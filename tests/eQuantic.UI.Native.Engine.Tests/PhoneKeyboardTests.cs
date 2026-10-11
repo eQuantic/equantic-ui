@@ -123,6 +123,19 @@ public class PhoneKeyboardTests
         form.Changes.Should().Equal(["a b"]);
     }
 
+    /// <summary>A pasted CRLF becomes one space, and the caret sent after it lands after the same
+    /// characters: it was left one past them.</summary>
+    [Fact]
+    public void AFlattenedLineBreak_KeepsTheSelectionOnItsText()
+    {
+        var (host, form) = Open();
+
+        host.UpdateEditingValue(new TextEditingValue("a\r\nbc", 3, 3)).Should().BeTrue();
+
+        form.Changes.Should().Equal(["a bc"]);
+        host.CaretIndex.Should().Be(2, "the caret was before the b");
+    }
+
     /// <summary>
     /// iOS autocorrects "teh" by deleting it and typing the fix, all before a frame. Read off the
     /// frame, each edit started from the value before all of them, and the field ended "tehthe"-ish

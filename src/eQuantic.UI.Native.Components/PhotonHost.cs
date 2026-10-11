@@ -1183,7 +1183,7 @@ public sealed class PhotonHost
         if (TextTarget is not { } entry || entry.Disabled) return false;
         // Typing over a selection REPLACES it — the one behaviour that makes selecting worth doing.
         var (start, end) = Selection;
-        var value = EditedValue ?? entry.Value;
+        var value = _edited ?? entry.Value;
         Commit(entry, value[..start] + text + value[end..], start + text.Length, clearAnchor: true);
         return true;
     }
@@ -1231,7 +1231,7 @@ public sealed class PhotonHost
         if (TextTarget is { } entry && !entry.Disabled)
         {
             var (start, end) = Selection;
-            var value = EditedValue ?? entry.Value;
+            var value = _edited ?? entry.Value;
             if (end > start)
                 Commit(entry, value[..start] + value[end..], start, clearAnchor: true);
         }
@@ -1273,7 +1273,7 @@ public sealed class PhotonHost
         get
         {
             if (TextTarget is not { } entry) return null;
-            var text = EditedValue ?? entry.Value;
+            var text = _edited ?? entry.Value;
             var caret = CaretIndex;
             var anchor = _anchor is { } held ? Math.Clamp(held, 0, text.Length) : caret;
             return _composing is { } composing && composing.Text == text
@@ -1292,21 +1292,40 @@ public sealed class PhotonHost
     public bool UpdateEditingValue(TextEditingValue value)
     {
         if (TextTarget is not { } entry || entry.Disabled) return false;
-        var text = value.Text ?? "";
-        if (entry.Lines <= 1 && text.AsSpan().IndexOfAny('\r', '\n') >= 0) text = text.ReplaceLineEndings(" ");
+        value = value with { Text = value.Text ?? "" };
+        if (entry.Lines <= 1 && value.Text.AsSpan().IndexOfAny('\r', '\n') >= 0) value = Flattened(value);
+        var text = value.Text;
         var extent = Math.Clamp(value.SelectionExtent, 0, text.Length);
         var anchor = Math.Clamp(value.SelectionBase, 0, text.Length);
 
-        if (text != (EditedValue ?? entry.Value)) Commit(entry, text, extent);
+        if (text != (_edited ?? entry.Value)) Commit(entry, text, extent);
         Caret = extent;
         _anchor = anchor == extent ? null : anchor;
         // After the caret, whose every move drops it: this is the one move that keeps it.
-        _composing = (value with { Text = text }).HasComposing
-            ? (value.ComposingStart, value.ComposingEnd, text)
-            : null;
+        _composing = value.HasComposing ? (value.ComposingStart, value.ComposingEnd, text) : null;
         _marked = "";
         NeedsRender = true;
         return true;
+    }
+
+    /// <summary>
+    /// A keyboard's state for a single line: each line break a space, as a paste makes it. A CRLF
+    /// is two characters that become one, so an offset past one moves back with the text it is in.
+    /// </summary>
+    private static TextEditingValue Flattened(TextEditingValue value)
+    {
+        var text = value.Text;
+        int At(int offset)
+        {
+            var shift = 0;
+            for (var i = text.IndexOf("\r\n", StringComparison.Ordinal);
+                 i >= 0 && i + 2 <= offset;
+                 i = text.IndexOf("\r\n", i + 2, StringComparison.Ordinal))
+                shift++;
+            return offset - shift;
+        }
+        return new TextEditingValue(text.ReplaceLineEndings(" "), At(value.SelectionBase),
+            At(value.SelectionExtent), At(value.ComposingStart), At(value.ComposingEnd));
     }
 
     /// <summary>The selected range of the focused field, as (start, length) — what
@@ -1376,7 +1395,7 @@ public sealed class PhotonHost
     private bool EditKey(TextEntry entry, string key, KeyModifiers modifiers)
     {
         if (entry.Disabled) return false;
-        var value = EditedValue ?? entry.Value;
+        var value = _edited ?? entry.Value;
         var caret = CaretIndex;
         var (start, end) = Selection;
         var selecting = modifiers.HasFlag(KeyModifiers.Shift);
