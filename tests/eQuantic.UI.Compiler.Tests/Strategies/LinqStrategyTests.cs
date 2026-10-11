@@ -216,14 +216,16 @@ public class LinqStrategyTests
         TestHelper.ConvertExpression("numbers.Sum(x => { return x * 2; })")
             .Should().Contain("$sum + ((x) => {").And.Contain("return x * 2;");
         TestHelper.ConvertExpression("numbers.Average(x => { return x * 2; })")
-            .Should().Contain("$sum + ((x) => {").And.Contain("$0.length");
+            .Should().Contain("$eq.linq.average(this.numbers, (x) => {").And.Contain("return x * 2;");
     }
 
+    /// <summary>The mean is the runtime's, told how the values add and whether they are nullable,
+    /// which only the bound overload says (#719).</summary>
     [Fact]
-    public void Average_NoPredicate_MapsToReduceDivide()
+    public void Average_NoPredicate_IsTheRuntimesMean()
     {
         var result = TestHelper.ConvertExpression("numbers.Average()");
-        result.Should().Be("(($0) => ($0.reduce(($a, $b) => $a + $b, 0) / $0.length))(this.numbers)");
+        result.Should().Be("$eq.linq.average(this.numbers, undefined, 'number', false)");
     }
 
     [Fact]

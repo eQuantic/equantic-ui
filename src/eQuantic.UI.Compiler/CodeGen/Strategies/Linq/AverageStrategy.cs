@@ -5,7 +5,14 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
 /// <summary>
-/// Converts LINQ .Average() to JavaScript reduce + divide.
+/// LINQ's <c>Average()</c> and <c>Average(selector)</c>, through the runtime's <c>$eq.linq.average</c>
+/// with what only the bound overload says: the type of the values it means, which decides how they add
+/// (a long's total exact as a BigInt, a float's in a double rounded once, a decimal's as a Decimal), and
+/// whether they are nullable, which passes a null over and answers null for a sequence with no value
+/// (#719). An inline reduce read the type from a selector's lambda body or else from the source's
+/// element type, so a method group or a delegate that answered a long added a BigInt to a number seed,
+/// a nullable's total was divided by its nulls too, and an empty sequence answered NaN where .NET
+/// throws. A call no model binds keeps that reduce:
 /// - Average() -> array.reduce(($a, $b) => $a + $b, 0) / array.length
 /// - Average(selector) -> array.reduce(($sum, $x) => $sum + selector($x), 0) / array.length
 /// The source is read once, though the division names it twice, and so is a selector that is not a
@@ -42,6 +49,16 @@ public class AverageStrategy : IExpressionIrStrategy
 
         var source = LinqSource.Ir(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
+
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method)
+        {
+            if (MeanOf(method) is not var (mean, nullable))
+                return JsExpr.Opaque(context.Unhandled(invocation, $"LINQ Average over {method.ReturnType.ToDisplayString()}"));
+            return LinqArguments.Call(Eq.LinqAverage, source, ["selector"], invocation,
+                    argument => context.Converter.ConvertIr(argument.Expression), context,
+                    [$"'{mean}'", nullable ? "true" : "false"])
+                ?? JsExpr.Opaque(context.Unhandled(invocation, "LINQ Average"));
+        }
 
         // Same rule as Sum: a decimal is a runtime Decimal, so `+` concatenates. Averaging then
         // divided that text by a count and produced NaN — visibly broken rather than quietly
@@ -87,6 +104,31 @@ public class AverageStrategy : IExpressionIrStrategy
         // Average() without selector
         return JsExpr.Template(Divide($"{{0}}.reduce(($a, $b) => {LinqAccumulation.Add("$a", "$b", exact)}, {seed})"),
             [source]);
+    }
+
+    /// <summary>
+    /// How the runtime adds the values an overload means (<c>Mean</c> in <c>utils/linq.ts</c>), and whether
+    /// they are nullable: the selector's result type where the overload takes one, and the source's element
+    /// type otherwise, which every overload without a selector names outright. Null for any other type,
+    /// which no overload of .NET 10 means.
+    /// </summary>
+    private static (string Mean, bool Nullable)? MeanOf(IMethodSymbol method)
+    {
+        var values = method.Parameters.FirstOrDefault(parameter => parameter.Name == "selector")?.Type is INamedTypeSymbol
+        {
+            TypeArguments: [_, var result],
+        }
+            ? result
+            : ((method.ReducedFrom ?? method).Parameters.FirstOrDefault()?.Type).GetEnumerableElementType();
+        var mean = values.UnwrapNullable()?.SpecialType switch
+        {
+            SpecialType.System_Int32 or SpecialType.System_Double => "number",
+            SpecialType.System_Int64 => "long",
+            SpecialType.System_Single => "single",
+            SpecialType.System_Decimal => "decimal",
+            _ => null,
+        };
+        return mean is null ? null : (mean, values.IsNullableValue());
     }
 
     public int Priority => 10;

@@ -45,6 +45,9 @@ public class FirstStrategy : IConversionStrategy
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         
+        if (WithADefaultValue(invocation, memberAccess, Eq.LinqFirstOrDefault, context) is { } withDefault)
+            return withDefault;
+
         var caller = LinqSource.Text(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
         
@@ -66,6 +69,26 @@ public class FirstStrategy : IConversionStrategy
         }
 
         return orDefault.Length > 0 ? $"({caller}[0]{orDefault})" : $"{caller}[0]";
+    }
+
+    /// <summary>
+    /// <c>FirstOrDefault(defaultValue)</c> and <c>FirstOrDefault(predicate, defaultValue)</c>, .NET 6's
+    /// overloads, and <c>LastOrDefault</c>'s twins of them, through the runtime's (<paramref name="helper"/>):
+    /// the element that matches, a null one included, or the value handed (#720). They took the shape of
+    /// the overload with a predicate, which called the default value as a function, and a <c>??</c> over
+    /// the element would hand the default for a null element .NET answers. Null for every other overload.
+    /// </summary>
+    internal static string? WithADefaultValue(InvocationExpressionSyntax invocation, MemberAccessExpressionSyntax access,
+        string helper, ConversionContext context)
+    {
+        if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol method
+            || !method.Parameters.Any(parameter => parameter.Name == "defaultValue"))
+            return null;
+        var call = LinqArguments.Call(helper, LinqSource.Ir(access.Expression, context), ["predicate", "defaultValue"],
+            invocation, argument => context.Converter.ConvertIr(argument.Expression), context);
+        return call is null
+            ? context.Unhandled(invocation, $"{method.Name} with a default value")
+            : Ir.JsExprWriter.Write(call);
     }
 
     public int Priority => 10;

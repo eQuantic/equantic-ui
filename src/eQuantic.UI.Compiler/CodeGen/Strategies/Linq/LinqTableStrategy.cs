@@ -83,6 +83,9 @@ public class LinqTableStrategy : IExpressionIrStrategy
         {
             template = template.Replace("$x.key === $key", LinqKeys.Matches(lookupKey, "$x.key", "$key"));
         }
+        // A lookup's accumulator is typed where the output is TypeScript, as GroupBy's is (#727).
+        if (name.Identifier.Text == "ToLookup" && context.TypeAnnotations)
+            template = template.Replace("($groups, $item)", "($groups: any[], $item)");
         if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
 
         // {0} is the receiver; {1}… the arguments. The writer binds whatever is reused.

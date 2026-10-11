@@ -127,6 +127,17 @@ public static class Eq
     /// <summary>LINQ <c>ToDictionary</c> into the runtime's dictionary class, refusing a null key and a
     /// key twice.</summary>
     public const string LinqToDictionary = "$eq.linq.toDictionary";
+    /// <summary>LINQ <c>Average</c>, by the type of the values it means: a long's total exact, a
+    /// nullable's over its values alone, an empty sequence refused where the answer is not nullable.</summary>
+    public const string LinqAverage = "$eq.linq.average";
+    /// <summary>LINQ <c>FirstOrDefault</c> with a default value, and a predicate or none.</summary>
+    public const string LinqFirstOrDefault = "$eq.linq.firstOrDefault";
+    /// <summary>LINQ <c>LastOrDefault</c> with a default value, and a predicate or none.</summary>
+    public const string LinqLastOrDefault = "$eq.linq.lastOrDefault";
+    /// <summary>LINQ <c>SequenceEqual</c>, element by element by the element type's default equality.</summary>
+    public const string LinqSequenceEqual = "$eq.linq.sequenceEqual";
+    /// <summary>LINQ <c>Zip</c> without a result selector: the pairs, or the triples, as arrays.</summary>
+    public const string LinqZipTuples = "$eq.linq.zipTuples";
 
     /// <summary>A sequence as the array the lowered operators work on — see <c>seq</c> in utils/linq.ts.</summary>
     public const string LinqSeq = "$eq.linq.seq";
