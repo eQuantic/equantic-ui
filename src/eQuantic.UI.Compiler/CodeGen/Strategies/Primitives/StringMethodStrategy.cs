@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
@@ -9,14 +10,15 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// <summary>
 /// Converts C# string instance methods to JavaScript equivalents.
 /// Handles:
-/// - Split(separator) -> split(separator); Split() -> $eq.text.splitOnWhiteSpace, .NET's white space
+/// - Split -> $eq.text.split (one separator) or splitAny (a set, white space where there is none),
+///   chosen by the bound overload, with its count and options
 /// - Replace(old, new) -> replaceAll(old, new)
 /// - StartsWith(prefix) -> startsWith(prefix)
 /// - EndsWith(suffix) -> endsWith(suffix)
 /// - Contains(substring) -> includes(substring)
 /// - Substring(start, length?) -> substring(start, start + length) or slice(start)
-/// - IndexOf(value) -> indexOf(value)
-/// - LastIndexOf(value) -> lastIndexOf(value)
+/// - IndexOf(value) -> indexOf(value); with a start or a count -> $eq.text.indexOf, ordinal
+/// - LastIndexOf(value) -> lastIndexOf(value); with a start or a count -> $eq.text.lastIndexOf, ordinal
 /// - PadLeft(width, char?) -> padStart(width, char)
 /// - PadRight(width, char?) -> padEnd(width, char)
 /// - Trim(), TrimStart(), TrimEnd() -> $eq.text.trim/trimStart/trimEnd, .NET's white space
@@ -68,6 +70,8 @@ public class StringMethodStrategy : IConversionStrategy
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var methodName = memberAccess.Name.Identifier.Text;
 
+        if (methodName == "Split")
+            return SplitCall(invocation, context);
         // An overload that compares goes to the runtime, chosen by the BOUND method and handed the
         // comparison as the value it is, its member's name, so one held in a variable is the one it
         // holds. It was read from its SPELLING and both sides were lower-cased: the Kelvin sign
@@ -79,12 +83,11 @@ public class StringMethodStrategy : IConversionStrategy
 
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
         var args = invocation.ArgumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)).ToList();
-        // IndexOf/LastIndexOf may carry a trailing startIndex after the search value.
+        // With no model to ask, IndexOf/LastIndexOf may carry a trailing start and count no spelling tells.
         var extraArgs = args.Count > 1 ? ", " + string.Join(", ", args.Skip(1)) : "";
 
         return methodName switch
         {
-            "Split" => ConvertSplit(caller, args, context),
             "Replace" => ConvertReplace(caller, args),
             "StartsWith" => $"{caller}.startsWith({args[0]})",
             "EndsWith" => $"{caller}.endsWith({args[0]})",
@@ -118,10 +121,16 @@ public class StringMethodStrategy : IConversionStrategy
     /// The shape of an overload that compares, one letter per parameter (s a string, c a char, i an
     /// int, b a bool, k a <c>StringComparison</c>, u a <c>CultureInfo</c>), or null for one that does
     /// not. <c>Replace(string, string)</c> is one: it is ordinal, and <c>replaceAll</c> read
-    /// <c>$&amp;</c> in its replacement as a pattern and wrote a null one as "null". The bound method
-    /// says which overload it is; with no model to ask, a comparison spelled as the last argument and
-    /// the count of the arguments are the only evidence there is, and a Replace of two arguments is
-    /// the ordinal one whether they are strings or chars, which it answers alike.
+    /// <c>$&amp;</c> in its replacement as a pattern and wrote a null one as "null". So are
+    /// <c>IndexOf</c> and <c>LastIndexOf</c> of a string from a start, and for a count: JavaScript's
+    /// searches take no count, read a start past the end as the end, and read <c>lastIndexOf</c>'s as
+    /// the place a match may START, where .NET's is the place it must END by (#724). They search by
+    /// ordinal, as the overload without a start does here, where .NET searches by the current culture
+    /// (#532). The bound method says which overload it is; with no model to ask, a comparison spelled
+    /// as the last argument and the count of the arguments are the only evidence there is, a Replace
+    /// of two arguments is the ordinal one whether they are strings or chars, which it answers alike,
+    /// and a search from a start is a string's unless a char literal says it is a char's, where its
+    /// start and count are written or computed numbers (<see cref="IsANumber"/>).
     /// </summary>
     private static string? ComparingShape(InvocationExpressionSyntax invocation, string methodName, ConversionContext context)
     {
@@ -141,7 +150,8 @@ public class StringMethodStrategy : IConversionStrategy
             // and ToLower's culture is their casing, which is theirs to read.
             var comparing = shape.Contains('k')
                 || (shape.Contains('u') && methodName is "StartsWith" or "EndsWith" or "Replace")
-                || (methodName == "Replace" && shape == "s,s");
+                || (methodName == "Replace" && shape == "s,s")
+                || (methodName is "IndexOf" or "LastIndexOf" && shape is "s,i" or "s,i,i");
             return comparing ? shape : null;
         }
 
@@ -156,6 +166,12 @@ public class StringMethodStrategy : IConversionStrategy
                 return "s,b,u";
             case ("Replace", 4):
                 return "s,s,b,u";
+            // A search from a start, and for a count, of a value no char literal says is a char, whose
+            // start and count no comparison could be: a name could hold one, a number cannot.
+            case ("IndexOf" or "LastIndexOf", 2 or 3)
+                when !arguments[0].Expression.IsKind(SyntaxKind.CharacterLiteralExpression)
+                    && arguments.Skip(1).All(argument => IsANumber(argument.Expression)):
+                return arguments.Count == 2 ? "s,i" : "s,i,i";
         }
         if (arguments.Count == 0 || !arguments[^1].Expression.ToString().Contains("StringComparison")) return null;
         return (methodName, arguments.Count) switch
@@ -171,11 +187,11 @@ public class StringMethodStrategy : IConversionStrategy
     /// <summary>
     /// The runtime's search for an overload that compares. It takes the overload's arguments as C#
     /// lists them, the receiver first, so a call binds nothing to keep them in the order they run;
-    /// <c>Replace(string, string)</c> is the ordinal one. Equals compares two whole strings, as the
-    /// static does by the same comparison; a SEARCH by a culture comparison has no JavaScript form
-    /// (.NET searches with ICU's collation, and the platform's collator searches nothing), so a
-    /// constant one is refused here and one in a variable throws in the runtime. A <c>CultureInfo</c>
-    /// has no form this side reads.
+    /// <c>Replace(string, string)</c> and the searches from a start with no comparison are the ordinal
+    /// ones. Equals compares two whole strings, as the static does by the same comparison; a SEARCH
+    /// by a culture comparison has no JavaScript form (.NET searches with ICU's collation, and the
+    /// platform's collator searches nothing), so a constant one is refused here and one in a variable
+    /// throws in the runtime. A <c>CultureInfo</c> has no form this side reads.
     /// </summary>
     private static string ComparingCall(InvocationExpressionSyntax invocation, string methodName, string shape, ConversionContext context)
     {
@@ -185,8 +201,8 @@ public class StringMethodStrategy : IConversionStrategy
             ("StartsWith", "s,k") => Eq.StringStartsWith,
             ("EndsWith", "s,k") => Eq.StringEndsWith,
             ("Contains", "s,k" or "c,k") => Eq.StringContains,
-            ("IndexOf", "s,k" or "c,k" or "s,i,k" or "s,i,i,k") => Eq.StringIndexOf,
-            ("LastIndexOf", "s,k" or "s,i,k" or "s,i,i,k") => Eq.StringLastIndexOf,
+            ("IndexOf", "s,k" or "c,k" or "s,i,k" or "s,i,i,k" or "s,i" or "s,i,i") => Eq.StringIndexOf,
+            ("LastIndexOf", "s,k" or "s,i,k" or "s,i,i,k" or "s,i" or "s,i,i") => Eq.StringLastIndexOf,
             ("Replace", "s,s,k" or "s,s") => Eq.StringReplace,
             _ => null,
         };
@@ -200,7 +216,9 @@ public class StringMethodStrategy : IConversionStrategy
             return context.Unhandled(invocation,
                 $"string.{methodName} (a culture comparison has no search in the browser: search by Ordinal or OrdinalIgnoreCase)");
 
-        return RuntimeCall(invocation, helper, shape.Split(',').Length, shape == "s,s" ? ", 'ordinal'" : "", bound, context);
+        // The overloads with no comparison search by ordinal.
+        var ordinal = shape is "s,s" or "s,i" or "s,i,i" ? ", 'ordinal'" : "";
+        return RuntimeCall(invocation, helper, shape.Split(',').Length, ordinal, bound, context);
     }
 
     /// <summary>
@@ -312,22 +330,138 @@ public class StringMethodStrategy : IConversionStrategy
         return $"{helper}({caller}{chars})";
     }
 
-    private string ConvertSplit(string caller, List<string> args, ConversionContext context)
+    /// <summary>
+    /// <c>string.Split</c> by the overload C# bound, through the runtime's twin of .NET's own: one
+    /// separator (a char or a string) goes to <see cref="Eq.StringSplit"/>, a set of them (a char
+    /// array, a span of chars or a string array, white space where it is null or empty) to
+    /// <see cref="Eq.StringSplitAny"/>, each with its count and its options in their places, a named
+    /// one included, as the values they are. JavaScript's <c>split</c> was handed the first argument
+    /// whole: an array was one text joined by commas, a null was the text "null", the count was
+    /// dropped, and the options were read from their spelling, so one in a variable was lost (#753).
+    /// The chars a params parameter takes one by one, <c>Split(',', ';')</c>, are an array of them.
+    /// </summary>
+    private static string SplitCall(InvocationExpressionSyntax invocation, ConversionContext context)
     {
-        // No separator splits on .NET's white space, keeping the empty entries between two of it.
-        // It was `split('')`, which cut the text into its characters.
-        if (args.Count == 0)
+        var receiver = context.Converter.ConvertIr(((MemberAccessExpressionSyntax)invocation.Expression).Expression);
+        var arguments = invocation.ArgumentList.Arguments;
+        context.UsedHelpers.Add(Eq.Import);
+        if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol { Parameters.Length: > 0 } method)
+            return GuessedSplit(invocation, receiver, context);
+
+        var separator = method.Parameters[0];
+        var helper = separator.Type.SpecialType is SpecialType.System_Char or SpecialType.System_String
+            ? Eq.StringSplit
+            : Eq.StringSplitAny;
+        if (separator.IsParams && PassesOneByOne(invocation, method, context))
         {
-            context.UsedHelpers.Add(Eq.Import);
-            return $"{Eq.SplitOnWhiteSpace}({caller})";
+            // The params overloads take nothing else, so every argument is one of the separators.
+            var parts = new List<JsExpr> { receiver };
+            parts.AddRange(arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)));
+            var holes = string.Join(", ", Enumerable.Range(1, arguments.Count).Select(index => "{" + index + "}"));
+            var template = arguments.Count == 0 ? $"{helper}({{0}})" : $"{helper}({{0}}, [{holes}])";
+            return JsExprWriter.Write(JsExpr.Template(template, parts));
         }
+        if (separator.Type is not (IArrayTypeSymbol or { SpecialType: SpecialType.System_Char or SpecialType.System_String })
+            && ParameterTemplate.Filling(invocation, method, 0)?.Expression is not CollectionExpressionSyntax)
+            return context.Unhandled(invocation, "string.Split over a span, which JavaScript does not have");
 
-        // Handle StringSplitOptions.RemoveEmptyEntries
-        if (args.Count >= 2 && args[1].Contains("RemoveEmptyEntries"))
-            return $"{caller}.split({args[0]}).filter(($s) => $s !== '')";
-
-        return $"{caller}.split({args[0]})";
+        // The count and the options where the overload has them and the call passes them; a count
+        // left out before the options is the twin's own default.
+        var passed = ParameterTemplate.WrittenFor(arguments, method);
+        string Hole(Func<IParameterSymbol, bool> takes) =>
+            method.Parameters.FirstOrDefault(takes) is { } parameter && passed[parameter.Ordinal] >= 0
+                ? "{" + (parameter.Ordinal + 1) + "}"
+                : "undefined";
+        var tail = new List<string>
+        {
+            Hole(parameter => parameter.Type.SpecialType == SpecialType.System_Int32),
+            Hole(parameter => parameter.Type.IsNamed("System.StringSplitOptions")),
+        };
+        while (tail.Count > 0 && tail[^1] == "undefined") tail.RemoveAt(tail.Count - 1);
+        var call = $"{helper}({string.Join(", ", new[] { "{0}", "{1}" }.Concat(tail))})";
+        return JsExprWriter.Write(ParameterTemplate.Call(call, receiver, invocation, method, context));
     }
+
+    /// <summary>Whether the call hands a params parameter its separators one by one (its expanded
+    /// form), which the bound tree says; with no operation to ask, any count of arguments but one, or
+    /// one that is a char, is that form.</summary>
+    private static bool PassesOneByOne(InvocationExpressionSyntax invocation, IMethodSymbol method, ConversionContext context)
+    {
+        if (context.SemanticHelper.GetOperation(invocation) is IInvocationOperation operation)
+            return operation.Arguments.Any(argument => SymbolEqualityComparer.Default.Equals(argument.Parameter, method.Parameters[0])
+                && argument.ArgumentKind is ArgumentKind.ParamArray or ArgumentKind.ParamCollection);
+        var arguments = invocation.ArgumentList.Arguments;
+        return arguments.Count != 1
+            || context.SemanticHelper.GetType(arguments[0].Expression)?.SpecialType == SpecialType.System_Char;
+    }
+
+    /// <summary>
+    /// <c>string.Split</c> with no model to say which overload it is: no argument is white space, chars
+    /// written one by one are a set of them, an array is a set, and anything else is the one separator,
+    /// followed by a count and options in the order they are written. A second argument alone is the
+    /// options where they are spelled as such and the count where it is a number
+    /// (<see cref="IsANumber"/>); a name could hold either, so it is a build error rather than a
+    /// guess, as <c>string.Format</c>'s first argument is.
+    /// </summary>
+    private static string GuessedSplit(InvocationExpressionSyntax invocation, JsExpr receiver, ConversionContext context)
+    {
+        var arguments = invocation.ArgumentList.Arguments;
+        // Options spelled as members are the number they make: with no model a member is its key.
+        var parts = new List<JsExpr> { receiver };
+        parts.AddRange(arguments.Select(argument => SpelledOptions(argument.Expression) is { } options
+            ? JsExpr.Literal(options.ToString(System.Globalization.CultureInfo.InvariantCulture))
+            : context.Converter.ConvertIr(argument.Expression)));
+        var holes = Enumerable.Range(1, arguments.Count).Select(index => "{" + index + "}").ToList();
+        string template;
+        if (arguments.Count == 0)
+            template = $"{Eq.StringSplitAny}({{0}})";
+        else if (arguments.Count > 1 && arguments.All(argument => argument.Expression.IsKind(SyntaxKind.CharacterLiteralExpression)))
+            template = $"{Eq.StringSplitAny}({{0}}, [{string.Join(", ", holes)}])";
+        else
+        {
+            var helper = arguments[0].Expression is ArrayCreationExpressionSyntax or ImplicitArrayCreationExpressionSyntax
+                or CollectionExpressionSyntax
+                ? Eq.StringSplitAny
+                : Eq.StringSplit;
+            if (arguments.Count == 2 && SpelledOptions(arguments[1].Expression) is not null)
+                holes.Insert(1, "undefined");
+            else if (arguments.Count == 2 && !IsANumber(arguments[1].Expression))
+                return context.Unhandled(invocation, "string.Split whose second argument the spelling cannot tell a count from options by");
+            template = $"{helper}({{0}}, {string.Join(", ", holes)})";
+        }
+        return JsExprWriter.Write(JsExpr.Template(template, parts));
+    }
+
+    /// <summary>The value of <c>StringSplitOptions</c> members spelled out and joined by <c>|</c>, or null
+    /// where the spelling is anything else.</summary>
+    private static int? SpelledOptions(ExpressionSyntax expression) => expression switch
+    {
+        ParenthesizedExpressionSyntax parenthesized => SpelledOptions(parenthesized.Expression),
+        BinaryExpressionSyntax binary when binary.IsKind(SyntaxKind.BitwiseOrExpression) =>
+            SpelledOptions(binary.Left) | SpelledOptions(binary.Right),
+        MemberAccessExpressionSyntax member when member.Expression.ToString() is "StringSplitOptions" or "System.StringSplitOptions" =>
+            member.Name.Identifier.ValueText switch
+            {
+                "None" => 0,
+                "RemoveEmptyEntries" => 1,
+                "TrimEntries" => 2,
+                _ => null,
+            },
+        _ => null,
+    };
+
+    /// <summary>Whether an argument is a number a name could not be: a numeric literal, its negation, or
+    /// arithmetic, which a <c>StringComparison</c> or a <c>StringSplitOptions</c> held in a variable
+    /// never is. Evidence for the paths with no model only.</summary>
+    private static bool IsANumber(ExpressionSyntax expression) => expression switch
+    {
+        ParenthesizedExpressionSyntax parenthesized => IsANumber(parenthesized.Expression),
+        LiteralExpressionSyntax literal => literal.IsKind(SyntaxKind.NumericLiteralExpression),
+        PrefixUnaryExpressionSyntax unary => unary.IsKind(SyntaxKind.UnaryMinusExpression) && IsANumber(unary.Operand),
+        BinaryExpressionSyntax binary => binary.Kind() is SyntaxKind.AddExpression or SyntaxKind.SubtractExpression
+            or SyntaxKind.MultiplyExpression or SyntaxKind.DivideExpression or SyntaxKind.ModuloExpression,
+        _ => false,
+    };
 
     private string ConvertReplace(string caller, List<string> args)
     {

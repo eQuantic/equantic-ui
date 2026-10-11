@@ -13,7 +13,7 @@ export class CodePatch {
             hunks = [];
             open = false;
         };
-        let lines = $eq.text.replace(text, '\r\n', '\n', 'ordinal').split('\n');
+        let lines = $eq.text.split($eq.text.replace(text, '\r\n', '\n', 'ordinal'), '\n');
         let files: CodePatchFile[] = [];
         let originalPath: string | null = null;
         let modifiedPath: string | null = null;
@@ -54,7 +54,7 @@ export class CodePatch {
     static header(line: string): [number, number, number, number, string] | null {
         let close = $eq.text.indexOf(line, ' @@', 3, 'ordinal');
         if (close < 0) return null;
-        let parts = line.slice(3, close).split(' ');
+        let parts = $eq.text.split(line.slice(3, close), ' ');
         if (parts.length !== 2 || !parts[0].startsWith('-') || !parts[1].startsWith('+')) return null;
         let original: any; let modified: any; 
         if (!((original = CodePatch.range(parts[0].slice(1))) != null) || !((modified = CodePatch.range(parts[1].slice(1))) != null)) return null;

@@ -115,14 +115,8 @@ import {
 } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
-import {
-  hasNonWhiteSpace,
-  isWhiteSpace,
-  splitOnWhiteSpace,
-  trim,
-  trimEnd,
-  trimStart,
-} from './utils/white-space';
+import { hasNonWhiteSpace, isWhiteSpace, trim, trimEnd, trimStart } from './utils/white-space';
+import { split, splitAny } from './utils/string-split';
 import { str } from './utils/culture';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
@@ -428,7 +422,7 @@ export const $eq = {
   },
   /** Text: number/string formatting, StringBuilder, StringInfo's text elements (grapheme clusters,
    * from the platform's segmenter), a character's general category, string's comparisons and
-   * ranged join, a string's own searches by a comparison, and .NET's white space. */
+   * ranged join, a string's own searches by a comparison, its split, and .NET's white space. */
   text: {
     /** A range of chars, refused where it leaves its source, as .NET refuses it. */
     chars,
@@ -465,7 +459,8 @@ export const $eq = {
     trim,
     trimStart,
     trimEnd,
-    splitOnWhiteSpace,
+    split,
+    splitAny,
   },
   /** A dictionary's indexer read, which fails on a missing key the way .NET does, and its write,
    * which answers the value written as C#'s assignment does. */

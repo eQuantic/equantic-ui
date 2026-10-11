@@ -15,14 +15,66 @@ public class StringStrategyTests
         // It was `split('')`, which cut the text into its characters: with no separator .NET splits
         // on white space (WhiteSpaceConformanceTests runs both sides).
         var result = TestHelper.ConvertExpression("str.Split()");
-        result.Should().Be("$eq.text.splitOnWhiteSpace(this.str)");
+        result.Should().Be("$eq.text.splitAny(this.str)");
     }
 
     [Fact]
-    public void Split_WithSeparator_MapsToSplit()
+    public void Split_WithSeparator_IsTheRuntimesSplit()
     {
+        // JavaScript's split was handed the first argument whole, and dropped the count and the
+        // options (#753); StringSplitAndSearchConformanceTests runs both sides.
         var result = TestHelper.ConvertExpression("str.Split(',')");
-        result.Should().Be("this.str.split(',')");
+        result.Should().Be("$eq.text.split(this.str, ',')");
+    }
+
+    [Fact]
+    public void Split_ByASet_TakesItsCountAndOptionsInTheirPlaces()
+    {
+        var result = TestHelper.ConvertExpression("str.Split(new[] { \"ab\", \"c\" }, StringSplitOptions.TrimEntries)");
+        result.Should().Be("$eq.text.splitAny(this.str, ['ab', 'c'], undefined, 2)");
+    }
+
+    [Fact]
+    public void Split_OverASpanHandedWhole_FailsTheBuild()
+    {
+        // A collection expression is an array in the browser; any other span has no form there.
+        TestHelper.DiagnosticsFor("str.Split(\",;\".AsSpan())").Should().Contain(d => d.Code == "EQ1004");
+    }
+
+    /// <summary>With no model, the spelling places what it can: chars written one by one are a set, an
+    /// array is a set, options are spelled as such, and a count is a number.</summary>
+    [Theory]
+    [InlineData("s.Split()", "$eq.text.splitAny(s)")]
+    [InlineData("s.Split(',', ';')", "$eq.text.splitAny(s, [',', ';'])")]
+    [InlineData("s.Split(new[] { \"ab\", \"c\" }, StringSplitOptions.None)", "$eq.text.splitAny(s, ['ab', 'c'], undefined, 0)")]
+    [InlineData("s.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)", "$eq.text.split(s, ',', undefined, 3)")]
+    [InlineData("s.Split(',', 2, StringSplitOptions.TrimEntries)", "$eq.text.split(s, ',', 2, 2)")]
+    [InlineData("s.Split(',', 2)", "$eq.text.split(s, ',', 2)")]
+    [InlineData("s.Split(sep, n, o)", "$eq.text.split(s, sep, n, o)")]
+    public void Split_WithNoModel_PlacesWhatItsSpellingSays(string code, string expected) =>
+        new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression(code)).Should().Be(expected);
+
+    /// <summary>With no model, a second argument held in a name could be the count or the options,
+    /// and a search's could be the start or a comparison: the split is a build error rather than a
+    /// guess, and the search keeps JavaScript's, which reads a start.</summary>
+    [Fact]
+    public void ANameTheSpellingCannotPlace_IsNotGuessed()
+    {
+        var converter = new CSharpToJsConverter();
+        converter.ConvertExpression(SyntaxFactory.ParseExpression("s.Split(',', o)"));
+        converter.Diagnostics.Should().Contain(d => d.Code == "EQ1004");
+
+        new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression("s.IndexOf(v, comparison)"))
+            .Should().Be("s.indexOf(v, comparison)");
+        new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression("s.LastIndexOf(\"x\", i - 1, 2)"))
+            .Should().Be("$eq.text.lastIndexOf(s, 'x', i - 1, 2, 'ordinal')");
+    }
+
+    [Fact]
+    public void Split_OfCharsWrittenOneByOne_IsASetOfThem()
+    {
+        var result = TestHelper.ConvertExpression("str.Split(',', ';')");
+        result.Should().Be("$eq.text.splitAny(this.str, [',', ';'])");
     }
 
     [Fact]
@@ -83,6 +135,15 @@ public class StringStrategyTests
     {
         var result = TestHelper.ConvertExpression("str.LastIndexOf(\"x\")");
         result.Should().Be("this.str.lastIndexOf('x')");
+    }
+
+    [Fact]
+    public void LastIndexOf_FromAStartForACount_IsTheRuntimesOrdinalSearch()
+    {
+        // JavaScript's lastIndexOf takes no count and reads its start as where a match may begin,
+        // where .NET's is where it must end by (#724).
+        var result = TestHelper.ConvertExpression("str.LastIndexOf(\"x\", 4, 2)");
+        result.Should().Be("$eq.text.lastIndexOf(this.str, 'x', 4, 2, 'ordinal')");
     }
 
     [Fact]
