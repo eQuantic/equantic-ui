@@ -195,7 +195,7 @@ A type parameter is erased in JavaScript, so an exception type whose type argume
 is nested in, are or hold one, built or tested (`new Failed<T>()` in a generic method, `catch (Failed<T>)`,
 `new Missing()` inside the generic class that declares it), carried, or compared, `T` itself:
 `catch (Failed<int>)` missed what `Of<int>()` threw (Copilot's second review of #708). It is refused
-(EQ2013, which says the same of a `ServerTopic<T>`). Alternative: carry the type arguments a generic method
+(EQ2014), under a code of its own as `new T()` (EQ2003) and a `ServerTopic<T>` built so (EQ2013) each have. Alternative: carry the type arguments a generic method
 or class receives at run time. Rejected: nothing in a twin holds them, and threading them through every
 generic call is a change of its own.
 

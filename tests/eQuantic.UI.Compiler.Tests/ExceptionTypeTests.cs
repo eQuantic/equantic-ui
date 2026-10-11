@@ -8,7 +8,7 @@ namespace eQuantic.UI.Compiler.Tests;
 /// <summary>
 /// An exception carries the types it is, its type arguments and those of the types it is nested in
 /// among them, which a typed <c>catch</c>, <c>is</c> and its name read. JavaScript erases a type
-/// parameter, so an exception type named where a type argument it carries is one is refused (EQ2013):
+/// parameter, so an exception type named where a type argument it carries is one is refused (EQ2014):
 /// <c>Make.Of&lt;int&gt;()</c> threw an exception that carried <c>T</c> itself, and
 /// <c>catch (Failed&lt;int&gt;)</c> missed it (Copilot's second review of #708).
 /// </summary>
@@ -47,7 +47,7 @@ public class ExceptionTypeTests
         var result = Compile(name);
 
         result.Success.Should().BeFalse();
-        result.Errors.Should().Contain(error => error.Code == "EQ2013" && error.Message.Contains(named) && error.Message.Contains("'T'"),
+        result.Errors.Should().Contain(error => error.Code == "EQ2014" && error.Message.Contains(named) && error.Message.Contains("'T'"),
             "the browser cannot tell which type T is, so the exception would carry, or the test compare, T itself");
     }
 
@@ -56,7 +56,7 @@ public class ExceptionTypeTests
     /// exception class is a class (#611), so the two hold together: an exception declared in a class is
     /// built as its twin, and a type declared in an exception class crosses as it does, where #584 kept
     /// both out while an exception had no module. Each fence still says its own: an exception nested in
-    /// a generic class, built where its type argument is a type parameter, is EQ2013 and never EQ2010,
+    /// a generic class, built where its type argument is a type parameter, is EQ2014 and never EQ2010,
     /// and a nested type of a server-only owner is EQ2010.
     /// </summary>
     [Fact]
@@ -81,7 +81,7 @@ public class ExceptionTypeTests
             .Contain("class Holder$Nested extends $eq.exceptions.Exception").And.Contain("'Holder+Nested'");
         results.Single(result => result.ComponentName == "Holder").TypeScript.Should().Contain("new Holder$Nested()");
         results.Single(result => result.ComponentName == "Client").Errors.Select(error => error.Code).Should().Contain("EQ2010");
-        Compile("Cache").Errors.Select(error => error.Code).Should().Contain("EQ2013").And.NotContain("EQ2010");
+        Compile("Cache").Errors.Select(error => error.Code).Should().Contain("EQ2014").And.NotContain("EQ2010");
     }
 
     /// <summary>

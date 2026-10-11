@@ -286,24 +286,24 @@ generic class's those of its construction from before its constructor's body run
 
 An exception carries the types it is, its type arguments and those of the types it is nested in among
 them, which a typed `catch`, `is` and its name read, and JavaScript erases a type parameter. eqc SHALL
-refuse with EQ2013 the construction of an exception type, and a test for one, where a type argument it
+refuse with EQ2014 the construction of an exception type, and a test for one, where a type argument it
 carries is, or holds, a type parameter.
 
 #### Scenario: A construction in a generic method
 
 - **WHEN** `static Exception Of<T>() => new Failed<T>();`
-- **THEN** the build fails with EQ2013, naming `T`, where the exception carried `T` itself and
+- **THEN** the build fails with EQ2014, naming `T`, where the exception carried `T` itself and
   `catch (Failed<int>)` missed what `Of<int>()` threw
 
 #### Scenario: A nested class of a generic class
 
 - **WHEN** `class Cache<T> { public class Missing : Exception { } public void Get() => throw new Missing(); }`
-- **THEN** the build fails with EQ2013 at the `new Missing()`
+- **THEN** the build fails with EQ2014 at the `new Missing()`
 
 #### Scenario: A test in a generic method
 
 - **WHEN** `catch (Failed<T>)` in `static string Run<T>(Exception e)`
-- **THEN** the build fails with EQ2013, where the test compared `T` itself
+- **THEN** the build fails with EQ2014, where the test compared `T` itself
 
 #### Scenario: Concrete type arguments
 

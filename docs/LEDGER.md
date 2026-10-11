@@ -2265,7 +2265,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   a call of one the browser would make is refused (EQ1009). What a twin cannot answer as C# does is
   refused too: a type that implements `IEnumerable<T>` over two types, a non-generic `GetEnumerator()` or
   a `Current` that does not hand back the answer of the member the twin keeps (EQ1007), and an exception
-  built or tested where a type argument it carries is a type parameter (EQ2013). An exception class
+  built or tested where a type argument it carries is a type parameter (EQ2014). An exception class
   declared inside another type is a class too, named by its owner, and what an exception class declares
   crosses as it does: #654 had kept both out while an exception had no module. 66 of the 71 new
   conformance cases fail on the head this merges over, the queue's at f03bcb62, and the five that pass

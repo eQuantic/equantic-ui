@@ -35,13 +35,13 @@
 ## 6. Copilot's second round on #708
 
 - [x] 6.1 A type that implements `IEnumerable<T>` or `IEnumerator<T>` over two types, and a non-generic `GetEnumerator()` or a `Current` the twin holds as one with the member it keeps where it does not hand back that member's answer (`IterableTwin.AnswersAs`), are refused (EQ1007). Compiler tests for each, and for the shapes that hand the answer back; failing on the previous head and green after
-- [x] 6.2 An exception type built or tested where a type argument it carries is a type parameter is refused (EQ2013). Compiler tests for a construction in a generic method, a nested class of a generic class and a typed catch in a generic method; failing on the previous head and green after
+- [x] 6.2 An exception type built or tested where a type argument it carries is a type parameter is refused (EQ2014). Compiler tests for a construction in a generic method, a nested class of a generic class and a typed catch in a generic method; failing on the previous head and green after
 - [x] 6.3 A call of a serialization constructor the browser would make, a `new`, a base call, a chain or a base clause, is refused (EQ1009), and the template still builds. Compiler tests for each; failing on the previous head and green after
 - [x] 6.4 A field of an exception class named like a member its base answers (`message`) keeps a slot of its own since #696 merged. A conformance case
 
 ## 7. Over #654, where a nested type is a module of its own
 
-- [x] 7.1 An exception class declared inside another type is a class, its twin named by its owner, and a type declared inside an exception class crosses as its owner does: #654 kept both out while an exception had no module. Conformance cases: a nested exception's members and its typed catch, a record declared in an exception class, and an exception nested in a generic class caught by its construction. A Compiler test that the modules are written, and that an exception nested in a generic class built where its type argument is a type parameter is refused with EQ2013, a nested type of a server-only owner still with EQ2010
+- [x] 7.1 An exception class declared inside another type is a class, its twin named by its owner, and a type declared inside an exception class crosses as its owner does: #654 kept both out while an exception had no module. Conformance cases: a nested exception's members and its typed catch, a record declared in an exception class, and an exception nested in a generic class caught by its construction. A Compiler test that the modules are written, and that an exception nested in a generic class built where its type argument is a type parameter is refused with EQ2014, a nested type of a server-only owner still with EQ2010
 - [x] 7.2 A host with no project's compilation, which keeps an exception class out by its base's name, builds one as the runtime's exception: the construction named a twin nothing wrote there. A Compiler test over a snippet compiled on its own
 
 ## 8. The real thing
@@ -50,5 +50,5 @@
 
 ## 9. Documentation and archive
 
-- [x] 9.1 docs/DIAGNOSTICS.md for EQ1007, EQ1009, EQ2010 and EQ2013, the wiki's SupportedFeatures and Diagnostics pages in English and Portuguese on the wiki branch named like this change's branch, and one docs/LEDGER.md line citing #563, #611 and #612
+- [x] 9.1 docs/DIAGNOSTICS.md for EQ1007, EQ1009, EQ2010 and EQ2014, the wiki's SupportedFeatures and Diagnostics pages in English and Portuguese on the wiki branch named like this change's branch, and one docs/LEDGER.md line citing #563, #611 and #612
 - [x] 9.2 `./scripts/check-openspec.sh` green, then `openspec archive a-class-dispatches-and-enumerates-as-dotnet-does --yes` before the merge

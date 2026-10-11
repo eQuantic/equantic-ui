@@ -39,7 +39,7 @@ public class ExceptionCreationStrategy : IExpressionIrStrategy
     {
         var creation = (BaseObjectCreationExpressionSyntax)node;
         var type = (INamedTypeSymbol)context.SemanticHelper.GetType(node)!;
-        // The types it carries cannot be a type parameter (EQ2013), nor its constructor one only .NET's
+        // The types it carries cannot be a type parameter (EQ2014), nor its constructor one only .NET's
         // serialization calls (EQ1009).
         ExceptionTypes.RefuseOpen(type, creation, tested: false, context);
         TwinConstructor.RefuseSerializationNew(creation, context);
