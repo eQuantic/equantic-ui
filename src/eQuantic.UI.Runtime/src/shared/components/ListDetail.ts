@@ -34,10 +34,12 @@ export class ListDetail extends StatelessComponent {
         const back = () => {
             return this.onBack == null ? null : new IconButton(new Icon(IconGlyph.fromIcons('chevronLeft')), SdkStrings.back, 'standard', 'medium', this.onBack);
         };
+        const withBack = (detail: VisualNode) => {
+            let goBack: any; 
+            return (goBack = this.onBack) != null ? new Shortcut(detail, KeyChord.escape, goBack) : detail;
+        };
         let chosen: any; 
-        let compact = (chosen = this.detail) != null ? pane(this.title, chosen(), back()) : pane(this.listTitle, this.list());
-        let goBack: any; 
-        if (!(this.detail == null) && (goBack = this.onBack) != null) compact = new Shortcut(compact, KeyChord.escape, goBack);
+        let compact = (chosen = this.detail) != null ? withBack(pane(this.title, chosen(), back())) : pane(this.listTitle, this.list());
         let wide = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill });
         wide.add(new Box(new BoxStyle({ width: this.listWidth, height: SizeValue.fill }), pane(this.listTitle, this.list())));
         wide.add(new Divider('none', 'vertical'));
