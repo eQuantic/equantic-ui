@@ -26,6 +26,7 @@ Plans for work that is still landing. Each names its slices and which are done.
 |---|---|
 | [NATIVE-GPU-ENGINE-PLAN.md](NATIVE-GPU-ENGINE-PLAN.md) | Photon — the native GPU engine, its backends and shells. |
 | [DESKTOP-PLAN.md](DESKTOP-PLAN.md) | Track W — Photon on the desktop: packaging, signing, notarization, Windows. |
+| [PHONE-CAPABILITIES-PLAN.md](PHONE-CAPABILITIES-PLAN.md) | Track D, second round — a phone's capabilities in C#: the routes to every iOS and Android API, the Swift and Kotlin bridge, on-device AI. Measured against the [platform catalog](platform-catalog/ios.md) ([Android](platform-catalog/android.md)). |
 | [SHARED-COMPONENTS-PLAN.md](SHARED-COMPONENTS-PLAN.md) | The write-once architecture: one vocabulary, realized per target. The plan that produced the current layering. |
 | [STYLE-SEMANTICS-PLAN.md](STYLE-SEMANTICS-PLAN.md) | Track S — CSS-free authoring and the atomic style engine. |
 | [CHARTS-PLAN.md](CHARTS-PLAN.md) | The chart library, written once and drawn by both realizers. |
@@ -52,4 +53,5 @@ owed turned into an issue — unless code or another document cites it.
 - **Bilingual where the wiki is.** This folder is English, as the code is. The wiki is English with a
   Portuguese twin per page, edited in the same commit.
 - **Never "widget".** The project's word is *component*; Flutter's word appears only in Flutter's
-  column of the parity audit.
+  column of the parity audit, and Apple's and Google's only where `platform-catalog/` names what
+  they ship or cites them.
