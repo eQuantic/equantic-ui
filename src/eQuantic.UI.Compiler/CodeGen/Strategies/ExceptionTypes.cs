@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
@@ -8,11 +9,13 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// <summary>
 /// An exception type as the browser knows it: a JavaScript <c>Error</c> that carries the .NET types it
 /// is, the most derived first and <c>System.Exception</c> last (the runtime's <c>utils/exceptions</c>).
-/// ONE place for the three things the translation asks of a type that derives from
-/// <c>System.Exception</c>, each answered from its SYMBOL:
+/// ONE place for what the translation asks of a type that derives from <c>System.Exception</c>, each
+/// answered from its SYMBOL:
 /// <list type="bullet">
 /// <item><see cref="Construction(IReadOnlyList{string}, BaseObjectCreationExpressionSyntax, ConversionContext)"/>:
-/// <c>new T(message)</c>, with T's chain written out.</item>
+/// <c>new T(message)</c> for a type with no twin of its own, one of .NET's, with T's chain written out.</item>
+/// <item><see cref="HasTwin(ITypeSymbol?)"/>: whether T is a class of the app's, which is built as any class is, over
+/// the runtime's <see cref="Eq.ExceptionBase"/>, its twin saying its chain (<see cref="TypesOf"/>, #611).</item>
 /// <item><see cref="Test"/>: whether a value is a T, which a typed <c>catch</c>, a type pattern and an
 /// <c>as</c> write alike.</item>
 /// <item><see cref="IsRoot"/>: whether T is <c>System.Exception</c> itself, which a <c>catch</c> takes
@@ -35,18 +38,132 @@ internal static class ExceptionTypes
         return false;
     }
 
+    /// <summary>
+    /// Whether <paramref name="type"/> is an exception class whose twin eqc writes, one the app declares:
+    /// a class like any other (#611), its members, its constructors and its methods its twin's, built
+    /// with <c>new</c> as a class is. It was an <c>Error</c> built by its symbol, with no member of its
+    /// own. One declared inside another type is a class too, its twin named by its owner
+    /// (<c>Holder$Nested</c>, #584): it was the one kind left as that <c>Error</c>, while a nested class
+    /// had no module. A class with no module of its own (<see cref="Services.PlainClassModule"/>), one
+    /// that stays on the server or that the runtime provides, itself or through a type it is declared
+    /// in, is still built as that <c>Error</c>.
+    /// </summary>
+    public static bool HasTwin(ITypeSymbol? type) =>
+        type is INamedTypeSymbol { TypeKind: TypeKind.Class } named && Is(named)
+        && Expressions.ObjectCreationStrategy.TwinIsWritten(named)
+        && !Services.PlainClassModule.ServerOnlyAlongChain(named)
+        && !Services.PlainClassModule.OwnerKeptOut(named)
+        && !RuntimeProvides(named);
+
+    /// <summary>
+    /// Whether this host BUILDS <paramref name="type"/> as its twin (<see cref="HasTwin(ITypeSymbol?)"/>):
+    /// only where it has the project's compilation, which the module rule reads a class's chain from. A
+    /// host with none, a snippet compiled on its own, keeps an exception class out by its base's name
+    /// (<see cref="Services.PlainClassModule.KeepsOutByName"/>), and <c>new Failure()</c> there named a
+    /// class nothing wrote, which the page met as <c>Failure is not defined</c>: it is built as the
+    /// runtime's exception, the <c>Error</c> that carries its types, as it was before an exception was a
+    /// class.
+    /// </summary>
+    public static bool HasTwin(ITypeSymbol? type, ConversionContext context) =>
+        context.HasProjectCompilation && HasTwin(type);
+
+    /// <summary>Whether <paramref name="type"/>, or a type it is declared in, is marked
+    /// <c>[RuntimeProvided]</c>: its twin is the runtime's, and eqc writes none.</summary>
+    private static bool RuntimeProvides(INamedTypeSymbol type)
+    {
+        for (var at = type; at is not null; at = at.ContainingType)
+            if (at.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "RuntimeProvided" or "RuntimeProvidedAttribute"))
+                return true;
+        return false;
+    }
+
+    /// <summary>
+    /// The twin's <c>static $types</c>: the chain of the class the twin is written from, which the
+    /// runtime's base reads off the class an exception is constructed as, so an exception of a derived
+    /// class carries the derived class's. A generic class's says its type parameters (<c>Failed`1[T]</c>),
+    /// and each construction of it hands its own (<see cref="ConstructedTypes"/>).
+    /// </summary>
+    public static JsExpr TypesOf(INamedTypeSymbol type) =>
+        JsExpr.Array(ChainOf(type.OriginalDefinition).Select(name => JsExpr.Literal(JsStringLiteral.Quote(name))).ToList());
+
+    /// <summary>
+    /// The types a construction of an exception class of the app's hands its base where the twin's
+    /// <c>$types</c> cannot say them: a constructed generic class (<c>new Failed&lt;int&gt;()</c>), whose
+    /// twin knows only <c>Failed`1[T]</c>, while a typed <c>catch</c> tells <c>Failed&lt;int&gt;</c> from
+    /// <c>Failed&lt;string&gt;</c>. It is built through <see cref="Eq.ExceptionConstruct"/>, which hands
+    /// them before the constructor's body runs: tagged after the construction returned, an exception its
+    /// body threw (<c>throw this</c>) missed <c>catch (Failed&lt;int&gt;)</c>, and a <c>Message</c> it read
+    /// named the class (Copilot's review of #708). Null for any other, which is built as it is.
+    /// </summary>
+    public static JsExpr? ConstructedTypes(INamedTypeSymbol type, ConversionContext context)
+    {
+        var chain = ChainOf(type);
+        if (chain.SequenceEqual(ChainOf(type.OriginalDefinition))) return null;
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Array(chain.Select(name => JsExpr.Literal(JsStringLiteral.Quote(name))).ToList());
+    }
+
+    /// <summary>
+    /// Refuses (EQ2014) an exception type named where a type argument it carries is, or holds, a type
+    /// parameter: <c>new Failed&lt;T&gt;()</c> in a generic method, a <c>catch (Failed&lt;T&gt;)</c>, or
+    /// <c>new Missing()</c> inside the generic class that declares it, whose type arguments it carries. An
+    /// exception carries the types it is, which a typed <c>catch</c>, <c>is</c> and its name read, and
+    /// JavaScript erases a type parameter, so it carried, or a test compared, <c>T</c> itself:
+    /// <c>catch (Failed&lt;int&gt;)</c> missed what <c>Make&lt;int&gt;()</c> threw (Copilot's second review of
+    /// #708). It is the erasure that refuses <c>new T()</c> (EQ2003) and a topic built over a type
+    /// parameter (EQ2013), under a code of its own, as each of those has. What is refused is still
+    /// written, and the build stops at the error. <paramref name="tested"/> says whether
+    /// <paramref name="at"/> tests for the type rather than building it.
+    /// </summary>
+    public static void RefuseOpen(INamedTypeSymbol type, SyntaxNode at, bool tested, ConversionContext context)
+    {
+        if (ArgumentsOf(type).FirstOrDefault(argument => argument.MentionsTypeParameter()) is not { } open) return;
+        var named = $"'{type.ToDisplayString()}' is {(tested ? "tested" : "built")} where its type argument "
+            + $"'{open.ToDisplayString()}' is a type parameter, which JavaScript erases, ";
+        context.Report(at, ConversionSeverity.Error, "EQ2014", tested
+            ? named + "so the test could not tell the exceptions it meets apart. Test for a type whose arguments are "
+                + "concrete types, or catch its base and read what it carries."
+            : named + "so the exception could not carry the type it is, which a typed catch, `is` and its name read. "
+                + "Build it where its type arguments are concrete types, or declare it outside the generic type that holds it.");
+    }
+
     /// <summary>Whether <paramref name="type"/> is <c>System.Exception</c> itself.</summary>
     public static bool IsRoot(ITypeSymbol? type) =>
         type is INamedTypeSymbol { Name: "Exception", ContainingType: null, Arity: 0 } named
         && named.ContainingNamespace is { Name: "System", ContainingNamespace.IsGlobalNamespace: true };
 
     /// <summary>
-    /// The name a type is known by in the browser: its C# name in full, as <c>ToDisplayString</c>
-    /// writes it (<c>System.Collections.Generic.KeyNotFoundException</c>, <c>App.Outer.Inner</c>,
-    /// <c>App.Failed&lt;int&gt;</c>), which is also how the runtime names the exceptions it throws.
+    /// The name a type is known by in the browser: the one .NET gives it at run time, as
+    /// <c>Type.ToString()</c> writes it, its namespace, its containing types joined by <c>+</c>, its arity
+    /// after a backtick and its type arguments by that same name in brackets
+    /// (<c>System.Collections.Generic.KeyNotFoundException</c>, <c>App.Outer+Inner</c>,
+    /// <c>App.Failed`1[System.Int32]</c>). It is how the runtime names the exceptions it throws, and what
+    /// <c>Exception.Message</c> prints for one given no message: the C# spelling
+    /// (<c>App.Failed&lt;int&gt;</c>, <c>App.Outer.Inner</c>) named a type .NET does not (#708).
     /// </summary>
-    public static string NameOf(ITypeSymbol type) =>
-        type.WithNullableAnnotation(NullableAnnotation.NotAnnotated).ToDisplayString();
+    public static string NameOf(ITypeSymbol type) => type switch
+    {
+        IArrayTypeSymbol array => NameOf(array.ElementType) + "[" + new string(',', array.Rank - 1) + "]",
+        INamedTypeSymbol named when ArgumentsOf(named) is { Count: > 0 } arguments =>
+            DefinedName(named) + "[" + string.Join(",", arguments.Select(NameOf)) + "]",
+        INamedTypeSymbol named => DefinedName(named),
+        _ => type.Name,
+    };
+
+    /// <summary>A type's namespace, its containing types joined by <c>+</c>, and its metadata name, which
+    /// carries its arity after a backtick.</summary>
+    private static string DefinedName(INamedTypeSymbol type) =>
+        type.ContainingType is { } outer ? DefinedName(outer) + "+" + type.MetadataName
+        : type.ContainingNamespace is { IsGlobalNamespace: false } space ? space.ToDisplayString() + "." + type.MetadataName
+        : type.MetadataName;
+
+    /// <summary>A type's arguments and its containing types', the outermost first, as .NET lists them.</summary>
+    private static List<ITypeSymbol> ArgumentsOf(INamedTypeSymbol type)
+    {
+        var all = type.ContainingType is { } outer ? ArgumentsOf(outer) : [];
+        all.AddRange(type.TypeArguments);
+        return all;
+    }
 
     /// <summary>The type and every type it derives from, the most derived first, down to
     /// <c>System.Exception</c>.</summary>
@@ -129,7 +246,7 @@ internal static class ExceptionTypes
 
     /// <summary>A message no run can find null: a constant with a value, an interpolated string, or a
     /// concatenation, which C# never makes null.</summary>
-    private static bool NeverNull(IOperation operation) => operation switch
+    internal static bool NeverNull(IOperation operation) => operation switch
     {
         { ConstantValue: { HasValue: true, Value: var value } } => value is not null,
         IInterpolatedStringOperation => true,
@@ -138,30 +255,38 @@ internal static class ExceptionTypes
     };
 
     /// <summary>
-    /// The text .NET writes for this creation where its message is absent or null
-    /// (<see cref="ExceptionDefaultMessage"/>). A framework type's is its constructor's own, save
-    /// <c>TypeInitializationException</c>'s, which the runtime composes from the type's name. An app's
-    /// type built with no argument takes the text of the nearest framework type it derives from, whose
-    /// parameterless constructor its own calls unless it says otherwise (#611); one with arguments
-    /// hands its message as it always did.
+    /// The text .NET writes for this creation where its message is absent or null. A framework type's
+    /// is its constructor's own (<see cref="FrameworkText"/>). An app's type with no twin of its own (a
+    /// nested one) built with no argument takes the text of the nearest framework type it derives from,
+    /// whose parameterless constructor its own calls unless it says otherwise; one with arguments hands
+    /// its message as it always did. An app's type with a twin is no creation of this kind: its base
+    /// call hands the text (<see cref="TwinConstructor"/>, #611).
     /// </summary>
     private static string? DefaultMessage(IMethodSymbol constructor, int written)
     {
-        if (IsFramework(constructor.ContainingType))
-            return constructor.Parameters.Any(parameter => parameter.Name == "fullTypeName")
-                ? null
-                : ExceptionDefaultMessage.Of(constructor);
+        if (IsFramework(constructor.ContainingType)) return FrameworkText(constructor);
         if (written > 0) return null;
         var framework = constructor.ContainingType.BaseType;
         while (framework is not null && !IsFramework(framework)) framework = framework.BaseType;
         return framework?.InstanceConstructors.FirstOrDefault(candidate => candidate.Parameters.IsEmpty) is { } parameterless
-            ? ExceptionDefaultMessage.Of(parameterless)
+            ? FrameworkText(parameterless)
             : null;
     }
 
+    /// <summary>
+    /// The text .NET writes where a framework exception constructor is handed no message, or a null
+    /// one, read from .NET itself (<see cref="ExceptionDefaultMessage"/>), or null where there is none
+    /// to hand: <c>TypeInitializationException</c>'s, which the runtime composes from the type's name,
+    /// and <c>Exception.Message</c>'s own, which names the type the app created. The same for a
+    /// <c>new</c> of the type and for the base call of an exception class of the app's over it (#611).
+    /// </summary>
+    internal static string? FrameworkText(IMethodSymbol constructor) =>
+        constructor.Parameters.Any(parameter => parameter.Name == "fullTypeName") ? null : ExceptionDefaultMessage.Of(constructor);
+
     /// <summary>A framework exception constructor's parameters besides the message, and the member
-    /// of the runtime's exception each one fills.</summary>
-    private static readonly (string Parameter, string Member)[] Parts =
+    /// of the runtime's exception each one fills: by a <c>new</c> of the type, and by the base call of an
+    /// exception class of the app's over it (<see cref="TwinConstructor"/>, #611).</summary>
+    internal static readonly (string Parameter, string Member)[] Parts =
     [
         ("paramName", "paramName"),
         ("actualValue", "actualValue"),

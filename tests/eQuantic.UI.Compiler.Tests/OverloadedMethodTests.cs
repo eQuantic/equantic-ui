@@ -367,6 +367,199 @@ public class OverloadedMethodTests
         results.SelectMany(result => result.Errors).Should().NotContain(error => error.Code == "EQ1007");
     }
 
+    /// <summary>
+    /// A method that HIDES an inherited one, with <c>new</c> or with the same signature and no
+    /// <c>override</c>, holds a name of its own on its twin (#563): it takes no name a base holds, so it
+    /// is not refused, and a call bound to the hidden one keeps reaching it. It was refused, legal C# and
+    /// all, where the base was the app's, and where it was not, it answered for the hidden one.
+    /// </summary>
+    [Fact]
+    public void AMethodThatHidesAnInheritedOne_HoldsANameOfItsOwn()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            public class Base
+            {
+                public virtual string Name() => "base";
+            }
+
+            public class Hiding : Base
+            {
+                public new string Name() => "hiding";
+                public string Both() => Name() + base.Name();
+            }
+
+            public class Again : Hiding
+            {
+                public new virtual string Name() => "again";
+            }
+
+            public sealed class Last : Again
+            {
+                public override string Name() => "last";
+            }
+            """, "Probe.cs");
+
+        results.SelectMany(result => result.Errors).Should().NotContain(error => error.Code == "EQ1007");
+        var hiding = results.Single(result => result.ComponentName == "Hiding").TypeScript;
+        hiding.Should().Contain("name$1()").And.Contain("this.name$1()").And.Contain("super.name()");
+        results.Single(result => result.ComponentName == "Again").TypeScript.Should().Contain("name$2()");
+        results.Single(result => result.ComponentName == "Last").TypeScript.Should().Contain("name$2()",
+            "an override fills the slot of the method it overrides, whatever that one is named");
+    }
+
+    /// <summary>
+    /// A method that hides an inherited one and answers an interface is refused: a call through the
+    /// interface reaches the member by the interface's name, which the hidden one holds on the twin, so it
+    /// would reach the hidden one where C# reaches the one that hides it.
+    /// </summary>
+    [Fact]
+    public void AMethodThatHidesOne_AndAnswersAnInterface_IsRefused()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            public interface INamed { string Name(); }
+
+            public class Base
+            {
+                public string Name() => "base";
+            }
+
+            public sealed class Hiding : Base, INamed
+            {
+                public new string Name() => "hiding";
+            }
+            """, "Probe.cs");
+
+        var error = results.Single(result => result.ComponentName == "Hiding").Errors.Should().ContainSingle().Subject;
+        error.Code.Should().Be("EQ1007");
+        error.Message.Should().Contain("'Hiding.Name' answers 'INamed.Name'").And.Contain("`name$1()`");
+    }
+
+    /// <summary>
+    /// A method beside an explicit implementation of its name holds a name of its own (Copilot's review of
+    /// #708): the explicit one holds the interface member's name, which a call through the interface
+    /// reaches, and a call through the class reaches the method by its own. Both were written under one
+    /// name, the later replacing the other. One that answers another interface is refused, since a call
+    /// through that interface would reach the explicit one.
+    /// </summary>
+    [Fact]
+    public void AMethodBesideAnExplicitImplementation_HoldsANameOfItsOwn()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            public interface INamedThing { string Name(); }
+            public interface ITitled { string Name(); }
+
+            public sealed class Labeled : INamedThing
+            {
+                public string Name() => "own";
+                string INamedThing.Name() => "interface";
+            }
+
+            public sealed class Answering : INamedThing, ITitled
+            {
+                public string Name() => "own";
+                string INamedThing.Name() => "interface";
+            }
+            """, "Probe.cs");
+
+        var labeled = results.Single(result => result.ComponentName == "Labeled");
+        labeled.Errors.Should().BeEmpty();
+        labeled.TypeScript.Should().Contain("name$1()").And.Contain("name()");
+        var error = results.Single(result => result.ComponentName == "Answering").Errors.Should().ContainSingle().Subject;
+        error.Code.Should().Be("EQ1007");
+        error.Message.Should().Contain("'Answering.Name' answers 'ITitled.Name'").And.Contain("explicit implementation of 'INamedThing.Name'");
+    }
+
+    private const string Sequences = """
+        using System.Collections;
+        using System.Collections.Generic;
+        public class Both : IEnumerable<int>, IEnumerable<string>
+        {
+            IEnumerator<int> IEnumerable<int>.GetEnumerator() { yield return 1; }
+            IEnumerator<string> IEnumerable<string>.GetEnumerator() { yield return "a"; }
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<int>)this).GetEnumerator();
+        }
+        public class Ints : IEnumerable<int>
+        {
+            public IEnumerator<int> GetEnumerator() { yield return 7; }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+        public class IntsAndNames : Ints, IEnumerable<string>
+        {
+            IEnumerator<string> IEnumerable<string>.GetEnumerator() { yield return "c"; }
+        }
+        public class TwoWalks : IEnumerator<int>, IEnumerator<string>
+        {
+            int IEnumerator<int>.Current => 1;
+            string IEnumerator<string>.Current => "a";
+            object IEnumerator.Current => 1;
+            public bool MoveNext() => false;
+            public void Reset() { }
+            public void Dispose() { }
+        }
+        public class Odd : IEnumerable<int>
+        {
+            public IEnumerator<int> GetEnumerator() { yield return 1; }
+            IEnumerator IEnumerable.GetEnumerator() { yield return "x"; }
+        }
+        public class OddCurrent : IEnumerator<int>
+        {
+            private int at;
+            public int Current => at;
+            object IEnumerator.Current => "other";
+            public bool MoveNext() => ++at <= 2;
+            public void Reset() { }
+            public void Dispose() { }
+        }
+        public class OddGenericCurrent : IEnumerator<int>
+        {
+            private int at;
+            public int Current => at;
+            int IEnumerator<int>.Current => at * 10;
+            object IEnumerator.Current => Current;
+            public bool MoveNext() => ++at <= 2;
+            public void Reset() { }
+            public void Dispose() { }
+        }
+        public class Alike : IEnumerable<string>, IEnumerator<string>
+        {
+            private int at;
+            IEnumerator<string> IEnumerable<string>.GetEnumerator() => this;
+            IEnumerator IEnumerable.GetEnumerator() { return ((IEnumerable<string>)this).GetEnumerator(); }
+            public string Current => "s" + at;
+            string IEnumerator<string>.Current { get { return Current; } }
+            object IEnumerator.Current => ((IEnumerator<string>)this).Current;
+            public bool MoveNext() => ++at <= 2;
+            public void Reset() { }
+            public void Dispose() { }
+        }
+        """;
+
+    /// <summary>
+    /// A sequence's twin has ONE iteration, which LINQ, a spread, <c>string.Join</c> and a <c>foreach</c>
+    /// over each interface walk, and ONE <c>current</c>, while C# lets a type implement
+    /// <c>IEnumerable&lt;T&gt;</c> over two types, and its members answer apart: the non-generic
+    /// <c>GetEnumerator()</c> and a <c>Current</c> are held as one with the member the twin keeps. Each walked,
+    /// or read, the other's answer in the browser (Copilot's second review of #708), so each is refused
+    /// (EQ1007), where a member that hands back the other's answer is held as one (<c>Alike</c>).
+    /// </summary>
+    [Theory]
+    [InlineData("Both", "implements 'IEnumerable<int>' and 'IEnumerable<string>'")]
+    [InlineData("IntsAndNames", "and its twin has one iteration")]
+    [InlineData("TwoWalks", "implements 'IEnumerator<int>' and 'IEnumerator<string>'")]
+    [InlineData("Odd", "'IEnumerable.GetEnumerator()' does not return it through 'GetEnumerator()'")]
+    [InlineData("OddCurrent", "'IEnumerator.Current' does not read it through 'Current'")]
+    [InlineData("OddGenericCurrent", "'IEnumerator<int>.Current' does not read it through 'Current'")]
+    public void ASequenceItsTwinWouldWalkOtherwise_IsRefused(string name, string said)
+    {
+        var results = new ComponentCompiler().CompileSource(Sequences, "Probe.cs");
+
+        var error = results.Single(result => result.ComponentName == name).Errors.Should().ContainSingle().Subject;
+        error.Code.Should().Be("EQ1007");
+        error.Message.Should().Contain(said);
+        results.Where(result => result.ComponentName is "Ints" or "Alike").SelectMany(result => result.Errors)
+            .Should().BeEmpty("a member that hands back what the other answers answers alike");
+    }
+
     /// <summary>An override is the method it overrides, and replacing it is what it is for.</summary>
     [Fact]
     public void AnOverride_IsNotASecondMethod()

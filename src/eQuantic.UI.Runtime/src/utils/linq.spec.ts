@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { max, min, toDictionary } from './linq';
+import { iterate, max, min, toDictionary } from './linq';
+import { is } from './exceptions';
 import { Dictionary } from './dictionary';
 
 // Every answer below was measured on .NET 10; the conformance suite runs the same calls on both sides.
@@ -82,5 +83,68 @@ describe('toDictionary (LINQ ToDictionary)', () => {
     expect(() => toDictionary(['a', null], (x) => x)).toThrow(
       "Value cannot be null. (Parameter 'key')",
     );
+  });
+});
+
+describe("iterate (a twin's [Symbol.iterator], #612)", () => {
+  /** An enumerator as a twin of the app's writes one: MoveNext, Current and Dispose. */
+  const countdown = (from: number, log: string[]) => {
+    let at = from + 1;
+    return {
+      moveNext: () => --at > 0,
+      get current() {
+        return at;
+      },
+      dispose: () => log.push('disposed'),
+    };
+  };
+
+  it('iterates an enumerator an iterator method filled, and a sequence of its own, as they are', () => {
+    const letters = new Set(['a', 'b']).values();
+    expect([...{ [Symbol.iterator]: () => iterate([1, 2, 3]) }]).toEqual([1, 2, 3]);
+    expect([...{ [Symbol.iterator]: () => iterate(letters) }]).toEqual(['a', 'b']);
+  });
+
+  it('walks one the app wrote by its MoveNext and Current, and disposes it when the walk ends', () => {
+    const log: string[] = [];
+    expect([...{ [Symbol.iterator]: () => iterate(countdown(3, log)) }]).toEqual([3, 2, 1]);
+    expect(log).toEqual(['disposed']);
+  });
+
+  it('walks a class that is its own enumerator by its MoveNext, where its own iteration came back here', () => {
+    // The twin of a class that implements IEnumerable<int> and IEnumerator<int>, `GetEnumerator() => this`.
+    class Ticker {
+      private at = 0;
+      [Symbol.iterator](): Iterator<number> {
+        return iterate(this.getEnumerator());
+      }
+      getEnumerator(): Ticker {
+        this.at = 0;
+        return this;
+      }
+      moveNext(): boolean {
+        return ++this.at <= 3;
+      }
+      get current(): number {
+        return this.at;
+      }
+    }
+    expect([...new Ticker()]).toEqual([1, 2, 3]);
+  });
+
+  it('disposes it when a loop leaves early, as a foreach does', () => {
+    const log: string[] = [];
+    for (const n of { [Symbol.iterator]: () => iterate(countdown(5, log)) }) if (n === 4) break;
+    expect(log).toEqual(['disposed']);
+  });
+
+  it("refuses a null enumerator with .NET's NullReferenceException", () => {
+    let thrown: unknown;
+    try {
+      iterate(null as unknown as number[]);
+    } catch (error) {
+      thrown = error;
+    }
+    expect(is(thrown, 'System.NullReferenceException')).toBe(true);
   });
 });

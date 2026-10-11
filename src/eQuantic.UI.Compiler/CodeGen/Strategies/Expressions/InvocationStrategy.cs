@@ -192,10 +192,14 @@ public class InvocationStrategy : IExpressionIrStrategy
                 return extension;
 
             ReportIfUntranslatable(symbol, methodName, invocation, context);
-            // The member called is named as a member access names it: a delegate FIELD in its slot, which
+            // The member called is named as the member it binds: a delegate FIELD in its slot, which
             // moves a case apart from a method (#396), so `other.check(n)` beside `Check(int)` called the
-            // method, and a method under its twin name.
-            return JsExpr.Call(JsExpr.Member(callerIr, genAccess.Name.MemberSlot(context)), argIrs);
+            // method, and a method by the name it holds on its twin, which one that hides a member holds
+            // of its own, so a call bound to the hidden one keeps reaching it (#563).
+            var called = context.SemanticHelper.GetSymbol(genAccess.Name) is IFieldSymbol calledField
+                ? calledField.TwinSlot()
+                : TwinMethodName.Of(symbol, methodName);
+            return JsExpr.Call(JsExpr.Member(callerIr, called), argIrs);
         }
 
         // Invoking a DELEGATE VALUE by bare name (`configure(node)`, `OnSelect(i)`): the invocation
@@ -254,14 +258,17 @@ public class InvocationStrategy : IExpressionIrStrategy
                 return JsExpr.Literal("undefined");
             // A nested type whose owner never crosses has no twin to call (EQ2010).
             if (declaring.ReportIfKeptOut(invocation, context)) return JsExpr.Literal("undefined");
-            var declaringNamespace = declaring.ContainingNamespace?.ToDisplayString() ?? string.Empty;
             // One name for the import and the call (#584): a nested type's twin, or the name a top-level
-            // type and a hand-written runtime twin keep.
-            if (RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(declaringNamespace))
+            // type and a hand-written runtime twin keep. From the runtime where the SYMBOL says so, its
+            // owners included: read from the namespace alone, a nested type of a [RuntimeProvided] owner
+            // in an app's namespace was imported as a module of the app's, which nothing writes (found
+            // by Copilot's third review of #708).
+            if (declaring.IsRuntimeProvided())
                 context.UsedRuntimeTypes.Add(declaring.TwinReference());
             else
                 context.UsedAppTypes.Add(declaring.TwinReference());
-            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(declaring.TwinReference()), methodName.ToCamelCase()), argIrs);
+            // By the name the bound method holds on its twin (#563).
+            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(declaring.TwinReference()), TwinMethodName.Of(symbol, methodName)), argIrs);
         }
 
         // STANDALONE factory calls (no semantic model — the playground's mode): nothing can RESOLVE
@@ -315,7 +322,7 @@ public class InvocationStrategy : IExpressionIrStrategy
             // `_tick?.Dispose()` raised EQ2004 while the shipped translation was fine.
             if (!invocation.IsNullConditional())
                 ReportIfUntranslatable(symbol, methodName, invocation, context);
-            return JsExpr.Call(JsExpr.ThisMember(methodName.ToCamelCase()), argIrs);
+            return JsExpr.Call(JsExpr.ThisMember(TwinMethodName.Of(symbol, methodName)), argIrs);
         }
 
         ReportIfUntranslatable(symbol, methodName, invocation, context);

@@ -1,6 +1,17 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { bases, create, exception, filter, is, raise, typeInitialization, typesOf } from './exceptions';
+import {
+  bases,
+  construct,
+  create,
+  exception,
+  Exception,
+  filter,
+  is,
+  raise,
+  typeInitialization,
+  typesOf,
+} from './exceptions';
 
 const ARGUMENT_NULL = [
   'System.ArgumentNullException',
@@ -31,11 +42,16 @@ describe('a .NET exception carries the types it is', () => {
     expect(Object.keys({ ...error })).toEqual([]);
   });
 
-  it('names a nested or a generic type by its own simple name', () => {
-    expect(create(['App.Outer.Inner', 'System.Exception']).name).toBe('Inner');
-    expect(create(['App.Failed<App.Item>', 'System.Exception']).name).toBe('Failed');
-    expect(create(['App.Outer<int>.Inner', 'System.Exception']).name).toBe('Inner');
-    expect(create(['App.Pair<App.Box<int>, string>.Gone', 'System.Exception']).name).toBe('Gone');
+  it("names a nested or a generic type by its own simple name, as .NET's Type.Name does", () => {
+    // The names Type.ToString() writes, which the compiler hands.
+    expect(create(['App.Outer+Inner', 'System.Exception']).name).toBe('Inner');
+    expect(create(['App.Failed`1[App.Item]', 'System.Exception']).name).toBe('Failed`1');
+    expect(create(['App.Outer`1+Inner[System.Int32]', 'System.Exception']).name).toBe('Inner');
+    expect(create(['App.Pair`2+Gone[App.Box`1[System.Int32],System.String]', 'System.Exception']).name).toBe('Gone');
+  });
+
+  it('writes the default message of a nested or a generic type by the name .NET writes', () => {
+    expect(create(['App.Outer+Inner', 'System.Exception']).message).toBe("Exception of type 'App.Outer+Inner' was thrown.");
   });
 
   it('writes a null message as Exception.Message does, a type\'s own text being the compiler\'s to hand', () => {
@@ -73,6 +89,140 @@ describe('a .NET exception carries the types it is', () => {
     expect(create(disposed, 'Cannot access a disposed object.', { objectName: 'thing' }).message).toBe(
       "Cannot access a disposed object.\nObject name: 'thing'.",
     );
+  });
+});
+
+describe("an exception class of the app's own is a class over the browser's Error (#611)", () => {
+  // The shape of the twin eqc writes for `class Failure : Exception`: its chain in `static $types`.
+  class Failure extends Exception {
+    static $types = ['App.Failure', 'System.Exception'];
+    code = 7;
+  }
+  class Retry extends Failure {
+    static $types = ['App.Retry', 'App.Failure', 'System.Exception'];
+  }
+  class Custom extends Exception {
+    static $types = ['App.Custom', 'System.Exception'];
+    get message(): string {
+      return 'custom:' + super.message;
+    }
+  }
+
+  it('is an Error carrying the types its class says, and a derived class its own', () => {
+    const retry = new Retry('r');
+    expect(retry).toBeInstanceOf(Error);
+    expect(retry.name).toBe('Retry');
+    expect(typesOf(retry)).toEqual(['App.Retry', 'App.Failure', 'System.Exception']);
+    expect(is(new Failure(), 'App.Retry')).toBe(false);
+    expect(retry.code).toBe(7);
+  });
+
+  it('keeps the message and the inner exception it was handed, and null for none', () => {
+    const inner = exception('System.InvalidOperationException', 'inner');
+    const outer = new Failure('outer', { innerException: inner }) as Failure & { innerException: unknown };
+    expect(outer.message).toBe('outer');
+    const alone = new Failure('alone') as Failure & { innerException: unknown };
+    expect(outer.innerException).toBe(inner);
+    expect(alone.innerException).toBe(null);
+  });
+
+  it("composes the message from what its .NET base's constructor took, as a create does (#558)", () => {
+    // The twin of `class Bad : ArgumentException { public Bad(string name) : base("bad", name) { } }`.
+    class Bad extends Exception {
+      static $types = ['App.Bad', 'System.ArgumentException', 'System.SystemException', 'System.Exception'];
+    }
+    const bad = new Bad('bad', { paramName: 'x' }) as Bad & { paramName: unknown };
+    expect(bad.message).toBe("bad (Parameter 'x')");
+    expect(bad.paramName).toBe('x');
+    expect(JSON.stringify(bad)).toBe('{}');
+  });
+
+  it("reads a missing message as .NET's default for the type it is", () => {
+    expect(new Failure().message).toBe("Exception of type 'App.Failure' was thrown.");
+    expect(new Retry(null).message).toBe("Exception of type 'App.Retry' was thrown.");
+  });
+
+  it('lets a class override Message, which the Error constructor would have hidden', () => {
+    expect(new Custom('text').message).toBe('custom:text');
+  });
+
+  it("lets a member the class declares answer under the name of one of the base's", () => {
+    // The twins of `class Lookup : Exception { public string Name => key; }` and of
+    // `class Renamed : ArgumentException { public override string ParamName => "q"; }`: an own
+    // property of the instance, as `create` writes one, hid both.
+    class Lookup extends Exception {
+      static $types = ['App.Lookup', 'System.Exception'];
+      get name(): string {
+        return 'key';
+      }
+    }
+    class Renamed extends Exception {
+      static $types = ['App.Renamed', 'System.ArgumentException', 'System.SystemException', 'System.Exception'];
+      get paramName(): string {
+        return 'q';
+      }
+    }
+    expect(new Lookup('m').name).toBe('key');
+    const renamed = new Renamed('m', { paramName: 'p' });
+    expect(renamed.paramName).toBe('q');
+    expect(renamed.message).toBe("m (Parameter 'p')");
+  });
+
+  it("reads an aggregate's first inner exception as its InnerException, and none as null", () => {
+    const first = exception('System.FormatException', 'f');
+    const many = new Failure('m', { innerExceptions: [first, exception('System.FormatException', 'g')] }) as Failure & {
+      innerException: unknown;
+    };
+    expect(many.innerException).toBe(first);
+    expect((new Failure('m') as Failure & { innerException: unknown }).innerException).toBe(null);
+  });
+
+  it('keeps its members and its chain out of the way of JSON', () => {
+    expect(JSON.stringify(new Failure('m'))).toBe('{"code":7}');
+  });
+
+  it("hands a construction of a generic class its construction's types before its constructor's body runs", () => {
+    const INT = ['App.Failed`1[System.Int32]', 'System.Exception'];
+    // The twin of `class Failed<T> : Exception`, whose constructor reads Message and throws itself.
+    class Failed extends Exception {
+      static $types = ['App.Failed`1[T]', 'System.Exception'];
+      seen: string;
+      constructor(message: string | null, rethrow: boolean) {
+        super(message);
+        this.seen = this.message;
+        if (rethrow) throw this;
+      }
+    }
+    const failed = construct(Failed, INT, 'x', false);
+    expect(is(failed, 'App.Failed`1[System.Int32]')).toBe(true);
+    expect(is(failed, 'App.Failed`1[System.String]')).toBe(false);
+    expect(failed.name).toBe('Failed`1');
+    expect(failed.message).toBe('x');
+    expect(construct(Failed, INT, null, false).seen).toBe("Exception of type 'App.Failed`1[System.Int32]' was thrown.");
+    let thrown: unknown;
+    try {
+      construct(Failed, INT, null, true);
+    } catch (error) {
+      thrown = error;
+    }
+    expect(is(thrown, 'App.Failed`1[System.Int32]')).toBe(true);
+  });
+
+  it('leaves the types a construction hands to the class it constructs', () => {
+    class Inner extends Exception {
+      static $types = ['App.Inner', 'System.Exception'];
+    }
+    // A field initializer runs before the base's constructor, and builds another exception there.
+    class Outer extends Exception {
+      static $types = ['App.Outer`1[T]', 'System.Exception'];
+      constructor(readonly made = new Inner()) {
+        super();
+      }
+    }
+    const outer = construct(Outer, ['App.Outer`1[System.Int32]', 'System.Exception']);
+    expect(typesOf(outer)).toEqual(['App.Outer`1[System.Int32]', 'System.Exception']);
+    expect(typesOf(outer.made)).toEqual(['App.Inner', 'System.Exception']);
+    expect(typesOf(new Outer())).toEqual(['App.Outer`1[T]', 'System.Exception']);
   });
 });
 

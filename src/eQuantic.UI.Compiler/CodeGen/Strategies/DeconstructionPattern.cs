@@ -114,7 +114,8 @@ internal static class DeconstructionPattern
             home.RegisterIntroduced(context);
             return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(home.Name), name), value);
         }
-        return JsExpr.Call(JsExpr.Member(value, name));
+        // An instance one by the name it holds on its twin, which one that hides a member has of its own (#563).
+        return JsExpr.Call(JsExpr.Member(value, TwinMethodName.Of(called)));
     }
 
     /// <summary>

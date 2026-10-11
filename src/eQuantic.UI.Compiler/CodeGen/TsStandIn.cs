@@ -7,8 +7,9 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// What a TypeScript annotation writes for a type whose C# name names nothing there, asked of the
 /// type's SYMBOL: an enum crosses as its members (the vocabulary's named union, a number when it is
 /// [Flags], a string otherwise), an interface as <c>any</c> (no module is emitted for one), an
-/// exception as the <c>Error</c> it is in JavaScript (<c>utils/exceptions.ts</c>), and a delegate as
-/// the function it is.
+/// exception of .NET's as the <c>Error</c> it is in JavaScript (<c>utils/exceptions.ts</c>), and a
+/// delegate as the function it is. An exception class of the app's is a class, whose twin its own name
+/// is (#611).
 /// <para>
 /// ONE rule for every annotation the emitters write: a class's members and parameters, a record's, a
 /// local's, a local function's parameters. Each path kept its own subset of it, so a record declared
@@ -40,7 +41,7 @@ internal static class TsStandIn
                 return "any";
             case TypeKind.Delegate when type is INamedTypeSymbol { DelegateInvokeMethod: { } invoke }:
                 return Function(invoke, imports);
-            case TypeKind.Class when ExceptionTypes.Is(type):
+            case TypeKind.Class when ExceptionTypes.Is(type) && !ExceptionTypes.HasTwin(type):
                 return "Error";
             default:
                 return null;

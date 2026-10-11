@@ -109,16 +109,17 @@ public class IdentifierStrategy : IExpressionIrStrategy
                     if (!isMemberName && symbol.AsQualified(identifier, context) is { } qualified) return qualified;
                     if (!isMemberName && symbol.ReportIfPlatformReachedBare(identifier, context))
                         return JsExpr.Literal("undefined");
+                    var staticName = Named(symbol, name);
                     return isMemberName
-                        ? JsExpr.Identifier(name.ToCamelCase())
-                        : JsExpr.Member(JsExpr.Identifier(StaticHome(symbol.ContainingType, context)), name.ToCamelCase());
+                        ? JsExpr.Identifier(staticName)
+                        : JsExpr.Member(JsExpr.Identifier(StaticHome(symbol.ContainingType, context)), staticName);
                 }
 
                 // If it's a member of the current class and not static, add 'this.'. A field is read in
                 // its slot, which moves a case apart from another member (FieldSlotExtensions, #396).
                 if (!symbol.IsStatic && symbol.ContainingType != null)
                 {
-                    var slot = symbol is IFieldSymbol field ? field.TwinSlot() : name.ToCamelCase();
+                    var slot = symbol is IFieldSymbol field ? field.TwinSlot() : Named(symbol, name);
                     if (isMemberName) return JsExpr.Identifier(slot);
 
                     var member = JsExpr.ThisMember(slot);
@@ -188,6 +189,11 @@ public class IdentifierStrategy : IExpressionIrStrategy
 
         return JsExpr.Identifier(name.ToJsIdentifier());
     }
+
+    /// <summary>The name a member holds on its twin: a method's own, which one that hides a member has of
+    /// its own (#563), and any other member's camelCased.</summary>
+    private static string Named(ISymbol symbol, string name) =>
+        symbol is IMethodSymbol method ? TwinMethodName.Of(method, name) : name.ToCamelCase();
 
     /// <summary>Whether <paramref name="name"/> reaches a binding of the scope it is read in, a local,
     /// a parameter, a range variable or a local function, rather than a member.</summary>

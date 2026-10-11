@@ -63,9 +63,10 @@ public class PlainClassModuleTests
             public class OverOverServer : OverServer { }
             """,
         // A partial type is one type: the half that declares nothing is not a module of its own.
-        // An exception or an attribute is one by its CHAIN of bases, which the base a class names does
-        // not say: three levels over `Exception`, across files, and two over `Attribute` with names
-        // that say nothing. A class named like an exception that derives from none is a class.
+        // An attribute is one by its CHAIN of bases, which the base a class names does not say: two
+        // over `Attribute` with names that say nothing. An exception class of the app's is a class
+        // (#611), three levels over `Exception` across files, and so is one named like an exception
+        // that derives from none.
         ["Failure.cs"] = "using System; public class Failure : Exception { }",
         ["Retry.cs"] = """
             public class Retry : Failure { }
@@ -122,12 +123,12 @@ public class PlainClassModuleTests
 
     private static readonly string[] Modules =
         ["Mute", "ChainBase", "Echo", "Message", "Ping", "Marker", "Filled", "Helpers", "Outer", "Card", "Split",
-         "FakeException", "Header", "Api", "Settings", "UserSettings", "ColorAttribute", "Shell", "Hollow"];
+         "FakeException", "Header", "Api", "Settings", "UserSettings", "ColorAttribute", "Shell", "Hollow",
+         "NotFoundException", "Oops", "Failure", "Retry", "LastRetry"];
 
     private static readonly string[] NotModules =
-        ["FooAttribute", "TaggedAttribute", "NotFoundException", "Oops", "Stays", "Provided", "Inner",
-         "ServerBase", "OverServer", "OverOverServer", "Failure", "Retry", "LastRetry", "Mark", "Underline",
-         "Copy"];
+        ["FooAttribute", "TaggedAttribute", "Stays", "Provided", "Inner",
+         "ServerBase", "OverServer", "OverOverServer", "Mark", "Underline", "Copy"];
 
     [Fact]
     public void TheParserAndTheResolver_AnswerAlikeForEveryKindOfClass() =>
@@ -135,10 +136,10 @@ public class PlainClassModuleTests
 
     /// <summary>
     /// A base from a LIBRARY the app references is judged as what it is there, by its symbol, and never
-    /// by its name: a plain class named like an attribute is a class, an exception named like nothing
-    /// is an exception, and a server-only class says so in its metadata. The resolver judged all three
-    /// by their names, so it refused the first while the parser wrote it, and imported the other two,
-    /// which nothing wrote.
+    /// by its name: a plain class named like an attribute is a class, an attribute named like nothing is
+    /// an attribute, and a server-only class says so in its metadata. The resolver judged them by their
+    /// names, so it refused the first while the parser wrote it, and imported the others, which nothing
+    /// wrote. A class over a library's exception is a class, as one over the app's own is (#611).
     /// </summary>
     [Fact]
     public void ABaseFromALibrary_IsJudgedAsWhatItIsThere() =>
@@ -148,20 +149,25 @@ public class PlainClassModuleTests
                 ["Color.cs"] = "public class ColorAttribute : ProductAttribute { public string Hex = \"#fff\"; }",
                 ["Order.cs"] = "public class OrderFailed : DomainError { public int OrderId; }",
                 ["Over.cs"] = "public class OverServer : ServerBase { public int Shown; }",
+                ["Underline.cs"] = "public class Underline : Emphasis { public int Weight; }",
             },
             library: """
                 public class ProductAttribute { public string Name = "p"; }
                 public class DomainError : System.Exception { }
+                public class Emphasis : System.Attribute { }
                 [eQuantic.UI.Primitives.ServerOnly] public class ServerBase { public int Secret; }
                 """,
             projectCompilation: true,
-            modules: ["ColorAttribute"],
-            notModules: ["OrderFailed", "OverServer"]);
+            modules: ["ColorAttribute", "OrderFailed"],
+            notModules: ["OverServer", "Underline"]);
 
     /// <summary>
     /// A host with no compilation at all walks the chain by NAME, and the parser walks the resolver's
     /// scan, which reaches the other file: it walked its own file only, stopped at `Failure`, which
-    /// another file declares over `Exception`, and wrote `Retry` as a module the resolver refused.
+    /// another file declares over `Exception`, and wrote `Retry` as a module the resolver refused. An
+    /// attribute two levels down, across files, is none either. An exception class is a class wherever
+    /// the model sees its chain (#611), and no model is here: nothing knows the constructors of the base
+    /// its twin would call, so a module of its own extended nothing and threw a plain object.
     /// </summary>
     [Fact]
     public void WithoutACompilation_TheParserWalksTheResolversScan() =>
@@ -170,12 +176,14 @@ public class PlainClassModuleTests
             {
                 ["Failure.cs"] = "public class Failure : System.Exception { }",
                 ["Retry.cs"] = "public class Retry : Failure { public int Attempts; }",
+                ["Mark.cs"] = "public class Mark : System.Attribute { }",
+                ["Underline.cs"] = "public class Underline : Mark { public int Weight; }",
                 ["Color.cs"] = "public interface IProductAttribute { } public class ColorAttribute : IProductAttribute { public string Name = \"red\"; }",
             },
             library: null,
             projectCompilation: false,
             modules: ["ColorAttribute"],
-            notModules: ["Failure", "Retry"]);
+            notModules: ["Failure", "Retry", "Mark", "Underline"]);
 
     private static void AssertTheRule(IReadOnlyDictionary<string, string> files, string? library, bool projectCompilation,
         string[] modules, string[] notModules)

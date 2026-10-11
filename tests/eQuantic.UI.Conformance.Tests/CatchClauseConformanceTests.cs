@@ -16,7 +16,14 @@ namespace eQuantic.UI.Conformance.Tests;
 /// </summary>
 public class CatchClauseConformanceTests
 {
-    private const string Prelude = """
+    /// <summary>
+    /// Exception classes of the app's own. Each is a class with a twin of its own (#611), so the cases
+    /// over them run through the module graph an app's build writes, where a class's twin is written:
+    /// the statement harness writes none.
+    /// </summary>
+    private const string AppExceptions = """
+        using System;
+
         public class GateClosedException : InvalidOperationException
         {
             public GateClosedException(string message) : base(message) { }
@@ -117,15 +124,14 @@ public class CatchClauseConformanceTests
     /// <summary>An exception class of the app's own is one by its symbol, whatever its name, and a clause
     /// of its base takes it.</summary>
     [SkippableTheory]
-    [InlineData("try { throw new GateClosedException(\"closed\"); } catch (ArgumentException) { return \"argument\"; } catch (GateClosedException e) { return e.Message; }")]
-    [InlineData("try { throw new GateClosedException(\"closed\"); } catch (InvalidOperationException e) { return \"base:\" + e.Message; }")]
-    [InlineData("try { throw new Failure(\"f\"); } catch (InvalidOperationException) { return \"wrong\"; } catch (Failure e) { return e.Message; }")]
-    [InlineData("try { try { throw new InvalidOperationException(\"plain\"); } catch (GateClosedException) { return \"wrong\"; } } catch (InvalidOperationException e) { return e.Message; }")]
-    public void AnExceptionOfTheAppsOwn_IsCaughtByItsType(string statements)
-    {
-        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
-        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Prelude);
-    }
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AnExceptionOfTheAppsOwn_IsCaughtByItsType(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(AppExceptions, typeAnnotations,
+            ("a clause of its own type", "try { throw new GateClosedException(\"closed\"); } catch (ArgumentException) { return \"argument\"; } catch (GateClosedException e) { return e.Message; }"),
+            ("a clause of its base's type", "try { throw new GateClosedException(\"closed\"); } catch (InvalidOperationException e) { return \"base:\" + e.Message; }"),
+            ("a clause of another type lets it through", "try { throw new Failure(\"f\"); } catch (InvalidOperationException) { return \"wrong\"; } catch (Failure e) { return e.Message; }"),
+            ("a clause of a derived type lets its base through", "try { try { throw new InvalidOperationException(\"plain\"); } catch (GateClosedException) { return \"wrong\"; } } catch (InvalidOperationException e) { return e.Message; }"));
 
     /// <summary>The same test in a type pattern, a switch over exceptions and an <c>as</c>, which were
     /// a null check: every exception was every exception type.</summary>
@@ -133,10 +139,19 @@ public class CatchClauseConformanceTests
     [InlineData("Exception e = new ArgumentNullException(\"p\"); return $\"{e is ArgumentException}{e is InvalidOperationException}{e is Exception}\";")] // TrueFalseTrue
     [InlineData("object o = new InvalidOperationException(\"x\"); return o switch { ArgumentException => 1, InvalidOperationException => 2, _ => 3 };")] // 2
     [InlineData("Exception e = new FormatException(\"x\"); return (e as ArgumentException) == null;")] // true
-    [InlineData("Exception e = new GateClosedException(\"x\"); return $\"{e is InvalidOperationException}{e is GateClosedException}{e is Failure}\";")] // TrueTrueFalse
     public void ATypePatternOverAnException_TestsItsType(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
-        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Prelude);
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>The type pattern over an exception class of the app's own, through the module graph its
+    /// twin is written in.</summary>
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ATypePatternOverAnExceptionOfTheAppsOwn_TestsItsType(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(AppExceptions, typeAnnotations,
+            ("a pattern of its own type, its base's and another's",
+                "Exception e = new GateClosedException(\"x\"); return $\"{e is InvalidOperationException}{e is GateClosedException}{e is Failure}\";"));
 }

@@ -2247,6 +2247,32 @@ record of a release, the wiki's Upgrading page is the distillate.
   gzipped bytes over what main serves, the twins' reads through a list's face and the runtime's
   helpers behind it. Proposed and archived through OpenSpec (`openspec/specs/transpiler-bcl`,
   `transpiler-sequences` and `transpiler-expressions`).
+- **2026-10-08 · A class of the app's dispatches, enumerates and throws as .NET does**: a method that
+  hides an inherited one, with `new` or the same signature and no `override`, was the override of the
+  hidden one on its twin, so the build refused `A a = new B(); a.Name()` where A was the app's (EQ1007)
+  and ran B's where it was .NET's, `public new int GetHashCode()` answering every hash of the object
+  ([#563](https://github.com/eQuantic/equantic-ui/issues/563)). It holds a name of its own on its twin
+  (`name$1`), which every call the model binds to it reaches. A class that implements `IEnumerable<T>`
+  had no `[Symbol.iterator]`, so `foreach`, a spread, `string.Join` and LINQ threw over it
+  ([#612](https://github.com/eQuantic/equantic-ui/issues/612)): each consumer walks the
+  `GetEnumerator()` C# binds for it, a `foreach` over the class its public one and LINQ the interface's,
+  an enumerator the app wrote and a struct's included. An exception class of the app's was an `Error`
+  built by its symbol, with none of its members
+  ([#611](https://github.com/eQuantic/equantic-ui/issues/611)): it is a class over the runtime's
+  exception base, whose base call hands what a `new` of its .NET base hands since #558, a generic one
+  carrying its construction's types before its constructor runs. Visual Studio's exception template
+  builds as it is written: the constructor only .NET's serialization calls is no branch of the twin, and
+  a call of one the browser would make is refused (EQ1009). What a twin cannot answer as C# does is
+  refused too: a type that implements `IEnumerable<T>` over two types, a non-generic `GetEnumerator()` or
+  a `Current` that does not hand back the answer of the member the twin keeps (EQ1007), and an exception
+  built or tested where a type argument it carries is a type parameter (EQ2014). An exception class
+  declared inside another type is a class too, named by its owner, and what an exception class declares
+  crosses as it does: #654 had kept both out while an exception had no module. 66 of the 71 new
+  conformance cases fail on the head this merges over, the queue's at f03bcb62, and the five that pass
+  are answers it had right; the 13 Compiler cases of the second review fail before it and pass after.
+  The served runtime grows 500 gzipped bytes over what that head serves, the exception base and the
+  walk of an enumerator the app wrote. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-classes`, `transpiler-sequences` and `transpiler-exceptions`).
 
 ## Retired documents
 
