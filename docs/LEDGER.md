@@ -2297,6 +2297,44 @@ record of a release, the wiki's Upgrading page is the distillate.
   three the build now refuses. The served runtime grew 3,834 gzipped bytes. Proposed and archived
   through OpenSpec (`openspec/specs/page-culture`, `runtime-dates`, `transpiler-bcl`,
   `transpiler-records`).
+- **2026-10-11 · A LINQ overload answers as its own .NET overload**: four overloads #715's measurement
+  found lowered as a sibling they resemble, and a fifth its review did. A default value was called as a
+  predicate ([#720](https://github.com/eQuantic/equantic-ui/issues/720), and `SingleOrDefault`'s,
+  [#760](https://github.com/eQuantic/equantic-ui/issues/760)), the third sequence of a `Zip` as a result
+  selector ([#722](https://github.com/eQuantic/equantic-ui/issues/722)), a mean of longs through a method
+  group added a BigInt to a number seed, a nullable mean divided by its nulls, an empty one answered
+  `NaN` and a mean of ints past 2^53 was rounded ([#719](https://github.com/eQuantic/equantic-ui/issues/719)), and `SequenceEqual` with a comparer
+  answered its first sequence while the one without compared JSON text
+  ([#721](https://github.com/eQuantic/equantic-ui/issues/721)). Each is a twin in `$eq.linq` now, handed
+  the bound overload's arguments by the parameter each binds to (`LinqArguments`), a selector named
+  first and a string under `?.` included, and `SequenceEqual`'s comparer passes the collection fence. `GroupBy` and `ToLookup` type their
+  accumulator in a type-checked module ([#727](https://github.com/eQuantic/equantic-ui/issues/727)). 50
+  of the 69 new conformance cases fail at a7d5f3d; the 19 that pass are the neighbours kept as pins. 36
+  entries leave the null-argument baseline. The served runtime grows about 700 gzipped bytes. Found on
+  the way: a lambda parameter of type `long` or `decimal` annotated `number` in a type-checked module
+  ([#758](https://github.com/eQuantic/equantic-ui/issues/758)), a query with `let`, a second `from` or
+  `into` that answers something else ([#761](https://github.com/eQuantic/equantic-ui/issues/761)), and a
+  value tuple printed as `1,2` ([#762](https://github.com/eQuantic/equantic-ui/issues/762)), and a
+  `Decimal` that never overflows ([#764](https://github.com/eQuantic/equantic-ui/issues/764)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-sequences`).
+- **2026-10-11 · A queue, a stack and a sorted set copy and combine as .NET's do**: two gaps #715's
+  measurement found in the collections. `Queue<T>.CopyTo`, `Stack<T>.CopyTo` and every member of
+  `SortedSet<T>` that combines or compares two sets (`CopyTo`, `UnionWith`, `IntersectWith`,
+  `ExceptWith`, `SymmetricExceptWith`, the six questions, `RemoveWhere`) were a `TypeError` in the
+  browser ([#723](https://github.com/eQuantic/equantic-ui/issues/723)); each is .NET's algorithm in
+  the runtime now, its refusals in .NET's words and order, and of two elements a sorted set finds equal
+  (`1.0m`, `1.00m`) a union and an intersection keep the one .NET keeps. A null source handed to a
+  collection's constructor built an empty collection, or a `TypeError` for a list, where .NET refuses
+  it by name ([#726](https://github.com/eQuantic/equantic-ui/issues/726)): eqc hands the factory the
+  name of the parameter the source binds to, the queue, stack and linked-list factories tell a
+  capacity from a collection as the constructors do, and `new List<T>(collection)` is a twin,
+  `$eq.collections.listCopy`, a string read by its UTF-16 chars. 78 of the 86 new conformance cases
+  fail at a7d5f3d; 23 entries leave the null-argument baseline. The served runtime grows about 1,500
+  gzipped bytes. Found on the way: those collections keep enumerating after they change
+  ([#765](https://github.com/eQuantic/equantic-ui/issues/765)), and `RemoveWhere` asks its predicate
+  in the set's order where .NET walks its tree breadth first
+  ([#766](https://github.com/eQuantic/equantic-ui/issues/766)). Proposed and archived through OpenSpec
+  (`openspec/specs/runtime-collections`).
 
 ## Retired documents
 

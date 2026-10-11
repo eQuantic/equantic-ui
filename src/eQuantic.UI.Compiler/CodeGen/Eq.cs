@@ -127,6 +127,19 @@ public static class Eq
     /// <summary>LINQ <c>ToDictionary</c> into the runtime's dictionary class, refusing a null key and a
     /// key twice.</summary>
     public const string LinqToDictionary = "$eq.linq.toDictionary";
+    /// <summary>LINQ <c>Average</c>, by the type of the values it means: a long's total exact, a
+    /// nullable's over its values alone, an empty sequence refused where the answer is not nullable.</summary>
+    public const string LinqAverage = "$eq.linq.average";
+    /// <summary>LINQ <c>FirstOrDefault</c> with a default value, and a predicate or none.</summary>
+    public const string LinqFirstOrDefault = "$eq.linq.firstOrDefault";
+    /// <summary>LINQ <c>LastOrDefault</c> with a default value, and a predicate or none.</summary>
+    public const string LinqLastOrDefault = "$eq.linq.lastOrDefault";
+    /// <summary>LINQ <c>SingleOrDefault</c> with a default value, and a predicate or none.</summary>
+    public const string LinqSingleOrDefault = "$eq.linq.singleOrDefault";
+    /// <summary>LINQ <c>SequenceEqual</c>, element by element by the element type's default equality.</summary>
+    public const string LinqSequenceEqual = "$eq.linq.sequenceEqual";
+    /// <summary>LINQ <c>Zip</c> without a result selector: the pairs, or the triples, as arrays.</summary>
+    public const string LinqZipTuples = "$eq.linq.zipTuples";
 
     /// <summary>A sequence as the array the lowered operators work on — see <c>seq</c> in utils/linq.ts.</summary>
     public const string LinqSeq = "$eq.linq.seq";
@@ -438,6 +451,10 @@ public static class Eq
     /// <summary>A list face's indexer write, an array's subscript or a twin's <c>setItem</c>, which answers
     /// the value written, as C#'s assignment does (#586).</summary>
     public const string ListSetItem = "$eq.collections.setItem";
+
+    /// <summary><c>new List&lt;T&gt;(collection)</c>: the array of what the collection enumerates, a string's
+    /// UTF-16 chars, and a null collection refused by its name, as .NET refuses it (#726).</summary>
+    public const string ListCopy = "$eq.collections.listCopy";
 
     /// <summary><c>new List&lt;T&gt;(capacity)</c>'s check, which refuses a negative capacity in .NET's words:
     /// the capacity is evaluated where C# evaluates it, before the list's elements, and sizes nothing.</summary>

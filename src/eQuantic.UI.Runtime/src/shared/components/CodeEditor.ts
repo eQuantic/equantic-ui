@@ -212,7 +212,7 @@ export class CodeEditor extends StatefulComponent {
 
     marks(editor: CodeEditorController, matches: CodeRange[], first: number, last: number) {
         if ($eq.collections.count(matches) === 0 && !this.matchBrackets && editor.composition == null) return this.decorations;
-        let marks: CodeDecoration[] = [...this.decorations];
+        let marks: CodeDecoration[] = $eq.collections.listCopy(this.decorations);
         let composition: any; 
         if ((composition = editor.composition) != null) marks.push(new CodeDecoration(composition, 'underline'));
         if ($eq.collections.count(matches) > 0) {

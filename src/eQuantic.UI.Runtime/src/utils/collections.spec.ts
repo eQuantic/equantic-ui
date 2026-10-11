@@ -294,3 +294,46 @@ describe("a list face's indexer, as the list behind the face answers it", () => 
     expect(() => clear(null)).toThrow(message);
   });
 });
+
+describe('Queue<T> and Stack<T> CopyTo, as .NET writes and refuses it (#723)', () => {
+  it('writes front to back, and from the top, from the index handed', () => {
+    const q = queue([1, 2, 3]);
+    q.dequeue();
+    q.enqueue(4);
+    const into = [0, 0, 0, 0, 0];
+    q.copyTo(into, 1);
+    expect(into).toEqual([0, 2, 3, 4, 0]);
+    const s = stack([1, 2, 3]);
+    const top = [0, 0, 0, 0];
+    s.copyTo(top, 1);
+    expect(top).toEqual([0, 3, 2, 1]);
+  });
+
+  it('refuses an index past the array, a room too small and a null array, in each one’s words', () => {
+    const q = queue([1, 2, 3]);
+    expect(() => q.copyTo([0, 0, 0, 0, 0], 6)).toThrow(
+      "Index was out of range. Must be non-negative and less than or equal to the size of the collection. (Parameter 'arrayIndex')",
+    );
+    expect(() => q.copyTo([0, 0, 0, 0, 0], 6)).not.toThrow('Actual value');
+    expect(() => stack([1]).copyTo([0, 0], 3)).toThrow("(Parameter 'arrayIndex')\nActual value was 3.");
+    expect(() => q.copyTo([0, 0, 0, 0, 0], 3)).toThrow('Offset and length were out of bounds');
+    expect(() => q.copyTo(null, 0)).toThrow("(Parameter 'array')");
+    expect(() => queue<number>().copyTo([0, 0], 2)).not.toThrow();
+  });
+});
+
+describe('the queue, stack and linked list factories, as their constructors build and refuse (#726)', () => {
+  it('builds nothing for no argument and for a capacity, and refuses a negative capacity', () => {
+    expect(queue().count + stack(4).count).toBe(0);
+    expect(() => queue(-1)).toThrow("capacity ('-1') must be a non-negative value. (Parameter 'capacity')");
+    expect(() => stack(-1)).toThrow("(Parameter 'capacity')");
+  });
+
+  it('refuses a null collection by its name, and reads a string by its UTF-16 chars', () => {
+    expect(() => queue(null)).toThrow("Value cannot be null. (Parameter 'collection')");
+    expect(() => stack(undefined as never)).toThrow("(Parameter 'collection')");
+    expect(() => linkedList(null)).toThrow("(Parameter 'collection')");
+    expect(queue('a\u{1F600}b').count).toBe(4);
+    expect(linkedList('ab').count).toBe(2);
+  });
+});

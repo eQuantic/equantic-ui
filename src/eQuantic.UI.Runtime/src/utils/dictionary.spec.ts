@@ -509,3 +509,12 @@ describe('bagEntries / bagSize — a DOM bag in either form', () => {
     expect(dictionary<string, number>().add('a', 1).add('b', 2).size).toBe(2);
   });
 });
+
+describe('dictionary refuses a null source by the name the compiler hands it (#726)', () => {
+  it('refuses a named null, and reads an unnamed one as no source', () => {
+    expect(() => dictionary(null, undefined, 'dictionary')).toThrow("Value cannot be null. (Parameter 'dictionary')");
+    expect(() => dictionary(undefined, true, 'collection')).toThrow("(Parameter 'collection')");
+    expect(dictionary(null, true).size).toBe(0);
+    expect(dictionary([['a', 1]], undefined, 'collection').get('a')).toBe(1);
+  });
+});

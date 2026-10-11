@@ -164,6 +164,9 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
         context.UsedHelpers.Add(Eq.Import);
         JsExpr? source = null;
         string? ordering = null;
+        // The parameter a copied dictionary or collection binds to, which the factory refuses a null
+        // one by (#726). A capacity has none: it is never null.
+        string? copied = null;
 
         if (context.SemanticHelper.GetOperation(creation) is IObjectCreationOperation operation)
         {
@@ -185,6 +188,7 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
                     continue;
                 }
                 source = context.Converter.ConvertIr((ExpressionSyntax)argument.Value.Syntax);
+                if (parameter?.SpecialType != SpecialType.System_Int32) copied = argument.Parameter?.Name;
             }
         }
         else
@@ -203,26 +207,33 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
                 var dropped = (capacity && factory != Eq.Dictionary) || parameter.IsCollectionComparer();
                 if (dropped) continue;
                 source = context.Converter.ConvertIr(arguments[i].Expression);
+                if (!capacity) copied = constructor?.Parameters.ElementAtOrDefault(i)?.Name;
             }
         }
 
-        return Initialized(Factory(factory, type, source, ordering), creation.Initializer, context);
+        return Initialized(Factory(factory, type, source, ordering, copied), creation.Initializer, context);
     }
 
     /// <summary><c>factory(seed)</c>, and <c>factory(seed, equality)</c> when the keys are not found by
     /// identity (<see cref="ElementEquality"/>), or <c>factory(seed, ordering)</c> for a sorted one, whose
     /// keys keep their type's order (<see cref="ValueOrdering"/>) rather than the one <c>&lt;</c> gives,
-    /// or the order its comparer asked for (<paramref name="asked"/>).</summary>
-    private static JsExpr Factory(string factory, ITypeSymbol? type, JsExpr? seed, string? asked = null)
+    /// or the order its comparer asked for (<paramref name="asked"/>). A seed the construction copies
+    /// is followed by the name of the parameter it binds to (<paramref name="copied"/>), by which the
+    /// factory refuses a null one, as .NET does (#726).</summary>
+    private static JsExpr Factory(string factory, ITypeSymbol? type, JsExpr? seed, string? asked = null,
+        string? copied = null)
     {
         var arguments = new List<JsExpr>();
         var key = type is INamedTypeSymbol { TypeArguments: [var keyType, _] } ? keyType : null;
         var second = key is null ? null
             : factory == Eq.Dictionary ? ElementEquality.Of(key)
             : asked ?? ValueOrdering.Of(key);
+        var named = seed is not null && copied is not null;
         if (seed is not null) arguments.Add(seed);
         else if (second is not null) arguments.Add(JsExpr.Literal("null"));
         if (second is not null) arguments.Add(JsExpr.Literal(second));
+        else if (named) arguments.Add(JsExpr.Literal("undefined"));
+        if (named) arguments.Add(JsExpr.Literal($"'{copied}'"));
         return JsExpr.Call(JsExpr.Identifier(factory), arguments);
     }
 

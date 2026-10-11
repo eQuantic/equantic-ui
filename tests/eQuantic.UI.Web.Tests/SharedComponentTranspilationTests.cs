@@ -159,7 +159,9 @@ public class SharedComponentTranspilationTests
     /// like the components, so a bound parameter that loses its type fails the type-check with TS7006,
     /// which no text pin and no execution can see. TypeScript types an immediately-invoked arrow's
     /// parameters from its arguments; the <c>any</c> once written there threw that type away
-    /// (Copilot's third review of #661). Never executed: what it proves is the type-check.
+    /// (Copilot's third review of #661). A grouping's accumulator is typed the same way, and so is what
+    /// a lookup's indexer searches (#727); the LINQ twins' answers keep their types through the call
+    /// (#719 to #722). Never executed: what it proves is the type-check.
     /// </summary>
     private const string BoundReceiversSource = """
         using eQuantic.UI.Components;
@@ -194,7 +196,17 @@ public class SharedComponentTranspilationTests
                 var distinct = Pairs().Distinct().Count();
                 Self()._seen |= distinct > 1;
                 var count = _counts.TryGetValue(first, out var value) ? value : 0;
-                return new Text($"{average} {doubled} {sum} {total} {first} {distinct} {_seen} {count}",
+                var groups = Items().GroupBy(Twice).Count();
+                var lookup = Pairs().ToLookup(KeyOf);
+                var named = Pairs().ToLookup(pair => pair.Key, pair => pair.Name);
+                var found = lookup[1].Count() + named[2].Count();
+                var zipped = Items().Zip(Items()).Sum(pair => pair.First * pair.Second);
+                var triples = Items().Zip(Items(), Pairs()).Sum(triple => triple.Third.Key);
+                var same = Items().SequenceEqual(Items());
+                var fallback = Items().FirstOrDefault(9) + Items().LastOrDefault(item => item > 1, 9)
+                    + Items().SingleOrDefault(item => item > 2, 9);
+                return new Text($"{average} {doubled} {sum} {total} {first} {distinct} {_seen} {count} "
+                    + $"{groups} {found} {zipped} {triples} {same} {fallback}",
                     TypeRole.Caption);
             }
         }

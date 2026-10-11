@@ -100,7 +100,7 @@ export class SheetDocument {
 
     static shiftSizes(sizes: any, at: number, delta: number) {
         if (sizes.size === 0) return;
-        let entries = [...sizes];
+        let entries = $eq.collections.listCopy(sizes);
         for (const entry of entries) {
             if (entry.key < at) continue;
             sizes.delete(entry.key);

@@ -14,6 +14,7 @@ import {
   indexOf,
   lastIndexOf,
   listCapacity,
+  listCopy,
   listSort,
   listSortBy,
   order,
@@ -224,5 +225,20 @@ describe("List<T>'s Sort and BinarySearch, by the comparer the compiler names (#
     expect(() => listCapacity(0)).not.toThrow();
     expect(() => listCapacity(16)).not.toThrow();
     expect(fails(() => listCapacity(-1))).toBe("Non-negative number required. (Parameter 'capacity')");
+  });
+});
+
+describe('new List<T>(collection), as .NET copies and refuses (#726)', () => {
+  it('copies what the collection enumerates, a string by its UTF-16 chars', () => {
+    const source = [1, 2];
+    const copy = listCopy(source);
+    expect(copy).toEqual([1, 2]);
+    expect(copy).not.toBe(source);
+    expect(listCopy(hashSetOf([3, 4]))).toEqual([3, 4]);
+    expect(listCopy('a\u{1F600}b')).toHaveLength(4);
+  });
+
+  it('refuses a null collection by its name', () => {
+    expect(() => listCopy(null)).toThrow("Value cannot be null. (Parameter 'collection')");
   });
 });

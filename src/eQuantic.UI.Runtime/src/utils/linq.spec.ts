@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { iterate, max, min, toDictionary } from './linq';
+import {
+  average,
+  firstOrDefault,
+  iterate,
+  lastOrDefault,
+  max,
+  min,
+  sequenceEqual,
+  singleOrDefault,
+  toDictionary,
+  zipTuples,
+} from './linq';
+import { Decimal } from './decimal';
 import { is } from './exceptions';
 import { Dictionary } from './dictionary';
 
@@ -146,5 +158,195 @@ describe("iterate (a twin's [Symbol.iterator], #612)", () => {
       thrown = error;
     }
     expect(is(thrown, 'System.NullReferenceException')).toBe(true);
+  });
+});
+
+describe('average (LINQ Average, #719)', () => {
+  it('adds longs as BigInts and divides as a double', () => {
+    expect(average([1n, 2n, 4n], undefined, 'long', false)).toBe(7 / 3);
+    expect(average([9007199254740993n, 9007199254740995n], undefined, 'long', false)).toBe(
+      9007199254740994,
+    );
+    expect(average([1, 2], (x: number) => BigInt(x * 3), 'long', false)).toBe(4.5);
+  });
+
+  it('refuses a long total past 64 bits, as .NET checks its sum', () => {
+    expect(() => average([9223372036854775807n, 1n], undefined, 'long', false)).toThrow(
+      'Arithmetic operation resulted in an overflow.',
+    );
+  });
+
+  it('passes a null over, and answers null for a nullable sequence with no value', () => {
+    expect(average([1, null, 4], undefined, 'number', true)).toBe(2.5);
+    expect(average([1n, null, 4n], undefined, 'long', true)).toBe(2.5);
+    expect(average([null], undefined, 'long', true)).toBe(null);
+    expect(average([], undefined, 'number', true)).toBe(null);
+  });
+
+  it('refuses an empty sequence whose answer is not nullable', () => {
+    expect(() => average([], undefined, 'number', false)).toThrow('Sequence contains no elements');
+    expect(() => average([], undefined, 'long', false)).toThrow('Sequence contains no elements');
+  });
+
+  it('rounds a single once, at the end, and keeps a decimal exact', () => {
+    expect(average([Math.fround(0.1), Math.fround(0.2)], undefined, 'single', false)).toBe(
+      Math.fround((Math.fround(0.1) + Math.fround(0.2)) / 2),
+    );
+    const mean = average(
+      [Decimal.from('1.0'), Decimal.from(2)],
+      undefined,
+      'decimal',
+      false,
+    ) as Decimal;
+    expect(mean.toString()).toBe('1.5');
+  });
+
+  it('refuses a null source and a null selector by name', () => {
+    expect(() => average(null as unknown as number[], undefined, 'number', false)).toThrow(
+      "(Parameter 'source')",
+    );
+    expect(() => average([1], null, 'number', false)).toThrow("(Parameter 'selector')");
+  });
+});
+
+describe("average of ints, in .NET's checked long", () => {
+  it('keeps the total exact past a safe integer, where a double rounds', () => {
+    const values = new Array<number>(5_000_000).fill(2147483647);
+    expect(average(values, undefined, 'int', false)).toBe(2147483647);
+    expect(average([1, 2, 4], undefined, 'int', false)).toBe(7 / 3);
+  });
+});
+
+describe('firstOrDefault and lastOrDefault with a default value (#720)', () => {
+  it('answers the element, a null one included, or the value handed', () => {
+    expect(firstOrDefault([1, 2], undefined, 9)).toBe(1);
+    expect(firstOrDefault([], undefined, 9)).toBe(9);
+    expect(firstOrDefault([null, 'a'], undefined, 'x')).toBe(null);
+    expect(firstOrDefault([1, 2, 3], (x: number) => x > 1, 9)).toBe(2);
+    expect(firstOrDefault([1, 2, 3], (x: number) => x > 5, 9)).toBe(9);
+    expect(lastOrDefault([1, 2], undefined, 9)).toBe(2);
+    expect(lastOrDefault([], undefined, 9)).toBe(9);
+    expect(lastOrDefault(['a', null], undefined, 'x')).toBe(null);
+    expect(lastOrDefault(new Set([1, 2, 3]), (x: number) => x < 3, 9)).toBe(2);
+  });
+
+  it('searches a list from its end, as .NET searches an IList', () => {
+    let seen = 0;
+    expect(lastOrDefault([1, 2, 3], (x: number) => (seen++, x === 2), 9)).toBe(2);
+    expect(seen).toBe(2);
+  });
+
+  it('refuses a null source and a null predicate by name', () => {
+    expect(() => firstOrDefault(null as unknown as number[], undefined, 9)).toThrow(
+      "(Parameter 'source')",
+    );
+    expect(() => lastOrDefault([1], null, 9)).toThrow("(Parameter 'predicate')");
+  });
+});
+
+describe('singleOrDefault with a default value (#760)', () => {
+  it('answers the one element, a null one included, or the value handed', () => {
+    expect(singleOrDefault([4], undefined, 9)).toBe(4);
+    expect(singleOrDefault([], undefined, 9)).toBe(9);
+    expect(singleOrDefault([null], undefined, 'x')).toBe(null);
+    expect(singleOrDefault([1, 2, 3], (x: number) => x === 2, 9)).toBe(2);
+    expect(singleOrDefault([1, 2, 3], (x: number) => x > 5, 9)).toBe(9);
+  });
+
+  it('refuses a second element and a second match, after walking up to it', () => {
+    expect(() => singleOrDefault([1, 2], undefined, 9)).toThrow('more than one element');
+    let seen = 0;
+    expect(() => singleOrDefault([1, 2, 3, 4], (x: number) => (seen++, x > 1), 9)).toThrow(
+      'more than one matching element',
+    );
+    expect(seen).toBe(3);
+    seen = 0;
+    expect(singleOrDefault([1, 2, 3], (x: number) => (seen++, x === 2), 9)).toBe(2);
+    expect(seen).toBe(3);
+  });
+
+  it('refuses a null source and a null predicate by name', () => {
+    expect(() => singleOrDefault(null as unknown as number[], undefined, 9)).toThrow(
+      "(Parameter 'source')",
+    );
+    expect(() => singleOrDefault([1], null, 9)).toThrow("(Parameter 'predicate')");
+  });
+});
+
+/** A sequence that records when its iterator is closed, as an app's enumerator records its Dispose. */
+function disposing(name: string, values: number[], closed: string[]): Iterable<number> {
+  return {
+    *[Symbol.iterator]() {
+      try {
+        yield* values;
+      } finally {
+        closed.push(name);
+      }
+    },
+  };
+}
+
+describe('sequenceEqual and zipTuples close what they walk, as .NET disposes it', () => {
+  it('closes both iterators, the second first, where a mismatch or a shorter sequence stops the walk', () => {
+    const closed: string[] = [];
+    expect(sequenceEqual(disposing('a', [1, 2], closed), disposing('b', [1, 3], closed))).toBe(
+      false,
+    );
+    expect(closed).toEqual(['b', 'a']);
+    closed.length = 0;
+    // The first ran out and closed itself, as a C# iterator runs its finally there; the second is closed.
+    expect(sequenceEqual(disposing('a', [1], closed), disposing('b', [1, 2], closed))).toBe(false);
+    expect(closed).toEqual(['a', 'b']);
+  });
+
+  it('closes every sequence a zip stops short in, the last first', () => {
+    const closed: string[] = [];
+    const triples = zipTuples(
+      disposing('a', [1, 2, 3], closed),
+      disposing('b', [4], closed),
+      disposing('c', [7, 8], closed),
+    );
+    expect(triples).toEqual([[1, 4, 7]]);
+    // b ran out and closed itself; c and a were left mid-walk and are closed, the last first.
+    expect(closed).toEqual(['b', 'c', 'a']);
+  });
+});
+
+describe('sequenceEqual (LINQ SequenceEqual, #721)', () => {
+  it('compares by the equality it is handed', () => {
+    expect(sequenceEqual([1n, 2n], [1n, 2n])).toBe(true);
+    expect(sequenceEqual([NaN], [NaN])).toBe(true);
+    expect(sequenceEqual([null], [NaN])).toBe(false);
+    const a = [1];
+    expect(sequenceEqual([a], [[1]])).toBe(false);
+    expect(sequenceEqual([a], [a])).toBe(true);
+    expect(sequenceEqual([Decimal.from('1.0')], [Decimal.from('1.00')], true)).toBe(true);
+    expect(sequenceEqual([{ x: 1 }], [{ x: 1 }], true)).toBe(true);
+  });
+
+  it('tells sequences of different lengths apart', () => {
+    expect(sequenceEqual([1, 2], [1, 2, 3])).toBe(false);
+    expect(sequenceEqual(new Set([1, 2, 3]), [1, 2])).toBe(false);
+  });
+
+  it('refuses a null sequence by name, and reads a null span as empty', () => {
+    expect(() => sequenceEqual(null, [1])).toThrow("(Parameter 'first')");
+    expect(() => sequenceEqual([1], null)).toThrow("(Parameter 'second')");
+    expect(sequenceEqual(null, [], false, true)).toBe(true);
+  });
+});
+
+describe('zipTuples (LINQ Zip without a selector, #722)', () => {
+  it('answers pairs and triples, as many as the shortest sequence holds', () => {
+    expect(zipTuples([1, 2, 3], ['a', 'b'])).toEqual([
+      [1, 'a'],
+      [2, 'b'],
+    ]);
+    expect(zipTuples([1, 2], ['a', 'b', 'c'], [true])).toEqual([[1, 'a', true]]);
+  });
+
+  it('refuses each sequence by its name', () => {
+    expect(() => zipTuples(null as unknown as number[], [1])).toThrow("(Parameter 'first')");
+    expect(() => zipTuples([1], [1], null)).toThrow("(Parameter 'third')");
   });
 });
