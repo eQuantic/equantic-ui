@@ -58,14 +58,14 @@ export class CodePatch {
         if (parts.length !== 2 || !parts[0].startsWith('-') || !parts[1].startsWith('+')) return null;
         let original: any; let modified: any; 
         if (!((original = CodePatch.range(parts[0].slice(1))) != null) || !((modified = CodePatch.range(parts[1].slice(1))) != null)) return null;
-        let section = close + 3 < line.length ? $eq.text.trimStart(line.slice((close + 3))) : '';
+        let section = close + 3 < line.length ? $eq.text.trimStart(line.slice(close + 3)) : '';
         return [original[0], original[1], modified[0], modified[1], section];
     }
 
     static range(text: string): [number, number] | null {
         let comma = text.indexOf(',');
         let lineText = comma < 0 ? text : text.slice(0, comma);
-        let countText = comma < 0 ? '1' : text.slice((comma + 1));
+        let countText = comma < 0 ? '1' : text.slice(comma + 1);
         let line: any; let count: any; 
         if (!((line = $eq.num.intTryParse(lineText, 'int')) !== undefined || ((line = 0), false)) || !((count = $eq.num.intTryParse(countText, 'int')) !== undefined || ((count = 0), false))) return null;
         return [line, count];
@@ -114,7 +114,7 @@ export class CodePatch {
     static gitHeaderPaths(text: string): [string | null, string | null] {
         let split = $eq.text.lastIndexOf(text, ' b/', 'ordinal');
         if (split < 0) return [null, null];
-        return [CodePatch.pathOf(text.slice(0, split)), CodePatch.pathOf(text.slice((split + 1)))];
+        return [CodePatch.pathOf(text.slice(0, split)), CodePatch.pathOf(text.slice(split + 1))];
     }
 }
 

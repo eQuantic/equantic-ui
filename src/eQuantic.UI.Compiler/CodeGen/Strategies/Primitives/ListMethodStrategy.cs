@@ -9,6 +9,12 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// <c>List&lt;T&gt;</c>'s members, and those of the faces a list answers to (<c>IList&lt;T&gt;</c>,
 /// <c>ICollection&lt;T&gt;</c>), over the array a list is on this side.
 /// <para>
+/// <c>ICollection&lt;T&gt;</c>'s own <c>Add</c> and <c>Clear</c> are the exception: an API takes that face
+/// when it promises no order, and a set, a linked list or a dictionary's pairs may stand behind it when
+/// the call runs, so the runtime asks the value what it is (#593), as it does for <c>Contains</c>,
+/// <c>Remove</c> and <c>CopyTo</c>. They were an array's <c>push</c> and <c>splice</c>, which none of those has.
+/// </para>
+/// <para>
 /// A member is the array's own method only where the two answer alike: <c>Add</c> is <c>push</c>,
 /// <c>FindAll</c> <c>filter</c>, <c>Exists</c> <c>some</c>, <c>TrueForAll</c> <c>every</c>,
 /// <c>ForEach</c> <c>forEach</c>, and <c>IndexOf</c> <c>indexOf</c> for an element compared by identity
@@ -119,7 +125,7 @@ public class ListMethodStrategy : IExpressionIrStrategy
     }
 
     /// <summary>Whether <paramref name="add"/> is an <c>Add</c> this strategy lowers: a list's, or a
-    /// list or collection interface's, which every call to it lowers to the array's <c>push</c>.</summary>
+    /// list or collection interface's (<see cref="Add"/>).</summary>
     internal static bool Lowers(IMethodSymbol? add) => add is { Name: "Add", ContainingType: { } declaring } && OfAList(declaring);
 
     /// <summary>A list, or a list or collection interface, whose methods this strategy lowers.</summary>
@@ -128,9 +134,23 @@ public class ListMethodStrategy : IExpressionIrStrategy
         && (name.StartsWith("System.Collections.Generic.List<") || name.StartsWith("System.Collections.Generic.IList<")
             || name.StartsWith("System.Collections.Generic.ICollection<"));
 
-    /// <summary>A list's <c>Add</c>, as every call to it lowers: the array's <c>push</c>. An object
-    /// initializer's element applied to a list a member holds is a call to it.</summary>
-    internal static JsExpr Add(JsExpr list, IReadOnlyList<JsExpr> items) => Method(list, "push", items);
+    /// <summary>
+    /// An <c>Add</c> this strategy lowers, as every call to it lowers: a list's is the array's <c>push</c>,
+    /// and <c>ICollection&lt;T&gt;</c>'s asks the runtime, which adds as the collection the interface holds
+    /// when the call runs adds (#593). An object initializer's element applied to a collection a member
+    /// holds is a call to it.
+    /// </summary>
+    internal static JsExpr Add(IMethodSymbol? add, JsExpr list, IReadOnlyList<JsExpr> items, ConversionContext context)
+    {
+        if (add?.ContainingType is not { } declaring || !IsCollectionInterface(declaring)) return Method(list, "push", items);
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Call(JsExpr.Identifier(Eq.CollectionAdd), [list, .. items]);
+    }
+
+    /// <summary>Whether <paramref name="type"/> is <c>ICollection&lt;T&gt;</c>, the face a set, a linked
+    /// list and a dictionary's pairs answer to as readily as a list.</summary>
+    private static bool IsCollectionInterface(INamedTypeSymbol type) =>
+        type.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.ICollection<T>";
 
     /// <summary>The lowering of a call the model binds, or null for the shapes every model answers alike.</summary>
     private static JsExpr? Bound(string name, InvocationExpressionSyntax invocation, IMethodSymbol method, JsExpr list,
@@ -139,6 +159,11 @@ public class ListMethodStrategy : IExpressionIrStrategy
         var count = method.Parameters.Length;
         switch (name)
         {
+            // ICollection<T>'s own, for whichever collection the interface holds when the call runs (#593).
+            case "Add" or "Clear" when method.ContainingType is { } declaring && IsCollectionInterface(declaring):
+                context.UsedHelpers.Add(Eq.Import);
+                return ParameterTemplate.Call(name == "Add" ? $"{Eq.CollectionAdd}({{0}}, {{1}})" : $"{Eq.CollectionClear}({{0}})",
+                    list, invocation, method, context);
             case "IndexOf" or "LastIndexOf":
             {
                 var equality = ElementEquality.Of(element);

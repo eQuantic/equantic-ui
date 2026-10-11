@@ -261,13 +261,7 @@ public static class ConformanceRunner
     {
         const string prelude = "using eQuantic.UI.Primitives;";
         var jsBlock = Transpiler.TranspileStatements(csharpStatements, prelude);
-        var url = RuntimeJsUrl()
-            ?? throw new InvalidOperationException("Could not locate the bundled runtime.js.");
-        var named = RuntimeExports.Value
-            .Where(name => name != "$eq" && Regex.IsMatch(jsBlock, $@"(?<![\w$.]){Regex.Escape(name)}\b"))
-            .ToList();
-        if (jsBlock.Contains("$eq.")) named.Insert(0, "$eq");
-        var program = (named.Count == 0 ? "" : $"import {{ {string.Join(", ", named)} }} from '{url}';\n") + Log(jsBlock);
+        var program = ImportOfWhatItNames(jsBlock) + Log(jsBlock);
 
         var actual = JsExecutor.Run(program);
         var expected = DotNetEvaluator.EvaluateToJson(csharpStatements, prelude);
@@ -275,6 +269,21 @@ public static class ConformanceRunner
         actual.Should().Be(
             expected,
             $"C# block `{csharpStatements}` (transpiled to JS `{jsBlock}`) must behave identically to .NET");
+    }
+
+    /// <summary>
+    /// The import a page's module would have for <paramref name="js"/>: every export of the served bundle
+    /// it names, <c>$eq</c> first where it reads the namespace, or nothing where it names none.
+    /// </summary>
+    internal static string ImportOfWhatItNames(string js)
+    {
+        var url = RuntimeJsUrl()
+            ?? throw new InvalidOperationException("Could not locate the bundled runtime.js.");
+        var named = RuntimeExports.Value
+            .Where(name => name != "$eq" && Regex.IsMatch(js, $@"(?<![\w$.]){Regex.Escape(name)}\b"))
+            .ToList();
+        if (js.Contains("$eq.")) named.Insert(0, "$eq");
+        return named.Count == 0 ? "" : $"import {{ {string.Join(", ", named)} }} from '{url}';\n";
     }
 
     /// <summary>The names the served bundle exports, read from the bundle itself rather than listed.</summary>

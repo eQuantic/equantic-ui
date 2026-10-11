@@ -88,6 +88,14 @@ public class WikiClaimsCompile
                 : Text("No library here", TypeRole.BodyM);
     }
 
+    /// <summary>DesignSystem (0.2.0-preview.61): a size that follows the window.</summary>
+    [Fact]
+    public void AFluidSize_Compiles()
+    {
+        var display = TypeStyle.OfSize(40, FontWeight.Bold).WithFluidSize(34, 4.2f, 54);
+        _ = Text("Escolha o seu distrito.", styleOverride: display, headingLevel: 1);
+    }
+
     /// <summary>Icons and Components (0.2.0-preview.61): a drawing at its column's width, a
     /// child placed by fraction and shifted by its own size, and an auto-filling grid.</summary>
     [Fact]
@@ -199,6 +207,15 @@ public class WikiClaimsCompile
         };
         _ = Primitives.Pinned.ScrolledThreshold;
         _ = Primitives.Pinned.ScrolledBase;
+
+        // WriteOnceComponents, "A weight of zero takes no share" (preview.61, #680): a picture that
+        // starts at 540 and never grows, beside text that takes the rest.
+        var story = new Row(gap: Space.S6) { Wrap = true, Width = SizeValue.Fill };
+        story.Add(Flexible(Text("picture", TypeRole.BodyM), flex: 0, basis: 540));
+        story.Add(Flexible(Text("story", TypeRole.BodyM), flex: 1, basis: 380));
+
+        // EmailRealizer, the welcome email, whole (#684, #694).
+        _ = new WelcomeEmail("Edgar");
     }
 
     /// <summary>Security, "A page that requires authorization" (preview.61): a page that only the
@@ -210,6 +227,27 @@ public class WikiClaimsCompile
         public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken) => Task.CompletedTask;
 
         public override VisualNode Build(ComponentContext context) => Text("queue", TypeRole.BodyM);
+    }
+
+    /// <summary>
+    /// The EmailRealizer page's welcome email, as the page writes it, with an address standing in
+    /// for its generated <c>Assets.Logo</c>. Its logo gave a width and no height (#684), and its
+    /// button was a <c>Button</c> with an <c>href</c> the factory does not have, which an email
+    /// refuses anyway because a Button is a Pressable (#694): the bulletproof button is a Link
+    /// around a painted Box.
+    /// </summary>
+    private sealed class WelcomeEmail(string name) : Primitives.StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            Column(gap: Space.S4, children: [
+                Image("https://cdn.example.com/logo.png", width: 132, height: 26),
+                Text($"Welcome, {name}", TypeRole.Heading),
+                Link("https://example.com/confirm", Box(new BoxStyle
+                {
+                    Background = context.Theme.Colors(Variant.Primary).Base,
+                    Padding = EdgeInsets.Symmetric(Space.S4, Space.S2),
+                }, Text("Confirm your address", TypeRole.Label, context.Theme.Colors(Variant.Primary).OnBase))),
+            ]);
     }
 
     /// <summary>The theme the DesignSystem page shows, whose body is elided there as "the rest

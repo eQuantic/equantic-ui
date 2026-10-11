@@ -10,11 +10,12 @@ namespace eQuantic.UI.Compiler.Tests.Strategies;
 
 /// <summary>
 /// Regression guard: with a real semantic model, calling Add() on an interface-typed collection
-/// (IList&lt;T&gt;/ICollection&lt;T&gt;, where Add is inherited from ICollection&lt;T&gt;) must map to the
-/// JS array <c>push</c> — not degrade to a naive camel-cased <c>.add()</c>. This mirrors HtmlElement.Children
-/// (IList&lt;IComponent&gt;), which broke SPA boot when the eqc semantic model lacked the eQuantic references
-/// and could not resolve the receiver type. The plain ListStrategyTests only cover the no-semantic-info
-/// fallback, so they never exercised this path.
+/// (IList&lt;T&gt;/ICollection&lt;T&gt;, where Add is inherited from ICollection&lt;T&gt;) must reach the
+/// runtime's <c>$eq.collections.add</c>, which pushes onto an array and adds to a set, a linked list or a
+/// twin through its own member (#593), and never degrade to a naive camel-cased <c>.add()</c>, which an
+/// array lacks. This mirrors HtmlElement.Children (IList&lt;IComponent&gt;), which broke SPA boot when the
+/// eqc semantic model lacked the eQuantic references and could not resolve the receiver type. The plain
+/// ListStrategyTests only cover the no-semantic-info fallback, so they never exercised this path.
 /// </summary>
 public class IListAddRepro
 {
@@ -60,8 +61,8 @@ public class IListAddRepro
     [Theory]
     [InlineData("Box")]      // concrete receiver, Children typed IList<IComponent>
     [InlineData("IComponent")] // interface receiver, Children typed IList<IComponent>
-    public void ChildrenAdd_MapsToPush(string receiverType)
+    public void ChildrenAdd_ReachesTheCollectionBehindTheFace(string receiverType)
     {
-        ConvertAddOn(receiverType).Should().Be("target.children.push(child)");
+        ConvertAddOn(receiverType).Should().Be("$eq.collections.add(target.children, child)");
     }
 }

@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeMetrics, CodeRow, CodeTokenKindValue, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRow, CodeTokenKindValue, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
@@ -35,7 +35,7 @@ export class CodeBlock extends StatelessComponent {
     declare caption: any;
     declare onCopy: (() => void) | null;
     declare onGutterPressed: ((int: number) => void) | null;
-    declare metrics: any;
+    declare metrics: CodeBlock$CodeMetrics | null;
     declare highlighter: any;
     declare viewportOffset: number;
     declare viewportHeight: number;
@@ -159,7 +159,7 @@ export class CodeBlock extends StatelessComponent {
             marks.add(new Positioned(new Box(new BoxStyle({ width: width, height: lineHeight, background: this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle })), Math.fround(metrics.contentTop + Math.fround(Math.fround(this.rowOf(activeLine)) * lineHeight)), null, null, 0));
         }
         this.addMarks(marks, CodeBlock.highlightPass, metrics, theme, first, last, firstLine, lastLine, width);
-        if (this.selectionBands.length > 0) {
+        if ($eq.collections.count(this.selectionBands) > 0) {
             let band = CodeBlock.selectionFor(this.inverse, theme).withOpacity(CodeBlock.selectionAlpha);
             let windowTop = Math.fround(metrics.contentTop + Math.fround(Math.fround(first) * lineHeight));
             let windowBottom = Math.fround(metrics.contentTop + Math.fround(Math.fround(last + 1) * lineHeight));
@@ -203,7 +203,7 @@ export class CodeBlock extends StatelessComponent {
     static metricsFor(context: BuildContext, size: SizeVariantValue, showLineNumbers: boolean, lastLineNumber: number) {
         let style = $eq.withPatch(TypeStyle.ofSize(Sizing.labelSize(size, context.density), 'regular'), { mono: true });
         let gutter = showLineNumbers ? Math.fround(Math.ceil(context.measureText(String(lastLineNumber) + '0', style)) + 12) : 0;
-        return new CodeMetrics(style, $eq.math.roundSingle(Math.fround(style.lineHeight * Math.fround(1.15))), context.monoAdvance(style), gutter);
+        return new CodeBlock$CodeMetrics(style, $eq.math.roundSingle(Math.fround(style.lineHeight * Math.fround(1.15))), context.monoAdvance(style), gutter);
     }
 
     static corner(caption: any, onCopy: (() => void) | null, inverse: boolean, theme: any) {
@@ -233,7 +233,7 @@ export class CodeBlock extends StatelessComponent {
         return column;
     }
 
-    gutterCell(shown: CodeRow, numberOf: ((value: CodeRow) => string | null) | null, metrics: CodeMetrics, theme: any) {
+    gutterCell(shown: CodeRow, numberOf: ((value: CodeRow) => string | null) | null, metrics: CodeBlock$CodeMetrics, theme: any) {
         let isLine = shown.kind === 'line';
         let index = shown.line;
         let number: any; 
@@ -252,7 +252,7 @@ export class CodeBlock extends StatelessComponent {
         return isLine && (pressed = this.onGutterPressed) != null ? new Pressable(cell, () => pressed(index), { label: SdkStrings.lineNumbered(this.firstLineNumber + index) }) : cell;
     }
 
-    rowView(shown: CodeRow, highlighter: CodeHighlighter, fillerHighlighter: any, metrics: CodeMetrics, ink: ColorToken, theme: any) {
+    rowView(shown: CodeRow, highlighter: CodeHighlighter, fillerHighlighter: any, metrics: CodeBlock$CodeMetrics, ink: ColorToken, theme: any) {
         if (shown.kind === 'line') return this.lineRow(this.document, highlighter, this.cellsOf(shown.line), shown.line, metrics, ink, theme);
         if (shown.kind === 'placeholder') return this.placeholderRow(shown, metrics, theme);
         let fillers: any; let colours: any; 
@@ -260,14 +260,14 @@ export class CodeBlock extends StatelessComponent {
         return this.fillerRow(shown, metrics, theme);
     }
 
-    fillerRow(shown: CodeRow, metrics: CodeMetrics, theme: any) {
+    fillerRow(shown: CodeRow, metrics: CodeBlock$CodeMetrics, theme: any) {
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: metrics.lineHeight, cross: 'center' });
         let label: any; 
         if ((label = shown.label) != null) row.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(12, 0) }), this.muted(label, metrics, theme)));
         return new Box(new BoxStyle({ width: SizeValue.fill, height: metrics.lineHeight, background: this.fillerColor }), row);
     }
 
-    placeholderRow(shown: CodeRow, metrics: CodeMetrics, theme: any) {
+    placeholderRow(shown: CodeRow, metrics: CodeBlock$CodeMetrics, theme: any) {
         let label = shown.label ?? SdkStrings.hiddenLines(shown.count);
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: metrics.lineHeight, cross: 'center' });
         row.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(12, 0) }), this.muted(label, metrics, theme)));
@@ -276,11 +276,11 @@ export class CodeBlock extends StatelessComponent {
         return (pressed = this.onPlaceholderPressed) != null ? new Pressable(box, () => pressed(shown.line), { label: label }) : box;
     }
 
-    muted(text: string, metrics: CodeMetrics, theme: any) {
+    muted(text: string, metrics: CodeBlock$CodeMetrics, theme: any) {
         return new Text(text, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style });
     }
 
-    lineRow(document: CodeDocument, highlighter: CodeHighlighter, cells: CodeLineCells, index: number, metrics: CodeMetrics, ink: ColorToken, theme: any) {
+    lineRow(document: CodeDocument, highlighter: CodeHighlighter, cells: CodeLineCells, index: number, metrics: CodeBlock$CodeMetrics, ink: ColorToken, theme: any) {
         let style = metrics.style;
         let lineHeight = metrics.lineHeight;
         let columnWidth = metrics.columnWidth;
@@ -351,13 +351,13 @@ export class CodeBlock extends StatelessComponent {
         return (() => { const $s = kind; if ($s === 'line') return CodeBlock.linePass; if ($s === 'highlight') return CodeBlock.highlightPass; return CodeBlock.outlinePass; })();
     }
 
-    addMarks(marks: Stack, pass: number, metrics: CodeMetrics, theme: any, first: number, last: number, firstLine: number, lastLine: number, width: number) {
+    addMarks(marks: Stack, pass: number, metrics: CodeBlock$CodeMetrics, theme: any, first: number, last: number, firstLine: number, lastLine: number, width: number) {
         for (const decoration of this.decorations) {
             if (CodeBlock.passOf(decoration.kind) !== pass) continue;
             for (const mark of this.marks(decoration, this.document, (line: number) => this.cellsOf(line), (line: number) => this.shows(line) ? this.rowOf(line) : -1, firstLine, lastLine, metrics, theme, width)) marks.add(mark);
         }
         let fillers: any; 
-        if (!((fillers = this.fillerDocument) != null) || this.fillerDecorations.length === 0) return;
+        if (!((fillers = this.fillerDocument) != null) || $eq.collections.count(this.fillerDecorations) === 0) return;
         let sources: number[] = [];
         let rows: number[] = [];
         let lowest = 2147483647;
@@ -382,7 +382,7 @@ export class CodeBlock extends StatelessComponent {
         return -1;
     }
 
-    marks(decoration: CodeDecoration, document: CodeDocument, cellsOf: (value: number) => CodeLineCells, rowOf: (value: number) => number, first: number, last: number, metrics: CodeMetrics, theme: any, rowWidth: number) {
+    marks(decoration: CodeDecoration, document: CodeDocument, cellsOf: (value: number) => CodeLineCells, rowOf: (value: number) => number, first: number, last: number, metrics: CodeBlock$CodeMetrics, theme: any, rowWidth: number) {
         const _seq = [];
         let start = document.clamp(decoration.range.start);
         let end = document.clamp(decoration.range.end);

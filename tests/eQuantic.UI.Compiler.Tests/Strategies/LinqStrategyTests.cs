@@ -1,4 +1,5 @@
 using FluentAssertions;
+using eQuantic.UI.Compiler.CodeGen;
 using Xunit;
 
 namespace eQuantic.UI.Compiler.Tests.Strategies;
@@ -337,14 +338,23 @@ public class LinqStrategyTests
     }
 
     [Fact]
-    public void ToDictionary_WithAComparer_IsRefused()
+    public void ToDictionary_WithAComparerThatAsksForTheDefault_IsTheShapeWithoutOne()
     {
-        // The comparer was called as if it were the element selector.
-        TestHelper.DiagnosticsFor("var r = items.ToDictionary(x => x, (IEqualityComparer<string>)null)")
-            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary with a comparer"));
-        TestHelper.DiagnosticsFor("var r = items.ToDictionary(x => x, x => x.Length, (IEqualityComparer<string>)null)")
-            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary with a comparer"),
-                "the comparer beside an element selector is refused in the same words");
+        // The comparer was once called as if it were the element selector it shares an argument count
+        // with (#390), and then every comparer was refused, the default's included. One the collection
+        // fence passes is dropped now, so the call is the one written without it (#578), and one that
+        // changes equality is the fence's to refuse (CollectionComparerFenceTests).
+        foreach (var (withComparer, without) in new[]
+        {
+            ("items.ToDictionary(x => x, (IEqualityComparer<string>)null)", "items.ToDictionary(x => x)"),
+            ("items.ToDictionary(x => x, x => x.Length, (IEqualityComparer<string>)null)", "items.ToDictionary(x => x, x => x.Length)"),
+        })
+        {
+            TestHelper.DiagnosticsFor($"var r = {withComparer}")
+                .Should().NotContain(d => d.Severity == ConversionSeverity.Error, $"`{withComparer}` builds");
+            TestHelper.ConvertExpression(withComparer).Should().Be(TestHelper.ConvertExpression(without),
+                "a comparer that asks for the default is dropped, never called as a selector");
+        }
         TestHelper.DiagnosticsFor("var r = items.ToDictionary(x => x, x => x.Length)")
             .Should().NotContain(d => d.Code == "EQ1004", "an element selector is not a comparer");
     }

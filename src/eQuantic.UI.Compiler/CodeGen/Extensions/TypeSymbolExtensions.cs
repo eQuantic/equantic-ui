@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 namespace eQuantic.UI.Compiler.CodeGen;
 
 /// <summary>
@@ -87,6 +88,35 @@ public static class TypeSymbolExtensions
     internal static bool TwinIsTranspiled(this ITypeSymbol type) =>
         type.GetAttributes().Any(attribute => attribute.AttributeClass is { Name: "TwinIsTranspiledAttribute" } marker
             && marker.ContainingNamespace?.ToDisplayString() == "eQuantic.UI.Primitives");
+
+    /// <summary>
+    /// The name a type's twin is written under: its own name after the chain of the types that contain
+    /// it, joined by <c>$</c> (<c>Cart$Item</c>, <c>A$B$C</c>, #584), which no C# type can take, so a
+    /// nested type's twin never meets a top-level type's. Generic arguments are erased
+    /// (<c>Box&lt;T&gt;.Node</c> is <c>Box$Node</c>). Its module is named the same, so a reference
+    /// imports it as it imports any type's. A top-level type's is its own name.
+    /// </summary>
+    internal static string TwinTypeName(this INamedTypeSymbol type) =>
+        eQuantic.UI.TwinName.OfNested(type.ContainingType?.TwinTypeName(), type.Name);
+
+    /// <summary>The twin name of a class, record or struct declared inside another type whose twin eqc
+    /// writes (in the source, or in a namespace it transpiles whole), which differs from the name it is
+    /// written with (<see cref="TwinTypeName(INamedTypeSymbol)"/>); null for any other type, whose name a
+    /// reference keeps.</summary>
+    internal static string? NestedTwinName(this INamedTypeSymbol type) =>
+        type is { ContainingType: not null, TypeKind: TypeKind.Class or TypeKind.Struct }
+        && (type.Locations.Any(location => location.IsInSource)
+            || Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(type.ContainingNamespace?.ToDisplayString() ?? string.Empty))
+            ? type.TwinTypeName()
+            : null;
+
+    /// <summary>
+    /// The name a REFERENCE to a type writes, and imports: a nested type's twin where eqc writes it
+    /// (<see cref="NestedTwinName"/>), and the type's own name otherwise, which is what a top-level type's
+    /// twin and a hand-written twin of the runtime are called (a nested vocabulary type keeps its simple
+    /// name there). Registering one name and calling another imported nothing the call named.
+    /// </summary>
+    internal static string TwinReference(this INamedTypeSymbol type) => type.NestedTwinName() ?? type.Name;
 
     /// <summary>
     /// True when the type derives (transitively) from a framework component/state base. Walking the base
@@ -294,6 +324,16 @@ public static class TypeSymbolExtensions
             || def.StartsWith("System.Collections.Generic.HashSet");
     }
 
+    /// <summary>
+    /// Whether <paramref name="type"/> is a LIST'S FACE: <c>IList&lt;T&gt;</c>, <c>IReadOnlyList&lt;T&gt;</c>
+    /// or the non-generic <c>IList</c>. An array and a list are arrays on this side and answer one through
+    /// a subscript and a <c>length</c>, but a twin of the app's own implements the face as readily, and
+    /// answers through its <c>item</c>, its <c>setItem</c> and its <c>count</c> (#586).
+    /// </summary>
+    internal static bool IsListFace(this ITypeSymbol? type) =>
+        type?.OriginalDefinition.ToDisplayString() is "System.Collections.Generic.IList<T>"
+            or "System.Collections.Generic.IReadOnlyList<T>" or "System.Collections.IList";
+
     /// <summary>The element type of an array or <c>IEnumerable&lt;T&gt;</c>, or <c>null</c>.</summary>
     public static ITypeSymbol? GetEnumerableElementType(this ITypeSymbol? collectionType)
     {
@@ -319,6 +359,22 @@ public static class TypeSymbolExtensions
         symbol is { ContainingType: { IsExtension: true, ContainingType: { } home } } ? home : null;
 
     /// <summary>
+    /// The name a twin is written by where the code names it, said once for the import too (#584): every
+    /// site that writes a type's twin into the output names it through this, so a twin reached only by
+    /// inference (an operator on what a call returned, the zero of a type an alias names, a nested
+    /// component's construction or type test) is imported as one the syntax names is.
+    /// </summary>
+    public static string IntroduceTwin(this INamedTypeSymbol type, ConversionContext context)
+    {
+        // A nested type whose owner never crosses has no twin: EQ2010 where the code names it, however
+        // it is reached (an alias, using static, an operator), found by Copilot's third review of #654.
+        // A twin it reported is not imported, so the module's import net, which catches a path that
+        // reaches no fence, does not say it twice.
+        if (context.Converting is not { } at || !type.ReportIfKeptOut(at, context)) type.RegisterIntroduced(context);
+        return type.TwinReference();
+    }
+
+    /// <summary>
     /// Registers a type name the conversion INTRODUCED into the output (the source never names the
     /// extension home — the call is written on the receiver), in the bucket its namespace decides,
     /// so the import scanner can see it. Same routing the static-call path uses.
@@ -326,9 +382,9 @@ public static class TypeSymbolExtensions
     public static void RegisterIntroduced(this INamedTypeSymbol home, ConversionContext context)
     {
         if (home.IsRuntimeProvided())
-            context.UsedRuntimeTypes.Add(home.Name);
+            context.UsedRuntimeTypes.Add(home.TwinReference());
         else
-            context.UsedAppTypes.Add(home.Name);
+            context.UsedAppTypes.Add(home.TwinReference());
     }
 
     /// <summary>
@@ -360,7 +416,14 @@ public static class TypeSymbolExtensions
     public static bool IsRuntimeProvided(this INamedTypeSymbol type) =>
         Services.RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(
             type.ContainingNamespace?.ToDisplayString() ?? string.Empty)
-        || type.GetAttributes().Any(a => a.AttributeClass?.Name == "RuntimeProvidedAttribute");
+        // By its name as written too, where the attribute binds to an error type (a compilation that
+        // does not reference it), as PlainClassModule reads [ServerOnly].
+        || type.GetAttributes().Any(a => a.AttributeClass?.Name is "RuntimeProvidedAttribute" or "RuntimeProvided")
+        // A nested type is the runtime's where its owner is, by the rule the parser reads
+        // (PlainClassModule.OwnersCross), and the runtime carries it under its owner's twin name
+        // (`CodeBlock$CodeMetrics`). Where the owner said so by the attribute, the reference imported
+        // a sibling module nothing writes (found by Copilot's third review of #654).
+        || type.ContainingType?.IsRuntimeProvided() == true;
 
     /// <summary>
     /// A vocabulary value type whose browser twin is its data alone, as <c>[TwinIsData]</c> declares

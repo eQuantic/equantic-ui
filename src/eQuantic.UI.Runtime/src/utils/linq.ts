@@ -26,18 +26,26 @@ export type { Ordering };
 
 const NO_ELEMENTS = 'Sequence contains no elements';
 
+/** .NET's refusal of a null argument, by the parameter's name. */
+function nullArgument(parameter: string): Error {
+  return exception('System.ArgumentNullException', `Value cannot be null. (Parameter '${parameter}')`);
+}
+
 /**
  * The largest (`direction` 1) or smallest (-1) value, by .NET's `MaxFloat`/`MinFloat` for a real
  * and its `Comparer<T>.Default` loop for the rest: `Min` answers the first NaN it meets and reads no
- * further, as .NET's does.
+ * further, as .NET's does. A null source, and then a null selector, are refused by name before either
+ * is read, as .NET refuses them (#569); the overload without a selector hands `undefined`.
  */
 function extreme<T>(
   source: Iterable<T>,
-  selector: ((item: T) => unknown) | undefined,
+  selector: ((item: T) => unknown) | null | undefined,
   ordering: Ordering,
   nullable: boolean,
   direction: 1 | -1,
 ): unknown {
+  if (source == null) throw nullArgument('source');
+  if (selector === null) throw nullArgument('selector');
   const compare = comparerOf(ordering);
   let found = false;
   let value: unknown = null;
@@ -82,7 +90,7 @@ export function max<T, R>(
 ): R;
 export function max<T>(
   source: Iterable<T>,
-  selector: ((item: T) => unknown) | undefined,
+  selector: ((item: T) => unknown) | null | undefined,
   ordering: Ordering,
   nullable: boolean,
 ): unknown {
@@ -104,7 +112,7 @@ export function min<T, R>(
 ): R;
 export function min<T>(
   source: Iterable<T>,
-  selector: ((item: T) => unknown) | undefined,
+  selector: ((item: T) => unknown) | null | undefined,
   ordering: Ordering,
   nullable: boolean,
 ): unknown {
@@ -115,7 +123,8 @@ export function min<T>(
  * `ToDictionary(keySelector)` and `ToDictionary(keySelector, elementSelector)` into the runtime's
  * {@link Dictionary}, the one a constructed dictionary is, its keys found as `byValue` says
  * ({@link KeyEquality}): each element selected before it is added, and a null key or a key twice refused with .NET's
- * words.
+ * words. A null source or key selector is refused by name, as .NET refuses it (#569). A null element
+ * selector is read as none: the lowering writes null for the overload without one.
  */
 export function toDictionary<T, K, V = T>(
   source: Iterable<T>,
@@ -123,6 +132,8 @@ export function toDictionary<T, K, V = T>(
   elementSelector?: ((item: T) => V) | null,
   byValue: KeyEquality = false,
 ): Dictionary<K, V> {
+  if (source == null) throw nullArgument('source');
+  if (keySelector == null) throw nullArgument('keySelector');
   const result = new Dictionary<K, V>(null, byValue);
   for (const item of source) {
     const key = keySelector(item);
@@ -144,14 +155,14 @@ export function toDictionary<T, K, V = T>(
  * as it is, a string by its chars (UTF-16 code units, where a spread gives code points), and anything
  * else by its own iterator (a `Set`, a dictionary's pairs, the runtime's sorted set, queue, stack and
  * linked list). LINQ over any of these called an array method the receiver does not have, and threw.
+ * `parameter` is the name the operator gives the sequence, which a null one is refused by: `source`
+ * for most, `second` for the other side of a `Concat`, `first` for a `Zip`'s own (#569).
  */
-export function seq<T>(source: Iterable<T> | string): T[] {
+export function seq<T>(source: Iterable<T> | string, parameter = 'source'): T[] {
   if (Array.isArray(source)) return source;
   if (typeof source === 'string') return source.split('') as unknown as T[];
   // A null source is .NET's ArgumentNullException, every LINQ operator's first check.
-  if (source == null) {
-    throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'source')");
-  }
+  if (source == null) throw nullArgument(parameter);
   // Array.from reads an object that is not iterable as an EMPTY array: a value that crossed as a plain
   // object where C# holds a sequence would count nothing, in silence. It says so instead.
   if (typeof (source as { [Symbol.iterator]?: unknown })[Symbol.iterator] !== 'function') {

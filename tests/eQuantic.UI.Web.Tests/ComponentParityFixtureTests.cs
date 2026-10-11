@@ -207,6 +207,44 @@ public class ComponentParityFixtureTests
                     new TextRun("cdn") { Destination = "//cdn.example.com/x" },
                 ],
             }), NoPresses),
+
+        // A ZERO WEIGHT (#680): the server raised it to 1 while the twin wrote the zero, so the two
+        // disagreed about whether the item grows. At a basis it keeps the basis; without one it
+        // starts from its content, which is a declaration of its own on each side.
+        ("flexible-zero-weight-at-a-basis", Line(wrap: true,
+            new Flexible(new Text("picture", TypeRole.BodyM, Theme.TextPrimary), flex: 0, basis: 540),
+            new Flexible(new Text("story", TypeRole.BodyM, Theme.TextPrimary), flex: 1, basis: 380)), NoPresses),
+        ("flexible-zero-weight-from-content", Line(wrap: false,
+            new Flexible(new Text("label", TypeRole.BodyM, Theme.TextPrimary), flex: 0),
+            new Flexible(new Text("rest", TypeRole.BodyM, Theme.TextPrimary), flex: 1)), NoPresses),
+        // A FRACTIONAL basis (#692): the server wrote it through TokenCss.Px, two decimals at most,
+        // and the twin wrote it raw, so 540.125 and the float 540.12 each hydrated as another class.
+        ("flexible-fractional-basis", Line(wrap: true,
+            new Flexible(new Text("half", TypeRole.BodyM, Theme.TextPrimary), flex: 1, basis: 540.125f),
+            new Flexible(new Text("float", TypeRole.BodyM, Theme.TextPrimary), flex: 1, basis: 540.12f)), NoPresses),
+        // A zero weight's SHRINK FACTOR: the declarations Chrome lays out at 480 and 520 in a row of
+        // 1000, the numbers FlexZeroWeightLayoutTests holds Photon to.
+        ("flexible-zero-weight-shrink-factor", Line(wrap: false,
+            new Flexible(new Text("three", TypeRole.BodyM, Theme.TextPrimary), flex: 0, basis: 540, shrink: 3),
+            new Flexible(new Text("one", TypeRole.BodyM, Theme.TextPrimary), flex: 0, basis: 540, shrink: 1)), NoPresses),
+
+        // AN ADAPTIVE NODE'S ARMS (#669, #670, #671), the issues' own trees. Fractional thresholds
+        // name their gates with an underscore, and past a thousand dp the two producers spelled one
+        // differently; a Gap arm lowers on its column's axis; a Positioned arm is anchored in its
+        // stack. Hydration adopts the server's gates and arms by these classes.
+        ("adaptive-fractional-thresholds", Stack(0, new AdaptiveNode(
+            new Text("narrow", TypeRole.BodyM, Theme.TextPrimary),
+            new Text("middle", TypeRole.BodyM, Theme.TextPrimary),
+            new Text("wide", TypeRole.BodyM, Theme.TextPrimary))
+        {
+            MediumFrom = 703.7037f,
+            ExpandedFrom = 1066.6667f,
+        }), NoPresses),
+        ("adaptive-gaps-in-column", Stack(0,
+            new Text("above", TypeRole.BodyM, Theme.TextPrimary),
+            new AdaptiveNode(Spacer.Fixed(24), null, Spacer.Fixed(64)) { ExpandedFrom = 980 },
+            new Text("below", TypeRole.BodyM, Theme.TextPrimary)), NoPresses),
+        ("adaptive-positioned-in-stack", AdaptiveCorner(), NoPresses),
     ];
 
     /// <summary>
@@ -250,6 +288,20 @@ public class ComponentParityFixtureTests
     /// <summary>The card of the pressable-through-wrappers case.</summary>
     private static Box LiftCard() => new(new BoxStyle { Width = 40, Height = 40, Background = Theme.Surface });
 
+    /// <summary>The stack of #671: a slab, and an AdaptiveNode whose wide arm is a Positioned in the
+    /// slab's top end corner.</summary>
+    private static Primitives.Stack AdaptiveCorner()
+    {
+        var stack = new Primitives.Stack();
+        stack.Add(new Box(new BoxStyle { Width = 400, Height = 300, Background = Theme.Surface }));
+        stack.Add(new AdaptiveNode(new Box(), null,
+            new Positioned(new Text("corner", TypeRole.BodyM, Theme.TextPrimary), top: 0, end: 0))
+        {
+            ExpandedFrom = 980,
+        });
+        return stack;
+    }
+
     /// <summary>The control of the control-states cases: a raised surface with a hover, a focus and a
     /// press, each changing what the others do not, and the pressed fill it has always had.</summary>
     private static Pressable ControlStates() => new(new Box(new BoxStyle
@@ -277,6 +329,13 @@ public class ComponentParityFixtureTests
         var column = new Column(gap);
         foreach (var child in children) column.Add(child);
         return column;
+    }
+
+    private static VisualNode Line(bool wrap, params VisualNode[] children)
+    {
+        var row = new Row(gap: 0) { Wrap = wrap };
+        foreach (var child in children) row.Add(child);
+        return row;
     }
 
     [Fact]

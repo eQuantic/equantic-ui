@@ -28,8 +28,11 @@ public class CollectionConstructionTests
             var fixedSize = new List<string>(16);
             """);
 
-        js.Should().Contain("let sized: string[] = [];", "a capacity is a hint, not the contents");
-        js.Should().Contain("let fixedSize: string[] = [];");
+        // A capacity is a hint, not the contents, but C# evaluates it and the constructor refuses a negative
+        // one, so one that is not a constant the list takes is handed to the runtime first.
+        js.Should().Contain("let sized: string[] = ($eq.collections.listCapacity(source.length + 1), []);",
+            "a capacity is a hint, not the contents, and is evaluated and checked as the constructor does");
+        js.Should().Contain("let fixedSize: string[] = [];", "a constant the list takes has nothing to evaluate or refuse");
     }
 
     [Fact]

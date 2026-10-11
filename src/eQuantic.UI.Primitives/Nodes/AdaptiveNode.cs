@@ -14,6 +14,12 @@ namespace eQuantic.UI.Primitives;
 /// two arms each holding the same article to one row whose ASIDE is the adaptive node, which reads
 /// better besides.
 /// </para>
+/// <para>
+/// The node is never laid out itself: its PARENT lays out each arm as a child of its own. So a
+/// Spacer arm is space on the parent's axis, a Positioned arm is anchored in its Stack, and an
+/// arm's own <see cref="VisualNode.AlignSelf"/> and <see cref="VisualNode.GridSpan"/> place it in
+/// its line or grid. Say them on the ARM: the node's own are not read.
+/// </para>
 /// </summary>
 public sealed class AdaptiveNode : VisualNode
 {

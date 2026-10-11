@@ -1905,12 +1905,17 @@ export class Positioned extends VisualNode {
 }
 
 interface FlexibleConfig {
+  /** C#'s object initializer can set the three numbers too (they are `init` there). */
+  flex?: number;
+  basis?: number;
+  shrink?: number;
   animateChanges?: boolean;
 }
 
 export class Flexible extends VisualNode {
   readonly nodeKind = 'flexible';
   child: VisualChild;
+  /** CSS flex-grow. 0 takes no share of the leftover: the child keeps its basis, or its content. */
   flex: number;
   /** CSS flex-basis in dp — the size the line breaker measures against when the parent wraps. */
   basis: number;
@@ -1925,6 +1930,28 @@ export class Flexible extends VisualNode {
     this.basis = basis;
     this.shrink = shrink;
     if (config) Object.assign(this, config);
+    // LAST, after every path that writes a number, for the reason Text checks its heading level
+    // there: the trailing config is the C# object initializer, and it runs after the parameters.
+    refuseFlexNumbers(this);
+  }
+}
+
+/**
+ * A Flexible's numbers as the C# accepts them (#680), refused where C# refuses them rather than
+ * clamped: a clamp once turned `flex: 0` into an item that grew. A weight and a shrink are whole
+ * numbers, zero or more; a basis is a finite size, zero or more. The lowering reads plain objects
+ * and degrades instead, like Text's heading level.
+ */
+function refuseFlexNumbers(flexible: Flexible): void {
+  const whole = (value: number) => Number.isInteger(value) && value >= 0;
+  if (!whole(flexible.flex)) {
+    throw new RangeError(`A flex weight is zero or more, not ${flexible.flex}.`);
+  }
+  if (!Number.isFinite(flexible.basis) || flexible.basis < 0) {
+    throw new RangeError(`A flex basis is a size in dp, zero or more, not ${flexible.basis}.`);
+  }
+  if (!whole(flexible.shrink)) {
+    throw new RangeError(`A flex shrink is zero or more, not ${flexible.shrink}.`);
   }
 }
 
@@ -1949,15 +1976,25 @@ export class Spacer extends VisualNode {
   /** Spec B14: weight changes animate over Motion.Base (pairs with an animated Flexible). */
   animateChanges = false;
 
-  constructor(flex = 1, config?: { animateChanges?: boolean; key?: string | null }) {
+  constructor(
+    flex = 1,
+    config?: { flex?: number; animateChanges?: boolean; key?: string | null },
+  ) {
     super();
-    this.flex = Math.max(1, flex);
+    this.flex = flex;
     this.fixedLength = 0;
     if (config) Object.assign(this, config);
+    // LAST, after the trailing config the C# initializer becomes, as the C# accessor refuses it:
+    // a weight below 1 used to be raised to 1 here without a word (#691).
+    if (!Number.isInteger(this.flex) || this.flex < 1) {
+      throw new RangeError(`A spacer's weight is 1 or more, not ${this.flex}.`);
+    }
   }
 
   static fixed(length: number): Spacer {
     const spacer = new Spacer();
+    // The rigid form's weight, the one zero a spacer holds, written past the constructor's check
+    // as the C# writes it past the accessor's.
     spacer.flex = 0;
     spacer.fixedLength = length;
     return spacer;

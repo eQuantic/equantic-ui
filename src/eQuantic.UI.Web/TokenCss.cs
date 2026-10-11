@@ -106,6 +106,34 @@ public static class TokenCss
         $"{(fraction * 100).ToString("0.##", CultureInfo.InvariantCulture)}%";
 
     /// <summary>
+    /// A style's font size: px, or <c>clamp(min, Nvw, max)</c> when it follows the window. The TS
+    /// <c>fontSize()</c> twin writes the same string.
+    /// </summary>
+    public static string FontSize(TypeStyle style) => style.Fluid is { } fluid
+        ? $"clamp({Px(fluid.Min)}, {Number(fluid.PercentOfWindow)}vw, {Px(fluid.Max)})"
+        : Px(style.Size);
+
+    /// <summary>
+    /// A style's line height: px, or the style's own ratio unitless when the size follows the window,
+    /// since a line box in px stays put while the glyphs grow. The TS <c>lineHeight()</c> twin.
+    /// </summary>
+    public static string LineHeight(TypeStyle style) => style.Fluid is not null && style.Size > 0
+        ? Ratio(style.LineHeight, style.Size)
+        : Px(style.LineHeight);
+
+    /// <summary>
+    /// A style's letter spacing: px, or <c>em</c> at the style's own ratio when the size follows the
+    /// window, so the tracking tightens with the glyphs. The TS <c>letterSpacing()</c> twin.
+    /// </summary>
+    public static string LetterSpacing(TypeStyle style) => style.Fluid is not null && style.Size > 0
+        ? $"{Ratio(style.Tracking, style.Size)}em"
+        : Px(style.Tracking);
+
+    /// <summary>A ratio divided in DOUBLE, as the TS twin divides, so both print the same digits.</summary>
+    private static string Ratio(float part, float whole) =>
+        ((double)part / whole).ToString("0.####", CultureInfo.InvariantCulture);
+
+    /// <summary>
     /// One edge of a positioned box: a point offset, a fraction of the containing box, or both
     /// added (<c>calc(30% - 16px)</c>); null when neither is set. The TS <c>edge()</c> twin writes
     /// the same string.
@@ -362,10 +390,10 @@ public static class PhotonCssGenerator
         {
             var style = theme.Type(role);
             css.AppendLine($".eq-type-{role.ToString().ToLowerInvariant()} {{");
-            css.AppendLine($"  font-size: {TokenCss.Px(style.Size)};");
-            css.AppendLine($"  line-height: {TokenCss.Px(style.LineHeight)};");
+            css.AppendLine($"  font-size: {TokenCss.FontSize(style)};");
+            css.AppendLine($"  line-height: {TokenCss.LineHeight(style)};");
             css.AppendLine($"  font-weight: {(int)style.Weight};");
-            css.AppendLine($"  letter-spacing: {TokenCss.Px(style.Tracking)};");
+            css.AppendLine($"  letter-spacing: {TokenCss.LetterSpacing(style)};");
             // The face a theme cut this ROLE in, on the class rather than inline on every node. The
             // client's lowering cannot read the theme's type scale — its component context is
             // opaque there — so a role face emitted inline by SSR would vanish on the first

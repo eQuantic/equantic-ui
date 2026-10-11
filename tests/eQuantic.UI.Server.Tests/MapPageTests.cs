@@ -86,4 +86,21 @@ public class MapPageTests
 
         mapping.Should().Throw<ArgumentException>().WithMessage("*NotAPage is not a page*");
     }
+
+    /// <summary>A page declared inside a type that never reaches the browser has no module to load, so
+    /// mapping it fails at startup, where a [Page] of the same shape is left out of the route table
+    /// (found by Copilot's third review of #654).</summary>
+    [Fact]
+    public async Task MappingAPageInsideAServerOnlyType_SaysSoAtStartup()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddUI(o => o.ScanAssembly(typeof(MapPageTests).Assembly));
+        await using var app = builder.Build();
+
+        var mapping = () => app.MapPage<KeptOutPages.ServerVault.Door>("/door");
+
+        mapping.Should().Throw<ArgumentException>()
+            .WithMessage("*declared inside a type that never reaches the browser*");
+    }
 }
+

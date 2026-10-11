@@ -39,10 +39,12 @@ public class GuidTypeStrategy : IExpressionIrStrategy
 
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
-        // `new Guid()` is Guid.Empty, as a struct's parameterless constructor is its zero.
+        // `new Guid()` is Guid.Empty, as a struct's parameterless constructor is its zero. `new
+        // Guid(text)` reads its text as Parse does, by a reader of its own that names the text `g`
+        // where it refuses a null, as the constructor's parameter is named (#569).
         if (node is BaseObjectCreationExpressionSyntax creation)
             return creation.ArgumentList is { Arguments.Count: 1 } list
-                ? Parsed(list.Arguments[0].Expression, context)
+                ? Parsed(list.Arguments[0].Expression, context, Eq.GuidOf)
                 : JsExpr.Literal(Empty);
 
         if (node is MemberAccessExpressionSyntax { Name.Identifier.Text: "Empty" })
@@ -63,7 +65,7 @@ public class GuidTypeStrategy : IExpressionIrStrategy
                 case "NewGuid":
                     return JsExpr.Callish("crypto.randomUUID()");
                 case "Parse" when arguments.Count == 1:
-                    return Parsed(arguments[0].Expression, context);
+                    return Parsed(arguments[0].Expression, context, Eq.GuidParse);
                 case "TryParse" when arguments.Count == 2
                     && arguments.FirstOrDefault(argument => !argument.RefKindKeyword.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.OutKeyword))
                         is { } input
@@ -80,11 +82,12 @@ public class GuidTypeStrategy : IExpressionIrStrategy
         return JsExpr.Opaque(context.Unhandled(node, "Guid"));
     }
 
-    /// <summary>The canonical text of a Guid read from <paramref name="text"/>, or .NET's refusal.</summary>
-    private static JsExpr Parsed(ExpressionSyntax text, ConversionContext context)
+    /// <summary>The canonical text of a Guid read from <paramref name="text"/> by <paramref name="reader"/>,
+    /// or .NET's refusal.</summary>
+    private static JsExpr Parsed(ExpressionSyntax text, ConversionContext context, string reader)
     {
         context.UsedHelpers.Add(Eq.Import);
-        return JsExpr.Call(JsExpr.Identifier(Eq.GuidParse), context.Converter.ConvertIr(text));
+        return JsExpr.Call(JsExpr.Identifier(reader), context.Converter.ConvertIr(text));
     }
 
     public int Priority => 10;

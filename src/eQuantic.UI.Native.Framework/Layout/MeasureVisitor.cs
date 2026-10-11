@@ -82,9 +82,11 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(Grid node, MeasureState s) => MeasureGrid(node, s.Constraints, _ctx, s.Path);
 
     // Spec S6: an AdaptiveNode IS its resolved variant on native — the other variants never measure,
-    // never paint (the web keeps them, CSS-gated).
+    // never paint (the web keeps them, CSS-gated). A line and a grid lay out the arm in its place
+    // (LaidOutChildren); every other parent measures the node through this door, a Stack included,
+    // which reads the arm off the node it measured (PositionedOf).
     public LayoutNode Visit(AdaptiveNode node, MeasureState s) =>
-        Measure(node.Resolve(_ctx.SizeClass), s.Constraints, _ctx, _ctx.ChildPath(s.Path, 0));
+        Measure(_ctx.ArmOf(node), s.Constraints, _ctx, _ctx.ChildPath(s.Path, 0));
 
     // Spec S7: Pinned renders IN FLOW on native until engine scrolling lands (correct at scroll
     // offset 0); the pinning joins the scroll compositor (fence on the node's doc).

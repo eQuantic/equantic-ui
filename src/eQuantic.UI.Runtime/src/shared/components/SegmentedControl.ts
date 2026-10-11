@@ -30,18 +30,18 @@ export class SegmentedControl extends StatelessComponent {
         let inset = 3;
         let trackRadius = Sizing.radius(this.size);
         let row = new Row(0, 'start', 'center', false, null, null, { width: this.stretch ? SizeValue.fill : SizeValue.hug, height: SizeValue.fill, cross: 'stretch' });
-        for (let i = 0; i < this.segments.length; i++) {
+        for (let i = 0; i < $eq.collections.count(this.segments); i++) {
             let index = i;
             let selected = index === this.selectedIndex;
             let label = new Row(0, 'start', 'center', false, null, null, { width: this.stretch ? SizeValue.fill : SizeValue.hug, height: SizeValue.fill, main: 'center', cross: 'center' });
-            label.add(new Text(this.segments[index], 'label', selected ? theme.textPrimary : theme.textSecondary, 1, 'start', false, false, null, 0, { styleOverride: theme.type('label').withSize(Sizing.labelSize(this.size, context.density)), transition: TransitionSpec.of(1, Motion.press) }));
+            label.add(new Text($eq.collections.item(this.segments, index), 'label', selected ? theme.textPrimary : theme.textSecondary, 1, 'start', false, false, null, 0, { styleOverride: theme.type('label').withSize(Sizing.labelSize(this.size, context.density)), transition: TransitionSpec.of(1, Motion.press) }));
             let segment = new Box(new BoxStyle({ width: this.stretch ? SizeValue.fill : SizeValue.hug, height: SizeValue.fill, padding: this.stretch ? undefined : EdgeInsets.symmetric(Sizing.paddingX(this.size, context.density), 0), background: selected ? theme.surface : null, cornerRadius: new CornerRadii(Math.fround(trackRadius - inset)), elevation: selected ? 1 : 0, transition: TransitionSpec.of(1 | 8, Motion.press) }), label);
-            let press = new Pressable(segment, this.disabled || selected ? null : () => this.onChanged?.(index), { disabled: this.disabled, label: this.segments[index], role: 'radio', selected: selected });
+            let press = new Pressable(segment, this.disabled || selected ? null : () => this.onChanged?.(index), { disabled: this.disabled, label: $eq.collections.item(this.segments, index), role: 'radio', selected: selected });
             row.add(this.stretch ? new Flexible(press, 1) : press);
         }
         let track = new Box(new BoxStyle({ width: this.stretch ? SizeValue.fill : SizeValue.hug, height: height, padding: EdgeInsets.all(inset), background: theme.surfaceSubtle, cornerRadius: new CornerRadii(trackRadius), opacity: this.disabled ? theme.disabledOpacity : 1 }), row);
-        if (this.disabled || this.onChanged == null || this.segments.length === 0) return track;
-        let count = this.segments.length;
+        if (this.disabled || this.onChanged == null || $eq.collections.count(this.segments) === 0) return track;
+        let count = $eq.collections.count(this.segments);
         return new Adjustable(track, (direction: number) => this.onChanged!($eq.num.intRem(this.selectedIndex + direction + count, count)), { role: 'radiogroup' });
     }
 }

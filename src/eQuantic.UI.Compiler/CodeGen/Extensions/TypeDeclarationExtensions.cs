@@ -169,22 +169,31 @@ public static class TypeDeclarationExtensions
         // function. The kind is only asked once the mapper has passed, though: `IReadOnlyList<T>` is
         // an interface too, and answering `any` for it threw away every element type in the model.
         var asked = type is NullableTypeSyntax wrapper ? wrapper.ElementType : type;
-        if (((model?.GetSymbolInfo(asked!).Symbol as ITypeSymbol) ?? model?.GetTypeInfo(asked!).Type) is { } resolved
-            && TypeScriptEmitter.CSharpTypeToTypeScript(name) == name)
+        var resolved = (model?.GetSymbolInfo(asked!).Symbol as ITypeSymbol) ?? model?.GetTypeInfo(asked!).Type;
+        // `Icons?` is a Nullable<Icons> STRUCT — asking it whether it is an enum answers no, and the
+        // member came out annotated `Icons | null`, a type nothing declares.
+        var core = resolved is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
+            ? nullable.TypeArguments[0]
+            : resolved;
+        // Against the NORMALISED spelling, as the class emitter asks: the mapper drops a
+        // qualification, so `Outer.Inner` read as translated and never reached the nested arm.
+        if (core is not null
+            && TypeScriptEmitter.CSharpTypeToTypeScript(name) == TypeScriptEmitter.NormalizeQualification(name))
         {
-            // `Icons?` is a Nullable<Icons> STRUCT — asking it whether it is an enum answers no,
-            // and the member came out annotated `Icons | null`, a type nothing declares.
-            var core = resolved is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
-                ? nullable.TypeArguments[0]
-                : resolved;
             if (TsStandIn.For(core) is { } standIn)
                 return type is NullableTypeSyntax && standIn != "any" ? TypeScriptEmitter.OrNull(standIn) : standIn;
+            // A nested type is its twin, named by its owner (#584).
+            if (core is INamedTypeSymbol nested && nested.NestedTwinName() is { } twin)
+                return type is NullableTypeSyntax ? TypeScriptEmitter.OrNull(twin) : twin;
         }
 
         // ONE mapper for the whole emission. This used to keep its own short list and answer `any`
         // to everything else, so a record member typed `IReadOnlyList<(char, char)>` arrived as
         // `any` and every lambda over it lost its parameter types with it.
         var ts = TypeScriptEmitter.CSharpTypeToTypeScript(name);
+        // ...and a nested type inside an array or a generic is its twin too (#584).
+        if (core is IArrayTypeSymbol or INamedTypeSymbol { TypeArguments.Length: > 0 })
+            ts = TypeScriptEmitter.NestedTwinsInside(ts, core);
         // With no model to ask, a NAME could be an enum (a string at runtime), an interface (no
         // emitted twin), or a class — and annotating the wrong one is a type nothing declares.
         // Only what is unambiguous survives; the rest stays open, as it always did.

@@ -61,6 +61,18 @@ function requireAtLeastZero(parameter: string, value: number): void {
   }
 }
 
+// ---- a list's capacity --------------------------------------------------------------------------
+
+/**
+ * `new List<T>(capacity)`: an array sizes nothing ahead, but .NET's constructor refuses a negative
+ * capacity, and the compiler hands it here before the list's elements are evaluated, as C# evaluates
+ * the constructor's argument first. The capacity was dropped unread, so a call that made it never ran
+ * and a negative one built a list.
+ */
+export function listCapacity(capacity: number): void {
+  if (capacity < 0) throw outOfRange('capacity', NON_NEGATIVE);
+}
+
 // ---- the comparers a sort or a search is handed --------------------------------------------------
 
 const orders = new Map<string, SortOrder<unknown>>();

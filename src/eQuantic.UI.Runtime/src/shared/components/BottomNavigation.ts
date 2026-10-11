@@ -9,7 +9,7 @@ export class BottomNavigation extends StatelessComponent {
     }
 
     set items(value) {
-        this.$items = (value.length < 3 || value.length > 5) ? $eq.exceptions.raise($eq.exceptions.create(['System.ArgumentException', 'System.SystemException', 'System.Exception'], 'BottomNavigation takes 3-5 destinations (spec B4): 2 → Tabs, 6+ → Drawer.', { paramName: 'Items' })) : value;
+        this.$items = (($v1760) => ($v1760 < 3 || $v1760 > 5))($eq.collections.count(value)) ? $eq.exceptions.raise($eq.exceptions.create(['System.ArgumentException', 'System.SystemException', 'System.Exception'], 'BottomNavigation takes 3-5 destinations (spec B4): 2 → Tabs, 6+ → Drawer.', { paramName: 'Items' })) : value;
     }
 
     declare selected: number;
@@ -31,8 +31,8 @@ export class BottomNavigation extends StatelessComponent {
         let theme = context.theme;
         let primary = theme.colors('primary');
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill });
-        for (let i = 0; i < this.items.length; i++) {
-            let item = this.items[i];
+        for (let i = 0; i < $eq.collections.count(this.items); i++) {
+            let item = $eq.collections.item(this.items, i);
             let isActive = i === this.selected;
             let index = i;
             let filled: any; 

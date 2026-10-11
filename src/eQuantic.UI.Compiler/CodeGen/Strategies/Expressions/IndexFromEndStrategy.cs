@@ -13,7 +13,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// An indexer a twin carries is not here: <c>ring[^1]</c> over a type that counts its elements is its
 /// <c>item</c> at the count the bound tree names (<see cref="Place"/>), and a type that declares
 /// <c>this[Index]</c> takes the index itself. This read <c>ring.length</c>, which no twin has, and
-/// wrote the bare index into <c>setItem</c>.
+/// wrote the bare index into <c>setItem</c>. Nor is a list face's (<c>IReadOnlyList&lt;T&gt;</c>,
+/// <c>IList&lt;T&gt;</c>), which counts and reads whichever list it holds through the runtime (#586).
 /// </para>
 /// <para>
 /// A <c>^n</c> that is no array's, list's or string's index is a System.Index VALUE (<c>Index i =
@@ -34,7 +35,7 @@ public class IndexFromEndStrategy : IConversionStrategy
 
         // Handle element access with ^n index: array[^1]. A dictionary keyed by Index is not one:
         // `d[^1]` looks the key up (DictionaryEntry), where this counted back from a length a map
-        // does not have. Nor is an indexer a twin carries.
+        // does not have. Nor is an indexer a twin carries, or a list face's.
         if (node is ElementAccessExpressionSyntax elementAccess
             && DictionaryEntry.Of(elementAccess, context) is null
             && Indexer.LoweredAt(elementAccess, context) is null)

@@ -9,7 +9,7 @@ export class NavigationRail extends StatelessComponent {
     }
 
     set items(value) {
-        this.$items = (value.length < 3 || value.length > 7) ? $eq.exceptions.raise($eq.exceptions.create(['System.ArgumentException', 'System.SystemException', 'System.Exception'], 'NavigationRail takes 3-7 destinations (spec B4): 2 → Tabs, 8+ → Drawer.', { paramName: 'Items' })) : value;
+        this.$items = (($v2470) => ($v2470 < 3 || $v2470 > 7))($eq.collections.count(value)) ? $eq.exceptions.raise($eq.exceptions.create(['System.ArgumentException', 'System.SystemException', 'System.Exception'], 'NavigationRail takes 3-7 destinations (spec B4): 2 → Tabs, 8+ → Drawer.', { paramName: 'Items' })) : value;
     }
 
     declare selected: number;
@@ -34,8 +34,8 @@ export class NavigationRail extends StatelessComponent {
         let theme = context.theme;
         let primary = theme.colors('primary');
         let destinations = new Column(8, 'start', 'stretch', false, null, null, { width: SizeValue.fill, cross: 'center' });
-        for (let i = 0; i < this.items.length; i++) {
-            let item = this.items[i];
+        for (let i = 0; i < $eq.collections.count(this.items); i++) {
+            let item = $eq.collections.item(this.items, i);
             let isActive = i === this.selected;
             let index = i;
             let filled: any; 

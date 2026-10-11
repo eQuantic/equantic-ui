@@ -6,7 +6,7 @@
  * markup. The wire shape mirrors the generated `photonTheme`; the round-trip is pinned in vitest.
  */
 
-import { ColorToken, TypeStyle, VariantColors, codeTokenColor } from './value-types';
+import { ColorToken, FluidSize, TypeStyle, VariantColors, codeTokenColor } from './value-types';
 import type { AppTheme, ShadowSpec } from './value-types';
 import type { ColorValue } from './nodes';
 import { DataPalette, DivergingScale, StatusScale } from './data-palette';
@@ -23,7 +23,17 @@ export interface ThemeData {
    *  carries any of them — the tail rides only when it says something. */
   type: Record<
     string,
-    readonly [number, number, string, number, number, boolean?, boolean?, string?]
+    readonly [
+      number,
+      number,
+      string,
+      number,
+      number,
+      boolean?,
+      boolean?,
+      (string | null)?,
+      (readonly [number, number, number])?,
+    ]
   >;
   /** The theme's code face, present only when it names one — same rule as the type tail. */
   monoFamily?: string;
@@ -70,8 +80,8 @@ export function materializeTheme(data: ThemeData): AppTheme {
     // unnamed sends five values, which is every theme shipped with the SDK. Reading it with
     // defaults is what lets a branded theme keep its face through hydration; without this the
     // server rendered the brand and the client re-rendered the system font.
-    const [size, lineHeight, weight, tracking, maxScale, mono, italic, family] = data.type[key];
-    typeScale[key] = new TypeStyle(
+    const [size, lineHeight, weight, tracking, maxScale, mono, italic, family, fluid] = data.type[key];
+    const style = new TypeStyle(
       size,
       lineHeight,
       weight,
@@ -79,8 +89,10 @@ export function materializeTheme(data: ThemeData): AppTheme {
       maxScale,
       mono ?? false,
       italic ?? false,
-      family,
+      family ?? undefined,
     );
+    // A role whose size follows the window (C# ThemeBridge): the clamp rides last.
+    typeScale[key] = fluid ? Object.assign(style, { fluid: new FluidSize(fluid[0], fluid[1], fluid[2]) }) : style;
   }
 
   const elevations: ShadowSpec[] = data.elevations.map(([offsetY, blur, spread, c]) => ({

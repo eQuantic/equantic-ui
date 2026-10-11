@@ -142,6 +142,28 @@ internal static class HostOnlySymbolExtensions
     private static bool Report(INamedTypeSymbol declaring, SyntaxNode node, ConversionContext context) =>
         Report(declaring, member: null, node, context);
 
+    /// <summary>
+    /// A NESTED type of this compilation the build writes no twin for, named from client code (#584):
+    /// one marked [ServerOnly], or declared inside a type that never crosses (one marked [ServerOnly],
+    /// an exception, an attribute). Its owner has no module, so it has none, and the reference named
+    /// `Vault$Key`, a twin nothing wrote, which the page met at load.
+    /// </summary>
+    internal static bool ReportIfKeptOut(this INamedTypeSymbol type, SyntaxNode node, ConversionContext context)
+    {
+        if (type.ContainingType is null || !type.Locations.Any(location => location.IsInSource)) return false;
+        if (!Services.PlainClassModule.OwnerKeptOut(type) && !Services.PlainClassModule.ServerOnlyAlongChain(type)) return false;
+        context.Report(node, ConversionSeverity.Error, "EQ2010", KeptOutMessage(type.ToDisplayString()));
+        context.RefusedTwins.Add(type.TwinReference());
+        return true;
+    }
+
+    /// <summary>What EQ2010 says of a nested type the build writes no twin for (#584): where a fence
+    /// names it, and where a module's import net does.</summary>
+    internal static string KeptOutMessage(string named) =>
+        $"'{named}' never reaches the browser: it, or a type it is declared in, is [ServerOnly], "
+        + "an exception or an attribute, which the build writes no module for, so it has none either. "
+        + "Use it from server code — a [ServerAction] or a [ServerOnly] class — never from a component's Build.";
+
     private static bool Report(
         INamedTypeSymbol declaring, string? member, SyntaxNode node, ConversionContext context)
     {

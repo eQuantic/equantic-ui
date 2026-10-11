@@ -256,12 +256,17 @@ public class InvocationStrategy : IExpressionIrStrategy
             if (symbol.AsQualified(invocation, context) is { } qualified) return qualified;
             if (symbol.ReportIfPlatformReachedBare(invocation, context))
                 return JsExpr.Literal("undefined");
+            // A nested type whose owner never crosses has no twin to call (EQ2010).
+            if (declaring.ReportIfKeptOut(invocation, context)) return JsExpr.Literal("undefined");
             var declaringNamespace = declaring.ContainingNamespace?.ToDisplayString() ?? string.Empty;
+            // One name for the import and the call (#584): a nested type's twin, or the name a top-level
+            // type and a hand-written runtime twin keep.
             if (RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(declaringNamespace))
-                context.UsedRuntimeTypes.Add(declaring.Name);
+                context.UsedRuntimeTypes.Add(declaring.TwinReference());
             else
-                context.UsedAppTypes.Add(declaring.Name);
-            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(declaring.Name), TwinMethodName.Of(symbol, methodName)), argIrs);
+                context.UsedAppTypes.Add(declaring.TwinReference());
+            // By the name the bound method holds on its twin (#563).
+            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(declaring.TwinReference()), TwinMethodName.Of(symbol, methodName)), argIrs);
         }
 
         // STANDALONE factory calls (no semantic model — the playground's mode): nothing can RESOLVE
