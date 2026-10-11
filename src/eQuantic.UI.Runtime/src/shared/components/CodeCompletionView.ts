@@ -45,7 +45,7 @@ export class CodeCompletionView {
         let room = Math.max(1, Math.fround(width - Math.fround(2 * Math.fround(CodeCompletionView.border + 8))));
         let style = CodeCompletionView.documentationStyle(metrics);
         let lines = 0;
-        for (const paragraph of CodeCompletionView.shown(documentation).split('\n')) {
+        for (const paragraph of $eq.text.split(CodeCompletionView.shown(documentation), '\n')) {
             lines += Math.max(1, (Math.trunc(Math.ceil(Math.fround(context.measureText(paragraph, style) / room))) | 0));
             if (lines >= CodeCompletionView.documentationLines) return CodeCompletionView.documentationLines;
         }

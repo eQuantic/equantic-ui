@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasNonWhiteSpace, isWhiteSpace, splitOnWhiteSpace, trim, trimEnd, trimStart } from './white-space';
+import { hasNonWhiteSpace, isWhiteSpace, trim, trimEnd, trimStart } from './white-space';
 
 /** .NET's white space, the list `char.IsWhiteSpace` answers true for (see white-space.ts). */
 const DOTNET = [
@@ -26,12 +26,6 @@ describe('white space is .NET\'s', () => {
     expect(trimEnd(text)).toBe(text);
     expect(trim(text)).toBe('a \ufeff');
     expect(trim(' \t\u3000x\u2028 ')).toBe('x');
-  });
-
-  it('splits on every white character, keeping the empty entries between two', () => {
-    expect(splitOnWhiteSpace('a  b\u0085c')).toEqual(['a', '', 'b', 'c']);
-    expect(splitOnWhiteSpace('a\ufeffb'), 'the byte order mark is no separator').toEqual(['a\ufeffb']);
-    expect(splitOnWhiteSpace('')).toEqual(['']);
   });
 
   it('reads null, empty and white as holding nothing', () => {

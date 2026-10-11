@@ -39,7 +39,7 @@ export class MermaidParser {
 
     static parse(source: string) {
         if (!source) return null;
-        let lines = $eq.text.replace(source, '\r\n', '\n', 'ordinal').split('\n');
+        let lines = $eq.text.split($eq.text.replace(source, '\r\n', '\n', 'ordinal'), '\n');
         let graph = MermaidParser.headerOf(lines);
         if (graph == null) return null;
         for (let i = 0; i < lines.length; i++) {

@@ -2365,6 +2365,24 @@ record of a release, the wiki's Upgrading page is the distillate.
   runs the loop against a stub on every pull request, with nine controls that each break it one way
   and must fail the case that guards it. Proposed and archived
   through OpenSpec (`openspec/specs/release-publishing`).
+- **2026-10-11 · A string splits, and searches from a start, as .NET does**: two gaps #715's measurement
+  found and one #748's review did. `string.Split` was JavaScript's `split` of its first argument: an
+  array of separators was one text joined by commas, an empty one cut the text into its characters, the
+  count was dropped, `TrimEntries` ignored, and `RemoveEmptyEntries` read from its spelling, so options
+  in a variable were lost ([#753](https://github.com/eQuantic/equantic-ui/issues/753)). It is two twins
+  of .NET 10's `SplitInternal` now, `$eq.text.split` for one separator and `$eq.text.splitAny` for a set
+  (white space where it is null or empty, `Split()` included, so `splitOnWhiteSpace` goes), handed the
+  bound overload's count and options by parameter. `IndexOf` and `LastIndexOf` of a string from a start,
+  and for a count, were JavaScript's, which take no count and read `lastIndexOf`'s start as where a match
+  may begin ([#724](https://github.com/eQuantic/equantic-ui/issues/724)); they are the runtime's ordinal
+  searches now, their range and a null value refused as .NET refuses them. A float, a double and an enum
+  a `StringBuilder` is handed already printed as .NET prints them since #637, and are pinned now
+  ([#750](https://github.com/eQuantic/equantic-ui/issues/750)). 55 of the 73 new split and search
+  conformance cases fail at 18509220, and the builder's 10 pass there; 10 entries leave the
+  null-argument baseline. The served runtime grows about 680 gzipped bytes. Found on the way: a float
+  or an enum boxed into `object` prints as the browser holds it
+  ([#768](https://github.com/eQuantic/equantic-ui/issues/768)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
 
 ## Retired documents
 
