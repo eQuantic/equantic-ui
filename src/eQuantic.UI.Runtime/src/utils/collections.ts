@@ -4,7 +4,9 @@
  * returns items top-first (LIFO order), while `Queue.ToArray()` returns them front-first.
  *
  * The transpiler emits `$eq.collections.queue(...)` / `$eq.collections.stack(...)` for
- * `new Queue<T>(...)` / `new Stack<T>(...)` and maps the instance methods to camelCase.
+ * `new Queue<T>(...)` / `new Stack<T>(...)` and maps the instance methods to camelCase. The factories
+ * are the constructors' twins, with their refusals (#726); the classes' own constructors are what the
+ * hydration builds with, from an array it already holds.
  */
 
 import { Dictionary as RuntimeDictionary } from './dictionary';
@@ -15,6 +17,66 @@ import { sameBy, sameItem, type KeyEquality } from './key-equality';
 import { SortedMap } from './sorted';
 
 export { pairComparer, sameItem } from './key-equality';
+
+/** `ArgumentNullException`'s words for a parameter. */
+function argumentNull(parameter: string): Error {
+  return exception('System.ArgumentNullException', `Value cannot be null. (Parameter '${parameter}')`);
+}
+
+/** `ArgumentOutOfRangeException.ThrowIfNegative`'s words. */
+function negative(parameter: string, value: number): Error {
+  return exception(
+    'System.ArgumentOutOfRangeException',
+    `${parameter} ('${value}') must be a non-negative value. (Parameter '${parameter}')\nActual value was ${value}.`,
+  );
+}
+
+const INDEX_LESS_OR_EQUAL =
+  'Index was out of range. Must be non-negative and less than or equal to the size of the collection.';
+const INVALID_OFF_LEN =
+  'Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.';
+
+/**
+ * `Queue<T>.CopyTo` and `Stack<T>.CopyTo`: `items`, in the order the collection enumerates, written into
+ * `array` from `arrayIndex`, after .NET's checks in .NET's order. A queue names no actual value when it
+ * refuses the index, and a stack names it, as each does on .NET 10 (measured).
+ */
+function copyInto<T>(items: readonly T[], array: T[] | null, arrayIndex: number, namesTheValue: boolean): void {
+  if (array == null) throw argumentNull('array');
+  if (arrayIndex < 0 || arrayIndex > array.length) {
+    const actual = namesTheValue ? `\nActual value was ${arrayIndex}.` : '';
+    throw exception(
+      'System.ArgumentOutOfRangeException',
+      `${INDEX_LESS_OR_EQUAL} (Parameter 'arrayIndex')${actual}`,
+    );
+  }
+  if (array.length - arrayIndex < items.length) throw exception('System.ArgumentException', INVALID_OFF_LEN);
+  items.forEach((item, at) => (array[arrayIndex + at] = item));
+}
+
+/** A sequence as C# enumerates it: a string by its chars (UTF-16 code units), anything else as it is. */
+function elements<T>(source: Iterable<T> | string): Iterable<T> {
+  return typeof source === 'string' ? (source.split('') as unknown as T[]) : source;
+}
+
+/**
+ * The elements a constructor's argument hands it: none for no argument and for a capacity, which a
+ * negative value is refused as, and a collection's own, a null one refused by its parameter's name,
+ * as `Queue<T>`, `Stack<T>` and `LinkedList<T>` refuse it (#726). They read a null as no collection.
+ */
+function constructorElements<T>(
+  argument: [] | [Iterable<T> | string | number | null | undefined],
+  takesACapacity: boolean,
+): T[] {
+  if (argument.length === 0) return [];
+  const [source] = argument;
+  if (typeof source === 'number' && takesACapacity) {
+    if (source < 0) throw negative('capacity', source);
+    return [];
+  }
+  if (source == null) throw argumentNull('collection');
+  return Array.from(elements(source as Iterable<T> | string));
+}
 
 export class Queue<T> {
   private readonly items: T[];
@@ -53,6 +115,11 @@ export class Queue<T> {
   /** Front-to-back order (FIFO), matching .NET. */
   toArray(): T[] {
     return this.items.slice();
+  }
+
+  /** `CopyTo(array, arrayIndex)`: front to back, from `arrayIndex`. */
+  copyTo(array: T[] | null, arrayIndex: number): void {
+    copyInto(this.items, array, arrayIndex, false);
   }
 
   /** Enumerates front to back, as .NET's does, for a `foreach` and LINQ alike. */
@@ -109,6 +176,11 @@ export class Stack<T> {
     return this.items.slice().reverse();
   }
 
+  /** `CopyTo(array, arrayIndex)`: from the top, from `arrayIndex`, as the stack enumerates. */
+  copyTo(array: T[] | null, arrayIndex: number): void {
+    copyInto(this.toArray(), array, arrayIndex, true);
+  }
+
   /** Enumerates from the top, as .NET's does, for a `foreach` and LINQ alike. */
   [Symbol.iterator](): Iterator<T> {
     return this.items.slice().reverse()[Symbol.iterator]();
@@ -120,12 +192,14 @@ export class Stack<T> {
   }
 }
 
-export function queue<T>(initial?: Iterable<T>): Queue<T> {
-  return new Queue<T>(initial);
+/** `new Queue<T>()`, `new Queue<T>(capacity)` and `new Queue<T>(collection)`. */
+export function queue<T>(...argument: [] | [Iterable<T> | string | number | null]): Queue<T> {
+  return new Queue<T>(constructorElements(argument, true));
 }
 
-export function stack<T>(initial?: Iterable<T>): Stack<T> {
-  return new Stack<T>(initial);
+/** `new Stack<T>()`, `new Stack<T>(capacity)` and `new Stack<T>(collection)`. */
+export function stack<T>(...argument: [] | [Iterable<T> | string | number | null]): Stack<T> {
+  return new Stack<T>(constructorElements(argument, true));
 }
 
 /**
@@ -258,8 +332,9 @@ export class LinkedList<T> implements Iterable<T> {
   }
 }
 
-export function linkedList<T>(initial?: Iterable<T>): LinkedList<T> {
-  return new LinkedList<T>(initial);
+/** `new LinkedList<T>()` and `new LinkedList<T>(collection)`. */
+export function linkedList<T>(...argument: [] | [Iterable<T> | string | null]): LinkedList<T> {
+  return new LinkedList<T>(constructorElements(argument, false));
 }
 
 /**

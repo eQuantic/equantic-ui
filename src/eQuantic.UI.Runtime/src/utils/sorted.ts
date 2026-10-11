@@ -24,6 +24,25 @@ import {
 import { comparerOf, type Ordering } from './ordering';
 import { identityHash } from './hash';
 import { exception } from './exceptions';
+import { introSort } from './sort';
+
+/** `ArgumentNullException`'s words for a parameter. */
+function argumentNull(parameter: string): Error {
+  return exception('System.ArgumentNullException', `Value cannot be null. (Parameter '${parameter}')`);
+}
+
+/** `ArgumentOutOfRangeException.ThrowIfNegative`'s words. */
+function negative(parameter: string, value: number): Error {
+  return exception(
+    'System.ArgumentOutOfRangeException',
+    `${parameter} ('${value}') must be a non-negative value. (Parameter '${parameter}')\nActual value was ${value}.`,
+  );
+}
+
+/** A sequence as C# enumerates it: a string by its chars (UTF-16 code units), anything else as it is. */
+function elements<T>(source: Iterable<T> | string): Iterable<T> {
+  return typeof source === 'string' ? (source.split('') as unknown as T[]) : source;
+}
 
 /** The order of a collection built with no ordering named: numeric for numbers/bigint, relational otherwise. */
 export function defaultCompare<T>(a: T, b: T): number {
@@ -37,6 +56,18 @@ export function defaultCompare<T>(a: T, b: T): number {
 /**
  * `SortedSet<T>` — a set whose enumeration is in sorted order. Backed by an array kept sorted and unique
  * (binary search for membership/insertion). `Add` returns false when the value is already present.
+ *
+ * Its set operations, its questions and `CopyTo` are .NET's, refusals included (#723). Of two elements
+ * its order finds equal, a union and an intersection keep the instance .NET keeps, which a decimal
+ * shows (`1.0m` and `1.00m`): where .NET merges two sets of one comparer, the other set's; where it
+ * adds the other's elements one by one, the first added. Two sets have one comparer here when they
+ * compare with the same function, which two sets of one element type do ({@link comparerOf} answers
+ * one function per {@link Ordering}), an enum's aside, whose names are equal only when identical, so
+ * either path keeps the same elements.
+ *
+ * `RemoveWhere` asks its predicate in this set's order, where .NET walks its red-black tree breadth
+ * first (#766): a predicate with no effect of its own answers the same, and nothing else here sees
+ * the tree's shape.
  */
 export class SortedSet<T> implements Iterable<T> {
   private readonly items: T[] = [];
@@ -107,6 +138,236 @@ export class SortedSet<T> implements Iterable<T> {
     return this.items.slice();
   }
 
+  /** `CopyTo(array)`, `CopyTo(array, index)` and `CopyTo(array, index, count)`: in order, from `index`,
+   *  at most `count` of them, after .NET's checks in .NET's order. */
+  copyTo(array: T[] | null, index = 0, count: number = this.items.length): void {
+    if (array == null) throw argumentNull('array');
+    if (index < 0) throw negative('index', index);
+    if (count < 0) throw negative('count', count);
+    if (count > array.length - index) {
+      throw exception(
+        'System.ArgumentException',
+        'Destination array is not long enough to copy all the items in the collection. Check array index and length.',
+      );
+    }
+    for (const item of this.items.slice(0, count)) array[index++] = item;
+  }
+
+  /** Whether `other` is a sorted set this one shares its comparer with: .NET's `HasEqualComparer`. */
+  private sharesOrder(other: unknown): other is SortedSet<T> {
+    return other instanceof SortedSet && other.compare === this.compare;
+  }
+
+  /** The elements, replaced by `items`, which are in this set's order already. */
+  private replace(items: T[]): void {
+    this.items.splice(0, this.items.length, ...items);
+  }
+
+  /**
+   * `UnionWith`. An empty set takes a sorted set's elements; a set of the same comparer no more than
+   * twice this one's size is merged in, its element kept of two equal ones; anything else is added
+   * element by element, which keeps this set's.
+   */
+  unionWith(other: Iterable<T> | string): void {
+    if (other == null) throw argumentNull('other');
+    if (other instanceof SortedSet && this.items.length === 0) {
+      for (const value of (other as SortedSet<T>).items) this.add(value);
+      return;
+    }
+    if (this.sharesOrder(other) && other.items.length > Math.trunc(this.items.length / 2)) {
+      const mine = this.items;
+      const theirs = other.items;
+      const merged: T[] = [];
+      let i = 0;
+      let j = 0;
+      while (i < mine.length && j < theirs.length) {
+        const order = this.compare(mine[i], theirs[j]);
+        if (order < 0) merged.push(mine[i++]);
+        else if (order === 0) {
+          merged.push(theirs[j++]);
+          i++;
+        } else merged.push(theirs[j++]);
+      }
+      this.replace([...merged, ...mine.slice(i), ...theirs.slice(j)]);
+      return;
+    }
+    for (const value of elements(other)) this.add(value);
+  }
+
+  /**
+   * `IntersectWith`. A set of the same comparer is merged, its element kept of two equal ones; any
+   * other sequence is walked, what this set holds of it saved, and the set rebuilt from what was
+   * saved, the other's elements again.
+   */
+  intersectWith(other: Iterable<T> | string): void {
+    if (other == null) throw argumentNull('other');
+    if (this.items.length === 0 || other === this) return;
+    if (this.sharesOrder(other)) {
+      const mine = this.items;
+      const theirs = other.items;
+      const max = mine[mine.length - 1];
+      const merged: T[] = [];
+      let i = 0;
+      let j = 0;
+      while (i < mine.length && j < theirs.length && this.compare(theirs[j], max) <= 0) {
+        const order = this.compare(mine[i], theirs[j]);
+        if (order < 0) i++;
+        else if (order === 0) {
+          merged.push(theirs[j++]);
+          i++;
+        } else j++;
+      }
+      this.replace(merged);
+      return;
+    }
+    const saved: T[] = [];
+    for (const value of elements(other)) if (this.contains(value)) saved.push(value);
+    this.clear();
+    for (const value of saved) this.add(value);
+  }
+
+  /** `ExceptWith`: each element of `other` removed; a set of the same comparer only where its range
+   *  meets this one's, and only up to this one's largest. */
+  exceptWith(other: Iterable<T> | string): void {
+    if (other == null) throw argumentNull('other');
+    if (this.items.length === 0) return;
+    if (other === this) {
+      this.clear();
+      return;
+    }
+    if (this.sharesOrder(other)) {
+      const min = this.items[0];
+      const max = this.items[this.items.length - 1];
+      if (other.items.length === 0 || this.compare(other.items[other.items.length - 1], min) < 0) return;
+      if (this.compare(other.items[0], max) > 0) return;
+      for (const value of other.items.slice()) {
+        if (this.compare(value, min) < 0) continue;
+        if (this.compare(value, max) > 0) break;
+        this.remove(value);
+      }
+      return;
+    }
+    for (const value of elements(other)) this.remove(value);
+  }
+
+  /**
+   * `SymmetricExceptWith`: each distinct element of `other` toggled. Any sequence but a sorted set of
+   * the same comparer is copied and sorted by this set's comparer first, as .NET's `Array.Sort` sorts
+   * it, and the first of each run of equal elements is the one toggled.
+   */
+  symmetricExceptWith(other: Iterable<T> | string): void {
+    if (other == null) throw argumentNull('other');
+    if (this.items.length === 0) {
+      this.unionWith(other);
+      return;
+    }
+    if (other === this) {
+      this.clear();
+      return;
+    }
+    if (this.sharesOrder(other)) {
+      for (const value of other.items.slice()) if (!this.remove(value)) this.add(value);
+      return;
+    }
+    const sorted = Array.from(elements(other));
+    introSort(sorted, 0, sorted.length, { compare: this.compare, kind: 'comparer', name: '' });
+    sorted.forEach((value, at) => {
+      if (at > 0 && this.compare(value, sorted[at - 1]) === 0) return;
+      if (!this.remove(value)) this.add(value);
+    });
+  }
+
+  /** Whether every element of this set is in `other`, a set of the same comparer. */
+  private within(other: SortedSet<T>): boolean {
+    return this.items.every((value) => other.contains(value));
+  }
+
+  /**
+   * How many distinct elements of this set `other` holds, and how many of its own it holds that this
+   * one does not, walking it to its end or, when `stopAtUnfound`, to its first such element: .NET's
+   * `CheckUniqueAndUnfoundElements`. An empty set reads at most one element of `other`.
+   */
+  private uniqueAndUnfound(other: Iterable<T> | string, stopAtUnfound: boolean): [number, number] {
+    if (this.items.length === 0) {
+      for (const _ of elements(other)) return [0, 1];
+      return [0, 0];
+    }
+    const found = new Set<number>();
+    let unfound = 0;
+    for (const value of elements(other)) {
+      const at = this.indexOf(value);
+      if (at >= 0) found.add(at);
+      else {
+        unfound++;
+        if (stopAtUnfound) break;
+      }
+    }
+    return [found.size, unfound];
+  }
+
+  /** `IsSubsetOf`. */
+  isSubsetOf(other: Iterable<T> | string): boolean {
+    if (other == null) throw argumentNull('other');
+    if (this.items.length === 0) return true;
+    if (this.sharesOrder(other)) return this.items.length <= other.items.length && this.within(other);
+    const [unique] = this.uniqueAndUnfound(other, false);
+    return unique === this.items.length;
+  }
+
+  /** `IsProperSubsetOf`. */
+  isProperSubsetOf(other: Iterable<T> | string): boolean {
+    if (other == null) throw argumentNull('other');
+    if (this.sharesOrder(other)) return this.items.length < other.items.length && this.within(other);
+    const [unique, unfound] = this.uniqueAndUnfound(other, false);
+    return unique === this.items.length && unfound > 0;
+  }
+
+  /** `IsSupersetOf`. */
+  isSupersetOf(other: Iterable<T> | string): boolean {
+    if (other == null) throw argumentNull('other');
+    if (this.sharesOrder(other) && this.items.length >= other.items.length) return other.within(this);
+    for (const value of elements(other)) if (!this.contains(value)) return false;
+    return true;
+  }
+
+  /** `IsProperSupersetOf`. */
+  isProperSupersetOf(other: Iterable<T> | string): boolean {
+    if (other == null) throw argumentNull('other');
+    if (this.items.length === 0) return false;
+    if (this.sharesOrder(other)) return other.items.length < this.items.length && other.within(this);
+    const [unique, unfound] = this.uniqueAndUnfound(other, true);
+    return unique < this.items.length && unfound === 0;
+  }
+
+  /** `Overlaps`. */
+  overlaps(other: Iterable<T> | string): boolean {
+    if (other == null) throw argumentNull('other');
+    if (this.items.length === 0) return false;
+    for (const value of elements(other)) if (this.contains(value)) return true;
+    return false;
+  }
+
+  /** `SetEquals`. */
+  setEquals(other: Iterable<T> | string): boolean {
+    if (other == null) throw argumentNull('other');
+    if (this.sharesOrder(other)) {
+      const theirs = other.items;
+      return this.items.length === theirs.length && this.items.every((value, at) => this.compare(value, theirs[at]) === 0);
+    }
+    const [unique, unfound] = this.uniqueAndUnfound(other, true);
+    return unique === this.items.length && unfound === 0;
+  }
+
+  /** `RemoveWhere`: the predicate asked of every element first, then each it matched removed; answers
+   *  how many were. A predicate that throws removes nothing. */
+  removeWhere(match: ((value: T) => boolean) | null): number {
+    if (match == null) throw argumentNull('match');
+    const matched = this.items.filter((value) => match(value));
+    let removed = 0;
+    for (let at = matched.length - 1; at >= 0; at--) if (this.remove(matched[at])) removed++;
+    return removed;
+  }
+
   /** The array System.Text.Json writes for a sorted set, in its order: with no `toJSON` it was
    * written as the class's fields (#597). */
   toJSON(): T[] {
@@ -114,11 +375,19 @@ export class SortedSet<T> implements Iterable<T> {
   }
 }
 
+/**
+ * `new SortedSet<T>(…)`: the elements it copies, in the order `compare` says. Where the construction
+ * wrote a collection, the compiler names the parameter it binds to (`collection`), and a null one is
+ * refused by that name, as .NET refuses it (#726); with no name, a null is no collection, which is how
+ * the compiler writes a construction that copies none beside a comparer.
+ */
 export function sortedSet<T>(
-  initial?: Iterable<T> | null,
+  initial?: Iterable<T> | string | null,
   compare?: ((a: T, b: T) => number) | Ordering,
+  collection?: string,
 ): SortedSet<T> {
-  return new SortedSet<T>(initial ?? undefined, orderOf(compare));
+  if (collection !== undefined && initial == null) throw argumentNull(collection);
+  return new SortedSet<T>(initial == null ? undefined : elements(initial), orderOf(compare));
 }
 
 /** The comparer a factory was handed: a function as it is, an {@link Ordering} by its comparer. */
@@ -268,10 +537,17 @@ export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
   }
 }
 
+/**
+ * `new SortedDictionary<K, V>(…)`: the pairs it copies, in the order `compare` says. A null dictionary
+ * is refused by the parameter the compiler names (`dictionary`), as {@link sortedSet} refuses its
+ * collection (#726).
+ */
 export function sortedDictionary<K, V>(
   initial?: Iterable<readonly [K, V]> | null,
   compare?: ((a: K, b: K) => number) | Ordering,
+  dictionary?: string,
 ): SortedMap<K, V> {
+  if (dictionary !== undefined && initial == null) throw argumentNull(dictionary);
   return new SortedMap<K, V>(initial ?? undefined, orderOf(compare));
 }
 
@@ -279,6 +555,8 @@ export function sortedDictionary<K, V>(
 export function sortedList<K, V>(
   initial?: Iterable<readonly [K, V]> | null,
   compare?: ((a: K, b: K) => number) | Ordering,
+  dictionary?: string,
 ): SortedMap<K, V> {
+  if (dictionary !== undefined && initial == null) throw argumentNull(dictionary);
   return new SortedMap<K, V>(initial ?? undefined, orderOf(compare), 'list');
 }

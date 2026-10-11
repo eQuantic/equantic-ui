@@ -89,7 +89,9 @@ public class QueueStackStrategy : ConversionStrategyBase
     /// its element type's (<see cref="ValueOrdering"/>) unless the comparer it is handed asks for the
     /// code-unit one. Every set ordered its elements by <c>&lt;</c>, so strings did not follow the
     /// current culture and decimals compared their text; and a comparer reached the factory as the
-    /// elements to copy, which threw. Null where the model cannot bind the construction.
+    /// elements to copy, which threw. A collection it copies is followed by the name of the parameter
+    /// it binds to, by which the factory refuses a null one (#726). Null where the model cannot bind
+    /// the construction.
     /// </summary>
     private static string? SortedSetConstruction(BaseObjectCreationExpressionSyntax creation, ITypeSymbol? type,
         ConversionContext context)
@@ -99,14 +101,20 @@ public class QueueStackStrategy : ConversionStrategyBase
             return null;
         var ordering = ValueOrdering.Of(element);
         string? source = null;
+        string? parameter = null;
         foreach (var argument in operation.Arguments)
         {
             if (argument.ArgumentKind == ArgumentKind.DefaultValue) continue;
             if ((argument.Parameter?.Type).IsCollectionComparer())
                 ordering = argument.Value.OrderingAskedFor(element);
             else
+            {
                 source = context.Converter.ConvertExpression((ExpressionSyntax)argument.Value.Syntax);
+                parameter = argument.Parameter?.Name;
+            }
         }
+        if (source is not null && parameter is not null)
+            return $"$eq.collections.sortedSet({source}, {ordering ?? "undefined"}, '{parameter}')";
         return ordering is null
             ? $"$eq.collections.sortedSet({source})"
             : $"$eq.collections.sortedSet({source ?? "null"}, {ordering})";

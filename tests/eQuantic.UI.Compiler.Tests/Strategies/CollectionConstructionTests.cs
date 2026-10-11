@@ -43,9 +43,9 @@ public class CollectionConstructionTests
             var copy = new List<string>(source);
             """);
 
-        js.Should().Contain("let copy: string[] = [...source];",
+        js.Should().Contain("let copy: string[] = $eq.collections.listCopy(source);",
             "C# copies the source — handing back the same array would make every later Add "
-            + "mutate what it was built from");
+            + "mutate what it was built from — and refuses a null one by its parameter's name (#726)");
     }
 
     [Fact]

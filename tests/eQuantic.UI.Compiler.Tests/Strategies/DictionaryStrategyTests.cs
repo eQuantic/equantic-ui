@@ -115,13 +115,14 @@ public class DictionaryStrategyTests
     }
 
     [Theory]
-    // A capacity sizes the dictionary as .NET's (#463); a copy copies; an initializer seeds after what is copied.
+    // A capacity sizes the dictionary as .NET's (#463); a copy copies, refusing a null source by the
+    // name of the parameter it binds to (#726); an initializer seeds after what is copied.
     [InlineData("new Dictionary<string, string>(16)", "$eq.collections.dictionary(16)")]
-    [InlineData("new Dictionary<string, string>(dict)", "$eq.collections.dictionary(this.dict)")]
-    [InlineData("new Dictionary<string, string>(dict) { [\"a\"] = \"b\" }", "$eq.collections.dictionary(this.dict).set('a', 'b')")]  // an indexer overwrites what the copy has
+    [InlineData("new Dictionary<string, string>(dict)", "$eq.collections.dictionary(this.dict, undefined, 'dictionary')")]
+    [InlineData("new Dictionary<string, string>(dict) { [\"a\"] = \"b\" }", "$eq.collections.dictionary(this.dict, undefined, 'dictionary').set('a', 'b')")]  // an indexer overwrites what the copy has
     [InlineData("new Dictionary<string, int> { { \"a\", 1 }, { \"b\", 2 } }", "$eq.collections.dictionary().add('a', 1).add('b', 2)")]  // one Add per entry, in order
     [InlineData("new SortedDictionary<int, string>()", "$eq.collections.sortedDictionary(null, 'value')")]
-    [InlineData("new SortedList<int, string>(dictionaryOfInts)", "$eq.collections.sortedList(dictionaryOfInts, 'value')")]
+    [InlineData("new SortedList<int, string>(dictionaryOfInts)", "$eq.collections.sortedList(dictionaryOfInts, 'value', 'dictionary')")]
     [InlineData("new SortedDictionary<string, int>()", "$eq.collections.sortedDictionary(null, 'text')")]
     public void Construction_SeedsTheFactory(string csharp, string js)
     {

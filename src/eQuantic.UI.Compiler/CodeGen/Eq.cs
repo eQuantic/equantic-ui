@@ -439,6 +439,10 @@ public static class Eq
     /// the value written, as C#'s assignment does (#586).</summary>
     public const string ListSetItem = "$eq.collections.setItem";
 
+    /// <summary><c>new List&lt;T&gt;(collection)</c>: the array of what the collection enumerates, a string's
+    /// UTF-16 chars, and a null collection refused by its name, as .NET refuses it (#726).</summary>
+    public const string ListCopy = "$eq.collections.listCopy";
+
     /// <summary><c>new List&lt;T&gt;(capacity)</c>'s check, which refuses a negative capacity in .NET's words:
     /// the capacity is evaluated where C# evaluates it, before the list's elements, and sizes nothing.</summary>
     public const string ListCapacity = "$eq.collections.listCapacity";

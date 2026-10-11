@@ -61,6 +61,18 @@ function requireAtLeastZero(parameter: string, value: number): void {
   }
 }
 
+// ---- a list's construction ----------------------------------------------------------------------
+
+/**
+ * `new List<T>(collection)`: the array of what the collection enumerates, a string's chars as its
+ * UTF-16 code units, and a null collection refused by its name, as .NET refuses it (#726). A spread
+ * read a null through null, a TypeError, and a string by its code points.
+ */
+export function listCopy<T>(collection: Iterable<T> | string | null): T[] {
+  if (collection == null) throw argumentNull('collection');
+  return typeof collection === 'string' ? (collection.split('') as unknown as T[]) : Array.from(collection);
+}
+
 // ---- a list's capacity --------------------------------------------------------------------------
 
 /**
