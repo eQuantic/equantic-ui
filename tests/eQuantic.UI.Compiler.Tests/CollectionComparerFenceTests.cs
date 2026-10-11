@@ -13,7 +13,8 @@ namespace eQuantic.UI.Compiler.Tests;
 /// vanish: <c>CodeLanguages.For("CSharp")</c> answered C# natively and plain text in the browser,
 /// and <c>new Dictionary&lt;string, int&gt;(comparer)</c> with no initializer became the comparer
 /// itself (found in review, #359). A LINQ operator that finds its keys or its elements by a comparer
-/// (<c>ToDictionary</c>, <c>ToLookup</c>, <c>GroupBy</c>, <c>Distinct</c>) passes the same fence (#578).
+/// (<c>ToDictionary</c>, <c>ToLookup</c>, <c>GroupBy</c>, <c>Distinct</c>) passes the same fence (#578),
+/// and so does <c>SequenceEqual</c>, which answered its first sequence when it was handed one (#721).
 /// </summary>
 public class CollectionComparerFenceTests
 {
@@ -32,6 +33,7 @@ public class CollectionComparerFenceTests
     [InlineData("var l = new[] { \"a\" }.ToLookup(w => w, w => w.Length, StringComparer.OrdinalIgnoreCase);")]
     [InlineData("var g = new[] { \"a\" }.GroupBy(w => w, StringComparer.OrdinalIgnoreCase);")]
     [InlineData("var x = new[] { \"a\" }.Distinct(StringComparer.OrdinalIgnoreCase);")]
+    [InlineData("var b = new[] { \"a\" }.SequenceEqual(new[] { \"A\" }, StringComparer.OrdinalIgnoreCase);")]
     // Named and written before the key selector, where it is the comparer that is refused (see below).
     [InlineData("var g = new[] { \"a\" }.GroupBy(comparer: StringComparer.OrdinalIgnoreCase, keySelector: w => w);")]
     public void AComparerThatChangesEqualityIsRefused(string statement)
@@ -61,6 +63,10 @@ public class CollectionComparerFenceTests
     [InlineData("var l = new[] { \"a\" }.ToLookup(w => w.Length, EqualityComparer<int>.Default);")]
     [InlineData("var g = new[] { \"a\" }.GroupBy(w => w, w => w.Length, (k, n) => k, StringComparer.Ordinal);")]
     [InlineData("var x = new[] { \"a\" }.Distinct((IEqualityComparer<string>)null);")]
+    // SequenceEqual's, which the runtime's twin drops as it compares by the default equality (#721).
+    [InlineData("var b = new[] { \"a\" }.SequenceEqual(new[] { \"a\" }, StringComparer.Ordinal);")]
+    [InlineData("var b = new[] { 1 }.SequenceEqual(new[] { 1 }, EqualityComparer<int>.Default);")]
+    [InlineData("var b = new[] { 1 }.SequenceEqual(comparer: null, second: new[] { 1 });")]
     // GroupBy's comparer named and written first: the key selector was refused as a comparer.
     [InlineData("var g = new[] { \"a\" }.GroupBy(comparer: StringComparer.Ordinal, keySelector: w => w);")]
     public void AComparerThatAsksForWhatTheLoweringDoesPasses(string statement)
