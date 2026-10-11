@@ -2373,6 +2373,19 @@ record of a release, the wiki's Upgrading page is the distillate.
   window crosses an adaptive breakpoint, as a phone does when it turns
   ([#797](https://github.com/eQuantic/equantic-ui/issues/797)). Proposed and archived through
   OpenSpec (`openspec/specs/system-back`, `openspec/specs/native-app-lifecycle`).
+- **2026-10-11 · A phone opens its keyboard**: the first blocker between a Photon app and a store
+  ([#770](https://github.com/eQuantic/equantic-ui/issues/770), under #195). The phone shells handed the
+  host touches only, so no keyboard ever opened and a field on a phone took no character. A phone's
+  keyboard edits a document rather than sending keys, so the host now takes the field's whole new state,
+  Flutter's `TextEditingValue`, through `PhotonHost.UpdateEditingValue`, with the composition inside the
+  text and drawn underlined, and a platform-free `TextInputSession` tells a shell after each frame
+  whether the keyboard opens, starts over, closes or takes a value the app changed, never echoing an
+  edit back to the keyboard that made it. A code surface and a sheet stay on the desktop's keys. The
+  keyboard's area is the host's `ViewInsets`: the tree lays out above it, the safe area under it counts
+  once, and a frame laid out shorter reveals the field being edited. Android answers with an input
+  connection over a mirror of the field; iOS edits an invisible text view at the caret, so UIKit's own
+  autocorrection, dictation and composition run against it. Proposed and archived through OpenSpec
+  (`openspec/specs/phone-keyboard`).
 
 ## Retired documents
 

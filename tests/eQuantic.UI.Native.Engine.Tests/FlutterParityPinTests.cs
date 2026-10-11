@@ -288,6 +288,9 @@ public class FlutterParityPinTests
         // The controllers are shared; the protocol that drives them is a HOST method.
         ["TextEditingController"] = () => Has("CodeEditorController") && Has("SheetController")
             && HasMember("PhotonHost", "TextInput"),
+        // The phone keyboard's protocol: the state crosses whole, through a session the shells translate.
+        ["TextInputClient"] = () => Has("TextEditingValue") && HasMember("PhotonHost", "EditingValue")
+            && HasMember("PhotonHost", "UpdateEditingValue") && HasMember("TextInputSession", "Poll"),
 
         // 6 — routing
         ["Navigator.push/pop"] = () => Has("Navigator"),
@@ -325,6 +328,7 @@ public class FlutterParityPinTests
         ["TextDirection.ltr/rtl"] = () => Nothing("TextDirection"),
         ["ThemeData"] = () => Has("IAppTheme") && Has("Density") && Nothing("CupertinoThemeData"),
         ["MediaQuery"] = () => Has("SafeArea") && Nothing("MediaQuery"),
+        ["MediaQuery.viewInsets"] = () => HasMember("PhotonHost", "ViewInsets"),
 
         // 10 — lifecycle and windows
         ["WidgetsBindingObserver"] = () => Nothing("WidgetsBindingObserver", "AppLifecycleState"),
