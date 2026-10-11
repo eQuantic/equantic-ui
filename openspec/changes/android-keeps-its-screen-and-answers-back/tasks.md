@@ -22,4 +22,4 @@
 
 - [ ] 4.1 The wiki's Photon and Components pages (EN + pt-BR), in one commit on the wiki branch named like this one
 - [x] 4.2 `docs/FLUTTER-PARITY.md`'s back row and one `docs/LEDGER.md` line citing #771, #772 and #794
-- [ ] 4.3 The suites, each alone and read by its exit code: Native.Engine, Web, Compiler, Server and the runtime's `TestRuntime`
+- [x] 4.3 The suites, each alone and read by its exit code: Native.Engine, Web, Compiler, Server and the runtime's `TestRuntime`
