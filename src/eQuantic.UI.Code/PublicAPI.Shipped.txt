@@ -1,7 +1,7 @@
 #nullable enable
 abstract eQuantic.UI.Code.CurlyBraceLanguage.ConstantWords.get -> System.Collections.Generic.IReadOnlySet<string!>!
-abstract eQuantic.UI.Code.CurlyBraceLanguage.Keywords.get -> System.Collections.Generic.IReadOnlySet<string!>!
 abstract eQuantic.UI.Code.CurlyBraceLanguage.Name.get -> string!
+abstract eQuantic.UI.Code.CurlyBraceLanguage.ReservedWords.get -> System.Collections.Generic.IReadOnlySet<string!>!
 abstract eQuantic.UI.Code.CurlyBraceLanguage.TypeWords.get -> System.Collections.Generic.IReadOnlySet<string!>!
 const eQuantic.UI.Code.CodeDiffLayout.DefaultContext = 3 -> int
 const eQuantic.UI.Code.CodeEditorController.CaretWidth = 2 -> float
@@ -37,40 +37,113 @@ eQuantic.UI.Code.CodeCollapse.LastLine.get -> int
 eQuantic.UI.Code.CodeCollapse.LastLine.init -> void
 eQuantic.UI.Code.CodeCollapse.Placeholder.get -> bool
 eQuantic.UI.Code.CodeCollapse.Placeholder.init -> void
+eQuantic.UI.Code.CodeCompletion
+eQuantic.UI.Code.CodeCompletion.Accept() -> bool
+eQuantic.UI.Code.CodeCompletion.AcceptChangesText.get -> bool
+eQuantic.UI.Code.CodeCompletion.Changed -> System.Action?
+eQuantic.UI.Code.CodeCompletion.Dismiss() -> bool
+eQuantic.UI.Code.CodeCompletion.Failed -> System.Action<System.Exception!>?
+eQuantic.UI.Code.CodeCompletion.Invoke() -> bool
+eQuantic.UI.Code.CodeCompletion.IsLoading.get -> bool
+eQuantic.UI.Code.CodeCompletion.IsOpen.get -> bool
+eQuantic.UI.Code.CodeCompletion.Items.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeCompletionMatch!>!
+eQuantic.UI.Code.CodeCompletion.Move(int delta) -> bool
+eQuantic.UI.Code.CodeCompletion.MovePage(int pages) -> bool
+eQuantic.UI.Code.CodeCompletion.OpensAsYouType.get -> bool
+eQuantic.UI.Code.CodeCompletion.OpensAsYouType.set -> void
+eQuantic.UI.Code.CodeCompletion.PageSize.get -> int
+eQuantic.UI.Code.CodeCompletion.PageSize.set -> void
+eQuantic.UI.Code.CodeCompletion.Providers.get -> System.Collections.Generic.IList<eQuantic.UI.Code.ICodeCompletionProvider!>!
+eQuantic.UI.Code.CodeCompletion.Select(int index) -> bool
+eQuantic.UI.Code.CodeCompletion.Selected.get -> int
+eQuantic.UI.Code.CodeCompletion.Start.get -> eQuantic.UI.Code.CodePosition
+eQuantic.UI.Code.CodeCompletionContext
+eQuantic.UI.Code.CodeCompletionContext.<Clone>$() -> eQuantic.UI.Code.CodeCompletionContext!
+eQuantic.UI.Code.CodeCompletionContext.Character.get -> char?
+eQuantic.UI.Code.CodeCompletionContext.Character.init -> void
+eQuantic.UI.Code.CodeCompletionContext.CodeCompletionContext(eQuantic.UI.Code.CodeCompletionTrigger Trigger, eQuantic.UI.Code.ICodeLanguage! Language) -> void
+eQuantic.UI.Code.CodeCompletionContext.Deconstruct(out eQuantic.UI.Code.CodeCompletionTrigger Trigger, out eQuantic.UI.Code.ICodeLanguage! Language) -> void
+eQuantic.UI.Code.CodeCompletionContext.Equals(eQuantic.UI.Code.CodeCompletionContext? other) -> bool
+eQuantic.UI.Code.CodeCompletionContext.Language.get -> eQuantic.UI.Code.ICodeLanguage!
+eQuantic.UI.Code.CodeCompletionContext.Language.init -> void
+eQuantic.UI.Code.CodeCompletionContext.Trigger.get -> eQuantic.UI.Code.CodeCompletionTrigger
+eQuantic.UI.Code.CodeCompletionContext.Trigger.init -> void
 eQuantic.UI.Code.CodeCompletionItem
 eQuantic.UI.Code.CodeCompletionItem.<Clone>$() -> eQuantic.UI.Code.CodeCompletionItem!
 eQuantic.UI.Code.CodeCompletionItem.CodeCompletionItem(string! Label, eQuantic.UI.Code.CodeCompletionKind Kind = eQuantic.UI.Code.CodeCompletionKind.Text) -> void
+eQuantic.UI.Code.CodeCompletionItem.CommitCharacters.get -> System.Collections.Generic.IReadOnlyList<char>?
+eQuantic.UI.Code.CodeCompletionItem.CommitCharacters.init -> void
 eQuantic.UI.Code.CodeCompletionItem.Deconstruct(out string! Label, out eQuantic.UI.Code.CodeCompletionKind Kind) -> void
 eQuantic.UI.Code.CodeCompletionItem.Detail.get -> string?
 eQuantic.UI.Code.CodeCompletionItem.Detail.init -> void
 eQuantic.UI.Code.CodeCompletionItem.Documentation.get -> string?
 eQuantic.UI.Code.CodeCompletionItem.Documentation.init -> void
 eQuantic.UI.Code.CodeCompletionItem.Equals(eQuantic.UI.Code.CodeCompletionItem? other) -> bool
+eQuantic.UI.Code.CodeCompletionItem.FilterText.get -> string?
+eQuantic.UI.Code.CodeCompletionItem.FilterText.init -> void
 eQuantic.UI.Code.CodeCompletionItem.InsertText.get -> string?
 eQuantic.UI.Code.CodeCompletionItem.InsertText.init -> void
 eQuantic.UI.Code.CodeCompletionItem.Kind.get -> eQuantic.UI.Code.CodeCompletionKind
 eQuantic.UI.Code.CodeCompletionItem.Kind.init -> void
 eQuantic.UI.Code.CodeCompletionItem.Label.get -> string!
 eQuantic.UI.Code.CodeCompletionItem.Label.init -> void
+eQuantic.UI.Code.CodeCompletionItem.Preselect.get -> bool
+eQuantic.UI.Code.CodeCompletionItem.Preselect.init -> void
 eQuantic.UI.Code.CodeCompletionItem.Replacing.get -> eQuantic.UI.Code.CodeRange?
 eQuantic.UI.Code.CodeCompletionItem.Replacing.init -> void
 eQuantic.UI.Code.CodeCompletionItem.SortText.get -> string?
 eQuantic.UI.Code.CodeCompletionItem.SortText.init -> void
 eQuantic.UI.Code.CodeCompletionKind
 eQuantic.UI.Code.CodeCompletionKind.Class = 6 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.Color = 22 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.Constant = 16 -> eQuantic.UI.Code.CodeCompletionKind
 eQuantic.UI.Code.CodeCompletionKind.Constructor = 3 -> eQuantic.UI.Code.CodeCompletionKind
 eQuantic.UI.Code.CodeCompletionKind.Enum = 10 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.EnumMember = 15 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.Event = 17 -> eQuantic.UI.Code.CodeCompletionKind
 eQuantic.UI.Code.CodeCompletionKind.Field = 4 -> eQuantic.UI.Code.CodeCompletionKind
 eQuantic.UI.Code.CodeCompletionKind.File = 13 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.Folder = 24 -> eQuantic.UI.Code.CodeCompletionKind
 eQuantic.UI.Code.CodeCompletionKind.Function = 2 -> eQuantic.UI.Code.CodeCompletionKind
 eQuantic.UI.Code.CodeCompletionKind.Interface = 7 -> eQuantic.UI.Code.CodeCompletionKind
 eQuantic.UI.Code.CodeCompletionKind.Keyword = 11 -> eQuantic.UI.Code.CodeCompletionKind
 eQuantic.UI.Code.CodeCompletionKind.Method = 1 -> eQuantic.UI.Code.CodeCompletionKind
 eQuantic.UI.Code.CodeCompletionKind.Module = 8 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.Operator = 18 -> eQuantic.UI.Code.CodeCompletionKind
 eQuantic.UI.Code.CodeCompletionKind.Property = 9 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.Reference = 23 -> eQuantic.UI.Code.CodeCompletionKind
 eQuantic.UI.Code.CodeCompletionKind.Snippet = 12 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.Struct = 14 -> eQuantic.UI.Code.CodeCompletionKind
 eQuantic.UI.Code.CodeCompletionKind.Text = 0 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.TypeParameter = 19 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.Unit = 21 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.Value = 20 -> eQuantic.UI.Code.CodeCompletionKind
 eQuantic.UI.Code.CodeCompletionKind.Variable = 5 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionList
+eQuantic.UI.Code.CodeCompletionList.<Clone>$() -> eQuantic.UI.Code.CodeCompletionList!
+eQuantic.UI.Code.CodeCompletionList.CodeCompletionList(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeCompletionItem!>! Items, bool IsIncomplete = false) -> void
+eQuantic.UI.Code.CodeCompletionList.Deconstruct(out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeCompletionItem!>! Items, out bool IsIncomplete) -> void
+eQuantic.UI.Code.CodeCompletionList.Equals(eQuantic.UI.Code.CodeCompletionList? other) -> bool
+eQuantic.UI.Code.CodeCompletionList.IsIncomplete.get -> bool
+eQuantic.UI.Code.CodeCompletionList.IsIncomplete.init -> void
+eQuantic.UI.Code.CodeCompletionList.Items.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeCompletionItem!>!
+eQuantic.UI.Code.CodeCompletionList.Items.init -> void
+eQuantic.UI.Code.CodeCompletionMatch
+eQuantic.UI.Code.CodeCompletionMatch.<Clone>$() -> eQuantic.UI.Code.CodeCompletionMatch!
+eQuantic.UI.Code.CodeCompletionMatch.CodeCompletionMatch(eQuantic.UI.Code.CodeCompletionItem! Item, int Score, System.Collections.Generic.IReadOnlyList<int>! Highlights) -> void
+eQuantic.UI.Code.CodeCompletionMatch.Deconstruct(out eQuantic.UI.Code.CodeCompletionItem! Item, out int Score, out System.Collections.Generic.IReadOnlyList<int>! Highlights) -> void
+eQuantic.UI.Code.CodeCompletionMatch.Equals(eQuantic.UI.Code.CodeCompletionMatch? other) -> bool
+eQuantic.UI.Code.CodeCompletionMatch.Highlights.get -> System.Collections.Generic.IReadOnlyList<int>!
+eQuantic.UI.Code.CodeCompletionMatch.Highlights.init -> void
+eQuantic.UI.Code.CodeCompletionMatch.Item.get -> eQuantic.UI.Code.CodeCompletionItem!
+eQuantic.UI.Code.CodeCompletionMatch.Item.init -> void
+eQuantic.UI.Code.CodeCompletionMatch.Score.get -> int
+eQuantic.UI.Code.CodeCompletionMatch.Score.init -> void
+eQuantic.UI.Code.CodeCompletionTrigger
+eQuantic.UI.Code.CodeCompletionTrigger.Character = 2 -> eQuantic.UI.Code.CodeCompletionTrigger
+eQuantic.UI.Code.CodeCompletionTrigger.Incomplete = 3 -> eQuantic.UI.Code.CodeCompletionTrigger
+eQuantic.UI.Code.CodeCompletionTrigger.Invoked = 0 -> eQuantic.UI.Code.CodeCompletionTrigger
+eQuantic.UI.Code.CodeCompletionTrigger.Typing = 1 -> eQuantic.UI.Code.CodeCompletionTrigger
 eQuantic.UI.Code.CodeDecoration
 eQuantic.UI.Code.CodeDecoration.<Clone>$() -> eQuantic.UI.Code.CodeDecoration!
 eQuantic.UI.Code.CodeDecoration.CodeDecoration(eQuantic.UI.Code.CodeRange Range, eQuantic.UI.Code.CodeDecorationKind Kind = eQuantic.UI.Code.CodeDecorationKind.Highlight) -> void
@@ -206,6 +279,7 @@ eQuantic.UI.Code.CodeEditorController.Carets.get -> System.Collections.Generic.I
 eQuantic.UI.Code.CodeEditorController.CellsOf(int line) -> eQuantic.UI.Code.CodeLineCells!
 eQuantic.UI.Code.CodeEditorController.Changed -> System.Action<eQuantic.UI.Code.CodeEdit?>?
 eQuantic.UI.Code.CodeEditorController.CodeEditorController(string! text = "", eQuantic.UI.Code.ICodeLanguage? language = null) -> void
+eQuantic.UI.Code.CodeEditorController.Completion.get -> eQuantic.UI.Code.CodeCompletion!
 eQuantic.UI.Code.CodeEditorController.Composition.get -> eQuantic.UI.Code.CodeRange?
 eQuantic.UI.Code.CodeEditorController.CopyText() -> string!
 eQuantic.UI.Code.CodeEditorController.Cut() -> string!
@@ -278,6 +352,15 @@ eQuantic.UI.Code.CodeFold.Placeholder.get -> string?
 eQuantic.UI.Code.CodeFold.Placeholder.init -> void
 eQuantic.UI.Code.CodeFold.StartLine.get -> int
 eQuantic.UI.Code.CodeFold.StartLine.init -> void
+eQuantic.UI.Code.CodeFuzzyMatch
+eQuantic.UI.Code.CodeFuzzyMatch.<Clone>$() -> eQuantic.UI.Code.CodeFuzzyMatch!
+eQuantic.UI.Code.CodeFuzzyMatch.CodeFuzzyMatch(int Score, System.Collections.Generic.IReadOnlyList<int>! Positions) -> void
+eQuantic.UI.Code.CodeFuzzyMatch.Deconstruct(out int Score, out System.Collections.Generic.IReadOnlyList<int>! Positions) -> void
+eQuantic.UI.Code.CodeFuzzyMatch.Equals(eQuantic.UI.Code.CodeFuzzyMatch? other) -> bool
+eQuantic.UI.Code.CodeFuzzyMatch.Positions.get -> System.Collections.Generic.IReadOnlyList<int>!
+eQuantic.UI.Code.CodeFuzzyMatch.Positions.init -> void
+eQuantic.UI.Code.CodeFuzzyMatch.Score.get -> int
+eQuantic.UI.Code.CodeFuzzyMatch.Score.init -> void
 eQuantic.UI.Code.CodeGrid
 eQuantic.UI.Code.CodeGrid.Cell.get -> eQuantic.UI.Primitives.Size
 eQuantic.UI.Code.CodeGrid.Cell.init -> void
@@ -352,6 +435,9 @@ eQuantic.UI.Code.CodeInnerChange.Modified.init -> void
 eQuantic.UI.Code.CodeInnerChange.Original.get -> eQuantic.UI.Code.CodeRange
 eQuantic.UI.Code.CodeInnerChange.Original.init -> void
 eQuantic.UI.Code.CodeKeymap
+eQuantic.UI.Code.CodeKeywordCompletionProvider
+eQuantic.UI.Code.CodeKeywordCompletionProvider.CodeKeywordCompletionProvider() -> void
+eQuantic.UI.Code.CodeKeywordCompletionProvider.CompleteAsync(eQuantic.UI.Code.CodeDocument! document, eQuantic.UI.Code.CodePosition position, eQuantic.UI.Code.CodeCompletionContext! context, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<eQuantic.UI.Code.CodeCompletionList!>!
 eQuantic.UI.Code.CodeLanguageRules
 eQuantic.UI.Code.CodeLanguageRules.<Clone>$() -> eQuantic.UI.Code.CodeLanguageRules!
 eQuantic.UI.Code.CodeLanguageRules.BlockComment.get -> (string! Open, string! Close)?
@@ -518,17 +604,23 @@ eQuantic.UI.Code.CodeToken.Length.get -> int
 eQuantic.UI.Code.CodeToken.Length.init -> void
 eQuantic.UI.Code.CodeToken.Start.get -> int
 eQuantic.UI.Code.CodeToken.Start.init -> void
+eQuantic.UI.Code.CodeWordCompletionProvider
+eQuantic.UI.Code.CodeWordCompletionProvider.CodeWordCompletionProvider() -> void
+eQuantic.UI.Code.CodeWordCompletionProvider.CompleteAsync(eQuantic.UI.Code.CodeDocument! document, eQuantic.UI.Code.CodePosition position, eQuantic.UI.Code.CodeCompletionContext! context, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<eQuantic.UI.Code.CodeCompletionList!>!
 eQuantic.UI.Code.CurlyBraceLanguage
 eQuantic.UI.Code.CurlyBraceLanguage.CurlyBraceLanguage() -> void
+eQuantic.UI.Code.CurlyBraceLanguage.Keywords.get -> System.Collections.Generic.IReadOnlyList<string!>!
 eQuantic.UI.Code.CurlyBraceLanguage.Tokenize(string! line, int state, System.Collections.Generic.List<eQuantic.UI.Code.CodeToken>! into) -> int
 eQuantic.UI.Code.ICodeCompletionProvider
-eQuantic.UI.Code.ICodeCompletionProvider.CompleteAsync(eQuantic.UI.Code.CodeDocument! document, eQuantic.UI.Code.CodePosition position, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeCompletionItem!>!>!
+eQuantic.UI.Code.ICodeCompletionProvider.CompleteAsync(eQuantic.UI.Code.CodeDocument! document, eQuantic.UI.Code.CodePosition position, eQuantic.UI.Code.CodeCompletionContext! context, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<eQuantic.UI.Code.CodeCompletionList!>!
+eQuantic.UI.Code.ICodeCompletionProvider.ResolveAsync(eQuantic.UI.Code.CodeCompletionItem! item, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<eQuantic.UI.Code.CodeCompletionItem!>!
 eQuantic.UI.Code.ICodeCompletionProvider.TriggerCharacters.get -> System.Collections.Generic.IReadOnlyList<char>!
 eQuantic.UI.Code.ICodeFoldProvider
 eQuantic.UI.Code.ICodeFoldProvider.FoldsFor(eQuantic.UI.Code.CodeDocument! document) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeFold!>!
 eQuantic.UI.Code.ICodeHoverProvider
 eQuantic.UI.Code.ICodeHoverProvider.HoverAsync(eQuantic.UI.Code.CodeDocument! document, eQuantic.UI.Code.CodePosition position, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<eQuantic.UI.Code.CodeHover?>!
 eQuantic.UI.Code.ICodeLanguage
+eQuantic.UI.Code.ICodeLanguage.Keywords.get -> System.Collections.Generic.IReadOnlyList<string!>!
 eQuantic.UI.Code.ICodeLanguage.Name.get -> string!
 eQuantic.UI.Code.ICodeLanguage.Rules.get -> eQuantic.UI.Code.CodeLanguageRules!
 eQuantic.UI.Code.ICodeLanguage.Tokenize(string! line, int state, System.Collections.Generic.List<eQuantic.UI.Code.CodeToken>! into) -> int
@@ -537,6 +629,7 @@ eQuantic.UI.Code.IndentationFoldProvider.FoldsFor(eQuantic.UI.Code.CodeDocument!
 eQuantic.UI.Code.IndentationFoldProvider.IndentationFoldProvider() -> void
 eQuantic.UI.Code.JsonLanguage
 eQuantic.UI.Code.JsonLanguage.JsonLanguage() -> void
+eQuantic.UI.Code.JsonLanguage.Keywords.get -> System.Collections.Generic.IReadOnlyList<string!>!
 eQuantic.UI.Code.JsonLanguage.Name.get -> string!
 eQuantic.UI.Code.JsonLanguage.Rules.get -> eQuantic.UI.Code.CodeLanguageRules!
 eQuantic.UI.Code.JsonLanguage.Tokenize(string! line, int state, System.Collections.Generic.List<eQuantic.UI.Code.CodeToken>! into) -> int
@@ -545,6 +638,7 @@ eQuantic.UI.Code.PlainTextLanguage.Name.get -> string!
 eQuantic.UI.Code.PlainTextLanguage.PlainTextLanguage() -> void
 eQuantic.UI.Code.PlainTextLanguage.Tokenize(string! line, int state, System.Collections.Generic.List<eQuantic.UI.Code.CodeToken>! into) -> int
 eQuantic.UI.Code.PythonLanguage
+eQuantic.UI.Code.PythonLanguage.Keywords.get -> System.Collections.Generic.IReadOnlyList<string!>!
 eQuantic.UI.Code.PythonLanguage.Name.get -> string!
 eQuantic.UI.Code.PythonLanguage.PythonLanguage() -> void
 eQuantic.UI.Code.PythonLanguage.Rules.get -> eQuantic.UI.Code.CodeLanguageRules!
@@ -560,9 +654,18 @@ override eQuantic.UI.Code.CSharpLanguage.Name.get -> string!
 override eQuantic.UI.Code.CSharpLanguage.Rules.get -> eQuantic.UI.Code.CodeLanguageRules!
 override eQuantic.UI.Code.CodeCell.GetHashCode() -> int
 override eQuantic.UI.Code.CodeCollapse.GetHashCode() -> int
+override eQuantic.UI.Code.CodeCompletionContext.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeCompletionContext.GetHashCode() -> int
+override eQuantic.UI.Code.CodeCompletionContext.ToString() -> string!
 override eQuantic.UI.Code.CodeCompletionItem.Equals(object? obj) -> bool
 override eQuantic.UI.Code.CodeCompletionItem.GetHashCode() -> int
 override eQuantic.UI.Code.CodeCompletionItem.ToString() -> string!
+override eQuantic.UI.Code.CodeCompletionList.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeCompletionList.GetHashCode() -> int
+override eQuantic.UI.Code.CodeCompletionList.ToString() -> string!
+override eQuantic.UI.Code.CodeCompletionMatch.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeCompletionMatch.GetHashCode() -> int
+override eQuantic.UI.Code.CodeCompletionMatch.ToString() -> string!
 override eQuantic.UI.Code.CodeDecoration.Equals(object? obj) -> bool
 override eQuantic.UI.Code.CodeDecoration.GetHashCode() -> int
 override eQuantic.UI.Code.CodeDecoration.ToString() -> string!
@@ -581,6 +684,9 @@ override eQuantic.UI.Code.CodeFiller.GetHashCode() -> int
 override eQuantic.UI.Code.CodeFold.Equals(object? obj) -> bool
 override eQuantic.UI.Code.CodeFold.GetHashCode() -> int
 override eQuantic.UI.Code.CodeFold.ToString() -> string!
+override eQuantic.UI.Code.CodeFuzzyMatch.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeFuzzyMatch.GetHashCode() -> int
+override eQuantic.UI.Code.CodeFuzzyMatch.ToString() -> string!
 override eQuantic.UI.Code.CodeGrid.GetHashCode() -> int
 override eQuantic.UI.Code.CodeGutterMarker.Equals(object? obj) -> bool
 override eQuantic.UI.Code.CodeGutterMarker.GetHashCode() -> int
@@ -613,8 +719,14 @@ static eQuantic.UI.Code.CodeCell.operator !=(eQuantic.UI.Code.CodeCell left, eQu
 static eQuantic.UI.Code.CodeCell.operator ==(eQuantic.UI.Code.CodeCell left, eQuantic.UI.Code.CodeCell right) -> bool
 static eQuantic.UI.Code.CodeCollapse.operator !=(eQuantic.UI.Code.CodeCollapse left, eQuantic.UI.Code.CodeCollapse right) -> bool
 static eQuantic.UI.Code.CodeCollapse.operator ==(eQuantic.UI.Code.CodeCollapse left, eQuantic.UI.Code.CodeCollapse right) -> bool
+static eQuantic.UI.Code.CodeCompletionContext.operator !=(eQuantic.UI.Code.CodeCompletionContext? left, eQuantic.UI.Code.CodeCompletionContext? right) -> bool
+static eQuantic.UI.Code.CodeCompletionContext.operator ==(eQuantic.UI.Code.CodeCompletionContext? left, eQuantic.UI.Code.CodeCompletionContext? right) -> bool
 static eQuantic.UI.Code.CodeCompletionItem.operator !=(eQuantic.UI.Code.CodeCompletionItem? left, eQuantic.UI.Code.CodeCompletionItem? right) -> bool
 static eQuantic.UI.Code.CodeCompletionItem.operator ==(eQuantic.UI.Code.CodeCompletionItem? left, eQuantic.UI.Code.CodeCompletionItem? right) -> bool
+static eQuantic.UI.Code.CodeCompletionList.operator !=(eQuantic.UI.Code.CodeCompletionList? left, eQuantic.UI.Code.CodeCompletionList? right) -> bool
+static eQuantic.UI.Code.CodeCompletionList.operator ==(eQuantic.UI.Code.CodeCompletionList? left, eQuantic.UI.Code.CodeCompletionList? right) -> bool
+static eQuantic.UI.Code.CodeCompletionMatch.operator !=(eQuantic.UI.Code.CodeCompletionMatch? left, eQuantic.UI.Code.CodeCompletionMatch? right) -> bool
+static eQuantic.UI.Code.CodeCompletionMatch.operator ==(eQuantic.UI.Code.CodeCompletionMatch? left, eQuantic.UI.Code.CodeCompletionMatch? right) -> bool
 static eQuantic.UI.Code.CodeDecoration.operator !=(eQuantic.UI.Code.CodeDecoration? left, eQuantic.UI.Code.CodeDecoration? right) -> bool
 static eQuantic.UI.Code.CodeDecoration.operator ==(eQuantic.UI.Code.CodeDecoration? left, eQuantic.UI.Code.CodeDecoration? right) -> bool
 static eQuantic.UI.Code.CodeDiagnostic.operator !=(eQuantic.UI.Code.CodeDiagnostic? left, eQuantic.UI.Code.CodeDiagnostic? right) -> bool
@@ -641,6 +753,9 @@ static eQuantic.UI.Code.CodeFiller.operator !=(eQuantic.UI.Code.CodeFiller left,
 static eQuantic.UI.Code.CodeFiller.operator ==(eQuantic.UI.Code.CodeFiller left, eQuantic.UI.Code.CodeFiller right) -> bool
 static eQuantic.UI.Code.CodeFold.operator !=(eQuantic.UI.Code.CodeFold? left, eQuantic.UI.Code.CodeFold? right) -> bool
 static eQuantic.UI.Code.CodeFold.operator ==(eQuantic.UI.Code.CodeFold? left, eQuantic.UI.Code.CodeFold? right) -> bool
+static eQuantic.UI.Code.CodeFuzzyMatch.Of(string! pattern, string! word, bool anywhere = false) -> eQuantic.UI.Code.CodeFuzzyMatch?
+static eQuantic.UI.Code.CodeFuzzyMatch.operator !=(eQuantic.UI.Code.CodeFuzzyMatch? left, eQuantic.UI.Code.CodeFuzzyMatch? right) -> bool
+static eQuantic.UI.Code.CodeFuzzyMatch.operator ==(eQuantic.UI.Code.CodeFuzzyMatch? left, eQuantic.UI.Code.CodeFuzzyMatch? right) -> bool
 static eQuantic.UI.Code.CodeGrid.Default.get -> eQuantic.UI.Code.CodeGrid
 static eQuantic.UI.Code.CodeGrid.operator !=(eQuantic.UI.Code.CodeGrid left, eQuantic.UI.Code.CodeGrid right) -> bool
 static eQuantic.UI.Code.CodeGrid.operator ==(eQuantic.UI.Code.CodeGrid left, eQuantic.UI.Code.CodeGrid right) -> bool
@@ -683,6 +798,7 @@ static eQuantic.UI.Code.CurlyBraceLanguage.NextNonSpace(string! line, int from) 
 static eQuantic.UI.Code.CurlyBraceLanguage.ScanNumber(string! line, int from) -> int
 static eQuantic.UI.Code.CurlyBraceLanguage.ScanQuoted(string! line, int from, char quote) -> int
 static eQuantic.UI.Code.CurlyBraceLanguage.ScanVerbatim(string! line, int from) -> int
+static readonly eQuantic.UI.Code.CodeCompletionList.Empty -> eQuantic.UI.Code.CodeCompletionList!
 static readonly eQuantic.UI.Code.CodeDocument.Empty -> eQuantic.UI.Code.CodeDocument!
 static readonly eQuantic.UI.Code.CodeLanguageRules.Default -> eQuantic.UI.Code.CodeLanguageRules!
 static readonly eQuantic.UI.Code.CodeLanguages.CSharp -> eQuantic.UI.Code.ICodeLanguage!

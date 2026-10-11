@@ -3,6 +3,8 @@ abstract eQuantic.UI.Server.Metadata.MetaTag.Key.get -> string!
 abstract eQuantic.UI.Server.Metadata.MetaTag.Render() -> string!
 const eQuantic.UI.Server.ConsentCookie.Name = "eq-consent" -> string!
 const eQuantic.UI.Server.CultureRouteConstraint.Name = "culture" -> string!
+const eQuantic.UI.Server.ServerActionsOptions.SectionName = "EQuantic:ServerActions" -> string!
+const eQuantic.UI.Server.ServerEventsOptions.SectionName = "EQuantic:ServerEvents" -> string!
 const eQuantic.UI.Server.ThemeCookie.Name = "eq-theme" -> string!
 eQuantic.UI.Server.AlternateRequest
 eQuantic.UI.Server.AlternateRequest.AlternateRequest() -> void
@@ -145,13 +147,21 @@ eQuantic.UI.Server.HtmlTemplateEngine.HtmlTemplateEngine(string! template) -> vo
 eQuantic.UI.Server.HtmlTemplateEngine.Render(System.Action<System.Collections.Generic.Dictionary<string!, string!>!>! configure) -> string!
 eQuantic.UI.Server.HtmlTemplateEngine.Render(System.Action<eQuantic.UI.Server.TemplateContext!>! configure) -> string!
 eQuantic.UI.Server.HtmlTemplateEngine.Render(System.Collections.Generic.Dictionary<string!, string!>! variables, System.Collections.Generic.Dictionary<string!, bool>? conditions = null) -> string!
-eQuantic.UI.Server.Hubs.ServerActionHub
-eQuantic.UI.Server.Hubs.ServerActionHub.ServerActionHub() -> void
 eQuantic.UI.Server.IServerActionRegistry
 eQuantic.UI.Server.IServerActionRegistry.GetAction(string! actionId) -> eQuantic.UI.Server.ServerActionDescriptor?
 eQuantic.UI.Server.IServerActionRegistry.GetAllActions() -> System.Collections.Generic.IEnumerable<eQuantic.UI.Server.ServerActionDescriptor!>!
 eQuantic.UI.Server.IServerActionRegistry.RegisterAction(string! actionId, eQuantic.UI.Server.ServerActionDescriptor! descriptor) -> void
 eQuantic.UI.Server.IServerActionRegistry.ScanAssembly(System.Reflection.Assembly! assembly) -> void
+eQuantic.UI.Server.IServerEventBackplane
+eQuantic.UI.Server.IServerEventBackplane.PublishAsync(eQuantic.UI.Server.ServerEventEnvelope! envelope, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+eQuantic.UI.Server.IServerEventBackplane.SubscribeAsync(System.Func<eQuantic.UI.Server.ServerEventEnvelope!, System.Threading.Tasks.ValueTask>! receive, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<System.IAsyncDisposable!>
+eQuantic.UI.Server.IServerEventHandler
+eQuantic.UI.Server.IServerEventHandler.OnConnectedAsync(eQuantic.UI.Server.ServerEventConnectionContext! connection) -> System.Threading.Tasks.ValueTask
+eQuantic.UI.Server.IServerEventHandler.OnDisconnectedAsync(eQuantic.UI.Server.ServerEventConnectionContext! connection) -> System.Threading.Tasks.ValueTask
+eQuantic.UI.Server.IServerEventHandler.OnReleasedAsync(eQuantic.UI.Server.ServerTopicContext! topic) -> System.Threading.Tasks.ValueTask
+eQuantic.UI.Server.IServerEventHandler.OnSubscribedAsync(eQuantic.UI.Server.ServerTopicContext! topic) -> System.Threading.Tasks.ValueTask
+eQuantic.UI.Server.IServerEventPublisher
+eQuantic.UI.Server.IServerEventPublisher.PublishAsync<T>(eQuantic.UI.Primitives.ServerTopic<T>! topic, T payload, eQuantic.UI.Server.ServerEventPublishOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 eQuantic.UI.Server.Json.EqJson
 eQuantic.UI.Server.Metadata.IHandleMetadata
 eQuantic.UI.Server.Metadata.IHandleMetadata.ConfigureMetadata(eQuantic.UI.Server.Metadata.SeoBuilder! seo) -> void
@@ -241,7 +251,70 @@ eQuantic.UI.Server.ServerActionRequest.Arguments.set -> void
 eQuantic.UI.Server.ServerActionRequest.ServerActionRequest() -> void
 eQuantic.UI.Server.ServerActionsMiddleware
 eQuantic.UI.Server.ServerActionsMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task!
-eQuantic.UI.Server.ServerActionsMiddleware.ServerActionsMiddleware(Microsoft.AspNetCore.Http.RequestDelegate! next, eQuantic.UI.Server.IServerActionRegistry! registry, System.IServiceProvider! serviceProvider, eQuantic.UI.Server.Authorization.IServerActionAuthorizationService! authorizationService, eQuantic.UI.Server.UIOptions! options, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.ServerActionsMiddleware!>! logger) -> void
+eQuantic.UI.Server.ServerActionsMiddleware.ServerActionsMiddleware(Microsoft.AspNetCore.Http.RequestDelegate! next, eQuantic.UI.Server.IServerActionRegistry! registry, System.IServiceProvider! serviceProvider, eQuantic.UI.Server.Authorization.IServerActionAuthorizationService! authorizationService, eQuantic.UI.Server.UIOptions! options, Microsoft.Extensions.Options.IOptionsMonitor<eQuantic.UI.Server.ServerActionsOptions!>! actions, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.ServerActionsMiddleware!>! logger) -> void
+eQuantic.UI.Server.ServerActionsOptions
+eQuantic.UI.Server.ServerActionsOptions.AllowedOrigins.get -> System.Collections.Generic.IList<string!>!
+eQuantic.UI.Server.ServerActionsOptions.ServerActionsOptions() -> void
+eQuantic.UI.Server.ServerEventConnectionContext
+eQuantic.UI.Server.ServerEventConnectionContext.<Clone>$() -> eQuantic.UI.Server.ServerEventConnectionContext!
+eQuantic.UI.Server.ServerEventConnectionContext.ConnectionId.get -> string!
+eQuantic.UI.Server.ServerEventConnectionContext.ConnectionId.init -> void
+eQuantic.UI.Server.ServerEventConnectionContext.Deconstruct(out string! ConnectionId, out Microsoft.AspNetCore.Http.HttpContext! HttpContext) -> void
+eQuantic.UI.Server.ServerEventConnectionContext.Equals(eQuantic.UI.Server.ServerEventConnectionContext? other) -> bool
+eQuantic.UI.Server.ServerEventConnectionContext.HttpContext.get -> Microsoft.AspNetCore.Http.HttpContext!
+eQuantic.UI.Server.ServerEventConnectionContext.HttpContext.init -> void
+eQuantic.UI.Server.ServerEventConnectionContext.ServerEventConnectionContext(string! ConnectionId, Microsoft.AspNetCore.Http.HttpContext! HttpContext) -> void
+eQuantic.UI.Server.ServerEventEnvelope
+eQuantic.UI.Server.ServerEventEnvelope.<Clone>$() -> eQuantic.UI.Server.ServerEventEnvelope!
+eQuantic.UI.Server.ServerEventEnvelope.Deconstruct(out string! Topic, out string! Payload, out string? Id) -> void
+eQuantic.UI.Server.ServerEventEnvelope.Equals(eQuantic.UI.Server.ServerEventEnvelope? other) -> bool
+eQuantic.UI.Server.ServerEventEnvelope.Id.get -> string?
+eQuantic.UI.Server.ServerEventEnvelope.Id.init -> void
+eQuantic.UI.Server.ServerEventEnvelope.Payload.get -> string!
+eQuantic.UI.Server.ServerEventEnvelope.Payload.init -> void
+eQuantic.UI.Server.ServerEventEnvelope.ServerEventEnvelope(string! Topic, string! Payload, string? Id) -> void
+eQuantic.UI.Server.ServerEventEnvelope.Topic.get -> string!
+eQuantic.UI.Server.ServerEventEnvelope.Topic.init -> void
+eQuantic.UI.Server.ServerEventPublishOptions
+eQuantic.UI.Server.ServerEventPublishOptions.<Clone>$() -> eQuantic.UI.Server.ServerEventPublishOptions!
+eQuantic.UI.Server.ServerEventPublishOptions.Equals(eQuantic.UI.Server.ServerEventPublishOptions? other) -> bool
+eQuantic.UI.Server.ServerEventPublishOptions.Id.get -> string?
+eQuantic.UI.Server.ServerEventPublishOptions.Id.init -> void
+eQuantic.UI.Server.ServerEventPublishOptions.ServerEventPublishOptions() -> void
+eQuantic.UI.Server.ServerEventsBuilder
+eQuantic.UI.Server.ServerEventsBuilder.AddHandler<THandler>() -> eQuantic.UI.Server.ServerEventsBuilder!
+eQuantic.UI.Server.ServerEventsBuilder.Configure(System.Action<eQuantic.UI.Server.ServerEventsOptions!>! configure) -> eQuantic.UI.Server.ServerEventsBuilder!
+eQuantic.UI.Server.ServerEventsBuilder.Topic(string! template, System.Action<eQuantic.UI.Server.ServerTopicRule!>! rule) -> eQuantic.UI.Server.ServerEventsBuilder!
+eQuantic.UI.Server.ServerEventsBuilder.UseBackplane<TBackplane>() -> eQuantic.UI.Server.ServerEventsBuilder!
+eQuantic.UI.Server.ServerEventsOptions
+eQuantic.UI.Server.ServerEventsOptions.HeartbeatInterval.get -> System.TimeSpan
+eQuantic.UI.Server.ServerEventsOptions.HeartbeatInterval.set -> void
+eQuantic.UI.Server.ServerEventsOptions.MaxPayloadBytes.get -> int
+eQuantic.UI.Server.ServerEventsOptions.MaxPayloadBytes.set -> void
+eQuantic.UI.Server.ServerEventsOptions.MaxQueuedEventsPerConnection.get -> int
+eQuantic.UI.Server.ServerEventsOptions.MaxQueuedEventsPerConnection.set -> void
+eQuantic.UI.Server.ServerEventsOptions.MaxTopicsPerConnection.get -> int
+eQuantic.UI.Server.ServerEventsOptions.MaxTopicsPerConnection.set -> void
+eQuantic.UI.Server.ServerEventsOptions.ServerEventsOptions() -> void
+eQuantic.UI.Server.ServerTopicContext
+eQuantic.UI.Server.ServerTopicContext.<Clone>$() -> eQuantic.UI.Server.ServerTopicContext!
+eQuantic.UI.Server.ServerTopicContext.ConnectionId.get -> string!
+eQuantic.UI.Server.ServerTopicContext.ConnectionId.init -> void
+eQuantic.UI.Server.ServerTopicContext.Deconstruct(out string! ConnectionId, out string! Topic, out System.Collections.Generic.IReadOnlyDictionary<string!, string?>! Values, out Microsoft.AspNetCore.Http.HttpContext! HttpContext) -> void
+eQuantic.UI.Server.ServerTopicContext.Equals(eQuantic.UI.Server.ServerTopicContext? other) -> bool
+eQuantic.UI.Server.ServerTopicContext.HttpContext.get -> Microsoft.AspNetCore.Http.HttpContext!
+eQuantic.UI.Server.ServerTopicContext.HttpContext.init -> void
+eQuantic.UI.Server.ServerTopicContext.ServerTopicContext(string! ConnectionId, string! Topic, System.Collections.Generic.IReadOnlyDictionary<string!, string?>! Values, Microsoft.AspNetCore.Http.HttpContext! HttpContext) -> void
+eQuantic.UI.Server.ServerTopicContext.Topic.get -> string!
+eQuantic.UI.Server.ServerTopicContext.Topic.init -> void
+eQuantic.UI.Server.ServerTopicContext.Values.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string?>!
+eQuantic.UI.Server.ServerTopicContext.Values.init -> void
+eQuantic.UI.Server.ServerTopicRule
+eQuantic.UI.Server.ServerTopicRule.AllowAnonymous() -> eQuantic.UI.Server.ServerTopicRule!
+eQuantic.UI.Server.ServerTopicRule.Authorize(System.Func<eQuantic.UI.Server.ServerTopicContext!, System.Threading.Tasks.ValueTask<bool>>! authorize) -> eQuantic.UI.Server.ServerTopicRule!
+eQuantic.UI.Server.ServerTopicRule.Authorize(System.Func<eQuantic.UI.Server.ServerTopicContext!, bool>! authorize) -> eQuantic.UI.Server.ServerTopicRule!
+eQuantic.UI.Server.ServerTopicRule.RequireAuthorization(params string![]! policies) -> eQuantic.UI.Server.ServerTopicRule!
+eQuantic.UI.Server.ServerTopicRule.Template.get -> string!
 eQuantic.UI.Server.SsrConsent
 eQuantic.UI.Server.SsrConsent.Deny() -> void
 eQuantic.UI.Server.SsrConsent.Grant() -> void
@@ -282,6 +355,7 @@ eQuantic.UI.Server.ThemeCookieOptions.Name.init -> void
 eQuantic.UI.Server.ThemeCookieOptions.ThemeCookieOptions() -> void
 eQuantic.UI.Server.UIExtensions
 eQuantic.UI.Server.UIOptions
+eQuantic.UI.Server.UIOptions.AllowServerActionOrigins(params string![]! origins) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.AllowedDeserializationAssemblies.get -> System.Collections.Generic.HashSet<System.Reflection.Assembly!>!
 eQuantic.UI.Server.UIOptions.AlternateCultures.get -> System.Collections.Generic.IReadOnlyList<string!>?
 eQuantic.UI.Server.UIOptions.AlternateUrl.get -> System.Func<eQuantic.UI.Server.AlternateRequest, string?>?
@@ -302,6 +376,7 @@ eQuantic.UI.Server.UIOptions.UIOptions() -> void
 eQuantic.UI.Server.UIOptions.UseAlternateLinks(System.Func<eQuantic.UI.Server.AlternateRequest, string?>! url, params string![]! cultures) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.UseCultureRoutes(params string![]! cultures) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.UseInitialThemeMode(eQuantic.UI.Primitives.ThemeMode mode) -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.UseServerEvents(System.Action<eQuantic.UI.Server.ServerEventsBuilder!>! configure) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.UseTheme(eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.UseThemeCookie(string! name = "eq-theme", int days = 365) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.WithAssetProvider<TProvider>() -> eQuantic.UI.Server.UIOptions!
@@ -331,6 +406,18 @@ override eQuantic.UI.Server.Metadata.NameMetaTag.Key.get -> string!
 override eQuantic.UI.Server.Metadata.NameMetaTag.Render() -> string!
 override eQuantic.UI.Server.Metadata.PropertyMetaTag.Key.get -> string!
 override eQuantic.UI.Server.Metadata.PropertyMetaTag.Render() -> string!
+override eQuantic.UI.Server.ServerEventConnectionContext.Equals(object? obj) -> bool
+override eQuantic.UI.Server.ServerEventConnectionContext.GetHashCode() -> int
+override eQuantic.UI.Server.ServerEventConnectionContext.ToString() -> string!
+override eQuantic.UI.Server.ServerEventEnvelope.Equals(object? obj) -> bool
+override eQuantic.UI.Server.ServerEventEnvelope.GetHashCode() -> int
+override eQuantic.UI.Server.ServerEventEnvelope.ToString() -> string!
+override eQuantic.UI.Server.ServerEventPublishOptions.Equals(object? obj) -> bool
+override eQuantic.UI.Server.ServerEventPublishOptions.GetHashCode() -> int
+override eQuantic.UI.Server.ServerEventPublishOptions.ToString() -> string!
+override eQuantic.UI.Server.ServerTopicContext.Equals(object? obj) -> bool
+override eQuantic.UI.Server.ServerTopicContext.GetHashCode() -> int
+override eQuantic.UI.Server.ServerTopicContext.ToString() -> string!
 static eQuantic.UI.Server.AlternateRequest.operator !=(eQuantic.UI.Server.AlternateRequest left, eQuantic.UI.Server.AlternateRequest right) -> bool
 static eQuantic.UI.Server.AlternateRequest.operator ==(eQuantic.UI.Server.AlternateRequest left, eQuantic.UI.Server.AlternateRequest right) -> bool
 static eQuantic.UI.Server.AlternateUrls.Absolute(Microsoft.AspNetCore.Http.HttpRequest! request, string! pathOrUrl) -> string!
@@ -367,6 +454,14 @@ static eQuantic.UI.Server.Rendering.ServerRenderResult.NotAvailable() -> eQuanti
 static eQuantic.UI.Server.Rendering.ServerRenderResult.Ok(string! html, eQuantic.UI.Server.Metadata.MetadataCollection? metadata = null, string? serializedState = null, eQuantic.UI.Server.Assets.AssetCollection? assets = null, int statusCode = 200, string? vectorDefs = null) -> eQuantic.UI.Server.Rendering.ServerRenderResult!
 static eQuantic.UI.Server.ScriptEndpointExtensions.MapScriptJs(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! path, System.Func<Microsoft.AspNetCore.Http.HttpContext!, string!>! scriptGenerator) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
 static eQuantic.UI.Server.ScriptEndpointExtensions.MapScriptJs(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! path, System.Func<string!>! scriptGenerator) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static eQuantic.UI.Server.ServerEventConnectionContext.operator !=(eQuantic.UI.Server.ServerEventConnectionContext? left, eQuantic.UI.Server.ServerEventConnectionContext? right) -> bool
+static eQuantic.UI.Server.ServerEventConnectionContext.operator ==(eQuantic.UI.Server.ServerEventConnectionContext? left, eQuantic.UI.Server.ServerEventConnectionContext? right) -> bool
+static eQuantic.UI.Server.ServerEventEnvelope.operator !=(eQuantic.UI.Server.ServerEventEnvelope? left, eQuantic.UI.Server.ServerEventEnvelope? right) -> bool
+static eQuantic.UI.Server.ServerEventEnvelope.operator ==(eQuantic.UI.Server.ServerEventEnvelope? left, eQuantic.UI.Server.ServerEventEnvelope? right) -> bool
+static eQuantic.UI.Server.ServerEventPublishOptions.operator !=(eQuantic.UI.Server.ServerEventPublishOptions? left, eQuantic.UI.Server.ServerEventPublishOptions? right) -> bool
+static eQuantic.UI.Server.ServerEventPublishOptions.operator ==(eQuantic.UI.Server.ServerEventPublishOptions? left, eQuantic.UI.Server.ServerEventPublishOptions? right) -> bool
+static eQuantic.UI.Server.ServerTopicContext.operator !=(eQuantic.UI.Server.ServerTopicContext? left, eQuantic.UI.Server.ServerTopicContext? right) -> bool
+static eQuantic.UI.Server.ServerTopicContext.operator ==(eQuantic.UI.Server.ServerTopicContext? left, eQuantic.UI.Server.ServerTopicContext? right) -> bool
 static eQuantic.UI.Server.TemplateVariablesExtensions.Set(this System.Collections.Generic.Dictionary<string!, string!>! variables, string! key, string! value) -> System.Collections.Generic.Dictionary<string!, string!>!
 static eQuantic.UI.Server.TemplateVariablesExtensions.SetIf(this System.Collections.Generic.Dictionary<string!, string!>! variables, bool condition, string! key, string! value) -> System.Collections.Generic.Dictionary<string!, string!>!
 static eQuantic.UI.Server.TemplateVariablesExtensions.SetOrEmpty(this System.Collections.Generic.Dictionary<string!, string!>! variables, string! key, string? value) -> System.Collections.Generic.Dictionary<string!, string!>!
