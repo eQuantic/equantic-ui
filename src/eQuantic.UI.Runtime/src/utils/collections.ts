@@ -62,7 +62,8 @@ function elements<T>(source: Iterable<T> | string): Iterable<T> {
 /**
  * The elements a constructor's argument hands it: none for no argument and for a capacity, which a
  * negative value is refused as, and a collection's own, a null one refused by its parameter's name,
- * as `Queue<T>`, `Stack<T>` and `LinkedList<T>` refuse it (#726). They read a null as no collection.
+ * as `Queue<T>`, `Stack<T>` and `LinkedList<T>` refuse it (#726), where the factories read a null as
+ * no collection.
  */
 function constructorElements<T>(
   argument: [] | [Iterable<T> | string | number | null | undefined],

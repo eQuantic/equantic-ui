@@ -35,6 +35,10 @@ public class CollectionMemberConformanceTests
     [InlineData("var s = new SortedSet<int> { 3, 1, 2 }; var a = new int[4]; s.CopyTo(a, 1); return string.Join(\",\", a);")]                      // 0,1,2,3
     [InlineData("var s = new SortedSet<int> { 3, 1, 2 }; var a = new int[4]; s.CopyTo(a, 1, 2); return string.Join(\",\", a);")]                   // 0,1,2,0
     [InlineData("var s = new SortedSet<string> { \"b\", \"a\" }; var a = new string[2]; s.CopyTo(a); return string.Join(\",\", a);")]              // a,b
+    // A named argument fills its own parameter, and every argument runs in the order it is written.
+    [InlineData("var log = \"\"; int[] Dest(int[] d) { log += \"d\"; return d; } int At(int i) { log += \"i\"; return i; } var q = new Queue<int>(new[] { 1, 2 }); var a = new int[3]; q.CopyTo(arrayIndex: At(1), array: Dest(a)); return log + \"|\" + string.Join(\",\", a);")] // id|0,1,2
+    [InlineData("var log = \"\"; int[] Dest(int[] d) { log += \"d\"; return d; } int At(int i) { log += \"i\"; return i; } var s = new Stack<int>(new[] { 1, 2 }); var a = new int[3]; s.CopyTo(arrayIndex: At(1), array: Dest(a)); return log + \"|\" + string.Join(\",\", a);")] // id|0,2,1
+    [InlineData("var log = \"\"; int[] Dest(int[] d) { log += \"d\"; return d; } int At(int i) { log += \"i\"; return i; } var s = new SortedSet<int> { 3, 1, 2 }; var a = new int[4]; s.CopyTo(count: At(2), array: Dest(a), index: At(1)); return log + \"|\" + string.Join(\",\", a);")] // idi|0,1,2,0
     public void CopyTo_WritesWhereDotNetWrites(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

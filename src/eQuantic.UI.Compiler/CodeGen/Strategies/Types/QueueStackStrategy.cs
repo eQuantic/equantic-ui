@@ -69,8 +69,12 @@ public class QueueStackStrategy : ConversionStrategyBase
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
-                var receiver = context.Converter.ConvertExpression(ma.Expression);
-                return $"{receiver}.{ma.Name.Identifier.Text.ToCamelCase()}({ConvertArgs(inv.ArgumentList, context)})";
+                // Each parameter's argument in its place, a named one included, evaluated in the order
+                // it is written: `q.CopyTo(arrayIndex: 1, array: a)` handed the index as the array.
+                var receiver = context.Converter.ConvertIr(ma.Expression);
+                var holes = string.Join(", ", Enumerable.Range(1, inv.ArgumentList.Arguments.Count).Select(index => "{" + index + "}"));
+                return Ir.JsExprWriter.Write(ParameterTemplate.Call($"{{0}}.{ma.Name.Identifier.Text.ToCamelCase()}({holes})",
+                    receiver, inv, context.SemanticHelper.GetSymbol(inv) as IMethodSymbol, context));
             }
 
             case MemberAccessExpressionSyntax member:
