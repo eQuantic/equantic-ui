@@ -125,8 +125,6 @@ DateTimeOffset.TryParseExact(String,String[],IFormatProvider,DateTimeStyles,Date
 DateTimeOffset.TryParseExact(String,String[],IFormatProvider,DateTimeStyles,DateTimeOffset&) formats  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture where it formats a number or a date and where it parses a number, and not where it parses a date or a time span, writes a time span or lists a date's formats
 DateTimeOffset.TryParseExact(String,String[],IFormatProvider,DateTimeStyles,DateTimeOffset&) input  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture where it formats a number or a date and where it parses a number, and not where it parses a date or a time span, writes a time span or lists a date's formats
 Decimal..ctor(int[]) bits  type  new decimal(bits) is written with C#'s keyword, a name the runtime does not have
-Dictionary<String,Int32>..ctor(IDictionary<String,Int32>) dictionary  type  the collection's twin reads a null as no collection, the form the parameterless constructor is lowered to
-Dictionary<String,Int32>..ctor(IEnumerable<KeyValuePair<String,Int32>>) collection  type  the collection's twin reads a null as no collection, the form the parameterless constructor is lowered to
 Enumerable.Aggregate(IEnumerable<TSource>,Func<TSource,TSource,TSource>) func  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Aggregate(IEnumerable<TSource>,Func<TSource,TSource,TSource>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Aggregate(IEnumerable<TSource>,TAccumulate,Func<TAccumulate,TSource,TAccumulate>) func  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
@@ -311,7 +309,6 @@ Enumerable.Zip(IEnumerable<TFirst>,IEnumerable<TSecond>,IEnumerable<TThird>) fir
 Enumerable.Zip(IEnumerable<TFirst>,IEnumerable<TSecond>,IEnumerable<TThird>) third  control  the Zip of three sequences is lowered as the Zip with a result selector
 Guid..ctor(Byte[]) b  type  new Guid of bytes is written as a class the runtime does not export
 Guid..ctor(Int32,Int16,Int16,Byte[]) d  type  new Guid of bytes is written as a class the runtime does not export
-List<Int32>..ctor(IEnumerable<Int32>) collection  type  lowered to a spread, which reads a null collection through null: refusing it by name is a guard at every call, which is a design decision
 List<Int32>.AddRange(IEnumerable<Int32>) collection  type  lowered to a spread, which reads a null collection through null: refusing it by name is a guard at every call, which is a design decision
 List<Int32>.Exists(Predicate<Int32>) match  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
 List<Int32>.FindAll(Predicate<Int32>) match  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
@@ -320,27 +317,7 @@ List<Int32>.FindLastIndex(Predicate<Int32>) match  type  lowered to the array's 
 List<Int32>.ForEach(Action<Int32>) action  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
 List<Int32>.InsertRange(Int32,IEnumerable<Int32>) collection  type  lowered to a spread, which reads a null collection through null: refusing it by name is a guard at every call, which is a design decision
 List<Int32>.TrueForAll(Predicate<Int32>) match  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Queue<Int32>..ctor(IEnumerable<Int32>) collection  type  the collection's twin reads a null as no collection, the form the parameterless constructor is lowered to
-Queue<Int32>.CopyTo(int[],Int32) array  control  the runtime's queue has no copyTo
-SortedDictionary<String,Int32>..ctor(IDictionary<String,Int32>) dictionary  type  the collection's twin reads a null as no collection, the form the parameterless constructor is lowered to
-SortedSet<Int32>..ctor(IEnumerable<Int32>) collection  type  the collection's twin reads a null as no collection, the form the parameterless constructor is lowered to
-SortedSet<Int32>.CopyTo(int[]) array  control  the runtime's sorted set has no copyTo
-SortedSet<Int32>.CopyTo(int[],Int32) array  type  the runtime's sorted set has no copyTo
-SortedSet<Int32>.CopyTo(int[],Int32,Int32) array  control  the runtime's sorted set has no copyTo
 SortedSet<Int32>.CreateSetComparer(IEqualityComparer<Int32>) memberEqualityComparer  type  the runtime's sorted set has no createSetComparer
-SortedSet<Int32>.ExceptWith(IEnumerable<Int32>) other  control  the runtime's sorted set has no exceptWith
-SortedSet<Int32>.IntersectWith(IEnumerable<Int32>) other  control  the runtime's sorted set has no intersectWith
-SortedSet<Int32>.IsProperSubsetOf(IEnumerable<Int32>) other  control  the runtime's sorted set has no isProperSubsetOf
-SortedSet<Int32>.IsProperSupersetOf(IEnumerable<Int32>) other  control  the runtime's sorted set has no isProperSupersetOf
-SortedSet<Int32>.IsSubsetOf(IEnumerable<Int32>) other  control  the runtime's sorted set has no isSubsetOf
-SortedSet<Int32>.IsSupersetOf(IEnumerable<Int32>) other  control  the runtime's sorted set has no isSupersetOf
-SortedSet<Int32>.Overlaps(IEnumerable<Int32>) other  control  the runtime's sorted set has no overlaps
-SortedSet<Int32>.RemoveWhere(Predicate<Int32>) match  control  the runtime's sorted set has no removeWhere
-SortedSet<Int32>.SetEquals(IEnumerable<Int32>) other  control  the runtime's sorted set has no setEquals
-SortedSet<Int32>.SymmetricExceptWith(IEnumerable<Int32>) other  control  the runtime's sorted set has no symmetricExceptWith
-SortedSet<Int32>.UnionWith(IEnumerable<Int32>) other  control  the runtime's sorted set has no unionWith
-Stack<Int32>..ctor(IEnumerable<Int32>) collection  type  the collection's twin reads a null as no collection, the form the parameterless constructor is lowered to
-Stack<Int32>.CopyTo(int[],Int32) array  control  the runtime's stack has no copyTo
 String.Concat(IEnumerable<String>) values  type  string.Concat of one argument is lowered to a spread of it, which reads a null through null, and an object that is no sequence too
 String.Concat(IEnumerable<T>) values  type  string.Concat of one argument is lowered to a spread of it, which reads a null through null, and an object that is no sequence too
 String.Concat(Object) arg0  type  string.Concat of one argument is lowered to a spread of it, which reads a null through null, and an object that is no sequence too
