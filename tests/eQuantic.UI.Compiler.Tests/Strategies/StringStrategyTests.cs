@@ -52,12 +52,12 @@ public class StringStrategyTests
     [InlineData("s.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)", "$eq.text.split(s, ',', undefined, 3)")]
     [InlineData("s.Split(',', 2, StringSplitOptions.TrimEntries)", "$eq.text.split(s, ',', 2, 2)")]
     [InlineData("s.Split(',', 2)", "$eq.text.split(s, ',', 2)")]
-    [InlineData("s.Split(sep, 2, o)", "$eq.text.split(s, sep, 2, o)")]
-    [InlineData("s.Split(sep, n, StringSplitOptions.None)", "$eq.text.split(s, sep, n, 0)")]
+    [InlineData("s.Split(\",\", 2, o)", "$eq.text.split(s, ',', 2, o)")]
+    [InlineData("s.Split($\"{c}\", n, StringSplitOptions.None)", "$eq.text.split(s, `${c}`, n, 0)")]
     [InlineData("s.Split(new[] { a }, n, o)", "$eq.text.splitAny(s, [a], n, o)")]
     [InlineData("s.Split(separator: ',', options: o)", "$eq.text.split(s, ',', undefined, o)")]
     [InlineData("s.Split(',', count: n)", "$eq.text.split(s, ',', n)")]
-    [InlineData("s.Split(sep, count: n, options: o)", "$eq.text.split(s, sep, n, o)")]
+    [InlineData("s.Split(separator: \",\", count: n, options: o)", "$eq.text.split(s, ',', n, o)")]
     [InlineData("s.Split((char[])null)", "$eq.text.splitAny(s, null)")]
     [InlineData("s.Split(((char[]?)null))", "$eq.text.splitAny(s, null)")]
     [InlineData("s.Split(default(char[]))", "$eq.text.splitAny(s, null)")]
@@ -78,8 +78,8 @@ public class StringStrategyTests
     [Theory]
     [InlineData("a.LastIndexOf(value: \"bc\", startIndex: start)", "$eq.text.lastIndexOf(a, 'bc', start, 'ordinal')")]
     [InlineData("a.IndexOf(\"bc\", startIndex: start)", "$eq.text.indexOf(a, 'bc', start, 'ordinal')")]
-    [InlineData("a.IndexOf(v, start, 2)", "$eq.text.indexOf(a, v, start, 2, 'ordinal')")]
-    [InlineData("a.IndexOf(v, start, count: n)", "$eq.text.indexOf(a, v, start, n, 'ordinal')")]
+    [InlineData("a.IndexOf(\"bc\", start, 2)", "$eq.text.indexOf(a, 'bc', start, 2, 'ordinal')")]
+    [InlineData("a.IndexOf($\"{v}\", start, count: n)", "$eq.text.indexOf(a, `${v}`, start, n, 'ordinal')")]
     [InlineData("a.LastIndexOf(v, start, n, comparison)", "$eq.text.lastIndexOf(a, v, start, n, comparison)")]
     [InlineData("a.IndexOf(v, comparisonType: comparison)", "$eq.text.indexOf(a, v, comparison)")]
     [InlineData("a.LastIndexOf(\"x\", i - 1, 2)", "$eq.text.lastIndexOf(a, 'x', i - 1, 2, 'ordinal')")]
@@ -89,17 +89,25 @@ public class StringStrategyTests
 
     /// <summary>With no model, what the spelling cannot place is a build error rather than a guess, as
     /// <c>string.Format</c>'s first argument is: a name in a place a start and a comparison share (or a
-    /// count and options, or three chars and a separator, a count and options), and a named argument
-    /// out of its parameter's place, which nothing here moves.</summary>
+    /// count and options, or three chars and a separator, a count and options), a value or a separator
+    /// a name holds, which could be a char, a string or a set of them, and a named argument out of its
+    /// parameter's place, which nothing here moves.</summary>
     [Theory]
     [InlineData("s.Split(',', o)")]
     [InlineData("s.Split(sep, n, o)")]
     [InlineData("s.Split(',', options: o, count: 2)")]
     [InlineData("s.Split(count: 2, separator: ',')")]
+    [InlineData("s.Split(sep)")]
+    [InlineData("s.Split(sep, 2)")]
+    [InlineData("s.Split(sep, 2, o)")]
+    [InlineData("s.Split(sep, count: n, options: StringSplitOptions.None)")]
     [InlineData("s.IndexOf(v, comparison)")]
     [InlineData("s.LastIndexOf(\"bc\", start)")]
     [InlineData("s.IndexOf('x', start)")]
     [InlineData("s.IndexOf(v, start, other)")]
+    [InlineData("s.IndexOf(v, 2)")]
+    [InlineData("s.IndexOf(v, start, 2)")]
+    [InlineData("\"\".LastIndexOf(value, startIndex: 5)")]
     [InlineData("s.IndexOf(\"x\", count: 2, startIndex: 1)")]
     [InlineData("s.LastIndexOf(startIndex: 1, value: \"x\")")]
     public void ANameTheSpellingCannotPlace_IsNotGuessed(string code)

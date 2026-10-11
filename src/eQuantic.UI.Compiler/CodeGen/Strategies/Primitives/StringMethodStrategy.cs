@@ -74,7 +74,7 @@ public class StringMethodStrategy : IConversionStrategy
             return SplitCall(invocation, context);
         if (methodName is "IndexOf" or "LastIndexOf" && invocation.ArgumentList.Arguments.Count > 1
             && context.SemanticHelper.GetSymbol(invocation) is null && SpelledSearch(invocation.ArgumentList.Arguments) is null)
-            return context.Unhandled(invocation, $"string.{methodName} whose start, count or comparison the spelling cannot tell apart");
+            return context.Unhandled(invocation, $"string.{methodName} whose overload the spelling cannot settle");
         // An overload that compares goes to the runtime, chosen by the BOUND method and handed the
         // comparison as the value it is, its member's name, so one held in a variable is the one it
         // holds. It was read from its SPELLING and both sides were lower-cased: the Kelvin sign
@@ -189,8 +189,11 @@ public class StringMethodStrategy : IConversionStrategy
     /// three, the second and third of four); it is a comparison where it is spelled or named as one, or
     /// is the fourth. A name in the second place of two, or the third of three, could hold either, so
     /// the shape is null, and so it is for a named argument out of its parameter's place, which nothing
-    /// here moves. The value is a char where a char literal says so and nothing compares: a search
-    /// that compares takes a char as the string of one it is in the browser.
+    /// here moves. A search from a start is a char's where a char literal says so and a string's where
+    /// the spelling says so (<see cref="SpellsAString"/>); a value a name holds could be either, and
+    /// the two answer differently at the ends of the string (<c>"".LastIndexOf(c, 5)</c> is -1 for a
+    /// char and throws for a string), so the shape is null. A search that compares has no char
+    /// overload to tell apart: <c>IndexOf(char, StringComparison)</c> answers as the string of one.
     /// </summary>
     private static string? SpelledSearch(SeparatedSyntaxList<ArgumentSyntax> arguments)
     {
@@ -223,9 +226,24 @@ public class StringMethodStrategy : IConversionStrategy
         if (names is null) return null;
         for (var place = 0; place < count; place++)
             if (arguments[place].NameColon?.Name.Identifier.ValueText is { } name && name != names[place]) return null;
-        var value = arguments[0].Expression.IsKind(SyntaxKind.CharacterLiteralExpression) && !tail.Contains('k') ? 'c' : 's';
-        return string.Join(",", tail.Prepend(value));
+        var value = tail.Contains('k') ? 's'
+            : arguments[0].Expression.IsKind(SyntaxKind.CharacterLiteralExpression) ? 'c'
+            : SpellsAString(arguments[0].Expression) ? 's'
+            : '?';
+        return value == '?' ? null : string.Join(",", tail.Prepend(value));
     }
+
+    /// <summary>Whether an expression is spelled as a string: a string literal, an interpolated string,
+    /// or a concatenation one side of which is. Evidence for the paths with no model only.</summary>
+    private static bool SpellsAString(ExpressionSyntax expression) => expression switch
+    {
+        ParenthesizedExpressionSyntax parenthesized => SpellsAString(parenthesized.Expression),
+        LiteralExpressionSyntax literal => literal.IsKind(SyntaxKind.StringLiteralExpression),
+        InterpolatedStringExpressionSyntax => true,
+        BinaryExpressionSyntax binary => binary.IsKind(SyntaxKind.AddExpression)
+            && (SpellsAString(binary.Left) || SpellsAString(binary.Right)),
+        _ => false,
+    };
 
     /// <summary>Whether an argument spells a <c>StringComparison</c>, the only evidence of one with no
     /// model to ask.</summary>
@@ -446,13 +464,15 @@ public class StringMethodStrategy : IConversionStrategy
     /// <summary>
     /// <c>string.Split</c> with no model to say which overload it is. No argument is white space; chars
     /// written one by one are a set of them, and so are more than three arguments, which only the
-    /// params overload takes; one argument is a set where it is spelled as an array
-    /// (<see cref="SpelledAsArray"/>) and the one separator otherwise. After the separator, the options are spelled or named as such and a count is a
-    /// number or named as one (<see cref="IsANumber"/>), and three arguments are a separator, a count
-    /// and options where the separator is an array or either of the others says what it is. A name
-    /// could hold a count or options, and three of them could be three chars, so what the spelling
-    /// cannot place is a build error rather than a guess, as <c>string.Format</c>'s first argument is;
-    /// so is a named argument out of its parameter's place, which nothing here moves.
+    /// params overload takes. Otherwise the separator is a set where it is spelled as an array
+    /// (<see cref="SpelledAsArray"/>) and the one separator where it is a char literal or spelled as a
+    /// string (<see cref="SpellsAString"/>); after it, the options are spelled or named as such and a
+    /// count is a number or named as one (<see cref="IsANumber"/>), and three arguments are a
+    /// separator, a count and options where the separator is an array or either of the others says
+    /// what it is. A name could hold a char, a string or a set of them, a count or options, and three
+    /// names could be three chars, so what the spelling cannot place is a build error rather than a
+    /// guess, as <c>string.Format</c>'s first argument is; so is a named argument out of its
+    /// parameter's place, which nothing here moves.
     /// </summary>
     private static string GuessedSplit(InvocationExpressionSyntax invocation, JsExpr receiver, ConversionContext context)
     {
@@ -478,6 +498,8 @@ public class StringMethodStrategy : IConversionStrategy
             : context.Converter.ConvertIr(argument.Expression)));
         var holes = Enumerable.Range(1, arguments.Count).Select(index => "{" + index + "}").ToList();
         var isSet = arguments.Count > 0 && SpelledAsArray(arguments[0].Expression);
+        var isOne = arguments.Count > 0 && (arguments[0].Expression.IsKind(SyntaxKind.CharacterLiteralExpression)
+            || SpellsAString(arguments[0].Expression));
         var helper = isSet ? Eq.StringSplitAny : Eq.StringSplit;
         var template = arguments.Count switch
         {
@@ -485,6 +507,7 @@ public class StringMethodStrategy : IConversionStrategy
             > 3 => $"{Eq.StringSplitAny}({{0}}, [{string.Join(", ", holes)}])",
             > 1 when arguments.All(argument => argument.Expression.IsKind(SyntaxKind.CharacterLiteralExpression)) =>
                 $"{Eq.StringSplitAny}({{0}}, [{string.Join(", ", holes)}])",
+            _ when !isSet && !isOne => null,
             1 => $"{helper}({{0}}, {{1}})",
             2 when IsOptions(1) => $"{helper}({{0}}, {{1}}, undefined, {{2}})",
             2 when IsCount(1) => $"{helper}({{0}}, {{1}}, {{2}})",
