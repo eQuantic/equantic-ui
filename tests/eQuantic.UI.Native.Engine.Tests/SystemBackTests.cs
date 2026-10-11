@@ -119,6 +119,26 @@ public class SystemBackTests
         host.CanGoBack.Should().BeFalse("and with nothing else open, the next back is the system's");
     }
 
+    /// <summary>The layer goes first, as a binding does for every key: a field inside a sheet leaves
+    /// with the sheet, rather than spending a back on its caret.</summary>
+    [Fact]
+    public void AFieldInsideALayerLeavesWithIt()
+    {
+        var closed = 0;
+        var host = Open(new BottomSheet(new TextEntry("", _ => { }) { Placeholder = "Reply" },
+            onDismiss: () => closed++));
+        // Tab walks to the field, past any stop the sheet keeps before it.
+        for (var i = 0; i < 4 && host.TextTarget is null; i++)
+        {
+            host.KeyDown("Tab");
+            host.RenderFrame(new DisplayListBuilder());
+        }
+        host.TextTarget.Should().NotBeNull();
+
+        host.Back().Should().BeTrue();
+        closed.Should().Be(1);
+    }
+
     /// <summary>
     /// A focus ring alone is not something back closes. Escape clears it on a desktop, where it is
     /// drawn; on a phone the person would press back and see nothing happen.

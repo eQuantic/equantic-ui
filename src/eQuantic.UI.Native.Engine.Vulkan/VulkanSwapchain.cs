@@ -51,6 +51,9 @@ public sealed unsafe class VulkanSwapchain : IDisposable
     /// </summary>
     public bool Present(DisplayList displayList, RhiRenderer renderer)
     {
+        // None made yet: the window has had no area since this was created.
+        if (_swapchain == 0) return false;
+
         uint index;
         var acquire = VkSurface.vkAcquireNextImageKHR(_device.Device, _swapchain, ulong.MaxValue,
             _acquired, 0, &index);
@@ -77,11 +80,7 @@ public sealed unsafe class VulkanSwapchain : IDisposable
     }
 
     /// <summary>Rebuilds for the surface's current size — a rotation, a resize, a keyboard.</summary>
-    public void Resize(int width, int height)
-    {
-        DestroyTargets();
-        Create(width, height);
-    }
+    public void Resize(int width, int height) => Create(width, height);
 
     private void Create(int width, int height)
     {
@@ -89,10 +88,16 @@ public sealed unsafe class VulkanSwapchain : IDisposable
         Vk.Check(VkSurface.vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
             _device.PhysicalDevice, _surface, &capabilities), "surface capabilities");
 
-        var (extentWidth, extentHeight) = SwapchainShape.Extent(width, height,
-            (capabilities.MinImageExtent.Width, capabilities.MinImageExtent.Height),
-            (capabilities.MaxImageExtent.Width, capabilities.MaxImageExtent.Height));
-        var extent = new VkExtent2D { Width = extentWidth, Height = extentHeight };
+        // A window with no area (a minimised desktop window) has no swapchain to make: the one it
+        // has stays, out of date, and the next present asks again.
+        if (SwapchainShape.Extent(width, height,
+                (capabilities.MinImageExtent.Width, capabilities.MinImageExtent.Height),
+                (capabilities.MaxImageExtent.Width, capabilities.MaxImageExtent.Height))
+            is not { } size)
+            return;
+        DestroyTargets();
+
+        var extent = new VkExtent2D { Width = size.Width, Height = size.Height };
         Width = (int)extent.Width;
         Height = (int)extent.Height;
 

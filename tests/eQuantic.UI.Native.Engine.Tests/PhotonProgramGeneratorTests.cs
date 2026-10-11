@@ -203,7 +203,7 @@ public class PhotonProgramGeneratorTests
 
         launcher.Should().Contain("EnableOnBackInvokedCallback = true");
         foreach (var change in new[] { "Orientation", "ScreenSize", "SmallestScreenSize", "ScreenLayout",
-                     "Keyboard", "KeyboardHidden", "UiMode", "Density" })
+                     "Keyboard", "KeyboardHidden", "Navigation", "UiMode", "Density" })
             Regex.IsMatch(launcher, $@"ConfigChanges\.{change}\b").Should().BeTrue(
                 $"a {change} change is the host's to follow, not a reason to rebuild the activity");
     }

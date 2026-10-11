@@ -25,10 +25,10 @@ internal static class SwapchainStatus
     /// True when the call did its work (an image acquired, a frame shown), false when the swapchain
     /// has to be rebuilt before it can; any other answer is an error, and throws.
     /// </summary>
-    internal static bool Usable(int result, string operation) => result switch
+    internal static bool Usable(int result, string operation)
     {
-        Vk.Success or Suboptimal => true,
-        OutOfDate => false,
-        _ => throw new InvalidOperationException($"Vulkan {operation} failed: VkResult {result}."),
-    };
+        if (result == OutOfDate) return false;
+        if (result != Suboptimal) Vk.Check(result, operation);
+        return true;
+    }
 }

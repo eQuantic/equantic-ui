@@ -44,4 +44,10 @@ public class SwapchainShapeTests
         SwapchainShape.Extent(0, 0, AnySize, Large).Should().Be((1u, 1u));
         SwapchainShape.Extent(9000, 300, AnySize, Large).Should().Be((4096u, 300u));
     }
+
+    /// <summary>A minimised desktop window's surface accepts only 0x0, which no swapchain can be
+    /// made in: there is none to make, and the one the window has stays until it has area again.</summary>
+    [Fact]
+    public void AWindowWithNoAreaHasNoSwapchainToMake() =>
+        SwapchainShape.Extent(1280, 800, (0u, 0u), (0u, 0u)).Should().BeNull();
 }

@@ -64,6 +64,7 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     private long _startedAt;
     private BackCallback? _back;
     private bool _backRegistered;
+    private bool _backKeyTaken;
 
     /// <summary>Frames actually presented — the self-test's exit evidence, as on every other shell.</summary>
     public int FramesPresented { get; private set; }
@@ -277,14 +278,20 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     /// <summary>
     /// The system's appearance or the display changed while the activity kept running: the manifest
     /// declares these changes as the activity's own to handle, so nothing rebuilds it. Light or dark
-    /// follows the system unless the app fixed it, and a new density re-rasters at the new scale.
+    /// follows the system unless the app fixed it, and a new density re-rasters at the new scale AND
+    /// lays out at the new size in dp: "Display size" changes the density and not the pixels, so no
+    /// surface change arrives to do it.
     /// </summary>
     public override void OnConfigurationChanged(global::Android.Content.Res.Configuration newConfig)
     {
         base.OnConfigurationChanged(newConfig);
         if (_host is null) return;
         _host.Mode = Mode();
-        _host.RenderScale = Resources!.DisplayMetrics!.Density;
+        var scale = Resources!.DisplayMetrics!.Density;
+        _host.RenderScale = scale;
+        if (_view?.Holder?.SurfaceFrame is { } frame && !frame.IsEmpty)
+            _host.Resize(frame.Width() / scale, frame.Height() / scale);
+        ApplyInsets(scale);
         _host.Invalidate();
     }
 
@@ -337,6 +344,9 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             if (!_vulkan.Present(displayList, _swapchain))
             {
                 _swapchain.Resize(holder.SurfaceFrame!.Width(), holder.SurfaceFrame.Height());
+                // Nothing was shown, and rendering marked the host clean: the next tick draws it
+                // again, into the rebuilt swapchain, and syncs back after it.
+                _host.Invalidate();
                 return;
             }
             FramesPresented++;
@@ -458,13 +468,24 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     /// Back, as Android delivers it: the callback above, or this key. Before Android 13 it is always
     /// the key, and from 13 it still is for an app the platform does not treat as opted into
     /// predictive back; when the platform calls the callback, the key never arrives, so the two
-    /// cannot both run for one press. The DOWN is taken too when back has somewhere to go, or the
-    /// activity would start tracking a back of its own and finish on the UP.
+    /// cannot both run for one press.
+    /// <para>
+    /// The DOWN decides, and the UP follows it. Taken, the activity never starts tracking a back of
+    /// its own and cannot finish on the UP; and the UP is taken even when what was open closed in
+    /// between, where <see cref="GoBack"/> then does what the system would have. Deciding again on
+    /// the UP lost that press: the activity ignores an UP whose DOWN it never saw.
+    /// </para>
     /// </summary>
     public override bool DispatchKeyEvent(KeyEvent? e)
     {
-        if (e?.KeyCode != Keycode.Back || _host?.CanGoBack != true) return base.DispatchKeyEvent(e);
-        if (e.Action == KeyEventActions.Up && !e.IsCanceled) GoBack();
+        if (e?.KeyCode != Keycode.Back) return base.DispatchKeyEvent(e);
+        if (e.Action == KeyEventActions.Down && e.RepeatCount == 0) _backKeyTaken = _host?.CanGoBack == true;
+        if (!_backKeyTaken) return base.DispatchKeyEvent(e);
+        if (e.Action == KeyEventActions.Up)
+        {
+            _backKeyTaken = false;
+            if (!e.IsCanceled) GoBack();
+        }
         return true;
     }
 

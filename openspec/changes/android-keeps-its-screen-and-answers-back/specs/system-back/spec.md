@@ -2,10 +2,10 @@
 
 ### Requirement: The system back closes what is open
 
-The platform's back SHALL run what Escape runs on a desktop: a field, a code surface or a sheet being
-edited SHALL stop being edited, and otherwise the topmost layer that binds Escape (a dismissible
-`Dialog`, a `BottomSheet`, a `Drawer`, an open `Anchored` menu, a picker) SHALL close through that
-binding. A screen with a back of its own SHALL declare it the same way, as a `Shortcut` of
+The platform's back SHALL run what Escape runs on a desktop: the topmost layer that binds Escape (a
+dismissible `Dialog`, a `BottomSheet`, a `Drawer`, an open `Anchored` menu, a picker) SHALL close
+through that binding, and with no such layer a field, a code surface or a sheet being edited SHALL stop
+being edited. A screen with a back of its own SHALL declare it the same way, as a `Shortcut` of
 `KeyChord.Escape`.
 
 #### Scenario: A dismissible dialog
@@ -27,6 +27,11 @@ binding. A screen with a back of its own SHALL declare it the same way, as a `Sh
 
 - **WHEN** back is pressed while a `TextEntry` has the caret and nothing else is open
 - **THEN** the field stops being edited, and the next back is the system's
+
+#### Scenario: A field inside a layer
+
+- **WHEN** back is pressed while a `TextEntry` inside an open `BottomSheet` has the caret
+- **THEN** the sheet closes
 
 ### Requirement: Back is the system's when nothing is open
 
