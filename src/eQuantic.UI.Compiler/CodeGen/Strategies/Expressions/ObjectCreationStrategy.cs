@@ -175,6 +175,14 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         else if (creation.Type is AliasQualifiedNameSyntax aliasQualified)
             typeName = aliasQualified.Name.ToString();
         var createdType = context.SemanticHelper.GetType(creation);
+        // A nested type, a component among them, is constructed by its twin's name and imported from
+        // there, whichever branch below builds it (#584): `new Host.Page()` constructed `Page`.
+        if (createdType is INamedTypeSymbol keptOut && keptOut.ReportIfKeptOut(creation, context)) return Undefined;
+        if (createdType is INamedTypeSymbol nestedType && nestedType.NestedTwinName() is not null)
+        {
+            typeName = nestedType.IntroduceTwin(context);
+            genericTypeName = null;
+        }
 
         // A type named through a using alias is built by its own name and imported by it, as a read of
         // its static is (#625): `using F = N.Fold;` then `new F()` wrote `new F()`, a name nothing defines.
@@ -721,8 +729,17 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         type.IsValueType && ctor is { IsImplicitlyDeclared: true, Parameters.Length: 0 } && TwinIsWritten(type)
             ? JsExpr.Opaque(DefaultValue.Of(type, context))
             : BoundArguments.Of(context.SemanticHelper.GetOperation(creation), argument => context.Converter.ConvertIr(argument)) is { } bound
-                ? bound.New(type.Name)
-                : JsExpr.New(JsExpr.Identifier(type.Name), ConstructorArguments(creation, ctor, context));
+                ? bound.New(TwinOf(type, context))
+                : JsExpr.New(JsExpr.Identifier(TwinOf(type, context)), ConstructorArguments(creation, ctor, context));
+
+    /// <summary>The name a construction calls, its type's twin's: named by its owner where it is nested
+    /// (#584), and imported from there, and the type's own name otherwise.</summary>
+    private static string TwinOf(ITypeSymbol type, ConversionContext context)
+    {
+        if (type is not INamedTypeSymbol named) return type.Name;
+        if (named.NestedTwinName() is not null) named.RegisterIntroduced(context);
+        return named.TwinReference();
+    }
 
     /// <summary>
     /// Whether <paramref name="type"/> is a class whose twin eqc writes with its C# constructors
@@ -805,6 +822,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         // guarding some of the ways a symbol can be named and reading like protection for all.
         // Found in review of that fix.
         if (ms?.ContainingType.ReportIfHostOnlyType(creation, context) == true) return Undefined;
+        if (ms?.ContainingType is { } keptOutTarget && keptOutTarget.ReportIfKeptOut(creation, context)) return Undefined;
 
         // `Color c = new(1, 2, 3, 4)` builds the data as the explicit form does.
         if (ms?.ContainingType is { } dataTarget && dataTarget.TwinIsData())
@@ -842,17 +860,17 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                 if (creation.Initializer.Kind() == SyntaxKind.CollectionInitializerExpression)
                 {
                     return AddPerElementConstruction(creation.Initializer,
-                        JsExpr.New(JsExpr.Identifier(target.Name), ctorArgs), context);
+                        JsExpr.New(JsExpr.Identifier(TwinOf(target, context)), ctorArgs), context);
                 }
                 // An initializer that adds to a member or writes an entry, applied once the object
                 // exists, as the explicit form applies it (#462), to the construction as IR: written as
                 // text, a lambda among its arguments lost every line of its block from the map.
                 if (TwinIsWritten(target) && !ObjectInitializer.OnlyAssigns(creation.Initializer))
-                    return ObjectInitializer.Apply(JsExpr.New(JsExpr.Identifier(target.Name), ctorArgs), creation.Initializer, context);
+                    return ObjectInitializer.Apply(JsExpr.New(JsExpr.Identifier(TwinOf(target, context)), ctorArgs), creation.Initializer, context);
                 if (ms != null && ctorArgs.Count < ms.Parameters.Length)
                     ctorArgs.AddRange(ms.Parameters.Skip(ctorArgs.Count).Select(parameter => DefaultOf(parameter, context)));
                 ctorArgs.Add(context.Converter.ConvertIr(creation.Initializer));
-                return JsExpr.New(JsExpr.Identifier(target.Name), ctorArgs);
+                return JsExpr.New(JsExpr.Identifier(TwinOf(target, context)), ctorArgs);
             }
 
             // A list one of whose elements an extension adds, as the explicit form applies it.
@@ -884,11 +902,12 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         if (ms?.ContainingType is { } plain && IsBuiltAsCSharp(plain))
             return BuildClassConstruction(creation, plain, context);
 
-        // Target-typed `new(args)` on a named type: `Item _x = new(9, "z")` → `new Item(9, 'z')`.
+        // Target-typed `new(args)` on a named type: `Item _x = new(9, "z")` → `new Item(9, 'z')`, a
+        // nested one (a component among them) by its twin's name, imported from there (#584).
         var args = creation.ArgumentList is { Arguments.Count: > 0 }
             ? OrderedArguments(creation, context)
             : [];
-        var typeName = ms?.ContainingType.Name;
+        var typeName = ms?.ContainingType is { } created ? TwinOf(created, context) : null;
         if (string.IsNullOrEmpty(typeName) || typeName == "Object")
         {
             // No semantic info: fall back to the field/var's declared type (without nullability/generics noise).

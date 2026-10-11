@@ -58,6 +58,12 @@ eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js
 eQuantic.UI.Compiler.CodeGen.ValueMember.Store.get -> string!
 eQuantic.UI.Compiler.CodeGen.ValueMember.Store.init -> void
 eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.ClassBuilder.State(string! name, string? type, Microsoft.CodeAnalysis.SyntaxNode? sourceNode = null) -> void
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.Binary(Microsoft.CodeAnalysis.IMethodSymbol! method, string! token, string! left, string! right) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr?
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.Unary(Microsoft.CodeAnalysis.IMethodSymbol! method, string! token, string! operand) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr?
+static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IntroduceTwin(this Microsoft.CodeAnalysis.INamedTypeSymbol! type, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.Unary(Microsoft.CodeAnalysis.IMethodSymbol! method, string! token, string! operand, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr?
+static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.Binary(Microsoft.CodeAnalysis.IMethodSymbol! method, string! token, string! left, string! right, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr?
+const eQuantic.UI.Compiler.CodeGen.Eq.GuidOf = "$eq.guid.of" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Closing = "$eq.closing" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ClosingLike = "$eq.closingLike" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.SameClosure = "$eq.sameClosure" -> string!

@@ -20,13 +20,31 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 internal static class LinqSource
 {
     /// <summary>The source as IR.</summary>
-    internal static JsExpr Ir(ExpressionSyntax source, ConversionContext context)
+    internal static JsExpr Ir(ExpressionSyntax source, ConversionContext context) =>
+        Read(source, ReceiverParameter(source, context), context);
+
+    /// <summary>
+    /// The source as IR, read through <c>seq</c> by the name the operator gives it, which a null one is
+    /// refused by: <c>source</c> for most, <c>first</c> for a <c>Zip</c>'s receiver, <c>second</c> for a
+    /// <c>Concat</c>'s argument. Every one was refused as <c>source</c> (#569).
+    /// </summary>
+    private static JsExpr Read(ExpressionSyntax source, string? parameter, ConversionContext context)
     {
         var converted = context.Converter.ConvertIr(source);
         if (IsArray(source, context)) return converted;
         context.UsedHelpers.Add(Eq.Import);
-        return JsExpr.Call(JsExpr.Identifier(Eq.LinqSeq), converted);
+        return parameter is null or "source"
+            ? JsExpr.Call(JsExpr.Identifier(Eq.LinqSeq), converted)
+            : JsExpr.Call(JsExpr.Identifier(Eq.LinqSeq), converted, JsExpr.Literal(JsStringLiteral.Quote(parameter)));
     }
+
+    /// <summary>The name of the parameter a receiver binds to: the extension's own first parameter.</summary>
+    private static string? ReceiverParameter(ExpressionSyntax source, ConversionContext context) =>
+        source.Parent is MemberAccessExpressionSyntax access && access.Expression == source
+        && access.Parent is InvocationExpressionSyntax invocation && invocation.Expression == access
+        && context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { ReducedFrom.Parameters: [var receiver, ..] }
+            ? receiver.Name
+            : null;
 
     /// <summary>
     /// A NEW array of the source's elements, as <c>ToList</c> and <c>ToArray</c> make: the source was
@@ -60,10 +78,10 @@ internal static class LinqSource
     /// </summary>
     internal static JsExpr Argument(ArgumentSyntax argument, InvocationExpressionSyntax invocation, ConversionContext context) =>
         context.SemanticHelper.GetOperation(invocation) is Microsoft.CodeAnalysis.Operations.IInvocationOperation call
-        && call.Arguments.FirstOrDefault(bound => bound.Syntax == argument)?.Parameter?.OriginalDefinition.Type
-            is INamedTypeSymbol parameter
+        && call.Arguments.FirstOrDefault(bound => bound.Syntax == argument)?.Parameter is { } bound
+        && bound.OriginalDefinition.Type is INamedTypeSymbol parameter
         && IsSequence(parameter)
-            ? Ir(argument.Expression, context)
+            ? Read(argument.Expression, bound.Name, context)
             : context.Converter.ConvertIr(argument.Expression);
 
     /// <summary>A parameter a LINQ call reads elements from: an <c>IEnumerable&lt;T&gt;</c>, or a span.</summary>

@@ -2188,6 +2188,35 @@ record of a release, the wiki's Upgrading page is the distillate.
   (`$eq.closingLike`, which `withPatch` uses too), so a copy constructor or an `init` accessor that
   compares the copy meets its closed type, and both name their binding `$copied`, as #661's guard asks.
   Main's CI runs had stayed queued, so the suites of the pull requests that merged main found it.
+- **2026-10-08 · A null argument is measured over the translated surface, and a twin refuses it by
+  name**: one measurement instead of one fix per report
+  ([#569](https://github.com/eQuantic/equantic-ui/issues/569)). `NullArgumentConformanceTests` derives
+  the surface from the BCL audit's record and reflection, lets eqc's own diagnostics say what it
+  translates, and calls each member with a null for each reference parameter on both sides, a control
+  without the null beside it. LINQ's `Max`, `Min` and `ToDictionary`, a sequence named by its
+  parameter, `CompareTo(object)`, `new Guid(text)`, `GetUnicodeCategory` and the cancellation pair refuse
+  a null as .NET does now, 67 probes. The 402 left are a baseline that only shrinks, each with its
+  reason, most of them members lowered to JavaScript's own method, where refusing a null by name is a
+  guard at every call, a decision. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-exceptions`).
+- **2026-10-06 · A nested class is a module of its own, named by its owner**: a class declared inside
+  another one had no module, so `Roster.First()` building a private `Row` threw, and where a top-level
+  class had its name the nested one resolved to it, so `new Cart().Size()` read the top-level `Item`'s
+  3 for its own 9 ([#584](https://github.com/eQuantic/equantic-ui/issues/584)); a nested record wrote
+  the module a top-level record of its name writes, and the two were refused (EQ2009); a nested static
+  class outside a component had no module. Every class, static class, record and struct declared
+  inside another type is a module named by the types that contain it and its own name joined by `$`
+  (`Cart$Item`), which no C# type can take, and every reference to it, a construction, a type test, a
+  static member, an operator, a zero and an annotation alike, names that twin and imports it, through
+  one name the parser, the resolver and the emitters read; one inside a server-only class, an
+  exception or an attribute has none, and client code that reaches it, by a name, an alias, `using
+  static`, an operator or a zero, is refused with EQ2010, the import every module makes being the net
+  under the fences; one inside a type the runtime provides is the runtime's. A record's text keeps its
+  C# name. The runtime's one nested type is `CodeBlock$CodeMetrics`. The server names the page it
+  serves by the same rule, one file linked into both (`TwinName.OfType`): a page declared inside a
+  class asked the browser for a module named by its simple name, which nothing writes any more, and
+  one inside an owner that never crosses has no route and cannot be mapped. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-classes`).
 
 ## Retired documents
 

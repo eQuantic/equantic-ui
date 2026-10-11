@@ -141,7 +141,11 @@ public class PageTitleTests
         config.GetProperty("routes").EnumerateArray().Single(route => route.GetProperty("pattern").GetString() == "/untitled")
             .TryGetProperty("title", out var __).Should().BeFalse("a route that declares no title says nothing");
         config.GetProperty("themeCookie").GetProperty("name").GetString().Should().Be("eq'theme");
-        config.GetProperty("page").GetString().Should().Be(nameof(UntitledPage));
+        // The page is declared inside this class, so its module is named by its owner, as eqc names it
+        // (#584): asked by its simple name, the client loaded a module nobody writes.
+        config.GetProperty("page").GetString().Should().Be($"{nameof(PageTitleTests)}${nameof(UntitledPage)}");
+        config.GetProperty("routes").EnumerateArray().Single(route => route.GetProperty("pattern").GetString() == "/untitled")
+            .GetProperty("page").GetString().Should().Be($"{nameof(PageTitleTests)}${nameof(UntitledPage)}");
         // The title of a route closes no script element: its `<` is escaped where it is written.
         html.Should().NotContain("</script><b>x");
     }

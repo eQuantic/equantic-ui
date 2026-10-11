@@ -40,7 +40,7 @@ export class PythonLanguage {
                 $slots.reserved = $eq.collections.hashSetOf(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
                 $slots.builtins = $eq.collections.hashSetOf(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
                 $slots.constants = $eq.collections.hashSetOf(['True', 'False', 'None', 'self', 'cls']);
-                $slots.words = [...[...$eq.linq.seq(PythonLanguage.reserved), ...$eq.linq.seq(PythonLanguage.builtins)], ...$eq.linq.seq(PythonLanguage.constants)].slice();
+                $slots.words = [...[...$eq.linq.seq(PythonLanguage.reserved, 'first'), ...$eq.linq.seq(PythonLanguage.builtins, 'second')], ...$eq.linq.seq(PythonLanguage.constants, 'second')].slice();
             } catch ($error) {
                 PythonLanguage.$slots = null;
                 throw PythonLanguage.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Code.PythonLanguage', $error);
