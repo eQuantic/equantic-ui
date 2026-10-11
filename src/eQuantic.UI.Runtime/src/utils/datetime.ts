@@ -19,7 +19,8 @@
 
 import { activeFormatData } from './culture';
 import { hash } from './hash';
-import { exception } from './exceptions';
+import { exception, is } from './exceptions';
+import { round } from './dotnet-math';
 
 /** A null text handed to `Parse`, as .NET words it: `DateTime`, `DateOnly` and `TimeOnly` name it `s`,
  * `TimeSpan` and `DateTimeOffset` name it `input`. Read through null, it was a NullReferenceException. */
@@ -37,8 +38,15 @@ function attempt<T>(read: (text: string) => T): (text: string | null | undefined
     if (text == null) return undefined;
     try {
       return read(text);
-    } catch {
-      return undefined;
+    } catch (error) {
+      // What Parse refuses a text with; anything else is a fault of the reader, and stays loud.
+      if (
+        is(error, 'System.FormatException') ||
+        is(error, 'System.OverflowException') ||
+        is(error, 'System.ArgumentException')
+      )
+        return undefined;
+      throw error;
     }
   };
 }
@@ -989,7 +997,11 @@ dateOnly.maxValue = () => new DateOnly(daysFromCivil(9999, 12, 31));
 dateOnly.parse = (text: string): DateOnly => {
   if (text == null) throw exception('System.ArgumentNullException', NULL_S);
   const parsed = tryParseDateOnly(text);
-  if (parsed === null) throw exception('System.FormatException', `Unrecognized DateOnly format: '${text}'`);
+  if (parsed === null)
+    throw exception(
+      'System.FormatException',
+      `String '${text}' was not recognized as a valid DateOnly.`,
+    );
   return parsed;
 };
 
@@ -1160,19 +1172,56 @@ timeOnly.minValue = () => new TimeOnly(0n);
 timeOnly.maxValue = () => new TimeOnly(TICKS_PER_DAY - 1n);
 timeOnly.parse = (text: string): TimeOnly => {
   if (text == null) throw exception('System.ArgumentNullException', NULL_S);
-  // The whole text, and a clock that exists: `25:00` read as a day and an hour, and `09:30 junk` as
-  // half past nine, where .NET refuses both.
-  const m = /^(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?$/.exec(text.trim());
-  if (!m || +m[1] > 23 || +m[2] > 59 || +(m[3] ?? 0) > 59)
-    throw exception('System.FormatException', `Unrecognized TimeOnly format: '${text}'`);
-  const frac = m[4] ? BigInt(m[4].padEnd(7, '0').slice(0, 7)) : 0n;
-  return new TimeOnly(
-    BigInt(+m[1]) * TICKS_PER_HOUR +
-      BigInt(+m[2]) * TICKS_PER_MINUTE +
-      BigInt(+(m[3] ?? 0)) * TICKS_PER_SECOND +
-      frac,
-  );
+  // The invariant culture's clock, as .NET 10 reads it: an hour, minutes and seconds of one or two
+  // digits each, a fraction after the seconds, and an AM or PM designator before or after, in any
+  // case. An hour alone needs a designator. The whole text, and a clock that exists: `25:00` read as a
+  // day and an hour, and `09:30 junk` as half past nine, where .NET refuses both.
+  const m =
+    /^(?:(AM|PM)\s*)?(\d{1,2})(?::(\d{1,2})(?::(\d{1,2})(?:\.(\d*))?)?)?(?:\s*(AM|PM))?$/i.exec(
+      text.trim(),
+    );
+  if (m === null || (m[1] !== undefined && m[6] !== undefined)) throw notTimeOnly(text);
+  const designator = (m[1] ?? m[6])?.toUpperCase();
+  let hour = +m[2];
+  const [minute, second] = [+(m[3] ?? 0), +(m[4] ?? 0)];
+  if ((m[3] === undefined && designator === undefined) || hour > 23 || minute > 59 || second > 59)
+    throw notTimeOnly(text);
+  // `AdjustHour`: AM takes an hour up to 12, twelve being midnight; PM moves an hour before noon on.
+  if (designator === 'AM') {
+    if (hour > 12) throw notTimeOnly(text);
+    if (hour === 12) hour = 0;
+  } else if (designator === 'PM' && hour < 12) hour += 12;
+  const ticks =
+    BigInt(hour) * TICKS_PER_HOUR +
+    BigInt(minute) * TICKS_PER_MINUTE +
+    BigInt(second) * TICKS_PER_SECOND +
+    BigInt(fractionTicks(m[5] ?? ''));
+  // A fraction that rounds up to the next day is midnight, as .NET's date-time reader carries it.
+  return new TimeOnly(ticks % TICKS_PER_DAY);
 };
+
+/** .NET's refusal of a text that is no time of day. */
+function notTimeOnly(text: string): Error {
+  return exception(
+    'System.FormatException',
+    `String '${text}' was not recognized as a valid TimeOnly.`,
+  );
+}
+
+/**
+ * The ticks of a fraction of a second, as .NET's `ParseFraction` reads its digits: each one added at a
+ * tenth of the place before, in doubles, and the sum rounded to the tick, half to even. Read as a
+ * decimal instead, `.12345678` lost its eighth digit and `.00000005` its rounding.
+ */
+function fractionTicks(digits: string): number {
+  let fraction = 0;
+  let place = 0.1;
+  for (const digit of digits) {
+    fraction += +digit * place;
+    place *= 0.1;
+  }
+  return round(fraction * 10_000_000);
+}
 
 timeOnly.tryParse = attempt(timeOnly.parse);
 
