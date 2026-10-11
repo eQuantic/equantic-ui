@@ -165,6 +165,7 @@ import {
   indexOf as listIndexOf,
   lastIndexOf as listLastIndexOf,
   listCapacity,
+  listCopy,
   listSort,
   listSortBy,
   order,
@@ -533,6 +534,8 @@ export const $eq = {
     arraySort,
     arraySortBy,
     binarySearch,
+    /** `new List<T>(collection)`'s copy, and its refusal of a null collection (#726). */
+    listCopy,
     /** `new List<T>(capacity)`'s refusal of a negative capacity, evaluated before the elements. */
     listCapacity,
     /** `new KeyValuePair<K, V>(key, value)` and `KeyValuePair.Create`: the shape a dictionary yields. */

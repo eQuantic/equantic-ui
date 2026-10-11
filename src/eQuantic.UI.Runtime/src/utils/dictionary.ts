@@ -358,12 +358,19 @@ export function keyText(key: unknown): string {
 /**
  * A new dictionary, from `[key, value]` pairs or another dictionary, or of a capacity, whose keys are
  * found as `byValue` says ({@link KeyEquality}). A copy enumerates compacted, in the order of what it
- * copies, as .NET's does.
+ * copies, as .NET's does. Where the construction wrote a source, the compiler names the parameter it
+ * binds to (`dictionary` or `collection`), and a null one is refused by that name, as .NET refuses it
+ * (#726); with no name, a null is no source, which is how the compiler writes a construction that
+ * copies none beside the equality.
  */
 export function dictionary<K, V>(
   entries?: Iterable<readonly [K, V]> | number | null,
   byValue: KeyEquality = false,
+  source?: string,
 ): Dictionary<K, V> {
+  if (source !== undefined && entries == null) {
+    throw exception('System.ArgumentNullException', `Value cannot be null. (Parameter '${source}')`);
+  }
   if (typeof entries !== 'number') return new Dictionary<K, V>(entries, byValue);
   // `new Dictionary<K, V>(capacity)`: the arrays .NET allocates for it, which `EnsureCapacity` answers.
   if (entries < 0) throw outOfRangeCapacity();

@@ -418,8 +418,10 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
 
     /// <summary>
     /// A list's array as its constructor builds it, then <paramref name="elements"/>: a COPY of the
-    /// source, spread, never an alias of it (a dictionary spreads into its pairs, a string into its
-    /// chars), and nothing for no argument at all. The single argument means one of two opposite things,
+    /// source, never an alias of it (a dictionary copies its pairs, a string its chars), made by the
+    /// constructor's twin (<see cref="Eq.ListCopy"/>), which refuses a null source by its name as .NET
+    /// does (#726): a spread read a null through null, and a string by its code points rather than its
+    /// UTF-16 chars. Nothing for no argument at all. The single argument means one of two opposite things,
     /// and only the bound constructor can say which: <c>new List&lt;T&gt;(capacity)</c> is an empty list
     /// sized ahead, where passing it through made the capacity the list, <c>var lines = 7;</c> followed
     /// by <c>lines.push(…)</c>.
@@ -435,7 +437,12 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         IReadOnlyList<JsExpr> elements, ConversionContext context)
     {
         if (arguments.Count != 1) return JsExpr.Array(elements);
-        if (!IsCapacityArgument(creation, context)) return JsExpr.Array([JsExpr.Spread(arguments[0]), .. elements]);
+        if (!IsCapacityArgument(creation, context))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var copy = JsExpr.Call(JsExpr.Identifier(Eq.ListCopy), arguments[0]);
+            return elements.Count == 0 ? copy : JsExpr.Array([JsExpr.Spread(copy), .. elements]);
+        }
         if (IsCapacityTaken(creation, context)) return JsExpr.Array(elements);
         context.UsedHelpers.Add(Eq.Import);
         return JsExpr.Template("({0}, {1})", [JsExpr.Call(JsExpr.Identifier(Eq.ListCapacity), arguments[0]), JsExpr.Array(elements)]);
