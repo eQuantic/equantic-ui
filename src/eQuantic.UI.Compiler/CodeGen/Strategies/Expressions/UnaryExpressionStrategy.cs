@@ -31,7 +31,7 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
             {
                 if (unaryMethod.ReportIfHostOnly(prefix, context)) return JsExpr.Callish("undefined");
                 if (UserDefinedOperators.Unary(unaryMethod, prefix.OperatorToken.Text,
-                        context.Converter.ConvertExpression(prefix.Operand)) is { } unaryCall)
+                        context.Converter.ConvertExpression(prefix.Operand), context) is { } unaryCall)
                     return unaryCall;
             }
 
@@ -137,10 +137,10 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
             if (UserDefinedOperators.IsInSource(method))
             {
                 // C# 14's instance `void operator ++()` steps the value in place, which no twin carries yet.
-                if (!method.IsStatic || UserDefinedOperators.Unary(method, op, "") is null)
+                if (!method.IsStatic || UserDefinedOperators.Unary(method, op, "", context) is null)
                     return JsExpr.Callish(context.Unhandled(node, "user-defined step"));
                 method.ContainingType.RegisterIntroduced(context);
-                JsExpr Operator(JsExpr current) => UserDefinedOperators.Unary(method, op, JsExprWriter.Write(current))!;
+                JsExpr Operator(JsExpr current) => UserDefinedOperators.Unary(method, op, JsExprWriter.Write(current), context)!;
                 return Stepped(current => increment.IsLifted ? NullableLift.Unary(current, Operator, context) : Operator(current));
             }
         }

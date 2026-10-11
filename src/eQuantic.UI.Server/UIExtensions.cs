@@ -250,6 +250,19 @@ public static class UIExtensions
                 + "StatefulComponent, or a write-once UiComponent).", nameof(TPage));
         }
 
+        // A page declared inside a [ServerOnly] or a [RuntimeProvided] class, an exception or an
+        // attribute has no module the browser can load, as the build writes none for its owner (#584):
+        // refused here, where a [Page] of the same shape is left out of the route table, rather than
+        // served and broken. The message names every owner TwinName.OwnersCross refuses: it listed the
+        // ones that never reach the browser, and a [RuntimeProvided] one does, inside the runtime.
+        if (!TwinName.OwnersCross(pageType))
+        {
+            throw new ArgumentException(
+                $"{pageType.FullName} is declared inside a type the build writes no module for ([ServerOnly], "
+                + "[RuntimeProvided], an exception or an attribute), so it has none either: declare the page outside it.",
+                nameof(TPage));
+        }
+
         var options = endpoints.ServiceProvider.GetRequiredService<UIOptions>();
         options.DeclareRoute(route, pageType, title);
 
@@ -310,7 +323,7 @@ public static class UIExtensions
         foreach (var assembly in options.AssembliesToScan)
         {
             var pageTypes = assembly.GetTypes()
-                .Where(t => t.GetCustomAttributes<PageAttribute>().Any());
+                .Where(t => t.GetCustomAttributes<PageAttribute>().Any() && TwinName.OwnersCross(t));
 
             foreach (var pageType in pageTypes)
             {
@@ -896,9 +909,9 @@ public static class UIExtensions
         // serializer's default encoder escapes every code unit a script cannot carry, `<` among them,
         // and JSON is a JavaScript expression.
         var configJson = JsonSerializer.Serialize(new ClientConfig(
-            // The page's MODULE, which the build names after the type alone (EQ1005 refuses two of
-            // one name in a project).
-            Page: page?.Name,
+            // The page's MODULE, which the build names after the type and the types it is nested in
+            // (TwinName.OfType, #584), so a page declared inside a class loads the module eqc wrote.
+            Page: page is null ? null : TwinName.OfType(page),
             Version: BuildId,
             Ssr: ssrEnabled,
             // Whether this server streams rebuilds, so the page listens exactly when there is a stream.
@@ -1447,7 +1460,7 @@ public class UIOptions
 
         // Scan for Error Pages
         var pageTypes = assembly.GetTypes()
-            .Where(t => t.GetCustomAttributes<PageAttribute>().Any());
+            .Where(t => t.GetCustomAttributes<PageAttribute>().Any() && TwinName.OwnersCross(t));
 
         foreach (var type in pageTypes)
         {

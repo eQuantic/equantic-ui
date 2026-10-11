@@ -54,19 +54,22 @@ internal static class PlainClassModule
     /// file (the resolver), so no syntax tree has to outlive its scan.
     /// </summary>
     /// <param name="Name">The class's simple name.</param>
-    /// <param name="OnItsOwn">Whether the declaration, by itself, takes a module: it is not nested, not
-    /// static, and not marked <c>[RuntimeProvided]</c> or <c>[ServerOnly]</c>.</param>
+    /// <param name="OnItsOwn">Whether the declaration, by itself, takes a module: it is not static, and
+    /// neither it nor a type it is nested in is marked <c>[RuntimeProvided]</c> or <c>[ServerOnly]</c>.</param>
     /// <param name="Base">The base it writes first, by the name its twin has; null for none.</param>
     /// <param name="Partial">Whether it is one declaration of a partial type, whose base another of its
     /// declarations may write.</param>
     /// <param name="Empty">Whether it is a partial declaration that declares nothing, which is no module
     /// of its own when another declaration of its type carries the members.</param>
-    internal readonly record struct Declared(string Name, bool OnItsOwn, string? Base, bool Partial, bool Empty)
+    /// <param name="Module">The name its module and its twin take: its own, after the types it is nested
+    /// in, joined by <c>$</c> (<c>Cart$Item</c>, #584).</param>
+    internal readonly record struct Declared(string Name, bool OnItsOwn, string? Base, bool Partial, bool Empty, string Module)
     {
         internal static Declared Of(ClassDeclarationSyntax declaration) =>
             new(declaration.Identifier.ValueText, IsOnItsOwn(declaration), WrittenBase(declaration),
                 declaration.Modifiers.Any(SyntaxKind.PartialKeyword),
-                declaration.Modifiers.Any(SyntaxKind.PartialKeyword) && declaration.Members.Count == 0);
+                declaration.Modifiers.Any(SyntaxKind.PartialKeyword) && declaration.Members.Count == 0,
+                declaration.TwinTypeName());
     }
 
     /// <summary>Whether <paramref name="declaration"/> gets a plain-class module.</summary>
@@ -94,10 +97,32 @@ internal static class PlainClassModule
     /// <summary>What the declaration says by itself: nested, static, or marked <c>[RuntimeProvided]</c> or
     /// <c>[ServerOnly]</c>.</summary>
     private static bool IsOnItsOwn(ClassDeclarationSyntax declaration) =>
-        declaration.Parent is not TypeDeclarationSyntax
-        && !declaration.Modifiers.Any(SyntaxKind.StaticKeyword)
-        && !declaration.AttributeLists.SelectMany(list => list.Attributes)
-            .Any(attribute => attribute.IsNamed("RuntimeProvided") || attribute.IsNamed("ServerOnly"));
+        !declaration.Modifiers.Any(SyntaxKind.StaticKeyword)
+        && !Marked(declaration)
+        && OwnersCross(declaration);
+
+    /// <summary>Marked <c>[RuntimeProvided]</c> or <c>[ServerOnly]</c>.</summary>
+    private static bool Marked(MemberDeclarationSyntax declaration) =>
+        IsServerOnlyDeclaration(declaration)
+        || declaration.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => attribute.IsNamed("RuntimeProvided"));
+
+    /// <summary>Marked <c>[ServerOnly]</c> where it is declared, which the parser writes no module for, as
+    /// it reads it.</summary>
+    internal static bool IsServerOnlyDeclaration(MemberDeclarationSyntax declaration) =>
+        declaration.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => attribute.IsNamed("ServerOnly"));
+
+    /// <summary>
+    /// Whether no type a declaration is nested in is marked <c>[RuntimeProvided]</c> or
+    /// <c>[ServerOnly]</c>: a nested type is a module of its own (#584), where its owner crosses. One
+    /// inside a server-only class never crosses, as its owner never does, and one inside a type the
+    /// runtime provides is the runtime's.
+    /// </summary>
+    internal static bool OwnersCross(BaseTypeDeclarationSyntax declaration)
+    {
+        for (var owner = declaration.Parent as BaseTypeDeclarationSyntax; owner is not null; owner = owner.Parent as BaseTypeDeclarationSyntax)
+            if (Marked(owner)) return false;
+        return true;
+    }
 
     /// <summary>
     /// Whether the type's own declarations, or its chain of base CLASSES, keep it out: the type or a
@@ -108,6 +133,9 @@ internal static class PlainClassModule
     /// </summary>
     private static bool KeptOut(INamedTypeSymbol type, Scan scan)
     {
+        // A nested class crosses only where its owner does (#584): one inside a server-only class, an
+        // exception or an attribute has none, as its owner has none.
+        if (type.ContainingType is { } owner && KeptOut(owner, scan)) return true;
         for (var at = type; at is not null; at = at.BaseType)
         {
             if (at.TypeKind == TypeKind.Error) return scan.KeepsOutFrom(at.Name);
@@ -126,6 +154,22 @@ internal static class PlainClassModule
     {
         for (var at = type; at is not null; at = at.BaseType)
             if (IsServerOnly(at)) return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Whether a type a nested record or struct sits in never crosses: it, or a type it derives from, is
+    /// marked <c>[ServerOnly]</c>, or it is an exception or an attribute, which have no twin (#584). A
+    /// nested record has a twin where its owner would have a module.
+    /// </summary>
+    internal static bool OwnerKeptOut(INamedTypeSymbol type)
+    {
+        for (var owner = type.ContainingType; owner is not null; owner = owner.ContainingType)
+        {
+            if (ServerOnlyAlongChain(owner)) return true;
+            for (var at = owner; at is not null; at = at.BaseType)
+                if (ExceptionTypes.IsRoot(at) || IsAttributeRoot(at)) return true;
+        }
         return false;
     }
 

@@ -99,7 +99,8 @@ public static class RuntimeProvidedTypeScanner
         type is { Name: "ComponentContext", ContainingNamespace: { } ns }
         && ns.ToDisplayString() == "eQuantic.UI.Primitives"
             ? "BuildContext"
-            : type.Name;
+            // A nested type crosses as its twin, named by its owner (#584): `CodeBlock$CodeMetrics`.
+            : type.TwinReference();
 
     /// <summary>Walks every identifier under <paramref name="root"/>, resolving symbols through
     /// <paramref name="model"/>, and buckets runtime-provided type names, enum type names, and —
@@ -163,7 +164,7 @@ public static class RuntimeProvidedTypeScanner
                 else runtimeProvided.Add(ExportedName(named));
             }
             else if (appTypes is not null && named.Locations.Any(l => l.IsInSource))
-                appTypes.Add(named.Name);
+                appTypes.Add(named.TwinReference());
         }
 
         // A SIMPLE name, generic ones included: `ServerTopic<Quote>` is a GenericNameSyntax, and a generic
@@ -230,7 +231,7 @@ public static class RuntimeProvidedTypeScanner
             // metadata from referenced assemblies) — a semantic distinction, never a name list.
             // The emitter decides which of these actually became modules before importing them.
             if (appTypes is not null && type.Locations.Any(l => l.IsInSource))
-                appTypes.Add(type.Name);
+                appTypes.Add(type is INamedTypeSymbol named ? named.TwinReference() : type.Name);
         }
     }
 }
