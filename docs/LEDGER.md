@@ -2353,6 +2353,22 @@ record of a release, the wiki's Upgrading page is the distillate.
   or an enum boxed into `object` prints as the browser holds it
   ([#768](https://github.com/eQuantic/equantic-ui/issues/768)). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-11 · A value converts, and a date parses, as .NET does**: two gaps #715's measurement found.
+  `Convert.ToBase64String`, `ToBase64CharArray`, `ToHexString` and `ToHexStringLower` were `String()` of
+  the array, so `new byte[] { 1, 2, 255 }` was `1,2,255` where .NET writes `AQL/` and `0102FF`
+  ([#716](https://github.com/eQuantic/equantic-ui/issues/716)); they are twins of .NET 10's `Convert` in
+  `$eq.convert` now, handed the bound overload's arguments by parameter, line breaks and refusals
+  included, and a span that is not a collection expression fails the build. `TryParse(string, out T)` of
+  a `DateTime`, a `DateTimeOffset`, a `TimeOnly` and a `TimeSpan` called a `tryParse` the runtime did
+  not have, and `DateOnly`'s answered the date or null
+  ([#718](https://github.com/eQuantic/equantic-ui/issues/718)); each answers true or false over its
+  `Parse` now, the type's default in the out argument where it fails, and the DatePicker says
+  `DateOnly.TryParse` as its comment wanted to; their other overloads (a provider, styles, a span) fail
+  the build, since the twin would read the text and never write the out argument. `TimeOnly.Parse`
+  refuses `25:00` and trailing text, as .NET does. 78 of the 81 new conformance cases fail at
+  20069215; 35 entries leave the null-argument baseline, 17 answered and 18 refused at the build. The
+  served runtime grows about 1,000 gzipped bytes. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
 
 ## Retired documents
 
