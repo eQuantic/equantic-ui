@@ -8,8 +8,8 @@ export class BoundReceivers extends StatelessComponent {
     _seen: boolean = false;
 
     build(_context: BuildContext) {
-        let average = $eq.linq.average(this.items(), undefined, 'number', false);
-        let doubled = $eq.linq.average(this.items(), BoundReceivers.twice, 'number', false);
+        let average = $eq.linq.average(this.items(), undefined, 'int', false);
+        let doubled = $eq.linq.average(this.items(), BoundReceivers.twice, 'int', false);
         let sum = this.items().reduce(($a, $b) => $a + $b, 0);
         let total = this.pairs().reduce(($sum, pair) => $sum + pair[0], 0);
         let first = (($0, $1) => [...$0].sort(($a, $b) => { { const $k: ($element: typeof $a) => any = $1; const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } return 0; }))(this.pairs(), BoundReceivers.keyOf)[0][1];

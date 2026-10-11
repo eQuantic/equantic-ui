@@ -209,6 +209,14 @@ describe('average (LINQ Average, #719)', () => {
   });
 });
 
+describe("average of ints, in .NET's checked long", () => {
+  it('keeps the total exact past a safe integer, where a double rounds', () => {
+    const values = new Array<number>(5_000_000).fill(2147483647);
+    expect(average(values, undefined, 'int', false)).toBe(2147483647);
+    expect(average([1, 2, 4], undefined, 'int', false)).toBe(7 / 3);
+  });
+});
+
 describe('firstOrDefault and lastOrDefault with a default value (#720)', () => {
   it('answers the element, a null one included, or the value handed', () => {
     expect(firstOrDefault([1, 2], undefined, 9)).toBe(1);

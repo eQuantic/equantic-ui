@@ -225,7 +225,7 @@ public class LinqStrategyTests
     public void Average_NoPredicate_IsTheRuntimesMean()
     {
         var result = TestHelper.ConvertExpression("numbers.Average()");
-        result.Should().Be("$eq.linq.average(this.numbers, undefined, 'number', false)");
+        result.Should().Be("$eq.linq.average(this.numbers, undefined, 'int', false)");
     }
 
     [Fact]

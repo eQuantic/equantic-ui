@@ -103,6 +103,7 @@ public class LinqOverloadConformanceTests
     [InlineData("return new int?[0].Average() is null;")]                                      // true
     [InlineData("return new double?[]{1.5, null}.Average();")]                                 // 1.5
     [InlineData("return new[]{int.MaxValue, int.MaxValue}.Average();")]                        // 2147483647
+    [InlineData("return Enumerable.Repeat(int.MaxValue, 5_000_000).Average();")]               // 2147483647, exact past 2^53
     [InlineData("try { return new int[0].Average(); } catch (InvalidOperationException e) { return e.Message; }")]
     [InlineData("try { return new long[0].Average(); } catch (InvalidOperationException e) { return e.Message; }")]
     [InlineData("try { return new int[0].Average(x => (long)x); } catch (InvalidOperationException e) { return e.Message; }")]

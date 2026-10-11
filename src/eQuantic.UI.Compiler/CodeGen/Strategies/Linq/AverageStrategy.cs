@@ -122,7 +122,8 @@ public class AverageStrategy : IExpressionIrStrategy
             : ((method.ReducedFrom ?? method).Parameters.FirstOrDefault()?.Type).GetEnumerableElementType();
         var mean = values.UnwrapNullable()?.SpecialType switch
         {
-            SpecialType.System_Int32 or SpecialType.System_Double => "number",
+            SpecialType.System_Int32 => "int",
+            SpecialType.System_Double => "number",
             SpecialType.System_Int64 => "long",
             SpecialType.System_Single => "single",
             SpecialType.System_Decimal => "decimal",

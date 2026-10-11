@@ -2302,19 +2302,20 @@ record of a release, the wiki's Upgrading page is the distillate.
   predicate ([#720](https://github.com/eQuantic/equantic-ui/issues/720), and `SingleOrDefault`'s,
   [#760](https://github.com/eQuantic/equantic-ui/issues/760)), the third sequence of a `Zip` as a result
   selector ([#722](https://github.com/eQuantic/equantic-ui/issues/722)), a mean of longs through a method
-  group added a BigInt to a number seed, a nullable mean divided by its nulls and an empty one answered
-  `NaN` ([#719](https://github.com/eQuantic/equantic-ui/issues/719)), and `SequenceEqual` with a comparer
+  group added a BigInt to a number seed, a nullable mean divided by its nulls, an empty one answered
+  `NaN` and a mean of ints past 2^53 was rounded ([#719](https://github.com/eQuantic/equantic-ui/issues/719)), and `SequenceEqual` with a comparer
   answered its first sequence while the one without compared JSON text
   ([#721](https://github.com/eQuantic/equantic-ui/issues/721)). Each is a twin in `$eq.linq` now, handed
   the bound overload's arguments by the parameter each binds to (`LinqArguments`), a selector named
   first and a string under `?.` included, and `SequenceEqual`'s comparer passes the collection fence. `GroupBy` and `ToLookup` type their
-  accumulator in a type-checked module ([#727](https://github.com/eQuantic/equantic-ui/issues/727)). 49
-  of the 68 new conformance cases fail at a7d5f3d; the 19 that pass are the neighbours kept as pins. 36
+  accumulator in a type-checked module ([#727](https://github.com/eQuantic/equantic-ui/issues/727)). 50
+  of the 69 new conformance cases fail at a7d5f3d; the 19 that pass are the neighbours kept as pins. 36
   entries leave the null-argument baseline. The served runtime grows about 700 gzipped bytes. Found on
   the way: a lambda parameter of type `long` or `decimal` annotated `number` in a type-checked module
   ([#758](https://github.com/eQuantic/equantic-ui/issues/758)), a query with `let`, a second `from` or
   `into` that answers something else ([#761](https://github.com/eQuantic/equantic-ui/issues/761)), and a
-  value tuple printed as `1,2` ([#762](https://github.com/eQuantic/equantic-ui/issues/762)). Proposed and archived through OpenSpec
+  value tuple printed as `1,2` ([#762](https://github.com/eQuantic/equantic-ui/issues/762)), and a
+  `Decimal` that never overflows ([#764](https://github.com/eQuantic/equantic-ui/issues/764)). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-sequences`).
 
 ## Retired documents

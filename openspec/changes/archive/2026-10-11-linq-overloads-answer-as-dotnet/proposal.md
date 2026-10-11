@@ -7,7 +7,7 @@ component; and #760, `SingleOrDefault`'s twin of #720, by this change's review.
 
 ## Why
 
-Executed on both sides at a7d5f3d, where 49 of the 68 cases of `LinqOverloadConformanceTests` fail:
+Executed on both sides at a7d5f3d, where 50 of the 69 cases of `LinqOverloadConformanceTests` fail:
 
 - `new int[0].FirstOrDefault(9)` and `LastOrDefault(9)` threw a `TypeError` in the browser: the default
   value was called as the predicate (`[].find(9)`). With a predicate, `FirstOrDefault(x => x > 5, 9)`
@@ -18,8 +18,9 @@ Executed on both sides at a7d5f3d, where 49 of the 68 cases of `LinqOverloadConf
 - A mean of longs through a method group or a delegate, `Average(Widen)`, threw `Cannot mix BigInt and
   other types`: the reduce read the type from a lambda's body, and seeded a number. `new long?[] { 1, null,
   4 }.Average()` threw the same way, `new double?[] { 1.5, null }.Average()` answered 0.75 by dividing by
-  the null too, an empty sequence answered `NaN` where .NET throws, and an overflow past `long.MaxValue`
-  was not refused (#719).
+  the null too, an empty sequence answered `NaN` where .NET throws, an overflow past `long.MaxValue`
+  was not refused, and a mean of ints whose total passed 2^53 was rounded where .NET's long holds it
+  (#719).
 - `a.SequenceEqual(b, EqualityComparer<int>.Default)` answered its first sequence, truthy whatever `b`
   held, and a comparer that changes equality was dropped rather than refused. Without one, the JSON text
   of each sequence was compared: two arrays of longs threw, `1.0m` was not `1.00m`, a null was a `NaN`,
@@ -31,7 +32,8 @@ Executed on both sides at a7d5f3d, where 49 of the 68 cases of `LinqOverloadConf
 
 - The runtime gains six twins in `$eq.linq`, each the .NET overload's own algorithm:
   `firstOrDefault`, `lastOrDefault` and `singleOrDefault` with a default value, `zipTuples` for pairs and triples,
-  `average` by the mean's type (`'number'`, `'single'`, `'long'`, `'decimal'`, nullable or not), and
+  `average` by the mean's type (`'int'`, `'number'`, `'single'`, `'long'`, `'decimal'`, nullable or
+  not), and
   `sequenceEqual` by the element type's default equality (`KeyEquality`, the one `Distinct` and the
   sets already use). Each refuses a null argument by name, as .NET does.
 - eqc hands each call to its twin from the BOUND overload: a default value is recognised by the
@@ -68,4 +70,5 @@ None.
 - #715's null-argument baseline only shrinks, and the BCL audit moves ten verdicts to `eq`.
 - Left for issues of their own: a lambda parameter of type `long` or `decimal` is annotated `number` in a
   type-checked module (#758); a query with `let`, a second `from` or `into` answers something else in the
-  browser (#761); and a value tuple prints as `1,2` where .NET writes `(1, 2)` (#762).
+  browser (#761); a value tuple prints as `1,2` where .NET writes `(1, 2)` (#762); and the runtime's
+  `Decimal` never overflows, so a decimal mean past its range answers where .NET throws (#764).

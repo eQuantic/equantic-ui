@@ -238,7 +238,7 @@ public class DecimalAverageTests
     }
 
     [Fact]
-    public void AverageOfNumbers_StaysPlainArithmetic()
+    public void AverageOfInts_AddsInTheIntMean()
     {
         var js = Compile("""
                     var v = new List<int> { 1, 2 };
@@ -246,7 +246,7 @@ public class DecimalAverageTests
                     return new Text($"{x}", TypeRole.BodyM);
             """);
 
-        Assert.Contains("$eq.linq.average(v, undefined, 'number', false)", js);
+        Assert.Contains("$eq.linq.average(v, undefined, 'int', false)", js);
         Assert.DoesNotContain("'decimal'", js);
     }
 }

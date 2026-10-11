@@ -125,13 +125,26 @@ export function min<T>(
 }
 
 /**
- * How `Average` adds the values it means, which the compiler reads from the type they have: an `int`
- * and a `double` as numbers (an int's in .NET's long, which a number holds exactly far past any sequence
- * a page counts), a `float` in a double rounded once at the end, as .NET's
- * `(float)(Sum<float, double> / count)`, a `long` as a BigInt checked at 64 bits, as .NET's sum is, and a
- * `decimal` as the runtime's Decimal.
+ * How `Average` adds the values it means, which the compiler reads from the type they have: an `int` in
+ * .NET's checked long, as a number while the total is a safe integer and as a BigInt past it, so the
+ * total stays exact where a double's would round; a `double` as a number; a `float` in a double rounded
+ * once at the end, as .NET's `(float)(Sum<float, double> / count)`; a `long` as a BigInt checked at 64
+ * bits, as .NET's sum is; and a `decimal` as the runtime's Decimal.
  */
-export type Mean = 'number' | 'single' | 'long' | 'decimal';
+export type Mean = 'int' | 'number' | 'single' | 'long' | 'decimal';
+
+/**
+ * An `int` added to a mean's total as .NET adds it, in a checked long: exactly, as a number while the
+ * sum is a safe integer, which every page's sequence is, and as a BigInt from the first sum that is not.
+ */
+function addInt(total: number | bigint, value: number): number | bigint {
+  if (typeof total === 'number') {
+    const next = total + value;
+    if (Number.isSafeInteger(next)) return next;
+    total = BigInt(total);
+  }
+  return checked(total + BigInt(value), 64) as bigint;
+}
 
 /**
  * `Average()` and `Average(selector)`, as .NET computes the mean for each element type (#719): a long's
@@ -180,7 +193,8 @@ export function average<T>(
     const value = selector === undefined ? item : selector(item);
     if (nullable && value == null) continue;
     count++;
-    if (mean === 'long') total = checked((total as bigint) + (value as bigint), 64) as bigint;
+    if (mean === 'int') total = addInt(total as number | bigint, value as number);
+    else if (mean === 'long') total = checked((total as bigint) + (value as bigint), 64) as bigint;
     else if (mean === 'decimal') total = (total as Decimal).add(value as Decimal);
     else total = (total as number) + (value as number);
   }
@@ -189,7 +203,7 @@ export function average<T>(
     throw exception('System.InvalidOperationException', NO_ELEMENTS);
   }
   if (mean === 'decimal') return (total as Decimal).div(Decimal.from(count));
-  const quotient = (mean === 'long' ? Number(total) : (total as number)) / count;
+  const quotient = (typeof total === 'bigint' ? Number(total) : (total as number)) / count;
   return mean === 'single' ? Math.fround(quotient) : quotient;
 }
 

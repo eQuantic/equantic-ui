@@ -229,7 +229,8 @@ handed a default value SHALL answer the element when there is one, a null elemen
 default otherwise, `SingleOrDefault` refusing a second element or a second match with .NET's
 `InvalidOperationException`. `Zip(second)`
 SHALL answer pairs and `Zip(second, third)` triples, as many as the shortest sequence holds. `Average`
-SHALL compute the mean in the element's type: a `long` summed exactly and divided as a double, a `float`
+SHALL compute the mean in the element's type: an `int` and a `long` summed exactly, in a checked long,
+and divided as a double, a `float`
 rounded to a single, a `decimal` as a decimal, a nullable over its values alone and null when it has
 none, and an empty sequence refused with an `InvalidOperationException` where the answer is not
 nullable. `SequenceEqual` SHALL compare by the element type's default equality.
