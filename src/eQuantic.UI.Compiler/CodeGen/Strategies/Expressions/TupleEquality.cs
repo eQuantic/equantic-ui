@@ -72,7 +72,7 @@ internal static class TupleEquality
                 .FirstOrDefault(method => !method.IsImplicitlyDeclared && method.Parameters.Length == 2) is { } equality
             && UserDefinedOperators.IsInSource(equality))
         {
-            return UserDefinedOperators.Binary(equality, "==", a, b) is { } call ? JsExprWriter.Write(call) : null;
+            return UserDefinedOperators.Binary(equality, "==", a, b, context) is { } call ? JsExprWriter.Write(call) : null;
         }
         // A decimal, a date, a record or a struct is an object here whose == is its value.
         if (LinqKeys.ComparesByValue(type))

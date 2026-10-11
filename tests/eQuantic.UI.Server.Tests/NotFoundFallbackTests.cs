@@ -105,7 +105,8 @@ public class NotFoundFallbackTests
         // Still a TRUE 404 — a branded page changes the pixels, not the status.
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         var html = await response.Content.ReadAsStringAsync();
-        ShellConfig.In(html).GetProperty("page").GetString().Should().Be("BrandedNotFound");
+        // Declared inside this class, its module is named by its owner, as eqc names it (#584).
+        ShellConfig.In(html).GetProperty("page").GetString().Should().Be($"{nameof(NotFoundFallbackTests)}${nameof(BrandedNotFound)}");
     }
 
     [Fact]

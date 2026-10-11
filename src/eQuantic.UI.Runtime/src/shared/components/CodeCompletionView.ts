@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeCompletion, CodeCompletionItem, CodeCompletionKindValue, CodeCompletionMatch, CodeLineCells, CodeMetrics, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Pressable, Rect, Row, SizeValue, Spacer, StyleDiff, Text, TextRun } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeCompletion, CodeCompletionItem, CodeCompletionKindValue, CodeCompletionMatch, CodeLineCells, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Pressable, Rect, Row, SizeValue, Spacer, StyleDiff, Text, TextRun } from "../runtime-exports";
 
 export class CodeCompletionView {
     static pageRows: number = 12;
@@ -11,7 +11,7 @@ export class CodeCompletionView {
     static documentationChrome: number = 9;
     static labelTabSize: number = 4;
 
-    static labelInset(metrics: CodeMetrics) {
+    static labelInset(metrics: CodeBlock$CodeMetrics) {
         return Math.fround(Math.fround(Math.fround(CodeCompletionView.border + 8) + metrics.lineHeight) + 4);
     }
 
@@ -29,19 +29,19 @@ export class CodeCompletionView {
         return Math.min(CodeCompletionView.cellsOf(item.label) + (((item.detail != null && item.detail.length > 0) && (detail = item.detail, true)) ? 2 + CodeCompletionView.cellsOf(detail) : 0), CodeCompletionView.maxColumns);
     }
 
-    static widthOf(metrics: CodeMetrics, columns: number) {
+    static widthOf(metrics: CodeBlock$CodeMetrics, columns: number) {
         return Math.fround(Math.fround(Math.fround(Math.fround(Math.fround(CodeCompletionView.labelInset(metrics) + Math.fround(Math.fround(columns) * metrics.columnWidth)) + 8) + 4) + CodeCompletionView.pageMarkWidth) + CodeCompletionView.border);
     }
 
-    static heightOf(metrics: CodeMetrics, rows: number) {
+    static heightOf(metrics: CodeBlock$CodeMetrics, rows: number) {
         return Math.fround(Math.fround(Math.fround(rows) * metrics.lineHeight) + Math.fround(2 * Math.fround(4 + CodeCompletionView.border)));
     }
 
-    static documentationStyle(metrics: CodeMetrics) {
+    static documentationStyle(metrics: CodeBlock$CodeMetrics) {
         return $eq.withPatch(metrics.style, { mono: false });
     }
 
-    static documentationLinesOf(context: BuildContext, metrics: CodeMetrics, documentation: string, width: number) {
+    static documentationLinesOf(context: BuildContext, metrics: CodeBlock$CodeMetrics, documentation: string, width: number) {
         let room = Math.max(1, Math.fround(width - Math.fround(2 * Math.fround(CodeCompletionView.border + 8))));
         let style = CodeCompletionView.documentationStyle(metrics);
         let lines = 0;
@@ -56,7 +56,7 @@ export class CodeCompletionView {
         return documentation.length > CodeCompletionView.documentationBudget ? $eq.text.substring(documentation, 0, CodeCompletionView.documentationBudget) : documentation;
     }
 
-    static documentationLineOf(context: BuildContext, metrics: CodeMetrics) {
+    static documentationLineOf(context: BuildContext, metrics: CodeBlock$CodeMetrics) {
         return CodeCompletionView.documentationStyle(metrics).scaledLineHeight(context.typeScale);
     }
 
@@ -64,7 +64,7 @@ export class CodeCompletionView {
         return lines === 0 ? 0 : Math.fround(CodeCompletionView.documentationChrome + Math.fround(Math.fround(lines) * line));
     }
 
-    static place(metrics: CodeMetrics, word: Rect, viewTop: number, viewBottom: number, viewLeft: number, viewWidth: number, wanted: number, width: number, documentation: number, documentationLine: number): [number, number, number, boolean, number] {
+    static place(metrics: CodeBlock$CodeMetrics, word: Rect, viewTop: number, viewBottom: number, viewLeft: number, viewWidth: number, wanted: number, width: number, documentation: number, documentationLine: number): [number, number, number, boolean, number] {
         let below = Math.fround(viewBottom - Math.fround(word.y + word.height));
         let above = Math.fround(word.y - viewTop);
         let shown = Math.fround(word.y + word.height) > viewTop && word.y < viewBottom;
@@ -89,7 +89,7 @@ export class CodeCompletionView {
         return [x, y, rows, up, lines];
     }
 
-    static build(context: BuildContext, completion: CodeCompletion, metrics: CodeMetrics, top: number, rows: number, width: number, above: boolean, documentation: string | null, documentationLines: number, pick: (int: number) => void) {
+    static build(context: BuildContext, completion: CodeCompletion, metrics: CodeBlock$CodeMetrics, top: number, rows: number, width: number, above: boolean, documentation: string | null, documentationLines: number, pick: (int: number) => void) {
         let theme = context.theme;
         let items = completion.items;
         let columns = (Math.trunc(Math.floor(Math.fround(Math.fround(width - CodeCompletionView.widthOf(metrics, 0)) / metrics.columnWidth))) | 0);
@@ -109,7 +109,7 @@ export class CodeCompletionView {
         return new Box(new BoxStyle({ width: width, background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: CodeCompletionView.border, borderColor: theme.border, elevation: 2, padding: EdgeInsets.symmetric(0, 4), clip: true }), list);
     }
 
-    static option(theme: any, metrics: CodeMetrics, match: CodeCompletionMatch, selected: boolean, columns: number, pressed: () => void) {
+    static option(theme: any, metrics: CodeBlock$CodeMetrics, match: CodeCompletionMatch, selected: boolean, columns: number, pressed: () => void) {
         let item = match.item;
         let ink = selected ? theme.colors('primary').onSubtle : theme.textPrimary;
         let label = CodeCompletionView.fit(item.label, columns);
@@ -144,7 +144,7 @@ export class CodeCompletionView {
         return $eq.text.substring(text, 0, end) + '…';
     }
 
-    static glyph(theme: any, metrics: CodeMetrics, kind: CodeCompletionKindValue) {
+    static glyph(theme: any, metrics: CodeBlock$CodeMetrics, kind: CodeCompletionKindValue) {
         let cell = new Row(0, 'center', 'center', false, null, null, { width: SizeValue.fixed(metrics.lineHeight), height: SizeValue.fixed(metrics.lineHeight) });
         cell.add(new Text(CodeCompletionView.glyphOf(kind), 'labelSmall', theme.code(CodeCompletionView.inkOf(kind)), 1, 'start', false, false, null, 0, { mono: true, styleOverride: $eq.withPatch(metrics.style, { weight: 'bold' }) }));
         return cell;
@@ -173,7 +173,7 @@ export class CodeCompletionView {
         return runs;
     }
 
-    static pageMark(theme: any, metrics: CodeMetrics, top: number, rows: number, count: number) {
+    static pageMark(theme: any, metrics: CodeBlock$CodeMetrics, top: number, rows: number, count: number) {
         let track = Math.fround(Math.fround(rows) * metrics.lineHeight);
         let mark = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fixed(CodeCompletionView.pageMarkWidth), height: SizeValue.fixed(track) });
         if (count <= rows) return mark;
@@ -183,7 +183,7 @@ export class CodeCompletionView {
         return mark;
     }
 
-    static documentation(context: BuildContext, metrics: CodeMetrics, documentation: string | null, lines: number, above: boolean) {
+    static documentation(context: BuildContext, metrics: CodeBlock$CodeMetrics, documentation: string | null, lines: number, above: boolean) {
         let text: any; 
         if (lines === 0 || !(((documentation != null && documentation.length > 0) && (text = documentation, true)))) return null;
         let theme = context.theme;
