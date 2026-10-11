@@ -256,7 +256,8 @@ public class TwinConstructorTests
     [InlineData("Clause", "'Exception(SerializationInfo, StreamingContext)'")]
     public void ACallOfASerializationConstructor_IsRefused(string name, string called)
     {
-        var results = new ComponentCompiler().CompileSource(SerializationCalls, "Probe.cs");
+        // With the project's compilation, where an exception class is a module (#611).
+        var results = ProjectProbe.Compile(SerializationCalls);
 
         results.Single(result => result.ComponentName == name).Errors.Should().Contain(error =>
             error.Code == "EQ1009" && error.Message.StartsWith(called + " is no constructor the browser has"),

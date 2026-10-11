@@ -34,6 +34,18 @@ public class ConversionContext
     public bool SymbolsAreAuthoritative { get; set; }
 
     /// <summary>
+    /// Whether the host handed over the project's compilation, which the module rule reads a class's
+    /// chain of bases from (<see cref="Services.PlainClassModule"/>): there an exception class of the
+    /// app's has a module of its own, and is built as the class it is (#611). A host with none keeps it
+    /// out by its base's name, so nothing writes its twin, and a construction that named it met a class
+    /// nothing declares (<see cref="Strategies.ExceptionTypes.HasTwin(ITypeSymbol?, ConversionContext)"/>).
+    /// It describes the host, as <see cref="SymbolsAreAuthoritative"/> does, though the two differ: a
+    /// library transpiled from its own sources has the compilation, and symbols that are not
+    /// authoritative.
+    /// </summary>
+    internal bool HasProjectCompilation { get; set; }
+
+    /// <summary>
     /// Whether a name heuristic is an HONEST basis for translating this node: the model cannot be
     /// asked (none, or a strategy-rewrote node from no tree it knows), or the host never promised
     /// the model was complete. When this is false, symbols are the only evidence that counts.

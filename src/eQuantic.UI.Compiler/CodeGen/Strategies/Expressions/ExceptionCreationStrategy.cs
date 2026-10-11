@@ -33,7 +33,7 @@ public class ExceptionCreationStrategy : IExpressionIrStrategy
     public bool CanConvert(SyntaxNode node, ConversionContext context) =>
         node is BaseObjectCreationExpressionSyntax
         && context.SemanticHelper.GetType(node) is var type
-        && ExceptionTypes.Is(type) && !ExceptionTypes.HasTwin(type);
+        && ExceptionTypes.Is(type) && !ExceptionTypes.HasTwin(type, context);
 
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {

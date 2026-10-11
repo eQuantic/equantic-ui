@@ -14,7 +14,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// <list type="bullet">
 /// <item><see cref="Construction(IReadOnlyList{string}, BaseObjectCreationExpressionSyntax, ConversionContext)"/>:
 /// <c>new T(message)</c> for a type with no twin of its own, one of .NET's, with T's chain written out.</item>
-/// <item><see cref="HasTwin"/>: whether T is a class of the app's, which is built as any class is, over
+/// <item><see cref="HasTwin(ITypeSymbol?)"/>: whether T is a class of the app's, which is built as any class is, over
 /// the runtime's <see cref="Eq.ExceptionBase"/>, its twin saying its chain (<see cref="TypesOf"/>, #611).</item>
 /// <item><see cref="Test"/>: whether a value is a T, which a typed <c>catch</c>, a type pattern and an
 /// <c>as</c> write alike.</item>
@@ -50,6 +50,18 @@ internal static class ExceptionTypes
         && Expressions.ObjectCreationStrategy.TwinIsWritten(named)
         && !Services.PlainClassModule.ServerOnlyAlongChain(named)
         && !named.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "RuntimeProvided" or "RuntimeProvidedAttribute");
+
+    /// <summary>
+    /// Whether this host BUILDS <paramref name="type"/> as its twin (<see cref="HasTwin(ITypeSymbol?)"/>):
+    /// only where it has the project's compilation, which the module rule reads a class's chain from. A
+    /// host with none, a snippet compiled on its own, keeps an exception class out by its base's name
+    /// (<see cref="Services.PlainClassModule.KeepsOutByName"/>), and <c>new Failure()</c> there named a
+    /// class nothing wrote, which the page met as <c>Failure is not defined</c>: it is built as the
+    /// runtime's exception, the <c>Error</c> that carries its types, as it was before an exception was a
+    /// class.
+    /// </summary>
+    public static bool HasTwin(ITypeSymbol? type, ConversionContext context) =>
+        context.HasProjectCompilation && HasTwin(type);
 
     /// <summary>
     /// The twin's <c>static $types</c>: the chain of the class the twin is written from, which the

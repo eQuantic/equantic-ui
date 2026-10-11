@@ -827,7 +827,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         // A construction of a generic exception class hands its base the types it is, before the
         // constructor's body runs (#611, #708), which a type parameter among them cannot say (EQ2013).
         JsExpr? types = null;
-        if (ExceptionTypes.HasTwin(type))
+        if (ExceptionTypes.HasTwin(type, context))
         {
             ExceptionTypes.RefuseOpen(type, creation, tested: false, context);
             types = ExceptionTypes.ConstructedTypes(type, context);

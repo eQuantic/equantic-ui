@@ -411,6 +411,10 @@ public class ComponentCompiler
                 authoritative = false;
             }
             _tsEmitter.SymbolsAreAuthoritative = authoritative;
+            // Whether the module rule read each class's chain off its symbol, which is what makes an
+            // exception class a module: asked of the provider itself, never of the regime above, which a
+            // host may demote while it holds the compilation.
+            _tsEmitter.HasProjectCompilation = _semanticModelProvider.HasProjectCompilation;
 
             // C# 15 union — a TS union alias module: implicit case conversions are no-ops in JS,
             // and `pet switch { Dog d => …, Cat c => … }` already tests instanceof per case type.
@@ -455,6 +459,7 @@ public class ComponentCompiler
                 var recordConverter = new CSharpToJsConverter
                 {
                     SymbolsAreAuthoritative = authoritative,
+                    HasProjectCompilation = _semanticModelProvider.HasProjectCompilation,
                 };
                 SemanticModel? recordModel = null;
                 if (component.SyntaxTree != null)

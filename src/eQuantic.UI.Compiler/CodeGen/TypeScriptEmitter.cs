@@ -296,6 +296,13 @@ public class TypeScriptEmitter
         set => _converter.SymbolsAreAuthoritative = value;
     }
 
+    /// <summary>Forwarded to the converter — see <see cref="CSharpToJsConverter.HasProjectCompilation"/>.</summary>
+    internal bool HasProjectCompilation
+    {
+        get => _converter.HasProjectCompilation;
+        set => _converter.HasProjectCompilation = value;
+    }
+
     public void SetDependencyResolver(ComponentDependencyResolver resolver)
     {
         _dependencyResolver = resolver;
