@@ -35,8 +35,10 @@ the keyboard, whose idea of the field would drift from the host's, would correct
   committed text, the desktop's path (`TextInputTarget.Keys`).
 - **The keyboard's area is the host's `ViewInsets`** (Flutter's `MediaQuery.viewInsets`). The tree lays
   out above it, the safe area it covers counts once, and a frame laid out in less height than the one
-  before scrolls the field being edited into what is left. A field the rising keyboard covered is still
-  the one being edited.
+  before scrolls the field being edited into what is left. Where nothing scrolls (a form that does
+  not fit what the keyboard leaves, a phone turned on its side), the screen is lifted until the field
+  shows, and comes back down with the keyboard. A field the rising keyboard covered is still the one
+  being edited.
 - **Android.** The surface view answers the keyboard with an input connection over a mirror of the
   field, described to the keyboard (a password, a single line that ends on Done, a multi-line field).
   The activity lays out with `adjustResize`, measures the keyboard's inset, shows the keyboard when an
@@ -49,7 +51,8 @@ the keyboard, whose idea of the field would drift from the host's, would correct
 
 For a developer: nothing to write. A `TextEntry`, a `TextInput`, a `SearchField`, a code surface or a
 sheet tapped on a phone opens the platform's keyboard, edits the way the platform edits (autocorrect,
-suggestions, dictation, a composition), and stays visible above it.
+suggestions, dictation, a composition), and stays visible above it, inside a `ScrollView` or not. The
+keyboard's action key on a single line (Done) submits the field and puts the keyboard away.
 
 ## Capabilities
 

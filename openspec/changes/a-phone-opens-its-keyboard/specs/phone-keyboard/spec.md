@@ -72,12 +72,20 @@ surface and a sheet SHALL be edited through keys and committed text (`TextInputT
 - **WHEN** a code surface holds the caret
 - **THEN** the session's target is `Keys` and the host has no editing value
 
+#### Scenario: Done
+
+- **WHEN** the keyboard's action key is pressed on a single-line field
+- **THEN** the field submits, and the session reports `Ended` after the next frame
+
 ### Requirement: The layout makes room for the keyboard
 
 The host's `ViewInsets` SHALL be the part of the window the keyboard covers. The tree SHALL lay out in
 the height above it, with the safe area it covers counted once, and a frame laid out in less height
-than the one before SHALL scroll the field being edited into view. A field the keyboard covered SHALL
-stay the one being edited.
+than the one before SHALL scroll the field being edited into view. Where no scroll brings it there, the
+host SHALL draw the screen lifted by the least that brings the field above the keyboard, SHALL take a
+press where the screen is drawn and report the caret and the semantics there, and SHALL draw it in
+place again when the keyboard goes down or the edit ends. A field the keyboard covered SHALL stay the
+one being edited.
 
 #### Scenario: The keyboard rises over a field near the bottom
 
@@ -85,6 +93,18 @@ stay the one being edited.
   that covers it
 - **THEN** the next frame lays out above the inset with the field inside it, and typing still reaches
   that field
+
+#### Scenario: A field nothing scrolls
+
+- **WHEN** a field laid out at 368 on a screen 600 tall that does not scroll is being edited, and the
+  keyboard covers the bottom 300
+- **THEN** the caret is drawn above 300, a press where the field is drawn moves its caret, and the
+  field is drawn at 368 again once the keyboard goes down
+
+#### Scenario: A field a scroll view brought into view
+
+- **WHEN** a field low in a scrolling form is being edited and the keyboard rises
+- **THEN** the form scrolls it into view, and the screen is not lifted
 
 #### Scenario: The safe area under the keyboard
 
@@ -103,8 +123,8 @@ reach the field. A key from a hardware keyboard SHALL reach the host as it does 
 
 - **WHEN** the PIX key field of the Wallet sample is tapped on the Android emulator and "teh " is typed
   on the on-screen keys
-- **THEN** the keyboard opens with the field and the Continue button above it, the word is underlined
-  while it is being typed, and the field ends with what the keyboard's autocorrection chose
+- **THEN** the keyboard opens with the field and the Continue button above it, each letter reaches the
+  field as it is typed, and the field ends with what the keyboard's autocorrection chose
 
 #### Scenario: Back on Android
 

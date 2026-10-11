@@ -2382,7 +2382,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   whether the keyboard opens, starts over, closes or takes a value the app changed, never echoing an
   edit back to the keyboard that made it. A code surface and a sheet stay on the desktop's keys. The
   keyboard's area is the host's `ViewInsets`: the tree lays out above it, the safe area under it counts
-  once, and a frame laid out shorter reveals the field being edited. Android answers with an input
+  once, a frame laid out shorter reveals the field being edited, and where nothing scrolls the screen is
+  lifted until the field shows. The keyboard's Done submits and puts the keyboard away. Android answers with an input
   connection over a mirror of the field; iOS edits an invisible text view at the caret, so UIKit's own
   autocorrection, dictation and composition run against it. Proposed and archived through OpenSpec
   (`openspec/specs/phone-keyboard`).
