@@ -145,6 +145,13 @@ reach the field. A key from a hardware keyboard SHALL reach the host as it does 
 - **THEN** the keyboard opens with the field and the Continue button above it, each letter reaches the
   field as it is typed, and the field ends with what the keyboard's autocorrection chose
 
+#### Scenario: Composing on Android
+
+- **WHEN** "ka" is typed into the PIX key field on the Android emulator with Gboard's Japanese layout,
+  and a candidate is picked
+- **THEN** the field shows "か" underlined while it is composed, and the candidate replaces it without
+  the underline
+
 #### Scenario: Back on Android
 
 - **WHEN** back is pressed once with the keyboard open, the field is tapped, and back is pressed twice

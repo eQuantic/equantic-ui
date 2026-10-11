@@ -11,10 +11,9 @@
 
 ## 2. The Android shell
 
-- [ ] 2.1 `PhotonInputConnection` over a mirror of the field, described to the keyboard; `PhotonSurfaceView` answers the keyboard and reports the window's insets; `AndroidKeys` names a hardware keyboard's keys. Verify: `dotnet build src/eQuantic.UI.Native.Shell.Android` on the Mac, with no new warning
-- [ ] 2.2 `PhotonActivity` opens, restarts and closes the keyboard with the session, lays out with `adjustResize`, and gives the host the keyboard's inset. Verify: on the emulator (API 36), the Wallet's PIX key field opens the keyboard above it; on-screen typing reaches it; autocorrection ends in the field; Backspace works and Done puts the keyboard away; back hides the keyboard, a tap shows it, back again ends the edit; and in landscape the screen lifts so the field stays above the keyboard
-
-- [ ] 2.3 A keyboard that composes reaches the field with its composition underlined. Verify: on the emulator, with a Gboard language that composes (the emulator's English Gboard commits every letter, as it does in a native `EditText`, and `PhotonInputTrace` shows no composition from it)
+- [x] 2.1 `PhotonInputConnection` over a mirror of the field, described to the keyboard; `PhotonSurfaceView` answers the keyboard and reports the window's insets; `AndroidKeys` names a hardware keyboard's keys. Verify: `dotnet build src/eQuantic.UI.Native.Shell.Android` on the Mac, with no new warning
+- [x] 2.2 `PhotonActivity` opens, restarts and closes the keyboard with the session, lays out with `adjustResize`, and gives the host the keyboard's inset. Verify: on the emulator (API 36), the Wallet's PIX key field opens the keyboard above it; on-screen typing reaches it; autocorrection ends in the field; Backspace works and Done puts the keyboard away; back hides the keyboard, a tap shows it, back again ends the edit; and in landscape the screen lifts so the field stays above the keyboard
+- [x] 2.3 A keyboard that composes reaches the field with its composition underlined. Verify: on the emulator, with Gboard's Japanese layout (its English layout commits every letter, as it does in a native `EditText`): "ka" arrives as `setComposingText` and is drawn underlined, a candidate picked replaces it without the underline, and a composition after committed text underlines only itself
 
 ## 3. The iOS shell
 
@@ -25,4 +24,4 @@
 
 - [ ] 4.1 The wiki's Photon page (EN + pt-BR), in one commit on the wiki branch named like this one
 - [x] 4.2 `docs/FLUTTER-PARITY.md`'s `TextInputClient` and `MediaQuery.viewInsets` rows with their probes, and one `docs/LEDGER.md` line citing #770
-- [ ] 4.3 The suites, each alone and read by its exit code: Native.Engine, Web, Compiler, Server and the runtime's `TestRuntime`
+- [x] 4.3 The suites, each alone and read by its exit code: Native.Engine, Web, Compiler, Server and the runtime's `TestRuntime`
