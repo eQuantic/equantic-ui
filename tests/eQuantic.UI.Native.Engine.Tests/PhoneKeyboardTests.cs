@@ -463,6 +463,78 @@ public class PhoneKeyboardTests
         host.TextInput("x").Should().BeTrue();
     }
 
+    /// <summary>A screen that does not scroll, with its field low on it: the Wallet's onboarding
+    /// step, or any form on a phone turned on its side.</summary>
+    private sealed class FixedForm : Primitives.StatefulComponent
+    {
+        public string Value = "abcdef";
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: 8) { Width = SizeValue.Fill };
+            column.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 360 }));
+            column.Add(new TextEntry(Value, v => SetState(() => Value = v)) { Placeholder = "Key" });
+            return column;
+        }
+    }
+
+    /// <summary>
+    /// Where nothing scrolls, nothing could bring the field into what the keyboard leaves, and it was
+    /// typed into under the keyboard. The screen is lifted until it shows, as Android does for a
+    /// window with nothing to scroll; a press lands where the screen is drawn, the caret and the
+    /// semantics are reported there, and the screen comes back down with the keyboard.
+    /// </summary>
+    [Fact]
+    public void AFieldNothingScrolls_IsLiftedAboveTheKeyboard()
+    {
+        var host = new PhotonHost(new FixedForm(), PhotonTheme.Instance, ThemeMode.Light, 390, 600)
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+        };
+        var laid = host.RenderFrame(new DisplayListBuilder()).TextRegions.Single().Bounds;
+        Tap(host, laid.Center);
+        host.RenderFrame(new DisplayListBuilder(), 16);
+
+        host.ViewInsets = new EdgeInsets(0, 0, 0, 300);
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        host.RenderFrame(new DisplayListBuilder(), 48);
+
+        var caret = host.CaretRect()!.Value;
+        caret.Bottom.Should().BeLessThanOrEqualTo(300, "the field is drawn above the keyboard");
+        var lift = laid.Y - caret.Y;
+        lift.Should().BeGreaterThan(0);
+        host.Semantics().Single(node => node.Role == SemanticRole.TextField).Bounds.Y
+            .Should().BeApproximately(laid.Y - lift, 0.5f, "a screen reader finds the field where it is drawn");
+
+        Tap(host, new Point(laid.X + 2 * 8 + 1, laid.Center.Y - lift));
+        host.HasTextFocus.Should().BeTrue("the press landed on the field where it is drawn");
+        host.CaretIndex.Should().Be(2);
+
+        host.ViewInsets = default;
+        host.RenderFrame(new DisplayListBuilder(), 64);
+        host.CaretRect()!.Value.Y.Should().BeApproximately(laid.Y, 0.5f, "the screen comes back down");
+    }
+
+    /// <summary>A field a scroll view brought into view is above the keyboard already: the screen
+    /// around it stays where it is.</summary>
+    [Fact]
+    public void AFieldAScrollViewReveals_IsNotLifted()
+    {
+        var host = new PhotonHost(new LongForm(), PhotonTheme.Instance, ThemeMode.Light, 390, 600);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        var low = frame.TextRegions.Last(region => region.Bounds.Bottom <= 600);
+        Tap(host, low.Bounds.Center);
+        host.RenderFrame(new DisplayListBuilder(), 16);
+
+        host.ViewInsets = new EdgeInsets(0, 0, 0, 300);
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        frame = host.RenderFrame(new DisplayListBuilder(), 48);
+        host.RenderFrame(new DisplayListBuilder(), 64);
+
+        var field = frame.TextRegions.Single(region => region.Path == low.Path).Bounds;
+        host.CaretRect()!.Value.Y.Should().BeApproximately(field.Y, 0.5f);
+    }
+
     private sealed class Padded : Primitives.StatefulComponent
     {
         public override VisualNode Build(ComponentContext context) =>

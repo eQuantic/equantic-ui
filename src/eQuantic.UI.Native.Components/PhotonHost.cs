@@ -186,6 +186,17 @@ public sealed class PhotonHost
     private float _laidHeight;
 
     /// <summary>
+    /// How far the screen is drawn above where it was laid out, so that the field being edited
+    /// clears the keyboard where nothing around it scrolls: a form that does not fit what the
+    /// keyboard leaves, a phone turned on its side. Android's own <c>adjustPan</c>, which Android
+    /// itself picks for a window with nothing to scroll; Flutter leaves the field covered there.
+    /// Zero with the keyboard down, with nothing being edited, and wherever a scroll view brings
+    /// the field into view instead. A pointer lands where the screen is drawn, and the caret and the
+    /// semantics are reported where they are drawn.
+    /// </summary>
+    private float _lift;
+
+    /// <summary>
     /// The corner the system's WINDOW CONTROLS float in under <see cref="WindowChrome.Unified"/> —
     /// Start on a Mac, End on Windows, Top the strip's height — for the one <see cref="SafeArea"/>
     /// that asks for <see cref="SafeEdges.WindowControls"/>: the toolbar that is the title bar. Zero
@@ -251,6 +262,7 @@ public sealed class PhotonHost
 
         builder.Clear(_theme.Background.Resolve(Mode));
         if (RenderScale != 1f) builder.PushTransform(Matrix2D.Scale(RenderScale, RenderScale));
+        if (_lift != 0) builder.PushTransform(Matrix2D.Translation(0, -_lift));
         _lastTimeMs = timeMs;
         // The tree lays out above what the system covers, and a SafeArea at the bottom pads only
         // what the keyboard leaves of the home indicator: the keyboard is already in its way.
@@ -274,6 +286,7 @@ public sealed class PhotonHost
             pathCache: _pathCache, hoveredPaths: _hoverPaths,
             nodePool: RecycleFrames ? _nodePool : null, inViewStore: _inView,
             windowControlsInsets: WindowControlsInsets, sizedLike: previousFrame);
+        if (_lift != 0) builder.Pop();
         if (RenderScale != 1f) builder.Pop();
         // The frame shows what the app made of the keyboard's edit. A composition in a text the app
         // did not keep is over (see _composing): the keyboard is about to be told that text.
@@ -315,6 +328,9 @@ public sealed class PhotonHost
         // rising does that, as an inset or, where the system resizes the window for it, as a
         // shorter window; so does a phone turned on its side.
         if (shorter && RevealEditing()) NeedsRender = true;
+        // Where nothing scrolled the field into view, the screen is lifted until it shows; read once
+        // a scroll has landed, so a field a scroll view is bringing in is never lifted on the way.
+        else if (!gliding && Lift(height)) NeedsRender = true;
 
         // The caret is 2Hz motion, not vsync motion. Holding NeedsRender for it pinned the whole
         // loop to the display's refresh — 120 presents a second on a ProMotion panel, measured, to
@@ -576,6 +592,35 @@ public sealed class PhotonHost
         for (var i = 0; i < stops.Count; i++)
             if (stops[i].Path == path) return ScrollIntoView(stops[i]);
         return false;
+    }
+
+    /// <summary>
+    /// Sets <see cref="_lift"/>: for a field being edited that ends below <paramref name="laidHeight"/>,
+    /// the least that brings its bottom above it with a control's worth of margin, and never so much
+    /// that its top leaves the screen. Read from the field's focus stop, which the frame keeps even
+    /// where the field is drawn under the keyboard. Answers whether the lift changed.
+    /// </summary>
+    private bool Lift(float laidHeight)
+    {
+        var lift = 0f;
+        if (_viewInsets.Bottom > 0 && _textPath is { } path && _lastFrame is { } frame)
+        {
+            var stops = frame.FocusStops;
+            for (var i = 0; i < stops.Count; i++)
+            {
+                if (stops[i].Path != path) continue;
+                // Only a field still under the keyboard: one a scroll view brought into view is
+                // already above it, and the lift a covered one takes holds as long as it is edited.
+                var field = stops[i].Bounds;
+                if (field.Bottom > laidHeight)
+                    lift = Math.Clamp(field.Bottom + ScrollIntoViewMargin - laidHeight, 0,
+                        MathF.Max(0, field.Top - ScrollIntoViewMargin));
+                break;
+            }
+        }
+        if (lift == _lift) return false;
+        _lift = lift;
+        return true;
     }
 
     /// <summary>
@@ -1284,7 +1329,10 @@ public sealed class PhotonHost
     /// window (the CJK picker appears under the text being composed, not in a corner). Null when
     /// nothing is focused or the frame has not rendered.
     /// </summary>
-    public Rect? CaretRect()
+    public Rect? CaretRect() => CaretInFrame() is { } caret ? caret with { Y = caret.Y - _lift } : null;
+
+    /// <summary>The caret where the frame laid it, before <see cref="_lift"/>.</summary>
+    private Rect? CaretInFrame()
     {
         if (_lastFrame is null || _textPath is null) return null;
 
@@ -1532,8 +1580,17 @@ public sealed class PhotonHost
     /// it is answered by <see cref="TakeAnnouncements"/>.
     /// </para>
     /// </summary>
-    public IReadOnlyList<SemanticNode> Semantics() =>
-        _lastFrame is null ? Array.Empty<SemanticNode>() : SemanticsTree.Collect(_lastFrame);
+    public IReadOnlyList<SemanticNode> Semantics()
+    {
+        if (_lastFrame is null) return Array.Empty<SemanticNode>();
+        var nodes = SemanticsTree.Collect(_lastFrame);
+        if (_lift == 0) return nodes;
+        // Read where it is drawn: a finger exploring the lifted screen finds what is under it.
+        var lifted = new SemanticNode[nodes.Count];
+        for (var i = 0; i < nodes.Count; i++)
+            lifted[i] = nodes[i] with { Bounds = nodes[i].Bounds with { Y = nodes[i].Bounds.Y - _lift } };
+        return lifted;
+    }
 
     /// <summary>
     /// The live-region announcements produced since this was last called, and the queue is emptied.
@@ -1681,6 +1738,7 @@ public sealed class PhotonHost
     /// </summary>
     public void PointerMove(float x, float y, PointerKind kind = PointerKind.Mouse)
     {
+        y += _lift;
         // A canvas being dragged keeps the pointer even when it leaves the box; otherwise the
         // topmost canvas under the point gets the move, and the one being left gets its leave.
         var overCanvas = _pressedCanvas ?? CanvasUnder(new Point(x, y));
@@ -1923,6 +1981,7 @@ public sealed class PhotonHost
     /// </summary>
     public bool ScrollBy(float x, float y, float delta)
     {
+        y += _lift;
         var regions = _lastFrame?.ScrollRegions;
         if (regions is null) return false;
         for (var i = regions.Count - 1; i >= 0; i--)
@@ -1949,6 +2008,7 @@ public sealed class PhotonHost
     /// </summary>
     public CursorShape CursorAt(float x, float y)
     {
+        y += _lift;
         if (_lastFrame is null) return CursorShape.Default;
         var point = new Point(x, y);
 
@@ -2030,6 +2090,7 @@ public sealed class PhotonHost
     /// </summary>
     public bool PressDown(float x, float y, int clickCount = 1, KeyModifiers modifiers = KeyModifiers.None)
     {
+        y += _lift;
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
 
@@ -2258,6 +2319,7 @@ public sealed class PhotonHost
     /// </summary>
     public bool PressUp(float x, float y, PointerKind kind = PointerKind.Mouse)
     {
+        y += _lift;
         // The canvas that took the press gets the release, wherever it happens — a drag that ends
         // outside the box still ends, which is what every gesture on every platform means by "up".
         if (_pressedCanvas is { } canvas)
@@ -2456,6 +2518,7 @@ public sealed class PhotonHost
 
     public bool Tap(float x, float y)
     {
+        y += _lift;
         if (_lastFrame is null) return false;
 
         var point = new Point(x, y);
