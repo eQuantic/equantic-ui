@@ -250,14 +250,16 @@ public static class UIExtensions
                 + "StatefulComponent, or a write-once UiComponent).", nameof(TPage));
         }
 
-        // A page declared inside a [ServerOnly] class, an exception or an attribute has no module the
-        // browser can load, as the build writes none for its owner (#584): refused here, where a
-        // [Page] of the same shape is left out of the route table, rather than served and broken.
+        // A page declared inside a [ServerOnly] or a [RuntimeProvided] class, an exception or an
+        // attribute has no module the browser can load, as the build writes none for its owner (#584):
+        // refused here, where a [Page] of the same shape is left out of the route table, rather than
+        // served and broken. The message names every owner TwinName.OwnersCross refuses: it listed the
+        // ones that never reach the browser, and a [RuntimeProvided] one does, inside the runtime.
         if (!TwinName.OwnersCross(pageType))
         {
             throw new ArgumentException(
-                $"{pageType.FullName} is declared inside a type that never reaches the browser ([ServerOnly], an "
-                + "exception or an attribute), so the build writes no module for it: declare the page outside it.",
+                $"{pageType.FullName} is declared inside a type the build writes no module for ([ServerOnly], "
+                + "[RuntimeProvided], an exception or an attribute), so it has none either: declare the page outside it.",
                 nameof(TPage));
         }
 
