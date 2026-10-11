@@ -734,6 +734,23 @@ release is Edgar's call, and a version number in the tree that nobody released i
 (Do not quote the current version here; it changes every release and a stale number in the docs is
 how a reader is misled — read `Directory.Build.props`.)
 
+**A publish that stops halfway is finished, never recut.** The tag's `publish-nuget` job pushes with
+`scripts/publish-packages.sh`: it skips what nuget.org already lists, waits before it tries a failed
+push again, goes on to the next package, and fails at the end naming what is still owed. When it
+does fail for a reason outside the tree (nuget.org answering 500, a runner killed), do not bump, and
+do not rerun the job: a rerun replays the workflow as it was at the tag, from the top of the list.
+Run the `Publish a release` workflow by hand, with the tag run's id and the tag:
+
+```bash
+gh workflow run publish-release.yml -f run-id=<the tag's run> -f tag=v<version>
+```
+
+It publishes, from that run's own `nupkgs` artifact, every package nuget.org does not list yet (or
+the ids given in `-f packages="…"`), then writes the release page from the tag's annotation, which
+`release-github` could not do. Running it twice changes nothing. The loop is proven outside a
+release by `scripts/check-publish-packages.sh`, which CI runs against a stub on every pull request
+(#759).
+
 **The release's list of BREAKS is not written from memory — the build already has it.** Every
 project that ships an assembly declares its public surface in `PublicAPI.Shipped.txt`, and
 `Microsoft.CodeAnalysis.PublicApiAnalyzers` fails the build of any change that is not declared:

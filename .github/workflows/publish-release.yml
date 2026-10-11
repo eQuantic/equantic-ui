@@ -1,0 +1,87 @@
+# Finishes a release by hand, from the packages its own run built (#759).
+#
+# The tag's pipeline (ci.yml) publishes a release. When its publish-nuget job stops halfway for a
+# reason outside the tree, a rerun cannot help: it replays the workflow as it was at the tag, from
+# the top of the list. 0.2.0-preview.61 stopped after 33 of 50 packages on three 500s from
+# nuget.org, and five reruns died on packages that were already there. This workflow takes the run
+# that built the release and its tag, pushes the packages it is given, or every one nuget.org does
+# not list yet, with the loop the pipeline itself runs (scripts/publish-packages.sh), and then
+# writes the tag's release page (scripts/release-page.sh). No new version is cut, and the key never
+# leaves the repository's secrets.
+#
+# Run it only after the tag's publish-nuget has failed. Running it twice changes nothing: what is
+# listed is skipped, and a page that exists is edited.
+name: Publish a release
+
+on:
+  workflow_dispatch:
+    inputs:
+      run-id:
+        description: "The run that built the release (the tag's CI run): its nupkgs artifact holds the packages"
+        required: true
+        type: string
+      tag:
+        description: "The release's tag, such as v0.2.0-preview.61"
+        required: true
+        type: string
+      packages:
+        description: "Package ids to publish, separated by spaces. Empty publishes every package nuget.org does not list yet"
+        required: false
+        default: ""
+        type: string
+
+# One at a time for a tag: two runs would only meet each other's packages as duplicates, but the
+# log of a release reads better as one list.
+concurrency:
+  group: publish-release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Download the run's packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nupkgs
+          path: nupkgs/
+          run-id: ${{ inputs.run-id }}
+          github-token: ${{ github.token }}
+
+      # The inputs reach the shell through the environment, never written into the script: a tag
+      # and a package id are text a person typed, and `${{ }}` is substituted before the shell
+      # reads the line. The ids are split on spaces on purpose, with globbing off, and the script
+      # refuses whatever is not an id.
+      - name: Publish to nuget.org
+        shell: bash
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          EQ_TAG: ${{ inputs.tag }}
+          EQ_PACKAGES: ${{ inputs.packages }}
+        run: |
+          set -euo pipefail
+          case "$EQ_TAG" in v[0-9]*) ;; *) echo "::error::'$EQ_TAG' is not a framework tag (v<version>)."; exit 2 ;; esac
+          set -f
+          # shellcheck disable=SC2086
+          ./scripts/publish-packages.sh nupkgs "${EQ_TAG#v}" $EQ_PACKAGES
+
+      - name: Write the release page from the tag's annotation
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EQ_TAG: ${{ inputs.tag }}
+        run: ./scripts/release-page.sh "$EQ_TAG"
