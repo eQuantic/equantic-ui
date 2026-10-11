@@ -2365,9 +2365,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   `Parse` now, the type's default in the out argument where it fails, and the DatePicker says
   `DateOnly.TryParse` as its comment wanted to; their other overloads (a provider, styles, a span) fail
   the build, since the twin would read the text and never write the out argument. `TimeOnly.Parse`
-  refuses `25:00` and trailing text, as .NET does. 78 of the 81 new conformance cases fail at
-  20069215; 35 entries leave the null-argument baseline, 17 answered and 18 refused at the build. The
-  served runtime grows about 1,000 gzipped bytes. Proposed and archived through OpenSpec
+  reads .NET's invariant grammar, so `9:30 PM` is 21:30 where it was half past nine in the morning,
+  `25:00` and trailing text are refused, and a fraction rounds to the tick as .NET rounds it. 99 of the
+  102 new conformance cases fail at 20069215; 35 entries leave the null-argument baseline, 17 answered
+  and 18 refused at the build. The served runtime grows about 1,150 gzipped bytes. What `TryParse`
+  inherits from `Parse` is filed: the invariant culture read where .NET reads the current one
+  ([#806](https://github.com/eQuantic/equantic-ui/issues/806)), and the forms `DateTime`,
+  `DateTimeOffset`, `DateOnly` and `TimeSpan` do not read, or read wrongly
+  ([#807](https://github.com/eQuantic/equantic-ui/issues/807)). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
 
 ## Retired documents

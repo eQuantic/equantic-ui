@@ -38,9 +38,12 @@ expression SHALL fail the build.
 false and write the type's default there for a text its `Parse` refuses and for a null one, and SHALL
 never throw. The out argument SHALL be any place C# can write, a discard, a variable declared before
 and an array's element included, and the arguments SHALL be evaluated in the order written.
-`TimeOnly.Parse` SHALL read the whole text and refuse an hour past 23, a minute past 59 and a second
-past 59, as .NET refuses them. Every other overload of the five's `TryParse` (a provider, styles, a span)
-SHALL fail the build.
+`TimeOnly.Parse` SHALL read the whole text in .NET's invariant grammar: an hour past 23, a minute past
+59 and a second past 59 refused, an AM or PM designator before or after the time in either case, `12`
+read as midnight under AM, an hour past 12 refused under AM and kept under PM, an hour alone only
+beside a designator, and a fraction only after the seconds, rounded to the tick as .NET rounds it.
+`TimeOnly.Parse` and `DateOnly.Parse` SHALL refuse a text in .NET's words. Every other overload of the
+five's `TryParse` (a provider, styles, a span) SHALL fail the build.
 
 #### Scenario: A text that is a date
 
@@ -56,6 +59,12 @@ SHALL fail the build.
 
 - **WHEN** `TimeOnly.TryParse("25:00", out var t)` runs
 - **THEN** it answers false, as in .NET, where `Parse` read a day and an hour
+
+#### Scenario: A time with a designator
+
+- **WHEN** `TimeOnly.Parse("9:30 PM")` and `TimeOnly.TryParse("13:00 AM", out var t)` run
+- **THEN** the first answers 21:30 and the second false, as in .NET, where the first was half past
+  nine in the morning
 
 #### Scenario: An overload with a provider
 

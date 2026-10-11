@@ -5,7 +5,7 @@ found by #715's null-argument measurement, which listed each overload as a gap.
 
 ## Why
 
-Executed on both sides at 20069215, where 78 of the 81 cases of `ConvertEncodingConformanceTests` and
+Executed on both sides at 20069215, where 99 of the 102 cases of `ConvertEncodingConformanceTests` and
 `DateTimeTryParseConformanceTests` fail:
 
 - `Convert.ToBase64String`, `ToBase64CharArray`, `ToHexString` and `ToHexStringLower` were lowered to
@@ -31,11 +31,18 @@ Executed on both sides at 20069215, where 78 of the 81 cases of `ConvertEncoding
 - The five time types gain a `tryParse` that answers the value their `Parse` reads, or undefined where
   Parse refuses the text or the text is null, and eqc lowers `TryParse(string, out T)` inline over it,
   as `Guid.TryParse` is: true with the value in the out argument, or false with the type's zero there.
-  `DateOnly.tryParse` answers undefined where it answered null. Every other overload of the five's
+  Only the refusals of `Parse` (a `FormatException`, an `OverflowException`, an `ArgumentException`)
+  become that false; any other fault of the reader stays loud. `DateOnly.tryParse` answers undefined
+  where it answered null. Every other overload of the five's
   `TryParse` (a provider, styles, a span) fails the build (EQ1004): handed to the twin it would read
   the text and never write its out argument, a wrong answer in silence where the page failed before.
-- `TimeOnly.Parse` reads the whole text and a clock that exists: `25:00` and `09:30 junk` are refused,
-  as .NET refuses them, where they were a day and an hour and half past nine.
+- `TimeOnly.Parse` reads .NET 10's invariant grammar, as measured there: the whole text, a clock that
+  exists, an AM or PM designator before or after the time in either case (`12 AM` is midnight, an hour
+  past 12 is refused under AM and kept under PM), parts of one or two digits, an hour alone only beside
+  a designator, and a fraction only after the seconds, rounded to the tick as .NET rounds it. Before,
+  `9:30 PM` was half past nine in the morning, `25:00` a day and an hour, `09:30 junk` half past nine,
+  and a fraction past its seventh digit was cut. `TimeOnly.Parse` and `DateOnly.Parse` refuse in
+  .NET's words: `String '25:00' was not recognized as a valid TimeOnly.`
 - The DatePicker reads a typed date with `DateOnly.TryParse`, which its comment said it wanted and
   could not say until now.
 
@@ -65,7 +72,8 @@ None.
 - #715's null-argument baseline only shrinks, by 35: 17 overloads answer as .NET's now, and the 18
   probes of the `TryParse` overloads with a provider leave the measured surface, since the build
   refuses them.
-- Left where they are: translating the `TryParse` overloads with a provider or styles (#717), and `FromBase64String`
-  and `FromHexString`, which stay fenced (EQ2004). `TryParse` reads what `Parse` reads, so the gaps of
-  `Parse`'s grammar (a time with AM or PM, a `TimeSpan` in a format other than `c`) are `TryParse`'s
-  too.
+- Left where they are: translating the `TryParse` overloads with a provider or styles (#717), and
+  `FromBase64String` and `FromHexString`, which stay fenced (EQ2004). `TryParse` reads what `Parse`
+  reads, so two of `Parse`'s gaps are `TryParse`'s too: with no provider it reads the invariant
+  culture where .NET reads the current one (#806), and `DateTime`, `DateTimeOffset`, `DateOnly` and
+  `TimeSpan` read fewer forms than .NET, `TimeSpan` some of them wrongly (#807).
