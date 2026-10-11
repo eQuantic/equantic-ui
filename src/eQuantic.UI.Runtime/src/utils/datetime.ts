@@ -26,6 +26,23 @@ import { exception } from './exceptions';
 const NULL_S = "Value cannot be null. (Parameter 's')";
 const NULL_INPUT = "Value cannot be null. (Parameter 'input')";
 
+/**
+ * `TryParse(string, out T)` over a type's `Parse`: the value it reads, or undefined where it
+ * refuses the text, as .NET's TryParse answers false for a text its Parse refuses and for a null
+ * one, and throws for neither. The compiler writes the value or the type's default through the out
+ * argument (#718).
+ */
+function attempt<T>(read: (text: string) => T): (text: string | null | undefined) => T | undefined {
+  return (text) => {
+    if (text == null) return undefined;
+    try {
+      return read(text);
+    } catch {
+      return undefined;
+    }
+  };
+}
+
 const TICKS_PER_MICROSECOND = 10n;
 const TICKS_PER_MILLISECOND = 10_000n;
 const TICKS_PER_SECOND = 10_000_000n;
@@ -329,6 +346,7 @@ export interface TimeSpanFactory {
   fromMicroseconds(value: bigint | number): TimeSpan;
   fromTicks(value: bigint | number): TimeSpan;
   parse(text: string): TimeSpan;
+  tryParse(text: string | null | undefined): TimeSpan | undefined;
   readonly zero: TimeSpan;
   minValue(): TimeSpan;
   maxValue(): TimeSpan;
@@ -383,6 +401,7 @@ timeSpan.parse = (text: string): TimeSpan => {
     frac;
   return new TimeSpan(m[1] ? -ticks : ticks);
 };
+timeSpan.tryParse = attempt(timeSpan.parse);
 (timeSpan as { zero: TimeSpan }).zero = new TimeSpan(0n);
 timeSpan.minValue = () => new TimeSpan(-9_223_372_036_854_775_808n);
 timeSpan.maxValue = () => new TimeSpan(9_223_372_036_854_775_807n);
@@ -683,6 +702,7 @@ export interface DateTimeFactory {
   minValue(): DateTime;
   maxValue(): DateTime;
   parse(text: string): DateTime;
+  tryParse(text: string | null | undefined): DateTime | undefined;
   /** A `DateTime` as System.Text.Json reads it from the wire: see {@link dateTimeFromJson}. */
   fromJson(text: string): DateTime;
   daysInMonth(year: number, month: number): number;
@@ -771,6 +791,7 @@ export const dateTime: DateTimeFactory = {
   daysInMonth,
   isLeapYear,
   parse: (text) => parseDateTime(text),
+  tryParse: attempt(parseDateTime),
   fromJson: (text) => dateTimeFromJson(text),
 };
 
@@ -955,8 +976,8 @@ export interface DateOnlyFactory {
   minValue(): DateOnly;
   maxValue(): DateOnly;
   parse(text: string): DateOnly;
-  /** The date a reader TYPED, by the active culture's field order, or null when it is not one. */
-  tryParse(text: string): DateOnly | null;
+  /** The date a reader TYPED, by the active culture's field order, or undefined if it is none. */
+  tryParse(text: string | null | undefined): DateOnly | undefined;
 }
 
 export const dateOnly = ((year: number, month: number, day: number) =>
@@ -1038,7 +1059,8 @@ function valid(year: number, month: number, day: number): DateOnly | null {
   return built.year === year && built.month === month && built.day === day ? built : null;
 }
 
-dateOnly.tryParse = tryParseDateOnly;
+// DateOnly.TryParse of null answered null where .NET answers false (#718).
+dateOnly.tryParse = (text) => (text == null ? undefined : (tryParseDateOnly(text) ?? undefined));
 
 // ---------------------------------------------------------------------------------------------
 // TimeOnly (.NET 6+) — a time of day with no date. Backed by ticks in [0, TicksPerDay).
@@ -1115,6 +1137,7 @@ export interface TimeOnlyFactory {
   minValue(): TimeOnly;
   maxValue(): TimeOnly;
   parse(text: string): TimeOnly;
+  tryParse(text: string | null | undefined): TimeOnly | undefined;
 }
 
 function timeOnlyImpl(...args: number[] | [bigint]): TimeOnly {
@@ -1137,8 +1160,11 @@ timeOnly.minValue = () => new TimeOnly(0n);
 timeOnly.maxValue = () => new TimeOnly(TICKS_PER_DAY - 1n);
 timeOnly.parse = (text: string): TimeOnly => {
   if (text == null) throw exception('System.ArgumentNullException', NULL_S);
-  const m = /^(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?/.exec(text.trim());
-  if (!m) throw exception('System.FormatException', `Unrecognized TimeOnly format: '${text}'`);
+  // The whole text, and a clock that exists: `25:00` read as a day and an hour, and `09:30 junk` as
+  // half past nine, where .NET refuses both.
+  const m = /^(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?$/.exec(text.trim());
+  if (!m || +m[1] > 23 || +m[2] > 59 || +(m[3] ?? 0) > 59)
+    throw exception('System.FormatException', `Unrecognized TimeOnly format: '${text}'`);
   const frac = m[4] ? BigInt(m[4].padEnd(7, '0').slice(0, 7)) : 0n;
   return new TimeOnly(
     BigInt(+m[1]) * TICKS_PER_HOUR +
@@ -1147,6 +1173,8 @@ timeOnly.parse = (text: string): TimeOnly => {
       frac,
   );
 };
+
+timeOnly.tryParse = attempt(timeOnly.parse);
 
 // ---------------------------------------------------------------------------------------------
 // DateTimeOffset — a wall-clock DateTime plus an offset from UTC. Compared/equated by the instant.
@@ -1370,6 +1398,7 @@ export interface DateTimeOffsetFactory {
   /** `DateTimeOffset.MaxValue`: 9999-12-31 23:59:59.9999999 at +00:00. */
   maxValue(): DateTimeOffset;
   parse(text: string): DateTimeOffset;
+  tryParse(text: string | null | undefined): DateTimeOffset | undefined;
 }
 
 /** The furthest an offset reaches from UTC, as .NET bounds it. */
@@ -1447,6 +1476,7 @@ export const dateTimeOffset: DateTimeOffsetFactory = {
   minValue: () => new DateTimeOffset(0n, 0n),
   maxValue: () => new DateTimeOffset(MAX_DATETIME_TICKS, 0n),
   parse: (text) => parseDateTimeOffset(text),
+  tryParse: attempt(parseDateTimeOffset),
 };
 
 function parseDateTimeOffset(text: string): DateTimeOffset {
