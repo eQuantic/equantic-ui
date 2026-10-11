@@ -125,14 +125,14 @@ internal sealed class PhotonInputConnection : BaseInputConnection
     /// <summary>
     /// A key the host just took (a key sent by the keyboard, or a keyboard attached to the phone)
     /// edited the field: the mirror takes it at once, because the keyboard's next edit reads the
-    /// mirror and must not start from the text before the key.
+    /// mirror and must not start from the text before the key. A key that ended the keyboard's
+    /// composition starts it over, as any change of the host's does.
     /// </summary>
     internal void Refresh()
     {
         if (!_document || !Serving || _host.EditingValue is not { } value || value == Current()) return;
-        if (_trace) PhotonInputTrace.Write($"refresh {value}");
-        Show(value);
-        Settle();
+        if (_trace) PhotonInputTrace.Write("refresh");
+        Apply(value);
     }
 
     /// <summary>Puts a state into the mirror without sending it anywhere.</summary>
