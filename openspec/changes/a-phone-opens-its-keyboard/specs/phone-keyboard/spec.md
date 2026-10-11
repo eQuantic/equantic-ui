@@ -81,11 +81,11 @@ surface and a sheet SHALL be edited through keys and committed text (`TextInputT
 
 The host's `ViewInsets` SHALL be the part of the window the keyboard covers. The tree SHALL lay out in
 the height above it, with the safe area it covers counted once, and a frame laid out in less height
-than the one before SHALL scroll the field being edited into view. Where no scroll brings it there, the
-host SHALL draw the screen lifted by the least that brings the field above the keyboard, SHALL take a
-press where the screen is drawn and report the caret and the semantics there, and SHALL draw it in
-place again when the keyboard goes down or the edit ends. A field the keyboard covered SHALL stay the
-one being edited.
+than the one before SHALL scroll the field being edited into view. Where no scroll view holds the field
+and the edit has less height than the screen had before it began, the host SHALL draw the screen
+lifted by the least that brings the field above the keyboard, SHALL take a press where the screen is
+drawn and report the caret and the semantics there, and SHALL draw it in place again when the keyboard
+goes down or the edit ends. A field the keyboard covered SHALL stay the one being edited.
 
 #### Scenario: The keyboard rises over a field near the bottom
 
@@ -101,10 +101,29 @@ one being edited.
 - **THEN** the caret is drawn above 300, a press where the field is drawn moves its caret, and the
   field is drawn at 368 again once the keyboard goes down
 
+#### Scenario: A window shortened for the keyboard
+
+- **WHEN** the same field is being edited and the window is shortened to 300 instead, with no inset, as
+  Android before 15 does for an app not drawn edge to edge
+- **THEN** the caret is drawn above 300, and the field is drawn in place again once the window is 600
+  tall again
+
 #### Scenario: A field a scroll view brought into view
 
 - **WHEN** a field low in a scrolling form is being edited and the keyboard rises
 - **THEN** the form scrolls it into view, and the screen is not lifted
+
+#### Scenario: A field the person scrolls under the keyboard
+
+- **WHEN** a field in a scrolling form is being edited with the keyboard up, and the person scrolls it
+  down under the keyboard
+- **THEN** the field stays where it was scrolled, and the screen is not lifted
+
+#### Scenario: A window that was always too short
+
+- **WHEN** a field laid out below the bottom of a window that does not scroll is focused, with no
+  keyboard and no change in the window's height
+- **THEN** the screen is not lifted
 
 #### Scenario: The safe area under the keyboard
 

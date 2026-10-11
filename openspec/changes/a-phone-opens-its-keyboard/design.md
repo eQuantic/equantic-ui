@@ -84,8 +84,13 @@ product principle asks for: the developer is not made to know that a form needs 
 the keyboard's sake. So the host draws the screen lifted by the least that brings the field's bottom
 above the keyboard, never so far that its top leaves the screen; a press lands where the screen is
 drawn, the caret and the semantics are reported there, and the lift returns to zero with the keyboard
-or the edit. A scroll view still comes first: the lift is read only once no scroll is moving, so a
-field a scroll view is bringing in is never lifted on its way.
+or the edit. A scroll view comes first, and wholly: a field inside one that scrolls up and down is
+never lifted, so the field a reveal brings in is not lifted on its way, and one the person scrolls
+under the keyboard stays there, as in Flutter, rather than the screen fighting the scroll. The lift is
+taken only while the edit has less room than the screen had before it began. That reads the keyboard
+however it arrives, as an inset or, on Android before 15 for an app not drawn edge to edge, as a
+window the system shortened, and it leaves alone a desktop window that was always too short for its
+form, which is the app's to scroll.
 
 **Android measures the keyboard itself.** With `adjustResize` the window may or may not shrink,
 depending on the version and on whether the app draws edge to edge. From API 30 the shell reads the

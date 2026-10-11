@@ -2,11 +2,11 @@
 
 ## 1. The editing value in the host
 
-- [x] 1.1 `TextEditingValue`, `PhotonHost.EditingValue` and `PhotonHost.UpdateEditingValue`: the keyboard's edit is the field's new state, handed to the app once, a single line flattened, a disabled or absent field refused. Verify: `PhoneKeyboardTests`, the editing value cases
+- [x] 1.1 `TextEditingValue`, `PhotonHost.EditingValue` and `PhotonHost.UpdateEditingValue`: the keyboard's edit is the field's new state, handed to the app once, a single line flattened with its selection kept on its text, a disabled or absent field refused. Verify: `PhoneKeyboardTests`, the editing value cases, `AFlattenedLineBreak_KeepsTheSelectionOnItsText` failing without its fix
 - [x] 1.2 The composition is in the text, drawn underlined, and ends with a caret the host moves or a text the app rewrites. Verify: `PhoneKeyboardTests.AComposition_IsDrawnUnderlined_AcrossItsRange` and `AnAppThatRewritesTheText_EndsTheComposition`, each failing without its fix
-- [x] 1.3 `TextInputSession`, `TextInputTarget` and `TextInputChange`: open, start over, close, a value the app changed, never an echo; a code surface and a sheet are keys. Verify: `PhoneKeyboardTests`, the session cases
+- [x] 1.3 `TextInputSession`, `TextInputTarget` and `TextInputChange`: open, start over, close, a value the app changed, never an echo; an edit that arrives after the caret left its field goes nowhere; a code surface and a sheet are keys. Verify: `PhoneKeyboardTests`, the session cases, `AnEditThatArrivesAfterTheCaretMoved_GoesNowhere` failing without its fix
 - [x] 1.4 `PhotonHost.ViewInsets`: the tree lays out above the keyboard, the safe area under it counts once, a shorter frame reveals the field being edited, and a covered field is still the one being edited. Verify: `PhoneKeyboardTests`, the insets cases, each failing without its fix, and the Native.Engine suite whole
-- [x] 1.5 Where nothing scrolls, the host lifts the screen until the field being edited clears the keyboard, takes presses where it is drawn and reports the caret and the semantics there. Verify: `PhoneKeyboardTests.AFieldNothingScrolls_IsLiftedAboveTheKeyboard` and `AFieldAScrollViewReveals_IsNotLifted`, each failing without its fix
+- [x] 1.5 Where nothing scrolls, the host lifts the screen until the field being edited clears the keyboard, takes presses where it is drawn and reports the caret and the semantics there. Verify: `PhoneKeyboardTests.AFieldNothingScrolls_IsLiftedAboveTheKeyboard`, `AFieldAShorterWindowCovers_IsLiftedToo`, `AFieldAScrollViewReveals_IsNotLifted`, `AFieldScrolledUnderTheKeyboard_IsNotLifted` and `AWindowThatWasAlwaysTooShort_IsNotLifted`, each failing without its fix
 - [x] 1.6 `TextInputSession.Submit`: the action key submits the field and ends the edit. Verify: `PhoneKeyboardTests.TheActionKey_SubmitsTheField_AndEndsTheEdit`, failing without it
 
 ## 2. The Android shell
