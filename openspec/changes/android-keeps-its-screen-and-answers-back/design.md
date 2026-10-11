@@ -37,9 +37,23 @@ activity, and any other activity finishes.
 **Both delivery paths, never both for one press.** Android 13 and later deliver back through the
 callback when the app opts into predictive back (the default for a target of API 36 on Android 16),
 and through `KEYCODE_BACK` otherwise. A platform that calls the callback does not send the key, so
-handling both covers every version without a manifest flag.
+handling both covers every version. The generated launcher still declares predictive back on the
+activity, which Android 14 and 15 read; the application-level flag Android 13 reads has no attribute in
+.NET for Android, and there the key reaches the same handler.
+
+**The swapchain draws upright, at the window's size.** The renderer never rotates what it draws, so
+the swapchain declares `preTransform` IDENTITY and the compositor turns the image to the panel, which
+costs a composition pass on a rotated phone and is what Android does for every app that does not
+pre-rotate. A present then answers `VK_SUBOPTIMAL_KHR` while the two transforms differ, which is a
+success code and is read as a frame shown; only `VK_ERROR_OUT_OF_DATE_KHR` rebuilds. The extent is the
+size the window reports, clamped into the surface's range: Android's current extent still described the
+old buffer when the rotated window arrived, and a desktop surface fixes its range to its current
+extent, so the clamp gives it what it gave before.
 
 ## Risks
+
+- `preTransform` IDENTITY and the extent rule are proven on the emulator, whose Vulkan runs on MoltenVK.
+  A phone's own driver and compositor are not measured here.
 
 - The activity is still rebuilt by a locale change, which it does not declare: the host follows, and the
   app starts on its first screen. Declaring it needs the culture to follow at run time, which is

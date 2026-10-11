@@ -71,7 +71,8 @@ panes are on screen, nor with the list on screen, nor without an `OnBack`.
 The Android shell SHALL register an `OnBackInvokedCallback` from Android 13 only while the host can go
 back, and unregister it when it cannot, so the system plays its predictive "leave the app" animation
 for every back the app does not take. Where the platform delivers back as `KEYCODE_BACK`, the activity
-SHALL take the key on the same condition. One press SHALL reach the host once.
+SHALL take the key on the same condition. One press SHALL reach the host once. The generated launcher
+activity SHALL declare predictive back, so the app does not.
 
 #### Scenario: A detail, then the list, on Android 16
 

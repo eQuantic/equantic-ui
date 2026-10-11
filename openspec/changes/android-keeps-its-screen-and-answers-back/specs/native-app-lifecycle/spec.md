@@ -34,3 +34,20 @@ light or dark (unless the app fixed one) and as the scale it rasters at.
 
 - **WHEN** the Wallet sample is on its Cards tab and the device turns to landscape and back
 - **THEN** it shows the Cards tab
+
+### Requirement: A rotated window is drawn upright at its own size
+
+The Vulkan swapchain SHALL be made at the size the window reports, inside the range the surface
+accepts, and SHALL declare its images upright, so the compositor turns them to the panel. A present
+that answers `VK_SUBOPTIMAL_KHR` SHALL count as a frame shown; one that answers
+`VK_ERROR_OUT_OF_DATE_KHR` SHALL rebuild the swapchain; any other failure SHALL be an error.
+
+#### Scenario: Turning with the app in front
+
+- **WHEN** the Wallet sample is in front and the device turns to landscape and back
+- **THEN** the app stays alive, drawn upright and filling the window in each orientation
+
+#### Scenario: Launched sideways
+
+- **WHEN** the Wallet sample starts while the device is already in landscape
+- **THEN** it is drawn upright and fills the window
