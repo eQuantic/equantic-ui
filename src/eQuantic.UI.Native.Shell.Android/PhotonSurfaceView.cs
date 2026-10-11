@@ -43,7 +43,7 @@ internal sealed class PhotonSurfaceView : SurfaceView
     /// <summary>Called when the system's insets change: the keyboard rising or falling, a bar
     /// shown or hidden. Nothing about the host has to change for that, so nothing else would draw
     /// the frame that lays out around them.</summary>
-    internal Action? InsetsChanged { get; set; }
+    internal System.Action? InsetsChanged { get; set; }
 
     public override AccessibilityNodeProvider? AccessibilityNodeProvider => Semantics;
 

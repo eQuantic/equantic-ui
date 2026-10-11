@@ -629,11 +629,7 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     /// </summary>
     private bool Key(KeyEvent e)
     {
-        if (_host is null) return false;
-        // Text no key of the device's key map types, sent as one event.
-        if (e.Action == KeyEventActions.Multiple && e.KeyCode == Keycode.Unknown)
-            return e.Characters is { Length: > 0 } characters && Took(_host.TextInput(characters));
-        if (e.Action != KeyEventActions.Down) return false;
+        if (_host is null || e.Action != KeyEventActions.Down) return false;
         var modifiers = AndroidKeys.Modifiers(e);
         var name = AndroidKeys.NameOf(e);
         if (name.Length > 0 && _host.KeyDown(name, modifiers)) return Took(true);

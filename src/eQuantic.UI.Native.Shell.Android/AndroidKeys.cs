@@ -37,7 +37,7 @@ internal static class AndroidKeys
         Keycode.PageDown => "PageDown",
         Keycode.Insert => "Insert",
         >= Keycode.F1 and <= Keycode.F12 => "F" + (e.KeyCode - Keycode.F1 + 1),
-        _ => Character(e.GetUnicodeChar(0)).ToLowerInvariant(),
+        _ => Character(e.GetUnicodeChar(MetaKeyStates.None)).ToLowerInvariant(),
     };
 
     /// <summary>
