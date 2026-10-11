@@ -185,14 +185,21 @@ internal sealed partial class MeasureVisitor
         result.Adopt(child);
 
         var width = ResolveSelf(scroll.Width, maxW, MathF.Min(child.Bounds.Width, maxW));
+        // A Flexible's slot caps a scroller's declared width at the slot, the web's `max-width:
+        // 100%` (LayoutConstraints.WidthIsACeiling): capped HERE, before the scroll range below is
+        // taken from it, so a horizontal scroller scrolls as far as its capped viewport needs.
+        if (constraints.WidthIsACeiling) width = MathF.Min(width, maxW);
         var height = ResolveSelf(scroll.Height, maxH, MathF.Min(child.Bounds.Height, maxH));
         result.Bounds = new Rect(0, 0, width, height);
 
         var maxOffset = MathF.Max(0, horizontal ? child.Bounds.Width - width : child.Bounds.Height - height);
         // Scroll compositor v1: the host's stored offset wins; the node's programmatic Offset is the
-        // default until the user scrolls. The realizer registers the region via ScrollMeta.
+        // default until the user scrolls. The realizer registers the region via ScrollMeta, with the
+        // range of the measure the tree KEEPS, which is the last one: a scroller measured again (a
+        // wrapping line that resolved, a Flexible's ceiling) kept the range of its first measure, so
+        // a viewport capped to 300 around 800 of content stopped scrolling at 400 instead of 500.
         var offset = Math.Clamp(ctx.ScrollOffsets?.Get(path) ?? scroll.Offset, 0, maxOffset);
-        ctx.ScrollMeta?.TryAdd(scroll, (path, maxOffset));
+        if (ctx.ScrollMeta is { } meta) meta[scroll] = (path, maxOffset);
         child.Bounds = child.Bounds with
         {
             X = horizontal ? -offset : 0,
@@ -495,15 +502,17 @@ internal sealed partial class MeasureVisitor
         var count = columns.Count;
         var gapTotal = grid.Gap * MathF.Max(0, count - 1);
 
-        // Place children into (column, span) slots — auto-flow with span clamping.
-        var placements = new (VisualNode Node, int Column, int Span, int Row)[grid.Children.Count];
+        // Place children into (column, span) slots — auto-flow with span clamping. An AdaptiveNode's
+        // place is its arm's, span included (see LaidOutChildren).
+        var children = new LaidOutChildren(grid.Children, ctx);
+        var placements = new (VisualNode Node, int Column, int Span, int Row)[children.Count];
         var col = 0;
         var row = 0;
-        for (var i = 0; i < grid.Children.Count; i++)
+        for (var i = 0; i < children.Count; i++)
         {
-            var span = Math.Clamp(grid.Children[i].GridSpan < 1 ? 1 : grid.Children[i].GridSpan, 1, count);
+            var span = Math.Clamp(children[i].GridSpan < 1 ? 1 : children[i].GridSpan, 1, count);
             if (col + span > count) { col = 0; row++; }
-            placements[i] = (grid.Children[i], col, span, row);
+            placements[i] = (children[i], col, span, row);
             col += span;
             if (col >= count) { col = 0; row++; }
         }
@@ -541,7 +550,7 @@ internal sealed partial class MeasureVisitor
             var (node, c, span, r) = placements[i];
             var cellW = grid.Gap * (span - 1);
             for (var k = c; k < c + span; k++) cellW += widths[k];
-            var child = Measure(node, constraints.ForChild(cellW, maxH), ctx, ctx.ChildPath(path, i, node));
+            var child = Measure(node, constraints.ForChild(cellW, maxH), ctx, children.PathOf(path, i));
             // A Fill-width child pins to the cell (the realizer paints the full extent).
             if (CrossSizeKind(node, horizontal: false) == SizeKind.Fill || WidthKind(node) == SizeKind.Fill)
                 child.Bounds = child.Bounds with { Width = cellW };

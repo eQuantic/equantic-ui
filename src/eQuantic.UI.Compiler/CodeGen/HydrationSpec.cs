@@ -113,7 +113,7 @@ public static class HydrationSpec
         // and on a topic's payload alike (#647).
         if (IsEmittedValueType(named) && !named.IsHostOnly())
         {
-            referenced.InSource.Add(named.Name);
+            referenced.InSource.Add(named.TwinTypeName());
             // A CONSTRUCTED generic record shares its twin with the open declaration, whose
             // `$hydration` cannot know what T is: `Box<long>`'s value arrived as the text the wire
             // writes. Its own members, T substituted, describe it on that twin. A record that holds
@@ -122,14 +122,14 @@ public static class HydrationSpec
             {
                 try
                 {
-                    return $"{{ of: {named.Name}, members: {MemberMap(MemberEntries(named, referenced, visiting))} }}";
+                    return $"{{ of: {named.TwinTypeName()}, members: {MemberMap(MemberEntries(named, referenced, visiting))} }}";
                 }
                 finally
                 {
                     visiting.Remove(named);
                 }
             }
-            return named.Name;
+            return named.TwinTypeName();
         }
 
         // A type the runtime ships no export for is fenced (EQ2010) wherever a component names it,

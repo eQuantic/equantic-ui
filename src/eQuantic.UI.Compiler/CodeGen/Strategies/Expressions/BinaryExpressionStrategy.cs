@@ -52,7 +52,7 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             if (RecordTypeEmitter.OperatorMethodName(op) is { } operatorMethod
                 && declaring.Locations.Any(location => location.IsInSource))
             {
-                return JsExpr.Callish($"{declaring.Name}.{operatorMethod}({left}, {right})");
+                return JsExpr.Callish($"{declaring.IntroduceTwin(context)}.{operatorMethod}({left}, {right})");
             }
         }
 

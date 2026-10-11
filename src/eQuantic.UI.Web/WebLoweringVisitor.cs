@@ -44,10 +44,17 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
     /// side of hydration, and one attribute of disagreement is a diverged subtree.
     /// </para>
     /// </summary>
-    internal HtmlElement? Lower(VisualNode node, bool? horizontalAxis)
-    {
-        var lowered = node.Accept(this, horizontalAxis);
+    internal HtmlElement? Lower(VisualNode node, bool? horizontalAxis) =>
+        Decorate(node, node.Accept(this, horizontalAxis));
 
+    /// <summary>
+    /// What the funnel writes on the element a node lowered to. A method of its own, apart from the
+    /// dispatch, for the one place that builds a node's element without dispatching the node: a
+    /// container placing an AdaptiveNode's arms itself (<see cref="Place"/>), whose wrapper is still
+    /// that node's element and still carries its key, its bookmark and its origin.
+    /// </summary>
+    private HtmlElement? Decorate(VisualNode node, HtmlElement? lowered)
+    {
         // A node's Key is its identity among siblings — the same one property Photon reads into a
         // keyed path segment — and here it becomes the reconciler's key, so a keyed row that moved
         // from the third position to the first is a MOVED row, not a rewritten one. Written in the
@@ -96,7 +103,10 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
 
     public HtmlElement? Visit(Grid grid, bool? horizontalAxis) => LowerGrid(grid);
 
-    public HtmlElement? Visit(AdaptiveNode adaptive, bool? horizontalAxis) => LowerAdaptive(adaptive);
+    // Reached from a parent with no rule of its own for a direct child — its arms are lowered as it
+    // was asked to be, on the same axis. A flex, a grid and a stack place the arms themselves.
+    public HtmlElement? Visit(AdaptiveNode adaptive, bool? horizontalAxis) =>
+        LowerAdaptive(adaptive, arm => Lower(arm, horizontalAxis));
 
     public HtmlElement? Visit(Pinned pinned, bool? horizontalAxis) => LowerPinned(pinned);
 

@@ -212,7 +212,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
             return "";
         // An interface, an exception and a delegate are named by what they cross as (TsStandIn):
         // `IThing thing = new Thing()` declared an `IThing` no module defines.
-        var name = TsStandIn.For(named, context.UsedRuntimeTypes) ?? named.Name;
+        var name = TsStandIn.For(named, context.UsedRuntimeTypes) ?? named.NestedTwinName() ?? named.Name;
         if (name == "any") return ": any";
         // `VisualNode?` crosses as the union it is — an annotation that rejects the null the C#
         // explicitly allowed would refuse `VisualNode? icon = selected ? new Icon(…) : null`.

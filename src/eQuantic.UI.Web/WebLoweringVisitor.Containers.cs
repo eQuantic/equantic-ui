@@ -64,113 +64,131 @@ internal sealed partial class WebLoweringVisitor
         foreach (var raw in stack.Children)
         {
             depth++;
-            // Through the COMPONENT to what it builds. `Positioned` is a contract with the parent
-            // — like a flex weight, it means nothing anywhere else — and asking `child is
-            // Positioned` missed the moment one came out of a component. It then degraded to its
-            // child and joined the flow: a corner button rendered ABOVE the slab it belonged to,
-            // silently, which is worse than not rendering at all.
-            var asked = _measurer.Asks;
-            var child = ResolveForPositioning(raw);
-            // Counted HERE for a component this stack expanded itself, to see a Positioned through
-            // it: Visit(UiComponent) never runs for one, so a measured component in a Stack was
-            // adopted with the zeros it was built on. Counted before the resolved node lowers, so
-            // the components inside it answer for themselves.
-            var unmeasured = _measurer.Asks > asked;
-            if (child is Positioned positioned)
-            {
-                var lowered = Lower(positioned.Child, horizontalAxis: null);
-                if (lowered is null) continue;
-                // An absolutely-positioned box with ONE edge shrink-wraps its content; with two it
-                // spans between them. Native measures a positioned child against the stack's full
-                // extent, so a child that FILLS gets the stack's width there and 64px of button
-                // here — the same tree, two geometries. Pinning the opposite edge gives the box the
-                // definite width its filling child is asking to be 100% of.
-                var (fillsWidth, fillsHeight) = Fills(positioned.Child);
-                var spanX = fillsWidth && positioned.AnchorsStart != positioned.AnchorsEnd;
-                var spanY = fillsHeight && positioned.AnchorsTop != positioned.AnchorsBottom;
-                // A translate's percentages are of the element's own box. The anchor shrink-wraps
-                // its child, except when both edges of an axis stretch it around a child that does
-                // not fill: then the shift goes on a child-sized wrapper, so -0.5 is half the CHILD,
-                // as Photon moves it.
-                var stretched = (positioned.AnchorsStart && positioned.AnchorsEnd && !fillsWidth)
-                    || (positioned.AnchorsTop && positioned.AnchorsBottom && !fillsHeight);
-                var shift = TokenCss.Shift(positioned.ShiftX, positioned.ShiftY);
-                var anchor = new RealizedElement("div")
-                {
-                    Style = new HtmlStyle
-                    {
-                        Position = Position.Absolute,
-                        // A point, a fraction of the stack, or both (`calc`); the stack is the
-                        // containing block, so a percentage is of ITS box, as on Photon.
-                        Top = TokenCss.Edge(positioned.Top, positioned.TopFraction) ?? (spanY ? "0" : null),
-                        Right = TokenCss.Edge(positioned.End, positioned.EndFraction) ?? (spanX ? "0" : null),
-                        Bottom = TokenCss.Edge(positioned.Bottom, positioned.BottomFraction) ?? (spanY ? "0" : null),
-                        Left = TokenCss.Edge(positioned.Start, positioned.StartFraction) ?? (spanX ? "0" : null),
-                        Transform = stretched ? null : shift,
-                        // Spec S7: explicit stacking WINS; otherwise the child's own depth.
-                        ZIndex = (positioned.Layer != 0 ? positioned.Layer : depth).ToString(),
-                    },
-                };
-                // The ANCHOR is marked, not what it holds: its offsets came from the same Build.
-                if (unmeasured) MarkUnmeasured(anchor);
-                if (stretched && shift is not null)
-                {
-                    var shifted = new RealizedElement("div")
-                    {
-                        Style = new HtmlStyle { Width = fillsWidth ? null : "fit-content", Transform = shift },
-                    };
-                    shifted.Children.Add(lowered);
-                    anchor.Children.Add(shifted);
-                }
-                else
-                {
-                    anchor.Children.Add(lowered);
-                }
-                element.Children.Add(anchor);
-            }
-            else
-            {
-                var lowered = Lower(child, horizontalAxis: null);
-                if (lowered is null) continue;
-                if (unmeasured) MarkUnmeasured(lowered);
-                // The cell IS the stack's available space (the native MeasureStack contract): it
-                // stretches to the single grid cell and aligns its child via flex — so a Fill child
-                // covers the stack while a hug child sits at the Stack.Align anchor.
-                var cell = new RealizedElement("div")
-                {
-                    Style = new HtmlStyle
-                    {
-                        GridArea = "1 / 1",
-                        Display = Display.Flex,
-                        JustifyContent = AlignmentJustify(stack.Align),
-                        AlignItems = AlignmentAlign(stack.Align),
-                        Width = "100%",
-                        Height = "100%",
-                        // …and the cell may not grow PAST it. A grid item's automatic minimum size
-                        // is its min-content size, so one layer holding a scroller sizes the track
-                        // to the scroller's content and the whole stack swells to the widest line in
-                        // the file — the scrollbar disappears and the overflow is clipped by
-                        // whatever ancestor happens to be smaller. Native measures a layer against
-                        // the stack's own extent, which is exactly what min-0 restores.
-                        MinWidth = "0",
-                        MinHeight = "0",
-                        // A grid item takes z-index without needing `position` — this is what keeps
-                        // a filtered child from jumping above the siblings drawn after it.
-                        ZIndex = depth.ToString(),
-                        // …and a cell whose LAYER is intangible has to be intangible too. The cell
-                        // stretches to the whole stack and carries the layer's z-index, so a closed
-                        // Drawer (a bare Box, see PaintsNothing) covered the viewport with an
-                        // invisible interactive rectangle: on a phone the shell's own menu button
-                        // could not be tapped. Marking only the inner box left the cell in the way.
-                        PointerEvents = child is Box bare && PaintsNothing(bare) ? "none" : null,
-                    },
-                };
-                cell.Children.Add(lowered);
-                element.Children.Add(cell);
-            }
+            if (LowerLayer(stack, raw, depth) is { } layer) element.Children.Add(layer);
         }
 
         return element;
+    }
+
+    /// <summary>
+    /// One LAYER of a stack at <paramref name="depth"/>: a Positioned child anchored at its
+    /// offsets, anything else in the single cell. An AdaptiveNode is no layer of its own — its gates
+    /// are display:contents, so each ARM is a layer, placed by this same rule inside its gate at the
+    /// node's depth (#671).
+    /// </summary>
+    private HtmlElement? LowerLayer(Stack stack, VisualNode raw, int depth)
+    {
+        // Through the COMPONENT to what it builds. `Positioned` is a contract with the parent — like
+        // a flex weight, it means nothing anywhere else — and asking `child is Positioned` missed
+        // the moment one came out of a component. It then degraded to its child and joined the
+        // flow: a corner button rendered ABOVE the slab it belonged to, silently, which is worse
+        // than not rendering at all.
+        var asked = _measurer.Asks;
+        var child = ResolveForPositioning(raw);
+        // Counted HERE for a component this stack expanded itself, to see a Positioned through it:
+        // Visit(UiComponent) never runs for one, so a measured component in a Stack was adopted with
+        // the zeros it was built on. Counted before the resolved node lowers, so the components
+        // inside it answer for themselves.
+        var unmeasured = _measurer.Asks > asked;
+        if (child is AdaptiveNode)
+        {
+            // Checked AFTER the component is resolved, because a component may build one: the arms
+            // are then the layers of the stack the component stands in.
+            var arms = Place(child, arm => LowerLayer(stack, arm, depth));
+            if (unmeasured && arms is not null) MarkUnmeasured(arms);
+            return arms;
+        }
+
+        if (child is Positioned positioned)
+        {
+            var lowered = Lower(positioned.Child, horizontalAxis: null);
+            if (lowered is null) return null;
+            // An absolutely-positioned box with ONE edge shrink-wraps its content; with two it spans
+            // between them. Native measures a positioned child against the stack's full extent, so a
+            // child that FILLS gets the stack's width there and 64px of button here — the same tree,
+            // two geometries. Pinning the opposite edge gives the box the definite width its filling
+            // child is asking to be 100% of.
+            var (fillsWidth, fillsHeight) = Fills(positioned.Child);
+            var spanX = fillsWidth && positioned.AnchorsStart != positioned.AnchorsEnd;
+            var spanY = fillsHeight && positioned.AnchorsTop != positioned.AnchorsBottom;
+            // A translate's percentages are of the element's own box. The anchor shrink-wraps its
+            // child, except when both edges of an axis stretch it around a child that does not fill:
+            // then the shift goes on a child-sized wrapper, so -0.5 is half the CHILD, as Photon
+            // moves it.
+            var stretched = (positioned.AnchorsStart && positioned.AnchorsEnd && !fillsWidth)
+                || (positioned.AnchorsTop && positioned.AnchorsBottom && !fillsHeight);
+            var shift = TokenCss.Shift(positioned.ShiftX, positioned.ShiftY);
+            var anchor = new RealizedElement("div")
+            {
+                Style = new HtmlStyle
+                {
+                    Position = Position.Absolute,
+                    // A point, a fraction of the stack, or both (`calc`); the stack is the containing
+                    // block, so a percentage is of ITS box, as on Photon.
+                    Top = TokenCss.Edge(positioned.Top, positioned.TopFraction) ?? (spanY ? "0" : null),
+                    Right = TokenCss.Edge(positioned.End, positioned.EndFraction) ?? (spanX ? "0" : null),
+                    Bottom = TokenCss.Edge(positioned.Bottom, positioned.BottomFraction) ?? (spanY ? "0" : null),
+                    Left = TokenCss.Edge(positioned.Start, positioned.StartFraction) ?? (spanX ? "0" : null),
+                    Transform = stretched ? null : shift,
+                    // Spec S7: explicit stacking WINS; otherwise the child's own depth.
+                    ZIndex = (positioned.Layer != 0 ? positioned.Layer : depth).ToString(),
+                },
+            };
+            // The ANCHOR is marked, not what it holds: its offsets came from the same Build.
+            if (unmeasured) MarkUnmeasured(anchor);
+            if (stretched && shift is not null)
+            {
+                var shifted = new RealizedElement("div")
+                {
+                    Style = new HtmlStyle { Width = fillsWidth ? null : "fit-content", Transform = shift },
+                };
+                shifted.Children.Add(lowered);
+                anchor.Children.Add(shifted);
+            }
+            else
+            {
+                anchor.Children.Add(lowered);
+            }
+            return anchor;
+        }
+
+        var content = Lower(child, horizontalAxis: null);
+        if (content is null) return null;
+        if (unmeasured) MarkUnmeasured(content);
+        // The cell IS the stack's available space (the native MeasureStack contract): it stretches
+        // to the single grid cell and aligns its child via flex — so a Fill child covers the stack
+        // while a hug child sits at the Stack.Align anchor.
+        var cell = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                GridArea = "1 / 1",
+                Display = Display.Flex,
+                JustifyContent = AlignmentJustify(stack.Align),
+                AlignItems = AlignmentAlign(stack.Align),
+                Width = "100%",
+                Height = "100%",
+                // …and the cell may not grow PAST it. A grid item's automatic minimum size is its
+                // min-content size, so one layer holding a scroller sizes the track to the
+                // scroller's content and the whole stack swells to the widest line in the file —
+                // the scrollbar disappears and the overflow is clipped by whatever ancestor happens
+                // to be smaller. Native measures a layer against the stack's own extent, which is
+                // exactly what min-0 restores.
+                MinWidth = "0",
+                MinHeight = "0",
+                // A grid item takes z-index without needing `position` — this is what keeps a
+                // filtered child from jumping above the siblings drawn after it.
+                ZIndex = depth.ToString(),
+                // …and a cell whose LAYER is intangible has to be intangible too. The cell stretches
+                // to the whole stack and carries the layer's z-index, so a closed Drawer (a bare
+                // Box, see PaintsNothing) covered the viewport with an invisible interactive
+                // rectangle: on a phone the shell's own menu button could not be tapped. Marking
+                // only the inner box left the cell in the way.
+                PointerEvents = child is Box bare && PaintsNothing(bare) ? "none" : null,
+            },
+        };
+        cell.Children.Add(content);
+        return cell;
     }
 
     /// <summary>
@@ -986,38 +1004,59 @@ internal sealed partial class WebLoweringVisitor
             },
         };
 
+        Func<VisualNode, HtmlElement?> item = child => LowerFlexItem(child, horizontal);
         foreach (var child in flex.Children)
         {
-            if (Lower(child, horizontal) is { } lowered)
-            {
-                // Spec S1 align-self: the child overrides the container's Cross for itself.
-                if (child.AlignSelf is { } self)
-                {
-                    lowered.Style ??= new HtmlStyle();
-                    lowered.Style.AlignSelf = self switch
-                    {
-                        CrossAlign.Start => "flex-start",
-                        CrossAlign.Center => "center",
-                        CrossAlign.End => "flex-end",
-                        _ => "stretch",
-                    };
-                }
-                element.Children.Add(lowered);
-            }
+            if (Place(child, item) is { } lowered) element.Children.Add(lowered);
         }
         return element;
     }
 
+    /// <summary>One item of a flex line: lowered on the line's axis, and aligned on its own when it
+    /// says so (spec S1 align-self — the child overrides the container's Cross for itself).</summary>
+    private HtmlElement? LowerFlexItem(VisualNode child, bool horizontal)
+    {
+        if (Lower(child, horizontal) is not { } lowered) return null;
+        if (child.AlignSelf is { } self)
+        {
+            lowered.Style ??= new HtmlStyle();
+            lowered.Style.AlignSelf = self switch
+            {
+                CrossAlign.Start => "flex-start",
+                CrossAlign.Center => "center",
+                CrossAlign.End => "flex-end",
+                _ => "stretch",
+            };
+        }
+        return lowered;
+    }
+
+    /// <summary>
+    /// A container's DIRECT child, placed by the container's own <paramref name="rule"/> for one —
+    /// and the one door that sees through an AdaptiveNode. Its gates are display:contents, so to the
+    /// browser every ARM is the container's child, laid out by it, and owed the same rule: a flex's
+    /// axis and align-self, a grid's span, a stack's anchor or cell. Lowered as a node of its own
+    /// instead, an arm stood nowhere: a Spacer had no axis and vanished (#670), and a Positioned
+    /// degraded into the flow (#671). The wrapper is still the node's element, so it carries the
+    /// node's own key, bookmark and origin. Photon's twin is the container reading the one arm its
+    /// window resolves.
+    /// </summary>
+    private HtmlElement? Place(VisualNode child, Func<VisualNode, HtmlElement?> rule) =>
+        child is AdaptiveNode adaptive
+            ? Decorate(adaptive, LowerAdaptive(adaptive, arm => Place(arm, rule)))
+            : rule(child);
+
     /// <summary>Spec S6: every DECLARED variant renders, each inside a gate whose fixed media rules
     /// show it only in its size-class range (display:contents keeps gates transparent to flex/grid).
-    /// The ranges encode the same fallback chain the native Resolve uses — zero JS, zero listeners.</summary>
-    private HtmlElement LowerAdaptive(AdaptiveNode adaptive)
+    /// The ranges encode the same fallback chain the native Resolve uses — zero JS, zero listeners.
+    /// Each arm is lowered by <paramref name="place"/>, the rule of the parent that lays it out.</summary>
+    private HtmlElement LowerAdaptive(AdaptiveNode adaptive, Func<VisualNode, HtmlElement?> place)
     {
         var wrapper = new RealizedElement("div") { Style = new HtmlStyle { Display = Display.Contents } };
 
         void AddVariant(VisualNode variant, string gate)
         {
-            if (Lower(variant, horizontalAxis: null) is not { } lowered) return;
+            if (place(variant) is not { } lowered) return;
             var gated = new RealizedElement("div") { AdaptiveGate = gate };
             gated.Children.Add(lowered);
             wrapper.Children.Add(gated);
@@ -1025,7 +1064,7 @@ internal sealed partial class WebLoweringVisitor
 
         // A lone Compact needs no gating — it IS the tree at every size.
         if (adaptive.Medium is null && adaptive.Expanded is null)
-            return Lower(adaptive.Compact, horizontalAxis: null) ?? wrapper;
+            return place(adaptive.Compact) ?? wrapper;
 
         // Ranges chain off the DECLARED variants and the node's own thresholds (a design that
         // switches at 1024 gets 1024 gates, not the spec's 600/840).
@@ -1070,17 +1109,21 @@ internal sealed partial class WebLoweringVisitor
         };
         foreach (var child in grid.Children)
         {
-            if (Lower(child, horizontalAxis: null) is { } lowered)
-            {
-                if (child.GridSpan > 1)
-                {
-                    lowered.Style ??= new HtmlStyle();
-                    lowered.Style.GridColumn = $"span {child.GridSpan}";
-                }
-                element.Children.Add(lowered);
-            }
+            if (Place(child, LowerGridItem) is { } lowered) element.Children.Add(lowered);
         }
         return element;
+    }
+
+    /// <summary>One cell of a grid: the child, spanning as many columns as it asks for (spec S4).</summary>
+    private HtmlElement? LowerGridItem(VisualNode child)
+    {
+        if (Lower(child, horizontalAxis: null) is not { } lowered) return null;
+        if (child.GridSpan > 1)
+        {
+            lowered.Style ??= new HtmlStyle();
+            lowered.Style.GridColumn = $"span {child.GridSpan}";
+        }
+        return lowered;
     }
 
     /// <summary>The gap declaration: single value normally; "run main" pair when wrapping with a
@@ -1132,7 +1175,13 @@ internal sealed partial class WebLoweringVisitor
         // and Shrink were hardcoded here (`{Flex} 1 0%`) while the TS twin emitted them, so SSR and
         // hydration disagreed on the class, and on the first paint a wrapping row measured ZERO for
         // a child asking for 220: it never broke the line and shrank the child to nothing instead.
-        var basis = flexible.Basis > 0 ? TokenCss.Px(flexible.Basis) : "0%";
+        //
+        // A ZERO weight takes no share (#680): it keeps its basis, and without one it starts from
+        // its content, `auto`. `0%` would size an item that never grows at nothing, where Photon
+        // measures the child, as Flutter lets an inflexible child determine its own size.
+        var basis = flexible.Basis > 0 ? TokenCss.Px(flexible.Basis)
+            : flexible.Flex == 0 ? "auto"
+            : "0%";
         var element = new RealizedElement("div")
         {
             Style = new HtmlStyle

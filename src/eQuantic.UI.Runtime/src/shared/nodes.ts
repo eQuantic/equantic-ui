@@ -85,6 +85,8 @@ export interface TypeStyleValue {
   italic?: boolean;
   /** The FACE by name (C# `TypeStyle.Family`), or absent for the platform's own. */
   family?: string;
+  /** A size that follows the window (C# `TypeStyle.Fluid`): `clamp(min, Nvw, max)`. */
+  fluid?: { min: number; percentOfWindow: number; max: number } | null;
 }
 
 export type { MainAlignValue } from './enums.generated';
@@ -503,8 +505,10 @@ export interface PressableNode extends VisualNodeValue {
 export interface FlexibleNode extends VisualNodeValue {
   nodeKind: 'flexible';
   child: VisualNodeValue;
+  /** CSS flex-grow. 0 takes no share of the leftover: the child keeps its basis, or its content. */
   flex: number; /** Spec B14: weight changes animate Base/standard; omitted on a regression (snap). */
-  /** CSS flex-basis in dp. Absent or 0 = sized purely from the weight (the historical shape). */
+  /** CSS flex-basis in dp. Absent or 0 = no basis: a weighted child is sized purely from its weight
+   * (the historical shape), a child of weight 0 by its content. */
   basis?: number;
   /** CSS flex-shrink. Absent = 1, which is what this realizer has always emitted. */
   shrink?: number;

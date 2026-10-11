@@ -150,9 +150,15 @@ export class CancellationTokenSource {
     return this._callbacks.delete(at);
   }
 
-  /** A source cancelled as soon as any of `tokens` is. */
-  static createLinkedTokenSource(...tokens: (CancellationToken | CancellationToken[])[]): CancellationTokenSource {
-    const all = tokens.flat();
+  /**
+   * A source cancelled as soon as any of `tokens` is. A token is a value and never null, so a null
+   * here is the array the `params` overload was handed, refused by its name as .NET refuses it (#569).
+   */
+  static createLinkedTokenSource(...tokens: (CancellationToken | CancellationToken[] | null)[]): CancellationTokenSource {
+    if (tokens.some((token) => token == null)) {
+      throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'tokens')");
+    }
+    const all = (tokens as (CancellationToken | CancellationToken[])[]).flat();
     if (all.length === 0) throw exception('System.ArgumentException', 'No tokens were supplied.');
     const linked = new CancellationTokenSource();
     for (const token of all) {
@@ -218,7 +224,10 @@ export class CancellationToken {
     throw canceled;
   }
 
-  register(callback: Callback): CancellationTokenRegistration {
+  /** `Register(callback)`, which refuses a null callback by its name before it looks at the source,
+   * even on a token that can never be cancelled (#569). */
+  register(callback: Callback | null): CancellationTokenRegistration {
+    if (callback == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'callback')");
     if (this._source === null) return CancellationTokenRegistration.none;
     return this._source.register(callback);
   }

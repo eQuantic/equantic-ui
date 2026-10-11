@@ -36,24 +36,23 @@ public static class UserDefinedOperators
         // ONE function names a conversion, and the emitter calls the same one — they used to
         // compute it apart, and a qualified declaration made them disagree in silence.
         var name = RecordTypeEmitter.ConversionNameFor(method);
-        // A vocabulary type is imported from the runtime, and the C# at the call never names it:
-        // `Icon(Icons.Search)` mentions no IconGlyph. The call is what introduces the name.
-        if (!IsInSource(method)) context.UsedRuntimeTypes.Add(method.ContainingType.Name);
-        return JsExpr.Callish($"{method.ContainingType.Name}.{name}({operand})");
+        // The C# at the call may never name the type: `Icon(Icons.Search)` mentions no IconGlyph, and
+        // an operand a call returned names none either. The call is what introduces the name.
+        return JsExpr.Callish($"{method.ContainingType.IntroduceTwin(context)}.{name}({operand})");
     }
 
     /// <summary>The unary operator called on its operand, or null.</summary>
-    public static JsExpr? Unary(IMethodSymbol method, string token, string operand)
+    public static JsExpr? Unary(IMethodSymbol method, string token, string operand, ConversionContext context)
     {
         if (!IsInSource(method) || RecordTypeEmitter.UnaryOperatorMethodName(token) is not { } name) return null;
-        return JsExpr.Callish($"{method.ContainingType.Name}.{name}({operand})");
+        return JsExpr.Callish($"{method.ContainingType.IntroduceTwin(context)}.{name}({operand})");
     }
 
     /// <summary>The binary operator called on its operands, or null.</summary>
-    public static JsExpr? Binary(IMethodSymbol method, string token, string left, string right)
+    public static JsExpr? Binary(IMethodSymbol method, string token, string left, string right, ConversionContext context)
     {
         if (!IsInSource(method) || RecordTypeEmitter.OperatorMethodName(token) is not { } name) return null;
-        return JsExpr.Callish($"{method.ContainingType.Name}.{name}({left}, {right})");
+        return JsExpr.Callish($"{method.ContainingType.IntroduceTwin(context)}.{name}({left}, {right})");
     }
 
 }
