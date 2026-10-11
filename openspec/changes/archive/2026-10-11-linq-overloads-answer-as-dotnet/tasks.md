@@ -2,15 +2,15 @@
 
 ## 1. Measure before changing
 
-- [x] 1.1 Write `LinqOverloadConformanceTests`, 53 cases executed on both sides: a default value with and without a predicate, a null element, evaluation order; pairs, triples and deconstruction; the mean of longs, nullables, an empty sequence and an overflow; `SequenceEqual` with the comparers that ask for the default, longs, decimals by value, `NaN`, arrays by reference and records by value
-- [x] 1.2 Run them against a7d5f3d: 37 of the 53 fail, with the `TypeError`, the BigInt mix and the truthy array the issues describe; the 16 that pass are the neighbours each overload was taken for, kept as pins
+- [x] 1.1 Write `LinqOverloadConformanceTests`, 68 cases executed on both sides: a default value with and without a predicate, a null element, evaluation order, `SingleOrDefault`'s second element and second match; a selector named first and a string under a null-conditional; pairs, triples and deconstruction; the mean of longs, nullables, an empty sequence and an overflow; `SequenceEqual` with the comparers that ask for the default, longs, decimals by value, `NaN`, arrays by reference and records by value
+- [x] 1.2 Run them against a7d5f3d: 49 of the 68 fail, with the `TypeError`, the BigInt mix and the truthy array the issues describe; the 16 that pass are the neighbours each overload was taken for, kept as pins
 
 ## 2. The twins and the calls
 
-- [x] 2.1 Add `average`, `firstOrDefault`, `lastOrDefault`, `sequenceEqual` and `zipTuples` to `utils/linq.ts` and `$eq.linq`, with their vitest cases
-- [x] 2.2 Hand each bound overload to its twin through `LinqArguments`, by the parameter each argument binds to, and fence `SequenceEqual`'s comparer
+- [x] 2.1 Add `average`, `firstOrDefault`, `lastOrDefault`, `singleOrDefault`, `sequenceEqual` and `zipTuples` to `utils/linq.ts` and `$eq.linq`, with their vitest cases
+- [x] 2.2 Hand each bound overload to its twin through `LinqArguments`, by the parameter each argument binds to, the selector form of `Zip` included, find a bound argument under a null-conditional through the one written in the tree, and fence `SequenceEqual`'s comparer
 - [x] 2.3 Type the accumulator of `GroupBy` and `ToLookup` in a type-checked module, proved by the `BoundReceivers` fixture through the runtime's strict `tsc` (red with the typing removed)
-- [x] 2.4 Prove it both ways: the conformance cases pass, 5140 of 5141 with one skipped; the null-argument baseline only shrinks; the compiler, Web, Server and Design suites and the runtime's tsc and vitest pass
+- [x] 2.4 Prove it both ways: the conformance suite passes, 5155 of 5156 with one skipped; the 15 cases the review added fail 12 to 3 on this change's first head; the null-argument baseline only shrinks, by 36; the compiler, Web, Server and Design suites and the runtime's tsc and vitest pass
 
 ## 3. Documentation
 

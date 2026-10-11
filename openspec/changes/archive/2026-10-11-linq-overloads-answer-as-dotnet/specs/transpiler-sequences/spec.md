@@ -3,8 +3,11 @@
 ### Requirement: A LINQ overload answers as its own .NET overload
 
 A LINQ call SHALL be lowered as the overload C# binds, never as a sibling it resembles, and SHALL answer
-what that overload answers in .NET. `FirstOrDefault` and `LastOrDefault` handed a default value SHALL
-answer the element when there is one, a null element included, and the default otherwise. `Zip(second)`
+what that overload answers in .NET, each argument filling the parameter it binds to however it is
+written, named or under a null-conditional. `FirstOrDefault`, `LastOrDefault` and `SingleOrDefault`
+handed a default value SHALL answer the element when there is one, a null element included, and the
+default otherwise, `SingleOrDefault` refusing a second element or a second match with .NET's
+`InvalidOperationException`. `Zip(second)`
 SHALL answer pairs and `Zip(second, third)` triples, as many as the shortest sequence holds. `Average`
 SHALL compute the mean in the element's type: a `long` summed exactly and divided as a double, a `float`
 rounded to a single, a `decimal` as a decimal, a nullable over its values alone and null when it has
@@ -20,6 +23,21 @@ nullable. `SequenceEqual` SHALL compare by the element type's default equality.
 
 - **WHEN** browser-side code computes `new string[] { null }.FirstOrDefault("x") ?? "null"`
 - **THEN** the answer is `null`, as in .NET
+
+#### Scenario: A second match
+
+- **WHEN** browser-side code computes `new[] { 1, 2, 3 }.SingleOrDefault(x => x > 1, 9)`
+- **THEN** it throws the `InvalidOperationException` .NET throws, "Sequence contains more than one matching element"
+
+#### Scenario: A selector named first
+
+- **WHEN** browser-side code computes `new[] { 0 }.Zip(resultSelector: S(), second: B()).Sum()`, where `S` and `B` record their calls
+- **THEN** the answer is 1 and `S` ran before `B`, as in .NET
+
+#### Scenario: A string under a null-conditional
+
+- **WHEN** browser-side code computes `a?.Zip("\U0001F600").Count()` where `a` is `new[] { 1, 2 }`
+- **THEN** the answer is 2, the string's two UTF-16 code units, as in .NET
 
 #### Scenario: Three sequences zipped
 
