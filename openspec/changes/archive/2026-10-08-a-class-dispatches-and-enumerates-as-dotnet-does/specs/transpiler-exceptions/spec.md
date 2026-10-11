@@ -2,9 +2,9 @@
 
 ### Requirement: An exception class of the app's is a class
 
-An exception class an app declares that is not nested in another type SHALL be a class in the browser,
-as any class of the app's is: its fields, its properties and their initializers, its constructors and
-their bodies, and its methods SHALL be its own. Over an exception of .NET's, its base call, explicit or
+An exception class an app declares SHALL be a class in the browser, as any class of the app's is, one
+declared inside another type included, its twin named by its owner: its fields, its properties and
+their initializers, its constructors and their bodies, and its methods SHALL be its own. Over an exception of .NET's, its base call, explicit or
 implicit, SHALL hand what a `new` of that type hands: the message bound to the constructor's `message`,
 or, where none or null was given, the text that constructor writes, and what it takes besides, each by
 its parameter, every argument evaluated in the order it is written; `Message`, `InnerException` and

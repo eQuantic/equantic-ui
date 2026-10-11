@@ -256,14 +256,16 @@ Every class, record and struct declared inside another type SHALL have a twin of
 of its own, named by the chain of the types that contain it and its own name joined by `$`
 (`Cart$Item`), which no C# type can take. Every reference to it, inside its owner or out, SHALL name
 that twin: a construction, a type test, a static member, a default and an annotation alike. A nested
-type of an owner that never crosses (`[ServerOnly]`, an exception, an attribute) SHALL have none, and
+type of an owner that never crosses (`[ServerOnly]`, an attribute) SHALL have none, and
 client code that reaches its twin SHALL be refused: one that builds it, tests for it, reads its statics,
 takes its zero or calls an operator or a conversion its value brings, however the code names the type
 (an alias, `using static`, inference). A module that would import such a twin SHALL report it rather
 than import it. A nested type of an owner the runtime provides SHALL be the runtime's,
 imported from it under its twin name. A record's text SHALL print its C# name, as .NET's does. The server SHALL name the page it serves by the
 same rule, so a page declared inside a class loads the module the build wrote for it, and SHALL refuse to
-map a page declared inside an owner that never crosses.
+map a page declared inside an owner that never crosses. An exception class of the app's is a class, so
+it SHALL be an owner as any class is, and one declared inside another type SHALL be a class too, its
+twin named by its owner.
 
 #### Scenario: A nested class beside a top-level class of its name
 
@@ -343,6 +345,14 @@ map a page declared inside an owner that never crosses.
 - **WHEN** a member is typed `A.Inner[]`, `List<A.Inner>` or `Func<A.Inner, B.Inner>`, in a class or a record
 - **THEN** its annotation names `A$Inner` and `B$Inner`, each where its type stands, and a top-level `Inner`
   beside them keeps its own name
+
+#### Scenario: An exception class and what it declares
+
+- **WHEN** `class Outer { public class Inner : Exception { public int Code = 5; } }` and
+  `class Rejected : Exception { public record Reason(string Code); }`
+- **THEN** `new Outer.Inner().Code` is `5`, built as `Outer$Inner`, and `new Rejected.Reason("r").Code` is
+  `r`, built as `Rejected$Reason`, where the first was an `Error` with none of its members and the second
+  was refused with EQ2010
 
 ### Requirement: A method that hides an inherited member holds a name of its own
 

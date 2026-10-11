@@ -37,7 +37,7 @@ class had no form in that twin:
   C#. It stays refused (EQ1007); naming every overload apart is the overload feature itself.
 - An enumerator walked by hand (`e.MoveNext()` on what a `GetEnumerator()` returned), and a .NET
   collection's own `GetEnumerator()` (`items.GetEnumerator()`), which has no translation (EQ2004).
-- A nested exception class, which has no module of its own, as no nested class has.
+- An exception of a referenced library, which no twin stands for.
 
 ## Decisions
 
@@ -146,7 +146,20 @@ open), so it hides none of them.
 
 A host with no compilation keeps an exception class out by its base's name, as before this change: with
 no model, nothing knows the constructors of the base its twin would call, and a module of its own
-extended nothing.
+extended nothing. A construction there is the runtime's exception, as it was before
+(`ExceptionTypes.HasTwin(type, context)`, which asks whether the host has the project's compilation): a
+snippet compiled on its own has a model of its one file and no project's, and `new Failure()` named a
+twin nothing wrote there, which the page met as `Failure is not defined`, found while this change was
+merged over #654.
+
+A class declared inside another type is a module of its own since #654 (`Owner$Inner`), merged while this
+change was open, which kept a type declared inside an exception out, as an exception had no module then.
+The two say one thing together: an exception class is a class, so one declared inside another type is a
+class too, its twin named by its owner (`ExceptionTypes.HasTwin`), and a type declared inside an
+exception class crosses as its owner does (`PlainClassModule.OwnerKeptOut`, and the server's
+`TwinName.OwnersCross`, which routes a page by the same rule). Alternative: keep both out, as each change
+left them. Rejected: the build then wrote a module for a nested exception that nothing constructed, and
+refused (EQ2010) a record declared in a class it writes.
 
 ### A constructor only .NET's serialization calls is no branch of the twin
 
