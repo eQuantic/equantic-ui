@@ -314,14 +314,14 @@ export function sequenceEqual<T>(
   if (second == null) throw nullArgument('second');
   if (Array.isArray(first) && Array.isArray(second) && first.length !== second.length) return false;
   const same = sameBy(equality);
-  const left = first[Symbol.iterator]();
-  const right = second[Symbol.iterator]();
-  for (;;) {
-    const a = left.next();
-    const b = right.next();
-    if (a.done || b.done) return a.done === true && b.done === true;
-    if (!same(a.value, b.value)) return false;
-  }
+  return walkTogether([first, second], ([left, right]) => {
+    for (;;) {
+      const a = left.next();
+      const b = right.next();
+      if (a.done || b.done) return a.done === true && b.done === true;
+      if (!same(a.value, b.value)) return false;
+    }
+  });
 }
 
 /**
@@ -349,16 +349,38 @@ export function zipTuples(
   if (second == null) throw nullArgument('second');
   if (third === null) throw nullArgument('third');
   const sequences = third === undefined ? [first, second] : [first, second, third];
-  const walkers = sequences.map((sequence) => sequence[Symbol.iterator]());
-  const tuples: unknown[][] = [];
-  for (;;) {
-    const tuple: unknown[] = [];
-    for (const walker of walkers) {
-      const step = walker.next();
-      if (step.done) return tuples;
-      tuple.push(step.value);
+  return walkTogether(sequences, (walkers) => {
+    const tuples: unknown[][] = [];
+    for (;;) {
+      const tuple: unknown[] = [];
+      for (const walker of walkers) {
+        const step = walker.next();
+        if (step.done) return tuples;
+        tuple.push(step.value);
+      }
+      tuples.push(tuple);
     }
-    tuples.push(tuple);
+  });
+}
+
+/**
+ * `walk` over the iterators of `sequences`, each acquired in order and closed in reverse once the walk
+ * ends however it ends, as the nested `using` statements of .NET's `SequenceEqual` and `Zip` dispose
+ * their enumerators. An iterator left at a mismatch, or at the end of the shortest sequence, never ran
+ * its `finally`, which is where a class of the app's that implements `IEnumerable<T>` disposes its
+ * enumerator (`iterate`); one acquired after another that threw is never acquired.
+ */
+function walkTogether<R>(
+  sequences: readonly Iterable<unknown>[],
+  walk: (walkers: Iterator<unknown>[]) => R,
+  walkers: Iterator<unknown>[] = [],
+): R {
+  if (walkers.length === sequences.length) return walk(walkers);
+  const walker = sequences[walkers.length][Symbol.iterator]();
+  try {
+    return walkTogether(sequences, walk, [...walkers, walker]);
+  } finally {
+    walker.return?.();
   }
 }
 

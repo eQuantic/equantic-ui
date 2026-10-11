@@ -273,6 +273,45 @@ describe('singleOrDefault with a default value (#760)', () => {
   });
 });
 
+/** A sequence that records when its iterator is closed, as an app's enumerator records its Dispose. */
+function disposing(name: string, values: number[], closed: string[]): Iterable<number> {
+  return {
+    *[Symbol.iterator]() {
+      try {
+        yield* values;
+      } finally {
+        closed.push(name);
+      }
+    },
+  };
+}
+
+describe('sequenceEqual and zipTuples close what they walk, as .NET disposes it', () => {
+  it('closes both iterators, the second first, where a mismatch or a shorter sequence stops the walk', () => {
+    const closed: string[] = [];
+    expect(sequenceEqual(disposing('a', [1, 2], closed), disposing('b', [1, 3], closed))).toBe(
+      false,
+    );
+    expect(closed).toEqual(['b', 'a']);
+    closed.length = 0;
+    // The first ran out and closed itself, as a C# iterator runs its finally there; the second is closed.
+    expect(sequenceEqual(disposing('a', [1], closed), disposing('b', [1, 2], closed))).toBe(false);
+    expect(closed).toEqual(['a', 'b']);
+  });
+
+  it('closes every sequence a zip stops short in, the last first', () => {
+    const closed: string[] = [];
+    const triples = zipTuples(
+      disposing('a', [1, 2, 3], closed),
+      disposing('b', [4], closed),
+      disposing('c', [7, 8], closed),
+    );
+    expect(triples).toEqual([[1, 4, 7]]);
+    // b ran out and closed itself; c and a were left mid-walk and are closed, the last first.
+    expect(closed).toEqual(['b', 'c', 'a']);
+  });
+});
+
 describe('sequenceEqual (LINQ SequenceEqual, #721)', () => {
   it('compares by the equality it is handed', () => {
     expect(sequenceEqual([1n, 2n], [1n, 2n])).toBe(true);
