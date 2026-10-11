@@ -2495,19 +2495,11 @@ public sealed class PhotonHost
     public bool KeyDown(string key, KeyModifiers modifiers = KeyModifiers.None)
     {
         // An app's own chord wins: ⌘K is the app's, and a control holding focus has no claim on it.
-        var bindings = _lastFrame?.Shortcuts;
-        if (bindings is not null)
+        if (BindingFor(key, modifiers) is { } binding)
         {
-            for (var i = bindings.Count - 1; i >= 0; i--)
-            {
-                var chord = bindings[i].Chord;
-                if (chord.Modifiers != modifiers) continue;
-                if (!string.Equals(chord.Key, key, StringComparison.OrdinalIgnoreCase)) continue;
-                if (bindings[i].Scope is { } scope && !FocusIsWithin(scope)) continue;
-                bindings[i].OnPressed();
-                NeedsRender = true;
-                return true;
-            }
+            binding.OnPressed();
+            NeedsRender = true;
+            return true;
         }
 
         // A SPREADSHEET under the selection speaks Excel: arrows move (⌘ jumps to the data edge,
@@ -2594,8 +2586,53 @@ public sealed class PhotonHost
 
             // A blinking caret is a running animation: the frame clock has to keep turning for it,
             // and only while a field is actually being edited.
-            
+
         }
         return false;
     }
+
+    /// <summary>The binding of THIS frame that answers a chord: the last one declared (the dialog on
+    /// top wins), skipping a focus-scoped one whose subtree does not hold the focus.</summary>
+    private ShortcutBinding? BindingFor(string key, KeyModifiers modifiers)
+    {
+        var bindings = _lastFrame?.Shortcuts;
+        if (bindings is null) return null;
+        for (var i = bindings.Count - 1; i >= 0; i--)
+        {
+            var chord = bindings[i].Chord;
+            if (chord.Modifiers != modifiers) continue;
+            if (!string.Equals(chord.Key, key, StringComparison.OrdinalIgnoreCase)) continue;
+            if (bindings[i].Scope is { } scope && !FocusIsWithin(scope)) continue;
+            return bindings[i];
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Whether the platform's back has anything to do on this frame: a field, a code surface or a
+    /// sheet being edited, or an Escape the frame binds, which is every open dialog, sheet, drawer,
+    /// menu and picker, and a <c>ListDetail</c> showing its detail on a phone.
+    /// <para>
+    /// A shell reads it after each frame because Android asks UP FRONT. Its predictive back plays
+    /// the "leave the app" animation while the gesture is still under the finger, so an app takes
+    /// back by registering for it before the gesture starts, and only while it has somewhere to go.
+    /// False leaves back to the system, which leaves the app.
+    /// </para>
+    /// </summary>
+    public bool CanGoBack =>
+        TextTarget is not null || CodeTarget is not null || SheetTarget is not null
+        || BindingFor(KeyChord.Escape.Key, KeyChord.Escape.Modifiers) is not null;
+
+    /// <summary>
+    /// The platform's back, Android's gesture and button, which means here what Escape means on a
+    /// desktop: the field being edited stops being edited, and otherwise the layer on top (a dialog,
+    /// a sheet, a drawer, a menu, a phone's detail pane) closes, through the Escape it already
+    /// declares. One key for both, because every layer back should close already answers to it.
+    /// <para>
+    /// Unlike <see cref="KeyDown"/>, a focus ring alone does not take it. Escape clears the ring on a
+    /// desktop, where the ring is drawn; on a phone it would be a back the person pressed and saw
+    /// nothing happen for. Answers whether anything took it; false is the system's back.
+    /// </para>
+    /// </summary>
+    public bool Back() => CanGoBack && KeyDown(KeyChord.Escape.Key, KeyChord.Escape.Modifiers);
 }

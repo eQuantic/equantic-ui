@@ -33,11 +33,16 @@ namespace eQuantic.UI.Components;
 /// not have to know the vocabulary of window size classes to get this layout right.
 /// </para>
 /// <para>
-/// v1 fences, both about the COMPACT pane swap, which is a navigation and not just a re-layout:
-/// keyboard focus stays where it was rather than moving into the pane that just arrived (the
-/// vocabulary has no target-neutral "focus this subtree" yet — <c>Autofocus</c> is a field's
-/// property), and the platform back gesture is not wired to <see cref="OnBack"/> (a host concern,
-/// per shell). A visible back affordance is drawn, so the pane is never a dead end.
+/// The COMPACT pane swap is a navigation and not just a re-layout, so the detail answers BACK:
+/// besides the visible back affordance, it binds Escape to <see cref="OnBack"/>, which is the key a
+/// desktop closes a layer with and the one a phone's back gesture runs (Android's shell sends back
+/// there). The binding lives in the compact arm only, so on a wide window, where both panes are on
+/// screen and there is nowhere to go back to, Escape is left to whatever else wants it.
+/// </para>
+/// <para>
+/// v1 fence: keyboard focus stays where it was rather than moving into the pane that just arrived
+/// (the vocabulary has no target-neutral "focus this subtree" yet — <c>Autofocus</c> is a field's
+/// property).
 /// </para>
 /// </summary>
 public sealed class ListDetail : StatelessComponent
@@ -110,6 +115,10 @@ public sealed class ListDetail : StatelessComponent
         var compact = Detail is { } chosen
             ? Pane(Title, chosen(), Back())
             : Pane(ListTitle, List());
+        // Back un-chooses on a phone, so the detail binds the key back runs: Escape on a desktop, the
+        // back gesture on Android. Only in this arm — wide, Escape is not ours to take.
+        if (Detail is not null && OnBack is { } back)
+            compact = new Shortcut(compact, KeyChord.Escape, back);
 
         var wide = new Row(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
         wide.Add(new Box(new BoxStyle { Width = ListWidth, Height = SizeValue.Fill },

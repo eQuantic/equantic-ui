@@ -1,1 +1,3 @@
 #nullable enable
+eQuantic.UI.Native.Components.PhotonHost.Back() -> bool
+eQuantic.UI.Native.Components.PhotonHost.CanGoBack.get -> bool
