@@ -2180,6 +2180,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   around a painted Box, because an email refuses a Button
   ([#694](https://github.com/eQuantic/equantic-ui/issues/694)). Proposed and archived through
   OpenSpec in seven changes (`openspec/specs/flex-layout`).
+- **2026-10-10 · A copy of a generic record or struct keeps its closed type**: main was red since #697
+  ([#751](https://github.com/eQuantic/equantic-ui/issues/751)). A mutable struct's `$clone` and a
+  record's `with` through a declared copy constructor build the copy without its constructor, so the
+  copy carried no closed type, and #689's `sameClosure` takes an unmarked value for any other: a boxed
+  `Pair<double>` equalled a `Pair<int>`. The copy is marked as its source was, where it is allocated
+  (`$eq.closingLike`, which `withPatch` uses too), so a copy constructor or an `init` accessor that
+  compares the copy meets its closed type, and both name their binding `$copied`, as #661's guard asks.
+  Main's CI runs had stayed queued, so the suites of the pull requests that merged main found it.
 
 ## Retired documents
 

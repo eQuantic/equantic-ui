@@ -59,6 +59,7 @@ eQuantic.UI.Compiler.CodeGen.ValueMember.Store.get -> string!
 eQuantic.UI.Compiler.CodeGen.ValueMember.Store.init -> void
 eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.ClassBuilder.State(string! name, string? type, Microsoft.CodeAnalysis.SyntaxNode? sourceNode = null) -> void
 const eQuantic.UI.Compiler.CodeGen.Eq.Closing = "$eq.closing" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ClosingLike = "$eq.closingLike" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.SameClosure = "$eq.sameClosure" -> string!
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.DistinctStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.GroupByStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
