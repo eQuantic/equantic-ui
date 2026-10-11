@@ -80,4 +80,18 @@ public sealed class TextInputSession
         Value = value;
         return true;
     }
+
+    /// <summary>
+    /// The keyboard's action key on a single-line field (Done): the field submits, as Enter does on a
+    /// desktop, and then the edit ends and the keyboard goes down, which is what that key does on a
+    /// phone (Flutter's <c>TextInputAction.done</c> unfocuses the same way). A submit that moved the
+    /// caret to another field keeps it there. Answers false when the keyboard is not editing a field.
+    /// </summary>
+    public bool Submit()
+    {
+        if (Target != TextInputTarget.Text || _host.FocusedPath is not { } path) return false;
+        _host.KeyDown("Enter");
+        if (_host.FocusedPath == path) _host.EndEditing();
+        return true;
+    }
 }

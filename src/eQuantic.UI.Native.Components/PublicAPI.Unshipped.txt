@@ -33,6 +33,7 @@ eQuantic.UI.Native.Components.TextInputChange.ValueChanged = 4 -> eQuantic.UI.Na
 eQuantic.UI.Native.Components.TextInputSession
 eQuantic.UI.Native.Components.TextInputSession.Obscure.get -> bool
 eQuantic.UI.Native.Components.TextInputSession.Poll() -> eQuantic.UI.Native.Components.TextInputChange
+eQuantic.UI.Native.Components.TextInputSession.Submit() -> bool
 eQuantic.UI.Native.Components.TextInputSession.Target.get -> eQuantic.UI.Native.Components.TextInputTarget
 eQuantic.UI.Native.Components.TextInputSession.TextInputSession(eQuantic.UI.Native.Components.PhotonHost! host) -> void
 eQuantic.UI.Native.Components.TextInputSession.Update(eQuantic.UI.Native.Components.TextEditingValue value) -> bool

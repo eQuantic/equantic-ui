@@ -38,6 +38,7 @@ internal sealed class PhotonInputConnection : BaseInputConnection
     private readonly bool _document;
     private readonly string? _path;
     private readonly SpannableStringBuilder _mirror = new();
+    private readonly bool _trace = PhotonInputTrace.On;
     private int _batch;
     private bool _edited;
     private bool _reportOwed;
@@ -54,6 +55,7 @@ internal sealed class PhotonInputConnection : BaseInputConnection
         _path = host.FocusedPath;
         if (_document) Show(session.Value);
         _reportOwed = false;
+        if (_trace) PhotonInputTrace.Write($"connection {session.Target} {_path} {Current()}");
     }
 
     /// <summary>What every edit of the base class applies to: the mirror. Empty for a surface that
@@ -92,6 +94,7 @@ internal sealed class PhotonInputConnection : BaseInputConnection
         info.InitialSelEnd = _session.Value.SelectionExtent;
         if (!_session.Obscure && OperatingSystem.IsAndroidVersionAtLeast(30))
             info.SetInitialSurroundingText(_mirror);
+        if (_trace) PhotonInputTrace.Write($"describe type={info.InputType} options={info.ImeOptions}");
     }
 
     // ---- The host changed the field ------------------------------------------------------------
@@ -108,6 +111,7 @@ internal sealed class PhotonInputConnection : BaseInputConnection
         if (!_document) return;
         var composing = (GetComposingSpanStart(_mirror), GetComposingSpanEnd(_mirror));
         var ended = composing.Item1 >= 0 && composing != (value.ComposingStart, value.ComposingEnd);
+        if (_trace) PhotonInputTrace.Write($"apply {value}{(ended ? ", restarting" : "")}");
         Show(value);
         if (ended)
         {
@@ -126,6 +130,7 @@ internal sealed class PhotonInputConnection : BaseInputConnection
     internal void Refresh()
     {
         if (!_document || !Serving || _host.EditingValue is not { } value || value == Current()) return;
+        if (_trace) PhotonInputTrace.Write($"refresh {value}");
         Show(value);
         Settle();
     }
@@ -156,18 +161,21 @@ internal sealed class PhotonInputConnection : BaseInputConnection
     public override bool BeginBatchEdit()
     {
         _batch++;
+        if (_trace) PhotonInputTrace.Write($"beginBatchEdit -> {_batch}");
         return true;
     }
 
     public override bool EndBatchEdit()
     {
         if (_batch > 0) _batch--;
+        if (_trace) PhotonInputTrace.Write($"endBatchEdit -> {_batch}");
         if (_batch == 0) Settle();
         return _batch > 0;
     }
 
     public override bool CommitText(ICharSequence? text, int newCursorPosition)
     {
+        if (_trace) PhotonInputTrace.Write($"commitText \"{text}\" {newCursorPosition}");
         if (!_document)
         {
             var typed = text?.ToString() ?? "";
@@ -180,6 +188,7 @@ internal sealed class PhotonInputConnection : BaseInputConnection
 
     public override bool SetComposingText(ICharSequence? text, int newCursorPosition)
     {
+        if (_trace) PhotonInputTrace.Write($"setComposingText \"{text}\" {newCursorPosition}");
         if (!_document) return Serving && _host.SetMarkedText(text?.ToString() ?? "");
         var done = base.SetComposingText(text, newCursorPosition);
         Edited();
@@ -188,6 +197,7 @@ internal sealed class PhotonInputConnection : BaseInputConnection
 
     public override bool SetComposingRegion(int start, int end)
     {
+        if (_trace) PhotonInputTrace.Write($"setComposingRegion {start} {end}");
         if (!_document) return false;
         var done = base.SetComposingRegion(start, end);
         Edited();
@@ -196,6 +206,7 @@ internal sealed class PhotonInputConnection : BaseInputConnection
 
     public override bool FinishComposingText()
     {
+        if (_trace) PhotonInputTrace.Write("finishComposingText");
         if (!_document)
             return !Serving || !_host.HasMarkedText || _host.CommitText(_host.MarkedText);
         var done = base.FinishComposingText();
@@ -205,6 +216,7 @@ internal sealed class PhotonInputConnection : BaseInputConnection
 
     public override bool DeleteSurroundingText(int beforeLength, int afterLength)
     {
+        if (_trace) PhotonInputTrace.Write($"deleteSurroundingText {beforeLength} {afterLength}");
         if (!_document) return Serving && Delete(beforeLength, afterLength);
         var done = base.DeleteSurroundingText(beforeLength, afterLength);
         Edited();
@@ -213,6 +225,7 @@ internal sealed class PhotonInputConnection : BaseInputConnection
 
     public override bool DeleteSurroundingTextInCodePoints(int beforeLength, int afterLength)
     {
+        if (_trace) PhotonInputTrace.Write($"deleteSurroundingTextInCodePoints {beforeLength} {afterLength}");
         if (!_document) return Serving && Delete(beforeLength, afterLength);
         var done = base.DeleteSurroundingTextInCodePoints(beforeLength, afterLength);
         Edited();
@@ -221,15 +234,28 @@ internal sealed class PhotonInputConnection : BaseInputConnection
 
     public override bool SetSelection(int start, int end)
     {
+        if (_trace) PhotonInputTrace.Write($"setSelection {start} {end}");
         if (!_document) return false;
         var done = base.SetSelection(start, end);
         Edited();
         return done;
     }
 
-    /// <summary>The keyboard's action key (Done on a single line), which is the field's Enter: it
-    /// submits.</summary>
-    public override bool PerformEditorAction(ImeAction actionCode) => Serving && _host.KeyDown("Enter");
+    /// <summary>The keyboard's action key (Done on a single line): the field submits and the edit
+    /// ends, as that key does on a phone. A surface that takes keys hears Enter.</summary>
+    public override bool PerformEditorAction(ImeAction actionCode)
+    {
+        if (_trace) PhotonInputTrace.Write($"performEditorAction {actionCode}");
+        return Serving && (_document ? _session.Submit() : _host.KeyDown("Enter"));
+    }
+
+    /// <summary>A key the keyboard sends as a key rather than as an edit, which the base class hands
+    /// to the view, and the activity to the host.</summary>
+    public override bool SendKeyEvent(KeyEvent? e)
+    {
+        if (_trace) PhotonInputTrace.Write($"sendKeyEvent {e?.Action} {e?.KeyCode}");
+        return base.SendKeyEvent(e);
+    }
 
     /// <summary>A deletion around the caret of a surface that takes keys: that many Backspaces
     /// before it and Deletes after it, the keys its model already answers.</summary>
@@ -259,13 +285,23 @@ internal sealed class PhotonInputConnection : BaseInputConnection
         if (_edited)
         {
             _edited = false;
-            if (Serving && Current() is var value && value != _session.Value) _session.Update(value);
+            if (Serving && Current() is var value && value != _session.Value)
+            {
+                var taken = _session.Update(value);
+                if (_trace) PhotonInputTrace.Write($"edited {value}{(taken ? "" : ", refused")}");
+            }
         }
         if (!_reportOwed) return;
         _reportOwed = false;
-        if (!Serving) return;
-        _keyboard.UpdateSelection(_view, Selection.GetSelectionStart(_mirror), Selection.GetSelectionEnd(_mirror),
-            GetComposingSpanStart(_mirror), GetComposingSpanEnd(_mirror));
+        if (!Serving)
+        {
+            if (_trace) PhotonInputTrace.Write("not serving: the edit went nowhere");
+            return;
+        }
+        var (start, end) = (Selection.GetSelectionStart(_mirror), Selection.GetSelectionEnd(_mirror));
+        var (composingStart, composingEnd) = (GetComposingSpanStart(_mirror), GetComposingSpanEnd(_mirror));
+        if (_trace) PhotonInputTrace.Write($"updateSelection {start} {end} {composingStart} {composingEnd}");
+        _keyboard.UpdateSelection(_view, start, end, composingStart, composingEnd);
     }
 
     /// <summary>The mirror as an editing value: Android's selection start is the end that stays and

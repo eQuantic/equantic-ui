@@ -192,9 +192,9 @@ internal sealed class PhotonKeyboard : IDisposable
     }
 
     /// <summary>
-    /// Before UIKit edits the proxy. A field's single line ends on the return key, which submits it
-    /// instead of breaking the line. A surface that takes keys is typed into directly, and the
-    /// proxy stays empty, unless a composition is building in it.
+    /// Before UIKit edits the proxy. A field's single line ends on the return key (Done), which
+    /// submits it and ends the edit instead of breaking the line. A surface that takes keys is typed
+    /// into directly, and the proxy stays empty, unless a composition is building in it.
     /// </summary>
     private bool ShouldChange(UITextView view, NSRange range, string replacement)
     {
@@ -203,7 +203,7 @@ internal sealed class PhotonKeyboard : IDisposable
         {
             case TextInputTarget.Text:
                 if (replacement != "\n" || _host.TextTarget?.Lines > 1) return true;
-                _host.KeyDown("Enter");
+                _session.Submit();
                 return false;
             case TextInputTarget.Keys:
                 if (_proxy.MarkedTextRange is not null) return true;

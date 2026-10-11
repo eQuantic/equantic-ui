@@ -322,7 +322,22 @@ public class PhoneKeyboardTests
         session.Value.Text.Should().Be("fixed");
     }
 
+    /// <summary>A phone's Done submits the field and puts the keyboard away with the edit.</summary>
     [Fact]
+    public void TheActionKey_SubmitsTheField_AndEndsTheEdit()
+    {
+        var (host, form) = Open("hi");
+        var session = new TextInputSession(host);
+        session.Poll();
+
+        session.Submit().Should().BeTrue();
+        host.RenderFrame(new DisplayListBuilder(), 32);
+
+        form.Submitted.Should().Be(1);
+        session.Poll().Should().Be(TextInputChange.Ended);
+    }
+
+        [Fact]
     public void AKeyTheHostEdits_ReachesTheKeyboard()
     {
         var (host, _) = Open("abc");
