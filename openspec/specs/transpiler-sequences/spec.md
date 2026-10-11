@@ -106,11 +106,11 @@ The source of a LINQ call and each of its arguments SHALL be evaluated once, in 
 
 ### Requirement: A LINQ operator takes a comparer the collection fence passes
 
-A comparer handed to `ToDictionary`, `ToLookup`, `GroupBy`, `Distinct` or `ToHashSet` SHALL pass the
-fence a collection's construction passes: one that asks for the key type's default equality
-(`EqualityComparer<T>.Default`, a null comparer, or `StringComparer.Ordinal` for a string) SHALL answer
-as the operator does without it, its selectors in their parameters whether named or not, and any other
-SHALL fail the build with EQ2007, never be dropped or called as a selector.
+A comparer handed to `ToDictionary`, `ToLookup`, `GroupBy`, `Distinct`, `ToHashSet` or `SequenceEqual`
+SHALL pass the fence a collection's construction passes: one that asks for the key type's default
+equality (`EqualityComparer<T>.Default`, a null comparer, or `StringComparer.Ordinal` for a string) SHALL
+answer as the operator does without it, its selectors in their parameters whether named or not, and any
+other SHALL fail the build with EQ2007, never be dropped or called as a selector.
 
 #### Scenario: An ordinal dictionary
 
@@ -131,6 +131,11 @@ SHALL fail the build with EQ2007, never be dropped or called as a selector.
 
 - **WHEN** browser-side code computes `new[] { "a", "bb", "cc" }.GroupBy(comparer: EqualityComparer<int>.Default, keySelector: w => w.Length)` and joins each key with its count
 - **THEN** the answer is `1:1,2:2`, as in .NET
+
+#### Scenario: Sequences compared with the default comparer
+
+- **WHEN** browser-side code computes `new[] { 1, 2 }.SequenceEqual(new[] { 1, 3 }, EqualityComparer<int>.Default)`
+- **THEN** the answer is false, as in .NET
 
 ### Requirement: A class that implements IEnumerable<T> is enumerated as its GetEnumerator() says
 
@@ -214,3 +219,59 @@ SHALL be held as one and SHALL NOT be refused.
   `IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<string>)this).GetEnumerator();` and
   `object IEnumerator.Current => Current;`
 - **THEN** each is held as one with the member it hands back, and the type builds
+
+### Requirement: A LINQ overload answers as its own .NET overload
+
+A LINQ call SHALL be lowered as the overload C# binds, never as a sibling it resembles, and SHALL answer
+what that overload answers in .NET. `FirstOrDefault` and `LastOrDefault` handed a default value SHALL
+answer the element when there is one, a null element included, and the default otherwise. `Zip(second)`
+SHALL answer pairs and `Zip(second, third)` triples, as many as the shortest sequence holds. `Average`
+SHALL compute the mean in the element's type: a `long` summed exactly and divided as a double, a `float`
+rounded to a single, a `decimal` as a decimal, a nullable over its values alone and null when it has
+none, and an empty sequence refused with an `InvalidOperationException` where the answer is not
+nullable. `SequenceEqual` SHALL compare by the element type's default equality.
+
+#### Scenario: A default value
+
+- **WHEN** browser-side code computes `new int[0].FirstOrDefault(9)` and `new[] { 1, 2, 3 }.LastOrDefault(x => x > 5, 9)`
+- **THEN** both answer 9, as in .NET
+
+#### Scenario: A null element is an element
+
+- **WHEN** browser-side code computes `new string[] { null }.FirstOrDefault("x") ?? "null"`
+- **THEN** the answer is `null`, as in .NET
+
+#### Scenario: Three sequences zipped
+
+- **WHEN** browser-side code computes `new[] { 1, 2, 3 }.Zip(new[] { 4, 5, 6 }, new[] { 7, 8, 9 }).Sum(t => t.First * t.Second * t.Third)`
+- **THEN** the answer is 270, as in .NET
+
+#### Scenario: The mean of longs
+
+- **WHEN** browser-side code computes `new[] { 1L, 2L, 4L }.Average()` and `new long?[] { 1, null, 4 }.Average()`
+- **THEN** the answers are 2.3333333333333335 and 2.5, as in .NET
+
+#### Scenario: An empty mean
+
+- **WHEN** browser-side code computes `new int[0].Average()`
+- **THEN** it throws the `InvalidOperationException` .NET throws, with its message
+
+#### Scenario: Sequences of values
+
+- **WHEN** browser-side code computes `new[] { 1.0m }.SequenceEqual(new[] { 1.00m })` and `new[] { double.NaN }.SequenceEqual(new[] { double.NaN })`
+- **THEN** both answer true, as in .NET
+
+#### Scenario: Sequences of arrays
+
+- **WHEN** browser-side code computes `new[] { a }.SequenceEqual(new[] { new[] { 1 } })` where `a` is `new[] { 1 }`
+- **THEN** the answer is false, as in .NET, which compares the arrays by reference
+
+### Requirement: A grouping in a type-checked module passes tsc
+
+A `GroupBy` or a `ToLookup` in a module eqc writes with type annotations SHALL pass the runtime's
+strict `tsc`, its groups read as sequences and its lookup by key.
+
+#### Scenario: A shared component that groups
+
+- **WHEN** a shared component computes `items.GroupBy(x => x).Count()` and `items.ToLookup(x => x)[key]`
+- **THEN** the module eqc writes passes the runtime's strict tsc

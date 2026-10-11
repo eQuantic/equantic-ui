@@ -2297,6 +2297,22 @@ record of a release, the wiki's Upgrading page is the distillate.
   three the build now refuses. The served runtime grew 3,834 gzipped bytes. Proposed and archived
   through OpenSpec (`openspec/specs/page-culture`, `runtime-dates`, `transpiler-bcl`,
   `transpiler-records`).
+- **2026-10-11 · A LINQ overload answers as its own .NET overload**: four overloads #715's measurement
+  found lowered as a sibling they resemble. A default value was called as a predicate
+  ([#720](https://github.com/eQuantic/equantic-ui/issues/720)), the third sequence of a `Zip` as a result
+  selector ([#722](https://github.com/eQuantic/equantic-ui/issues/722)), a mean of longs through a method
+  group added a BigInt to a number seed, a nullable mean divided by its nulls and an empty one answered
+  `NaN` ([#719](https://github.com/eQuantic/equantic-ui/issues/719)), and `SequenceEqual` with a comparer
+  answered its first sequence while the one without compared JSON text
+  ([#721](https://github.com/eQuantic/equantic-ui/issues/721)). Each is a twin in `$eq.linq` now, handed
+  the bound overload's arguments by the parameter each binds to (`LinqArguments`), and
+  `SequenceEqual`'s comparer passes the collection fence. `GroupBy` and `ToLookup` type their
+  accumulator in a type-checked module ([#727](https://github.com/eQuantic/equantic-ui/issues/727)). 37
+  of the 53 new conformance cases fail at a7d5f3d; the 16 that pass are the neighbours kept as pins. 33
+  entries leave the null-argument baseline. The served runtime grows about 600 gzipped bytes. A lambda
+  parameter of type `long` or `decimal` annotated `number` in a type-checked module is
+  [#758](https://github.com/eQuantic/equantic-ui/issues/758). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-sequences`).
 
 ## Retired documents
 
