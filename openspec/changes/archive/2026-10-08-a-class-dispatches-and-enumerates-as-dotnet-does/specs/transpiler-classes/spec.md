@@ -107,11 +107,11 @@ that chains to a constructor that chains in turn.
 
 #### Scenario: A call of the serialization constructor
 
-- **WHEN** `new Snap(null!, new StreamingContext())` calls a public `Snap(SerializationInfo, StreamingContext)`
-  beside `Snap(string, string)`, or `class Derived : Base` calls a protected one with
-  `: base(info, new StreamingContext())`
+- **WHEN** `new Snap(info, context)` calls a public `Snap(SerializationInfo, StreamingContext)` beside
+  `Snap(string, string)`, or a constructor of `class Passing : Base` calls a protected one with
+  `: base(info, context)`
 - **THEN** the build fails with EQ1009, naming the constructor called, where the twin ran
-  `Snap(string, string)`
+  `Snap(string, string)` and `Base(string, Exception)`
 
 ### Requirement: A nested type is a module of its own, named by its owner
 

@@ -285,8 +285,8 @@ internal sealed class TwinConstructor
     /// <para>
     /// C# can still call one, a public one by a <c>new</c> and a protected one by the base call of a
     /// derived constructor, and the twin, with no branch for it, ran another constructor that takes two
-    /// arguments: <c>new Snapshot(null!, new StreamingContext())</c> ran <c>(string, string)</c> (Copilot's
-    /// second review of #708). So every call of one the browser would make is refused
+    /// arguments: <c>new Snap(info, context)</c> ran <c>Snap(string, string)</c> (Copilot's second review
+    /// of #708). So every call of one the browser would make is refused
     /// (<see cref="SerializationCall"/>): a <c>new</c>, and the <c>: base(…)</c>, the base clause or the
     /// <c>: this(…)</c> of a constructor the twin writes. The template's own calls its base's, and is no
     /// branch, so that call is never made, and the template builds as it is written.

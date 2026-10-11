@@ -245,8 +245,8 @@ public class TwinConstructorTests
     /// A constructor only .NET's serialization calls is no branch of its twin, so a call of one the browser
     /// would make is refused (EQ1009): C# calls a public one by a <c>new</c>, and a protected one by a derived
     /// constructor's base call, a chain or a base clause, and with no branch for it the twin ran another
-    /// constructor of two arguments, <c>new Snap(null!, new StreamingContext())</c> the
-    /// <c>(string, string)</c> one (Copilot's second review of #708). The template's own calls its base's,
+    /// constructor of two arguments, <c>new Snap(info, context)</c> the <c>Snap(string, string)</c> one
+    /// (Copilot's second review of #708). The template's own calls its base's,
     /// and is no branch, so that call is never made and the template's class builds.
     /// </summary>
     [Theory]

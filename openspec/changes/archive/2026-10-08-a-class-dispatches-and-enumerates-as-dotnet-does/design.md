@@ -176,7 +176,7 @@ constructor nothing in the browser can call.
 
 C# can still call one, a public one by a `new` and a protected one by a derived constructor's base call,
 and with no branch for it the twin ran another constructor of two arguments
-(`new Snap(null!, new StreamingContext())` ran `(string, string)`, Copilot's second review of #708). So
+(`new Snap(info, context)` ran `Snap(string, string)`, Copilot's second review of #708). So
 every call of one the browser would make is refused (EQ1009): a `new`, and the `: base(…)`, `: this(…)`
 or base clause of a constructor the twin writes. The template's own calls its base's, is no branch, and
 makes no call, so the template still builds as it is written. Alternative: leave out only a protected or
