@@ -12,7 +12,8 @@
 #               macos-latest, whose /bin/bash is 3.2: PUBLISH_BASH=/bin/bash on a Mac proves that.
 #
 # The stub `dotnet` records every push and answers from a plan written per package: one outcome a
-# line (ok, 409, 500, 403), the last one repeating. The stub `sleep` records what it was asked to
+# line (ok, 409, 500, 403, and taken-500 for a push nuget.org took before it answered 500), the
+# last one repeating. The stub `sleep` records what it was asked to
 # wait and returns at once, so the real waits are asserted without being waited. The index is a
 # directory of JSON documents read through file://.
 #
@@ -61,7 +62,13 @@ case "$outcome" in
     echo "  Conflict https://www.nuget.org/api/v2/package/ 297ms"
     echo "Package '$3' already exists at feed 'https://www.nuget.org/api/v2/package'."
     ;;
-  500)
+  500|taken-500)
+    if [ "$outcome" = taken-500 ]; then
+      # The fixture's ids have no dot, so the id ends at the first one and the version follows.
+      id=${file%%.*}; rest=${file#*.}
+      mkdir -p "$here/index/$(printf '%s' "$id" | tr '[:upper:]' '[:lower:]')"
+      printf '{"versions":["%s"]}' "${rest%.nupkg}" > "$here/index/$(printf '%s' "$id" | tr '[:upper:]' '[:lower:]')/index.json"
+    fi
     echo "  InternalServerError https://www.nuget.org/api/v2/package/ 65ms"
     echo "error: Response status code does not indicate success: 500 (Internal Server Error)."
     exit 1
@@ -135,9 +142,35 @@ case_failed_push_is_tried_again() {
   plan Alpha 500 500 ok
   publish
   expect "exit" "$status" 0
-  expect "pushes" "$(calls)" "Alpha Alpha Alpha Beta"
-  # One wait and then a longer one for Alpha, then the pause before Beta.
-  expect "waits" "$(sleeps)" "30 60 15"
+  # Every package once, then Alpha alone after a wait, and again after a longer one.
+  expect "pushes" "$(calls)" "Alpha Beta Alpha Alpha"
+  expect "waits" "$(sleeps)" "15 30 60"
+}
+
+case_waits_are_shared_by_the_list() {
+  case_name="a feed that fails everything still lets the list finish, on one schedule of waits"
+  # Five rounds over the three, and each wait spent ONCE: a schedule per package would wait
+  # 30 + 60 + 120 + 240 seconds for Alpha before Beta was tried at all, 50 times over in a release.
+  fixture outage
+  package Alpha; package Beta; package Gamma
+  plan Alpha 500; plan Beta 500; plan Gamma 500
+  publish
+  expect "exit" "$status" 1
+  expect "pushes" "$(calls)" "Alpha Beta Gamma Alpha Beta Gamma Alpha Beta Gamma Alpha Beta Gamma Alpha Beta Gamma"
+  expect "waits" "$(sleeps)" "15 15 30 15 15 60 15 15 120 15 15 240 15 15"
+  grep -q 'Not pushed after every try: Alpha Beta Gamma\.' "$fx/output" || problem "the failure does not name the three"
+}
+
+case_taken_before_the_failure_is_not_pushed_twice() {
+  case_name="a package nuget.org took before it answered 500 is not pushed again"
+  fixture taken
+  package Alpha; package Beta
+  plan Alpha taken-500
+  publish
+  expect "exit" "$status" 0
+  expect "pushes" "$(calls)" "Alpha Beta"
+  expect "waits" "$(sleeps)" "15 30"
+  grep -q 'on nuget.org after all: Alpha' "$fx/output" || problem "the log does not say Alpha was there after all"
 }
 
 case_goes_on_and_fails_at_the_end() {
@@ -147,8 +180,8 @@ case_goes_on_and_fails_at_the_end() {
   plan Beta 500
   publish
   expect "exit" "$status" 1
-  expect "pushes" "$(calls)" "Alpha Beta Beta Beta Beta Beta Gamma"
-  expect "waits" "$(sleeps)" "15 30 60 120 240 15"
+  expect "pushes" "$(calls)" "Alpha Beta Gamma Beta Beta Beta Beta"
+  expect "waits" "$(sleeps)" "15 15 30 60 120 240"
   grep -q 'Not pushed after every try: Beta\.' "$fx/output" || problem "the failure does not name Beta alone"
 }
 
@@ -275,6 +308,8 @@ run_cases() {
   script=$1
   case_listed_is_skipped
   case_failed_push_is_tried_again
+  case_waits_are_shared_by_the_list
+  case_taken_before_the_failure_is_not_pushed_twice
   case_goes_on_and_fails_at_the_end
   case_refused_push_is_not_tried_again
   case_stray_version_is_refused
@@ -324,7 +359,7 @@ control() {
 
 control "stops at the first package it cannot push" \
   "publishing goes on after a package it could not push and fails at the end" \
-  's/^    \*) owed="\$owed \$id" ;;$/    *) echo "stopped on $id"; exit 1 ;;/'
+  's/^      \*) again="\$again\$package"\$.\\n. ;;$/      *) echo "stopped on $id"; exit 1 ;;/'
 control "pushes what nuget.org already lists" \
   "a package nuget.org already lists is not pushed again" \
   's/^listed() {$/listed() { return 1/'
@@ -333,7 +368,7 @@ control "tries a refused key again" \
   's/^    return 2$/    return 1/'
 control "stops at a refused key" \
   "a push refused for the key is not tried again, and the list goes on" \
-  's/^    2) refused="\$refused \$id" ;;$/    2) echo "refused on $id"; exit 1 ;;/'
+  's/^      2) refused="\$refused \$id" ;;$/      2) echo "refused on $id"; exit 1 ;;/'
 control "leaves out a package at another version" \
   "a package at another version is refused, not left out" \
   's/^      \*) strays="\$strays \${file##\*\/}" ;;$/      *) : ;;/'
@@ -345,7 +380,10 @@ control "looks for a package's file by the version as it was typed" \
   's/^if ! packed=\$(normalized "\$version"); then$/packed=$version; if false; then/'
 control "tries again without waiting" \
   "a push that fails for a reason outside the package is tried again" \
-  's/^      sleep "\$delay"$/      :/'
+  's/^    sleep "\$delay"$/    :/'
+control "pushes again what nuget.org took before it failed" \
+  "a package nuget.org took before it answered 500 is not pushed again" \
+  's/^    if listed "\$id"; then$/    if [ "$round" -eq 1 ] \&\& listed "$id"; then/'
 control "prints the key" \
   "the key reaches the client and no log" \
   's/^  \[ "\$status" -eq 0 \] && return 0$/  echo "key $NUGET_API_KEY"; [ "$status" -eq 0 ] \&\& return 0/'

@@ -67,10 +67,17 @@ been called a stray and the publish would have stopped before its first push.
 requires the push of that tag at the tag's commit. A pull request's run or main's packs the same
 version from another commit, and nuget.org never takes a version back.
 
-**Waits of 30, 60, 120 and 240 seconds, and a 15-second pause between packages.** On 2026-10-11 the
-one package that failed in the one-off run went through 30 seconds later. Seven and a half minutes
-per package at worst keeps a stubborn outage inside the job's timeout, and the loop still names
-whatever it could not push. Both are read from the environment, so the check runs with no waits.
+**The tries are rounds over the whole list, with waits of 30, 60, 120 and 240 seconds between them
+and a 15-second pause between pushes.** Every package is tried once, then the ones that failed are
+tried again together after each wait. On 2026-10-11 the one package that failed in the one-off run
+went through 30 seconds later. The first form spent the four waits on each package in turn, and
+Copilot's second round caught what that costs: 450 seconds for each of 50 packages is more than six
+hours, past the manual workflow's 180 minutes and the tag job's 360, so a feed answering 500 to
+everything would have had the job killed before the end of the list, with nothing named. In rounds
+the waits are 450 seconds for the whole list, and five rounds over 50 packages are about an hour of
+pauses and pushes. A package the index lists by the next round is not pushed again: a try can fail
+after nuget.org took the package. Waits and pause are read from the environment, and the check
+records them through a stub `sleep` instead of waiting.
 
 **The manual workflow takes a run, a tag and optional package ids.** `workflow_dispatch` with the
 inputs `run-id`, `tag` and `packages`. It downloads the run's `nupkgs` artifact with

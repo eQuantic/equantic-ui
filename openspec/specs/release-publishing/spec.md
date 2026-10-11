@@ -20,15 +20,29 @@ lists, and SHALL push only the others.
 
 ### Requirement: A push that fails for a reason outside the package is tried again
 
-When a push fails and nuget.org did not refuse the key, publishing SHALL try the same package
-again after a wait, each wait longer than the one before, a fixed number of times, and SHALL pause
-between one package and the next.
+When a push fails and nuget.org did not refuse the key, publishing SHALL go on to the other
+packages and then try again, together, the ones that failed, after a wait, a fixed number of
+times, each wait longer than the one before, and SHALL pause between one push and the next. The
+waits SHALL be spent once for the whole list, so that the time publishing can wait does not grow
+with the number of packages. A package the index lists by the time it is tried again SHALL NOT be
+pushed again.
 
 #### Scenario: nuget.org answers 500 and then accepts the package
 
 - **WHEN** the push of a package fails twice with a 500 and succeeds on the third try
-- **THEN** the package is pushed, after one wait and then a longer one, and publishing goes on to
-  the next package
+- **THEN** the other packages are pushed first, and that one is pushed after one wait and then a
+  longer one
+
+#### Scenario: nuget.org answers 500 to everything
+
+- **WHEN** every push of each of three packages fails
+- **THEN** the three are tried five times in turn, each wait is spent once and not once per
+  package, and publishing fails naming the three
+
+#### Scenario: nuget.org took the package before it answered 500
+
+- **WHEN** a push fails and the index lists that package at the next round
+- **THEN** the package is not pushed again and counts as published
 
 ### Requirement: Publishing goes on after a package it could not push and fails at the end
 

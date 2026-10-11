@@ -6,11 +6,11 @@
 # failed PUT three times within seconds, so on 2026-10-11 three 500s in a row stopped the release
 # of 0.2.0-preview.61 after 33 of 50 packages, and every rerun died on a package that was already
 # there before it reached one still owed: nuget.org answered 500 where a duplicate answers 409.
-# So this one reads what nuget.org already lists and leaves it alone, waits before it tries a
-# failed push again, goes on to the next package when one never goes through, and fails at the END,
-# naming what is still owed. A push nuget.org refuses for the key (401, 403) is not tried again,
-# since waiting changes nothing, but the list goes on: a key whose scope lacks one new package id
-# is refused for that package alone.
+# So this one reads what nuget.org already lists and leaves it alone, goes on to the next package
+# when one does not go through, tries those again together after a wait, each wait longer than the
+# one before, and fails at the END, naming what is still owed. A push nuget.org refuses for the key
+# (401, 403) is not tried again, since waiting changes nothing, but the list goes on: a key whose
+# scope lacks one new package id is refused for that package alone.
 #
 #   scripts/publish-packages.sh <packages-dir> <version> [package-id ...]
 #
@@ -27,8 +27,9 @@
 # PUBLISH_SOURCE  where to push. nuget.org's v3 index by default.
 # PUBLISH_INDEX   the package index a restore reads, which says what is published already.
 #                 scripts/check-publish-packages.sh points it at files.
-# PUBLISH_WAITS   seconds to wait before each further try of one package ("30 60 120 240").
-# PUBLISH_PAUSE   seconds between one package and the next (15).
+# PUBLISH_WAITS   seconds to wait before each further round over what failed ("30 60 120 240").
+#                 Shared by the whole list: 50 packages that all fail cost these 450 seconds once.
+# PUBLISH_PAUSE   seconds between one push and the next (15).
 #
 # It runs on macos-latest in the tag's pipeline, whose /bin/bash is 3.2: no bash 4 feature here.
 set -uo pipefail
@@ -159,42 +160,65 @@ push() {
 
 already=0
 pushed=0
-owed=""
 refused=""
-first=1
+pending=$packages
+round=0
 
-while IFS= read -r package <&3; do
-  [ -n "$package" ] || continue
-  file=${package##*/}
-  id=${file%."$packed".nupkg}
-
-  if listed "$id"; then
-    echo "on nuget.org already: $id"
-    already=$((already + 1))
-    continue
+# The tries are ROUNDS over the whole list, not a schedule per package: every package is tried once,
+# then the ones that failed are tried again together after each wait. The waiting a publish can
+# spend is the sum of the waits whatever the number of packages, so a feed that answers 500 to
+# everything still lets the list finish and be named inside the job's time. A schedule per package
+# would spend seven and a half minutes on each of 50 packages, past any job's timeout, and the
+# packages at the end of the list would never be tried at all.
+for delay in 0 $waits; do
+  [ -n "$pending" ] || break
+  round=$((round + 1))
+  if [ "$delay" -gt 0 ]; then
+    echo "waiting ${delay}s before trying again what did not go through"
+    sleep "$delay"
   fi
 
-  if [ "$first" -eq 0 ] && [ "$pause" -gt 0 ]; then sleep "$pause"; fi
-  first=0
+  again=""
+  first=1
+  while IFS= read -r package <&3; do
+    [ -n "$package" ] || continue
+    file=${package##*/}
+    id=${file%."$packed".nupkg}
 
-  result=1
-  for delay in 0 $waits; do
-    if [ "$delay" -gt 0 ]; then
-      echo "waiting ${delay}s before trying $id again"
-      sleep "$delay"
+    if listed "$id"; then
+      if [ "$round" -eq 1 ]; then
+        echo "on nuget.org already: $id"
+        already=$((already + 1))
+      else
+        # A try that failed after nuget.org had taken the package.
+        echo "on nuget.org after all: $id"
+        pushed=$((pushed + 1))
+      fi
+      continue
     fi
-    push "$package"
-    result=$?
-    [ "$result" -eq 1 ] || break
-  done
 
-  case "$result" in
-    0) pushed=$((pushed + 1)) ;;
-    2) refused="$refused $id" ;;
-    *) owed="$owed $id" ;;
-  esac
-done 3<<EOF
-$packages
+    if [ "$first" -eq 0 ] && [ "$pause" -gt 0 ]; then sleep "$pause"; fi
+    first=0
+
+    push "$package"
+    case $? in
+      0) pushed=$((pushed + 1)) ;;
+      2) refused="$refused $id" ;;
+      *) again="$again$package"$'\n' ;;
+    esac
+  done 3<<EOF
+$pending
+EOF
+  pending=$again
+done
+
+owed=""
+while IFS= read -r package; do
+  [ -n "$package" ] || continue
+  file=${package##*/}
+  owed="$owed ${file%."$packed".nupkg}"
+done <<EOF
+$pending
 EOF
 
 echo "listed on nuget.org already: $already"

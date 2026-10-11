@@ -735,8 +735,9 @@ release is Edgar's call, and a version number in the tree that nobody released i
 how a reader is misled — read `Directory.Build.props`.)
 
 **A publish that stops halfway is finished, never recut.** The tag's `publish-nuget` job pushes with
-`scripts/publish-packages.sh`: it skips what nuget.org already lists, waits before it tries a failed
-push again, goes on to the next package, and fails at the end naming what is still owed. When it
+`scripts/publish-packages.sh`: it skips what nuget.org already lists, goes on to the next package
+when a push fails, tries the failed ones again together after a wait, and fails at the end naming
+what is still owed. When it
 does fail for a reason outside the tree (nuget.org answering 500, a runner killed), do not bump, and
 do not rerun the job: a rerun replays the workflow as it was at the tag, from the top of the list.
 Run the `Publish a release` workflow by hand, with the tag run's id and the tag:

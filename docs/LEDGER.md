@@ -2356,13 +2356,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   duplicate answered 500 where it answers 409
   ([#759](https://github.com/eQuantic/equantic-ui/issues/759)). The 17 still owed went up from the
   tag run's own artifact through a one-off workflow, and the release page was written by hand. Now
-  one script publishes (`scripts/publish-packages.sh`): it skips what nuget.org lists, waits 30, 60,
-  120 and 240 seconds before trying a failed push again, goes on to the next package and fails at the
-  end naming what is still owed. A push refused for the key is not tried again, and the list goes on.
+  one script publishes (`scripts/publish-packages.sh`): it skips what nuget.org lists, goes on to the
+  next package when one fails, tries the failed ones again together after 30, 60, 120 and 240
+  seconds, and fails at the end naming what is still owed. A push refused for the key is not tried again, and the list goes on.
   `publish-nuget` runs it, and so does `Publish a release`, a workflow run by hand that finishes a
   release from the packages of its tag's own run, any other run refused, and writes its page
   (`scripts/release-page.sh`, which `release-github` runs too). `scripts/check-publish-packages.sh`
-  runs the loop against a stub on every pull request, with nine controls that each break it one way
+  runs the loop against a stub on every pull request, with ten controls that each break it one way
   and must fail the case that guards it. Proposed and archived
   through OpenSpec (`openspec/specs/release-publishing`).
 - **2026-10-11 · A string splits, and searches from a start, as .NET does**: two gaps #715's measurement
