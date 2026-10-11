@@ -219,6 +219,28 @@ public class StringBuilderConformanceTests
             "public enum Tone { Warm, Cool }");
     }
 
+    /// <summary>A value <c>Append</c> or <c>Insert</c> is handed itself prints as .NET prints it (#750):
+    /// a float as its own digits, a double in .NET's notation and its negative zero, an enum as its
+    /// member name, its value or its flags, and a number in the culture in force. An object holding
+    /// a float or an enum is #768's: boxed, it no longer knows the type its text depends on.</summary>
+    [SkippableTheory]
+    [InlineData("return new StringBuilder().Append(0.1f).ToString();", null)]                                        // "0.1"
+    [InlineData("return new StringBuilder().Append(1e21).ToString();", null)]                                        // "1E+21"
+    [InlineData("return new StringBuilder().Append(-0.0).ToString();", null)]                                        // "-0"
+    [InlineData("return new StringBuilder().Append(1e-7).ToString();", null)]                                        // "1E-07"
+    [InlineData("return new StringBuilder().Append(double.PositiveInfinity).Append(double.NaN).ToString();", null)]  // "InfinityNaN"
+    [InlineData("return new StringBuilder().Append(Tone.Warm).ToString();", null)]                                   // "Warm"
+    [InlineData("return new StringBuilder().Append((Tone)7).Append(Access.Read | Access.Write).ToString();", null)]  // "7Read, Write"
+    [InlineData("return new StringBuilder(\"ab\").Insert(1, 0.1f).Insert(1, 1e21).ToString();", null)]               // "a1E+210.1b"
+    [InlineData("return new StringBuilder(\"ab\").Insert(1, Tone.Warm).Insert(1, Tone.Cool).ToString();", null)]   // "aCoolWarmb"
+    [InlineData("return new StringBuilder().Append(1.5).Append('|').Append(0.1f).ToString();", "pt-BR")]             // "1,5|0,1"
+    public void AValueTheBuilderIsHanded_PrintsAsDotNet(string statements, string? culture)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements,
+            "public enum Tone { Warm, Cool }\n[System.Flags] public enum Access { None = 0, Read = 1, Write = 2 }", culture);
+    }
+
     /// <summary>The refusals that write their actual value on a line of their own.</summary>
     [SkippableTheory]
     [InlineData("var b = new StringBuilder(\"12\"); try { b.Length = -1; return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]      // "value ('-1') must be a non-negative value. …"

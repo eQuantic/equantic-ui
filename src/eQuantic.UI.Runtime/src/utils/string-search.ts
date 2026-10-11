@@ -42,7 +42,7 @@ const COUNT =
   'Count must be positive and count must refer to a location within the string/array/collection.';
 
 /** The instance a method is called on: .NET throws before the method runs when there is none. */
-function receiver(source: string | null | undefined): string {
+export function receiver(source: string | null | undefined): string {
   if (source == null)
     throw exception(
       'System.NullReferenceException',

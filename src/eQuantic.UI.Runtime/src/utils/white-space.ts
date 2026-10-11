@@ -73,20 +73,6 @@ export function trim(value: string, chars?: TrimChars): string {
   return trimEnd(trimStart(value, chars), chars);
 }
 
-/** `string.Split()` with no separator: every white space character is one, and the empty entries
- * between two of them stay, as .NET keeps them. */
-export function splitOnWhiteSpace(value: string): string[] {
-  const parts: string[] = [];
-  let start = 0;
-  for (let i = 0; i < value.length; i++) {
-    if (!isWhiteUnit(value.charCodeAt(i))) continue;
-    parts.push(value.slice(start, i));
-    start = i + 1;
-  }
-  parts.push(value.slice(start));
-  return parts;
-}
-
 declare const nonWhite: unique symbol;
 
 /** A string that holds something besides white space: what a true `hasNonWhiteSpace` proves. */

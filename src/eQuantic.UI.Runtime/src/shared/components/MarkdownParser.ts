@@ -4,7 +4,7 @@ export class MarkdownParser {
     static parse(source: string) {
         let blocks: MarkdownBlock[] = [];
         if (!source) return blocks;
-        let lines = MarkdownParser.stripComments($eq.text.replace(source, '\r\n', '\n', 'ordinal').split('\n'));
+        let lines = MarkdownParser.stripComments($eq.text.split($eq.text.replace(source, '\r\n', '\n', 'ordinal'), '\n'));
         let paragraph = '';
         let usedIds: Set<string> = $eq.collections.hashSet();
         for (let i = 0; i < lines.length; i++) {
