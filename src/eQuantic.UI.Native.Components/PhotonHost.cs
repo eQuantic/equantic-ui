@@ -190,11 +190,19 @@ public sealed class PhotonHost
     /// clears the keyboard where nothing around it scrolls: a form that does not fit what the
     /// keyboard leaves, a phone turned on its side. Android's own <c>adjustPan</c>, which Android
     /// itself picks for a window with nothing to scroll; Flutter leaves the field covered there.
-    /// Zero with the keyboard down, with nothing being edited, and wherever a scroll view brings
-    /// the field into view instead. A pointer lands where the screen is drawn, and the caret and the
-    /// semantics are reported where they are drawn.
+    /// Taken only while the edit has less room than the screen had before it, so it holds whether
+    /// the keyboard arrives as an inset or as a window the system shortened for it, and a desktop
+    /// window that was always too short for its form is not moved. Zero with nothing being edited,
+    /// with the field in view, and for a field a scroll view holds: the scroll view brings it into
+    /// view instead, and what the person scrolls away is theirs to scroll back. A pointer lands where
+    /// the screen is drawn, and the caret and the semantics are reported where they are drawn.
     /// </summary>
     private float _lift;
+
+    /// <summary>The height the screen laid out in before the edit began, or the most it has had since:
+    /// a frame laid out in less while something is edited lost that room to the keyboard, as an
+    /// inset or as a shorter window, or to a phone turned on its side.</summary>
+    private float _roomBeforeEdit;
 
     /// <summary>
     /// The corner the system's WINDOW CONTROLS float in under <see cref="WindowChrome.Unified"/> —
@@ -269,6 +277,7 @@ public sealed class PhotonHost
         var height = MathF.Max(0, Height - _viewInsets.Bottom);
         var shorter = height < _laidHeight;
         _laidHeight = height;
+        if (_textPath is null || height > _roomBeforeEdit) _roomBeforeEdit = height;
         var safeArea = _viewInsets.Bottom > 0
             ? SafeAreaInsets with { Bottom = MathF.Max(0, SafeAreaInsets.Bottom - _viewInsets.Bottom) }
             : SafeAreaInsets;
@@ -328,9 +337,8 @@ public sealed class PhotonHost
         // rising does that, as an inset or, where the system resizes the window for it, as a
         // shorter window; so does a phone turned on its side.
         if (shorter && RevealEditing()) NeedsRender = true;
-        // Where nothing scrolled the field into view, the screen is lifted until it shows; read once
-        // a scroll has landed, so a field a scroll view is bringing in is never lifted on the way.
-        else if (!gliding && Lift(height)) NeedsRender = true;
+        // Where nothing scrolls the field into view, the screen is lifted until it shows.
+        if (Lift(height)) NeedsRender = true;
 
         // The caret is 2Hz motion, not vsync motion. Holding NeedsRender for it pinned the whole
         // loop to the display's refresh — 120 presents a second on a ProMotion panel, measured, to
@@ -596,21 +604,22 @@ public sealed class PhotonHost
 
     /// <summary>
     /// Sets <see cref="_lift"/>: for a field being edited that ends below <paramref name="laidHeight"/>,
-    /// the least that brings its bottom above it with a control's worth of margin, and never so much
-    /// that its top leaves the screen. Read from the field's focus stop, which the frame keeps even
-    /// where the field is drawn under the keyboard. Answers whether the lift changed.
+    /// where the keyboard took the room it needed and no scroll view can bring it up, the least that
+    /// brings its bottom above it with a control's worth of margin, and never so much that its top
+    /// leaves the screen. Read from the field's focus stop, which the frame keeps even where the
+    /// field is drawn under the keyboard, and which is laid out where it was before the lift, so the
+    /// lift a covered field takes holds as long as it is edited. Answers whether the lift changed.
     /// </summary>
     private bool Lift(float laidHeight)
     {
         var lift = 0f;
-        if (_viewInsets.Bottom > 0 && _textPath is { } path && _lastFrame is { } frame)
+        var squeezed = _viewInsets.Bottom > 0 || laidHeight < _roomBeforeEdit;
+        if (squeezed && _textPath is { } path && _lastFrame is { } frame && !InVerticalScroll(frame, path))
         {
             var stops = frame.FocusStops;
             for (var i = 0; i < stops.Count; i++)
             {
                 if (stops[i].Path != path) continue;
-                // Only a field still under the keyboard: one a scroll view brought into view is
-                // already above it, and the lift a covered one takes holds as long as it is edited.
                 var field = stops[i].Bounds;
                 if (field.Bottom > laidHeight)
                     lift = Math.Clamp(field.Bottom + ScrollIntoViewMargin - laidHeight, 0,
@@ -621,6 +630,18 @@ public sealed class PhotonHost
         if (lift == _lift) return false;
         _lift = lift;
         return true;
+    }
+
+    /// <summary>Whether a scroll view that moves up and down, with somewhere to move, holds
+    /// <paramref name="path"/>: what it holds is brought into view by scrolling it.</summary>
+    private static bool InVerticalScroll(RealizeResult frame, string path)
+    {
+        var regions = frame.ScrollRegions;
+        for (var i = 0; i < regions.Count; i++)
+            if (regions[i].Axis != ScrollAxis.Horizontal && regions[i].MaxOffset > 0
+                && IsAncestorPath(regions[i].Path, path))
+                return true;
+        return false;
     }
 
     /// <summary>

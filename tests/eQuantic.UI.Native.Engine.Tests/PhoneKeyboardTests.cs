@@ -550,6 +550,80 @@ public class PhoneKeyboardTests
         host.CaretRect()!.Value.Y.Should().BeApproximately(laid.Y, 0.5f, "the screen comes back down");
     }
 
+    /// <summary>
+    /// Android before 15, for an app not drawn edge to edge, makes room for the keyboard by
+    /// shortening the window: no inset arrives, and the field is lifted all the same.
+    /// </summary>
+    [Fact]
+    public void AFieldAShorterWindowCovers_IsLiftedToo()
+    {
+        var host = new PhotonHost(new FixedForm(), PhotonTheme.Instance, ThemeMode.Light, 390, 600);
+        var laid = host.RenderFrame(new DisplayListBuilder()).TextRegions.Single().Bounds;
+        Tap(host, laid.Center);
+        host.RenderFrame(new DisplayListBuilder(), 16);
+
+        host.Resize(390, 300);
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        host.RenderFrame(new DisplayListBuilder(), 48);
+
+        host.CaretRect()!.Value.Bottom.Should().BeLessThanOrEqualTo(300);
+
+        host.Resize(390, 600);
+        host.RenderFrame(new DisplayListBuilder(), 64);
+        host.CaretRect()!.Value.Y.Should().BeApproximately(laid.Y, 4, "the screen comes back down");
+    }
+
+    /// <summary>
+    /// A window that was always too short for its form, with nothing taken from it by a keyboard: a
+    /// desktop's. Its layout is the app's to scroll, and the screen is not moved under it.
+    /// </summary>
+    [Fact]
+    public void AWindowThatWasAlwaysTooShort_IsNotLifted()
+    {
+        var host = new PhotonHost(new FixedForm(), PhotonTheme.Instance, ThemeMode.Light, 390, 300);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        host.KeyDown("Tab").Should().BeTrue();
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        frame = host.RenderFrame(new DisplayListBuilder(), 32);
+
+        host.HasTextFocus.Should().BeTrue();
+        var field = frame.FocusStops.Single(stop => stop.Path == host.FocusedPath).Bounds;
+        field.Bottom.Should().BeGreaterThan(300, "the field is below the window");
+        host.Semantics().Single(node => node.Role == SemanticRole.TextField).Bounds.Y
+            .Should().BeApproximately(field.Y, 0.5f, "the screen is drawn where it was laid out");
+    }
+
+    /// <summary>
+    /// With the keyboard up, the person scrolls the field being edited down under it. A scroll view
+    /// holds it, and the scroll is theirs: the screen is not lifted to fight it, as Flutter leaves
+    /// it.
+    /// </summary>
+    [Fact]
+    public void AFieldScrolledUnderTheKeyboard_IsNotLifted()
+    {
+        var host = new PhotonHost(new LongForm(), PhotonTheme.Instance, ThemeMode.Light, 390, 600)
+        {
+            SmoothScroll = false,
+        };
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        var low = frame.TextRegions.Last(region => region.Bounds.Bottom <= 600);
+        Tap(host, low.Bounds.Center);
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        host.ViewInsets = new EdgeInsets(0, 0, 0, 300);
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        host.RenderFrame(new DisplayListBuilder(), 48);
+
+        host.ScrollBy(100, 100, -1000).Should().BeTrue();
+        host.RenderFrame(new DisplayListBuilder(), 64);
+        frame = host.RenderFrame(new DisplayListBuilder(), 80);
+
+        frame.FocusStops.Single(stop => stop.Path == low.Path).Bounds.Top
+            .Should().BeGreaterThan(300, "the field is under the keyboard, where it was scrolled");
+        host.Semantics().Where(node => node.Role == SemanticRole.TextField).Min(node => node.Bounds.Y)
+            .Should().BeApproximately(frame.TextRegions.Min(region => region.Bounds.Y), 0.5f,
+                "the screen is drawn where it was laid out");
+    }
+
     /// <summary>A field a scroll view brought into view is above the keyboard already: the screen
     /// around it stays where it is.</summary>
     [Fact]
