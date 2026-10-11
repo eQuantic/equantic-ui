@@ -2362,7 +2362,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   `publish-nuget` runs it, and so does `Publish a release`, a workflow run by hand that finishes a
   release from the packages of its tag's own run, any other run refused, and writes its page
   (`scripts/release-page.sh`, which `release-github` runs too). `scripts/check-publish-packages.sh`
-  runs the loop against a stub on every pull request, with eight controls that each break it one way
+  runs the loop against a stub on every pull request, with nine controls that each break it one way
   and must fail the case that guards it. Proposed and archived
   through OpenSpec (`openspec/specs/release-publishing`).
 

@@ -14,6 +14,10 @@
 #
 #   scripts/publish-packages.sh <packages-dir> <version> [package-id ...]
 #
+# The version is the one the release was given (the tag without its v). A package's file carries it
+# as NuGet normalizes it, which is how the script looks for it: `dotnet pack` writes 1.0 as
+# X.1.0.0.nupkg and 1.0.0-rc.1+build.7 as X.1.0.0-rc.1.nupkg.
+#
 # With no package id it takes every `*.<version>.nupkg` of the directory, and refuses a directory
 # that holds a package at any other version: a release publishes everything its run packed, and a
 # package left out without a word is a release that went out incomplete. An id that has no package
@@ -48,6 +52,36 @@ pause=${PUBLISH_PAUSE:-15}
 # A version and an id become part of a file name and of a URL, and an id can be text a person typed
 # into the manual workflow: anything outside a package's own alphabet is refused, never escaped.
 case "$version" in ""|*[!A-Za-z0-9.+-]*) echo "::error::'$version' is not a version." >&2; exit 2 ;; esac
+
+# The version as NuGet writes it in a package's file name (NuGetVersion.ToNormalizedString, measured
+# with `dotnet pack`): no build metadata, three numeric parts at least, a fourth only when it is not
+# zero, and no leading zero. Matching the version as typed would call every package of such a
+# release a stray, and the publish would stop before its first push.
+normalized() {
+  local whole=${1%%+*} release label="" part out="" count=0
+  case "$whole" in
+    *-*) release=${whole%%-*}; label="-${whole#*-}" ;;
+    *) release=$whole ;;
+  esac
+  local IFS=.
+  for part in $release; do
+    case "$part" in ""|*[!0-9]*) return 1 ;; esac
+    part=$((10#$part))
+    count=$((count + 1))
+    if [ "$count" -eq 4 ] && [ "$part" -eq 0 ]; then continue; fi
+    out="$out${out:+.}$part"
+  done
+  if [ "$count" -lt 1 ] || [ "$count" -gt 4 ]; then return 1; fi
+  while [ "$count" -lt 3 ]; do
+    out="$out.0"
+    count=$((count + 1))
+  done
+  printf '%s%s' "$out" "$label"
+}
+if ! packed=$(normalized "$version"); then
+  echo "::error::'$version' is not a version NuGet packs." >&2
+  exit 2
+fi
 for seconds in $waits $pause; do
   case "$seconds" in *[!0-9]*) echo "::error::'$seconds' is not a number of seconds." >&2; exit 2 ;; esac
 done
@@ -63,14 +97,14 @@ if [ $# -gt 0 ]; then
   unknown=""
   for id in "$@"; do
     case "$id" in ""|.*|*[!A-Za-z0-9._-]*) echo "::error::'$id' is not a package id." >&2; exit 2 ;; esac
-    if [ -f "$dir/$id.$version.nupkg" ]; then
-      packages="$packages$dir/$id.$version.nupkg"$'\n'
+    if [ -f "$dir/$id.$packed.nupkg" ]; then
+      packages="$packages$dir/$id.$packed.nupkg"$'\n'
     else
       unknown="$unknown $id"
     fi
   done
   if [ -n "$unknown" ]; then
-    echo "::error::No package at $version in $dir for:$unknown. Nothing was pushed." >&2
+    echo "::error::No package at $packed in $dir for:$unknown. Nothing was pushed." >&2
     exit 1
   fi
 else
@@ -78,24 +112,24 @@ else
   for file in "$dir"/*.nupkg; do
     [ -f "$file" ] || continue
     case "${file##*/}" in
-      *."$version".nupkg) packages="$packages$file"$'\n' ;;
+      *."$packed".nupkg) packages="$packages$file"$'\n' ;;
       *) strays="$strays ${file##*/}" ;;
     esac
   done
   if [ -n "$strays" ]; then
-    echo "::error::$dir holds packages that are not at $version:$strays. Nothing was pushed." >&2
+    echo "::error::$dir holds packages that are not at $packed:$strays. Nothing was pushed." >&2
     exit 1
   fi
   if [ -z "$packages" ]; then
-    echo "::error::No package at $version in $dir. Nothing was pushed." >&2
+    echo "::error::No package at $packed in $dir. Nothing was pushed." >&2
     exit 1
   fi
 fi
 
 # Whether nuget.org lists <id> at the version already. An id it has never seen answers 404, and an
 # index that cannot be read says nothing: both are "not listed", and the push then tells.
-# The index writes a version lower-cased and without its build metadata, so it is compared that way.
-listed_version=$(printf '%s' "${version%%+*}" | tr '[:upper:]' '[:lower:]')
+# The index writes the normalized version lower-cased, so it is compared that way.
+listed_version=$(printf '%s' "$packed" | tr '[:upper:]' '[:lower:]')
 listed() {
   local lower body
   lower=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')
@@ -132,7 +166,7 @@ first=1
 while IFS= read -r package <&3; do
   [ -n "$package" ] || continue
   file=${package##*/}
-  id=${file%."$version".nupkg}
+  id=${file%."$packed".nupkg}
 
   if listed "$id"; then
     echo "on nuget.org already: $id"

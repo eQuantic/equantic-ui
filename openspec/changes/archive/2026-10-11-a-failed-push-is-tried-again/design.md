@@ -56,8 +56,12 @@ before the loop names it at the end.
 **A package at another version fails the publish, and a version is compared as the index writes
 it.** The loop this replaces pushed every `.nupkg` of the artifact. Taking only the ones at the
 release's version would leave any other out without a word, so the script refuses such a directory
-before it pushes anything. The index lists a version lower-cased and without its build metadata, and
-the script compares it that way, or a version with a capital letter would never be found listed.
+before it pushes anything. `dotnet pack` names a package by the version as NuGet normalizes it
+(`1.0` packs as `X.1.0.0.nupkg`, `1.02.0-rc.1` as `X.1.2.0-rc.1.nupkg`, and build metadata goes), so
+the script normalizes the version it was given before it looks for a file, and compares the index by
+that same version lower-cased. Matching the version as typed was the first form, and Copilot's first
+round caught it: with the stray rule beside it, every package of a release tagged `v1.0` would have
+been called a stray and the publish would have stopped before its first push.
 
 **The manual workflow refuses a run that is not the tag's own.** It asks GitHub for the run and
 requires the push of that tag at the tag's commit. A pull request's run or main's packs the same

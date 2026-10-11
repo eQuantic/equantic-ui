@@ -184,19 +184,35 @@ case_stray_version_is_refused() {
   grep -q 'Gamma.1.0.0.nupkg' "$fx/output" || problem "the failure does not name the stray package"
 }
 
-case_index_version_is_compared_as_the_index_writes_it() {
-  case_name="a version is found listed as the index writes it"
-  # The index lower-cases a version and drops its build metadata.
-  fixture written
-  local release=$version
-  version=9.9.9-check.1
-  package Alpha listed
-  mv "$fx/packages/Alpha.$version.nupkg" "$fx/packages/Alpha.9.9.9-CHECK.1+build.7.nupkg"
-  version=9.9.9-CHECK.1+build.7
-  publish
-  version=$release
-  expect "exit" "$status" 0
-  expect "pushes" "$(calls)" ""
+case_version_is_found_as_nuget_packs_it() {
+  case_name="a package is found by the version as NuGet packs it"
+  # Each row is a version as a release is given it, the version `dotnet pack` wrote in the file's
+  # name for it, and the one the index lists. All measured, none reasoned: no build metadata, three
+  # parts at least, a fourth only when it is not zero, no leading zero, and lower case in the index.
+  local release=$version row typed packed listed
+  for row in \
+    "9.9.9-CHECK.1+build.7 9.9.9-CHECK.1 9.9.9-check.1" \
+    "1.0 1.0.0 1.0.0" \
+    "1.02.0-rc.1 1.2.0-rc.1 1.2.0-rc.1" \
+    "2.0.0.0 2.0.0 2.0.0" \
+    "1.2.3.4 1.2.3.4 1.2.3.4" \
+    "0.2.0-preview.61 0.2.0-preview.61 0.2.0-preview.61"; do
+    set -- $row
+    typed=$1; packed=$2; listed=$3
+    fixture packed
+    : > "$fx/packages/Alpha.$packed.nupkg"; : > "$fx/packages/Beta.$packed.nupkg"
+    mkdir -p "$fx/index/alpha"
+    printf '{"versions":["0.1.0","%s"]}' "$listed" > "$fx/index/alpha/index.json"
+    version=$typed
+    publish
+    expect "exit for $typed" "$status" 0
+    expect "pushes for $typed" "$(tr '\n' ' ' < "$fx/calls")" "Beta.$packed.nupkg "
+    : > "$fx/calls"
+    publish Beta
+    version=$release
+    expect "exit for $typed with an id" "$status" 0
+    expect "pushes for $typed with an id" "$(tr '\n' ' ' < "$fx/calls")" "Beta.$packed.nupkg "
+  done
 }
 
 case_given_ids_only() {
@@ -262,7 +278,7 @@ run_cases() {
   case_goes_on_and_fails_at_the_end
   case_refused_push_is_not_tried_again
   case_stray_version_is_refused
-  case_index_version_is_compared_as_the_index_writes_it
+  case_version_is_found_as_nuget_packs_it
   case_given_ids_only
   case_unknown_id_is_refused_first
   case_duplicate_counts_as_pushed
@@ -321,9 +337,12 @@ control "stops at a refused key" \
 control "leaves out a package at another version" \
   "a package at another version is refused, not left out" \
   's/^      \*) strays="\$strays \${file##\*\/}" ;;$/      *) : ;;/'
-control "compares the version as it was typed" \
-  "a version is found listed as the index writes it" \
+control "reads the index for the version as it was typed" \
+  "a package is found by the version as NuGet packs it" \
   's/^listed_version=.*$/listed_version=$version/'
+control "looks for a package's file by the version as it was typed" \
+  "a package is found by the version as NuGet packs it" \
+  's/^if ! packed=\$(normalized "\$version"); then$/packed=$version; if false; then/'
 control "tries again without waiting" \
   "a push that fails for a reason outside the package is tried again" \
   's/^      sleep "\$delay"$/      :/'

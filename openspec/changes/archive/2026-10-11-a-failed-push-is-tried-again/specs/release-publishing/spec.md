@@ -63,13 +63,22 @@ end naming each package that was refused and saying the key refused them.
 ### Requirement: Everything the run packed is published or publishing fails
 
 Publishing a release with no package ids given SHALL refuse, before any push, a set of packages
-that holds one at a version other than the release's, naming it. A version SHALL be found listed
-as the index writes it, lower-cased and without build metadata.
+that holds one at a version other than the release's, naming it. A package SHALL be looked for by
+the release's version as NuGet writes it in a package's file name (no build metadata, three numeric
+parts at least, a fourth only when it is not zero, no leading zero), and SHALL be found listed by
+that same version lower-cased, as the index writes it.
 
 #### Scenario: A package packed at another version
 
 - **WHEN** the run's packages hold `Gamma.1.0.0.nupkg` beside the release's own
 - **THEN** publishing fails naming that file, and nothing is pushed
+
+#### Scenario: A version NuGet writes otherwise than it was given
+
+- **WHEN** a release is given the version `1.0`, or `9.9.9-CHECK.1+build.7`, and its packages are
+  `Alpha.1.0.0.nupkg`, or `Alpha.9.9.9-CHECK.1.nupkg`, as `dotnet pack` names them
+- **THEN** those packages are the release's, not strays, and one the index lists at `1.0.0`, or at
+  `9.9.9-check.1`, is not pushed again
 
 ### Requirement: A release that stopped halfway is finished by hand from its own run's packages
 
