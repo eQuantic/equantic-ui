@@ -35,8 +35,8 @@ public class StringBuilderStrategyTests
     /// <summary>AppendFormat and AppendJoin append what string.Format and string.Join write, bound
     /// by the same parameters and under the same culture policy (#679).</summary>
     [Theory]
-    [InlineData("new System.Text.StringBuilder().AppendFormat(\"{0}-{1}\", 1, 2)", "$eq.text.stringBuilder().append($eq.text.stringFormat('{0}-{1}', 1, 2))")]
-    [InlineData("new System.Text.StringBuilder().AppendFormat(System.Globalization.CultureInfo.InvariantCulture, \"{0:N2}\", Amount)", "$eq.text.stringBuilder().append($eq.text.stringFormatInvariant('{0:N2}', this.amount))")]
+    [InlineData("new System.Text.StringBuilder().AppendFormat(\"{0}-{1}\", 1, 2)", "$eq.text.stringBuilder().append($eq.text.stringFormat('{0}-{1}', $eq.text.asNumber(1, 'int32'), $eq.text.asNumber(2, 'int32')))")]
+    [InlineData("new System.Text.StringBuilder().AppendFormat(System.Globalization.CultureInfo.InvariantCulture, \"{0:N2}\", Amount)", "$eq.text.stringBuilder().append($eq.text.stringFormatInvariant('{0:N2}', $eq.text.asNumber(this.amount, 'double')))")]
     [InlineData("new System.Text.StringBuilder().AppendJoin(\",\", items)", "$eq.text.stringBuilder().append($eq.text.join(',', this.items))")]
     [InlineData("new System.Text.StringBuilder().AppendJoin(';', \"a\", \"b\")", "$eq.text.stringBuilder().append(['a', 'b'].join(';'))")]
     public void AppendFormatAndAppendJoin_AppendWhatFormatAndJoinWrite(string code, string expected)
@@ -57,26 +57,27 @@ public class StringBuilderStrategyTests
     /// <summary>An interpolated <c>Append</c> or <c>AppendLine</c> appends each part in turn, as .NET's
     /// interpolation handler does, so a hole that reads the builder sees the parts before it; a hole's
     /// alignment pads in an append of its own, a provider that is the current culture adds nothing, and
-    /// a hole prints as a plain interpolation's does: an enum as its member name, a bool as True. A
-    /// string's append stays one append (#679's review).</summary>
+    /// a hole prints as a plain interpolation's does: an enum as its member name, a bool as True, a
+    /// number as its text in the culture, by its kind (#454). A string's append stays one append
+    /// (#679's review).</summary>
     [Theory]
-    [InlineData("new System.Text.StringBuilder().Append($\"a{Id}b\")", "$eq.text.stringBuilder().append('a').append(this.id).append('b')")]
-    [InlineData("new System.Text.StringBuilder().AppendLine($\"{Name,5}|{Amount:F2}\")", "$eq.text.stringBuilder().appendAligned($eq.text.format(this.name, null), 5).append('|').append($eq.text.format(this.amount, 'F2')).appendLine()")]
-    [InlineData("new System.Text.StringBuilder().Append($\"a{Id}\" + $\"b{Name}\")", "$eq.text.stringBuilder().append('a').append(this.id).append('b').append(this.name ?? '')")]
+    [InlineData("new System.Text.StringBuilder().Append($\"a{Id}b\")", "$eq.text.stringBuilder().append('a').append($eq.text.format(this.id, null, undefined, undefined, 'int32')).append('b')")]
+    [InlineData("new System.Text.StringBuilder().AppendLine($\"{Name,5}|{Amount:F2}\")", "$eq.text.stringBuilder().appendAligned($eq.text.format(this.name, null), 5).append('|').append($eq.text.format(this.amount, 'F2', undefined, undefined, 'double')).appendLine()")]
+    [InlineData("new System.Text.StringBuilder().Append($\"a{Id}\" + $\"b{Name}\")", "$eq.text.stringBuilder().append('a').append($eq.text.format(this.id, null, undefined, undefined, 'int32')).append('b').append(this.name ?? '')")]
     [InlineData("new System.Text.StringBuilder().Append($\"{Size.Small}{Active}\")", "$eq.text.stringBuilder().append('Small').append($eq.text.format(this.active, null))")]
-    [InlineData("new System.Text.StringBuilder().Append(System.Globalization.CultureInfo.CurrentCulture, $\"x{Id}\")", "$eq.text.stringBuilder().append('x').append(this.id)")]
-    [InlineData("new System.Text.StringBuilder().Append(\"a\" + Id)", "$eq.text.stringBuilder().append('a' + this.id)")]
+    [InlineData("new System.Text.StringBuilder().Append(System.Globalization.CultureInfo.CurrentCulture, $\"x{Id}\")", "$eq.text.stringBuilder().append('x').append($eq.text.format(this.id, null, undefined, undefined, 'int32'))")]
+    [InlineData("new System.Text.StringBuilder().Append(\"a\" + Id)", "$eq.text.stringBuilder().append('a' + $eq.text.format(this.id, null, undefined, undefined, 'int32'))")]
     public void AnInterpolatedAppend_AppendsEachPartInTurn(string code, string expected)
     {
         TestHelper.ConvertExpression(code).Should().Be(expected);
     }
 
     /// <summary><c>Append(StringBuilder)</c> is its own method, refused in words of its own; a builder
-    /// typed as an object is a string's append, as C# binds it.</summary>
+    /// typed as an object is a string's append of its text, as C# binds it.</summary>
     [Theory]
     [InlineData("new System.Text.StringBuilder().Append(new System.Text.StringBuilder())", "$eq.text.stringBuilder().appendBuilder($eq.text.stringBuilder())")]
     [InlineData("new System.Text.StringBuilder().Append(new System.Text.StringBuilder(), 0, 0)", "$eq.text.stringBuilder().appendBuilder($eq.text.stringBuilder(), 0, 0)")]
-    [InlineData("new System.Text.StringBuilder().Append((object)new System.Text.StringBuilder())", "$eq.text.stringBuilder().append($eq.text.stringBuilder())")]
+    [InlineData("new System.Text.StringBuilder().Append((object)new System.Text.StringBuilder())", "$eq.text.stringBuilder().append($eq.text.format($eq.text.stringBuilder(), null))")]
     public void AppendOfABuilder_IsItsOwnMethod(string code, string expected)
     {
         TestHelper.ConvertExpression(code).Should().Be(expected);

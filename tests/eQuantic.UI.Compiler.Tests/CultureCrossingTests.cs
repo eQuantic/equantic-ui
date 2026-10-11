@@ -204,8 +204,9 @@ public class CultureCrossingTests
     {
         var result = Compile(body);
         Assert.True(result.Success, string.Join("; ", result.Errors.Select(e => e.Message)));
-        // The formatter's call, closing on what it is handed after the value.
-        Assert.Matches(@"\$eq\.text\.format\(\$eq\.time\.\w+\([^;]*?\)" + System.Text.RegularExpressions.Regex.Escape(emitted),
+        // The formatter's call, closing on what it is handed after the value, which a DateTime's and a
+        // DateTimeOffset's constructor builds through its factory (`$eq.time.dateTime.of(…)`, #606).
+        Assert.Matches(@"\$eq\.text\.format\(\$eq\.time\.\w+(?:\.\w+)?\([^;]*?\)" + System.Text.RegularExpressions.Regex.Escape(emitted),
             result.TypeScript);
     }
 
