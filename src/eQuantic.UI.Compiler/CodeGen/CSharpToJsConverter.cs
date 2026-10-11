@@ -56,6 +56,14 @@ public class CSharpToJsConverter
         set => _context.SymbolsAreAuthoritative = value;
     }
 
+    /// <summary>See <see cref="ConversionContext.HasProjectCompilation"/>. Survives <see cref="Reset"/>
+    /// too: it describes the host, not the file.</summary>
+    internal bool HasProjectCompilation
+    {
+        get => _context.HasProjectCompilation;
+        set => _context.HasProjectCompilation = value;
+    }
+
     public void SetSemanticModel(SemanticModel? semanticModel)
     {
         _semanticModel = semanticModel;

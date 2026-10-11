@@ -34,6 +34,9 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
 
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
+        // A constructor only .NET's serialization calls is no branch of a twin, so a `new` of it would run
+        // another (TwinConstructor.IsSerializationConstructor).
+        TwinConstructor.RefuseSerializationNew(node, context);
         var built = Build(node, context);
         // A generic record or struct built as the closed type C# names carries its type arguments: one
         // twin class serves every one of them, and `Box<int>` equalled `Box<double>` holding the same 1
@@ -782,12 +785,15 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// constructor is its zero.
     /// </summary>
     private static JsExpr Construction(BaseObjectCreationExpressionSyntax creation, ITypeSymbol type, IMethodSymbol? ctor,
-        ConversionContext context) =>
+        ConversionContext context, JsExpr? types = null) =>
         type.IsValueType && ctor is { IsImplicitlyDeclared: true, Parameters.Length: 0 } && TwinIsWritten(type)
             ? JsExpr.Opaque(DefaultValue.Of(type, context))
             : BoundArguments.Of(context.SemanticHelper.GetOperation(creation), argument => context.Converter.ConvertIr(argument)) is { } bound
-                ? bound.New(TwinOf(type, context))
-                : JsExpr.New(JsExpr.Identifier(TwinOf(type, context)), ConstructorArguments(creation, ctor, context));
+                ? bound.New(TwinOf(type, context), types)
+                : types is null
+                    ? JsExpr.New(JsExpr.Identifier(TwinOf(type, context)), ConstructorArguments(creation, ctor, context))
+                    : JsExpr.Call(JsExpr.Identifier(Eq.ExceptionConstruct),
+                        [JsExpr.Identifier(TwinOf(type, context)), types, .. ConstructorArguments(creation, ctor, context)]);
 
     /// <summary>The name a construction calls, its type's twin's: named by its owner where it is nested
     /// (#584), and imported from there, and the type's own name otherwise.</summary>
@@ -801,15 +807,14 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// <summary>
     /// Whether <paramref name="type"/> is a class whose twin eqc writes with its C# constructors
     /// (<see cref="TwinConstructor"/>, #583), which is built as a record is
-    /// (<see cref="BuildClassConstruction"/>). A node of the tree, a component and a component's state
-    /// take their initializer as the props the runtime's classes take, an exception is built by its
-    /// symbol (<see cref="ExceptionCreationStrategy"/>), and the vocabulary's hand-written twins take a
-    /// config object of their own.
+    /// (<see cref="BuildClassConstruction"/>), an exception class of the app's among them (#611). A node
+    /// of the tree, a component and a component's state take their initializer as the props the
+    /// runtime's classes take, and the vocabulary's hand-written twins take a config object of their own.
     /// </summary>
     internal static bool IsBuiltAsCSharp(INamedTypeSymbol type) =>
         type is { TypeKind: TypeKind.Class, IsRecord: false, IsStatic: false }
         && TwinIsWritten(type)
-        && !type.IsVisualNode() && !type.IsComponentState() && !ExceptionTypes.Is(type);
+        && !type.IsVisualNode() && !type.IsComponentState();
 
     /// <summary>
     /// A plain class built as C# builds it (#582): the constructor the call binds, then the object
@@ -819,7 +824,15 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     private static JsExpr BuildClassConstruction(BaseObjectCreationExpressionSyntax creation, INamedTypeSymbol type,
         ConversionContext context)
     {
-        var construction = Construction(creation, type, context.SemanticHelper.GetSymbol(creation) as IMethodSymbol, context);
+        // A construction of a generic exception class hands its base the types it is, before the
+        // constructor's body runs (#611, #708), which a type parameter among them cannot say (EQ2014).
+        JsExpr? types = null;
+        if (ExceptionTypes.HasTwin(type, context))
+        {
+            ExceptionTypes.RefuseOpen(type, creation, tested: false, context);
+            types = ExceptionTypes.ConstructedTypes(type, context);
+        }
+        var construction = Construction(creation, type, context.SemanticHelper.GetSymbol(creation) as IMethodSymbol, context, types);
         return creation.Initializer switch
         {
             null => construction,

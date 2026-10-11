@@ -30,7 +30,14 @@ public class ForEachVariableStatementStrategy : IStatementStrategy
             context.SemanticHelper.ForEachInfo(foreachStmt)?.ElementType, context);
         var pattern = deconstruction?.Pattern ?? ConvertDesignation(foreachStmt.Variable);
         var declared = ExpressionVariableScanner.Declarations(foreachStmt.Expression, context.TypeAnnotations);
-        var collection = context.Converter.ConvertExpression(foreachStmt.Expression);
+        // A class's public GetEnumerator() beside the interface's is called as the loop binds it
+        // (IterableTwin.ForEachSource).
+        var source = context.Converter.ConvertIr(foreachStmt.Expression);
+        var collection = JsExprWriter.Write(
+            foreachStmt.AwaitKeyword.Value == null && context.SemanticHelper.ForEachInfo(foreachStmt) is { } info
+            && IterableTwin.ForEachSource(info, context.SemanticHelper.GetType(foreachStmt.Expression), source, context.UsedHelpers) is { } bound
+                ? bound
+                : source);
 
         var body = context.Converter.ConvertStatementIr(foreachStmt.Statement);
         var loopType = foreachStmt.AwaitKeyword.Value != null ? "for await" : "for";

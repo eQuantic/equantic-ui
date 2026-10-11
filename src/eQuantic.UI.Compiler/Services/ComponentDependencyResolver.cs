@@ -348,7 +348,7 @@ public class ComponentDependencyResolver
 
     /// <summary>
     /// Whether <paramref name="name"/> is the twin of a nested type the build writes no module for: it,
-    /// or a type it is declared in, is [ServerOnly], an exception or an attribute (#584). A module that
+    /// or a type it is declared in, is [ServerOnly] or an attribute (#584). A module that
     /// would import it names a twin nothing declares, so the emitters report it there (EQ2010), the net
     /// under the fences a strategy raises where an expression names the type.
     /// </summary>

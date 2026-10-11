@@ -11,15 +11,18 @@ returns.
 ### Requirement: Every constructor a class declares is reached or refused
 
 A plain class's twin SHALL reach each constructor the class declares by the counts of arguments it
-takes, its optional parameters counted, as a record's twin does. A constructor that does its own work
-(the primary one, or an explicit one that does not chain with `: this(…)`) SHALL bind its parameters,
-start the class's instance members, call its base's constructor with its own arguments and run its
-body. One that chains with `: this(…)` SHALL evaluate the chain's arguments from the arguments that
-arrived, run the constructor it chains to, and then its own body. Every argument of a chain, of a
-`: base(…)` and of a base clause SHALL land in its parameter's place and be evaluated in the order it
-is written, a base clause's where the primary constructor's parameters are in scope. eqc SHALL refuse
-with EQ1009, naming it, a constructor that takes a count of arguments another constructor of the class
-takes too, and one that chains to a constructor that chains in turn.
+takes, its optional parameters counted, as a record's twin does, save the constructor only .NET's
+serialization calls, `(SerializationInfo, StreamingContext)`, which SHALL be no branch of the twin, and
+whose every call the browser would make, a `new`, or the `: base(…)`, `: this(…)` or base clause of a
+constructor the twin writes, SHALL be refused with EQ1009. A constructor that does its own work (the primary one, or an
+explicit one that does not chain with `: this(…)`) SHALL bind its parameters, start the class's
+instance members, call its base's constructor with its own arguments and run its body. One that chains
+with `: this(…)` SHALL evaluate the chain's arguments from the arguments that arrived, run the
+constructor it chains to, and then its own body. Every argument of a chain, of a `: base(…)` and of a
+base clause SHALL land in its parameter's place and be evaluated in the order it is written, a base
+clause's where the primary constructor's parameters are in scope. eqc SHALL refuse with EQ1009, naming
+it, a constructor that takes a count of arguments another constructor of the class takes too, and one
+that chains to a constructor that chains in turn.
 
 #### Scenario: A constructor that chains to another
 
@@ -45,6 +48,22 @@ takes too, and one that chains to a constructor that chains in turn.
 
 - **WHEN** `class Pair { public Pair(int a) { } public Pair(string s) { } }`
 - **THEN** the build fails with EQ1009, naming `Pair(string s)`
+
+#### Scenario: Visual Studio's exception template
+
+- **WHEN** `class TemplatedException : Exception` declares `()`, `(string)`, `(string, Exception)` and the
+  protected `(SerializationInfo, StreamingContext)`, and
+  `new TemplatedException("outer", new InvalidOperationException("inner"))`
+- **THEN** it builds, and its `Message` is `outer` and its `InnerException`'s is `inner`, as in .NET,
+  where the build refused the class with EQ1009
+
+#### Scenario: A call of the serialization constructor
+
+- **WHEN** `new Snap(info, context)` calls a public `Snap(SerializationInfo, StreamingContext)` beside
+  `Snap(string, string)`, or a constructor of `class Passing : Base` calls a protected one with
+  `: base(info, context)`
+- **THEN** the build fails with EQ1009, naming the constructor called, where the twin ran
+  `Snap(string, string)` and `Base(string, Exception)`
 
 ### Requirement: A class's instance members start in declaration order, before its base's constructor
 
@@ -237,14 +256,16 @@ Every class, record and struct declared inside another type SHALL have a twin of
 of its own, named by the chain of the types that contain it and its own name joined by `$`
 (`Cart$Item`), which no C# type can take. Every reference to it, inside its owner or out, SHALL name
 that twin: a construction, a type test, a static member, a default and an annotation alike. A nested
-type of an owner that never crosses (`[ServerOnly]`, an exception, an attribute) SHALL have none, and
+type of an owner that never crosses (`[ServerOnly]`, an attribute) SHALL have none, and
 client code that reaches its twin SHALL be refused: one that builds it, tests for it, reads its statics,
 takes its zero or calls an operator or a conversion its value brings, however the code names the type
 (an alias, `using static`, inference). A module that would import such a twin SHALL report it rather
 than import it. A nested type of an owner the runtime provides SHALL be the runtime's,
 imported from it under its twin name. A record's text SHALL print its C# name, as .NET's does. The server SHALL name the page it serves by the
 same rule, so a page declared inside a class loads the module the build wrote for it, and SHALL refuse to
-map a page declared inside an owner that never crosses.
+map a page declared inside an owner that never crosses. An exception class of the app's is a class, so
+it SHALL be an owner as any class is, and one declared inside another type SHALL be a class too, its
+twin named by its owner.
 
 #### Scenario: A nested class beside a top-level class of its name
 
@@ -324,3 +345,65 @@ map a page declared inside an owner that never crosses.
 - **WHEN** a member is typed `A.Inner[]`, `List<A.Inner>` or `Func<A.Inner, B.Inner>`, in a class or a record
 - **THEN** its annotation names `A$Inner` and `B$Inner`, each where its type stands, and a top-level `Inner`
   beside them keeps its own name
+
+#### Scenario: An exception class and what it declares
+
+- **WHEN** `class Outer { public class Inner : Exception { public int Code = 5; } }` and
+  `class Rejected : Exception { public record Reason(string Code); }`
+- **THEN** `new Outer.Inner().Code` is `5`, built as `Outer$Inner`, and `new Rejected.Reason("r").Code` is
+  `r`, built as `Rejected$Reason`, where the first was an `Error` with none of its members and the second
+  was refused with EQ2010
+
+### Requirement: A method that hides an inherited member holds a name of its own
+
+A method that hides an inherited member, declared with `new` or with the same signature and no
+`override`, SHALL hold a name of its own on its type's twin, and every call, method group, base call
+and null-conditional call bound to it SHALL reach it by that name, so that a call bound to the hidden
+member reaches the hidden one, as .NET's does: through the base type, the base's method answers, and
+through the hiding type, the hiding one. An override of a method that hides one SHALL answer for that
+method. A member of .NET's that the runtime reads by its name (`GetHashCode`, `ToString`, `Equals`)
+SHALL be answered where the runtime reads it by the member, never by a method of the app's that hides
+it. eqc SHALL refuse with EQ1007 a method that hides an inherited member and answers an interface's
+member, which a call through the interface reaches by the hidden member's name. A method beside an
+explicit interface implementation of its name SHALL hold a name of its own too, the explicit one
+keeping the interface member's, and eqc SHALL refuse with EQ1007 one that also answers another
+interface.
+
+#### Scenario: A call through the base
+
+- **WHEN** `class A { public virtual string Name() => "A"; }`,
+  `class B : A { public new string Name() => "B"; }` and `A a = new B(); return a.Name() + new B().Name();`
+- **THEN** it answers `AB`, as .NET does, where the build refused `B` with EQ1007
+
+#### Scenario: An override of a virtual method that hides one
+
+- **WHEN** `class D : B { public new virtual string Name() => "D"; }`,
+  `class E : D { public override string Name() => "E" + base.Name(); }` and
+  `var e = new E(); A a = e; B b = e; D d = e; return a.Name() + "|" + b.Name() + "|" + d.Name();`
+- **THEN** it answers `A|B|ED`, as .NET does
+
+#### Scenario: A method that hides GetHashCode
+
+- **WHEN** `class Counter { public int Calls; public new int GetHashCode() => ++Calls; }` and
+  `var c = new Counter(); object o = c; var h1 = o.GetHashCode(); var h2 = o.GetHashCode(); return (h1 == h2) + "|" + c.Calls;`
+- **THEN** it answers `True|0`, object's identity hash, as .NET does, where the hiding method answered
+  `False|2`
+
+#### Scenario: A method that hides one and answers an interface
+
+- **WHEN** `class Hiding : Base, INamed { public new string Name() => "hiding"; }` over
+  `class Base { public string Name() => "base"; }` and `interface INamed { string Name(); }`
+- **THEN** eqc refuses `Hiding` with EQ1007, naming the method and the interface
+
+#### Scenario: A generic method that hides one over its own type parameter
+
+- **WHEN** `class Gen { public virtual string F<T>(List<T> x) => "base"; }`,
+  `class GenHiding : Gen { public new string F<U>(List<U> x) => "hiding"; }` and
+  `Gen g = new GenHiding(); return g.F(new List<int>()) + new GenHiding().F(new List<int>());`
+- **THEN** it answers `basehiding`, as .NET does, where the build refused `GenHiding` with EQ1007
+
+#### Scenario: A public method beside an explicit implementation of its name
+
+- **WHEN** `class Labeled : INamedThing { public string Name() => "own"; string INamedThing.Name() => "interface"; }`
+  and `var l = new Labeled(); INamedThing n = l; return l.Name() + "|" + n.Name();`
+- **THEN** it answers `own|interface`, as .NET does, where both calls answered the one written last

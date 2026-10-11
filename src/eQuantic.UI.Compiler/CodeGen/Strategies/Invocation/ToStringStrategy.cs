@@ -20,6 +20,13 @@ public class ToStringStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
+        // A ToString that hides object's (`public new string ToString()`) is the app's own method, which
+        // its twin holds under a name of its own, and is called as any other method is (#563).
+        if (memberAccess.Name.Identifier.Text == "ToString"
+            && context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol bound
+            && TwinMethodName.HoldsANameOfItsOwn(bound))
+            return false;
+
         return memberAccess.Name.Identifier.Text == "ToString";
     }
 
