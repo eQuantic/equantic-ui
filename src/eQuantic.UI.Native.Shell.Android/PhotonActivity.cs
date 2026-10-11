@@ -581,7 +581,10 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     private void SyncKeyboard()
     {
         if (_input is null || _view is null || _keyboard is null) return;
-        switch (_input.Poll())
+        var change = _input.Poll();
+        if (change != TextInputChange.None && PhotonInputTrace.On)
+            PhotonInputTrace.Write($"{change}: {_input.Target} {_input.Value}");
+        switch (change)
         {
             case TextInputChange.Began:
                 _view.RequestFocus();
