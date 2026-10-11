@@ -17,5 +17,5 @@
 
 - [x] 4.1 The transpiled library's pins regenerated and read: a list copy through `listCopy`
 - [x] 4.2 #715's null-argument baseline regenerated, and only shrinking
-- [x] 4.3 The wiki's SupportedFeatures page (EN + pt-BR) on the branch named like this one
+- [x] 4.3 The wiki's SupportedFeatures page (EN + pt-BR), one commit for the wiki branch named like this one: written as a patch the owner pushes there before the merge, since the session that wrote it cannot push to the wiki
 - [x] 4.4 The suites, each alone and read by its exit code: Compiler, Web, Server, Conformance and the runtime's `TestRuntime`
