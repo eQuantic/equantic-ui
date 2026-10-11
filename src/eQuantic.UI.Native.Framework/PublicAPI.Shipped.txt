@@ -210,9 +210,13 @@ eQuantic.UI.Native.Framework.TextRaster.Width.init -> void
 eQuantic.UI.Native.Framework.TransitionStore
 eQuantic.UI.Native.Framework.TransitionStore.AnyActive.get -> bool
 eQuantic.UI.Native.Framework.TransitionStore.BeginFrame() -> void
+eQuantic.UI.Native.Framework.TransitionStore.Positions(string! path) -> int?
+eQuantic.UI.Native.Framework.TransitionStore.RememberPositions(string! path, int count) -> void
 eQuantic.UI.Native.Framework.TransitionStore.Resolve(string! path, float target, float timeMs, bool animate, bool reducedMotion) -> float
 eQuantic.UI.Native.Framework.TransitionStore.Resolve(string! path, float target, float timeMs, eQuantic.UI.Primitives.TransitionSpec? spec, bool reducedMotion) -> float
 eQuantic.UI.Native.Framework.TransitionStore.ResolveColor(string! path, eQuantic.UI.Primitives.Color target, float timeMs, eQuantic.UI.Primitives.TransitionSpec? spec, bool reducedMotion) -> eQuantic.UI.Primitives.Color
+eQuantic.UI.Native.Framework.TransitionStore.Target(string! path) -> float?
+eQuantic.UI.Native.Framework.TransitionStore.TargetColor(string! path) -> eQuantic.UI.Primitives.Color?
 eQuantic.UI.Native.Framework.TransitionStore.TransitionStore() -> void
 override eQuantic.UI.Native.Framework.AxisConstraint.GetHashCode() -> int
 override eQuantic.UI.Native.Framework.LayoutConstraints.GetHashCode() -> int

@@ -1,6 +1,6 @@
 #nullable enable
 eQuantic.UI.Images.BlurPlaceholderGenerator
-eQuantic.UI.Images.BlurPlaceholderGenerator.BlurPlaceholderGenerator() -> void
+eQuantic.UI.Images.BlurPlaceholderGenerator.BlurPlaceholderGenerator(eQuantic.UI.Images.ImageOptimizationOptions! options) -> void
 eQuantic.UI.Images.BlurPlaceholderGenerator.GenerateAsync(System.IO.Stream! source) -> System.Threading.Tasks.Task<string!>!
 eQuantic.UI.Images.BlurPlaceholderGenerator.GenerateFromFileAsync(string! filePath) -> System.Threading.Tasks.Task<string!>!
 eQuantic.UI.Images.ImageCache
@@ -31,7 +31,7 @@ eQuantic.UI.Images.ImageOptimizationOptions.MaxSourceSize.set -> void
 eQuantic.UI.Images.ImageOptimizationOptions.Validate() -> void
 eQuantic.UI.Images.ImageOptimizer
 eQuantic.UI.Images.ImageOptimizer.GetDimensionsAsync(System.IO.Stream! source) -> System.Threading.Tasks.Task<(int Width, int Height)>!
-eQuantic.UI.Images.ImageOptimizer.ImageOptimizer() -> void
+eQuantic.UI.Images.ImageOptimizer.ImageOptimizer(eQuantic.UI.Images.ImageOptimizationOptions! options) -> void
 eQuantic.UI.Images.ImageOptimizer.OptimizeAsync(System.IO.Stream! source, int width, int quality, string! outputFormat) -> System.Threading.Tasks.Task<byte[]!>!
 static eQuantic.UI.Images.ImageExtensions.AddImageOptimization(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<eQuantic.UI.Images.ImageOptimizationOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static eQuantic.UI.Images.ImageExtensions.UseImageOptimization(this Microsoft.AspNetCore.Builder.WebApplication! app) -> Microsoft.AspNetCore.Builder.WebApplication!

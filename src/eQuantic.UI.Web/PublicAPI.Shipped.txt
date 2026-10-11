@@ -27,6 +27,7 @@ eQuantic.UI.Web.ComponentExpansionScope.Reserved.init -> void
 eQuantic.UI.Web.ComponentExpansionScope.Restore.get -> System.Collections.Generic.IReadOnlyDictionary<string!, eQuantic.UI.Web.LoadedComponentState!>!
 eQuantic.UI.Web.ComponentExpansionScope.Restore.init -> void
 eQuantic.UI.Web.ComponentIdentity
+eQuantic.UI.Web.CultureFormatBridge
 eQuantic.UI.Web.Display
 eQuantic.UI.Web.Display.Block = 0 -> eQuantic.UI.Web.Display
 eQuantic.UI.Web.Display.Contents = 7 -> eQuantic.UI.Web.Display
@@ -578,6 +579,8 @@ eQuantic.UI.Web.HtmlStyle.Transform.get -> string?
 eQuantic.UI.Web.HtmlStyle.Transform.set -> void
 eQuantic.UI.Web.HtmlStyle.Transition.get -> string?
 eQuantic.UI.Web.HtmlStyle.Transition.set -> void
+eQuantic.UI.Web.HtmlStyle.Translate.get -> string?
+eQuantic.UI.Web.HtmlStyle.Translate.set -> void
 eQuantic.UI.Web.HtmlStyle.UserSelect.get -> string?
 eQuantic.UI.Web.HtmlStyle.UserSelect.set -> void
 eQuantic.UI.Web.HtmlStyle.Visibility.get -> string?
@@ -754,6 +757,7 @@ static eQuantic.UI.Web.ComponentExpansionScope.FieldsOf(System.Type! type) -> Sy
 static eQuantic.UI.Web.ComponentExpansionScope.WhatLoaded(eQuantic.UI.Primitives.UiComponent! component, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! asBuilt) -> eQuantic.UI.Web.LoadedComponentState!
 static eQuantic.UI.Web.ComponentIdentity.Key(System.Type! type, int ordinal) -> string!
 static eQuantic.UI.Web.ComponentIdentity.Of(System.Type! type) -> string!
+static eQuantic.UI.Web.CultureFormatBridge.SerializeJson(System.Globalization.CultureInfo! culture) -> string!
 static eQuantic.UI.Web.GradientSink.Ambient.get -> eQuantic.UI.Web.GradientSink?
 static eQuantic.UI.Web.GradientSink.Ambient.set -> void
 static eQuantic.UI.Web.HtmlNode.Text(string! content) -> eQuantic.UI.Web.HtmlNode!
@@ -780,22 +784,29 @@ static eQuantic.UI.Web.ThemeBridge.SerializeJson(eQuantic.UI.Primitives.IAppThem
 static eQuantic.UI.Web.ThemeVarMap.For(eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Web.ThemeVarMap!
 static eQuantic.UI.Web.TokenCss.Bezier(eQuantic.UI.Primitives.Curve curve) -> string!
 static eQuantic.UI.Web.TokenCss.Cursor(eQuantic.UI.Primitives.PointerCursor cursor) -> string!
+static eQuantic.UI.Web.TokenCss.Edge(float? point, float? fraction) -> string?
 static eQuantic.UI.Web.TokenCss.Face(string! family, bool mono) -> string!
+static eQuantic.UI.Web.TokenCss.FontSize(eQuantic.UI.Primitives.TypeStyle style) -> string!
 static eQuantic.UI.Web.TokenCss.Glow(eQuantic.UI.Primitives.RadialGradient glow) -> string!
 static eQuantic.UI.Web.TokenCss.Gradient(eQuantic.UI.Primitives.LinearGradient gradient) -> string!
 static eQuantic.UI.Web.TokenCss.GridPattern(eQuantic.UI.Primitives.GridPattern pattern) -> string!
 static eQuantic.UI.Web.TokenCss.GridPatternSize(eQuantic.UI.Primitives.GridPattern pattern) -> string!
 static eQuantic.UI.Web.TokenCss.Hex(eQuantic.UI.Primitives.Color color) -> string!
+static eQuantic.UI.Web.TokenCss.LetterSpacing(eQuantic.UI.Primitives.TypeStyle style) -> string!
+static eQuantic.UI.Web.TokenCss.LineHeight(eQuantic.UI.Primitives.TypeStyle style) -> string!
 static eQuantic.UI.Web.TokenCss.Number(float value) -> string!
 static eQuantic.UI.Web.TokenCss.Padding(eQuantic.UI.Primitives.EdgeInsets insets) -> string!
 static eQuantic.UI.Web.TokenCss.Percent(float fraction) -> string!
 static eQuantic.UI.Web.TokenCss.Px(float dp) -> string!
 static eQuantic.UI.Web.TokenCss.Radius(eQuantic.UI.Primitives.CornerRadii radii) -> string!
 static eQuantic.UI.Web.TokenCss.Shadow(eQuantic.UI.Primitives.ShadowSpec spec) -> string!
+static eQuantic.UI.Web.TokenCss.Shift(float x, float y) -> string?
 static eQuantic.UI.Web.TokenCss.Transform(eQuantic.UI.Primitives.Transform2D transform) -> string?
 static eQuantic.UI.Web.TokenCss.Transition(eQuantic.UI.Primitives.TransitionSpec spec) -> string!
 static eQuantic.UI.Web.TokenCss.Value(eQuantic.UI.Primitives.ColorToken token) -> string!
+static eQuantic.UI.Web.VisualNodeComponent.AmbientDensity.get -> eQuantic.UI.Primitives.Density?
+static eQuantic.UI.Web.VisualNodeComponent.AmbientDensity.set -> void
 static eQuantic.UI.Web.WebRealizer.GradientId(eQuantic.UI.Primitives.VectorGradient run) -> string!
-static eQuantic.UI.Web.WebRealizer.Lower(eQuantic.UI.Primitives.VisualNode! node, eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Web.StyleSink? styles = null) -> eQuantic.UI.Web.HtmlElement!
+static eQuantic.UI.Web.WebRealizer.Lower(eQuantic.UI.Primitives.VisualNode! node, eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Web.StyleSink? styles = null, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable) -> eQuantic.UI.Web.HtmlElement!
 virtual eQuantic.UI.Web.HtmlElement.AddChild(eQuantic.UI.Web.IComponent! child) -> void
 virtual eQuantic.UI.Web.HtmlElement.RemoveChild(eQuantic.UI.Web.IComponent! child) -> void
