@@ -11,7 +11,7 @@
 - [x] 2.1 `PhotonActivity` keeps its host across the surface, and follows dark mode and density in `OnConfigurationChanged`; the generated launcher activity handles a resize and a hardware keyboard. Verify: on the emulator, the Wallet keeps its Cards tab through Home, the screen turning off, another app, a rotation and a dark-mode change while away
 - [x] 2.2 `PhotonActivity` registers its back callback only while the host can go back, and takes `KEYCODE_BACK` on the same condition. Verify: on the emulator, the template's list-detail and drawer apps close their detail and drawer on back and leave on the next, through the callback and, opted out of predictive back, through the key
 - [x] 2.3 The generated launcher activity declares `EnableOnBackInvokedCallback`. Verify: `PhotonProgramGeneratorTests.TheAndroidLauncherFollowsItsOwnChangesAndDeclaresPredictiveBack`, failing without it, and the Wallet APK's manifest
-- [ ] 2.4 A density change lays out at the new size in dp, a frame lost to a rebuilt swapchain is drawn again, the back key's UP follows the DOWN that decided it, and the launcher handles a `Navigation` change. Verify: `PhotonProgramGeneratorTests`, and on the emulator `wm density` with the Wallet in front, then a rotation and back as before
+- [x] 2.4 A density change lays out at the new size in dp, a frame lost to a rebuilt swapchain is drawn again, the back key's UP follows the DOWN that decided it, and the launcher handles a `Navigation` change. Verify: `PhotonProgramGeneratorTests`, and on the emulator `wm density` with the Wallet in front, then a rotation and back as before
 
 ## 3. The Vulkan swapchain (#794)
 
