@@ -2353,6 +2353,18 @@ record of a release, the wiki's Upgrading page is the distillate.
   or an enum boxed into `object` prints as the browser holds it
   ([#768](https://github.com/eQuantic/equantic-ui/issues/768)). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-11 · Track D's second round: what a phone offers, and how C# reaches it**: every
+  developer capability of iOS 26 and 27 (355) and of Android 16 and 17 with Jetpack and Play
+  services (323) catalogued with its route from C# and its .NET binding, in
+  `docs/platform-catalog/`; half of iOS and 60% of Android is bound today and needs only a contract,
+  most of the rest needs a Swift or Kotlin connector the SDK ships, a per-app artefact, or .NET 11,
+  and what only Compose or KSP reach has no C# route. The epic
+  [#774](https://github.com/eQuantic/equantic-ui/issues/774) holds D8–D34; the design is
+  [`PHONE-CAPABILITIES-PLAN.md`](PHONE-CAPABILITIES-PLAN.md), and `ROADMAP.md` gained Track D. Found
+  on the way: an app built with the iOS 27 SDK does not launch
+  ([#796](https://github.com/eQuantic/equantic-ui/issues/796)), and the Apple shell's callbacks are
+  not AOT-safe on a device ([#795](https://github.com/eQuantic/equantic-ui/issues/795))
+  ([#809](https://github.com/eQuantic/equantic-ui/issues/809)).
 
 ## Retired documents
 
@@ -2375,8 +2387,9 @@ cited by code comments and by each other.
 
 Every issue on [project #11](https://github.com/orgs/eQuantic/projects/11), by parent. The board
 is the live view; this snapshot is regenerated when the hierarchy changes shape. Closed items are
-struck through. Eight epics now: the audit's four, the parity gaps, the tracks in flight, the audit
-that continues, and — since 2026-09-22 — the roadmap ahead.
+struck through. Nine epics now: the audit's four, the parity gaps, the tracks in flight, the audit
+that continues, since 2026-09-22 the roadmap ahead, and since 2026-10-11 a phone's capabilities,
+whose subtree is as of that day.
 
 - [#157](https://github.com/eQuantic/equantic-ui/issues/157) One vocabulary, one door per node *(Epic)*
   - ~~[#161](https://github.com/eQuantic/equantic-ui/issues/161) A visitor per dispatch over the vocabulary~~ *(Feature)*
@@ -2485,6 +2498,37 @@ that continues, and — since 2026-09-22 — the roadmap ahead.
   - [#304](https://github.com/eQuantic/equantic-ui/issues/304) Spreadsheet beyond v1: two-dimensional scroll, a formula engine, per-cell formatting, merges, frozen panes *(Feature)*
   - [#305](https://github.com/eQuantic/equantic-ui/issues/305) Inline marked-text rendering in code surfaces during IME composition *(Feature)*
   - [#306](https://github.com/eQuantic/equantic-ui/issues/306) A formal security hardening review, and CSP guidance the SDK writes for the developer *(Feature)*
+- [#774](https://github.com/eQuantic/equantic-ui/issues/774) Device capabilities on the phones: one C# contract per capability, realized on Android and iOS *(Epic)*
+  - [#775](https://github.com/eQuantic/equantic-ui/issues/775) D8 · ICamera on Android: a CameraPreview starts nothing on the one phone that lacks it *(Feature)*
+  - [#776](https://github.com/eQuantic/equantic-ui/issues/776) D9 · ITextClipboard on the phones: a Copy button does nothing on Android and iOS *(Feature)*
+  - [#777](https://github.com/eQuantic/equantic-ui/issues/777) D10 · Deep links on the phones: IDeepLinks and the app's URL scheme on Android and iOS *(Feature)*
+  - [#778](https://github.com/eQuantic/equantic-ui/issues/778) D11 · Opening a link, a mail, a call or a map from a phone *(Feature)*
+  - [#779](https://github.com/eQuantic/equantic-ui/issues/779) D12 · Four capabilities write a permission that no API uses: Contacts, Notifications, Microphone, PhotoLibraryAdd *(Bug)*
+  - [#780](https://github.com/eQuantic/equantic-ui/issues/780) D13 · Sharing to other apps: a text, a link, an image or a file *(Feature)*
+  - [#345](https://github.com/eQuantic/equantic-ui/issues/345) ✨ feat: haptic roles, fired by components on the moments they already have *(Feature)*
+  - [#781](https://github.com/eQuantic/equantic-ui/issues/781) D14 · Notifications on the phones: local, scheduled and push *(Feature)*
+  - [#782](https://github.com/eQuantic/equantic-ui/issues/782) D15 · Picking a document on a phone *(Feature)*
+  - [#783](https://github.com/eQuantic/equantic-ui/issues/783) D16 · Device, app and power information at run time *(Feature)*
+  - [#784](https://github.com/eQuantic/equantic-ui/issues/784) D17 · The camera grows up: front and back, torch, zoom, and video recording *(Feature)*
+  - [#785](https://github.com/eQuantic/equantic-ui/issues/785) D18 · Reading QR codes and barcodes from the camera or a picture *(Feature)*
+  - [#786](https://github.com/eQuantic/equantic-ui/issues/786) D19 · Finding faces and reading text in a picture or the live camera *(Feature)*
+  - [#787](https://github.com/eQuantic/equantic-ui/issues/787) D20 · Saving a picture or a video into the person's library *(Feature)*
+  - [#788](https://github.com/eQuantic/equantic-ui/issues/788) D21 · Choosing a contact, and reading the contact list when an app truly needs it *(Feature)*
+  - [#789](https://github.com/eQuantic/equantic-ui/issues/789) D22 · Recording and playing sound *(Feature)*
+  - [#790](https://github.com/eQuantic/equantic-ui/issues/790) D23 · The compass, the barometer and the other sensors beside IMotionSensor *(Feature)*
+  - [#791](https://github.com/eQuantic/equantic-ui/issues/791) D24 · Decide augmented reality: what a 2D engine owes ARKit and ARCore *(Task)*
+  - [#792](https://github.com/eQuantic/equantic-ui/issues/792) D25 · Every phone capability run on physical devices: an iPhone and two Android GPUs *(Task)*
+  - [#795](https://github.com/eQuantic/equantic-ui/issues/795) On a physical iPhone, five capabilities hand Objective-C a callback the AOT compiler never prepared *(Bug)*
+  - [#796](https://github.com/eQuantic/equantic-ui/issues/796) Built with the iOS 27 SDK, a Photon app does not launch: the iOS shell has no scene life cycle *(Bug)*
+  - [#798](https://github.com/eQuantic/equantic-ui/issues/798) D26 · The Apple bridge: Swift connectors the SDK compiles and ships inside its own package *(Feature)*
+  - [#799](https://github.com/eQuantic/equantic-ui/issues/799) D27 · The Android bridge: Kotlin connectors the SDK compiles and ships as an .aar *(Feature)*
+  - [#800](https://github.com/eQuantic/equantic-ui/issues/800) D28 · An on-device language model in one C# contract, over Apple's Foundation Models and Gemini Nano *(Feature)*
+  - [#801](https://github.com/eQuantic/equantic-ui/issues/801) D29 · Speech, translation and text tools on the device *(Feature)*
+  - [#802](https://github.com/eQuantic/equantic-ui/issues/802) D30 · Assistants and agents can call the app: App Intents and AppFunctions from one C# declaration *(Feature)*
+  - [#803](https://github.com/eQuantic/equantic-ui/issues/803) D31 · Home Screen surfaces, Live Activities and Live Updates fed from C# *(Feature)*
+  - [#804](https://github.com/eQuantic/equantic-ui/issues/804) D32 · Android 17 from .NET 10: decide how the SDK reaches API 37, and measure what targeting it changes *(Task)*
+  - [#805](https://github.com/eQuantic/equantic-ui/issues/805) D33 · Keep the platform catalog in the repository and refresh it after each WWDC and Google I/O *(Task)*
+  - [#809](https://github.com/eQuantic/equantic-ui/issues/809) D34 · Track D on the roadmap: the phones, the native bridge and on-device AI *(Task)*
 
 ## How to add an entry
 
