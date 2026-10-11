@@ -29,7 +29,7 @@ export class Calendar extends StatefulComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let first = CalendarNames.firstDayOfWeek;
-        let monthTitle = `${CalendarNames.monthNames[this._month.month - 1]} ${this._month.year}`;
+        let monthTitle = `${$eq.collections.item(CalendarNames.monthNames, this._month.month - 1)} ${this._month.year}`;
         let header = new Row(4, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill });
         header.add(new Text(this.label ?? monthTitle, 'titleSmall', theme.textPrimary, 1));
         header.add(new Flexible(new Spacer()));
@@ -38,7 +38,7 @@ export class Calendar extends StatefulComponent {
         let names = CalendarNames.dayNamesShort;
         let dayRow = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill });
         for (let column = 0; column < 7; column++) {
-            dayRow.add(new Box(new BoxStyle({ width: SizeValue.fixed(Calendar.cellSize), height: SizeValue.fixed(Calendar.headerHeight) }), VisualNodeExtensions.centered(new Text(names[(first + column) % 7], 'caption', theme.textMuted, 1))));
+            dayRow.add(new Box(new BoxStyle({ width: SizeValue.fixed(Calendar.cellSize), height: SizeValue.fixed(Calendar.headerHeight) }), VisualNodeExtensions.centered(new Text($eq.collections.item(names, (first + column) % 7), 'caption', theme.textMuted, 1))));
         }
         let rows = [dayRow];
         let start = Calendar.gridStart(this._month, first);
@@ -87,7 +87,7 @@ export class Calendar extends StatefulComponent {
     }
 
     static spoken(day: DateOnly) {
-        return `${CalendarNames.dayNamesLong[Calendar.sundayIndex(day)]}, ${day.day} ${CalendarNames.monthNames[day.month - 1]} ${day.year}`;
+        return `${$eq.collections.item(CalendarNames.dayNamesLong, Calendar.sundayIndex(day))}, ${day.day} ${$eq.collections.item(CalendarNames.monthNames, day.month - 1)} ${day.year}`;
     }
 
     static sundayIndex(day: DateOnly) {

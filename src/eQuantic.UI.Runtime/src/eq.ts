@@ -119,6 +119,10 @@ import {
   linkedList,
   contains,
   remove,
+  add as collectionAdd,
+  clear as collectionClear,
+  item as listItem,
+  setItem as listSetItem,
   sameItem,
   pairComparer,
   count,
@@ -147,6 +151,7 @@ import {
   findLastIndex,
   indexOf as listIndexOf,
   lastIndexOf as listLastIndexOf,
+  listCapacity,
   listSort,
   listSortBy,
   order,
@@ -158,7 +163,7 @@ import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals, equalsGroup } from './utils/equals';
 import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
-import { guidParse, guidTryParse } from './utils/guid';
+import { guidOf, guidParse, guidTryParse } from './utils/guid';
 import { CancellationToken, CancellationTokenRegistration, CancellationTokenSource } from './utils/cancellation';
 import {
   bases as exceptionBases,
@@ -454,6 +459,12 @@ export const $eq = {
     count,
     setAdd,
     remove,
+    /** `ICollection<T>`'s `Add` and `Clear`, for whichever collection the interface holds (#593). */
+    add: collectionAdd,
+    clear: collectionClear,
+    /** A list face's indexer, read and written, for an array and a twin alike (#586). */
+    item: listItem,
+    setItem: listSetItem,
     sameItem,
     pairComparer,
     /** `new HashSet<T>(…)`, and a set an initializer or a collection expression builds. */
@@ -488,6 +499,8 @@ export const $eq = {
     arraySort,
     arraySortBy,
     binarySearch,
+    /** `new List<T>(capacity)`'s refusal of a negative capacity, evaluated before the elements. */
+    listCapacity,
     /** `new KeyValuePair<K, V>(key, value)` and `KeyValuePair.Create`: the shape a dictionary yields. */
     pair,
   },
@@ -521,7 +534,7 @@ export const $eq = {
     fields: hashFields,
   },
   /** A Guid's canonical text, the lowercase `D` format, from any format .NET reads. */
-  guid: { parse: guidParse, tryParse: guidTryParse },
+  guid: { parse: guidParse, tryParse: guidTryParse, of: guidOf },
   /**
    * The cancellation pair, built where C# builds it: `new CancellationTokenSource(delay?)`,
    * `CancellationToken.None` (and `default`), `new CancellationToken(canceled)`,

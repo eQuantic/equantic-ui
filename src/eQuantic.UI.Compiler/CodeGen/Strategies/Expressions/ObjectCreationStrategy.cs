@@ -175,6 +175,14 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         else if (creation.Type is AliasQualifiedNameSyntax aliasQualified)
             typeName = aliasQualified.Name.ToString();
         var createdType = context.SemanticHelper.GetType(creation);
+        // A nested type, a component among them, is constructed by its twin's name and imported from
+        // there, whichever branch below builds it (#584): `new Host.Page()` constructed `Page`.
+        if (createdType is INamedTypeSymbol keptOut && keptOut.ReportIfKeptOut(creation, context)) return Undefined;
+        if (createdType is INamedTypeSymbol nestedType && nestedType.NestedTwinName() is not null)
+        {
+            typeName = nestedType.IntroduceTwin(context);
+            genericTypeName = null;
+        }
 
         // A type named through a using alias is built by its own name and imported by it, as a read of
         // its static is (#625): `using F = N.Fold;` then `new F()` wrote `new F()`, a name nothing defines.
@@ -265,9 +273,11 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         // `Add` (ObjectInitializer), over the list the constructor built: as the list's literal, every
         // element was the list's own, 1 where .NET holds "#1".
         if (ListAddedByAnExtension(creation.Initializer, createdType, context) is { } listed)
-            return ObjectInitializer.Apply(
-                arguments.Count == 0 || IsCapacityArgument(creation, context) ? JsExpr.Array([]) : JsExpr.Array([JsExpr.Spread(arguments[0])]),
-                listed, context);
+            return ObjectInitializer.Apply(Listed(creation, arguments, [], context), listed, context);
+
+        // A list is the array it holds: what its constructor copies, then its initializer's elements.
+        if (IsList(createdType) || createdType is null or IErrorTypeSymbol && IsListTypeName(typeName))
+            return ListLiteral(creation, arguments, context);
 
         // An object initializer that ADDS to what a member holds (`Items = { 1, 2 }`) or writes an
         // entry (`[k] = v`) is applied once the object exists (#462): a config object can only
@@ -317,23 +327,6 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             }
         }
 
-        // Special handling for Collections (handle both short and fully-qualified names).
-        //
-        // The single argument means one of TWO opposite things, and only the semantic model can say
-        // which: `new List<T>(capacity)` is an empty list sized ahead, `new List<T>(source)` is a
-        // copy. Passing it straight through emitted the capacity AS the list — `var lines = 7;`
-        // followed by `lines.push(...)`, which throws — and nothing said so at build time.
-        if (typeName.StartsWith("List<") || typeName.Contains(".List<")
-            || typeName.StartsWith("IEnumerable<") || typeName.Contains(".IEnumerable<"))
-        {
-            if (arguments.Count == 0 || arguments is [JsObject { Properties.Count: 0 }]) return JsExpr.Array([]);
-            if (IsCapacityArgument(creation, context)) return JsExpr.Array([]);
-            // A copy of the source, not an alias of it; a dictionary spreads into its pairs.
-            if (creation.Initializer == null && creation.ArgumentList?.Arguments.Count == 1)
-                return JsExpr.Array([JsExpr.Spread(arguments[0])]);
-            return Spliced(arguments);
-        }
-        
         // `new string(c, count)` — the padding idiom (`new string(' ', indentWidth)`). There is no
         // String constructor in JS that means this; `repeat` is what it means.
         if (typeName == "string" && creation.ArgumentList?.Arguments.Count == 2)
@@ -382,11 +375,83 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             ? initializer
             : null;
 
+    /// <summary>Whether <paramref name="type"/> is <c>List&lt;T&gt;</c>, which this side holds as the
+    /// array of its elements.</summary>
+    private static bool IsList(ITypeSymbol? type) =>
+        type?.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>";
+
+    /// <summary>A list's type as it is written, where no model can say what it binds to.</summary>
+    private static bool IsListTypeName(string typeName) => typeName.StartsWith("List<") || typeName.Contains(".List<");
+
     /// <summary>
-    /// Values that stand where ONE expression is read, as they always stood: the only one, or, where
-    /// a creation's arguments and its initializer meet in a collection's literal, all of them
-    /// spliced in as text. That second shape is a comma expression and was never right: kept as it
-    /// was, for a change that is about where lines map rather than what a collection holds.
+    /// A list as C# builds it, as one array: what its constructor copies (<see cref="Listed"/>), then
+    /// each element of its initializer, in order, as its <c>Add</c> appends them (#564). A capacity
+    /// dropped the elements, <c>[]</c>, and a source was joined to them with a comma, <c>source, [3]</c>,
+    /// a second declarator in a declaration and a second argument in a call; the target-typed form kept
+    /// the elements and dropped the source, and with no initializer built an empty list where a copy
+    /// was asked for.
+    /// </summary>
+    private static JsExpr ListLiteral(BaseObjectCreationExpressionSyntax creation, IReadOnlyList<JsExpr> arguments,
+        ConversionContext context) => creation.Initializer switch
+    {
+        // An object initializer assigns the list's members (`{ Capacity = 8 }`), once it is built.
+        { RawKind: (int)SyntaxKind.ObjectInitializerExpression, Expressions.Count: > 0 } members =>
+            ObjectInitializer.Apply(Listed(creation, arguments, [], context), members, context),
+        null => Listed(creation, arguments, [], context),
+        var initializer => Listed(creation, arguments,
+            [.. initializer.Expressions.Select(element => context.Converter.ConvertIr(Added(element)))], context),
+    };
+
+    /// <summary>
+    /// What an initializer's element hands the list's <c>Add</c>: the element itself, or the one
+    /// expression of a complex element initializer, <c>{ 1 }</c>, which C# hands <c>Add</c> as its
+    /// argument. Converted as an initializer, <c>new List&lt;int&gt; { { 1 }, 2 }</c> held an empty
+    /// object where .NET holds 1.
+    /// </summary>
+    private static ExpressionSyntax Added(ExpressionSyntax element) =>
+        element is InitializerExpressionSyntax { RawKind: (int)SyntaxKind.ComplexElementInitializerExpression, Expressions: [var only] }
+            ? only
+            : element;
+
+    /// <summary>
+    /// A list's array as its constructor builds it, then <paramref name="elements"/>: a COPY of the
+    /// source, spread, never an alias of it (a dictionary spreads into its pairs, a string into its
+    /// chars), and nothing for no argument at all. The single argument means one of two opposite things,
+    /// and only the bound constructor can say which: <c>new List&lt;T&gt;(capacity)</c> is an empty list
+    /// sized ahead, where passing it through made the capacity the list, <c>var lines = 7;</c> followed
+    /// by <c>lines.push(…)</c>.
+    /// <para>
+    /// A capacity puts nothing in the list, but C# evaluates it before the list's elements and the
+    /// constructor refuses a negative one, so a capacity that is not a constant the list takes reaches
+    /// the runtime first (<see cref="Eq.ListCapacity"/>), and the array after it. It was dropped unread:
+    /// <c>new List&lt;int&gt;(Capacity()) { Item() }</c> never called <c>Capacity</c>, and a negative one
+    /// built a list where .NET throws.
+    /// </para>
+    /// </summary>
+    private static JsExpr Listed(BaseObjectCreationExpressionSyntax creation, IReadOnlyList<JsExpr> arguments,
+        IReadOnlyList<JsExpr> elements, ConversionContext context)
+    {
+        if (arguments.Count != 1) return JsExpr.Array(elements);
+        if (!IsCapacityArgument(creation, context)) return JsExpr.Array([JsExpr.Spread(arguments[0]), .. elements]);
+        if (IsCapacityTaken(creation, context)) return JsExpr.Array(elements);
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Template("({0}, {1})", [JsExpr.Call(JsExpr.Identifier(Eq.ListCapacity), arguments[0]), JsExpr.Array(elements)]);
+    }
+
+    /// <summary>Whether a list's capacity is a constant its constructor takes: nothing to evaluate,
+    /// nothing to refuse. Read from the bound tree, or from an integer literal where no model binds.</summary>
+    private static bool IsCapacityTaken(BaseObjectCreationExpressionSyntax creation, ConversionContext context) =>
+        creation.ArgumentList?.Arguments is [{ Expression: var capacity }]
+        && (context.SemanticHelper.GetOperation(capacity)?.ConstantValue is { HasValue: true, Value: int and >= 0 }
+            || capacity is LiteralExpressionSyntax { Token.Value: int and >= 0 });
+
+    /// <summary>A target-typed list's constructor arguments, converted in its parameters' order.</summary>
+    private static IReadOnlyList<JsExpr> ListArguments(BaseObjectCreationExpressionSyntax creation, ConversionContext context) =>
+        creation.ArgumentList is { Arguments.Count: > 0 } ? OrderedArguments(creation, context) : [];
+
+    /// <summary>
+    /// Values that stand where ONE expression is read, as they always stood: the only one, or all of
+    /// them spliced in as text, a comma expression, for a node constructed with arguments.
     /// </summary>
     private static JsExpr Spliced(IReadOnlyList<JsExpr> values) =>
         values.Count == 1 ? values[0] : JsExpr.Opaque(string.Join(", ", values.Select(JsExprWriter.Write)));
@@ -721,8 +786,17 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         type.IsValueType && ctor is { IsImplicitlyDeclared: true, Parameters.Length: 0 } && TwinIsWritten(type)
             ? JsExpr.Opaque(DefaultValue.Of(type, context))
             : BoundArguments.Of(context.SemanticHelper.GetOperation(creation), argument => context.Converter.ConvertIr(argument)) is { } bound
-                ? bound.New(type.Name)
-                : JsExpr.New(JsExpr.Identifier(type.Name), ConstructorArguments(creation, ctor, context));
+                ? bound.New(TwinOf(type, context))
+                : JsExpr.New(JsExpr.Identifier(TwinOf(type, context)), ConstructorArguments(creation, ctor, context));
+
+    /// <summary>The name a construction calls, its type's twin's: named by its owner where it is nested
+    /// (#584), and imported from there, and the type's own name otherwise.</summary>
+    private static string TwinOf(ITypeSymbol type, ConversionContext context)
+    {
+        if (type is not INamedTypeSymbol named) return type.Name;
+        if (named.NestedTwinName() is not null) named.RegisterIntroduced(context);
+        return named.TwinReference();
+    }
 
     /// <summary>
     /// Whether <paramref name="type"/> is a class whose twin eqc writes with its C# constructors
@@ -805,6 +879,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         // guarding some of the ways a symbol can be named and reading like protection for all.
         // Found in review of that fix.
         if (ms?.ContainingType.ReportIfHostOnlyType(creation, context) == true) return Undefined;
+        if (ms?.ContainingType is { } keptOutTarget && keptOutTarget.ReportIfKeptOut(creation, context)) return Undefined;
 
         // `Color c = new(1, 2, 3, 4)` builds the data as the explicit form does.
         if (ms?.ContainingType is { } dataTarget && dataTarget.TwinIsData())
@@ -842,31 +917,33 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                 if (creation.Initializer.Kind() == SyntaxKind.CollectionInitializerExpression)
                 {
                     return AddPerElementConstruction(creation.Initializer,
-                        JsExpr.New(JsExpr.Identifier(target.Name), ctorArgs), context);
+                        JsExpr.New(JsExpr.Identifier(TwinOf(target, context)), ctorArgs), context);
                 }
                 // An initializer that adds to a member or writes an entry, applied once the object
                 // exists, as the explicit form applies it (#462), to the construction as IR: written as
                 // text, a lambda among its arguments lost every line of its block from the map.
                 if (TwinIsWritten(target) && !ObjectInitializer.OnlyAssigns(creation.Initializer))
-                    return ObjectInitializer.Apply(JsExpr.New(JsExpr.Identifier(target.Name), ctorArgs), creation.Initializer, context);
+                    return ObjectInitializer.Apply(JsExpr.New(JsExpr.Identifier(TwinOf(target, context)), ctorArgs), creation.Initializer, context);
                 if (ms != null && ctorArgs.Count < ms.Parameters.Length)
                     ctorArgs.AddRange(ms.Parameters.Skip(ctorArgs.Count).Select(parameter => DefaultOf(parameter, context)));
                 ctorArgs.Add(context.Converter.ConvertIr(creation.Initializer));
-                return JsExpr.New(JsExpr.Identifier(target.Name), ctorArgs);
+                return JsExpr.New(JsExpr.Identifier(TwinOf(target, context)), ctorArgs);
             }
 
             // A list one of whose elements an extension adds, as the explicit form applies it.
             if (ListAddedByAnExtension(creation.Initializer, target, context) is { } listed)
-                return ObjectInitializer.Apply(
-                    creation.ArgumentList is { Arguments.Count: 1 } && !IsCapacityArgument(creation, context)
-                        ? JsExpr.Array([JsExpr.Spread(context.Converter.ConvertIr(creation.ArgumentList.Arguments[0].Expression))])
-                        : JsExpr.Array([]),
-                    listed, context);
+                return ObjectInitializer.Apply(Listed(creation, ListArguments(creation, context), [], context), listed, context);
+
+            // A list, as the explicit form builds one: what its constructor copies, then its elements.
+            if (IsList(target)) return ListLiteral(creation, ListArguments(creation, context), context);
 
             // `new() { … }` on a collection (or with no resolvable named target) → the initializer IS
             // the value. A dictionary target is DictionaryStrategy's.
             return context.Converter.ConvertIr(creation.Initializer);
         }
+
+        // A list with no initializer: the copy of its source, or an empty one.
+        if (IsList(ms?.ContainingType)) return ListLiteral(creation, ListArguments(creation, context), context);
 
         // Collection target with no initializer → empty literal.
         if (typeDisplay.Contains("List<") || typeDisplay.Contains("IEnumerable<") ||
@@ -884,11 +961,12 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         if (ms?.ContainingType is { } plain && IsBuiltAsCSharp(plain))
             return BuildClassConstruction(creation, plain, context);
 
-        // Target-typed `new(args)` on a named type: `Item _x = new(9, "z")` → `new Item(9, 'z')`.
+        // Target-typed `new(args)` on a named type: `Item _x = new(9, "z")` → `new Item(9, 'z')`, a
+        // nested one (a component among them) by its twin's name, imported from there (#584).
         var args = creation.ArgumentList is { Arguments.Count: > 0 }
             ? OrderedArguments(creation, context)
             : [];
-        var typeName = ms?.ContainingType.Name;
+        var typeName = ms?.ContainingType is { } created ? TwinOf(created, context) : null;
         if (string.IsNullOrEmpty(typeName) || typeName == "Object")
         {
             // No semantic info: fall back to the field/var's declared type (without nullability/generics noise).

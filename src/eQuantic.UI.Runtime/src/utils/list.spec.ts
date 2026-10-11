@@ -13,6 +13,7 @@ import {
   findLastIndex,
   indexOf,
   lastIndexOf,
+  listCapacity,
   listSort,
   listSortBy,
   order,
@@ -215,5 +216,13 @@ describe("List<T>'s Sort and BinarySearch, by the comparer the compiler names (#
     expect(fails(() => binarySearch([1, 3], 5, order('value', 'comparable'), 0, -1))).toBe(
       "Non-negative number required. (Parameter 'count')",
     );
+  });
+
+  // `new List<T>(capacity)` hands its capacity here before the list's elements: one the constructor
+  // takes passes, a negative one is refused in .NET's words.
+  it("refuses a negative capacity as List<T>'s constructor does", () => {
+    expect(() => listCapacity(0)).not.toThrow();
+    expect(() => listCapacity(16)).not.toThrow();
+    expect(fails(() => listCapacity(-1))).toBe("Non-negative number required. (Parameter 'capacity')");
   });
 });

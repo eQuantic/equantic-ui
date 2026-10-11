@@ -57,7 +57,7 @@ export class CodeDocument {
     }
 
     static fromLines(lines: string[]) {
-        return new CodeDocument(lines.length === 0 ? [''] : lines.slice());
+        return new CodeDocument($eq.collections.count(lines) === 0 ? [''] : lines.slice());
     }
 
     static fromText(text: string) {
@@ -132,7 +132,7 @@ export class CodeDocument {
             let start = this.clamp(range.start);
             let end = this.clamp(range.end);
             let inserted = CodeDocument.fromText(text);
-            let lines: string[] = [];
+            let lines: string[] = ($eq.collections.listCapacity(this._lines.length + inserted.lineCount), []);
             for (let i = 0; i < start.line; i++) lines.push(this._lines[i]);
             let head = this._lines[start.line].slice(0, start.column);
             let tail = this._lines[end.line].slice(end.column);

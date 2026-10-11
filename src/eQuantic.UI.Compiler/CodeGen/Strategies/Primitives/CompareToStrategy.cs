@@ -63,6 +63,21 @@ public class CompareToStrategy : IExpressionIrStrategy
             SpecialType.System_Char => "({0}.charCodeAt(0) - {1}.charCodeAt(0))",
             _ => "({0} < {1} ? -1 : {0} > {1} ? 1 : 0)",
         };
+        // CompareTo(object) answers 1 for a null, a null being less than every value, as each of these
+        // types' does: the char's subtraction read it through null, and `false` and a negative number
+        // answered -1 (#569). Each of them reads its receiver TWICE, which is what makes the writer bind
+        // a receiver with an effect and run it first, as C# does: around a comparison that reads it
+        // once (a number's subtraction, a char's), the null test answered before it reached the
+        // receiver, so `Next().CompareTo((object)null)` never called Next (found by Copilot's review of
+        // #715). So a number takes the ordered three-way here, and a char answers a null as the code
+        // unit before its own, which keeps its subtraction and makes it 1.
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { Parameters: [{ Type.SpecialType: SpecialType.System_Object }] })
+            template = kind switch
+            {
+                SpecialType.System_Boolean => $"({{1}} == null ? 1 : {template})",
+                SpecialType.System_Char => "({0}.charCodeAt(0) - ({1} == null ? {0}.charCodeAt(0) - 1 : {1}.charCodeAt(0)))",
+                _ => "({1} == null ? 1 : ({0} < {1} ? -1 : {0} > {1} ? 1 : 0))",
+            };
         return JsExpr.Template(template, new[] { left, right });
     }
 

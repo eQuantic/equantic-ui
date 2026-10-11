@@ -126,7 +126,7 @@ export class MarkdownParser {
             let ch = plain[i];
             if ((/^\p{L}$/u.test(ch)) || (/^\p{Nd}$/u.test(ch))) slug += ch; else if (slug.length > 0 && slug[slug.length - 1] !== '-') slug += '-';
         }
-        while (slug.length > 0 && slug[slug.length - 1] === '-') slug = slug.slice(0, (slug.length - 1));
+        while (slug.length > 0 && slug[slug.length - 1] === '-') slug = slug.slice(0, slug.length - 1);
         return slug;
     }
 
@@ -160,7 +160,7 @@ export class MarkdownParser {
                     clean.push('');
                     continue;
                 }
-                text = text.slice((close + 3));
+                text = text.slice(close + 3);
                 open = false;
             }
             while (true) {
@@ -172,7 +172,7 @@ export class MarkdownParser {
                     open = true;
                     break;
                 }
-                text = text.slice(0, start) + text.slice((end + 3));
+                text = text.slice(0, start) + text.slice(end + 3);
             }
             clean.push($eq.text.trimEnd(text));
         }
@@ -194,7 +194,7 @@ export class MarkdownParser {
         let cells: string[] = [];
         let t = $eq.text.trim(line);
         if (t.length > 0 && t[0] === '|') t = t.slice(1);
-        if (t.length > 0 && t[t.length - 1] === '|') t = t.slice(0, (t.length - 1));
+        if (t.length > 0 && t[t.length - 1] === '|') t = t.slice(0, t.length - 1);
         let cell = '';
         let inCode = false;
         for (let i = 0; i < t.length; i++) {
@@ -221,7 +221,7 @@ export class MarkdownParser {
         while (digits < t.length && (/^\p{Nd}$/u.test(t[digits]))) digits++;
         if (digits > 0 && digits + 1 < t.length && t[digits] === '.' && t[digits + 1] === ' ') {
             let $n12: any; 
-            return ($n12 = new MarkdownBulletMatch(), $n12.marker = t.slice(0, digits) + '.', $n12.content = $eq.text.trim(t.slice((digits + 2))), $n12);
+            return ($n12 = new MarkdownBulletMatch(), $n12.marker = t.slice(0, digits) + '.', $n12.content = $eq.text.trim(t.slice(digits + 2)), $n12);
         }
         return null;
     }
@@ -238,7 +238,7 @@ export class MarkdownParser {
                 if (end > i) {
                     buffer = MarkdownParser.flushText(runs, buffer);
                     let $n13: any; 
-                    runs.push(($n13 = new MarkdownRun(), $n13.text = text.slice((i + 1), end), $n13.code = true, $n13));
+                    runs.push(($n13 = new MarkdownRun(), $n13.text = text.slice(i + 1, end), $n13.code = true, $n13));
                     i = end + 1;
                     continue;
                 }
@@ -262,7 +262,7 @@ export class MarkdownParser {
                 let end = $eq.text.indexOf(text, '**', i + 2, 'ordinal');
                 if (end > i) {
                     buffer = MarkdownParser.flushText(runs, buffer);
-                    for (const run of MarkdownParser.inline(text.slice((i + 2), end))) {
+                    for (const run of MarkdownParser.inline(text.slice(i + 2, end))) {
                         run.bold = true;
                         runs.push(run);
                     }
@@ -282,7 +282,7 @@ export class MarkdownParser {
                 }
                 if (end > i + 1) {
                     buffer = MarkdownParser.flushText(runs, buffer);
-                    for (const run of MarkdownParser.inline(text.slice((i + 1), end))) {
+                    for (const run of MarkdownParser.inline(text.slice(i + 1, end))) {
                         run.italic = true;
                         runs.push(run);
                     }
@@ -317,7 +317,7 @@ export class MarkdownParser {
         let hrefEnd = $eq.text.indexOfChar(text, ')', close + 2);
         if (hrefEnd <= close) return null;
         let $n15: any; 
-        return ($n15 = new MarkdownLinkMatch(), $n15.label = text.slice((open + 1), close), $n15.href = text.slice((close + 2), hrefEnd), $n15.end = hrefEnd + 1, $n15);
+        return ($n15 = new MarkdownLinkMatch(), $n15.label = text.slice(open + 1, close), $n15.href = text.slice(close + 2, hrefEnd), $n15.end = hrefEnd + 1, $n15);
     }
 
     static addLinkRuns(runs: MarkdownRun[], label: string, href: string) {

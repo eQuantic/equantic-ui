@@ -19,8 +19,8 @@ export class Accordion extends StatefulComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        for (let i = 0; i < this.items.length; i++) {
-            let item = this.items[i];
+        for (let i = 0; i < $eq.collections.count(this.items); i++) {
+            let item = $eq.collections.item(this.items, i);
             let index = i;
             let open = this.isOpen(i);
             let header = new Row(8, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
@@ -32,7 +32,7 @@ export class Accordion extends StatefulComponent {
             if (open && (content = item.content) != null) {
                 column.add(new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(12, 0, 12, 12) }), content));
             }
-            if (i < this.items.length - 1) column.add(new Divider());
+            if (i < $eq.collections.count(this.items) - 1) column.add(new Divider());
         }
         return column;
     }

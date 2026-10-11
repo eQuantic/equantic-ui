@@ -1,4 +1,4 @@
-import { BuildContext, Column, Divider, ListItem, SizeValue, StatelessComponent } from "../runtime-exports";
+import { $eq, BuildContext, Column, Divider, ListItem, SizeValue, StatelessComponent } from "../runtime-exports";
 
 export class List extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.List';
@@ -17,9 +17,9 @@ export class List extends StatelessComponent {
 
     build(_context: BuildContext) {
         let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        for (let i = 0; i < this.items.length; i++) {
-            column.add(this.items[i]);
-            if (this.dividers && i < this.items.length - 1) column.add(new Divider('leading', 'horizontal', { leadingInset: this.items[i].contentInset }));
+        for (let i = 0; i < $eq.collections.count(this.items); i++) {
+            column.add($eq.collections.item(this.items, i));
+            if (this.dividers && i < $eq.collections.count(this.items) - 1) column.add(new Divider('leading', 'horizontal', { leadingInset: $eq.collections.item(this.items, i).contentInset }));
         }
         return column;
     }

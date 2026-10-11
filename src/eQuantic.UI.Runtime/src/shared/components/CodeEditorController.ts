@@ -98,7 +98,7 @@ export class CodeEditorController {
     get widestLine(): number {
         let tabSize = this.rules.indentWidth;
         if (this._widths == null || this._widthsTabs !== tabSize) {
-            this._widths = [];
+            this._widths = ($eq.collections.listCapacity(this._document.lineCount), []);
             for (let line = 0; line < this._document.lineCount; line++) this._widths.push(CodeLineCells.widthOf(this._document.line(line), tabSize));
             this._widthsTabs = tabSize;
             this._widest = CodeEditorController.widest(this._widths);
@@ -151,7 +151,7 @@ export class CodeEditorController {
             if (lostTheWidest && widestHere < this._widest) this._widest = CodeEditorController.widest(old); else if (widestHere > this._widest) this._widest = widestHere;
             return;
         }
-        let next: number[] = [];
+        let next: number[] = ($eq.collections.listCapacity(old.length - gone + linesInserted + 1), []);
         for (let i = 0; i < line; i++) next.push(old[i]);
         let measuredWidest = 0;
         for (let i = line; i <= line + linesInserted; i++) {
@@ -792,21 +792,21 @@ export class CodeEditorController {
     }
 
     nextOf(matches: CodeRange[], backward: boolean = false) {
-        if (matches.length === 0) return null;
+        if ($eq.collections.count(matches) === 0) return null;
         let low = 0;
-        let high = matches.length;
+        let high = $eq.collections.count(matches);
         if (backward) {
             while (low < high) {
                 let middle = Math.trunc((low + high) / 2);
-                if (CodePosition.opLessOrEqual(matches[middle].end, this._selection.start)) low = middle + 1; else high = middle;
+                if (CodePosition.opLessOrEqual($eq.collections.item(matches, middle).end, this._selection.start)) low = middle + 1; else high = middle;
             }
-            return low > 0 ? matches[low - 1] : matches[matches.length - 1];
+            return low > 0 ? $eq.collections.item(matches, low - 1) : $eq.collections.item(matches, $eq.collections.count(matches) - 1);
         }
         while (low < high) {
             let middle = Math.trunc((low + high) / 2);
-            if (CodePosition.opLessThan(matches[middle].start, this._selection.end)) low = middle + 1; else high = middle;
+            if (CodePosition.opLessThan($eq.collections.item(matches, middle).start, this._selection.end)) low = middle + 1; else high = middle;
         }
-        return low < matches.length ? matches[low] : matches[0];
+        return low < $eq.collections.count(matches) ? $eq.collections.item(matches, low) : $eq.collections.item(matches, 0);
     }
 
     bracketAtCaret(): [CodePosition, CodePosition] | null {

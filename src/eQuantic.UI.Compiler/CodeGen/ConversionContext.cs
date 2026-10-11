@@ -16,6 +16,13 @@ public class ConversionContext
     public required SemanticHelper SemanticHelper { get; set; }
 
     /// <summary>
+    /// The expression the dispatcher is converting, innermost first: where a fence deep inside a
+    /// helper reports, a twin's zero or an operator's home among them, which are handed no node of
+    /// their own.
+    /// </summary>
+    internal SyntaxNode? Converting { get; set; }
+
+    /// <summary>
     /// The host PROMISED the semantic model is complete — the project's real references and
     /// generated sources are in it (the SDK build, the design session). Under that promise, an
     /// in-tree call the model cannot bind is a build error (EQ2006), never a name-guessed
@@ -143,7 +150,10 @@ public class ConversionContext
     public void Report(SyntaxNode node, ConversionSeverity severity, string code, string message)
     {
         var pos = node.GetLocation().GetLineSpan().StartLinePosition;
-        Diagnostics.Add(new ConversionDiagnostic(severity, code, message, pos.Line + 1, pos.Character + 1));
+        // The same diagnostic at the same place says nothing new: an emitter that asks for a field's
+        // zero for its declaration and again for its constructor met the same fence twice (#584).
+        var diagnostic = new ConversionDiagnostic(severity, code, message, pos.Line + 1, pos.Character + 1);
+        if (!Diagnostics.Contains(diagnostic)) Diagnostics.Add(diagnostic);
     }
 
     /// <summary>
@@ -166,7 +176,15 @@ public class ConversionContext
     {
         Diagnostics.Clear();
         ResourceUses.Clear();
+        RefusedTwins.Clear();
     }
+
+    /// <summary>
+    /// The twins a fence refused while this module was converted (#584): the module's import net,
+    /// which reports a twin the build writes no module for, says nothing more of one already said
+    /// where the code named it. Kept with the diagnostics, and cleared with them.
+    /// </summary>
+    internal HashSet<string> RefusedTwins { get; } = new(StringComparer.Ordinal);
 
     /// <summary>
     /// Drops everything that belonged to the PREVIOUS emission. A converter outlives the file it is

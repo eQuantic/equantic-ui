@@ -52,16 +52,21 @@ public static class CollectionComparerExtensions
     }
 
     /// <summary>
-    /// Reports EQ2007 at an equality comparer handed to a call that builds a collection from it
-    /// (<c>ToHashSet(comparer)</c>), where it has no JavaScript translation, and answers whether it
-    /// reported. The comparers that ask for the default pass, as they do for a constructor.
+    /// Reports EQ2007 at an equality comparer handed to a LINQ operator that finds its elements or its
+    /// keys by it (<c>ToHashSet</c>, <c>Distinct</c>, <c>ToDictionary</c>, <c>ToLookup</c>, <c>GroupBy</c>),
+    /// where it has no JavaScript translation, and answers whether it reported. The comparers that ask
+    /// for the default pass, as they do for a constructor, and the operator's lowering, which already
+    /// finds them as the default does, drops them: each operator once kept a stricter copy of this test
+    /// of its own, or none, and refused <c>StringComparer.Ordinal</c> or dropped
+    /// <c>StringComparer.OrdinalIgnoreCase</c> (#578).
     /// </summary>
     internal static bool RefusesAsUntranslatable(this IOperation comparer, string what, ConversionContext context)
     {
         if (AsksForTheDefault(comparer)) return false;
         context.Report(comparer.Syntax, ConversionSeverity.Error, "EQ2007",
-            $"'{what}' with a comparer has no JavaScript translation: the set it builds finds its elements as the "
-            + "element type's default comparer does, and takes no other. Normalize the elements yourself, or drop the comparer.");
+            $"'{what}' with a comparer has no JavaScript translation: what it builds finds its elements and its keys as "
+            + "their type's default comparer does, and takes no other. Normalize them yourself (in the key selector), "
+            + "or drop the comparer.");
         return true;
     }
 
@@ -132,6 +137,11 @@ public static class CollectionComparerExtensions
     /// </summary>
     internal static bool IsCollectionComparer(this ITypeSymbol? type) =>
         type is INamedTypeSymbol named && (IsNamed(named, "IEqualityComparer`1") || IsNamed(named, "IComparer`1"));
+
+    /// <summary>Whether <paramref name="type"/> is an <c>IEqualityComparer&lt;T&gt;</c>: the parameter a
+    /// LINQ operator finds its keys or its elements by.</summary>
+    internal static bool IsEqualityComparer(this ITypeSymbol? type) =>
+        type is INamedTypeSymbol named && IsNamed(named, "IEqualityComparer`1");
 
     /// <summary>
     /// Whether the comparer asks for nothing the lowering does not already do: <c>null</c> (the
