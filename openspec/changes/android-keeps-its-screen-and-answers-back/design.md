@@ -2,7 +2,7 @@
 
 ## How Flutter solves it
 
-Flutter keeps its engine, and the widget tree with it, when Android takes the surface away: the
+Flutter keeps its engine, and the tree it built with it, when Android takes the surface away: the
 `FlutterView` detaches from the surface and reattaches to the next one. That is what #771 does with the
 host. `docs/FLUTTER-PARITY.md`'s `WidgetsBindingObserver` row stays a gap: the states are not surfaced
 to a component by this change.
