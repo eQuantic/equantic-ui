@@ -6,3 +6,6 @@ const eQuantic.UI.Compiler.CodeGen.Eq.LinqSequenceEqual = "$eq.linq.sequenceEqua
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqSingleOrDefault = "$eq.linq.singleOrDefault" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqZipTuples = "$eq.linq.zipTuples" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListCopy = "$eq.collections.listCopy" -> string!
+*REMOVED*const eQuantic.UI.Compiler.CodeGen.Eq.SplitOnWhiteSpace = "$eq.text.splitOnWhiteSpace" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringSplit = "$eq.text.split" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringSplitAny = "$eq.text.splitAny" -> string!

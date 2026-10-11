@@ -15,14 +15,113 @@ public class StringStrategyTests
         // It was `split('')`, which cut the text into its characters: with no separator .NET splits
         // on white space (WhiteSpaceConformanceTests runs both sides).
         var result = TestHelper.ConvertExpression("str.Split()");
-        result.Should().Be("$eq.text.splitOnWhiteSpace(this.str)");
+        result.Should().Be("$eq.text.splitAny(this.str)");
     }
 
     [Fact]
-    public void Split_WithSeparator_MapsToSplit()
+    public void Split_WithSeparator_IsTheRuntimesSplit()
     {
+        // JavaScript's split was handed the first argument whole, and dropped the count and the
+        // options (#753); StringSplitAndSearchConformanceTests runs both sides.
         var result = TestHelper.ConvertExpression("str.Split(',')");
-        result.Should().Be("this.str.split(',')");
+        result.Should().Be("$eq.text.split(this.str, ',')");
+    }
+
+    [Fact]
+    public void Split_ByASet_TakesItsCountAndOptionsInTheirPlaces()
+    {
+        var result = TestHelper.ConvertExpression("str.Split(new[] { \"ab\", \"c\" }, StringSplitOptions.TrimEntries)");
+        result.Should().Be("$eq.text.splitAny(this.str, ['ab', 'c'], undefined, 2)");
+    }
+
+    [Fact]
+    public void Split_OverASpanHandedWhole_FailsTheBuild()
+    {
+        // A collection expression is an array in the browser; any other span has no form there.
+        TestHelper.DiagnosticsFor("str.Split(\",;\".AsSpan())").Should().Contain(d => d.Code == "EQ1004");
+    }
+
+    /// <summary>With no model, the spelling places what it can: chars written one by one are a set, and
+    /// so is an array or any count of arguments past three; options are spelled or named as such, a
+    /// count is a number or named as one, and a named argument in its parameter's place is placed.</summary>
+    [Theory]
+    [InlineData("s.Split()", "$eq.text.splitAny(s)")]
+    [InlineData("s.Split(',', ';')", "$eq.text.splitAny(s, [',', ';'])")]
+    [InlineData("s.Split(a, b, c, d)", "$eq.text.splitAny(s, [a, b, c, d])")]
+    [InlineData("s.Split(new[] { \"ab\", \"c\" }, StringSplitOptions.None)", "$eq.text.splitAny(s, ['ab', 'c'], undefined, 0)")]
+    [InlineData("s.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)", "$eq.text.split(s, ',', undefined, 3)")]
+    [InlineData("s.Split(',', 2, StringSplitOptions.TrimEntries)", "$eq.text.split(s, ',', 2, 2)")]
+    [InlineData("s.Split(',', 2)", "$eq.text.split(s, ',', 2)")]
+    [InlineData("s.Split(\",\", 2, o)", "$eq.text.split(s, ',', 2, o)")]
+    [InlineData("s.Split($\"{c}\", n, StringSplitOptions.None)", "$eq.text.split(s, `${c}`, n, 0)")]
+    [InlineData("s.Split(new[] { a }, n, o)", "$eq.text.splitAny(s, [a], n, o)")]
+    [InlineData("s.Split(separator: ',', options: o)", "$eq.text.split(s, ',', undefined, o)")]
+    [InlineData("s.Split(',', count: n)", "$eq.text.split(s, ',', n)")]
+    [InlineData("s.Split(separator: \",\", count: n, options: o)", "$eq.text.split(s, ',', n, o)")]
+    [InlineData("s.Split((char[])null)", "$eq.text.splitAny(s, null)")]
+    [InlineData("s.Split(((char[]?)null))", "$eq.text.splitAny(s, null)")]
+    [InlineData("s.Split(default(char[]))", "$eq.text.splitAny(s, null)")]
+    [InlineData("s.Split((string[])parts, StringSplitOptions.None)", "$eq.text.splitAny(s, parts, undefined, 0)")]
+    [InlineData("s.Split((char[])x, n, o)", "$eq.text.splitAny(s, x, n, o)")]
+    public void Split_WithNoModel_PlacesWhatItsSpellingSays(string code, string expected) =>
+        new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression(code)).Should().Be(expected);
+
+    /// <summary>A value converted with <c>as</c> to an array is a set of separators too, with no model.</summary>
+    [Fact]
+    public void Split_WithNoModel_OfAValueAsAnArray_IsASetOfThem() =>
+        new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression("s.Split(x as string[], n, o)"))
+            .Should().StartWith("$eq.text.splitAny(s, ").And.EndWith(", n, o)");
+
+    /// <summary>With no model, a search's start, count and comparison are placed where the spelling
+    /// settles them: a number or a name is a start or a count, a spelled or named comparison is one, and
+    /// a place only an int takes (the second of three, the second and third of four) holds one.</summary>
+    [Theory]
+    [InlineData("a.LastIndexOf(value: \"bc\", startIndex: start)", "$eq.text.lastIndexOf(a, 'bc', start, 'ordinal')")]
+    [InlineData("a.IndexOf(\"bc\", startIndex: start)", "$eq.text.indexOf(a, 'bc', start, 'ordinal')")]
+    [InlineData("a.IndexOf(\"bc\", start, 2)", "$eq.text.indexOf(a, 'bc', start, 2, 'ordinal')")]
+    [InlineData("a.IndexOf($\"{v}\", start, count: n)", "$eq.text.indexOf(a, `${v}`, start, n, 'ordinal')")]
+    [InlineData("a.LastIndexOf(v, start, n, comparison)", "$eq.text.lastIndexOf(a, v, start, n, comparison)")]
+    [InlineData("a.IndexOf(v, comparisonType: comparison)", "$eq.text.indexOf(a, v, comparison)")]
+    [InlineData("a.LastIndexOf(\"x\", i - 1, 2)", "$eq.text.lastIndexOf(a, 'x', i - 1, 2, 'ordinal')")]
+    [InlineData("a.IndexOf('x', startIndex: start)", "$eq.text.indexOfChar(a, 'x', start)")]
+    public void Search_WithNoModel_PlacesWhatItsSpellingSays(string code, string expected) =>
+        new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression(code)).Should().Be(expected);
+
+    /// <summary>With no model, what the spelling cannot place is a build error rather than a guess, as
+    /// <c>string.Format</c>'s first argument is: a name in a place a start and a comparison share (or a
+    /// count and options, or three chars and a separator, a count and options), a value or a separator
+    /// a name holds, which could be a char, a string or a set of them, and a named argument out of its
+    /// parameter's place, which nothing here moves.</summary>
+    [Theory]
+    [InlineData("s.Split(',', o)")]
+    [InlineData("s.Split(sep, n, o)")]
+    [InlineData("s.Split(',', options: o, count: 2)")]
+    [InlineData("s.Split(count: 2, separator: ',')")]
+    [InlineData("s.Split(sep)")]
+    [InlineData("s.Split(sep, 2)")]
+    [InlineData("s.Split(sep, 2, o)")]
+    [InlineData("s.Split(sep, count: n, options: StringSplitOptions.None)")]
+    [InlineData("s.IndexOf(v, comparison)")]
+    [InlineData("s.LastIndexOf(\"bc\", start)")]
+    [InlineData("s.IndexOf('x', start)")]
+    [InlineData("s.IndexOf(v, start, other)")]
+    [InlineData("s.IndexOf(v, 2)")]
+    [InlineData("s.IndexOf(v, start, 2)")]
+    [InlineData("\"\".LastIndexOf(value, startIndex: 5)")]
+    [InlineData("s.IndexOf(\"x\", count: 2, startIndex: 1)")]
+    [InlineData("s.LastIndexOf(startIndex: 1, value: \"x\")")]
+    public void ANameTheSpellingCannotPlace_IsNotGuessed(string code)
+    {
+        var converter = new CSharpToJsConverter();
+        converter.ConvertExpression(SyntaxFactory.ParseExpression(code));
+        converter.Diagnostics.Should().Contain(d => d.Code == "EQ1004");
+    }
+
+    [Fact]
+    public void Split_OfCharsWrittenOneByOne_IsASetOfThem()
+    {
+        var result = TestHelper.ConvertExpression("str.Split(',', ';')");
+        result.Should().Be("$eq.text.splitAny(this.str, [',', ';'])");
     }
 
     [Fact]
@@ -83,6 +182,15 @@ public class StringStrategyTests
     {
         var result = TestHelper.ConvertExpression("str.LastIndexOf(\"x\")");
         result.Should().Be("this.str.lastIndexOf('x')");
+    }
+
+    [Fact]
+    public void LastIndexOf_FromAStartForACount_IsTheRuntimesOrdinalSearch()
+    {
+        // JavaScript's lastIndexOf takes no count and reads its start as where a match may begin,
+        // where .NET's is where it must end by (#724).
+        var result = TestHelper.ConvertExpression("str.LastIndexOf(\"x\", 4, 2)");
+        result.Should().Be("$eq.text.lastIndexOf(this.str, 'x', 4, 2, 'ordinal')");
     }
 
     [Fact]

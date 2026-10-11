@@ -110,9 +110,13 @@ public static class Eq
     public const string TrimStart = "$eq.text.trimStart";
     /// <summary><c>string.TrimEnd()</c> of .NET's white space.</summary>
     public const string TrimEnd = "$eq.text.trimEnd";
-    /// <summary><c>string.Split()</c> with no separator: every white space character is one, and the
-    /// empty entries between two of them stay.</summary>
-    public const string SplitOnWhiteSpace = "$eq.text.splitOnWhiteSpace";
+    /// <summary><c>string.Split</c> by one separator, a char or a string, with its count and its
+    /// options: a null or an empty separator splits nothing.</summary>
+    public const string StringSplit = "$eq.text.split";
+    /// <summary><c>string.Split</c> by a set of separators, chars or strings, with its count and its
+    /// options: the first in the set's order that matches at a place wins, and a null or an empty set
+    /// is .NET's white space.</summary>
+    public const string StringSplitAny = "$eq.text.splitAny";
     /// <summary>A dictionary's indexer read, which throws for a key that is not there.</summary>
     public const string MapGet = "$eq.mapGet";
     /// <summary>A dictionary's indexer write, through its <c>set</c>, answering the value written.</summary>
