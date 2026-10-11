@@ -336,8 +336,12 @@ public static class Eq
     /// <c>base</c> without calling itself back.</summary>
     public const string HashFields = "$eq.hash.fields";
 
-    /// <summary><c>Guid.Parse</c> and <c>new Guid(string)</c>: the canonical text, or .NET's refusal.</summary>
+    /// <summary><c>Guid.Parse</c>: the canonical text, or .NET's refusal.</summary>
     public const string GuidParse = "$eq.guid.parse";
+
+    /// <summary><c>new Guid(string)</c>: as <see cref="GuidParse"/>, a null refused by the
+    /// constructor's own parameter name, <c>g</c>.</summary>
+    public const string GuidOf = "$eq.guid.of";
 
     /// <summary><c>Guid.TryParse</c>: the canonical text, or undefined where .NET answers false.</summary>
     public const string GuidTryParse = "$eq.guid.tryParse";

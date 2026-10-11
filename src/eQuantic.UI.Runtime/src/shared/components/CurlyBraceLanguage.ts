@@ -27,7 +27,7 @@ export abstract class CurlyBraceLanguage {
     abstract constantWords: Set<string>;
 
     get keywords(): string[] {
-        return this._keywords ?? (this._keywords = [...new Set([...[...$eq.linq.seq(this.reservedWords), ...$eq.linq.seq(this.typeWords)], ...$eq.linq.seq(this.constantWords)])].slice());
+        return this._keywords ?? (this._keywords = [...new Set([...[...$eq.linq.seq(this.reservedWords, 'first'), ...$eq.linq.seq(this.typeWords, 'second')], ...$eq.linq.seq(this.constantWords, 'second')])].slice());
     }
 
     get hasVerbatimStrings(): boolean {
