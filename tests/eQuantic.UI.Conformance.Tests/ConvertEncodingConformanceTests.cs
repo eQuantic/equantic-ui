@@ -72,36 +72,47 @@ public class ConvertEncodingConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
 
-    /// <summary>What .NET refuses, in the order it checks: the arrays, the length, the offsets, the
-    /// options, then the range each offset leaves.</summary>
+    /// <summary>A null array and an option .NET does not define, refused in the order it checks them,
+    /// and no bytes, which answer before the room left is checked.</summary>
     [SkippableTheory]
     [InlineData("byte[] b = null; Convert.ToBase64String(b); return \"encoded\";")]
     [InlineData("byte[] b = null; Convert.ToBase64String(b, -1, -1); return \"encoded\";")]
-    [InlineData("Convert.ToBase64String(new byte[3], 0, -1); return \"encoded\";")]
-    [InlineData("Convert.ToBase64String(new byte[3], -1, -1); return \"encoded\";")]
-    [InlineData("Convert.ToBase64String(new byte[3], -1, 2); return \"encoded\";")]
-    [InlineData("Convert.ToBase64String(new byte[3], 2, 2); return \"encoded\";")]
     [InlineData("Convert.ToBase64String(new byte[3], (Base64FormattingOptions)2); return \"encoded\";")]
     [InlineData("Convert.ToBase64String(new byte[0], (Base64FormattingOptions)2); return \"encoded\";")]
-    [InlineData("Convert.ToBase64String(new byte[3], 4, 0, (Base64FormattingOptions)2); return \"encoded\";")]
     [InlineData("byte[] b = null; Convert.ToHexString(b); return \"encoded\";")]
     [InlineData("byte[] b = null; Convert.ToHexStringLower(b, 0, 0); return \"encoded\";")]
-    [InlineData("Convert.ToHexString(new byte[3], 0, -1); return \"encoded\";")]
-    [InlineData("Convert.ToHexStringLower(new byte[3], -1, 0); return \"encoded\";")]
-    [InlineData("Convert.ToHexString(new byte[3], 1, 3); return \"encoded\";")]
     [InlineData("Convert.ToBase64CharArray(null, 0, 0, null, 0); return \"encoded\";")]
     [InlineData("Convert.ToBase64CharArray(new byte[3], 0, 0, null, 0); return \"encoded\";")]
-    [InlineData("Convert.ToBase64CharArray(new byte[3], 0, -1, new char[4], -1); return \"encoded\";")]
-    [InlineData("Convert.ToBase64CharArray(new byte[3], -1, 3, new char[4], -1); return \"encoded\";")]
-    [InlineData("Convert.ToBase64CharArray(new byte[3], 0, 3, new char[4], -1); return \"encoded\";")]
     [InlineData("Convert.ToBase64CharArray(new byte[3], 4, 0, new char[4], 0, (Base64FormattingOptions)2); return \"encoded\";")]
-    [InlineData("Convert.ToBase64CharArray(new byte[3], 2, 2, new char[4], 0); return \"encoded\";")]
-    [InlineData("Convert.ToBase64CharArray(new byte[3], 0, 3, new char[4], 1); return \"encoded\";")]
     [InlineData("Convert.ToBase64CharArray(new byte[3], 3, 0, new char[0], 9); return \"encoded\";")]
     public void AnEncoding_RefusesAsDotNetRefuses(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(Refused(statements));
+    }
+
+    /// <summary>A length, an offset or a range .NET refuses, in its order. Its
+    /// <c>ArgumentOutOfRangeException</c> writes the actual value after <c>Environment.NewLine</c>, which is
+    /// <c>\r\n</c> on Windows.</summary>
+    [SkippableTheory]
+    [InlineData("Convert.ToBase64String(new byte[3], 0, -1); return \"encoded\";")]
+    [InlineData("Convert.ToBase64String(new byte[3], -1, -1); return \"encoded\";")]
+    [InlineData("Convert.ToBase64String(new byte[3], -1, 2); return \"encoded\";")]
+    [InlineData("Convert.ToBase64String(new byte[3], 2, 2); return \"encoded\";")]
+    [InlineData("Convert.ToBase64String(new byte[3], 4, 0, (Base64FormattingOptions)2); return \"encoded\";")]
+    [InlineData("Convert.ToHexString(new byte[3], 0, -1); return \"encoded\";")]
+    [InlineData("Convert.ToHexStringLower(new byte[3], -1, 0); return \"encoded\";")]
+    [InlineData("Convert.ToHexString(new byte[3], 1, 3); return \"encoded\";")]
+    [InlineData("Convert.ToBase64CharArray(new byte[3], 0, -1, new char[4], -1); return \"encoded\";")]
+    [InlineData("Convert.ToBase64CharArray(new byte[3], -1, 3, new char[4], -1); return \"encoded\";")]
+    [InlineData("Convert.ToBase64CharArray(new byte[3], 0, 3, new char[4], -1); return \"encoded\";")]
+    [InlineData("Convert.ToBase64CharArray(new byte[3], 2, 2, new char[4], 0); return \"encoded\";")]
+    [InlineData("Convert.ToBase64CharArray(new byte[3], 0, 3, new char[4], 1); return \"encoded\";")]
+    public void AnEncoding_RefusesARangeAsDotNetRefusesIt(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNetExceptTheHostsNewline(Refused(statements),
+            "an ArgumentOutOfRangeException writes its actual value after Environment.NewLine");
     }
 
     /// <summary>The arguments are values like any other: held in variables, named out of their order,
