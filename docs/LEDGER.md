@@ -2297,6 +2297,24 @@ record of a release, the wiki's Upgrading page is the distillate.
   three the build now refuses. The served runtime grew 3,834 gzipped bytes. Proposed and archived
   through OpenSpec (`openspec/specs/page-culture`, `runtime-dates`, `transpiler-bcl`,
   `transpiler-records`).
+- **2026-10-11 · A queue, a stack and a sorted set copy and combine as .NET's do**: two gaps #715's
+  measurement found in the collections. `Queue<T>.CopyTo`, `Stack<T>.CopyTo` and every member of
+  `SortedSet<T>` that combines or compares two sets (`CopyTo`, `UnionWith`, `IntersectWith`,
+  `ExceptWith`, `SymmetricExceptWith`, the six questions, `RemoveWhere`) were a `TypeError` in the
+  browser ([#723](https://github.com/eQuantic/equantic-ui/issues/723)); each is .NET's algorithm in
+  the runtime now, its refusals in .NET's words and order, and of two elements a sorted set finds equal
+  (`1.0m`, `1.00m`) a union and an intersection keep the one .NET keeps. A null source handed to a
+  collection's constructor built an empty collection, or a `TypeError` for a list, where .NET refuses
+  it by name ([#726](https://github.com/eQuantic/equantic-ui/issues/726)): eqc hands the factory the
+  name of the parameter the source binds to, the queue, stack and linked-list factories tell a
+  capacity from a collection as the constructors do, and `new List<T>(collection)` is a twin,
+  `$eq.collections.listCopy`, a string read by its UTF-16 chars. 75 of the 83 new conformance cases
+  fail at a7d5f3d; 23 entries leave the null-argument baseline. The served runtime grows about 1,500
+  gzipped bytes. Found on the way: those collections keep enumerating after they change
+  ([#765](https://github.com/eQuantic/equantic-ui/issues/765)), and `RemoveWhere` asks its predicate
+  in the set's order where .NET walks its tree breadth first
+  ([#766](https://github.com/eQuantic/equantic-ui/issues/766)). Proposed and archived through OpenSpec
+  (`openspec/specs/runtime-collections`).
 
 ## Retired documents
 
