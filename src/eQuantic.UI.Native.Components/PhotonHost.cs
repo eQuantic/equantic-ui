@@ -174,7 +174,6 @@ public sealed class PhotonHost
         set
         {
             if (value == _viewInsets) return;
-            if (value.Bottom > _viewInsets.Bottom) _revealEditing = true;
             _viewInsets = value;
             NeedsRender = true;
         }
@@ -182,9 +181,9 @@ public sealed class PhotonHost
 
     private EdgeInsets _viewInsets;
 
-    /// <summary>The keyboard rose: after the next frame lays out above it, the field being edited is
-    /// brought into view.</summary>
-    private bool _revealEditing;
+    /// <summary>The height the last frame laid out in. A frame that lays out in less reveals the
+    /// field being edited.</summary>
+    private float _laidHeight;
 
     /// <summary>
     /// The corner the system's WINDOW CONTROLS float in under <see cref="WindowChrome.Unified"/> —
@@ -256,6 +255,8 @@ public sealed class PhotonHost
         // The tree lays out above what the system covers, and a SafeArea at the bottom pads only
         // what the keyboard leaves of the home indicator: the keyboard is already in its way.
         var height = MathF.Max(0, Height - _viewInsets.Bottom);
+        var shorter = height < _laidHeight;
+        _laidHeight = height;
         var safeArea = _viewInsets.Bottom > 0
             ? SafeAreaInsets with { Bottom = MathF.Max(0, SafeAreaInsets.Bottom - _viewInsets.Bottom) }
             : SafeAreaInsets;
@@ -309,13 +310,11 @@ public sealed class PhotonHost
         // new place exists in window coordinates; the scroll it causes paints on the next one.
         if (RevealCodeCarets()) NeedsRender = true;
 
-        // The keyboard rose, and this frame laid out in what it left: the field being edited is
-        // brought into that, or the person types into a field they cannot see.
-        if (_revealEditing)
-        {
-            _revealEditing = false;
-            if (RevealEditing()) NeedsRender = true;
-        }
+        // The space shrank under the edit, and this frame laid out in what is left: the field being
+        // edited is brought into it, or the person types into a field they cannot see. A keyboard
+        // rising does that, as an inset or, where the system resizes the window for it, as a
+        // shorter window; so does a phone turned on its side.
+        if (shorter && RevealEditing()) NeedsRender = true;
 
         // The caret is 2Hz motion, not vsync motion. Holding NeedsRender for it pinned the whole
         // loop to the display's refresh — 120 presents a second on a ProMotion panel, measured, to

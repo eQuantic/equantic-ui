@@ -400,6 +400,29 @@ public class PhoneKeyboardTests
     }
 
     /// <summary>
+    /// Where the system makes room for the keyboard by resizing the window (Android before it went
+    /// edge to edge) the keyboard reaches the host as a shorter window, and the field is revealed
+    /// all the same. So it is when a phone turns on its side.
+    /// </summary>
+    [Fact]
+    public void AWindowThatShrinks_RevealsTheFieldBeingEdited()
+    {
+        var host = new PhotonHost(new LongForm(), PhotonTheme.Instance, ThemeMode.Light, 390, 600);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        var low = frame.TextRegions.Last(region => region.Bounds.Bottom <= 600);
+        Tap(host, low.Bounds.Center);
+        host.RenderFrame(new DisplayListBuilder(), 16);
+
+        host.Resize(390, 300);
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        frame = host.RenderFrame(new DisplayListBuilder(), 48);
+
+        var field = frame.TextRegions.Single(region => region.Path == low.Path);
+        field.Bounds.Bottom.Should().BeLessThanOrEqualTo(300);
+        field.Bounds.Top.Should().BeGreaterThanOrEqualTo(0);
+    }
+
+    /// <summary>
     /// The frame laid out above the rising keyboard clips the field under it before the reveal
     /// scrolls it back. It is still the field being edited: the keyboard stays a text keyboard, and
     /// what is typed in that frame reaches it.
