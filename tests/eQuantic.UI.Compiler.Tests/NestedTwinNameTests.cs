@@ -154,6 +154,23 @@ public class NestedTwinNameTests
             .And.NotContain("./Kit$Part");
     }
 
+    /// <summary>The same through <c>using static</c> and a bare call: the class the call introduces is
+    /// the runtime's too. The import's bucket was read from the namespace alone, so an owner the
+    /// runtime provides from an app's namespace sent <c>Kit$Part</c> to a module of the app's, which
+    /// nothing writes (found by Copilot's third review of #708).</summary>
+    [Fact]
+    public void AStaticOfARuntimeProvidedOwnersNestedType_ReachedBare_IsTheRuntimes()
+    {
+        var client = CompileScanned("""
+            using static Kit.Part;
+            [eQuantic.UI.Primitives.RuntimeProvided] public class Kit { public static class Part { public static int Make() => 1; } }
+            public class Client { public int Use() => Make(); }
+            """, "Client");
+        client.Errors.Should().BeEmpty();
+        client.TypeScript.Should().MatchRegex(@"import \{[^}]*(?<![\w$])Kit\$Part(?![\w$])[^}]*\} from ""@equantic/runtime""")
+            .And.NotContain("./Kit$Part");
+    }
+
     /// <summary>A file compiled as eqc compiles a project's: scanned by the dependency resolver first,
     /// whose module set decides every import a module writes, then compiled with it. A compile with no
     /// scan imports none of the app's modules, so it cannot show one imported, or refused.</summary>
