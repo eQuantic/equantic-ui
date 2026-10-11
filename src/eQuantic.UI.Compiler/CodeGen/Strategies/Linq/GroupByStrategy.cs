@@ -88,7 +88,11 @@ public class GroupByStrategy : IExpressionIrStrategy
         // default equality does: by === two equal records were two groups.
         var key = bound is { TypeArguments.Length: > 1 } ? bound.TypeArguments[1] : null;
         if (LinqKeys.ComparesByValue(key)) context.UsedHelpers.Add(Eq.Import);
-        var grouped = "{0}.reduce(($groups, $item) => { " +
+        // Where the output is TypeScript the accumulator is typed: the seed `[]` alone gave it `never[]`
+        // over a typed source and `any` over a loose one, and a strict tsc refused the reduce either way
+        // (#727). As `any[]`, `find` types its own parameter, and so does a lookup's indexer over it.
+        var groups = context.TypeAnnotations ? "$groups: any[]" : "$groups";
+        var grouped = $"{{0}}.reduce(({groups}, $item) => {{ " +
                       $"const $key = ({{{keyAt}}})($item); " +
                       $"let $g = $groups.find(($x) => {LinqKeys.Matches(key, "$x.key", "$key")}); " +
                       "if (!$g) { $g = []; $g.key = $key; $groups.push($g); } " +

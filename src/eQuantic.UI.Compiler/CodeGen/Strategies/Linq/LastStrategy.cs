@@ -41,6 +41,9 @@ public class LastStrategy : IConversionStrategy
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var methodName = memberAccess.Name.Identifier.Text;
 
+        if (LinqArguments.WithADefaultValue(invocation, memberAccess, Eq.LinqLastOrDefault, context) is { } withDefault)
+            return withDefault;
+
         var args = invocation.ArgumentList.Arguments;
         // The default of the ELEMENT — see DefaultValue; null is only right for a reference type.
         var isOrDefault = methodName == "LastOrDefault";

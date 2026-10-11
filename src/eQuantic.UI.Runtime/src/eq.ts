@@ -68,7 +68,21 @@ import {
   realParse,
   realTryParse,
 } from './utils/number-parse';
-import { enumerable, iterate, max, min, seq, toArray, toDictionary } from './utils/linq';
+import {
+  average,
+  enumerable,
+  firstOrDefault,
+  iterate,
+  lastOrDefault,
+  max,
+  min,
+  seq,
+  sequenceEqual,
+  singleOrDefault,
+  toArray,
+  toDictionary,
+  zipTuples,
+} from './utils/linq';
 import { range, repeat } from './utils/sequence-factories';
 import {
   chars,
@@ -305,8 +319,27 @@ export const $eq = {
   /** LINQ Zip: pairs stop with the shorter sequence. */
   zip,
   /** LINQ's Max and Min by the type they answer, ToDictionary with .NET's refusals, Range and
-   * Repeat over arguments evaluated once, and the iteration of a twin that implements IEnumerable<T>. */
-  linq: { enumerable, iterate, max, min, seq, toArray, toDictionary, range, repeat },
+   * Repeat over arguments evaluated once, the iteration of a twin that implements IEnumerable<T>, and
+   * the overloads a sibling's lowering mistook: Average by its element type, FirstOrDefault,
+   * LastOrDefault and SingleOrDefault with a default value, SequenceEqual by the default equality, and
+   * Zip's tuples. */
+  linq: {
+    average,
+    enumerable,
+    firstOrDefault,
+    iterate,
+    lastOrDefault,
+    max,
+    min,
+    seq,
+    sequenceEqual,
+    singleOrDefault,
+    toArray,
+    toDictionary,
+    range,
+    repeat,
+    zipTuples,
+  },
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
   /** A generic record's closed type, by value, and the comparison of two — see `closing`. */

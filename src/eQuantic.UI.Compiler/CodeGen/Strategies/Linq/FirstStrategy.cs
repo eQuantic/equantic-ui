@@ -45,6 +45,9 @@ public class FirstStrategy : IConversionStrategy
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         
+        if (LinqArguments.WithADefaultValue(invocation, memberAccess, Eq.LinqFirstOrDefault, context) is { } withDefault)
+            return withDefault;
+
         var caller = LinqSource.Text(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
         

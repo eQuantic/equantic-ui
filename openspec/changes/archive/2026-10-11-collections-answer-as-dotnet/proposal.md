@@ -6,7 +6,7 @@ whose twin read a null source as no collection.
 
 ## Why
 
-Executed on both sides at a7d5f3d, where 75 of the 83 cases of `CollectionMemberConformanceTests` fail:
+Executed on both sides at a7d5f3d, where 78 of the 86 cases of `CollectionMemberConformanceTests` fail:
 
 - `Queue<T>.CopyTo`, `Stack<T>.CopyTo` and every `SortedSet<T>.CopyTo` were a `TypeError` in the
   browser: the runtime's twins had no `copyTo` (#723).

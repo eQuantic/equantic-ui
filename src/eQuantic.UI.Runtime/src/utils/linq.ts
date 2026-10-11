@@ -13,9 +13,12 @@
  * a null key became the text "null", the key "__proto__" went to the prototype's setter instead of
  * the dictionary, and every record key was the same "[object Object]".
  */
+import { Decimal } from './decimal';
 import { Dictionary, keyText, type KeyEquality } from './dictionary';
 import { exception } from './exceptions';
+import { sameBy } from './key-equality';
 import { comparerOf, type Ordering } from './ordering';
+import { checked } from './overflow';
 
 /**
  * How the values a `Max` or `Min` answers are ordered, the table every ordering of the runtime reads
@@ -25,6 +28,8 @@ import { comparerOf, type Ordering } from './ordering';
 export type { Ordering };
 
 const NO_ELEMENTS = 'Sequence contains no elements';
+const MORE_THAN_ONE = 'Sequence contains more than one element';
+const MORE_THAN_ONE_MATCH = 'Sequence contains more than one matching element';
 
 /** .NET's refusal of a null argument, by the parameter's name. */
 function nullArgument(parameter: string): Error {
@@ -117,6 +122,266 @@ export function min<T>(
   nullable: boolean,
 ): unknown {
   return extreme(source, selector, ordering, nullable, -1);
+}
+
+/**
+ * How `Average` adds the values it means, which the compiler reads from the type they have: an `int` in
+ * .NET's checked long, as a number while the total is a safe integer and as a BigInt past it, so the
+ * total stays exact where a double's would round; a `double` as a number; a `float` in a double rounded
+ * once at the end, as .NET's `(float)(Sum<float, double> / count)`; a `long` as a BigInt checked at 64
+ * bits, as .NET's sum is; and a `decimal` as the runtime's Decimal.
+ */
+export type Mean = 'int' | 'number' | 'single' | 'long' | 'decimal';
+
+/**
+ * An `int` added to a mean's total as .NET adds it, in a checked long: exactly, as a number while the
+ * sum is a safe integer, which every page's sequence is, and as a BigInt from the first sum that is not.
+ */
+function addInt(total: number | bigint, value: number): number | bigint {
+  if (typeof total === 'number') {
+    const next = total + value;
+    if (Number.isSafeInteger(next)) return next;
+    total = BigInt(total);
+  }
+  return checked(total + BigInt(value), 64) as bigint;
+}
+
+/**
+ * `Average()` and `Average(selector)`, as .NET computes the mean for each element type (#719): a long's
+ * total exact and divided as the double C# declares, a nullable's over its values alone and null when it
+ * has none, and an empty sequence refused where the answer is not nullable. The reduce it replaces added
+ * a BigInt to a number seed wherever the type the compiler read was not the long being added, divided a
+ * nullable's total by its nulls too, and answered NaN for an empty sequence. A null source, and then a
+ * null selector, are refused by name; the overload without a selector hands `undefined`.
+ */
+export function average<T>(
+  source: Iterable<T>,
+  selector: ((item: T) => unknown) | null | undefined,
+  mean: 'decimal',
+  nullable: false,
+): Decimal;
+export function average<T>(
+  source: Iterable<T>,
+  selector: ((item: T) => unknown) | null | undefined,
+  mean: 'decimal',
+  nullable: true,
+): Decimal | null;
+export function average<T>(
+  source: Iterable<T>,
+  selector: ((item: T) => unknown) | null | undefined,
+  mean: Exclude<Mean, 'decimal'>,
+  nullable: false,
+): number;
+export function average<T>(
+  source: Iterable<T>,
+  selector: ((item: T) => unknown) | null | undefined,
+  mean: Exclude<Mean, 'decimal'>,
+  nullable: true,
+): number | null;
+export function average<T>(
+  source: Iterable<T>,
+  selector: ((item: T) => unknown) | null | undefined,
+  mean: Mean,
+  nullable: boolean,
+): number | Decimal | null {
+  if (source == null) throw nullArgument('source');
+  if (selector === null) throw nullArgument('selector');
+  let count = 0;
+  let total: number | bigint | Decimal =
+    mean === 'long' ? 0n : mean === 'decimal' ? Decimal.from(0) : 0;
+  for (const item of source) {
+    const value = selector === undefined ? item : selector(item);
+    if (nullable && value == null) continue;
+    count++;
+    if (mean === 'int') total = addInt(total as number | bigint, value as number);
+    else if (mean === 'long') total = checked((total as bigint) + (value as bigint), 64) as bigint;
+    else if (mean === 'decimal') total = (total as Decimal).add(value as Decimal);
+    else total = (total as number) + (value as number);
+  }
+  if (count === 0) {
+    if (nullable) return null;
+    throw exception('System.InvalidOperationException', NO_ELEMENTS);
+  }
+  if (mean === 'decimal') return (total as Decimal).div(Decimal.from(count));
+  const quotient = (typeof total === 'bigint' ? Number(total) : (total as number)) / count;
+  return mean === 'single' ? Math.fround(quotient) : quotient;
+}
+
+/**
+ * `FirstOrDefault(defaultValue)` and `FirstOrDefault(predicate, defaultValue)`, .NET 6's overloads: the
+ * first element that matches, a null one included, or the value handed (#720). They were lowered as the
+ * overloads with a predicate, so the default value was called as a function. A null source, and then a
+ * null predicate, are refused by name; the overload without a predicate hands `undefined`.
+ */
+export function firstOrDefault<T>(
+  source: Iterable<T>,
+  predicate: ((item: T) => boolean) | null | undefined,
+  defaultValue: T,
+): T {
+  if (source == null) throw nullArgument('source');
+  if (predicate === null) throw nullArgument('predicate');
+  for (const item of source) {
+    if (predicate === undefined || predicate(item)) return item;
+  }
+  return defaultValue;
+}
+
+/**
+ * `LastOrDefault(defaultValue)` and `LastOrDefault(predicate, defaultValue)`: the last element that
+ * matches, or the value handed (#720). An array is searched from its end, as .NET searches an
+ * `IList<T>`, so a predicate runs only until it matches; any other iterable is walked whole. The
+ * compiler hands every source as an array, so a set or a queue is searched from its end too, and a
+ * predicate with side effects sees fewer of its elements than .NET's, which walks it whole: a
+ * sequence's laziness is #685's decision.
+ */
+export function lastOrDefault<T>(
+  source: Iterable<T>,
+  predicate: ((item: T) => boolean) | null | undefined,
+  defaultValue: T,
+): T {
+  if (source == null) throw nullArgument('source');
+  if (predicate === null) throw nullArgument('predicate');
+  if (Array.isArray(source)) {
+    for (let index = source.length - 1; index >= 0; index--) {
+      if (predicate === undefined || predicate(source[index])) return source[index];
+    }
+    return defaultValue;
+  }
+  let found = false;
+  let last = defaultValue;
+  for (const item of source) {
+    if (predicate === undefined || predicate(item)) {
+      found = true;
+      last = item;
+    }
+  }
+  return found ? last : defaultValue;
+}
+
+/**
+ * `SingleOrDefault(defaultValue)` and `SingleOrDefault(predicate, defaultValue)`, .NET 6's overloads:
+ * the one element, or the one that matches, a null one included, or the value handed where there is
+ * none (#760). A second element is refused, and so is a second match, the predicate having run on
+ * every element up to it, as .NET's walk does. They were lowered as the overloads without a default
+ * value, which called it as a predicate. A null source, and then a null predicate, are refused by name.
+ */
+export function singleOrDefault<T>(
+  source: Iterable<T>,
+  predicate: ((item: T) => boolean) | null | undefined,
+  defaultValue: T,
+): T {
+  if (source == null) throw nullArgument('source');
+  if (predicate === null) throw nullArgument('predicate');
+  let found = false;
+  let single = defaultValue;
+  for (const item of source) {
+    if (predicate !== undefined && !predicate(item)) continue;
+    if (found) {
+      throw exception(
+        'System.InvalidOperationException',
+        predicate === undefined ? MORE_THAN_ONE : MORE_THAN_ONE_MATCH,
+      );
+    }
+    found = true;
+    single = item;
+  }
+  return single;
+}
+
+/**
+ * `SequenceEqual(second)` and `SequenceEqual(second, comparer)`, element by element by the element
+ * type's default equality (`equality`, {@link KeyEquality}): a record and a decimal by value, a class
+ * by its own `Equals` and by reference where it has none, an array by reference, a NaN equal to a NaN
+ * (#721). The text of each sequence's JSON was compared
+ * instead, which threw for a long, told `1.0m` from `1.00m`, took a null for a NaN and two arrays of
+ * the same items for one, and the overload with a comparer answered its first sequence. A comparer that
+ * reaches here asks for that equality; the compiler refuses any other. Two lists of different lengths
+ * are told apart before either is read, as .NET tells two collections. With `spans`, the call is the one
+ * an array binds through `MemoryExtensions`, where a null array is an empty span; otherwise a null
+ * sequence is refused by name.
+ */
+export function sequenceEqual<T>(
+  first: Iterable<T> | null,
+  second: Iterable<T> | null,
+  equality: KeyEquality = false,
+  spans = false,
+): boolean {
+  if (spans) {
+    first ??= [];
+    second ??= [];
+  }
+  if (first == null) throw nullArgument('first');
+  if (second == null) throw nullArgument('second');
+  if (Array.isArray(first) && Array.isArray(second) && first.length !== second.length) return false;
+  const same = sameBy(equality);
+  return walkTogether([first, second], ([left, right]) => {
+    for (;;) {
+      const a = left.next();
+      const b = right.next();
+      if (a.done || b.done) return a.done === true && b.done === true;
+      if (!same(a.value, b.value)) return false;
+    }
+  });
+}
+
+/**
+ * `Zip(second)` and `Zip(second, third)`: the pairs and the triples .NET answers, value tuples held as
+ * arrays here, as many as the shortest sequence holds (#722). The three sequences were lowered as the
+ * Zip with a result selector, which called the third as a function, and the pair form answered its
+ * first sequence. Each sequence is refused by its name when null; the pair form hands no `third`.
+ */
+export function zipTuples<A, B>(
+  first: Iterable<A>,
+  second: Iterable<B>,
+  third?: undefined,
+): [A, B][];
+export function zipTuples<A, B, C>(
+  first: Iterable<A>,
+  second: Iterable<B>,
+  third: Iterable<C> | null,
+): [A, B, C][];
+export function zipTuples(
+  first: Iterable<unknown>,
+  second: Iterable<unknown>,
+  third?: Iterable<unknown> | null,
+): unknown[][] {
+  if (first == null) throw nullArgument('first');
+  if (second == null) throw nullArgument('second');
+  if (third === null) throw nullArgument('third');
+  const sequences = third === undefined ? [first, second] : [first, second, third];
+  return walkTogether(sequences, (walkers) => {
+    const tuples: unknown[][] = [];
+    for (;;) {
+      const tuple: unknown[] = [];
+      for (const walker of walkers) {
+        const step = walker.next();
+        if (step.done) return tuples;
+        tuple.push(step.value);
+      }
+      tuples.push(tuple);
+    }
+  });
+}
+
+/**
+ * `walk` over the iterators of `sequences`, each acquired in order and closed in reverse once the walk
+ * ends however it ends, as the nested `using` statements of .NET's `SequenceEqual` and `Zip` dispose
+ * their enumerators. An iterator left at a mismatch, or at the end of the shortest sequence, never ran
+ * its `finally`, which is where a class of the app's that implements `IEnumerable<T>` disposes its
+ * enumerator (`iterate`); one acquired after another that threw is never acquired.
+ */
+function walkTogether<R>(
+  sequences: readonly Iterable<unknown>[],
+  walk: (walkers: Iterator<unknown>[]) => R,
+  walkers: Iterator<unknown>[] = [],
+): R {
+  if (walkers.length === sequences.length) return walk(walkers);
+  const walker = sequences[walkers.length][Symbol.iterator]();
+  try {
+    return walkTogether(sequences, walk, [...walkers, walker]);
+  } finally {
+    walker.return?.();
+  }
 }
 
 /**

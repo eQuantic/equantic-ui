@@ -218,8 +218,8 @@ public class DecimalAverageTests
                     return new Text($"{x}", TypeRole.BodyM);
             """);
 
-        Assert.Contains(".add(", js);
-        Assert.Contains(".div(", js);
+        // The runtime's Average adds and divides a decimal mean as Decimals (#719).
+        Assert.Contains("$eq.linq.average(v, undefined, 'decimal', false)", js);
         Assert.DoesNotContain("($a, $b) => $a + $b", js);
     }
 
@@ -232,12 +232,13 @@ public class DecimalAverageTests
                     return new Text($"{x}", TypeRole.BodyM);
             """);
 
-        Assert.Contains(".add(", js);
-        Assert.Contains(".div(", js);
+        // The selector's parameter annotation is the lambda strategy's, not this call's: asserted around it.
+        Assert.Contains("$eq.linq.average(v, (n", js);
+        Assert.Contains(") => n, 'decimal', false)", js);
     }
 
     [Fact]
-    public void AverageOfNumbers_StaysPlainArithmetic()
+    public void AverageOfInts_AddsInTheIntMean()
     {
         var js = Compile("""
                     var v = new List<int> { 1, 2 };
@@ -245,7 +246,7 @@ public class DecimalAverageTests
                     return new Text($"{x}", TypeRole.BodyM);
             """);
 
-        Assert.Contains("/ v.length", js);
-        Assert.DoesNotContain(".div(", js);
+        Assert.Contains("$eq.linq.average(v, undefined, 'int', false)", js);
+        Assert.DoesNotContain("'decimal'", js);
     }
 }
