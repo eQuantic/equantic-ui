@@ -78,6 +78,7 @@ import {
   min,
   seq,
   sequenceEqual,
+  singleOrDefault,
   toArray,
   toDictionary,
   zipTuples,
@@ -318,8 +319,9 @@ export const $eq = {
   zip,
   /** LINQ's Max and Min by the type they answer, ToDictionary with .NET's refusals, Range and
    * Repeat over arguments evaluated once, the iteration of a twin that implements IEnumerable<T>, and
-   * the overloads a sibling's lowering mistook: Average by its element type, FirstOrDefault and
-   * LastOrDefault with a default value, SequenceEqual by the default equality, and Zip's tuples. */
+   * the overloads a sibling's lowering mistook: Average by its element type, FirstOrDefault,
+   * LastOrDefault and SingleOrDefault with a default value, SequenceEqual by the default equality, and
+   * Zip's tuples. */
   linq: {
     average,
     enumerable,
@@ -330,6 +332,7 @@ export const $eq = {
     min,
     seq,
     sequenceEqual,
+    singleOrDefault,
     toArray,
     toDictionary,
     range,

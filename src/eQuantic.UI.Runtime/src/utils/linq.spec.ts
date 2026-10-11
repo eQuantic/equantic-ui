@@ -7,6 +7,7 @@ import {
   max,
   min,
   sequenceEqual,
+  singleOrDefault,
   toDictionary,
   zipTuples,
 } from './linq';
@@ -232,6 +233,35 @@ describe('firstOrDefault and lastOrDefault with a default value (#720)', () => {
       "(Parameter 'source')",
     );
     expect(() => lastOrDefault([1], null, 9)).toThrow("(Parameter 'predicate')");
+  });
+});
+
+describe('singleOrDefault with a default value (#760)', () => {
+  it('answers the one element, a null one included, or the value handed', () => {
+    expect(singleOrDefault([4], undefined, 9)).toBe(4);
+    expect(singleOrDefault([], undefined, 9)).toBe(9);
+    expect(singleOrDefault([null], undefined, 'x')).toBe(null);
+    expect(singleOrDefault([1, 2, 3], (x: number) => x === 2, 9)).toBe(2);
+    expect(singleOrDefault([1, 2, 3], (x: number) => x > 5, 9)).toBe(9);
+  });
+
+  it('refuses a second element and a second match, after walking up to it', () => {
+    expect(() => singleOrDefault([1, 2], undefined, 9)).toThrow('more than one element');
+    let seen = 0;
+    expect(() => singleOrDefault([1, 2, 3, 4], (x: number) => (seen++, x > 1), 9)).toThrow(
+      'more than one matching element',
+    );
+    expect(seen).toBe(3);
+    seen = 0;
+    expect(singleOrDefault([1, 2, 3], (x: number) => (seen++, x === 2), 9)).toBe(2);
+    expect(seen).toBe(3);
+  });
+
+  it('refuses a null source and a null predicate by name', () => {
+    expect(() => singleOrDefault(null as unknown as number[], undefined, 9)).toThrow(
+      "(Parameter 'source')",
+    );
+    expect(() => singleOrDefault([1], null, 9)).toThrow("(Parameter 'predicate')");
   });
 });
 

@@ -41,7 +41,7 @@ public class LastStrategy : IConversionStrategy
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var methodName = memberAccess.Name.Identifier.Text;
 
-        if (FirstStrategy.WithADefaultValue(invocation, memberAccess, Eq.LinqLastOrDefault, context) is { } withDefault)
+        if (LinqArguments.WithADefaultValue(invocation, memberAccess, Eq.LinqLastOrDefault, context) is { } withDefault)
             return withDefault;
 
         var args = invocation.ArgumentList.Arguments;

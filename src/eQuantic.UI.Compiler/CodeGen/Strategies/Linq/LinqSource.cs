@@ -74,11 +74,14 @@ internal static class LinqSource
     /// went through here. The declaration decides, not the type the call substitutes: <c>Append</c>'s
     /// element is a <c>TSource</c>, which is a sequence when the source holds sequences, and a queue
     /// appended there was read into an array instead of being the element. Any other argument
-    /// converts as it always did.
+    /// converts as it always did. Under a null-conditional the call's arguments are copies, so the bound
+    /// argument is found by the one written in the tree (<see cref="LinqArguments.Written"/>): a string
+    /// zipped there was walked by code point.
     /// </summary>
     internal static JsExpr Argument(ArgumentSyntax argument, InvocationExpressionSyntax invocation, ConversionContext context) =>
         context.SemanticHelper.GetOperation(invocation) is Microsoft.CodeAnalysis.Operations.IInvocationOperation call
-        && call.Arguments.FirstOrDefault(bound => bound.Syntax == argument)?.Parameter is { } bound
+        && LinqArguments.Written(argument, invocation, context) is var written
+        && call.Arguments.FirstOrDefault(bound => bound.Syntax == written)?.Parameter is { } bound
         && bound.OriginalDefinition.Type is INamedTypeSymbol parameter
         && IsSequence(parameter)
             ? Read(argument.Expression, bound.Name, context)

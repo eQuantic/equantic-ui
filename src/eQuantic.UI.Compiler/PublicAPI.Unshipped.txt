@@ -3,4 +3,5 @@ const eQuantic.UI.Compiler.CodeGen.Eq.LinqAverage = "$eq.linq.average" -> string
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqFirstOrDefault = "$eq.linq.firstOrDefault" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqLastOrDefault = "$eq.linq.lastOrDefault" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqSequenceEqual = "$eq.linq.sequenceEqual" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqSingleOrDefault = "$eq.linq.singleOrDefault" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqZipTuples = "$eq.linq.zipTuples" -> string!

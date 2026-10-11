@@ -5,10 +5,12 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
 /// <summary>
 /// Strategy for Zip.
-/// Handles: source.Zip(second, (a, b) => ...), and the overloads without a result selector,
-/// source.Zip(second) and source.Zip(second, third), which answer value tuples (arrays here) through the
-/// runtime's <c>$eq.linq.zipTuples</c> (#722): the three sequences were taken for the overload with a
-/// selector, which called the third as a function, and the pair form answered its receiver.
+/// Handles: source.Zip(second, (a, b) => ...) through <c>$eq.zip</c>, and the overloads without a result
+/// selector, source.Zip(second) and source.Zip(second, third), which answer value tuples (arrays here)
+/// through the runtime's <c>$eq.linq.zipTuples</c> (#722): the three sequences were taken for the overload
+/// with a selector, which called the third as a function, and the pair form answered its receiver. Each
+/// argument fills the parameter it binds to, so a selector named and written first is not the second
+/// sequence. A call no model binds keeps the selector form by position.
 /// </summary>
 public class ZipStrategy : IConversionStrategy
 {
@@ -21,12 +23,13 @@ public class ZipStrategy : IConversionStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method
-            && !method.Parameters.Any(parameter => parameter.Name == "resultSelector"))
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method)
         {
-            var tuples = LinqArguments.Call(Eq.LinqZipTuples, LinqSource.Ir(memberAccess.Expression, context), ["second", "third"],
-                invocation, argument => LinqSource.Argument(argument, invocation, context), context);
-            return tuples is null ? context.Unhandled(invocation, "Zip without a result selector") : Ir.JsExprWriter.Write(tuples);
+            var selects = method.Parameters.Any(parameter => parameter.Name == "resultSelector");
+            var zipped = LinqArguments.Call(selects ? Eq.Zip : Eq.LinqZipTuples, LinqSource.Ir(memberAccess.Expression, context),
+                selects ? ["second", "resultSelector"] : ["second", "third"], invocation,
+                argument => LinqSource.Argument(argument, invocation, context), context);
+            return zipped is null ? context.Unhandled(invocation, "Zip") : Ir.JsExprWriter.Write(zipped);
         }
 
         var source = LinqSource.Text(memberAccess.Expression, context);

@@ -36,6 +36,40 @@ internal static class LinqArguments
     }
 
     /// <summary>
+    /// <c>FirstOrDefault</c>, <c>LastOrDefault</c> and <c>SingleOrDefault</c> with a default value, .NET 6's
+    /// overloads with a predicate or without, through the runtime's (<paramref name="helper"/>): the element,
+    /// a null one included, or the value handed (#720, #760). They took the shape of the overloads without
+    /// one, which called the default value as a function, and a <c>??</c> over the element would hand the
+    /// default for a null element .NET answers. Null for every other overload.
+    /// </summary>
+    internal static string? WithADefaultValue(InvocationExpressionSyntax invocation, MemberAccessExpressionSyntax access,
+        string helper, ConversionContext context)
+    {
+        if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol method
+            || !method.Parameters.Any(parameter => parameter.Name == "defaultValue"))
+            return null;
+        var call = Call(helper, LinqSource.Ir(access.Expression, context), ["predicate", "defaultValue"],
+            invocation, argument => context.Converter.ConvertIr(argument.Expression), context);
+        return call is null
+            ? context.Unhandled(invocation, $"{method.Name} with a default value")
+            : JsExprWriter.Write(call);
+    }
+
+    /// <summary>
+    /// The argument of the in-tree call that <paramref name="argument"/> stands for: itself, or, in a call a
+    /// null-conditional rebuilt, the original at its position, which is the one the bound tree knows.
+    /// </summary>
+    internal static ArgumentSyntax Written(ArgumentSyntax argument, InvocationExpressionSyntax invocation,
+        ConversionContext context)
+    {
+        var at = invocation.ArgumentList.Arguments.IndexOf(argument);
+        return at >= 0 && (context.SemanticHelper.Original(invocation) as InvocationExpressionSyntax)?.ArgumentList.Arguments
+            is { } written && at < written.Count
+            ? written[at]
+            : argument;
+    }
+
+    /// <summary>
     /// <c>helper(source, p1, p2, …)</c> over <paramref name="slots"/>, the twin's parameters after the
     /// source in their order: each filled by the argument written for it (<paramref name="convert"/>
     /// writes it), and <c>undefined</c> where the call wrote none, then <paramref name="settled"/>, the

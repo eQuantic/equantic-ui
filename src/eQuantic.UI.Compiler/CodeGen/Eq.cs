@@ -134,6 +134,8 @@ public static class Eq
     public const string LinqFirstOrDefault = "$eq.linq.firstOrDefault";
     /// <summary>LINQ <c>LastOrDefault</c> with a default value, and a predicate or none.</summary>
     public const string LinqLastOrDefault = "$eq.linq.lastOrDefault";
+    /// <summary>LINQ <c>SingleOrDefault</c> with a default value, and a predicate or none.</summary>
+    public const string LinqSingleOrDefault = "$eq.linq.singleOrDefault";
     /// <summary>LINQ <c>SequenceEqual</c>, element by element by the element type's default equality.</summary>
     public const string LinqSequenceEqual = "$eq.linq.sequenceEqual";
     /// <summary>LINQ <c>Zip</c> without a result selector: the pairs, or the triples, as arrays.</summary>

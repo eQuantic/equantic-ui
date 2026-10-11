@@ -203,7 +203,8 @@ public class SharedComponentTranspilationTests
                 var zipped = Items().Zip(Items()).Sum(pair => pair.First * pair.Second);
                 var triples = Items().Zip(Items(), Pairs()).Sum(triple => triple.Third.Key);
                 var same = Items().SequenceEqual(Items());
-                var fallback = Items().FirstOrDefault(9) + Items().LastOrDefault(item => item > 1, 9);
+                var fallback = Items().FirstOrDefault(9) + Items().LastOrDefault(item => item > 1, 9)
+                    + Items().SingleOrDefault(item => item > 2, 9);
                 return new Text($"{average} {doubled} {sum} {total} {first} {distinct} {_seen} {count} "
                     + $"{groups} {found} {zipped} {triples} {same} {fallback}",
                     TypeRole.Caption);

@@ -28,6 +28,8 @@ import { checked } from './overflow';
 export type { Ordering };
 
 const NO_ELEMENTS = 'Sequence contains no elements';
+const MORE_THAN_ONE = 'Sequence contains more than one element';
+const MORE_THAN_ONE_MATCH = 'Sequence contains more than one matching element';
 
 /** .NET's refusal of a null argument, by the parameter's name. */
 function nullArgument(parameter: string): Error {
@@ -212,8 +214,11 @@ export function firstOrDefault<T>(
 
 /**
  * `LastOrDefault(defaultValue)` and `LastOrDefault(predicate, defaultValue)`: the last element that
- * matches, or the value handed (#720). A list is searched from its end, as .NET searches an `IList<T>`,
- * so a predicate runs only until it matches; any other sequence is walked whole.
+ * matches, or the value handed (#720). An array is searched from its end, as .NET searches an
+ * `IList<T>`, so a predicate runs only until it matches; any other iterable is walked whole. The
+ * compiler hands every source as an array, so a set or a queue is searched from its end too, and a
+ * predicate with side effects sees fewer of its elements than .NET's, which walks it whole: a
+ * sequence's laziness is #685's decision.
  */
 export function lastOrDefault<T>(
   source: Iterable<T>,
@@ -240,9 +245,40 @@ export function lastOrDefault<T>(
 }
 
 /**
+ * `SingleOrDefault(defaultValue)` and `SingleOrDefault(predicate, defaultValue)`, .NET 6's overloads:
+ * the one element, or the one that matches, a null one included, or the value handed where there is
+ * none (#760). A second element is refused, and so is a second match, the predicate having run on
+ * every element up to it, as .NET's walk does. They were lowered as the overloads without a default
+ * value, which called it as a predicate. A null source, and then a null predicate, are refused by name.
+ */
+export function singleOrDefault<T>(
+  source: Iterable<T>,
+  predicate: ((item: T) => boolean) | null | undefined,
+  defaultValue: T,
+): T {
+  if (source == null) throw nullArgument('source');
+  if (predicate === null) throw nullArgument('predicate');
+  let found = false;
+  let single = defaultValue;
+  for (const item of source) {
+    if (predicate !== undefined && !predicate(item)) continue;
+    if (found) {
+      throw exception(
+        'System.InvalidOperationException',
+        predicate === undefined ? MORE_THAN_ONE : MORE_THAN_ONE_MATCH,
+      );
+    }
+    found = true;
+    single = item;
+  }
+  return single;
+}
+
+/**
  * `SequenceEqual(second)` and `SequenceEqual(second, comparer)`, element by element by the element
- * type's default equality (`equality`, {@link KeyEquality}): a record and a decimal by value, an array
- * and a class by reference, a NaN equal to a NaN (#721). The text of each sequence's JSON was compared
+ * type's default equality (`equality`, {@link KeyEquality}): a record and a decimal by value, a class
+ * by its own `Equals` and by reference where it has none, an array by reference, a NaN equal to a NaN
+ * (#721). The text of each sequence's JSON was compared
  * instead, which threw for a long, told `1.0m` from `1.00m`, took a null for a NaN and two arrays of
  * the same items for one, and the overload with a comparer answered its first sequence. A comparer that
  * reaches here asks for that equality; the compiler refuses any other. Two lists of different lengths

@@ -11,6 +11,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 /// - Single(predicate) -> array.find(predicate)
 /// - SingleOrDefault() -> array.find(() => true) ?? null
 /// - SingleOrDefault(predicate) -> array.find(predicate) ?? null
+/// The overloads with a default value are the runtime's <c>$eq.linq.singleOrDefault</c>, which refuses a
+/// second element as .NET does (#760): they took this shape, which called the default as a predicate.
 /// </summary>
 public class SingleStrategy : IConversionStrategy
 {
@@ -41,6 +43,9 @@ public class SingleStrategy : IConversionStrategy
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var methodName = memberAccess.Name.Identifier.Text;
+
+        if (LinqArguments.WithADefaultValue(invocation, memberAccess, Eq.LinqSingleOrDefault, context) is { } withDefault)
+            return withDefault;
 
         var caller = LinqSource.Text(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
