@@ -3,6 +3,7 @@ using Android.Content.PM;
 using Android.Graphics;
 using Android.Runtime;
 using Android.Views;
+using Android.Views.InputMethods;
 using System.Runtime.Versioning;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
@@ -47,6 +48,13 @@ namespace eQuantic.UI.Native.Shell.Android;
 /// system's own back run, and that leaves the app.
 /// </para>
 /// <para>
+/// The KEYBOARD opens when an edit begins and closes when it ends, read from the host after each
+/// frame through a <see cref="TextInputSession"/>; a field is edited as a document through
+/// <see cref="PhotonInputConnection"/>. The tree lays out above the keyboard (the host's
+/// <see cref="PhotonHost.ViewInsets"/>) and the field being edited is scrolled into what is left.
+/// Keys, from the keyboard or from one attached to the device, reach the host as on a desktop.
+/// </para>
+/// <para>
 /// The LAUNCHER activity is generated into the app's own assembly, not this one. Android would
 /// otherwise never load the app: nothing would have referenced it, so the registration that names
 /// its program would never run. Subclassing is also what gives an app somewhere to override.
@@ -65,6 +73,8 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     private BackCallback? _back;
     private bool _backRegistered;
     private bool _backKeyTaken;
+    private TextInputSession? _input;
+    private InputMethodManager? _keyboard;
 
     /// <summary>Frames actually presented — the self-test's exit evidence, as on every other shell.</summary>
     public int FramesPresented { get; private set; }
@@ -166,8 +176,14 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         base.OnCreate(savedInstanceState);
         Current = this;
 
+        // The keyboard is given room rather than drawn over the app. Edge to edge, which Android 15
+        // enforces, the window keeps its size and the keyboard arrives as an inset; before that, the
+        // system shortens the window. The host reveals the edited field either way.
+        Window?.SetSoftInputMode(SoftInput.AdjustResize);
+
         _view = new PhotonSurfaceView(this);
         _view.Holder!.AddCallback(this);
+        _view.InsetsChanged = InsetsChanged;
         SetContentView(_view);
     }
 
@@ -232,6 +248,12 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             () => _host?.Semantics() ?? [],
             path => _host?.ActivatePath(path) ?? false,
             (path, direction) => _host?.AdjustPath(path, direction) ?? false);
+
+        // The keyboard follows the host's edit: the session says when it begins, moves and ends,
+        // and the view hands the keyboard a connection to it.
+        _keyboard = GetSystemService(InputMethodService)?.JavaCast<InputMethodManager>();
+        _input = new TextInputSession(_host);
+        if (_keyboard is not null) _view.Editing = (_host, _input, _keyboard);
 
         Choreographer.Instance!.PostFrameCallback(this);
     }
@@ -298,7 +320,8 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     /// <summary>
     /// The system's own margins — the status bar, the gesture handle, a cutout. A SafeArea node lays
     /// out against what the DEVICE reserves, which is the same contract the iOS shell honours and
-    /// the reason the Wallet's trees need no change to sit correctly on either.
+    /// the reason the Wallet's trees need no change to sit correctly on either. And the keyboard,
+    /// which is not a margin but a cover: the host lays the tree out above it.
     /// </summary>
     private void ApplyInsets(float scale)
     {
@@ -308,13 +331,43 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             var bars = insets.GetInsets(WindowInsets.Type.SystemBars() | WindowInsets.Type.DisplayCutout());
             _host.SafeAreaInsets = new EdgeInsets(
                 bars.Left / scale, bars.Top / scale, bars.Right / scale, bars.Bottom / scale);
+            _host.ViewInsets = new EdgeInsets(0, 0, 0, KeyboardOverlap(insets) / scale);
             return;
         }
 
-        // API 26-29: the typed accessor does not exist yet and these carry the same numbers.
+        // API 26-29: the typed accessor does not exist yet. The STABLE insets are the bars alone:
+        // the system window's grow by the keyboard, which there shortens the window instead, and
+        // read here it would pad the bottom by a keyboard the window already ends above.
         _host.SafeAreaInsets = new EdgeInsets(
-            insets.SystemWindowInsetLeft / scale, insets.SystemWindowInsetTop / scale,
-            insets.SystemWindowInsetRight / scale, insets.SystemWindowInsetBottom / scale);
+            insets.StableInsetLeft / scale, insets.StableInsetTop / scale,
+            insets.StableInsetRight / scale, insets.StableInsetBottom / scale);
+    }
+
+    /// <summary>
+    /// How much of THIS view the keyboard covers, in pixels: from where the view ends to where the
+    /// keyboard begins, rather than the keyboard's height. A window the system still shortens for
+    /// the keyboard (an app not drawn edge to edge) already ends above it, and the keyboard reaches
+    /// the host as that shorter window; read as an inset too, it would count twice.
+    /// </summary>
+    [SupportedOSPlatform("android30.0")]
+    private int KeyboardOverlap(WindowInsets insets)
+    {
+        if (_view is null || Window?.DecorView is not { } decor) return 0;
+        var keyboard = insets.GetInsets(WindowInsets.Type.Ime()).Bottom;
+        if (keyboard <= 0) return 0;
+        var at = new int[2];
+        _view.GetLocationInWindow(at);
+        return Math.Max(0, at[1] + _view.Height - (decor.Height - keyboard));
+    }
+
+    /// <summary>The insets changed without anything in the host changing: the keyboard rose or
+    /// fell. The frame that lays out around them is drawn now.</summary>
+    private void InsetsChanged()
+    {
+        if (_host is null) return;
+        var safeArea = _host.SafeAreaInsets;
+        ApplyInsets(Resources!.DisplayMetrics!.Density);
+        if (_host.SafeAreaInsets != safeArea) _host.Invalidate();
     }
 
     // ---- The clock ------------------------------------------------------------------------------
@@ -379,6 +432,9 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
 
         // And whether back has anywhere to go now, which Android has to know BEFORE the gesture.
         SyncBack();
+
+        // And whether the keyboard has to open, start over, close or hear a new value.
+        SyncKeyboard();
 
         if (forced == true && FramesPresented >= Application!.Options.MaxFrames)
         {
@@ -465,10 +521,13 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     }
 
     /// <summary>
+    /// Every key reaches the host here (<see cref="Key"/>), and back is the one with rules of its own.
+    /// <para>
     /// Back, as Android delivers it: the callback above, or this key. Before Android 13 it is always
     /// the key, and from 13 it still is for an app the platform does not treat as opted into
     /// predictive back; when the platform calls the callback, the key never arrives, so the two
     /// cannot both run for one press.
+    /// </para>
     /// <para>
     /// The DOWN decides, and the UP follows it. Taken, the activity never starts tracking a back of
     /// its own and cannot finish on the UP; and the UP is taken even when what was open closed in
@@ -478,7 +537,8 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     /// </summary>
     public override bool DispatchKeyEvent(KeyEvent? e)
     {
-        if (e?.KeyCode != Keycode.Back) return base.DispatchKeyEvent(e);
+        if (e is null) return base.DispatchKeyEvent(e);
+        if (e.KeyCode != Keycode.Back) return Key(e) || base.DispatchKeyEvent(e);
         if (e.Action == KeyEventActions.Down && e.RepeatCount == 0) _backKeyTaken = _host?.CanGoBack == true;
         if (!_backKeyTaken) return base.DispatchKeyEvent(e);
         if (e.Action == KeyEventActions.Up)
@@ -511,6 +571,84 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         public void OnBackInvoked() => activity.GoBack();
     }
 
+    // ---- The keyboard ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// Opens, restarts and closes the keyboard as the host's edit begins, moves and ends, and tells
+    /// it a field's new state. Read after each frame, as back is: the host says what is being
+    /// edited, the session says what changed, and this does it.
+    /// </summary>
+    private void SyncKeyboard()
+    {
+        if (_input is null || _view is null || _keyboard is null) return;
+        switch (_input.Poll())
+        {
+            case TextInputChange.Began:
+                _view.RequestFocus();
+                _keyboard.RestartInput(_view);
+                ShowKeyboard();
+                break;
+            case TextInputChange.Retargeted:
+                _keyboard.RestartInput(_view);
+                ShowKeyboard();
+                break;
+            case TextInputChange.Ended:
+                HideKeyboard();
+                // Restarted on nothing: the view now answers that there is nothing to edit.
+                _keyboard.RestartInput(_view);
+                break;
+            case TextInputChange.ValueChanged:
+                _view.Connection?.Apply(_input.Value);
+                break;
+        }
+    }
+
+    private void ShowKeyboard()
+    {
+        if (_view is null) return;
+        if (OperatingSystem.IsAndroidVersionAtLeast(30) && _view.WindowInsetsController is { } controller)
+            controller.Show(WindowInsets.Type.Ime());
+        else
+            _keyboard?.ShowSoftInput(_view, 0);
+    }
+
+    private void HideKeyboard()
+    {
+        if (_view is null) return;
+        if (OperatingSystem.IsAndroidVersionAtLeast(30) && _view.WindowInsetsController is { } controller)
+            controller.Hide(WindowInsets.Type.Ime());
+        else
+            _keyboard?.HideSoftInputFromWindow(_view.WindowToken, HideSoftInputFlags.None);
+    }
+
+    /// <summary>
+    /// A key for the host: one the keyboard sent (Enter, Backspace, every key into a code surface)
+    /// or one from a keyboard attached to the device. The named key first, as on Windows: only
+    /// what nothing claimed becomes text, so Space runs the focused button instead of typing into
+    /// whatever field was last touched.
+    /// </summary>
+    private bool Key(KeyEvent e)
+    {
+        if (_host is null) return false;
+        // Text no key of the device's key map types, sent as one event.
+        if (e.Action == KeyEventActions.Multiple && e.KeyCode == Keycode.Unknown)
+            return e.Characters is { Length: > 0 } characters && Took(_host.TextInput(characters));
+        if (e.Action != KeyEventActions.Down) return false;
+        var modifiers = AndroidKeys.Modifiers(e);
+        var name = AndroidKeys.NameOf(e);
+        if (name.Length > 0 && _host.KeyDown(name, modifiers)) return Took(true);
+        var text = AndroidKeys.TypedText(e, modifiers);
+        return text.Length > 0 && Took(_host.TextInput(text));
+    }
+
+    /// <summary>A key the host took may have edited the field: the keyboard's mirror of it takes the
+    /// edit before the keyboard's next one reads it.</summary>
+    private bool Took(bool handled)
+    {
+        if (handled) _view?.Connection?.Refresh();
+        return handled;
+    }
+
     // ---- Touches --------------------------------------------------------------------------------
 
     // ONE finger owns the interaction. A second landing mid-gesture would jump the pointer between
@@ -535,6 +673,11 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
                 return true;
             case MotionEventActions.Up:
                 _host.PressUp(x, y, PointerKind.Touch);
+                // A tap that leaves something being edited brings back a keyboard the person put
+                // away: back hides the keyboard and leaves the field being edited, as Android's own
+                // fields do, and tapping the field again is how they get it back.
+                if (_host.HasTextFocus && _input?.Target is TextInputTarget.Text or TextInputTarget.Keys)
+                    ShowKeyboard();
                 return true;
             // The system took the gesture away — a scroll view claimed it, a call arrived. Nothing
             // was decided, so nothing is reported and every surface returns to the caller's rest.
