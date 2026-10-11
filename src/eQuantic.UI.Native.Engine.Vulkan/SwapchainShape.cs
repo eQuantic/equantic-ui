@@ -17,6 +17,12 @@ internal static class SwapchainShape
     /// does, so a phone held sideways would show the app sideways. The price is a present that
     /// answers SUBOPTIMAL while the two differ, which <see cref="SwapchainStatus.Usable"/> reads as
     /// shown.
+    /// <para>
+    /// A surface that refuses IDENTITY gets its current transform, because a transform outside the
+    /// supported set is not a swapchain Vulkan can make, and its images would then show turned: the
+    /// renderer does not pre-rotate. No surface this engine presents to does that. Android's loader
+    /// offers IDENTITY on every surface, and the desktop drivers offer nothing else.
+    /// </para>
     /// </summary>
     internal static uint PreTransform(uint supported, uint current) =>
         (supported & Identity) != 0 ? Identity : current;
