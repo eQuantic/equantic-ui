@@ -2242,7 +2242,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   dropped unread, which never ran its call and built a list where a negative one throws, all fixed; a
   `T[]` behind the faces grows where .NET refuses, as it did before,
   [#711](https://github.com/eQuantic/equantic-ui/issues/711). 97 of the 115 new conformance cases fail
-  on main, and 14 of the 16 new Compiler cases; all of them pass here. The served runtime grows 656
+  on main, and 14 of the 16 new Compiler cases; all of them pass here. One gap of the null-argument
+  baseline closes with it, ToLookup's null comparer, 402 entries to 401. The served runtime grows 686
   gzipped bytes over what main serves, the twins' reads through a list's face and the runtime's
   helpers behind it. Proposed and archived through OpenSpec (`openspec/specs/transpiler-bcl`,
   `transpiler-sequences` and `transpiler-expressions`).
