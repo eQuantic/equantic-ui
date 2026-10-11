@@ -46,15 +46,15 @@ public sealed unsafe class VulkanSwapchain : IDisposable
     /// <summary>
     /// Draws one frame and shows it. Returns false when the presentation engine says the swapchain
     /// no longer matches the surface — a rotation, a resize — which is a fact about the WINDOW, not
-    /// an error: the caller rebuilds and carries on.
+    /// an error: the caller rebuilds and carries on. A swapchain that only matches it less than
+    /// exactly still draws and shows (see <see cref="SwapchainStatus"/>).
     /// </summary>
     public bool Present(DisplayList displayList, RhiRenderer renderer)
     {
         uint index;
         var acquire = VkSurface.vkAcquireNextImageKHR(_device.Device, _swapchain, ulong.MaxValue,
             _acquired, 0, &index);
-        if (acquire is -1000001004 or -1000001002) return false; // OUT_OF_DATE / SUBOPTIMAL
-        Vk.Check(acquire, "swapchain acquire");
+        if (!SwapchainStatus.Usable(acquire, "swapchain acquire")) return false;
 
         var target = _targets[index];
         var commands = (VulkanCommandList)_device.Begin(target, RhiRenderer.ClearColorOf(displayList));
@@ -73,9 +73,7 @@ public sealed unsafe class VulkanSwapchain : IDisposable
             PImageIndices = &index,
         };
         var present = VkSurface.vkQueuePresentKHR(_device.Queue, &presentInfo);
-        if (present is -1000001004 or -1000001002) return false;
-        Vk.Check(present, "queue present");
-        return true;
+        return SwapchainStatus.Usable(present, "queue present");
     }
 
     /// <summary>Rebuilds for the surface's current size — a rotation, a resize, a keyboard.</summary>
@@ -117,7 +115,8 @@ public sealed unsafe class VulkanSwapchain : IDisposable
             ImageArrayLayers = 1,
             ImageUsage = 0x10,          // COLOR_ATTACHMENT
             ImageSharingMode = 0,       // EXCLUSIVE — one queue family draws and presents
-            PreTransform = capabilities.CurrentTransform,
+            PreTransform = SwapchainStatus.PreTransform(capabilities.SupportedTransforms,
+                capabilities.CurrentTransform),
             CompositeAlpha = 0x1,       // OPAQUE — the app owns every pixel of its window
             PresentMode = PresentModeFifo,
             Clipped = 1,
