@@ -72,6 +72,9 @@ public class StringMethodStrategy : IConversionStrategy
 
         if (methodName == "Split")
             return SplitCall(invocation, context);
+        if (methodName is "IndexOf" or "LastIndexOf" && invocation.ArgumentList.Arguments.Count > 1
+            && context.SemanticHelper.GetSymbol(invocation) is null && SpelledSearch(invocation.ArgumentList.Arguments) is null)
+            return context.Unhandled(invocation, $"string.{methodName} whose start, count or comparison the spelling cannot tell apart");
         // An overload that compares goes to the runtime, chosen by the BOUND method and handed the
         // comparison as the value it is, its member's name, so one held in a variable is the one it
         // holds. It was read from its SPELLING and both sides were lower-cased: the Kelvin sign
@@ -129,8 +132,8 @@ public class StringMethodStrategy : IConversionStrategy
     /// (#532). The bound method says which overload it is; with no model to ask, a comparison spelled
     /// as the last argument and the count of the arguments are the only evidence there is, a Replace
     /// of two arguments is the ordinal one whether they are strings or chars, which it answers alike,
-    /// and a search from a start is a string's unless a char literal says it is a char's, where its
-    /// start and count are written or computed numbers (<see cref="IsANumber"/>).
+    /// and a search is what its spelling settles (<see cref="SpelledSearch"/>), a char's from a start
+    /// left to <see cref="CharSearch"/>.
     /// </summary>
     private static string? ComparingShape(InvocationExpressionSyntax invocation, string methodName, ConversionContext context)
     {
@@ -166,23 +169,67 @@ public class StringMethodStrategy : IConversionStrategy
                 return "s,b,u";
             case ("Replace", 4):
                 return "s,s,b,u";
-            // A search from a start, and for a count, of a value no char literal says is a char, whose
-            // start and count no comparison could be: a name could hold one, a number cannot.
-            case ("IndexOf" or "LastIndexOf", 2 or 3)
-                when !arguments[0].Expression.IsKind(SyntaxKind.CharacterLiteralExpression)
-                    && arguments.Skip(1).All(argument => IsANumber(argument.Expression)):
-                return arguments.Count == 2 ? "s,i" : "s,i,i";
+            case ("IndexOf" or "LastIndexOf", > 1):
+                return SpelledSearch(arguments) is ['s', ..] search ? search : null;
         }
-        if (arguments.Count == 0 || !arguments[^1].Expression.ToString().Contains("StringComparison")) return null;
+        if (arguments.Count == 0 || !SpellsAComparison(arguments[^1].Expression)) return null;
         return (methodName, arguments.Count) switch
         {
-            ("Equals" or "StartsWith" or "EndsWith" or "Contains" or "IndexOf" or "LastIndexOf", 2) => "s,k",
-            ("IndexOf" or "LastIndexOf", 3) => "s,i,k",
-            ("IndexOf" or "LastIndexOf", 4) => "s,i,i,k",
+            ("Equals" or "StartsWith" or "EndsWith" or "Contains", 2) => "s,k",
             ("Replace", 3) => "s,s,k",
             _ => null,
         };
     }
+
+    /// <summary>
+    /// The shape of an <c>IndexOf</c> or <c>LastIndexOf</c> of two arguments or more, in
+    /// <see cref="ComparingShape"/>'s letters, with no model to say which overload it is, or null where
+    /// the spelling cannot settle it. After the value, an argument is a start or a count where it is a
+    /// number (<see cref="IsANumber"/>), is named as one, or stands where only an int can (the second of
+    /// three, the second and third of four); it is a comparison where it is spelled or named as one, or
+    /// is the fourth. A name in the second place of two, or the third of three, could hold either, so
+    /// the shape is null, and so it is for a named argument out of its parameter's place, which nothing
+    /// here moves. The value is a char where a char literal says so and nothing compares: a search
+    /// that compares takes a char as the string of one it is in the browser.
+    /// </summary>
+    private static string? SpelledSearch(SeparatedSyntaxList<ArgumentSyntax> arguments)
+    {
+        var count = arguments.Count;
+        var tail = new List<char>();
+        for (var place = 1; place < count; place++)
+        {
+            var argument = arguments[place];
+            tail.Add(argument.NameColon?.Name.Identifier.ValueText switch
+            {
+                "startIndex" or "count" => 'i',
+                "comparisonType" => 'k',
+                not null => '?',
+                _ when IsANumber(argument.Expression) => 'i',
+                _ when SpellsAComparison(argument.Expression) => 'k',
+                _ when count == 4 => place < 3 ? 'i' : 'k',
+                _ when count == 3 && place == 1 => 'i',
+                _ => '?',
+            });
+        }
+        string[]? names = new string(tail.ToArray()) switch
+        {
+            "i" => ["value", "startIndex"],
+            "ii" => ["value", "startIndex", "count"],
+            "k" => ["value", "comparisonType"],
+            "ik" => ["value", "startIndex", "comparisonType"],
+            "iik" => ["value", "startIndex", "count", "comparisonType"],
+            _ => null,
+        };
+        if (names is null) return null;
+        for (var place = 0; place < count; place++)
+            if (arguments[place].NameColon?.Name.Identifier.ValueText is { } name && name != names[place]) return null;
+        var value = arguments[0].Expression.IsKind(SyntaxKind.CharacterLiteralExpression) && !tail.Contains('k') ? 'c' : 's';
+        return string.Join(",", tail.Prepend(value));
+    }
+
+    /// <summary>Whether an argument spells a <c>StringComparison</c>, the only evidence of one with no
+    /// model to ask.</summary>
+    private static bool SpellsAComparison(ExpressionSyntax expression) => expression.ToString().Contains("StringComparison");
 
     /// <summary>
     /// The runtime's search for an overload that compares. It takes the overload's arguments as C#
@@ -226,7 +273,8 @@ public class StringMethodStrategy : IConversionStrategy
     /// runtime, which checks the range as .NET 10 checks it. JavaScript's <c>indexOf</c> and
     /// <c>lastIndexOf</c> clamped a start outside the string and take no count, so the count was
     /// dropped (#534). The bound method says it is the char overload; with no model to ask, a char
-    /// literal written as the value is the only evidence there is.
+    /// literal written as the value is the only evidence there is, its start and count placed by
+    /// <see cref="SpelledSearch"/>.
     /// </summary>
     private static string? CharSearch(InvocationExpressionSyntax invocation, string methodName, ConversionContext context)
     {
@@ -237,7 +285,7 @@ public class StringMethodStrategy : IConversionStrategy
             ? bound.Parameters.Length is 2 or 3
                 && bound.Parameters[0].Type.SpecialType == SpecialType.System_Char
                 && bound.Parameters.Skip(1).All(parameter => parameter.Type.SpecialType == SpecialType.System_Int32)
-            : arguments.Count is 2 or 3 && arguments[0].Expression.IsKind(SyntaxKind.CharacterLiteralExpression);
+            : arguments.Count > 1 && SpelledSearch(arguments) is "c,i" or "c,i,i";
         if (!isCharSearch) return null;
         var helper = methodName == "IndexOf" ? Eq.StringIndexOfChar : Eq.StringLastIndexOfChar;
         return RuntimeCall(invocation, helper, bound?.Parameters.Length ?? arguments.Count, "", bound, context);
@@ -396,40 +444,57 @@ public class StringMethodStrategy : IConversionStrategy
     }
 
     /// <summary>
-    /// <c>string.Split</c> with no model to say which overload it is: no argument is white space, chars
-    /// written one by one are a set of them, an array is a set, and anything else is the one separator,
-    /// followed by a count and options in the order they are written. A second argument alone is the
-    /// options where they are spelled as such and the count where it is a number
-    /// (<see cref="IsANumber"/>); a name could hold either, so it is a build error rather than a
-    /// guess, as <c>string.Format</c>'s first argument is.
+    /// <c>string.Split</c> with no model to say which overload it is. No argument is white space; chars
+    /// written one by one are a set of them, and so are more than three arguments, which only the
+    /// params overload takes; one argument is a set where it is an array and the one separator
+    /// otherwise. After the separator, the options are spelled or named as such and a count is a
+    /// number or named as one (<see cref="IsANumber"/>), and three arguments are a separator, a count
+    /// and options where the separator is an array or either of the others says what it is. A name
+    /// could hold a count or options, and three of them could be three chars, so what the spelling
+    /// cannot place is a build error rather than a guess, as <c>string.Format</c>'s first argument is;
+    /// so is a named argument out of its parameter's place, which nothing here moves.
     /// </summary>
     private static string GuessedSplit(InvocationExpressionSyntax invocation, JsExpr receiver, ConversionContext context)
     {
         var arguments = invocation.ArgumentList.Arguments;
+        string? Name(int place) => arguments[place].NameColon?.Name.Identifier.ValueText;
+        var inPlace = Enumerable.Range(0, arguments.Count).All(place => Name(place) switch
+        {
+            null => true,
+            "separator" => place == 0,
+            "count" => place == 1,
+            "options" => place > 0 && place == arguments.Count - 1,
+            _ => false,
+        });
+        if (!inPlace)
+            return context.Unhandled(invocation, "string.Split with a named argument out of its place, which no model moves");
+        bool IsCount(int place) => Name(place) == "count" || IsANumber(arguments[place].Expression);
+        bool IsOptions(int place) => Name(place) == "options" || SpelledOptions(arguments[place].Expression) is not null;
+
         // Options spelled as members are the number they make: with no model a member is its key.
         var parts = new List<JsExpr> { receiver };
         parts.AddRange(arguments.Select(argument => SpelledOptions(argument.Expression) is { } options
             ? JsExpr.Literal(options.ToString(System.Globalization.CultureInfo.InvariantCulture))
             : context.Converter.ConvertIr(argument.Expression)));
         var holes = Enumerable.Range(1, arguments.Count).Select(index => "{" + index + "}").ToList();
-        string template;
-        if (arguments.Count == 0)
-            template = $"{Eq.StringSplitAny}({{0}})";
-        else if (arguments.Count > 1 && arguments.All(argument => argument.Expression.IsKind(SyntaxKind.CharacterLiteralExpression)))
-            template = $"{Eq.StringSplitAny}({{0}}, [{string.Join(", ", holes)}])";
-        else
+        var isSet = arguments.Count > 0 && arguments[0].Expression is ArrayCreationExpressionSyntax
+            or ImplicitArrayCreationExpressionSyntax or CollectionExpressionSyntax;
+        var helper = isSet ? Eq.StringSplitAny : Eq.StringSplit;
+        var template = arguments.Count switch
         {
-            var helper = arguments[0].Expression is ArrayCreationExpressionSyntax or ImplicitArrayCreationExpressionSyntax
-                or CollectionExpressionSyntax
-                ? Eq.StringSplitAny
-                : Eq.StringSplit;
-            if (arguments.Count == 2 && SpelledOptions(arguments[1].Expression) is not null)
-                holes.Insert(1, "undefined");
-            else if (arguments.Count == 2 && !IsANumber(arguments[1].Expression))
-                return context.Unhandled(invocation, "string.Split whose second argument the spelling cannot tell a count from options by");
-            template = $"{helper}({{0}}, {string.Join(", ", holes)})";
-        }
-        return JsExprWriter.Write(JsExpr.Template(template, parts));
+            0 => $"{Eq.StringSplitAny}({{0}})",
+            > 3 => $"{Eq.StringSplitAny}({{0}}, [{string.Join(", ", holes)}])",
+            > 1 when arguments.All(argument => argument.Expression.IsKind(SyntaxKind.CharacterLiteralExpression)) =>
+                $"{Eq.StringSplitAny}({{0}}, [{string.Join(", ", holes)}])",
+            1 => $"{helper}({{0}}, {{1}})",
+            2 when IsOptions(1) => $"{helper}({{0}}, {{1}}, undefined, {{2}})",
+            2 when IsCount(1) => $"{helper}({{0}}, {{1}}, {{2}})",
+            3 when isSet || IsCount(1) || IsOptions(2) => $"{helper}({{0}}, {{1}}, {{2}}, {{3}})",
+            _ => null,
+        };
+        return template is null
+            ? context.Unhandled(invocation, "string.Split whose separator, count and options the spelling cannot tell apart")
+            : JsExprWriter.Write(JsExpr.Template(template, parts));
     }
 
     /// <summary>The value of <c>StringSplitOptions</c> members spelled out and joined by <c>|</c>, or null
