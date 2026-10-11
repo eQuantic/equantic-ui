@@ -117,8 +117,8 @@ public sealed class ListDetail : StatelessComponent
             : Pane(ListTitle, List());
         // Back un-chooses on a phone, so the detail binds the key back runs: Escape on a desktop, the
         // back gesture on Android. Only in this arm — wide, Escape is not ours to take.
-        if (Detail is not null && OnBack is { } back)
-            compact = new Shortcut(compact, KeyChord.Escape, back);
+        if (Detail is not null && OnBack is { } goBack)
+            compact = new Shortcut(compact, KeyChord.Escape, goBack);
 
         var wide = new Row(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
         wide.Add(new Box(new BoxStyle { Width = ListWidth, Height = SizeValue.Fill },

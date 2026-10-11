@@ -1,4 +1,4 @@
-import { AdaptiveNode, AppBar, Box, BoxStyle, BuildContext, Column, Divider, EmptyState, Flexible, Icon, IconButton, IconGlyph, Row, SdkStrings, SizeValue, StatelessComponent, VisualNode } from "../runtime-exports";
+import { AdaptiveNode, AppBar, Box, BoxStyle, BuildContext, Column, Divider, EmptyState, Flexible, Icon, IconButton, IconGlyph, KeyChord, Row, SdkStrings, Shortcut, SizeValue, StatelessComponent, VisualNode } from "../runtime-exports";
 
 export class ListDetail extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.ListDetail';
@@ -36,6 +36,8 @@ export class ListDetail extends StatelessComponent {
         };
         let chosen: any; 
         let compact = (chosen = this.detail) != null ? pane(this.title, chosen(), back()) : pane(this.listTitle, this.list());
+        let goBack: any; 
+        if (!(this.detail == null) && (goBack = this.onBack) != null) compact = new Shortcut(compact, KeyChord.escape, goBack);
         let wide = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill });
         wide.add(new Box(new BoxStyle({ width: this.listWidth, height: SizeValue.fill }), pane(this.listTitle, this.list())));
         wide.add(new Divider('none', 'vertical'));

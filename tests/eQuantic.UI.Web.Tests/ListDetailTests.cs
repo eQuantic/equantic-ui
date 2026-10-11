@@ -227,7 +227,7 @@ public class ListDetailTests
     public void OnlyTheCompactDetailBindsEscapeToBack()
     {
         static int EscapeBindings(HtmlNode html) =>
-            Walk(html).Count(node => node.Attributes.GetValueOrDefault("data-eq-shortcut", "")
+            Walk(html).Count(node => (node.Attributes.GetValueOrDefault("data-eq-shortcut") ?? "")
                 .Split(' ').Contains("escape"));
 
         var chosen = (AdaptiveNode)new ListDetail(Inbox, () => new Text("Body"), onBack: () => { })
