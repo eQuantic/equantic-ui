@@ -1,0 +1,95 @@
+# Spec Delta
+
+## Purpose
+
+How a release's packages reach nuget.org from the run that built them: what a push that fails for
+a reason outside the package does, how a release that stops halfway is finished from its own run's
+packages without a new version, and how its release page is written.
+
+## ADDED Requirements
+
+### Requirement: A package nuget.org already lists is not pushed again
+
+Publishing a release SHALL skip every package whose version nuget.org's package index already
+lists, and SHALL push only the others.
+
+#### Scenario: A release that stopped after 33 of 50 packages
+
+- **WHEN** the 50 packages of a release are published and nuget.org already lists 33 of them at
+  that version
+- **THEN** 17 pushes are made, one for each package nuget.org does not list
+
+### Requirement: A push that fails for a reason outside the package is tried again
+
+When a push fails and nuget.org did not refuse the key, publishing SHALL try the same package
+again after a wait, each wait longer than the one before, a fixed number of times, and SHALL pause
+between one package and the next.
+
+#### Scenario: nuget.org answers 500 and then accepts the package
+
+- **WHEN** the push of a package fails twice with a 500 and succeeds on the third try
+- **THEN** the package is pushed, after one wait and then a longer one, and publishing goes on to
+  the next package
+
+### Requirement: Publishing goes on after a package it could not push and fails at the end
+
+A package that still fails after the last try SHALL NOT stop the packages after it from being
+pushed. Publishing SHALL then fail, naming every package it could not push.
+
+#### Scenario: One package never goes through
+
+- **WHEN** every try of one package fails and the packages after it succeed
+- **THEN** the packages after it are pushed, and publishing exits with a failure that names that
+  package
+
+### Requirement: A refused key stops publishing at once
+
+When nuget.org refuses the key (401 or 403), publishing SHALL stop without trying that package
+again or pushing any other, and SHALL fail saying that the key was refused.
+
+#### Scenario: The key has expired
+
+- **WHEN** nuget.org answers 403 to the first push
+- **THEN** no other push is made, and publishing fails saying the key was refused
+
+### Requirement: A release that stopped halfway is finished by hand from its own run's packages
+
+A workflow run by hand SHALL take the id of the run that built a release, the release's tag and,
+optionally, the ids of the packages to publish. It SHALL download that run's packages and publish,
+by the requirements above, the packages it was given, or every one of them nuget.org does not list
+yet when it was given none, and SHALL then write the tag's release page. It SHALL refuse a package
+id that the run's packages do not hold before it pushes anything, and the key SHALL be read only
+from the repository's secrets.
+
+#### Scenario: Finishing 0.2.0-preview.61
+
+- **WHEN** the workflow is run with run 38132878034, tag `v0.2.0-preview.61` and no package ids
+- **THEN** it pushes the packages nuget.org does not list at `0.2.0-preview.61` and writes the
+  release page of `v0.2.0-preview.61`
+
+#### Scenario: A package id the run did not build
+
+- **WHEN** the workflow is given the package id `eQuantic.UI.Missing`
+- **THEN** it fails naming that id, and no package is pushed
+
+### Requirement: The release page is written from the tag's annotation, whoever writes it
+
+The release page SHALL be titled `eQuantic.UI <version>`, SHALL carry the body of the tag's
+annotation (its subject line left out), SHALL be marked a pre-release when the version has a
+pre-release suffix, and SHALL be edited in place, not created twice, when it exists already. The
+tag's own pipeline and the workflow run by hand SHALL write it the same way.
+
+#### Scenario: A page that exists already
+
+- **WHEN** the release page of `v0.2.0-preview.61` exists and the page is written again
+- **THEN** that page's title and body are set from the annotation, and no second page is created
+
+### Requirement: Publishing is exercised on every pull request
+
+The pipeline SHALL run the publishing logic on every pull request and on `main` against a stub of
+the push and of nuget.org's package index, and SHALL fail when any requirement above does not hold.
+
+#### Scenario: A change that stops publishing at the first failure
+
+- **WHEN** a pull request makes publishing stop at the first package it cannot push
+- **THEN** that pull request's checks fail, naming the requirement it broke
