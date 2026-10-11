@@ -28,6 +28,34 @@ describe('tryParse of the time types', () => {
     expect(timeOnly.tryParse('25:00')).toBeUndefined();
     expect(timeOnly.tryParse('09:60')).toBeUndefined();
     expect(timeOnly.tryParse('09:30 junk')).toBeUndefined();
-    expect(() => timeOnly.parse('25:00')).toThrow("Unrecognized TimeOnly format: '25:00'");
+    expect(() => timeOnly.parse('25:00')).toThrow(
+      "String '25:00' was not recognized as a valid TimeOnly.",
+    );
+  });
+
+  // Measured on .NET 10 in the invariant culture.
+  it('reads an AM or PM designator as .NET does', () => {
+    expect(timeOnly.parse('9:30 AM').ticks).toBe(342_000_000_000n);
+    expect(timeOnly.parse('9:30 pm').ticks).toBe(774_000_000_000n);
+    expect(timeOnly.parse('12:15 AM').ticks).toBe(9_000_000_000n);
+    expect(timeOnly.parse('12:15 PM').ticks).toBe(441_000_000_000n);
+    expect(timeOnly.parse('13:00 PM').ticks).toBe(468_000_000_000n);
+    expect(timeOnly.parse('9PM').ticks).toBe(756_000_000_000n);
+    expect(timeOnly.parse('AM 9:30').ticks).toBe(342_000_000_000n);
+    expect(timeOnly.tryParse('13:00 AM')).toBeUndefined();
+    expect(timeOnly.tryParse('PM 9:30 PM')).toBeUndefined();
+    expect(timeOnly.tryParse('9')).toBeUndefined();
+  });
+
+  it('rounds a fraction to the tick as .NET does', () => {
+    expect(timeOnly.parse('09:30:15.12345678').ticks).toBe(342_151_234_568n);
+    expect(timeOnly.parse('9:30:15.00000005').ticks).toBe(342_150_000_001n);
+    expect(timeOnly.parse('23:59:59.99999999').ticks).toBe(0n);
+    expect(timeOnly.parse('09:30:15.').ticks).toBe(342_150_000_000n);
+  });
+
+  it('keeps a fault of its own reader loud', () => {
+    const broken = { toString: () => '09:30' } as unknown as string;
+    expect(() => timeOnly.tryParse(broken)).toThrow(TypeError);
   });
 });

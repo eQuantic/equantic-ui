@@ -38,12 +38,42 @@ public class DateTimeTryParseConformanceTests
     [InlineData("var ok = TimeOnly.TryParse(\"25:00\", out var t); return ok + \":\" + t.Ticks;")]
     [InlineData("var ok = TimeOnly.TryParse(\"abc\", out var t); return ok + \":\" + t.Ticks;")]
     [InlineData("var ok = TimeOnly.TryParse(null, out var t); return ok + \":\" + t.Ticks;")]
+    // A TimeOnly's designator, before or after, in any case, an hour alone with one, and its fraction
+    // rounded to the tick, as .NET's date-time reader reads them in the invariant culture.
+    [InlineData("var ok = TimeOnly.TryParse(\"9:30 AM\", out var t); return ok + \":\" + t.Ticks;")]
+    [InlineData("var ok = TimeOnly.TryParse(\"9:30 pm\", out var t); return ok + \":\" + t.Ticks;")]
+    [InlineData("var ok = TimeOnly.TryParse(\"12:15 AM\", out var t); return ok + \":\" + t.Ticks;")]
+    [InlineData("var ok = TimeOnly.TryParse(\"12:15 PM\", out var t); return ok + \":\" + t.Ticks;")]
+    [InlineData("var ok = TimeOnly.TryParse(\"13:00 PM\", out var t); return ok + \":\" + t.Ticks;")]
+    [InlineData("var ok = TimeOnly.TryParse(\"13:00 AM\", out var t); return ok + \":\" + t.Ticks;")]
+    [InlineData("var ok = TimeOnly.TryParse(\"9PM\", out var t); return ok + \":\" + t.Ticks;")]
+    [InlineData("var ok = TimeOnly.TryParse(\"AM 9:30\", out var t); return ok + \":\" + t.Ticks;")]
+    [InlineData("var ok = TimeOnly.TryParse(\"PM 9:30 PM\", out var t); return ok + \":\" + t.Ticks;")]
+    [InlineData("var ok = TimeOnly.TryParse(\"9\", out var t); return ok + \":\" + t.Ticks;")]
+    [InlineData("var ok = TimeOnly.TryParse(\"9:5:3\", out var t); return ok + \":\" + t.Ticks;")]
+    [InlineData("var ok = TimeOnly.TryParse(\"009:30\", out var t); return ok + \":\" + t.Ticks;")]
+    [InlineData("var ok = TimeOnly.TryParse(\"09:30:15.12345678\", out var t); return ok + \":\" + t.Ticks;")]
+    [InlineData("var ok = TimeOnly.TryParse(\"9:30:15.00000005\", out var t); return ok + \":\" + t.Ticks;")]
+    [InlineData("var ok = TimeOnly.TryParse(\"9:30:15.00000025\", out var t); return ok + \":\" + t.Ticks;")]
+    [InlineData("var ok = TimeOnly.TryParse(\"23:59:59.99999999\", out var t); return ok + \":\" + t.Ticks;")]
+    [InlineData("var ok = TimeOnly.TryParse(\"09:30:15.\", out var t); return ok + \":\" + t.Ticks;")]
     // A TimeSpan.
     [InlineData("var ok = TimeSpan.TryParse(\"1.02:03:04.5\", out var s); return ok + \":\" + s.Ticks;")]
     [InlineData("var ok = TimeSpan.TryParse(\"-02:03:04\", out var s); return ok + \":\" + s.Ticks;")]
     [InlineData("var ok = TimeSpan.TryParse(\"abc\", out var s); return ok + \":\" + s.Ticks;")]
     [InlineData("var ok = TimeSpan.TryParse(null, out var s); return ok + \":\" + s.Ticks;")]
     public void TryParse_AnswersAsDotNetAnswers(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>What a DateOnly's and a TimeOnly's Parse refuse, in .NET's words.</summary>
+    [SkippableTheory]
+    [InlineData("try { TimeOnly.Parse(\"25:00\"); return \"no\"; } catch (FormatException e) { return e.Message; }")]
+    [InlineData("try { TimeOnly.Parse(\"9:30 PM junk\"); return \"no\"; } catch (FormatException e) { return e.Message; }")]
+    [InlineData("try { DateOnly.Parse(\"abc\"); return \"no\"; } catch (FormatException e) { return e.Message; }")]
+    public void Parse_RefusesInDotNetsWords(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);

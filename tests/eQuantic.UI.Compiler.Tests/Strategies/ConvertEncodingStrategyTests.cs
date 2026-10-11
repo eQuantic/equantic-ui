@@ -25,6 +25,8 @@ public class ConvertEncodingStrategyTests
         "$eq.convert.toBase64String([1], undefined, undefined, 1)")]
     [InlineData("Convert.ToBase64String(new byte[] { 1 }, 0, 1)", "$eq.convert.toBase64String([1], 0, 1)")]
     [InlineData("Convert.ToHexStringLower([1, 2])", "$eq.convert.toHexStringLower([1, 2])")]
+    // Named `bytes`, an array binds the span's overload, and is the array it is.
+    [InlineData("Convert.ToHexString(bytes: new byte[] { 1 })", "$eq.convert.toHexString([1])")]
     [InlineData("Convert.ToBase64CharArray(new byte[] { 1 }, 0, 1, new char[] { 'x' }, 0)",
         "$eq.convert.toBase64CharArray([1], 0, 1, ['x'], 0)")]
     public void AnEncoding_IsTheRuntimesTwin(string code, string expected) =>

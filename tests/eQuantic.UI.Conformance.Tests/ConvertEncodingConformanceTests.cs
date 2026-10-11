@@ -109,6 +109,7 @@ public class ConvertEncodingConformanceTests
     [SkippableTheory]
     [InlineData("var log = \"\"; int O() { log += \"o\"; return 1; } int L() { log += \"l\"; return 2; } var r = Convert.ToHexString(length: L(), offset: O(), inArray: new byte[] { 1, 2, 3 }); return log + \":\" + r;")] // lo:0203
     [InlineData("var bytes = new byte[] { 1, 2, 255 }; var o = Base64FormattingOptions.None; return Convert.ToBase64String(bytes, o);")] // AQL/
+    [InlineData("var b = new byte[] { 1, 2, 255 }; return Convert.ToBase64String(bytes: b, options: Base64FormattingOptions.None) + Convert.ToHexString(bytes: b);")] // AQL/0102FF: the span's overload, handed an array
     public void AnEncoding_TakesItsArgumentsAsValues(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
