@@ -173,8 +173,12 @@ public class ConvertStrategy : IExpressionIrStrategy
                 var slot = SlotOf(encoding.Slots, parameter.Name);
                 if (slot < 0) return Refused($"with a parameter, '{parameter.Name}', its twin does not take");
                 if (written[parameter.Ordinal] < 0) continue;
+                // A span's overload takes an array too (`bytes: array` binds it), and a collection
+                // expression is an array here; any other span has no JavaScript form.
+                var bytes = arguments[written[parameter.Ordinal]].Expression;
                 if (encoding.Slots[slot] == "inArray" && parameter.Type is not IArrayTypeSymbol
-                    && arguments[written[parameter.Ordinal]].Expression is not CollectionExpressionSyntax)
+                    && bytes is not CollectionExpressionSyntax
+                    && context.SemanticHelper.GetType(bytes) is not IArrayTypeSymbol)
                     return Refused("over a span, which JavaScript does not have");
                 filling[slot] = written[parameter.Ordinal];
             }
