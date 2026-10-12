@@ -2,11 +2,11 @@
 
 ### Requirement: The system back closes what is open
 
-The platform's back SHALL run what Escape runs on a desktop: the topmost layer that binds Escape (a
-dismissible `Dialog`, a `BottomSheet`, a `Drawer`, an open `Anchored` menu, a picker) SHALL close
-through that binding, and with no such layer a field, a code surface or a sheet being edited SHALL stop
-being edited. A screen with a back of its own SHALL declare it the same way, as a `Shortcut` of
-`KeyChord.Escape`.
+The platform's back SHALL close the topmost layer that binds Escape (a dismissible `Dialog`, a
+`BottomSheet`, a `Drawer`, an open `Anchored` menu, a picker) through that binding. A screen with a
+back of its own SHALL declare it the same way, as a `Shortcut` of `KeyChord.Escape`. A field, a code
+surface or a sheet being edited SHALL NOT take back, inside a layer or not, as a focused `TextField`
+does not hold Flutter's back.
 
 #### Scenario: A dismissible dialog
 
@@ -26,7 +26,7 @@ being edited. A screen with a back of its own SHALL declare it the same way, as 
 #### Scenario: A field being edited
 
 - **WHEN** back is pressed while a `TextEntry` has the caret and nothing else is open
-- **THEN** the field stops being edited, and the next back is the system's
+- **THEN** the app takes nothing, the field keeps the caret, and back is the system's
 
 #### Scenario: A field inside a layer
 
@@ -35,14 +35,13 @@ being edited. A screen with a back of its own SHALL declare it the same way, as 
 
 ### Requirement: Back is the system's when nothing is open
 
-When there is no edit and no Escape binding on screen, the app SHALL take no back, and the platform's
-own back SHALL run, which leaves the app. A focus ring alone SHALL NOT take back, and SHALL stay where
-it is. A host SHALL be able to tell before a back arrives whether it would take one
+When there is no Escape binding on screen, the app SHALL take no back, and the platform's own back
+SHALL run, which leaves the app. A focus ring alone SHALL NOT take back, and SHALL stay where it is. A host SHALL be able to tell before a back arrives whether it would take one
 (`PhotonHost.CanGoBack`).
 
 #### Scenario: Nothing open
 
-- **WHEN** back is pressed on a screen with no edit, no dialog, no sheet, no drawer and no menu
+- **WHEN** back is pressed on a screen with no dialog, no sheet, no drawer and no menu
 - **THEN** the app takes nothing and Android leaves the app
 
 #### Scenario: A dialog that refuses to be dismissed

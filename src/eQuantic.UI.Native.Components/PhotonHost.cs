@@ -2885,10 +2885,9 @@ public sealed class PhotonHost
     }
 
     /// <summary>
-    /// Whether the platform's back has anything to do on this frame: a field, a code surface or a
-    /// sheet being edited, or an Escape the frame binds, which is every open dialog, sheet, drawer,
-    /// menu and picker, and a <c>ListDetail</c> showing its detail on a phone. These are the takers of
-    /// Escape in <see cref="KeyDown"/> minus the focus ring, and one added there belongs here too.
+    /// Whether the platform's back has anything to do on this frame: an Escape the frame binds, which
+    /// is every open dialog, sheet, drawer, menu and picker, and a <c>ListDetail</c> showing its detail
+    /// on a phone. An edit is not one of them (see <see cref="Back"/>).
     /// <para>
     /// A shell reads it after each frame because Android asks UP FRONT. Its predictive back plays
     /// the "leave the app" animation while the gesture is still under the finger, so an app takes
@@ -2896,21 +2895,20 @@ public sealed class PhotonHost
     /// False leaves back to the system, which leaves the app.
     /// </para>
     /// </summary>
-    public bool CanGoBack =>
-        TextTarget is not null || CodeTarget is not null || SheetTarget is not null
-        || BindingFor(KeyChord.Escape.Key, KeyChord.Escape.Modifiers) is not null;
+    public bool CanGoBack => BindingFor(KeyChord.Escape.Key, KeyChord.Escape.Modifiers) is not null;
 
     /// <summary>
-    /// The platform's back, Android's gesture and button, which means here what Escape means on a
-    /// desktop: the layer on top (a dialog, a sheet, a drawer, a menu, a phone's detail pane) closes,
-    /// through the Escape it already declares, and with none open the field being edited stops being
-    /// edited. The layer goes first, as a binding does for every key, so a field inside a dialog
-    /// leaves with the dialog. One key for both, because every layer back should close already
-    /// answers to it.
+    /// The platform's back, Android's gesture and button: the layer on top (a dialog, a sheet, a
+    /// drawer, a menu, a phone's detail pane) closes, through the Escape it already declares, because
+    /// every layer back should close already answers to it. A field inside a dialog leaves with the
+    /// dialog, as a binding answers every key before the field does.
     /// <para>
-    /// Unlike <see cref="KeyDown"/>, a focus ring alone does not take it. Escape clears the ring on a
-    /// desktop, where the ring is drawn; on a phone it would be a back the person pressed and saw
-    /// nothing happen for. Answers whether anything took it; false is the system's back.
+    /// Unlike <see cref="KeyDown"/>, neither an edit nor a focus ring takes it, as a focused
+    /// <c>TextField</c> never holds Flutter's back and an <c>EditText</c> never holds Android's. On a
+    /// phone the soft keyboard has already spent the first back going down, keeping the caret; a
+    /// second back spent on the caret, or on a ring, would be a press the person saw nothing useful
+    /// come of. With nothing open, back is the system's, and it leaves the app with the field still
+    /// focused. Answers whether anything took it.
     /// </para>
     /// </summary>
     public bool Back() => CanGoBack && KeyDown(KeyChord.Escape.Key, KeyChord.Escape.Modifiers);
