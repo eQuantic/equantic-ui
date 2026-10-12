@@ -41,14 +41,40 @@ its end. No shell SHALL read a path or a value on the way.
 
 ### Requirement: A program that fails says which it was
 
-A program the build starts that ends with an exit code other than zero SHALL fail the build. When it
-reported no error of its own, the build SHALL report EQ4004 naming the program and the arguments it
-was started with.
+A program the build starts that ends with an exit code other than zero SHALL fail the build, but for
+the one step the build does without: the description of the commit a source tree is at, which asks
+git and goes on with no answer. When the program reported no error of its own, the build SHALL report
+EQ4004 naming the program and the arguments it was started with. The arguments SHALL be left out for
+a call whose command line is not echoed, the one that hands `notarytool` its password.
 
 #### Scenario: A program that fails in silence
 
 - **WHEN** a program the build starts writes nothing and ends with exit code 2
 - **THEN** the build fails with EQ4004, which names the program, its arguments and the code
+
+#### Scenario: A source tree described with no git
+
+- **WHEN** an app outside the repository builds against its source tree, and git is not on the machine
+  or answers with an error
+- **THEN** the build goes on, and names the tree's branch alone
+
+#### Scenario: The notary's call that fails
+
+- **WHEN** the call that hands `notarytool` its password ends with an exit code other than zero and no
+  error of its own
+- **THEN** EQ4004 names the program and none of its arguments
+
+### Requirement: A program runs in the project's folder
+
+The SDKs SHALL start a program in the project's folder unless a step names another, and a folder a
+step names by a relative path SHALL be read from the project's, wherever the build was started and
+however the task that starts the program is loaded.
+
+#### Scenario: A build started outside the app's folder
+
+- **WHEN** MSBuild is started in another folder on an app that declares a `BunPackage`, whose obj is
+  written `obj/`
+- **THEN** `bun add` runs in the app's own `obj/eQuantic/npm`, and `node_modules` links into it
 
 ### Requirement: Every npm package an app declares is installed
 

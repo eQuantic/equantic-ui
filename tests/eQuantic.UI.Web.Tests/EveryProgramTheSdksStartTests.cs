@@ -228,6 +228,62 @@ public class EveryProgramTheSdksStartTests
     }
 
     [UnixFact]
+    public void AProgramRunsInTheProjectsFolder_WhereverMSBuildWasStarted()
+    {
+        // MSBuild makes the project's folder the current one while it builds the project, and starts a
+        // task host in it. So the folder a step names by a relative path is the project's, however the
+        // task is loaded, and so is the one a relative argument is read from. Every other probe here is
+        // started inside its own folder, which could not tell (found in review of #855): this one is
+        // started in the repository's root, with obj written as a project file writes it.
+        var shipped = Shipped("eQuantic.UI.Sdk");
+        foreach (var factory in new[] { "AssemblyTaskFactory", "TaskHostFactory" })
+        {
+            // No double quote in this path: MSBuild's own command line drops one from a project's.
+            var root = RealPath(Directory.CreateTempSubdirectory("eq-where $w ").FullName);
+            var directory = Path.Combine(root, "App");
+            Directory.CreateDirectory(directory);
+            var bun = Path.Combine(root, "bun");
+            File.WriteAllText(bun, "#!/bin/sh\nmkdir -p node_modules && pwd >> \"$EQ_RECORD\"\n");
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(bun, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            var record = Path.Combine(root, "where.txt");
+            try
+            {
+                // The targets in a file of their own, imported, as the SDK's are: the file that holds a
+                // task is then not the project, and a folder read from it would be the SDK's.
+                Directory.CreateDirectory(Path.Combine(root, "Sdk"));
+                new XDocument(new XElement("Project",
+                    UsingTasks(shipped),
+                    StandIn("ResolveBunPath"),
+                    Target(shipped, "InstallBunPackages"))).Save(Path.Combine(root, "Sdk", "Sdk.targets"));
+                var probe = Path.Combine(directory, "probe.proj");
+                new XDocument(new XElement("Project",
+                    Properties(
+                        ("_EqSourceTree", "false"),
+                        ("_EqTasksAssembly", typeof(RunProgram).Assembly.Location),
+                        ("_EqTaskFactory", factory),
+                        ("BunPath", bun),
+                        ("BaseIntermediateOutputPath", "obj/")),
+                    new XElement("ItemGroup",
+                        new XElement("BunPackage", new XAttribute("Include", "dayjs"), new XAttribute("Version", "1.11.13"))),
+                    new XElement("Import", new XAttribute("Project", "../Sdk/Sdk.targets")))).Save(probe);
+
+                Dotnet(null, new Dictionary<string, string> { ["EQ_RECORD"] = record },
+                    "msbuild", probe, "-nologo", "-nr:false", "-v:m", "-t:InstallBunPackages");
+
+                File.ReadAllLines(record).Should().Equal([directory + "/obj/eQuantic/npm"],
+                    $"bun runs in the project's own obj, the task loaded by {factory}");
+                new DirectoryInfo(Path.Combine(directory, "node_modules")).LinkTarget
+                    .Should().Be(directory + "/obj/eQuantic/npm/node_modules", "the link leads into the project's own obj");
+            }
+            finally
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    [UnixFact]
     public void TheNativeSdk_HandsEachProgramOfAMacBundleItsArguments_AsTheyAre()
     {
         const string identity = "Developer ID Application: A $b (T)";

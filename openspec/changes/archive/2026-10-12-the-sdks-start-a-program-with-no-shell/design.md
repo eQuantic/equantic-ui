@@ -70,6 +70,12 @@ a rebuilt assembly is the one that runs and a reused node never holds the file. 
 probe: 0.4 s for the whole run either way. One property names the factory, MSBuild's own default for
 a package, so each task is declared once.
 
+**A program runs in the project's folder, which MSBuild sets.** MSBuild makes the project's folder
+the current one while it builds that project, and starts a task host in it, so a step that names no
+folder runs there and a relative one is read from there, wherever the build was started (measured in
+both, from another folder). `BuildEngine.ProjectFileOfTaskNode` is not that folder: it is the file
+that holds the task, the SDK's own targets.
+
 **EQ4004 for a program that fails in silence.** A program that reported its own errors has said what
 went wrong, as eqc does. One that did not gets the command it was started with, as `Exec`'s MSB3073
 gave it. A program that cannot be found is MSBuild's own MSB6003.
