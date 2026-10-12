@@ -60,27 +60,22 @@ public sealed class AppleCamera : ICamera
         return AppleCameraSession.Open();
     }
 
-    private static Task<bool> AskAsync(CancellationToken cancellationToken)
+    private static unsafe Task<bool> AskAsync(CancellationToken cancellationToken)
     {
-        var answer = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
         // The framework OWNS this block — copies it, calls it once on an arbitrary queue, releases
-        // it — which is the global-block lifetime, again.
-        AccessReply? reply = null;
-        reply = (_, granted) =>
-        {
-            answer.TrySetResult(granted);
-            GC.KeepAlive(reply);
-        };
-        var block = new ObjCBlock(reply);
+        // it — which is the global-block lifetime, again. The reply lets its context go.
+        var pending = new PendingReply<bool>((IntPtr)(delegate* unmanaged<IntPtr, byte, void>)&AccessReplied);
         SendVoid(objc_getClass("AVCaptureDevice"),
-            Sel("requestAccessForMediaType:completionHandler:"), NSString("vide"), block.Handle);
+            Sel("requestAccessForMediaType:completionHandler:"), NSString("vide"), pending.Block.Handle);
 
-        cancellationToken.Register(() => answer.TrySetCanceled(cancellationToken));
-        return answer.Task;
+        cancellationToken.Register(() => pending.Cancel(cancellationToken));
+        return pending.Task;
     }
 
-    private delegate void AccessReply(IntPtr block, [MarshalAs(UnmanagedType.I1)] bool granted);
+    /// <summary>AVFoundation's answer to the ask. BOOL crosses as a byte: a bool is not blittable.</summary>
+    [UnmanagedCallersOnly]
+    private static void AccessReplied(IntPtr block, byte granted) =>
+        ObjCBlock.Context<PendingReply<bool>>(block)?.Reply(granted != 0);
 
     [DllImport("/usr/lib/libobjc.A.dylib", EntryPoint = "objc_msgSend")]
     private static extern long SendLong(IntPtr receiver, IntPtr selector, IntPtr arg1);
@@ -93,9 +88,9 @@ public sealed class AppleCamera : ICamera
 public sealed partial class AppleCameraSession : ICameraSession
 {
     private static readonly Lock Gate = new();
-    private static AppleCameraSession? _instance;   // the delegate routes here; one camera per process
 
     private IntPtr _session;
+    private volatile bool _stopped;
     private byte[]? _rgba;
     private int _width;
     private int _height;
@@ -111,7 +106,6 @@ public sealed partial class AppleCameraSession : ICameraSession
     internal static AppleCameraSession? Open()
     {
         var session = new AppleCameraSession();
-        lock (Gate) _instance = session;
         return session.Start() ? session : null;
     }
 
@@ -148,8 +142,12 @@ public sealed partial class AppleCameraSession : ICameraSession
             Sel("dictionaryWithObject:forKey:"), bgra, formatKey);
         SendVoid(output, Sel("setVideoSettings:"), settings);
 
+        // This session's own delegate, which finds this session and no other. WEAK, and never
+        // freed: a frame already on the camera's queue may read it after Dispose, and a freed handle
+        // could hand that read whatever object took its slot. One handle per session is the price.
+        var context = GCHandle.Alloc(this, GCHandleType.Weak);
         SendVoid(output, Sel("setSampleBufferDelegate:queue:"),
-            Send(Send(DelegateClass(), Sel("alloc")), Sel("init")),
+            DelegateClass.Value.New(context),
             dispatch_queue_create("eq.camera", IntPtr.Zero));
         SendVoid(_session, Sel("addOutput:"), output);
         SendVoid(_session, Sel("commitConfiguration"));
@@ -176,10 +174,7 @@ public sealed partial class AppleCameraSession : ICameraSession
 
     public void Dispose()
     {
-        lock (Gate)
-        {
-            if (ReferenceEquals(_instance, this)) _instance = null;
-        }
+        _stopped = true;
         if (_session == IntPtr.Zero) return;
         var session = _session;
         _session = IntPtr.Zero;
@@ -188,29 +183,22 @@ public sealed partial class AppleCameraSession : ICameraSession
 
     // ---- the frame delegate --------------------------------------------------------------------
 
-    private delegate void DidOutput(IntPtr self, IntPtr selector, IntPtr output, IntPtr sampleBuffer, IntPtr connection);
+    private static readonly Lazy<ObjCDelegateClass> DelegateClass = new(DefineDelegateClass);
 
-    private static DidOutput? _onFrame;   // kept alive for the runtime's sake
-    private static IntPtr _delegateClass;
+    // A static entry point (#795): a device build has no JIT to make a wrapper for a delegate. It
+    // finds its session in the delegate object it was called on.
+    private static unsafe ObjCDelegateClass DefineDelegateClass() => ObjCDelegateClass.Define("EQCameraDelegate",
+        ("captureOutput:didOutputSampleBuffer:fromConnection:",
+            (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr, IntPtr, void>)&DidOutput, "v@:@@@"));
 
-    private static IntPtr DelegateClass()
-    {
-        if (_delegateClass != IntPtr.Zero) return _delegateClass;
-        _delegateClass = objc_allocateClassPair(objc_getClass("NSObject"), "EQCameraDelegate", 0);
-        _onFrame = static (_, _, _, sampleBuffer, _) => Instance()?.FrameArrived(sampleBuffer);
-        class_addMethod(_delegateClass, sel_registerName("captureOutput:didOutputSampleBuffer:fromConnection:"),
-            Marshal.GetFunctionPointerForDelegate(_onFrame), "v@:@@@");
-        objc_registerClassPair(_delegateClass);
-        return _delegateClass;
-    }
-
-    private static AppleCameraSession? Instance()
-    {
-        lock (Gate) return _instance;
-    }
+    [UnmanagedCallersOnly]
+    private static void DidOutput(IntPtr self, IntPtr selector, IntPtr output, IntPtr sampleBuffer, IntPtr connection) =>
+        DelegateClass.Value.Context<AppleCameraSession>(self)?.FrameArrived(sampleBuffer);
 
     private void FrameArrived(IntPtr sampleBuffer)
     {
+        if (_stopped) return;   // a frame that was already on the queue when the session stopped
+
         var pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
         if (pixelBuffer == IntPtr.Zero) return;
 

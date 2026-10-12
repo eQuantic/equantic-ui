@@ -29,13 +29,10 @@ public sealed class AppleNetworkStatus : INetworkStatus
     private NetworkState _current = NetworkState.Offline;
     private bool _started;
 
-    // Kept for the lifetime of the monitor: the native side holds the block, the block holds the
-    // delegate, and the GC must not collect what the framework will still call.
+    // Kept for the lifetime of the monitor: the native side holds the block, and the block holds
+    // this status as its context.
     private ObjCBlock? _handler;
-    private PathUpdate? _callback;
     private IntPtr _monitor;
-
-    private delegate void PathUpdate(IntPtr block, IntPtr path);
 
     public NetworkState Current
     {
@@ -54,7 +51,7 @@ public sealed class AppleNetworkStatus : INetworkStatus
         return subscription;
     }
 
-    private void EnsureStarted()
+    private unsafe void EnsureStarted()
     {
         lock (_gate)
         {
@@ -62,15 +59,18 @@ public sealed class AppleNetworkStatus : INetworkStatus
             _started = true;
 
             _monitor = nw_path_monitor_create();
-            _callback = OnPathUpdate;
-            _handler = new ObjCBlock(_callback);
+            _handler = new ObjCBlock((IntPtr)(delegate* unmanaged<IntPtr, IntPtr, void>)&PathUpdated, this);
             nw_path_monitor_set_update_handler(_monitor, _handler.Handle);
             nw_path_monitor_set_queue(_monitor, dispatch_get_global_queue(0, 0));
             nw_path_monitor_start(_monitor);
         }
     }
 
-    private void OnPathUpdate(IntPtr block, IntPtr path)
+    [UnmanagedCallersOnly]
+    private static void PathUpdated(IntPtr block, IntPtr path) =>
+        ObjCBlock.Context<AppleNetworkStatus>(block)?.OnPathUpdate(path);
+
+    private void OnPathUpdate(IntPtr path)
     {
         // nw_path_status_t: 1 = satisfied. 2 (unsatisfied) and 3 (satisfiable) are both "not now" —
         // satisfiable means a connection COULD come up on demand, which an app cannot send bytes

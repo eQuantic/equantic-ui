@@ -30,11 +30,14 @@ API uses. Nothing has run on a physical device.
 
 Two defects found while cataloguing come before any new capability on iOS:
 
-- [#796](https://github.com/eQuantic/equantic-ui/issues/796): built with the iOS 27 SDK, an app does
-  not launch, because the iOS shell has no scene life cycle (TN3187).
-- [#795](https://github.com/eQuantic/equantic-ui/issues/795): every Apple callback goes through
+- [#796](https://github.com/eQuantic/equantic-ui/issues/796): built with the iOS 27 SDK, an app did
+  not launch, because the iOS shell had no scene life cycle (TN3187). Fixed: the window belongs to a
+  scene delegate and the SDK declares the scene manifest.
+- [#795](https://github.com/eQuantic/equantic-ui/issues/795): every Apple callback went through
   `Marshal.GetFunctionPointerForDelegate`, the shape Mono full-AOT does not prepare, and a device
-  Release build is the first to run it.
+  Release build is the first to run it. Fixed: a block and a registered method call static
+  `[UnmanagedCallersOnly]` entry points that find their object in a handle the block or the delegate
+  carries. The device run itself is [#792](https://github.com/eQuantic/equantic-ui/issues/792)'s.
 
 ## The routes, counted
 
@@ -167,7 +170,7 @@ entitlements, as it does for entitlements on macOS.
 
 - Two native CI legs (macOS with Xcode; JDK, Gradle and Kotlin), each pinned.
 - The runtime under the bridge changes: .NET 11 moves Android and iOS to CoreCLR. A C-ABI bridge
-  with `[UnmanagedCallersOnly]` does not care; the shell's current callbacks do (#795).
+  with `[UnmanagedCallersOnly]` does not care, and since #795 neither do the shell's callbacks.
 - Lagging bindings (GenAI Prompt, Biometric, Firebase Messaging, LiteRT); the Kotlin bridge is also
   how the SDK stops depending on their cadence.
 - "Every capability" has no end, so the order below, and a catalog refreshed after each WWDC and

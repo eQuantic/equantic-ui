@@ -771,6 +771,14 @@ jobs:
           fi
           echo "iOS bundles: $app, Android packages: $apk."
 
+      # A bundle is not a launch (#796). An iOS shell that stops connecting its scene builds green
+      # and shows a black screen, and one built with the iOS 27 SDK without the scene life cycle
+      # does not start. So the Wallet is launched on a fresh simulator, on the newest iOS runtime the
+      # image has, and the line it prints after its last frame is read back from the unified log.
+      - name: The Wallet sample launches and draws on an iOS simulator
+        shell: bash
+        run: ./scripts/check-ios-launch.sh
+
 
   # GitHub Packages is a convenience feed for every main push — a light ubuntu job so the heavy
   # macOS build job never dies on the upload (exit 137).

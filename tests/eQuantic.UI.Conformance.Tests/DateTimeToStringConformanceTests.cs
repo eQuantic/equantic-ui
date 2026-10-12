@@ -26,6 +26,9 @@ public class DateTimeToStringConformanceTests
     // what it transpiles, would not report.)
     [InlineData(Moment + "return $\"{d.ToString(\"D\", System.Globalization.CultureInfo.InvariantCulture)}|{d.ToString(\"G\", System.Globalization.CultureInfo.InvariantCulture)}|{d.ToString(\"o\", System.Globalization.CultureInfo.InvariantCulture)}|{d.ToString(\"yyyy-MM-dd\", System.Globalization.CultureInfo.InvariantCulture)}\";")]
     [InlineData(Moment + "return $\"{d.ToString(\"D\", System.Globalization.CultureInfo.CurrentCulture)}|{d.ToString(\"g\", null)}\";")]
+    // A format and a provider bound by name are the ones they name, in either order: a null provider
+    // named first was read as the format, and the value written with none (found in review, #837).
+    [InlineData(Moment + "return d.ToString(provider: null, format: \"yyyy\") + \"|\" + d.ToString(provider: System.Globalization.CultureInfo.InvariantCulture, format: \"D\") + \"|\" + d.ToString(format: \"d\", provider: null);")]
     // A provider alone is the call with none, the invariant one invariant.
     [InlineData(Moment + "return $\"{d.ToString(System.Globalization.CultureInfo.InvariantCulture)}|{d.ToString(System.Globalization.CultureInfo.CurrentCulture)}|{d.ToString((IFormatProvider)null)}|{d.ToString()}\";")]
     // A custom picture, drawn token by token: the control, single-letter tokens, names, a

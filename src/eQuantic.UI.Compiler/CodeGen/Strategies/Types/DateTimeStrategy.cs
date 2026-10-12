@@ -37,6 +37,12 @@ public class DateTimeStrategy : ConversionStrategyBase
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "ToString" } }:
                 return false;
 
+            // No twin reads a date back through a format pattern, nor lists a date's formats: each was a
+            // call to a member the twin does not have, a TypeError on the page. Left unclaimed, each is
+            // refused at the build (#717).
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "ParseExact" or "TryParseExact" or "GetDateTimeFormats" } }:
+                return false;
+
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
                 return IsDateTimeMember(ma, context);
 

@@ -254,8 +254,9 @@ second round, in four groups:
 - **Upkeep** (D32–D34): reaching Android 17's API 37 from .NET 10, the catalog refreshed after each
   WWDC and Google I/O, and this section kept on the roadmap.
 
-Two defects come first on iOS: an app built with the iOS 27 SDK does not launch (#796), and the
-Apple callbacks are not AOT-safe on a device (#795). **Fence, with the reason**: what the system
+Two defects came first on iOS, and both are fixed: an app built with the iOS 27 SDK did not launch
+(#796: the shell runs under the scene life cycle), and the Apple callbacks were not AOT-safe on a
+device (#795: static entry points that carry their context; the run on a physical iPhone is #792's). **Fence, with the reason**: what the system
 draws in another process (WidgetKit, the Dynamic Island, Glance) and what exists only at compile time
 (App Intents, `@Generable`, KSP, Compose) cannot run C#; the plan names the route for each.
 

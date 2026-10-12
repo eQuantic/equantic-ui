@@ -86,9 +86,10 @@ public class FlutterParityPinTests
     /// whole file instead of a method body. That note is still there, in the graphics family now.
     /// </para>
     /// </summary>
-    private static string WebRealizerCode() =>
-        Regex.Replace(Regex.Replace(WebRealizerSource(), @"/\*.*?\*/", "", RegexOptions.Singleline),
-            @"//[^\n]*", "");
+    private static string WebRealizerCode() => WithoutComments(WebRealizerSource());
+
+    private static string WithoutComments(string source) =>
+        Regex.Replace(Regex.Replace(source, @"/\*.*?\*/", "", RegexOptions.Singleline), @"//[^\n]*", "");
 
     /// <summary>
     /// THE WHOLE REALIZER, not one file of it — every <c>.cs</c> in <c>eQuantic.UI.Web</c>.
@@ -104,23 +105,34 @@ public class FlutterParityPinTests
     /// the assertion means what it says: no code in the web realizer produces semantics.
     /// </para>
     /// </summary>
-    private static string WebRealizerSource()
+    private static string WebRealizerSource() => ProjectSource("eQuantic.UI.Web", atLeast: 11,
+        because: "the realizer is many files; a probe that found one or none would assert about nothing");
+
+    /// <summary>Every <c>.cs</c> of one project under <c>src/</c>, in a stable order.</summary>
+    private static string ProjectSource(string project, int atLeast, string because)
     {
         var here = new DirectoryInfo(AppContext.BaseDirectory);
-        while (here is not null && !Directory.Exists(Path.Combine(here.FullName, "src", "eQuantic.UI.Web")))
+        while (here is not null && !Directory.Exists(Path.Combine(here.FullName, "src", project)))
             here = here.Parent;
-        here.Should().NotBeNull("the probe reads the realizer's source, so it has to find the tree");
+        here.Should().NotBeNull("the probe reads {0}'s source, so it has to find the tree", project);
 
-        var project = Path.Combine(here!.FullName, "src", "eQuantic.UI.Web");
-        var files = Directory.EnumerateFiles(project, "*.cs", SearchOption.AllDirectories)
+        var folder = Path.Combine(here!.FullName, "src", project);
+        var files = Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories)
             .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
                         && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
             .OrderBy(path => path, StringComparer.Ordinal)
             .ToArray();
-        files.Should().HaveCountGreaterThan(10,
-            "the realizer is many files; a probe that found one or none would assert about nothing");
+        files.Should().HaveCountGreaterThanOrEqualTo(atLeast, because);
         return string.Join("\n", files.Select(File.ReadAllText));
     }
+
+    /// <summary>
+    /// The iOS shell's CODE, comments stripped and read once. It targets <c>net10.0-ios</c>, which
+    /// this suite cannot load, so the row about its life cycle reads what the shell declares instead.
+    /// </summary>
+    private static readonly Lazy<string> IosShellCode = new(() => WithoutComments(
+        ProjectSource("eQuantic.UI.Native.Shell.iOS", atLeast: 5,
+            because: "the shell is several files; a probe that found one would assert about little")));
 
     private static Type? Find(string name) => Surface
         .SelectMany(a => a.GetExportedTypes())
@@ -341,6 +353,13 @@ public class FlutterParityPinTests
         // Back runs the Escape binding the open layer declares; no route stack, nothing to veto a pop.
         ["PopScope"] = () => HasMember("PhotonHost", "Back") && HasMember("PhotonHost", "CanGoBack")
             && Nothing("PopScope", "WillPopScope", "BackButtonListener"),
+        // The window belongs to a scene delegate, and the app delegate owns none (#796).
+        // Counted rather than looked for inside a class body: a brace-bounded match ends at the first
+        // initializer and misses a window property declared after it.
+        ["FlutterSceneDelegate"] = () =>
+            Regex.IsMatch(IosShellCode.Value, @"class\s+PhotonSceneDelegate\s*:\s*(UIKit\.)?UIWindowSceneDelegate\b")
+            && Regex.Matches(IosShellCode.Value, @"\bUIWindow\??\s+Window\s*\{").Count == 1
+            && !Regex.IsMatch(IosShellCode.Value, @"new\s+(UIKit\.)?UIWindow\s*\(\s*(UIKit\.)?UIScreen\b"),
     };
 
     // ---- the assertions ---------------------------------------------------------------------------

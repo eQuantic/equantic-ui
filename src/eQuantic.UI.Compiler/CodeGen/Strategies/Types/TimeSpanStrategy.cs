@@ -8,8 +8,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// <summary>
 /// Maps <c>System.TimeSpan</c> to the runtime <c>TimeSpan</c> compat type (tick-precise, .NET "c"
 /// formatting). Construction and statics (<c>FromSeconds</c>, …) route through the <c>timeSpan</c>
-/// factory; instance members/methods become camelCase calls. Operators are handled by
-/// BinaryExpressionStrategy. Priority 15, gated on the semantic type.
+/// factory; instance members/methods become camelCase calls, but a call to <c>ToString</c>, which is
+/// the formatter's. Operators are handled by BinaryExpressionStrategy. Priority 15, gated on the
+/// semantic type.
 /// </summary>
 public class TimeSpanStrategy : ConversionStrategyBase
 {
@@ -22,6 +23,18 @@ public class TimeSpanStrategy : ConversionStrategyBase
             case BaseObjectCreationExpressionSyntax oc:
                 return IsType(context.SemanticHelper.GetType(oc))
                     || (oc is ObjectCreationExpressionSyntax named && named.Type.ToString() == "TimeSpan");
+
+            // A value's ToString is the formatter's (ToStringStrategy), as a date's is: the twin's
+            // toString takes no format, so every format wrote the constant text, and a null one was
+            // read through null (#837).
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "ToString" } }:
+                return false;
+
+            // No twin reads a time span back through a format pattern: each was a call to a member the
+            // twin does not have, a TypeError on the page. Left unclaimed, each is refused at the build
+            // (#717).
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "ParseExact" or "TryParseExact" } }:
+                return false;
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
                 return IsTimeSpanMember(ma, context);

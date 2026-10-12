@@ -27,9 +27,6 @@ public sealed partial class AppleMotionSensor : IMotionSensor
     private IntPtr _manager;
     private IntPtr _queue;
     private ObjCBlock? _handler;
-    private MotionHandler? _callback;
-
-    private delegate void MotionHandler(IntPtr block, IntPtr motion, IntPtr error);
 
     /// <summary>Three doubles by value — the CMAcceleration/CMRotationRate layout. Marshalled the
     /// same way CGRect already is: the runtime handles the large-struct return convention.</summary>
@@ -73,7 +70,7 @@ public sealed partial class AppleMotionSensor : IMotionSensor
         }
     }
 
-    private void Start()
+    private unsafe void Start()
     {
         var manager = Manager();
         if (manager == IntPtr.Zero || !SendBool(manager, Sel("isDeviceMotionAvailable"))) return;
@@ -82,8 +79,7 @@ public sealed partial class AppleMotionSensor : IMotionSensor
         SendVoid(manager, Sel("setDeviceMotionUpdateInterval:"), 1.0 / 60.0);
 
         _queue = Send(Send(objc_getClass("NSOperationQueue"), Sel("alloc")), Sel("init"));
-        _callback = OnMotion;
-        _handler = new ObjCBlock(_callback);
+        _handler ??= new ObjCBlock((IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&MotionArrived, this);
         SendVoid(manager, Sel("startDeviceMotionUpdatesToQueue:withHandler:"), _queue, _handler.Handle);
     }
 
@@ -92,7 +88,11 @@ public sealed partial class AppleMotionSensor : IMotionSensor
         if (_manager != IntPtr.Zero) SendVoid(_manager, Sel("stopDeviceMotionUpdates"));
     }
 
-    private void OnMotion(IntPtr block, IntPtr motion, IntPtr error)
+    [UnmanagedCallersOnly]
+    private static void MotionArrived(IntPtr block, IntPtr motion, IntPtr error) =>
+        ObjCBlock.Context<AppleMotionSensor>(block)?.OnMotion(motion);
+
+    private void OnMotion(IntPtr motion)
     {
         if (motion == IntPtr.Zero) return;
 

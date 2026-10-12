@@ -17,10 +17,12 @@
  * time zone the browser runs in, read through `Date`.
  */
 
-import { activeFormatData } from './culture';
+import { activeFormatData, INVARIANT_FORMAT, type DateTimeFormatData } from './culture';
+import { readMoment, type Moment, type Refusal } from './date-reading';
 import { hash } from './hash';
+import { Decimal } from './decimal';
 import { exception, is } from './exceptions';
-import { round } from './dotnet-math';
+import { timeSpanText } from './timespan-text';
 
 /** A null text handed to `Parse`, as .NET words it: `DateTime`, `DateOnly` and `TimeOnly` name it `s`,
  * `TimeSpan` and `DateTimeOffset` name it `input`. Read through null, it was a NullReferenceException. */
@@ -33,11 +35,13 @@ const NULL_INPUT = "Value cannot be null. (Parameter 'input')";
  * one, and throws for neither. The compiler writes the value or the type's default through the out
  * argument (#718).
  */
-function attempt<T>(read: (text: string) => T): (text: string | null | undefined) => T | undefined {
-  return (text) => {
+function attempt<T>(
+  read: (text: string, invariant?: boolean) => T,
+): (text: string | null | undefined, invariant?: boolean) => T | undefined {
+  return (text, invariant) => {
     if (text == null) return undefined;
     try {
-      return read(text);
+      return read(text, invariant);
     } catch (error) {
       // What Parse refuses a text with; anything else is a fault of the reader, and stays loud.
       if (
@@ -49,6 +53,17 @@ function attempt<T>(read: (text: string) => T): (text: string | null | undefined
       throw error;
     }
   };
+}
+
+/**
+ * The culture a date or a time is read in: the page's, which `Parse` and `TryParse` read with no
+ * provider, with the current culture and with a null one, as .NET reads `CultureInfo.CurrentCulture`;
+ * or the invariant one, which the compiler asks for where the call names it (#806, #717).
+ */
+function readingCulture(invariant = false): DateTimeFormatData {
+  return invariant
+    ? INVARIANT_FORMAT.dateTimeFormat
+    : (activeFormatData()?.dateTimeFormat ?? INVARIANT_FORMAT.dateTimeFormat);
 }
 
 const TICKS_PER_MICROSECOND = 10n;
@@ -260,21 +275,10 @@ export class TimeSpan {
     return hash(this.ticks);
   }
 
-  /** .NET "c" (constant) format: `[-][d.]hh:mm:ss[.fffffff]`. */
+  /** .NET "c" (constant) format: `[-][d.]hh:mm:ss[.fffffff]`. A format is the formatter's
+   * (`$eq.text.format`), which writes the others (#837). */
   toString(): string {
-    const sign = this.ticks < 0n ? '-' : '';
-    const abs = this.ticks < 0n ? -this.ticks : this.ticks;
-    const d = Number(abs / TICKS_PER_DAY);
-    const h = Number((abs / TICKS_PER_HOUR) % 24n);
-    const m = Number((abs / TICKS_PER_MINUTE) % 60n);
-    const s = Number((abs / TICKS_PER_SECOND) % 60n);
-    const frac = abs % TICKS_PER_SECOND;
-
-    let result = sign;
-    if (d > 0) result += d + '.';
-    result += `${pad(h, 2)}:${pad(m, 2)}:${pad(s, 2)}`;
-    if (frac > 0n) result += '.' + frac.toString().padStart(7, '0');
-    return result;
+    return timeSpanText(this.ticks, 'c', '.');
   }
 
   /** System.Text.Json serializes TimeSpan in the "c" format — same as toString. */
@@ -353,8 +357,9 @@ export interface TimeSpanFactory {
   fromMilliseconds(value: bigint | number, ...components: Component[]): TimeSpan;
   fromMicroseconds(value: bigint | number): TimeSpan;
   fromTicks(value: bigint | number): TimeSpan;
-  parse(text: string): TimeSpan;
-  tryParse(text: string | null | undefined): TimeSpan | undefined;
+  /** `TimeSpan.Parse`, in the page's culture, or the invariant one where `invariant` says so. */
+  parse(text: string, invariant?: boolean): TimeSpan;
+  tryParse(text: string | null | undefined, invariant?: boolean): TimeSpan | undefined;
   readonly zero: TimeSpan;
   minValue(): TimeSpan;
   maxValue(): TimeSpan;
@@ -395,12 +400,15 @@ timeSpan.fromSeconds = components(3, TICKS_PER_SECOND);
 timeSpan.fromMilliseconds = components(4, TICKS_PER_MILLISECOND);
 timeSpan.fromMicroseconds = (v) => interval(v, 10n);
 timeSpan.fromTicks = (v) => new TimeSpan(typeof v === 'bigint' ? v : BigInt(Math.trunc(v)));
-timeSpan.parse = (text: string): TimeSpan => {
+timeSpan.parse = (text: string, invariant = false): TimeSpan => {
   if (text == null) throw exception('System.ArgumentNullException', NULL_INPUT);
-  // .NET "c" format: [-][d.]hh:mm:ss[.fffffff]
-  const m = /^(-)?(?:(\d+)\.)?(\d{1,2}):(\d{2}):(\d{2})(?:\.(\d+))?$/.exec(text.trim());
-  if (!m) throw exception('System.FormatException', `Unrecognized TimeSpan format: '${text}'`);
-  const frac = m[6] ? BigInt(m[6].padEnd(7, '0').slice(0, 7)) : 0n;
+  // .NET "c" format: [-][d.]hh:mm:ss[.fffffff], and with no days a fraction written with the culture's
+  // decimal separator too, as its general form `g` writes one (#806): `1:02:03,5` in pt-BR.
+  const decimal = invariant ? '.' : (activeFormatData()?.numberFormat.numberDecimalSeparator ?? '.');
+  const m = /^(-)?(?:(\d+)\.)?(\d{1,2}):(\d{2}):(\d{2})(?:(\D+)(\d+))?$/.exec(text.trim());
+  if (!m || (m[6] !== undefined && m[6] !== '.' && (m[6] !== decimal || m[2] !== undefined)))
+    throw exception('System.FormatException', `String '${text}' was not recognized as a valid TimeSpan.`);
+  const frac = m[7] ? BigInt(m[7].padEnd(7, '0').slice(0, 7)) : 0n;
   const ticks =
     BigInt(m[2] ?? 0) * TICKS_PER_DAY +
     BigInt(m[3]) * TICKS_PER_HOUR +
@@ -709,8 +717,17 @@ export interface DateTimeFactory {
   today(): DateTime;
   minValue(): DateTime;
   maxValue(): DateTime;
-  parse(text: string): DateTime;
-  tryParse(text: string | null | undefined): DateTime | undefined;
+  /** `DateTime.Parse`, in the page's culture, or the invariant one where `invariant` says so. */
+  parse(text: string, invariant?: boolean): DateTime;
+  tryParse(text: string | null | undefined, invariant?: boolean): DateTime | undefined;
+  /**
+   * `Convert.ToDateTime` of a text or of an object (#844): null is `MinValue`, where `parse` throws, a
+   * text reads as `parse` reads it, and a date is itself. Anything else has no conversion to a date,
+   * and .NET names its type: a date or a time of another type by its name, a bool, a long and a
+   * decimal by theirs. A number no longer says whether it was an int or a double here, and a char is
+   * a text of one character, so those are named, and read, by what the browser holds (#401).
+   */
+  convert(value: unknown, invariant?: boolean): DateTime;
   /** A `DateTime` as System.Text.Json reads it from the wire: see {@link dateTimeFromJson}. */
   fromJson(text: string): DateTime;
   daysInMonth(year: number, month: number): number;
@@ -798,8 +815,42 @@ export const dateTime: DateTimeFactory = {
   maxValue: () => new DateTime(MAX_DATETIME_TICKS),
   daysInMonth,
   isLeapYear,
-  parse: (text) => parseDateTime(text),
+  parse: (text, invariant) => parseDateTime(text, invariant),
   tryParse: attempt(parseDateTime),
+  convert(value, invariant) {
+    if (value === null || value === undefined) return dateTime.minValue();
+    if (typeof value === 'string') return parseDateTime(value, invariant);
+    if (value instanceof DateTime) return value;
+    const time =
+      value instanceof DateOnly
+        ? 'DateOnly'
+        : value instanceof TimeOnly
+          ? 'TimeOnly'
+          : value instanceof TimeSpan
+            ? 'TimeSpan'
+            : value instanceof DateTimeOffset
+              ? 'DateTimeOffset'
+              : null;
+    if (time !== null) {
+      throw exception(
+        'System.InvalidCastException',
+        `Unable to cast object of type 'System.${time}' to type 'System.IConvertible'.`,
+      );
+    }
+    const held =
+      typeof value === 'boolean'
+        ? 'Boolean'
+        : typeof value === 'bigint'
+          ? 'Int64'
+          : value instanceof Decimal
+            ? 'Decimal'
+            : typeof value === 'number' && Number.isInteger(value)
+              ? 'Int32'
+              : typeof value === 'number'
+                ? 'Double'
+                : 'Object';
+    throw exception('System.InvalidCastException', `Invalid cast from '${held}' to 'DateTime'.`);
+  },
   fromJson: (text) => dateTimeFromJson(text),
 };
 
@@ -842,24 +893,55 @@ function localFrom(ticks: bigint, zone: 'utc' | bigint): DateTime {
 }
 
 /**
- * `DateTime.Parse`: a time zone written in the text moves the value to the browser's local time, of
- * the local kind, as .NET's Parse does, where the zone was dropped and the clock time kept.
+ * `DateTime.Parse`: a date in the culture's order, a clock with its designators and separators, and a
+ * time zone written after them, which moves the value to the browser's local time, of the local kind,
+ * as .NET's Parse does (#806).
  */
-function parseDateTime(text: string): DateTime {
+function parseDateTime(text: string, invariant = false): DateTime {
   if (text == null) throw exception('System.ArgumentNullException', NULL_S);
-  const t = text.trim();
-  const iso = readIso(t);
-  if (iso === 'date') throw unrecognized(text);
-  if (iso === 'time') throw unsupported(text);
-  if (iso) return iso.zone === null ? new DateTime(iso.ticks) : localFrom(iso.ticks, iso.zone);
-  // The invariant culture's own: MM/dd/yyyy[ HH:mm:ss], and nothing after it, where trailing text was
-  // read past.
-  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}):(\d{2}))?$/.exec(t);
-  if (!m) throw unrecognized(text);
-  const [month, day, year, hour, minute, second] = [+m[1], +m[2], +m[3], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)];
-  if (year < 1 || month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) throw unrecognized(text);
-  if (hour > 23 || minute > 59 || second > 59) throw unsupported(text);
-  return fromComponents(year, month, day, hour, minute, second);
+  const read = readMoment(text, readingCulture(invariant));
+  if ('refused' in read) throw refusalOf(text, read);
+  // A clock with no date is today's in .NET, and not read here yet (#807).
+  if (read.date === null) throw unrecognized(text);
+  const ticks = momentTicks(read);
+  return read.zone === null ? new DateTime(ticks) : localFrom(ticks, read.zone);
+}
+
+/** The ticks of the clock time a text names, its date and clock. */
+function momentTicks({ date, clock }: Moment): bigint {
+  const { year, month, day } = date!;
+  return (
+    fromComponents(year, month, day, clock?.hour ?? 0, clock?.minute ?? 0, clock?.second ?? 0).ticks +
+    BigInt(clock?.fraction ?? 0)
+  );
+}
+
+/** Why a text names no DateTime, in .NET's words for each. */
+function refusalOf(text: string, refusal: Refusal): Error {
+  switch (refusal.refused) {
+    case 'word':
+      return exception(
+        'System.FormatException',
+        `The string '${text}' was not recognized as a valid DateTime. There is an unknown word starting at index '${refusal.index}'.`,
+      );
+    case 'clock':
+      return unsupported(text);
+    case 'zone':
+      return exception(
+        'System.FormatException',
+        `The time zone offset of string '${text}' must be within plus or minus 14 hours.`,
+      );
+    default:
+      return unrecognized(text);
+  }
+}
+
+/** .NET's refusal of a date or a time that names more than its type holds: a time beside a date. */
+function notSpecific(text: string, type: 'DateOnly' | 'TimeOnly'): Error {
+  return exception(
+    'System.FormatException',
+    `String '${text}' contains parts which are not specific to the ${type}.`,
+  );
 }
 
 /** .NET's refusal of text that names no date it can read. */
@@ -983,9 +1065,10 @@ export interface DateOnlyFactory {
   fromDateTime(dt: DateTime): DateOnly;
   minValue(): DateOnly;
   maxValue(): DateOnly;
-  parse(text: string): DateOnly;
-  /** The date a reader TYPED, by the active culture's field order, or undefined if it is none. */
-  tryParse(text: string | null | undefined): DateOnly | undefined;
+  /** `DateOnly.Parse`, in the page's culture, or the invariant one where `invariant` says so. */
+  parse(text: string, invariant?: boolean): DateOnly;
+  /** The date a reader TYPED, by the culture's field order, or undefined if it is none. */
+  tryParse(text: string | null | undefined, invariant?: boolean): DateOnly | undefined;
 }
 
 export const dateOnly = ((year: number, month: number, day: number) =>
@@ -994,85 +1077,24 @@ dateOnly.fromDayNumber = (n) => new DateOnly(n);
 dateOnly.fromDateTime = (dt) => new DateOnly(Number(dt.ticks / TICKS_PER_DAY));
 dateOnly.minValue = () => new DateOnly(0);
 dateOnly.maxValue = () => new DateOnly(daysFromCivil(9999, 12, 31));
-dateOnly.parse = (text: string): DateOnly => {
+/**
+ * `DateOnly.Parse`: a typed date, by the culture's field order, the half of parsing that cannot be
+ * guessed. `07/08` is July 8th to a reader in Chicago and August 7th to one in São Paulo, and a parser
+ * that picks one silently is wrong twelve times a year for half the world. The order comes from the
+ * culture's own short date pattern, `DateTimeFormatInfo`'s, which travels with every page
+ * (`CultureFormat`, #471), so the client reads a typed date exactly as the server would.
+ */
+dateOnly.parse = (text: string, invariant = false): DateOnly => {
   if (text == null) throw exception('System.ArgumentNullException', NULL_S);
-  const parsed = tryParseDateOnly(text);
-  if (parsed === null)
-    throw exception(
-      'System.FormatException',
-      `String '${text}' was not recognized as a valid DateOnly.`,
-    );
-  return parsed;
+  const read = readMoment(text, readingCulture(invariant));
+  if (!('refused' in read) && (read.clock !== null || read.zone !== null)) throw notSpecific(text, 'DateOnly');
+  if ('refused' in read || read.date === null)
+    throw exception('System.FormatException', `String '${text}' was not recognized as a valid DateOnly.`);
+  return dateOnly(read.date.year, read.date.month, read.date.day);
 };
 
-/**
- * A typed date, by the ACTIVE CULTURE's field order — the half of parsing that cannot be guessed.
- * `07/08` is July 8th to a reader in Chicago and August 7th to one in São Paulo, and a parser that
- * picks one silently is wrong twelve times a year for half the world.
- *
- * The order comes from the culture's own short-date pattern, `DateTimeFormatInfo`'s, which travels
- * with every page (`CultureFormat`, #471), so the client reads a typed date exactly as the server
- * would. ISO is accepted everywhere: it is unambiguous by construction
- * and it is what a date input hands over.
- */
-function tryParseDateOnly(text: string): DateOnly | null {
-  const t = text.trim();
-  if (t.length === 0) return null;
-
-  const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(t);
-  if (iso) return valid(+iso[1], +iso[2], +iso[3]);
-
-  const parts = /^(\d{1,4})[/.-](\d{1,4})[/.-](\d{1,4})$/.exec(t);
-  if (!parts) return null;
-
-  // Which slot holds what, read off the pattern: "M/d/yyyy" is month-first, "dd/MM/yyyy" is
-  // day-first, "yyyy/MM/dd" leads with the year. For a culture whose data did not travel (a switch
-  // with no server to ask), the invariant order applies, which is what .NET's own invariant
-  // culture does.
-  const pattern = (activeFormatData()?.dateTimeFormat.shortDatePattern ?? 'M/d/yyyy').toLowerCase();
-  const dayAt = pattern.indexOf('d');
-  const monthAt = pattern.indexOf('m');
-  const yearAt = pattern.indexOf('y');
-  const dayFirst = dayAt >= 0 && monthAt >= 0 && dayAt < monthAt;
-  const yearFirst =
-    yearAt >= 0 && (dayAt < 0 || yearAt < dayAt) && (monthAt < 0 || yearAt < monthAt);
-
-  const [, one, two, three] = parts;
-  // Three digits or more is a year wherever it sits, and a year-first culture takes the leading
-  // slot when the trailing one is not itself year-shaped. Both were PROBED against .NET rather
-  // than reasoned: en-US reads "2026/7/17" (month-first!) as the ISO order, and ja-JP reads
-  // "17/7/26" as 2017-07-26 where a slot-blind reader sees month 17 and gives up.
-  const yearLeads = looksLikeYear(one) || (yearFirst && !looksLikeYear(three));
-  // A year that leads is followed by month then day in EVERY culture .NET ships — a day-first
-  // culture handed "2026/7/17" still answers July 17th.
-  if (yearLeads) return valid(pivot(one), +two, +three);
-  return valid(pivot(three), dayFirst ? +two : +one, dayFirst ? +one : +two);
-}
-
-/** Three digits can only be a year: no month or day reaches 100. */
-function looksLikeYear(part: string): boolean {
-  return part.length >= 3;
-}
-
-/**
- * A year as .NET reads it: one or two digits are resolved against the calendar's
- * <c>TwoDigitYearMax</c>, which is 2049 for every culture the framework ships — 00–49 land in
- * this century, 50–99 in the last. Three digits or more are literal, so "1/2/003" is year 3.
- */
-function pivot(part: string): number {
-  const year = +part;
-  return part.length <= 2 ? (year <= 49 ? 2000 + year : 1900 + year) : year;
-}
-
-/** The date, or null when those numbers are not one — 31 February parses and does not exist. */
-function valid(year: number, month: number, day: number): DateOnly | null {
-  if (month < 1 || month > 12 || day < 1 || year < 1 || year > 9999) return null;
-  const built = dateOnly(year, month, day);
-  return built.year === year && built.month === month && built.day === day ? built : null;
-}
-
 // DateOnly.TryParse of null answered null where .NET answers false (#718).
-dateOnly.tryParse = (text) => (text == null ? undefined : (tryParseDateOnly(text) ?? undefined));
+dateOnly.tryParse = attempt(dateOnly.parse);
 
 // ---------------------------------------------------------------------------------------------
 // TimeOnly (.NET 6+) — a time of day with no date. Backed by ticks in [0, TicksPerDay).
@@ -1148,8 +1170,9 @@ export interface TimeOnlyFactory {
   fromDateTime(value: DateTime): TimeOnly;
   minValue(): TimeOnly;
   maxValue(): TimeOnly;
-  parse(text: string): TimeOnly;
-  tryParse(text: string | null | undefined): TimeOnly | undefined;
+  /** `TimeOnly.Parse`, in the page's culture, or the invariant one where `invariant` says so. */
+  parse(text: string, invariant?: boolean): TimeOnly;
+  tryParse(text: string | null | undefined, invariant?: boolean): TimeOnly | undefined;
 }
 
 function timeOnlyImpl(...args: number[] | [bigint]): TimeOnly {
@@ -1170,32 +1193,21 @@ timeOnly.fromDateTime = (value: DateTime) =>
   new TimeOnly(((value.ticks % TICKS_PER_DAY) + TICKS_PER_DAY) % TICKS_PER_DAY);
 timeOnly.minValue = () => new TimeOnly(0n);
 timeOnly.maxValue = () => new TimeOnly(TICKS_PER_DAY - 1n);
-timeOnly.parse = (text: string): TimeOnly => {
+timeOnly.parse = (text: string, invariant = false): TimeOnly => {
   if (text == null) throw exception('System.ArgumentNullException', NULL_S);
-  // The invariant culture's clock, as .NET 10 reads it: an hour, minutes and seconds of one or two
-  // digits each, a fraction after the seconds, and an AM or PM designator before or after, in any
-  // case. An hour alone needs a designator. The whole text, and a clock that exists: `25:00` read as a
-  // day and an hour, and `09:30 junk` as half past nine, where .NET refuses both.
-  const m =
-    /^(?:(AM|PM)\s*)?(\d{1,2})(?::(\d{1,2})(?::(\d{1,2})(?:\.(\d*))?)?)?(?:\s*(AM|PM))?$/i.exec(
-      text.trim(),
-    );
-  if (m === null || (m[1] !== undefined && m[6] !== undefined)) throw notTimeOnly(text);
-  const designator = (m[1] ?? m[6])?.toUpperCase();
-  let hour = +m[2];
-  const [minute, second] = [+(m[3] ?? 0), +(m[4] ?? 0)];
-  if ((m[3] === undefined && designator === undefined) || hour > 23 || minute > 59 || second > 59)
-    throw notTimeOnly(text);
-  // `AdjustHour`: AM takes an hour up to 12, twelve being midnight; PM moves an hour before noon on.
-  if (designator === 'AM') {
-    if (hour > 12) throw notTimeOnly(text);
-    if (hour === 12) hour = 0;
-  } else if (designator === 'PM' && hour < 12) hour += 12;
+  // The culture's clock, as .NET 10 reads it: an hour, minutes and seconds of one or two digits each,
+  // a fraction after the seconds, and an AM or PM designator, or the culture's own, before or after,
+  // in any case. An hour alone needs a designator. The whole text, and a clock that exists: `25:00`
+  // read as a day and an hour, and `09:30 junk` as half past nine, where .NET refuses both.
+  const read = readMoment(text, readingCulture(invariant));
+  if (!('refused' in read) && (read.date !== null || read.zone !== null)) throw notSpecific(text, 'TimeOnly');
+  if ('refused' in read || read.clock === null) throw notTimeOnly(text);
+  const { hour, minute, second, fraction } = read.clock;
   const ticks =
     BigInt(hour) * TICKS_PER_HOUR +
     BigInt(minute) * TICKS_PER_MINUTE +
     BigInt(second) * TICKS_PER_SECOND +
-    BigInt(fractionTicks(m[5] ?? ''));
+    BigInt(fraction);
   // A fraction that rounds up to the next day is midnight, as .NET's date-time reader carries it.
   return new TimeOnly(ticks % TICKS_PER_DAY);
 };
@@ -1206,21 +1218,6 @@ function notTimeOnly(text: string): Error {
     'System.FormatException',
     `String '${text}' was not recognized as a valid TimeOnly.`,
   );
-}
-
-/**
- * The ticks of a fraction of a second, as .NET's `ParseFraction` reads its digits: each one added at a
- * tenth of the place before, in doubles, and the sum rounded to the tick, half to even. Read as a
- * decimal instead, `.12345678` lost its eighth digit and `.00000005` its rounding.
- */
-function fractionTicks(digits: string): number {
-  let fraction = 0;
-  let place = 0.1;
-  for (const digit of digits) {
-    fraction += +digit * place;
-    place *= 0.1;
-  }
-  return round(fraction * 10_000_000);
 }
 
 timeOnly.tryParse = attempt(timeOnly.parse);
@@ -1446,8 +1443,9 @@ export interface DateTimeOffsetFactory {
   minValue(): DateTimeOffset;
   /** `DateTimeOffset.MaxValue`: 9999-12-31 23:59:59.9999999 at +00:00. */
   maxValue(): DateTimeOffset;
-  parse(text: string): DateTimeOffset;
-  tryParse(text: string | null | undefined): DateTimeOffset | undefined;
+  /** `DateTimeOffset.Parse`, in the page's culture, or the invariant one where `invariant` says so. */
+  parse(text: string, invariant?: boolean): DateTimeOffset;
+  tryParse(text: string | null | undefined, invariant?: boolean): DateTimeOffset | undefined;
 }
 
 /** The furthest an offset reaches from UTC, as .NET bounds it. */
@@ -1524,28 +1522,21 @@ export const dateTimeOffset: DateTimeOffsetFactory = {
   utcNow: () => new DateTimeOffset(utcTicksNow(), 0n),
   minValue: () => new DateTimeOffset(0n, 0n),
   maxValue: () => new DateTimeOffset(MAX_DATETIME_TICKS, 0n),
-  parse: (text) => parseDateTimeOffset(text),
+  parse: (text, invariant) => parseDateTimeOffset(text, invariant),
   tryParse: attempt(parseDateTimeOffset),
 };
 
-function parseDateTimeOffset(text: string): DateTimeOffset {
+/**
+ * `DateTimeOffset.Parse`: what `DateTime.Parse` reads, its zone kept as the offset, and the browser's
+ * offset for that clock time where the text has none, as .NET takes the local one (#806). It read
+ * ISO-8601 with its seconds and nothing else, and refused in words of its own.
+ */
+function parseDateTimeOffset(text: string, invariant = false): DateTimeOffset {
   if (text == null) throw exception('System.ArgumentNullException', NULL_INPUT);
-  const t = text.trim();
-  // yyyy-MM-ddTHH:mm:ss[.fff][(+|-)HH:mm | Z]
-  const m =
-    /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?\s*(Z|[+-]\d{2}:?\d{2})?$/.exec(
-      t,
-    );
-  if (!m) throw exception('System.FormatException', `Unrecognized DateTimeOffset format: '${text}'`);
-  const frac = m[7] ? BigInt(m[7].padEnd(7, '0').slice(0, 7)) : 0n;
-  const local = fromComponents(+m[1], +m[2], +m[3], +m[4], +m[5], +m[6]).ticks + frac;
-  let offsetTicks = 0n;
-  if (m[8] && m[8] !== 'Z') {
-    const neg = m[8][0] === '-';
-    const digits = m[8].slice(1).replace(':', '');
-    offsetTicks =
-      (BigInt(digits.slice(0, 2)) * TICKS_PER_HOUR + BigInt(digits.slice(2)) * TICKS_PER_MINUTE) *
-      (neg ? -1n : 1n);
-  }
-  return new DateTimeOffset(local, offsetTicks);
+  const read = readMoment(text, readingCulture(invariant));
+  if ('refused' in read) throw refusalOf(text, read);
+  if (read.date === null) throw unrecognized(text);
+  const local = momentTicks(read);
+  const offset = read.zone === null ? localOffsetFor(local) : read.zone === 'utc' ? 0n : read.zone;
+  return new DateTimeOffset(local, offset);
 }

@@ -2545,6 +2545,64 @@ record of a release, the wiki's Upgrading page is the distillate.
   test runs the one that writes the file, as it ships, in a real MSBuild under a folder whose name
   holds what a shell reads ([#836](https://github.com/eQuantic/equantic-ui/issues/836)). Proposed and
   archived through OpenSpec (`openspec/specs/referenced-projects`).
+- **2026-10-12 · A TimeSpan writes the format it is given**: a `TimeSpan` written with a format wrote
+  its constant text whatever the format asked for, so `ToString(@"hh\:mm")` of an hour and two minutes
+  was `01:02:00` where .NET writes `01:02`, and a format .NET refuses wrote a value
+  ([#837](https://github.com/eQuantic/equantic-ui/issues/837)). The formatter handed a TimeSpan to the
+  twin's own `toString`, which takes no format, and eqc lowered `ToString(format)` to it directly. The
+  runtime writes .NET 10's standard formats now, the general ones with the culture's decimal separator,
+  and its custom formats token by token, with its refusals in its words; eqc hands a TimeSpan's
+  `ToString` to the formatter as it hands a date's, so its provider is the culture it names where it
+  was a name no browser defines, and a null `TimeSpan?` writes nothing where it was read through null.
+  The review found a provider named before its format (`ToString(provider: null, format: "g")`) read
+  as the format, for a number and a date as well: `ToStringStrategy` now asks the parameter each
+  argument binds to. 45 of the first 50 conformance cases, run in five cultures, fail at d5097bc2, and
+  the 7 the review added fail before that fix; one entry leaves the null-argument baseline. The served
+  runtime grows about 900 gzipped bytes. Proposed and archived through OpenSpec
+  (`openspec/specs/runtime-dates`).
+- **2026-10-12 · An iOS app launches under the scene life cycle**: built with the iOS 27 SDK, an app
+  without it does not launch (TN3187), and on Xcode 27 every app already is: the native link takes
+  the installed Xcode's SDK whichever .NET pack resolves, so the Wallet sample built with the default
+  26.5 pack carried `sdk 27.0` ([#796](https://github.com/eQuantic/equantic-ui/issues/796)). The window
+  now belongs to a `UIWindowSceneDelegate`, the app delegate answers which delegate a scene gets in C#,
+  and the SDK's `PhotonApp.plist` declares the scene manifest. The screen lives for the process, so a
+  scene the system connects again shows the same page, and its clock pauses in the background. CI's
+  `samples` job launches the Wallet on a fresh simulator and reads its self-test line from the unified
+  log (`scripts/check-ios-launch.sh`); its image has no Xcode 27 yet, so the iOS 27 half was measured
+  on a developer machine: on a fresh iOS 27.0 simulator, main's Wallet stopped at launch with UIKit's
+  "UIScene life cycle is required for apps built with this SDK", and this change's drew its frames.
+  Proposed and archived through OpenSpec (`openspec/specs/native-app-lifecycle`).
+- **2026-10-12 · A date is read in the culture the call names**: `Parse` and `TryParse` of the five
+  time types read the invariant shapes whatever culture the page was in, so `01/02/2024` was the 2nd
+  of January on a pt-BR page where .NET reads the 1st of February, and a value written with
+  `ToString()` did not read back ([#806](https://github.com/eQuantic/equantic-ui/issues/806)); a
+  provider crossed as the name `CultureInfo`, which no browser defines, and so did `ParseExact`,
+  `TryParseExact` and `GetDateTimeFormats` ([#717](https://github.com/eQuantic/equantic-ui/issues/717)).
+  The runtime reads the numeric forms a culture writes, as .NET 10's `DateTimeParse` reads them, in the
+  page's culture or the invariant one, with .NET's refusals in its words; eqc reads every overload by
+  the parameter each argument binds to, any other culture is EQ2108, and the exact readers are left to
+  the fence. Measuring them found `Convert.ToDateTime` answering the text of its argument for every
+  overload ([#844](https://github.com/eQuantic/equantic-ui/issues/844)), which now reads a text as
+  `Parse` does. 242 of the 280 conformance cases, run in ten cultures, fail at c25b177e, and 49 still
+  failed before a review of the whole diff found a clock written with points, the ISO form, the order
+  of the parts and `Convert`'s words read narrower than .NET; 60 entries leave the null-argument
+  baseline. What .NET reads beyond the numeric forms stays #807's. Proposed and archived through
+  OpenSpec (`openspec/specs/runtime-dates`, `openspec/specs/transpiler-bcl`).
+- **2026-10-12 · The Apple shells call back through entry points a device build prepares**: the
+  shared Apple shell turned delegates into native function pointers, which a JIT wraps on demand and
+  an iPhone's ahead-of-time build never does, so the camera, location, biometrics, motion and network
+  status would have failed at their first callback on a device
+  ([#795](https://github.com/eQuantic/equantic-ui/issues/795)). A block now calls a static
+  `[UnmanagedCallersOnly]` entry point and carries its context as a `GCHandle` after its descriptor
+  (`ObjCBlock.Context<T>`), and the methods registered with the Objective-C runtime are static entry
+  points that find their object in a handle the delegate carries in an ivar (`ObjCDelegateClass`), so a
+  second camera session no longer takes the first one's frames. A reply that answers once lets only its context go and keeps
+  its block, which the framework releases after the call returns: the biometric reply freed its block
+  from inside that call. `AppleCallbackTests` fails when the shared Apple shell or the
+  iOS shell calls `Marshal.GetFunctionPointerForDelegate`, and the block tests run against the real
+  runtime on the Mac. The run on a physical iPhone belongs to the device pass
+  ([#792](https://github.com/eQuantic/equantic-ui/issues/792)). Proposed and archived through OpenSpec
+  (`openspec/specs/native-callbacks`).
 - **2026-10-12 · Every program the SDKs start goes through RunProgram, with no shell**: the two SDKs
   started every program with MSBuild's `Exec`, which writes the command into a script for `/bin/sh` or
   `cmd.exe`, and each read it first: with the NuGet package folder under a folder named `nuget $b`, a
