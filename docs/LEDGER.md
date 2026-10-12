@@ -2528,18 +2528,6 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#836](https://github.com/eQuantic/equantic-ui/issues/836)), and three more shapes of a type named
   where nothing is written joined [#830](https://github.com/eQuantic/equantic-ui/issues/830). Proposed
   and archived through OpenSpec (`openspec/specs/referenced-projects`, `openspec/specs/transpiler-bcl`).
-- **2026-10-12 · An iOS app launches under the scene life cycle**: built with the iOS 27 SDK, an app
-  without it does not launch (TN3187), and on Xcode 27 every app already is: the native link takes
-  the installed Xcode's SDK whichever .NET pack resolves, so the Wallet sample built with the default
-  26.5 pack carried `sdk 27.0` ([#796](https://github.com/eQuantic/equantic-ui/issues/796)). The window
-  now belongs to a `UIWindowSceneDelegate`, the app delegate answers which delegate a scene gets in C#,
-  and the SDK's `PhotonApp.plist` declares the scene manifest. The screen lives for the process, so a
-  scene the system connects again shows the same page, and its clock pauses in the background. CI's
-  `samples` job launches the Wallet on a fresh simulator and reads its self-test line from the unified
-  log (`scripts/check-ios-launch.sh`); its image has no Xcode 27 yet, so the iOS 27 half was measured
-  on a developer machine: on a fresh iOS 27.0 simulator, main's Wallet stopped at launch with UIKit's
-  "UIScene life cycle is required for apps built with this SDK", and this change's drew its frames.
-  Proposed and archived through OpenSpec (`openspec/specs/native-app-lifecycle`).
 - **2026-10-12 · The SDK hands eqc a file, and no value of the project goes through a shell**: every
   argument was written into the command the SDK ran eqc with, and a shell read that command first.
   Measured on macOS, an assembly name `Cash$Flow` reached eqc as `Cash`, so a library's
@@ -2557,6 +2545,18 @@ record of a release, the wiki's Upgrading page is the distillate.
   test runs the one that writes the file, as it ships, in a real MSBuild under a folder whose name
   holds what a shell reads ([#836](https://github.com/eQuantic/equantic-ui/issues/836)). Proposed and
   archived through OpenSpec (`openspec/specs/referenced-projects`).
+- **2026-10-12 · An iOS app launches under the scene life cycle**: built with the iOS 27 SDK, an app
+  without it does not launch (TN3187), and on Xcode 27 every app already is: the native link takes
+  the installed Xcode's SDK whichever .NET pack resolves, so the Wallet sample built with the default
+  26.5 pack carried `sdk 27.0` ([#796](https://github.com/eQuantic/equantic-ui/issues/796)). The window
+  now belongs to a `UIWindowSceneDelegate`, the app delegate answers which delegate a scene gets in C#,
+  and the SDK's `PhotonApp.plist` declares the scene manifest. The screen lives for the process, so a
+  scene the system connects again shows the same page, and its clock pauses in the background. CI's
+  `samples` job launches the Wallet on a fresh simulator and reads its self-test line from the unified
+  log (`scripts/check-ios-launch.sh`); its image has no Xcode 27 yet, so the iOS 27 half was measured
+  on a developer machine: on a fresh iOS 27.0 simulator, main's Wallet stopped at launch with UIKit's
+  "UIScene life cycle is required for apps built with this SDK", and this change's drew its frames.
+  Proposed and archived through OpenSpec (`openspec/specs/native-app-lifecycle`).
 
 ## Retired documents
 
