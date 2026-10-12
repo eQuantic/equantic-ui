@@ -122,6 +122,27 @@ public class FlutterParityPinTests
         return string.Join("\n", files.Select(File.ReadAllText));
     }
 
+    /// <summary>
+    /// The iOS shell's CODE, comments stripped. It targets <c>net10.0-ios</c>, which this suite cannot
+    /// load, so the row about its life cycle reads what the shell declares instead.
+    /// </summary>
+    private static string IosShellCode()
+    {
+        var here = new DirectoryInfo(AppContext.BaseDirectory);
+        while (here is not null && !Directory.Exists(Path.Combine(here.FullName, "src", "eQuantic.UI.Native.Shell.iOS")))
+            here = here.Parent;
+        here.Should().NotBeNull("the probe reads the iOS shell's source, so it has to find the tree");
+
+        var project = Path.Combine(here!.FullName, "src", "eQuantic.UI.Native.Shell.iOS");
+        var files = Directory.EnumerateFiles(project, "*.cs", SearchOption.AllDirectories)
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                        && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .ToArray();
+        files.Should().NotBeEmpty("a probe that read no file would assert about nothing");
+        var source = string.Join("\n", files.Select(File.ReadAllText));
+        return Regex.Replace(Regex.Replace(source, @"/\*.*?\*/", "", RegexOptions.Singleline), @"//[^\n]*", "");
+    }
+
     private static Type? Find(string name) => Surface
         .SelectMany(a => a.GetExportedTypes())
         .FirstOrDefault(t => t.Name == name || t.Name == name + "Attribute");
@@ -341,6 +362,10 @@ public class FlutterParityPinTests
         // Back runs the Escape binding the open layer declares; no route stack, nothing to veto a pop.
         ["PopScope"] = () => HasMember("PhotonHost", "Back") && HasMember("PhotonHost", "CanGoBack")
             && Nothing("PopScope", "WillPopScope", "BackButtonListener"),
+        // The window belongs to a scene delegate, and the app delegate owns none (#796).
+        ["FlutterSceneDelegate"] = () =>
+            Regex.IsMatch(IosShellCode(), @"class\s+PhotonSceneDelegate\s*:\s*UIWindowSceneDelegate")
+            && !Regex.IsMatch(IosShellCode(), @"UIApplicationDelegate[^{]*\{[^}]*override\s+UIWindow\?\s+Window"),
     };
 
     // ---- the assertions ---------------------------------------------------------------------------
