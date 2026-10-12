@@ -21,7 +21,7 @@
 
 ## 4. Proof and documents
 
-- [ ] 4.1 Run the Compiler, Web, Server and Conformance suites, build the dashboard sample and compare it file by file with a build of main, and build the shared-library sample and run its check
-- [ ] 4.2 Build the shared-library sample from packages alone, under a directory whose name holds a dollar sign, a bar and a space, with an assembly name that holds a dollar sign, and serve it
+- [x] 4.1 Run the Compiler, Web, Server and Conformance suites, build the dashboard sample and compare it file by file with a build of main, and build the shared-library sample and run its check
+- [x] 4.2 Build the shared-library sample from packages alone, under a directory whose name holds a dollar sign, a bar and a space, with an assembly name that holds a dollar sign, and serve it
 - [x] 4.3 CLAUDE.md's build pipeline, the wiki's Build Flow in English and Portuguese, and one `docs/LEDGER.md` line citing the issue
-- [ ] 4.4 Archive the change with `openspec archive the-sdk-hands-eqc-a-file --yes`
+- [x] 4.4 Archive the change with `openspec archive the-sdk-hands-eqc-a-file --yes`
