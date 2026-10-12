@@ -184,3 +184,22 @@ reach the field. A key from a hardware keyboard SHALL reach the host as it does 
   and a candidate is picked
 - **THEN** the field shows "か" underlined while it is composed, and the candidate replaces it without
   the underline
+
+### Requirement: A phone's clipboard serves its fields and its pages
+
+The Android and iOS shells SHALL give the host the platform's clipboard (Android's `ClipboardManager`,
+iOS's general `UIPasteboard`), so the copy, cut and paste chords of a keyboard attached to the phone
+reach the system clipboard as they do on a desktop. The shells SHALL register the same clipboard as the
+`ITextClipboard` service, so a page's own Copy button finds it.
+
+#### Scenario: Cut and paste with an attached keyboard
+
+- **WHEN** the text of a field is selected from a keyboard attached to the phone (Ctrl+A on Android,
+  ⌘A on iOS), cut (Ctrl+X, ⌘X), and pasted back (Ctrl+V, ⌘V)
+- **THEN** the cut empties the field and leaves its text on the system clipboard, and the paste puts it
+  back
+
+#### Scenario: A Copy button on a phone
+
+- **WHEN** a component on Android or iOS asks for `ITextClipboard` with `context.GetService`
+- **THEN** it gets the platform's clipboard, and what it writes is on the system clipboard

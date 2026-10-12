@@ -2448,7 +2448,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   once, a frame laid out shorter reveals the field being edited, and where nothing scrolls the screen is
   lifted until the field shows. The keyboard's Done submits and puts the keyboard away. Android answers with an input
   connection over a mirror of the field; iOS edits an invisible text view at the caret, so UIKit's own
-  autocorrection, dictation and composition run against it. Proposed and archived through OpenSpec
+  autocorrection, dictation and composition run against it. A keyboard attached to the phone copies,
+  cuts and pastes through the system clipboard, which both shells now give the host and register as
+  `ITextClipboard`, so a page's own Copy button works on a phone too
+  ([#776](https://github.com/eQuantic/equantic-ui/issues/776)): without it, a cut from that keyboard
+  deleted the selection and kept it nowhere. Proposed and archived through OpenSpec
   (`openspec/specs/phone-keyboard`).
 
 ## Retired documents

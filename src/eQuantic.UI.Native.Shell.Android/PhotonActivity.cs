@@ -239,6 +239,8 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             IconRasterizer = new AndroidIconRasterizer(),
             // A phone rolls too: a scroll that jumps reads as a redraw there just as on a desktop.
             SmoothScroll = app.Options.SmoothScroll,
+            // What Ctrl+C, X and V on a keyboard attached to the phone copy, cut and paste through.
+            Clipboard = new AndroidClipboard(),
         };
         cultureController?.Attach(_host.Invalidate);
 

@@ -1,7 +1,7 @@
 # Proposal
 
 Closes #770, a Feature under #195 (One text-editing protocol across hosts), of which it is the phone
-half. It is the first blocker between an app built with the SDK and a store: a sign-in, a sign-up or a
+half, and #776, the phones' clipboard (under #774), which the keyboard's copy, cut and paste need. It is the first blocker between an app built with the SDK and a store: a sign-in, a sign-up or a
 search on a phone could not be filled.
 
 ## Why
@@ -48,6 +48,10 @@ the keyboard, whose idea of the field would drift from the host's, would correct
   suggestions, dictation and composition against it, kept in step with the field by the session. The
   keyboard's frame becomes the host's `ViewInsets`. A hardware keyboard's keys reach the host as on a
   desktop.
+- **The phones' clipboard.** Both shells give the host the platform's clipboard (`ClipboardManager`,
+  `UIPasteboard`) and register it as `ITextClipboard`, as the desktop shells do. A hardware keyboard's
+  copy, cut and paste reach the system clipboard, where without one a cut deleted the selection and
+  kept it nowhere; and a page's own Copy button, which found no clipboard on a phone, finds it.
 
 For a developer: nothing to write. A `TextEntry`, a `TextInput`, a `SearchField`, a code surface or a
 sheet tapped on a phone opens the platform's keyboard, edits the way the platform edits (autocorrect,
@@ -74,9 +78,10 @@ None.
   (`composing`), so its signature goes and a wider one replaces it. The parameter is optional, so source
   that names its arguments compiles unchanged, as all 46 calls in the tree did; an assembly built
   against the old signature is rebuilt.
-- The Android shell: `PhotonSurfaceView`, `PhotonActivity`, and the new `PhotonInputConnection` and
-  `AndroidKeys`.
-- The iOS shell: `PhotonViewController`, and the new `PhotonKeyboard`, `PhotonTextProxy` and `IosKeys`.
+- The Android shell: `PhotonSurfaceView`, `PhotonActivity`, `AndroidCapabilities`, and the new
+  `PhotonInputConnection`, `AndroidKeys` and `AndroidClipboard`.
+- The iOS shell: `PhotonViewController`, `IosCapabilities`, and the new `PhotonKeyboard`,
+  `PhotonTextProxy`, `IosKeys` and `IosClipboard`.
 - Not reached: eqc, the runtime, the web realizer, the macOS and Windows shells, the SDKs and the
   templates. The developer surface does not move.
 - Out of scope: the keyboard's type and autofill hints (#675, which builds on this); a code surface's

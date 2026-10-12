@@ -116,6 +116,8 @@ public sealed class PhotonViewController : UIViewController
             IconRasterizer = new CoreGraphicsIconRasterizer(),
             ReducedMotion = UIAccessibility.IsReduceMotionEnabled,
             SmoothScroll = SmoothScroll,
+            // What ⌘C, X and V on a keyboard attached to the device copy, cut and paste through.
+            Clipboard = new IosClipboard(),
         };
 
         // The semantics bridge: VoiceOver reads the SAME target-neutral tree the macOS bridge
