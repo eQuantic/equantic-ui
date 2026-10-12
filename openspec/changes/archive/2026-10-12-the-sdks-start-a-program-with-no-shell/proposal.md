@@ -43,8 +43,7 @@ developer surface does not move, and the public surface does not either: the tas
 inside the SDK packages, as eqc and eqicon do, and is no package of its own.
 
 It does not reach the repository's own build: the Server's `BundleRuntime` and the runtime's tests
-still start bun through `Exec`, which only a clone of the framework runs. That is a follow-up of its
-own.
+still start bun through `Exec`, which only a clone of the framework runs. That is #852.
 
 ## Capabilities
 

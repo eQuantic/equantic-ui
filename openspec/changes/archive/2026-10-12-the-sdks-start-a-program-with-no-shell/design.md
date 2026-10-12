@@ -24,7 +24,7 @@ docs/FLUTTER-PARITY.md has no row for build tooling, and this is the same answer
 **Non-Goals:**
 
 - The repository's own build: the Server's `BundleRuntime` and the runtime's tests run bun through
-  `Exec`, and only a clone of the framework runs them. A follow-up.
+  `Exec`, and only a clone of the framework runs them. That is #852.
 - Moving work out of MSBuild into the tools (eqicon running `codesign`, eqc running `bun add`). Each
   call keeps its program; only the way it is started changes.
 
@@ -108,4 +108,4 @@ MSBuild records every task's parameters, these arguments among them, as it recor
   while they live: clearing the package cache between two packs of one version needs
   `dotnet build-server shutdown` first. Every SDK that ships a task shares this.
 - A symbolic link on Windows needs Developer Mode or elevation, as `mklink /D` did.
-- The repository's own build keeps its `Exec` tasks until the follow-up.
+- The repository's own build keeps its `Exec` tasks until #852.
