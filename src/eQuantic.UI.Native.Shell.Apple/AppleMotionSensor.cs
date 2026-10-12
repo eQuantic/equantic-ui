@@ -90,7 +90,7 @@ public sealed partial class AppleMotionSensor : IMotionSensor
 
     [UnmanagedCallersOnly]
     private static void MotionArrived(IntPtr block, IntPtr motion, IntPtr error) =>
-        ObjCBlock.Context<AppleMotionSensor>(block).OnMotion(motion);
+        ObjCBlock.Context<AppleMotionSensor>(block)?.OnMotion(motion);
 
     private void OnMotion(IntPtr motion)
     {

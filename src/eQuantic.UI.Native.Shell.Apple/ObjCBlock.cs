@@ -61,7 +61,7 @@ public sealed unsafe class ObjCBlock : IDisposable
         public nuint Size;
     }
 
-    private readonly GCHandle _context;
+    private GCHandle _context;
     private IntPtr _block;
     private IntPtr _descriptor;
 
@@ -105,10 +105,29 @@ public sealed unsafe class ObjCBlock : IDisposable
     public IntPtr Handle => _block;
 
     /// <summary>
-    /// The object a block was made for, read by its entry point from the block it was called with.
+    /// The object a block was made for, read by its entry point from the block it was called with;
+    /// null once <see cref="ReleaseContext"/> let it go. Never throws: it runs inside an
+    /// <see cref="UnmanagedCallersOnlyAttribute"/> method, where an exception ends the process.
     /// </summary>
-    public static T Context<T>(IntPtr block) where T : class =>
-        (T)GCHandle.FromIntPtr(((Layout*)block)->Context).Target!;
+    public static T? Context<T>(IntPtr block) where T : class
+    {
+        if (block == IntPtr.Zero) return null;
+        var handle = ((Layout*)block)->Context;
+        return handle == IntPtr.Zero ? null : GCHandle.FromIntPtr(handle).Target as T;
+    }
+
+    /// <summary>
+    /// Lets the context go and keeps the block: what a reply that answers ONCE calls from inside its
+    /// own entry point. The framework that called it still holds the block, and releases it after
+    /// the call returns, reading the block's flags as it does; freeing the block here would hand it
+    /// freed memory. So the block's two small allocations stay for the life of the process, the price
+    /// of an ask, and everything the context reaches is free to go. A later call finds no context.
+    /// </summary>
+    public void ReleaseContext()
+    {
+        if (_block != IntPtr.Zero) ((Layout*)_block)->Context = IntPtr.Zero;
+        if (_context.IsAllocated) _context.Free();
+    }
 
     private static IntPtr ConcreteGlobalBlock()
     {
@@ -122,6 +141,10 @@ public sealed unsafe class ObjCBlock : IDisposable
     [DllImport("/usr/lib/libSystem.B.dylib")]
     private static extern IntPtr dlsym(IntPtr handle, string symbol);
 
+    /// <summary>
+    /// Frees the block. Only once nothing native holds it any more: a borrowed block after the call
+    /// that borrowed it, never a block a framework copied and will release later.
+    /// </summary>
     public void Dispose()
     {
         if (_block != IntPtr.Zero) { Marshal.FreeHGlobal(_block); _block = IntPtr.Zero; }

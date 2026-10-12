@@ -62,34 +62,20 @@ public sealed class AppleCamera : ICamera
 
     private static unsafe Task<bool> AskAsync(CancellationToken cancellationToken)
     {
-        var answer = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
         // The framework OWNS this block — copies it, calls it once on an arbitrary queue, releases
-        // it — which is the global-block lifetime, again. The reply lets it go.
-        var pending = new PendingAccess(answer);
-        var block = new ObjCBlock((IntPtr)(delegate* unmanaged<IntPtr, byte, void>)&AccessReplied, pending);
-        pending.Block = block;
+        // it — which is the global-block lifetime, again. The reply lets its context go.
+        var pending = new PendingReply<bool>((IntPtr)(delegate* unmanaged<IntPtr, byte, void>)&AccessReplied);
         SendVoid(objc_getClass("AVCaptureDevice"),
-            Sel("requestAccessForMediaType:completionHandler:"), NSString("vide"), block.Handle);
+            Sel("requestAccessForMediaType:completionHandler:"), NSString("vide"), pending.Block.Handle);
 
-        cancellationToken.Register(() => answer.TrySetCanceled(cancellationToken));
-        return answer.Task;
+        cancellationToken.Register(() => pending.Cancel(cancellationToken));
+        return pending.Task;
     }
 
     /// <summary>AVFoundation's answer to the ask. BOOL crosses as a byte: a bool is not blittable.</summary>
     [UnmanagedCallersOnly]
-    private static void AccessReplied(IntPtr block, byte granted)
-    {
-        var pending = ObjCBlock.Context<PendingAccess>(block);
-        pending.Answer.TrySetResult(granted != 0);
-        pending.Block?.Dispose();
-    }
-
-    private sealed class PendingAccess(TaskCompletionSource<bool> answer)
-    {
-        public TaskCompletionSource<bool> Answer { get; } = answer;
-        public ObjCBlock? Block { get; set; }
-    }
+    private static void AccessReplied(IntPtr block, byte granted) =>
+        ObjCBlock.Context<PendingReply<bool>>(block)?.Reply(granted != 0);
 
     [DllImport("/usr/lib/libobjc.A.dylib", EntryPoint = "objc_msgSend")]
     private static extern long SendLong(IntPtr receiver, IntPtr selector, IntPtr arg1);

@@ -68,7 +68,7 @@ public sealed class AppleNetworkStatus : INetworkStatus
 
     [UnmanagedCallersOnly]
     private static void PathUpdated(IntPtr block, IntPtr path) =>
-        ObjCBlock.Context<AppleNetworkStatus>(block).OnPathUpdate(path);
+        ObjCBlock.Context<AppleNetworkStatus>(block)?.OnPathUpdate(path);
 
     private void OnPathUpdate(IntPtr path)
     {
