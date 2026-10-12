@@ -27,9 +27,11 @@ registers would fail at their first callback on a device.
 - **A method registered with the runtime is a static entry point.** The camera's frame delegate,
   location's three delegate methods and the deep-link AppleEvent handler register
   `(IntPtr)(delegate* unmanaged<…>)&Method`. Each routes to its process-wide instance, as before.
-- **Two leaks close on the way.** The camera's access request and the biometric reply now free their
-  block once they answer, and the motion sensor reuses its block across starts instead of making a
-  new one each time.
+- **A one-shot reply no longer frees memory a framework still holds.** The biometric reply freed its
+  block from inside its own call, before LocalAuthentication released it. A reply now lets only its
+  context go (`ObjCBlock.ReleaseContext`) and keeps the block, through one `PendingReply<T>` shared by
+  the biometric reply and the camera's access request, which leaked its context before. The motion
+  sensor reuses its block across starts instead of making a new one each time.
 
 For a developer: nothing to write and nothing to change. The camera, location, biometrics, motion and
 network status answer on a device as they do on the simulator.
@@ -52,7 +54,7 @@ None.
   shell had no callback of its own to change; the macOS shell's own (window, text input,
   accessibility) are outside this change, since a Mac app runs on the JIT or NativeAOT, both of which
   prepare a delegate's wrapper.
-- **Public surface moves.** `ObjCBlock(Delegate)` goes (`*REMOVED*`); `ObjCBlock(IntPtr, object)` and
-  `ObjCBlock.Context<T>(IntPtr)` arrive. The developer surface does not move.
+- **Public surface moves.** `ObjCBlock(Delegate)` goes (`*REMOVED*`); `ObjCBlock(IntPtr, object)`,
+  `ObjCBlock.Context<T>(IntPtr)` and `ObjCBlock.ReleaseContext()` arrive. The developer surface does not move.
 - **Migration**: code that built an `ObjCBlock` from a delegate passes a static `[UnmanagedCallersOnly]`
   method's address and the object it needs, and reads that object with `ObjCBlock.Context<T>`.

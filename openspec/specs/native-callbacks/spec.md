@@ -1,4 +1,11 @@
-## ADDED Requirements
+# native-callbacks Specification
+
+## Purpose
+What a native shell hands the platform to call back, a block's function or a method registered with
+the Objective-C runtime, and how that callback finds the object it answers for, so that the same code
+is right under the JIT, Mono's ahead-of-time compiler and NativeAOT.
+
+## Requirements
 
 ### Requirement: A callback handed to native code is a static entry point
 
@@ -38,3 +45,10 @@ entry point receives.
 
 - **WHEN** a block is copied with `_Block_copy`, called, released with `_Block_release` and called again
 - **THEN** the copy is the same pointer, and both calls reach the entry point with the same context
+
+#### Scenario: A reply that answers once
+
+- **WHEN** a block held by `_Block_copy` is called, lets its context go from its entry point's answer,
+  and is then released with `_Block_release` and called again
+- **THEN** the release finds a block rather than freed memory, the context reads as null, and the later
+  call does nothing

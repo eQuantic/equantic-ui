@@ -27,6 +27,17 @@ deep links each have one instance per process, and their delegate classes alread
 each runtime class an ivar to hold a `GCHandle` would add a second way to find the same object, so the
 method is made a static entry point and the routing stays.
 
+**A reply that answers once lets its context go, never its block.** LocalAuthentication and
+AVFoundation copy a completion block, call it once, and release it after the call returns, reading
+the block's flags to see it is global. Freeing the block from inside its own call, which the biometric
+reply did on main, hands that release freed memory, where the allocator may already have written over
+the flags. So `ObjCBlock.ReleaseContext` frees the `GCHandle` and clears the field, and the block's two
+small allocations stay for the process: the price of an ask, against heap corruption on a background
+queue after a successful Face ID. `PendingReply<T>` holds that lifetime for both asks, and its task
+runs continuations asynchronously, so nothing awaiting the answer runs inside the native callback.
+`ObjCBlock.Context<T>` answers null rather than throwing once the context is gone: an exception
+leaving an `[UnmanagedCallersOnly]` method ends the process.
+
 **BOOL crosses as a byte.** A `bool` parameter is not blittable, and an `[UnmanagedCallersOnly]`
 method takes only blittable types; `success != 0` reads it.
 
