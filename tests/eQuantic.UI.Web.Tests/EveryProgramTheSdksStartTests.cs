@@ -147,6 +147,49 @@ public class EveryProgramTheSdksStartTests
     }
 
     [UnixFact]
+    public void EqcIsHandedItsResponseFile_ByItsFullPath_WhereverObjIs()
+    {
+        // The obj folder's own path holds a Configuration, a target framework or an artifacts
+        // layout's folders, and MSBuild writes it with a backslash in it on every system.
+        var shipped = Shipped("eQuantic.UI.Sdk");
+        foreach (var obj in new[] { "obj\\Rel$ease `x` 'y'/", "$(MSBuildProjectDirectory)/../artifacts $a/obj/" })
+        {
+            var (directory, environment, record) = Prepare("App", "dotnet");
+            try
+            {
+                new XDocument(new XElement("Project",
+                    Properties(
+                        ("_EqSourceTree", "false"),
+                        ("_EqTasksAssembly", typeof(RunProgram).Assembly.Location),
+                        ("EnableEQuanticUICompilation", "true"),
+                        ("IntermediateOutputPath", obj),
+                        ("EQuanticOutputPath", "wwwroot/_equantic/"),
+                        ("_EqcSourceDirs", "$(MSBuildProjectDirectory)"),
+                        ("_EqcRefsFile", "$(MSBuildProjectDirectory)/obj/equantic.refs.txt"),
+                        ("EQuanticSourceMaps", "none"),
+                        ("EqcCliPath", "$(MSBuildProjectDirectory)/tools/eqc.dll")),
+                    UsingTasks(shipped),
+                    StandIn("_EQuanticCompilerInputs"),
+                    StandIn("ResolveBunPath"),
+                    Target(shipped, "_EQuanticCompilerArguments"),
+                    Target(shipped, "CompileEQuanticUI"))).Save(Path.Combine(directory, "probe.proj"));
+
+                Dotnet(directory, environment, "msbuild", "probe.proj", "-nologo", "-nr:false", "-v:m", "-t:CompileEQuanticUI");
+
+                var file = Path.GetFullPath(Path.Combine(directory,
+                    obj.Replace("$(MSBuildProjectDirectory)/", "").Replace('\\', '/'), "equantic.eqc.rsp"));
+                File.Exists(file).Should().BeTrue($"the response file is written under {obj}");
+                Calls(record).Should().Equal([Call("dotnet", directory + "/tools/eqc.dll", "@" + file)],
+                    $"eqc is handed the file that was written, with obj at {obj}");
+            }
+            finally
+            {
+                Clean(directory);
+            }
+        }
+    }
+
+    [UnixFact]
     public void EveryNpmPackageAnAppDeclares_IsHandedToBun()
     {
         // The install ran in batches under one condition, "no node_modules yet", which MSBuild asks

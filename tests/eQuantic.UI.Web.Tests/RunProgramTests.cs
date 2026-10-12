@@ -77,6 +77,19 @@ public class RunProgramTests
     }
 
     [Fact]
+    public void ABlankLineAProgramWrites_IsNoLineOfItsOutput()
+    {
+        // An item has a name, and a blank line is none: MSBuild refused the whole output over one
+        // (MSB4028). Exec trimmed each line and kept the ones with text.
+        var (task, engine) = Echoing(Argument("after the blank line"));
+        task.EnvironmentVariables = ["EQ_ECHO_BLANK=1"];
+
+        task.Execute().Should().BeTrue(string.Join("\n", engine.Errors));
+
+        Received(task).Should().Equal("after the blank line");
+    }
+
+    [Fact]
     public void AProgramThatFailsInSilence_IsEQ4004_WithTheCommandItWasStartedWith()
     {
         var (task, engine) = Echoing(Argument("a $b"));

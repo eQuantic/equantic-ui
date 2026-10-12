@@ -31,8 +31,9 @@ and `notarytool` through the same shell.
   under the condition "no `node_modules` yet", which the first `bun add` made false for the rest.
 - A program that fails without reporting an error of its own fails the build with EQ4004, naming the
   program and the arguments it was started with, where `Exec` named its command in MSB3073.
-- The call that hands `notarytool` the notary's password no longer writes its command line to the
-  build log.
+- The call that hands `notarytool` the notary's password is no longer echoed: its command line was
+  in every log at normal verbosity. A diagnostic or a binary log still records a task's parameters,
+  as it recorded `Exec`'s command.
 
 For a developer: nothing to write. An app whose folders, package folder, title or signing identity
 hold a `$`, a backtick, quotes, a `%`, an `&` or a trailing backslash builds as any other.

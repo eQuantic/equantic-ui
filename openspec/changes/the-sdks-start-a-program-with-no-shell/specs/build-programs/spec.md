@@ -31,8 +31,8 @@ its end. No shell SHALL read a path or a value on the way.
 - **WHEN** a macOS app titled `Cash$Flow & Co` is published with the signing identity
   `Developer ID Application: A $b (T)` and a notary password holding `$` and `"`
 - **THEN** the icon tool is handed the title as one argument, `codesign` the identity as one, and
-  `notarytool` the password as one, and the command line that carries the password is not in the
-  build's log
+  `notarytool` the password as one, and the build does not echo the command line that carries the
+  password
 
 ### Requirement: A program that fails says which it was
 

@@ -48,7 +48,7 @@ public sealed class RunProgram : ToolTask
     /// <summary>Whether <see cref="ConsoleOutput"/> collects the lines the program writes.</summary>
     public bool ConsoleToMSBuild { get; set; }
 
-    /// <summary>The lines the program wrote, one item each, when <see cref="ConsoleToMSBuild"/> is set.</summary>
+    /// <summary>The lines the program wrote that are not blank, trimmed, one item each, when <see cref="ConsoleToMSBuild"/> is set.</summary>
     [Output]
     public ITaskItem[] ConsoleOutput => [.. _console];
 
@@ -103,7 +103,9 @@ public sealed class RunProgram : ToolTask
     /// <inheritdoc />
     protected override void LogEventsFromTextOutput(string singleLine, MessageImportance messageImportance)
     {
-        if (ConsoleToMSBuild) _console.Add(new TaskItem(Escaped(singleLine), treatAsFilePath: false));
+        // As Exec collected them: each line trimmed, and no empty one, which is no item's name.
+        if (ConsoleToMSBuild && singleLine.Trim() is { Length: > 0 } line)
+            _console.Add(new TaskItem(Escaped(line), treatAsFilePath: false));
         base.LogEventsFromTextOutput(singleLine, messageImportance);
     }
 

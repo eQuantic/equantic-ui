@@ -192,6 +192,8 @@
         <_EqIconToolDir Condition="'$(_EqIconToolDir)' == ''">$(MSBuildThisFileDirectory)../tools/net10.0/</_EqIconToolDir>
         <_EqTasksAssembly Condition="'$(_EqSourceTree)' == 'true'">$(MSBuildThisFileDirectory)../../eQuantic.UI.Sdk.Tasks/bin/$(Configuration)/netstandard2.0/eQuantic.UI.Sdk.Tasks.dll</_EqTasksAssembly>
         <_EqTasksAssembly Condition="'$(_EqTasksAssembly)' == ''">$(MSBuildThisFileDirectory)../tools/netstandard2.0/eQuantic.UI.Sdk.Tasks.dll</_EqTasksAssembly>
+        <_EqTaskFactory>AssemblyTaskFactory</_EqTaskFactory>
+        <_EqTaskFactory Condition="'$(_EqSourceTree)' == 'true'">TaskHostFactory</_EqTaskFactory>
         <_EqIconDir>$(MSBuildProjectDirectory)/obj/eQuantic</_EqIconDir>
         <_EqAssetsGenerated>$(EQuanticGeneratedAssetsDir)</_EqAssetsGenerated>
         <_EqIconSetDir>$(_EqIconDir)/Assets.xcassets</_EqIconSetDir>
@@ -214,12 +216,10 @@
     <!--
         Every program this SDK starts, it starts with RunProgram: a program and a list of arguments,
         with no shell between them (#841), as the web SDK does. A source tree loads the task in a
-        task host that ends with the build, since it builds the assembly in the same graph.
+        task host that ends with the build, since it builds the assembly in the same graph, and a
+        package's as any task's is.
     -->
-    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.RunProgram" AssemblyFile="$(_EqTasksAssembly)"
-               TaskFactory="TaskHostFactory" Condition="'$(_EqSourceTree)' == 'true'" />
-    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.RunProgram" AssemblyFile="$(_EqTasksAssembly)"
-               Condition="'$(_EqSourceTree)' != 'true'" />
+    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.RunProgram" AssemblyFile="$(_EqTasksAssembly)" TaskFactory="$(_EqTaskFactory)" />
 
     <!--
         The executable's icon on Windows, from the same Assets/AppIcon — set at EVALUATION by literal

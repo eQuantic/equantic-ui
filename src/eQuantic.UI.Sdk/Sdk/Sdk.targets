@@ -115,6 +115,8 @@
         <_EqIconToolDir Condition="'$(_EqIconToolDir)' == ''">$(_SdkToolsDir)</_EqIconToolDir>
         <_EqTasksAssembly Condition="'$(_EqSourceTree)' == 'true'">$(MSBuildThisFileDirectory)../../eQuantic.UI.Sdk.Tasks/bin/$(Configuration)/netstandard2.0/eQuantic.UI.Sdk.Tasks.dll</_EqTasksAssembly>
         <_EqTasksAssembly Condition="'$(_EqTasksAssembly)' == ''">$(MSBuildThisFileDirectory)../tools/netstandard2.0/eQuantic.UI.Sdk.Tasks.dll</_EqTasksAssembly>
+        <_EqTaskFactory>AssemblyTaskFactory</_EqTaskFactory>
+        <_EqTaskFactory Condition="'$(_EqSourceTree)' == 'true'">TaskHostFactory</_EqTaskFactory>
     </PropertyGroup>
     <!--
         EVERY PROGRAM THIS SDK STARTS, it starts with RunProgram: a program and a list of arguments,
@@ -123,18 +125,13 @@
         `nuget $b`, a build stopped at the first program it started (#841). An argument is an item
         whose Value metadata is the text, after its Option metadata when it names one, so MSBuild
         neither splits it at a semicolon nor expands a wildcard in it; the item's own name is a label.
-        A source tree builds the task assembly in the same graph that uses it, as it builds eqc, so
-        it is loaded in a task host that ends with the build: a rebuilt assembly is the one that runs,
-        and no reused node holds the file.
+        A package's assembly is loaded as any task's is (AssemblyTaskFactory, MSBuild's own default).
+        A source tree builds the assembly in the same graph that uses it, as it builds eqc, so there
+        it is loaded in a task host that ends with the build (TaskHostFactory): a rebuilt assembly is
+        the one that runs, and no reused node holds the file.
     -->
-    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.RunProgram" AssemblyFile="$(_EqTasksAssembly)"
-               TaskFactory="TaskHostFactory" Condition="'$(_EqSourceTree)' == 'true'" />
-    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.RunProgram" AssemblyFile="$(_EqTasksAssembly)"
-               Condition="'$(_EqSourceTree)' != 'true'" />
-    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.LinkDirectory" AssemblyFile="$(_EqTasksAssembly)"
-               TaskFactory="TaskHostFactory" Condition="'$(_EqSourceTree)' == 'true'" />
-    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.LinkDirectory" AssemblyFile="$(_EqTasksAssembly)"
-               Condition="'$(_EqSourceTree)' != 'true'" />
+    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.RunProgram" AssemblyFile="$(_EqTasksAssembly)" TaskFactory="$(_EqTaskFactory)" />
+    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.LinkDirectory" AssemblyFile="$(_EqTasksAssembly)" TaskFactory="$(_EqTaskFactory)" />
     <PropertyGroup>
         <_EqOsArch Condition="'$(_EqOsArch)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_EqOsArch>
         <_EqIsArm64 Condition="'$(_EqOsArch)' == 'Arm64'">true</_EqIsArm64>
@@ -250,13 +247,16 @@
             Importance="High"
             Condition="!Exists('$(_BunNpmNodeModules)')" />
 
-        <!-- One `bun add` a package: an item a package, batched by its name. -->
+        <!-- One `bun add` a package and version: the packages to add are listed once, under the one
+             condition, and the task is batched over what each is handed. Asked before each batch,
+             "no node_modules yet" was false from the second on, since the first `bun add` makes it. -->
         <ItemGroup Condition="!Exists('$(_BunNpmNodeModules)')">
-            <_EqBunAddArgument Include="@(BunPackage)" Option="add" Value="%(Identity)@%(Version)" />
+            <_EqBunAddCommand Include="command" Value="add" />
+            <_EqBunAddPackage Include="@(BunPackage)" Value="%(Identity)@%(Version)" />
         </ItemGroup>
-        <RunProgram Program="$(BunPath)" Arguments="@(_EqBunAddArgument)"
+        <RunProgram Program="$(BunPath)" Arguments="@(_EqBunAddCommand);@(_EqBunAddPackage)"
             WorkingDirectory="$(_BunNpmDir)"
-            Condition="'%(_EqBunAddArgument.Identity)' != ''" />
+            Condition="'%(_EqBunAddPackage.Value)' != ''" />
 
         <!-- node_modules at the project root for tool resolution, made by the system's own call: the
              Windows half was `mklink /D`, a command of cmd.exe, not a program. What is already there

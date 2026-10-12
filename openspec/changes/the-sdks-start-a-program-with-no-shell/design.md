@@ -67,7 +67,8 @@ response file. The item's name is a label for the reader. An option repeated per
 changes. A source tree builds the assembly in the same graph that uses it, so it is a graph edge like
 eqc and eqicon, and its `UsingTask` names `TaskHostFactory`: a task host that ends with the build, so
 a rebuilt assembly is the one that runs and a reused node never holds the file. Measured on the
-probe: 0.4 s for the whole run either way.
+probe: 0.4 s for the whole run either way. One property names the factory, MSBuild's own default for
+a package, so each task is declared once.
 
 **EQ4004 for a program that fails in silence.** A program that reported its own errors has said what
 went wrong, as eqc does. One that did not gets the command it was started with, as `Exec`'s MSB3073
@@ -94,8 +95,12 @@ once, and the task then runs for every package of the list.
 builds against, and no git, a tarball or a shallow copy must not fail the build. `IgnoreExitCode`
 covers a program that is not on the machine at all, which the shell answered with 127.
 
-**The notary's password is not echoed.** The call that carries it sets `EchoOff`, so its command line
-is not in the build's log. It was, at normal verbosity, in every log and binlog.
+**The notary's password is not echoed.** The call that carries it sets `EchoOff`, and its command
+line, which was in every log at normal verbosity, is not written. ToolTask logs a command line
+whatever `EchoOff` says, since it is `Exec` that asks first, so the task asks, and EQ4004 names no
+argument of such a call. What this does not reach: at diagnostic verbosity, and so in a binary log,
+MSBuild records every task's parameters, these arguments among them, as it recorded `Exec`'s command
+(measured).
 
 ## Risks / Trade-offs
 
