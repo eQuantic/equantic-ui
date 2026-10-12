@@ -11,7 +11,8 @@
 
 - [ ] 2.1 The assembly as a graph edge in a source tree and under `tools/netstandard2.0/` in the package, and its `UsingTask`
 - [ ] 2.2 `git describe`, bun's `chmod` and `bun add`, the link, eqc in the project's folder with its response file by full path, eqicon's vectors and web icon
-- [ ] 2.3 Build the dashboard sample and compare it file by file with a build of main, build the shared-library sample and run its check, and build an app with a `BunPackage` that a page imports
+- [ ] 2.3 Write the case: an app that declares two npm packages has both handed to bun, with a bun that makes `node_modules` as bun does
+- [ ] 2.4 Build the dashboard sample and compare it file by file with a build of main, and build the shared-library sample and run its check
 
 ## 3. The native SDK
 
@@ -27,6 +28,6 @@
 ## 5. Proof and documents
 
 - [ ] 5.1 The suites, the solution build, `./scripts/check-openspec.sh`
-- [ ] 5.2 The consumer's path from packages alone, with the package folder under a folder named `nuget $b`, served in a browser
+- [ ] 5.2 The consumer's path from packages alone, with the package folder under a folder named `nuget $b`, an app icon, a title with a dollar sign and an npm package, served in a browser
 - [ ] 5.3 CLAUDE.md, the wiki's Build Flow, Package Architecture and BunPackage pages in English and Portuguese, and one `docs/LEDGER.md` line citing the issue
 - [ ] 5.4 Archive the change with `openspec archive the-sdks-start-a-program-with-no-shell --yes`

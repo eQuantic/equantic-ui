@@ -147,6 +147,44 @@ public class EveryProgramTheSdksStartTests
     }
 
     [UnixFact]
+    public void EveryNpmPackageAnAppDeclares_IsHandedToBun()
+    {
+        // The install ran in batches under one condition, "no node_modules yet", which MSBuild asks
+        // again before each batch. The first `bun add` made the folder, so the second package of an
+        // app was never installed: measured on main with a bun that makes the folder, as bun does.
+        var shipped = Shipped("eQuantic.UI.Sdk");
+        var (directory, environment, record) = Prepare("Packages");
+        var bun = Path.Combine(directory, "bun");
+        File.WriteAllText(bun, "#!/bin/sh\nmkdir -p node_modules && printf '%s\\n' \"$2\" >> \"$EQ_RECORD\"\n");
+        if (!OperatingSystem.IsWindows())
+            File.SetUnixFileMode(bun, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        try
+        {
+            new XDocument(new XElement("Project",
+                Properties(
+                    ("_EqSourceTree", "false"),
+                    ("_EqTasksAssembly", typeof(RunProgram).Assembly.Location),
+                    ("BunPath", bun),
+                    ("BaseIntermediateOutputPath", "$(MSBuildProjectDirectory)/obj/")),
+                new XElement("ItemGroup",
+                    new XElement("BunPackage", new XAttribute("Include", "dayjs"), new XAttribute("Version", "1.11.13")),
+                    new XElement("BunPackage", new XAttribute("Include", "marked"), new XAttribute("Version", "15.0.6"))),
+                UsingTasks(shipped),
+                StandIn("ResolveBunPath"),
+                Target(shipped, "InstallBunPackages"))).Save(Path.Combine(directory, "probe.proj"));
+
+            Dotnet(directory, environment, "msbuild", "probe.proj", "-nologo", "-nr:false", "-v:m", "-t:InstallBunPackages");
+
+            File.ReadAllLines(record).Should().Equal(["dayjs@1.11.13", "marked@15.0.6"],
+                "every package is added, the ones after the first included");
+        }
+        finally
+        {
+            Clean(directory);
+        }
+    }
+
+    [UnixFact]
     public void TheNativeSdk_HandsEachProgramOfAMacBundleItsArguments_AsTheyAre()
     {
         const string identity = "Developer ID Application: A $b (T)";

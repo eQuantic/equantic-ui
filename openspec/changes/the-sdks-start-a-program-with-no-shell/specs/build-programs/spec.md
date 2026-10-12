@@ -45,6 +45,16 @@ was started with.
 - **WHEN** a program the build starts writes nothing and ends with exit code 2
 - **THEN** the build fails with EQ4004, which names the program, its arguments and the code
 
+### Requirement: Every npm package an app declares is installed
+
+The SDK SHALL hand bun every `BunPackage` an app declares, one `bun add` a package, the first time
+the packages are installed.
+
+#### Scenario: An app that declares two packages
+
+- **WHEN** an app declares `dayjs` and `marked` as `BunPackage` items and is built for the first time
+- **THEN** `bun add` runs for `dayjs` and then for `marked`
+
 ### Requirement: The npm packages' link is made without a shell
 
 When an app declares a `BunPackage`, the SDK SHALL make `node_modules` in the project's folder a link

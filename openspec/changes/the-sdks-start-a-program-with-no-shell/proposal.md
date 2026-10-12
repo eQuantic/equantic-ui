@@ -27,6 +27,8 @@ and `notarytool` through the same shell.
   expands a wildcard in it.
 - eqc is started in the project's folder again, with its response file named by its full path. #836
   ran it in the response file's folder only to keep that path away from the shell.
+- Every `BunPackage` an app declares is installed. Only the first one was: the install ran in batches
+  under the condition "no `node_modules` yet", which the first `bun add` made false for the rest.
 - A program that fails without reporting an error of its own fails the build with EQ4004, naming the
   program and the arguments it was started with, where `Exec` named its command in MSB3073.
 - The call that hands `notarytool` the notary's password no longer writes its command line to the

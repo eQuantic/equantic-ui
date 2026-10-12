@@ -84,6 +84,12 @@ Something already at the path stays, which the script's `[ ! -L node_modules ]` 
 quite do: on a real folder `ln -s` made a link inside it. A link that cannot be made is said at high
 importance and does not fail the build, as the script's ignored exit code did not.
 
+**The packages to install are decided once.** The install batched one `Exec` over the packages under
+the condition "no `node_modules` yet", and MSBuild evaluates a task's condition again before each
+batch: the first `bun add` made the folder, and the second package was never added (measured on main
+with a bun that makes the folder, as bun does). The list of what to add is built under that condition
+once, and the task then runs for every package of the list.
+
 **`git describe` stays tolerant.** In a source tree outside the repository the SDK names the commit it
 builds against, and no git, a tarball or a shallow copy must not fail the build. `IgnoreExitCode`
 covers a program that is not on the machine at all, which the shell answered with 127.
