@@ -91,6 +91,24 @@ public class RunProgramTests
     }
 
     [Fact]
+    public void EchoOff_KeepsTheArgumentsOutOfTheLog_EvenWhenTheProgramFails()
+    {
+        // The notary's password is an argument of notarytool's: ToolTask logs a command line whatever
+        // EchoOff says, and EQ4004 would name the arguments of a call that failed.
+        var (task, engine) = Echoing(Argument("pa$$ \"word\"", option: "--password"));
+        task.ConsoleToMSBuild = false;
+        task.EchoOff = true;
+        task.EnvironmentVariables = ["EQ_ECHO_EXIT=2"];
+
+        task.Execute().Should().BeFalse();
+
+        engine.Messages.Concat(engine.Errors.Select(error => error.Message))
+            .Where(line => !line.StartsWith('"'))
+            .Should().NotContain(line => line.Contains("pa$$"), "only the program's own output may carry it");
+        engine.Errors.Should().ContainSingle().Which.Message.Should().Be("dotnet ended with exit code 2.");
+    }
+
+    [Fact]
     public void IgnoreExitCode_ToleratesAFailure_AndAProgramThatIsNotOnThisMachine()
     {
         var (failing, engine) = Echoing();

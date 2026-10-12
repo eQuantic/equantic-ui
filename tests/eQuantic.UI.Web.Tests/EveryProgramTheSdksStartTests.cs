@@ -222,7 +222,8 @@ public class EveryProgramTheSdksStartTests
                 Call("hdiutil", "create", "-volname", AppName, "-srcfolder", ship, "-ov", "-format", "UDZO", dmg),
                 Call("codesign", "--force", "--sign", identity, dmg),
             ]);
-            output.Should().NotContain(password, "the command line that carries the notary's password is not echoed");
+            output.Should().NotContain("pa$$", "the command line that carries the notary's password is not echoed, "
+                + "where the password would show quoted, its own quotes escaped");
         }
         finally
         {

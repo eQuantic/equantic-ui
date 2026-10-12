@@ -91,6 +91,15 @@ public sealed class RunProgram : ToolTask
     /// <inheritdoc />
     protected override string? GetWorkingDirectory() => WorkingDirectory.Length > 0 ? WorkingDirectory : null;
 
+    /// <summary>
+    /// The command line, unless <see cref="ToolTask.EchoOff"/> is set: one that carries a password
+    /// says nothing of it. ToolTask logs it either way, and it is <c>Exec</c> that asks first.
+    /// </summary>
+    protected override void LogToolCommand(string message)
+    {
+        if (!EchoOff) base.LogToolCommand(message);
+    }
+
     /// <inheritdoc />
     protected override void LogEventsFromTextOutput(string singleLine, MessageImportance messageImportance)
     {
@@ -107,10 +116,11 @@ public sealed class RunProgram : ToolTask
             return true;
         }
         // A program that reported its own errors has said what went wrong; one that did not gets the
-        // command it was started with, which is what a reader needs to run it again.
+        // command it was started with, which is what a reader needs to run it again, unless its
+        // command line is not to be echoed.
         if (!Log.HasLoggedErrors)
         {
-            var arguments = GenerateCommandLineCommands();
+            var arguments = EchoOff ? "" : GenerateCommandLineCommands();
             Log.LogError(null, "EQ4004", null, null, 0, 0, 0, 0, "{0} ended with exit code {1}.",
                 arguments.Length > 0 ? $"{Program} {arguments}" : Program, ExitCode);
         }
