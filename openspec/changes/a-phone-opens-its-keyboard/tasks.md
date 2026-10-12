@@ -17,8 +17,8 @@
 
 ## 3. The iOS shell
 
-- [ ] 3.1 `PhotonTextProxy`, `PhotonKeyboard` and `IosKeys`; `PhotonViewController` syncs the keyboard after each frame. Verify: `dotnet build src/eQuantic.UI.Native.Shell.iOS`, and the `samples` job building the Wallet's iOS head
-- [ ] 3.2 Verify: on the iOS simulator, the Wallet's PIX key field opens the keyboard above it, on-screen typing reaches it, and the keyboard closes when the edit ends
+- [x] 3.1 `PhotonTextProxy`, `PhotonKeyboard` and `IosKeys`; `PhotonViewController` syncs the keyboard after each frame. Verify: `dotnet build src/eQuantic.UI.Native.Shell.iOS` on the Mac, with no new warning, and the `samples` job building the Wallet's iOS head
+- [x] 3.2 Verify: on the iOS simulator (iPhone 17, iOS 26.5), the Wallet's PIX key field opens the keyboard above it; on-screen typing reaches it; autocorrection ends in the field; Backspace works; Done puts the keyboard away and ends the edit, and a tap brings both back with the caret where it was; and with the Japanese Romaji keyboard, "ka" is drawn underlined and a candidate picked replaces it without the underline
 
 ## 4. Documentation and the suites
 

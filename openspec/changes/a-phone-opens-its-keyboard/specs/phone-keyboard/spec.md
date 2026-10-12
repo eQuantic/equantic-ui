@@ -160,6 +160,15 @@ reach the field. A key from a hardware keyboard SHALL reach the host as it does 
 
 #### Scenario: Typing on iOS
 
-- **WHEN** the PIX key field of the Wallet sample is tapped on the iOS simulator and typed into on the
-  on-screen keyboard
-- **THEN** the keyboard opens, the text appears in the field, and the field stays above the keyboard
+- **WHEN** the PIX key field of the Wallet sample is tapped on the iOS simulator, "teh " is typed on the
+  on-screen keys, and the keyboard's Done key is pressed
+- **THEN** the keyboard opens with the field and the Continue button above it, each letter reaches the
+  field as it is typed, the field ends with what the keyboard's autocorrection chose, and Done puts the
+  keyboard away and ends the edit
+
+#### Scenario: Composing on iOS
+
+- **WHEN** "ka" is typed into the PIX key field on the iOS simulator with the Japanese Romaji keyboard,
+  and a candidate is picked
+- **THEN** the field shows "か" underlined while it is composed, and the candidate replaces it without
+  the underline
