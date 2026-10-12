@@ -62,8 +62,10 @@ internal sealed class Solution : IDisposable
     /// <summary>The directory a project's files are in.</summary>
     public string DirectoryOf(string project) => Path.Combine(_root, project);
 
-    /// <summary>A file of a project, as the developer wrote it.</summary>
-    public string FileOf(string project, string relativePath) => Path.Combine(_root, project, relativePath);
+    /// <summary>A file of a project, by the path the build names it with: a test writes
+    /// <c>Screens/Home.cs</c> on every system, and the build reports <c>Screens\Home.cs</c> on Windows.</summary>
+    public string FileOf(string project, string relativePath) =>
+        Path.GetFullPath(Path.Combine(_root, project, relativePath));
 
     /// <summary>
     /// A class library the app references, directly or through another.

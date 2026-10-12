@@ -88,6 +88,13 @@ type or member marked `[ServerOnly]` SHALL be refused where the browser code nam
 - **WHEN** a page calls a method of a referenced project's class whose body uses `System.IO.File`
 - **THEN** the build fails naming that file of the referenced project and the construct
 
+#### Scenario: A record that crossed as data holds a method a browser cannot run
+
+- **WHEN** a Server Action answers a record of a referenced project that declares a method whose
+  body uses `System.IO.File`, and no page calls that method
+- **THEN** the build fails naming that method's file, where the same record read from an assembly
+  crossed as data alone
+
 #### Scenario: A server-only type of a referenced project
 
 - **WHEN** a page names a type the referenced project marks `[ServerOnly]`

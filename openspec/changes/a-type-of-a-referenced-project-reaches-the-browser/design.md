@@ -166,6 +166,14 @@ referenced catalogue keeps the id it has today.
   against 9.8 s at most, where it added two seconds before the names stopped being read for the
   SDK's own libraries. That solution's pages reach none of its projects yet, and what the build
   writes for it is the same files with and without the list.
+- [A type that crossed as data is compiled whole] → A record of a referenced project that a Server
+  Action answers had no twin and was read back member by member. Its twin is the whole record now, so
+  a method of it that a browser cannot run fails the build at that method, though no page calls it:
+  measured, with the build handed no projects as the control. Loud, at the right file, and nothing
+  written wrong, which is why it stands. Keeping such a type a shape with no twin was weighed and
+  left: every rule that asks for a source would have to be told about it, and a value with no twin
+  meeting code that calls it fails in the browser. The way through is a member the build leaves out,
+  or members compiled only where they are reached, and it is filed (#826).
 - ["The emitted text names it" reads inside a string literal] → A word of a string can pass for a
   reference, for the app's own types as for a project's. For a project's it would compile a type
   nothing uses. It is the test every path already had, and it is filed with the import of a

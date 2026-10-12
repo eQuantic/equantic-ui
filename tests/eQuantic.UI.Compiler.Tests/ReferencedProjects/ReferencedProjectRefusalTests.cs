@@ -161,6 +161,80 @@ public sealed class ReferencedProjectRefusalTests
     }
 
     [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ARecordThatCrossedAsData_AndHoldsServerCode_FailsAtThatMember(bool handProjects)
+    {
+        // The one thing that gets STRICTER for an app that already built. A record of a referenced
+        // project that a Server Action answers used to cross as data alone: read from its assembly
+        // it had no twin, and its answer was read back member by member. Its twin is the whole
+        // record now, as an app's own record's is, so a method of it that a browser cannot run is
+        // refused, at its own file, though no page calls it. Loud and at the right place, and
+        // nothing is written wrong. It is filed (#826): the way through is a member the build leaves
+        // out, or members compiled only where they are reached.
+        using var solution = new Solution()
+            .Library("Domain", files:
+            [
+                ("Order.cs",
+                    """
+                    namespace Domain;
+
+                    public sealed record Order(decimal Total, long Number)
+                    {
+                        public string Export() => File.ReadAllText("orders.csv");
+                    }
+                    """),
+            ])
+            .App("App", references: ["Domain"], globalUsings: SharedLibrary.Factories, files:
+            [
+                ("Screens/Home.cs",
+                    """
+                    using eQuantic.UI.Primitives;
+                    using Domain;
+
+                    namespace App.Screens;
+
+                    public sealed class Home : StatefulComponent
+                    {
+                        private Order? _order;
+
+                        [ServerAction]
+                        public Task<Order> Load() => Task.FromResult(new Order(1m, 2));
+
+                        private async Task Fetch()
+                        {
+                            var order = await Load();
+                            SetState(() => _order = order);
+                        }
+
+                        public override VisualNode Build(ComponentContext context) =>
+                            Column(gap: Space.S2, children: [
+                                Button("Load", onPressed: () => _ = Fetch()),
+                                Text(_order is null ? "none" : _order.Total.ToString(), TypeRole.BodyM, context.Theme.TextPrimary, maxLines: 1),
+                            ]);
+                    }
+                    """),
+            ]);
+        var built = solution.Build(handProjects);
+
+        if (handProjects)
+        {
+            built.Failed.Should().BeTrue();
+            built.ErrorsIn("Domain").Should().ContainSingle()
+                .Which.Should().StartWith(solution.FileOf("Domain", "Order.cs") + "(")
+                .And.Contain("error EQ2004").And.Contain("'System.IO.File.ReadAllText'");
+            built.ErrorsIn("App").Should().BeEmpty();
+        }
+        else
+        {
+            // The control, and what the page was before: built, with the record a shape and no twin.
+            built.Failed.Should().BeFalse(built.Errors);
+            built.Module("Home").Should().Contain("{ members: { total: 'decimal', number: 'long' } }");
+            built.Modules.Should().BeEquivalentTo(["Home"]);
+        }
+    }
+
+    [Theory]
     [InlineData("a file of the library")]
     [InlineData("the list of projects")]
     public void AReferencedProjectThatCannotBeRead_StopsTheBuild_AndNeverFallsBackToGuessing(string held)
