@@ -186,8 +186,9 @@ function formatCore(value: any, format: string | null, kind: NumberKind): string
     return formatNumber(value, format, kind);
   const moment = momentOf(value);
   if (moment !== null) return formatDate(moment, format);
-  // A duration's format is its own, its general forms with the culture's decimal separator: the twin's
-  // toString takes none, so every format wrote the constant text (#837).
+  // A duration's format is its own, its general forms with the culture's decimal separator (.NET reads
+  // its date-time one, which equals the number one in every culture .NET ships): the twin's toString
+  // takes none, so every format wrote the constant text (#837).
   if (value instanceof TimeSpan) return timeSpanText(value.ticks, format, symbols().decimal);
   // A value that takes no format writes its own text, as one that is not IFormattable does in .NET.
   return general(value, kind);

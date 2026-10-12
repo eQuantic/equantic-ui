@@ -9,8 +9,9 @@ constant form `[-][d.]hh:mm:ss[.fffffff]` in every culture, `g` the short genera
 decimal separator, and a custom format token by token without a sign. A null or an empty format SHALL
 be the constant form. Any other format SHALL throw .NET's FormatException with its message. The
 invariant culture SHALL write the invariant separator, the current culture and a null provider SHALL
-be the call with none, and any other provider SHALL fail the build (EQ2108). A null `TimeSpan?` SHALL
-write nothing.
+be the call with none, and any other provider SHALL fail the build (EQ2108). A format and a provider
+SHALL be the arguments bound to those parameters, by name or by place. A null `TimeSpan?` SHALL write
+nothing.
 
 #### Scenario: A custom format
 
@@ -27,6 +28,12 @@ write nothing.
 
 - **WHEN** `TimeSpan.Zero.ToString("h")` and `TimeSpan.Zero.ToString("'abc")` run
 - **THEN** each throws a FormatException with .NET's message, where both wrote `00:00:00`
+
+#### Scenario: A provider named before its format
+
+- **WHEN** `new TimeSpan(1, 2, 3, 4, 500).Negate().ToString(formatProvider: null, format: "g")` runs
+- **THEN** it answers `-1:2:03:04.5` in the invariant culture, as in .NET, where the null was read as
+  the format and the value written in the constant form
 
 #### Scenario: A null TimeSpan
 

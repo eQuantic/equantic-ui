@@ -2522,8 +2522,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   and its custom formats token by token, with its refusals in its words; eqc hands a TimeSpan's
   `ToString` to the formatter as it hands a date's, so its provider is the culture it names where it
   was a name no browser defines, and a null `TimeSpan?` writes nothing where it was read through null.
-  45 of the 50 new conformance cases, run in five cultures, fail at d5097bc2; one entry leaves the
-  null-argument baseline. The served runtime grows about 900 gzipped bytes. Proposed and archived
+  The review found a provider named before its format (`ToString(provider: null, format: "g")`) read
+  as the format, for a number and a date as well: `ToStringStrategy` now asks the parameter each
+  argument binds to. 45 of the first 50 conformance cases, run in five cultures, fail at d5097bc2, and
+  the 7 the review added fail before that fix; one entry leaves the null-argument baseline. The served runtime grows about 900 gzipped bytes. Proposed and archived
   through OpenSpec (`openspec/specs/runtime-dates`).
 
 ## Retired documents

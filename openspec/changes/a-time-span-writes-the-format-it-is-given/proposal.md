@@ -16,6 +16,10 @@ Executed on both sides at d5097bc2, where 45 of the 50 cases of `TimeSpanFormatC
 - `ts.ToString(format, provider)` crossed with its provider written as the name `CultureInfo`, which
   the runtime does not export, a ReferenceError on the page (#717).
 - `ToString()` of a null `TimeSpan?` read it through null, where .NET writes nothing.
+- Found in review, and older than this change: a provider named before its format
+  (`ToString(provider: null, format: "g")`) was read as the format, for every value `ToStringStrategy`
+  writes, so a number, a date and a TimeSpan wrote their text with no format. A null has no type, and
+  the strategy asked the argument's type which one was the provider.
 
 ## What Changes
 
@@ -31,6 +35,8 @@ Executed on both sides at d5097bc2, where 45 of the 50 cases of `TimeSpanFormatC
   call runs, the invariant culture is the formatter's invariant flag, the current culture and a null
   provider are the call with none, and any other provider fails the build (EQ2108). A null `TimeSpan?`
   writes nothing.
+- eqc's `ToStringStrategy` asks which argument is the provider of the parameter it binds to, by its
+  name or its place, and the argument's own type only where no method is bound.
 
 For a developer: `duration.ToString(@"hh\:mm")` and `$"{duration:g}"` write in the browser what they
 write on the server.
@@ -47,7 +53,8 @@ None.
 
 ## Impact
 
-- eqc: `TimeSpanStrategy` leaves `ToString` to `ToStringStrategy`. No public surface moves.
+- eqc: `TimeSpanStrategy` leaves `ToString` to `ToStringStrategy`, which reads a named provider by its
+  parameter for every value it writes. No public surface moves.
 - Runtime: the new `utils/timespan-text.ts`, read by `format.ts` and by the TimeSpan twin. The served
   runtime grows by the writer.
 - Not reached: the web realizer, Photon, the SDKs, the templates and the shared components, whose

@@ -8,9 +8,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// <summary>
 /// Maps <c>System.TimeSpan</c> to the runtime <c>TimeSpan</c> compat type (tick-precise, .NET "c"
 /// formatting). Construction and statics (<c>FromSeconds</c>, …) route through the <c>timeSpan</c>
-/// factory; instance members/methods become camelCase calls, but <c>ToString</c>, which is the
-/// formatter's. Operators are handled by BinaryExpressionStrategy. Priority 15, gated on the semantic
-/// type.
+/// factory; instance members/methods become camelCase calls, but a call to <c>ToString</c>, which is
+/// the formatter's. Operators are handled by BinaryExpressionStrategy. Priority 15, gated on the
+/// semantic type.
 /// </summary>
 public class TimeSpanStrategy : ConversionStrategyBase
 {
