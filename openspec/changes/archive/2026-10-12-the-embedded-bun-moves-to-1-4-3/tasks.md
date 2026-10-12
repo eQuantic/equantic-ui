@@ -15,7 +15,7 @@
 
 ## 3. Proof and documents
 
-- [ ] 3.1 The runtime's own tests, the conformance suite, the Compiler, Web and Server suites, and `./scripts/check-openspec.sh`
-- [ ] 3.2 The dashboard sample built and walked in a browser, and the shared-library and desktop samples built
-- [ ] 3.3 The wiki's Code Editor page in English and Portuguese, and one `docs/LEDGER.md` line citing the issue
-- [ ] 3.4 Archive the change with `openspec archive the-embedded-bun-moves-to-1-4-3 --yes`
+- [x] 3.1 The runtime's own tests, the conformance suite, the Compiler, Web and Server suites, and `./scripts/check-openspec.sh`
+- [x] 3.2 The dashboard sample built and walked in a browser, and the shared-library and desktop samples built
+- [x] 3.3 The wiki's Code Editor page in English and Portuguese, and one `docs/LEDGER.md` line citing the issue
+- [x] 3.4 Archive the change with `openspec archive the-embedded-bun-moves-to-1-4-3 --yes`
