@@ -19,8 +19,11 @@ Flutter has no counterpart to ask: this is how one .NET build hands another prog
 
 **Non-Goals:**
 
-- The compiler's own path. It is still the one value in the command, quoted: the SDK's own install
-  location, which the developer neither chooses nor names.
+- The compiler's own path. It is still the one value in the command, quoted, and a shell still reads
+  it: the SDK's package folder, the source tree, or the `EqcCliPath` a project states. So does every
+  program the two SDKs start, and with the package folder under a folder named `nuget $b` a build
+  stops at `chmod +x` on bun's own path before eqc starts (MSB3073, measured). Starting a program with
+  an argument list, for every one of them, is #841's.
 
 ## Decisions
 

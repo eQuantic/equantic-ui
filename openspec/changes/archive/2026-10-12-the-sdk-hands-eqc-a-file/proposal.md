@@ -30,12 +30,16 @@ green.
   the compiler library, so a test reads them the way eqc does.
 - The list of projects holds each project's two paths on a line each, so a path holds any character
   a line can.
+- eqc runs bun in the project's folder and hands it each path as an argument of its own, so where
+  eqc runs renames no chunk, and a double quote in a folder's name reaches bun.
 
 For a developer: nothing to write, and nothing to look up. A project whose directory or assembly
-name holds a `$`, a backtick or a quote builds as any other.
+name holds a `$`, a backtick or a quote, single or double, builds as any other.
 
-It reaches the SDK and eqc. The public surface gains two static members of `AppBuildOptions`, which
-read a command line, and loses nothing. The developer surface does not move.
+It reaches the SDK, eqc and its bundler. The public surface gains `AppBuildOptions.ReadArguments` and
+`FromArguments`, which read a command line, and `AppBuildOptions.Watch`. `ModuleBundler.Bundle` takes
+the folder bun runs in, a break that nothing outside this repository meets. The developer surface does
+not move.
 
 ## Capabilities
 
