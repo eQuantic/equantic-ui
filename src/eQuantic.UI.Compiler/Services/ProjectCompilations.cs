@@ -32,11 +32,13 @@ internal static class ProjectCompilations
     /// app's projects need too, since references flow, so each project is compiled against it.</param>
     /// <param name="addStandardReferences">See <see cref="ProjectCompilationHelper.CreateCompilationFromSources"/>.</param>
     /// <param name="projects">The referenced projects, in any order.</param>
+    /// <param name="read">How an assembly is read; null reads each file anew.</param>
     /// <param name="built">Each project a compilation was built for, with that compilation. A project
     /// with no C# source (another language's) keeps its assembly and is not here.</param>
     public static Compilation Create(string assemblyName, IEnumerable<string> sourceFiles,
         IEnumerable<string> assemblyPaths, bool addStandardReferences,
-        IReadOnlyList<ReferencedProject> projects, out IReadOnlyDictionary<ReferencedProject, Compilation> built)
+        IReadOnlyList<ReferencedProject> projects, Func<string, MetadataReference>? read,
+        out IReadOnlyDictionary<ReferencedProject, Compilation> built)
     {
         var sources = projects.ToDictionary(project => project, project => project.SourceFiles());
         var compiled = projects.Where(project => sources[project].Any(IsItsOwnSource)).ToList();
@@ -44,7 +46,7 @@ internal static class ProjectCompilations
         // The assemblies of the projects compiled here are not loaded: a type read from both its
         // compilation and its assembly is two types of one name, and every use of it ambiguous.
         var metadata = ProjectCompilationHelper.LoadReferences(assemblyPaths, addStandardReferences,
-            compiled.Select(project => project.AssemblyFileName).ToHashSet(StringComparer.OrdinalIgnoreCase));
+            compiled.Select(project => project.AssemblyFileName).ToHashSet(StringComparer.OrdinalIgnoreCase), read);
 
         // In the order the assemblies reference one another, each project referencing the ones it
         // reaches, directly or through another: a type of a third project named in a signature of a

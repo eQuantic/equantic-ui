@@ -42,3 +42,5 @@ eQuantic.UI.Compiler.Services.AppBuildOptions.AppBuildOptions() -> void
 eQuantic.UI.Compiler.Services.AppBuild.Compilation.get -> Microsoft.CodeAnalysis.Compilation?
 eQuantic.UI.Compiler.Services.AppBuildOptions.ProjectsFile.get -> string?
 eQuantic.UI.Compiler.Services.AppBuildOptions.ProjectsFile.init -> void
+eQuantic.UI.Compiler.Services.AppBuildOptions.ReferenceReader.get -> System.Func<string!, Microsoft.CodeAnalysis.MetadataReference!>?
+eQuantic.UI.Compiler.Services.AppBuildOptions.ReferenceReader.init -> void

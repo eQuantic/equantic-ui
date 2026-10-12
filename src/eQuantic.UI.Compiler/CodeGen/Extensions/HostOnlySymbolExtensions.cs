@@ -105,7 +105,7 @@ internal static class HostOnlySymbolExtensions
     {
         var declaring = symbol.ContainingType;
         if (declaring is null) return false;
-        if (declaring.Locations.Any(location => location.IsInSource)) return false;
+        if (context.Declares(declaring)) return false;
         if (symbol.IsHostOnly()) return Report(declaring, symbol.Name, node, context);
         if (!declaring.IsHostOnly()) return false;
         if (ReachedThroughAClientVisibleType(through)) return false;
@@ -134,7 +134,7 @@ internal static class HostOnlySymbolExtensions
     internal static bool ReportIfHostOnlyType(this ITypeSymbol? type, SyntaxNode node, ConversionContext context)
     {
         if (type is not INamedTypeSymbol named) return false;
-        if (named.Locations.Any(location => location.IsInSource)) return false;
+        if (context.Declares(named)) return false;
         if (!named.IsHostOnly()) return false;
         return Report(named, node, context);
     }

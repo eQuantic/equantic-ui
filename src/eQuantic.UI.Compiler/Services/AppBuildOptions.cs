@@ -41,6 +41,14 @@ public sealed class AppBuildOptions
     /// </summary>
     public string? ProjectsFile { get; init; }
 
+    /// <summary>
+    /// How an assembly of the reference list is read; null reads each file anew, which is right for a
+    /// process that builds once. A reference holds its assembly in native memory until it is
+    /// finalized, so a host that runs many builds (a test suite, a design tool) hands a reader that
+    /// keeps one reference per assembly.
+    /// </summary>
+    public Func<string, Microsoft.CodeAnalysis.MetadataReference>? ReferenceReader { get; init; }
+
     /// <summary>What each module's source map carries.</summary>
     public SourceMapMode SourceMaps { get; init; } = SourceMapMode.Full;
 }

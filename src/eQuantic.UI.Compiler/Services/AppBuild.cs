@@ -196,11 +196,12 @@ public sealed class AppBuild
                 var projects = ReferencedProjects();
                 if (projects.Count == 0)
                 {
-                    projectCompilation = ProjectCompilationHelper.CreateCompilationFromSources(
+                    projectCompilation = ProjectCompilationHelper.CompilationOf(
                         allSourceFiles,
                         assemblyPaths,
                         assemblyName: assemblyName,
-                        addStandardReferences: !usingExplicitRefs
+                        addStandardReferences: !usingExplicitRefs,
+                        read: _options.ReferenceReader
                     );
                 }
                 else
@@ -209,7 +210,7 @@ public sealed class AppBuild
                     // compilation the app references in place of the project's assembly, so a type of
                     // one is a type declared in source for every rule this compiler has (#624).
                     projectCompilation = ProjectCompilations.Create(assemblyName, allSourceFiles, assemblyPaths,
-                        addStandardReferences: !usingExplicitRefs, projects, out var built);
+                        addStandardReferences: !usingExplicitRefs, projects, _options.ReferenceReader, out var built);
                     _output.WriteLine($"   Compiling {built.Count} referenced project(s) from source: " +
                         string.Join(", ", built.Keys.Select(project => project.AssemblyName)));
                     if (built.Count > 0)

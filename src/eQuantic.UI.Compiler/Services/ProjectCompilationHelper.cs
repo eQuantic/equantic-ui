@@ -69,8 +69,20 @@ public static class ProjectCompilationHelper
         string assemblyName = "DynamicAssembly",
         bool addStandardReferences = true)
     {
+        return CompilationOf(sourceFiles, assemblyPaths, assemblyName, addStandardReferences, read: null);
+    }
+
+    /// <summary><see cref="CreateCompilationFromSources"/>, with the way an assembly is read handed
+    /// over: null reads each file anew.</summary>
+    internal static Compilation CompilationOf(
+        IEnumerable<string> sourceFiles,
+        IEnumerable<string> assemblyPaths,
+        string assemblyName,
+        bool addStandardReferences,
+        Func<string, MetadataReference>? read)
+    {
         var syntaxTrees = ParseSources(sourceFiles);
-        var references = LoadReferences(assemblyPaths, addStandardReferences);
+        var references = LoadReferences(assemblyPaths, addStandardReferences, read: read);
 
         // Create compilation. Nullable annotations MUST be enabled: without them `Action?`/`string?`
         // in referenced signatures parse as Nullable<T> (invalid for reference types), overload
@@ -107,9 +119,12 @@ public static class ProjectCompilationHelper
     /// <param name="addStandardReferences">See <see cref="CreateCompilationFromSources"/>.</param>
     /// <param name="leftOut">File names that are not loaded: the assemblies of the referenced
     /// projects whose source the build compiles in their place.</param>
+    /// <param name="read">How an assembly is read; null reads each file anew.</param>
     internal static List<MetadataReference> LoadReferences(IEnumerable<string> assemblyPaths,
-        bool addStandardReferences, IReadOnlySet<string>? leftOut = null)
+        bool addStandardReferences, IReadOnlySet<string>? leftOut = null,
+        Func<string, MetadataReference>? read = null)
     {
+        read ??= static path => MetadataReference.CreateFromFile(path);
         var references = new List<MetadataReference>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -120,7 +135,7 @@ public static class ProjectCompilationHelper
                 return;
             try
             {
-                references.Add(MetadataReference.CreateFromFile(path));
+                references.Add(read(path));
             }
             catch
             {
