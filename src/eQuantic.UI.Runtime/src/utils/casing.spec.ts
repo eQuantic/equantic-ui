@@ -20,7 +20,7 @@ describe('casing: one code unit to one', () => {
     expect(toUpper('ŉǰ')).toBe('ŉǰ');
   });
 
-  it('upper-cases a letter with a iota subscript to its capital with a prosgegrammeni', () => {
+  it('upper-cases a letter with an iota subscript to its capital with a prosgegrammeni', () => {
     expect(toUpper('ᾳᾀῃῳ')).toBe('ᾼᾈῌῼ');
   });
 

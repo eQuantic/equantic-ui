@@ -13,7 +13,7 @@ import { exception } from './exceptions';
  * any other one code point at a time, each keeping what .NET keeps:
  *
  * - a mapping that lengthens is the simple one, which is the code point itself, except for the Greek
- *   letters with a iota subscript, which take the letter with a prosgegrammeni (`ᾳ` is `ᾼ`);
+ *   letters with an iota subscript, which take the letter with a prosgegrammeni (`ᾳ` is `ᾼ`);
  * - the dotted and the dotless i are the culture's: tr and az upper-case `i` to `İ` and lower-case `I`
  *   to `ı`, every other culture upper-cases `ı` to `I` and lower-cases `İ` to `i`, and the invariant
  *   culture leaves both as they are;

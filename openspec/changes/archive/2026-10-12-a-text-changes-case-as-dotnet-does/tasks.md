@@ -10,7 +10,7 @@
 - [x] 2.1 Add `utils/casing.ts` with its vitest cases, exported as `$eq.text.toUpper` and `$eq.text.toLower`, and read its invariant upper case for the ordinal comparison that ignores case
 - [x] 2.2 Lower `ToUpper` and `ToLower` and their invariant pair, of a string and of a char, to the twins in eqc, the culture read by `NamedCulture.ReadsInvariant`, and refuse a char's casing with a culture taken as a delegate
 - [x] 2.3 Refuse `new DateOnly(…, calendar)` at the build, as `DateTime`'s and `DateTimeOffset`'s
-- [x] 2.4 Prove it both ways: the new conformance cases pass and the whole suite with them, the compiler's 17 new cases fail without the change, the null-argument baseline only shrinks, the shared components' pinned modules do not change, and the compiler, Web and Server suites and the runtime's tsc and vitest pass
+- [x] 2.4 Prove it both ways: the new conformance cases pass and the whole suite with them, the compiler's 17 new cases fail without the change, the null-argument baseline only shrinks, the shared components' modules change only at their seven casing calls, each now the invariant twin, and the compiler, Web and Server suites and the runtime's tsc and vitest pass
 
 ## 3. Documentation
 

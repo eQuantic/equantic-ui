@@ -30,7 +30,7 @@ each run in the invariant culture, en-US, pt-BR, de-DE, tr-TR, az-Latn-AZ, lt-LT
 - The runtime gains `utils/casing.ts`, `$eq.text.toUpper` and `$eq.text.toLower`: a text with none of
   the characters an engine cases otherwise is cased by the engine whole, and any other one code point
   at a time, each taking .NET's simple mapping: a mapping that lengthens is the code point itself, but
-  for the Greek letters with a iota subscript, which take the capital with a prosgegrammeni; a capital
+  for the Greek letters with an iota subscript, which take the capital with a prosgegrammeni; a capital
   sigma is the medial one; a code point .NET 10 does not case keeps its case; and the two i's are the
   culture's, tr and az by their language, the invariant culture keeping `İ` and `ı`. A char's culture
   handed as null throws .NET's ArgumentNullException, after the char is evaluated.
@@ -44,7 +44,7 @@ each run in the invariant culture, en-US, pt-BR, de-DE, tr-TR, az-Latn-AZ, lt-LT
 - `new DateOnly(…, calendar)` fails the build (EQ1004), as the `DateTime` and `DateTimeOffset`
   constructors with a calendar do.
 - The ordinal comparison that ignores case reads the invariant culture's simple upper case from the
-  same table, but for the long s, which it keeps, so the table of the Greek letters with a iota
+  same table, but for the long s, which it keeps, so the table of the Greek letters with an iota
   subscript is written once and the letters .NET 10 does not case match only themselves on any engine.
 
 For a developer: `"straße".ToUpper()` is `STRAßE` in the browser as on the server, `"i".ToUpper()` on a
@@ -71,7 +71,11 @@ None.
   `Eq.ToUpper` and `Eq.ToLower` (`PublicAPI.Unshipped.txt`).
 - Runtime: the new `utils/casing.ts`, exported under `$eq.text`; `utils/string-statics.ts` reads its
   invariant upper case for `ordinalUpper`.
-- Not reached: the web realizer, Photon, the SDKs, the templates and the shared components, whose
-  pinned modules do not change. The developer surface does not move.
+- The shared components embedded in the runtime: the seven whose C# cases a text or a char with
+  `ToLowerInvariant` or `ToUpperInvariant` (`CodeCompletion`, `CodeEditorController`, `CodeFuzzyMatch`,
+  `CodeKeymap`, `CodeLanguages`, `DataTable`, `MarkdownParser`) call the invariant twin where their
+  modules called the engine's casing, and nothing else in those modules changes.
+- Not reached: the web realizer, Photon, the SDKs and the templates. The developer surface does not
+  move.
 - #715's null-argument baseline only shrinks, by 3 lines. The BCL audit moves the eight casing
   members from native to the runtime.
