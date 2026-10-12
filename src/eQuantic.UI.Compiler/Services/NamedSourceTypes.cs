@@ -1,5 +1,6 @@
 using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
+using eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -17,6 +18,17 @@ namespace eQuantic.UI.Compiler.Services;
 /// taken apart into its type arguments and elements. The emitters collect import candidates each in
 /// its own way, and a candidate no walk of theirs recorded by symbol would be one this could not
 /// place. So this reads everything and decides nothing: it only answers where a name is declared.
+/// </para>
+/// <para>
+/// Everything that is WRITTEN, that is. A name in code the twin does not carry is no name of the
+/// module, and it is left out by the rule of whoever leaves the code out, asked through that
+/// owner's own function and never repeated here: the parser's for a component's server code, the
+/// constant strategy's for a read written as its value, and <c>nameof</c> and an attribute, which
+/// are text and metadata (<see cref="DefaultInterfaceMembers"/> reads a default's names the same
+/// way). It matters when two types share a simple name. A page that shows the app's own
+/// <c>Order</c> and names the Domain's <c>Order</c> only where nothing is written had the Domain's
+/// reached, since its <c>./Order</c> could mean either: compiled for the browser, where its server
+/// code is refused.
 /// </para>
 /// </summary>
 internal sealed class NamedSourceTypes
@@ -64,15 +76,30 @@ internal sealed class NamedSourceTypes
         _ => false,
     };
 
+    /// <summary>
+    /// A node that writes nothing of what it names, each by its owner's rule: an attribute is
+    /// metadata, <c>nameof</c> is the text of a name, and a constant the strategy inlines is its
+    /// value (<see cref="InlinedConstantStrategy.ConstantWrittenAsItsValue"/>).
+    /// </summary>
+    private static bool WritesNothing(SyntaxNode node, SemanticModel model) => node switch
+    {
+        AttributeListSyntax => true,
+        InvocationExpressionSyntax invocation => invocation.IsNameOf(model),
+        MemberAccessExpressionSyntax or IdentifierNameSyntax =>
+            InlinedConstantStrategy.ConstantWrittenAsItsValue(node, model.GetSymbolInfo(node).Symbol) is not null,
+        _ => false,
+    };
+
     private void Read(SyntaxNode declaration, SemanticModel model, bool asComponent)
     {
-        var crossing = asComponent
-            ? declaration.DescendantNodesAndSelf(node => !StaysOnTheServer(node)).Where(node => !StaysOnTheServer(node))
-            : declaration.DescendantNodesAndSelf();
-        foreach (var node in crossing)
+        // Each node is asked once, and a node left out takes what is under it along.
+        var pending = new Stack<SyntaxNode>();
+        pending.Push(declaration);
+        while (pending.TryPop(out var node))
         {
             try
             {
+                if (asComponent && StaysOnTheServer(node) || WritesNothing(node, model)) continue;
                 switch (node)
                 {
                     case ExpressionSyntax expression:
@@ -92,6 +119,7 @@ internal sealed class NamedSourceTypes
                 // sweep reads it (RuntimeProvidedTypeScanner): the conversion asks the same model
                 // about the same node and reports what it cannot translate.
             }
+            foreach (var child in node.ChildNodes()) pending.Push(child);
         }
     }
 

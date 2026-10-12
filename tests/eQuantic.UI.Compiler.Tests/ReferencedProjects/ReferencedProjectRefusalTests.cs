@@ -149,6 +149,8 @@ public sealed class ReferencedProjectRefusalTests
 
         public sealed class Order
         {
+            public const string Kind = "order";
+
             public decimal Total { get; set; }
 
             public static Order Stored(string id) => new() { Total = decimal.Parse(File.ReadAllText(id + ".txt")) };
@@ -198,6 +200,89 @@ public sealed class ReferencedProjectRefusalTests
         built.Errors.Should().BeEmpty("the Domain's Order is named by server code alone");
         built.Module("Order").Should().Contain("total").And.NotContain("stored");
         built.Modules.Should().BeEquivalentTo(["Home", "Order"]);
+    }
+
+    [Theory]
+    [InlineData("nameof in a field", "", "private static readonly string Label = nameof(Domain.Order);", "_order.Total.ToString() + Label", "'Order'")]
+    [InlineData("nameof in the code that crosses", "", "", "_order.Total.ToString() + nameof(Domain.Order)", "'Order'")]
+    [InlineData("a constant in an attribute", "[System.ComponentModel.Description(Domain.Order.Kind)]", "", "_order.Total.ToString()", "")]
+    [InlineData("typeof in an attribute", "[System.ComponentModel.DefaultValue(typeof(Domain.Order), \"x\")]", "", "_order.Total.ToString()", "")]
+    [InlineData("a constant read in the code that crosses", "", "", "_order.Total.ToString() + Domain.Order.Kind", "'order'")]
+    public void CodeThatWritesNothing_ThatNamesALibraryTypeOfTheAppsName_ReachesNothing(
+        string what, string onTheClass, string member, string shown, string written)
+    {
+        // The same two Orders, and the Domain's named where NOTHING of it is written: nameof is the
+        // text of a name, an attribute is metadata, and a constant is its value. Each built on main,
+        // which compiled no referenced project at all, and each had the Domain's Order reached here,
+        // since the page's `./Order` could mean either: compiled for the browser, where the file it
+        // reads is refused. Measured on the code as pushed for the second review round, all five.
+        using var solution = new Solution()
+            .Library("Domain", files: [("Order.cs", DomainOrder)])
+            .App("App", references: ["Domain"], globalUsings: SharedLibrary.Factories, files:
+            [
+                ("Model/Order.cs", AppOrder),
+                ("Screens/Home.cs",
+                    $$"""
+                    using eQuantic.UI.Primitives;
+                    using App.Model;
+
+                    namespace App.Screens;
+
+                    {{onTheClass}}
+                    public sealed class Home : StatefulComponent
+                    {
+                        private Order _order = new(0m);
+
+                        {{member}}
+
+                        public override VisualNode Build(ComponentContext context) =>
+                            Text({{shown}}, TypeRole.BodyM, context.Theme.TextPrimary, maxLines: 1);
+                    }
+                    """),
+            ]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse($"{what} writes nothing of the Domain's Order:\n{built.Errors}");
+        built.Errors.Should().BeEmpty();
+        built.Module("Order").Should().Contain("total").And.NotContain("stored");
+        built.Modules.Should().BeEquivalentTo(["Home", "Order"]);
+        if (written.Length > 0) built.Module("Home").Should().Contain(written, $"{what} is written as text");
+    }
+
+    [Fact]
+    public void AConstantWrittenAsAReference_StillReachesTheClassThatDeclaresIt()
+    {
+        // The other half, and what a rule of "a constant names nothing" would break: a constant read
+        // by its bare name under `using static` is NOT written as its value when a source declares
+        // it. It is its twin's static, so the class has to be found, imported and compiled. The walk
+        // asks the strategy that decides it, and never its own idea of a constant.
+        using var solution = new Solution()
+            .Library("Common", files:
+            [
+                ("Limits.cs", "namespace Common;\n\npublic static class Limits\n{\n    public const int Max = 3;\n}\n"),
+            ])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files:
+            [
+                ("Screens/Home.cs",
+                    """
+                    using eQuantic.UI.Primitives;
+                    using static Common.Limits;
+
+                    namespace App.Screens;
+
+                    public sealed class Home : StatelessComponent
+                    {
+                        public override VisualNode Build(ComponentContext context) =>
+                            Text(Max.ToString(), TypeRole.BodyM, context.Theme.TextPrimary, maxLines: 1);
+                    }
+                    """),
+            ]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Module("Home").Should().Contain("Limits.max");
+        built.SiblingImportsOf("Home").Should().Equal("Limits");
+        built.Modules.Should().BeEquivalentTo(["Home", "Limits"]);
     }
 
     [Fact]
