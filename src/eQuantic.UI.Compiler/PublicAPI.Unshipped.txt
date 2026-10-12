@@ -27,6 +27,8 @@ eQuantic.UI.Compiler.Services.AppBuildOptions.SourceDirectories.get -> System.Co
 eQuantic.UI.Compiler.Services.AppBuildOptions.SourceDirectories.init -> void
 eQuantic.UI.Compiler.Services.AppBuildOptions.OutputDirectory.get -> string!
 eQuantic.UI.Compiler.Services.AppBuildOptions.OutputDirectory.init -> void
+static eQuantic.UI.Compiler.Services.AppBuildOptions.FromArguments(System.Collections.Generic.IReadOnlyList<string!>! arguments) -> eQuantic.UI.Compiler.Services.AppBuildOptions!
+static eQuantic.UI.Compiler.Services.AppBuildOptions.ReadArguments(System.Collections.Generic.IReadOnlyList<string!>! commandLine) -> System.Collections.Generic.IReadOnlyList<string!>!
 eQuantic.UI.Compiler.Services.AppBuildOptions.AssemblyName.get -> string?
 eQuantic.UI.Compiler.Services.AppBuildOptions.AssemblyName.init -> void
 eQuantic.UI.Compiler.Services.AppBuildOptions.BunPath.get -> string?
