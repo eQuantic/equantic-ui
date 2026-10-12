@@ -2545,21 +2545,6 @@ record of a release, the wiki's Upgrading page is the distillate.
   test runs the one that writes the file, as it ships, in a real MSBuild under a folder whose name
   holds what a shell reads ([#836](https://github.com/eQuantic/equantic-ui/issues/836)). Proposed and
   archived through OpenSpec (`openspec/specs/referenced-projects`).
-- **2026-10-12 · The Apple shells call back through entry points a device build prepares**: the
-  shared Apple shell turned delegates into native function pointers, which a JIT wraps on demand and
-  an iPhone's ahead-of-time build never does, so the camera, location, biometrics, motion and network
-  status would have failed at their first callback on a device
-  ([#795](https://github.com/eQuantic/equantic-ui/issues/795)). A block now calls a static
-  `[UnmanagedCallersOnly]` entry point and carries its context as a `GCHandle` after its descriptor
-  (`ObjCBlock.Context<T>`), and the methods registered with the Objective-C runtime are static entry
-  points that find their object in a handle the delegate carries in an ivar (`ObjCDelegateClass`), so a
-  second camera session no longer takes the first one's frames. A reply that answers once lets only its context go and keeps
-  its block, which the framework releases after the call returns: the biometric reply freed its block
-  from inside that call. `AppleCallbackTests` fails when the shared Apple shell or the
-  iOS shell calls `Marshal.GetFunctionPointerForDelegate`, and the block tests run against the real
-  runtime on the Mac. The run on a physical iPhone belongs to the device pass
-  ([#792](https://github.com/eQuantic/equantic-ui/issues/792)). Proposed and archived through OpenSpec
-  (`openspec/specs/native-callbacks`).
 - **2026-10-12 · A TimeSpan writes the format it is given**: a `TimeSpan` written with a format wrote
   its constant text whatever the format asked for, so `ToString(@"hh\:mm")` of an hour and two minutes
   was `01:02:00` where .NET writes `01:02`, and a format .NET refuses wrote a value
@@ -2587,6 +2572,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   on a developer machine: on a fresh iOS 27.0 simulator, main's Wallet stopped at launch with UIKit's
   "UIScene life cycle is required for apps built with this SDK", and this change's drew its frames.
   Proposed and archived through OpenSpec (`openspec/specs/native-app-lifecycle`).
+- **2026-10-12 · The Apple shells call back through entry points a device build prepares**: the
+  shared Apple shell turned delegates into native function pointers, which a JIT wraps on demand and
+  an iPhone's ahead-of-time build never does, so the camera, location, biometrics, motion and network
+  status would have failed at their first callback on a device
+  ([#795](https://github.com/eQuantic/equantic-ui/issues/795)). A block now calls a static
+  `[UnmanagedCallersOnly]` entry point and carries its context as a `GCHandle` after its descriptor
+  (`ObjCBlock.Context<T>`), and the methods registered with the Objective-C runtime are static entry
+  points that find their object in a handle the delegate carries in an ivar (`ObjCDelegateClass`), so a
+  second camera session no longer takes the first one's frames. A reply that answers once lets only its context go and keeps
+  its block, which the framework releases after the call returns: the biometric reply freed its block
+  from inside that call. `AppleCallbackTests` fails when the shared Apple shell or the
+  iOS shell calls `Marshal.GetFunctionPointerForDelegate`, and the block tests run against the real
+  runtime on the Mac. The run on a physical iPhone belongs to the device pass
+  ([#792](https://github.com/eQuantic/equantic-ui/issues/792)). Proposed and archived through OpenSpec
+  (`openspec/specs/native-callbacks`).
 
 ## Retired documents
 
