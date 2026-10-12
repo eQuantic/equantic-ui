@@ -468,8 +468,12 @@ public class ComponentCompiler
         if (model.GetDeclaredSymbol(declaration) is INamedTypeSymbol self)
             declarations.AddRange(DefaultInterfaceMembers.Of(self, model.Compilation)
                 .Select(inherited => inherited.Declaration).OfType<SyntaxNode>());
+        // A component's server code stays on the server, and what it names is not what the module
+        // names. The other shapes write every method they declare.
+        var asComponent = !component.IsRecordType && !component.IsPlainClass && !component.IsStaticHelper && !component.IsUnionType;
         return new ReferencedNames(_referencedModules, NamedSourceTypes.Of(declarations,
-            node => ReferenceEquals(node.SyntaxTree, model.SyntaxTree) ? model : model.Compilation.ModelOf(node.SyntaxTree)));
+            node => ReferenceEquals(node.SyntaxTree, model.SyntaxTree) ? model : model.Compilation.ModelOf(node.SyntaxTree),
+            asComponent));
     }
 
     private CompilationResult CompileModule(ComponentDefinition component, ReferencedNames referenced)

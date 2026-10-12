@@ -527,9 +527,18 @@ public class ComponentParser
             .Any(attribute => attribute.IsNamed("RuntimeProvided"));
     }
 
-    private static bool IsServerOnly(MethodDeclarationSyntax method) =>
+    /// <summary>A method a component keeps on the server whole: not parsed, not transpiled, and no
+    /// member of its twin. Asked by the parser and by whoever reads what a component's code names
+    /// (<see cref="Services.NamedSourceTypes"/>), so the two cannot disagree on what crosses.</summary>
+    internal static bool IsServerOnly(MethodDeclarationSyntax method) =>
         method.AttributeLists.SelectMany(list => list.Attributes)
             .Any(attribute => attribute.IsNamed("ServerOnly"));
+
+    /// <summary>A method a component runs on the server and calls from the browser: its twin is a stub
+    /// written from its SIGNATURE, and its body never crosses.</summary>
+    internal static bool IsServerAction(MethodDeclarationSyntax method) =>
+        method.AttributeLists.SelectMany(list => list.Attributes)
+            .Any(attribute => attribute.IsNamed("ServerAction"));
 
     private void ParseMethods(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
@@ -564,8 +573,7 @@ public class ComponentParser
             // A [ServerAction] body runs on the SERVER; the client twin is the RPC stub the
             // emitter writes from definition.ServerActions. Transpiling the body here shipped
             // server code (DbContexts, Stopwatches, the compiler itself) into the browser.
-            if (method.AttributeLists.SelectMany(a => a.Attributes)
-                .Any(a => a.IsNamed("ServerAction"))) continue;
+            if (IsServerAction(method)) continue;
 
             var methodName = method.Identifier.Text;
             if (methodName == "CreateState") continue;

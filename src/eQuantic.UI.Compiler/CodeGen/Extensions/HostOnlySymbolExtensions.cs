@@ -105,8 +105,13 @@ internal static class HostOnlySymbolExtensions
     {
         var declaring = symbol.ContainingType;
         if (declaring is null) return false;
-        if (context.Declares(declaring)) return false;
+        // The MEMBER first, whoever declares it. A member marked [ServerOnly] is refused where
+        // client code names it, this compilation's own included: a component leaves such a method
+        // out of its twin, so a call to it from the component's own Build was written as a call to
+        // a member the twin does not have, with no diagnostic (found in review of #827). Only the
+        // TYPE-level question below is this compilation's own business.
         if (symbol.IsHostOnly()) return Report(declaring, symbol.Name, node, context);
+        if (context.Declares(declaring)) return false;
         if (!declaring.IsHostOnly()) return false;
         if (ReachedThroughAClientVisibleType(through)) return false;
         return Report(declaring, symbol.Name, node, context);

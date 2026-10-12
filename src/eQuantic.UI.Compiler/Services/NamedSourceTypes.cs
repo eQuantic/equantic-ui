@@ -34,18 +34,42 @@ internal sealed class NamedSourceTypes
         Declarations(name).Select(declaration => declaration.File).Distinct(StringComparer.Ordinal);
 
     /// <summary>What <paramref name="declarations"/> name, each read with the model of its own file.</summary>
-    public static NamedSourceTypes Of(IEnumerable<SyntaxNode> declarations, Func<SyntaxNode, SemanticModel?> modelFor)
+    /// <param name="declarations">The declarations a module is written from.</param>
+    /// <param name="modelFor">The model of a declaration's own file.</param>
+    /// <param name="asComponent">
+    /// Whether the module is a component's, whose server code stays on the server: a
+    /// <c>[ServerOnly]</c> method is no member of its twin, and a <c>[ServerAction]</c> crosses as a
+    /// stub written from its signature. What such code names is not what the module names. Read with
+    /// the rest of the class, a Server Action that mapped the Domain's <c>Order</c> into the app's own
+    /// <c>Order</c> had the Domain's reached: compiled for the browser, where its server code is
+    /// refused, and in collision with the app's (found in review of #827). A record's, a plain
+    /// class's and a static class's methods are all written, so all are read.
+    /// </param>
+    public static NamedSourceTypes Of(IEnumerable<SyntaxNode> declarations, Func<SyntaxNode, SemanticModel?> modelFor,
+        bool asComponent)
     {
         var named = new NamedSourceTypes();
         foreach (var declaration in declarations)
             if (modelFor(declaration) is { } model)
-                named.Read(declaration, model);
+                named.Read(declaration, model, asComponent);
         return named;
     }
 
-    private void Read(SyntaxNode declaration, SemanticModel model)
+    /// <summary>A node whose code stays on the server, by the parser's own two rules.</summary>
+    private static bool StaysOnTheServer(SyntaxNode node) => node switch
     {
-        foreach (var node in declaration.DescendantNodesAndSelf())
+        MethodDeclarationSyntax method => Parser.ComponentParser.IsServerOnly(method),
+        BlockSyntax or ArrowExpressionClauseSyntax => node.Parent is MethodDeclarationSyntax action
+            && Parser.ComponentParser.IsServerAction(action),
+        _ => false,
+    };
+
+    private void Read(SyntaxNode declaration, SemanticModel model, bool asComponent)
+    {
+        var crossing = asComponent
+            ? declaration.DescendantNodesAndSelf(node => !StaysOnTheServer(node)).Where(node => !StaysOnTheServer(node))
+            : declaration.DescendantNodesAndSelf();
+        foreach (var node in crossing)
         {
             try
             {

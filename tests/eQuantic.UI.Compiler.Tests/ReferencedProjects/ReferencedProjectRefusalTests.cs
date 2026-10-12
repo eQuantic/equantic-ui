@@ -142,6 +142,151 @@ public sealed class ReferencedProjectRefusalTests
         built.Errors.Should().NotContain("EQ1006", "two types of one full name are not one type declared twice");
     }
 
+    /// <summary>The Domain's Order: an entity with server code, which no browser can run.</summary>
+    private const string DomainOrder =
+        """
+        namespace Domain;
+
+        public sealed class Order
+        {
+            public decimal Total { get; set; }
+
+            public static Order Stored(string id) => new() { Total = decimal.Parse(File.ReadAllText(id + ".txt")) };
+        }
+        """;
+
+    /// <summary>The app's Order: the shape a page shows, under the same simple name.</summary>
+    private const string AppOrder = "namespace App.Model;\n\npublic sealed record Order(decimal Total);\n";
+
+    [Theory]
+    [InlineData("[ServerAction]\n    public Task<Order> Load() => Task.FromResult(new Order(Domain.Order.Stored(\"o-1\").Total));")]
+    [InlineData("[ServerAction]\n    public Task<Order> Load()\n    {\n        Domain.Order stored = Domain.Order.Stored(\"o-1\");\n        return Task.FromResult(new Order(stored.Total));\n    }")]
+    [InlineData("[ServerOnly]\n    public decimal Warm() => Domain.Order.Stored(\"o-1\").Total;")]
+    public void ServerCodeOfAPage_ThatNamesALibraryTypeOfTheAppsName_ReachesNothing(string serverMember)
+    {
+        // The usual shape of an app with a Domain: the page shows its own Order, and its server code
+        // maps it from the Domain's Order, of the same simple name. A Server Action's body and a
+        // [ServerOnly] method never cross, so what they name is not what the page's `./Order` means.
+        // Read with the rest of the class, the Domain's Order was reached: compiled for the browser,
+        // where its file IO is refused, and in collision with the app's own (found in review of #827).
+        using var solution = new Solution()
+            .Library("Domain", files: [("Order.cs", DomainOrder)])
+            .App("App", references: ["Domain"], globalUsings: SharedLibrary.Factories, files:
+            [
+                ("Model/Order.cs", AppOrder),
+                ("Screens/Home.cs",
+                    $$"""
+                    using eQuantic.UI.Primitives;
+                    using App.Model;
+
+                    namespace App.Screens;
+
+                    public sealed class Home : StatefulComponent
+                    {
+                        private Order _order = new(0m);
+
+                        {{serverMember}}
+
+                        public override VisualNode Build(ComponentContext context) =>
+                            Text(_order.Total.ToString(), TypeRole.BodyM, context.Theme.TextPrimary, maxLines: 1);
+                    }
+                    """),
+            ]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Errors.Should().BeEmpty("the Domain's Order is named by server code alone");
+        built.Module("Order").Should().Contain("total").And.NotContain("stored");
+        built.Modules.Should().BeEquivalentTo(["Home", "Order"]);
+    }
+
+    [Fact]
+    public void AServerActionsAnswer_NamedNowhereElse_IsStillReached()
+    {
+        // The other half: a Server Action's SIGNATURE does cross. Its stub hands the answer to the
+        // record's twin, so a type named by the return type alone is imported, and has to be found.
+        using var solution = new Solution()
+            .Library("Common", files: [("Cursor.cs", SharedLibrary.Cursor)])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files:
+            [
+                ("Screens/Home.cs",
+                    """
+                    using eQuantic.UI.Primitives;
+
+                    namespace App.Screens;
+
+                    public sealed class Home : StatefulComponent
+                    {
+                        private int _position;
+
+                        [ServerAction]
+                        public Task<Common.Cursor> Load() => Task.FromResult(new Common.Cursor(3));
+
+                        private async Task Fetch()
+                        {
+                            var loaded = await Load();
+                            SetState(() => _position = loaded.Position);
+                        }
+
+                        public override VisualNode Build(ComponentContext context) =>
+                            Column(gap: Space.S2, children: [
+                                Button("Load", onPressed: () => _ = Fetch()),
+                                Text(_position.ToString(), TypeRole.BodyM, context.Theme.TextPrimary, maxLines: 1),
+                            ]);
+                    }
+                    """),
+            ]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.SiblingImportsOf("Home").Should().Contain("Cursor");
+        built.Module("Cursor").Should().Contain("export class Cursor");
+    }
+
+    /// <summary>A component that calls its own [ServerOnly] method from the code that crosses.</summary>
+    private const string CallsItsOwnServerOnlyMethod =
+        """
+        using eQuantic.UI.Primitives;
+
+        namespace NS;
+
+        public sealed class Sealed : StatelessComponent
+        {
+            [ServerOnly]
+            private string Secret() => Environment.GetEnvironmentVariable("SECRET") ?? "";
+
+            public override VisualNode Build(ComponentContext context) =>
+                Text(Secret(), TypeRole.BodyM, context.Theme.TextPrimary, maxLines: 1);
+        }
+        """;
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AComponentsOwnServerOnlyMethod_CalledFromItsClientCode_IsRefused(bool inALibrary)
+    {
+        // A component leaves a [ServerOnly] method out of its twin. Called from the component's own
+        // Build, it was written as `this.secret()`, a member the twin does not have, and the build
+        // said nothing: the fence was silent for any symbol of the compilation in hand, the member
+        // as much as the type. In the app's own project, and in a referenced project's component now
+        // that one is compiled (found in review of #827).
+        using var solution = new Solution();
+        if (inALibrary)
+            solution.Library("Common", globalUsings: SharedLibrary.Factories, files: [("Sealed.cs", CallsItsOwnServerOnlyMethod.Replace("NS", "Common"))])
+                .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files:
+                [
+                    ("Screens/Home.cs", "using eQuantic.UI.Primitives;\n\nnamespace App.Screens;\n\npublic sealed class Home : StatelessComponent\n{\n    public override VisualNode Build(ComponentContext context) => new Common.Sealed();\n}\n"),
+                ]);
+        else
+            solution.App("App", globalUsings: SharedLibrary.Factories, files: [("Screens/Sealed.cs", CallsItsOwnServerOnlyMethod.Replace("NS", "App.Screens"))]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue("the twin has no such member to call");
+        var where = inALibrary ? solution.FileOf("Common", "Sealed.cs") : solution.FileOf("App", "Screens/Sealed.cs");
+        built.Errors.Split('\n', StringSplitOptions.RemoveEmptyEntries).Should().ContainSingle()
+            .Which.Should().StartWith(where + "(").And.Contain("error EQ2010").And.Contain("Sealed.Secret");
+    }
+
     /// <summary>One file of a library that declares two types of one simple name, in two
     /// namespaces. The second reads a file, so compiling it says so.</summary>
     private const string TwoStatuses =
