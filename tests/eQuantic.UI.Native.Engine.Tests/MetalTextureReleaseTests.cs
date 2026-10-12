@@ -38,6 +38,37 @@ public class MetalTextureReleaseTests
             "and the renderer keeps only the last few");
     }
 
+    /// <summary>
+    /// The path a WINDOW takes: each frame committed and not waited for, so a raster is released
+    /// while frames that bound it may still be on their way to the GPU. Here nothing holds the CPU
+    /// back (a window has its drawable pool for that), so the frames in flight are many more than
+    /// the thirty a raster is kept for, and what keeps each texture alive until its frame is drawn
+    /// is the command buffer that bound it. A release that took a texture from under one would end
+    /// this process rather than fail an assertion.
+    /// </summary>
+    [SkippableFact]
+    public void ThePathAWindowTakes_ReleasesWhileFramesAreStillInFlight()
+    {
+        Skip.IfNot(MetalBackend.IsSupported, "No Metal device on this host.");
+        using var backend = new MetalBackend();
+        using var surface = backend.CreateSurface(64, 64);
+        var target = ((MetalRenderTarget)((RhiSurface)surface).Target).Texture;
+
+        for (var frame = 0; frame < 40; frame++) Unwaited(backend, target);
+        backend.Render(FrameWithANewRaster(), surface);   // waits, and the queue is in order: all of the above is drawn
+        var before = Allocated(backend);
+
+        for (var frame = 0; frame < Frames; frame++) Unwaited(backend, target);
+        backend.Render(FrameWithANewRaster(), surface);
+
+        var grown = Allocated(backend) - before;
+        const long held = (long)Frames * Side * Side * 4;
+        grown.Should().BeLessThan(held / 4, "the frames were drawn and their rasters went with them");
+    }
+
+    private static void Unwaited(MetalBackend backend, IntPtr target) =>
+        backend.RenderToDrawable(FrameWithANewRaster(), target, MetalDevice.PixelFormatRgba8UnormSrgb, drawable: IntPtr.Zero);
+
     private static DisplayList FrameWithANewRaster()
     {
         var builder = new DisplayListBuilder();

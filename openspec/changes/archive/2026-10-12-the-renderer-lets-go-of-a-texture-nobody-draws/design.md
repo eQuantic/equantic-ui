@@ -57,8 +57,10 @@ layers. Its pass refuses a texture that was already released. With the release s
 those cases fail.
 
 The real Metal device answers for Metal: four hundred frames, each with a new 256 by 256 raster, and
-`currentAllocatedSize` must not grow by the 100 MB that keeping them costs. With the empty `Dispose`
-the test fails.
+`currentAllocatedSize` must not grow by the 100 MB that keeping them costs. Once on the waited path,
+and once on the unwaited one a window takes, where nothing holds the CPU back and the frames in flight
+outnumber the thirty a raster is kept for: what keeps a texture until its frame is drawn there is the
+command buffer that bound it. With the empty `Dispose` both fail.
 
 The Vulkan half cannot run on the test hosts, which have no Vulkan device, so it is proved on the
 Android emulator (API 36). The text that ended main at its 1,025th set ran past 6,400 different

@@ -54,6 +54,12 @@ texture a frame still in flight reads until that frame has been drawn.
 - **WHEN** a Metal backend renders four hundred frames, each with a new 256 by 256 raster
 - **THEN** the device's allocated size grows by less than a quarter of what keeping them all costs
 
+#### Scenario: Frames still in flight on Metal
+
+- **WHEN** a Metal backend commits four hundred such frames without waiting for any, then waits
+- **THEN** every frame was drawn, and the device's allocated size grew by less than a quarter of what
+  keeping their rasters costs
+
 ### Requirement: A full descriptor pool is not the end of the process
 
 The Vulkan backend SHALL take a descriptor set from a new pool when the pool it asked answers that it

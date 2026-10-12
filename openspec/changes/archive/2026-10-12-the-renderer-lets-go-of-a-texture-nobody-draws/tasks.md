@@ -6,7 +6,7 @@
 
 ## 2. The backends
 
-- [x] 2.1 `MetalTexture.Dispose` gives back the texture's reference. Verify: `MetalTextureReleaseTests` against the real device's `currentAllocatedSize`, which fails with the empty `Dispose`
+- [x] 2.1 `MetalTexture.Dispose` gives back the texture's reference. Verify: `MetalTextureReleaseTests` against the real device's `currentAllocatedSize`, on the waited path and on the unwaited one a window takes; both fail with the empty `Dispose`
 - [x] 2.2 `DescriptorPoolStatus.IsFull` reads the two codes, and `VulkanDevice` takes the set from a new pool when the newest is full. Verify: `DescriptorPoolStatusTests`, and on the emulator below
 
 ## 3. The device
@@ -17,4 +17,4 @@
 ## 4. Documentation and the suites
 
 - [x] 4.1 One `docs/LEDGER.md` line citing #858. No wiki page describes the renderer's texture cache
-- [x] 4.2 The Native.Engine suite, alone and read by its exit code: 2,130 passed, 19 skipped, exit 0
+- [x] 4.2 The Native.Engine suite, alone and read by its exit code: 2,131 passed, 19 skipped, exit 0
