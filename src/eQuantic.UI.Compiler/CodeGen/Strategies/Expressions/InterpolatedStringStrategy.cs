@@ -53,14 +53,17 @@ public class InterpolatedStringStrategy : IConversionStrategy
     /// expression there and nothing else, so the model has its value whatever the source spells it
     /// with. The source's TEXT was written: <c>{name,Widths.Name}</c> named a member the twin does not
     /// have (its static is <c>name</c>), or a class the module never imported, and the text was never
-    /// padded, with no diagnostic (#834). The text is what there is only where the model cannot be
-    /// asked.
+    /// padded, with no diagnostic (#834). The constant arrives in its OWN type, so a <c>short</c>, a
+    /// <c>byte</c> or a <c>char</c>, which C# converts to the int it pads to, is that int too. The text
+    /// is what there is only where the model cannot be asked.
     /// </summary>
     internal static string? Alignment(InterpolationSyntax interpolation, ConversionContext context)
     {
         if (interpolation.AlignmentClause?.Value is not { } written) return null;
-        return context.SemanticHelper.TryGetConstantValue(written, out var value) && value is int columns
-            ? columns.ToString(System.Globalization.CultureInfo.InvariantCulture)
+        return context.SemanticHelper.TryGetConstantValue(written, out var value)
+            && value is int or short or ushort or sbyte or byte or char
+            ? System.Convert.ToInt32(value, System.Globalization.CultureInfo.InvariantCulture)
+                .ToString(System.Globalization.CultureInfo.InvariantCulture)
             : written.ToString();
     }
 

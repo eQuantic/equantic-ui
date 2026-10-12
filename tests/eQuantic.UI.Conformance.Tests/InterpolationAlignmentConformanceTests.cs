@@ -15,6 +15,7 @@ public class InterpolationAlignmentConformanceTests
 {
     private const string Prelude =
         "public static class Widths { public const int Name = 6; public const int Wide = Name * 2; } " +
+        "public static class Narrow { public const short Width = 5; public const byte Small = 3; public const char Code = (char)7; } " +
         "public enum Kind { A, B }";
 
     [SkippableTheory]
@@ -22,6 +23,8 @@ public class InterpolationAlignmentConformanceTests
     [InlineData("string name = \"ab\"; return $\"{name,Widths.Name}|\";")]
     [InlineData("string name = \"ab\"; return $\"{name,-Widths.Name}|\";")]
     [InlineData("string name = \"ab\"; return $\"{name,Widths.Wide}|\";")]
+    // A constant of a type C# converts to int: the model holds it in its own type.
+    [InlineData("string name = \"ab\"; return $\"{name,Narrow.Width}|{name,-Narrow.Small}|{name,Narrow.Code}|\";")]
     // A constant expression: a sum, and a negated one.
     [InlineData("string name = \"ab\"; return $\"{name,Widths.Name + 2}|{name,-(Widths.Name + 1)}|\";")]
     // With a format beside it, and for a value that formats itself.
