@@ -180,7 +180,6 @@
         DependsOnTargets="EnsureBunExtracted">
         <PropertyGroup Condition="'$(BunPath)' != ''">
             <BunPath>$(BunPath.Trim())</BunPath>
-            <_BunArg> --bun "$(BunPath)"</_BunArg>
         </PropertyGroup>
         <Message Text="eQuantic.UI: BunPath resolved to '$(BunPath)'" Importance="High" />
     </Target>
@@ -282,7 +281,13 @@
     <!-- GenerateGlobalUsings must have run before eqc: eqc reads the generated GlobalUsings.g.cs
          into its own compilation (that is how the implicit factory `using static` reaches it), and
          on a FIRST build the file does not exist until the target writes it. -->
-    <Target Name="CompileEQuanticUI" BeforeTargets="Build"
+    <!--
+        THE COMPILE is three targets, chained: what eqc reads (its source roots, and the lists of the
+        references, the icon packs and the referenced projects), then what eqc is HANDED (the response
+        file), then eqc itself. They were one target, and the middle one is where a value of the
+        project reached a shell (#836): it is a target of its own so a test runs it as it ships.
+    -->
+    <Target Name="_EQuanticCompilerInputs"
         DependsOnTargets="ResolveReferences;FindReferenceAssembliesForReferences;GenerateGlobalUsings"
         Condition="'$(EnableEQuanticUICompilation)' == 'true'">
         <PropertyGroup>
@@ -389,30 +394,72 @@
             <_EqcProject Include="@(_EqcReferencedProject)"
                 Condition="!Exists('%(RootDir)%(Directory)EQuanticIconPack.marker') And ('$(_EqSdkSourceRoot)' == '' Or !$([System.String]::Copy('%(FullPath)').StartsWith('$(_EqSdkSourceRoot)')))" />
         </ItemGroup>
+    </Target>
+
+    <!--
+        WHAT EQC IS HANDED (#836) is a file, and never a shell's argument. A value written into the
+        command was read by the shell first: an assembly name `Cash$Flow` reached eqc as `Cash`, and
+        a backtick ran as a command; a path holding a `$` met the same end. Every argument is a line of
+        a response file now, kept whole as an item's metadata, so a semicolon is not a separator, a
+        star is not a glob and a percent sign is not an escape on its way to the file, and eqc reads
+        `@<file>` a line an argument. The developer sets nothing.
+
+        The referenced projects' list is two lines a project, the assembly MSBuild resolved for it,
+        then its project file: one line `assembly|project file` was cut at the first bar, which a path
+        on macOS and Linux may hold. ResolveBunPath is a dependency, because the bundler's path is an
+        argument and the hooks named BeforeTargets="CompileEQuanticUI" run after its dependencies.
+    -->
+    <Target Name="_EQuanticCompilerArguments" DependsOnTargets="_EQuanticCompilerInputs;ResolveBunPath"
+        Condition="'$(EnableEQuanticUICompilation)' == 'true'">
+        <PropertyGroup>
+            <_EqcArgumentsFile>$(IntermediateOutputPath)equantic.eqc.rsp</_EqcArgumentsFile>
+        </PropertyGroup>
         <WriteLinesToFile File="$(_EqcProjectsFile)"
-            Lines="@(_EqcProject->'%(EqAssembly)|%(FullPath)')"
+            Lines="@(_EqcProject->'%(EqAssembly)%0A%(FullPath)')"
             Overwrite="true" WriteOnlyWhenDifferent="true"
             Condition="'@(_EqcProject)' != ''" />
-        <PropertyGroup>
-            <_ProjectsArg Condition="'@(_EqcProject)' != ''"> --projects &quot;$(_EqcProjectsFile)&quot;</_ProjectsArg>
-            <!-- The app's assembly name as MSBuild evaluated it. A project file may set it apart
-                 from its own name, and it is the name another assembly knows the app by: a
-                 referenced project's InternalsVisibleTo opens its internal types to this name and
-                 to no other. eqc took the project file's name for it, so an app that sets
-                 AssemblyName was compiled under a name nothing knew it by. The developer sets
-                 nothing here: the property is the one the project already has. -->
-            <_AssemblyNameArg Condition="'$(AssemblyName)' != ''"> --assembly-name &quot;$(AssemblyName)&quot;</_AssemblyNameArg>
-            <_RefSourcesArg Condition="'@(_EqcRefSourceFinal)' != ''"> --ref-sources &quot;$(_EqcRefSourcesFile)&quot;</_RefSourcesArg>
-            <!-- The generated tree for THIS configuration. eqc cannot infer it: a project built
-                 Debug and Release has one under each, and sweeping obj would take every generated
-                 type twice, resolving to neither while the C# build stays happy. Single line —
-                 a multi-line property value carries its newline into the command (see the release
-                 notes on Windows: cmd.exe cuts the command there). -->
-            <_GeneratedArg Condition="'$(CompilerGeneratedFilesOutputPath)' != ''"> --generated &quot;$(MSBuildProjectDirectory)/$(CompilerGeneratedFilesOutputPath)&quot;</_GeneratedArg>
-        </PropertyGroup>
+        <ItemGroup>
+            <!-- The source roots as eqc reads them, one argument: an item each first, which drops the
+                 line breaks and the indentation a root written on several lines carries. -->
+            <_EqcSourceRoot Remove="@(_EqcSourceRoot)" />
+            <_EqcSourceRoot Include="$(_EqcSourceDirs)" />
+            <_EqcArgument Remove="@(_EqcArgument)" />
+            <_EqcArgument Include="sources" Value="@(_EqcSourceRoot)" />
+            <_EqcArgument Include="output" Value="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)" />
+            <_EqcArgument Include="refs" Value="--refs" />
+            <_EqcArgument Include="refs-file" Value="$(_EqcRefsFile)" />
+            <_EqcArgument Include="projects" Value="--projects" Condition="'@(_EqcProject)' != ''" />
+            <_EqcArgument Include="projects-file" Value="$(_EqcProjectsFile)" Condition="'@(_EqcProject)' != ''" />
+            <!-- The app's assembly name as MSBuild evaluated it. A project file may set it apart from
+                 its own name, and it is the name another assembly knows the app by: a referenced
+                 project's InternalsVisibleTo opens its internal types to this name and to no other. -->
+            <_EqcArgument Include="assembly-name" Value="--assembly-name" Condition="'$(AssemblyName)' != ''" />
+            <_EqcArgument Include="assembly-name-value" Value="$(AssemblyName)" Condition="'$(AssemblyName)' != ''" />
+            <_EqcArgument Include="ref-sources" Value="--ref-sources" Condition="'@(_EqcRefSourceFinal)' != ''" />
+            <_EqcArgument Include="ref-sources-file" Value="$(_EqcRefSourcesFile)" Condition="'@(_EqcRefSourceFinal)' != ''" />
+            <!-- The generated tree for THIS configuration. eqc cannot infer it: a project built Debug
+                 and Release has one under each, and sweeping obj would take every generated type
+                 twice, resolving to neither while the C# build stays happy. -->
+            <_EqcArgument Include="generated" Value="--generated" Condition="'$(CompilerGeneratedFilesOutputPath)' != ''" />
+            <_EqcArgument Include="generated-dir" Value="$(MSBuildProjectDirectory)/$(CompilerGeneratedFilesOutputPath)" Condition="'$(CompilerGeneratedFilesOutputPath)' != ''" />
+            <_EqcArgument Include="bun" Value="--bun" Condition="'$(BunPath)' != ''" />
+            <_EqcArgument Include="bun-path" Value="$(BunPath)" Condition="'$(BunPath)' != ''" />
+            <_EqcArgument Include="source-maps" Value="--source-maps" />
+            <_EqcArgument Include="source-maps-mode" Value="$(EQuanticSourceMaps)" />
+        </ItemGroup>
+        <WriteLinesToFile File="$(_EqcArgumentsFile)"
+            Lines="@(_EqcArgument->'%(Value)')"
+            Overwrite="true" WriteOnlyWhenDifferent="true" />
+    </Target>
 
+    <!-- The command names two things: the compiler, and the response file by its path under obj,
+         relative to the project's directory, which is the working directory. No value of the project
+         is in it. -->
+    <Target Name="CompileEQuanticUI" BeforeTargets="Build"
+        DependsOnTargets="_EQuanticCompilerArguments"
+        Condition="'$(EnableEQuanticUICompilation)' == 'true'">
         <Exec
-            Command="dotnet $(EqcCliPath) &quot;$(_EqcSourceDirs)&quot; $(MSBuildProjectDirectory)/$(EQuanticOutputPath) --refs &quot;$(_EqcRefsFile)&quot;$(_ProjectsArg)$(_AssemblyNameArg)$(_RefSourcesArg)$(_GeneratedArg)$(_BunArg) --source-maps $(EQuanticSourceMaps)"
+            Command="dotnet &quot;$(EqcCliPath)&quot; &quot;@$(_EqcArgumentsFile)&quot;"
             WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true"
             StandardOutputImportance="High" />
     </Target>
