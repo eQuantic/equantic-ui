@@ -1,0 +1,375 @@
+using Android.Graphics;
+using Android.Hardware.Camera2;
+using Android.Hardware.Camera2.Params;
+using Android.Media;
+using Android.OS;
+using Android.Views;
+using eQuantic.UI.Native.Engine;
+using eQuantic.UI.Primitives;
+
+namespace eQuantic.UI.Native.Shell.Android;
+
+/// <summary>
+/// One running feed. The camera delivers YUV frames to an <see cref="ImageReader"/> on a thread of
+/// its own; each is converted to RGBA, turned upright, into one reused buffer, and the engine uploads
+/// that buffer as a texture when the version moves.
+/// <para>
+/// UPRIGHT is the session's job, not the page's: a phone's sensor is mounted sideways, and the frame
+/// is turned by the sensor's orientation less the display's rotation, read per frame, so a phone
+/// turned while the preview runs keeps the picture the right way up.
+/// </para>
+/// <para>
+/// The hardware goes when the activity leaves the screen and comes back with it. Android takes the
+/// camera from an app in the background anyway; letting it go first is what keeps the session able
+/// to open it again, and the last frame stays in the buffer meanwhile. Disposing stops it for good.
+/// </para>
+/// </summary>
+internal sealed class AndroidCameraSession : ICameraSession
+{
+    /// <summary>A preview's resolution, as on the Apple shells: the conversion costs by the pixel.</summary>
+    private const int PreferredWidth = 640;
+    private const int PreferredHeight = 480;
+
+    private readonly Lock _gate = new();
+    private readonly PhotonActivity _activity;
+    private readonly CameraManager _manager;
+    private readonly string _camera;
+    private readonly int _sensorOrientation;
+    private readonly bool _facesFront;
+    private readonly HandlerThread _thread;
+    private readonly Handler _handler;
+    private readonly ImageReader _reader;
+
+    private CameraDevice? _device;
+    private CameraCaptureSession? _capture;
+    private TaskCompletionSource<bool>? _opening;
+    private byte[]? _rgba;
+    private int _width;
+    private int _height;
+    private int _version;
+    private bool _disposed;
+
+    private AndroidCameraSession(PhotonActivity activity, CameraManager manager, string camera)
+    {
+        _activity = activity;
+        _manager = manager;
+        _camera = camera;
+
+        var characteristics = manager.GetCameraCharacteristics(camera);
+        _sensorOrientation = (characteristics.Get(CameraCharacteristics.SensorOrientation) as Java.Lang.Integer)?.IntValue() ?? 0;
+        _facesFront = (characteristics.Get(CameraCharacteristics.LensFacing) as Java.Lang.Integer)?.IntValue() == (int)LensFacing.Front;
+        var size = ChooseSize(characteristics);
+
+        _thread = new HandlerThread("eq.camera");
+        _thread.Start();
+        _handler = new Handler(_thread.Looper!);
+
+        // Two images: the one being converted, and the next the camera is already filling.
+        _reader = ImageReader.NewInstance(size.Width, size.Height, ImageFormatType.Yuv420888, 2);
+        _reader.SetOnImageAvailableListener(new FrameListener(this), _handler);
+    }
+
+    public string Id { get; } = Guid.NewGuid().ToString("N");
+
+    public int FrameWidth => _width;
+    public int FrameHeight => _height;
+    public byte[]? FrameBytes => _rgba;
+    public int FrameVersion => _version;
+
+    /// <summary>Opens the camera and waits for its first configured session. Null when the device
+    /// does not answer.</summary>
+    internal static async Task<ICameraSession?> OpenAsync(PhotonActivity activity, CameraManager manager,
+        string camera, CancellationToken cancellationToken)
+    {
+        AndroidCameraSession session;
+        try
+        {
+            session = new AndroidCameraSession(activity, manager, camera);
+        }
+        catch (CameraAccessException)
+        {
+            return null;
+        }
+
+        if (!await session.OpenDeviceAsync().WaitAsync(cancellationToken))
+        {
+            session.Dispose();
+            return null;
+        }
+
+        activity.Paused += session.Suspend;
+        activity.Resumed += session.Resume;
+        return session;
+    }
+
+    public ImageData? Capture()
+    {
+        byte[] snapshot;
+        int width, height;
+        lock (_gate)
+        {
+            if (_rgba is null || _width == 0) return null;
+            snapshot = (byte[])_rgba.Clone();
+            width = _width;
+            height = _height;
+        }
+
+        // ARGB_8888 is R, G, B, A in memory, which is the buffer's own order.
+        using var bitmap = Bitmap.CreateBitmap(width, height, Bitmap.Config.Argb8888!);
+        using var pixels = Java.Nio.ByteBuffer.Wrap(snapshot);
+        bitmap.CopyPixelsFromBuffer(pixels);
+        using var encoded = new MemoryStream();
+        return bitmap.Compress(Bitmap.CompressFormat.Jpeg!, 90, encoded)
+            ? new ImageData(encoded.ToArray(), "image/jpeg", width, height)
+            : null;
+    }
+
+    public void Dispose()
+    {
+        lock (_gate)
+        {
+            if (_disposed) return;
+            _disposed = true;
+        }
+        _activity.Paused -= Suspend;
+        _activity.Resumed -= Resume;
+        Release();
+        _reader.Close();
+        _thread.QuitSafely();
+    }
+
+    // ---- the device ------------------------------------------------------------------------------
+
+    private Task<bool> OpenDeviceAsync()
+    {
+        var opening = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (_gate)
+        {
+            if (_disposed) return Task.FromResult(false);
+            _opening = opening;
+        }
+
+        try
+        {
+            _manager.OpenCamera(_camera, new DeviceCallback(this), _handler);
+        }
+        catch (Exception failure) when (failure is CameraAccessException or Java.Lang.SecurityException)
+        {
+            // In use by another app, disabled by policy, or the permission was taken back.
+            opening.TrySetResult(false);
+        }
+        return opening.Task;
+    }
+
+    private void Opened(CameraDevice device)
+    {
+        lock (_gate)
+        {
+            if (_disposed) { device.Close(); return; }
+            _device = device;
+        }
+
+        try
+        {
+            var callback = new CaptureCallback(this);
+            if (OperatingSystem.IsAndroidVersionAtLeast(28))
+            {
+                device.CreateCaptureSession(new SessionConfiguration((int)SessionType.Regular,
+                    [new OutputConfiguration(_reader.Surface!)], new HandlerExecutor(_handler), callback));
+            }
+            else
+            {
+                device.CreateCaptureSession([_reader.Surface!], callback, _handler);
+            }
+        }
+        catch (CameraAccessException)
+        {
+            Failed();
+        }
+    }
+
+    private void Configured(CameraCaptureSession capture)
+    {
+        CameraDevice? device;
+        lock (_gate)
+        {
+            device = _device;
+            if (_disposed || device is null) { capture.Close(); return; }
+            _capture = capture;
+        }
+
+        try
+        {
+            var request = device.CreateCaptureRequest(CameraTemplate.Preview);
+            request.AddTarget(_reader.Surface!);
+            capture.SetRepeatingRequest(request.Build(), null, _handler);
+            Settle(true);
+        }
+        catch (Exception failure) when (failure is CameraAccessException or Java.Lang.IllegalStateException)
+        {
+            Failed();
+        }
+    }
+
+    /// <summary>The device did not open, was taken away, or refused its session.</summary>
+    private void Failed()
+    {
+        Release();
+        Settle(false);
+    }
+
+    private void Settle(bool opened)
+    {
+        TaskCompletionSource<bool>? opening;
+        lock (_gate)
+        {
+            opening = _opening;
+            _opening = null;
+        }
+        opening?.TrySetResult(opened);
+    }
+
+    /// <summary>Lets the hardware go and keeps the session: the reader, the thread and the last
+    /// frame stay.</summary>
+    private void Release()
+    {
+        CameraCaptureSession? capture;
+        CameraDevice? device;
+        lock (_gate)
+        {
+            capture = _capture;
+            device = _device;
+            _capture = null;
+            _device = null;
+        }
+        try { capture?.Close(); } catch (Java.Lang.IllegalStateException) { /* the device went first */ }
+        device?.Close();
+    }
+
+    private void Suspend() => Release();
+
+    private void Resume()
+    {
+        lock (_gate)
+        {
+            if (_disposed || _device is not null || _opening is not null) return;
+        }
+        _ = OpenDeviceAsync();
+    }
+
+    // ---- frames ----------------------------------------------------------------------------------
+
+    private void FrameArrived(ImageReader reader)
+    {
+        var image = reader.AcquireLatestImage();
+        if (image is null) return;
+        try
+        {
+            var planes = image.GetPlanes();
+            if (planes is not { Length: 3 }) return;
+            var turns = QuarterTurns();
+            var (width, height) = Yuv420.Turned(image.Width, image.Height, turns);
+
+            lock (_gate)
+            {
+                if (_disposed) return;
+                if (_rgba is null || _width != width || _height != height)
+                {
+                    _rgba = new byte[width * height * 4];
+                    _width = width;
+                    _height = height;
+                }
+
+                Yuv420.ToRgba(Bytes(planes[0]), planes[0].RowStride,
+                    Bytes(planes[1]), Bytes(planes[2]), planes[1].RowStride, planes[1].PixelStride,
+                    image.Width, image.Height, turns, _rgba);
+                _version++;
+            }
+        }
+        finally
+        {
+            image.Close();
+        }
+    }
+
+    /// <summary>A plane's bytes where the camera wrote them, with no copy.</summary>
+    private static unsafe ReadOnlySpan<byte> Bytes(global::Android.Media.Image.Plane plane)
+    {
+        var buffer = plane.Buffer!;
+        return new ReadOnlySpan<byte>((void*)buffer.GetDirectBufferAddress(), buffer.Capacity());
+    }
+
+    /// <summary>
+    /// How far the frame has to turn to stand upright on the display as it is now. A back camera
+    /// turns with the sensor less the display; a front one, which looks the other way, with their sum.
+    /// </summary>
+    private int QuarterTurns()
+    {
+        var display = (int)DisplayRotation() * 90;
+        var degrees = _facesFront ? (_sensorOrientation + display) % 360 : (_sensorOrientation - display + 360) % 360;
+        return degrees / 90;
+    }
+
+    private SurfaceOrientation DisplayRotation()
+    {
+        if (OperatingSystem.IsAndroidVersionAtLeast(30))
+            return _activity.Display?.Rotation ?? SurfaceOrientation.Rotation0;
+        return _activity.WindowManager?.DefaultDisplay?.Rotation ?? SurfaceOrientation.Rotation0;
+    }
+
+    /// <summary>640×480 when the camera offers it, otherwise the size nearest to it in pixels.</summary>
+    private static global::Android.Util.Size ChooseSize(CameraCharacteristics characteristics)
+    {
+        var preferred = new global::Android.Util.Size(PreferredWidth, PreferredHeight);
+        var map = characteristics.Get(CameraCharacteristics.ScalerStreamConfigurationMap) as StreamConfigurationMap;
+        var sizes = map?.GetOutputSizes((int)ImageFormatType.Yuv420888);
+        if (sizes is not { Length: > 0 }) return preferred;
+
+        const int target = PreferredWidth * PreferredHeight;
+        return sizes.MinBy(size => Math.Abs(size.Width * size.Height - target))!;
+    }
+
+    // ---- the platform's callbacks ----------------------------------------------------------------
+
+    private sealed class DeviceCallback(AndroidCameraSession session) : CameraDevice.StateCallback
+    {
+        public override void OnOpened(CameraDevice camera) => session.Opened(camera);
+
+        public override void OnDisconnected(CameraDevice camera)
+        {
+            camera.Close();
+            session.Failed();
+        }
+
+        public override void OnError(CameraDevice camera, CameraError error)
+        {
+            camera.Close();
+            session.Failed();
+        }
+    }
+
+    private sealed class CaptureCallback(AndroidCameraSession session) : CameraCaptureSession.StateCallback
+    {
+        public override void OnConfigured(CameraCaptureSession capture) => session.Configured(capture);
+
+        public override void OnConfigureFailed(CameraCaptureSession capture) => session.Failed();
+    }
+
+    /// <summary>The camera's thread as the executor a session configuration asks for.</summary>
+    private sealed class HandlerExecutor(Handler handler) : Java.Lang.Object, Java.Util.Concurrent.IExecutor
+    {
+        public void Execute(Java.Lang.IRunnable? command)
+        {
+            if (command is not null) handler.Post(command);
+        }
+    }
+
+    private sealed class FrameListener(AndroidCameraSession session)
+        : Java.Lang.Object, ImageReader.IOnImageAvailableListener
+    {
+        public void OnImageAvailable(ImageReader? reader)
+        {
+            if (reader is not null) session.FrameArrived(reader);
+        }
+    }
+}

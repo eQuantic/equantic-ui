@@ -17,6 +17,7 @@ public sealed class AndroidCapabilities : IPhotonCapabilities
         services.TryAddSingleton<INetworkStatus, AndroidNetworkStatus>();
         services.TryAddSingleton<IMotionSensor, AndroidMotionSensor>();
         services.TryAddSingleton<ILocation, AndroidLocation>();
+        services.TryAddSingleton<ICamera, AndroidCamera>();
         // The same two-method clipboard the text fields use, offered as a SERVICE: what a page's
         // own "Copy" button asks for.
         services.TryAddSingleton<ITextClipboard, AndroidClipboard>();

@@ -188,6 +188,28 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         SetContentView(_view);
     }
 
+    /// <summary>
+    /// The activity stopped being the one in front, and came back. What a capability holds that
+    /// Android will not leave with an app in the background (the camera) is let go on the first and
+    /// taken again on the second.
+    /// </summary>
+    internal event Action? Paused;
+
+    /// <inheritdoc cref="Paused"/>
+    internal event Action? Resumed;
+
+    protected override void OnPause()
+    {
+        base.OnPause();
+        Paused?.Invoke();
+    }
+
+    protected override void OnResume()
+    {
+        base.OnResume();
+        Resumed?.Invoke();
+    }
+
     public void SurfaceCreated(ISurfaceHolder holder)
     {
         // The window behind the Surface is what Vulkan draws at. Holding it keeps the surface
