@@ -587,6 +587,53 @@ public sealed class ReferencedProjectRefusalTests
         built.Modules.Should().BeEmpty();
     }
 
+    [Theory]
+    [InlineData("the list is not there")]
+    [InlineData("a line is not a project")]
+    [InlineData("a listed assembly is not there")]
+    [InlineData("a listed project is not there")]
+    public void AListOfProjectsThatDoesNotHold_StopsTheBuild_AndIsNeverReadAsFewerProjects(string broken)
+    {
+        // The SDK handed a list, and when eqc reads it the list does not hold. Read as "no list",
+        // or as a list of the lines that do hold, the build went on with a project as an assembly:
+        // a page that builds a record of it was written with no module to import, and nothing said
+        // so. No file HANDED is an app that references no project. A file handed is never that
+        // (found in review of #827).
+        using var solution = new Solution()
+            .Library("Common", files: [("Cursor.cs", SharedLibrary.Cursor)])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files:
+            [
+                ("Screens/Home.cs", Home("new Cursor(1).Position.ToString()", "using Common;")),
+            ]);
+        var list = solution.FileOf("App", Path.Combine("obj", "Debug", "net10.0", "equantic.projects.txt"));
+        var built = solution.Build(whileEqcRuns: () =>
+        {
+            switch (broken)
+            {
+                case "the list is not there":
+                    File.Delete(list);
+                    break;
+                case "a line is not a project":
+                    File.AppendAllText(list, "Common.dll\n");
+                    break;
+                case "a listed assembly is not there":
+                    File.AppendAllText(list,
+                        $"{Path.Combine(solution.Root, "Ghost", "Ghost.dll")}|{Path.Combine(solution.DirectoryOf("Common"), "Common.csproj")}\n");
+                    break;
+                case "a listed project is not there":
+                    File.AppendAllText(list,
+                        $"{solution.AssemblyOf("Common")}|{Path.Combine(solution.Root, "Ghost", "Ghost.csproj")}\n");
+                    break;
+            }
+            return Stream.Null;
+        });
+
+        built.Failed.Should().BeTrue($"{broken}, and the build cannot stand on it");
+        built.Errors.Should().Contain("error EQ0001").And.Contain("equantic.projects.txt");
+        built.HasCompilation.Should().BeFalse("nothing was compiled against a compilation that is not the project's");
+        built.Modules.Should().BeEmpty();
+    }
+
     [Fact]
     public void AConstantReadOffAReferencedProjectsClass_IsInlined_AndBringsNoModule()
     {
