@@ -24,8 +24,8 @@ green.
 ## What Changes
 
 - The SDK writes what it hands eqc to a response file under `obj`, one argument a line, and the
-  command names two things: the compiler, and that file by a path relative to the project's
-  directory. No value of the project is written into a command a shell reads.
+  command names two things: the compiler, and that file by its name, in the folder eqc runs in. No
+  value of the project is written into a command a shell reads.
 - eqc reads its arguments from `@<file>`. Reading them moves from the CLI's top-level statements into
   the compiler library, so a test reads them the way eqc does.
 - The list of projects holds each project's two paths on a line each, so a path holds any character

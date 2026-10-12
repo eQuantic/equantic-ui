@@ -28,8 +28,11 @@ Flutter has no counterpart to ask: this is how one .NET build hands another prog
 `dotnet build @file`), and it has one rule on every system: a line is an argument. The SDK builds an
 ordered item list, each value kept whole as item metadata, so a semicolon, a star or a percent sign
 in it is neither a separator nor a glob nor an escape, and writes it with `WriteLinesToFile`. The
-command is `dotnet "<eqc.dll>" "@<file>"`, the file named by its path under `obj`, relative to the
-project's directory, which is the working directory MSBuild sets.
+command is `dotnet "<eqc.dll>" @equantic.eqc.rsp`, run in the folder that holds the file: MSBuild sets
+a process's working directory itself, so the file is named by its name alone and no path of the
+project is in the command. Named by a path relative to the project, the file still carried what the
+obj folder's path holds, a Configuration, a target framework, an artifacts layout's folders (found in
+review). Every path in the file is absolute, so eqc reads none of them from where it runs.
 
 Quoting each value for the shell was set aside: two shells, two rules, and `cmd.exe` reads `%` inside
 quotes. An environment variable was set aside for the same reason, as `cmd.exe` reads `%NAME%` as
