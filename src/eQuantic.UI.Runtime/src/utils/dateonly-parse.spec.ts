@@ -88,7 +88,7 @@ describe('DateOnly.TryParse — the slot a number lands in is the culture patter
       it(`${culture}: "${text}" → ${expected ?? 'refused'}`, () => {
         installCulture(culture, culture, {}, withShortDate(PATTERNS[culture]));
         const parsed = dateOnly.tryParse(text);
-        expect(parsed === null ? null : parsed.toString('yyyy-MM-dd')).toBe(expected);
+        expect(parsed === undefined ? null : parsed.toString('yyyy-MM-dd')).toBe(expected);
       });
     }
   }
@@ -100,6 +100,6 @@ describe('DateOnly.TryParse — the slot a number lands in is the culture patter
 
   it('with no catalog behind the page the invariant order applies', () => {
     expect(dateOnly.tryParse('7/17/26')?.toString('yyyy-MM-dd')).toBe('2026-07-17');
-    expect(dateOnly.tryParse('17/7/26')).toBeNull();
+    expect(dateOnly.tryParse('17/7/26')).toBeUndefined();
   });
 });

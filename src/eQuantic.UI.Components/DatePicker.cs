@@ -166,18 +166,5 @@ public sealed class DatePicker : StatefulComponent
     /// <summary>What the reader typed, as a date, or null while it is not one yet. The culture's
     /// own short pattern decides — 07/17 is July in en-US and nothing at all in pt-BR, and
     /// guessing between them would silently pick the wrong month twelve times a year.</summary>
-    private static DateOnly? Parse(string text)
-    {
-        // `DateOnly.TryParse(text, out var d)` is what this wants to say, and the compat types have
-        // no TryParse on this side yet — the out-parameter lowering exists for numbers and enums
-        // and not for these. Filed; the shape below says the same thing and transpiles today.
-        try
-        {
-            return DateOnly.Parse(text);
-        }
-        catch
-        {
-            return null;
-        }
-    }
+    private static DateOnly? Parse(string text) => DateOnly.TryParse(text, out var day) ? day : null;
 }

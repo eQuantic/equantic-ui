@@ -55,6 +55,21 @@ public static class DefaultValue
     private static bool IsRuntimeProvided(INamedTypeSymbol type) =>
         TypeSymbolExtensions.IsRuntimeProvided(type) || !type.Locations.Any(location => location.IsInSource);
 
+    /// <summary>
+    /// The zero of a time struct the runtime twins, by the type's full name, or null for any other
+    /// name: what its MinValue or Zero crosses as. A strategy that knows the type only by its spelling,
+    /// where no model can be asked, writes the same zero as one that has the symbol.
+    /// </summary>
+    internal static string? TimeZero(string? fullName) => fullName switch
+    {
+        "System.DateTime" => $"{Eq.DateTime}.minValue()",
+        "System.TimeSpan" => $"{Eq.TimeSpan}.zero",
+        "System.DateOnly" => "$eq.time.dateOnly.minValue()",
+        "System.TimeOnly" => "$eq.time.timeOnly.minValue()",
+        "System.DateTimeOffset" => $"{Eq.DateTimeOffset}.minValue()",
+        _ => null,
+    };
+
     /// <param name="type">The type whose default to write.</param>
     /// <param name="named">Told of every struct the value constructs, for its import.</param>
     /// <param name="typeParameter">The zero a type parameter has where its caller gives one, or null.</param>
@@ -79,22 +94,13 @@ public static class DefaultValue
                 return JsStringLiteral.Quote("\0");
             case SpecialType.System_String or SpecialType.System_Object:
                 return "null";
-            case SpecialType.System_DateTime:
-                return $"{Eq.DateTime}.minValue()";
         }
 
         // The time and identity structs the runtime twins: each one's zero is what its MinValue, Zero
         // or Empty crosses as. `new DateTime[1]` held null on the web, where C# holds 0001-01-01.
+        if (TimeZero(type?.ToDisplayString()) is { } time) return time;
         switch (type?.ToDisplayString())
         {
-            case "System.TimeSpan":
-                return $"{Eq.TimeSpan}.zero";
-            case "System.DateOnly":
-                return "$eq.time.dateOnly.minValue()";
-            case "System.TimeOnly":
-                return "$eq.time.timeOnly.minValue()";
-            case "System.DateTimeOffset":
-                return $"{Eq.DateTimeOffset}.minValue()";
             case "System.Guid":
                 return "'00000000-0000-0000-0000-000000000000'";
             // The token that never cancels: `default` and `None` are one value.

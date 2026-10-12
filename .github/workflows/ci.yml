@@ -102,6 +102,22 @@ jobs:
       - name: The wiki checkout still discriminates
         run: ./scripts/checkout-wiki.sh --self-test
 
+  # The loop that publishes a release, run against a stub of the push and of nuget.org's index. The
+  # jobs that publish run only on a `v*` tag or by hand, so this is the only place the loop runs
+  # before a release depends on it: 0.2.0-preview.61 stopped after 33 of 50 packages on three 500s
+  # from nuget.org, and no rerun of the loop it had could finish it (#759). The check carries its
+  # own controls: a loop that stops at the first failure, pushes what is already there, tries a
+  # refused key again, does not wait, or prints the key has to fail the case that guards it.
+  publish-packages:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publishing still finishes the list
+        run: ./scripts/check-publish-packages.sh
+
   # The runtime's TypeScript, proven once: the command a developer runs, through the embedded bun
   # (bun.lock as pinned, tsc, vitest). It hands nothing on. The bundle an app runs is written by
   # the Server's own build, in every job that builds it, and a library build of the same sources
@@ -1001,6 +1017,9 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: macos-latest
     steps:
+      # For scripts/publish-packages.sh, the one loop this job and the workflow run by hand share.
+      - uses: actions/checkout@v4
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -1012,23 +1031,15 @@ jobs:
           name: nupkgs
           path: nupkgs/
 
+      # The script skips what nuget.org already lists, waits before it tries a failed push again,
+      # goes on to the next package and fails at the end naming what is still owed (#759). When it
+      # does fail, the release is finished with the "Publish a release" workflow, from this run's
+      # own packages: a rerun of this job replays the workflow as it was at the tag.
       - name: Publish to nuget.org
         shell: bash
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-        run: |
-          set -euo pipefail
-          if [ -z "$NUGET_API_KEY" ]; then
-            echo "::error::NUGET_API_KEY secret is not configured."
-            exit 1
-          fi
-          for package in nupkgs/*.nupkg; do
-            echo "Publishing $package to nuget.org..."
-            dotnet nuget push "$package" \
-              --source "https://api.nuget.org/v3/index.json" \
-              --api-key "$NUGET_API_KEY" \
-              --skip-duplicate
-          done
+        run: ./scripts/publish-packages.sh nupkgs "${GITHUB_REF_NAME#v}"
 
   # The GitHub Release for a framework tag, written AFTER nuget.org has the packages: a release page
   # announcing what the public feed does not carry is the arrangement preview.31 already taught, and
@@ -1050,21 +1061,4 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-          # The checkout may hold the tag as a lightweight ref; the annotation lives on the tag OBJECT.
-          git fetch --force origin "+refs/tags/${TAG}:refs/tags/${TAG}"
-          git tag -l --format='%(contents:body)' "$TAG" > notes.md
-          if [ ! -s notes.md ]; then
-            echo "::warning::${TAG} carries no release notes in its annotation; the release page says so."
-            echo "_This tag was annotated without release notes._" > notes.md
-          fi
-          version="${TAG#v}"
-          prerelease=""
-          case "$version" in *-*) prerelease="--prerelease" ;; esac
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" --title "eQuantic.UI $version" --notes-file notes.md $prerelease
-          else
-            gh release create "$TAG" --verify-tag --title "eQuantic.UI $version" --notes-file notes.md $prerelease
-          fi
+        run: ./scripts/release-page.sh "$GITHUB_REF_NAME"

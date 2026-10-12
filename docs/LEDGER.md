@@ -2297,6 +2297,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   three the build now refuses. The served runtime grew 3,834 gzipped bytes. Proposed and archived
   through OpenSpec (`openspec/specs/page-culture`, `runtime-dates`, `transpiler-bcl`,
   `transpiler-records`).
+- **0.2.0-preview.61 released** from `a7d5f3de`: a component that hears the server on a typed topic
+  (#647), a page that requires its authorization and a Server Action that refuses another site's
+  request (#686, #737), a layout that follows its box and type that follows the window (#648, #665),
+  a control's press and focus on every target with a 24dp floor under a pointer (#617, #628), the
+  code editor's completion (#618, #653, #733), a hot reload that keeps the page's state (#666, #672),
+  the image optimizer on SkiaSharp (#730), one tree drawn alike by every producer with Photon's
+  hit-testing and text layout (#688, #690, #699, #739, #741, #749), a number and a date in the
+  page's culture (#637), and the browser's answers made .NET's for a class, a record and a struct
+  as C# builds and copies them (#608, #621, #654, #689, #696, #697, #708, #752), collections and
+  indexers (#594, #668, #707, #709), dates, null-conditionals and null arguments (#660, #588, #656,
+  #715), names and imports (#661, #705), strings, builders and exceptions (#607, #667, #748), a
+  curve (#731), and an ordinal dictionary with a fragment under a floating header (#579), with a
+  page that answers HEAD (#610), the conformance harness's own comparison (#609) and the release's
+  own issue (#756).
+  *([v0.2.0-preview.61](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.61))*
 - **2026-10-11 · A LINQ overload answers as its own .NET overload**: four overloads #715's measurement
   found lowered as a sibling they resemble, and a fifth its review did. A default value was called as a
   predicate ([#720](https://github.com/eQuantic/equantic-ui/issues/720), and `SingleOrDefault`'s,
@@ -2335,6 +2350,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   in the set's order where .NET walks its tree breadth first
   ([#766](https://github.com/eQuantic/equantic-ui/issues/766)). Proposed and archived through OpenSpec
   (`openspec/specs/runtime-collections`).
+- **2026-10-11 · A release finishes what nuget.org refused**: the tag run of `0.2.0-preview.61`
+  pushed 33 of its 50 packages and stopped on three 500s from nuget.org, and five reruns of the job
+  died on packages that were already there, since the loop started from the top each time and a
+  duplicate answered 500 where it answers 409
+  ([#759](https://github.com/eQuantic/equantic-ui/issues/759)). The 17 still owed went up from the
+  tag run's own artifact through a one-off workflow, and the release page was written by hand. Now
+  one script publishes (`scripts/publish-packages.sh`): it skips what nuget.org lists, goes on to the
+  next package when one fails, tries the failed ones again together after 30, 60, 120 and 240
+  seconds, and fails at the end naming what is still owed. A push refused for the key is not tried again, and the list goes on.
+  `publish-nuget` runs it, and so does `Publish a release`, a workflow run by hand that finishes a
+  release from the packages of its tag's own run, any other run refused, and writes its page
+  (`scripts/release-page.sh`, which `release-github` runs too). `scripts/check-publish-packages.sh`
+  runs the loop against a stub on every pull request, with ten controls that each break it one way
+  and must fail the case that guards it. Proposed and archived
+  through OpenSpec (`openspec/specs/release-publishing`).
 - **2026-10-11 · A string splits, and searches from a start, as .NET does**: two gaps #715's measurement
   found and one #748's review did. `string.Split` was JavaScript's `split` of its first argument: an
   array of separators was one text joined by commas, an empty one cut the text into its characters, the
@@ -2365,6 +2395,27 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#796](https://github.com/eQuantic/equantic-ui/issues/796)), and the Apple shell's callbacks are
   not AOT-safe on a device ([#795](https://github.com/eQuantic/equantic-ui/issues/795))
   ([#809](https://github.com/eQuantic/equantic-ui/issues/809)).
+- **2026-10-11 · A value converts, and a date parses, as .NET does**: two gaps #715's measurement found.
+  `Convert.ToBase64String`, `ToBase64CharArray`, `ToHexString` and `ToHexStringLower` were `String()` of
+  the array, so `new byte[] { 1, 2, 255 }` was `1,2,255` where .NET writes `AQL/` and `0102FF`
+  ([#716](https://github.com/eQuantic/equantic-ui/issues/716)); they are twins of .NET 10's `Convert` in
+  `$eq.convert` now, handed the bound overload's arguments by parameter, line breaks and refusals
+  included, and a span that is not a collection expression fails the build. `TryParse(string, out T)` of
+  a `DateTime`, a `DateTimeOffset`, a `TimeOnly` and a `TimeSpan` called a `tryParse` the runtime did
+  not have, and `DateOnly`'s answered the date or null
+  ([#718](https://github.com/eQuantic/equantic-ui/issues/718)); each answers true or false over its
+  `Parse` now, the type's default in the out argument where it fails, and the DatePicker says
+  `DateOnly.TryParse` as its comment wanted to; their other overloads (a provider, styles, a span) fail
+  the build, since the twin would read the text and never write the out argument. `TimeOnly.Parse`
+  reads .NET's invariant grammar, so `9:30 PM` is 21:30 where it was half past nine in the morning,
+  `25:00` and trailing text are refused, and a fraction rounds to the tick as .NET rounds it. 99 of the
+  102 new conformance cases fail at 20069215; 35 entries leave the null-argument baseline, 17 answered
+  and 18 refused at the build. The served runtime grows about 1,150 gzipped bytes. What `TryParse`
+  inherits from `Parse` is filed: the invariant culture read where .NET reads the current one
+  ([#806](https://github.com/eQuantic/equantic-ui/issues/806)), and the forms `DateTime`,
+  `DateTimeOffset`, `DateOnly` and `TimeSpan` do not read, or read wrongly
+  ([#807](https://github.com/eQuantic/equantic-ui/issues/807)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
 - **2026-10-11 · An Android app keeps its screen, turns, and answers back**: three of the blockers
   between an app built with the SDK and the Play Store, measured on the Android emulator (API 36,
   Vulkan) at 1850922. The Wallet sample came back on its first tab after Home, because the activity

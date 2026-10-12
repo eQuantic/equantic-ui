@@ -271,6 +271,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<TupleMemberAccessStrategy>();
         _strategyRegistry.Register<CheckedExpressionStrategy>();
         _strategyRegistry.Register<GuidTypeStrategy>();
+        _strategyRegistry.Register<TimeTryParseStrategy>(); // Priority 16
         _strategyRegistry.Register<NamespaceRemovalStrategy>();
         _strategyRegistry.Register<NameofStrategy>(); // Priority 15
         _strategyRegistry.Register<DefaultKeywordStrategy>(); // Priority 15
