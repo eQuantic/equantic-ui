@@ -184,8 +184,8 @@ public class StringBuilderStrategy : ConversionStrategyBase
                     break;
                 case InterpolationSyntax hole:
                     var value = InterpolatedStringStrategy.Hole(hole, context, padded: false);
-                    chain.Append(hole.AlignmentClause is { } alignment
-                        ? $".appendAligned({value}, {alignment.Value})"
+                    chain.Append(InterpolatedStringStrategy.Alignment(hole, context) is { } alignment
+                        ? $".appendAligned({value}, {alignment})"
                         : $".append({value})");
                     break;
             }

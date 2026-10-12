@@ -589,6 +589,7 @@ public sealed class ReferencedProjectRefusalTests
 
     [Theory]
     [InlineData("the list is not there")]
+    [InlineData("the list holds no project")]
     [InlineData("a line is not a project")]
     [InlineData("a listed assembly is not there")]
     [InlineData("a listed project is not there")]
@@ -612,6 +613,10 @@ public sealed class ReferencedProjectRefusalTests
             {
                 case "the list is not there":
                     File.Delete(list);
+                    break;
+                case "the list holds no project":
+                    // What a write cut short leaves: the file, and no line of it (#835).
+                    File.WriteAllText(list, "\n\n");
                     break;
                 case "a line is not a project":
                     File.AppendAllText(list, "Common.dll\n");

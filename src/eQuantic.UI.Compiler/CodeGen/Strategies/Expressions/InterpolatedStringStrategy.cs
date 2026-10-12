@@ -49,6 +49,25 @@ public class InterpolatedStringStrategy : IConversionStrategy
         Unbraced(text.TextToken.ValueText, interpolated);
 
     /// <summary>
+    /// A hole's alignment as the number it is, or null for a hole with none. C# takes a constant
+    /// expression there and nothing else, so the model has its value whatever the source spells it
+    /// with. The source's TEXT was written: <c>{name,Widths.Name}</c> named a member the twin does not
+    /// have (its static is <c>name</c>), or a class the module never imported, and the text was never
+    /// padded, with no diagnostic (#834). The constant arrives in its OWN type, so a <c>short</c>, a
+    /// <c>byte</c> or a <c>char</c>, which C# converts to the int it pads to, is that int too. The text
+    /// is what there is only where the model cannot be asked.
+    /// </summary>
+    internal static string? Alignment(InterpolationSyntax interpolation, ConversionContext context)
+    {
+        if (interpolation.AlignmentClause?.Value is not { } written) return null;
+        return context.SemanticHelper.TryGetConstantValue(written, out var value)
+            && value is int or short or ushort or sbyte or byte or char
+            ? System.Convert.ToInt32(value, System.Globalization.CultureInfo.InvariantCulture)
+                .ToString(System.Globalization.CultureInfo.InvariantCulture)
+            : written.ToString();
+    }
+
+    /// <summary>
     /// The JavaScript of a hole's text: its value converted as C# converts it, formatted where a format
     /// is written, and padded to its alignment, or, not <paramref name="padded"/>, the text the
     /// alignment pads, for a writer that appends the padding itself (<c>StringBuilder.Append($"…")</c>).
@@ -61,7 +80,7 @@ public class InterpolatedStringStrategy : IConversionStrategy
         // raw value, for the formatter.
         var expr = context.Converter.ConvertExpression(interpolation.Expression);
         var format = interpolation.FormatClause?.FormatStringToken.ValueText;
-        var alignment = interpolation.AlignmentClause?.Value.ToString();
+        var alignment = Alignment(interpolation, context);
         
         // An ENUM formats itself, as its ToString(format) does, and the alignment pads
         // that text: it prints its member name, not the camelCase key the browser holds
