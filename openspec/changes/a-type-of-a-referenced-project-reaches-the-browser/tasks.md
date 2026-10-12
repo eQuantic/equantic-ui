@@ -2,8 +2,8 @@
 
 ## 1. Measure before changing
 
-- [ ] 1.1 Write a two-project fixture (an app and a class library holding a static class with a `static readonly` member, a record, a component and a class that reads a file) and build it with eqc as it is. Verify the emitted page module names `Palette` and `Cursor` with no import, which is #624, and keep the fixture as the tests' input.
-- [ ] 1.2 Read what MSBuild gives for a project reached directly and one reached through another project. Verify `ReferencePath` carries `MSBuildSourceProjectFile` for both, beside the source tree and from packages.
+- [x] 1.1 Write a two-project fixture (an app and a class library holding a static class with a `static readonly` member, a record, a component and a class that reads a file) and build it with eqc as it is. Verify the emitted page module names `Palette` and `Cursor` with no import, which is #624, and keep the fixture as the tests' input.
+- [x] 1.2 Read what MSBuild gives for a project reached directly and one reached through another project. Verify `ReferencePath` carries `MSBuildSourceProjectFile` for both, beside the source tree and from packages.
 
 ## 2. One compilation per referenced project
 
