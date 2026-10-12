@@ -590,7 +590,7 @@ public sealed class ReferencedProjectRefusalTests
     [Theory]
     [InlineData("the list is not there")]
     [InlineData("the list holds no project")]
-    [InlineData("a line is not a project")]
+    [InlineData("an assembly has no project file after it")]
     [InlineData("a listed assembly is not there")]
     [InlineData("a listed project is not there")]
     public void AListOfProjectsThatDoesNotHold_StopsTheBuild_AndIsNeverReadAsFewerProjects(string broken)
@@ -618,16 +618,16 @@ public sealed class ReferencedProjectRefusalTests
                     // What a write cut short leaves: the file, and no line of it (#835).
                     File.WriteAllText(list, "\n\n");
                     break;
-                case "a line is not a project":
-                    File.AppendAllText(list, "Common.dll\n");
+                case "an assembly has no project file after it":
+                    File.AppendAllText(list, $"{solution.AssemblyOf("Common")}\n");
                     break;
                 case "a listed assembly is not there":
                     File.AppendAllText(list,
-                        $"{Path.Combine(solution.Root, "Ghost", "Ghost.dll")}|{Path.Combine(solution.DirectoryOf("Common"), "Common.csproj")}\n");
+                        $"{Path.Combine(solution.Root, "Ghost", "Ghost.dll")}\n{Path.Combine(solution.DirectoryOf("Common"), "Common.csproj")}\n");
                     break;
                 case "a listed project is not there":
                     File.AppendAllText(list,
-                        $"{solution.AssemblyOf("Common")}|{Path.Combine(solution.Root, "Ghost", "Ghost.csproj")}\n");
+                        $"{solution.AssemblyOf("Common")}\n{Path.Combine(solution.Root, "Ghost", "Ghost.csproj")}\n");
                     break;
             }
             return Stream.Null;
@@ -637,6 +637,28 @@ public sealed class ReferencedProjectRefusalTests
         built.Errors.Should().Contain("error EQ0001").And.Contain("equantic.projects.txt");
         built.HasCompilation.Should().BeFalse("nothing was compiled against a compilation that is not the project's");
         built.Modules.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ASolutionUnderAFolderWhoseNameHoldsABar_BuildsItsLibraryFromSource()
+    {
+        // The list was one line a project, `assembly|project file`, and the reader cut it at the first
+        // bar: a solution under `a|b $c` was refused on every build (EQ0001), naming `.../a` as the
+        // assembly it could not find (#836). A path is a line whole now. Windows takes no bar in a
+        // name, so there the folder holds the rest.
+        var folder = OperatingSystem.IsWindows() ? "a $b c" : "a|b $c";
+        using var solution = new Solution(folder)
+            .Library("Common", files: [("Cursor.cs", SharedLibrary.Cursor)])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files:
+            [
+                ("Screens/Home.cs", Home("new Cursor(1).Position.ToString()", "using Common;")),
+            ]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        solution.Root.Should().EndWith(folder);
+        built.Modules.Should().Contain("Cursor");
+        built.SiblingImportsOf("Home").Should().Contain("Cursor");
     }
 
     [Fact]
