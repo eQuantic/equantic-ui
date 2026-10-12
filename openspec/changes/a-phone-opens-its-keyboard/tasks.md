@@ -22,6 +22,6 @@
 
 ## 4. Documentation and the suites
 
-- [ ] 4.1 The wiki's Photon page (EN + pt-BR), in one commit on the wiki branch named like this one
+- [x] 4.1 The wiki's Photon page (EN + pt-BR), in one commit on the wiki branch named like this one
 - [x] 4.2 `docs/FLUTTER-PARITY.md`'s `TextInputClient` and `MediaQuery.viewInsets` rows with their probes, and one `docs/LEDGER.md` line citing #770
 - [x] 4.3 The suites, each alone and read by its exit code: Native.Engine, Web, Compiler, Server and the runtime's `TestRuntime`
