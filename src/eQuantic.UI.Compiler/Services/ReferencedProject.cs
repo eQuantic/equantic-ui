@@ -48,8 +48,9 @@ internal sealed class ReferencedProject
     /// set by hand.
     /// <para>
     /// No file handed is an app that references no project. A file that WAS handed and does not hold
-    /// is never that: the list that is not there, a line that is not a project, an assembly or a
-    /// project directory that is not where the line says. Each throws, and the build stops on it
+    /// is never that: the list that is not there or holds no project (the SDK hands one only when it
+    /// wrote a line), a line that is not a project, an assembly or a project directory that is not
+    /// where the line says. Each throws, and the build stops on it
     /// (EQ0001). Read as fewer projects, the build would go on with those projects as assemblies,
     /// which is a page written wrong with no diagnostic (found in review of #827).
     /// </para>
@@ -80,6 +81,8 @@ internal sealed class ReferencedProject
             if (!seen.Add(Path.GetFileName(assembly))) continue;
             projects.Add(new ReferencedProject(assembly, Path.TrimEndingDirectorySeparator(directory) + Path.DirectorySeparatorChar));
         }
+        if (projects.Count == 0)
+            throw new InvalidDataException($"the list of projects holds no project: '{projectsFile}'");
         return projects;
     }
 
