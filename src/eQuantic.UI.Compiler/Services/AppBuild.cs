@@ -186,9 +186,15 @@ public sealed class AppBuild
 
                 _output.WriteLine($"   Creating compilation for {allSourceFiles.Count} files with {assemblyPaths.Count} references...");
 
-                // Get project name from .csproj
+                // The name the project evaluates to, which the SDK hands over. Inferred from the
+                // project file's name, an app that sets <AssemblyName> was compiled here under a name
+                // no other assembly knows it by, and a referenced project's InternalsVisibleTo opened
+                // nothing to it (found in review of #827). The file's name is MSBuild's own default,
+                // and what a build with no SDK behind it has.
                 var csprojFiles = Directory.GetFiles(_primarySourceDir, "*.csproj", SearchOption.TopDirectoryOnly);
-                var assemblyName = csprojFiles.Length > 0 ? Path.GetFileNameWithoutExtension(csprojFiles[0]) : "DynamicAssembly";
+                var assemblyName = !string.IsNullOrWhiteSpace(_options.AssemblyName)
+                    ? _options.AssemblyName.Trim()
+                    : csprojFiles.Length > 0 ? Path.GetFileNameWithoutExtension(csprojFiles[0]) : "DynamicAssembly";
 
                 // When we have the complete MSBuild reference set, use it verbatim. Injecting the runtime BCL
                 // impl assemblies on top of the targeting-pack ref assemblies would duplicate identities and

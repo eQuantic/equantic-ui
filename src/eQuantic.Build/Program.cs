@@ -4,7 +4,7 @@ using eQuantic.UI.Compiler.Services;
 
 if (args.Length < 2)
 {
-    Console.Error.WriteLine("Usage: eqc <source-dir> <output-dir> [--refs <file>] [--projects <file>] [--bun <path>] [--source-maps full|external|none] [--watch]");
+    Console.Error.WriteLine("Usage: eqc <source-dir> <output-dir> [--refs <file>] [--projects <file>] [--assembly-name <name>] [--bun <path>] [--source-maps full|external|none] [--watch]");
     return 1;
 }
 
@@ -37,6 +37,10 @@ var generatedDir = args.ToList().Contains("--generated") ? args[args.ToList().In
 // compiled in place of their assemblies, so a type of one that a page uses is a module of the bundle and
 // not a name nothing defines (#624). The SDK writes the file; a developer sets nothing.
 var projectsFile = args.ToList().Contains("--projects") ? args[args.ToList().IndexOf("--projects") + 1].Trim() : null;
+// --assembly-name <name>: the app's assembly name as its project evaluates it, which a project file
+// may set apart from its own name. It is the name a referenced project's InternalsVisibleTo opens its
+// internal types to. The SDK passes $(AssemblyName); a direct run takes the project file's name.
+var assemblyName = args.ToList().Contains("--assembly-name") ? args[args.ToList().IndexOf("--assembly-name") + 1].Trim() : null;
 // --source-maps full|external|none (#352): what each module's map carries. `full` links a map with
 // the C# inside it, `external` writes one without the C# and without the link, `none` writes none.
 // The SDK passes full in Debug and none everywhere else; a direct run keeps full.
@@ -58,6 +62,7 @@ var build = new AppBuild(new AppBuildOptions
     ReferenceSourcesFile = refSourcesFile,
     GeneratedDirectory = generatedDir,
     ProjectsFile = projectsFile,
+    AssemblyName = assemblyName,
     SourceMaps = sourceMaps,
 });
 

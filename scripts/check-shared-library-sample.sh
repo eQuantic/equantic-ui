@@ -47,10 +47,15 @@ fi
 
 # EVERY TYPE THE PAGE REACHES IS A MODULE, in whichever project: a static class, a record, a
 # component, a record a Server Action answers, and the record of the second project inside it.
-for type in Palette Cursor Wordmark Receipt Money; do
+#
+# Imprint is INTERNAL to the library, which opens it to the app by its ASSEMBLY's name
+# (InternalsVisibleTo), and the app's project file names its assembly apart from itself. So Imprint
+# is a module only when the SDK handed the compiler the name MSBuild evaluated: under the project
+# file's name the friend declaration opens nothing, and the page that builds it does not compile.
+for type in Palette Cursor Wordmark Receipt Money Imprint; do
     [ -f "$modules/$type.ts" ] || fail "no module was written for $type, a type of a referenced project the page uses"
 done
-for type in Palette Cursor Wordmark Receipt; do
+for type in Palette Cursor Wordmark Receipt Imprint; do
     grep -q "^import { $type } from \"./$type\";" "$modules/HomePage.ts" \
         || fail "HomePage.ts does not import $type, which it names"
 done

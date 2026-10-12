@@ -21,6 +21,12 @@
         <ProjectReference Include="../../../src/eQuantic.UI.Components/eQuantic.UI.Components.csproj" />
     </ItemGroup>
 
+    <!-- An internal type of the library (Imprint), opened to the web app alone. The item names the
+         app's ASSEMBLY, which is not its project file's name. -->
+    <ItemGroup>
+        <InternalsVisibleTo Include="SharedLibrary.Site" />
+    </ItemGroup>
+
     <!-- The declarative factories in scope in every file, as the SDK puts them in an app's own. -->
     <ItemGroup>
         <Using Include="eQuantic.UI.Components.UI" Static="true" />

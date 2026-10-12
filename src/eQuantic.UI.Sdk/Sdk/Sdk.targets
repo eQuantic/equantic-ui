@@ -395,6 +395,13 @@
             Condition="'@(_EqcProject)' != ''" />
         <PropertyGroup>
             <_ProjectsArg Condition="'@(_EqcProject)' != ''"> --projects &quot;$(_EqcProjectsFile)&quot;</_ProjectsArg>
+            <!-- The app's assembly name as MSBuild evaluated it. A project file may set it apart
+                 from its own name, and it is the name another assembly knows the app by: a
+                 referenced project's InternalsVisibleTo opens its internal types to this name and
+                 to no other. eqc took the project file's name for it, so an app that sets
+                 AssemblyName was compiled under a name nothing knew it by. The developer sets
+                 nothing here: the property is the one the project already has. -->
+            <_AssemblyNameArg Condition="'$(AssemblyName)' != ''"> --assembly-name &quot;$(AssemblyName)&quot;</_AssemblyNameArg>
             <_RefSourcesArg Condition="'@(_EqcRefSourceFinal)' != ''"> --ref-sources &quot;$(_EqcRefSourcesFile)&quot;</_RefSourcesArg>
             <!-- The generated tree for THIS configuration. eqc cannot infer it: a project built
                  Debug and Release has one under each, and sweeping obj would take every generated
@@ -405,7 +412,7 @@
         </PropertyGroup>
 
         <Exec
-            Command="dotnet $(EqcCliPath) &quot;$(_EqcSourceDirs)&quot; $(MSBuildProjectDirectory)/$(EQuanticOutputPath) --refs &quot;$(_EqcRefsFile)&quot;$(_ProjectsArg)$(_RefSourcesArg)$(_GeneratedArg)$(_BunArg) --source-maps $(EQuanticSourceMaps)"
+            Command="dotnet $(EqcCliPath) &quot;$(_EqcSourceDirs)&quot; $(MSBuildProjectDirectory)/$(EQuanticOutputPath) --refs &quot;$(_EqcRefsFile)&quot;$(_ProjectsArg)$(_AssemblyNameArg)$(_RefSourcesArg)$(_GeneratedArg)$(_BunArg) --source-maps $(EQuanticSourceMaps)"
             WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true"
             StandardOutputImportance="High" />
     </Target>

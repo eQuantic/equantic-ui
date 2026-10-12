@@ -42,6 +42,15 @@ public sealed class AppBuildOptions
     public string? ProjectsFile { get; init; }
 
     /// <summary>
+    /// The app's assembly name as its project evaluates it (<c>$(AssemblyName)</c>), which a project
+    /// file may set apart from its own name. The app's compilation takes it, because it is the name
+    /// another assembly knows the app by: a referenced project's <c>InternalsVisibleTo</c> opens its
+    /// internal types to that name and to no other. Null takes the project file's name, which is
+    /// what MSBuild itself defaults the property to.
+    /// </summary>
+    public string? AssemblyName { get; init; }
+
+    /// <summary>
     /// How an assembly of the reference list is read; null reads each file anew, which is right for a
     /// process that builds once. A reference holds its assembly in native memory until it is
     /// finalized, so a host that runs many builds (a test suite, a design tool) hands a reader that

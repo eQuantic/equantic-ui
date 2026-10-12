@@ -182,6 +182,62 @@ public sealed class ReferencedProjectCompilationTests
         built.SiblingImportsOf("Home").Should().Contain("Seal");
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AnAppWhoseAssemblyIsNamedApartFromItsProject_IsTheFriendItsLibraryNames(bool handAssemblyName)
+    {
+        // A project file may name its assembly apart from itself (<AssemblyName>), and a friend
+        // declaration names the ASSEMBLY. The build took the project file's name for the app's
+        // compilation, so the library's InternalsVisibleTo("Shop.Site") opened nothing to an app
+        // whose file is App.csproj: C# compiled it, and here an internal record it builds was a
+        // type the build could not bind. The SDK hands the name MSBuild evaluated (found in review
+        // of #827).
+        using var solution = new Solution()
+            .Library("Common", files:
+            [
+                (Path.Combine("obj", "Debug", "net10.0", "Common.AssemblyInfo.cs"),
+                    "[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"Shop.Site\")]\n"),
+                ("Seal.cs", "namespace Common;\n\ninternal sealed record Seal(string Text);\n"),
+            ])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, assemblyName: "Shop.Site", files:
+            [
+                ("Screens/Home.cs",
+                    """
+                    using eQuantic.UI.Primitives;
+                    using Common;
+
+                    namespace App.Screens;
+
+                    public sealed class Home : StatelessComponent
+                    {
+                        public override VisualNode Build(ComponentContext context) =>
+                            Text(new Seal("kept").Text, TypeRole.BodyM, context.Theme.TextPrimary, maxLines: 1);
+                    }
+                    """),
+            ]);
+        var built = solution.Build(handAssemblyName: handAssemblyName);
+
+        if (handAssemblyName)
+        {
+            built.Failed.Should().BeFalse(built.Errors);
+            built.Errors.Should().BeEmpty();
+            built.Compilation.AssemblyName.Should().Be("Shop.Site");
+            built.SiblingImportsOf("Home").Should().Contain("Seal");
+            built.Module("Seal").Should().Contain("export class Seal");
+        }
+        else
+        {
+            // The control, and every build before: the app is compiled as "App", a name the library
+            // never named. The record is one the model cannot reach, so the call around it does not
+            // bind, and code C# compiled is refused here.
+            built.Compilation.AssemblyName.Should().Be("App");
+            built.Failed.Should().BeTrue();
+            built.Errors.Should().Contain("error EQ2006");
+            built.Modules.Should().NotContain("Seal");
+        }
+    }
+
     /// <summary>What a simple name binds to at the top of a file, as a type or a namespace.</summary>
     private static IEnumerable<ISymbol> NamesInScope(Compilation compilation, string file, string name)
     {

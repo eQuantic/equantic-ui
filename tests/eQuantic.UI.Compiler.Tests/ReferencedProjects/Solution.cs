@@ -46,8 +46,13 @@ internal sealed class Solution : IDisposable
     private readonly string _root = Directory.CreateTempSubdirectory("eq-solution-").FullName;
     private readonly List<Project> _projects = [];
 
-    private sealed record Project(string Name, string[] References, string GlobalUsings, bool IsApp, bool IsPackage = false)
+    private sealed record Project(string Name, string[] References, string GlobalUsings, bool IsApp, bool IsPackage = false,
+        string? NamedAssembly = null)
     {
+        /// <summary>The assembly's name, which is the project's unless the project names it apart
+        /// (<c>&lt;AssemblyName&gt;</c>).</summary>
+        public string AssemblyName => NamedAssembly ?? Name;
+
         public Compilation? Compilation { get; set; }
         public string? Assembly { get; set; }
     }
@@ -89,10 +94,16 @@ internal sealed class Solution : IDisposable
         Add(new Project(name, [], "", IsApp: false, IsPackage: true), files);
 
     /// <summary>The app, which is declared last and referenced by nothing.</summary>
-    /// <inheritdoc cref="Library"/>
+    /// <param name="name">The project's name, which is its directory's and its project file's.</param>
+    /// <param name="references">The projects it references, each declared before it.</param>
+    /// <param name="globalUsings">Global usings its build generates beside the implicit ones.</param>
+    /// <param name="assemblyName">The name its project file gives its assembly, when that is not the
+    /// project's own (<c>&lt;AssemblyName&gt;</c>): the project file keeps the project's name, and
+    /// the assembly and what the SDK hands the build carry this one.</param>
+    /// <param name="files">Its source: each file's path inside the project, and its text.</param>
     public Solution App(string name, string[]? references = null, string globalUsings = "",
-        params (string Path, string Text)[] files) =>
-        Add(new Project(name, references ?? [], globalUsings, IsApp: true), files);
+        string? assemblyName = null, params (string Path, string Text)[] files) =>
+        Add(new Project(name, references ?? [], globalUsings, IsApp: true, NamedAssembly: assemblyName), files);
 
     private Solution Add(Project project, (string Path, string Text)[] files)
     {
@@ -126,7 +137,10 @@ internal sealed class Solution : IDisposable
     /// root, or a page) and is to be RUN. Without one the build stops at the modules it wrote.</param>
     /// <param name="whileEqcRuns">Something held from after the projects are compiled until eqc's
     /// build ends: a file the C# compiler could read and eqc then cannot.</param>
-    public Built Build(bool handProjects = true, string? bun = null, Func<IDisposable>? whileEqcRuns = null)
+    /// <param name="handAssemblyName">False builds the app as an SDK that hands eqc no assembly name
+    /// does, which is every build before the review of #827: the build takes the project file's.</param>
+    public Built Build(bool handProjects = true, string? bun = null, Func<IDisposable>? whileEqcRuns = null,
+        bool handAssemblyName = true)
     {
         foreach (var project in _projects) Compile(project);
 
@@ -148,6 +162,7 @@ internal sealed class Solution : IDisposable
             OutputDirectory = outputDirectory,
             ReferencesFile = referencesFile,
             ProjectsFile = handProjects ? projectsFile : null,
+            AssemblyName = handAssemblyName ? app.AssemblyName : null,
             BunPath = bun,
             // One reference per assembly for the whole test process (#481).
             ReferenceReader = TestReferences.Of,
@@ -171,7 +186,7 @@ internal sealed class Solution : IDisposable
             .Select(file => CSharpSyntaxTree.ParseText(File.ReadAllText(file), ParseDefaults.Options, path: file));
         var references = Framework.Value.Select(path => TestReferences.Of(path))
             .Concat(Reached(project).Select(reference => reference.Compilation!.ToMetadataReference()));
-        var compilation = CSharpCompilation.Create(project.Name, trees, references,
+        var compilation = CSharpCompilation.Create(project.AssemblyName, trees, references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
                 nullableContextOptions: NullableContextOptions.Enable));
         compilation.GetDiagnostics().Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
@@ -179,7 +194,7 @@ internal sealed class Solution : IDisposable
             .Should().BeEmpty($"{project.Name} is C# that compiles");
         project.Compilation = compilation;
 
-        var assembly = Path.Combine(directory, "bin", "Debug", "net10.0", project.Name + ".dll");
+        var assembly = Path.Combine(directory, "bin", "Debug", "net10.0", project.AssemblyName + ".dll");
         Directory.CreateDirectory(Path.GetDirectoryName(assembly)!);
         using (var image = File.Create(assembly))
             compilation.Emit(image).Success.Should().BeTrue($"{project.Name} emits its assembly");
