@@ -95,6 +95,16 @@ public static class Eq
     /// <summary><c>Convert.ToString(value, toBase)</c>: an integer written in base 2, 8, 10 or 16, a
     /// negative one as its bits in any base but 10.</summary>
     public const string ToBase = "$eq.num.toBase";
+    /// <summary><c>Convert.ToBase64String</c>, every overload: the array, the offset, the length and the
+    /// options, each <c>undefined</c> where the overload has none.</summary>
+    public const string ToBase64String = "$eq.convert.toBase64String";
+    /// <summary><c>Convert.ToBase64CharArray</c>: the characters written into the array handed over,
+    /// and their count.</summary>
+    public const string ToBase64CharArray = "$eq.convert.toBase64CharArray";
+    /// <summary><c>Convert.ToHexString</c>, every overload: two uppercase digits a byte.</summary>
+    public const string ToHexString = "$eq.convert.toHexString";
+    /// <summary><c>Convert.ToHexStringLower</c>, every overload: two lowercase digits a byte.</summary>
+    public const string ToHexStringLower = "$eq.convert.toHexStringLower";
     /// <summary>Substring that refuses an out-of-range index, the way .NET does.</summary>
     public const string Substring = "$eq.text.substring";
     /// <summary><c>char.IsWhiteSpace</c> over .NET's set, which JavaScript's <c>\s</c> is not: it leaves

@@ -61,6 +61,12 @@ import {
 import { double, single } from './utils/real-text';
 import { fromBase, toBase } from './utils/convert-base';
 import {
+  toBase64CharArray,
+  toBase64String,
+  toHexString,
+  toHexStringLower,
+} from './utils/convert-encoding';
+import {
   intConvert,
   intParse,
   intTryParse,
@@ -538,6 +544,9 @@ export const $eq = {
   },
   /** `bool.Parse`, `bool.TryParse` and `Convert.ToBoolean(string)`, as .NET reads the text. */
   bool: { parse: boolParse, tryParse: boolTryParse, convert: boolConvert },
+  /** `Convert.ToBase64String`, `ToBase64CharArray`, `ToHexString` and `ToHexStringLower`, as .NET
+   * encodes the bytes (#716). */
+  convert: { toBase64String, toBase64CharArray, toHexString, toHexStringLower },
   /** Nullable<T> lifted operators (null-propagating arithmetic, false-on-null relational). */
   nullable: { arith: liftArith, cmp: liftCmp, unary: liftUnary },
   /** `bool | bool` and `bool & bool`: both operands evaluated, a bool answered — see `or`. */
