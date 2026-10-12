@@ -30,8 +30,9 @@ API uses. Nothing has run on a physical device.
 
 Two defects found while cataloguing come before any new capability on iOS:
 
-- [#796](https://github.com/eQuantic/equantic-ui/issues/796): built with the iOS 27 SDK, an app does
-  not launch, because the iOS shell has no scene life cycle (TN3187).
+- [#796](https://github.com/eQuantic/equantic-ui/issues/796): built with the iOS 27 SDK, an app did
+  not launch, because the iOS shell had no scene life cycle (TN3187). Fixed: the window belongs to a
+  scene delegate and the SDK declares the scene manifest.
 - [#795](https://github.com/eQuantic/equantic-ui/issues/795): every Apple callback goes through
   `Marshal.GetFunctionPointerForDelegate`, the shape Mono full-AOT does not prepare, and a device
   Release build is the first to run it.

@@ -166,6 +166,7 @@ prose, and cannot go on claiming an absence that has ended.
 | Flutter | Here | Verdict |
 |---|---|---|
 | `WidgetsBindingObserver` (`resumed`, `paused`, `detached`, `hidden`) | — | **GAP.** The shells know these states; nothing surfaces them to a component. |
+| iOS's scene life cycle — `FlutterSceneDelegate`, the `AppDelegate` keeping the process's duties, an engine initialized apart from any scene (Flutter 3.41) | `PhotonApp.PhotonSceneDelegate`, `PhotonAppDelegate` answering only which delegate a scene gets, a screen kept for the process | **SAME.** Both answer TN3187 the same way, and the SDK writes the scene manifest as Flutter's tool does. One step less to take: a Photon app has no delegate of its own to migrate (#796). |
 | `WidgetsFlutterBinding` — seven bindings mixed in, one class each: gesture, scheduler, services, painting, semantics, renderer, widgets | `PhotonHost` — one class, 2,074 lines, 44 fields, 27 public methods; a shell drives up to 18 of them, with no interface between them | **DIFFERENT, and heavier.** Everything Flutter splits by concern is one object here, which is why editing a spreadsheet and routing a hover live in the same file. |
 | `View` / `PlatformDispatcher`, multiple windows | `WindowChrome` and the desktop shells | **PARTIAL** |
 | `devicePixelRatio` | Render scale, realizer-side | **PARTIAL** — used, not authorable. |
