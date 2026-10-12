@@ -1,1 +1,2 @@
 #nullable enable
+const eQuantic.UI.Native.Engine.RhiRenderer.RetainFrames = 30 -> int
