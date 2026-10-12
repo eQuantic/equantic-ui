@@ -61,6 +61,12 @@ public sealed class AppBuildOptions
     /// <summary>What each module's source map carries.</summary>
     public SourceMapMode SourceMaps { get; init; } = SourceMapMode.Full;
 
+    /// <summary>The options that are followed by a value.</summary>
+    private static readonly HashSet<string> ValueOptions = new(StringComparer.Ordinal)
+    {
+        "--refs", "--ref-sources", "--generated", "--projects", "--assembly-name", "--bun", "--source-maps",
+    };
+
     /// <summary>
     /// The arguments a command line holds: the ones it was given, or, when its one argument is
     /// <c>@&lt;file&gt;</c>, the ones that file holds, one a line. The SDK hands eqc a file and never
@@ -87,13 +93,17 @@ public sealed class AppBuildOptions
             || arguments[1].StartsWith("--", StringComparison.Ordinal))
             throw new ArgumentException("eqc is handed the source roots and the output folder first.");
 
-        string? Value(string option)
+        // Read in order, an option and then its value: a value that reads like an option (a folder
+        // named `--refs`) is the value it stands as. A flag of the CLI's own, `--watch`, is passed by.
+        var values = new Dictionary<string, string>(StringComparer.Ordinal);
+        for (var at = 2; at < arguments.Count; at++)
         {
-            var at = arguments.ToList().IndexOf(option);
-            if (at < 0) return null;
-            if (at + 1 >= arguments.Count) throw new ArgumentException($"{option} is handed no value.");
-            return arguments[at + 1];
+            if (!ValueOptions.Contains(arguments[at])) continue;
+            if (at + 1 >= arguments.Count) throw new ArgumentException($"{arguments[at]} is handed no value.");
+            values[arguments[at]] = arguments[at + 1];
+            at++;
         }
+        string? Value(string option) => values.GetValueOrDefault(option);
 
         // --source-maps full|external|none (#352): what each module's map carries. `full` links a
         // map with the C# inside it, `external` writes one without the C# and without the link,

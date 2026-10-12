@@ -93,6 +93,17 @@ public class AppBuildArgumentsTests
         options.SourceDirectories.Should().Equal([$"/{Odd.Split(';')[0]}", $"{Odd.Split(';')[1].Trim()}/app"]);
     }
 
+    [Fact]
+    public void AValueThatReadsLikeAnOption_IsTheValueItStandsAs()
+    {
+        // Read in order, an option and then its value. Taken by where its text first appears, the
+        // value `--bun` was read as the option.
+        var options = AppBuildOptions.FromArguments(["src", "out", "--assembly-name", "--bun", "--bun", "/tools/bun"]);
+
+        options.AssemblyName.Should().Be("--bun");
+        options.BunPath.Should().Be("/tools/bun");
+    }
+
     [Theory]
     [InlineData(new[] { "only-one" }, "the source roots and the output folder first")]
     [InlineData(new[] { "--refs", "refs.txt" }, "the source roots and the output folder first")]

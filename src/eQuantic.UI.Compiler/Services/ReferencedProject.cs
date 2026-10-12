@@ -63,9 +63,11 @@ internal sealed class ReferencedProject
         if (!File.Exists(projectsFile))
             throw new FileNotFoundException($"the list of projects is not there: '{projectsFile}'", projectsFile);
 
+        // A line is a path whole, as a line of the response file is an argument whole: a space that
+        // starts or ends a folder's name on macOS and Linux is the folder's.
         var lines = File.ReadAllLines(projectsFile)
-            .Select((text, index) => (Path: text.Trim(), Number: index + 1))
-            .Where(line => line.Path.Length > 0)
+            .Select((text, index) => (Path: text, Number: index + 1))
+            .Where(line => !string.IsNullOrWhiteSpace(line.Path))
             .ToList();
         if (lines.Count % 2 != 0)
             throw new InvalidDataException(

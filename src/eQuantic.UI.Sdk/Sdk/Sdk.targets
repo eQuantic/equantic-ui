@@ -412,19 +412,23 @@
     <Target Name="_EQuanticCompilerArguments" DependsOnTargets="_EQuanticCompilerInputs;ResolveBunPath"
         Condition="'$(EnableEQuanticUICompilation)' == 'true'">
         <PropertyGroup>
-            <_EqcArgumentsFile>$(IntermediateOutputPath)equantic.eqc.rsp</_EqcArgumentsFile>
+            <_EqcArgumentsPath>$(IntermediateOutputPath)equantic.eqc.rsp</_EqcArgumentsPath>
+            <!-- Named in the command relative to the project's directory, the working directory,
+                 whatever IntermediateOutputPath is: an artifacts layout makes it absolute, and an
+                 absolute path is folders a shell would read again. -->
+            <_EqcArgumentsFile>$([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)/', '$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(_EqcArgumentsPath)'))'))</_EqcArgumentsFile>
+            <!-- The source roots as one argument, with no line break in it: a root written on
+                 several lines of a project file carries them, and a line of the file is an argument.
+                 eqc trims the whitespace around each root. -->
+            <_EqcSourceDirsArgument>$(_EqcSourceDirs.Replace('&#13;', '').Replace('&#10;', ''))</_EqcSourceDirsArgument>
         </PropertyGroup>
         <WriteLinesToFile File="$(_EqcProjectsFile)"
             Lines="@(_EqcProject->'%(EqAssembly)%0A%(FullPath)')"
             Overwrite="true" WriteOnlyWhenDifferent="true"
             Condition="'@(_EqcProject)' != ''" />
         <ItemGroup>
-            <!-- The source roots as eqc reads them, one argument: an item each first, which drops the
-                 line breaks and the indentation a root written on several lines carries. -->
-            <_EqcSourceRoot Remove="@(_EqcSourceRoot)" />
-            <_EqcSourceRoot Include="$(_EqcSourceDirs)" />
             <_EqcArgument Remove="@(_EqcArgument)" />
-            <_EqcArgument Include="sources" Value="@(_EqcSourceRoot)" />
+            <_EqcArgument Include="sources" Value="$(_EqcSourceDirsArgument)" />
             <_EqcArgument Include="output" Value="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)" />
             <_EqcArgument Include="refs" Value="--refs" />
             <_EqcArgument Include="refs-file" Value="$(_EqcRefsFile)" />
@@ -447,7 +451,7 @@
             <_EqcArgument Include="source-maps" Value="--source-maps" />
             <_EqcArgument Include="source-maps-mode" Value="$(EQuanticSourceMaps)" />
         </ItemGroup>
-        <WriteLinesToFile File="$(_EqcArgumentsFile)"
+        <WriteLinesToFile File="$(_EqcArgumentsPath)"
             Lines="@(_EqcArgument->'%(Value)')"
             Overwrite="true" WriteOnlyWhenDifferent="true" />
     </Target>

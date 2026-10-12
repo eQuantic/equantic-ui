@@ -35,8 +35,9 @@ public class TheCompilerIsHandedAFileTests
     private static readonly TimeSpan Deadline = TimeSpan.FromMinutes(3);
 
     /// <summary>Runs <c>dotnet</c> from the repository root, whose global.json picks the SDK, and fails
-    /// with the child's output. Its arguments go to it as a list, never through a shell.</summary>
-    private static void Dotnet(params string[] args)
+    /// with the child's output, which it returns. Its arguments go to it as a list, never through a
+    /// shell.</summary>
+    private static string Dotnet(params string[] args)
     {
         var info = new ProcessStartInfo("dotnet")
         {
@@ -60,6 +61,7 @@ public class TheCompilerIsHandedAFileTests
             throw new TimeoutException($"dotnet {string.Join(' ', args)} did not finish within {Deadline}.");
         }
         process.ExitCode.Should().Be(0, output.Result + error.Result);
+        return output.Result;
     }
 
     /// <summary>A name a shell reads as its own: a variable, a command, quotes. Windows takes no bar in
@@ -71,10 +73,10 @@ public class TheCompilerIsHandedAFileTests
     /// the two targets it depends on standing in empty, and the target itself as <c>Sdk.targets</c>
     /// ships it.
     /// </summary>
-    private static string Project() => new XDocument(new XElement("Project",
+    private static string Project(string intermediateOutputPath = "obj/") => new XDocument(new XElement("Project",
         new XElement("PropertyGroup",
             new XElement("EnableEQuanticUICompilation", "true"),
-            new XElement("IntermediateOutputPath", "obj/"),
+            new XElement("IntermediateOutputPath", intermediateOutputPath),
             new XElement("EQuanticOutputPath", "wwwroot/_equantic/"),
             // Written on two lines, as a project file may write a property: the roots are read as
             // eqc reads them, with no line break carried into an argument.
@@ -126,6 +128,31 @@ public class TheCompilerIsHandedAFileTests
         finally
         {
             Directory.Delete(Path.GetDirectoryName(directory)!, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void TheResponseFile_IsNamedRelativeToTheProject_WhereverObjIs()
+    {
+        // An artifacts layout makes IntermediateOutputPath absolute, and the absolute path is the
+        // folders a shell would read again: the command names the file from the project's directory.
+        var root = Path.Combine(Directory.CreateTempSubdirectory("eq-handed-").FullName, Odd);
+        var directory = Path.Combine(root, "App");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var probe = Path.Combine(directory, "probe.proj");
+            File.WriteAllText(probe, Project("$(MSBuildProjectDirectory)/../artifacts/obj/"));
+
+            var named = Dotnet("msbuild", probe, "-t:_EQuanticCompilerArguments", "-nologo",
+                "-getProperty:_EqcArgumentsFile").Trim();
+
+            named.Replace('\\', '/').Should().Be("../artifacts/obj/equantic.eqc.rsp");
+            File.Exists(Path.Combine(root, "artifacts", "obj", "equantic.eqc.rsp")).Should().BeTrue();
+        }
+        finally
+        {
+            Directory.Delete(Path.GetDirectoryName(root)!, recursive: true);
         }
     }
 
