@@ -98,6 +98,16 @@ beside it, so the strings follow from the component being compiled. The rule tha
 the app's root contributes every key was written for the SDK's own library, whose reads this build
 cannot see. A referenced project's reads are seen, so it contributes the keys read.
 
+**A catalogue's id is decided once for the build.** A read of `Strings.Title` is written as the
+catalogue's id and the key, and the id is the class's simple name while that is unique among the
+resource classes of the compilation the file is compiled in, namespace-qualified once two share a
+name. With a compilation per project that view differs by file: an app's `Strings` and a library's
+`Strings` would both be `Strings`, and one's `Title` would overwrite the other's in the catalog. So
+the ids are computed once, over the resource classes of the app and of every referenced project, and
+every file reads that one answer, by the class's assembly and full name, since a symbol does not
+compare equal across the compilations a file is recompiled in. An app with one `Strings` and no
+referenced catalogue keeps the id it has today.
+
 ## Risks / Trade-offs
 
 - [A symbol of a referenced project belongs to another assembly] → No rule in the compiler compares a

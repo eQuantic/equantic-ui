@@ -124,10 +124,20 @@ holds, SHALL be revived in the browser by its own shape, as one the app declares
 ### Requirement: A string of a referenced project's catalogue reaches the browser
 
 When a reached type reads a string from a `.resx` of its own project, the client string catalogs
-SHALL hold that string for each culture the project has a `.resx` for.
+SHALL hold that string for each culture the project has a `.resx` for. A catalogue SHALL be told
+apart from every other one of the app and of its referenced projects, whichever file reads it: two
+catalogues of one class name SHALL NOT share a key.
 
 #### Scenario: A component of a referenced project reads its project's `Strings.Brand`
 
 - **WHEN** a page places a referenced project's component that reads `Strings.Brand` from that
   project's `Strings.resx`, which has a `Strings.pt-BR.resx` beside it
 - **THEN** the neutral catalog and the `pt-BR` one hold that string, and the hydrated page shows it
+
+#### Scenario: The app and the referenced project each have a `Strings`
+
+- **WHEN** a page reads `Title` from the app's own `Strings` and places a referenced project's
+  component that reads `Title` from that project's `Strings`, each with a `pt-PT` and a `pt-BR`
+  `.resx`, and the two texts differ
+- **THEN** the neutral, the `pt-PT` and the `pt-BR` catalogs each hold both strings, and each read
+  shows its own project's text in each culture
