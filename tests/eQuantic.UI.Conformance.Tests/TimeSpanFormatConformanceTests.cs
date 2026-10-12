@@ -59,6 +59,11 @@ public class TimeSpanFormatConformanceTests
             + "+ b.ToString(\"G\", System.Globalization.CultureInfo.CurrentCulture) + \"|\" "
             + "+ b.ToString(\"g\", null) + \"|\" + a.ToString(@\"hh\\:mm\", System.Globalization.CultureInfo.InvariantCulture) + \"|\" "
             + "+ a.ToString(null, System.Globalization.CultureInfo.InvariantCulture);",
+        // A format and a provider bound by name are the ones they name, in either order: a null provider
+        // named first was read as the format, and the value written with none (found in review).
+        Spans + "return b.ToString(formatProvider: null, format: \"g\") + \"|\" "
+            + "+ a.ToString(formatProvider: System.Globalization.CultureInfo.InvariantCulture, format: @\"hh\\:mm\") + \"|\" "
+            + "+ b.ToString(format: \"G\", formatProvider: null);",
         // A null TimeSpan writes nothing, its ToString with no format included, which read it through null.
         "TimeSpan? n = null; TimeSpan? m = new TimeSpan(1, 2, 3); "
             + "return $\"[{n:g}]|[{m:g}]|[{n?.ToString(\"G\")}]|[{n.ToString()}]|{m.ToString()}|\" + m?.ToString(\"G\");",

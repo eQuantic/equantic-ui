@@ -220,6 +220,8 @@ public class CultureCrossingTests
     [InlineData("TimeSpan.FromHours(1).ToString(\"G\", CultureInfo.CurrentCulture)", ", 'G')")]
     [InlineData("TimeSpan.FromHours(1).ToString(_pattern, null)", ", this._pattern)")]
     [InlineData("TimeSpan.FromHours(1).ToString(null, CultureInfo.InvariantCulture)", ", null, undefined, true)")]
+    [InlineData("TimeSpan.FromHours(1).ToString(formatProvider: null, format: \"g\")", ", 'g')")]
+    [InlineData("TimeSpan.FromHours(1).ToString(formatProvider: CultureInfo.InvariantCulture, format: \"G\")", ", 'G', undefined, true)")]
     public void ATimeSpansToString_IsTheFormatters(string body, string emitted)
     {
         var result = Compile(body);
