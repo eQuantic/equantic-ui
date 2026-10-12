@@ -51,11 +51,18 @@
             when the working tree is modified. Failure is tolerated on purpose — no git, a tarball,
             a shallow copy — and the line still names the branch and the path.
         -->
-        <Exec Command="git -C &quot;$([System.IO.Path]::GetFullPath('$(_DevRootDir)..'))&quot; describe --always --dirty --abbrev=8"
+        <ItemGroup>
+            <_EqDescribeArgument Include="repository" Option="-C" Value="$([System.IO.Path]::GetFullPath('$(_DevRootDir)..'))" />
+            <_EqDescribeArgument Include="command" Value="describe" />
+            <_EqDescribeArgument Include="always" Value="--always" />
+            <_EqDescribeArgument Include="dirty" Value="--dirty" />
+            <_EqDescribeArgument Include="abbreviation" Value="--abbrev=8" />
+        </ItemGroup>
+        <RunProgram Program="git" Arguments="@(_EqDescribeArgument)"
               ConsoleToMSBuild="true" StandardOutputImportance="low"
               ContinueOnError="true" IgnoreExitCode="true">
             <Output TaskParameter="ConsoleOutput" PropertyName="_EqDevDescribe" />
-        </Exec>
+        </RunProgram>
         <PropertyGroup>
             <_EqDevAt Condition="'$(_EqDevDescribe)' != ''"> @ $(_EqDevDescribe.Trim())</_EqDevAt>
         </PropertyGroup>
@@ -183,6 +190,8 @@
         <_EqSourceTree Condition="Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/eQuantic.UI.Native.Build.csproj')">true</_EqSourceTree>
         <_EqIconToolDir Condition="'$(_EqSourceTree)' == 'true'">$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/bin/$(Configuration)/net10.0/</_EqIconToolDir>
         <_EqIconToolDir Condition="'$(_EqIconToolDir)' == ''">$(MSBuildThisFileDirectory)../tools/net10.0/</_EqIconToolDir>
+        <_EqTasksAssembly Condition="'$(_EqSourceTree)' == 'true'">$(MSBuildThisFileDirectory)../../eQuantic.UI.Sdk.Tasks/bin/$(Configuration)/netstandard2.0/eQuantic.UI.Sdk.Tasks.dll</_EqTasksAssembly>
+        <_EqTasksAssembly Condition="'$(_EqTasksAssembly)' == ''">$(MSBuildThisFileDirectory)../tools/netstandard2.0/eQuantic.UI.Sdk.Tasks.dll</_EqTasksAssembly>
         <_EqIconDir>$(MSBuildProjectDirectory)/obj/eQuantic</_EqIconDir>
         <_EqAssetsGenerated>$(EQuanticGeneratedAssetsDir)</_EqAssetsGenerated>
         <_EqIconSetDir>$(_EqIconDir)/Assets.xcassets</_EqIconSetDir>
@@ -202,6 +211,15 @@
         <_EqWindowsHead Condition="'$(_EqPlatform)' == '' AND '$(TargetFramework)' != '' AND ('$(OutputType)' == 'Exe' OR '$(OutputType)' == 'WinExe') AND '$([MSBuild]::IsOSPlatform(`Windows`))' == 'true'">true</_EqWindowsHead>
         <_EqWindowsIco>$(_EqIconDir)/$(AssemblyName).ico</_EqWindowsIco>
     </PropertyGroup>
+    <!--
+        Every program this SDK starts, it starts with RunProgram: a program and a list of arguments,
+        with no shell between them (#841), as the web SDK does. A source tree loads the task in a
+        task host that ends with the build, since it builds the assembly in the same graph.
+    -->
+    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.RunProgram" AssemblyFile="$(_EqTasksAssembly)"
+               TaskFactory="TaskHostFactory" Condition="'$(_EqSourceTree)' == 'true'" />
+    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.RunProgram" AssemblyFile="$(_EqTasksAssembly)"
+               Condition="'$(_EqSourceTree)' != 'true'" />
 
     <!--
         The executable's icon on Windows, from the same Assets/AppIcon — set at EVALUATION by literal
@@ -259,8 +277,12 @@
                  RemoveProperties="%(ProjectReference.GlobalPropertiesToRemove)" />
         <Error Condition="!Exists('$(_EqIconToolDir)eqicon.dll')" Code="EQ4001"
                Text="This app declares an icon ($(EQuanticAppIconSource)) but the eQuantic icon tool is missing at '$(_EqIconToolDir)eqicon.dll'. In a source-tree build this is a broken build graph (eQuantic.UI.Native.Build did not build); from a package the SDK package is broken. Neither is fixed by building twice." />
-        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --android &quot;$(_EqAssetsGenerated)/android/res&quot;"
-              StandardOutputImportance="normal" />
+        <ItemGroup>
+            <_EqAndroidIconArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
+            <_EqAndroidIconArgument Include="source" Option="--source" Value="$(EQuanticAppIconSource)" />
+            <_EqAndroidIconArgument Include="resources" Option="--android" Value="$(_EqAssetsGenerated)/android/res" />
+        </ItemGroup>
+        <RunProgram Program="dotnet" Arguments="@(_EqAndroidIconArgument)" StandardOutputImportance="normal" />
     </Target>
 
     <!--
@@ -356,20 +378,24 @@
             The `hardened` argument below carries the CONFIGURATION half of EQ4003, because that
             half is this file's to know and the other half — which of Apple's families a signature
             consults — is the vocabulary's. It is passed VERBATIM, and the tool mirrors the question
-            asked a few lines down (`_EqHardenedArg`) rather than being told the answer: hardening is
+            asked a few lines down (`_EqSignOption`) rather than being told the answer: hardening is
             on for `true` and off for every other non-empty value, so `False`, `off` and the typo
             `ture` are all builds without it. EMPTY is the case that is not a mistake at all — an
             ordinary development build that never asked, and the one a warning here used to fire on
             at every single build.
         -->
-        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; entitlements --assembly &quot;$(TargetDir)$(TargetFileName)&quot; --plist &quot;$(_EqIconDir)/$(AssemblyName).entitlements&quot; --also &quot;$(_EqRuntimeEntitlements)&quot; --hardened &quot;$(EQuanticHardenedRuntime)&quot;"
-              StandardOutputImportance="normal" />
+        <ItemGroup>
+            <_EqEntitlementsArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
+            <_EqEntitlementsArgument Include="command" Value="entitlements" />
+            <_EqEntitlementsArgument Include="assembly" Option="--assembly" Value="$(TargetDir)$(TargetFileName)" />
+            <_EqEntitlementsArgument Include="plist" Option="--plist" Value="$(_EqIconDir)/$(AssemblyName).entitlements" />
+            <_EqEntitlementsArgument Include="runtime" Option="--also" Value="$(_EqRuntimeEntitlements)" />
+            <_EqEntitlementsArgument Include="hardened" Option="--hardened" Value="$(EQuanticHardenedRuntime)" />
+        </ItemGroup>
+        <RunProgram Program="dotnet" Arguments="@(_EqEntitlementsArgument)" StandardOutputImportance="normal" />
 
         <PropertyGroup>
             <_EqEntitlements>$(_EqIconDir)/$(AssemblyName).entitlements</_EqEntitlements>
-            <!-- Only when the app declared some: signing WITH an empty entitlements file is not the
-                 same as signing without one, and it grants nothing while still changing the signature. -->
-            <_EqEntitlementsArg Condition="Exists('$(_EqEntitlements)')">--entitlements "$(_EqEntitlements)"</_EqEntitlementsArg>
 
             <!-- Ad hoc unless the app names a real identity. Ad hoc is right for development and
                  says so honestly: it proves nothing about origin, and it is what lets a local app be
@@ -380,8 +406,14 @@
                  because notarization requires both. -->
             <_EqSignIdentity>-</_EqSignIdentity>
             <_EqSignIdentity Condition="'$(EQuanticSigningIdentity)' != ''">$(EQuanticSigningIdentity)</_EqSignIdentity>
-            <_EqHardenedArg Condition="'$(EQuanticHardenedRuntime)' == 'true'">--options runtime</_EqHardenedArg>
         </PropertyGroup>
+        <!-- The entitlements only when the app declared some: signing WITH an empty entitlements file
+             is not the same as signing without one, and it grants nothing while still changing the
+             signature. -->
+        <ItemGroup>
+            <_EqSignOption Include="hardened runtime" Option="--options" Value="runtime" Condition="'$(EQuanticHardenedRuntime)' == 'true'" />
+            <_EqSignOption Include="entitlements" Option="--entitlements" Value="$(_EqEntitlements)" Condition="Exists('$(_EqEntitlements)')" />
+        </ItemGroup>
 
         <!--
             An entitlement the app declares but never gets is the failure this whole block exists to
@@ -443,13 +475,19 @@
                  MSB4184 — the whole build fails on a property that is normally set by the SDK and
                  is not guaranteed to be. Nothing here needs PublishDir to exist; the sibling-build
                  rule below finds a publish tree anyway. -->
-            <_EqExcludeArgs Condition="'$(PublishDir)' != ''">--exclude &quot;$([System.IO.Path]::GetFullPath('$(PublishDir)'))&quot;</_EqExcludeArgs>
-            <_EqExcludeArgs Condition="'@(_EqOtherBuild)' != ''">$(_EqExcludeArgs) --exclude &quot;@(_EqOtherBuild, '&quot; --exclude &quot;')&quot;</_EqExcludeArgs>
         </PropertyGroup>
+        <ItemGroup>
+            <_EqBundleExclude Include="publish" Value="$([System.IO.Path]::GetFullPath('$(PublishDir)'))" Condition="'$(PublishDir)' != ''" />
+            <_EqBundleExclude Include="@(_EqOtherBuild)" Value="%(Identity)" />
+        </ItemGroup>
 
-        <Exec Condition="'$(EQuanticAppIconSource)' != ''"
-              Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --macos &quot;$(_EqIcns)&quot;"
-              StandardOutputImportance="normal" />
+        <ItemGroup Condition="'$(EQuanticAppIconSource)' != ''">
+            <_EqMacIconArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
+            <_EqMacIconArgument Include="source" Option="--source" Value="$(EQuanticAppIconSource)" />
+            <_EqMacIconArgument Include="icns" Option="--macos" Value="$(_EqIcns)" />
+        </ItemGroup>
+        <RunProgram Condition="'$(EQuanticAppIconSource)' != ''"
+              Program="dotnet" Arguments="@(_EqMacIconArgument)" StandardOutputImportance="normal" />
 
         <!--
             The bundle AND its payload in one call. What belongs inside is decided in C#
@@ -460,9 +498,25 @@
             build-output bundle that swallows it ships an entire second copy of the app inside
             itself — 86 MB of it, measured on this repo's own desktop sample after one publish.
         -->
-        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; bundle --app &quot;$(_EqBundleDir)&quot; --exec &quot;$(AssemblyName)&quot; --name &quot;$(_EqAppName)&quot; --id &quot;$(_EqBundleId)&quot; --version &quot;$(Version)&quot; --icns &quot;$(_EqIcns)&quot; --capabilities &quot;$(TargetDir)$(TargetFileName)&quot; --payload &quot;$(TargetDir)&quot; $(_EqExcludeArgs)"
-              StandardOutputImportance="normal" />
-        <Exec Command="chmod +x &quot;$(_EqBundleDir)/Contents/MacOS/$(AssemblyName)&quot;" />
+        <ItemGroup>
+            <_EqMacBundleArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
+            <_EqMacBundleArgument Include="command" Value="bundle" />
+            <_EqMacBundleArgument Include="app" Option="--app" Value="$(_EqBundleDir)" />
+            <_EqMacBundleArgument Include="executable" Option="--exec" Value="$(AssemblyName)" />
+            <_EqMacBundleArgument Include="name" Option="--name" Value="$(_EqAppName)" />
+            <_EqMacBundleArgument Include="identifier" Option="--id" Value="$(_EqBundleId)" />
+            <_EqMacBundleArgument Include="version" Option="--version" Value="$(Version)" />
+            <_EqMacBundleArgument Include="icns" Option="--icns" Value="$(_EqIcns)" />
+            <_EqMacBundleArgument Include="capabilities" Option="--capabilities" Value="$(TargetDir)$(TargetFileName)" />
+            <_EqMacBundleArgument Include="payload" Option="--payload" Value="$(TargetDir)" />
+            <_EqMacBundleArgument Include="@(_EqBundleExclude)" Option="--exclude" />
+        </ItemGroup>
+        <RunProgram Program="dotnet" Arguments="@(_EqMacBundleArgument)" StandardOutputImportance="normal" />
+        <ItemGroup>
+            <_EqMacModeArgument Include="mode" Value="+x" />
+            <_EqMacModeArgument Include="executable" Value="$(_EqBundleDir)/Contents/MacOS/$(AssemblyName)" />
+        </ItemGroup>
+        <RunProgram Program="chmod" Arguments="@(_EqMacModeArgument)" />
 
         <!--
             And SIGN it, ad hoc, under the bundle's own identifier. Without this the identity is
@@ -476,8 +530,15 @@
             (Full Disk Access) evaporates between builds, and nobody connects a lost permission to
             a warning that scrolled past yesterday. A loud build is the cheap version of that hour.
         -->
-        <Exec Command="codesign --force --deep --sign &quot;$(_EqSignIdentity)&quot; $(_EqHardenedArg) $(_EqEntitlementsArg) --identifier &quot;$(_EqBundleId)&quot; &quot;$(_EqBundleDir)&quot;"
-              StandardOutputImportance="normal" />
+        <ItemGroup>
+            <_EqMacSignArgument Include="force" Value="--force" />
+            <_EqMacSignArgument Include="deep" Value="--deep" />
+            <_EqMacSignArgument Include="identity" Option="--sign" Value="$(_EqSignIdentity)" />
+            <_EqMacSignArgument Include="@(_EqSignOption)" />
+            <_EqMacSignArgument Include="identifier" Option="--identifier" Value="$(_EqBundleId)" />
+            <_EqMacSignArgument Include="bundle" Value="$(_EqBundleDir)" />
+        </ItemGroup>
+        <RunProgram Program="codesign" Arguments="@(_EqMacSignArgument)" StandardOutputImportance="normal" />
     </Target>
 
     <!--
@@ -505,23 +566,56 @@
             <_EqShipDir>$(_EqPublishDir)$(_EqAppName).app</_EqShipDir>
             <_EqDmg>$(_EqPublishDir)$(_EqAppName).dmg</_EqDmg>
             <_EqNotaryZip>$(_EqIconDir)/$(AssemblyName).notarize.zip</_EqNotaryZip>
+            <_EqNotaryBy Condition="'$(EQuanticNotaryProfile)' != ''">profile</_EqNotaryBy>
+            <_EqNotaryBy Condition="'$(_EqNotaryBy)' == '' AND '$(EQuanticNotaryAppleId)' != '' AND '$(EQuanticNotaryTeamId)' != '' AND '$(EQuanticNotaryPassword)' != ''">credentials</_EqNotaryBy>
 
             <!-- Credentials, never the project's business to hold: either a notarytool keychain
                  profile a developer stored once, or the three values a CI holds as secrets. Both
                  spellings, because a laptop has a keychain and a build agent does not. -->
-            <_EqNotaryArgs Condition="'$(EQuanticNotaryProfile)' != ''">--keychain-profile &quot;$(EQuanticNotaryProfile)&quot;</_EqNotaryArgs>
-            <_EqNotaryArgs Condition="'$(_EqNotaryArgs)' == '' AND '$(EQuanticNotaryAppleId)' != '' AND '$(EQuanticNotaryTeamId)' != '' AND '$(EQuanticNotaryPassword)' != ''">--apple-id &quot;$(EQuanticNotaryAppleId)&quot; --team-id &quot;$(EQuanticNotaryTeamId)&quot; --password &quot;$(EQuanticNotaryPassword)&quot;</_EqNotaryArgs>
         </PropertyGroup>
+        <ItemGroup>
+            <_EqNotaryCredential Include="profile" Option="--keychain-profile" Value="$(EQuanticNotaryProfile)" Condition="'$(_EqNotaryBy)' == 'profile'" />
+            <_EqNotaryCredential Include="apple id" Option="--apple-id" Value="$(EQuanticNotaryAppleId)" Condition="'$(_EqNotaryBy)' == 'credentials'" />
+            <_EqNotaryCredential Include="team" Option="--team-id" Value="$(EQuanticNotaryTeamId)" Condition="'$(_EqNotaryBy)' == 'credentials'" />
+            <_EqNotaryCredential Include="password" Option="--password" Value="$(EQuanticNotaryPassword)" Condition="'$(_EqNotaryBy)' == 'credentials'" />
+        </ItemGroup>
 
-        <Exec Condition="'$(EQuanticAppIconSource)' != ''"
-              Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --macos &quot;$(_EqIcns)&quot;"
-              StandardOutputImportance="normal" />
+        <ItemGroup Condition="'$(EQuanticAppIconSource)' != ''">
+            <_EqShipIconArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
+            <_EqShipIconArgument Include="source" Option="--source" Value="$(EQuanticAppIconSource)" />
+            <_EqShipIconArgument Include="icns" Option="--macos" Value="$(_EqIcns)" />
+        </ItemGroup>
+        <RunProgram Condition="'$(EQuanticAppIconSource)' != ''"
+              Program="dotnet" Arguments="@(_EqShipIconArgument)" StandardOutputImportance="normal" />
 
-        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; bundle --app &quot;$(_EqShipDir)&quot; --exec &quot;$(AssemblyName)&quot; --name &quot;$(_EqAppName)&quot; --id &quot;$(_EqBundleId)&quot; --version &quot;$(Version)&quot; --icns &quot;$(_EqIcns)&quot; --capabilities &quot;$(TargetDir)$(TargetFileName)&quot; --payload &quot;$(_EqPublishDir)&quot; --exclude &quot;$(_EqDmg)&quot;"
-              StandardOutputImportance="normal" />
-        <Exec Command="chmod +x &quot;$(_EqShipDir)/Contents/MacOS/$(AssemblyName)&quot;" />
-        <Exec Command="codesign --force --deep --sign &quot;$(_EqSignIdentity)&quot; $(_EqHardenedArg) $(_EqEntitlementsArg) --identifier &quot;$(_EqBundleId)&quot; &quot;$(_EqShipDir)&quot;"
-              StandardOutputImportance="normal" />
+        <ItemGroup>
+            <_EqShipBundleArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
+            <_EqShipBundleArgument Include="command" Value="bundle" />
+            <_EqShipBundleArgument Include="app" Option="--app" Value="$(_EqShipDir)" />
+            <_EqShipBundleArgument Include="executable" Option="--exec" Value="$(AssemblyName)" />
+            <_EqShipBundleArgument Include="name" Option="--name" Value="$(_EqAppName)" />
+            <_EqShipBundleArgument Include="identifier" Option="--id" Value="$(_EqBundleId)" />
+            <_EqShipBundleArgument Include="version" Option="--version" Value="$(Version)" />
+            <_EqShipBundleArgument Include="icns" Option="--icns" Value="$(_EqIcns)" />
+            <_EqShipBundleArgument Include="capabilities" Option="--capabilities" Value="$(TargetDir)$(TargetFileName)" />
+            <_EqShipBundleArgument Include="payload" Option="--payload" Value="$(_EqPublishDir)" />
+            <_EqShipBundleArgument Include="disk image" Option="--exclude" Value="$(_EqDmg)" />
+        </ItemGroup>
+        <RunProgram Program="dotnet" Arguments="@(_EqShipBundleArgument)" StandardOutputImportance="normal" />
+        <ItemGroup>
+            <_EqShipModeArgument Include="mode" Value="+x" />
+            <_EqShipModeArgument Include="executable" Value="$(_EqShipDir)/Contents/MacOS/$(AssemblyName)" />
+        </ItemGroup>
+        <RunProgram Program="chmod" Arguments="@(_EqShipModeArgument)" />
+        <ItemGroup>
+            <_EqShipSignArgument Include="force" Value="--force" />
+            <_EqShipSignArgument Include="deep" Value="--deep" />
+            <_EqShipSignArgument Include="identity" Option="--sign" Value="$(_EqSignIdentity)" />
+            <_EqShipSignArgument Include="@(_EqSignOption)" />
+            <_EqShipSignArgument Include="identifier" Option="--identifier" Value="$(_EqBundleId)" />
+            <_EqShipSignArgument Include="bundle" Value="$(_EqShipDir)" />
+        </ItemGroup>
+        <RunProgram Program="codesign" Arguments="@(_EqShipSignArgument)" StandardOutputImportance="normal" />
 
         <!-- Ad hoc is fine on a laptop and is NOT distributable: Gatekeeper refuses it on any
              machine that did not build it. Said once, at publish, where it is actionable. -->
@@ -535,22 +629,34 @@
             the way notarytool expects (ditto, keeping the bundle), submit and WAIT, then staple the
             ticket into the bundle so it verifies with no network at all.
         -->
-        <Message Condition="'$(_EqNotaryArgs)' != ''" Importance="high"
+        <Message Condition="'$(_EqNotaryBy)' != ''" Importance="high"
                  Text="eQuantic.UI: submitting $(_EqAppName).app for notarization — Apple decides how long this takes." />
-        <Exec Condition="'$(_EqNotaryArgs)' != ''"
-              Command="ditto -c -k --keepParent &quot;$(_EqShipDir)&quot; &quot;$(_EqNotaryZip)&quot;" />
-        <Exec Condition="'$(_EqNotaryArgs)' != ''"
-              Command="xcrun notarytool submit &quot;$(_EqNotaryZip)&quot; $(_EqNotaryArgs) --wait"
-              StandardOutputImportance="high" />
-        <Exec Condition="'$(_EqNotaryArgs)' != ''"
-              Command="xcrun stapler staple &quot;$(_EqShipDir)&quot;"
+        <ItemGroup Condition="'$(_EqNotaryBy)' != ''">
+            <_EqNotaryZipArgument Include="create" Value="-c" />
+            <_EqNotaryZipArgument Include="zip" Value="-k" />
+            <_EqNotaryZipArgument Include="keep parent" Value="--keepParent" />
+            <_EqNotaryZipArgument Include="bundle" Value="$(_EqShipDir)" />
+            <_EqNotaryZipArgument Include="archive" Value="$(_EqNotaryZip)" />
+            <_EqNotarySubmitArgument Include="tool" Value="notarytool" />
+            <_EqNotarySubmitArgument Include="command" Value="submit" />
+            <_EqNotarySubmitArgument Include="archive" Value="$(_EqNotaryZip)" />
+            <_EqNotarySubmitArgument Include="@(_EqNotaryCredential)" />
+            <_EqNotarySubmitArgument Include="wait" Value="--wait" />
+            <_EqStapleArgument Include="tool" Value="stapler" />
+            <_EqStapleArgument Include="command" Value="staple" />
+            <_EqStapleArgument Include="bundle" Value="$(_EqShipDir)" />
+        </ItemGroup>
+        <RunProgram Condition="'$(_EqNotaryBy)' != ''" Program="ditto" Arguments="@(_EqNotaryZipArgument)" />
+        <RunProgram Condition="'$(_EqNotaryBy)' != ''" Program="xcrun" Arguments="@(_EqNotarySubmitArgument)"
+              EchoOff="true" StandardOutputImportance="high" />
+        <RunProgram Condition="'$(_EqNotaryBy)' != ''" Program="xcrun" Arguments="@(_EqStapleArgument)"
               StandardOutputImportance="normal" />
-        <Delete Condition="'$(_EqNotaryArgs)' != ''" Files="$(_EqNotaryZip)" />
+        <Delete Condition="'$(_EqNotaryBy)' != ''" Files="$(_EqNotaryZip)" />
 
         <!-- Notarizing an AD-HOC signature cannot succeed — Apple has nothing to attach a ticket
              to. Better to say which of the two is missing than to let notarytool answer it in its
              own vocabulary five minutes later. -->
-        <Warning Condition="'$(_EqNotaryArgs)' != '' AND '$(EQuanticSigningIdentity)' == ''"
+        <Warning Condition="'$(_EqNotaryBy)' != '' AND '$(EQuanticSigningIdentity)' == ''"
                  Text="Notarization needs a real signature: set EQuanticSigningIdentity as well, or Apple has nothing to issue a ticket for." />
 
         <!--
@@ -559,12 +665,21 @@
             the image itself is signed with the same identity so the download is not a stranger.
         -->
         <Delete Condition="'$(EQuanticPackageFormat)' == 'Dmg'" Files="$(_EqDmg)" />
-        <Exec Condition="'$(EQuanticPackageFormat)' == 'Dmg'"
-              Command="hdiutil create -volname &quot;$(_EqAppName)&quot; -srcfolder &quot;$(_EqShipDir)&quot; -ov -format UDZO &quot;$(_EqDmg)&quot;"
-              StandardOutputImportance="normal" />
-        <Exec Condition="'$(EQuanticPackageFormat)' == 'Dmg' AND '$(EQuanticSigningIdentity)' != ''"
-              Command="codesign --force --sign &quot;$(_EqSignIdentity)&quot; &quot;$(_EqDmg)&quot;"
-              StandardOutputImportance="normal" />
+        <ItemGroup Condition="'$(EQuanticPackageFormat)' == 'Dmg'">
+            <_EqDiskImageArgument Include="command" Value="create" />
+            <_EqDiskImageArgument Include="volume" Option="-volname" Value="$(_EqAppName)" />
+            <_EqDiskImageArgument Include="bundle" Option="-srcfolder" Value="$(_EqShipDir)" />
+            <_EqDiskImageArgument Include="overwrite" Value="-ov" />
+            <_EqDiskImageArgument Include="format" Option="-format" Value="UDZO" />
+            <_EqDiskImageArgument Include="image" Value="$(_EqDmg)" />
+            <_EqDiskImageSignArgument Include="force" Value="--force" />
+            <_EqDiskImageSignArgument Include="identity" Option="--sign" Value="$(_EqSignIdentity)" />
+            <_EqDiskImageSignArgument Include="image" Value="$(_EqDmg)" />
+        </ItemGroup>
+        <RunProgram Condition="'$(EQuanticPackageFormat)' == 'Dmg'"
+              Program="hdiutil" Arguments="@(_EqDiskImageArgument)" StandardOutputImportance="normal" />
+        <RunProgram Condition="'$(EQuanticPackageFormat)' == 'Dmg' AND '$(EQuanticSigningIdentity)' != ''"
+              Program="codesign" Arguments="@(_EqDiskImageSignArgument)" StandardOutputImportance="normal" />
 
         <Message Importance="high" Text="eQuantic.UI: $(_EqShipDir)" />
         <Message Condition="'$(EQuanticPackageFormat)' == 'Dmg'" Importance="high" Text="eQuantic.UI: $(_EqDmg)" />
@@ -597,8 +712,13 @@
 
     <Target Name="EQuanticCapabilityManifest" AfterTargets="Compile"
             Condition="'$(_EqPlatform)' == 'ios'">
-        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; capabilities --assembly &quot;@(IntermediateAssembly)&quot; --plist &quot;$(_EqCapabilityPlist)&quot;"
-              StandardOutputImportance="normal" />
+        <ItemGroup>
+            <_EqCapabilitiesArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
+            <_EqCapabilitiesArgument Include="command" Value="capabilities" />
+            <_EqCapabilitiesArgument Include="assembly" Option="--assembly" Value="@(IntermediateAssembly)" />
+            <_EqCapabilitiesArgument Include="plist" Option="--plist" Value="$(_EqCapabilityPlist)" />
+        </ItemGroup>
+        <RunProgram Program="dotnet" Arguments="@(_EqCapabilitiesArgument)" StandardOutputImportance="normal" />
         <ItemGroup Condition="Exists('$(_EqCapabilityPlist)')">
             <PartialAppManifest Include="$(_EqCapabilityPlist)" />
         </ItemGroup>
@@ -611,9 +731,12 @@
             <!-- No TargetFramework during restore: write EVERYTHING the app's platforms could ask
                  for. Deriving four small PNGs nobody reads costs less than a build that cannot see
                  the one it needs. -->
-            <_EqIconArgs Condition="'$(TargetFramework)' == ''">--android "$(_EqAssetsGenerated)/android/res"</_EqIconArgs>
-            <_EqIconArgs Condition="'$(_EqPlatform)' == 'ios'">--out "$(_EqIconSetDir)"</_EqIconArgs>
-            <_EqIconArgs Condition="'$(_EqWindowsHead)' == 'true'">--windows "$(_EqWindowsIco)"</_EqIconArgs>
+            <_EqIconOption Condition="'$(TargetFramework)' == ''">--android</_EqIconOption>
+            <_EqIconOutput Condition="'$(TargetFramework)' == ''">$(_EqAssetsGenerated)/android/res</_EqIconOutput>
+            <_EqIconOption Condition="'$(_EqPlatform)' == 'ios'">--out</_EqIconOption>
+            <_EqIconOutput Condition="'$(_EqPlatform)' == 'ios'">$(_EqIconSetDir)</_EqIconOutput>
+            <_EqIconOption Condition="'$(_EqWindowsHead)' == 'true'">--windows</_EqIconOption>
+            <_EqIconOutput Condition="'$(_EqWindowsHead)' == 'true'">$(_EqWindowsIco)</_EqIconOutput>
         </PropertyGroup>
         <ItemGroup Condition="'$(_EqPlatform)' == 'ios'">
             <!-- Items born inside a target carry no provenance, and Apple's packaging asks for it.
@@ -623,9 +746,13 @@
                 <LocalMSBuildProjectFullPath>$(MSBuildProjectFullPath)</LocalMSBuildProjectFullPath>
             </ImageAsset>
         </ItemGroup>
-        <Exec Condition="'$(_EqIconArgs)' != ''"
-              Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; $(_EqIconArgs)"
-              StandardOutputImportance="normal" />
+        <ItemGroup Condition="'$(_EqIconOption)' != ''">
+            <_EqAppIconArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
+            <_EqAppIconArgument Include="source" Option="--source" Value="$(EQuanticAppIconSource)" />
+            <_EqAppIconArgument Include="output" Option="$(_EqIconOption)" Value="$(_EqIconOutput)" />
+        </ItemGroup>
+        <RunProgram Condition="'$(_EqIconOption)' != ''"
+              Program="dotnet" Arguments="@(_EqAppIconArgument)" StandardOutputImportance="normal" />
     </Target>
 
 </Project>
