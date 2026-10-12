@@ -66,6 +66,7 @@ import {
   DateTime as DotNetDateTime,
   DateTimeOffset,
   TimeOnly,
+  TimeSpan,
   utcOffsetOf,
   wallOffsetMs,
   type DateTimeKind,
@@ -86,6 +87,7 @@ import {
   type Tie,
 } from './exact-decimal';
 import { drawPicture, type PictureNumber, type PictureSymbols } from './number-picture';
+import { timeSpanText } from './timespan-text';
 
 /** Which C# number a JavaScript number stands for, by the name of its .NET type. A number cannot
  * say it is a double, a single or an int, so whoever knows passes it: the compiler, from the static
@@ -184,6 +186,9 @@ function formatCore(value: any, format: string | null, kind: NumberKind): string
     return formatNumber(value, format, kind);
   const moment = momentOf(value);
   if (moment !== null) return formatDate(moment, format);
+  // A duration's format is its own, its general forms with the culture's decimal separator: the twin's
+  // toString takes none, so every format wrote the constant text (#837).
+  if (value instanceof TimeSpan) return timeSpanText(value.ticks, format, symbols().decimal);
   // A value that takes no format writes its own text, as one that is not IFormattable does in .NET.
   return general(value, kind);
 }

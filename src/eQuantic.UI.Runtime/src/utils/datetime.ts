@@ -21,6 +21,7 @@ import { activeFormatData } from './culture';
 import { hash } from './hash';
 import { exception, is } from './exceptions';
 import { round } from './dotnet-math';
+import { timeSpanText } from './timespan-text';
 
 /** A null text handed to `Parse`, as .NET words it: `DateTime`, `DateOnly` and `TimeOnly` name it `s`,
  * `TimeSpan` and `DateTimeOffset` name it `input`. Read through null, it was a NullReferenceException. */
@@ -260,21 +261,10 @@ export class TimeSpan {
     return hash(this.ticks);
   }
 
-  /** .NET "c" (constant) format: `[-][d.]hh:mm:ss[.fffffff]`. */
+  /** .NET "c" (constant) format: `[-][d.]hh:mm:ss[.fffffff]`. A format is the formatter's
+   * (`$eq.text.format`), which writes the others (#837). */
   toString(): string {
-    const sign = this.ticks < 0n ? '-' : '';
-    const abs = this.ticks < 0n ? -this.ticks : this.ticks;
-    const d = Number(abs / TICKS_PER_DAY);
-    const h = Number((abs / TICKS_PER_HOUR) % 24n);
-    const m = Number((abs / TICKS_PER_MINUTE) % 60n);
-    const s = Number((abs / TICKS_PER_SECOND) % 60n);
-    const frac = abs % TICKS_PER_SECOND;
-
-    let result = sign;
-    if (d > 0) result += d + '.';
-    result += `${pad(h, 2)}:${pad(m, 2)}:${pad(s, 2)}`;
-    if (frac > 0n) result += '.' + frac.toString().padStart(7, '0');
-    return result;
+    return timeSpanText(this.ticks, 'c', '.');
   }
 
   /** System.Text.Json serializes TimeSpan in the "c" format — same as toString. */
