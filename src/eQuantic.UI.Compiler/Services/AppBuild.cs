@@ -193,48 +193,47 @@ public sealed class AppBuild
                 // When we have the complete MSBuild reference set, use it verbatim. Injecting the runtime BCL
                 // impl assemblies on top of the targeting-pack ref assemblies would duplicate identities and
                 // muddy resolution, so only add the standard fallback set when --refs was not supplied.
-                var projects = ReferencedProjects();
-                if (projects.Count == 0)
-                {
-                    projectCompilation = ProjectCompilationHelper.CompilationOf(
-                        allSourceFiles,
-                        assemblyPaths,
-                        assemblyName: assemblyName,
-                        addStandardReferences: !usingExplicitRefs,
-                        read: _options.ReferenceReader
-                    );
-                }
-                else
-                {
-                    // The projects the app references are compiled from their own source, each a
-                    // compilation the app references in place of the project's assembly, so a type of
-                    // one is a type declared in source for every rule this compiler has (#624).
-                    IReadOnlyDictionary<ReferencedProject, Compilation> built;
-                    try
-                    {
-                        projectCompilation = ProjectCompilations.Create(assemblyName, allSourceFiles, assemblyPaths,
-                            addStandardReferences: !usingExplicitRefs, projects, _options.ReferenceReader, out built);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Never the fallback below: without the project's compilation the build goes on
-                        // by name heuristics, and a page that used a type of a referenced project would
-                        // be written wrong with no diagnostic, which is the defect this exists to end.
-                        _errors.WriteLine($"{_options.ProjectsFile}(1,1): error EQ0001: Compilation crash: " +
-                            $"the projects the app references could not be compiled from their source: {ex.Message}");
-                        return false;
-                    }
+                var addStandardReferences = !usingExplicitRefs;
 
-                    if (built.Count > 0)
-                    {
-                        _output.WriteLine($"   Compiling {built.Count} referenced project(s) from source: " +
-                            string.Join(", ", built.Keys.Select(project => project.AssemblyName)));
-                        _referenced = new ReferencedModules(built, _primarySourceDir);
-                        _compiler.SetReferencedModules(_referenced);
-                        // One catalogue id per resource class for the whole build: two projects may
-                        // each have a Strings, and a file sees only its own project's.
-                        _compiler.SetResourceIds(new ResourceCatalogIds(projectCompilation));
-                    }
+                // The projects the app references are compiled from their own source, each a
+                // compilation the app references in place of the project's assembly, so a type of
+                // one is a type declared in source for every rule this compiler has (#624).
+                IReadOnlyDictionary<ReferencedProject, Compilation>? built = null;
+                try
+                {
+                    var projects = ReferencedProjects();
+                    if (projects.Count > 0)
+                        projectCompilation = ProjectCompilations.Create(assemblyName, allSourceFiles, assemblyPaths,
+                            addStandardReferences, projects, _options.ReferenceReader, out built);
+                }
+                catch (Exception ex)
+                {
+                    // Never the fallback below: without the project's compilation the build goes on
+                    // by name heuristics, and a page that used a type of a referenced project would
+                    // be written wrong with no diagnostic, which is the defect this exists to end.
+                    // The list itself is read in here for that reason.
+                    _errors.WriteLine($"{_options.ProjectsFile}(1,1): error EQ0001: Compilation crash: " +
+                        $"the projects the app references could not be compiled from their source: {ex.Message}");
+                    return false;
+                }
+
+                // An app that references no project is compiled exactly as it was before it could.
+                projectCompilation ??= ProjectCompilationHelper.CompilationOf(
+                    allSourceFiles,
+                    assemblyPaths,
+                    assemblyName: assemblyName,
+                    addStandardReferences,
+                    read: _options.ReferenceReader);
+
+                if (built is { Count: > 0 })
+                {
+                    _output.WriteLine($"   Compiling {built.Count} referenced project(s) from source: " +
+                        string.Join(", ", built.Keys.Select(project => project.AssemblyName)));
+                    _referenced = new ReferencedModules(built, _primarySourceDir);
+                    _compiler.SetReferencedModules(_referenced);
+                    // One catalogue id per resource class for the whole build: two projects may
+                    // each have a Strings, and a file sees only its own project's.
+                    _compiler.SetResourceIds(new ResourceCatalogIds(projectCompilation));
                 }
 
                 Compilation = projectCompilation;

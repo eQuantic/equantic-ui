@@ -160,21 +160,27 @@ public sealed class ReferencedProjectRefusalTests
         built.Module("Status").Should().Contain("'App.Model'").And.NotContain("'Common'");
     }
 
-    [Fact]
-    public void AReferencedProjectThatCannotBeRead_StopsTheBuild_AndNeverFallsBackToGuessing()
+    [Theory]
+    [InlineData("a file of the library")]
+    [InlineData("the list of projects")]
+    public void AReferencedProjectThatCannotBeRead_StopsTheBuild_AndNeverFallsBackToGuessing(string held)
     {
-        // A file of the library is held exclusively while eqc runs, so reading it throws. A failure
-        // to build the app's compilation used to be survivable: the build went on by name heuristics.
-        // For a solution with referenced projects that is #624 again, a page written wrong with no
-        // diagnostic, so the build stops and says which list it could not stand on.
+        // A file is held exclusively while eqc runs, so reading it throws: a source file of the
+        // library, or the list of projects itself. A failure to build the app's compilation used to
+        // be survivable: the build went on by name heuristics. For a solution with referenced
+        // projects that is #624 again, a page written wrong with no diagnostic, so the build stops
+        // and says which list it could not stand on.
         using var solution = new Solution()
             .Library("Common", files: [("Cursor.cs", SharedLibrary.Cursor)])
             .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files:
             [
                 ("Screens/Home.cs", Home("new Cursor(1).Next().Position.ToString()", "using Common;")),
             ]);
+        var file = held == "the list of projects"
+            ? solution.FileOf("App", Path.Combine("obj", "Debug", "net10.0", "equantic.projects.txt"))
+            : solution.FileOf("Common", "Cursor.cs");
         var built = solution.Build(whileEqcRuns: () =>
-            new FileStream(solution.FileOf("Common", "Cursor.cs"), FileMode.Open, FileAccess.ReadWrite, FileShare.None));
+            new FileStream(file, FileMode.Open, FileAccess.ReadWrite, FileShare.None));
 
         built.Failed.Should().BeTrue();
         built.Errors.Should().Contain("error EQ0001").And.Contain("equantic.projects.txt");
