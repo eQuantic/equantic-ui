@@ -424,7 +424,25 @@ public class ComponentCompiler
         // What the module names of the projects the app references, read once before any emitter
         // runs and asked by all of them; and, after, which of those it imports. Every emit path
         // below returns on its own, so both halves live here, around them.
-        var referenced = ReferencedNamesOf(component);
+        ReferencedNames referenced;
+        try
+        {
+            referenced = ReferencedNamesOf(component);
+        }
+        catch (Exception ex)
+        {
+            // As the emit paths below fail: this module, with what went wrong, and no other. Left
+            // to escape, one declaration the model cannot read would end the whole build, and
+            // swallowed, its module would import nothing of a referenced project and say so nowhere.
+            return new CompilationResult
+            {
+                ComponentName = component.Name,
+                Namespace = component.Namespace,
+                Success = false,
+                Errors = [new CompilationError { Message = ex.Message, SourcePath = component.SourcePath }],
+            };
+        }
+
         _tsEmitter.Referenced = referenced;
         var result = CompileModule(component, referenced);
         if (result.Success) result.ReferencedTypes = referenced.ImportedBy(result.TypeScript);
@@ -538,7 +556,7 @@ public class ComponentCompiler
                     ?? (recordModel is null ? null : ComponentDependencyResolver.From(recordModel.Compilation));
                 // TypeAnnotations flows here too: a record emitted as TypeScript is a parse error
                 // for a consumer that runs the module directly, and nothing upstream would notice.
-                result.TypeScript = new RecordTypeEmitter(recordConverter, modules, referenced)
+                result.TypeScript = new RecordTypeEmitter(recordConverter, modules) { Referenced = referenced }
                     .EmitModule(component.ValueTypeSyntax, TypeAnnotations);
                 CollectResourceUses(recordConverter.ResourceUses);
                 result.Success = true;

@@ -57,9 +57,11 @@ internal sealed class NamedSourceTypes
                         break;
                 }
             }
-            catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
+            catch
             {
-                // A node the model cannot answer for names nothing this can place.
+                // A node the model cannot answer for names nothing this can place, as the import
+                // sweep reads it (RuntimeProvidedTypeScanner): the conversion asks the same model
+                // about the same node and reports what it cannot translate.
             }
         }
     }

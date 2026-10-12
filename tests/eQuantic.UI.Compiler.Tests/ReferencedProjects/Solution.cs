@@ -122,7 +122,9 @@ internal sealed class Solution : IDisposable
     /// does, which is every build before #624: the referenced projects reach it as assemblies alone.</param>
     /// <param name="bun">The bundler, for a solution whose app has an entry point (a file at its
     /// root, or a page) and is to be RUN. Without one the build stops at the modules it wrote.</param>
-    public Built Build(bool handProjects = true, string? bun = null)
+    /// <param name="whileEqcRuns">Something held from after the projects are compiled until eqc's
+    /// build ends: a file the C# compiler could read and eqc then cannot.</param>
+    public Built Build(bool handProjects = true, string? bun = null, Func<IDisposable>? whileEqcRuns = null)
     {
         foreach (var project in _projects) Compile(project);
 
@@ -149,8 +151,9 @@ internal sealed class Solution : IDisposable
             ReferenceReader = TestReferences.Of,
             SourceMaps = SourceMapMode.None,
         }, output, errors);
-        build.Load().Should().BeTrue($"the build stands on its references:\n{errors}");
-        var failed = build.CompileAndBundle();
+        using var held = whileEqcRuns?.Invoke();
+        // A build that cannot stand on what it was handed stops there, having said why.
+        var failed = !build.Load() || build.CompileAndBundle();
         return new Built(this, build, failed, output.ToString(), errors.ToString(), outputDirectory);
     }
 

@@ -209,12 +209,26 @@ public sealed class AppBuild
                     // The projects the app references are compiled from their own source, each a
                     // compilation the app references in place of the project's assembly, so a type of
                     // one is a type declared in source for every rule this compiler has (#624).
-                    projectCompilation = ProjectCompilations.Create(assemblyName, allSourceFiles, assemblyPaths,
-                        addStandardReferences: !usingExplicitRefs, projects, _options.ReferenceReader, out var built);
-                    _output.WriteLine($"   Compiling {built.Count} referenced project(s) from source: " +
-                        string.Join(", ", built.Keys.Select(project => project.AssemblyName)));
+                    IReadOnlyDictionary<ReferencedProject, Compilation> built;
+                    try
+                    {
+                        projectCompilation = ProjectCompilations.Create(assemblyName, allSourceFiles, assemblyPaths,
+                            addStandardReferences: !usingExplicitRefs, projects, _options.ReferenceReader, out built);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Never the fallback below: without the project's compilation the build goes on
+                        // by name heuristics, and a page that used a type of a referenced project would
+                        // be written wrong with no diagnostic, which is the defect this exists to end.
+                        _errors.WriteLine($"{_options.ProjectsFile}(1,1): error EQ0001: Compilation crash: " +
+                            $"the projects the app references could not be compiled from their source: {ex.Message}");
+                        return false;
+                    }
+
                     if (built.Count > 0)
                     {
+                        _output.WriteLine($"   Compiling {built.Count} referenced project(s) from source: " +
+                            string.Join(", ", built.Keys.Select(project => project.AssemblyName)));
                         _referenced = new ReferencedModules(built, _primarySourceDir);
                         _compiler.SetReferencedModules(_referenced);
                         // One catalogue id per resource class for the whole build: two projects may

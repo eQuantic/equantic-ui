@@ -24,8 +24,9 @@ public class RecordTypeEmitter
     private readonly Services.ComponentDependencyResolver? _modules;
 
     /// <summary>What the record being written names of the projects the app references, which are
-    /// sibling modules as the app's own types are (#624).</summary>
-    private readonly Services.ReferencedNames _referenced = Services.ReferencedNames.None;
+    /// sibling modules as the app's own types are (#624). The compiler sets it for a build that has
+    /// such projects, and it names none otherwise.</summary>
+    internal Services.ReferencedNames Referenced { get; init; } = Services.ReferencedNames.None;
     private readonly MethodLowering _lowering;
 
     /// <summary>Whether this emission writes TypeScript: set by <see cref="Emit"/>, read wherever the
@@ -37,10 +38,6 @@ public class RecordTypeEmitter
     /// <param name="modules">The per-app scan, which knows which of the app's own types became
     /// modules. Without one, no app type is imported — the rule the component and class paths hold,
     /// so an import never names a module nobody wrote.</param>
-    /// <param name="referenced">What the record names of the projects the app references.</param>
-    internal RecordTypeEmitter(CSharpToJsConverter converter, Services.ComponentDependencyResolver? modules,
-        Services.ReferencedNames referenced) : this(converter, modules) => _referenced = referenced;
-
     public RecordTypeEmitter(CSharpToJsConverter converter, Services.ComponentDependencyResolver? modules = null)
     {
         _converter = converter;
@@ -212,7 +209,7 @@ public class RecordTypeEmitter
                 {
                     // The net under the fences, as a class module has it (TypeScriptEmitter): a twin
                     // the build writes no module for is reported, never imported (#584).
-                    if (_modules?.IsKeptOut(introduced) == true || _referenced.IsKeptOut(introduced))
+                    if (_modules?.IsKeptOut(introduced) == true || Referenced.IsKeptOut(introduced))
                     {
                         if (!_converter.RefusedTwins.Contains(introduced))
                             _converter.Report(type, ConversionSeverity.Error, "EQ2010",
@@ -227,7 +224,7 @@ public class RecordTypeEmitter
             // named, so both were a name the module never imported — `new Holder()` on the web threw
             // where C# built a zeroed Span2.
             foreach (var appType in appTypes)
-                if ((_modules?.IsModule(appType) == true || _referenced.IsModule(appType)) && Names(appType))
+                if ((_modules?.IsModule(appType) == true || Referenced.IsModule(appType)) && Names(appType))
                     specReferences.Add(appType);
             specReferences.Remove(type.TwinTypeName());
             if (baseName != null) specReferences.Remove(baseName);

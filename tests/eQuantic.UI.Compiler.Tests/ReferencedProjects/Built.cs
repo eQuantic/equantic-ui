@@ -37,8 +37,12 @@ internal sealed class Built
     /// <summary>Its diagnostics, one a line, in MSBuild's form.</summary>
     public string Errors { get; }
 
-    /// <summary>The app's compilation, with each referenced project among its references.</summary>
+    /// <summary>The app's compilation, with each referenced project among its references; null for
+    /// a build that stopped before it had one.</summary>
     public Compilation Compilation => _build.Compilation!;
+
+    /// <summary>Whether the build got as far as a compilation of the app.</summary>
+    public bool HasCompilation => _build.Compilation is not null;
 
     /// <summary>The compilation the build made of a referenced project, found among the app's
     /// references by the project's name.</summary>

@@ -161,6 +161,28 @@ public sealed class ReferencedProjectRefusalTests
     }
 
     [Fact]
+    public void AReferencedProjectThatCannotBeRead_StopsTheBuild_AndNeverFallsBackToGuessing()
+    {
+        // A file of the library is held exclusively while eqc runs, so reading it throws. A failure
+        // to build the app's compilation used to be survivable: the build went on by name heuristics.
+        // For a solution with referenced projects that is #624 again, a page written wrong with no
+        // diagnostic, so the build stops and says which list it could not stand on.
+        using var solution = new Solution()
+            .Library("Common", files: [("Cursor.cs", SharedLibrary.Cursor)])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files:
+            [
+                ("Screens/Home.cs", Home("new Cursor(1).Next().Position.ToString()", "using Common;")),
+            ]);
+        var built = solution.Build(whileEqcRuns: () =>
+            new FileStream(solution.FileOf("Common", "Cursor.cs"), FileMode.Open, FileAccess.ReadWrite, FileShare.None));
+
+        built.Failed.Should().BeTrue();
+        built.Errors.Should().Contain("error EQ0001").And.Contain("equantic.projects.txt");
+        built.HasCompilation.Should().BeFalse("nothing was compiled against a compilation that is not the project's");
+        built.Modules.Should().BeEmpty();
+    }
+
+    [Fact]
     public void AConstantReadOffAReferencedProjectsClass_IsInlined_AndBringsNoModule()
     {
         // The app's static class reads a const of the library's class, which is written where it is
