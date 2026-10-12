@@ -583,7 +583,7 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         if (_input is null || _view is null || _keyboard is null) return;
         var change = _input.Poll();
         if (change != TextInputChange.None && PhotonInputTrace.On)
-            PhotonInputTrace.Write($"{change}: {_input.Target} {_input.Value}");
+            PhotonInputTrace.Write($"{change}: {_input.Target} {PhotonInputTrace.Value(_input.Value, _input.Obscure)}");
         switch (change)
         {
             case TextInputChange.Began:

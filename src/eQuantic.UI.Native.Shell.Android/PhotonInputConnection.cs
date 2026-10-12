@@ -55,7 +55,7 @@ internal sealed class PhotonInputConnection : BaseInputConnection
         _path = host.FocusedPath;
         if (_document) Show(session.Value);
         _reportOwed = false;
-        if (_trace) PhotonInputTrace.Write($"connection {session.Target} {_path} {Current()}");
+        if (_trace) PhotonInputTrace.Write($"connection {session.Target} {_path} {Shown(Current())}");
     }
 
     /// <summary>What every edit of the base class applies to: the mirror. Empty for a surface that
@@ -111,7 +111,7 @@ internal sealed class PhotonInputConnection : BaseInputConnection
         if (!_document) return;
         var composing = (GetComposingSpanStart(_mirror), GetComposingSpanEnd(_mirror));
         var ended = composing.Item1 >= 0 && composing != (value.ComposingStart, value.ComposingEnd);
-        if (_trace) PhotonInputTrace.Write($"apply {value}{(ended ? ", restarting" : "")}");
+        if (_trace) PhotonInputTrace.Write($"apply {Shown(value)}{(ended ? ", restarting" : "")}");
         Show(value);
         if (ended)
         {
@@ -175,7 +175,7 @@ internal sealed class PhotonInputConnection : BaseInputConnection
 
     public override bool CommitText(ICharSequence? text, int newCursorPosition)
     {
-        if (_trace) PhotonInputTrace.Write($"commitText \"{text}\" {newCursorPosition}");
+        if (_trace) PhotonInputTrace.Write($"commitText {Shown(text)} {newCursorPosition}");
         if (!_document)
         {
             var typed = text?.ToString() ?? "";
@@ -188,7 +188,7 @@ internal sealed class PhotonInputConnection : BaseInputConnection
 
     public override bool SetComposingText(ICharSequence? text, int newCursorPosition)
     {
-        if (_trace) PhotonInputTrace.Write($"setComposingText \"{text}\" {newCursorPosition}");
+        if (_trace) PhotonInputTrace.Write($"setComposingText {Shown(text)} {newCursorPosition}");
         if (!_document) return Serving && _host.SetMarkedText(text?.ToString() ?? "");
         var done = base.SetComposingText(text, newCursorPosition);
         Edited();
@@ -253,7 +253,7 @@ internal sealed class PhotonInputConnection : BaseInputConnection
     /// to the view, and the activity to the host.</summary>
     public override bool SendKeyEvent(KeyEvent? e)
     {
-        if (_trace) PhotonInputTrace.Write($"sendKeyEvent {e?.Action} {e?.KeyCode}");
+        if (_trace) PhotonInputTrace.Write($"sendKeyEvent {PhotonInputTrace.Key(e, _session.Obscure)}");
         return base.SendKeyEvent(e);
     }
 
@@ -288,7 +288,7 @@ internal sealed class PhotonInputConnection : BaseInputConnection
             if (Serving && Current() is var value && value != _session.Value)
             {
                 var taken = _session.Update(value);
-                if (_trace) PhotonInputTrace.Write($"edited {value}{(taken ? "" : ", refused")}");
+                if (_trace) PhotonInputTrace.Write($"edited {Shown(value)}{(taken ? "" : ", refused")}");
             }
         }
         if (!_reportOwed) return;
@@ -303,6 +303,12 @@ internal sealed class PhotonInputConnection : BaseInputConnection
         if (_trace) PhotonInputTrace.Write($"updateSelection {start} {end} {composingStart} {composingEnd}");
         _keyboard.UpdateSelection(_view, start, end, composingStart, composingEnd);
     }
+
+    /// <summary>A state as the trace writes it: a field that hides what is typed shows none of it.</summary>
+    private string Shown(TextEditingValue value) => PhotonInputTrace.Value(value, _session.Obscure);
+
+    /// <summary>Text the keyboard sent, as the trace writes it.</summary>
+    private string Shown(ICharSequence? text) => PhotonInputTrace.Text(text?.ToString(), _session.Obscure);
 
     /// <summary>The mirror as an editing value: Android's selection start is the end that stays and
     /// its end the end that moves, which is a value's base and extent.</summary>
