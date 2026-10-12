@@ -12,7 +12,7 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// static method the compiler saw as an entry point. A delegate turned into a function pointer works
 /// on the Mac and on the simulator, both of which have a JIT, and fails at its first call on a device.
 /// </summary>
-public partial class AppleCallbackTests
+public unsafe partial class AppleCallbackTests
 {
     /// <summary>
     /// The instrument that FAILS, rather than a reviewer who remembers: no code in the shared Apple
@@ -62,10 +62,57 @@ public partial class AppleCallbackTests
         offenders.Should().BeEmpty("a delegate passed to native code is a function pointer a device build never prepared");
     }
 
+    /// <summary>What a delegate method writes to: the context its object carries.</summary>
+    private sealed class Pinged
+    {
+        public List<string> Names { get; } = [];
+    }
+
+    private static readonly Lazy<ObjCDelegateClass> TestClass = new(DefineTestClass);
+
+    private static ObjCDelegateClass DefineTestClass() => ObjCDelegateClass.Define($"EQTestDelegate{Guid.NewGuid():N}",
+        ("ping:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&Ping, "v@:@"));
+
+    [UnmanagedCallersOnly]
+    private static void Ping(IntPtr self, IntPtr selector, IntPtr name) =>
+        TestClass.Value.Context<Pinged>(self)?.Names.Add(FromNSString(name) ?? "");
+
+    /// <summary>
+    /// Two instances of ONE runtime class, each made with its own context, each called through
+    /// <c>objc_msgSend</c>: the method the class was given finds, in the ivar of the object it was
+    /// called on, the context of that object and of no other.
+    /// </summary>
+    [MacFact]
+    public void EachDelegateObjectAnswersForItsOwnContext()
+    {
+        var first = new Pinged();
+        var second = new Pinged();
+        var one = GCHandle.Alloc(first);
+        var two = GCHandle.Alloc(second);
+        try
+        {
+            var a = TestClass.Value.New(one);
+            var b = TestClass.Value.New(two);
+
+            SendVoid(a, Sel("ping:"), NSString("a"));
+            SendVoid(b, Sel("ping:"), NSString("b"));
+            SendVoid(b, Sel("ping:"), NSString("b again"));
+
+            first.Names.Should().Equal("a");
+            second.Names.Should().Equal("b", "b again");
+        }
+        finally
+        {
+            one.Free();
+            two.Free();
+        }
+    }
+
     /// <summary>
     /// A method registered with the Objective-C runtime, called the way the system calls it: an
-    /// AppleEvent sent to the handler class through <c>objc_msgSend</c>, which dispatches to the
-    /// entry point the class was given, and the URL arrives at the relay.
+    /// AppleEvent sent through <c>objc_msgSend</c> to the handler <see cref="AppleDeepLinks.Install"/>
+    /// put in place, which dispatches to the entry point the class was given; the entry point finds
+    /// the relay in that handler, and the URL arrives there.
     /// </summary>
     [MacFact]
     public void AnAppleEvent_ReachesTheRelay_ThroughTheRegisteredEntryPoint()
@@ -82,7 +129,12 @@ public partial class AppleCallbackTests
         SetParam(urlEvent, Sel("setParamDescriptor:forKeyword:"),
             Send(descriptors, Sel("descriptorWithString:"), NSString(url)), FourCharCode("----"));
 
-        var handler = Send(Send(objc_getClass("EQDeepLinkHandler"), Sel("alloc")), Sel("init"));
+        // The installed handler, the object NSAppleEventManager calls: it is the one carrying the
+        // relay, and a fresh instance of its class would carry nothing.
+        var handler = (IntPtr)typeof(AppleDeepLinks)
+            .GetField("_handler", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+            .GetValue(null)!;
+        handler.Should().NotBe(IntPtr.Zero);
         SendVoid(handler, Sel("handleURLEvent:withReplyEvent:"), urlEvent, IntPtr.Zero);
 
         heard.Should().Be(new Uri(url), "the runtime dispatched to the registered entry point");
