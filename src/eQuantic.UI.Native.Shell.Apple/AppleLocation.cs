@@ -9,9 +9,8 @@ namespace eQuantic.UI.Native.Shell.Apple;
 /// <para>
 /// CLLocationManager talks back through a DELEGATE — an Objective-C object with named methods —
 /// so one is defined at runtime, the same way the content view that hears live resizes is:
-/// <c>objc_allocateClassPair</c> + <c>class_addMethod</c>. The callbacks route through a static
-/// instance because the capability is a singleton in the container; there is exactly one manager
-/// per process, which is also Apple's own guidance.
+/// an <see cref="ObjCDelegateClass"/>. Each manager gets its own delegate object, whose context is
+/// this capability, so a callback answers for the instance that made the manager (#795).
 /// </para>
 /// <para>
 /// The manager must be created on a thread with a RUN LOOP — its delegate speaks through the loop
@@ -33,7 +32,6 @@ public sealed class AppleLocation : ILocation
     private static readonly TimeSpan FixTimeout = TimeSpan.FromSeconds(15);
 
     private static readonly Lock Gate = new();
-    private static AppleLocation? _instance;
 
     private readonly List<Subscription> _subscriptions = new();
     private IntPtr _manager;
@@ -41,11 +39,8 @@ public sealed class AppleLocation : ILocation
     private TaskCompletionSource<bool>? _authorizationAnswer;
     private TaskCompletionSource<GeoLocation?>? _fixAnswer;
     private bool _watching;
-
-    public AppleLocation()
-    {
-        lock (Gate) _instance = this;
-    }
+    // The delegate's context: held for as long as the manager, which is as long as this capability.
+    private GCHandle _context;
 
     public bool IsAvailable
     {
@@ -126,7 +121,8 @@ public sealed class AppleLocation : ILocation
             if (_manager != IntPtr.Zero) return _manager;
             dlopen(CoreLocationLib, 2);
             _manager = Send(Send(objc_getClass("CLLocationManager"), Sel("alloc")), Sel("init"));
-            _delegate = Send(Send(DelegateClass(), Sel("alloc")), Sel("init"));
+            _context = GCHandle.Alloc(this);
+            _delegate = DelegateClass.Value.New(_context);
             SendVoid(_manager, Sel("setDelegate:"), _delegate);
             return _manager;
         }
@@ -134,38 +130,29 @@ public sealed class AppleLocation : ILocation
 
     // ---- the runtime delegate ----------------------------------------------------------------
 
-    private delegate void AuthorizationChanged(IntPtr self, IntPtr selector, IntPtr manager);
-    private delegate void UpdatedLocations(IntPtr self, IntPtr selector, IntPtr manager, IntPtr locations);
-    private delegate void FailedWith(IntPtr self, IntPtr selector, IntPtr manager, IntPtr error);
+    private static readonly Lazy<ObjCDelegateClass> DelegateClass = new(DefineDelegateClass);
 
-    private static AuthorizationChanged? _onAuthorization;   // kept alive for the runtime's sake
-    private static UpdatedLocations? _onLocations;
-    private static FailedWith? _onFailure;
-    private static IntPtr _delegateClass;
+    // Static entry points (#795): a device build has no JIT to make a wrapper for a delegate. Each
+    // finds its capability in the delegate object it was called on.
+    private static unsafe ObjCDelegateClass DefineDelegateClass() => ObjCDelegateClass.Define("EQLocationDelegate",
+        ("locationManagerDidChangeAuthorization:",
+            (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&DidChangeAuthorization, "v@:@"),
+        ("locationManager:didUpdateLocations:",
+            (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr, void>)&DidUpdateLocations, "v@:@@"),
+        ("locationManager:didFailWithError:",
+            (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr, void>)&DidFail, "v@:@@"));
 
-    private static IntPtr DelegateClass()
-    {
-        if (_delegateClass != IntPtr.Zero) return _delegateClass;
+    [UnmanagedCallersOnly]
+    private static void DidChangeAuthorization(IntPtr self, IntPtr selector, IntPtr manager) =>
+        DelegateClass.Value.Context<AppleLocation>(self)?.AuthorizationDidChange();
 
-        _delegateClass = objc_allocateClassPair(objc_getClass("NSObject"), "EQLocationDelegate", 0);
-        _onAuthorization = static (_, _, _) => Instance()?.AuthorizationDidChange();
-        _onLocations = static (_, _, _, locations) => Instance()?.LocationsDidArrive(locations);
-        _onFailure = static (_, _, _, _) => Instance()?.FixDidFail();
+    [UnmanagedCallersOnly]
+    private static void DidUpdateLocations(IntPtr self, IntPtr selector, IntPtr manager, IntPtr locations) =>
+        DelegateClass.Value.Context<AppleLocation>(self)?.LocationsDidArrive(locations);
 
-        class_addMethod(_delegateClass, sel_registerName("locationManagerDidChangeAuthorization:"),
-            Marshal.GetFunctionPointerForDelegate(_onAuthorization), "v@:@");
-        class_addMethod(_delegateClass, sel_registerName("locationManager:didUpdateLocations:"),
-            Marshal.GetFunctionPointerForDelegate(_onLocations), "v@:@@");
-        class_addMethod(_delegateClass, sel_registerName("locationManager:didFailWithError:"),
-            Marshal.GetFunctionPointerForDelegate(_onFailure), "v@:@@");
-        objc_registerClassPair(_delegateClass);
-        return _delegateClass;
-    }
-
-    private static AppleLocation? Instance()
-    {
-        lock (Gate) return _instance;
-    }
+    [UnmanagedCallersOnly]
+    private static void DidFail(IntPtr self, IntPtr selector, IntPtr manager, IntPtr error) =>
+        DelegateClass.Value.Context<AppleLocation>(self)?.FixDidFail();
 
     private void AuthorizationDidChange()
     {

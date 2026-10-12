@@ -2588,6 +2588,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   of the parts and `Convert`'s words read narrower than .NET; 60 entries leave the null-argument
   baseline. What .NET reads beyond the numeric forms stays #807's. Proposed and archived through
   OpenSpec (`openspec/specs/runtime-dates`, `openspec/specs/transpiler-bcl`).
+- **2026-10-12 · The Apple shells call back through entry points a device build prepares**: the
+  shared Apple shell turned delegates into native function pointers, which a JIT wraps on demand and
+  an iPhone's ahead-of-time build never does, so the camera, location, biometrics, motion and network
+  status would have failed at their first callback on a device
+  ([#795](https://github.com/eQuantic/equantic-ui/issues/795)). A block now calls a static
+  `[UnmanagedCallersOnly]` entry point and carries its context as a `GCHandle` after its descriptor
+  (`ObjCBlock.Context<T>`), and the methods registered with the Objective-C runtime are static entry
+  points that find their object in a handle the delegate carries in an ivar (`ObjCDelegateClass`), so a
+  second camera session no longer takes the first one's frames. A reply that answers once lets only its context go and keeps
+  its block, which the framework releases after the call returns: the biometric reply freed its block
+  from inside that call. `AppleCallbackTests` fails when the shared Apple shell or the
+  iOS shell calls `Marshal.GetFunctionPointerForDelegate`, and the block tests run against the real
+  runtime on the Mac. The run on a physical iPhone belongs to the device pass
+  ([#792](https://github.com/eQuantic/equantic-ui/issues/792)). Proposed and archived through OpenSpec
+  (`openspec/specs/native-callbacks`).
 
 ## Retired documents
 
