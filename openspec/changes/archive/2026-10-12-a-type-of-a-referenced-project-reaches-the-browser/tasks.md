@@ -26,6 +26,6 @@
 
 ## 5. The record
 
-- [ ] 5.1 Document it in the wiki, in English and Portuguese in one commit on a wiki branch named like this one: a section of BuildFlow on a class library shared by a solution's projects (what crosses, what does not, how to keep server code out), and the SupportedFeatures row. Verify the wiki guards pass against that branch.
+- [x] 5.1 Document it in the wiki, in English and Portuguese in one commit on a wiki branch named like this one: a section of BuildFlow on a class library shared by a solution's projects (what crosses, what does not, how to keep server code out), and the SupportedFeatures row. Verify the wiki guards pass against that branch.
 - [x] 5.2 File the follow-ups the proposal lists, each under #565 or the feature it belongs to, add the `docs/LEDGER.md` line citing #624, and declare what became public in `PublicAPI.Unshipped.txt`. Verify the docs guards and the public API analyzer pass.
-- [ ] 5.3 Validate and archive the change before the merge (`./scripts/check-openspec.sh`, `openspec archive`), and verify `openspec/specs/referenced-projects/spec.md` exists with its Purpose.
+- [x] 5.3 Validate and archive the change before the merge (`./scripts/check-openspec.sh`, `openspec archive`), and verify `openspec/specs/referenced-projects/spec.md` exists with its Purpose.
