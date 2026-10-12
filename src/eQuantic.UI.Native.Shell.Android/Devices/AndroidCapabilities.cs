@@ -17,6 +17,9 @@ public sealed class AndroidCapabilities : IPhotonCapabilities
         services.TryAddSingleton<INetworkStatus, AndroidNetworkStatus>();
         services.TryAddSingleton<IMotionSensor, AndroidMotionSensor>();
         services.TryAddSingleton<ILocation, AndroidLocation>();
+        // The same two-method clipboard the text fields use, offered as a SERVICE: what a page's
+        // own "Copy" button asks for.
+        services.TryAddSingleton<ITextClipboard, AndroidClipboard>();
         // The app's own durable key/value store — SharedPreferences, in the app's sandbox,
         // removed with the app like every other preference on the platform.
         services.TryAddSingleton<IAppStorage, AndroidAppStorage>();

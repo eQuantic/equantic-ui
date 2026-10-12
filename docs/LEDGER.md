@@ -2436,6 +2436,30 @@ record of a release, the wiki's Upgrading page is the distillate.
   window crosses an adaptive breakpoint, as a phone does when it turns
   ([#797](https://github.com/eQuantic/equantic-ui/issues/797)). Proposed and archived through
   OpenSpec (`openspec/specs/system-back`, `openspec/specs/native-app-lifecycle`).
+- **2026-10-11 · A phone opens its keyboard**: the first blocker between a Photon app and a store
+  ([#770](https://github.com/eQuantic/equantic-ui/issues/770), under #195). The phone shells handed the
+  host touches only, so no keyboard ever opened and a field on a phone took no character. A phone's
+  keyboard edits a document rather than sending keys, so the host now takes the field's whole new state,
+  Flutter's `TextEditingValue`, through `PhotonHost.UpdateEditingValue`, with the composition inside the
+  text and drawn underlined, and a platform-free `TextInputSession` tells a shell after each frame
+  whether the keyboard opens, starts over, closes or takes a value the app changed, never echoing an
+  edit back to the keyboard that made it. A code surface and a sheet stay on the desktop's keys. The
+  keyboard's area is the host's `ViewInsets`: the tree lays out above it, the safe area under it counts
+  once, a frame laid out shorter reveals the field being edited, and where nothing scrolls the screen is
+  lifted until the field shows. The keyboard's Done submits and puts the keyboard away. Android answers with an input
+  connection over a mirror of the field; iOS edits an invisible text view at the caret, so UIKit's own
+  autocorrection, dictation and composition run against it. A keyboard attached to the phone copies,
+  cuts and pastes through the system clipboard, which both shells now give the host and register as
+  `ITextClipboard`, so a page's own Copy button works on a phone too
+  ([#776](https://github.com/eQuantic/equantic-ui/issues/776)): without it, a cut from that keyboard
+  deleted the selection and kept it nowhere. The Android activity now runs the app as every other
+  entry point does: it never had, so a component's `context.GetService` answered null on Android and a
+  `SetState` from another thread was not marshalled there
+  ([#829](https://github.com/eQuantic/equantic-ui/issues/829)). Found on the way and filed: a code
+  block's short line drawn cut with an ellipsis on both phones
+  ([#831](https://github.com/eQuantic/equantic-ui/issues/831)), and ⌘V on iOS asking to paste text
+  another app copied ([#832](https://github.com/eQuantic/equantic-ui/issues/832)). Proposed and
+  archived through OpenSpec (`openspec/specs/phone-keyboard`).
 - **2026-10-12 · A type of a referenced project that a page uses is a module of the bundle**: a
   component that used a type of ANOTHER project of the solution built with no diagnostic and failed in
   the browser, `new Cursor(0)` and `Palette.Names` written into the page's module with nothing

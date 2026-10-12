@@ -161,6 +161,50 @@ public sealed class PhotonHost
     public EdgeInsets SafeAreaInsets { get; set; }
 
     /// <summary>
+    /// The part of the window something of the system's covers: a phone's keyboard, Flutter's
+    /// <c>MediaQuery.viewInsets</c>. The tree lays out in what is left, as Flutter's
+    /// <c>Scaffold</c> does by default, so a form ends above the keyboard instead of under it; the
+    /// <see cref="SafeAreaInsets"/> the inset already covers count once, as Flutter's padding does
+    /// under it; and when the keyboard rises, the field being edited is scrolled into what is left.
+    /// Zero on a desktop, and on a phone with the keyboard down.
+    /// </summary>
+    public EdgeInsets ViewInsets
+    {
+        get => _viewInsets;
+        set
+        {
+            if (value == _viewInsets) return;
+            _viewInsets = value;
+            NeedsRender = true;
+        }
+    }
+
+    private EdgeInsets _viewInsets;
+
+    /// <summary>The height the last frame laid out in. A frame that lays out in less reveals the
+    /// field being edited.</summary>
+    private float _laidHeight;
+
+    /// <summary>
+    /// How far the screen is drawn above where it was laid out, so that the field being edited
+    /// clears the keyboard where nothing around it scrolls: a form that does not fit what the
+    /// keyboard leaves, a phone turned on its side. Android's own <c>adjustPan</c>, which Android
+    /// itself picks for a window with nothing to scroll; Flutter leaves the field covered there.
+    /// Taken only while the edit has less room than the screen had before it, so it holds whether
+    /// the keyboard arrives as an inset or as a window the system shortened for it, and a desktop
+    /// window that was always too short for its form is not moved. Zero with nothing being edited,
+    /// with the field in view, and for a field a scroll view holds: the scroll view brings it into
+    /// view instead, and what the person scrolls away is theirs to scroll back. A pointer lands where
+    /// the screen is drawn, and the caret and the semantics are reported where they are drawn.
+    /// </summary>
+    private float _lift;
+
+    /// <summary>The height the screen laid out in before the edit began, or the most it has had since:
+    /// a frame laid out in less while something is edited lost that room to the keyboard, as an
+    /// inset or as a shorter window, or to a phone turned on its side.</summary>
+    private float _roomBeforeEdit;
+
+    /// <summary>
     /// The corner the system's WINDOW CONTROLS float in under <see cref="WindowChrome.Unified"/> —
     /// Start on a Mac, End on Windows, Top the strip's height — for the one <see cref="SafeArea"/>
     /// that asks for <see cref="SafeEdges.WindowControls"/>: the toolbar that is the title bar. Zero
@@ -217,9 +261,26 @@ public sealed class PhotonHost
             _imageCache.Clear();
         }
 
+        // What was typed since the last frame is in the tree now, as the app took it: the frame's
+        // value is the field's again. The caret is placed first, against the value it was moved in:
+        // read after, it clamped to the last frame's shorter text and drew a character behind.
+        var caretIndex = CaretIndex;
+        var selection = Selection;
+        _edited = null;
+
         builder.Clear(_theme.Background.Resolve(Mode));
         if (RenderScale != 1f) builder.PushTransform(Matrix2D.Scale(RenderScale, RenderScale));
+        if (_lift != 0) builder.PushTransform(Matrix2D.Translation(0, -_lift));
         _lastTimeMs = timeMs;
+        // The tree lays out above what the system covers, and a SafeArea at the bottom pads only
+        // what the keyboard leaves of the home indicator: the keyboard is already in its way.
+        var height = MathF.Max(0, Height - _viewInsets.Bottom);
+        var shorter = height < _laidHeight;
+        _laidHeight = height;
+        if (_textPath is null || height > _roomBeforeEdit) _roomBeforeEdit = height;
+        var safeArea = _viewInsets.Bottom > 0
+            ? SafeAreaInsets with { Bottom = MathF.Max(0, SafeAreaInsets.Bottom - _viewInsets.Bottom) }
+            : SafeAreaInsets;
         // A gliding scroll advances BEFORE the frame is realized, so this frame paints where it
         // moved to; while anything is still gliding the host keeps asking for frames.
         // Resolved HERE, not when it was set: ReducedMotion can arrive from the system at any
@@ -227,13 +288,18 @@ public sealed class PhotonHost
         _scrolls.Smooth = SmoothScroll && !ReducedMotion;
         var gliding = _scrolls.Advance(timeMs);
         var previousFrame = _lastFrame;
-        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, SafeAreaInsets, _pressedPath,
-            _focusVisible ? _focusedPath : null, _textPath, CaretIndex, CaretVisible,
-            Selection.Start, Selection.End, density: Density,
-            scrollOffset: path => _scrolls.Get(path), markedText: _marked, pathCache: _pathCache, hoveredPaths: _hoverPaths,
+        _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, safeArea, _pressedPath,
+            _focusVisible ? _focusedPath : null, _textPath, caretIndex, CaretVisible,
+            selection.Start, selection.End, density: Density,
+            scrollOffset: path => _scrolls.Get(path), markedText: _marked, composing: _composing,
+            pathCache: _pathCache, hoveredPaths: _hoverPaths,
             nodePool: RecycleFrames ? _nodePool : null, inViewStore: _inView,
             windowControlsInsets: WindowControlsInsets, sizedLike: previousFrame);
+        if (_lift != 0) builder.Pop();
         if (RenderScale != 1f) builder.Pop();
+        // The frame shows what the app made of the keyboard's edit. A composition in a text the app
+        // did not keep is over (see _composing): the keyboard is about to be told that text.
+        if (_composing is { } composing && TextTarget?.Value != composing.Text) _composing = null;
         // The frame we just replaced is OURS to discard — nobody else holds production frames.
         // (Opt-in: anything that retains RealizeResults — tests, tooling — leaves this off and
         // every tree stays untouched forever.)
@@ -265,6 +331,14 @@ public sealed class PhotonHost
         // a command, a find stepping to a match. After the frame, because that is when the caret's
         // new place exists in window coordinates; the scroll it causes paints on the next one.
         if (RevealCodeCarets()) NeedsRender = true;
+
+        // The space shrank under the edit, and this frame laid out in what is left: the field being
+        // edited is brought into it, or the person types into a field they cannot see. A keyboard
+        // rising does that, as an inset or, where the system resizes the window for it, as a
+        // shorter window; so does a phone turned on its side.
+        if (shorter && RevealEditing()) NeedsRender = true;
+        // Where nothing scrolls the field into view, the screen is lifted until it shows.
+        if (Lift(height)) NeedsRender = true;
 
         // The caret is 2Hz motion, not vsync motion. Holding NeedsRender for it pinned the whole
         // loop to the display's refresh — 120 presents a second on a ProMotion panel, measured, to
@@ -428,9 +502,9 @@ public sealed class PhotonHost
     /// contains whom — asking it is cheaper and truer than keeping a second map that can disagree.
     /// </para>
     /// </summary>
-    private void ScrollIntoView(FocusStop stop)
+    private bool ScrollIntoView(FocusStop stop)
     {
-        if (_lastFrame is null || stop.Bounds.Height <= 0) return;
+        if (_lastFrame is null || stop.Bounds.Height <= 0) return false;
 
         var regions = _lastFrame.ScrollRegions;
         var best = -1;
@@ -440,7 +514,7 @@ public sealed class PhotonHost
             if (!IsAncestorPath(regions[i].Path, stop.Path)) continue;
             if (best < 0 || regions[i].Path.Length > regions[best].Path.Length) best = i;
         }
-        if (best < 0) return;
+        if (best < 0) return false;
 
         var (laid, toScreen) = Laid(stop);
         var (own, viewport) = InScrollSpace(regions, best, laid, toScreen);
@@ -456,7 +530,7 @@ public sealed class PhotonHost
         var delta = 0f;
         if (start < viewStart + margin) delta = start - viewStart - margin;
         else if (end > viewEnd - margin) delta = end - viewEnd + margin;
-        if (delta == 0) return;
+        if (delta == 0) return false;
 
         // Brought into view NOW, not glided to: the ring has to be on screen in the frame that draws
         // it, and the next Tab may arrive before a glide would have landed — the browser scrolls a
@@ -466,6 +540,7 @@ public sealed class PhotonHost
         var current = _scrolls.Get(regions[best].Path) ?? regions[best].Fallback;
         _scrolls.ScrollTo(regions[best].Path, current + delta, regions[best].MaxOffset);
         NeedsRender = true;
+        return true;
     }
 
     private const float ScrollIntoViewMargin = 24f;
@@ -501,6 +576,72 @@ public sealed class PhotonHost
             scrolled |= RevealRect(region.Path, laid, toScreen);
         }
         return scrolled;
+    }
+
+    /// <summary>
+    /// Brings what is being edited into view: a code surface by its caret when it is on screen to
+    /// have one, and otherwise the field or surface whole, by its focus stop, which a frame keeps
+    /// where its viewport no longer reaches (a field the keyboard just covered has no region left to
+    /// find it by). Answers whether anything scrolled.
+    /// </summary>
+    private bool RevealEditing()
+    {
+        if (_lastFrame is null || _textPath is not { } path) return false;
+        var surfaces = _lastFrame.CodeRegions;
+        for (var i = 0; i < surfaces.Count; i++)
+        {
+            if (surfaces[i].Path != path) continue;
+            var carets = surfaces[i].Surface.Model.Carets;
+            if (carets.Count == 0) break;
+            var (laid, toScreen) = Laid(surfaces, i, surfaces[i].Bounds, carets[0]);
+            return RevealRect(path, laid, toScreen);
+        }
+        var stops = _lastFrame.FocusStops;
+        for (var i = 0; i < stops.Count; i++)
+            if (stops[i].Path == path) return ScrollIntoView(stops[i]);
+        return false;
+    }
+
+    /// <summary>
+    /// Sets <see cref="_lift"/>: for a field being edited that ends below <paramref name="laidHeight"/>,
+    /// where the keyboard took the room it needed and no scroll view can bring it up, the least that
+    /// brings its bottom above it with a control's worth of margin, and never so much that its top
+    /// leaves the screen. Read from the field's focus stop, which the frame keeps even where the
+    /// field is drawn under the keyboard, and which is laid out where it was before the lift, so the
+    /// lift a covered field takes holds as long as it is edited. Answers whether the lift changed.
+    /// </summary>
+    private bool Lift(float laidHeight)
+    {
+        var lift = 0f;
+        var squeezed = _viewInsets.Bottom > 0 || laidHeight < _roomBeforeEdit;
+        if (squeezed && _textPath is { } path && _lastFrame is { } frame && !InVerticalScroll(frame, path))
+        {
+            var stops = frame.FocusStops;
+            for (var i = 0; i < stops.Count; i++)
+            {
+                if (stops[i].Path != path) continue;
+                var field = stops[i].Bounds;
+                if (field.Bottom > laidHeight)
+                    lift = Math.Clamp(field.Bottom + ScrollIntoViewMargin - laidHeight, 0,
+                        MathF.Max(0, field.Top - ScrollIntoViewMargin));
+                break;
+            }
+        }
+        if (lift == _lift) return false;
+        _lift = lift;
+        return true;
+    }
+
+    /// <summary>Whether a scroll view that moves up and down, with somewhere to move, holds
+    /// <paramref name="path"/>: what it holds is brought into view by scrolling it.</summary>
+    private static bool InVerticalScroll(RealizeResult frame, string path)
+    {
+        var regions = frame.ScrollRegions;
+        for (var i = 0; i < regions.Count; i++)
+            if (regions[i].Axis != ScrollAxis.Horizontal && regions[i].MaxOffset > 0
+                && IsAncestorPath(regions[i].Path, path))
+                return true;
+        return false;
     }
 
     /// <summary>
@@ -632,6 +773,9 @@ public sealed class PhotonHost
         {
             _caret = value;
             _caretPhaseMs = _lastTimeMs;
+            // A caret the host moved (a key, a press, an edit the keyboard did not make) has left the
+            // word a phone keyboard was composing; the keyboard's own edit sets it again after this.
+            _composing = null;
         }
     }
 
@@ -655,7 +799,7 @@ public sealed class PhotonHost
         {
             if (_anchor is not { } anchor) return (CaretIndex, CaretIndex);
             var caret = CaretIndex;
-            var length = TextTarget?.Value.Length ?? 0;
+            var length = EditedValue?.Length ?? 0;
             anchor = Math.Clamp(anchor, 0, length);
             return anchor <= caret ? (anchor, caret) : (caret, anchor);
         }
@@ -722,8 +866,8 @@ public sealed class PhotonHost
     /// What ⌘C puts on the clipboard. A password field copies NOTHING — the dots are what is drawn,
     /// and the secret behind them is not the field's to hand out.
     /// </summary>
-    private static string Copyable(TextEntry entry, int start, int end) =>
-        entry.Obscure ? "" : entry.Value[start..end];
+    private static string Copyable(TextEntry entry, string value, int start, int end) =>
+        entry.Obscure ? "" : value[start..end];
 
     /// <summary>What is actually DRAWN for a value — a password shows dots, and a click has to land
     /// where the dots are.</summary>
@@ -731,7 +875,15 @@ public sealed class PhotonHost
         entry.Obscure ? new string('•', value.Length) : value;
 
     /// <summary>The field being edited in the CURRENT frame, or null. Resolved by path every time
-    /// rather than remembered: the node handed out last frame is already stale.</summary>
+    /// rather than remembered: the node handed out last frame is already stale.
+    /// <para>
+    /// A field scrolled out of view is still the one being edited. Its region is clipped away, so
+    /// nobody can tap what they cannot see, but its focus stop is registered wherever it is and
+    /// still names it. A phone's keyboard rising over the field is that case in every form: the
+    /// frame that lays out above the keyboard clips the field before the reveal scrolls it back,
+    /// and reading it as no field there would turn the keyboard into a key pad for that frame and
+    /// drop what was typed into it.
+    /// </para></summary>
     public TextEntry? TextTarget
     {
         get
@@ -740,6 +892,9 @@ public sealed class PhotonHost
             var fields = _lastFrame.TextRegions;
             for (var i = 0; i < fields.Count; i++)
                 if (fields[i].Path == _textPath) return fields[i].Entry;
+            var stops = _lastFrame.FocusStops;
+            for (var i = 0; i < stops.Count; i++)
+                if (stops[i].Path == _textPath && stops[i].Entry is { } entry) return entry;
             return null;
         }
     }
@@ -851,7 +1006,26 @@ public sealed class PhotonHost
 
     /// <summary>Where the caret sits, clamped to the text that is actually there — the app may have
     /// replaced the value with something shorter (a formatter, a reset) between keystrokes.</summary>
-    public int CaretIndex => Math.Clamp(_caret, 0, TextTarget?.Value.Length ?? 0);
+    public int CaretIndex => Math.Clamp(_caret, 0, EditedValue?.Length ?? 0);
+
+    /// <summary>
+    /// The value last handed to the field's <c>OnChanged</c> and not yet drawn, or null. A keyboard
+    /// edits twice between two frames (an autocorrection deletes the word and types its fix, a
+    /// keyboard batches its edits), and the second edit has to start from what the first one made:
+    /// read off the frame, it started from the value before both and undid the first.
+    /// </summary>
+    private string? _edited;
+
+    /// <summary>The focused field's value as the next edit has to see it: the last one typed, until
+    /// a frame draws what the app made of it.</summary>
+    private string? EditedValue => _edited ?? TextTarget?.Value;
+
+    /// <summary>A phone keyboard's composition, as a range of the value (see
+    /// <see cref="TextEditingValue"/>), or null. Drawn underlined, like the desktop's marked text.
+    /// It carries the text it marks a range OF: an app that rewrites the value (a formatter, an
+    /// upper-caser) ends it, as setting a controller's text does in Flutter, because the keyboard is
+    /// then told a text it never composed in.</summary>
+    private (int Start, int End, string Text)? _composing;
 
     /// <summary>
     /// Half-second on, half-second off, off the frame clock — the rate every desktop uses. A caret
@@ -965,6 +1139,7 @@ public sealed class PhotonHost
         // a form where four boxes all look like the active one.
         if (changed) EndEditing();
         _textPath = field.Path;
+        if (changed) _edited = null;
         // Where the pointer fell, or the end of the text when it arrived by Tab.
         Caret = caret ?? field.Entry.Value.Length;
         _anchor = caret is null ? null : _caret;
@@ -974,7 +1149,12 @@ public sealed class PhotonHost
         NeedsRender = true;
     }
 
-    private void EndEditing()
+    /// <summary>
+    /// Ends the edit: the field or surface that held the caret loses it, and with it any
+    /// composition. Escape and back do this from inside; a shell does it when the platform took the
+    /// keyboard away itself (an iPad's hide-keyboard key, another app's window).
+    /// </summary>
+    public void EndEditing()
     {
         if (_textPath is null) return;
         TextTarget?.OnFocusChanged?.Invoke(false);
@@ -987,6 +1167,7 @@ public sealed class PhotonHost
         }
         _textPath = null;
         _marked = "";
+        _edited = null;
         Caret = 0;
         _anchor = null;
         NeedsRender = true;
@@ -1023,7 +1204,7 @@ public sealed class PhotonHost
         if (TextTarget is not { } entry || entry.Disabled) return false;
         // Typing over a selection REPLACES it — the one behaviour that makes selecting worth doing.
         var (start, end) = Selection;
-        var value = entry.Value;
+        var value = _edited ?? entry.Value;
         Commit(entry, value[..start] + text + value[end..], start + text.Length, clearAnchor: true);
         return true;
     }
@@ -1071,8 +1252,9 @@ public sealed class PhotonHost
         if (TextTarget is { } entry && !entry.Disabled)
         {
             var (start, end) = Selection;
+            var value = _edited ?? entry.Value;
             if (end > start)
-                Commit(entry, entry.Value[..start] + entry.Value[end..], start, clearAnchor: true);
+                Commit(entry, value[..start] + value[end..], start, clearAnchor: true);
         }
         if (_marked == text) return true;
         _marked = text;
@@ -1091,6 +1273,80 @@ public sealed class PhotonHost
             NeedsRender = true;
         }
         return TextInput(text);
+    }
+
+    // ---- A phone's keyboard ---------------------------------------------------------------------
+    //
+    // A phone keyboard edits a DOCUMENT, not a stream of keys: it reads the text around the caret,
+    // replaces a word it autocorrected, marks the word it is suggesting for, moves the selection.
+    // Android's input connection and iOS's text input both work that way, so both phone shells hand
+    // the host the field's whole new state, Flutter's TextInputClient.updateEditingValue, and the
+    // host turns it into the one edit the app hears about. A code surface and a sheet keep their text
+    // to themselves, have no editing value, and take the keyboard's keys and committed text instead.
+
+    /// <summary>
+    /// The field being edited as a keyboard sees it: its value (the last one typed until a frame
+    /// draws it), the selection and the composition. Null when no field holds the caret, which
+    /// includes a code surface and a sheet: they take keys, not a document.
+    /// </summary>
+    public TextEditingValue? EditingValue
+    {
+        get
+        {
+            if (TextTarget is not { } entry) return null;
+            var text = _edited ?? entry.Value;
+            var caret = CaretIndex;
+            var anchor = _anchor is { } held ? Math.Clamp(held, 0, text.Length) : caret;
+            return _composing is { } composing && composing.Text == text
+                ? new TextEditingValue(text, anchor, caret, composing.Start, composing.End)
+                : new TextEditingValue(text, anchor, caret);
+        }
+    }
+
+    /// <summary>
+    /// The keyboard's edit, as the field's whole new state (Flutter's
+    /// <c>TextInputClient.updateEditingValue</c>). A new text reaches the app through
+    /// <see cref="TextEntry.OnChanged"/>, once, as typing does; the selection and the composition are
+    /// the host's to keep. A single-line field flattens a line break, as a paste does. Answers false
+    /// when no field holds the caret, or the one that does is disabled.
+    /// </summary>
+    public bool UpdateEditingValue(TextEditingValue value)
+    {
+        if (TextTarget is not { } entry || entry.Disabled) return false;
+        value = value with { Text = value.Text ?? "" };
+        if (entry.Lines <= 1 && value.Text.AsSpan().IndexOfAny('\r', '\n') >= 0) value = Flattened(value);
+        var text = value.Text;
+        var extent = Math.Clamp(value.SelectionExtent, 0, text.Length);
+        var anchor = Math.Clamp(value.SelectionBase, 0, text.Length);
+
+        if (text != (_edited ?? entry.Value)) Commit(entry, text, extent);
+        Caret = extent;
+        _anchor = anchor == extent ? null : anchor;
+        // After the caret, whose every move drops it: this is the one move that keeps it.
+        _composing = value.HasComposing ? (value.ComposingStart, value.ComposingEnd, text) : null;
+        _marked = "";
+        NeedsRender = true;
+        return true;
+    }
+
+    /// <summary>
+    /// A keyboard's state for a single line: each line break a space, as a paste makes it. A CRLF
+    /// is two characters that become one, so an offset past one moves back with the text it is in.
+    /// </summary>
+    private static TextEditingValue Flattened(TextEditingValue value)
+    {
+        var text = value.Text;
+        int At(int offset)
+        {
+            var shift = 0;
+            for (var i = text.IndexOf("\r\n", StringComparison.Ordinal);
+                 i >= 0 && i + 2 <= offset;
+                 i = text.IndexOf("\r\n", i + 2, StringComparison.Ordinal))
+                shift++;
+            return offset - shift;
+        }
+        return new TextEditingValue(text.ReplaceLineEndings(" "), At(value.SelectionBase),
+            At(value.SelectionExtent), At(value.ComposingStart), At(value.ComposingEnd));
     }
 
     /// <summary>The selected range of the focused field, as (start, length) — what
@@ -1113,7 +1369,10 @@ public sealed class PhotonHost
     /// window (the CJK picker appears under the text being composed, not in a corner). Null when
     /// nothing is focused or the frame has not rendered.
     /// </summary>
-    public Rect? CaretRect()
+    public Rect? CaretRect() => CaretInFrame() is { } caret ? caret with { Y = caret.Y - _lift } : null;
+
+    /// <summary>The caret where the frame laid it, before <see cref="_lift"/>.</summary>
+    private Rect? CaretInFrame()
     {
         if (_lastFrame is null || _textPath is null) return null;
 
@@ -1157,7 +1416,7 @@ public sealed class PhotonHost
     private bool EditKey(TextEntry entry, string key, KeyModifiers modifiers)
     {
         if (entry.Disabled) return false;
-        var value = entry.Value;
+        var value = _edited ?? entry.Value;
         var caret = CaretIndex;
         var (start, end) = Selection;
         var selecting = modifiers.HasFlag(KeyModifiers.Shift);
@@ -1181,7 +1440,7 @@ public sealed class PhotonHost
             switch (char.ToLowerInvariant(key[0]))
             {
                 case 'c':
-                    if (start != end && Copyable(entry, start, end) is { Length: > 0 } copied)
+                    if (start != end && Copyable(entry, value, start, end) is { Length: > 0 } copied)
                         Clipboard?.Write(copied);
                     return true;
 
@@ -1189,7 +1448,7 @@ public sealed class PhotonHost
                     if (start == end) return true;
                     // An obscured field cuts by DELETING only: writing its dots' secret out is not
                     // its call, and writing "" would clear what the user already had there.
-                    if (Copyable(entry, start, end) is { Length: > 0 } cut) Clipboard?.Write(cut);
+                    if (Copyable(entry, value, start, end) is { Length: > 0 } cut) Clipboard?.Write(cut);
                     Commit(entry, value.Remove(start, end - start), start, clearAnchor: true);
                     return true;
 
@@ -1270,7 +1529,9 @@ public sealed class PhotonHost
         NeedsRender = true;
         // The caret moves whether or not the app takes the change: a field with no OnChanged is a
         // read-only field, and pretending the character landed would be a lie the next frame undoes.
-        entry.OnChanged?.Invoke(value);
+        if (entry.OnChanged is null) return;
+        _edited = value;
+        entry.OnChanged(value);
     }
 
     /// <summary>Clears keyboard focus (pointer interaction, escape).</summary>
@@ -1359,8 +1620,17 @@ public sealed class PhotonHost
     /// it is answered by <see cref="TakeAnnouncements"/>.
     /// </para>
     /// </summary>
-    public IReadOnlyList<SemanticNode> Semantics() =>
-        _lastFrame is null ? Array.Empty<SemanticNode>() : SemanticsTree.Collect(_lastFrame);
+    public IReadOnlyList<SemanticNode> Semantics()
+    {
+        if (_lastFrame is null) return Array.Empty<SemanticNode>();
+        var nodes = SemanticsTree.Collect(_lastFrame);
+        if (_lift == 0) return nodes;
+        // Read where it is drawn: a finger exploring the lifted screen finds what is under it.
+        var lifted = new SemanticNode[nodes.Count];
+        for (var i = 0; i < nodes.Count; i++)
+            lifted[i] = nodes[i] with { Bounds = nodes[i].Bounds with { Y = nodes[i].Bounds.Y - _lift } };
+        return lifted;
+    }
 
     /// <summary>
     /// The live-region announcements produced since this was last called, and the queue is emptied.
@@ -1508,6 +1778,7 @@ public sealed class PhotonHost
     /// </summary>
     public void PointerMove(float x, float y, PointerKind kind = PointerKind.Mouse)
     {
+        y += _lift;
         // A canvas being dragged keeps the pointer even when it leaves the box; otherwise the
         // topmost canvas under the point gets the move, and the one being left gets its leave.
         var overCanvas = _pressedCanvas ?? CanvasUnder(new Point(x, y));
@@ -1750,6 +2021,7 @@ public sealed class PhotonHost
     /// </summary>
     public bool ScrollBy(float x, float y, float delta)
     {
+        y += _lift;
         var regions = _lastFrame?.ScrollRegions;
         if (regions is null) return false;
         for (var i = regions.Count - 1; i >= 0; i--)
@@ -1776,6 +2048,7 @@ public sealed class PhotonHost
     /// </summary>
     public CursorShape CursorAt(float x, float y)
     {
+        y += _lift;
         if (_lastFrame is null) return CursorShape.Default;
         var point = new Point(x, y);
 
@@ -1857,6 +2130,7 @@ public sealed class PhotonHost
     /// </summary>
     public bool PressDown(float x, float y, int clickCount = 1, KeyModifiers modifiers = KeyModifiers.None)
     {
+        y += _lift;
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
 
@@ -2085,6 +2359,7 @@ public sealed class PhotonHost
     /// </summary>
     public bool PressUp(float x, float y, PointerKind kind = PointerKind.Mouse)
     {
+        y += _lift;
         // The canvas that took the press gets the release, wherever it happens — a drag that ends
         // outside the box still ends, which is what every gesture on every platform means by "up".
         if (_pressedCanvas is { } canvas)
@@ -2283,6 +2558,7 @@ public sealed class PhotonHost
 
     public bool Tap(float x, float y)
     {
+        y += _lift;
         if (_lastFrame is null) return false;
 
         var point = new Point(x, y);

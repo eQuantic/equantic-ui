@@ -19,6 +19,9 @@ public sealed class IosCapabilities : IPhotonCapabilities
         services.TryAddSingleton<IMotionSensor, AppleMotionSensor>();
         services.TryAddSingleton<ILocation, AppleLocation>();
         services.TryAddSingleton<ICamera, AppleCamera>();
+        // The same two-method clipboard the text fields use, offered as a SERVICE: what a page's
+        // own "Copy" button asks for.
+        services.TryAddSingleton<ITextClipboard, IosClipboard>();
         // The app's own durable key/value store — NSUserDefaults, which the system already
         // backs up, migrates and deletes along with the app. One realization for both
         // Apple platforms because it is one API on both.
