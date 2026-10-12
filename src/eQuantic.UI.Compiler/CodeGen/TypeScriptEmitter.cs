@@ -68,9 +68,7 @@ public class TypeScriptEmitter
     {
         if (_converter.Model is not { } model) return null;
         if (ReferenceEquals(node.SyntaxTree, model.SyntaxTree)) return model;
-        return model.Compilation.ContainsSyntaxTree(node.SyntaxTree)
-            ? model.Compilation.GetSemanticModel(node.SyntaxTree)
-            : null;
+        return model.Compilation.ModelOf(node.SyntaxTree);
     }
 
     /// <summary>The symbol of a declared type — what the hydration spec is computed from — or
@@ -301,6 +299,13 @@ public class TypeScriptEmitter
     {
         get => _converter.HasProjectCompilation;
         set => _converter.HasProjectCompilation = value;
+    }
+
+    /// <summary>Forwarded to the converter — see <see cref="CSharpToJsConverter.ResourceIds"/>.</summary>
+    internal Services.ResourceCatalogIds? ResourceIds
+    {
+        get => _converter.ResourceIds;
+        set => _converter.ResourceIds = value;
     }
 
     public void SetDependencyResolver(ComponentDependencyResolver resolver)
@@ -975,7 +980,7 @@ public class TypeScriptEmitter
                     componentTypes.Add(appType);
                     continue;
                 }
-                if (_dependencyResolver.IsModule(appType)) componentTypes.Add(appType);
+                if (IsAppModule(appType)) componentTypes.Add(appType);
             }
         }
 
@@ -2505,7 +2510,12 @@ public class TypeScriptEmitter
 
     /// <summary>Whether the per-app scan knows this name became one of the app's OWN modules — the
     /// only kind a <c>./Name</c> import may point at.</summary>
-    private bool IsAppModule(string name) => _dependencyResolver?.IsModule(name) == true;
+    private bool IsAppModule(string name) => _dependencyResolver?.IsModule(name) == true || Referenced.IsModule(name);
+
+    /// <summary>What the module being written names of the projects the app references: a type of
+    /// one is a sibling module too, where a symbol of this module names it (#624). The compiler sets
+    /// it for each module, and a build with no referenced project leaves it naming none.</summary>
+    internal Services.ReferencedNames Referenced { get; set; } = Services.ReferencedNames.None;
 
     /// <summary>
     /// The net under every fence (#584): a twin this module would import that the build writes no
@@ -2516,13 +2526,19 @@ public class TypeScriptEmitter
     /// </summary>
     private bool ReportIfKeptOut(string name, SyntaxNode? at)
     {
-        if (at is null || _dependencyResolver?.IsKeptOut(name) != true) return false;
+        if (at is null || (_dependencyResolver?.IsKeptOut(name) != true && !Referenced.IsKeptOut(name))) return false;
         // A fence that refused it where the code named it said it there already.
         if (!_converter.RefusedTwins.Contains(name))
             _converter.Report(at, ConversionSeverity.Error, "EQ2010",
                 CodeGen.Extensions.HostOnlySymbolExtensions.KeptOutMessage(name.Replace('$', '.')));
         return true;
     }
+
+    /// <summary>Whether <paramref name="emitted"/> names <paramref name="name"/> as a whole
+    /// identifier. Lookarounds rather than <c>\b</c>: a twin's name can hold a <c>$</c>.</summary>
+    private static bool NamedIn(string emitted, string name) =>
+        System.Text.RegularExpressions.Regex.IsMatch(emitted,
+            $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(name)}(?![\w$])");
 
     /// <summary>Whether the per-app scan knows this name at all: one of the app's own modules, or a
     /// type the app declares <c>[RuntimeProvided]</c>, which the runtime exports instead.</summary>
@@ -2653,8 +2669,13 @@ public class TypeScriptEmitter
             if (string.IsNullOrEmpty(ct) || ct == name || ct == baseName
                 || ct == "HtmlNode" || NonImportableTypes.Contains(ct)) continue;
             if (runtimeProvided.Contains(ct) || referencedEnums.Contains(ct)) continue;
-            if (IsAppModule(ct)) imports.Add(new JsImport([ct], $"./{ct}"));
-            else ReportIfKeptOut(ct, cls);
+            // A type of a referenced project is imported where the emitted text names it, as the
+            // component and the record paths import: a constant read off one is inlined and leaves
+            // no reference, and importing it there compiled a whole class of another project for a
+            // literal. Measured on an app's `const string Serif = Theme.Serif;` (#624).
+            if (_dependencyResolver?.IsModule(ct) == true || Referenced.IsModule(ct) && NamedIn(emitted, ct))
+                imports.Add(new JsImport([ct], $"./{ct}"));
+            else if (!Referenced.IsModule(ct)) ReportIfKeptOut(ct, cls);
         }
         var module = new JsModule(imports, builder.ToString());
         // The class's mappings were recorded against its own text; the imports stand above it.

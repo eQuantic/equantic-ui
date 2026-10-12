@@ -249,7 +249,7 @@ internal static class ValueCopies
         foreach (var reference in method.DeclaringSyntaxReferences)
         {
             var syntax = reference.GetSyntax();
-            if (compilation.GetSemanticModel(syntax.SyntaxTree).GetOperation(syntax) is not { } body) continue;
+            if (compilation.ModelOf(syntax.SyntaxTree)?.GetOperation(syntax) is not { } body) continue;
             foreach (var operation in body.Descendants())
             {
                 var target = operation switch

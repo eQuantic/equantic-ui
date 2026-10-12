@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- The innermost project: plain .NET, with no reference to eQuantic.UI at all. The web app
+         reaches it THROUGH SharedLibrary.Common, which is the transitive case: a type declared here
+         crosses to the browser when a page reaches it, wherever the reference came from. -->
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+</Project>

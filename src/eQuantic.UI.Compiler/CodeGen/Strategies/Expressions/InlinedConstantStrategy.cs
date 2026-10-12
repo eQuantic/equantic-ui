@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
 using eQuantic.UI.Compiler.CodeGen.Ir;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -29,13 +30,7 @@ public class InlinedConstantStrategy : IConversionStrategy
     {
         MemberAccessExpressionSyntax =>
             TryResolveConstant(node, context, out _) || TryResolveInlinable(node, context, out _, out _),
-        // `using static System.Math;` then a bare `PI` reads the constant `Math.PI` reads, so it inlines
-        // as that one does: it fell to the rule for the app's own statics and read `Math.pI` (#485).
-        // Only a constant this compilation does not declare: an app's own, reached by its simple
-        // name, stays its twin's static.
-        IdentifierNameSyntax name when name.StandsAlone()
-            && context.SemanticHelper.GetSymbol(name) is IFieldSymbol { IsConst: true, ContainingType: { } owner }
-            && !owner.Locations.Any(location => location.IsInSource) => TryResolveConstant(node, context, out _),
+        IdentifierNameSyntax => TryResolveConstant(node, context, out _),
         _ => false,
     };
 
@@ -51,7 +46,9 @@ public class InlinedConstantStrategy : IConversionStrategy
         if (!TryResolveInlinable(node, context, out var initializer, out var glyphTypeName))
             return context.Converter.ConvertExpression(((MemberAccessExpressionSyntax)node).Expression);
 
-        var model = context.SemanticModel!.Compilation.GetSemanticModel(initializer.SyntaxTree);
+        // The initializer's own file's model, which a pack's or a referenced project's file has in
+        // the compilation that holds it.
+        var model = context.SemanticModel!.Compilation.ModelOf(initializer.SyntaxTree) ?? context.SemanticModel;
         var inlined = context.Converter.ConvertExpressionWithModel(initializer, model);
 
         // The inlined `new IconGlyph(...)` references a runtime-provided type the COMPONENT never
@@ -69,22 +66,52 @@ public class InlinedConstantStrategy : IConversionStrategy
     private static bool TryResolveConstant(SyntaxNode node, ConversionContext context,
         [NotNullWhen(true)] out IFieldSymbol? field)
     {
-        field = null;
-        if (context.SemanticModel is null) return false;
-        if (context.SemanticHelper.GetSymbol(node) is not IFieldSymbol
+        field = context.SemanticModel is null
+            ? null
+            : ConstantWrittenAsItsValue(node, context.SemanticHelper.GetSymbol(node));
+        return field is not null;
+    }
+
+    /// <summary>
+    /// The `const` a read is written as the VALUE of, given the symbol the node binds to: null for
+    /// a read that is written as a reference, or as something else.
+    /// <para>
+    /// This is the whole rule, asked by this strategy and by whoever reads what a declaration names
+    /// (<see cref="NamedSourceTypes"/>), so the two cannot disagree: a read written as its value
+    /// writes no reference to the type that declares the constant, and names nothing a module has
+    /// to import.
+    /// </para>
+    /// </summary>
+    internal static IFieldSymbol? ConstantWrittenAsItsValue(SyntaxNode node, ISymbol? symbol)
+    {
+        if (symbol is not IFieldSymbol
             {
                 IsConst: true, HasConstantValue: true, ContainingType: { } owner,
             } constant)
         {
-            return false;
+            return null;
+        }
+        switch (node)
+        {
+            case MemberAccessExpressionSyntax:
+                break;
+            // `using static System.Math;` then a bare `PI` reads the constant `Math.PI` reads, so it
+            // inlines as that one does: it fell to the rule for the app's own statics and read
+            // `Math.pI` (#485). Only a constant no source here declares: an app's own, reached by
+            // its simple name, stays its twin's static.
+            case IdentifierNameSyntax name when name.StandsAlone()
+                && !owner.Locations.Any(location => location.IsInSource):
+                break;
+            default:
+                return null;
         }
         // Track L D2: nothing that lives on a resource-shaped class may inline — the value is
         // per-culture data, and a baked literal is the build machine's language in production.
         // (The generated accessors are PROPERTIES and never reach this field-only path; this
         // guard is the belt for a hand-written const inside a Designer-shaped class, and for
         // whoever widens this strategy to properties one day.)
-        if (Services.ResourceClasses.IsResourceClass(owner)) return false;
-        if (owner.TypeKind == TypeKind.Enum) return false;
+        if (Services.ResourceClasses.IsResourceClass(owner)) return null;
+        if (owner.TypeKind == TypeKind.Enum) return null;
 
         // EXACTNESS FIRST, in the value's own type: a decimal and a long reach JavaScript as the
         // runtime's Decimal and a BigInt, never as a number. A decimal had no writer at all, so
@@ -93,9 +120,7 @@ public class InlinedConstantStrategy : IConversionStrategy
         // it met threw on. A FLOAT is the double it is: `float.E` printed as "2.7182817" is read back
         // as 2.7182817000000001, not 2.7182817459106445 (SinglePrecision). A const whose TYPE is an
         // enum is that enum's representation, never the ordinal its value arrives as.
-        if (ConstantLiteral.Write(constant.ConstantValue, constant.Type) is null) return false;
-        field = constant;
-        return true;
+        return ConstantLiteral.Write(constant.ConstantValue, constant.Type) is null ? null : constant;
     }
 
     /// <summary>The inlinable initializer for the accessed field, when this is an external constant

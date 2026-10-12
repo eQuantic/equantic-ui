@@ -1,13 +1,10 @@
-// CLI entry point for eQuantic.UI Compiler
-using System.Diagnostics;
-using System.Text;
-using eQuantic.UI.Compiler;
+// CLI entry point for eQuantic.UI Compiler: it reads its arguments and runs the build the compiler
+// library holds (AppBuild), so a test runs the same build the SDK does.
 using eQuantic.UI.Compiler.Services;
-using Microsoft.CodeAnalysis;
 
 if (args.Length < 2)
 {
-    Console.Error.WriteLine("Usage: eqc <source-dir> <output-dir> [--bun <path>] [--source-maps full|external|none] [--watch]");
+    Console.Error.WriteLine("Usage: eqc <source-dir> <output-dir> [--refs <file>] [--projects <file>] [--assembly-name <name>] [--bun <path>] [--source-maps full|external|none] [--watch]");
     return 1;
 }
 
@@ -35,6 +32,15 @@ var refSourcesFile = args.ToList().Contains("--ref-sources") ? args[args.ToList(
 // generated tree under obj/Debug AND obj/Release, and sweeping obj would take every generated type
 // twice — which resolves to neither, while the C# build stays perfectly happy.
 var generatedDir = args.ToList().Contains("--generated") ? args[args.ToList().IndexOf("--generated") + 1].Trim() : null;
+// --projects <file>: the projects the app references with a ProjectReference, directly or through
+// another, one a line: the assembly MSBuild resolved for it, a `|`, and its project file. Their source is
+// compiled in place of their assemblies, so a type of one that a page uses is a module of the bundle and
+// not a name nothing defines (#624). The SDK writes the file; a developer sets nothing.
+var projectsFile = args.ToList().Contains("--projects") ? args[args.ToList().IndexOf("--projects") + 1].Trim() : null;
+// --assembly-name <name>: the app's assembly name as its project evaluates it, which a project file
+// may set apart from its own name. It is the name a referenced project's InternalsVisibleTo opens its
+// internal types to. The SDK passes $(AssemblyName); a direct run takes the project file's name.
+var assemblyName = args.ToList().Contains("--assembly-name") ? args[args.ToList().IndexOf("--assembly-name") + 1].Trim() : null;
 // --source-maps full|external|none (#352): what each module's map carries. `full` links a map with
 // the C# inside it, `external` writes one without the C# and without the link, `none` writes none.
 // The SDK passes full in Debug and none everywhere else; a direct run keeps full.
@@ -47,202 +53,22 @@ var sourceMaps = sourceMapArg.ToLowerInvariant() switch
     _ => throw new ArgumentException($"--source-maps takes full, external or none, not '{sourceMapArg}'."),
 };
 
-// Determine intermediate directory based on primary source dir
-var primarySourceDir = sourceDirs[0];
-var intermediateDir = Path.Combine(primarySourceDir, "obj", "eQuantic", "ts");
-
-var compiler = new ComponentCompiler
+var build = new AppBuild(new AppBuildOptions
 {
+    SourceDirectories = sourceDirs,
+    OutputDirectory = outputDir,
+    BunPath = bunPath,
+    ReferencesFile = refsFile,
+    ReferenceSourcesFile = refSourcesFile,
+    GeneratedDirectory = generatedDir,
+    ProjectsFile = projectsFile,
+    AssemblyName = assemblyName,
     SourceMaps = sourceMaps,
-    SourceRoot = Path.GetFullPath(primarySourceDir),
-    SourceMapDirectory = Path.GetFullPath(intermediateDir),
-};
+});
 
-// Create full project compilation for better type resolution
-// This enables the compiler to resolve types defined in external files
-Compilation? projectCompilation = null;
-try
-{
-    // Write to a log file for debugging since MSBuild might not show console output
-    var logPath = Path.Combine(intermediateDir, "compilation.log");
-    Directory.CreateDirectory(intermediateDir);
-    File.WriteAllText(logPath, $"[{DateTime.Now:HH:mm:ss}] Starting compilation setup\n");
-
-    Console.WriteLine("🔍 Attempting to load project compilation...");
-
-    // Collect source files only from the PRIMARY source directory (user's project)
-    // Skip standard components directory as those are already compiled
-    var allSourceFiles = new List<string>();
-
-    if (Directory.Exists(primarySourceDir))
-    {
-        Console.WriteLine($"   Scanning project directory: {primarySourceDir}");
-        var files = ProjectCompilationHelper.GetProjectSourceFiles(primarySourceDir).ToList();
-        Console.WriteLine($"   Found {files.Count} source files in project");
-        allSourceFiles.AddRange(files);
-
-        // Feed the SDK-generated global usings (obj/*.GlobalUsings.g.cs) to the compilation so the
-        // semantic model resolves BCL types used unqualified — e.g. Dictionary<RecordKey, V> under
-        // <ImplicitUsings> — exactly as the real build does, without hardcoding a namespace list.
-        var globalUsings = ProjectCompilationHelper.GetGeneratedGlobalUsingsFiles(primarySourceDir).ToList();
-        if (globalUsings.Count > 0)
-        {
-            Console.WriteLine($"   Including {globalUsings.Count} generated global-usings file(s)");
-            allSourceFiles.AddRange(globalUsings);
-        }
-
-        // SOURCE-GENERATOR output: part of the program csc compiled, so a page calling into it
-        // must resolve here too — see GetCompilerGeneratedFiles.
-        var generated = ProjectCompilationHelper.GetCompilerGeneratedFiles(primarySourceDir, generatedDir).ToList();
-        if (generated.Count > 0)
-        {
-            Console.WriteLine($"   Including {generated.Count} compiler-generated file(s)");
-            allSourceFiles.AddRange(generated);
-        }
-    }
-
-    // Reference-only sources (icon packs etc.): their .cs enter the compilation so the semantic model
-    // can reach constant initializers for inlining, but they are NOT in sourceDirs so nothing here is
-    // transpiled to a module.
-    if (!string.IsNullOrEmpty(refSourcesFile) && File.Exists(refSourcesFile))
-    {
-        var refSourceCount = 0;
-        foreach (var dir in File.ReadAllLines(refSourcesFile).Select(l => l.Trim()).Where(l => l.Length > 0))
-        {
-            if (!Directory.Exists(dir)) continue;
-            foreach (var file in ProjectCompilationHelper.GetProjectSourceFiles(dir))
-            {
-                allSourceFiles.Add(file);
-                refSourceCount++;
-            }
-        }
-        if (refSourceCount > 0)
-            Console.WriteLine($"   Including {refSourceCount} reference-source file(s) for constant inlining");
-    }
-
-    if (allSourceFiles.Count > 0)
-    {
-        var assemblyPaths = new List<string>();
-
-        // Preferred path: the exact reference set MSBuild resolved for this project, handed to us via
-        // --refs. This is what csc itself compiles against, so the semantic model resolves every type
-        // the real build does (eQuantic.UI.*, NuGet, project references) with no TFM/config guessing.
-        var usingExplicitRefs = false;
-        if (!string.IsNullOrEmpty(refsFile) && File.Exists(refsFile))
-        {
-            foreach (var line in File.ReadAllLines(refsFile))
-            {
-                var path = line.Trim();
-                if (path.Length > 0 && File.Exists(path))
-                    assemblyPaths.Add(path);
-            }
-            usingExplicitRefs = assemblyPaths.Count > 0;
-            Console.WriteLine($"   Using {assemblyPaths.Count} MSBuild-resolved references from {Path.GetFileName(refsFile)}");
-
-            // An EMPTY --refs file is not a reason to fall back — it is a reason to stop. The bin-tree
-            // fallback below exists for a human running eqc by hand with no MSBuild at all; reaching it
-            // from a real build means the semantic model is gone, and the compiler's degraded path
-            // passes named arguments through in SYNTACTIC order. That renders a component with the
-            // wrong values and reports nothing, which is the single worst outcome this compiler has.
-            // Fail the build and say what to do about it.
-            if (!usingExplicitRefs)
-            {
-                Console.Error.WriteLine(
-                    $"{refsFile}(1,1): error EQ0002: the MSBuild reference list is empty, so the " +
-                    "semantic model would be built from an incomplete compilation and named arguments " +
-                    "could be emitted in the wrong order. Rebuild the project (dotnet build) to " +
-                    "regenerate it; if this persists, the CompileEQuanticUI target ran without " +
-                    "FindReferenceAssembliesForReferences.");
-                return 1;
-            }
-        }
-
-        if (!usingExplicitRefs)
-        {
-            // Fallback for direct CLI use without --refs: the running BCL plus any eQuantic/System/Roslyn
-            // assemblies emitted to the project's bin tree. Scan every TFM/config dir (deduping by file
-            // name) instead of hardcoding one — the old net8.0 hardcode silently dropped all references.
-            assemblyPaths.Add(typeof(object).Assembly.Location);   // System.Private.CoreLib
-            assemblyPaths.Add(typeof(Enumerable).Assembly.Location); // System.Linq
-            assemblyPaths.Add(typeof(List<>).Assembly.Location);   // System.Collections
-
-            var binRoot = Path.Combine(primarySourceDir, "bin");
-            if (Directory.Exists(binRoot))
-            {
-                var seen = new HashSet<string>(assemblyPaths.Select(Path.GetFileName)!, StringComparer.OrdinalIgnoreCase);
-                foreach (var dll in Directory.GetFiles(binRoot, "*.dll", SearchOption.AllDirectories))
-                {
-                    var fileName = Path.GetFileName(dll);
-                    var isCandidate =
-                        fileName.StartsWith("eQuantic.UI", StringComparison.OrdinalIgnoreCase) ||
-                        fileName.StartsWith("Microsoft.CodeAnalysis", StringComparison.OrdinalIgnoreCase) ||
-                        fileName.StartsWith("System.", StringComparison.OrdinalIgnoreCase);
-                    if (isCandidate && seen.Add(fileName))
-                        assemblyPaths.Add(dll);
-                }
-                Console.WriteLine($"   Found {assemblyPaths.Count - 3} assemblies in bin tree (fallback)");
-            }
-        }
-
-        Console.WriteLine($"   Creating compilation for {allSourceFiles.Count} files with {assemblyPaths.Count} references...");
-
-        // Get project name from .csproj
-        var csprojFiles = Directory.GetFiles(primarySourceDir, "*.csproj", SearchOption.TopDirectoryOnly);
-        var assemblyName = csprojFiles.Length > 0 ? Path.GetFileNameWithoutExtension(csprojFiles[0]) : "DynamicAssembly";
-
-        // When we have the complete MSBuild reference set, use it verbatim. Injecting the runtime BCL
-        // impl assemblies on top of the targeting-pack ref assemblies would duplicate identities and
-        // muddy resolution, so only add the standard fallback set when --refs was not supplied.
-        projectCompilation = ProjectCompilationHelper.CreateCompilationFromSources(
-            allSourceFiles,
-            assemblyPaths,
-            assemblyName: assemblyName,
-            addStandardReferences: !usingExplicitRefs
-        );
-
-        compiler.SetProjectCompilation(projectCompilation);
-        Console.WriteLine($"📚 Loaded project compilation: {assemblyName} ({allSourceFiles.Count} files, {assemblyPaths.Count} refs)");
-
-        // Log success
-        File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss}] SUCCESS: Loaded {assemblyName} with {allSourceFiles.Count} files\n");
-    }
-    else
-    {
-        Console.WriteLine("⚠️  No source files found for project compilation");
-        File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss}] WARNING: No source files found\n");
-    }
-}
-catch (Exception ex)
-{
-    // If project compilation fails, continue with minimal compilation
-    Console.WriteLine($"⚠️  Project compilation failed: {ex.Message}");
-    Console.WriteLine($"   Stack: {ex.StackTrace}");
-    Console.WriteLine("   Using minimal compilation per file");
-
-    var logPath = Path.Combine(intermediateDir, "compilation.log");
-    File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n{ex.StackTrace}\n");
-}
-
-// Initialize dependency resolver by scanning component directories. It is handed the compilation the
-// compiler's model is built from: it asks it for each type's symbol, as the parser does, so who imports
-// a module and who writes it read one answer (#423). Without it the resolver judges a library's base,
-// and an interface, by its name.
-var dependencyResolver = new ComponentDependencyResolver(projectCompilation);
-var componentDirectories = new List<string>(sourceDirs);
-
-// Also scan standard component library locations relative to build tool
-var buildDir = AppContext.BaseDirectory;
-var standardComponentsPath = Path.GetFullPath(Path.Combine(buildDir, "..", "..", "..", "..", "eQuantic.UI.Web.Components"));
-if (Directory.Exists(standardComponentsPath))
-{
-    componentDirectories.Add(standardComponentsPath);
-}
-
-dependencyResolver.GeneratedDirectory = generatedDir;
-dependencyResolver.ScanSourceDirectories(componentDirectories);
-compiler.SetDependencyResolver(dependencyResolver);
-
-var hasBun = !string.IsNullOrEmpty(bunPath) && File.Exists(bunPath);
+// The project's compilation and the scan of its declarations. A build it cannot stand on has said
+// why (an empty reference list is EQ0002) and stops here.
+if (!build.Load()) return 1;
 
 if (isWatchMode)
 {
@@ -253,11 +79,11 @@ else
     Console.WriteLine($"🔨 eQuantic.UI: Compiling components from {sourceDirs.Length} directories");
 }
 
-Console.WriteLine($"   Intermediate: {intermediateDir}");
+Console.WriteLine($"   Intermediate: {build.IntermediateDirectory}");
 Console.WriteLine($"   Output:       {outputDir}");
 
 // Initial compilation
-var initialBuildHadErrors = CompileAndBundle();
+var initialBuildHadErrors = build.CompileAndBundle();
 
 if (isWatchMode)
 {
@@ -275,10 +101,10 @@ if (isWatchMode)
             if (e.FullPath.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") ||
                 e.FullPath.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
                 return;
-                
+
             debouncer.Debounce(() => {
                 Console.WriteLine($"🔄 Change detected in {Path.GetFileName(e.FullPath)}. Recompiling...");
-                CompileAndBundle();
+                build.CompileAndBundle();
             });
         };
 
@@ -289,269 +115,12 @@ if (isWatchMode)
         watcher.EnableRaisingEvents = true;
         watchers.Add(watcher);
     }
-    
+
     await Task.Delay(-1);
 }
 
 // Non-zero exit fails the MSBuild `Exec` step when transpilation hit unsupported constructs.
 return initialBuildHadErrors ? 1 : 0;
-
-// Format a diagnostic in MSBuild's canonical form so `Exec` recognises it and fails/warns the build:
-//   path(line,col): error EQ2001: message
-static string FormatDiagnostic(eQuantic.UI.Compiler.CompilationError d, string severity)
-{
-    var code = string.IsNullOrEmpty(d.Code) ? "EQ0000" : d.Code;
-    var path = string.IsNullOrEmpty(d.SourcePath) ? "eQuantic.UI" : d.SourcePath;
-    var line = d.Line > 0 ? d.Line : 1;
-    var col = d.Column > 0 ? d.Column : 1;
-    return $"{path}({line},{col}): {severity} {code}: {d.Message}";
-}
-
-// Returns true if compilation produced errors (so the process can exit non-zero and fail the build).
-bool CompileAndBundle()
-{
-    try
-    {
-        var hasErrors = false;
-        // Which names are already taken — see EmittedTwins for why a name collision is an error.
-        var written = new eQuantic.UI.Compiler.Services.EmittedTwins();
-        var entryPoints = new List<string>();
-        
-        if (!Directory.Exists(intermediateDir)) Directory.CreateDirectory(intermediateDir);
-        if (!Directory.Exists(outputDir)) Directory.CreateDirectory(outputDir);
-
-        // GENERATED sources are compiled alongside the app's own: a generator that writes something
-        // a page CALLS (a factory surface built from the app's components) has to become a module,
-        // or the page names a binding the bundle never defines. They are paired with the project
-        // dir so their entry-point rule is the project's own; nothing here is an entry point unless
-        // it is a page. Files a generator wrote for other purposes (ASP.NET's public Program, say)
-        // pass through the parser and come back empty, exactly as a non-component always has.
-        //
-        // The list comes from the SAME function the semantic model is built from, and each unit
-        // says whether it is generated. That is the whole of #244: this used to be a raw recursive
-        // GetFiles filtered by the SHAPE of the path — obj/ and bin/ skipped "unless the path
-        // contains /generated/" — so a Release build transpiled obj/Debug's factory surface too.
-        var compileUnits = ProjectCompilationHelper
-            .GetCompilationUnits(sourceDirs, generatedDir)
-            .GroupBy(unit => unit.Directory);
-
-        foreach (var group in compileUnits)
-        {
-            var dir = group.Key;
-
-            foreach (var (_, file, isGenerated) in group)
-            {
-                // Try to compile - parser will return empty if not a component
-                // This removes restrictions on naming, inheritance patterns, aliases, etc.
-                var results = compiler.CompileFile(file);
-                
-                foreach (var result in results)
-                {
-                    // Warnings surface whether or not compilation succeeded (e.g. an unconverted
-                    // construct emitted verbatim). Errors are reported below and fail the build.
-                    foreach (var warning in result.Warnings)
-                    {
-                        Console.Error.WriteLine(FormatDiagnostic(warning, "warning"));
-                    }
-
-                    if (result.Success)
-                    {
-                        var tsPath = Path.Combine(intermediateDir, $"{result.ComponentName}.ts");
-
-                        // A twin is named for its TYPE, not its namespace, so two types with one
-                        // name write the same file and the second wins. Nothing said so: C# is
-                        // happy — the namespaces differ — and the page died in the browser with
-                        // the OTHER type's fields, which is the worst way to learn.
-                        // Namespace-qualified, because that is what makes two claims ONE type.
-                        // The FILE is still keyed by the bare name — see EmittedTwins for why both
-                        // halves are needed, and why either alone gets a real case wrong.
-                        var identity = string.IsNullOrEmpty(result.Namespace)
-                            ? result.ComponentName
-                            : $"{result.Namespace}.{result.ComponentName}";
-                        var claim = written.Claim(result.ComponentName, identity, file, result.TypeScript,
-                            path => Path.GetRelativePath(dir, path), out var message);
-                        if (claim == eQuantic.UI.Compiler.Services.TwinClaim.Collision)
-                        {
-                            Console.Error.WriteLine($"{file}(1,1): error EQ1005: {message}");
-                            hasErrors = true;
-                            continue;
-                        }
-                        // One type across declarations eqc cannot merge. The build goes on with
-                        // the module already written; the members left out are said out loud,
-                        // because their absence shows up only in the browser.
-                        if (claim == eQuantic.UI.Compiler.Services.TwinClaim.Divided)
-                        {
-                            Console.Error.WriteLine($"{file}(1,1): warning EQ1006: {message}");
-                            continue;
-                        }
-                        // The same module already on disk: writing it again would rewrite its map
-                        // with one pointing at a different C# file.
-                        if (claim == eQuantic.UI.Compiler.Services.TwinClaim.Repeat) continue;
-
-                        File.WriteAllText(tsPath, result.TypeScript);
-                        
-                        if (!string.IsNullOrEmpty(result.SourceMap))
-                        {
-                            var mapPath = tsPath + ".map";
-                            File.WriteAllText(mapPath, result.SourceMap);
-                            File.AppendAllText(tsPath, $"\n//# sourceMappingURL={result.ComponentName}.ts.map");
-                        }
-                        
-                        var relativePath = Path.GetRelativePath(dir, file);
-                        // A PAGE is always an entry point, wherever its file sits: the server loads
-                        // it by name, so a page that is only transpiled is a 404 the build never
-                        // mentioned. The positional rule stays as well — a project laid out the
-                        // conventional way keeps every module it had before.
-                        var isEntryPoint = result.IsPage
-                            || (!isGenerated && dir == sourceDirs[0]
-                                && (relativePath.StartsWith("Pages")
-                                    || !relativePath.Contains(Path.DirectorySeparatorChar)));
-                        if (isEntryPoint)
-                        {
-                            entryPoints.Add(tsPath);
-                        }
-                    }
-                    else
-                    {
-                        hasErrors = true;
-                        foreach (var error in result.Errors)
-                        {
-                            Console.Error.WriteLine(FormatDiagnostic(error, "error"));
-                        }
-                    }
-                }
-            }
-        }
-
-        if (hasErrors) return true;
-
-        // Track L D3/D12: the per-culture string catalogs, from exactly the keys the compiled
-        // tree used. The whole fallback chain is FLATTENED here — a key present only in a parent
-        // culture's resx, or only in the neutral one, appears in every catalog that falls back
-        // through it — so the runtime does a flat lookup and never
-        // reimplements .NET's resolution.
-        EmitStringCatalogs(compiler, outputDir, primarySourceDir);
-
-        if (!hasBun && entryPoints.Count > 0)
-        {
-            // The embedded Bun is a hard requirement — bundling is what produces the page JS. A
-            // missing binary must fail the build loudly, never "succeed" without output.
-            Console.Error.WriteLine("❌ Embedded Bun not found — the eQuantic.UI build requires the " +
-                "bundled Bun (restore the platform Runtime package, e.g. eQuantic.UI.Runtime.Osx64).");
-            return true;
-        }
-
-        if (hasBun && entryPoints.Count > 0)
-        {
-            // Bundling and the map composition are the library's (ModuleBundler), so the test that
-            // proves a thrown error's frame leads back to its C# line runs exactly this.
-            if (eQuantic.UI.Compiler.Services.ModuleBundler.Bundle(bunPath!, entryPoints, outputDir, intermediateDir,
-                    sourceMaps, Console.Error.WriteLine) is { } bunError)
-            {
-                Console.Error.WriteLine("❌ Bun compilation failed:");
-                Console.Error.WriteLine(bunError);
-                return true;
-            }
-        }
-
-        Console.WriteLine($"✅ Built at {DateTime.Now:HH:mm:ss}");
-        return false;
-    }
-    catch (Exception ex)
-    {
-        Console.Error.WriteLine($"eQuantic.UI(1,1): error EQ0001: Compilation crash: {ex.Message}");
-        return true;
-    }
-}
-
-
-static void EmitStringCatalogs(eQuantic.UI.Compiler.ComponentCompiler compiler, string outputDir,
-    string appSourceDir)
-{
-    // Two contributions, and the difference is not a preference — it is what each side can KNOW.
-    // The app's own resx contributes the keys its pages actually read (D3: unused keys never
-    // ship), because this compilation sees those reads. A LIBRARY's resx (the SDK's own
-    // SdkResources above all) is read by components already transpiled into runtime.js at the
-    // SDK's build, so no read is visible here at all — it contributes WHOLE, which is exactly
-    // D14's promise that an app with zero resx still announces "Marcado" to a pt-BR reader.
-    var appRoot = Path.GetFullPath(appSourceDir);
-    var libraryResources = compiler.DiscoveredResources
-        .Where(pair => pair.Value.Length > 0
-            && !Path.GetFullPath(pair.Value).StartsWith(appRoot, StringComparison.Ordinal))
-        .ToList();
-
-    var uses = compiler.ResourceUses;
-    if (uses.Count == 0 && libraryResources.Count == 0) return;
-
-    var neutral = new SortedDictionary<string, string>(StringComparer.Ordinal);
-    var cultures = new SortedDictionary<string, SortedDictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
-
-    SortedDictionary<string, string> CatalogFor(string culture) =>
-        culture.Length == 0
-            ? neutral
-            : cultures.TryGetValue(culture, out var existing)
-                ? existing
-                : cultures[culture] = new SortedDictionary<string, string>(StringComparer.Ordinal);
-
-    foreach (var (id, designerPath) in libraryResources)
-    {
-        foreach (var (culture, path) in eQuantic.UI.Compiler.Services.ResxFiles.VariantsFor(designerPath))
-        {
-            var values = eQuantic.UI.Compiler.Services.ResxFiles.Read(path);
-            if (values is null) continue;
-            var target = CatalogFor(culture);
-            foreach (var (key, value) in values) target[$"{id}/{key}"] = value;
-        }
-    }
-
-    foreach (var use in uses)
-    {
-        var variants = eQuantic.UI.Compiler.Services.ResxFiles.VariantsFor(use.DesignerPath).ToList();
-        if (variants.Count == 0)
-        {
-            Console.Error.WriteLine($"⚠️  strings: no .resx found beside {use.DesignerPath} — " +
-                $"'{use.Id}' resolves on the server and native, but the web catalog has no values.");
-            continue;
-        }
-        foreach (var (culture, path) in variants)
-        {
-            var values = eQuantic.UI.Compiler.Services.ResxFiles.Read(path);
-            if (values is null) continue;
-            var target = CatalogFor(culture);
-            foreach (var key in use.Keys)
-            {
-                if (values.TryGetValue(key, out var value)) target[$"{use.Id}/{key}"] = value;
-                else if (culture.Length == 0)
-                    Console.Error.WriteLine($"⚠️  strings: key '{key}' is read by a page but " +
-                        $"missing from {path}.");
-            }
-        }
-    }
-
-    // D12: flatten — the client lookup is flat, so each culture is folded along the chain .NET's
-    // own ResourceManager walks, NEAREST ancestor first. Folding the neutral alone was the same
-    // answer whenever a culture's parent IS the neutral one, and a different page when it is not:
-    // `pt-BR` falls back through `pt`, so a key translated once in Strings.pt.resx and not repeated
-    // in Strings.pt-BR.resx came back in ENGLISH on the client while the server rendered it in
-    // Portuguese. TryAdd is what makes nearest win.
-    eQuantic.UI.Compiler.Services.ResxFiles.FoldFallbackChains(neutral, cultures);
-
-    // The catalogs carry STRINGS and nothing else. How a culture formats a number or a date is not
-    // the build's to say: the server writes it from .NET for every page, catalog or not, from the
-    // culture the request is in (CultureBridge, #471). Written here, it travelled only with a
-    // catalog, from the build machine's ICU, and for the UI culture rather than the format one.
-
-    var stringsDir = Path.Combine(outputDir, "strings");
-    Directory.CreateDirectory(stringsDir);
-    var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = false };
-    File.WriteAllText(Path.Combine(stringsDir, "neutral.json"),
-        System.Text.Json.JsonSerializer.Serialize(neutral, options));
-    foreach (var (culture, strings) in cultures)
-        File.WriteAllText(Path.Combine(stringsDir, culture + ".json"),
-            System.Text.Json.JsonSerializer.Serialize(strings, options));
-    Console.WriteLine($"🌐 Strings: {neutral.Count} keys → neutral" +
-        (cultures.Count > 0 ? " + " + string.Join(", ", cultures.Keys) : ""));
-}
 
 class Debouncer
 {

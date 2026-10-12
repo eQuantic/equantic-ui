@@ -1,0 +1,20 @@
+<Project>
+    <Import Project="../../../src/eQuantic.UI.Sdk/Sdk/Sdk.props" />
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <!-- The assembly is named apart from the project file, as an app's often is. The library's
+             InternalsVisibleTo names THIS, and the SDK hands the build the name MSBuild evaluated. -->
+        <AssemblyName>SharedLibrary.Site</AssemblyName>
+    </PropertyGroup>
+
+    <!-- The whole of it: the class library is referenced, and what a page uses of it reaches the
+         browser. SharedLibrary.Domain is not referenced here; it arrives through the library. -->
+    <ItemGroup>
+        <ProjectReference Include="../SharedLibrary.Common/SharedLibrary.Common.csproj" />
+    </ItemGroup>
+
+    <Import Project="../../../src/eQuantic.UI.Sdk/Sdk/Sdk.targets" />
+</Project>

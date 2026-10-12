@@ -28,7 +28,7 @@ public class ResourceAccessorStrategy : IConversionStrategy
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var property = (IPropertySymbol)context.SemanticHelper.GetSymbol(node)!;
-        var id = ResourceClasses.IdFor(context.SemanticModel!.Compilation, property.ContainingType);
+        var id = context.CatalogIdOf(property.ContainingType);
         var key = ResourceClasses.KeyFor(property);
         context.ResourceUses.Add(new ResourceUse(
             id, key, ResourceClasses.DesignerPathFor(property.ContainingType)));

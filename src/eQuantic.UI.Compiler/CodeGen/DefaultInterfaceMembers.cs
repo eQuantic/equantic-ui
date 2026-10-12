@@ -59,8 +59,7 @@ internal static class DefaultInterfaceMembers
         while (pending.Count > 0)
         {
             var declaration = pending.Dequeue();
-            if (!compilation.ContainsSyntaxTree(declaration.SyntaxTree)) continue;
-            var model = compilation.GetSemanticModel(declaration.SyntaxTree);
+            if (compilation.ModelOf(declaration.SyntaxTree) is not { } model) continue;
             foreach (var name in RunTimeNames(declaration, model))
             {
                 if (model.GetSymbolInfo(name).Symbol is not { IsStatic: false, IsAbstract: false } helper
@@ -87,9 +86,7 @@ internal static class DefaultInterfaceMembers
     private static IEnumerable<SimpleNameSyntax> RunTimeNames(MemberDeclarationSyntax declaration, SemanticModel model) =>
         declaration.DescendantNodes(node => node is not AttributeListSyntax)
             .OfType<SimpleNameSyntax>()
-            .Where(name => !name.Ancestors().OfType<InvocationExpressionSyntax>().Any(invocation =>
-                invocation.Expression is IdentifierNameSyntax { Identifier.ValueText: "nameof" }
-                && model.GetOperation(invocation) is Microsoft.CodeAnalysis.Operations.INameOfOperation));
+            .Where(name => !name.Ancestors().OfType<InvocationExpressionSyntax>().Any(invocation => invocation.IsNameOf(model)));
 
     private static MemberDeclarationSyntax? DeclarationOf(ISymbol member) =>
         member.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() as MemberDeclarationSyntax;

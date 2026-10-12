@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Ir;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -206,7 +207,7 @@ internal static class IterableTwin
             _ => null,
         };
         if (returned is null) return null;
-        var (target, receiver) = Unconverted(compilation.GetSemanticModel(returned.SyntaxTree).GetOperation(returned)) switch
+        var (target, receiver) = Unconverted(compilation.ModelOf(returned.SyntaxTree)?.GetOperation(returned)) switch
         {
             IInvocationOperation { Arguments.Length: 0 } call => ((ISymbol?)call.TargetMethod, call.Instance),
             IPropertyReferenceOperation { Arguments.Length: 0 } read => (read.Property, read.Instance),

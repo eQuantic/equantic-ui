@@ -568,6 +568,15 @@ jobs:
           fi
           exit $status
 
+      # A page that uses a class library the app references (#624). The builds above cannot say it:
+      # before the fix this sample built green with a page that named the library's types and
+      # imported none of them, which only a browser reported. So what the build WROTE is read: the
+      # projects the SDK handed the compiler, a module for every type the page reaches and none for
+      # the server class it does not, and the catalogs of two projects that each have a Strings.
+      - name: The shared-library sample's page holds what it uses of its library
+        shell: bash
+        run: ./scripts/check-shared-library-sample.sh
+
       # Composing a map installed an npm package beside eqc on the first Debug build, and bun's
       # auto-install fetched what it imported (#356). eqc composes maps in C# now, so a package
       # manager's files in its folder are a fetch someone put back. The Debug builds above composed
