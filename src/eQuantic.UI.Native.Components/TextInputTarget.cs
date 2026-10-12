@@ -3,7 +3,7 @@ namespace eQuantic.UI.Native.Components;
 /// <summary>What a phone's keyboard is editing, as a <see cref="TextInputSession"/> reads it.</summary>
 public enum TextInputTarget
 {
-    /// <summary>Nothing holds the caret: the keyboard is down.</summary>
+    /// <summary>Nothing in the frame holds the caret: the keyboard is down.</summary>
     None,
 
     /// <summary>A field: the keyboard edits its text as a document, through

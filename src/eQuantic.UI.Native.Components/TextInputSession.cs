@@ -34,13 +34,19 @@ public sealed class TextInputSession
     /// What the keyboard has to do now. Reads the host after a frame: whether anything holds the
     /// caret, which field or surface, and whether the field's state is still the one the keyboard
     /// has. Each answer is given once; the keyboard is assumed to have done it.
+    /// <para>
+    /// The caret counts only where the frame has something to type into. A field the app took away
+    /// or disabled while it was being edited leaves the host's caret naming its place, and the
+    /// keyboard goes down rather than starting over on nothing.
+    /// </para>
     /// </summary>
     public TextInputChange Poll()
     {
         var editing = _host.EditingValue;
         var target = !_host.HasTextFocus ? TextInputTarget.None
             : editing is not null ? TextInputTarget.Text
-            : TextInputTarget.Keys;
+            : TakesKeys() ? TextInputTarget.Keys
+            : TextInputTarget.None;
         var path = target == TextInputTarget.None ? null : _host.FocusedPath;
         var obscure = target == TextInputTarget.Text && _host.TextTarget?.Obscure == true;
         var value = editing ?? TextEditingValue.Collapsed("", 0);
@@ -96,6 +102,21 @@ public sealed class TextInputSession
         _host.KeyDown("Enter");
         if (_host.FocusedPath == _path) _host.EndEditing();
         return true;
+    }
+
+    /// <summary>
+    /// Whether the caret is in a code surface or a sheet the frame still has. Its focus stop names
+    /// it wherever it is, so one the rising keyboard clips for a frame is still being edited, as a
+    /// field is (<see cref="PhotonHost.TextTarget"/>).
+    /// </summary>
+    private bool TakesKeys()
+    {
+        if (_host.CodeTarget is not null || _host.SheetTarget is not null) return true;
+        if (_host.FocusedPath is not { } path || _host.LastFrame is not { } frame) return false;
+        var stops = frame.FocusStops;
+        for (var i = 0; i < stops.Count; i++)
+            if (stops[i].Path == path && stops[i] is { Code: not null } or { Sheet: not null }) return true;
+        return false;
     }
 
     /// <summary>Whether the keyboard is editing a field and the caret is still in it: what the keyboard

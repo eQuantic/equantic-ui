@@ -412,6 +412,89 @@ public class PhoneKeyboardTests
         host.KeyDown("Backspace").Should().BeTrue();
     }
 
+    /// <summary>A field the app takes away or disables while it is being edited: a PIN that moves
+    /// on by itself at its last digit, a form that locks while it sends.</summary>
+    private sealed class Vanishing : Primitives.StatefulComponent
+    {
+        private bool _shown = true;
+        private bool _disabled;
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+            if (_shown) column.Add(new TextEntry("1234", _ => { }) { Placeholder = "PIN", Disabled = _disabled });
+            column.Add(new Text("Sending", TypeRole.BodyM));
+            return column;
+        }
+
+        public void Remove() => SetState(() => _shown = false);
+
+        public void Disable() => SetState(() => _disabled = true);
+    }
+
+    /// <summary>
+    /// The field being edited leaves the frame: nothing is there to type into, so the keyboard goes
+    /// down. Before, the host's caret still named the field's place, and the session read that as a
+    /// surface taking keys: the keyboard started over, empty, over a screen with no field on it.
+    /// </summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AFieldTheAppTakesAway_PutsTheKeyboardAway(bool removed)
+    {
+        var form = new Vanishing();
+        var host = new PhotonHost(form, PhotonTheme.Instance, ThemeMode.Light, 400, 300);
+        var session = new TextInputSession(host);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        Tap(host, frame.TextRegions[0].Bounds.Center);
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        session.Poll().Should().Be(TextInputChange.Began);
+
+        if (removed) form.Remove();
+        else form.Disable();
+        host.RenderFrame(new DisplayListBuilder(), 32);
+
+        session.Poll().Should().Be(TextInputChange.Ended);
+        session.Target.Should().Be(TextInputTarget.None);
+    }
+
+    private sealed class LongEditor : Primitives.StatefulComponent
+    {
+        public readonly CodeEditorController Controller = new("x");
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var list = new Column(gap: Space.S4) { Width = SizeValue.Fill };
+            for (var i = 0; i < 11; i++) list.Add(new TextEntry("", _ => { }) { Placeholder = $"F{i}" });
+            list.Add(new CodeSurface(new Text("code", TypeRole.BodyM), Controller) { Autofocus = true });
+            return new ScrollView(list) { Width = SizeValue.Fill, Height = SizeValue.Fill };
+        }
+    }
+
+    /// <summary>
+    /// A code surface the rising keyboard clips for a frame is still the one being edited, as a field
+    /// is: its focus stop names it wherever it is. The keyboard stays up and keeps typing keys.
+    /// </summary>
+    [Fact]
+    public void ACodeSurfaceTheKeyboardCovers_StillTakesTheKeys()
+    {
+        var host = new PhotonHost(new LongEditor(), PhotonTheme.Instance, ThemeMode.Light, 390, 600);
+        var session = new TextInputSession(host);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        var code = frame.CodeRegions.Single();
+        code.Bounds.Bottom.Should().BeLessThanOrEqualTo(600, "the surface starts on screen");
+        session.Poll().Should().Be(TextInputChange.Began);
+        session.Target.Should().Be(TextInputTarget.Keys);
+
+        host.ViewInsets = new EdgeInsets(0, 0, 0, 300);
+        frame = host.RenderFrame(new DisplayListBuilder(), 32);
+        frame.CodeRegions.Should().NotContain(region => region.Path == code.Path,
+            "the surface is under the keyboard in this frame");
+
+        session.Poll().Should().Be(TextInputChange.None);
+        session.Target.Should().Be(TextInputTarget.Keys);
+    }
+
     // ---- the keyboard's area ---------------------------------------------------------------------
 
     private sealed class LongForm : Primitives.StatefulComponent

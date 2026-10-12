@@ -45,7 +45,9 @@ A shell SHALL learn from a `TextInputSession`, after each frame, whether the key
 (an edit began), start over (the caret moved to another field or surface), close (the edit ended) or
 take a new value (the app changed it). An edit the keyboard made and the app took as it came SHALL
 not be reported back to it. A field SHALL be edited as a document (`TextInputTarget.Text`); a code
-surface and a sheet SHALL be edited through keys and committed text (`TextInputTarget.Keys`).
+surface and a sheet SHALL be edited through keys and committed text (`TextInputTarget.Keys`), and
+SHALL stay so while the keyboard clips them. A field the app takes away or disables while it is
+edited SHALL close the keyboard (`TextInputTarget.None`).
 
 #### Scenario: Focus opens it and leaving closes it
 
@@ -71,6 +73,16 @@ surface and a sheet SHALL be edited through keys and committed text (`TextInputT
 
 - **WHEN** a code surface holds the caret
 - **THEN** the session's target is `Keys` and the host has no editing value
+
+#### Scenario: A code surface under the keyboard
+
+- **WHEN** the keyboard rises over the code surface being edited, and the frame clips it
+- **THEN** the next poll reports `None` and the target stays `Keys`
+
+#### Scenario: A field the app takes away
+
+- **WHEN** the field being edited leaves the frame, or is disabled
+- **THEN** the next poll reports `Ended` and the target is `None`
 
 #### Scenario: Done
 
