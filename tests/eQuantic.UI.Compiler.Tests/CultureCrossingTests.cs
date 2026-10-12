@@ -210,6 +210,32 @@ public class CultureCrossingTests
             result.TypeScript);
     }
 
+    /// <summary>A TimeSpan's ToString is the formatter's, as a date's is, its provider read as a date's
+    /// is: the twin's own toString takes no format, so every format wrote the constant text, and the
+    /// provider crossed as a name no browser defines (#837).</summary>
+    [Theory]
+    [InlineData("TimeSpan.FromHours(1).ToString(\"g\")", ", 'g')")]
+    [InlineData("TimeSpan.FromHours(1).ToString(@\"hh\\:mm\")", ", 'hh\\\\:mm')")]
+    [InlineData("TimeSpan.FromHours(1).ToString(\"G\", CultureInfo.InvariantCulture)", ", 'G', undefined, true)")]
+    [InlineData("TimeSpan.FromHours(1).ToString(\"G\", CultureInfo.CurrentCulture)", ", 'G')")]
+    [InlineData("TimeSpan.FromHours(1).ToString(_pattern, null)", ", this._pattern)")]
+    [InlineData("TimeSpan.FromHours(1).ToString(null, CultureInfo.InvariantCulture)", ", null, undefined, true)")]
+    public void ATimeSpansToString_IsTheFormatters(string body, string emitted)
+    {
+        var result = Compile(body);
+        Assert.True(result.Success, string.Join("; ", result.Errors.Select(e => e.Message)));
+        Assert.Matches(@"\$eq\.text\.format\(\$eq\.time\.timeSpan\.fromHours\([^;]*?\)" + System.Text.RegularExpressions.Regex.Escape(emitted),
+            result.TypeScript);
+        Assert.DoesNotContain("CultureInfo", result.TypeScript);
+    }
+
+    [Fact]
+    public void ATimeSpansProvider_OutsideTheSubset_IsRefused()
+    {
+        var result = Compile("TimeSpan.FromHours(1).ToString(\"g\", CultureInfo.GetCultureInfo(\"de-DE\"))");
+        Assert.Single(result.Errors, e => e.Code == "EQ2108");
+    }
+
     /// <summary>A provider the subset cannot honour is refused where the developer can see it,
     /// which is the whole reason this file exists.</summary>
     [Fact]
