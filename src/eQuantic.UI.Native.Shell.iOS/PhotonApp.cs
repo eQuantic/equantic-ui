@@ -66,8 +66,14 @@ public static class PhotonApp
         public override bool FinishedLaunching(UIApplication application, NSDictionary? launchOptions) => true;
 
         /// <summary>
-        /// Every scene the system connects is the app's one window. Answered here rather than by a
-        /// class NAME in the plist, so the type it names is one the compiler has seen.
+        /// The app's own scene gets the app's one window. Answered here rather than by a class NAME
+        /// in the plist, so the type it names is one the compiler has seen.
+        /// <para>
+        /// ONLY the app's own role. A display connected by cable or AirPlay asks for a scene of
+        /// another role, and handing it this delegate would move the one screen off the phone's
+        /// window and onto the display, then leave the phone with none when the display goes. That
+        /// scene gets no delegate, so this shell puts no window on it.
+        /// </para>
         /// <para>
         /// UNNAMED, measured: a named configuration sends UIKit looking for its dictionary in the
         /// Info.plist, and finding none it logs an error on every launch ("Info.plist contained no
@@ -75,8 +81,13 @@ public static class PhotonApp
         /// </para>
         /// </summary>
         public override UISceneConfiguration GetConfiguration(UIApplication application,
-            UISceneSession connectingSceneSession, UISceneConnectionOptions options) =>
-            new(null, connectingSceneSession.Role) { DelegateType = typeof(PhotonSceneDelegate) };
+            UISceneSession connectingSceneSession, UISceneConnectionOptions options)
+        {
+            var configuration = new UISceneConfiguration(null, connectingSceneSession.Role);
+            if (connectingSceneSession.Role == UIWindowSceneSessionRole.Application)
+                configuration.DelegateType = typeof(PhotonSceneDelegate);
+            return configuration;
+        }
     }
 
     /// <summary>
@@ -97,8 +108,15 @@ public static class PhotonApp
         public override void WillConnect(UIScene scene, UISceneSession session, UISceneConnectionOptions connectionOptions)
         {
             if (scene is not UIWindowScene windowScene) return;
-            Window = new UIWindow(windowScene) { RootViewController = Screen() };
+            var screen = Screen();
+            Window = new UIWindow(windowScene) { RootViewController = screen };
             Window.MakeKeyAndVisible();
+
+            // A scene can connect while the app is in the background, and one connected there never
+            // ENTERS the background, so the clock the view just started is paused here. And a scene
+            // connected after another left in the background resumes the clock that one paused.
+            if (scene.ActivationState == UISceneActivationState.Background) screen.Pause();
+            else screen.Resume();
         }
 
         public override void DidDisconnect(UIScene scene)
