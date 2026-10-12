@@ -34,7 +34,12 @@ public static class AppleBiometry
     /// <summary>How long the system's own sheet gets before the caller is told it did not work.</summary>
     private static readonly TimeSpan ReplyTimeout = TimeSpan.FromSeconds(60);
 
-    private delegate void ReplyBlock(IntPtr block, [MarshalAs(UnmanagedType.I1)] bool success, IntPtr error);
+    /// <summary>One ask in flight: where its answer goes, and the block that will deliver it.</summary>
+    private sealed class Pending(TaskCompletionSource<BiometricResult> answer)
+    {
+        public TaskCompletionSource<BiometricResult> Answer { get; } = answer;
+        public ObjCBlock? Block { get; set; }
+    }
 
     /// <summary>Whether a reader exists AND has something enrolled — the two are one question to a
     /// caller deciding whether to offer the button at all.</summary>
@@ -49,7 +54,7 @@ public static class AppleBiometry
     /// <summary>
     /// Asks, and answers how it went. The reason is shown by the system in its own sheet, verbatim.
     /// </summary>
-    public static Task<BiometricResult> AuthenticateAsync(string reason, CancellationToken cancellationToken)
+    public static unsafe Task<BiometricResult> AuthenticateAsync(string reason, CancellationToken cancellationToken)
     {
         Load();
         var context = NewContext();
@@ -59,16 +64,12 @@ public static class AppleBiometry
 
         var answer = new TaskCompletionSource<BiometricResult>();
 
-        // The block and its delegate are held until the reply arrives: a block whose delegate was
-        // collected is a crash in another thread, minutes later, pointing nowhere useful.
-        ReplyBlock reply = null!;
-        ObjCBlock? block = null;
-        reply = (_, success, error) =>
-        {
-            answer.TrySetResult(success ? BiometricResult.Succeeded : Interpret(error));
-            block?.Dispose();
-        };
-        block = new ObjCBlock(reply);
+        // The block holds the pending ask until the reply arrives, and the reply lets both go: a
+        // block whose context was collected is a crash in another thread, minutes later, pointing
+        // nowhere useful.
+        var pending = new Pending(answer);
+        var block = new ObjCBlock((IntPtr)(delegate* unmanaged<IntPtr, byte, IntPtr, void>)&Replied, pending);
+        pending.Block = block;
 
         // Cancelling stops the WAIT; the system sheet is the system's, and nothing here dismisses it.
         cancellationToken.Register(() => answer.TrySetCanceled(cancellationToken));
@@ -83,10 +84,16 @@ public static class AppleBiometry
 
         SendVoid(context, Sel("evaluatePolicy:localizedReason:reply:"),
             PolicyBiometricsOrPasscode, NSString(reason), block.Handle);
-
-        // Held to the end of the call so neither is collected while the framework holds them.
-        GC.KeepAlive(reply);
         return answer.Task;
+    }
+
+    /// <summary>LocalAuthentication's reply. BOOL crosses as a byte: a bool is not blittable.</summary>
+    [UnmanagedCallersOnly]
+    private static void Replied(IntPtr block, byte success, IntPtr error)
+    {
+        var pending = ObjCBlock.Context<Pending>(block);
+        pending.Answer.TrySetResult(success != 0 ? BiometricResult.Succeeded : Interpret(error));
+        pending.Block?.Dispose();
     }
 
     /// <summary>Which of the four "did not succeed" situations this was.</summary>

@@ -18,10 +18,19 @@ namespace eQuantic.UI.Native.Shell.Apple;
 /// that says it lives on the stack invites the runtime to copy it to the heap and free it — with
 /// memory this class allocated and still intends to free itself. A global block is immortal by
 /// contract: copy hands back the same pointer, release does nothing, and the lifetime stays here,
-/// where the handle keeping the delegate alive already is.
+/// where the handle keeping the context alive already is.
+/// </para>
+/// <para>
+/// The function a block calls is a STATIC <see cref="UnmanagedCallersOnlyAttribute"/> entry point, never a
+/// delegate (#795). A device build is compiled ahead of time, and there a native caller can only
+/// reach a method the compiler saw as an entry point: a delegate to an instance method or a closure
+/// has no wrapper prepared, and the first callback fails. So the entry point is static, and it finds
+/// the object it answers for in the block's own storage: <see cref="Context{T}"/> reads the
+/// <see cref="GCHandle"/> the block carries after its descriptor, where a compiled block keeps what it
+/// captured. The same code is right under the JIT, Mono AOT and NativeAOT.
 /// </para>
 /// </summary>
-public sealed class ObjCBlock : IDisposable
+public sealed unsafe class ObjCBlock : IDisposable
 {
     /// <summary>Look a symbol up in everything already loaded, rather than naming the library that
     /// exports it — the blocks runtime has moved between libSystem's sub-libraries before.</summary>
@@ -40,6 +49,9 @@ public sealed class ObjCBlock : IDisposable
         public int Reserved;
         public IntPtr Invoke;
         public IntPtr Descriptor;
+        // What the block "captured": a handle to the object its entry point answers for. A block's
+        // captures follow its descriptor, and the descriptor's size counts them.
+        public IntPtr Context;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -49,18 +61,28 @@ public sealed class ObjCBlock : IDisposable
         public nuint Size;
     }
 
-    private readonly GCHandle _callback;
+    private readonly GCHandle _context;
     private IntPtr _block;
     private IntPtr _descriptor;
 
     /// <summary>
-    /// Wraps a managed delegate. The delegate MUST be kept alive by the caller for as long as the
-    /// framework might call it — a block whose function pointer outlives its delegate is a crash
-    /// that arrives minutes later, in another thread, with nothing pointing back here.
+    /// A block that calls <paramref name="invoke"/>, carrying <paramref name="context"/> for it.
     /// </summary>
-    public ObjCBlock(Delegate callback)
+    /// <param name="invoke">
+    /// The address of a static <see cref="UnmanagedCallersOnlyAttribute"/> method whose first parameter is the
+    /// block itself, then the block's own parameters: <c>(IntPtr)(delegate* unmanaged&lt;IntPtr, …&gt;)&amp;Entry</c>.
+    /// The compiler refuses that expression for a method without the attribute.
+    /// </param>
+    /// <param name="context">
+    /// The object the entry point answers for, kept alive by this block until it is disposed: a
+    /// block that outlives its context is a crash that arrives minutes later, in another thread,
+    /// with nothing pointing back here.
+    /// </param>
+    public ObjCBlock(IntPtr invoke, object context)
     {
-        _callback = GCHandle.Alloc(callback);
+        ArgumentNullException.ThrowIfNull(context);
+        if (invoke == IntPtr.Zero) throw new ArgumentException("A block needs an entry point to call.", nameof(invoke));
+        _context = GCHandle.Alloc(context);
 
         var descriptor = new Descriptor { Reserved = 0, Size = (nuint)Marshal.SizeOf<Layout>() };
         _descriptor = Marshal.AllocHGlobal(Marshal.SizeOf<Descriptor>());
@@ -71,8 +93,9 @@ public sealed class ObjCBlock : IDisposable
             Isa = ConcreteGlobalBlock(),
             Flags = BlockIsGlobal,
             Reserved = 0,
-            Invoke = Marshal.GetFunctionPointerForDelegate(callback),
+            Invoke = invoke,
             Descriptor = _descriptor,
+            Context = GCHandle.ToIntPtr(_context),
         };
         _block = Marshal.AllocHGlobal(Marshal.SizeOf<Layout>());
         Marshal.StructureToPtr(layout, _block, false);
@@ -80,6 +103,12 @@ public sealed class ObjCBlock : IDisposable
 
     /// <summary>What gets passed where a framework expects a block.</summary>
     public IntPtr Handle => _block;
+
+    /// <summary>
+    /// The object a block was made for, read by its entry point from the block it was called with.
+    /// </summary>
+    public static T Context<T>(IntPtr block) where T : class =>
+        (T)GCHandle.FromIntPtr(((Layout*)block)->Context).Target!;
 
     private static IntPtr ConcreteGlobalBlock()
     {
@@ -97,6 +126,6 @@ public sealed class ObjCBlock : IDisposable
     {
         if (_block != IntPtr.Zero) { Marshal.FreeHGlobal(_block); _block = IntPtr.Zero; }
         if (_descriptor != IntPtr.Zero) { Marshal.FreeHGlobal(_descriptor); _descriptor = IntPtr.Zero; }
-        if (_callback.IsAllocated) _callback.Free();
+        if (_context.IsAllocated) _context.Free();
     }
 }

@@ -60,19 +60,15 @@ public sealed class AppleCamera : ICamera
         return AppleCameraSession.Open();
     }
 
-    private static Task<bool> AskAsync(CancellationToken cancellationToken)
+    private static unsafe Task<bool> AskAsync(CancellationToken cancellationToken)
     {
         var answer = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         // The framework OWNS this block — copies it, calls it once on an arbitrary queue, releases
-        // it — which is the global-block lifetime, again.
-        AccessReply? reply = null;
-        reply = (_, granted) =>
-        {
-            answer.TrySetResult(granted);
-            GC.KeepAlive(reply);
-        };
-        var block = new ObjCBlock(reply);
+        // it — which is the global-block lifetime, again. The reply lets it go.
+        var pending = new PendingAccess(answer);
+        var block = new ObjCBlock((IntPtr)(delegate* unmanaged<IntPtr, byte, void>)&AccessReplied, pending);
+        pending.Block = block;
         SendVoid(objc_getClass("AVCaptureDevice"),
             Sel("requestAccessForMediaType:completionHandler:"), NSString("vide"), block.Handle);
 
@@ -80,7 +76,20 @@ public sealed class AppleCamera : ICamera
         return answer.Task;
     }
 
-    private delegate void AccessReply(IntPtr block, [MarshalAs(UnmanagedType.I1)] bool granted);
+    /// <summary>AVFoundation's answer to the ask. BOOL crosses as a byte: a bool is not blittable.</summary>
+    [UnmanagedCallersOnly]
+    private static void AccessReplied(IntPtr block, byte granted)
+    {
+        var pending = ObjCBlock.Context<PendingAccess>(block);
+        pending.Answer.TrySetResult(granted != 0);
+        pending.Block?.Dispose();
+    }
+
+    private sealed class PendingAccess(TaskCompletionSource<bool> answer)
+    {
+        public TaskCompletionSource<bool> Answer { get; } = answer;
+        public ObjCBlock? Block { get; set; }
+    }
 
     [DllImport("/usr/lib/libobjc.A.dylib", EntryPoint = "objc_msgSend")]
     private static extern long SendLong(IntPtr receiver, IntPtr selector, IntPtr arg1);
@@ -188,21 +197,24 @@ public sealed partial class AppleCameraSession : ICameraSession
 
     // ---- the frame delegate --------------------------------------------------------------------
 
-    private delegate void DidOutput(IntPtr self, IntPtr selector, IntPtr output, IntPtr sampleBuffer, IntPtr connection);
-
-    private static DidOutput? _onFrame;   // kept alive for the runtime's sake
     private static IntPtr _delegateClass;
 
-    private static IntPtr DelegateClass()
+    // The method is a static entry point (#795): a device build has no JIT to make a wrapper for a
+    // delegate. It needs no context of its own, because there is one camera per process and the
+    // delegate routes to it.
+    private static unsafe IntPtr DelegateClass()
     {
         if (_delegateClass != IntPtr.Zero) return _delegateClass;
         _delegateClass = objc_allocateClassPair(objc_getClass("NSObject"), "EQCameraDelegate", 0);
-        _onFrame = static (_, _, _, sampleBuffer, _) => Instance()?.FrameArrived(sampleBuffer);
         class_addMethod(_delegateClass, sel_registerName("captureOutput:didOutputSampleBuffer:fromConnection:"),
-            Marshal.GetFunctionPointerForDelegate(_onFrame), "v@:@@@");
+            (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr, IntPtr, void>)&DidOutput, "v@:@@@");
         objc_registerClassPair(_delegateClass);
         return _delegateClass;
     }
+
+    [UnmanagedCallersOnly]
+    private static void DidOutput(IntPtr self, IntPtr selector, IntPtr output, IntPtr sampleBuffer, IntPtr connection) =>
+        Instance()?.FrameArrived(sampleBuffer);
 
     private static AppleCameraSession? Instance()
     {

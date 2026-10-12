@@ -1,1 +1,4 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Native.Shell.Apple.ObjCBlock.ObjCBlock(System.Delegate! callback) -> void
+eQuantic.UI.Native.Shell.Apple.ObjCBlock.ObjCBlock(nint invoke, object! context) -> void
+static eQuantic.UI.Native.Shell.Apple.ObjCBlock.Context<T>(nint block) -> T!

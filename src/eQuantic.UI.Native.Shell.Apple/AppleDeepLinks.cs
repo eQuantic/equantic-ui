@@ -30,11 +30,8 @@ public static class AppleDeepLinks
     private static readonly uint GetUrlEventId = FourCharCode("GURL");
     private static readonly uint KeyDirectObject = FourCharCode("----");
 
-    private delegate void HandleUrlEvent(IntPtr self, IntPtr cmd, IntPtr eventDescriptor, IntPtr reply);
-
     private static readonly object Gate = new();
     private static DeepLinkRelay? _relay;
-    private static HandleUrlEvent? _onUrl;          // kept alive for the runtime's sake
     private static IntPtr _handlerClass;
     private static IntPtr _handler;
 
@@ -44,7 +41,7 @@ public static class AppleDeepLinks
     /// nothing an app writes can be early enough. Idempotent: the second caller gets the first
     /// caller's relay, which is what makes the container's registration safe.
     /// </summary>
-    public static DeepLinkRelay Install()
+    public static unsafe DeepLinkRelay Install()
     {
         lock (Gate)
         {
@@ -52,9 +49,9 @@ public static class AppleDeepLinks
             _relay = new DeepLinkRelay();
 
             _handlerClass = objc_allocateClassPair(objc_getClass("NSObject"), "EQDeepLinkHandler", 0);
-            _onUrl = static (_, _, descriptor, _) => Deliver(descriptor);
+            // A static entry point (#795), routing to the one relay of the process.
             class_addMethod(_handlerClass, sel_registerName("handleURLEvent:withReplyEvent:"),
-                Marshal.GetFunctionPointerForDelegate(_onUrl), "v@:@@");
+                (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr, void>)&HandleUrlEvent, "v@:@@");
             objc_registerClassPair(_handlerClass);
 
             _handler = Send(Send(_handlerClass, Sel("alloc")), Sel("init"));
@@ -67,6 +64,10 @@ public static class AppleDeepLinks
             return _relay;
         }
     }
+
+    [UnmanagedCallersOnly]
+    private static void HandleUrlEvent(IntPtr self, IntPtr selector, IntPtr eventDescriptor, IntPtr reply) =>
+        Deliver(eventDescriptor);
 
     /// <summary>The one line of interop: an AppleEvent's direct object, as text. Everything that
     /// happens to it afterwards is <see cref="DeepLinkRelay"/>'s, where it can be tested.</summary>

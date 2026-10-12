@@ -134,33 +134,36 @@ public sealed class AppleLocation : ILocation
 
     // ---- the runtime delegate ----------------------------------------------------------------
 
-    private delegate void AuthorizationChanged(IntPtr self, IntPtr selector, IntPtr manager);
-    private delegate void UpdatedLocations(IntPtr self, IntPtr selector, IntPtr manager, IntPtr locations);
-    private delegate void FailedWith(IntPtr self, IntPtr selector, IntPtr manager, IntPtr error);
-
-    private static AuthorizationChanged? _onAuthorization;   // kept alive for the runtime's sake
-    private static UpdatedLocations? _onLocations;
-    private static FailedWith? _onFailure;
     private static IntPtr _delegateClass;
 
-    private static IntPtr DelegateClass()
+    // Static entry points (#795): a device build has no JIT to make a wrapper for a delegate. They
+    // route through the static instance, the one manager per process.
+    private static unsafe IntPtr DelegateClass()
     {
         if (_delegateClass != IntPtr.Zero) return _delegateClass;
 
         _delegateClass = objc_allocateClassPair(objc_getClass("NSObject"), "EQLocationDelegate", 0);
-        _onAuthorization = static (_, _, _) => Instance()?.AuthorizationDidChange();
-        _onLocations = static (_, _, _, locations) => Instance()?.LocationsDidArrive(locations);
-        _onFailure = static (_, _, _, _) => Instance()?.FixDidFail();
-
         class_addMethod(_delegateClass, sel_registerName("locationManagerDidChangeAuthorization:"),
-            Marshal.GetFunctionPointerForDelegate(_onAuthorization), "v@:@");
+            (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&DidChangeAuthorization, "v@:@");
         class_addMethod(_delegateClass, sel_registerName("locationManager:didUpdateLocations:"),
-            Marshal.GetFunctionPointerForDelegate(_onLocations), "v@:@@");
+            (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr, void>)&DidUpdateLocations, "v@:@@");
         class_addMethod(_delegateClass, sel_registerName("locationManager:didFailWithError:"),
-            Marshal.GetFunctionPointerForDelegate(_onFailure), "v@:@@");
+            (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr, void>)&DidFail, "v@:@@");
         objc_registerClassPair(_delegateClass);
         return _delegateClass;
     }
+
+    [UnmanagedCallersOnly]
+    private static void DidChangeAuthorization(IntPtr self, IntPtr selector, IntPtr manager) =>
+        Instance()?.AuthorizationDidChange();
+
+    [UnmanagedCallersOnly]
+    private static void DidUpdateLocations(IntPtr self, IntPtr selector, IntPtr manager, IntPtr locations) =>
+        Instance()?.LocationsDidArrive(locations);
+
+    [UnmanagedCallersOnly]
+    private static void DidFail(IntPtr self, IntPtr selector, IntPtr manager, IntPtr error) =>
+        Instance()?.FixDidFail();
 
     private static AppleLocation? Instance()
     {
