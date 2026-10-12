@@ -46,17 +46,24 @@ public class DateTimeConstructionStrategy : IExpressionIrStrategy
 
         var offset = constructor.ContainingType.IsNamed("System.DateTimeOffset");
         var type = offset ? "DateTimeOffset" : "DateTime";
-        if (constructor.Parameters.Any(parameter => parameter.Type.IsNamed("System.Globalization.Calendar")))
-        {
-            context.Report(node, ConversionSeverity.Error, "EQ1004",
-                $"This {type} constructor takes a Calendar, and the browser has none of .NET's calendars. "
-                + "Build the value from its Gregorian components, or convert it on the server.");
-            return JsExpr.Opaque(creation.ToString());
-        }
+        if (RefusesCalendar(node, constructor, type, context)) return JsExpr.Opaque(creation.ToString());
 
         context.UsedHelpers.Add(Eq.Import);
         var factory = offset ? Eq.DateTimeOffset : Eq.DateTime;
         return ParameterTemplate.Construction($"{factory}.{Shape(constructor, offset)}", creation, constructor, context);
+    }
+
+    /// <summary>
+    /// Whether <paramref name="constructor"/> takes a <c>Calendar</c>, which fails the build (EQ1004): the
+    /// browser has none of .NET's calendars. <c>DateOnly</c>'s is refused by the same rule (#725).
+    /// </summary>
+    internal static bool RefusesCalendar(SyntaxNode creation, IMethodSymbol constructor, string type, ConversionContext context)
+    {
+        if (!constructor.Parameters.Any(parameter => parameter.Type.IsNamed("System.Globalization.Calendar"))) return false;
+        context.Report(creation, ConversionSeverity.Error, "EQ1004",
+            $"This {type} constructor takes a Calendar, and the browser has none of .NET's calendars. "
+            + "Build the value from its Gregorian components, or convert it on the server.");
+        return true;
     }
 
     /// <summary>

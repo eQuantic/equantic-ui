@@ -57,7 +57,6 @@ Convert.ToUInt32(Object) value  value  Convert of an object is lowered to a roun
 Convert.ToUInt32(Object,IFormatProvider) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
 Convert.ToUInt64(Object) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
 Convert.ToUInt64(Object,IFormatProvider) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-DateOnly..ctor(Int32,Int32,Int32,Calendar) calendar  type  the lowering drops the calendar argument, so its null is never read
 Decimal..ctor(int[]) bits  type  new decimal(bits) is written with C#'s keyword, a name the runtime does not have
 Enumerable.Aggregate(IEnumerable<TSource>,Func<TSource,TSource,TSource>) func  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Aggregate(IEnumerable<TSource>,Func<TSource,TSource,TSource>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision

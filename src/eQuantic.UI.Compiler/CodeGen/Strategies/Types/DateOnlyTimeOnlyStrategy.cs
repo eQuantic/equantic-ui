@@ -54,6 +54,11 @@ public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
         {
             case BaseObjectCreationExpressionSyntax oc:
             {
+                // A calendar was dropped, so a null one was never refused and any other was read as the
+                // Gregorian one (#725): it is refused, as DateTime's is.
+                if (context.SemanticHelper.GetSymbol(oc) is IMethodSymbol constructor
+                    && DateTimeConstructionStrategy.RefusesCalendar(oc, constructor, constructor.ContainingType.Name, context))
+                    return oc.ToString();
                 var kind = KindOf(context.SemanticHelper.GetType(oc))
                     ?? (oc is ObjectCreationExpressionSyntax named ? KindOfName(named.Type.ToString()) : null);
                 return $"$eq.time.{kind}({ConvertArgs(oc.ArgumentList, context)})";
