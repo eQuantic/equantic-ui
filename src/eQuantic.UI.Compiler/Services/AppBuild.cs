@@ -500,8 +500,10 @@ public sealed class AppBuild
             if (hasBun && entryPoints.Count > 0)
             {
                 // Bundling and the map composition are the library's (ModuleBundler), so the test that
-                // proves a thrown error's frame leads back to its C# line runs exactly this.
-                if (ModuleBundler.Bundle(bunPath!, entryPoints, outputDir, _intermediateDir,
+                // proves a thrown error's frame leads back to its C# line runs exactly this. bun runs
+                // in the project's folder, where the build has always run it, so a chunk keeps its
+                // name wherever eqc itself runs.
+                if (ModuleBundler.Bundle(bunPath!, _primarySourceDir, entryPoints, outputDir, _intermediateDir,
                         _options.SourceMaps, _errors.WriteLine) is { } bunError)
                 {
                     _errors.WriteLine("❌ Bun compilation failed:");

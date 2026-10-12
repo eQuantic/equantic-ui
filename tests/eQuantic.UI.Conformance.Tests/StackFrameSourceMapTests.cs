@@ -442,7 +442,7 @@ public class StackFrameSourceMapTests
             var tsPath = Path.Combine(tsDir, $"{module}.ts");
 
             // The build's bundling, flags and composition included.
-            ModuleBundler.Bundle(bun, [tsPath], outDir, tsDir, SourceMapMode.Full).Should().BeNull();
+            ModuleBundler.Bundle(bun, dir, [tsPath], outDir, tsDir, SourceMapMode.Full).Should().BeNull();
 
             // The runtime the module imports by its bare name, resolved the way a page's import map does.
             var shim = Path.Combine(dir, "node_modules", "@equantic", "runtime");
