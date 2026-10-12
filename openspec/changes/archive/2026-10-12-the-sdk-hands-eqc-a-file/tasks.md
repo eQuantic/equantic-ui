@@ -19,10 +19,11 @@
 - [x] 3.3 Write the cases: the shipped target that writes the response file, run in a real MSBuild with those values, is read back by `FromArguments` as it was set, and the shipped command names no value but the compiler and the file
 - [x] 3.4 Update the shared-library sample's check for the list's new shape
 - [x] 3.5 bun runs in the project's folder, named by the bundler: write the case that bundles two copies of one app in two folders, take the folder back and confirm it fails
+- [x] 3.6 bun is handed each path as an argument of its own: write the case that bundles an app in a folder whose name holds double quotes, take the list back and confirm it fails
 
 ## 4. Proof and documents
 
 - [x] 4.1 Run the Compiler, Web, Server and Conformance suites, build the dashboard sample and compare it file by file with a build of main, and build the shared-library sample and run its check
-- [x] 4.2 Build the shared-library sample from packages alone, under a directory whose name holds a dollar sign, a bar and a space, with an assembly name that holds a dollar sign, and serve it
+- [x] 4.2 Build the shared-library sample from packages alone, under a directory whose name holds a dollar sign, single and double quotes, backticks and a space, with an assembly name that holds a dollar sign, and serve it (a bar stops the C# compiler itself, CS0006)
 - [x] 4.3 CLAUDE.md's build pipeline, the wiki's Build Flow in English and Portuguese, and one `docs/LEDGER.md` line citing the issue
 - [x] 4.4 Archive the change with `openspec archive the-sdk-hands-eqc-a-file --yes`

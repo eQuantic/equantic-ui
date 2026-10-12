@@ -36,6 +36,8 @@ review). Every path in the file is absolute, so eqc reads none of them from wher
 bun did read it: it names a shared chunk by a hash of its modules' paths from the folder it runs in,
 and it inherited eqc's, so every chunk was renamed (the dashboard's comparison with main found it).
 The bundler names bun's folder now, the project's, where the build always ran it.
+And it hands bun each path as an argument of its own: a command line of quoted paths lost every
+double quote a folder's name held, and .NET builds a project under such a folder.
 
 Quoting each value for the shell was set aside: two shells, two rules, and `cmd.exe` reads `%` inside
 quotes. An environment variable was set aside for the same reason, as `cmd.exe` reads `%NAME%` as
@@ -63,3 +65,6 @@ continue.
 - A bar is read whole by eqc now, and that is all it buys: the C# compiler does not build a project
   with a reference under a folder whose name holds one (CS0006, measured). The pair format costs
   nothing over the old one, and keeps eqc out of that failure.
+- A double quote reaches eqc and bun whole, and an app under such a folder builds and runs. Its
+  publish stops at ASP.NET Core's own compression of static web assets, as a `dotnet new web` app's
+  does there (MSB6006, measured).

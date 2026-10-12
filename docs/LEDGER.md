@@ -2538,12 +2538,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   arguments to `obj/…/equantic.eqc.rsp`, one a line, each kept whole as an item's metadata, and the
   command names the compiler and that file by its name, in the folder eqc runs in, which MSBuild sets.
   The bundler hands bun the project's folder rather than eqc's, since bun names a shared chunk by its
-  modules' paths from the folder it runs in, so no chunk is renamed. eqc reads `@<file>`, through
-  `AppBuildOptions.ReadArguments` and `FromArguments`, which hold what its CLI read inline, and the
-  list is two lines a project. `CompileEQuanticUI` is three targets, so a test runs the one that
-  writes the file, as it ships, in a real MSBuild under a folder whose name holds what a shell reads
-  ([#836](https://github.com/eQuantic/equantic-ui/issues/836)). Proposed and archived through OpenSpec
-  (`openspec/specs/referenced-projects`).
+  modules' paths from the folder it runs in, so no chunk is renamed. And it hands bun each path as an
+  argument of its own: a command line of quoted paths lost every double quote a folder's name held.
+  eqc reads `@<file>`, through `AppBuildOptions.ReadArguments` and `FromArguments`, which hold what
+  its CLI read inline, and the list is two lines a project. `CompileEQuanticUI` is three targets, so a
+  test runs the one that writes the file, as it ships, in a real MSBuild under a folder whose name
+  holds what a shell reads ([#836](https://github.com/eQuantic/equantic-ui/issues/836)). Proposed and
+  archived through OpenSpec (`openspec/specs/referenced-projects`).
 
 ## Retired documents
 

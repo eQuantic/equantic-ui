@@ -269,7 +269,8 @@ conversion SHALL import the type that declares it.
 
 The paths and the name the SDK hands the build SHALL reach it as they are, whatever characters they
 hold that a file name or an assembly name may hold: a dollar sign, a backtick, a bar, a space, a
-quote. No shell SHALL read them on the way.
+quote. No shell SHALL read them on the way, and each program of the build SHALL receive a path as an
+argument of its own.
 
 #### Scenario: The list of projects under a directory whose name holds a bar
 
@@ -283,6 +284,12 @@ quote. No shell SHALL read them on the way.
 - **WHEN** an app and the class library it references sit under a directory named `app $b 'c'`, and
   the app is built from packages alone
 - **THEN** the build succeeds, and the bundle holds the library's types the page uses
+
+#### Scenario: An app under a directory whose name holds a double quote
+
+- **WHEN** an app and the class library it references sit under a directory named `app "e"`, on a
+  system whose paths may hold a double quote, and the app is built from packages alone
+- **THEN** the build succeeds, and the page runs as it does under any other directory
 
 #### Scenario: An app whose assembly name holds a dollar sign
 
