@@ -1,9 +1,10 @@
 # eQuantic.UI — Roadmap & Honest State Assessment
 
-> Last updated: 2026-09-02 (a freshness pass: measured numbers replaced by where the count lives,
-> shipped work marked with the release that carries it). This document is an honest, evidence-based
-> assessment of where eQuantic.UI stands against its vision, and a prioritized roadmap to close the
-> gaps.
+> Last updated: 2026-10-11 (Track D's second round added: a phone's capabilities, the native bridge
+> and on-device AI). The rest is as of the 2026-09-02 freshness pass: measured numbers replaced by
+> where the count lives, shipped work marked with the release that carries it. This document is an
+> honest, evidence-based assessment of where eQuantic.UI stands against its vision, and a
+> prioritized roadmap to close the gaps.
 >
 > **Update (2026-06-10): Phase 1 (transpiler correctness & conformance) is essentially complete.** The
 > correctness net now exists — a **differential conformance harness** (emitted JS run via embedded Bun and
@@ -221,6 +222,45 @@ device farm — the conformance culture applied to pixels. Milestones M0 (triang
 authored ONCE in a shared assembly (abstract nodes + typed tokens in `eQuantic.UI.Primitives`) and
 lowered per target by realizers — DOM/CSS on web, Photon pixels on native — so the two platforms are
 written practically identically → `docs/SHARED-COMPONENTS-PLAN.md`.
+
+## Track D — A phone's capabilities in C#
+
+Added 2026-10-11, from Edgar's questions: does every capability of a phone (the camera, the
+gyroscope, augmented reality, the fingerprint, the face, sharing with other apps) have its C#
+equivalent, written once for Android and iOS, and how does C# reach what each year's releases and
+their AI bring? The first round, D1–D7 (closed 2026-08-04), made capabilities services: a contract
+in `Primitives`, `builder.Capabilities.UseX("reason")` written into the Info.plist and the manifest
+by the SDK, a realization per shell, and `null` where a host has none. The model is right; its
+coverage of a phone is not. Twelve contracts, eight realized on iOS and seven on Android; no camera
+on Android; nothing for sharing, notifications, haptics, contacts, sound, barcodes or augmented
+reality; four permissions declared that no API uses; nothing yet run on a physical device.
+
+Measured against everything the platforms offer a developer today — 355 iOS 26/27 capabilities and
+323 Android 16/17, Jetpack and Play services ones, 129 of them AI, each with how C# reaches it —
+half of iOS and 60% of Android are already bound by the .NET workloads and need only a contract. The
+second round, in four groups:
+
+- **The contracts that need no bridge** (D8–D25): the camera on Android, the clipboard and deep
+  links on the phones, opening a link, sharing, notifications, a document picker, device and power
+  information, the full camera, barcodes, faces and text, saving to the library, contacts, sound,
+  the other sensors, haptics (#345), the orphan permissions, and the decisions on augmented reality
+  and the physical-device pass.
+- **The bridge** (D26–D27): Swift connectors the SDK compiles into a weak-linked xcframework, and
+  Kotlin connectors into an `.aar`, both shipped inside the SDK's own packages. The developer's
+  machine needs nothing new, and nothing comes from MAUI.
+- **On-device AI and agents** (D28–D31): one contract over Apple's Foundation Models and Gemini
+  Nano; speech, translation and text tools; App Intents and AppFunctions from one C# declaration;
+  Home Screen and Lock Screen surfaces, Live Activities and Live Updates fed from C#.
+- **Upkeep** (D32–D34): reaching Android 17's API 37 from .NET 10, the catalog refreshed after each
+  WWDC and Google I/O, and this section kept on the roadmap.
+
+Two defects come first on iOS: an app built with the iOS 27 SDK does not launch (#796), and the
+Apple callbacks are not AOT-safe on a device (#795). **Fence, with the reason**: what the system
+draws in another process (WidgetKit, the Dynamic Island, Glance) and what exists only at compile time
+(App Intents, `@Generable`, KSP, Compose) cannot run C#; the plan names the route for each.
+
+→ epic [#774](https://github.com/eQuantic/equantic-ui/issues/774); the plan, the routes counted and
+the order: `docs/PHONE-CAPABILITIES-PLAN.md`; the catalog: `docs/platform-catalog/`.
 
 ## Track F — Form factors (tablet, watch, TV)
 
