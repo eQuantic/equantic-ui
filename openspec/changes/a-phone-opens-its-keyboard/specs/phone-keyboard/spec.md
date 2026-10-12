@@ -168,7 +168,7 @@ reach the field. A key from a hardware keyboard SHALL reach the host as it does 
 
 - **WHEN** back is pressed once with the keyboard open, the field is tapped, and back is pressed twice
 - **THEN** the first back hides the keyboard and the field keeps its caret, the tap shows it again, the
-  next back hides it, and the last one ends the edit
+  next back hides it, and the last one leaves the app, as it does from a native field (`system-back`)
 
 #### Scenario: Typing on iOS
 
