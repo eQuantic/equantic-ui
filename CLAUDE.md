@@ -463,7 +463,9 @@ MSBuild: CompileEQuanticUI (BeforeTargets="Build")
 
 A project the app references with a `ProjectReference`, directly or through another, reaches eqc as a
 compilation of its own SOURCE: `Sdk.targets` writes `obj/…/equantic.projects.txt` from the references
-MSBuild resolved (`--projects`), without the SDK's own projects and icon packs. A type of one is a
+MSBuild resolved (`--projects`), without the SDK's own projects and icon packs, and hands the app's
+assembly name as the project evaluates it (`--assembly-name`), which is the name a library's
+`InternalsVisibleTo` names. A type of one is a
 module of the bundle when a written module imports it, and only then, so a class library shared by a
 solution's apps works in a page and a Domain project costs what the pages use of it
 (`openspec/specs/referenced-projects`, `samples/SharedLibrary`).

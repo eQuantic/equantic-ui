@@ -2453,11 +2453,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   an app with no library gains as well: a component's own `Build` calling its `[ServerOnly]` method
   was written as a call to a member the twin does not have, and is EQ2010 now. A catalogue's id is
   decided once for the build, so an app's `Strings` and a library's do not share a key, and a
-  referenced project's catalogue contributes the keys read. One
+  referenced project's catalogue contributes the keys read. What a module names is read from what is
+  written and nothing else: a Server Action's body, a `[ServerOnly]` method, `nameof`, an attribute
+  and a constant written as its value reach nothing, each by the rule of whoever leaves it out. The
+  app is known to the build by the assembly name its project evaluates to, which the SDK hands, so
+  an app named apart from its project file is the friend a library's `InternalsVisibleTo` names. A
+  list of projects that was handed and does not hold stops the build (EQ0001) and is never read as
+  fewer projects. One
   case is stricter than it was: a record of a referenced project that crossed as data alone has a
   twin now, the whole record, so a method of it that a browser cannot run fails the build at that
   method though no page calls it ([#826](https://github.com/eQuantic/equantic-ui/issues/826)). The
-  build loop left the CLI's top-level statements for the compiler library (`AppBuild`), where 50
+  build loop left the CLI's top-level statements for the compiler library (`AppBuild`), where 62
   tests run it over a solution written to disk, and each piece of the change, taken back in turn,
   fails at least one of them. An app that references no project writes byte for byte what it wrote,
   the dashboard sample's 289 files, and a real solution of five referenced projects writes the same
@@ -2478,7 +2484,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   package's type ([#822](https://github.com/eQuantic/equantic-ui/issues/822)). A referenced project's
   source is read as the app's own is, from its directory and with no `#if` symbol defined, which is
   not what the C# compiler was given, for either
-  ([#828](https://github.com/eQuantic/equantic-ui/issues/828)). Proposed and archived
+  ([#828](https://github.com/eQuantic/equantic-ui/issues/828)). A module's import is still mapped
+  back to a declaration by its name, so a type named where no reference is written (a cast, a
+  `default`) is reached when the app has a type of that name
+  ([#830](https://github.com/eQuantic/equantic-ui/issues/830)). Proposed and archived
   through OpenSpec (`openspec/specs/referenced-projects`).
 
 ## Retired documents

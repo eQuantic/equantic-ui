@@ -43,7 +43,8 @@ in whichever referenced project it is declared.
 
 A type of a referenced project that no written module names SHALL NOT be compiled or written, and
 SHALL raise no diagnostic, whatever it contains. A type is reached when a written module imports it:
-code that does not cross, and a read the build writes as a literal, reach nothing.
+code that does not cross, and a name the build writes nothing for (inside `nameof`, in an attribute,
+or a constant written as its value), reach nothing.
 
 #### Scenario: A referenced project that holds server code
 
@@ -75,6 +76,20 @@ code that does not cross, and a read the build writes as a literal, reach nothin
   class of the referenced project that also reads a file
 - **THEN** the app's module holds the constant's value, imports nothing of `Theme`, and the build
   succeeds with no module of `Theme`
+
+#### Scenario: A name written nowhere names a referenced project's type of the app's name
+
+- **WHEN** a page shows the app's own `Order`, and names the referenced project's `Order`, a class
+  that reads a file, only inside `nameof`, in an attribute, or by reading a constant of it
+- **THEN** the build succeeds with the app's `Order` as the module, the name and the constant are
+  written as text, and the referenced project's `Order` is not compiled
+
+#### Scenario: A constant written as a reference
+
+- **WHEN** a page reads a constant of a referenced project's static class by its bare name, under
+  `using static`
+- **THEN** the page's module reads it off that class's twin and imports the class, and the bundle
+  holds its module
 
 ### Requirement: A referenced project's name is imported only where a symbol names its type
 
@@ -156,7 +171,8 @@ A type of a referenced project that is not reached SHALL NOT collide with anythi
 
 The SDK SHALL hand the build every project the app references with a `ProjectReference`, directly
 or through another referenced project, with no property or item set by the developer. The SDK's own
-projects and icon packs SHALL NOT be among them.
+projects and icon packs SHALL NOT be among them. A list that was handed and does not hold SHALL stop
+the build with a diagnostic, and SHALL never be read as fewer projects.
 
 #### Scenario: An app that references a class library
 
@@ -164,11 +180,18 @@ projects and icon packs SHALL NOT be among them.
   nothing else about it
 - **THEN** a page that uses a type of `Common` builds and runs in the browser
 
+#### Scenario: The list the SDK handed does not hold
+
+- **WHEN** the file the build was handed is not there, a line of it is not a project, or a line names
+  an assembly or a project that is not there
+- **THEN** the build fails with EQ0001 naming the list and what did not hold, and writes no module
+
 ### Requirement: Each project keeps its own C# scope
 
 A referenced project's source SHALL be read with that project's own `global using` directives and
 its own internal types. Neither SHALL reach the app's source or another project's, and a type
-declared under one full name in two projects SHALL NOT be an error.
+declared under one full name in two projects SHALL NOT be an error. The app SHALL be known to the
+build by the assembly name its project evaluates to, which is the name a friend declaration names.
 
 #### Scenario: Two projects each declare an internal `Guard`
 
@@ -180,6 +203,13 @@ declared under one full name in two projects SHALL NOT be an error.
 
 - **WHEN** the referenced project's build declares `InternalsVisibleTo` for the app in a generated
   file, and a page builds an internal record of that project
+- **THEN** the build succeeds and the bundle holds that record's module
+
+#### Scenario: An app whose assembly is named apart from its project file
+
+- **WHEN** an app's project file sets `<AssemblyName>` to a name that is not the file's, the
+  referenced project declares `InternalsVisibleTo` for that name, and a page builds an internal
+  record of that project
 - **THEN** the build succeeds and the bundle holds that record's module
 
 ### Requirement: A value of a referenced project's type crosses the wire as its type

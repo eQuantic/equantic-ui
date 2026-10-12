@@ -62,6 +62,13 @@ project file is written into a generated file under `obj`, which the C# compiler
 build does not. Left out, an internal type of the library that the app compiles against would be one
 this build cannot bind. The declarations are in the assembly MSBuild built, which is already opened
 for its references, so they are read there and declared again in the project's compilation.
+A friend declaration names an ASSEMBLY, and the app's compilation had its project file's name, which
+is main's line: an app whose project file sets `<AssemblyName>` was the friend of nothing here, and
+a page that built an internal record of the library was refused (EQ2006) though C# compiled it
+(found in review). The SDK hands the name MSBuild evaluated, `$(AssemblyName)`, and the compilation
+takes it. A build with no SDK behind it keeps the project file's name, which is MSBuild's own
+default. The fixture stands in for the SDK, so the sample is the proof of the hand-off: its app is
+named apart from its project file, and its check reads the module of an internal record.
 
 **A project's source is its directory, read by the rule the app's own source is read by.** Every
 `*.cs` under it outside `bin` and `obj`, plus its generated global usings, and without a
@@ -78,7 +85,11 @@ for it and its project file, to `obj/…/equantic.projects.txt`, and passes it a
 out: a project under the SDK's own source tree, which a sample references in place of packages, and
 one whose directory carries the icon pack marker, whose constants are inlined where they are used.
 eqc leaves out a project whose directory it already reads another way, whatever the list says. No
-property lists projects: the SDK derives them.
+property lists projects: the SDK derives them. A list that was handed and does not hold stops the
+build (EQ0001): the file that is not there, a line that is not a project, an assembly or a project
+that is not where its line says. Read as no list, or as the lines that do hold, the build went on
+with a project as an assembly, which is the defect this change exists to end (found in review). The
+SDK writes the list in the target that passes it, so none of these is a build it produces.
 
 **A referenced project's type is written when a written module imports it, and imported only when a
 symbol named it.** The build compiles the app's files as today. Each module it writes says which
@@ -101,7 +112,17 @@ elements. The walk decides nothing. It answers which files declare the type a na
 ask it. For a component it reads the code that crosses and no other, by the parser's own two rules:
 a `[ServerOnly]` method is left out whole, and a Server Action is read for its signature, which its
 stub is written from. Read with the rest of the class, a Server Action that mapped the Domain's
-`Order` into the app's own `Order` had the Domain's reached (found in review).
+`Order` into the app's own `Order` had the Domain's reached (found in review). The same holds for a
+name the build writes nothing for, which a probe found after that review: inside `nameof`, in an
+attribute, and a constant written as its value. Each is left out by the rule of whoever leaves it out, asked through that
+owner's own function and never repeated: `nameof` and an attribute as an interface's defaults are
+already read (`DefaultInterfaceMembers`), and a constant by the strategy that inlines it, whose rule
+is one function the strategy and the walk both call. A list of the syntax that writes nothing, kept
+here, would have been a second idea of what a constant is: a constant read by its bare name under
+`using static` is its twin's static when a source declares it, and its class has to be reached.
+What is left of the class is filed (#830): a module's `./Order` is still mapped back to a
+declaration by its NAME, so any syntax that names a type and writes no reference to it, which this
+walk does not know of, reaches that type when another type of that name is written.
 
 The dependency scan of a referenced project is a layer of its own, made when a name of that project
 is first asked for: an app name is importable as today, and a referenced project's name only for a
