@@ -2,6 +2,7 @@ using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Compiler.Services;
@@ -99,7 +100,18 @@ internal sealed class NamedSourceTypes
         {
             try
             {
-                if (asComponent && StaysOnTheServer(node) || WritesNothing(node, model)) continue;
+                if (asComponent && StaysOnTheServer(node)) continue;
+                if (WritesNothing(node, model))
+                {
+                    // Nothing of what it NAMES is written. What is written in its place is a value,
+                    // and C# still converts that value where it stands: a constant handed to
+                    // `this[Slot slot]` is written `Slot.fromInt(1)`, a call like any other, on the
+                    // type that declares the conversion. Left out with the node, the module called
+                    // a type it never imported (#833). Only the node knows where it is converted:
+                    // an indexer's symbol and a constructor initializer carry no parameter type.
+                    if (node is ExpressionSyntax value) Symbol(model.GetConversion(value).MethodSymbol);
+                    continue;
+                }
                 switch (node)
                 {
                     case ExpressionSyntax expression:
