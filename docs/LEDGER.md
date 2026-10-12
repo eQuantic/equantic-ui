@@ -2297,6 +2297,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   three the build now refuses. The served runtime grew 3,834 gzipped bytes. Proposed and archived
   through OpenSpec (`openspec/specs/page-culture`, `runtime-dates`, `transpiler-bcl`,
   `transpiler-records`).
+- **0.2.0-preview.61 released** from `a7d5f3de`: a component that hears the server on a typed topic
+  (#647), a page that requires its authorization and a Server Action that refuses another site's
+  request (#686, #737), a layout that follows its box and type that follows the window (#648, #665),
+  a control's press and focus on every target with a 24dp floor under a pointer (#617, #628), the
+  code editor's completion (#618, #653, #733), a hot reload that keeps the page's state (#666, #672),
+  the image optimizer on SkiaSharp (#730), one tree drawn alike by every producer with Photon's
+  hit-testing and text layout (#688, #690, #699, #739, #741, #749), a number and a date in the
+  page's culture (#637), and the browser's answers made .NET's for a class, a record and a struct
+  as C# builds and copies them (#608, #621, #654, #689, #696, #697, #708, #752), collections and
+  indexers (#594, #668, #707, #709), dates, null-conditionals and null arguments (#660, #588, #656,
+  #715), names and imports (#661, #705), strings, builders and exceptions (#607, #667, #748), a
+  curve (#731), and an ordinal dictionary with a fragment under a floating header (#579), with a
+  page that answers HEAD (#610), the conformance harness's own comparison (#609) and the release's
+  own issue (#756).
+  *([v0.2.0-preview.61](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.61))*
 - **2026-10-11 · A LINQ overload answers as its own .NET overload**: four overloads #715's measurement
   found lowered as a sibling they resemble, and a fifth its review did. A default value was called as a
   predicate ([#720](https://github.com/eQuantic/equantic-ui/issues/720), and `SingleOrDefault`'s,
@@ -2335,6 +2350,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   in the set's order where .NET walks its tree breadth first
   ([#766](https://github.com/eQuantic/equantic-ui/issues/766)). Proposed and archived through OpenSpec
   (`openspec/specs/runtime-collections`).
+- **2026-10-11 · A release finishes what nuget.org refused**: the tag run of `0.2.0-preview.61`
+  pushed 33 of its 50 packages and stopped on three 500s from nuget.org, and five reruns of the job
+  died on packages that were already there, since the loop started from the top each time and a
+  duplicate answered 500 where it answers 409
+  ([#759](https://github.com/eQuantic/equantic-ui/issues/759)). The 17 still owed went up from the
+  tag run's own artifact through a one-off workflow, and the release page was written by hand. Now
+  one script publishes (`scripts/publish-packages.sh`): it skips what nuget.org lists, goes on to the
+  next package when one fails, tries the failed ones again together after 30, 60, 120 and 240
+  seconds, and fails at the end naming what is still owed. A push refused for the key is not tried again, and the list goes on.
+  `publish-nuget` runs it, and so does `Publish a release`, a workflow run by hand that finishes a
+  release from the packages of its tag's own run, any other run refused, and writes its page
+  (`scripts/release-page.sh`, which `release-github` runs too). `scripts/check-publish-packages.sh`
+  runs the loop against a stub on every pull request, with ten controls that each break it one way
+  and must fail the case that guards it. Proposed and archived
+  through OpenSpec (`openspec/specs/release-publishing`).
 - **2026-10-11 · A string splits, and searches from a start, as .NET does**: two gaps #715's measurement
   found and one #748's review did. `string.Split` was JavaScript's `split` of its first argument: an
   array of separators was one text joined by commas, an empty one cut the text into its characters, the
