@@ -2534,13 +2534,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   `InternalsVisibleTo` for the real name opened nothing (EQ2006), and a backtick ran as a command. And
   the list of referenced projects was one line a project, `assembly|project file`, cut at the first
   bar, which a path on macOS and Linux may hold (the C# compiler itself does not build under such a
-  folder, CS0006, so this half keeps eqc whole and turns no build green). The SDK writes eqc's arguments to `obj/…/equantic.eqc.rsp`, one a line, each kept whole as
-  an item's metadata, and the command names the compiler and that file by its name, in the folder
-  eqc runs in, which MSBuild sets. eqc reads `@<file>`, through `AppBuildOptions.ReadArguments` and `FromArguments`, which
-  hold what its CLI read inline, and the list is two lines a project. `CompileEQuanticUI` is three
-  targets, so a test runs the one that writes the file, as it ships, in a real MSBuild under a folder
-  whose name holds what a shell reads ([#836](https://github.com/eQuantic/equantic-ui/issues/836)).
-  Proposed and archived through OpenSpec (`openspec/specs/referenced-projects`).
+  folder, CS0006, so this half keeps eqc whole and turns no build green). The SDK writes eqc's
+  arguments to `obj/…/equantic.eqc.rsp`, one a line, each kept whole as an item's metadata, and the
+  command names the compiler and that file by its name, in the folder eqc runs in, which MSBuild sets.
+  The bundler hands bun the project's folder rather than eqc's, since bun names a shared chunk by its
+  modules' paths from the folder it runs in, so no chunk is renamed. eqc reads `@<file>`, through
+  `AppBuildOptions.ReadArguments` and `FromArguments`, which hold what its CLI read inline, and the
+  list is two lines a project. `CompileEQuanticUI` is three targets, so a test runs the one that
+  writes the file, as it ships, in a real MSBuild under a folder whose name holds what a shell reads
+  ([#836](https://github.com/eQuantic/equantic-ui/issues/836)). Proposed and archived through OpenSpec
+  (`openspec/specs/referenced-projects`).
 
 ## Retired documents
 

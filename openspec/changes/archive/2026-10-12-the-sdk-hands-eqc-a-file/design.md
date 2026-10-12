@@ -33,6 +33,9 @@ a process's working directory itself, so the file is named by its name alone and
 project is in the command. Named by a path relative to the project, the file still carried what the
 obj folder's path holds, a Configuration, a target framework, an artifacts layout's folders (found in
 review). Every path in the file is absolute, so eqc reads none of them from where it runs.
+bun did read it: it names a shared chunk by a hash of its modules' paths from the folder it runs in,
+and it inherited eqc's, so every chunk was renamed (the dashboard's comparison with main found it).
+The bundler names bun's folder now, the project's, where the build always ran it.
 
 Quoting each value for the shell was set aside: two shells, two rules, and `cmd.exe` reads `%` inside
 quotes. An environment variable was set aside for the same reason, as `cmd.exe` reads `%NAME%` as

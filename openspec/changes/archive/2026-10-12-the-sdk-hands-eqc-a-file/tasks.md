@@ -18,6 +18,7 @@
 - [x] 3.2 Write the response file from an ordered item list, and the list of projects in pairs
 - [x] 3.3 Write the cases: the shipped target that writes the response file, run in a real MSBuild with those values, is read back by `FromArguments` as it was set, and the shipped command names no value but the compiler and the file
 - [x] 3.4 Update the shared-library sample's check for the list's new shape
+- [x] 3.5 bun runs in the project's folder, named by the bundler: write the case that bundles two copies of one app in two folders, take the folder back and confirm it fails
 
 ## 4. Proof and documents
 
