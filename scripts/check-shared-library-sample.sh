@@ -14,6 +14,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # SHARED_LIBRARY_SAMPLE points the check at another copy of the built app: a copy with one file
 # taken away or changed is how each case below was shown to fail.
 web="${SHARED_LIBRARY_SAMPLE:-$ROOT/samples/SharedLibrary/SharedLibrary.Web}"
+# SHARED_LIBRARY_ASSEMBLY is the app's assembly name, for a copy built under another one.
+assembly="${SHARED_LIBRARY_ASSEMBLY:-SharedLibrary.Site}"
 modules="$web/obj/eQuantic/ts"
 output="$web/wwwroot/_equantic"
 
@@ -35,14 +37,26 @@ if [ -z "$projects" ]; then
     fail "the SDK wrote no equantic.projects.txt for the sample, so the compiler was handed no referenced project"
 else
     for project in SharedLibrary.Common SharedLibrary.Domain; do
-        grep -q "|.*/$project/$project.csproj\$" "$projects" \
+        grep -q "/$project/$project.csproj\$" "$projects" \
             || fail "$projects does not list $project, a project the app references"
     done
-    listed=$(grep -c . "$projects")
-    if [ "$listed" -ne 2 ]; then
-        fail "$projects lists $listed projects where the app's own are 2: the SDK's projects and icon packs are read another way"
+    # Two lines a project, the assembly MSBuild resolved for it and then its project file, so a path
+    # is a line whole whatever it holds (#836).
+    lines=$(grep -c . "$projects")
+    if [ $((lines % 2)) -ne 0 ] || [ "$lines" -ne 4 ]; then
+        fail "$projects holds $lines lines where the app's own 2 projects are 4: the SDK's projects and icon packs are read another way"
         cat "$projects"
     fi
+fi
+
+# WHAT EQC IS HANDED IS A FILE, one argument a line, and the app's assembly name is a line of it as
+# it is: the SDK wrote every value into a command a shell read first, which cut `Cash$Flow` to
+# `Cash` (#836).
+arguments=$(find "$web/obj" -name equantic.eqc.rsp | sort | head -1)
+if [ -z "$arguments" ]; then
+    fail "the SDK wrote no equantic.eqc.rsp for the sample, so the compiler was handed its arguments some other way"
+elif ! grep -qxF -- "$assembly" "$arguments"; then
+    fail "$arguments does not hold the app's assembly name, $assembly, as a line of its own"
 fi
 
 # EVERY TYPE THE PAGE REACHES IS A MODULE, in whichever project: a static class, a record, a

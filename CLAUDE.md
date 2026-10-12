@@ -465,7 +465,9 @@ A project the app references with a `ProjectReference`, directly or through anot
 compilation of its own SOURCE: `Sdk.targets` writes `obj/…/equantic.projects.txt` from the references
 MSBuild resolved (`--projects`), without the SDK's own projects and icon packs, and hands the app's
 assembly name as the project evaluates it (`--assembly-name`), which is the name a library's
-`InternalsVisibleTo` names. A type of one is a
+`InternalsVisibleTo` names. Everything eqc is handed reaches it in a response file,
+`obj/…/equantic.eqc.rsp`, one argument a line, and the command names only the compiler and that file:
+a shell read each value written into it first, and `Cash$Flow` arrived as `Cash` (#836). A type of one is a
 module of the bundle when a written module imports it, and only then, so a class library shared by a
 solution's apps works in a page and a Domain project costs what the pages use of it
 (`openspec/specs/referenced-projects`, `samples/SharedLibrary`).

@@ -12,12 +12,13 @@ public static class ModuleBundler
 {
     /// <summary>
     /// Bundles <paramref name="entryPoints"/>, TypeScript files under <paramref name="intermediateDir"/>,
-    /// into <paramref name="outputDir"/> with <paramref name="bunPath"/>, and composes the maps
-    /// <paramref name="sourceMaps"/> asks for. Answers null, or bun's error output when it fails. A
-    /// map that cannot be composed stays as bun wrote it, and <paramref name="warn"/> hears why.
+    /// into <paramref name="outputDir"/> with <paramref name="bunPath"/> run in
+    /// <paramref name="workingDirectory"/>, and composes the maps <paramref name="sourceMaps"/> asks
+    /// for. Answers null, or bun's error output when it fails. A map that cannot be composed stays as
+    /// bun wrote it, and <paramref name="warn"/> hears why.
     /// </summary>
-    public static string? Bundle(string bunPath, IReadOnlyCollection<string> entryPoints, string outputDir,
-        string intermediateDir, SourceMapMode sourceMaps, Action<string>? warn = null)
+    public static string? Bundle(string bunPath, string workingDirectory, IReadOnlyCollection<string> entryPoints,
+        string outputDir, string intermediateDir, SourceMapMode sourceMaps, Action<string>? warn = null)
     {
         // --root pins the output-path base to the intermediate TS dir (where every entry .ts lives),
         // so bun writes entries FLAT as "<Page>.js" in outDir. Without it bun infers the root from the
@@ -30,26 +31,35 @@ public static class ModuleBundler
         // keeps for the whole folder (the generated-files spec).
         var started = DateTime.UtcNow.AddSeconds(-2);
         var before = Maps(outputDir);
-        var mapArg = sourceMaps switch
+        string[] mapArguments = sourceMaps switch
         {
-            SourceMapMode.Full => " --sourcemap",
-            SourceMapMode.External => " --sourcemap=external",
-            _ => "",
+            SourceMapMode.Full => ["--sourcemap"],
+            SourceMapMode.External => ["--sourcemap=external"],
+            _ => [],
         };
-        var bunArgs = $"build {string.Join(" ", entryPoints.Select(p => $"\"{p}\""))} --outdir \"{outputDir}\" --root \"{intermediateDir}\" --splitting{mapArg} --minify-syntax --minify-whitespace --target browser --external @equantic/runtime";
+        string[] arguments =
+        [
+            "build", .. entryPoints, "--outdir", outputDir, "--root", intermediateDir, "--splitting",
+            .. mapArguments, "--minify-syntax", "--minify-whitespace", "--target", "browser",
+            "--external", "@equantic/runtime",
+        ];
 
-        using var process = new Process
+        // bun names each module by its path from the folder it runs in, and mixes those names into the
+        // hash a shared chunk is named by. So that folder is named here and never inherited: a bundle
+        // is the same bytes wherever its caller runs, and the SDK runs eqc in the folder of its
+        // response file, not the project's (#836). Each argument is handed whole, as a list: a
+        // command line of quoted paths lost every double quote a folder's name held.
+        var startInfo = new ProcessStartInfo
         {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = bunPath,
-                Arguments = bunArgs,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            },
+            FileName = bunPath,
+            WorkingDirectory = workingDirectory,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
         };
+        foreach (var argument in arguments) startInfo.ArgumentList.Add(argument);
+        using var process = new Process { StartInfo = startInfo };
         process.Start();
         // Both streams drain at once: one read to its end first can fill the other's pipe and
         // stall the child.

@@ -33,11 +33,12 @@ public sealed class AppBuildOptions
     public string? GeneratedDirectory { get; init; }
 
     /// <summary>
-    /// The projects the app references with a <c>ProjectReference</c>, directly or through another:
-    /// one a line, the assembly MSBuild resolved for it, a <c>|</c>, and its project file. The SDK
-    /// writes it from <c>@(ReferencePathWithRefAssemblies)</c>, so the developer sets nothing. Each
-    /// project's source is compiled in place of its assembly, and a type of it that browser code
-    /// reaches becomes a module of the bundle (#624).
+    /// The projects the app references with a <c>ProjectReference</c>, directly or through another,
+    /// each as two lines: the path of the assembly MSBuild resolved for it, then the path of its
+    /// project file, with no blank line between (#836). The SDK writes it from
+    /// <c>@(ReferencePathWithRefAssemblies)</c>, so the developer sets nothing. Each project's source
+    /// is compiled in place of its assembly, and a type of it that browser code reaches becomes a
+    /// module of the bundle (#624).
     /// </summary>
     public string? ProjectsFile { get; init; }
 
@@ -60,4 +61,104 @@ public sealed class AppBuildOptions
 
     /// <summary>What each module's source map carries.</summary>
     public SourceMapMode SourceMaps { get; init; } = SourceMapMode.Full;
+
+    /// <summary>Whether the CLI stays and compiles again on every change of a source (<c>--watch</c>).
+    /// The build itself reads nothing of it.</summary>
+    public bool Watch { get; init; }
+
+    /// <summary>The options that are followed by a value.</summary>
+    private static readonly HashSet<string> ValueOptions = new(StringComparer.Ordinal)
+    {
+        "--refs", "--ref-sources", "--generated", "--projects", "--assembly-name", "--bun", "--source-maps",
+    };
+
+    /// <summary>
+    /// The arguments a command line holds: the ones it was given, or, when its one argument is
+    /// <c>@&lt;file&gt;</c>, the ones that file holds, one a line. The SDK hands eqc a file and never
+    /// writes a value of the project into the command, because a shell reads the command first:
+    /// <c>Cash$Flow</c> reached eqc as <c>Cash</c>, and a backtick ran as a command (#836). A line is
+    /// an argument whatever characters it holds, and an empty line is none.
+    /// </summary>
+    /// <exception cref="IOException">The file the command line names cannot be read.</exception>
+    public static IReadOnlyList<string> ReadArguments(IReadOnlyList<string> commandLine) =>
+        commandLine is [var only] && only.StartsWith('@')
+            ? File.ReadAllLines(only[1..]).Where(line => line.Length > 0).ToList()
+            : commandLine;
+
+    /// <summary>
+    /// The options the arguments hold, as eqc reads them: the source roots, separated by a
+    /// semicolon, and the output folder first, then each option followed by its value, and
+    /// <c>--watch</c>, which takes none.
+    /// </summary>
+    /// <exception cref="ArgumentException">There are not the two folders first, an option has no
+    /// value after it, or <c>--source-maps</c> names no mode.</exception>
+    public static AppBuildOptions FromArguments(IReadOnlyList<string> arguments)
+    {
+        if (arguments.Count < 2 || arguments[0].StartsWith("--", StringComparison.Ordinal)
+            || arguments[1].StartsWith("--", StringComparison.Ordinal))
+            throw new ArgumentException("eqc is handed the source roots and the output folder first.");
+
+        // Read in order, an option and then its value: a value that reads like an option (a folder
+        // named `--refs`, an assembly named `--watch`) is the value it stands as. Found anywhere in the
+        // list, `--watch` as an assembly's name kept a build waiting forever (found in review of #843).
+        var values = new Dictionary<string, string>(StringComparer.Ordinal);
+        var watch = false;
+        for (var at = 2; at < arguments.Count; at++)
+        {
+            if (arguments[at] == "--watch")
+            {
+                watch = true;
+                continue;
+            }
+            if (!ValueOptions.Contains(arguments[at])) continue;
+            if (at + 1 >= arguments.Count) throw new ArgumentException($"{arguments[at]} is handed no value.");
+            values[arguments[at]] = arguments[at + 1];
+            at++;
+        }
+        string? Value(string option) => values.GetValueOrDefault(option);
+
+        // --source-maps full|external|none (#352): what each module's map carries. `full` links a
+        // map with the C# inside it, `external` writes one without the C# and without the link,
+        // `none` writes none. The SDK passes full in Debug and none everywhere else; a direct run
+        // keeps full.
+        var sourceMaps = Value("--source-maps")?.Trim() ?? "full";
+        return new AppBuildOptions
+        {
+            // TrimEntries: a root written on several lines of a project file carries the line
+            // breaks and the indentation around it, and an untrimmed root is a folder that is not
+            // there, whose components are then never transpiled.
+            SourceDirectories = arguments[0].Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+            OutputDirectory = arguments[1].Trim(),
+            // --refs <file>: the assemblies MSBuild resolved for the project
+            // (@(ReferencePathWithRefAssemblies)), one a line, so the semantic model resolves every
+            // reference as csc did. Without it, base types stay unresolved and member calls degrade
+            // to naive camel-casing (.Add to .add).
+            ReferencesFile = Value("--refs"),
+            // --ref-sources <file>: folders whose C# joins the compilation to resolve, and is never
+            // transpiled. An icon pack's `static readonly IconGlyph` is inlined where it is used,
+            // which needs its initializer, and metadata does not carry one.
+            ReferenceSourcesFile = Value("--ref-sources"),
+            // --generated <dir>: the source generators' output for the configuration being built,
+            // which the SDK knows and eqc cannot: a project built in both configurations has a tree
+            // under each, and sweeping obj would take every generated type twice.
+            GeneratedDirectory = Value("--generated")?.Trim(),
+            // --projects <file>: the projects the app references with a ProjectReference, directly
+            // or through another, each as two lines, the assembly MSBuild resolved for it and its
+            // project file. Their source is compiled in place of their assemblies (#624).
+            ProjectsFile = Value("--projects")?.Trim(),
+            // --assembly-name <name>: the app's assembly name as its project evaluates it, which a
+            // project file may set apart from its own name, and which a referenced project's
+            // InternalsVisibleTo names.
+            AssemblyName = Value("--assembly-name")?.Trim(),
+            BunPath = Value("--bun"),
+            Watch = watch,
+            SourceMaps = sourceMaps.ToLowerInvariant() switch
+            {
+                "full" => SourceMapMode.Full,
+                "external" => SourceMapMode.External,
+                "none" => SourceMapMode.None,
+                _ => throw new ArgumentException($"--source-maps takes full, external or none, not '{sourceMaps}'."),
+            },
+        };
+    }
 }

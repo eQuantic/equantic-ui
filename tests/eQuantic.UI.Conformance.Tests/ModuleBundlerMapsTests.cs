@@ -29,7 +29,7 @@ public class ModuleBundlerMapsTests
             var entry = Path.Combine(ts, "Page.ts");
             File.WriteAllText(entry, "export const page = ;\n");
 
-            ModuleBundler.Bundle(bun, [entry], output, ts, SourceMapMode.Full)
+            ModuleBundler.Bundle(bun, ts, [entry], output, ts, SourceMapMode.Full)
                 .Should().NotBeNull("bun refuses an entry that does not parse");
 
             File.Exists(map).Should().BeTrue("a bundle that fails leaves the folder as it found it");
@@ -48,7 +48,7 @@ public class ModuleBundlerMapsTests
             File.WriteAllText(entry, "export const page = 1;\n");
             var warnings = new List<string>();
 
-            ModuleBundler.Bundle(bun, [entry], output, ts, SourceMapMode.Full, warnings.Add).Should().BeNull();
+            ModuleBundler.Bundle(bun, ts, [entry], output, ts, SourceMapMode.Full, warnings.Add).Should().BeNull();
 
             File.Exists(gone).Should().BeFalse("a map this bundle did not write does not survive it");
             File.Exists(Path.Combine(output, "Page.js.map")).Should().BeTrue("the map bun wrote stays");
@@ -65,7 +65,7 @@ public class ModuleBundlerMapsTests
             var entry = Path.Combine(ts, "Page.ts");
             File.WriteAllText(entry, "export const page = 1;\n");
 
-            ModuleBundler.Bundle(bun, [entry], output, ts, SourceMapMode.None).Should().BeNull();
+            ModuleBundler.Bundle(bun, ts, [entry], output, ts, SourceMapMode.None).Should().BeNull();
 
             File.Exists(Path.Combine(output, "Page.js")).Should().BeTrue();
             File.Exists(map).Should().BeFalse("a Release bundle leaves no Debug bundle's map behind");
