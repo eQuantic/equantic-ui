@@ -2603,6 +2603,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   runtime on the Mac. The run on a physical iPhone belongs to the device pass
   ([#792](https://github.com/eQuantic/equantic-ui/issues/792)). Proposed and archived through OpenSpec
   (`openspec/specs/native-callbacks`).
+- **2026-10-12 · The renderer lets go of a texture nobody draws**: the shared renderer kept every
+  raster it ever uploaded for its own life, and on Vulkan each one held descriptor sets out of a pool
+  of 1,024, so an Android app that drew a thousand different texts died at the 1,025th with
+  "descriptor set allocation failed": measured on the emulator with a text changing every 16 ms, about
+  17 seconds in, with no camera in the app
+  ([#858](https://github.com/eQuantic/equantic-ui/issues/858)). A raster no frame has drawn for
+  `RhiRenderer.RetainFrames` frames now gives its texture back, on every backend, and a Vulkan pool
+  that is full hands over to a new one. The same text then ran past 3,600 different contents with
+  fewer than a hundred sets allocated. Found while proving the camera preview of
+  [#775](https://github.com/eQuantic/equantic-ui/issues/775). Proposed and archived through OpenSpec
+  (`openspec/specs/renderer-textures`).
 
 ## Retired documents
 
