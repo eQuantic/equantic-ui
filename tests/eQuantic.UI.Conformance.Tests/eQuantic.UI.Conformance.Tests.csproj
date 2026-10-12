@@ -33,6 +33,9 @@
          claimed to test. And the Server itself renders the pages whose payload HydrationCrossingTests
          hands to their twins. -->
     <ProjectReference Include="..\..\src\eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
+    <!-- The component library, which the solution fixture's projects compile against (#624): the
+         shared library of a solution holds components, and the app that references it places them. -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
     <!-- As the SDK adds it to an app: the generator writes the hydration manifest of the crossing's
          fixture pages (Hydration/), which both halves read. -->
     <ProjectReference Include="..\..\src\eQuantic.UI.Generators\eQuantic.UI.Generators.csproj"
@@ -43,5 +46,11 @@
     <!-- One metadata reference per assembly for the whole test process, shared by every compilation
          a test creates: a new one per compilation held tens of gigabytes (#481). -->
     <Compile Include="..\Shared\TestReferences.cs" Link="Shared\TestReferences.cs" />
+    <!-- A solution written to disk and built as the SDK builds it, an app over the projects it
+         references (#624). The compiler's tests read what such a build WROTE, and this suite runs it:
+         one fixture, so the two cannot describe two different builds. -->
+    <Compile Include="..\eQuantic.UI.Compiler.Tests\ReferencedProjects\Solution.cs" Link="ReferencedProjects\Solution.cs" />
+    <Compile Include="..\eQuantic.UI.Compiler.Tests\ReferencedProjects\Built.cs" Link="ReferencedProjects\Built.cs" />
+    <Compile Include="..\eQuantic.UI.Compiler.Tests\ReferencedProjects\SharedLibrary.cs" Link="ReferencedProjects\SharedLibrary.cs" />
   </ItemGroup>
 </Project>

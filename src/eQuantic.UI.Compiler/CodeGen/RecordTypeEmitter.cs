@@ -22,6 +22,11 @@ public class RecordTypeEmitter
 {
     private readonly CSharpToJsConverter _converter;
     private readonly Services.ComponentDependencyResolver? _modules;
+
+    /// <summary>What the record being written names of the projects the app references, which are
+    /// sibling modules as the app's own types are (#624). The compiler sets it for a build that has
+    /// such projects, and it names none otherwise.</summary>
+    internal Services.ReferencedNames Referenced { get; init; } = Services.ReferencedNames.None;
     private readonly MethodLowering _lowering;
 
     /// <summary>Whether this emission writes TypeScript: set by <see cref="Emit"/>, read wherever the
@@ -101,9 +106,7 @@ public class RecordTypeEmitter
     {
         if (_converter.Model is not { } model) return null;
         if (ReferenceEquals(node.SyntaxTree, model.SyntaxTree)) return model;
-        return model.Compilation.ContainsSyntaxTree(node.SyntaxTree)
-            ? model.Compilation.GetSemanticModel(node.SyntaxTree)
-            : null;
+        return model.Compilation.ModelOf(node.SyntaxTree);
     }
 
     /// <summary>
@@ -206,7 +209,7 @@ public class RecordTypeEmitter
                 {
                     // The net under the fences, as a class module has it (TypeScriptEmitter): a twin
                     // the build writes no module for is reported, never imported (#584).
-                    if (_modules?.IsKeptOut(introduced) == true)
+                    if (_modules?.IsKeptOut(introduced) == true || Referenced.IsKeptOut(introduced))
                     {
                         if (!_converter.RefusedTwins.Contains(introduced))
                             _converter.Report(type, ConversionSeverity.Error, "EQ2010",
@@ -221,7 +224,7 @@ public class RecordTypeEmitter
             // named, so both were a name the module never imported — `new Holder()` on the web threw
             // where C# built a zeroed Span2.
             foreach (var appType in appTypes)
-                if (_modules?.IsModule(appType) == true && Names(appType))
+                if ((_modules?.IsModule(appType) == true || Referenced.IsModule(appType)) && Names(appType))
                     specReferences.Add(appType);
             specReferences.Remove(type.TwinTypeName());
             if (baseName != null) specReferences.Remove(baseName);

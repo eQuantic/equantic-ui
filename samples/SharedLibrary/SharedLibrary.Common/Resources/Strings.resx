@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="Brand" xml:space="preserve">
+    <value>Shared Library</value>
+  </data>
+  <data name="Title" xml:space="preserve">
+    <value>A mark every app shares</value>
+  </data>
+  <data name="Unused" xml:space="preserve">
+    <value>A string no page reads</value>
+  </data>
+</root>

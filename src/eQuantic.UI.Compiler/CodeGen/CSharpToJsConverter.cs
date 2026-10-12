@@ -64,6 +64,13 @@ public class CSharpToJsConverter
         set => _context.HasProjectCompilation = value;
     }
 
+    /// <summary>See <see cref="ConversionContext.ResourceIds"/>.</summary>
+    internal Services.ResourceCatalogIds? ResourceIds
+    {
+        get => _context.ResourceIds;
+        set => _context.ResourceIds = value;
+    }
+
     public void SetSemanticModel(SemanticModel? semanticModel)
     {
         _semanticModel = semanticModel;
@@ -87,14 +94,13 @@ public class CSharpToJsConverter
     {
         if (_semanticModel is not { } model
             || ReferenceEquals(node.SyntaxTree, model.SyntaxTree)
-            || !model.Compilation.ContainsSyntaxTree(node.SyntaxTree))
+            || model.Compilation.ModelOf(node.SyntaxTree) is not { } other)
         {
             convert();
             return;
         }
 
         var (savedModel, savedHelper) = (_semanticModel, _context.SemanticHelper);
-        var other = model.Compilation.GetSemanticModel(node.SyntaxTree);
         _semanticModel = other;
         _context.SemanticModel = other;
         _context.SemanticHelper = new SemanticHelper(other);

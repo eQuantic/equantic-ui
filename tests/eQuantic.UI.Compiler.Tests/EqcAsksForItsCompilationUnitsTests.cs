@@ -27,6 +27,13 @@ namespace eQuantic.UI.Compiler.Tests;
 /// </para>
 ///
 /// <para>
+/// The loop itself lives in the compiler library since #624
+/// (<see cref="eQuantic.UI.Compiler.Services.AppBuild"/>), where a test can run it, and the guard
+/// went with it: it reads the CLI's folder and the loop's file, since a guard left watching the
+/// folder the loop moved out of would pass on a file that enumerates nothing because it does nothing.
+/// </para>
+///
+/// <para>
 /// A SOURCE guard needs no reference, which is the whole reason it can watch a project the suite
 /// cannot link — the same shape as
 /// <c>eQuantic.UI.Web.Tests.GeneratedFilesEndTheirLinesTheSameWayTests</c>, which reads committed
@@ -73,14 +80,19 @@ public class EqcAsksForItsCompilationUnitsTests
     private static string OneLine(SyntaxNode call) =>
         string.Join(' ', call.ToString().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
+    /// <summary>Where the build loop is: the class the CLI runs.</summary>
+    private static string BuildLoop() =>
+        Path.Combine(RepoRoot(), "src", "eQuantic.UI.Compiler", "Services", "AppBuild.cs");
+
     [Fact]
     public void TheCliNeverEnumeratesSourceFilesItself()
     {
         var cli = Path.Combine(RepoRoot(), "src", "eQuantic.Build");
         Directory.Exists(cli).Should().BeTrue("the guard is worthless if it reads nothing");
+        File.Exists(BuildLoop()).Should().BeTrue("the guard is worthless if the loop is not where it reads");
 
         var offenders = new List<string>();
-        foreach (var file in Directory.EnumerateFiles(cli, "*.cs", SearchOption.AllDirectories))
+        foreach (var file in Directory.EnumerateFiles(cli, "*.cs", SearchOption.AllDirectories).Append(BuildLoop()))
         {
             if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}",
                     StringComparison.Ordinal)
@@ -123,9 +135,8 @@ public class EqcAsksForItsCompilationUnitsTests
     [Fact]
     public void AndItAsksTheHelperInstead()
     {
-        var program = Path.Combine(RepoRoot(), "src", "eQuantic.Build", "Program.cs");
         var unit = CSharpSyntaxTree
-            .ParseText(File.ReadAllText(program), ParseDefaults.Options)
+            .ParseText(File.ReadAllText(BuildLoop()), ParseDefaults.Options)
             .GetRoot();
 
         unit.DescendantNodes().OfType<InvocationExpressionSyntax>()
