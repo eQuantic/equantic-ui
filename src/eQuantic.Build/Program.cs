@@ -4,7 +4,7 @@ using eQuantic.UI.Compiler.Services;
 
 if (args.Length < 2)
 {
-    Console.Error.WriteLine("Usage: eqc <source-dir> <output-dir> [--bun <path>] [--source-maps full|external|none] [--watch]");
+    Console.Error.WriteLine("Usage: eqc <source-dir> <output-dir> [--refs <file>] [--projects <file>] [--bun <path>] [--source-maps full|external|none] [--watch]");
     return 1;
 }
 
