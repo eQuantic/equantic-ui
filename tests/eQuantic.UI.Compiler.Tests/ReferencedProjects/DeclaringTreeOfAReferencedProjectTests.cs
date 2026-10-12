@@ -43,7 +43,11 @@ public sealed class DeclaringTreeOfAReferencedProjectTests : IClassFixture<Decla
                     {
                         string Name { get; }
 
-                        string Describe() => "I am " + Name;
+                        string Describe() => Framed("I am " + Name);
+
+                        // A helper of the interface's own: it travels with the default that calls it,
+                        // and which default calls it is read with the model of THIS file.
+                        private string Framed(string text) => "[" + text + "]";
                     }
                     """),
                 ("Counter.cs",
@@ -63,13 +67,16 @@ public sealed class DeclaringTreeOfAReferencedProjectTests : IClassFixture<Decla
 
                     namespace Common;
 
-                    public sealed class Bag : IEnumerable<int>
+                    public class Bag : IEnumerable<int>
                     {
-                        public IEnumerator<int> GetEnumerator()
+                        private IEnumerator<int> Items()
                         {
                             yield return 1;
                             yield return 2;
                         }
+
+                        // It hands back what another member answers, which is what the build reads.
+                        public IEnumerator<int> GetEnumerator() => Items();
 
                         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
                     }
@@ -118,19 +125,32 @@ public sealed class DeclaringTreeOfAReferencedProjectTests : IClassFixture<Decla
                             ]);
                     }
                     """),
-                ("Screens/BagUser.cs",
+                ("Screens/Deck.cs",
                     """
-                    using eQuantic.UI.Primitives;
+                    using System.Collections;
                     using Common;
 
                     namespace App.Screens;
 
-                    public sealed class BagUser : StatelessComponent
+                    // The app's class implements the plain interface again, over the library's
+                    // sequence: whether its member answers as the library's is read off BOTH bodies.
+                    public sealed class Deck : Bag, IEnumerable
+                    {
+                        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+                    }
+                    """),
+                ("Screens/DeckUser.cs",
+                    """
+                    using eQuantic.UI.Primitives;
+
+                    namespace App.Screens;
+
+                    public sealed class DeckUser : StatelessComponent
                     {
                         public override VisualNode Build(ComponentContext context)
                         {
                             var total = 0;
-                            foreach (var item in new Bag()) total += item;
+                            foreach (var item in new Deck()) total += item;
                             return Text($"{total}", TypeRole.BodyM, context.Theme.TextPrimary, maxLines: 1);
                         }
                     }
@@ -163,8 +183,10 @@ public sealed class DeclaringTreeOfAReferencedProjectTests : IClassFixture<Decla
     [Fact]
     public void ADefaultOfTheLibrarysInterface_IsWrittenIntoTheClassThatTakesIt()
     {
-        // The default's body lives in the interface's file, in the library's compilation.
-        _built.Module("Described").Should().Contain("describe()").And.Contain("'I am ' + this.name");
+        // The default's body lives in the interface's file, in the library's compilation, and so
+        // does the private helper it calls, which is found by binding the call in that file.
+        _built.Module("Described").Should().Contain("describe()").And.Contain("this.framed('I am ' + this.name)")
+            .And.Contain("framed(text");
     }
 
     [Fact]
@@ -178,9 +200,11 @@ public sealed class DeclaringTreeOfAReferencedProjectTests : IClassFixture<Decla
     [Fact]
     public void ASequenceOfTheLibrary_IsReadForWhatItsEnumeratorsHandBack()
     {
-        // How the class is walked is read off its GetEnumerator members, in the library's file.
-        _built.Module("BagUser").Should().NotBeNull();
-        _built.SiblingImportsOf("BagUser").Should().Contain("Bag");
+        // Whether Deck's own GetEnumerator answers as the one it inherits is read off the bodies
+        // of both, and the inherited one's is in the library's file.
+        _built.Module("Deck").Should().Contain("export class Deck extends Bag");
+        _built.SiblingImportsOf("Deck").Should().Contain("Bag");
         _built.Module("Bag").Should().Contain("export class Bag");
+        _built.SiblingImportsOf("DeckUser").Should().Contain("Deck");
     }
 }
