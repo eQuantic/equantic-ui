@@ -19,6 +19,10 @@ public sealed class AppBuild
     private readonly string _primarySourceDir;
     private readonly string _intermediateDir;
 
+    /// <summary>What the projects the app references declare; null for an app that references none,
+    /// which is built exactly as it was before there was such a layer.</summary>
+    private ReferencedModules? _referenced;
+
     /// <param name="options">What the build is handed.</param>
     /// <param name="output">Where the build narrates; the console when null.</param>
     /// <param name="errors">Where diagnostics go, in MSBuild's canonical form; the console's error
@@ -40,6 +44,10 @@ public sealed class AppBuild
 
     /// <summary>Where each type's TypeScript module is written before it is bundled.</summary>
     public string IntermediateDirectory => _intermediateDir;
+
+    /// <summary>The app's compilation, once <see cref="Load"/> has built it: the projects it
+    /// references are among its references as compilations of their own.</summary>
+    public Compilation? Compilation { get; private set; }
 
     /// <summary>
     /// Builds the project's compilation and the scan of its declarations, which every module of the
@@ -185,13 +193,36 @@ public sealed class AppBuild
                 // When we have the complete MSBuild reference set, use it verbatim. Injecting the runtime BCL
                 // impl assemblies on top of the targeting-pack ref assemblies would duplicate identities and
                 // muddy resolution, so only add the standard fallback set when --refs was not supplied.
-                projectCompilation = ProjectCompilationHelper.CreateCompilationFromSources(
-                    allSourceFiles,
-                    assemblyPaths,
-                    assemblyName: assemblyName,
-                    addStandardReferences: !usingExplicitRefs
-                );
+                var projects = ReferencedProjects();
+                if (projects.Count == 0)
+                {
+                    projectCompilation = ProjectCompilationHelper.CreateCompilationFromSources(
+                        allSourceFiles,
+                        assemblyPaths,
+                        assemblyName: assemblyName,
+                        addStandardReferences: !usingExplicitRefs
+                    );
+                }
+                else
+                {
+                    // The projects the app references are compiled from their own source, each a
+                    // compilation the app references in place of the project's assembly, so a type of
+                    // one is a type declared in source for every rule this compiler has (#624).
+                    projectCompilation = ProjectCompilations.Create(assemblyName, allSourceFiles, assemblyPaths,
+                        addStandardReferences: !usingExplicitRefs, projects, out var built);
+                    _output.WriteLine($"   Compiling {built.Count} referenced project(s) from source: " +
+                        string.Join(", ", built.Keys.Select(project => project.AssemblyName)));
+                    if (built.Count > 0)
+                    {
+                        _referenced = new ReferencedModules(built);
+                        _compiler.SetReferencedModules(_referenced);
+                        // One catalogue id per resource class for the whole build: two projects may
+                        // each have a Strings, and a file sees only its own project's.
+                        _compiler.SetResourceIds(new ResourceCatalogIds(projectCompilation));
+                    }
+                }
 
+                Compilation = projectCompilation;
                 _compiler.SetProjectCompilation(projectCompilation);
                 _output.WriteLine($"📚 Loaded project compilation: {assemblyName} ({allSourceFiles.Count} files, {assemblyPaths.Count} refs)");
 
@@ -235,6 +266,34 @@ public sealed class AppBuild
         _compiler.SetDependencyResolver(dependencyResolver);
         return true;
     }
+
+    /// <summary>
+    /// The projects the build compiles from source, of those the SDK listed. One whose directory is
+    /// already read another way is left out, whatever the list says: the app's own, a library the
+    /// build transpiles whole, or a pack whose sources joined the app's compilation. Its types would
+    /// be declared twice, and a name declared twice binds to neither.
+    /// </summary>
+    private IReadOnlyList<ReferencedProject> ReferencedProjects()
+    {
+        var alreadyRead = _options.SourceDirectories.Select(Normalize).ToHashSet(StringComparer.Ordinal);
+        if (!string.IsNullOrEmpty(_options.ReferenceSourcesFile) && File.Exists(_options.ReferenceSourcesFile))
+            foreach (var directory in File.ReadAllLines(_options.ReferenceSourcesFile).Select(line => line.Trim()))
+                if (directory.Length > 0) alreadyRead.Add(Normalize(directory));
+
+        return ReferencedProject.ReadList(_options.ProjectsFile)
+            .Where(project => !alreadyRead.Contains(project.Directory))
+            .ToList();
+
+        static string Normalize(string directory) =>
+            Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory)) + Path.DirectorySeparatorChar;
+    }
+
+    /// <summary>A file read back for a message: by its place in the app where it is the app's,
+    /// and by its place in its own project, named, where it is a referenced project's.</summary>
+    private string Describe(string file) =>
+        _referenced?.ProjectOf(file) is { } project
+            ? $"{project.AssemblyName}: {Path.GetRelativePath(project.Directory, file)}"
+            : Path.GetRelativePath(_primarySourceDir, file);
 
     // Format a diagnostic in MSBuild's canonical form so `Exec` recognises it and fails/warns the build:
     //   path(line,col): error EQ2001: message
@@ -282,6 +341,83 @@ public sealed class AppBuild
                 .GetCompilationUnits(sourceDirs, _options.GeneratedDirectory)
                 .GroupBy(unit => unit.Directory);
 
+            // What the written modules import of the projects the app references, still to be
+            // compiled: each type's name with a file that declares it.
+            var reached = new Queue<ReferencedType>();
+
+            // One module from one compiled type: its warnings, its name's claim, its file and map,
+            // and whether the bundle starts from it. `claimedAs` is what makes two claims of a name
+            // ONE type, and `describe` reads a file back for the message of a clash.
+            void Write(CompilationResult result, string file, bool isEntryCandidate, string claimedAs,
+                Func<string, string> describe)
+            {
+                // Warnings surface whether or not compilation succeeded (e.g. an unconverted
+                // construct emitted verbatim). Errors are reported below and fail the build.
+                foreach (var warning in result.Warnings)
+                {
+                    _errors.WriteLine(FormatDiagnostic(warning, "warning"));
+                }
+
+                if (!result.Success)
+                {
+                    hasErrors = true;
+                    foreach (var error in result.Errors)
+                    {
+                        _errors.WriteLine(FormatDiagnostic(error, "error"));
+                    }
+                    return;
+                }
+
+                var tsPath = Path.Combine(_intermediateDir, $"{result.ComponentName}.ts");
+
+                // A twin is named for its TYPE, not its namespace, so two types with one
+                // name write the same file and the second wins. Nothing said so: C# is
+                // happy — the namespaces differ — and the page died in the browser with
+                // the OTHER type's fields, which is the worst way to learn.
+                // Namespace-qualified, because that is what makes two claims ONE type.
+                // The FILE is still keyed by the bare name — see EmittedTwins for why both
+                // halves are needed, and why either alone gets a real case wrong.
+                var claim = written.Claim(result.ComponentName, claimedAs, file, result.TypeScript,
+                    describe, out var message);
+                if (claim == TwinClaim.Collision)
+                {
+                    _errors.WriteLine($"{file}(1,1): error EQ1005: {message}");
+                    hasErrors = true;
+                    return;
+                }
+                // One type across declarations eqc cannot merge. The build goes on with
+                // the module already written; the members left out are said out loud,
+                // because their absence shows up only in the browser.
+                if (claim == TwinClaim.Divided)
+                {
+                    _errors.WriteLine($"{file}(1,1): warning EQ1006: {message}");
+                    return;
+                }
+                // The same module already on disk: writing it again would rewrite its map
+                // with one pointing at a different C# file.
+                if (claim == TwinClaim.Repeat) return;
+
+                File.WriteAllText(tsPath, result.TypeScript);
+
+                if (!string.IsNullOrEmpty(result.SourceMap))
+                {
+                    var mapPath = tsPath + ".map";
+                    File.WriteAllText(mapPath, result.SourceMap);
+                    File.AppendAllText(tsPath, $"\n//# sourceMappingURL={result.ComponentName}.ts.map");
+                }
+
+                // A PAGE is always an entry point, wherever its file sits: the server loads
+                // it by name, so a page that is only transpiled is a 404 the build never
+                // mentioned. The positional rule stays as well — a project laid out the
+                // conventional way keeps every module it had before.
+                if (result.IsPage || isEntryCandidate)
+                {
+                    entryPoints.Add(tsPath);
+                }
+
+                foreach (var type in result.ReferencedTypes) reached.Enqueue(type);
+            }
+
             foreach (var group in compileUnits)
             {
                 var dir = group.Key;
@@ -292,87 +428,47 @@ public sealed class AppBuild
                     // This removes restrictions on naming, inheritance patterns, aliases, etc.
                     var results = _compiler.CompileFile(file);
 
+                    var relativePath = Path.GetRelativePath(dir, file);
+                    var isEntryCandidate = !isGenerated && dir == sourceDirs[0]
+                        && (relativePath.StartsWith("Pages")
+                            || !relativePath.Contains(Path.DirectorySeparatorChar));
+
                     foreach (var result in results)
                     {
-                        // Warnings surface whether or not compilation succeeded (e.g. an unconverted
-                        // construct emitted verbatim). Errors are reported below and fail the build.
-                        foreach (var warning in result.Warnings)
-                        {
-                            _errors.WriteLine(FormatDiagnostic(warning, "warning"));
-                        }
-
-                        if (result.Success)
-                        {
-                            var tsPath = Path.Combine(_intermediateDir, $"{result.ComponentName}.ts");
-
-                            // A twin is named for its TYPE, not its namespace, so two types with one
-                            // name write the same file and the second wins. Nothing said so: C# is
-                            // happy — the namespaces differ — and the page died in the browser with
-                            // the OTHER type's fields, which is the worst way to learn.
-                            // Namespace-qualified, because that is what makes two claims ONE type.
-                            // The FILE is still keyed by the bare name — see EmittedTwins for why both
-                            // halves are needed, and why either alone gets a real case wrong.
-                            var identity = string.IsNullOrEmpty(result.Namespace)
-                                ? result.ComponentName
-                                : $"{result.Namespace}.{result.ComponentName}";
-                            var claim = written.Claim(result.ComponentName, identity, file, result.TypeScript,
-                                path => Path.GetRelativePath(dir, path), out var message);
-                            if (claim == TwinClaim.Collision)
-                            {
-                                _errors.WriteLine($"{file}(1,1): error EQ1005: {message}");
-                                hasErrors = true;
-                                continue;
-                            }
-                            // One type across declarations eqc cannot merge. The build goes on with
-                            // the module already written; the members left out are said out loud,
-                            // because their absence shows up only in the browser.
-                            if (claim == TwinClaim.Divided)
-                            {
-                                _errors.WriteLine($"{file}(1,1): warning EQ1006: {message}");
-                                continue;
-                            }
-                            // The same module already on disk: writing it again would rewrite its map
-                            // with one pointing at a different C# file.
-                            if (claim == TwinClaim.Repeat) continue;
-
-                            File.WriteAllText(tsPath, result.TypeScript);
-
-                            if (!string.IsNullOrEmpty(result.SourceMap))
-                            {
-                                var mapPath = tsPath + ".map";
-                                File.WriteAllText(mapPath, result.SourceMap);
-                                File.AppendAllText(tsPath, $"\n//# sourceMappingURL={result.ComponentName}.ts.map");
-                            }
-
-                            var relativePath = Path.GetRelativePath(dir, file);
-                            // A PAGE is always an entry point, wherever its file sits: the server loads
-                            // it by name, so a page that is only transpiled is a 404 the build never
-                            // mentioned. The positional rule stays as well — a project laid out the
-                            // conventional way keeps every module it had before.
-                            var isEntryPoint = result.IsPage
-                                || (!isGenerated && dir == sourceDirs[0]
-                                    && (relativePath.StartsWith("Pages")
-                                        || !relativePath.Contains(Path.DirectorySeparatorChar)));
-                            if (isEntryPoint)
-                            {
-                                entryPoints.Add(tsPath);
-                            }
-                        }
-                        else
-                        {
-                            hasErrors = true;
-                            foreach (var error in result.Errors)
-                            {
-                                _errors.WriteLine(FormatDiagnostic(error, "error"));
-                            }
-                        }
+                        var identity = string.IsNullOrEmpty(result.Namespace)
+                            ? result.ComponentName
+                            : $"{result.Namespace}.{result.ComponentName}";
+                        Write(result, file, isEntryCandidate, identity, path => Path.GetRelativePath(dir, path));
                     }
+                }
+            }
+
+            // A type of a referenced project is a module when a written module imports it, and only
+            // then (#624): the record a page builds, the static class whose member it reads, the
+            // component it places, and whatever those name in turn, in whichever project. So the
+            // build follows the imports until none is unmet, compiling a type where it is reached
+            // and nothing beside it. A Domain or a Persistence project costs what the browser code
+            // uses of it, and a class in it that reads a file is never compiled, so it says nothing.
+            var compiled = new HashSet<ReferencedType>();
+            while (_referenced is not null && reached.TryDequeue(out var type))
+            {
+                if (_referenced.ProjectOf(type.File) is not { } project || !compiled.Add(type)) continue;
+                foreach (var result in _compiler.CompileType(type.File, type.Name))
+                {
+                    // Claimed with its project's assembly: a type of the app and one of a referenced
+                    // project that share a full name are two types, and one name for both is the
+                    // collision, never one type declared twice.
+                    var identity = string.IsNullOrEmpty(result.Namespace)
+                        ? $"{project.AssemblyName}:{result.ComponentName}"
+                        : $"{project.AssemblyName}:{result.Namespace}.{result.ComponentName}";
+                    Write(result, type.File, isEntryCandidate: false, identity, Describe);
                 }
             }
 
             if (hasErrors) return true;
 
-            StringCatalogs.Write(_compiler, outputDir, _primarySourceDir, _output, _errors);
+            StringCatalogs.Write(_compiler, outputDir, _primarySourceDir,
+                file => _referenced?.ProjectOf(file) is not null, _output, _errors);
 
             if (!hasBun && entryPoints.Count > 0)
             {

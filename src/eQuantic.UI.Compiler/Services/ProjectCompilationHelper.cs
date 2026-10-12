@@ -69,8 +69,29 @@ public static class ProjectCompilationHelper
         string assemblyName = "DynamicAssembly",
         bool addStandardReferences = true)
     {
-        // Parse all source files
-        var syntaxTrees = sourceFiles
+        var syntaxTrees = ParseSources(sourceFiles);
+        var references = LoadReferences(assemblyPaths, addStandardReferences);
+
+        // Create compilation. Nullable annotations MUST be enabled: without them `Action?`/`string?`
+        // in referenced signatures parse as Nullable<T> (invalid for reference types), overload
+        // resolution fails, and the transpiler silently loses its semantic bindings.
+        var compilation = CSharpCompilation.Create(
+            assemblyName,
+            syntaxTrees,
+            references,
+            Options);
+
+        return compilation;
+    }
+
+    /// <summary>The options every compilation of a build is created with, the app's and each
+    /// referenced project's alike.</summary>
+    internal static CSharpCompilationOptions Options { get; } =
+        new(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable);
+
+    /// <summary>The files that exist, parsed in the order given.</summary>
+    internal static List<SyntaxTree> ParseSources(IEnumerable<string> sourceFiles) =>
+        sourceFiles
             .Where(File.Exists)
             .Select(file => CSharpSyntaxTree.ParseText(
                 File.ReadAllText(file),
@@ -78,14 +99,24 @@ public static class ProjectCompilationHelper
                 path: file))
             .ToList();
 
-        // Load all assembly references, deduping by file name so the same assembly supplied through both
-        // the standard set and the explicit list isn't added twice.
+    /// <summary>
+    /// The assembly references of a compilation, deduped by file name so the same assembly supplied
+    /// through both the standard set and the explicit list isn't added twice.
+    /// </summary>
+    /// <param name="assemblyPaths">Paths to referenced assemblies (.dll).</param>
+    /// <param name="addStandardReferences">See <see cref="CreateCompilationFromSources"/>.</param>
+    /// <param name="leftOut">File names that are not loaded: the assemblies of the referenced
+    /// projects whose source the build compiles in their place.</param>
+    internal static List<MetadataReference> LoadReferences(IEnumerable<string> assemblyPaths,
+        bool addStandardReferences, IReadOnlySet<string>? leftOut = null)
+    {
         var references = new List<MetadataReference>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         void AddReference(string path)
         {
-            if (!File.Exists(path) || !seen.Add(Path.GetFileName(path)))
+            if (!File.Exists(path) || leftOut?.Contains(Path.GetFileName(path)) == true
+                || !seen.Add(Path.GetFileName(path)))
                 return;
             try
             {
@@ -121,17 +152,7 @@ public static class ProjectCompilationHelper
             AddReference(assemblyPath);
         }
 
-        // Create compilation. Nullable annotations MUST be enabled: without them `Action?`/`string?`
-        // in referenced signatures parse as Nullable<T> (invalid for reference types), overload
-        // resolution fails, and the transpiler silently loses its semantic bindings.
-        var compilation = CSharpCompilation.Create(
-            assemblyName,
-            syntaxTrees,
-            references,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
-                nullableContextOptions: NullableContextOptions.Enable));
-
-        return compilation;
+        return references;
     }
 
     /// <summary>

@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
 using eQuantic.UI.Compiler.CodeGen.Ir;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -51,7 +52,9 @@ public class InlinedConstantStrategy : IConversionStrategy
         if (!TryResolveInlinable(node, context, out var initializer, out var glyphTypeName))
             return context.Converter.ConvertExpression(((MemberAccessExpressionSyntax)node).Expression);
 
-        var model = context.SemanticModel!.Compilation.GetSemanticModel(initializer.SyntaxTree);
+        // The initializer's own file's model, which a pack's or a referenced project's file has in
+        // the compilation that holds it.
+        var model = context.SemanticModel!.Compilation.ModelOf(initializer.SyntaxTree) ?? context.SemanticModel;
         var inlined = context.Converter.ConvertExpressionWithModel(initializer, model);
 
         // The inlined `new IconGlyph(...)` references a runtime-provided type the COMPONENT never

@@ -8,17 +8,19 @@ namespace eQuantic.UI.Compiler.Services;
 /// the neutral one, appears in every catalog that falls back through it), so the runtime does a flat
 /// lookup and never reimplements .NET's resolution.
 /// </summary>
-public static class StringCatalogs
+internal static class StringCatalogs
 {
     /// <summary>Writes <c>strings/&lt;culture&gt;.json</c> under <paramref name="outputDirectory"/> for
     /// what <paramref name="compiler"/> read, and says so on <paramref name="output"/>.</summary>
     /// <param name="compiler">The compiler every module of the build went through.</param>
     /// <param name="outputDirectory">The folder the bundled modules are written to.</param>
     /// <param name="appSourceDirectory">The app's own directory, which tells its resx from a library's.</param>
+    /// <param name="isOfAReferencedProject">Whether a file belongs to a project the app references,
+    /// whose reads this build sees as it sees the app's own.</param>
     /// <param name="output">Where the build narrates.</param>
     /// <param name="errors">Where the build warns.</param>
     public static void Write(ComponentCompiler compiler, string outputDirectory, string appSourceDirectory,
-        TextWriter output, TextWriter errors)
+        Func<string, bool> isOfAReferencedProject, TextWriter output, TextWriter errors)
     {
         // Two contributions, and the difference is not a preference — it is what each side can KNOW.
         // The app's own resx contributes the keys its pages actually read (D3: unused keys never
@@ -26,10 +28,14 @@ public static class StringCatalogs
         // SdkResources above all) is read by components already transpiled into runtime.js at the
         // SDK's build, so no read is visible here at all — it contributes WHOLE, which is exactly
         // D14's promise that an app with zero resx still announces "Marcado" to a pt-BR reader.
+        // A project the app REFERENCES is on the app's side of that line (#624): its types are
+        // compiled here when a page reaches them, so its reads are seen, and it contributes the
+        // keys read. Whole, a shared library's catalogue would ship to every page of every app.
         var appRoot = Path.GetFullPath(appSourceDirectory);
         var libraryResources = compiler.DiscoveredResources
             .Where(pair => pair.Value.Length > 0
-                && !Path.GetFullPath(pair.Value).StartsWith(appRoot, StringComparison.Ordinal))
+                && !Path.GetFullPath(pair.Value).StartsWith(appRoot, StringComparison.Ordinal)
+                && !isOfAReferencedProject(pair.Value))
             .ToList();
 
         var uses = compiler.ResourceUses;

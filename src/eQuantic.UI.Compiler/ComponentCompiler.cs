@@ -1,5 +1,6 @@
 using eQuantic.UI.Compiler.Parser;
 using eQuantic.UI.Compiler.CodeGen;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.Models;
 using eQuantic.UI.Compiler.Services;
 using Microsoft.CodeAnalysis;
@@ -18,6 +19,10 @@ public class ComponentCompiler
     /// <summary>The per-app scan, when the build has one — every emission path asks it which app
     /// types became modules, the record path included.</summary>
     private ComponentDependencyResolver? _dependencyResolver;
+
+    /// <summary>What the projects the app references declare, when the build has any: the layer a
+    /// module's imports are judged by beside the app's own scan (#624).</summary>
+    private ReferencedModules? _referencedModules;
     private readonly SourceMapGenerator _sourceMapGenerator;
 
     /// <summary>
@@ -247,6 +252,23 @@ public class ComponentCompiler
     }
 
     /// <summary>
+    /// Hands over what the projects the app references declare, so a type of one that a module names
+    /// by symbol is imported as a sibling module, and the module says which it imported.
+    /// </summary>
+    internal void SetReferencedModules(ReferencedModules modules) => _referencedModules = modules;
+
+    /// <summary>The catalogue ids of the build, decided once over the app and every project it
+    /// references: see <see cref="ResourceCatalogIds"/>.</summary>
+    internal void SetResourceIds(ResourceCatalogIds ids)
+    {
+        _resourceIds = ids;
+        _parser.ResourceIds = ids;
+        _tsEmitter.ResourceIds = ids;
+    }
+
+    private ResourceCatalogIds? _resourceIds;
+
+    /// <summary>
     /// Compile a single source file
     /// </summary>
     public IEnumerable<CompilationResult> CompileFile(string filePath)
@@ -254,6 +276,15 @@ public class ComponentCompiler
         var components = _parser.Parse(filePath);
         return CompileAll(components);
     }
+
+    /// <summary>
+    /// The modules of the types named <paramref name="typeName"/> that <paramref name="filePath"/>
+    /// declares, and of no other type of the file. A referenced project's file is compiled for the
+    /// type the browser code reached: a class beside it that reads a file is never compiled, so it
+    /// reports nothing (#624).
+    /// </summary>
+    internal IEnumerable<CompilationResult> CompileType(string filePath, string typeName) =>
+        CompileAll(_parser.Parse(filePath).Where(component => component.Name == typeName));
 
     /// <summary>
     /// Every parsed component through <see cref="Compile"/>, with one file-level check first: two
@@ -390,6 +421,36 @@ public class ComponentCompiler
     /// </summary>
     public CompilationResult Compile(ComponentDefinition component)
     {
+        // What the module names of the projects the app references, read once before any emitter
+        // runs and asked by all of them; and, after, which of those it imports. Every emit path
+        // below returns on its own, so both halves live here, around them.
+        var referenced = ReferencedNamesOf(component);
+        _tsEmitter.Referenced = referenced;
+        var result = CompileModule(component, referenced);
+        if (result.Success) result.ReferencedTypes = referenced.ImportedBy(result.TypeScript);
+        return result;
+    }
+
+    /// <summary>
+    /// The types of referenced projects the component's declaration names, by symbol: its own
+    /// syntax and the defaults it takes from its interfaces, whose bodies are written into its twin.
+    /// None for a build with no referenced project, which is every build before #624.
+    /// </summary>
+    private ReferencedNames ReferencedNamesOf(ComponentDefinition component)
+    {
+        if (_referencedModules is null || component.SyntaxTree is null || DeclarationOf(component) is not { } declaration)
+            return ReferencedNames.None;
+        var model = _semanticModelProvider.GetSemanticModel(component.SyntaxTree);
+        var declarations = new List<SyntaxNode> { declaration };
+        if (model.GetDeclaredSymbol(declaration) is INamedTypeSymbol self)
+            declarations.AddRange(DefaultInterfaceMembers.Of(self, model.Compilation)
+                .Select(inherited => inherited.Declaration).OfType<SyntaxNode>());
+        return new ReferencedNames(_referencedModules, NamedSourceTypes.Of(declarations,
+            node => ReferenceEquals(node.SyntaxTree, model.SyntaxTree) ? model : model.Compilation.ModelOf(node.SyntaxTree)));
+    }
+
+    private CompilationResult CompileModule(ComponentDefinition component, ReferencedNames referenced)
+    {
         var result = new CompilationResult
         {
             ComponentName = component.Name,
@@ -460,6 +521,7 @@ public class ComponentCompiler
                 {
                     SymbolsAreAuthoritative = authoritative,
                     HasProjectCompilation = _semanticModelProvider.HasProjectCompilation,
+                    ResourceIds = _resourceIds,
                 };
                 SemanticModel? recordModel = null;
                 if (component.SyntaxTree != null)
@@ -475,7 +537,7 @@ public class ComponentCompiler
                     ?? (recordModel is null ? null : ComponentDependencyResolver.From(recordModel.Compilation));
                 // TypeAnnotations flows here too: a record emitted as TypeScript is a parse error
                 // for a consumer that runs the module directly, and nothing upstream would notice.
-                result.TypeScript = new RecordTypeEmitter(recordConverter, modules)
+                result.TypeScript = new RecordTypeEmitter(recordConverter, modules, referenced)
                     .EmitModule(component.ValueTypeSyntax, TypeAnnotations);
                 CollectResourceUses(recordConverter.ResourceUses);
                 result.Success = true;
@@ -707,6 +769,11 @@ public class CompilationResult
     public string TypeScript { get; set; } = string.Empty;
     public string JavaScript { get; set; } = string.Empty;
     public string? SourceMap { get; set; }
+
+    /// <summary>The types of referenced projects the module imports, each with a file that declares
+    /// it: what the build compiles next, since a referenced project's type is a module only when a
+    /// written module imports it (#624).</summary>
+    internal IReadOnlyList<Services.ReferencedType> ReferencedTypes { get; set; } = [];
     public List<CompilationError> Errors { get; set; } = new();
     public List<CompilationError> Warnings { get; set; } = new();
 }

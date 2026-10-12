@@ -32,6 +32,11 @@ var refSourcesFile = args.ToList().Contains("--ref-sources") ? args[args.ToList(
 // generated tree under obj/Debug AND obj/Release, and sweeping obj would take every generated type
 // twice — which resolves to neither, while the C# build stays perfectly happy.
 var generatedDir = args.ToList().Contains("--generated") ? args[args.ToList().IndexOf("--generated") + 1].Trim() : null;
+// --projects <file>: the projects the app references with a ProjectReference, directly or through
+// another, one a line: the assembly MSBuild resolved for it, a `|`, and its project file. Their source is
+// compiled in place of their assemblies, so a type of one that a page uses is a module of the bundle and
+// not a name nothing defines (#624). The SDK writes the file; a developer sets nothing.
+var projectsFile = args.ToList().Contains("--projects") ? args[args.ToList().IndexOf("--projects") + 1].Trim() : null;
 // --source-maps full|external|none (#352): what each module's map carries. `full` links a map with
 // the C# inside it, `external` writes one without the C# and without the link, `none` writes none.
 // The SDK passes full in Debug and none everywhere else; a direct run keeps full.
@@ -52,6 +57,7 @@ var build = new AppBuild(new AppBuildOptions
     ReferencesFile = refsFile,
     ReferenceSourcesFile = refSourcesFile,
     GeneratedDirectory = generatedDir,
+    ProjectsFile = projectsFile,
     SourceMaps = sourceMaps,
 });
 

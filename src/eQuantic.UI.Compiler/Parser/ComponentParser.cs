@@ -24,6 +24,13 @@ public class ComponentParser
     /// </summary>
     public Dictionary<string, string> DiscoveredResources { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>The catalogue ids of the build, where it has more than one compilation; null where a
+    /// class's own compilation answers (<see cref="Services.ResourceCatalogIds"/>).</summary>
+    internal Services.ResourceCatalogIds? ResourceIds { get; set; }
+
+    private string CatalogIdOf(SemanticModel model, INamedTypeSymbol resourceClass) =>
+        ResourceIds?.IdFor(resourceClass) ?? Services.ResourceClasses.IdFor(model.Compilation, resourceClass);
+
     /// <summary>
     /// Supplies a semantic model provider so component detection can walk the base-type chain (via the
     /// project compilation, which resolves library bases) instead of matching base-type name strings.
@@ -143,7 +150,7 @@ public class ComponentParser
                 // runtime.js at the SDK's own build), so the catalog emitter has no reachable use
                 // to learn it from — and D14 promises the SDK's strings ride every app's catalogs.
                 DiscoveredResources.TryAdd(
-                    Services.ResourceClasses.IdFor(helperModel.Compilation, declared),
+                    CatalogIdOf(helperModel, declared),
                     Services.ResourceClasses.DesignerPathFor(declared));
                 continue;
             }
@@ -271,7 +278,7 @@ public class ComponentParser
                 && Services.ResourceClasses.IsResourceClass(declaredPlain))
             {
                 DiscoveredResources.TryAdd(
-                    Services.ResourceClasses.IdFor(helperModel.Compilation, declaredPlain),
+                    CatalogIdOf(helperModel, declaredPlain),
                     Services.ResourceClasses.DesignerPathFor(declaredPlain));
                 continue;
             }

@@ -39,5 +39,6 @@ eQuantic.UI.Compiler.Services.AppBuildOptions.SourceMaps.get -> eQuantic.UI.Comp
 eQuantic.UI.Compiler.Services.AppBuildOptions.SourceMaps.init -> void
 eQuantic.UI.Compiler.Services.AppBuildOptions
 eQuantic.UI.Compiler.Services.AppBuildOptions.AppBuildOptions() -> void
-eQuantic.UI.Compiler.Services.StringCatalogs
-static eQuantic.UI.Compiler.Services.StringCatalogs.Write(eQuantic.UI.Compiler.ComponentCompiler! compiler, string! outputDirectory, string! appSourceDirectory, System.IO.TextWriter! output, System.IO.TextWriter! errors) -> void
+eQuantic.UI.Compiler.Services.AppBuild.Compilation.get -> Microsoft.CodeAnalysis.Compilation?
+eQuantic.UI.Compiler.Services.AppBuildOptions.ProjectsFile.get -> string?
+eQuantic.UI.Compiler.Services.AppBuildOptions.ProjectsFile.init -> void

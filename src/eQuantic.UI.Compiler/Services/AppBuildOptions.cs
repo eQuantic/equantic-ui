@@ -32,6 +32,15 @@ public sealed class AppBuildOptions
     /// the build find it by sweeping <c>obj</c>, which takes every configuration's.</summary>
     public string? GeneratedDirectory { get; init; }
 
+    /// <summary>
+    /// The projects the app references with a <c>ProjectReference</c>, directly or through another:
+    /// one a line, the assembly MSBuild resolved for it, a <c>|</c>, and its project file. The SDK
+    /// writes it from <c>@(ReferencePathWithRefAssemblies)</c>, so the developer sets nothing. Each
+    /// project's source is compiled in place of its assembly, and a type of it that browser code
+    /// reaches becomes a module of the bundle (#624).
+    /// </summary>
+    public string? ProjectsFile { get; init; }
+
     /// <summary>What each module's source map carries.</summary>
     public SourceMapMode SourceMaps { get; init; } = SourceMapMode.Full;
 }

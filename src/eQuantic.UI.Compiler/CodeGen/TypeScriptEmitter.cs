@@ -68,9 +68,7 @@ public class TypeScriptEmitter
     {
         if (_converter.Model is not { } model) return null;
         if (ReferenceEquals(node.SyntaxTree, model.SyntaxTree)) return model;
-        return model.Compilation.ContainsSyntaxTree(node.SyntaxTree)
-            ? model.Compilation.GetSemanticModel(node.SyntaxTree)
-            : null;
+        return model.Compilation.ModelOf(node.SyntaxTree);
     }
 
     /// <summary>The symbol of a declared type — what the hydration spec is computed from — or
@@ -301,6 +299,13 @@ public class TypeScriptEmitter
     {
         get => _converter.HasProjectCompilation;
         set => _converter.HasProjectCompilation = value;
+    }
+
+    /// <summary>Forwarded to the converter — see <see cref="CSharpToJsConverter.ResourceIds"/>.</summary>
+    internal Services.ResourceCatalogIds? ResourceIds
+    {
+        get => _converter.ResourceIds;
+        set => _converter.ResourceIds = value;
     }
 
     public void SetDependencyResolver(ComponentDependencyResolver resolver)
@@ -975,7 +980,7 @@ public class TypeScriptEmitter
                     componentTypes.Add(appType);
                     continue;
                 }
-                if (_dependencyResolver.IsModule(appType)) componentTypes.Add(appType);
+                if (IsAppModule(appType)) componentTypes.Add(appType);
             }
         }
 
@@ -2505,7 +2510,12 @@ public class TypeScriptEmitter
 
     /// <summary>Whether the per-app scan knows this name became one of the app's OWN modules — the
     /// only kind a <c>./Name</c> import may point at.</summary>
-    private bool IsAppModule(string name) => _dependencyResolver?.IsModule(name) == true;
+    private bool IsAppModule(string name) => _dependencyResolver?.IsModule(name) == true || Referenced.IsModule(name);
+
+    /// <summary>What the module being written names of the projects the app references: a type of
+    /// one is a sibling module too, where a symbol of this module names it (#624). The compiler sets
+    /// it for each module, and a build with no referenced project leaves it naming none.</summary>
+    internal Services.ReferencedNames Referenced { get; set; } = Services.ReferencedNames.None;
 
     /// <summary>
     /// The net under every fence (#584): a twin this module would import that the build writes no
@@ -2516,7 +2526,7 @@ public class TypeScriptEmitter
     /// </summary>
     private bool ReportIfKeptOut(string name, SyntaxNode? at)
     {
-        if (at is null || _dependencyResolver?.IsKeptOut(name) != true) return false;
+        if (at is null || (_dependencyResolver?.IsKeptOut(name) != true && !Referenced.IsKeptOut(name))) return false;
         // A fence that refused it where the code named it said it there already.
         if (!_converter.RefusedTwins.Contains(name))
             _converter.Report(at, ConversionSeverity.Error, "EQ2010",

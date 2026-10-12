@@ -46,6 +46,19 @@ public class ConversionContext
     internal bool HasProjectCompilation { get; set; }
 
     /// <summary>
+    /// The catalogue ids of the build, when it compiles the projects the app references beside the
+    /// app: one answer for every file, where <see cref="Services.ResourceClasses.IdFor"/> answers for
+    /// the one compilation a file is in (#624). Null for a host with a single compilation, which
+    /// that answer is right for. It describes the host and survives <see cref="Reset"/>.
+    /// </summary>
+    internal Services.ResourceCatalogIds? ResourceIds { get; set; }
+
+    /// <summary>The catalogue id a read of <paramref name="resourceClass"/> is written with, which
+    /// the catalogs are keyed by.</summary>
+    internal string CatalogIdOf(INamedTypeSymbol resourceClass) =>
+        ResourceIds?.IdFor(resourceClass) ?? Services.ResourceClasses.IdFor(SemanticModel!.Compilation, resourceClass);
+
+    /// <summary>
     /// Whether a name heuristic is an HONEST basis for translating this node: the model cannot be
     /// asked (none, or a strategy-rewrote node from no tree it knows), or the host never promised
     /// the model was complete. When this is false, symbols are the only evidence that counts.

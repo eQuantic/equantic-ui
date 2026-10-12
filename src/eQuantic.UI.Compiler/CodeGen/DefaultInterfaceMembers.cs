@@ -59,8 +59,7 @@ internal static class DefaultInterfaceMembers
         while (pending.Count > 0)
         {
             var declaration = pending.Dequeue();
-            if (!compilation.ContainsSyntaxTree(declaration.SyntaxTree)) continue;
-            var model = compilation.GetSemanticModel(declaration.SyntaxTree);
+            if (compilation.ModelOf(declaration.SyntaxTree) is not { } model) continue;
             foreach (var name in RunTimeNames(declaration, model))
             {
                 if (model.GetSymbolInfo(name).Symbol is not { IsStatic: false, IsAbstract: false } helper

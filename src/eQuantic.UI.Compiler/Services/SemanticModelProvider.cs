@@ -1,3 +1,4 @@
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using System.IO;
@@ -27,6 +28,35 @@ public class SemanticModelProvider
     public void SetProjectCompilation(Compilation projectCompilation)
     {
         _projectCompilation = projectCompilation;
+        _referencedTrees = null;
+    }
+
+    /// <summary>
+    /// Every tree of the projects the app references as compilations, by its file, with the
+    /// compilation that holds it; built when a file is first asked for that the app's compilation
+    /// does not hold. A file of a referenced project is bound in ITS project's compilation, with
+    /// that project's own global usings and internal types (#624).
+    /// </summary>
+    private Dictionary<string, (Compilation Compilation, SyntaxTree Tree)>? _referencedTrees;
+
+    private (Compilation Compilation, SyntaxTree Tree)? ReferencedTree(string? path)
+    {
+        if (_projectCompilation is null || string.IsNullOrEmpty(path)) return null;
+        if (_referencedTrees is null)
+        {
+            _referencedTrees = new(StringComparer.OrdinalIgnoreCase);
+            foreach (var compilation in _projectCompilation.ReferencedCompilations())
+                foreach (var tree in compilation.SyntaxTrees)
+                    if (!string.IsNullOrEmpty(tree.FilePath))
+                        _referencedTrees.TryAdd(FullPath(tree.FilePath), (compilation, tree));
+        }
+        return _referencedTrees.TryGetValue(FullPath(path), out var found) ? found : null;
+    }
+
+    private static string FullPath(string path)
+    {
+        try { return Path.GetFullPath(path); }
+        catch { return path; }
     }
 
     /// <summary>
@@ -35,6 +65,7 @@ public class SemanticModelProvider
     public void ClearProjectCompilation()
     {
         _projectCompilation = null;
+        _referencedTrees = null;
     }
 
     /// <summary>
@@ -145,6 +176,10 @@ public class SemanticModelProvider
                 return updated.GetSemanticModel(tree);
             }
 
+            // A file of a project the app references is replaced in that project's own compilation.
+            if (ReferencedTree(tree.FilePath) is { } referenced)
+                return referenced.Compilation.ReplaceSyntaxTree(referenced.Tree, tree).GetSemanticModel(tree);
+
             // If tree not found in project compilation, add it
             var updatedCompilation = _projectCompilation.AddSyntaxTrees(tree);
             return updatedCompilation.GetSemanticModel(tree);
@@ -186,7 +221,9 @@ public class SemanticModelProvider
                     nullableContextOptions: NullableContextOptions.Enable))
             : _projectCompilation.SyntaxTrees.FirstOrDefault(t => AreSameFile(t.FilePath, tree.FilePath)) is { } existing
                 ? _projectCompilation.ReplaceSyntaxTree(existing, tree)
-                : _projectCompilation.AddSyntaxTrees(tree);
+                : ReferencedTree(tree.FilePath) is { } referenced
+                    ? referenced.Compilation.ReplaceSyntaxTree(referenced.Tree, tree)
+                    : _projectCompilation.AddSyntaxTrees(tree);
 
         return compilation.GetSemanticModel(tree)
             .GetDiagnostics()

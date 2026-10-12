@@ -363,7 +363,38 @@
             Lines="@(_EqcRefSourceFinal)"
             Overwrite="true" WriteOnlyWhenDifferent="true"
             Condition="'@(_EqcRefSourceFinal)' != ''" />
+
+        <!-- REFERENCED PROJECTS (#624): every project the app references with a ProjectReference,
+             directly or through another, handed to eqc with the assembly MSBuild resolved for it.
+             eqc compiles each one's SOURCE in place of that assembly, so a type of a class library a
+             page uses is a module of the bundle; read from the assembly it has no source, and the
+             page named something nothing defined, with no diagnostic. Derived from what the build
+             already resolved: a reference that came from a project carries the project file that
+             produced it (MSBuildSourceProjectFile), the transitive ones included. The developer sets
+             nothing. Two kinds are left out because they are read another way: the SDK's own
+             projects, which an app beside the source tree references in place of packages and whose
+             types the runtime provides, and an icon pack, whose constants are inlined where they are
+             used (the marker above). -->
         <PropertyGroup>
+            <_EqSdkSourceRoot Condition="'$(IsEQuanticDevMode)' == 'true'">$([System.IO.Path]::GetFullPath('$(_DevRootDir)'))</_EqSdkSourceRoot>
+            <_EqcProjectsFile>$(MSBuildProjectDirectory)/$(IntermediateOutputPath)equantic.projects.txt</_EqcProjectsFile>
+        </PropertyGroup>
+        <ItemGroup>
+            <_EqcProjectAssembly Include="@(ReferencePathWithRefAssemblies)"
+                Condition="'%(ReferencePathWithRefAssemblies.MSBuildSourceProjectFile)' != ''">
+                <EqAssembly>%(FullPath)</EqAssembly>
+            </_EqcProjectAssembly>
+            <!-- Keyed by the project FILE from here on, so its own directory can be asked of it. -->
+            <_EqcReferencedProject Include="@(_EqcProjectAssembly->'%(MSBuildSourceProjectFile)')" />
+            <_EqcProject Include="@(_EqcReferencedProject)"
+                Condition="!Exists('%(RootDir)%(Directory)EQuanticIconPack.marker') And ('$(_EqSdkSourceRoot)' == '' Or !$([System.String]::Copy('%(FullPath)').StartsWith('$(_EqSdkSourceRoot)')))" />
+        </ItemGroup>
+        <WriteLinesToFile File="$(_EqcProjectsFile)"
+            Lines="@(_EqcProject->'%(EqAssembly)|%(FullPath)')"
+            Overwrite="true" WriteOnlyWhenDifferent="true"
+            Condition="'@(_EqcProject)' != ''" />
+        <PropertyGroup>
+            <_ProjectsArg Condition="'@(_EqcProject)' != ''"> --projects &quot;$(_EqcProjectsFile)&quot;</_ProjectsArg>
             <_RefSourcesArg Condition="'@(_EqcRefSourceFinal)' != ''"> --ref-sources &quot;$(_EqcRefSourcesFile)&quot;</_RefSourcesArg>
             <!-- The generated tree for THIS configuration. eqc cannot infer it: a project built
                  Debug and Release has one under each, and sweeping obj would take every generated
@@ -374,7 +405,7 @@
         </PropertyGroup>
 
         <Exec
-            Command="dotnet $(EqcCliPath) &quot;$(_EqcSourceDirs)&quot; $(MSBuildProjectDirectory)/$(EQuanticOutputPath) --refs &quot;$(_EqcRefsFile)&quot;$(_RefSourcesArg)$(_GeneratedArg)$(_BunArg) --source-maps $(EQuanticSourceMaps)"
+            Command="dotnet $(EqcCliPath) &quot;$(_EqcSourceDirs)&quot; $(MSBuildProjectDirectory)/$(EQuanticOutputPath) --refs &quot;$(_EqcRefsFile)&quot;$(_ProjectsArg)$(_RefSourcesArg)$(_GeneratedArg)$(_BunArg) --source-maps $(EQuanticSourceMaps)"
             WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true"
             StandardOutputImportance="High" />
     </Target>
