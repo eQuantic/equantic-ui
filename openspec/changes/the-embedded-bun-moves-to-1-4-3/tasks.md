@@ -11,6 +11,7 @@
 - [x] 2.1 List what the oracle changed between the two versions, character by character
 - [x] 2.2 The table follows Unicode 17, and its twin in the runtime is regenerated
 - [x] 2.3 `CellWidthOracleTests` passes on both sides, with a Hangul syllable in conjoining jamo as a case
+- [x] 2.4 A Hangul vowel or final that begins an element keeps its cell: measure what a browser draws, hold it on both sides, take the fix back and confirm the test fails
 
 ## 3. Proof and documents
 

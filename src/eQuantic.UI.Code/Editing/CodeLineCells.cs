@@ -222,14 +222,17 @@ public sealed class CodeLineCells
     /// <summary>
     /// Whether a character takes NO cell: the zero-width space and joiners, the direction marks, the
     /// directional embeddings, overrides and isolates, the word joiner and invisible operators, the
-    /// byte-order mark, the soft hyphen, the format characters that are drawn only as part of what
-    /// follows them, and the Hangul vowels and finals, which a font draws over the consonant before
-    /// them. Compared with the same oracle as <see cref="IsWide"/>.
+    /// byte-order mark, the soft hyphen, the Hangul vowel filler, and the format characters that are
+    /// drawn only as part of what follows them. Compared with the same oracle as
+    /// <see cref="IsWide"/>, which parts from this in one place: it counts every Hangul vowel and
+    /// final as no cell. That is what one takes after its consonant, where it is part of the
+    /// consonant's element and this is never asked. One that BEGINS an element has no consonant to
+    /// join and a font draws it standing alone, so it is not here.
     /// </summary>
     public static bool IsZeroWidth(int codePoint) =>
         codePoint is
-        0xAD or (>= 0x600 and <= 0x605) or 0x61C or 0x6DD or 0x70F or 0x8E2 or (>= 0x1160 and <= 0x11FF)
-        or 0x180E or (>= 0x200B and <= 0x200F) or (>= 0x202A and <= 0x202E) or (>= 0x2060 and <= 0x206F)
-        or (>= 0xD7B0 and <= 0xD7FB) or 0xFEFF or (>= 0x1BCA0 and <= 0x1BCA3)
-        or (>= 0x1D173 and <= 0x1D17A) or (>= 0xE0001 and <= 0xE007F);
+        0xAD or (>= 0x600 and <= 0x605) or 0x61C or 0x6DD or 0x70F or 0x8E2 or 0x1160 or 0x180E
+        or (>= 0x200B and <= 0x200F) or (>= 0x202A and <= 0x202E) or (>= 0x2060 and <= 0x206F)
+        or 0xFEFF or (>= 0x1BCA0 and <= 0x1BCA3) or (>= 0x1D173 and <= 0x1D17A)
+        or (>= 0xE0001 and <= 0xE007F);
 }

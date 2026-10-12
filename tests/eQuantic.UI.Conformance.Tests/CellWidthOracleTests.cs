@@ -18,16 +18,29 @@ namespace eQuantic.UI.Conformance.Tests;
 /// as 🌡 as two cells, and nothing compared it with anything.
 /// <para>
 /// Every character that can begin a text element is compared, which leaves out marks, controls,
-/// surrogates and unassigned and private characters. The one place where the oracle and the grid
-/// part on purpose is named rather than hidden: <see cref="OracleErrors"/>. Conjoining Hangul jamo
-/// were another until Bun 1.4.3, which counts a vowel or a final as no cell, so the syllable they
-/// make with their consonant takes the two cells a font draws it in, and a case holds that.
+/// surrogates and unassigned and private characters. Two places where the oracle and the grid part
+/// on purpose are named rather than hidden: <see cref="OracleErrors"/>, and Hangul that is not a
+/// whole syllable. Since 1.4.3 Bun counts a vowel or a final as no cell, so a syllable written in
+/// conjoining jamo takes the two cells of its consonant on both, and a case holds that. A vowel or
+/// a final that BEGINS an element has no consonant to join, and a font draws it standing alone, so
+/// the grid keeps its cell (<see cref="IsVowelOrFinal"/>). Leading consonants in a row are one
+/// element of two cells where Bun counts each, which no case holds: what such an element should
+/// take is #860.
 /// </para>
 /// </summary>
 public class CellWidthOracleTests
 {
     /// <summary>Three LETTERS Bun counts as zero-width, which every font that has them draws.</summary>
     private static readonly HashSet<int> OracleErrors = [0x0980, 0x0C80, 0x0D3A];
+
+    /// <summary>
+    /// A Hangul vowel or final, which Bun counts as no cell. That is its width after its consonant,
+    /// where it never begins an element. One that does begin an element takes ONE cell on both
+    /// sides, as it did before Bun 1.4.3: measured in a browser, every one of them is drawn with an
+    /// advance. The vowel filler (U+1160) is not among them, since nothing is drawn for it.
+    /// </summary>
+    private static bool IsVowelOrFinal(int codePoint) =>
+        codePoint is (>= 0x1161 and <= 0x11FF) or (>= 0xD7B0 and <= 0xD7FB);
 
     /// <summary>Two lines, one character per code point from U+0020: the oracle's width, then the
     /// twin's, and <c>x</c> for a character that cannot begin an element.</summary>
@@ -61,14 +74,16 @@ public class CellWidthOracleTests
         {
             var expected = oracle[cp - 0x20];
             if (expected == 'x' || OracleErrors.Contains(cp)) continue;
+            if (IsVowelOrFinal(cp)) expected = '1';
             var dotnet = (char)('0' + new CodeLineCells(char.ConvertFromUtf32(cp), 4).Width);
             var web = twin[cp - 0x20];
             if (dotnet == expected && web == expected) continue;
             if (count++ < 40)
-                mismatches.Append($"\n  U+{cp:X4}: the oracle says {expected}, .NET {dotnet}, the web {web}");
+                mismatches.Append($"\n  U+{cp:X4}: {expected} expected, .NET {dotnet}, the web {web}");
         }
 
-        count.Should().Be(0, $"every character takes the cells the oracle gives it, on both sides:{mismatches}");
+        count.Should().Be(0,
+            $"every character takes the cells the oracle gives it, or the one a named parting keeps, on both sides:{mismatches}");
     }
 
     /// <summary>Every mark, one character per code point from U+0300: the twin's width alone, and
@@ -140,7 +155,7 @@ public class CellWidthOracleTests
     [InlineData("\u2764\uFE0F")]                                                           // a presentation selector
     [InlineData("\U0001F3F4\U000E0067\U000E0062\U000E0065\U000E006E\U000E0067\U000E007F")] // a tag sequence flag
     [InlineData("e\u0301")]                                                                // a mark on its base
-    [InlineData("\u1100\u1161\u11A8")]                                                    // a Hangul syllable in conjoining jamo
+    [InlineData("\u1100\u1161\u11A8")]                                                     // a Hangul syllable in conjoining jamo
     [InlineData("a\u200Db")]                                                               // a joiner between letters
     [InlineData("x\u200By")]                                                               // a zero-width space
     public void AClusterIsAsWideAsTheOracleSays_OnBothSides(string text)

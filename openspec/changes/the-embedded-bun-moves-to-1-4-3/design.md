@@ -32,17 +32,26 @@ file, named as the SDK extracts it (`bun-darwin`, `bun-linux`, `bun.exe`). The r
 unpacked, the file renamed and zipped with the time the release gave it and no extra field, so the
 digests in the pin are the ones anyone gets from the same release.
 
-**The width table follows the oracle.** The table is held to `Bun.stringWidth` for every character
-that can begin a text element, so a new oracle is a new table. What moved was read as a list first,
-old answer against new: format characters that now take no cell, the Hangul vowels and finals, and
-what Unicode 16 and 17 made or added wide. A lone Hangul vowel or final takes no cell, as the oracle
-says and as fonts draw one, with no advance: it begins an element only when it stands without its
-consonant. The three Indic letters the oracle counts as no cell stay named as its errors. Ranges
-were widened or merged only over characters that never begin an element.
+**The width table follows the oracle, but for what a font shows it wrong on.** The table is held to
+`Bun.stringWidth` for every character that can begin a text element, so a new oracle is a new table.
+What moved was read as a list first, old answer against new: format characters that now take no
+cell, the Hangul vowels and finals, and what Unicode 16 and 17 made or added wide. The format
+characters and the wide ones follow. Ranges were widened or merged only over characters that never
+begin an element, and the three Indic letters the oracle counts as no cell stay named as its errors.
+
+**A Hangul vowel or final that begins an element keeps its cell.** The oracle counts one as no cell.
+That is its width after its consonant, where it is part of the consonant's element and the table is
+never asked. One that begins an element was measured in a browser, in the dashboard sample's code
+font on macOS: every one from U+1161 to U+11FF is drawn with an advance, 1 to 1.66 cells, the widths
+the leading consonants have, and U+D7B0 to U+D7FB one cell. The block draws only a two-cell element
+in a box, so counting none would draw the rest of the line more than a cell right of its caret. It
+keeps the one cell it had, the test names the parting beside the Indic letters and holds it on both
+sides, and what Hangul that is not a syllable should take, consonants in a row among it, is #860.
+The vowel filler (U+1160) follows the oracle: nothing is drawn for it.
 
 **The regeneration writes `${1}`.** The replacement text was `$1` followed by the digest, and a digest
-that starts with a digit read as part of the group's number. It ran once an update, so it had never
-met one.
+that starts with a digit read as part of the group's number. It runs once an update, and the pin had
+one commit before this one, the one that wrote it: this was its first.
 
 ## Risks / Trade-offs
 

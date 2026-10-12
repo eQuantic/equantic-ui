@@ -21,8 +21,9 @@ changed their answer, and the table said the old one for each.
 - The code engine's cell widths follow Unicode 17, in .NET and in the browser. Two cells now: the
   Yijing and Tai Xuan Jing symbols, the counting rods, the Tangut and Khitan characters and the emoji
   Unicode 16 and 17 added. No cell now: the directional embeddings, overrides and isolates, the Arabic
-  letter mark, the Mongolian vowel separator, and a Hangul vowel or final, which a font draws over the
-  consonant before it.
+  letter mark, the Mongolian vowel separator and the Hangul vowel filler. A Hangul vowel or final that
+  begins an element keeps its one cell, where the oracle now counts none: a font draws it standing
+  alone (#860).
 - The pin's regeneration (`EQ_UPDATE_BUN_MANIFEST=1`) wrote a digest that starts with a digit without
   its line's key. It keeps the line now, and has a case of its own.
 

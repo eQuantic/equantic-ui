@@ -2608,10 +2608,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   from the release, checked against its `SHASUMS256.txt` and repacked as the packages hold them.
   `Bun.stringWidth`, the oracle `CellWidthOracleTests` holds the code engine's width table to, went
   from Unicode 15.1 to 17 with it, and 616 characters changed their answer. The table and its twin
-  follow: the Yijing and Tai Xuan Jing symbols and the newest emoji take two cells, and a directional
-  isolate or a Hangul vowel takes none. The pin's regeneration (`EQ_UPDATE_BUN_MANIFEST=1`) wrote `$1`
-  before each digest, and one that starts with a digit lost its line's key: four lines of six, on its
-  first run since it was written ([#854](https://github.com/eQuantic/equantic-ui/issues/854)).
+  follow where a font agrees: the Yijing and Tai Xuan Jing symbols and the newest emoji take two
+  cells, and a directional embedding, override or isolate takes none. A Hangul vowel or final that
+  begins an element keeps its cell, though the oracle now counts none: a browser draws every one of
+  them with an advance, and the test names the parting
+  ([#860](https://github.com/eQuantic/equantic-ui/issues/860)). The pin's regeneration
+  (`EQ_UPDATE_BUN_MANIFEST=1`) wrote `$1` before each digest, and one that starts with a digit lost
+  its line's key: four lines of six, on the pin's first update
+  ([#854](https://github.com/eQuantic/equantic-ui/issues/854)).
   Proposed and archived through OpenSpec (`openspec/specs/code-cells`).
 
 ## Retired documents

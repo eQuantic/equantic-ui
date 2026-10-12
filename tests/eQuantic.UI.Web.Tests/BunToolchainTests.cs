@@ -53,8 +53,8 @@ public class BunToolchainTests
             json, $"(\"{System.Text.RegularExpressions.Regex.Escape(relative)}\": \")[a-f0-9]+", $"${{1}}{digest}");
 
     /// <summary>
-    /// The regeneration runs once an update, so it had never met a digest that starts with a digit:
-    /// moving to 1.4.3 it wrote four of six lines without their key (#854).
+    /// The regeneration runs once an update, and the pin's first was the move to 1.4.3: it wrote four
+    /// of six lines without their key, the four whose digest starts with a digit (#854).
     /// </summary>
     [Theory]
     [InlineData("7b3ab8150d7a615b")]
