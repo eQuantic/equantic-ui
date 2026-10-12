@@ -23,6 +23,7 @@ import { hash } from './hash';
 import { Decimal } from './decimal';
 import { exception, is } from './exceptions';
 import { timeSpanText } from './timespan-text';
+import { readTimeSpan } from './timespan-reading';
 
 /** A null text handed to `Parse`, as .NET words it: `DateTime`, `DateOnly` and `TimeOnly` name it `s`,
  * `TimeSpan` and `DateTimeOffset` name it `input`. Read through null, it was a NullReferenceException. */
@@ -402,20 +403,28 @@ timeSpan.fromMicroseconds = (v) => interval(v, 10n);
 timeSpan.fromTicks = (v) => new TimeSpan(typeof v === 'bigint' ? v : BigInt(Math.trunc(v)));
 timeSpan.parse = (text: string, invariant = false): TimeSpan => {
   if (text == null) throw exception('System.ArgumentNullException', NULL_INPUT);
-  // .NET "c" format: [-][d.]hh:mm:ss[.fffffff], and with no days a fraction written with the culture's
-  // decimal separator too, as its general form `g` writes one (#806): `1:02:03,5` in pt-BR.
-  const decimal = invariant ? '.' : (activeFormatData()?.numberFormat.numberDecimalSeparator ?? '.');
-  const m = /^(-)?(?:(\d+)\.)?(\d{1,2}):(\d{2}):(\d{2})(?:(\D+)(\d+))?$/.exec(text.trim());
-  if (!m || (m[6] !== undefined && m[6] !== '.' && (m[6] !== decimal || m[2] !== undefined)))
-    throw exception('System.FormatException', `String '${text}' was not recognized as a valid TimeSpan.`);
-  const frac = m[7] ? BigInt(m[7].padEnd(7, '0').slice(0, 7)) : 0n;
-  const ticks =
-    BigInt(m[2] ?? 0) * TICKS_PER_DAY +
-    BigInt(m[3]) * TICKS_PER_HOUR +
-    BigInt(m[4]) * TICKS_PER_MINUTE +
-    BigInt(m[5]) * TICKS_PER_SECOND +
-    frac;
-  return new TimeSpan(m[1] ? -ticks : ticks);
+  // .NET reads the invariant pattern in every culture and the culture's own beside it, whose fraction
+  // starts with the culture's decimal separator: `1:02:03,5` in pt-BR (#806, #857).
+  const decimal = invariant
+    ? '.'
+    : (activeFormatData()?.numberFormat.numberDecimalSeparator ?? '.');
+  const read = readTimeSpan(text, decimal);
+  if (read === 'format')
+    throw exception(
+      'System.FormatException',
+      `String '${text}' was not recognized as a valid TimeSpan.`,
+    );
+  if (read === 'overflow')
+    throw exception(
+      'System.OverflowException',
+      `The TimeSpan string '${text}' could not be parsed because at least one of the numeric components is out of range or contains too many digits.`,
+    );
+  if (read === 'index')
+    throw exception(
+      'System.IndexOutOfRangeException',
+      'Index was outside the bounds of the array.',
+    );
+  return new TimeSpan(read);
 };
 timeSpan.tryParse = attempt(timeSpan.parse);
 (timeSpan as { zero: TimeSpan }).zero = new TimeSpan(0n);
