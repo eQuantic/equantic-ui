@@ -391,8 +391,10 @@ public class ConvertStrategy : IExpressionIrStrategy
     /// reads it, in the culture the call names (<see cref="Types.TimeParseStrategy.ReadsInvariant"/>),
     /// except that a null one is <c>MinValue</c>; an object is read by what it holds when the call runs,
     /// so is a call no model binds; a date is itself; and a value of any other type has no conversion to
-    /// a date, which .NET throws after evaluating it. Every overload was <c>String(value)</c>, so the call
-    /// answered the text of its argument, and a page that read its year read <c>undefined</c>.
+    /// a date, which .NET throws after evaluating it. A char held in an object is read as a text of one
+    /// character, since a boxed value does not carry its type (#552). Every overload was
+    /// <c>String(value)</c>, so the call answered the text of its argument, and a page that read its year
+    /// read <c>undefined</c>.
     /// </summary>
     private static JsExpr ToDateTime(InvocationExpressionSyntax invocation, ExpressionSyntax value, ExpressionSyntax? provider,
         ConversionContext context)

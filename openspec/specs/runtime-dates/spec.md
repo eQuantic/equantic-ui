@@ -402,7 +402,9 @@ fence (EQ2004). The arguments SHALL be the ones bound to each parameter, by name
 `Convert.ToDateTime` SHALL answer by the overload C# bound: a text SHALL read as `DateTime.Parse` reads
 it, in the culture the call names, and a null text SHALL be `DateTime.MinValue`; an object SHALL be
 read by what it holds when the call runs, a null one being `MinValue`; a `DateTime` SHALL be itself;
-and a value of any other type SHALL throw .NET's InvalidCastException after it is evaluated.
+and a value of any other type SHALL throw .NET's InvalidCastException after it is evaluated. A char
+held in an object SHALL be read as a text of one character, since the browser holds a char as one and
+a boxed value does not carry its type (#552).
 
 #### Scenario: A text in the page's culture
 
