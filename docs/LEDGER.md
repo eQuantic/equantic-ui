@@ -2603,6 +2603,19 @@ record of a release, the wiki's Upgrading page is the distillate.
   runtime on the Mac. The run on a physical iPhone belongs to the device pass
   ([#792](https://github.com/eQuantic/equantic-ui/issues/792)). Proposed and archived through OpenSpec
   (`openspec/specs/native-callbacks`).
+- **2026-10-12 · A text changes case as .NET changes it**: `ToUpper` and `ToLower` and their
+  invariant pair were the engine's full mappings, which lengthen `ß` to `SS` and read a final sigma in
+  its context, where .NET changes a code unit to exactly one other
+  ([#848](https://github.com/eQuantic/equantic-ui/issues/848)), and eqc dropped the culture a call
+  named, so a tr-TR page upper-cased `i` to `I` and a char's null culture was never refused
+  ([#725](https://github.com/eQuantic/equantic-ui/issues/725)). The runtime cases a text by .NET 10's
+  simple mappings, the two i's by the culture's language and the code points a later Unicode cases and
+  .NET 10 does not left alone; eqc reads the culture as it reads a date's, any other being EQ2108, and
+  `new DateOnly(…, calendar)` fails the build as `DateTime`'s does. The ordinal comparison that ignores
+  case reads the same table. 72 of the 96 conformance cases (12, each run in eight cultures, four of
+  them over every code unit of the BMP) fail at 9b43eb2b; 3 entries leave the null-argument baseline,
+  which were the whole of #725. Proposed and archived through OpenSpec (`openspec/specs/transpiler-bcl`,
+  `openspec/specs/runtime-dates`).
 
 ## Retired documents
 
