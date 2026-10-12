@@ -2,69 +2,27 @@
 // library holds (AppBuild), so a test runs the same build the SDK does.
 using eQuantic.UI.Compiler.Services;
 
-if (args.Length < 2)
+// The SDK hands its arguments in a file, `@<file>`, one a line, so no shell reads a path or a name
+// on its way here (#836). A run by hand may still write them out.
+IReadOnlyList<string> arguments;
+AppBuildOptions options;
+try
 {
-    Console.Error.WriteLine("Usage: eqc <source-dir> <output-dir> [--refs <file>] [--projects <file>] [--assembly-name <name>] [--bun <path>] [--source-maps full|external|none] [--watch]");
+    arguments = AppBuildOptions.ReadArguments(args);
+    options = AppBuildOptions.FromArguments(arguments);
+}
+catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
+{
+    Console.Error.WriteLine($"eqc: {ex.Message}");
+    Console.Error.WriteLine("Usage: eqc <source-dir>[;<source-dir>...] <output-dir> [--refs <file>] [--projects <file>] [--assembly-name <name>] [--ref-sources <file>] [--generated <dir>] [--bun <path>] [--source-maps full|external|none] [--watch]");
+    Console.Error.WriteLine("       eqc @<file>, the same arguments one a line");
     return 1;
 }
+var isWatchMode = options.Watch;
+var sourceDirs = options.SourceDirectories;
+var outputDir = options.OutputDirectory;
 
-// TrimEntries: the SDK passes the source dirs as "$(MSBuildProjectDirectory);$(_StandardComponentsDir)",
-// and _StandardComponentsDir is defined as multi-line XML, so its value carries leading whitespace/
-// newline. Without trimming, Directory.Exists fails on the standard-components path → the built-in
-// components (Grid/Box/…) are never transpiled, and pages referencing them break with "X is not defined".
-var sourceDirs = args[0].Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-var outputDir = args[1].Trim();
-var bunPath = args.ToList().Contains("--bun") ? args[args.ToList().IndexOf("--bun") + 1] : null;
-var isWatchMode = args.Any(a => a == "--watch");
-// --refs <file>: a newline-delimited list of the assemblies MSBuild resolved for this project
-// (@(ReferencePathWithRefAssemblies)). Feeding these to the semantic model makes eqc's type resolution
-// identical to the real csc build — eQuantic.UI.Core/Components, NuGet and project references all resolve,
-// independent of TargetFramework or configuration. Without it, base types like HtmlElement.Children
-// (IList<IComponent>) stay unresolved and member calls degrade to naive camel-casing (.Add → .add).
-var refsFile = args.ToList().Contains("--refs") ? args[args.ToList().IndexOf("--refs") + 1] : null;
-// --ref-sources <file>: newline-delimited DIRECTORIES whose .cs join the compilation as
-// SEMANTIC-ONLY reference sources (never transpiled). This is what lets eqc inline external
-// constants at the use site — an icon pack's `static readonly IconGlyph` needs its INITIALIZER,
-// which metadata (via --refs) does not carry; the pack's tools/source supplies it here.
-var refSourcesFile = args.ToList().Contains("--ref-sources") ? args[args.ToList().IndexOf("--ref-sources") + 1] : null;
-// --generated <dir>: the SOURCE-GENERATOR output directory for the configuration being built. The
-// SDK knows which one that is and eqc cannot: a project built in both configurations has a
-// generated tree under obj/Debug AND obj/Release, and sweeping obj would take every generated type
-// twice — which resolves to neither, while the C# build stays perfectly happy.
-var generatedDir = args.ToList().Contains("--generated") ? args[args.ToList().IndexOf("--generated") + 1].Trim() : null;
-// --projects <file>: the projects the app references with a ProjectReference, directly or through
-// another, one a line: the assembly MSBuild resolved for it, a `|`, and its project file. Their source is
-// compiled in place of their assemblies, so a type of one that a page uses is a module of the bundle and
-// not a name nothing defines (#624). The SDK writes the file; a developer sets nothing.
-var projectsFile = args.ToList().Contains("--projects") ? args[args.ToList().IndexOf("--projects") + 1].Trim() : null;
-// --assembly-name <name>: the app's assembly name as its project evaluates it, which a project file
-// may set apart from its own name. It is the name a referenced project's InternalsVisibleTo opens its
-// internal types to. The SDK passes $(AssemblyName); a direct run takes the project file's name.
-var assemblyName = args.ToList().Contains("--assembly-name") ? args[args.ToList().IndexOf("--assembly-name") + 1].Trim() : null;
-// --source-maps full|external|none (#352): what each module's map carries. `full` links a map with
-// the C# inside it, `external` writes one without the C# and without the link, `none` writes none.
-// The SDK passes full in Debug and none everywhere else; a direct run keeps full.
-var sourceMapArg = args.ToList().Contains("--source-maps") ? args[args.ToList().IndexOf("--source-maps") + 1].Trim() : "full";
-var sourceMaps = sourceMapArg.ToLowerInvariant() switch
-{
-    "full" => eQuantic.UI.Compiler.SourceMapMode.Full,
-    "external" => eQuantic.UI.Compiler.SourceMapMode.External,
-    "none" => eQuantic.UI.Compiler.SourceMapMode.None,
-    _ => throw new ArgumentException($"--source-maps takes full, external or none, not '{sourceMapArg}'."),
-};
-
-var build = new AppBuild(new AppBuildOptions
-{
-    SourceDirectories = sourceDirs,
-    OutputDirectory = outputDir,
-    BunPath = bunPath,
-    ReferencesFile = refsFile,
-    ReferenceSourcesFile = refSourcesFile,
-    GeneratedDirectory = generatedDir,
-    ProjectsFile = projectsFile,
-    AssemblyName = assemblyName,
-    SourceMaps = sourceMaps,
-});
+var build = new AppBuild(options);
 
 // The project's compilation and the scan of its declarations. A build it cannot stand on has said
 // why (an empty reference list is EQ0002) and stops here.
@@ -72,11 +30,11 @@ if (!build.Load()) return 1;
 
 if (isWatchMode)
 {
-    Console.WriteLine($"👀 eQuantic.UI: Watching {sourceDirs.Length} directories...");
+    Console.WriteLine($"👀 eQuantic.UI: Watching {sourceDirs.Count} directories...");
 }
 else
 {
-    Console.WriteLine($"🔨 eQuantic.UI: Compiling components from {sourceDirs.Length} directories");
+    Console.WriteLine($"🔨 eQuantic.UI: Compiling components from {sourceDirs.Count} directories");
 }
 
 Console.WriteLine($"   Intermediate: {build.IntermediateDirectory}");

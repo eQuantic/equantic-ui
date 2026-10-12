@@ -220,7 +220,7 @@ public class ExpressionVariableEmissionTests
                     File.WriteAllText(path, module.TypeScript);
                     return path;
                 }).ToList();
-                ModuleBundler.Bundle(bun, entries, Path.Combine(dir, "out"), written, SourceMapMode.None).Should().BeNull();
+                ModuleBundler.Bundle(bun, dir, entries, Path.Combine(dir, "out"), written, SourceMapMode.None).Should().BeNull();
                 importDir = "./out";
             }
             else
