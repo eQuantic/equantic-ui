@@ -6,15 +6,17 @@ reached GitHub's limit of 100 sub-issues).
 
 ## Why
 
-Executed on both sides at c25b177e, where 177 of the 198 cases of
-`DateTextInTheCultureConformanceTests` fail (22 cases, each run in the invariant culture, en-US,
-pt-BR, de-DE, sv-SE, ar, fi-FI, ja-JP and ko-KR):
+Executed on both sides at c25b177e, where 242 of the 280 cases of
+`DateTextInTheCultureConformanceTests` fail (28 cases, each run in the invariant culture, en-US,
+pt-BR, de-DE, sv-SE, ar, fi-FI, id-ID, ja-JP and ko-KR):
 
 - `Parse` and `TryParse` of a `DateTime`, a `DateTimeOffset`, a `DateOnly`, a `TimeOnly` and a
   `TimeSpan` with no provider read the invariant shapes whatever culture the page was in, where .NET
   reads the current culture. `DateTime.TryParse("01/02/2024", out d)` on a pt-BR page answered the
   2nd of January where .NET answers the 1st of February, with no failure anywhere; `15/01/2024` was
   refused; and a value written with `ToString()` did not read back in en-US or pt-BR (#806).
+  `DateOnly` alone already read three numbers in the culture's order, which #806's table missed, and
+  none of the rest of the culture's forms.
 - The overloads with a provider crossed it as the name `CultureInfo`, which the runtime does not
   export, a ReferenceError on the page; `TryParse` with one failed the build (EQ1004) since #718.
   `ParseExact`, `TryParseExact` and `GetDateTimeFormats` did the same, with nothing at the build to
@@ -32,8 +34,12 @@ pt-BR, de-DE, sv-SE, ar, fi-FI, ja-JP and ko-KR):
   a number; ko-KR's point after the day; a clock of one to three parts with `:` or the culture's own
   separator (fi-FI's point), a fraction after the seconds with a point or a comma in every culture,
   `AM` and `PM` and the culture's own designators before or after it; a zone (`Z`, `±h`, `±hh`,
-  `±hmm`, `±hhmm`, `±hh:mm`), refused past fourteen hours. What it refuses is .NET's refusal in its
-  words: a word it does not know at its index, a clock no day has, a zone out of range.
+  `±hmm`, `±hhmm`, `±hh:mm`), refused past fourteen hours. Where the culture writes its clock with
+  points (fi-FI, da-DK, id-ID), three short numbers joined by points are a clock, unless a year among
+  them makes a date where the culture writes its date with points too. A clock and its zone may come
+  before the date, and a designator after the zone. The ISO form, a year first and a `T`, reads two
+  digits a part and no designator. What it refuses is .NET's refusal in its words: a word it does not
+  know at its index, a clock no day has, a zone out of range.
 - The five twins' `parse` and `tryParse` read with it, in the page's culture, or in the invariant one
   when told so; a TimeSpan's fraction takes the culture's decimal separator where it has no days.
 - eqc's `TimeParseStrategy` (the former `TimeTryParseStrategy`) claims `Parse` and `TryParse` of the
@@ -46,7 +52,8 @@ pt-BR, de-DE, sv-SE, ar, fi-FI, ja-JP and ko-KR):
   Reading through a format is left for later.
 - `Convert.ToDateTime` reads by the overload C# bound: a text as `DateTime.Parse` reads it, in the
   culture the call names, a null one as `MinValue`; an object by what it holds when the call runs; a
-  date as itself; and a value of any other type throws .NET's InvalidCastException.
+  date as itself; and a value of any other type, held in an object or not, throws .NET's
+  InvalidCastException in .NET's words.
 
 For a developer: `DateTime.Parse(text)` reads on a pt-BR page what it reads on a pt-BR server, a value
 written with `ToString()` reads back, `DateTime.Parse(text, CultureInfo.InvariantCulture)` works in the
@@ -62,6 +69,9 @@ None.
 
 - `runtime-dates`: a date or a time is read in the culture the call names, and `Convert.ToDateTime`
   reads a text as `Parse` does.
+- `transpiler-bcl`: a time type's `TryParse` with a provider or styles reads in the culture it names,
+  where it failed the build, and `TimeOnly.Parse` reads in that culture, where it read the invariant
+  grammar.
 
 ## Impact
 

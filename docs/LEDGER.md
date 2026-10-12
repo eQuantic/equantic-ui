@@ -2571,9 +2571,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   the parameter each argument binds to, any other culture is EQ2108, and the exact readers are left to
   the fence. Measuring them found `Convert.ToDateTime` answering the text of its argument for every
   overload ([#844](https://github.com/eQuantic/equantic-ui/issues/844)), which now reads a text as
-  `Parse` does. 177 of the 198 conformance cases, run in nine cultures, fail at c25b177e; 60 entries
-  leave the null-argument baseline. What .NET reads beyond the numeric forms stays #807's. Proposed and
-  archived through OpenSpec (`openspec/specs/runtime-dates`).
+  `Parse` does. 242 of the 280 conformance cases, run in ten cultures, fail at c25b177e, and 49 still
+  failed before a review of the whole diff found a clock written with points, the ISO form, the order
+  of the parts and `Convert`'s words read narrower than .NET; 60 entries leave the null-argument
+  baseline. What .NET reads beyond the numeric forms stays #807's. Proposed and archived through
+  OpenSpec (`openspec/specs/runtime-dates`, `openspec/specs/transpiler-bcl`).
 
 ## Retired documents
 
