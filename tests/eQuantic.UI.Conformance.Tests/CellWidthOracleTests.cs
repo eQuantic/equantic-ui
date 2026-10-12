@@ -18,9 +18,10 @@ namespace eQuantic.UI.Conformance.Tests;
 /// as 🌡 as two cells, and nothing compared it with anything.
 /// <para>
 /// Every character that can begin a text element is compared, which leaves out marks, controls,
-/// surrogates and unassigned and private characters. Two places where the oracle and the grid part
-/// on purpose are named rather than hidden: <see cref="OracleErrors"/>, and conjoining Hangul jamo,
-/// which Bun counts one by one where a font draws the syllable they make in two cells.
+/// surrogates and unassigned and private characters. The one place where the oracle and the grid
+/// part on purpose is named rather than hidden: <see cref="OracleErrors"/>. Conjoining Hangul jamo
+/// were another until Bun 1.4.3, which counts a vowel or a final as no cell, so the syllable they
+/// make with their consonant takes the two cells a font draws it in, and a case holds that.
 /// </para>
 /// </summary>
 public class CellWidthOracleTests
@@ -139,6 +140,7 @@ public class CellWidthOracleTests
     [InlineData("\u2764\uFE0F")]                                                           // a presentation selector
     [InlineData("\U0001F3F4\U000E0067\U000E0062\U000E0065\U000E006E\U000E0067\U000E007F")] // a tag sequence flag
     [InlineData("e\u0301")]                                                                // a mark on its base
+    [InlineData("\u1100\u1161\u11A8")]                                                    // a Hangul syllable in conjoining jamo
     [InlineData("a\u200Db")]                                                               // a joiner between letters
     [InlineData("x\u200By")]                                                               // a zero-width space
     public void AClusterIsAsWideAsTheOracleSays_OnBothSides(string text)
