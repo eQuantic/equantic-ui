@@ -43,6 +43,9 @@ public class NumberFormatSpecifierConformanceTests
     // (found in review, #445): an int's -1 is FFFFFFFF and a short's FFFF, where JavaScript wrote -1.
     [InlineData("return ((short)-1).ToString(\"X\") + \"|\" + ((sbyte)-2).ToString(\"x\") + \"|\" + (-255).ToString(\"X4\") + \"|\" + ((byte)255).ToString(\"X\") + \"|\" + 4294967295u.ToString(\"X\") + \"|\" + ((ushort)65535).ToString(\"x\");")]
     [InlineData("short s = -1; sbyte b = -2; return $\"{s:X}\" + \"|\" + string.Format(\"{0:X4}|{1:x}\", b, s) + \"|\" + 42.ToString(\"B\") + \"|\" + s.ToString(\"B\") + \"|\" + 42.ToString(\"B8\") + \"|\" + (-2L).ToString(\"b\");")]
+    // A format and a provider bound by name are the ones they name, in either order: a null provider
+    // named first was read as the format, and the value written with none (found in review, #837).
+    [InlineData("return (1234.5).ToString(provider: null, format: \"N1\") + \"|\" + 42.ToString(provider: System.Globalization.CultureInfo.InvariantCulture, format: \"D5\") + \"|\" + (0.5m).ToString(format: \"P0\", provider: null);")]
     // D, X and B take an integer only: a fraction, a float and a decimal throw, as .NET throws; and so
     // does a letter no number takes, and a precision past .NET's limit, whose leading zeros are allowed.
     [InlineData("try { return (2.5).ToString(\"D\"); } catch (Exception e) { return e.Message; }")]

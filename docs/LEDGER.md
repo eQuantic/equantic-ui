@@ -2545,6 +2545,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   test runs the one that writes the file, as it ships, in a real MSBuild under a folder whose name
   holds what a shell reads ([#836](https://github.com/eQuantic/equantic-ui/issues/836)). Proposed and
   archived through OpenSpec (`openspec/specs/referenced-projects`).
+- **2026-10-12 · A TimeSpan writes the format it is given**: a `TimeSpan` written with a format wrote
+  its constant text whatever the format asked for, so `ToString(@"hh\:mm")` of an hour and two minutes
+  was `01:02:00` where .NET writes `01:02`, and a format .NET refuses wrote a value
+  ([#837](https://github.com/eQuantic/equantic-ui/issues/837)). The formatter handed a TimeSpan to the
+  twin's own `toString`, which takes no format, and eqc lowered `ToString(format)` to it directly. The
+  runtime writes .NET 10's standard formats now, the general ones with the culture's decimal separator,
+  and its custom formats token by token, with its refusals in its words; eqc hands a TimeSpan's
+  `ToString` to the formatter as it hands a date's, so its provider is the culture it names where it
+  was a name no browser defines, and a null `TimeSpan?` writes nothing where it was read through null.
+  The review found a provider named before its format (`ToString(provider: null, format: "g")`) read
+  as the format, for a number and a date as well: `ToStringStrategy` now asks the parameter each
+  argument binds to. 45 of the first 50 conformance cases, run in five cultures, fail at d5097bc2, and
+  the 7 the review added fail before that fix; one entry leaves the null-argument baseline. The served
+  runtime grows about 900 gzipped bytes. Proposed and archived through OpenSpec
+  (`openspec/specs/runtime-dates`).
 
 ## Retired documents
 
