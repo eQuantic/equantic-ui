@@ -51,7 +51,10 @@ the keyboard, whose idea of the field would drift from the host's, would correct
 - **The phones' clipboard.** Both shells give the host the platform's clipboard (`ClipboardManager`,
   `UIPasteboard`) and register it as `ITextClipboard`, as the desktop shells do. A hardware keyboard's
   copy, cut and paste reach the system clipboard, where without one a cut deleted the selection and
-  kept it nowhere; and a page's own Copy button, which found no clipboard on a phone, finds it.
+  kept it nowhere; and a page's own Copy button, which found no clipboard on a phone, finds it. On
+  Android that also takes the activity RUNNING the app, as every other entry point does: it took the
+  app without running it, so a component's `context.GetService` answered null there and a `SetState`
+  from another thread was not marshalled (#829).
 
 For a developer: nothing to write. A `TextEntry`, a `TextInput`, a `SearchField`, a code surface or a
 sheet tapped on a phone opens the platform's keyboard, edits the way the platform edits (autocorrect,

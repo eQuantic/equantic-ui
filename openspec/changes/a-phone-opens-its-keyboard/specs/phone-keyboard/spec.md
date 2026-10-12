@@ -170,6 +170,12 @@ reach the field. A key from a hardware keyboard SHALL reach the host as it does 
 - **THEN** the first back hides the keyboard and the field keeps its caret, the tap shows it again, the
   next back hides it, and the last one leaves the app, as it does from a native field (`system-back`)
 
+#### Scenario: An attached keyboard on Android
+
+- **WHEN** a key is pressed on a keyboard attached to the phone, which takes Android out of touch mode,
+  and the app is opened again
+- **THEN** the screen is drawn as the app draws it, with no system focus highlight over it
+
 #### Scenario: Typing on iOS
 
 - **WHEN** the PIX key field of the Wallet sample is tapped on the iOS simulator, "teh " is typed on the
@@ -190,7 +196,9 @@ reach the field. A key from a hardware keyboard SHALL reach the host as it does 
 The Android and iOS shells SHALL give the host the platform's clipboard (Android's `ClipboardManager`,
 iOS's general `UIPasteboard`), so the copy, cut and paste chords of a keyboard attached to the phone
 reach the system clipboard as they do on a desktop. The shells SHALL register the same clipboard as the
-`ITextClipboard` service, so a page's own Copy button finds it.
+`ITextClipboard` service, so a page's own Copy button finds it, from a constructor or from
+`context.GetService`; the Android activity SHALL run the app as every other entry point does, which is
+what arms the scope `GetService` reads.
 
 #### Scenario: Cut and paste with an attached keyboard
 

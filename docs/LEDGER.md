@@ -2452,7 +2452,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   cuts and pastes through the system clipboard, which both shells now give the host and register as
   `ITextClipboard`, so a page's own Copy button works on a phone too
   ([#776](https://github.com/eQuantic/equantic-ui/issues/776)): without it, a cut from that keyboard
-  deleted the selection and kept it nowhere. Proposed and archived through OpenSpec
+  deleted the selection and kept it nowhere. The Android activity now runs the app as every other
+  entry point does: it never had, so a component's `context.GetService` answered null on Android and a
+  `SetState` from another thread was not marshalled there
+  ([#829](https://github.com/eQuantic/equantic-ui/issues/829)). Proposed and archived through OpenSpec
   (`openspec/specs/phone-keyboard`).
 
 ## Retired documents

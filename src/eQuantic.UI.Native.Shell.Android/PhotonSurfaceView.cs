@@ -26,6 +26,10 @@ internal sealed class PhotonSurfaceView : SurfaceView
         // The keyboard asks the focused view for its input connection, so the surface takes focus,
         // from a touch too. Focusable in touch mode makes it focusable as well.
         FocusableInTouchMode = true;
+        // A focused view out of touch mode (a key pressed on an attached keyboard) gets the system's
+        // focus highlight drawn over it, and this view is the whole window: the app went a shade
+        // darker until it was launched again. What has focus inside the tree is Photon's to show.
+        DefaultFocusHighlightEnabled = false;
     }
 
     /// <summary>The semantics bridge, armed once the host exists. Null before that — a view with no

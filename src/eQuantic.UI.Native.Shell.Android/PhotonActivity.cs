@@ -217,8 +217,14 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         }
 
         // Android launched us; nobody ran a Main. The app describes itself in a CreateApp the
-        // host can find, which is the same method every other platform's entry point calls.
-        var app = Application ??= PhotonApplication.Create();
+        // host can find, and is RUN as every other platform's entry point runs it: Run arms what the
+        // whole process shares (the capability scope a component in the middle of the tree asks,
+        // the UI thread's dispatcher, the report of a contained failure), and its runner hands the
+        // app to this activity. Without it, context.GetService answered null on Android and a
+        // SetState from another thread was not marshalled.
+        if (Application is null) PhotonApplication.Create().Run();
+        var app = Application ?? throw new InvalidOperationException(
+            "The Android runner did not hand the app to the activity.");
 
         var metrics = Resources!.DisplayMetrics!;
         var scale = metrics.Density;
