@@ -30,26 +30,34 @@ public class RendererTextureReleaseTests
         public IRhiCommandList Begin(IRhiRenderTarget target, Color clearColor) => throw new NotSupportedException();
         public void Dispose() { }
 
-        private sealed class CountedTexture(CountingDevice device, TextureData data) : IRhiTexture
+        internal sealed class CountedTexture(CountingDevice device, TextureData data) : IRhiTexture
         {
-            private bool _disposed;
+            public bool Released { get; private set; }
             public int Width => data.Width;
             public int Height => data.Height;
 
             public void Dispose()
             {
-                _disposed.Should().BeFalse("a texture is released once");
-                _disposed = true;
+                Released.Should().BeFalse("a texture is released once");
+                Released = true;
                 device.Live--;
             }
         }
     }
 
-    /// <summary>Records what a pass bound, and refuses a texture that was already released.</summary>
+    /// <summary>A pass that refuses a texture already released: what a frame binds is still on the GPU.</summary>
     private sealed class Pass : IRhiCommandList
     {
+        public int Bound { get; private set; }
+
         public void SetPipeline(RhiPipelineKind kind) { }
-        public void BindTexture(int slot, IRhiTexture texture, RhiFilter filter = RhiFilter.Nearest) { }
+
+        public void BindTexture(int slot, IRhiTexture texture, RhiFilter filter = RhiFilter.Nearest)
+        {
+            ((CountingDevice.CountedTexture)texture).Released.Should().BeFalse("a frame never binds a released texture");
+            Bound++;
+        }
+
         public void Draw(in DrawUniforms uniforms) { }
         public void Submit(bool waitUntilCompleted) { }
     }
@@ -98,6 +106,8 @@ public class RendererTextureReleaseTests
     [Theory]
     [InlineData(5, 1)]
     [InlineData(RhiRenderer.RetainFrames - 1, 1)]
+    [InlineData(RhiRenderer.RetainFrames, 1)]        // away for exactly as long as it is kept: still there
+    [InlineData(RhiRenderer.RetainFrames + 1, 2)]    // one frame longer: released, then uploaded again
     [InlineData(RhiRenderer.RetainFrames + 5, 2)]
     public void ARasterThatComesBack_IsUploadedAgainOnlyIfItWasReleased(int framesAway, int uploads)
     {
@@ -107,9 +117,52 @@ public class RendererTextureReleaseTests
 
         renderer.Encode(Frame(raster), new Pass());
         for (var frame = 0; frame < framesAway; frame++) renderer.Encode(Frame(), new Pass());
-        renderer.Encode(Frame(raster), new Pass());
+        var back = new Pass();
+        renderer.Encode(Frame(raster), back);
 
         device.Uploads[raster].Should().Be(uploads);
+        back.Bound.Should().BeGreaterThan(0, "the frame that draws it again binds a texture that is on the GPU");
+    }
+
+    /// <summary>
+    /// Every way into the encoder is a frame. The three-argument overload is the window path's own
+    /// fallback; left out of the count, a caller on it would never release anything.
+    /// </summary>
+    [Fact]
+    public void TheOverloadThatTakesLayers_CountsFramesToo()
+    {
+        var device = new CountingDevice();
+        using var renderer = new RhiRenderer(device);
+
+        for (var frame = 0; frame < 500; frame++) renderer.Encode(Frame(Raster()), new Pass(), layersHandle: null);
+
+        device.Live.Should().BeLessThanOrEqualTo(RhiRenderer.RetainFrames + 3);
+    }
+
+    /// <summary>
+    /// Leaving a screen retires all of its rasters at once. They go a bounded number per frame, so
+    /// the frame after is not the one that pays for the whole screen, and they all go.
+    /// </summary>
+    [Fact]
+    public void AScreenLeft_IsReleasedAFewRastersAFrameUntilNoneIsHeld()
+    {
+        var device = new CountingDevice();
+        using var renderer = new RhiRenderer(device);
+        var screen = Enumerable.Range(0, RhiRenderer.ReleasesPerFrame * 3 + 10).Select(_ => Raster()).ToArray();
+        renderer.Encode(Frame(screen), new Pass());
+        var held = device.Live;
+
+        // A frame learns what it draws only as it encodes, so a raster is counted away at the start
+        // of the frame AFTER one that left it out: the frame below is the first to find the screen
+        // away for longer than it is kept.
+        for (var frame = 0; frame <= RhiRenderer.RetainFrames; frame++) renderer.Encode(Frame(), new Pass());
+        device.Live.Should().Be(held, "not yet away for longer than it is kept");
+
+        renderer.Encode(Frame(), new Pass());
+        device.Live.Should().Be(held - RhiRenderer.ReleasesPerFrame, "the first frame releases its share and no more");
+
+        for (var frame = 0; frame < 4; frame++) renderer.Encode(Frame(), new Pass());
+        device.Live.Should().Be(held - screen.Length, "and a few frames later none of the screen is held");
     }
 
     /// <summary>A live texture (a camera's frame) is one slot whose version moves: uploaded again per

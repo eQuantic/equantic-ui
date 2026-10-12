@@ -221,12 +221,24 @@ public sealed class RhiRenderer : IDisposable
     public const int ColorSlot = 1;
 
     /// <summary>
-    /// How many frames a raster stays uploaded after the last one that drew it. Long enough that
-    /// what leaves the screen for a moment (a row scrolled past and back, a state that flickers)
-    /// is not uploaded again, and far longer than any frame still in flight on the GPU; short
-    /// enough that a text changing every frame holds a handful of textures rather than all of them.
+    /// How many frames a raster may go undrawn and stay uploaded. Long enough that what leaves the
+    /// screen for a moment (a row scrolled past and back, a state that flickers) is not uploaded
+    /// again, and far longer than any frame still in flight on the GPU; short enough that a text
+    /// changing every frame holds a handful of textures rather than all of them.
+    /// <para>
+    /// FRAMES, and the shells render on demand: a screen that goes still stops the count, and what
+    /// its last frames stopped drawing waits for the next ones. Nothing is uploaded while nothing
+    /// is drawn, so the wait holds what was there and adds nothing to it.
+    /// </para>
     /// </summary>
-    public const int RetainFrames = 30;
+    internal const int RetainFrames = 30;
+
+    /// <summary>
+    /// The most rasters released at the start of one frame. Leaving a screen retires all of its
+    /// rasters in the same frame, and each release costs the backend a destroy; spread over a few
+    /// frames it is not a hitch in the transition that follows.
+    /// </summary>
+    internal const int ReleasesPerFrame = 64;
 
     private readonly IRhiDevice _device;
     private readonly Dictionary<TextureData, Uploaded> _textures = new();
@@ -267,7 +279,7 @@ public sealed class RhiRenderer : IDisposable
         if (splits is null)
         {
             var commands = _device.Begin(target, ClearColorOf(displayList));
-            Encode(displayList, commands, layers);
+            EncodeRange(displayList, commands, layers, 0, displayList.Commands.Length);
             commands.Submit(waitUntilCompleted: true);
             layers?.Dispose();
             return;
@@ -443,11 +455,8 @@ public sealed class RhiRenderer : IDisposable
     /// Encodes <paramref name="displayList"/> into an open pass. Window paths call this directly
     /// with a backend-created command list (drawable target) and submit without waiting.
     /// </summary>
-    public void Encode(DisplayList displayList, IRhiCommandList commands)
-    {
-        BeginFrame();
+    public void Encode(DisplayList displayList, IRhiCommandList commands) =>
         Encode(displayList, commands, layersHandle: null);
-    }
 
     /// <summary>
     /// Encodes <paramref name="displayList"/> into an open pass, compositing any layer scopes from
@@ -457,6 +466,9 @@ public sealed class RhiRenderer : IDisposable
     /// </summary>
     public void Encode(DisplayList displayList, IRhiCommandList commands, object? layersHandle)
     {
+        // A caller's own pass is one frame. Render begins its frame itself and encodes through
+        // EncodeRange, so every way into the encoder passes BeginFrame exactly once.
+        BeginFrame();
         var layers = layersHandle as LayerTargets;
         EncodeRange(displayList, commands, layers, 0, displayList.Commands.Length);
     }
@@ -664,11 +676,12 @@ public sealed class RhiRenderer : IDisposable
         commands.Draw(in uniforms);
     }
 
-    /// <summary>Uploads (and caches by IDENTITY) a display-list raster. Cache lifetime is the
-    /// renderer's — the host's raster caches reuse instances across frames, so entries stay warm.
+    /// <summary>Uploads (and caches by IDENTITY) a display-list raster. An entry lives while frames
+    /// keep drawing it (see <see cref="RetainFrames"/>) — the host's raster caches reuse instances
+    /// across frames, so what is on screen stays warm.
     /// A LIVE texture (camera) mutates its bytes in place and bumps <see cref="TextureData.Version"/>:
-    /// same instance, same cache slot, re-uploaded when the number moved — which is what keeps a
-    /// 30 fps feed at exactly ONE GPU texture instead of a new leaked one per frame.</summary>
+    /// same instance, same cache slot, re-uploaded when the number moved and the upload it replaces
+    /// released — which is what keeps a 30 fps feed at exactly ONE GPU texture.</summary>
     private IRhiTexture TextureFor(TextureData data)
     {
         if (_textures.TryGetValue(data, out var uploaded))
@@ -686,23 +699,35 @@ public sealed class RhiRenderer : IDisposable
     }
 
     /// <summary>
-    /// A new frame starts: the rasters no frame has drawn for <see cref="RetainFrames"/> frames are
-    /// released before anything is encoded. A raster drawn again later is uploaded again, from the
-    /// bytes its owner still holds.
+    /// A new frame starts: the rasters that went undrawn for more than <see cref="RetainFrames"/>
+    /// whole frames are released, before anything is encoded, so nothing this frame binds can be
+    /// one of them. A raster drawn again later is uploaded again, from the bytes its owner still
+    /// holds.
     /// </summary>
     private void BeginFrame()
     {
         _frame++;
+        // The frame that is starting has drawn nothing yet, so it is not one of the frames a raster
+        // "went undrawn" for: one drawn at frame f was away for (_frame - f - 1) frames.
         foreach (var entry in _textures)
-            if (_frame - entry.Value.LastFrame > RetainFrames) _retired.Add(entry.Key);
+        {
+            if (_frame - entry.Value.LastFrame - 1 <= RetainFrames) continue;
+            _retired.Add(entry.Key);
+            if (_retired.Count == ReleasesPerFrame) break;
+        }
         if (_retired.Count == 0) return;
 
-        foreach (var data in _retired)
+        try
         {
-            _textures.Remove(data, out var uploaded);
-            uploaded!.Texture.Dispose();
+            // Out of the map first: a release that throws must not leave an entry whose texture
+            // is gone, nor a list of keys the next frame would trip over.
+            foreach (var data in _retired)
+                if (_textures.Remove(data, out var uploaded)) uploaded.Texture.Dispose();
         }
-        _retired.Clear();
+        finally
+        {
+            _retired.Clear();
+        }
     }
 
     private IRhiTexture Dummy() => _dummy ??= _device.CreateTexture(new TextureData(1, 1, new byte[] { 0 }));
