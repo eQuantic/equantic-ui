@@ -163,22 +163,22 @@ public sealed class ReferencedProjectRefusalTests
     [Fact]
     public void ANameBoundToAPackagesType_NeverImportsAReferencedProjectsModuleOfThatName()
     {
-        // The page names System.Text.StringBuilder, which the runtime has. A referenced project
-        // happens to declare a class of that name that nothing reaches: a name the layer of
-        // referenced projects answered for by NAME alone would import the library's.
+        // The page reads a member of Vendor.Status, a type of a PACKAGE. A referenced project happens
+        // to declare a class of that name, which nothing reaches. The emitters gather import
+        // candidates by name, so a layer that answered for a referenced project's name by NAME
+        // alone would import the library's Status into a page that never named it.
+        const string Status = "namespace OWNER;\n\npublic static class Status\n{\n    public static string Label => \"OWNER\";\n}\n";
         using var solution = new Solution()
-            .Library("Common", files:
+            .Package("Vendor", ("Status.cs", Status.Replace("OWNER", "Vendor")))
+            .Library("Common", files: [("Status.cs", Status.Replace("OWNER", "Common"))])
+            .App("App", references: ["Common", "Vendor"], globalUsings: SharedLibrary.Factories, files:
             [
-                ("StringBuilder.cs", "namespace Common;\n\npublic sealed class StringBuilder\n{\n    public string Text => \"common\";\n}\n"),
-            ])
-            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files:
-            [
-                ("Screens/Home.cs", Home("""new System.Text.StringBuilder().Append("built").ToString()""")),
+                ("Screens/Home.cs", Home("Status.Label", "using Vendor;")),
             ]);
         var built = solution.Build();
 
-        built.Failed.Should().BeFalse(built.Errors);
-        built.SiblingImportsOf("Home").Should().BeEmpty();
-        built.Modules.Should().BeEquivalentTo(["Home"], "the library's class of that name is not what the page named");
+        built.Module("Home").Should().Contain("Status.label", "the page names the type the code names: a package's");
+        built.SiblingImportsOf("Home").Should().BeEmpty("the library's class of that name is not what the page named");
+        built.Modules.Should().NotContain("Status", "and nothing reached the library's, so it is no module");
     }
 }

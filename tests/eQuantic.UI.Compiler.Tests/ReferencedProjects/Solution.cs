@@ -46,7 +46,7 @@ internal sealed class Solution : IDisposable
     private readonly string _root = Directory.CreateTempSubdirectory("eq-solution-").FullName;
     private readonly List<Project> _projects = [];
 
-    private sealed record Project(string Name, string[] References, string GlobalUsings, bool IsApp)
+    private sealed record Project(string Name, string[] References, string GlobalUsings, bool IsApp, bool IsPackage = false)
     {
         public Compilation? Compilation { get; set; }
         public string? Assembly { get; set; }
@@ -69,6 +69,15 @@ internal sealed class Solution : IDisposable
     public Solution Library(string name, string[]? references = null, string globalUsings = "",
         params (string Path, string Text)[] files) =>
         Add(new Project(name, references ?? [], globalUsings, IsApp: false), files);
+
+    /// <summary>
+    /// An assembly the app references that is NOT a project of its solution: a package. It is
+    /// compiled like a library and its assembly is in the reference list, and nothing says where its
+    /// source is, so the build reads it as an assembly, as it reads every package.
+    /// </summary>
+    /// <inheritdoc cref="Library"/>
+    public Solution Package(string name, params (string Path, string Text)[] files) =>
+        Add(new Project(name, [], "", IsApp: false, IsPackage: true), files);
 
     /// <summary>The app, which is declared last and referenced by nothing.</summary>
     /// <inheritdoc cref="Library"/>
@@ -114,7 +123,7 @@ internal sealed class Solution : IDisposable
         var referencesFile = Path.Combine(obj, "equantic.refs.txt");
         File.WriteAllLines(referencesFile, Framework.Value.Concat(libraries.Select(library => library.Assembly!)));
         var projectsFile = Path.Combine(obj, "equantic.projects.txt");
-        File.WriteAllLines(projectsFile, libraries.Select(library =>
+        File.WriteAllLines(projectsFile, libraries.Where(library => !library.IsPackage).Select(library =>
             $"{library.Assembly}|{Path.Combine(DirectoryOf(library.Name), library.Name + ".csproj")}"));
 
         var output = new StringWriter();
