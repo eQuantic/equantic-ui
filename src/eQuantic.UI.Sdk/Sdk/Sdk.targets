@@ -78,11 +78,18 @@
             when the working tree is modified. Failure is tolerated on purpose — no git, a tarball,
             a shallow copy — and the line still names the branch and the path.
         -->
-        <Exec Command="git -C &quot;$([System.IO.Path]::GetFullPath('$(_DevRootDir)..'))&quot; describe --always --dirty --abbrev=8"
+        <ItemGroup>
+            <_EqDescribeArgument Include="repository" Option="-C" Value="$([System.IO.Path]::GetFullPath('$(_DevRootDir)..'))" />
+            <_EqDescribeArgument Include="command" Value="describe" />
+            <_EqDescribeArgument Include="always" Value="--always" />
+            <_EqDescribeArgument Include="dirty" Value="--dirty" />
+            <_EqDescribeArgument Include="abbreviation" Value="--abbrev=8" />
+        </ItemGroup>
+        <RunProgram Program="git" Arguments="@(_EqDescribeArgument)"
               ConsoleToMSBuild="true" StandardOutputImportance="low"
               ContinueOnError="true" IgnoreExitCode="true">
             <Output TaskParameter="ConsoleOutput" PropertyName="_EqDevDescribe" />
-        </Exec>
+        </RunProgram>
         <PropertyGroup>
             <_EqDevAt Condition="'$(_EqDevDescribe)' != ''"> @ $(_EqDevDescribe.Trim())</_EqDevAt>
         </PropertyGroup>
@@ -106,7 +113,28 @@
         <EqcCliPath Condition="'$(EqcCliPath)' == ''">$(_SdkToolsDir)eqc.dll</EqcCliPath>
         <_EqIconToolDir Condition="'$(_EqSourceTree)' == 'true'">$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/bin/$(Configuration)/net10.0/</_EqIconToolDir>
         <_EqIconToolDir Condition="'$(_EqIconToolDir)' == ''">$(_SdkToolsDir)</_EqIconToolDir>
+        <_EqTasksAssembly Condition="'$(_EqSourceTree)' == 'true'">$(MSBuildThisFileDirectory)../../eQuantic.UI.Sdk.Tasks/bin/$(Configuration)/netstandard2.0/eQuantic.UI.Sdk.Tasks.dll</_EqTasksAssembly>
+        <_EqTasksAssembly Condition="'$(_EqTasksAssembly)' == ''">$(MSBuildThisFileDirectory)../tools/netstandard2.0/eQuantic.UI.Sdk.Tasks.dll</_EqTasksAssembly>
     </PropertyGroup>
+    <!--
+        EVERY PROGRAM THIS SDK STARTS, it starts with RunProgram: a program and a list of arguments,
+        with no shell between them. MSBuild's Exec writes its command into a script that /bin/sh or
+        cmd.exe runs, and each read the command first: with the package folder under a folder named
+        `nuget $b`, a build stopped at the first program it started (#841). An argument is an item
+        whose Value metadata is the text, after its Option metadata when it names one, so MSBuild
+        neither splits it at a semicolon nor expands a wildcard in it; the item's own name is a label.
+        A source tree builds the task assembly in the same graph that uses it, as it builds eqc, so
+        it is loaded in a task host that ends with the build: a rebuilt assembly is the one that runs,
+        and no reused node holds the file.
+    -->
+    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.RunProgram" AssemblyFile="$(_EqTasksAssembly)"
+               TaskFactory="TaskHostFactory" Condition="'$(_EqSourceTree)' == 'true'" />
+    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.RunProgram" AssemblyFile="$(_EqTasksAssembly)"
+               Condition="'$(_EqSourceTree)' != 'true'" />
+    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.LinkDirectory" AssemblyFile="$(_EqTasksAssembly)"
+               TaskFactory="TaskHostFactory" Condition="'$(_EqSourceTree)' == 'true'" />
+    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.LinkDirectory" AssemblyFile="$(_EqTasksAssembly)"
+               Condition="'$(_EqSourceTree)' != 'true'" />
     <PropertyGroup>
         <_EqOsArch Condition="'$(_EqOsArch)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_EqOsArch>
         <_EqIsArm64 Condition="'$(_EqOsArch)' == 'Arm64'">true</_EqIsArm64>
@@ -168,7 +196,11 @@
         />
 
         <!-- Make executable on Linux/Mac -->
-        <Exec Command="chmod +x &quot;$(BunExePath)&quot;"
+        <ItemGroup>
+            <_EqBunModeArgument Include="mode" Value="+x" />
+            <_EqBunModeArgument Include="bun" Value="$(BunExePath)" />
+        </ItemGroup>
+        <RunProgram Program="chmod" Arguments="@(_EqBunModeArgument)"
             Condition="Exists('$(BunExePath)') And !$([MSBuild]::IsOSPlatform('Windows'))" />
 
         <PropertyGroup Condition="Exists('$(BunExePath)')">
@@ -218,21 +250,19 @@
             Importance="High"
             Condition="!Exists('$(_BunNpmNodeModules)')" />
 
-        <Exec Command="&quot;$(BunPath)&quot; add %(BunPackage.Identity)@%(BunPackage.Version)"
+        <!-- One `bun add` a package: an item a package, batched by its name. -->
+        <ItemGroup Condition="!Exists('$(_BunNpmNodeModules)')">
+            <_EqBunAddArgument Include="@(BunPackage)" Option="add" Value="%(Identity)@%(Version)" />
+        </ItemGroup>
+        <RunProgram Program="$(BunPath)" Arguments="@(_EqBunAddArgument)"
             WorkingDirectory="$(_BunNpmDir)"
-            Condition="!Exists('$(_BunNpmNodeModules)')" />
+            Condition="'%(_EqBunAddArgument.Identity)' != ''" />
 
-        <!-- Create node_modules symlink at project root for tool resolution -->
-        <Exec
-            Command="if [ ! -L &quot;node_modules&quot; ]; then ln -s &quot;$(_BunNpmDir)/node_modules&quot; &quot;node_modules&quot;; fi"
-            Condition="!$([MSBuild]::IsOSPlatform('Windows'))"
-            WorkingDirectory="$(MSBuildProjectDirectory)"
-            IgnoreExitCode="true" />
-        <Exec
-            Command="if not exist &quot;node_modules&quot; mklink /D &quot;node_modules&quot; &quot;$(_BunNpmDir)\node_modules&quot;"
-            Condition="$([MSBuild]::IsOSPlatform('Windows'))"
-            WorkingDirectory="$(MSBuildProjectDirectory)"
-            IgnoreExitCode="true" />
+        <!-- node_modules at the project root for tool resolution, made by the system's own call: the
+             Windows half was `mklink /D`, a command of cmd.exe, not a program. What is already there
+             stays, a link of an earlier build or a folder of the developer's own. -->
+        <LinkDirectory Link="$(MSBuildProjectDirectory)/node_modules"
+            Target="$([MSBuild]::NormalizePath('$(_BunNpmDir)', 'node_modules'))" />
     </Target>
 
     <!--
@@ -413,13 +443,6 @@
         Condition="'$(EnableEQuanticUICompilation)' == 'true'">
         <PropertyGroup>
             <_EqcArgumentsPath>$(IntermediateOutputPath)equantic.eqc.rsp</_EqcArgumentsPath>
-            <!-- eqc runs IN the folder that holds its response file, and the command names the file by
-                 its name alone. MSBuild sets a process's working directory itself, so no shell reads
-                 that folder's path, whatever IntermediateOutputPath holds: a Configuration, a target
-                 framework or an artifacts layout's folders. Named by a path, even a relative one, the
-                 file carried that text into the command (found in review of #843). Every path in the
-                 file is absolute, so eqc reads none of them from where it runs. -->
-            <_EqcArgumentsDirectory>$([System.IO.Path]::GetDirectoryName($([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(_EqcArgumentsPath)'))))</_EqcArgumentsDirectory>
             <!-- The source roots as one argument, with no line break in it: a root written on
                  several lines of a project file carries them, and a line of the file is an argument.
                  eqc trims the whitespace around each root. -->
@@ -459,15 +482,15 @@
             Overwrite="true" WriteOnlyWhenDifferent="true" />
     </Target>
 
-    <!-- The command names two things: the compiler, and the response file by its name, in the folder
-         eqc runs in. No value of the project is in it. -->
+    <!-- eqc is handed two arguments: the compiler, and its response file by its full path. -->
     <Target Name="CompileEQuanticUI" BeforeTargets="Build"
         DependsOnTargets="_EQuanticCompilerArguments"
         Condition="'$(EnableEQuanticUICompilation)' == 'true'">
-        <Exec
-            Command="dotnet &quot;$(EqcCliPath)&quot; @equantic.eqc.rsp"
-            WorkingDirectory="$(_EqcArgumentsDirectory)" ConsoleToMSBuild="true"
-            StandardOutputImportance="High" />
+        <ItemGroup>
+            <_EqcStartArgument Include="compiler" Value="$(EqcCliPath)" />
+            <_EqcStartArgument Include="arguments" Value="@$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(_EqcArgumentsPath)'))" />
+        </ItemGroup>
+        <RunProgram Program="dotnet" Arguments="@(_EqcStartArgument)" />
     </Target>
 
     <!--
@@ -665,8 +688,14 @@
         Condition="Exists('$(EQuanticAssetsDir)')"
         Inputs="@(_EqVectorSource);$(_EqVectorInputsFile);$(_EqIconToolDir)eqicon.dll"
         Outputs="$(EQuanticVectorsFile)">
-        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; vectors --assets &quot;$(EQuanticAssetsDir)&quot; --out &quot;$(MSBuildProjectDirectory)/$(EQuanticVectorsFile)&quot; --namespace &quot;$(EQuanticVectorsNamespace)&quot;"
-            StandardOutputImportance="normal" />
+        <ItemGroup>
+            <_EqVectorsArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
+            <_EqVectorsArgument Include="command" Value="vectors" />
+            <_EqVectorsArgument Include="assets" Option="--assets" Value="$(EQuanticAssetsDir)" />
+            <_EqVectorsArgument Include="catalog" Option="--out" Value="$(MSBuildProjectDirectory)/$(EQuanticVectorsFile)" />
+            <_EqVectorsArgument Include="namespace" Option="--namespace" Value="$(EQuanticVectorsNamespace)" />
+        </ItemGroup>
+        <RunProgram Program="dotnet" Arguments="@(_EqVectorsArgument)" StandardOutputImportance="normal" />
         <!-- eqicon writes only when the catalog changed, so an edit that leaves it the same would
              leave it older than its inputs, and this target would run on every build after. -->
         <Touch Files="$(EQuanticVectorsFile)" Condition="Exists('$(EQuanticVectorsFile)')" />
@@ -685,8 +714,13 @@
 
     <Target Name="EQuanticWebAppIcon" BeforeTargets="Build"
         Condition="'$(EQuanticAppIconSource)' != ''">
-        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --web &quot;$(MSBuildProjectDirectory)/wwwroot/_equantic/icons&quot; --app &quot;$(ApplicationTitle)&quot;"
-            StandardOutputImportance="normal" />
+        <ItemGroup>
+            <_EqWebIconArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
+            <_EqWebIconArgument Include="source" Option="--source" Value="$(EQuanticAppIconSource)" />
+            <_EqWebIconArgument Include="icons" Option="--web" Value="$(MSBuildProjectDirectory)/wwwroot/_equantic/icons" />
+            <_EqWebIconArgument Include="title" Option="--app" Value="$(ApplicationTitle)" />
+        </ItemGroup>
+        <RunProgram Program="dotnet" Arguments="@(_EqWebIconArgument)" StandardOutputImportance="normal" />
     </Target>
 
     <!--
