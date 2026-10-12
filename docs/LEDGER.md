@@ -2528,6 +2528,19 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#836](https://github.com/eQuantic/equantic-ui/issues/836)), and three more shapes of a type named
   where nothing is written joined [#830](https://github.com/eQuantic/equantic-ui/issues/830). Proposed
   and archived through OpenSpec (`openspec/specs/referenced-projects`, `openspec/specs/transpiler-bcl`).
+- **2026-10-12 · The SDK hands eqc a file, and no value of the project goes through a shell**: every
+  argument was written into the command the SDK ran eqc with, and a shell read that command first.
+  Measured on macOS, an assembly name `Cash$Flow` reached eqc as `Cash`, so a library's
+  `InternalsVisibleTo` for the real name opened nothing (EQ2006), and a backtick ran as a command. And
+  the list of referenced projects was one line a project, `assembly|project file`, cut at the first
+  bar, which a path on macOS and Linux may hold: a solution under `a|b` was refused on every build
+  (EQ0001). The SDK writes eqc's arguments to `obj/…/equantic.eqc.rsp`, one a line, each kept whole as
+  an item's metadata, and the command names the compiler and that file, relative to the project's
+  directory. eqc reads `@<file>`, through `AppBuildOptions.ReadArguments` and `FromArguments`, which
+  hold what its CLI read inline, and the list is two lines a project. `CompileEQuanticUI` is three
+  targets, so a test runs the one that writes the file, as it ships, in a real MSBuild under a folder
+  whose name holds what a shell reads ([#836](https://github.com/eQuantic/equantic-ui/issues/836)).
+  Proposed and archived through OpenSpec (`openspec/specs/referenced-projects`).
 
 ## Retired documents
 
