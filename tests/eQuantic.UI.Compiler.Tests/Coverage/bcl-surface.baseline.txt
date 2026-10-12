@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=292 · fenced=90 · invalid-probe=6 · native=645
+# totals: eq=293 · fenced=90 · invalid-probe=6 · native=644
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -1017,7 +1017,7 @@ native         TimeSpan.TicksPerMillisecond
 native         TimeSpan.TicksPerMinute
 native         TimeSpan.TicksPerSecond
 native         TimeSpan.ToString()
-native         TimeSpan.ToString(String)
+eq             TimeSpan.ToString(String)
 native         TimeSpan.TotalDays
 native         TimeSpan.TotalHours
 native         TimeSpan.TotalMicroseconds
