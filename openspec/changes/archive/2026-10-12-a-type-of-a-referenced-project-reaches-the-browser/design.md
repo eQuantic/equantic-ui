@@ -98,7 +98,10 @@ one walk of the declaration, apart from all of them: the symbol every name binds
 that declares it (a static member's owner, a constructor's type, the static class an extension method
 is declared in) and the type of every expression, each taken apart into its type arguments and
 elements. The walk decides nothing. It answers which files declare the type a name is, and the gates
-ask it.
+ask it. For a component it reads the code that crosses and no other, by the parser's own two rules:
+a `[ServerOnly]` method is left out whole, and a Server Action is read for its signature, which its
+stub is written from. Read with the rest of the class, a Server Action that mapped the Domain's
+`Order` into the app's own `Order` had the Domain's reached (found in review).
 
 The dependency scan of a referenced project is a layer of its own, made when a name of that project
 is first asked for: an app name is importable as today, and a referenced project's name only for a
@@ -124,7 +127,11 @@ called a library's `[ServerOnly]` class built with no diagnostic where it was EQ
 library was read from its assembly. Measured before it was fixed. The fence asks whether the type is
 of the assembly being converted, by the assembly's name, since every file is compiled in a
 compilation of its own and two of those hold two assembly symbols for one project. The app's own
-`[ServerOnly]` type named from client code builds in silence, as before this change. It is filed.
+`[ServerOnly]` type named from client code builds in silence, as before this change. It is filed
+(#823). A MEMBER marked `[ServerOnly]` is asked first, whoever declares it: a component leaves such
+a method out of its twin, so a call to it from the component's own code was a call to a member the
+twin does not have, with no diagnostic, in the app's own project as in a referenced one (found in
+review, and measured in an app with no referenced project).
 
 **The semantic model of a tree comes from the compilation that holds it.** One helper answers it:
 the compilation asked, or the one among its compilation references that contains the tree. The

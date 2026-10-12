@@ -56,6 +56,19 @@ code that does not cross, and a read the build writes as a literal, reach nothin
 - **WHEN** a page's Server Action builds that class in its body, and nothing else of the page names it
 - **THEN** the build succeeds and the bundle holds no module of that class
 
+#### Scenario: A Server Action maps a referenced project's type of the app's name
+
+- **WHEN** a page shows the app's own `Order`, and its Server Action, or a `[ServerOnly]` method of
+  it, builds that `Order` from the referenced project's `Order`, a class that reads a file
+- **THEN** the build succeeds with the app's `Order` as the module, and the referenced project's is
+  not compiled
+
+#### Scenario: A Server Action's answer is named by its return type alone
+
+- **WHEN** a Server Action answers a record of the referenced project, and nothing else of the page
+  names that record
+- **THEN** the page's module imports the record, and the bundle holds its module
+
 #### Scenario: A constant read off a referenced project's class
 
 - **WHEN** a static class of the app declares `const string Serif = Theme.Serif;`, where `Theme` is a
@@ -80,7 +93,9 @@ of that name.
 
 When a reached type holds what the browser cannot carry, the build SHALL fail with the diagnostic
 the same construct raises in the app's own project, at the referenced project's file. A reached
-type or member marked `[ServerOnly]` SHALL be refused where the browser code names it.
+type or member marked `[ServerOnly]` SHALL be refused where the browser code names it. A member
+marked so SHALL be refused in the code of its own type too, in a referenced project as in the app:
+a component's twin has no such member to call.
 
 #### Scenario: A reached class that reads a file
 
@@ -93,6 +108,12 @@ type or member marked `[ServerOnly]` SHALL be refused where the browser code nam
   body uses `System.IO.File`, and no page calls that method
 - **THEN** the build fails naming that method's file, where the same record read from an assembly
   crossed as data alone
+
+#### Scenario: A component calls its own server-only method
+
+- **WHEN** a component, the app's or a referenced project's, calls a `[ServerOnly]` method of its
+  own from its `Build`
+- **THEN** the build fails with EQ2010 at that call, in the component's file
 
 #### Scenario: A server-only type of a referenced project
 

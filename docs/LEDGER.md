@@ -2429,12 +2429,15 @@ record of a release, the wiki's Upgrading page is the distillate.
   it is reached, so a Domain or a Persistence project costs what the pages use of it, and a Server
   Action's body names its server code freely. A reached type is held to the app's own rules at its
   own file, a `[ServerOnly]` one is refused where the page names it, and two reached types of one
-  name are EQ1005. A catalogue's id is decided once for the build, so an app's `Strings` and a
-  library's do not share a key, and a referenced project's catalogue contributes the keys read. One
+  name are EQ1005. A member marked `[ServerOnly]` is refused in the code of its own type too, which
+  an app with no library gains as well: a component's own `Build` calling its `[ServerOnly]` method
+  was written as a call to a member the twin does not have, and is EQ2010 now. A catalogue's id is
+  decided once for the build, so an app's `Strings` and a library's do not share a key, and a
+  referenced project's catalogue contributes the keys read. One
   case is stricter than it was: a record of a referenced project that crossed as data alone has a
   twin now, the whole record, so a method of it that a browser cannot run fails the build at that
   method though no page calls it ([#826](https://github.com/eQuantic/equantic-ui/issues/826)). The
-  build loop left the CLI's top-level statements for the compiler library (`AppBuild`), where 46
+  build loop left the CLI's top-level statements for the compiler library (`AppBuild`), where 50
   tests run it over a solution written to disk, and each piece of the change, taken back in turn,
   fails at least one of them. An app that references no project writes byte for byte what it wrote,
   the dashboard sample's 289 files, and a real solution of five referenced projects writes the same
