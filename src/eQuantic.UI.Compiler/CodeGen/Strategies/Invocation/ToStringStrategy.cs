@@ -44,6 +44,8 @@ public class ToStringStrategy : IConversionStrategy
         // runs the C#, was perfectly happy.
         var args = invocation.ArgumentList.Arguments;
         var receiverType = context.SemanticHelper.GetType(memberAccess.Expression);
+        var method = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
+        bool Provides(ArgumentSyntax argument) => IsFormatProvider(argument, args.IndexOf(argument), method, context);
 
         // A value the browser holds as DATA reads as its record text, which is what a concatenation
         // already writes it as (StringConversion).
@@ -59,7 +61,7 @@ public class ToStringStrategy : IConversionStrategy
         // getter may have one.
         if (receiverType.UnwrapNullable() is { SpecialType: SpecialType.System_Boolean })
         {
-            var ignored = args.FirstOrDefault(argument => IsFormatProvider(argument.Expression, context))?.Expression;
+            var ignored = args.FirstOrDefault(Provides)?.Expression;
             if (ignored is null || IsInert(ignored, context))
                 return JsExprWriter.Write(StringConversion.ToDotNetString(memberAccess.Expression,
                     context.Converter.ConvertIr(memberAccess.Expression), context));
@@ -69,7 +71,7 @@ public class ToStringStrategy : IConversionStrategy
                 [context.Converter.ConvertIr(memberAccess.Expression), context.Converter.ConvertIr(ignored)]));
         }
 
-        var provider = args.FirstOrDefault(argument => IsFormatProvider(argument.Expression, context));
+        var provider = args.FirstOrDefault(Provides);
         var formatArg = args.FirstOrDefault(argument => argument != provider);
 
         // An ENUM crosses as its camelCase key (`Kind.B` → 'b'), or its number for a flags enum, so
@@ -221,18 +223,26 @@ public class ToStringStrategy : IConversionStrategy
 
     /// <summary>
     /// Is this argument the PROVIDER rather than the format? Asked of the model, because the two
-    /// overloads are one syntax. Without a model — the playground compiles a buffer alone — the
-    /// source's own spelling is the only evidence there is, and `CultureInfo.X` is unambiguous.
+    /// overloads are one syntax: of the PARAMETER the argument binds to, by its name or its place,
+    /// and else of the argument's own type. A null has no type, so a provider named before its
+    /// format (<c>ToString(provider: null, format: "g")</c>) was read as the format, and the value
+    /// written with none. Without a model — the playground compiles a buffer alone — the source's
+    /// own spelling is the only evidence there is, and `CultureInfo.X` is unambiguous.
     /// </summary>
-    private static bool IsFormatProvider(ExpressionSyntax expression, ConversionContext context)
+    private static bool IsFormatProvider(ArgumentSyntax argument, int place, IMethodSymbol? method,
+        ConversionContext context)
     {
-        if (context.SemanticHelper.GetType(expression) is { } type)
+        var parameter = method is null ? null
+            : argument.NameColon?.Name.Identifier.ValueText is { } named
+                ? method.Parameters.FirstOrDefault(p => p.Name == named)
+                : place < method.Parameters.Length ? method.Parameters[place] : null;
+        if ((parameter?.Type ?? context.SemanticHelper.GetType(argument.Expression)) is { } type)
         {
             return type.Name == "IFormatProvider"
                 || type.AllInterfaces.Any(i => i.ToDisplayString() == "System.IFormatProvider");
         }
 
-        return expression is MemberAccessExpressionSyntax { Expression: IdentifierNameSyntax { Identifier.Text: "CultureInfo" } };
+        return argument.Expression is MemberAccessExpressionSyntax { Expression: IdentifierNameSyntax { Identifier.Text: "CultureInfo" } };
     }
 
     public int Priority => 10;

@@ -10,6 +10,12 @@ namespace eQuantic.UI.Native.Shell.iOS;
 /// No storyboard, no AppDelegate to write, no Info.plist keys beyond what the SDK already emits —
 /// the promise the framework makes on web (write the component, not the plumbing) has to hold here
 /// or "write once" is only half true.
+/// <para>
+/// The app runs under the SCENE life cycle. Built with the iOS 27 SDK, an app without it does not
+/// launch at all (TN3187), so the window belongs to <see cref="PhotonSceneDelegate"/> and the app
+/// delegate keeps only what is the process's. The SDK's <c>PhotonApp.plist</c> declares the scene
+/// manifest; the delegate class is named here, in code, where the compiler checks it.
+/// </para>
 /// </summary>
 public static class PhotonApp
 {
@@ -18,6 +24,7 @@ public static class PhotonApp
     private static ThemeMode? _mode;
     private static int _maxFrames;
     private static bool _smoothScroll = true;
+    private static PhotonViewController? _screen;
 
     /// <param name="args">The process arguments, as the platform handed them over.</param>
     /// <param name="theme">The app's theme, which every measurement and every paint reads.</param>
@@ -39,23 +46,88 @@ public static class PhotonApp
         UIApplication.Main(args, null, typeof(PhotonAppDelegate));
     }
 
+    /// <summary>
+    /// The app's one screen, built the first time a scene asks for it and kept for the life of the
+    /// PROCESS. The system may disconnect a scene in the background to reclaim its memory and
+    /// connect a new one when the person comes back; a screen that lived and died with the scene
+    /// would come back on its first page with its state gone. The process outlived the window under
+    /// the old life cycle, and the tree must still outlive it under this one.
+    /// </summary>
+    private static PhotonViewController Screen() => _screen ??= new PhotonViewController(_root!(), _theme!, _mode)
+    {
+        MaxFrames = _maxFrames,
+        SmoothScroll = _smoothScroll,
+    };
+
+    /// <summary>What is the process's and nothing else: which delegate each scene gets.</summary>
     [Register("PhotonAppDelegate")]
     public sealed class PhotonAppDelegate : UIApplicationDelegate
     {
+        public override bool FinishedLaunching(UIApplication application, NSDictionary? launchOptions) => true;
+
+        /// <summary>
+        /// The app's own scene gets the app's one window. Answered here rather than by a class NAME
+        /// in the plist, so the type it names is one the compiler has seen.
+        /// <para>
+        /// ONLY the app's own role. A display connected by cable or AirPlay asks for a scene of
+        /// another role, and handing it this delegate would move the one screen off the phone's
+        /// window and onto the display, then leave the phone with none when the display goes. That
+        /// scene gets no delegate, so this shell puts no window on it.
+        /// </para>
+        /// <para>
+        /// UNNAMED, measured: a named configuration sends UIKit looking for its dictionary in the
+        /// Info.plist, and finding none it logs an error on every launch ("Info.plist contained no
+        /// UIScene configuration dictionary") although the scene connects fine.
+        /// </para>
+        /// </summary>
+        public override UISceneConfiguration GetConfiguration(UIApplication application,
+            UISceneSession connectingSceneSession, UISceneConnectionOptions options)
+        {
+            var configuration = new UISceneConfiguration(null, connectingSceneSession.Role);
+            if (connectingSceneSession.Role == UIWindowSceneSessionRole.Application)
+                configuration.DelegateType = typeof(PhotonSceneDelegate);
+            return configuration;
+        }
+    }
+
+    /// <summary>
+    /// The window, and the screen's two moments: the person leaving and coming back. A screen in
+    /// the background is not drawn — the system takes the GPU away from it — so its clock stops
+    /// there and starts again, with a fresh frame, when the scene returns.
+    /// <para>
+    /// The URLs a scene is opened WITH arrive here too, in the connection options and in
+    /// <c>scene:openURLContexts:</c>, and nowhere else under this life cycle: that is where the
+    /// phones' deep links (#777) read them.
+    /// </para>
+    /// </summary>
+    [Register("PhotonSceneDelegate")]
+    public sealed class PhotonSceneDelegate : UIWindowSceneDelegate
+    {
         public override UIWindow? Window { get; set; }
 
-        public override bool FinishedLaunching(UIApplication application, NSDictionary? launchOptions)
+        public override void WillConnect(UIScene scene, UISceneSession session, UISceneConnectionOptions connectionOptions)
         {
-            Window = new UIWindow(UIScreen.MainScreen.Bounds)
-            {
-                RootViewController = new PhotonViewController(_root!(), _theme!, _mode)
-                {
-                    MaxFrames = _maxFrames,
-                    SmoothScroll = _smoothScroll,
-                },
-            };
+            if (scene is not UIWindowScene windowScene) return;
+            var screen = Screen();
+            Window = new UIWindow(windowScene) { RootViewController = screen };
             Window.MakeKeyAndVisible();
-            return true;
+
+            // A scene can connect while the app is in the background, and one connected there never
+            // ENTERS the background, so the clock the view just started is paused here. And a scene
+            // connected after another left in the background resumes the clock that one paused.
+            if (scene.ActivationState == UISceneActivationState.Background) screen.Pause();
+            else screen.Resume();
         }
+
+        public override void DidDisconnect(UIScene scene)
+        {
+            // The window goes with the scene; the screen does not (see Screen()).
+            if (Window is not null) Window.RootViewController = null;
+            Window = null;
+        }
+
+        public override void DidEnterBackground(UIScene scene) => _screen?.Pause();
+
+        public override void WillEnterForeground(UIScene scene) => _screen?.Resume();
     }
 }
