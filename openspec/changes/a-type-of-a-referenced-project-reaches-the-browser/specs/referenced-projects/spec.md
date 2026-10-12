@@ -43,13 +43,39 @@ in whichever referenced project it is declared.
 ### Requirement: Only what the browser code reaches is compiled
 
 A type of a referenced project that no written module names SHALL NOT be compiled or written, and
-SHALL raise no diagnostic, whatever it contains.
+SHALL raise no diagnostic, whatever it contains. A type is reached when a written module imports it:
+code that does not cross, and a read the build writes as a literal, reach nothing.
 
 #### Scenario: A referenced project that holds server code
 
 - **WHEN** the referenced project also declares a class that reads a file with `System.IO`, and no
   page names it
 - **THEN** the build succeeds and the bundle holds no module of that class
+
+#### Scenario: A Server Action names the referenced project's server code
+
+- **WHEN** a page's Server Action builds that class in its body, and nothing else of the page names it
+- **THEN** the build succeeds and the bundle holds no module of that class
+
+#### Scenario: A constant read off a referenced project's class
+
+- **WHEN** a static class of the app declares `const string Serif = Theme.Serif;`, where `Theme` is a
+  class of the referenced project that also reads a file
+- **THEN** the app's module holds the constant's value, imports nothing of `Theme`, and the build
+  succeeds with no module of `Theme`
+
+### Requirement: A referenced project's name is imported only where a symbol names its type
+
+A module SHALL import a referenced project's type only where a symbol of the module's own code is
+that type. A name bound to another type, or to none, SHALL NOT import a referenced project's module
+of that name.
+
+#### Scenario: A package's type of the same name
+
+- **WHEN** a page reads a member of `Status`, a class of a package, and a referenced project declares
+  a class named `Status` that nothing reaches
+- **THEN** the page's module imports no `Status` and the bundle holds no module of the referenced
+  project's
 
 ### Requirement: A reached type that cannot cross is reported where it is declared
 
@@ -78,6 +104,14 @@ A type of a referenced project that is not reached SHALL NOT collide with anythi
 - **WHEN** a page reads a member of the referenced project's `Status` and the app declares a
   `Status` of its own
 - **THEN** the build fails with EQ1005 naming the two files
+
+#### Scenario: The app and the library each declare a type of one full name, and both are reached
+
+- **WHEN** the app and the referenced project each declare `internal static class Guard` in the same
+  namespace, a page calls the app's, and the page calls a type of the referenced project that calls
+  its own
+- **THEN** the build fails with EQ1005 at the referenced project's file, and reports no type as
+  declared twice (EQ1006)
 
 #### Scenario: The library's `Status` is never used by the browser code
 
@@ -108,6 +142,12 @@ declared under one full name in two projects SHALL NOT be an error.
 - **WHEN** the app and a referenced project each declare `internal static class Guard` in the same
   namespace, and a page uses the app's
 - **THEN** the build succeeds and the page's module calls the app's `Guard`
+
+#### Scenario: A referenced project declares the app as a friend
+
+- **WHEN** the referenced project's build declares `InternalsVisibleTo` for the app in a generated
+  file, and a page builds an internal record of that project
+- **THEN** the build succeeds and the bundle holds that record's module
 
 ### Requirement: A value of a referenced project's type crosses the wire as its type
 

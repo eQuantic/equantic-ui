@@ -364,7 +364,7 @@ tree beside it (`IsEQuanticDevMode`) and swaps every `PackageReference` for a `P
 itself — no bootstrap pack, no local feed, no cache step between an edit and the sample that shows it:
 
 ```bash
-dotnet build samples/DefaultUIDashboard   # web; PhotonDesktop and WalletMobile are the native heads
+dotnet build samples/DefaultUIDashboard   # web; SharedLibrary is a web app over a class library; PhotonDesktop and WalletMobile are the native heads
 ```
 
 `runtime.js` in a source-tree build is `src/eQuantic.UI.Server/wwwroot/runtime.js`, which the Server
@@ -461,6 +461,13 @@ MSBuild: CompileEQuanticUI (BeforeTargets="Build")
    └─ *.js (compiled components)
 ```
 
+A project the app references with a `ProjectReference`, directly or through another, reaches eqc as a
+compilation of its own SOURCE: `Sdk.targets` writes `obj/…/equantic.projects.txt` from the references
+MSBuild resolved (`--projects`), without the SDK's own projects and icon packs. A type of one is a
+module of the bundle when a written module imports it, and only then, so a class library shared by a
+solution's apps works in a page and a Domain project costs what the pages use of it
+(`openspec/specs/referenced-projects`, `samples/SharedLibrary`).
+
 ### Compilation Strategy
 
 **Static Shell** (build-time): Component structure, layout, styles, initial state, routing metadata
@@ -501,6 +508,11 @@ The Roslyn-based compiler READS C# with strategies and WRITES JavaScript from an
    heuristics are legal ONLY where the model cannot be asked (`Knows()` false — no model, or a
    strategy-rewrote node); an in-tree call the model cannot bind is a build error (EQ2006), never
    a guessed translation.
+
+The loop that drives all of it for an app is `Services/AppBuild.cs`: the project's compilation (and
+one per referenced project), a module per type, the string catalogs and the bundle. `eqc` reads its
+arguments and runs it, and a test runs the same loop over a solution written to disk
+(`tests/eQuantic.UI.Compiler.Tests/ReferencedProjects`).
 
 Output contracts: the component pins (`EQ_UPDATE_TRANSPILED=1`) and the conformance suite (both
 sides executed) are the net. A layout change must be WHITESPACE-ONLY against the pins; a

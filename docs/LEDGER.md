@@ -2416,6 +2416,41 @@ record of a release, the wiki's Upgrading page is the distillate.
   `DateTimeOffset`, `DateOnly` and `TimeSpan` do not read, or read wrongly
   ([#807](https://github.com/eQuantic/equantic-ui/issues/807)). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-12 · A type of a referenced project that a page uses is a module of the bundle**: a
+  component that used a type of ANOTHER project of the solution built with no diagnostic and failed in
+  the browser, `new Cursor(0)` and `Palette.Names` written into the page's module with nothing
+  importing them ([#624](https://github.com/eQuantic/equantic-ui/issues/624)). eqc tells a type it
+  writes a module for by asking whether it is declared in source, and a referenced project reached it
+  only as the assembly MSBuild resolved, where no type has one. The SDK now writes the projects the
+  app references, directly or through another, from the references the build already resolved, and
+  eqc compiles each one's source as a compilation of its own that the app references in place of the
+  assembly, so each keeps its global usings and its internal types. A type of one is a module when a
+  written module imports it, and only then: the build follows the imports and compiles a type where
+  it is reached, so a Domain or a Persistence project costs what the pages use of it, and a Server
+  Action's body names its server code freely. A reached type is held to the app's own rules at its
+  own file, a `[ServerOnly]` one is refused where the page names it, and two reached types of one
+  name are EQ1005. A catalogue's id is decided once for the build, so an app's `Strings` and a
+  library's do not share a key, and a referenced project's catalogue contributes the keys read. The
+  build loop left the CLI's top-level statements for the compiler library (`AppBuild`), where 39
+  tests run it over a solution written to disk, and each piece of the change, taken back in turn,
+  fails at least one of them. An app that references no project writes byte for byte what it wrote,
+  the dashboard sample's 289 files, and a real solution of five referenced projects writes the same
+  files with and without the list, within the noise of a run. `samples/SharedLibrary` is the proof in
+  a browser, read by CI after it builds (`scripts/check-shared-library-sample.sh`). Found on the way
+  and filed: a Server Action that reads a file is refused as client code
+  ([#816](https://github.com/eQuantic/equantic-ui/issues/816)), the app's own `[ServerOnly]` type
+  called from a page builds in silence
+  ([#823](https://github.com/eQuantic/equantic-ui/issues/823)), a page that reads a string imports a
+  module nothing writes ([#824](https://github.com/eQuantic/equantic-ui/issues/824)), and choosing
+  the neutral language asks for a catalog that does not exist
+  ([#825](https://github.com/eQuantic/equantic-ui/issues/825)). What is not there yet is filed too:
+  a factory for a referenced project's component
+  ([#818](https://github.com/eQuantic/equantic-ui/issues/818)), a page or a Server Action declared in
+  one ([#819](https://github.com/eQuantic/equantic-ui/issues/819)), what a source generator writes in
+  one ([#820](https://github.com/eQuantic/equantic-ui/issues/820)), an edit to one while the app runs
+  ([#821](https://github.com/eQuantic/equantic-ui/issues/821)), and a static member read off a
+  package's type ([#822](https://github.com/eQuantic/equantic-ui/issues/822)). Proposed and archived
+  through OpenSpec (`openspec/specs/referenced-projects`).
 
 ## Retired documents
 

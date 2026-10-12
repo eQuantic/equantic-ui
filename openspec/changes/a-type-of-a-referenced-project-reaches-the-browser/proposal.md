@@ -43,12 +43,12 @@ referenced project's source is. An app that outgrows one project has no way thro
 For a developer: a class library referenced with a `ProjectReference` is shared between apps, and
 what a page uses of it works in the browser as it does on the server. No setting, no attribute.
 
-Not here, each to be filed under #565 or the feature it belongs to: the declarative factory surface
-for a referenced project's components (a page writes `new Wordmark()` until then), a `[Page]` or a
-`[ServerAction]` declared in a referenced project, what a source generator writes in a referenced
-project, hot reload on a referenced project's files, and a type of an assembly the build has no
-source for (a package), which still reads as a name nothing defines and wants a diagnostic of its
-own.
+Not here, each filed under #565: the declarative factory surface for a referenced project's
+components (#818, a page writes `new Wordmark()` until then), a `[Page]` or a `[ServerAction]`
+declared in a referenced project (#819), what a source generator writes in a referenced project
+(#820), an edit to a referenced project's file while the app runs (#821), and a type of an assembly
+the build has no source for (a package), which still reads as a name nothing defines and wants a
+diagnostic of its own (#822).
 
 ## Capabilities
 

@@ -54,7 +54,14 @@ compilation references, in dependency order, and the order is read from the asse
 each one MSBuild built names the assemblies it references. Evaluating every project with MSBuild
 inside eqc was rejected as slow and as a second source of truth. What it costs: a compile-time-only
 dependency of a library that does not flow to the app is unresolved in that library's compilation,
-and a reached type that uses it is refused (EQ2006) and not guessed.
+and a reached type that uses it is refused (EQ2006) and not guessed. A project with no C# source,
+one written in another language, keeps its assembly.
+
+**A project's friend declarations are read from its assembly.** An `InternalsVisibleTo` item of a
+project file is written into a generated file under `obj`, which the C# compiler reads and this
+build does not. Left out, an internal type of the library that the app compiles against would be one
+this build cannot bind. The declarations are in the assembly MSBuild built, which is already opened
+for its references, so they are read there and declared again in the project's compilation.
 
 **A project's source is its directory, read by the rule the app's own source is read by.** Every
 `*.cs` under it outside `bin` and `obj`, plus its generated global usings, and without a
@@ -64,22 +71,56 @@ source is read that way too: two rules for one question would disagree.
 
 **The SDK names the projects from what MSBuild already resolved.** Every `ReferencePath` that came
 from a project carries the project file that produced it (`MSBuildSourceProjectFile`), direct or
-through another project. `Sdk.targets` writes one line per project, its assembly's file name and its
-directory, to `obj/…/equantic.projects.txt`, and passes it as `--projects`. Left out: a directory
-under the SDK's own source tree, which a sample references in place of packages, and one that carries
-the icon pack marker, whose constants are inlined where they are used. No property lists projects:
-the SDK derives them.
+through another project. `Sdk.targets` writes one line per project, the assembly MSBuild resolved
+for it and its project file, to `obj/…/equantic.projects.txt`, and passes it as `--projects`. Left
+out: a project under the SDK's own source tree, which a sample references in place of packages, and
+one whose directory carries the icon pack marker, whose constants are inlined where they are used.
+eqc leaves out a project whose directory it already reads another way, whatever the list says. No
+property lists projects: the SDK derives them.
 
 **A referenced project's type is written when a written module imports it, and imported only when a
-symbol named it.** The build compiles the app's files as today. Then, for each module it wrote, it
-reads the imports of sibling modules, and for a name no module has yet that a referenced project
-declares, it compiles the declaring file and writes that type's module, until no import is unmet.
-Results are kept per file, and only a reached type is written and claims its name, so a type nobody
-reaches neither collides nor reports. The dependency scan reads the referenced projects'
-declarations so their names are known, in a layer of their own: an app name is importable as today,
-and a referenced project's name only where the semantic sweep or the conversion recorded the type
-from its symbol. A name a file merely mentions, bound to some package's type, then never imports a
-referenced project's module of that name.
+symbol named it.** The build compiles the app's files as today. Each module it writes says which
+types of referenced projects it imports: every sibling import of its text that a symbol of the
+module's declaration placed in a referenced project, with the file that declares it. The build
+compiles that file for that type alone, writes its module, and follows what that one imports in turn,
+until none is left. Only a reached type is compiled and claims its name, so a type nobody reaches
+neither collides nor reports, and a class beside a reached one in the same file is not compiled
+either.
+
+A module is no longer told apart by its name alone, since the app and a project may each declare a
+`Status`. The emitters gather import candidates by name, each path in its own way, and a recording
+added to each of them would miss the path nobody thought of. So where a name is declared is read in
+one walk of the declaration, apart from all of them: the symbol every name binds to with the type
+that declares it (a static member's owner, a constructor's type, the static class an extension method
+is declared in) and the type of every expression, each taken apart into its type arguments and
+elements. The walk decides nothing. It answers which files declare the type a name is, and the gates
+ask it.
+
+The dependency scan of a referenced project is a layer of its own, made when a name of that project
+is first asked for: an app name is importable as today, and a referenced project's name only for a
+declaration a symbol named. A name a file merely mentions, bound to some package's type, then never
+imports a referenced project's module of that name. In a class module a referenced project's type is
+imported where the emitted text names it, as the component and the record paths already import: a
+constant read off it is written as the literal it is and leaves no reference, and importing it there
+compiled a whole class of another project. Measured on a real app.
+
+Two types of one FULL name, one in the app and one in a project, are two types. A reached type of a
+project claims its name with its assembly, or the pair would read as one type declared twice, which
+is a warning and a module that holds one of the two.
+
+The names are read for the app's own files and the referenced projects'. The libraries the SDK
+transpiles beside every app can name no project of the app, and they are most of what a build
+compiles.
+
+**A fence that says nothing of "this compilation" asks about the compilation.** The fence that
+refuses a `[ServerOnly]` symbol named from client code is silent for a symbol declared in the
+compilation being converted, which the scan writes no module for, and it asked that by whether the
+type has a source. A referenced project's type has one now, in another compilation, and a page that
+called a library's `[ServerOnly]` class built with no diagnostic where it was EQ2010 while the
+library was read from its assembly. Measured before it was fixed. The fence asks whether the type is
+of the assembly being converted, by the assembly's name, since every file is compiled in a
+compilation of its own and two of those hold two assembly symbols for one project. The app's own
+`[ServerOnly]` type named from client code builds in silence, as before this change. It is filed.
 
 **The semantic model of a tree comes from the compilation that holds it.** One helper answers it:
 the compilation asked, or the one among its compilation references that contains the tree. The
@@ -88,9 +129,12 @@ an inherited default, a struct's writing methods, an iterator's source) go throu
 tree can now be another project's.
 
 **The loop moves into the compiler library.** `Program.cs` holds it in top-level statements today,
-which no test can call. It becomes a class of `eQuantic.UI.Compiler.Services` that the CLI calls and
-that the new tests run over projects written to a temporary directory, as `ModuleBundler` was moved
-for the source map tests.
+which no test can call. It becomes a class of `eQuantic.UI.Compiler.Services` (`AppBuild`) that the
+CLI calls and that the new tests run over projects written to a temporary directory, as
+`ModuleBundler` was moved for the source map tests. The source guard that watched the CLI's file for
+a second walk of the source files goes with the loop to its new file. A host that runs many builds
+in one process hands the build a reader that keeps one reference per assembly, since a reference
+holds its assembly in native memory until it is finalized.
 
 **A referenced project's catalogue is read for the keys its reached types read.** A read of a
 resource is recorded with the path of its designer file, and the catalogs are filled from the `.resx`
@@ -110,13 +154,22 @@ referenced catalogue keeps the id it has today.
 
 ## Risks / Trade-offs
 
-- [A symbol of a referenced project belongs to another assembly] → No rule in the compiler compares a
-  type's assembly with the compilation's own. The fifty-one judgments ask about source, which the
-  measurement answers.
+- [A symbol of a referenced project belongs to another assembly] → The fifty-one judgments ask about
+  source, which the measurement answers. One of them meant "of this compilation" and is asked that
+  way now, the fence that refuses a `[ServerOnly]` symbol. The tests take each piece of this change
+  back in turn and fail without it.
 - [A referenced project's file edited after its assembly was built] → eqc reads the file, csc read
   the same file in the same build, and an edit between the two is the next build's.
-- [A project with hundreds of server files] → Each is parsed and none is bound until reached. The
-  sample and Cura's five projects are timed in the tasks.
+- [A project with hundreds of server files] → Each is parsed, side by side, and none is bound until
+  reached. Timed with one eqc, with and without the list of projects: the sample goes from 4.8 s to
+  5.0 s, and a real solution of five referenced projects stays within the noise of a run, 9.1 s
+  against 9.8 s at most, where it added two seconds before the names stopped being read for the
+  SDK's own libraries. That solution's pages reach none of its projects yet, and what the build
+  writes for it is the same files with and without the list.
+- ["The emitted text names it" reads inside a string literal] → A word of a string can pass for a
+  reference, for the app's own types as for a project's. For a project's it would compile a type
+  nothing uses. It is the test every path already had, and it is filed with the import of a
+  resource class it produces today.
 - [Two ways to build: beside the source tree, and from packages] → The sample proves the first in
   CI. The second is proven with a two-project app against a local feed, as the release gate is
   rehearsed.
