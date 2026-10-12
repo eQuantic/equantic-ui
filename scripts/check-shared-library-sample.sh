@@ -14,6 +14,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # SHARED_LIBRARY_SAMPLE points the check at another copy of the built app: a copy with one file
 # taken away or changed is how each case below was shown to fail.
 web="${SHARED_LIBRARY_SAMPLE:-$ROOT/samples/SharedLibrary/SharedLibrary.Web}"
+# SHARED_LIBRARY_ASSEMBLY is the app's assembly name, for a copy built under another one.
+assembly="${SHARED_LIBRARY_ASSEMBLY:-SharedLibrary.Site}"
 modules="$web/obj/eQuantic/ts"
 output="$web/wwwroot/_equantic"
 
@@ -53,8 +55,8 @@ fi
 arguments=$(find "$web/obj" -name equantic.eqc.rsp | sort | head -1)
 if [ -z "$arguments" ]; then
     fail "the SDK wrote no equantic.eqc.rsp for the sample, so the compiler was handed its arguments some other way"
-elif ! grep -qx "SharedLibrary.Site" "$arguments"; then
-    fail "$arguments does not hold the app's assembly name, SharedLibrary.Site, as a line of its own"
+elif ! grep -qxF -- "$assembly" "$arguments"; then
+    fail "$arguments does not hold the app's assembly name, $assembly, as a line of its own"
 fi
 
 # EVERY TYPE THE PAGE REACHES IS A MODULE, in whichever project: a static class, a record, a
