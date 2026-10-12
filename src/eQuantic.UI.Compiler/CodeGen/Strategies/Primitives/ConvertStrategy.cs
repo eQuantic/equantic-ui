@@ -106,6 +106,8 @@ public class ConvertStrategy : IExpressionIrStrategy
         // `Convert.ToString(-1.5)` read `-1.5` on a pt-BR page that wrote `-1,5` beside it.
         if (name == "ToString")
             return TextOf(invocation, argExpr, providerExpr, context);
+        if (name == "ToDateTime")
+            return ToDateTime(invocation, argExpr, providerExpr, context);
         if (ReadsText(invocation, argExpr, context) && TextReader(name) is { } text)
         {
             // Text is read in a culture, and the browser reads the invariant one (see ParseCulture).
@@ -382,6 +384,37 @@ public class ConvertStrategy : IExpressionIrStrategy
             + "Convert with one of them, or format with an explicit specifier, ToString(\"N2\"), which "
             + "follows the app's culture on both targets.");
         return StringConversion.ToText(value, converted, context);
+    }
+
+    /// <summary>
+    /// <c>Convert.ToDateTime</c> by the overload C# bound (#844): a text reads as <c>DateTime.Parse</c>
+    /// reads it, in the culture the call names (<see cref="Types.TimeParseStrategy.ReadsInvariant"/>),
+    /// except that a null one is <c>MinValue</c>; an object is read by what it holds when the call runs,
+    /// so is a call no model binds; a date is itself; and a value of any other type has no conversion to
+    /// a date, which .NET throws after evaluating it. A char held in an object is read as a text of one
+    /// character, since a boxed value does not carry its type (#552). Every overload was
+    /// <c>String(value)</c>, so the call answered the text of its argument, and a page that read its year
+    /// read <c>undefined</c>.
+    /// </summary>
+    private static JsExpr ToDateTime(InvocationExpressionSyntax invocation, ExpressionSyntax value, ExpressionSyntax? provider,
+        ConversionContext context)
+    {
+        var converted = context.Converter.ConvertIr(value);
+        var type = context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { Parameters: [var first, ..] }
+            ? first.Type
+            : null;
+        if (type?.SpecialType == SpecialType.System_DateTime) return converted;
+        context.UsedHelpers.Add(Eq.Import);
+        if (type is null or { SpecialType: SpecialType.System_String or SpecialType.System_Object })
+        {
+            List<JsExpr> read = [converted];
+            if (Types.TimeParseStrategy.ReadsInvariant(invocation, provider, context)) read.Add(JsExpr.Literal("true"));
+            return JsExpr.Call(JsExpr.Identifier($"{Eq.DateTime}.convert"), read);
+        }
+        var parameter = context.TypeAnnotations ? "(_: unknown)" : "(_)";
+        return JsExpr.Template(
+            $"({parameter} => {{ throw {Eq.ExceptionOf}('System.InvalidCastException', \"Invalid cast from '{type.Name}' to 'DateTime'.\"); }})({{0}})",
+            [converted]);
     }
 
     private static bool BindsToCultureInfo(ExpressionSyntax provider, ConversionContext context) =>
