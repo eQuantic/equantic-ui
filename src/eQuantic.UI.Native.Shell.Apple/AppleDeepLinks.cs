@@ -16,9 +16,9 @@ namespace eQuantic.UI.Native.Shell.Apple;
 /// </para>
 /// <para>
 /// Registered through the runtime like every other Apple delegate in this assembly
-/// (<c>objc_allocateClassPair</c> + <c>class_addMethod</c>), because an AppleEvent handler is a
-/// target and a SELECTOR — there is no block-taking form of it, which is why this could not simply
-/// use <see cref="ObjCBlock"/>.
+/// (<see cref="ObjCDelegateClass"/>), because an AppleEvent handler is a target and a SELECTOR —
+/// there is no block-taking form of it, which is why this could not simply use
+/// <see cref="ObjCBlock"/>.
 /// </para>
 /// </summary>
 public static class AppleDeepLinks
@@ -32,7 +32,7 @@ public static class AppleDeepLinks
 
     private static readonly object Gate = new();
     private static DeepLinkRelay? _relay;
-    private static IntPtr _handlerClass;
+    private static ObjCDelegateClass? _handlerClass;
     private static IntPtr _handler;
 
     /// <summary>
@@ -48,13 +48,12 @@ public static class AppleDeepLinks
             if (_relay is not null) return _relay;
             _relay = new DeepLinkRelay();
 
-            _handlerClass = objc_allocateClassPair(objc_getClass("NSObject"), "EQDeepLinkHandler", 0);
-            // A static entry point (#795), routing to the one relay of the process.
-            class_addMethod(_handlerClass, sel_registerName("handleURLEvent:withReplyEvent:"),
-                (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr, void>)&HandleUrlEvent, "v@:@@");
-            objc_registerClassPair(_handlerClass);
-
-            _handler = Send(Send(_handlerClass, Sel("alloc")), Sel("init"));
+            // A static entry point (#795), finding the relay in the handler it was called on. The
+            // handler and its relay live as long as the process, and so does the handle between them.
+            _handlerClass = ObjCDelegateClass.Define("EQDeepLinkHandler",
+                ("handleURLEvent:withReplyEvent:",
+                    (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr, void>)&HandleUrlEvent, "v@:@@"));
+            _handler = _handlerClass.New(GCHandle.Alloc(_relay));
 
             var manager = Send(objc_getClass("NSAppleEventManager"), Sel("sharedAppleEventManager"));
             SendVoid(manager, Sel("setEventHandler:andSelector:forEventClass:andEventID:"),
@@ -66,20 +65,19 @@ public static class AppleDeepLinks
     }
 
     [UnmanagedCallersOnly]
-    private static void HandleUrlEvent(IntPtr self, IntPtr selector, IntPtr eventDescriptor, IntPtr reply) =>
-        Deliver(eventDescriptor);
+    private static void HandleUrlEvent(IntPtr self, IntPtr selector, IntPtr eventDescriptor, IntPtr reply)
+    {
+        if (_handlerClass?.Context<DeepLinkRelay>(self) is { } relay) Deliver(relay, eventDescriptor);
+    }
 
     /// <summary>The one line of interop: an AppleEvent's direct object, as text. Everything that
     /// happens to it afterwards is <see cref="DeepLinkRelay"/>'s, where it can be tested.</summary>
-    private static void Deliver(IntPtr descriptor)
+    private static void Deliver(DeepLinkRelay relay, IntPtr descriptor)
     {
         if (descriptor == IntPtr.Zero) return;
         var direct = Send(descriptor, Sel("paramDescriptorForKeyword:"), KeyDirectObject);
         if (direct == IntPtr.Zero) return;
-
-        DeepLinkRelay? relay;
-        lock (Gate) relay = _relay;
-        relay?.Offer(FromNSString(Send(direct, Sel("stringValue"))));
+        relay.Offer(FromNSString(Send(direct, Sel("stringValue"))));
     }
 
     /// <summary>Four characters, most significant first — the layout an OSType has had since
