@@ -11,10 +11,29 @@ namespace eQuantic.UI.Conformance.Tests;
 /// from the folder it runs in and mixes those names into the hash a shared chunk is named by. A bundler
 /// that let bun inherit its caller's folder renamed every app's chunks the day the SDK began running
 /// eqc in the folder of its response file instead of the project's (#836): nothing failed, and the
-/// browser fetched every chunk again.
+/// browser fetched every chunk again. And a folder's name reaches bun as it is, whatever it holds.
 /// </summary>
 public class ModuleBundlerFolderTests
 {
+    [SkippableFact]
+    public void AnAppInAFolderWhoseNameHoldsQuotes_Bundles()
+    {
+        var bun = JsExecutor.RequireBun();
+        // A double quote is a character a folder's name may hold everywhere but on Windows, and .NET
+        // builds a project under such a folder. A command line of quoted paths lost it on the way.
+        var project = Directory.CreateTempSubdirectory(
+            OperatingSystem.IsWindows() ? "eq $b 'c' " : "eq \"a\" $b 'c' ").FullName;
+        try
+        {
+            Bundled(bun, project).Select(file => file.Name).Should().Contain(["First.js", "Second.js"],
+                "every path bun is handed is an argument of its own, whatever the folder's name holds");
+        }
+        finally
+        {
+            Directory.Delete(project, recursive: true);
+        }
+    }
+
     [SkippableFact]
     public void TwoCopiesOfOneApp_BundleToTheSameBytes_WhereverEachOneSits()
     {
