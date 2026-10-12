@@ -1,1 +1,3 @@
 #nullable enable
+override eQuantic.UI.Native.Shell.Android.PhotonActivity.DispatchKeyEvent(Android.Views.KeyEvent? e) -> bool
+override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnConfigurationChanged(Android.Content.Res.Configuration! newConfig) -> void
