@@ -64,8 +64,41 @@ internal static class AndroidKeys
             : Character(e.GetUnicodeChar(e.MetaState));
 
     /// <summary>
+    /// The accent a DEAD key holds for the next key, or zero for any other press. On a layout with
+    /// dead keys (Portuguese, US International), ´ types nothing by itself and makes the next letter
+    /// á; the key map marks such a press with <see cref="KeyCharacterMap.CombiningAccent"/>, and what
+    /// is under the mask is the accent written on its own. A Ctrl chord holds nothing, as it types
+    /// nothing.
+    /// </summary>
+    public static int DeadAccent(KeyEvent e, KeyModifiers modifiers)
+    {
+        if ((modifiers & (KeyModifiers.Command | KeyModifiers.Control)) != 0) return 0;
+        var unicode = e.GetUnicodeChar(e.MetaState);
+        return (unicode & KeyCharacterMap.CombiningAccent) != 0
+            ? unicode & KeyCharacterMap.CombiningAccentMask
+            : 0;
+    }
+
+    /// <summary>The accent a dead key held, written on its own.</summary>
+    public static string Accent(int accent) => Character(accent);
+
+    /// <summary>
+    /// What a held accent and the text typed after it write: the one character the two make where
+    /// there is one (´ then a is á; the accent again, or a space, is the accent on its own), and
+    /// otherwise the accent followed by the text, as Android's own fields write it.
+    /// </summary>
+    public static string Composed(int accent, string typed)
+    {
+        if (typed.Length == 0) return Accent(accent);
+        var composed = KeyCharacterMap.GetDeadChar(accent, char.ConvertToUtf32(typed, 0));
+        if (composed <= 0) return Accent(accent) + typed;
+        return Character(composed) + typed[(char.IsSurrogatePair(typed, 0) ? 2 : 1)..];
+    }
+
+    /// <summary>
     /// The character a key map answered, or empty: zero is no character, a dead key's accent sets
-    /// the sign bit, and a control character is a key handled by name.
+    /// the sign bit (<see cref="DeadAccent"/> reads it), and a control character is a key handled
+    /// by name.
     /// </summary>
     private static string Character(int unicode)
     {

@@ -75,6 +75,7 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     private bool _backKeyTaken;
     private TextInputSession? _input;
     private InputMethodManager? _keyboard;
+    private int _deadAccent;
 
     /// <summary>Frames actually presented — the self-test's exit evidence, as on every other shell.</summary>
     public int FramesPresented { get; private set; }
@@ -584,6 +585,9 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         var change = _input.Poll();
         if (change != TextInputChange.None && PhotonInputTrace.On)
             PhotonInputTrace.Write($"{change}: {_input.Target} {PhotonInputTrace.Value(_input.Value, _input.Obscure)}");
+        // An accent a dead key held belongs to the field it was typed in.
+        if (change is TextInputChange.Began or TextInputChange.Retargeted or TextInputChange.Ended)
+            _deadAccent = 0;
         switch (change)
         {
             case TextInputChange.Began:
@@ -634,10 +638,40 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     {
         if (_host is null || e.Action != KeyEventActions.Down) return false;
         var modifiers = AndroidKeys.Modifiers(e);
+        if (AndroidKeys.DeadAccent(e, modifiers) is var accent and not 0) return Hold(accent);
         var name = AndroidKeys.NameOf(e);
-        if (name.Length > 0 && _host.KeyDown(name, modifiers)) return Took(true);
         var text = AndroidKeys.TypedText(e, modifiers);
+        // The key after a dead key: what it types takes the accent, and any other key lets it go.
+        // Shift is neither, so the accent waits through it: ´ then Shift+A is Á.
+        if (_deadAccent != 0 && (name.Length > 0 || text.Length > 0))
+        {
+            var held = _deadAccent;
+            _deadAccent = 0;
+            if (text.Length > 0) return Took(_host.TextInput(AndroidKeys.Composed(held, text)));
+            // Backspace takes the accent back, and nothing before it.
+            if (name == "Backspace") return true;
+        }
+        if (name.Length > 0 && _host.KeyDown(name, modifiers)) return Took(true);
         return text.Length > 0 && Took(_host.TextInput(text));
+    }
+
+    /// <summary>
+    /// A dead key from a keyboard attached to the device. Android hands an app the accent and leaves
+    /// combining it to the editor, so the accent waits here for the next key, which
+    /// <see cref="Key"/> combines it with, as the dead keys of Windows and macOS combine before a
+    /// field sees them. The same dead key again types the accent on its own; another one types the
+    /// first accent and waits in its place. With nothing being edited, the key is not the app's.
+    /// </summary>
+    private bool Hold(int accent)
+    {
+        if (_host is not { HasTextFocus: true } host)
+        {
+            _deadAccent = 0;
+            return false;
+        }
+        var held = _deadAccent;
+        _deadAccent = held == accent ? 0 : accent;
+        return held == 0 || Took(host.TextInput(AndroidKeys.Accent(held)));
     }
 
     /// <summary>A key the host took may have edited the field: the keyboard's mirror of it takes the
