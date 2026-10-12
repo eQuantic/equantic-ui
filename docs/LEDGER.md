@@ -2395,6 +2395,27 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#796](https://github.com/eQuantic/equantic-ui/issues/796)), and the Apple shell's callbacks are
   not AOT-safe on a device ([#795](https://github.com/eQuantic/equantic-ui/issues/795))
   ([#809](https://github.com/eQuantic/equantic-ui/issues/809)).
+- **2026-10-11 · A value converts, and a date parses, as .NET does**: two gaps #715's measurement found.
+  `Convert.ToBase64String`, `ToBase64CharArray`, `ToHexString` and `ToHexStringLower` were `String()` of
+  the array, so `new byte[] { 1, 2, 255 }` was `1,2,255` where .NET writes `AQL/` and `0102FF`
+  ([#716](https://github.com/eQuantic/equantic-ui/issues/716)); they are twins of .NET 10's `Convert` in
+  `$eq.convert` now, handed the bound overload's arguments by parameter, line breaks and refusals
+  included, and a span that is not a collection expression fails the build. `TryParse(string, out T)` of
+  a `DateTime`, a `DateTimeOffset`, a `TimeOnly` and a `TimeSpan` called a `tryParse` the runtime did
+  not have, and `DateOnly`'s answered the date or null
+  ([#718](https://github.com/eQuantic/equantic-ui/issues/718)); each answers true or false over its
+  `Parse` now, the type's default in the out argument where it fails, and the DatePicker says
+  `DateOnly.TryParse` as its comment wanted to; their other overloads (a provider, styles, a span) fail
+  the build, since the twin would read the text and never write the out argument. `TimeOnly.Parse`
+  reads .NET's invariant grammar, so `9:30 PM` is 21:30 where it was half past nine in the morning,
+  `25:00` and trailing text are refused, and a fraction rounds to the tick as .NET rounds it. 99 of the
+  102 new conformance cases fail at 20069215; 35 entries leave the null-argument baseline, 17 answered
+  and 18 refused at the build. The served runtime grows about 1,150 gzipped bytes. What `TryParse`
+  inherits from `Parse` is filed: the invariant culture read where .NET reads the current one
+  ([#806](https://github.com/eQuantic/equantic-ui/issues/806)), and the forms `DateTime`,
+  `DateTimeOffset`, `DateOnly` and `TimeSpan` do not read, or read wrongly
+  ([#807](https://github.com/eQuantic/equantic-ui/issues/807)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
 
 ## Retired documents
 

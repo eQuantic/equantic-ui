@@ -9,3 +9,12 @@ const eQuantic.UI.Compiler.CodeGen.Eq.ListCopy = "$eq.collections.listCopy" -> s
 *REMOVED*const eQuantic.UI.Compiler.CodeGen.Eq.SplitOnWhiteSpace = "$eq.text.splitOnWhiteSpace" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.StringSplit = "$eq.text.split" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.StringSplitAny = "$eq.text.splitAny" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ToBase64CharArray = "$eq.convert.toBase64CharArray" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ToBase64String = "$eq.convert.toBase64String" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ToHexString = "$eq.convert.toHexString" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ToHexStringLower = "$eq.convert.toHexStringLower" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.TimeTryParseStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.TimeTryParseStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.TimeTryParseStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.TimeTryParseStrategy.Priority.get -> int
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.TimeTryParseStrategy.TimeTryParseStrategy() -> void
