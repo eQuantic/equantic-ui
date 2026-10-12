@@ -103,6 +103,34 @@ public class RunProgramTests
             && error.Message.Contains("\"a $b\"") && error.Message.EndsWith("ended with exit code 2."));
     }
 
+    [UnixFact]
+    public void AProgramUnderAFolderWithASpace_IsOneWordOfTheEchoAndOfEQ4004()
+    {
+        // bun lives in the package folder, and a folder's name may hold a space: written as it is
+        // before the arguments, the program's path ran into them, and the command EQ4004 names
+        // could not be run again (found in review of #855).
+        var folder = Directory.CreateTempSubdirectory("eq run program ").FullName;
+        try
+        {
+            var program = Path.Combine(folder, "fails");
+            File.WriteAllText(program, "#!/bin/sh\nexit 3\n");
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(program, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            var engine = new RecordingBuildEngine();
+            var task = new RunProgram { BuildEngine = engine, Program = program, Arguments = [Argument("one"), Argument("two words")] };
+
+            task.Execute().Should().BeFalse();
+
+            var command = $"\"{program}\" one \"two words\"";
+            engine.Messages.Should().Contain(command, "the echoed line is the command, the program one word of it");
+            engine.Errors.Should().ContainSingle().Which.Should().Be(("EQ4004", $"{command} ended with exit code 3."));
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
     [Fact]
     public void EchoOff_KeepsTheArgumentsOutOfTheLog_EvenWhenTheProgramFails()
     {

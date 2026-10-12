@@ -93,11 +93,19 @@ public sealed class RunProgram : ToolTask
 
     /// <summary>
     /// The command line, unless <see cref="ToolTask.EchoOff"/> is set: one that carries a password
-    /// says nothing of it. ToolTask logs it either way, and it is <c>Exec</c> that asks first.
+    /// says nothing of it. ToolTask logs it either way, and it is <c>Exec</c> that asks first. ToolTask
+    /// hands the path it resolved and the command line joined by a space, the path as it is: it is
+    /// written here as an argument is, so a program under a folder with a space in its name is
+    /// still one word of the line.
     /// </summary>
     protected override void LogToolCommand(string message)
     {
-        if (!EchoOff) base.LogToolCommand(message);
+        if (EchoOff) return;
+        var arguments = GenerateCommandLineCommands();
+        var program = message.TrimEnd();
+        if (arguments.Length > 0 && program.EndsWith(arguments, StringComparison.Ordinal))
+            program = program.Substring(0, program.Length - arguments.Length).TrimEnd();
+        base.LogToolCommand(Shown(program));
     }
 
     /// <inheritdoc />
@@ -121,13 +129,16 @@ public sealed class RunProgram : ToolTask
         // command it was started with, which is what a reader needs to run it again, unless its
         // command line is not to be echoed.
         if (!Log.HasLoggedErrors)
-        {
-            var arguments = EchoOff ? "" : GenerateCommandLineCommands();
-            Log.LogError(null, "EQ4004", null, null, 0, 0, 0, 0, "{0} ended with exit code {1}.",
-                arguments.Length > 0 ? $"{Program} {arguments}" : Program, ExitCode);
-        }
+            Log.LogError(null, "EQ4004", null, null, 0, 0, 0, 0, "{0} ended with exit code {1}.", Shown(Program), ExitCode);
         return false;
     }
+
+    /// <summary>
+    /// The command as a reader runs it again: <paramref name="program"/> and the arguments, each in
+    /// quotes where it needs them, the program included. Under <see cref="ToolTask.EchoOff"/> the
+    /// program alone.
+    /// </summary>
+    private string Shown(string program) => CommandLine.Of(EchoOff ? [program] : [program, .. Words()]);
 
     /// <summary>The arguments the items say, in order: see <see cref="Arguments"/>.</summary>
     private IEnumerable<string> Words()
