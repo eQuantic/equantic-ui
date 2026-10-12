@@ -1,5 +1,4 @@
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using eQuantic.UI.Native.Shell.Apple;
 using FluentAssertions;
 using Xunit;
@@ -20,6 +19,11 @@ public partial class AppleCallbackTests
     /// shell or the iOS shell turns a delegate into a function pointer. What remains is
     /// <c>(IntPtr)(delegate* unmanaged&lt;…&gt;)&amp;Entry</c>, which the compiler accepts only for a
     /// method marked <see cref="UnmanagedCallersOnlyAttribute"/>.
+    /// <para>
+    /// The source is read as it is, comments included: stripping them with a pattern also strips
+    /// whatever a string such as <c>"Frameworks/*"</c> opens, and a guard that can hide code is worse
+    /// than one a comment can trip.
+    /// </para>
     /// </summary>
     [Theory]
     [InlineData("eQuantic.UI.Native.Shell.Apple")]
@@ -34,6 +38,28 @@ public partial class AppleCallbackTests
         offenders.Should().BeEmpty(
             "a device build has no JIT to make a wrapper for a delegate; hand native code a static " +
             "[UnmanagedCallersOnly] entry point instead");
+    }
+
+    /// <summary>
+    /// The other way a delegate becomes a function pointer: a P/Invoke that takes one, which the
+    /// marshaller turns into a pointer at the call without the word appearing anywhere. Read from the
+    /// compiled shared shell, the one of the two this suite can load.
+    /// </summary>
+    [Fact]
+    public void NoPInvokeTakesADelegate()
+    {
+        var methods = typeof(ObjCBlock).Assembly.GetTypes()
+            .SelectMany(type => type.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic
+                | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly))
+            .Where(method => method.Attributes.HasFlag(System.Reflection.MethodAttributes.PinvokeImpl))
+            .ToArray();
+        methods.Should().NotBeEmpty("the shared shell is all P/Invoke; finding none means this read nothing");
+
+        var offenders = methods
+            .Where(method => method.GetParameters().Any(parameter => typeof(Delegate).IsAssignableFrom(parameter.ParameterType)))
+            .Select(method => $"{method.DeclaringType!.Name}.{method.Name}")
+            .ToArray();
+        offenders.Should().BeEmpty("a delegate passed to native code is a function pointer a device build never prepared");
     }
 
     /// <summary>
@@ -72,7 +98,7 @@ public partial class AppleCallbackTests
     [LibraryImport("/usr/lib/libobjc.A.dylib", EntryPoint = "objc_msgSend")]
     private static partial void SetParam(IntPtr receiver, IntPtr selector, IntPtr descriptor, uint keyword);
 
-    /// <summary>Every <c>.cs</c> of a project under <c>src/</c>, comments stripped, by path.</summary>
+    /// <summary>Every <c>.cs</c> of a project under <c>src/</c>, by path.</summary>
     private static IEnumerable<(string Path, string Code)> Code(string project)
     {
         var here = new DirectoryInfo(AppContext.BaseDirectory);
@@ -87,7 +113,6 @@ public partial class AppleCallbackTests
             .ToArray();
         files.Should().HaveCountGreaterThan(3, "a guard that read no file would pass having checked nothing");
 
-        return files.Select(path => (Path.GetRelativePath(folder, path),
-            Regex.Replace(Regex.Replace(File.ReadAllText(path), @"/\*.*?\*/", "", RegexOptions.Singleline), @"//[^\n]*", "")));
+        return files.Select(path => (Path.GetRelativePath(folder, path), File.ReadAllText(path)));
     }
 }

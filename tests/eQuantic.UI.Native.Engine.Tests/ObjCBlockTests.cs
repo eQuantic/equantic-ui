@@ -35,7 +35,7 @@ public unsafe class ObjCBlockTests
     [UnmanagedCallersOnly]
     private static void Enumerated(IntPtr block, IntPtr item, nuint index, IntPtr stop)
     {
-        var seen = ObjCBlock.Context<Seen>(block);
+        if (ObjCBlock.Context<Seen>(block) is not { } seen) return;
         seen.Indexes.Add(index);
         seen.Item = FromNSString(item);
     }
@@ -122,6 +122,30 @@ public unsafe class ObjCBlockTests
         seen.Item = null;
         SendVoid(array, Sel("enumerateObjectsUsingBlock:"), block.Handle);
         seen.Item.Should().Be("kept");
+    }
+
+    [MacFact]
+    public void AReplyLetsItsContextGo_AndTheFrameworksReleaseStillFindsTheBlock()
+    {
+        // A reply that answers once frees its context from inside its own call, while the framework
+        // still holds the block and releases it after the call returns. The block must still BE a
+        // block then: its memory stays, and a later call finds no context and does nothing.
+        var array = ArrayOf("once");
+        var seen = new Seen();
+        var block = new ObjCBlock(Entry, seen);
+
+        var held = BlockCopy(block.Handle);
+        SendVoid(array, Sel("enumerateObjectsUsingBlock:"), held);
+        seen.Item.Should().Be("once");
+
+        block.ReleaseContext();
+        ObjCBlock.Context<Seen>(block.Handle).Should().BeNull("the context was let go");
+        BlockRelease(held);   // what the framework does after the reply returns: a block, not freed memory
+
+        seen.Item = null;
+        SendVoid(array, Sel("enumerateObjectsUsingBlock:"), block.Handle);
+        seen.Item.Should().BeNull("a call after the reply finds no context and does nothing");
+        block.Dispose();
     }
 
     [Fact]
