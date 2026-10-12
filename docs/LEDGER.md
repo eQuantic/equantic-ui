@@ -2603,6 +2603,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   runtime on the Mac. The run on a physical iPhone belongs to the device pass
   ([#792](https://github.com/eQuantic/equantic-ui/issues/792)). Proposed and archived through OpenSpec
   (`openspec/specs/native-callbacks`).
+- **2026-10-12 · The embedded bun is 1.4.3, and the code engine's cell widths follow its Unicode 17**:
+  the six platform runtime packages move from bun 1.3.14 to 1.4.3, each the build it replaces, taken
+  from the release, checked against its `SHASUMS256.txt` and repacked as the packages hold them.
+  `Bun.stringWidth`, the oracle `CellWidthOracleTests` holds the code engine's width table to, went
+  from Unicode 15.1 to 17 with it, and 616 characters changed their answer. The table and its twin
+  follow: the Yijing and Tai Xuan Jing symbols and the newest emoji take two cells, and a directional
+  isolate or a Hangul vowel takes none. The pin's regeneration (`EQ_UPDATE_BUN_MANIFEST=1`) wrote `$1`
+  before each digest, and one that starts with a digit lost its line's key: four lines of six, on its
+  first run since it was written ([#854](https://github.com/eQuantic/equantic-ui/issues/854)).
+  Proposed and archived through OpenSpec (`openspec/specs/code-cells`).
 
 ## Retired documents
 
