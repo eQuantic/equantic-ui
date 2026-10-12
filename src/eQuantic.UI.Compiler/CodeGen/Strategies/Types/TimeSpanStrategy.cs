@@ -30,6 +30,12 @@ public class TimeSpanStrategy : ConversionStrategyBase
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "ToString" } }:
                 return false;
 
+            // No twin reads a time span back through a format pattern: each was a call to a member the
+            // twin does not have, a TypeError on the page. Left unclaimed, each is refused at the build
+            // (#717).
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "ParseExact" or "TryParseExact" } }:
+                return false;
+
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
                 return IsTimeSpanMember(ma, context);
 

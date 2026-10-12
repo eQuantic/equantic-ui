@@ -23,6 +23,11 @@ public class DateTimeOffsetStrategy : ConversionStrategyBase
             // twin's toString wrote the invariant text, and ignored a format and a provider.
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "ToString" } }:
                 return false;
+
+            // No twin reads a date back through a format pattern: each was a call to a member the twin
+            // does not have, a TypeError on the page. Left unclaimed, each is refused at the build (#717).
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "ParseExact" or "TryParseExact" } }:
+                return false;
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
                 return IsMember(ma, context);
             case MemberAccessExpressionSyntax member:
