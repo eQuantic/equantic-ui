@@ -7,7 +7,7 @@
 
 ## 2. Registered methods
 
-- [x] 2.1 The camera's frame delegate, location's three delegate methods and the deep-link handler register static entry points. Verify: `AppleCallbackTests.AnAppleEvent_ReachesTheRelay_ThroughTheRegisteredEntryPoint`, an AppleEvent sent through `objc_msgSend`, and `LocationTests`
+- [x] 2.1 The camera's frame delegate, location's three delegate methods and the deep-link handler are static entry points of an `ObjCDelegateClass`, each finding its object in the delegate's ivar. Verify: `AppleCallbackTests.EachDelegateObjectAnswersForItsOwnContext`, two instances of one runtime class called through `objc_msgSend`; `AnAppleEvent_ReachesTheRelay_ThroughTheRegisteredEntryPoint`, an AppleEvent sent to the installed handler; and `LocationTests`
 
 ## 3. The guard
 

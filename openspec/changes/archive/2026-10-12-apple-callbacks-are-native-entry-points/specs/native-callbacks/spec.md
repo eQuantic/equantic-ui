@@ -16,6 +16,18 @@ Objective-C runtime alike, and SHALL NOT turn a delegate into a function pointer
 - **WHEN** an AppleEvent carrying a URL is sent to the deep-link handler class through `objc_msgSend`
 - **THEN** the URL reaches the deep-link relay's subscribers
 
+### Requirement: A registered method finds its object in the delegate it was called on
+
+A method registered with the Objective-C runtime SHALL find the object it answers for in a handle
+carried by the delegate object it was called on, so that two delegates of one class answer each for
+their own object.
+
+#### Scenario: Two delegates of one class
+
+- **WHEN** two instances of one runtime class, made with different contexts, are each sent the class's
+  method through `objc_msgSend`
+- **THEN** each call reaches only the context of the instance it was sent to
+
 ### Requirement: A block finds the object it answers for in its own storage
 
 A block built by the shell SHALL carry a handle to its context after its descriptor, keep that context

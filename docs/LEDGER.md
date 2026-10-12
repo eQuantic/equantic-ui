@@ -2535,7 +2535,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#795](https://github.com/eQuantic/equantic-ui/issues/795)). A block now calls a static
   `[UnmanagedCallersOnly]` entry point and carries its context as a `GCHandle` after its descriptor
   (`ObjCBlock.Context<T>`), and the methods registered with the Objective-C runtime are static entry
-  points routing to their one instance. A reply that answers once lets only its context go and keeps
+  points that find their object in a handle the delegate carries in an ivar (`ObjCDelegateClass`), so a
+  second camera session no longer takes the first one's frames. A reply that answers once lets only its context go and keeps
   its block, which the framework releases after the call returns: the biometric reply freed its block
   from inside that call. `AppleCallbackTests` fails when the shared Apple shell or the
   iOS shell calls `Marshal.GetFunctionPointerForDelegate`, and the block tests run against the real

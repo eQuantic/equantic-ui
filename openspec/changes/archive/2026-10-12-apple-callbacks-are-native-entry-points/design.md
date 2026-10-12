@@ -22,10 +22,14 @@ signature, and `ObjCBlock` is one type; `IntPtr` is the common denominator, and 
 site, `(IntPtr)(delegate* unmanaged<…>)&Method`, is where the compiler checks the signature and refuses
 a method without `[UnmanagedCallersOnly]` (CS8786).
 
-**A registered method routes through the static instance it already had.** The camera, location and
-deep links each have one instance per process, and their delegate classes already routed to it. Giving
-each runtime class an ivar to hold a `GCHandle` would add a second way to find the same object, so the
-method is made a static entry point and the routing stays.
+**A registered method finds its object in the delegate's ivar.** The camera, location and deep links
+routed every callback through a process-wide static, so a second camera session took the first one's
+frames. `ObjCDelegateClass` defines the runtime class with a pointer-sized ivar, `New(GCHandle)` makes an
+instance carrying its context, and a method reads it back from `self` with `Context<T>`: the delegate
+object's twin of the block's own storage, one way to find an object for both. Location's and the
+deep-link handler's handles live as long as the process, as their objects do. A camera session's
+delegate holds its session WEAKLY and the handle is never freed: a frame already on the camera's queue
+may read it after `Dispose`, and a freed handle could hand that read whatever took its slot.
 
 **A reply that answers once lets its context go, never its block.** LocalAuthentication and
 AVFoundation copy a completion block, call it once, and release it after the call returns, reading

@@ -24,9 +24,11 @@ registers would fail at their first callback on a device.
   for; the block stores a `GCHandle` to that object after its descriptor, where a compiled block keeps
   what it captured, and `ObjCBlock.Context<T>(block)` reads it back inside the entry point. The
   network status, the motion sensor, biometrics and the camera's access request use it.
-- **A method registered with the runtime is a static entry point.** The camera's frame delegate,
-  location's three delegate methods and the deep-link AppleEvent handler register
-  `(IntPtr)(delegate* unmanaged<…>)&Method`. Each routes to its process-wide instance, as before.
+- **A method registered with the runtime is a static entry point, and finds its object in the
+  delegate.** The camera's frame delegate, location's three delegate methods and the deep-link
+  AppleEvent handler are defined through `ObjCDelegateClass`: each delegate object carries a `GCHandle`
+  to its context in an ivar, and the method reads it from `self`. A second camera session no longer
+  takes the first one's frames.
 - **A one-shot reply no longer frees memory a framework still holds.** The biometric reply freed its
   block from inside its own call, before LocalAuthentication released it. A reply now lets only its
   context go (`ObjCBlock.ReleaseContext`) and keeps the block, through one `PendingReply<T>` shared by
@@ -55,6 +57,6 @@ None.
   accessibility) are outside this change, since a Mac app runs on the JIT or NativeAOT, both of which
   prepare a delegate's wrapper.
 - **Public surface moves.** `ObjCBlock(Delegate)` goes (`*REMOVED*`); `ObjCBlock(IntPtr, object)`,
-  `ObjCBlock.Context<T>(IntPtr)` and `ObjCBlock.ReleaseContext()` arrive. The developer surface does not move.
+  `ObjCBlock.Context<T>(IntPtr)`, `ObjCBlock.ReleaseContext()` and `ObjCDelegateClass` arrive. The developer surface does not move.
 - **Migration**: code that built an `ObjCBlock` from a delegate passes a static `[UnmanagedCallersOnly]`
   method's address and the object it needs, and reads that object with `ObjCBlock.Context<T>`.
