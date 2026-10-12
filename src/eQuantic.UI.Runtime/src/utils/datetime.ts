@@ -719,6 +719,13 @@ export interface DateTimeFactory {
   /** `DateTime.Parse`, in the page's culture, or the invariant one where `invariant` says so. */
   parse(text: string, invariant?: boolean): DateTime;
   tryParse(text: string | null | undefined, invariant?: boolean): DateTime | undefined;
+  /**
+   * `Convert.ToDateTime` of a text or of an object (#844): null is `MinValue`, where `parse` throws, a
+   * text reads as `parse` reads it, and a date is itself. Anything else has no conversion to a date;
+   * .NET names its type, which an object holding a number no longer carries here (#401), so a number
+   * is named by what the browser holds.
+   */
+  convert(value: unknown, invariant?: boolean): DateTime;
   /** A `DateTime` as System.Text.Json reads it from the wire: see {@link dateTimeFromJson}. */
   fromJson(text: string): DateTime;
   daysInMonth(year: number, month: number): number;
@@ -808,6 +815,22 @@ export const dateTime: DateTimeFactory = {
   isLeapYear,
   parse: (text, invariant) => parseDateTime(text, invariant),
   tryParse: attempt(parseDateTime),
+  convert(value, invariant) {
+    if (value === null || value === undefined) return dateTime.minValue();
+    if (typeof value === 'string') return parseDateTime(value, invariant);
+    if (value instanceof DateTime) return value;
+    const held =
+      typeof value === 'boolean'
+        ? 'Boolean'
+        : typeof value === 'bigint'
+          ? 'Int64'
+          : typeof value === 'number'
+            ? Number.isInteger(value)
+              ? 'Int32'
+              : 'Double'
+            : 'Object';
+    throw exception('System.InvalidCastException', `Invalid cast from '${held}' to 'DateTime'.`);
+  },
   fromJson: (text) => dateTimeFromJson(text),
 };
 
