@@ -2536,8 +2536,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   and the SDK's `PhotonApp.plist` declares the scene manifest. The screen lives for the process, so a
   scene the system connects again shows the same page, and its clock pauses in the background. CI's
   `samples` job launches the Wallet on a fresh simulator and reads its self-test line from the unified
-  log (`scripts/check-ios-launch.sh`); its image has no Xcode 27 yet. Proposed and archived through
-  OpenSpec (`openspec/specs/native-app-lifecycle`).
+  log (`scripts/check-ios-launch.sh`); its image has no Xcode 27 yet, so the iOS 27 half was measured
+  on a developer machine: on a fresh iOS 27.0 simulator, main's Wallet stopped at launch with UIKit's
+  "UIScene life cycle is required for apps built with this SDK", and this change's drew its frames.
+  Proposed and archived through OpenSpec (`openspec/specs/native-app-lifecycle`).
 
 ## Retired documents
 

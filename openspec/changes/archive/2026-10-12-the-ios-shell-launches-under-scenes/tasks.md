@@ -16,7 +16,7 @@
 
 ## 4. iOS 27
 
-- [ ] 4.1 On Xcode 27 with an iOS 27 simulator runtime: `main`'s Wallet does not launch and this branch's presents its frames, the same script on both sides
+- [x] 4.1 On Xcode 27 with an iOS 27 simulator runtime: `main`'s Wallet does not launch and this branch's presents its frames, the same script on both sides. Verify: both built on Xcode 27.0 (`sdk 27.0`), launched on a fresh iOS 27.0 (24A434) simulator; main's stops at once, UIKit logging "Application failed to launch: UIScene life cycle is required for apps built with this SDK", and this branch's presents its 60 frames
 
 ## 5. Documentation and the suites
 

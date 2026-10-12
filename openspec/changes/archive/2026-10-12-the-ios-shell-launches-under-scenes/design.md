@@ -53,6 +53,8 @@ simulator the image has: the Wallet sample built in Release, launched with
 built Info.plist. That catches a shell that stops connecting its scene, which is this defect's shape
 on any runtime.
 
-The iOS 27 half (built on Xcode 27, launched on an iOS 27 runtime, failing on `main` and launching here)
-is proved on a developer machine and recorded in the pull request, until the runner image ships
-Xcode 27.
+The iOS 27 half was proved on a developer machine, with the same script on both sides: built on
+Xcode 27.0 and launched on a fresh iOS 27.0 simulator, `main`'s Wallet stops at once ("Application
+failed to launch: UIScene life cycle is required for apps built with this SDK", from UIKit) and this
+change's presents its frames. The `samples` job reaches it once the runner image makes Xcode 27 its
+default, since it launches on the newest runtime that Xcode sees.
