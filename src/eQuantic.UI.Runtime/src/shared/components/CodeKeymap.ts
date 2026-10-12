@@ -1,4 +1,4 @@
-import { CodeEditorController, KeyboardConventionValue } from "../runtime-exports";
+import { $eq, CodeEditorController, KeyboardConventionValue } from "../runtime-exports";
 
 export class CodeKeymap {
     static handle(editor: CodeEditorController, key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any = null) {
@@ -27,7 +27,7 @@ export class CodeKeymap {
         if (command && key.length === 1) {
             {
                 let pasted: any;
-                switch (key[0].toLowerCase()) {
+                switch ($eq.text.toLower(key[0], true)) {
                     case 'a':
                         editor.selectAll();
                         return true;

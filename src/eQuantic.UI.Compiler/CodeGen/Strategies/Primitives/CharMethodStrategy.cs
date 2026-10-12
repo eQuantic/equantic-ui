@@ -5,8 +5,8 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
 /// <summary>
-/// Strategy for System.Char static methods. C# chars are JS single-character strings, so case
-/// methods map to string case methods and the Is* classifiers map to Unicode-aware regex tests.
+/// Strategy for System.Char static methods. C# chars are JS single-character strings, so the case
+/// methods are the runtime's casing of a string of one, and the Is* classifiers Unicode-aware regex tests.
 /// </summary>
 public class CharMethodStrategy : IExpressionIrStrategy
 {
@@ -35,8 +35,7 @@ public class CharMethodStrategy : IExpressionIrStrategy
 
     /// <summary>The methods this strategy lowers.</summary>
     private static bool Lowers(string name) => name is
-        // The INVARIANT pair is the one a UI reaches for — a sort key, a lookup key — and it
-        // was the only casing method missing. JS `toUpperCase` is already culture-independent.
+        // The casing is .NET's, in the culture the call names (#848, #725).
         "ToUpper" or "ToUpperInvariant" or "ToLower" or "ToLowerInvariant"
         or "IsDigit" or "IsLetter" or "IsLetterOrDigit"
         or "IsWhiteSpace" or "IsUpper" or "IsLower" or "IsNumber" or "IsPunctuation"
@@ -70,6 +69,10 @@ public class CharMethodStrategy : IExpressionIrStrategy
         // (#524). Typed, since nothing may type it from outside (`Func<char, bool> f = char.IsDigit`).
         if (node is MemberAccessExpressionSyntax or IdentifierNameSyntax && Group((ExpressionSyntax)node, context) is { } named)
         {
+            // A culture handed to the delegate is a value the browser cannot hold: only the two it
+            // knows, named where the call is written, cross.
+            if (named.Parameters.Any(parameter => parameter.Type.IsNamed("System.Globalization.CultureInfo")))
+                return JsExpr.Opaque(context.Unhandled(node, $"char.{named.Name} with a culture, taken as a delegate"));
             var parameters = named.Parameters.Select(p => p.Name.ToJsIdentifier()).ToArray();
             var typed = named.Parameters.Select((p, i) => context.TypeAnnotations
                 ? $"{parameters[i]}: {(p.Type.SpecialType == SpecialType.System_Int32 ? "number" : "string")}"
@@ -85,16 +88,40 @@ public class CharMethodStrategy : IExpressionIrStrategy
         if (args.Length == 0) return JsExpr.Identifier("undefined");
         var method = (IMethodSymbol)context.SemanticHelper.GetSymbol(invocation)!;
         return Lowered(method, args,
-            template => PrimitiveStaticStrategy.BindNamedArguments(template, invocation, method), context);
+            template => PrimitiveStaticStrategy.BindNamedArguments(template, invocation, method), context,
+            Culture(invocation, method, context));
+    }
+
+    /// <summary>
+    /// What a casing's culture argument hands the twin: <c>true</c> for the invariant culture, nothing
+    /// for the current one, and <c>null</c> for a null, which the twin refuses as .NET does, after the
+    /// char is evaluated. Any other culture fails the build (EQ2108). Its argument was dropped, so a
+    /// null was never refused and a page in tr-TR upper-cased an i as the invariant culture does (#725).
+    /// </summary>
+    private static string? Culture(InvocationExpressionSyntax invocation, IMethodSymbol method, ConversionContext context)
+    {
+        if (method.Parameters.FirstOrDefault(parameter => parameter.Type.IsNamed("System.Globalization.CultureInfo")) is not { } parameter)
+            return null;
+        var argument = invocation.ArgumentList.Arguments
+            .FirstOrDefault(argument => argument.NameColon?.Name.Identifier.ValueText == parameter.Name)
+            ?? invocation.ArgumentList.Arguments[parameter.Ordinal];
+        if (NamedCulture.IsNull(argument.Expression, context)) return "null";
+        return NamedCulture.ReadsInvariant(invocation, argument.Expression, context, StringMethodStrategy.ChangingCase)
+            ? "true"
+            : null;
     }
 
     /// <summary>
     /// The call of <paramref name="method"/> on <paramref name="args"/>, already converted, a
     /// template over parameter holes that <paramref name="place"/> orders as the call names them.
     /// </summary>
-    private static JsExpr Lowered(IMethodSymbol method, JsExpr[] args, Func<string, string> place, ConversionContext context)
+    private static JsExpr Lowered(IMethodSymbol method, JsExpr[] args, Func<string, string> place, ConversionContext context,
+        string? culture = null)
     {
         var name = method.Name;
+        // The invariant pair names its culture by its name; ToUpper and ToLower by their argument.
+        culture = name.EndsWith("Invariant", StringComparison.Ordinal) ? "true" : culture;
+        var cased = culture is null ? "" : $", {culture}";
 
         // The (string, index) overloads classify the character AT the index, and read a surrogate
         // pair there as the one code point it is, which is what .NET does. They were handed the
@@ -111,8 +138,8 @@ public class CharMethodStrategy : IExpressionIrStrategy
 
         var template = name switch
         {
-            "ToUpper" or "ToUpperInvariant" => $"{c}.toUpperCase()",
-            "ToLower" or "ToLowerInvariant" => $"{c}.toLowerCase()",
+            "ToUpper" or "ToUpperInvariant" => $"{Eq.ToUpper}({c}{cased})",
+            "ToLower" or "ToLowerInvariant" => $"{Eq.ToLower}({c}{cased})",
             "IsDigit" => Test(@"/^\p{Nd}$/u", c),
             "IsNumber" => Test(@"/^\p{N}$/u", c),
             "IsLetter" => Test(@"/^\p{L}$/u", c),
@@ -134,7 +161,8 @@ public class CharMethodStrategy : IExpressionIrStrategy
             "IsAscii" => $"(Number({c}.codePointAt(0)) < 128)",
             _ => c,
         };
-        if (name == "IsWhiteSpace") context.UsedHelpers.Add(Eq.Import);
+        if (name is "IsWhiteSpace" or "ToUpper" or "ToUpperInvariant" or "ToLower" or "ToLowerInvariant")
+            context.UsedHelpers.Add(Eq.Import);
         return JsExpr.Template(place(template), args);
     }
 

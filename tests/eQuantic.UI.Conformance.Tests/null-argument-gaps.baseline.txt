@@ -36,8 +36,6 @@ Char.IsSurrogatePair(String,Int32) s  type  the (string, index) overloads read t
 Char.IsSymbol(String,Int32) s  type  the (string, index) overloads read the code point inline, through null: refusing it by name is a guard at every call, which is a design decision
 Char.IsUpper(String,Int32) s  type  the (string, index) overloads read the code point inline, through null: refusing it by name is a guard at every call, which is a design decision
 Char.IsWhiteSpace(String,Int32) s  type  the (string, index) overloads read the code point inline, through null: refusing it by name is a guard at every call, which is a design decision
-Char.ToLower(Char,CultureInfo) culture  type  the lowering drops the culture argument, so its null is never read
-Char.ToUpper(Char,CultureInfo) culture  type  the lowering drops the culture argument, so its null is never read
 Convert.ToBoolean(Object) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
 Convert.ToBoolean(Object,IFormatProvider) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
 Convert.ToByte(Object) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
