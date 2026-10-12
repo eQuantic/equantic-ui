@@ -2513,6 +2513,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   `default`) is reached when the app has a type of that name
   ([#830](https://github.com/eQuantic/equantic-ui/issues/830)). Proposed and archived
   through OpenSpec (`openspec/specs/referenced-projects`).
+- **2026-10-12 · An iOS app launches under the scene life cycle**: built with the iOS 27 SDK, an app
+  without it does not launch (TN3187), and on Xcode 27 every app already is: the native link takes
+  the installed Xcode's SDK whichever .NET pack resolves, so the Wallet sample built with the default
+  26.5 pack carried `sdk 27.0` ([#796](https://github.com/eQuantic/equantic-ui/issues/796)). The window
+  now belongs to a `UIWindowSceneDelegate`, the app delegate answers which delegate a scene gets in C#,
+  and the SDK's `PhotonApp.plist` declares the scene manifest. The screen lives for the process, so a
+  scene the system connects again shows the same page, and its clock pauses in the background. CI's
+  `samples` job launches the Wallet on a fresh simulator and reads its self-test line from the unified
+  log (`scripts/check-ios-launch.sh`); its image has no Xcode 27 yet. Proposed and archived through
+  OpenSpec (`openspec/specs/native-app-lifecycle`).
 
 ## Retired documents
 
