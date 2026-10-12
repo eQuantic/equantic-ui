@@ -21,9 +21,13 @@ does the same.
 ## What Changes
 
 - **The renderer releases what no frame draws.** Each upload remembers the last frame that drew it,
-  and a raster not drawn for `RhiRenderer.RetainFrames` frames (30) gives its texture back before the
-  next frame is encoded. Drawn again later, it is uploaded again from the bytes its owner still
-  holds. On every backend: on Metal the same textures were simply never released.
+  and a raster that went undrawn for more than thirty whole frames gives its texture back as the next
+  frame starts, before anything is encoded. Drawn again later, it is uploaded again from the bytes its
+  owner still holds. At most sixty-four go in one frame, so leaving a screen is not one frame that
+  pays for all of it.
+- **A released texture leaves the Metal device.** `MetalTexture.Dispose` was an empty body behind the
+  device's per-process fence, so on Metal the release above would have done nothing. The texture now
+  gives back the reference it was created with.
 - **A full Vulkan pool hands over to a new one.** `vkAllocateDescriptorSets` answering
   `VK_ERROR_OUT_OF_POOL_MEMORY` or `VK_ERROR_FRAGMENTED_POOL` (what the emulator's driver answered)
   means that pool has no room, and the set then comes from another pool. Every pool goes with the
@@ -45,7 +49,9 @@ None.
 ## Impact
 
 - **The engine** (`eQuantic.UI.Native.Engine`): `RhiRenderer`.
+- **The Metal backend** (`eQuantic.UI.Native.Engine.Metal`): `MetalTexture`.
 - **The Vulkan backend** (`eQuantic.UI.Native.Engine.Vulkan`): `VulkanDevice`, and a new
   `DescriptorPoolStatus`.
-- **Public surface moves** by one addition: `RhiRenderer.RetainFrames`. The developer surface does not
-  move. Nothing breaks.
+- **No public surface moves**, and neither does the developer surface. How long a raster is kept is a
+  tuning number inside the engine, which its own suite reads so the boundary cases move with it.
+  Nothing breaks.

@@ -2608,10 +2608,12 @@ record of a release, the wiki's Upgrading page is the distillate.
   of 1,024, so an Android app that drew a thousand different texts died at the 1,025th with
   "descriptor set allocation failed": measured on the emulator with a text changing every 16 ms, about
   17 seconds in, with no camera in the app
-  ([#858](https://github.com/eQuantic/equantic-ui/issues/858)). A raster no frame has drawn for
-  `RhiRenderer.RetainFrames` frames now gives its texture back, on every backend, and a Vulkan pool
-  that is full hands over to a new one. The same text then ran past 3,600 different contents with
-  fewer than a hundred sets allocated. Found while proving the camera preview of
+  ([#858](https://github.com/eQuantic/equantic-ui/issues/858)). A raster that went undrawn for more
+  than thirty frames now gives its texture back, at most sixty-four a frame, on every backend: on
+  Metal `MetalTexture.Dispose` was an empty body, and the real device's allocated size is what the
+  test reads. A Vulkan pool that is full hands over to a new one. On the emulator the same text then
+  ran past 6,400 different contents with fewer than a hundred sets allocated, and a screen of 1,296
+  different texts took its 1,025th set from a second pool. Found while proving the camera preview of
   [#775](https://github.com/eQuantic/equantic-ui/issues/775). Proposed and archived through OpenSpec
   (`openspec/specs/renderer-textures`).
 
