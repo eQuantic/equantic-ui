@@ -25,6 +25,9 @@ internal sealed class Built
         _outputDirectory = outputDirectory;
     }
 
+    /// <summary>Where the bundle and the string catalogs were written.</summary>
+    public string OutputDirectory => _outputDirectory;
+
     /// <summary>Whether the build produced an error, which is the process's exit code.</summary>
     public bool Failed { get; }
 

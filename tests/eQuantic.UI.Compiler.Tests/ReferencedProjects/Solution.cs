@@ -52,6 +52,13 @@ internal sealed class Solution : IDisposable
         public string? Assembly { get; set; }
     }
 
+    /// <summary>The directory the solution's projects are in, each in a folder of its name.</summary>
+    public string Root => _root;
+
+    /// <summary>The assembly a project was compiled to by the last <see cref="Build"/>, the app's
+    /// included: what .NET loads to answer what the browser is asked.</summary>
+    public string AssemblyOf(string project) => _projects.Single(candidate => candidate.Name == project).Assembly!;
+
     /// <summary>The directory a project's files are in.</summary>
     public string DirectoryOf(string project) => Path.Combine(_root, project);
 
@@ -113,7 +120,9 @@ internal sealed class Solution : IDisposable
     /// </summary>
     /// <param name="handProjects">False builds the app as an SDK that hands eqc no list of projects
     /// does, which is every build before #624: the referenced projects reach it as assemblies alone.</param>
-    public Built Build(bool handProjects = true)
+    /// <param name="bun">The bundler, for a solution whose app has an entry point (a file at its
+    /// root, or a page) and is to be RUN. Without one the build stops at the modules it wrote.</param>
+    public Built Build(bool handProjects = true, string? bun = null)
     {
         foreach (var project in _projects) Compile(project);
 
@@ -135,6 +144,7 @@ internal sealed class Solution : IDisposable
             OutputDirectory = outputDirectory,
             ReferencesFile = referencesFile,
             ProjectsFile = handProjects ? projectsFile : null,
+            BunPath = bun,
             // One reference per assembly for the whole test process (#481).
             ReferenceReader = TestReferences.Of,
             SourceMaps = SourceMapMode.None,
@@ -145,7 +155,8 @@ internal sealed class Solution : IDisposable
     }
 
     /// <summary>One project compiled as MSBuild compiles it, its assembly written under its
-    /// <c>bin</c>. A project that does not compile is a test whose C# is wrong, not a case.</summary>
+    /// <c>bin</c>, the app's too. A project that does not compile is a test whose C# is wrong, not a
+    /// case.</summary>
     private void Compile(Project project)
     {
         var directory = DirectoryOf(project.Name);
@@ -162,7 +173,6 @@ internal sealed class Solution : IDisposable
             .Select(diagnostic => diagnostic.ToString())
             .Should().BeEmpty($"{project.Name} is C# that compiles");
         project.Compilation = compilation;
-        if (project.IsApp) return;
 
         var assembly = Path.Combine(directory, "bin", "Debug", "net10.0", project.Name + ".dll");
         Directory.CreateDirectory(Path.GetDirectoryName(assembly)!);
