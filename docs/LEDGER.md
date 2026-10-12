@@ -2603,6 +2603,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   runtime on the Mac. The run on a physical iPhone belongs to the device pass
   ([#792](https://github.com/eQuantic/equantic-ui/issues/792)). Proposed and archived through OpenSpec
   (`openspec/specs/native-callbacks`).
+- **2026-10-13 · A camera preview shows on Android**: the Android shell registered no `ICamera`, so
+  a `CameraPreview` drew its unavailable state there while `UseCamera` still wrote the permission
+  ([#775](https://github.com/eQuantic/equantic-ui/issues/775)). It now realizes the contract through
+  Camera2 over Mono.Android, with no CameraX connector: the permission is asked inside
+  `StartPreviewAsync` and reads three ways, frames arrive as YUV and the engine's `Yuv420.ToRgba`
+  turns them into upright RGBA, `Capture()` answers a JPEG, and the camera is given up and taken back
+  as the app leaves and returns. Proved on the emulator (API 36), the device turned both ways. Found
+  on the way: a preview with a session and no frame yet did not ask for the next frame, on every
+  shell. The wiki's Capabilities page says which shell answers which contract, and
+  `WikiShellRealizationsTests` compares it with the registrations. Proposed and archived through
+  OpenSpec (`openspec/specs/device-camera`).
 
 ## Retired documents
 
