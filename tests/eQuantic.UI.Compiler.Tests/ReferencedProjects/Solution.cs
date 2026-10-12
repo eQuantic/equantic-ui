@@ -161,7 +161,9 @@ internal sealed class Solution : IDisposable
             SourceDirectories = [DirectoryOf(app.Name)],
             OutputDirectory = outputDirectory,
             ReferencesFile = referencesFile,
-            ProjectsFile = handProjects ? projectsFile : null,
+            // The SDK hands a list only when it wrote a line: an app that references no project
+            // is handed none, and an empty one is a list that does not hold (#835).
+            ProjectsFile = handProjects && libraries.Any(library => !library.IsPackage) ? projectsFile : null,
             AssemblyName = handAssemblyName ? app.AssemblyName : null,
             BunPath = bun,
             // One reference per assembly for the whole test process (#481).

@@ -2513,6 +2513,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   `default`) is reached when the app has a type of that name
   ([#830](https://github.com/eQuantic/equantic-ui/issues/830)). Proposed and archived
   through OpenSpec (`openspec/specs/referenced-projects`).
+- **2026-10-12 · What a review of #827's last commits found**: three defects, each measured on main
+  after #827 merged. A constant or `nameof` handed where C# applies a user-defined conversion was
+  written with that conversion and no import of the type that declares it: the reader of a module's
+  names left the node out, and what it converts to went with it. The conversion is asked of the node
+  now and read as a call ([#833](https://github.com/eQuantic/equantic-ui/issues/833)). An
+  interpolation hole's alignment was written as its source text, so `{name,Widths.Name}` named a
+  member the twin does not have and the text was never padded, in every app. It is the model's
+  constant now, for an interpolated string and for one handed to a `StringBuilder`
+  ([#834](https://github.com/eQuantic/equantic-ui/issues/834)). And a list of projects that was handed
+  and holds no project was read as no list, where #827 stopped the build on every other list that does
+  not hold ([#835](https://github.com/eQuantic/equantic-ui/issues/835)). Filed beside them: what the
+  SDK hands eqc does not survive a `$` in a name or a `|` in a path
+  ([#836](https://github.com/eQuantic/equantic-ui/issues/836)), and three more shapes of a type named
+  where nothing is written joined [#830](https://github.com/eQuantic/equantic-ui/issues/830). Proposed
+  and archived through OpenSpec (`openspec/specs/referenced-projects`, `openspec/specs/transpiler-bcl`).
 
 ## Retired documents
 
