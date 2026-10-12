@@ -932,12 +932,13 @@ expression SHALL fail the build.
 false and write the type's default there for a text its `Parse` refuses and for a null one, and SHALL
 never throw. The out argument SHALL be any place C# can write, a discard, a variable declared before
 and an array's element included, and the arguments SHALL be evaluated in the order written.
-`TimeOnly.Parse` SHALL read the whole text in .NET's invariant grammar: an hour past 23, a minute past
-59 and a second past 59 refused, an AM or PM designator before or after the time in either case, `12`
-read as midnight under AM, an hour past 12 refused under AM and kept under PM, an hour alone only
-beside a designator, and a fraction only after the seconds, rounded to the tick as .NET rounds it.
-`TimeOnly.Parse` and `DateOnly.Parse` SHALL refuse a text in .NET's words. Every other overload of the
-five's `TryParse` (a provider, styles, a span) SHALL fail the build.
+`TimeOnly.Parse` SHALL read the whole text in the culture the call names (`runtime-dates`): an hour
+past 23, a minute past 59 and a second past 59 refused, an AM or PM designator before or after the
+time in either case, `12` read as midnight under AM, an hour past 12 refused under AM and kept under
+PM, an hour alone only beside a designator, and a fraction only after the seconds, rounded to the tick
+as .NET rounds it. `TimeOnly.Parse` and `DateOnly.Parse` SHALL refuse a text in .NET's words. The
+overloads of the five's `TryParse` with a provider, with styles or with both SHALL read as
+`runtime-dates` says, and one over a span SHALL fail the build (EQ1004).
 
 #### Scenario: A text that is a date
 
@@ -963,7 +964,13 @@ five's `TryParse` (a provider, styles, a span) SHALL fail the build.
 #### Scenario: An overload with a provider
 
 - **WHEN** a page calls `DateTime.TryParse(text, null, out var when)`
-- **THEN** the build fails (EQ1004), where the page failed when the call ran
+- **THEN** it reads the text in the page's culture, as .NET reads the current one, where the build
+  failed (EQ1004)
+
+#### Scenario: An overload over a span
+
+- **WHEN** a page calls `TimeSpan.TryParse(text.AsSpan(), out var span)`
+- **THEN** the build fails (EQ1004)
 
 ### Requirement: An interpolation hole's alignment is the number it is
 

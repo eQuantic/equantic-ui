@@ -2587,6 +2587,22 @@ record of a release, the wiki's Upgrading page is the distillate.
   runtime on the Mac. The run on a physical iPhone belongs to the device pass
   ([#792](https://github.com/eQuantic/equantic-ui/issues/792)). Proposed and archived through OpenSpec
   (`openspec/specs/native-callbacks`).
+- **2026-10-12 · A date is read in the culture the call names**: `Parse` and `TryParse` of the five
+  time types read the invariant shapes whatever culture the page was in, so `01/02/2024` was the 2nd
+  of January on a pt-BR page where .NET reads the 1st of February, and a value written with
+  `ToString()` did not read back ([#806](https://github.com/eQuantic/equantic-ui/issues/806)); a
+  provider crossed as the name `CultureInfo`, which no browser defines, and so did `ParseExact`,
+  `TryParseExact` and `GetDateTimeFormats` ([#717](https://github.com/eQuantic/equantic-ui/issues/717)).
+  The runtime reads the numeric forms a culture writes, as .NET 10's `DateTimeParse` reads them, in the
+  page's culture or the invariant one, with .NET's refusals in its words; eqc reads every overload by
+  the parameter each argument binds to, any other culture is EQ2108, and the exact readers are left to
+  the fence. Measuring them found `Convert.ToDateTime` answering the text of its argument for every
+  overload ([#844](https://github.com/eQuantic/equantic-ui/issues/844)), which now reads a text as
+  `Parse` does. 242 of the 280 conformance cases, run in ten cultures, fail at c25b177e, and 49 still
+  failed before a review of the whole diff found a clock written with points, the ISO form, the order
+  of the parts and `Convert`'s words read narrower than .NET; 60 entries leave the null-argument
+  baseline. What .NET reads beyond the numeric forms stays #807's. Proposed and archived through
+  OpenSpec (`openspec/specs/runtime-dates`, `openspec/specs/transpiler-bcl`).
 
 ## Retired documents
 
