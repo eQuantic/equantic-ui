@@ -20,6 +20,7 @@
 import { activeFormatData, INVARIANT_FORMAT, type DateTimeFormatData } from './culture';
 import { readMoment, type Moment, type Refusal } from './date-reading';
 import { hash } from './hash';
+import { Decimal } from './decimal';
 import { exception, is } from './exceptions';
 import { timeSpanText } from './timespan-text';
 
@@ -721,9 +722,10 @@ export interface DateTimeFactory {
   tryParse(text: string | null | undefined, invariant?: boolean): DateTime | undefined;
   /**
    * `Convert.ToDateTime` of a text or of an object (#844): null is `MinValue`, where `parse` throws, a
-   * text reads as `parse` reads it, and a date is itself. Anything else has no conversion to a date;
-   * .NET names its type, which an object holding a number no longer carries here (#401), so a number
-   * is named by what the browser holds.
+   * text reads as `parse` reads it, and a date is itself. Anything else has no conversion to a date,
+   * and .NET names its type: a date or a time of another type by its name, a bool, a long and a
+   * decimal by theirs. A number no longer says whether it was an int or a double here, and a char is
+   * a text of one character, so those are named, and read, by what the browser holds (#401).
    */
   convert(value: unknown, invariant?: boolean): DateTime;
   /** A `DateTime` as System.Text.Json reads it from the wire: see {@link dateTimeFromJson}. */
@@ -819,16 +821,34 @@ export const dateTime: DateTimeFactory = {
     if (value === null || value === undefined) return dateTime.minValue();
     if (typeof value === 'string') return parseDateTime(value, invariant);
     if (value instanceof DateTime) return value;
+    const time =
+      value instanceof DateOnly
+        ? 'DateOnly'
+        : value instanceof TimeOnly
+          ? 'TimeOnly'
+          : value instanceof TimeSpan
+            ? 'TimeSpan'
+            : value instanceof DateTimeOffset
+              ? 'DateTimeOffset'
+              : null;
+    if (time !== null) {
+      throw exception(
+        'System.InvalidCastException',
+        `Unable to cast object of type 'System.${time}' to type 'System.IConvertible'.`,
+      );
+    }
     const held =
       typeof value === 'boolean'
         ? 'Boolean'
         : typeof value === 'bigint'
           ? 'Int64'
-          : typeof value === 'number'
-            ? Number.isInteger(value)
+          : value instanceof Decimal
+            ? 'Decimal'
+            : typeof value === 'number' && Number.isInteger(value)
               ? 'Int32'
-              : 'Double'
-            : 'Object';
+              : typeof value === 'number'
+                ? 'Double'
+                : 'Object';
     throw exception('System.InvalidCastException', `Invalid cast from '${held}' to 'DateTime'.`);
   },
   fromJson: (text) => dateTimeFromJson(text),

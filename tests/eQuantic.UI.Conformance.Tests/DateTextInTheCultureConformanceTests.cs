@@ -9,7 +9,7 @@ namespace eQuantic.UI.Conformance.Tests;
 /// <c>Parse</c> and <c>TryParse</c> with no provider read the current culture, and the twins read the
 /// invariant shapes whatever culture the page was in: <c>01/02/2024</c> was the 2nd of January on a
 /// pt-BR page where .NET reads the 1st of February, a value written with <c>ToString()</c> did not read
-/// back, and a provider crossed as a name no browser defines. Measured on .NET 10 in nine cultures that
+/// back, and a provider crossed as a name no browser defines. Measured on .NET 10 in ten cultures that
 /// each read a date their own way: month first, day first with a slash and with a point, year first
 /// with a hyphen, with a slash and with a point and a space, an AM or PM designator of the culture's
 /// own before or after the clock, a point between the hours and the minutes, and marks of direction
@@ -20,8 +20,9 @@ public class DateTextInTheCultureConformanceTests
     /// <summary>The cultures every case runs in: the invariant one, then month first (en-US), day
     /// first with a slash (pt-BR), with a point (de-DE) and with marks of direction and words for AM
     /// and PM (ar), year first with a hyphen (sv-SE), with a slash (ja-JP) and with a point and a space
-    /// and the designator before the clock (ko-KR), and a point between the parts of a clock (fi-FI).</summary>
-    public static readonly string?[] Cultures = [null, "en-US", "pt-BR", "de-DE", "sv-SE", "ar", "fi-FI", "ja-JP", "ko-KR"];
+    /// and the designator before the clock (ko-KR), and a point between the parts of a clock, beside one
+    /// between the parts of a date (fi-FI) and with none there (id-ID).</summary>
+    public static readonly string?[] Cultures = [null, "en-US", "pt-BR", "de-DE", "sv-SE", "ar", "fi-FI", "ja-JP", "ko-KR", "id-ID"];
 
     /// <summary>What a reader answers for each text of a list: the value written in a form no culture
     /// changes, or <c>no</c>.</summary>
@@ -76,8 +77,8 @@ public class DateTextInTheCultureConformanceTests
         // What may stand between the parts of a date: any of the separators, white space beside them,
         // and a mark of right-to-left direction after a number, which ar writes; not one before the
         // date, nor a mark of left-to-right direction.
-        DateTimes("15//01/2024", "2024/01-15", "15/01-2024", "2024 / 01 / 15", "15‏/1‏/2024",
-            "15‏‏/1‏‏/2024", "15/1/2024‏", "‏15/1/2024", "1‎/15‎/2024", "  15/01/2024  "),
+        DateTimes("15//01/2024", "2024/01-15", "15/01-2024", "2024 / 01 / 15", "15\u200f/1\u200f/2024",
+            "15\u200f\u200f/1\u200f\u200f/2024", "15/1/2024\u200f", "\u200f15/1/2024", "1\u200e/15\u200e/2024", "  15/01/2024  "),
         // A clock after the date: one or two digits a part, a fraction after the seconds alone, written
         // with a point or a comma, and rounded to the tick, the hours alone only with a designator.
         DateTimes("2024/01/15 21:30", "2024/01/15 21:30:05.5", "2024/01/15 21:30:05,5", "2024/01/15 21:30:05.123456789",
@@ -94,6 +95,22 @@ public class DateTextInTheCultureConformanceTests
         // A point between the parts of a clock, which only a culture that writes one reads.
         DateTimes("2024/01/15 21.30", "2024/01/15 21.30.05", "2024/01/15 21:30.05", "2024/01/15 21.30,5",
             "2024/01/15 21.30.05,5", "2024/01/15 21.30.05.5", "15.1.2024 21.30.05"),
+        // Three short numbers joined by points are a clock where the culture writes its clock so, and a
+        // date elsewhere; a year among them makes them a date where the culture writes its date so too.
+        Each("TimeOnly.TryParse(t, out var v)", "v.ToString(\"o\")", "10.11.12", "9.05.07", "1.2.24", "10.11.12.5", "10.11.2012", "10.11"),
+        Each("DateOnly.TryParse(t, out var v)", "v.ToString(\"o\")", "10.11.12", "9.05.07", "1.2.24", "10.11.2012", "2012.11.10"),
+        DateTimes("1.2.2024 10.11.12", "1.2.2024 9.05", "10.11.12 1.2.2024", "10/11/2012", "100.1.1"),
+        // The clock and its zone before the date, the designator after the zone, a lowercase zone, and
+        // numbers of eight digits and of nine.
+        DateTimes("21:30 2024/01/15", "9:30 PM 2024/01/15", "21:30 -03:00 2024/01/15", "2024/01/15 21:30 -03:00 PM",
+            "2024/01/15 21:30:05z", "2024/01/15 21:30 +5:3", "1/1/00002024", "1/1/000002024", "1.2.24 10.11"),
+        // The ISO form: a year first, a T in either case and a clock of two digits a part, and nothing a
+        // designator or a short part adds.
+        DateTimes("2024-01-15T09:30:00.5", "2024-01-15T09:30:00,5", "2024/01/15T09:30", "2024-1-5T09:30", "2024-01-15T 09:30",
+            "2024-01-15 T09:30", "2024-01-15t09:30", "2024-01-15T09:30z", "2024-01-15T09:30 Z", "2024-01-15T9:30",
+            "2024-01-15T09:30:5", "2024-01-15T09:30:00 PM", "2024-01-15T09", "2024-01-15T", "24-01-15T09:30",
+            "15/01/2024T09:30", "2024-01-15T09:30:00."),
+        Offsets("2024-01-15T09:30+3", "2024-01-15T09:30:00+05:3", "2024-01-15T09:30 -03:00", "2024-01-15T09:30z"),
         // A zone after it: a DateTime is moved to the local time, and a DateTimeOffset keeps it, or takes
         // the local one where the text has none.
         DateTimes("2024/01/15 21:30:05 -03:00", "2024/01/15 21:30:05 +0530", "2024/01/15 21:30:05Z", "2024/01/15 21:30 -3",
@@ -108,7 +125,7 @@ public class DateTextInTheCultureConformanceTests
             "오후 9:30", "9:30 ص", "9:30 م", "9:30 ap.", "9:30 ip.", "9:30 PM", " 21:30 ", "24:00",
             "2024/01/15 21:30", "21:30 -03:00", "21:30Z"),
         Each("DateOnly.TryParse(t, out var v)", "v.ToString(\"o\")", "2024/01/15", "15/01/2024", "1/15/2024", "15.1.2024",
-            "2024/01/15 21:30", "2024/01/15 00:00", "15‏‏/1‏‏/2024", "2024/01/15 -03:00"),
+            "2024/01/15 21:30", "2024/01/15 00:00", "15\u200f\u200f/1\u200f\u200f/2024", "2024/01/15 -03:00"),
         // A time span's fraction: a point in any culture, and the culture's own separator where the
         // span has no days.
         Each("TimeSpan.TryParse(t, out var v)", "v.ToString(\"c\")", "1:02:03.5", "1:02:03,5", "1:02:03٫5",
@@ -116,7 +133,8 @@ public class DateTextInTheCultureConformanceTests
         // What each Parse refuses, in .NET's words.
         Refused("DateTime.Parse", "15//01/2024", "2024/01/15 24:00", "2024/01/15 23:60", "2024/01/15 13:30 AM", "abc",
             "2024/01/15 21:30 junk", "2024/01/15 21:30:05 +14:01", "", "  ", "2024/01/15 021:30", "10000/01/01", "2024/13/01",
-            "2024/01/15 21", "2024/02/31"),
+            "2024/01/15 21", "2024/02/31", "2024/01/15 24:00 junk", "2024/01/15 13:30 AM junk", "2024-01-15T09:30:00 junk",
+            "1/1/000002024"),
         Refused("DateTimeOffset.Parse", "abc", "2024/02/31", "2024/01/15 24:00", "2024/01/15 21:30 +15:00", "2024/01/15 21:30 junk"),
         Refused("TimeOnly.Parse", "24:00", "2024/01/15 21:30", "21:30 -03:00", "13:30 AM", "abc", "21", "21:30Z", "9:30 PM junk"),
         Refused("DateOnly.Parse", "2024/01/15 21:30", "2024/02/31", "abc", "2024/01/15 -03:00", "2024/01/15Z"),
@@ -154,6 +172,10 @@ public class DateTextInTheCultureConformanceTests
             + "try { Convert.ToDateTime(1.5m); } catch (InvalidCastException e) { s += e.Message + \"|\"; } "
             + "try { Convert.ToDateTime(2L); } catch (InvalidCastException e) { s += e.Message + \"|\"; } "
             + "try { Convert.ToDateTime((object)true); } catch (InvalidCastException e) { s += e.Message + \"|\"; } "
+            + "try { Convert.ToDateTime((object)1.5m); } catch (InvalidCastException e) { s += e.Message + \"|\"; } "
+            + "try { Convert.ToDateTime((object)2L); } catch (InvalidCastException e) { s += e.Message + \"|\"; } "
+            + "try { Convert.ToDateTime(new DateOnly(2024, 1, 2)); } catch (InvalidCastException e) { s += e.Message + \"|\"; } "
+            + "try { Convert.ToDateTime((object)TimeSpan.FromHours(1)); } catch (InvalidCastException e) { s += e.Message + \"|\"; } "
             + "try { Convert.ToDateTime(\"abc\"); } catch (FormatException e) { s += e.Message; } "
             + "return s;",
         // An argument bound by its name is the one it names, and they run in the order they are written.

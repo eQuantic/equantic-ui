@@ -8,11 +8,14 @@
  * the year (its short date pattern's), the separator of its date and of its clock beside the ones
  * every culture reads (`/`, `-` and `.`; `:`), its AM and PM designators beside `AM` and `PM`, a
  * literal its date ends with (ko-KR's point), and the marks of right-to-left direction ar writes after
- * a number. What it does not: a fraction of a second is written with a point or a comma in every
- * culture, and AM and PM are read in every one.
+ * a number. A culture that writes its clock with points (fi-FI, da-DK, id-ID) reads three short
+ * numbers joined by points as a clock, `10.11.12` being 10:11:12 there and the 10th of November 2012
+ * in de-DE. What it does not change: a fraction of a second is written with a point or a comma in
+ * every culture, and AM and PM are read in every one.
  *
  * The forms are the numeric ones: three numbers for a date, a clock of one to three parts, a
- * designator, a zone. A month's name, a date of two numbers and a clock with no date are .NET's and
+ * designator, a zone, and the ISO form, a date whose year comes first, a `T` and a clock of two digits
+ * a part. A month's name, a date of two numbers and a clock with no date as today's are .NET's and
  * not read here yet (#807).
  */
 import type { DateTimeFormatData } from './culture';
@@ -58,12 +61,23 @@ const TICKS_PER_HOUR = 36_000_000_000n;
 const TICKS_PER_MINUTE = 600_000_000n;
 
 /** U+200F RIGHT-TO-LEFT MARK, which ar writes after each number of a date and .NET reads past there. */
-const RLM = '‏';
+const RLM = '\u200f';
+
+/** U+200E LEFT-TO-RIGHT MARK, which a culture's separator may carry and the reader compares without. */
+const LRM = '\u200e';
+
+/** The refusal of a text no shape reads, which .NET words plainly. */
+const FORMAT: Refusal = { refused: 'format' };
 
 /** A culture's separators and designators, as the reader compares them. */
 interface Shapes {
   dateSeparators: string[];
   timeSeparators: string[];
+  /**
+   * Whether the culture writes a point between the parts of its clock (fi-FI, da-DK, id-ID): three
+   * numbers of two digits or fewer joined by points are then a clock, where .NET reads them as one.
+   */
+  pointIsClock: boolean;
   /** Each designator and what it says, the longest first, so `ap.` is tried before `AM` would be. */
   designators: { text: string; pm: boolean }[];
   /** What the short date pattern writes after its last part (ko-KR's `.`), or nothing. */
@@ -72,7 +86,7 @@ interface Shapes {
 }
 
 function shapesOf(culture: DateTimeFormatData): Shapes {
-  const own = (separator: string) => separator.split(RLM).join('').split('‎').join('').trim();
+  const own = (separator: string) => separator.split(RLM).join('').split(LRM).join('').trim();
   const designators = [
     { text: culture.amDesignator, pm: false },
     { text: culture.pmDesignator, pm: true },
@@ -87,9 +101,15 @@ function shapesOf(culture: DateTimeFormatData): Shapes {
     pattern.lastIndexOf('M'),
     pattern.lastIndexOf('y'),
   );
+  const dateSeparator = own(culture.dateSeparator);
+  const pointIsClock = own(culture.timeSeparator) === '.';
+  // A point separates a date in every culture but one whose clock it separates and whose date it does
+  // not: id-ID refuses `10.11.2012`, where fi-FI, which writes its date with points too, reads it.
+  const point = pointIsClock && dateSeparator !== '.' ? [] : ['.'];
   return {
-    dateSeparators: ['/', '-', '.', own(culture.dateSeparator)].filter((s) => s.length > 0),
+    dateSeparators: ['/', '-', ...point, dateSeparator].filter((s) => s.length > 0),
     timeSeparators: [':', own(culture.timeSeparator)].filter((s) => s.length > 0),
+    pointIsClock,
     designators,
     dateEnd: own(pattern.slice(last + 1).replace(/'/g, '')),
     pattern,
@@ -139,95 +159,175 @@ function isLetter(character: string | undefined): boolean {
   return character !== undefined && /\p{L}/u.test(character);
 }
 
+/** Whether a reader's answer is a refusal. */
+function refused<T extends object>(read: T | Refusal): read is Refusal {
+  return 'refused' in read;
+}
+
 /**
- * The moment a text names, read in `culture`, or why it names none.
+ * The moment a text names, read in `culture`, or why it names none: a date, then a clock and a zone,
+ * or a clock and a zone, then a date, as .NET's lexer takes them in either order; or a date whose year
+ * is written first, a `T` and the ISO clock.
  */
 export function readMoment(text: string, culture: DateTimeFormatData): Moment | Refusal {
   const shapes = shapesOf(culture);
-  const read = readFrom(text, shapes, true);
-  // Three numbers that make no date may be a clock whose culture writes a point between its parts
-  // (fi-FI's `21.30.05`), so they are read again as one.
-  if (read === 'invalid date') {
-    const clock = readFrom(text, shapes, false);
-    return clock === 'invalid date' || 'refused' in clock ? { refused: 'format' } : clock;
-  }
-  return read;
-}
-
-function readFrom(
-  text: string,
-  shapes: Shapes,
-  withDate: boolean,
-): Moment | Refusal | 'invalid date' {
   const cursor = new Cursor(text);
   cursor.space();
 
-  const start = cursor.at;
   let date: ReadDate | null = null;
-  if (withDate) {
-    const read = readDate(cursor, shapes);
-    if (read === 'invalid') return 'invalid date';
-    if (read === 'none') cursor.at = start;
-    else date = read;
-  }
-
-  let clock: ReadClock | null;
-  const iso = date !== null && text[cursor.at] === 'T';
-  if (iso) {
-    // The ISO form: the clock right after the date.
-    cursor.at++;
-    const read = readClockAndDesignator(cursor, shapes, false);
-    if (read === null || 'refused' in read) return read ?? { refused: 'format' };
-    clock = read;
-  } else {
+  const leading = readDate(cursor, shapes);
+  if (leading === 'invalid') return FORMAT;
+  if (leading !== 'none') {
+    date = leading.date;
+    const before = cursor.at;
     cursor.space();
-    const read = readClockAndDesignator(cursor, shapes, true);
-    if (read !== null && 'refused' in read) return read;
-    clock = read;
-  }
-
-  // A zone after the clock, or after a date with none.
-  let zone: Moment['zone'] = null;
-  if (date !== null || clock !== null) {
-    cursor.space();
-    const read = readZone(cursor);
-    if (read !== null && typeof read === 'object') return read;
-    zone = read;
+    if (leading.yearFirst && (text[cursor.at] === 'T' || text[cursor.at] === 't')) {
+      cursor.at++;
+      return readIso(cursor, date);
+    }
+    cursor.at = before;
   }
 
   cursor.space();
-  if (!cursor.done || (date === null && clock === null)) {
-    // A word is named where .NET's lexer meets it; its ISO reader names none.
-    return isLetter(text[cursor.at]) && !iso
-      ? { refused: 'word', index: cursor.at }
-      : { refused: 'format' };
+  const raw = readClockAndDesignator(cursor, shapes);
+  if (raw === 'invalid') return FORMAT;
+
+  let zone: Moment['zone'] = null;
+  const readZoneHere = (): Refusal | null => {
+    const before = cursor.at;
+    cursor.space();
+    const read = readZone(cursor);
+    if (read === null) cursor.at = before;
+    else if (typeof read === 'object') return read;
+    else zone = read;
+    return null;
+  };
+  if (date !== null || raw !== null) {
+    const refusal = readZoneHere();
+    if (refusal) return refusal;
   }
+
+  // A date after the clock, and a zone after it where none came before.
+  if (date === null && raw !== null) {
+    const before = cursor.at;
+    cursor.space();
+    const trailing = readDate(cursor, shapes);
+    if (trailing === 'invalid') return FORMAT;
+    if (trailing === 'none') cursor.at = before;
+    else {
+      date = trailing.date;
+      if (zone === null) {
+        const refusal = readZoneHere();
+        if (refusal) return refusal;
+      }
+    }
+  }
+
+  // A designator after the zone, where none stood beside the clock.
+  if (raw !== null && raw.pm === null) {
+    const before = cursor.at;
+    cursor.space();
+    raw.pm = readDesignator(cursor, shapes);
+    if (raw.pm === null) cursor.at = before;
+  }
+
+  cursor.space();
+  if (!cursor.done || (date === null && raw === null)) {
+    // A word is named where .NET's lexer meets it, before a clock out of range is.
+    return isLetter(text[cursor.at]) ? { refused: 'word', index: cursor.at } : FORMAT;
+  }
+  const clock = raw === null ? null : clockOf(raw);
+  if (clock !== null && refused(clock)) return clock;
   return { date, clock, zone };
 }
 
 /**
- * A date of three numbers: `none` where the text does not start with one, `invalid` where its numbers
- * make no date in the culture's order.
+ * The rest of an ISO text after its `T`, as .NET's `ParseISO8601` reads it: hours and minutes of two
+ * digits each and seconds of two, joined by colons with white space allowed beside them, a fraction
+ * after the seconds, then a zone. No designator, and nothing after: what is left is the plain refusal.
  */
-function readDate(cursor: Cursor, shapes: Shapes): ReadDate | 'none' | 'invalid' {
+function readIso(cursor: Cursor, date: ReadDate): Moment | Refusal {
+  const two = (): number | null => {
+    cursor.space();
+    const digits = cursor.digits();
+    return digits !== null && digits.length === 2 ? +digits : null;
+  };
+  const colon = (): boolean => {
+    const before = cursor.at;
+    cursor.space();
+    if (cursor.text[cursor.at] === ':') {
+      cursor.at++;
+      return true;
+    }
+    cursor.at = before;
+    return false;
+  };
+  const hour = two();
+  if (hour === null || !colon()) return FORMAT;
+  const minute = two();
+  if (minute === null) return FORMAT;
+  let second = 0;
+  let fraction = 0;
+  if (colon()) {
+    const read = two();
+    if (read === null) return FORMAT;
+    second = read;
+    const mark = cursor.text[cursor.at];
+    if (mark === '.' || mark === ',') {
+      cursor.at++;
+      const digits = cursor.digits();
+      if (digits === null) return FORMAT;
+      fraction = fractionTicks(digits);
+    }
+  }
+  cursor.space();
+  const zone = readZone(cursor);
+  if (zone !== null && typeof zone === 'object') return zone;
+  cursor.space();
+  if (!cursor.done) return FORMAT;
+  if (hour > 23 || minute > 59 || second > 59) return { refused: 'clock' };
+  return { date, clock: { hour, minute, second, fraction }, zone };
+}
+
+/**
+ * A date of three numbers: `none` where the text has none here, which leaves the cursor where it was,
+ * `invalid` where its numbers make no date in the culture's order. In a culture whose clock is written
+ * with points, three numbers of two digits or fewer joined by points are its clock, not a date.
+ */
+function readDate(
+  cursor: Cursor,
+  shapes: Shapes,
+): { date: ReadDate; yearFirst: boolean } | 'none' | 'invalid' {
+  const start = cursor.at;
+  const none = (): 'none' => {
+    cursor.at = start;
+    return 'none';
+  };
   const parts: string[] = [];
+  let points = true;
   for (let i = 0; i < 3; i++) {
     if (i > 0) {
       cursor.space();
-      if (cursor.take(shapes.dateSeparators) === null) return 'none';
+      const separator = cursor.take(shapes.dateSeparators);
+      if (separator === null) return none();
+      points &&= separator === '.';
       cursor.space();
     }
     const part = cursor.digits();
-    if (part === null) return 'none';
+    if (part === null) return none();
     parts.push(part);
   }
+  if (shapes.pointIsClock && points && parts.every((part) => !looksLikeYear(part))) return none();
+  // .NET reads a number of eight digits at most.
+  if (parts.some((part) => part.length > 8)) return 'invalid';
   // The literal the culture's date ends with, which it writes after the day (ko-KR's `2024. 1. 15.`).
   if (shapes.dateEnd.length > 0) {
     const before = cursor.at;
     cursor.space();
     if (cursor.take([shapes.dateEnd]) === null) cursor.at = before;
   }
-  return dateOf(parts, shapes.pattern) ?? 'invalid';
+  const date = dateOf(parts, shapes.pattern);
+  return date === null ? 'invalid' : { date, yearFirst: looksLikeYear(parts[0]) };
 }
 
 /**
@@ -291,32 +391,45 @@ function readDesignator(cursor: Cursor, shapes: Shapes): boolean | null {
   return null;
 }
 
+/** The parts of a clock and the designator beside it, before they are checked as a time of day. */
+interface RawClock {
+  parts: number[] & { fraction: number };
+  pm: boolean | null;
+}
+
 /**
- * A clock, with the designator before or after it: null where there is neither, a refusal where they
- * are no time of day. `spaced` lets white space stand between the designator and the clock.
+ * A clock, with the designator before or after it: null where there is neither, `invalid` where they
+ * are no clock .NET reads. Whether it is a time of day is {@link clockOf}'s, once the text is read
+ * through, since .NET names a word it does not know before it refuses a clock out of range.
  */
-function readClockAndDesignator(
-  cursor: Cursor,
-  shapes: Shapes,
-  spaced: boolean,
-): ReadClock | Refusal | null {
+function readClockAndDesignator(cursor: Cursor, shapes: Shapes): RawClock | 'invalid' | null {
+  const start = cursor.at;
   let pm = readDesignator(cursor, shapes);
-  if (pm !== null && spaced) cursor.space();
+  if (pm !== null) cursor.space();
   const parts = readClock(cursor, shapes);
-  if (parts === null) return pm === null ? null : { refused: 'format' };
-  if (parts === 'invalid') return { refused: 'format' };
+  if (parts === null) {
+    if (pm === null) return null;
+    cursor.at = start;
+    return 'invalid';
+  }
+  if (parts === 'invalid') return 'invalid';
   if (pm === null) {
     const before = cursor.at;
     cursor.space();
     pm = readDesignator(cursor, shapes);
     if (pm === null) cursor.at = before;
   }
+  return { parts, pm };
+}
+
+/** The time of day a clock and its designator name, or why they name none. */
+function clockOf({ parts, pm }: RawClock): ReadClock | Refusal {
   // The hours alone are a clock only with a designator.
-  if (parts.length === 1 && pm === null) return { refused: 'format' };
+  if (parts.length === 1 && pm === null) return FORMAT;
   let [hour] = parts;
   const [, minute = 0, second = 0] = parts;
   if (pm === false) {
-    if (hour > 12) return { refused: 'format' };
+    if (hour > 12) return FORMAT;
     if (hour === 12) hour = 0;
   } else if (pm === true && hour < 12) hour += 12;
   if (hour > 23 || minute > 59 || second > 59) return { refused: 'clock' };
@@ -374,12 +487,13 @@ function fractionTicks(digits: string): number {
 }
 
 /**
- * A zone: `Z`, or a sign and an offset of hours, `-3`, `-03`, `-300`, `-0300` and `-03:00`. Null where there is
- * none; a refusal where it is past fourteen hours, or its minutes are not ones.
+ * A zone: `Z` in either case, or a sign and an offset of hours, `-3`, `-03`, `-300`, `-0300`, `-03:00`
+ * and `-3:5`. Null where there is none; a refusal where it is past fourteen hours, or its minutes are
+ * not ones.
  */
 function readZone(cursor: Cursor): 'utc' | bigint | Refusal | null {
   const mark = cursor.text[cursor.at];
-  if (mark === 'Z' && !isLetter(cursor.text[cursor.at + 1])) {
+  if ((mark === 'Z' || mark === 'z') && !isLetter(cursor.text[cursor.at + 1])) {
     cursor.at++;
     return 'utc';
   }
@@ -398,7 +512,7 @@ function readZone(cursor: Cursor): 'utc' | bigint | Refusal | null {
     if (cursor.text[cursor.at] === ':') {
       cursor.at++;
       const more = cursor.digits();
-      if (more === null || more.length !== 2) return { refused: 'format' };
+      if (more === null || more.length > 2) return { refused: 'format' };
       minutes = +more;
     }
   } else if (digits.length <= 4) {

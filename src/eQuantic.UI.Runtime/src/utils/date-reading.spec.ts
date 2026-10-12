@@ -12,7 +12,7 @@ function culture(data: Partial<DateTimeFormatData>): DateTimeFormatData {
   return { ...INVARIANT_FORMAT.dateTimeFormat, ...data };
 }
 
-const RLM = '‏';
+const RLM = '\u200f';
 
 const CULTURES = {
   invariant: INVARIANT_FORMAT.dateTimeFormat,
@@ -38,6 +38,7 @@ const CULTURES = {
     amDesignator: 'ap.',
     pmDesignator: 'ip.',
   }),
+  'id-ID': culture({ shortDatePattern: 'dd/MM/yyyy', timeSeparator: '.' }),
   'ja-JP': culture({ shortDatePattern: 'yyyy/MM/dd', amDesignator: '午前', pmDesignator: '午後' }),
   'ko-KR': culture({
     shortDatePattern: 'yyyy. M. d.',
@@ -110,7 +111,7 @@ describe('readMoment: what a culture writes reads back', () => {
   it('reads past the marks of direction ar writes after a number, and no other', () => {
     expect(read(`15${RLM}/1${RLM}/2024`, 'ar')).toBe('2024-01-15');
     expect(read(`${RLM}15/1/2024`, 'ar')).toBe('format');
-    expect(read('15‎/1/2024', 'ar')).toBe('format');
+    expect(read('15\u200e/1/2024', 'ar')).toBe('format');
   });
 });
 
@@ -180,5 +181,67 @@ describe('readMoment: what is left over', () => {
   it('refuses a text with nothing to read', () => {
     expect(read('', 'invariant')).toBe('format');
     expect(read('   ', 'invariant')).toBe('format');
+  });
+});
+
+describe('readMoment: a clock written with points', () => {
+  it.each<[Culture, string, string]>([
+    // Three short numbers joined by points are a clock where the culture writes its clock so.
+    ['fi-FI', '10.11.12', '10:11:12'],
+    ['fi-FI', '9.05.07', '09:05:07'],
+    ['fi-FI', '10.11.12.5', '10:11:12+5000000'],
+    ['id-ID', '10.11.12', '10:11:12'],
+    ['de-DE', '10.11.12', '2012-11-10'],
+    // A year among them makes them a date where the culture writes its date with points too.
+    ['fi-FI', '10.11.2012', '2012-11-10'],
+    ['fi-FI', '1.2.2024 10.11.12', '2024-02-01 10:11:12'],
+    ['fi-FI', '10.11.12 1.2.2024', '2024-02-01 10:11:12'],
+    ['id-ID', '10.11.2012', 'format'],
+    ['id-ID', '10/11/2012', '2012-11-10'],
+  ])('%s reads %s as %s', (name, text, expected) => {
+    expect(read(text, name)).toBe(expected);
+  });
+});
+
+describe('readMoment: the ISO form', () => {
+  it.each<[string, string]>([
+    ['2024-01-15T09:30:00.5', '2024-01-15 09:30:00+5000000'],
+    ['2024-1-5T09:30', '2024-01-05 09:30:00'],
+    ['2024/01/15T09:30', '2024-01-15 09:30:00'],
+    ['2024-01-15 T 09:30', '2024-01-15 09:30:00'],
+    ['2024-01-15t09:30z', '2024-01-15 09:30:00 Z'],
+    ['2024-01-15T09:30:00+05:3', '2024-01-15 09:30:00 303min'],
+    // Two digits a part, no designator, and a year first.
+    ['2024-01-15T9:30', 'format'],
+    ['2024-01-15T09:30:5', 'format'],
+    ['2024-01-15T09:30:00 PM', 'format'],
+    ['2024-01-15T09', 'format'],
+    ['2024-01-15T09:30:00.', 'format'],
+    ['24-01-15T09:30', 'format'],
+  ])('reads %s as %s', (text, expected) => {
+    expect(read(text, 'invariant')).toBe(expected);
+  });
+});
+
+describe('readMoment: the order of the parts', () => {
+  it.each<[string, string]>([
+    ['21:30 2024/01/15', '2024-01-15 21:30:00'],
+    ['9:30 PM 2024/01/15', '2024-01-15 21:30:00'],
+    ['21:30 -03:00 2024/01/15', '2024-01-15 21:30:00 -180min'],
+    ['2024/01/15 21:30 -03:00 PM', '2024-01-15 21:30:00 -180min'],
+    ['2024/01/15 9:30 -03:00 PM', '2024-01-15 21:30:00 -180min'],
+  ])('reads %s as %s', (text, expected) => {
+    expect(read(text, 'invariant')).toBe(expected);
+  });
+
+  it('names a word before it refuses a clock out of range, as .NET’s lexer meets it first', () => {
+    expect(read('2024/01/15 24:00 junk', 'invariant')).toBe('word at 17');
+    expect(read('2024/01/15 13:30 AM junk', 'invariant')).toBe('word at 20');
+    expect(read('2024/01/15 24:00', 'invariant')).toBe('clock');
+  });
+
+  it('reads a number of eight digits and refuses one of nine', () => {
+    expect(read('1/1/00002024', 'invariant')).toBe('2024-01-01');
+    expect(read('1/1/000002024', 'invariant')).toBe('format');
   });
 });
