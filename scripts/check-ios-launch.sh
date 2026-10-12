@@ -18,9 +18,15 @@ frames=60
 
 app=${EQ_IOS_APP:-}
 if [ -z "$app" ]; then
-  # Release: a Debug build installs a .app without its assemblies, which crashes on launch.
-  dotnet build "$root/samples/WalletMobile" -f net10.0-ios -r iossimulator-arm64 -c Release
-  app="$root/samples/WalletMobile/bin/Release/net10.0-ios/iossimulator-arm64/WalletMobile.app"
+  # Release: a Debug build installs a .app without its assemblies, which crashes on launch. The
+  # simulator runs the machine's own architecture.
+  case "$(uname -m)" in
+    arm64) rid=iossimulator-arm64 ;;
+    *) rid=iossimulator-x64 ;;
+  esac
+  dotnet build "$root/samples/WalletMobile" -f net10.0-ios -r "$rid" -c Release
+  # Read back from what the build wrote, rather than a path spelled here.
+  app=$(find "$root/samples/WalletMobile/bin/Release" -maxdepth 4 -path "*/$rid/*" -name "*.app" | head -1)
 fi
 if [ ! -f "$app/Info.plist" ]; then
   echo "::error::no app at $app, so this would launch nothing"
@@ -69,21 +75,36 @@ app_log() {
     --predicate "process == \"$process\"" 2>/dev/null || true
 }
 
-# The line the controller prints after its last frame. Polled: a cold simulator takes its time.
-# Matched on a here-string, never `| grep -q`: under pipefail a grep that stops at the first match
-# can fail the pipeline it stopped, and read a found line as a missing one.
-done_line="[photon] frames presented: $frames"
+# Whether the app's process is still there. An app that crashed at launch, the defect this step
+# exists for, is reported now rather than after the whole wait.
+running() {
+  xcrun simctl spawn "$udid" launchctl list 2>/dev/null \
+    | awk -v label="UIKitApplication:$bundle[" 'index($3, label) == 1 && $1 != "-" { found = 1 } END { exit !found }'
+}
+
+# The line the controller prints after its last frame, and only when nothing was CONTAINED and no
+# face went missing: those it appends to the same line, so the line is matched to its end. Polled,
+# because a cold simulator takes its time. Matched on a here-string, never `| grep -q`: under
+# pipefail a grep that stops at the first match can fail the pipeline it stopped, and read a found
+# line as a missing one.
+done_line="\[photon\] frames presented: $frames\$"
 log=""
 for _ in $(seq 1 120); do
   log=$(app_log)
-  if grep -qF "$done_line" <<<"$log"; then break; fi
+  if grep -qE "\[photon\] frames presented: " <<<"$log"; then break; fi
+  if ! running; then
+    sleep 2
+    log=$(app_log)
+    echo "::error::$bundle is no longer running on $runtime."
+    break
+  fi
   sleep 2
 done
 
 grep -F "[photon]" <<<"$log" || true
 
-if ! grep -qF "$done_line" <<<"$log"; then
-  echo "::error::$bundle did not present $frames frames on $runtime. The last of its log:"
+if ! grep -qE "$done_line" <<<"$log"; then
+  echo "::error::$bundle did not present $frames clean frames on $runtime. The last of its log:"
   tail -40 <<<"$log"
   exit 1
 fi
