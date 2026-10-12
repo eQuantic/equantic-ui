@@ -43,6 +43,30 @@ public class BunToolchainTests
     private static string Digest(string path) =>
         Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant();
 
+    /// <summary>
+    /// <paramref name="json"/> with <paramref name="relative"/>'s digest replaced by <paramref name="digest"/>.
+    /// The group is written <c>${1}</c>, never <c>$1</c>: a digest that starts with a digit read as part
+    /// of the group's number, <c>$17b3…</c> for a group 17 that is not there, and the line lost its key.
+    /// </summary>
+    private static string WithDigest(string json, string relative, string digest) =>
+        System.Text.RegularExpressions.Regex.Replace(
+            json, $"(\"{System.Text.RegularExpressions.Regex.Escape(relative)}\": \")[a-f0-9]+", $"${{1}}{digest}");
+
+    /// <summary>
+    /// The regeneration runs once an update, so it had never met a digest that starts with a digit:
+    /// moving to 1.4.3 it wrote four of six lines without their key (#854).
+    /// </summary>
+    [Theory]
+    [InlineData("7b3ab8150d7a615b")]
+    [InlineData("c34f35f31d0de594")]
+    public void ARegeneratedDigest_KeepsItsLine_WhateverItStartsWith(string digest)
+    {
+        const string line = "    \"eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux.zip\": \"79db9fbe0dc4558d\",";
+
+        WithDigest(line, "eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux.zip", digest)
+            .Should().Be($"    \"eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux.zip\": \"{digest}\",");
+    }
+
     [Fact]
     public void EveryCommittedBun_MatchesItsPinnedDigest()
     {
@@ -57,9 +81,7 @@ public class BunToolchainTests
                 relative => relative,
                 relative => Digest(Path.Combine(root, "src", relative)));
             var json = File.ReadAllText(ManifestPath(root));
-            foreach (var (relative, digest) in refreshed)
-                json = System.Text.RegularExpressions.Regex.Replace(
-                    json, $"(\"{System.Text.RegularExpressions.Regex.Escape(relative)}\": \")[a-f0-9]+", $"$1{digest}");
+            foreach (var (relative, digest) in refreshed) json = WithDigest(json, relative, digest);
             File.WriteAllText(ManifestPath(root), json);
             return;
         }
