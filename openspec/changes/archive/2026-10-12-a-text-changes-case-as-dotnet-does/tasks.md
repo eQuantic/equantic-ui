@@ -3,7 +3,7 @@
 ## 1. Measure before changing
 
 - [x] 1.1 Measure .NET 10's casing over every code unit of the BMP and every code point of the first supplementary plane, in the invariant culture and in tr, az and the common cultures, against the engine's full mappings, and list the code points an engine of a later Unicode cases and .NET 10 does not
-- [x] 1.2 Write `CasingConformanceTests` and run them against 54a2e335: 72 of the 96 cases, in eight cultures, fail as #848 and #725 describe
+- [x] 1.2 Write `CasingConformanceTests` and run them against 9b43eb2b: 72 of the 96 cases, in eight cultures, fail as #848 and #725 describe
 
 ## 2. The twins and the calls
 

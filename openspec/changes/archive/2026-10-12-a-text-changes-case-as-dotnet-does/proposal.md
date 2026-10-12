@@ -6,7 +6,7 @@ null-argument baseline carried for a dropped culture or calendar.
 
 ## Why
 
-Executed on both sides at 54a2e335, 72 of the 96 cases of `CasingConformanceTests` fail (12 cases,
+Executed on both sides at 9b43eb2b, 72 of the 96 cases of `CasingConformanceTests` fail (12 cases,
 each run in the invariant culture, en-US, pt-BR, de-DE, tr-TR, az-Latn-AZ, lt-LT and el-GR):
 
 - `ToUpper`, `ToLower` and their invariant pair, of a string and of a char, were the engine's
