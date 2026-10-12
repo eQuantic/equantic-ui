@@ -2513,6 +2513,18 @@ record of a release, the wiki's Upgrading page is the distillate.
   `default`) is reached when the app has a type of that name
   ([#830](https://github.com/eQuantic/equantic-ui/issues/830)). Proposed and archived
   through OpenSpec (`openspec/specs/referenced-projects`).
+- **2026-10-12 · A TimeSpan writes the format it is given**: a `TimeSpan` written with a format wrote
+  its constant text whatever the format asked for, so `ToString(@"hh\:mm")` of an hour and two minutes
+  was `01:02:00` where .NET writes `01:02`, and a format .NET refuses wrote a value
+  ([#837](https://github.com/eQuantic/equantic-ui/issues/837)). The formatter handed a TimeSpan to the
+  twin's own `toString`, which takes no format, and eqc lowered `ToString(format)` to it directly. The
+  runtime writes .NET 10's standard formats now, the general ones with the culture's decimal separator,
+  and its custom formats token by token, with its refusals in its words; eqc hands a TimeSpan's
+  `ToString` to the formatter as it hands a date's, so its provider is the culture it names where it
+  was a name no browser defines, and a null `TimeSpan?` writes nothing where it was read through null.
+  45 of the 50 new conformance cases, run in five cultures, fail at d5097bc2; one entry leaves the
+  null-argument baseline. The served runtime grows about 900 gzipped bytes. Proposed and archived
+  through OpenSpec (`openspec/specs/runtime-dates`).
 
 ## Retired documents
 
