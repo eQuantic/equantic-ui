@@ -15,8 +15,11 @@ name that is not its assembly's, and a library's `InternalsVisibleTo` for the re
 name meets the same end.
 
 The list of projects splits at a bar. It is one line a project, `assembly|project file`, and the
-reader cuts at the first bar, which a path on macOS or Linux may hold. A solution under `/work/a|b`
-is refused on every build (EQ0001).
+reader cuts at the first bar, which a path on macOS or Linux may hold: read alone, a list under
+`/work/a|b` is EQ0001 naming `/work/a`. Measured after the issue was filed, the C# compiler itself does
+not build a project with a reference under such a folder (CS0006, the reference's path handed to it
+without its bar), so this half is the compiler's own reading made whole, and not a build it turns
+green.
 
 ## What Changes
 
@@ -29,7 +32,7 @@ is refused on every build (EQ0001).
   a line can.
 
 For a developer: nothing to write, and nothing to look up. A project whose directory or assembly
-name holds a `$`, a backtick or a bar builds as any other.
+name holds a `$`, a backtick or a quote builds as any other.
 
 It reaches the SDK and eqc. The public surface gains two static members of `AppBuildOptions`, which
 read a command line, and loses nothing. The developer surface does not move.

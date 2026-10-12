@@ -8,11 +8,18 @@ The paths and the name the SDK hands the build SHALL reach it as they are, whate
 hold that a file name or an assembly name may hold: a dollar sign, a backtick, a bar, a space, a
 quote. No shell SHALL read them on the way.
 
-#### Scenario: A solution under a directory whose name holds a bar
+#### Scenario: The list of projects under a directory whose name holds a bar
 
-- **WHEN** an app and the class library it references sit under a directory named `a|b $c`, on a
-  system whose paths may hold a bar
-- **THEN** the build succeeds, and a type of the library that a page uses is a module of the bundle
+- **WHEN** the projects the build is handed sit under a directory named `a|b $c`, on a system whose
+  paths may hold a bar
+- **THEN** each project is read whole, and a type of the library that a page uses is a module of the
+  bundle
+
+#### Scenario: An app under a directory whose name holds a dollar sign and quotes
+
+- **WHEN** an app and the class library it references sit under a directory named `app $b 'c'`, and
+  the app is built from packages alone
+- **THEN** the build succeeds, and the bundle holds the library's types the page uses
 
 #### Scenario: An app whose assembly name holds a dollar sign
 

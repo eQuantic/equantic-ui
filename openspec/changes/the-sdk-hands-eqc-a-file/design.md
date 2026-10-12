@@ -54,3 +54,6 @@ continue.
   the step that failed. The SDK writes it in the target before the one that runs eqc.
 - The dashboard sample's output is the measure that nothing else moved: byte for byte what main
   writes.
+- A bar is read whole by eqc now, and that is all it buys: the C# compiler does not build a project
+  with a reference under a folder whose name holds one (CS0006, measured). The pair format costs
+  nothing over the old one, and keeps eqc out of that failure.

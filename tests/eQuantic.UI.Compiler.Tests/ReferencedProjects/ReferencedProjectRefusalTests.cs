@@ -643,9 +643,11 @@ public sealed class ReferencedProjectRefusalTests
     public void ASolutionUnderAFolderWhoseNameHoldsABar_BuildsItsLibraryFromSource()
     {
         // The list was one line a project, `assembly|project file`, and the reader cut it at the first
-        // bar: a solution under `a|b $c` was refused on every build (EQ0001), naming `.../a` as the
-        // assembly it could not find (#836). A path is a line whole now. Windows takes no bar in a
-        // name, so there the folder holds the rest.
+        // bar: a list under `a|b $c` was EQ0001, naming `.../a` as the assembly it could not find
+        // (#836). A path is a line whole now. This holds eqc's own reading, under the build the
+        // fixture runs in process: the C# compiler does not build a project with a reference under
+        // such a folder (CS0006, measured). Windows takes no bar in a name, so there the folder holds
+        // the rest.
         var folder = OperatingSystem.IsWindows() ? "a $b c" : "a|b $c";
         using var solution = new Solution(folder)
             .Library("Common", files: [("Cursor.cs", SharedLibrary.Cursor)])
