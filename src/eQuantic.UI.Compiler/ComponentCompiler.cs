@@ -278,13 +278,17 @@ public class ComponentCompiler
     }
 
     /// <summary>
-    /// The modules of the types named <paramref name="typeName"/> that <paramref name="filePath"/>
-    /// declares, and of no other type of the file. A referenced project's file is compiled for the
-    /// type the browser code reached: a class beside it that reads a file is never compiled, so it
-    /// reports nothing (#624).
+    /// The module of ONE type of a referenced project, from a file that declares it, and of no other
+    /// type of that file. The file is compiled for the type the browser code reached: a class beside
+    /// it that reads a file is never compiled, so it reports nothing (#624). The type is found by
+    /// what it is, its CLR name, since a file may hold another of its simple name in another
+    /// namespace, which the page did not reach.
     /// </summary>
-    internal IEnumerable<CompilationResult> CompileType(string filePath, string typeName) =>
-        CompileAll(_parser.Parse(filePath).Where(component => component.Name == typeName));
+    internal IEnumerable<CompilationResult> CompileType(ReferencedType type) =>
+        CompileAll(_parser.Parse(type.File).Where(component =>
+            component.Name == type.Name
+            && DeclarationOf(component) is { } declaration
+            && ComponentParser.ClrIdentity(declaration) == type.Identity));
 
     /// <summary>
     /// Every parsed component through <see cref="Compile"/>, with one file-level check first: two

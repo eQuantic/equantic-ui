@@ -467,15 +467,13 @@ public sealed class AppBuild
             while (_referenced is not null && reached.TryDequeue(out var type))
             {
                 if (_referenced.ProjectOf(type.File) is not { } project || !compiled.Add(type)) continue;
-                foreach (var result in _compiler.CompileType(type.File, type.Name))
+                foreach (var result in _compiler.CompileType(type))
                 {
-                    // Claimed with its project's assembly: a type of the app and one of a referenced
-                    // project that share a full name are two types, and one name for both is the
-                    // collision, never one type declared twice.
-                    var identity = string.IsNullOrEmpty(result.Namespace)
-                        ? $"{project.AssemblyName}:{result.ComponentName}"
-                        : $"{project.AssemblyName}:{result.Namespace}.{result.ComponentName}";
-                    Write(result, type.File, isEntryCandidate: false, identity, Describe);
+                    // Claimed as what it is, with its project's assembly: a type of the app and one
+                    // of a referenced project that share a full name are two types, and so are two
+                    // of one simple name in two namespaces of one file. One name for two types is
+                    // the collision, never one type declared twice.
+                    Write(result, type.File, isEntryCandidate: false, $"{project.AssemblyName}:{type.Identity}", Describe);
                 }
             }
 

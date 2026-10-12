@@ -119,6 +119,12 @@ A type of a referenced project that is not reached SHALL NOT collide with anythi
 - **THEN** the build fails with EQ1005 at the referenced project's file, and reports no type as
   declared twice (EQ1006)
 
+#### Scenario: One file of the library declares two types of one name, and a page reaches one
+
+- **WHEN** a file of the referenced project declares a `Status` in each of two namespaces, the
+  second of which reads a file, and a page builds the first
+- **THEN** the build succeeds with the first as the module, and the second is not compiled
+
 #### Scenario: The library's `Status` is never used by the browser code
 
 - **WHEN** the app declares `Status`, the referenced project declares another, and no written

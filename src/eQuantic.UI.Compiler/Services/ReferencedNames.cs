@@ -51,10 +51,9 @@ internal sealed class ReferencedNames
         var imported = new List<ReferencedType>();
         foreach (Match import in SiblingImport.Matches(typeScript))
         {
-            var name = import.Groups[1].Value;
-            foreach (var file in _named.DeclaredIn(name))
-                if (_modules.ProjectOf(file) is not null)
-                    imported.Add(new ReferencedType(name, file));
+            foreach (var declaration in _named.Declarations(import.Groups[1].Value))
+                if (_modules.ProjectOf(declaration.File) is not null)
+                    imported.Add(declaration);
         }
         return imported;
     }

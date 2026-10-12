@@ -2434,7 +2434,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   case is stricter than it was: a record of a referenced project that crossed as data alone has a
   twin now, the whole record, so a method of it that a browser cannot run fails the build at that
   method though no page calls it ([#826](https://github.com/eQuantic/equantic-ui/issues/826)). The
-  build loop left the CLI's top-level statements for the compiler library (`AppBuild`), where 43
+  build loop left the CLI's top-level statements for the compiler library (`AppBuild`), where 46
   tests run it over a solution written to disk, and each piece of the change, taken back in turn,
   fails at least one of them. An app that references no project writes byte for byte what it wrote,
   the dashboard sample's 289 files, and a real solution of five referenced projects writes the same
@@ -2452,7 +2452,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   one ([#819](https://github.com/eQuantic/equantic-ui/issues/819)), what a source generator writes in
   one ([#820](https://github.com/eQuantic/equantic-ui/issues/820)), an edit to one while the app runs
   ([#821](https://github.com/eQuantic/equantic-ui/issues/821)), and a static member read off a
-  package's type ([#822](https://github.com/eQuantic/equantic-ui/issues/822)). Proposed and archived
+  package's type ([#822](https://github.com/eQuantic/equantic-ui/issues/822)). A referenced project's
+  source is read as the app's own is, from its directory and with no `#if` symbol defined, which is
+  not what the C# compiler was given, for either
+  ([#828](https://github.com/eQuantic/equantic-ui/issues/828)). Proposed and archived
   through OpenSpec (`openspec/specs/referenced-projects`).
 
 ## Retired documents

@@ -67,7 +67,9 @@ for its references, so they are read there and declared again in the project's c
 `*.cs` under it outside `bin` and `obj`, plus its generated global usings, and without a
 sub-directory that holds a project file of its own. Asking MSBuild for the project's `Compile` items
 would be more exact for a project that removes or links files, and was left for the day the app's own
-source is read that way too: two rules for one question would disagree.
+source is read that way too: two rules for one question would disagree. The same holds for the
+symbols a project's `#if` reads, which no file is parsed with, the app's own included. Both are
+filed as one gap (#828).
 
 **The SDK names the projects from what MSBuild already resolved.** Every `ReferencePath` that came
 from a project carries the project file that produced it (`MSBuildSourceProjectFile`), direct or
@@ -85,7 +87,9 @@ module's declaration placed in a referenced project, with the file that declares
 compiles that file for that type alone, writes its module, and follows what that one imports in turn,
 until none is left. Only a reached type is compiled and claims its name, so a type nobody reaches
 neither collides nor reports, and a class beside a reached one in the same file is not compiled
-either.
+either. The type travels as what it is, its CLR name, and the build compiles the declaration that is
+that type: chosen by its simple name, a second type of that name in another namespace of the same
+file was compiled with it (found in review).
 
 A module is no longer told apart by its name alone, since the app and a project may each declare a
 `Status`. The emitters gather import candidates by name, each path in its own way, and a recording

@@ -142,6 +142,101 @@ public sealed class ReferencedProjectRefusalTests
         built.Errors.Should().NotContain("EQ1006", "two types of one full name are not one type declared twice");
     }
 
+    /// <summary>One file of a library that declares two types of one simple name, in two
+    /// namespaces. The second reads a file, so compiling it says so.</summary>
+    private const string TwoStatuses =
+        """
+        namespace Common.Orders
+        {
+            public sealed record Status(string Text);
+        }
+
+        namespace Common.Payments
+        {
+            public sealed record Status(int Code)
+            {
+                public string Stored() => File.ReadAllText("status.txt");
+            }
+        }
+        """;
+
+    [Fact]
+    public void TwoTypesOfOneNameInOneFile_OnlyTheOneReachedIsCompiled()
+    {
+        // A reached type is found by what it IS, never by its simple name: the file declares another
+        // Status, in another namespace, that no page names. Chosen by name, both were compiled, the
+        // unreached one reported what it holds and the two collided (found in review of #827).
+        using var solution = new Solution()
+            .Library("Common", files: [("Statuses.cs", TwoStatuses)])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files:
+            [
+                ("Screens/Home.cs", Home("""new Common.Orders.Status("open").Text""")),
+            ]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Errors.Should().BeEmpty("the Status of Payments is reached by nothing");
+        built.Module("Status").Should().Contain("text").And.NotContain("code");
+    }
+
+    [Fact]
+    public void AGenericAndANestedTypeOfAReferencedProject_AreFoundByWhatTheyAre()
+    {
+        // The shapes whose CLR name is not their simple name: a generic type carries its arity, a
+        // nested one its owners, and a type in nested namespace blocks every one of them. A name read
+        // off the symbol and one read off the declaration have to meet for each, or the type the page
+        // reached is not the one the build looks for and no module is written.
+        using var solution = new Solution()
+            .Library("Common", files:
+            [
+                ("Shapes.cs",
+                    """
+                    namespace Common
+                    {
+                        namespace Shapes
+                        {
+                            public sealed record Box<T>(T Held);
+
+                            public static class Outer
+                            {
+                                public static class Inner
+                                {
+                                    public static string Value => "inner";
+                                }
+                            }
+                        }
+                    }
+                    """),
+            ])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files:
+            [
+                ("Screens/Home.cs", Home("new Box<int>(1).Held + Outer.Inner.Value", "using Common.Shapes;")),
+            ]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Module("Box").Should().Contain("export class Box");
+        built.Module("Outer$Inner").Should().Contain("'inner'");
+        built.SiblingImportsOf("Home").Should().Contain(["Box", "Outer$Inner"]);
+    }
+
+    [Fact]
+    public void TwoTypesOfOneNameInOneFile_BothReached_IsTheCollision()
+    {
+        // And when a page does reach both, they are two types wanting one module: the collision,
+        // each named by its own namespace, never one type declared twice.
+        using var solution = new Solution()
+            .Library("Common", files: [("Statuses.cs", TwoStatuses.Replace("File.ReadAllText(\"status.txt\")", "\"stored\""))])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files:
+            [
+                ("Screens/Home.cs", Home("""new Common.Orders.Status("open").Text + new Common.Payments.Status(2).Code""")),
+            ]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue();
+        built.Errors.Should().Contain("error EQ1005").And.NotContain("EQ1006").And.NotContain("EQ2009");
+    }
+
     [Fact]
     public void TheSameName_WithTheProjectsNeverReached_IsTheAppsModule()
     {

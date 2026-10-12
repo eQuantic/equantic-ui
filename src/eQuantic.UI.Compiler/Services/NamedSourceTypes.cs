@@ -21,12 +21,17 @@ namespace eQuantic.UI.Compiler.Services;
 /// </summary>
 internal sealed class NamedSourceTypes
 {
-    private readonly Dictionary<string, HashSet<string>> _declaredIn = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, HashSet<ReferencedType>> _declarations = new(StringComparer.Ordinal);
 
-    /// <summary>The files that declare the type whose twin is <paramref name="name"/>, as the
-    /// declaration's symbols name it; none when no symbol of it names such a type.</summary>
-    public IReadOnlyCollection<string> DeclaredIn(string name) =>
-        _declaredIn.TryGetValue(name, out var files) ? files : [];
+    /// <summary>The declarations of the types whose twin is <paramref name="name"/>, as the
+    /// declaration's symbols name them: each type with a file that declares it. None when no symbol
+    /// of it names such a type.</summary>
+    public IReadOnlyCollection<ReferencedType> Declarations(string name) =>
+        _declarations.TryGetValue(name, out var declarations) ? declarations : [];
+
+    /// <summary>The files that declare a type whose twin is <paramref name="name"/>.</summary>
+    public IEnumerable<string> DeclaredIn(string name) =>
+        Declarations(name).Select(declaration => declaration.File).Distinct(StringComparer.Ordinal);
 
     /// <summary>What <paramref name="declarations"/> name, each read with the model of its own file.</summary>
     public static NamedSourceTypes Of(IEnumerable<SyntaxNode> declarations, Func<SyntaxNode, SemanticModel?> modelFor)
@@ -123,11 +128,23 @@ internal sealed class NamedSourceTypes
                 {
                     if (string.IsNullOrEmpty(reference.SyntaxTree.FilePath)) continue;
                     var twin = definition.TwinReference();
-                    if (!_declaredIn.TryGetValue(twin, out var files))
-                        _declaredIn[twin] = files = new HashSet<string>(StringComparer.Ordinal);
-                    files.Add(reference.SyntaxTree.FilePath);
+                    if (!_declarations.TryGetValue(twin, out var declarations))
+                        _declarations[twin] = declarations = [];
+                    declarations.Add(new ReferencedType(twin, ClrName(definition), reference.SyntaxTree.FilePath));
                 }
                 return;
         }
+    }
+
+    /// <summary>The type's CLR name, as <see cref="Parser.ComponentParser.ClrIdentity"/> reads it
+    /// off the declaration: the two are compared to find the declaration a symbol is.</summary>
+    private static string ClrName(INamedTypeSymbol definition)
+    {
+        var name = definition.MetadataName;
+        for (var owner = definition.ContainingType; owner is not null; owner = owner.ContainingType)
+            name = $"{owner.MetadataName}+{name}";
+        return definition.ContainingNamespace is { IsGlobalNamespace: false } space
+            ? $"{space.ToDisplayString()}.{name}"
+            : name;
     }
 }
