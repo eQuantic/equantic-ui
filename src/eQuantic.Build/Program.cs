@@ -18,7 +18,7 @@ catch (Exception ex) when (ex is ArgumentException or IOException or Unauthorize
     Console.Error.WriteLine("       eqc @<file>, the same arguments one a line");
     return 1;
 }
-var isWatchMode = arguments.Contains("--watch");
+var isWatchMode = options.Watch;
 var sourceDirs = options.SourceDirectories;
 var outputDir = options.OutputDirectory;
 

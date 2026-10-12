@@ -591,6 +591,7 @@ public sealed class ReferencedProjectRefusalTests
     [InlineData("the list is not there")]
     [InlineData("the list holds no project")]
     [InlineData("an assembly has no project file after it")]
+    [InlineData("a blank line where a project file was")]
     [InlineData("a listed assembly is not there")]
     [InlineData("a listed project is not there")]
     public void AListOfProjectsThatDoesNotHold_StopsTheBuild_AndIsNeverReadAsFewerProjects(string broken)
@@ -620,6 +621,11 @@ public sealed class ReferencedProjectRefusalTests
                     break;
                 case "an assembly has no project file after it":
                     File.AppendAllText(list, $"{solution.AssemblyOf("Common")}\n");
+                    break;
+                case "a blank line where a project file was":
+                    // Two records whose project lines were cut: dropped, the blanks paired the first
+                    // assembly with the second, whose folder exists, and the wrong source was read.
+                    File.WriteAllText(list, $"{solution.AssemblyOf("Common")}\n\n{solution.AssemblyOf("Common")}\n\n");
                     break;
                 case "a listed assembly is not there":
                     File.AppendAllText(list,

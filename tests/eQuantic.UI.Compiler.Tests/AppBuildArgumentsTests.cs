@@ -69,6 +69,21 @@ public class AppBuildArgumentsTests
         options.GeneratedDirectory.Should().Be("/app/generated");
         options.BunPath.Should().Be("/tools/bun");
         options.SourceMaps.Should().Be(SourceMapMode.External);
+        options.Watch.Should().BeTrue();
+    }
+
+    [Fact]
+    public void AnAssemblyNamedLikeTheWatchFlag_IsANameAndNoFlag()
+    {
+        // Found anywhere in the list, `--watch` as an assembly's name put the CLI in watch mode, and
+        // the SDK's build compiled once and then waited forever (found in review of #843).
+        var named = AppBuildOptions.FromArguments(["src", "out", "--assembly-name", "--watch"]);
+        var watching = AppBuildOptions.FromArguments(["src", "out", "--watch", "--assembly-name", "App"]);
+
+        named.AssemblyName.Should().Be("--watch");
+        named.Watch.Should().BeFalse();
+        watching.Watch.Should().BeTrue();
+        watching.AssemblyName.Should().Be("App");
     }
 
     [Fact]

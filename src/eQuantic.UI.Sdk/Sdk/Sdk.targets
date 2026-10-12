@@ -413,10 +413,13 @@
         Condition="'$(EnableEQuanticUICompilation)' == 'true'">
         <PropertyGroup>
             <_EqcArgumentsPath>$(IntermediateOutputPath)equantic.eqc.rsp</_EqcArgumentsPath>
-            <!-- Named in the command relative to the project's directory, the working directory,
-                 whatever IntermediateOutputPath is: an artifacts layout makes it absolute, and an
-                 absolute path is folders a shell would read again. -->
-            <_EqcArgumentsFile>$([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)/', '$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(_EqcArgumentsPath)'))'))</_EqcArgumentsFile>
+            <!-- eqc runs IN the folder that holds its response file, and the command names the file by
+                 its name alone. MSBuild sets a process's working directory itself, so no shell reads
+                 that folder's path, whatever IntermediateOutputPath holds: a Configuration, a target
+                 framework or an artifacts layout's folders. Named by a path, even a relative one, the
+                 file carried that text into the command (found in review of #843). Every path in the
+                 file is absolute, so eqc reads none of them from where it runs. -->
+            <_EqcArgumentsDirectory>$([System.IO.Path]::GetDirectoryName($([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(_EqcArgumentsPath)'))))</_EqcArgumentsDirectory>
             <!-- The source roots as one argument, with no line break in it: a root written on
                  several lines of a project file carries them, and a line of the file is an argument.
                  eqc trims the whitespace around each root. -->
@@ -456,15 +459,14 @@
             Overwrite="true" WriteOnlyWhenDifferent="true" />
     </Target>
 
-    <!-- The command names two things: the compiler, and the response file by its path under obj,
-         relative to the project's directory, which is the working directory. No value of the project
-         is in it. -->
+    <!-- The command names two things: the compiler, and the response file by its name, in the folder
+         eqc runs in. No value of the project is in it. -->
     <Target Name="CompileEQuanticUI" BeforeTargets="Build"
         DependsOnTargets="_EQuanticCompilerArguments"
         Condition="'$(EnableEQuanticUICompilation)' == 'true'">
         <Exec
-            Command="dotnet &quot;$(EqcCliPath)&quot; &quot;@$(_EqcArgumentsFile)&quot;"
-            WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true"
+            Command="dotnet &quot;$(EqcCliPath)&quot; @equantic.eqc.rsp"
+            WorkingDirectory="$(_EqcArgumentsDirectory)" ConsoleToMSBuild="true"
             StandardOutputImportance="High" />
     </Target>
 

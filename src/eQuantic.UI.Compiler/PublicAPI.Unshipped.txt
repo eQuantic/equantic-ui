@@ -30,6 +30,8 @@ eQuantic.UI.Compiler.Services.AppBuildOptions.OutputDirectory.init -> void
 static eQuantic.UI.Compiler.Services.AppBuildOptions.FromArguments(System.Collections.Generic.IReadOnlyList<string!>! arguments) -> eQuantic.UI.Compiler.Services.AppBuildOptions!
 static eQuantic.UI.Compiler.Services.AppBuildOptions.ReadArguments(System.Collections.Generic.IReadOnlyList<string!>! commandLine) -> System.Collections.Generic.IReadOnlyList<string!>!
 eQuantic.UI.Compiler.Services.AppBuildOptions.AssemblyName.get -> string?
+eQuantic.UI.Compiler.Services.AppBuildOptions.Watch.get -> bool
+eQuantic.UI.Compiler.Services.AppBuildOptions.Watch.init -> void
 eQuantic.UI.Compiler.Services.AppBuildOptions.AssemblyName.init -> void
 eQuantic.UI.Compiler.Services.AppBuildOptions.BunPath.get -> string?
 eQuantic.UI.Compiler.Services.AppBuildOptions.BunPath.init -> void

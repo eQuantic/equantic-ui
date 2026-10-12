@@ -131,24 +131,30 @@ public class TheCompilerIsHandedAFileTests
         }
     }
 
-    [Fact]
-    public void TheResponseFile_IsNamedRelativeToTheProject_WhereverObjIs()
+    [Theory]
+    [InlineData("obj/Rel$ease `x` 'y'/", "the obj folder's own path holds what a shell reads")]
+    [InlineData("$(MSBuildProjectDirectory)/../artifacts/obj/", "an artifacts layout makes the obj folder absolute")]
+    public void EqcRunsInTheFolderOfItsResponseFile_WhereverObjIsAndWhateverItHolds(string intermediateOutputPath, string because)
     {
-        // An artifacts layout makes IntermediateOutputPath absolute, and the absolute path is the
-        // folders a shell would read again: the command names the file from the project's directory.
+        // The command names the file by its name alone, and MSBuild sets the folder eqc runs in, which
+        // no shell reads. Named by a path, even one relative to the project, the file carried what the
+        // obj folder's path holds into the command: a Configuration, a target framework, an artifacts
+        // layout's folders (found in review of #843).
         var root = Path.Combine(Directory.CreateTempSubdirectory("eq-handed-").FullName, Odd);
         var directory = Path.Combine(root, "App");
         Directory.CreateDirectory(directory);
         try
         {
             var probe = Path.Combine(directory, "probe.proj");
-            File.WriteAllText(probe, Project("$(MSBuildProjectDirectory)/../artifacts/obj/"));
+            File.WriteAllText(probe, Project(intermediateOutputPath));
 
-            var named = Dotnet("msbuild", probe, "-t:_EQuanticCompilerArguments", "-nologo",
-                "-getProperty:_EqcArgumentsFile").Trim();
+            var folder = Dotnet("msbuild", probe, "-t:_EQuanticCompilerArguments", "-nologo",
+                "-getProperty:_EqcArgumentsDirectory").Trim();
 
-            named.Replace('\\', '/').Should().Be("../artifacts/obj/equantic.eqc.rsp");
-            File.Exists(Path.Combine(root, "artifacts", "obj", "equantic.eqc.rsp")).Should().BeTrue();
+            var expected = Path.GetFullPath(Path.Combine(directory,
+                intermediateOutputPath.Replace("$(MSBuildProjectDirectory)/", "")));
+            folder.Should().Be(Path.TrimEndingDirectorySeparator(expected), because);
+            File.Exists(Path.Combine(folder, "equantic.eqc.rsp")).Should().BeTrue(because);
         }
         finally
         {
@@ -159,11 +165,13 @@ public class TheCompilerIsHandedAFileTests
     [Fact]
     public void TheShippedCommand_NamesTheCompilerAndTheFile_AndNoValueOfTheProject()
     {
-        var command = (string)ShippedTarget("CompileEQuanticUI").Descendants("Exec").Single().Attribute("Command")!;
+        var exec = ShippedTarget("CompileEQuanticUI").Descendants("Exec").Single();
+        var command = (string)exec.Attribute("Command")!;
 
         Regex.Matches(command, @"\$\(([^)]+)\)").Select(match => match.Groups[1].Value)
-            .Should().BeEquivalentTo(["EqcCliPath", "_EqcArgumentsFile"],
-                "a value written into the command is read by a shell before eqc reads it");
+            .Should().Equal(["EqcCliPath"], "a value written into the command is read by a shell before eqc reads it");
+        command.Should().EndWith(" @equantic.eqc.rsp", "the file is named by its name, in the folder eqc runs in");
         command.Should().NotContain("@(").And.NotContain("%(");
+        ((string?)exec.Attribute("WorkingDirectory")).Should().Be("$(_EqcArgumentsDirectory)");
     }
 }

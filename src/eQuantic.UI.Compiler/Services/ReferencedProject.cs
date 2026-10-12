@@ -64,11 +64,16 @@ internal sealed class ReferencedProject
             throw new FileNotFoundException($"the list of projects is not there: '{projectsFile}'", projectsFile);
 
         // A line is a path whole, as a line of the response file is an argument whole: a space that
-        // starts or ends a folder's name on macOS and Linux is the folder's.
-        var lines = File.ReadAllLines(projectsFile)
-            .Select((text, index) => (Path: text, Number: index + 1))
-            .Where(line => !string.IsNullOrWhiteSpace(line.Path))
-            .ToList();
+        // starts or ends a folder's name on macOS and Linux is the folder's. A blank line is no line to
+        // pass over: dropped, a list whose project lines were cut paired one project's assembly with
+        // the next one's, whose folder exists, and the build read the wrong source (found in review of
+        // #843). Only the blank lines that end the file are nothing.
+        var all = File.ReadAllLines(projectsFile);
+        var count = all.Length;
+        while (count > 0 && string.IsNullOrWhiteSpace(all[count - 1])) count--;
+        var lines = all.Take(count).Select((text, index) => (Path: text, Number: index + 1)).ToList();
+        if (lines.FirstOrDefault(line => string.IsNullOrWhiteSpace(line.Path)) is { Number: > 0 } blank)
+            throw new InvalidDataException($"line {blank.Number} is blank, where a path was");
         if (lines.Count % 2 != 0)
             throw new InvalidDataException(
                 $"line {lines[^1].Number} is an assembly with no project file after it: '{lines[^1].Path}'");
