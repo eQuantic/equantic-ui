@@ -43,16 +43,18 @@ internal sealed class ReferencedProject
     public bool Holds(string file) => Path.GetFullPath(file).StartsWith(Directory, StringComparison.Ordinal);
 
     /// <summary>
-    /// The projects a <c>--projects</c> file lists, one a line: the assembly's path, a <c>|</c>, and
-    /// the project file's. The SDK writes it from the references MSBuild resolved, so nothing in it is
-    /// set by hand.
+    /// The projects a <c>--projects</c> file lists, each as two lines: the path of the assembly MSBuild
+    /// resolved for it, then the path of its project file. The SDK writes it from the references
+    /// MSBuild resolved, so nothing in it is set by hand. A path is a line whole: the list was one line
+    /// a project, <c>assembly|project file</c>, and a bar, which a path may hold on macOS and Linux,
+    /// cut it in the wrong place (#836).
     /// <para>
     /// No file handed is an app that references no project. A file that WAS handed and does not hold
     /// is never that: the list that is not there or holds no project (the SDK hands one only when it
-    /// wrote a line), a line that is not a project, an assembly or a project directory that is not
-    /// where the line says. Each throws, and the build stops on it
-    /// (EQ0001). Read as fewer projects, the build would go on with those projects as assemblies,
-    /// which is a page written wrong with no diagnostic (found in review of #827).
+    /// wrote a project), an assembly with no project file after it, an assembly or a project directory
+    /// that is not where the list says. Each throws, and the build stops on it (EQ0001). Read as fewer
+    /// projects, the build would go on with those projects as assemblies, which is a page written
+    /// wrong with no diagnostic (found in review of #827).
     /// </para>
     /// </summary>
     public static IReadOnlyList<ReferencedProject> ReadList(string? projectsFile)
@@ -61,23 +63,32 @@ internal sealed class ReferencedProject
         if (!File.Exists(projectsFile))
             throw new FileNotFoundException($"the list of projects is not there: '{projectsFile}'", projectsFile);
 
+        // A line is a path whole, as a line of the response file is an argument whole: a space that
+        // starts or ends a folder's name on macOS and Linux is the folder's. A blank line is no line to
+        // pass over: dropped, a list whose project lines were cut paired one project's assembly with
+        // the next one's, whose folder exists, and the build read the wrong source (found in review of
+        // #843). Only the blank lines that end the file are nothing.
+        var all = File.ReadAllLines(projectsFile);
+        var count = all.Length;
+        while (count > 0 && string.IsNullOrWhiteSpace(all[count - 1])) count--;
+        var lines = all.Take(count).Select((text, index) => (Path: text, Number: index + 1)).ToList();
+        if (lines.FirstOrDefault(line => string.IsNullOrWhiteSpace(line.Path)) is { Number: > 0 } blank)
+            throw new InvalidDataException($"line {blank.Number} is blank, where a path was");
+        if (lines.Count % 2 != 0)
+            throw new InvalidDataException(
+                $"line {lines[^1].Number} is an assembly with no project file after it: '{lines[^1].Path}'");
+
         var projects = new List<ReferencedProject>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var number = 0;
-        foreach (var line in File.ReadAllLines(projectsFile))
+        for (var at = 0; at < lines.Count; at += 2)
         {
-            number++;
-            if (string.IsNullOrWhiteSpace(line)) continue;
-            var separator = line.IndexOf('|');
-            var assembly = separator > 0 ? line[..separator].Trim() : "";
-            var projectFile = separator > 0 ? line[(separator + 1)..].Trim() : "";
-            if (assembly.Length == 0 || projectFile.Length == 0)
-                throw new InvalidDataException($"line {number} is not an assembly, a '|' and a project file: '{line.Trim()}'");
+            var (assembly, number) = lines[at];
+            var (projectFile, projectNumber) = lines[at + 1];
             if (!File.Exists(assembly))
                 throw new FileNotFoundException($"the assembly line {number} lists is not there: '{assembly}'", assembly);
             if (Path.GetDirectoryName(Path.GetFullPath(projectFile)) is not { Length: > 0 } directory
                 || !System.IO.Directory.Exists(directory))
-                throw new DirectoryNotFoundException($"the project line {number} lists is not there: '{projectFile}'");
+                throw new DirectoryNotFoundException($"the project line {projectNumber} lists is not there: '{projectFile}'");
             if (!seen.Add(Path.GetFileName(assembly))) continue;
             projects.Add(new ReferencedProject(assembly, Path.TrimEndingDirectorySeparator(directory) + Path.DirectorySeparatorChar));
         }

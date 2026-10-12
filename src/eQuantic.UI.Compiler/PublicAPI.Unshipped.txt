@@ -27,7 +27,11 @@ eQuantic.UI.Compiler.Services.AppBuildOptions.SourceDirectories.get -> System.Co
 eQuantic.UI.Compiler.Services.AppBuildOptions.SourceDirectories.init -> void
 eQuantic.UI.Compiler.Services.AppBuildOptions.OutputDirectory.get -> string!
 eQuantic.UI.Compiler.Services.AppBuildOptions.OutputDirectory.init -> void
+static eQuantic.UI.Compiler.Services.AppBuildOptions.FromArguments(System.Collections.Generic.IReadOnlyList<string!>! arguments) -> eQuantic.UI.Compiler.Services.AppBuildOptions!
+static eQuantic.UI.Compiler.Services.AppBuildOptions.ReadArguments(System.Collections.Generic.IReadOnlyList<string!>! commandLine) -> System.Collections.Generic.IReadOnlyList<string!>!
 eQuantic.UI.Compiler.Services.AppBuildOptions.AssemblyName.get -> string?
+eQuantic.UI.Compiler.Services.AppBuildOptions.Watch.get -> bool
+eQuantic.UI.Compiler.Services.AppBuildOptions.Watch.init -> void
 eQuantic.UI.Compiler.Services.AppBuildOptions.AssemblyName.init -> void
 eQuantic.UI.Compiler.Services.AppBuildOptions.BunPath.get -> string?
 eQuantic.UI.Compiler.Services.AppBuildOptions.BunPath.init -> void
@@ -46,3 +50,5 @@ eQuantic.UI.Compiler.Services.AppBuildOptions.ProjectsFile.get -> string?
 eQuantic.UI.Compiler.Services.AppBuildOptions.ProjectsFile.init -> void
 eQuantic.UI.Compiler.Services.AppBuildOptions.ReferenceReader.get -> System.Func<string!, Microsoft.CodeAnalysis.MetadataReference!>?
 eQuantic.UI.Compiler.Services.AppBuildOptions.ReferenceReader.init -> void
+*REMOVED*static eQuantic.UI.Compiler.Services.ModuleBundler.Bundle(string! bunPath, System.Collections.Generic.IReadOnlyCollection<string!>! entryPoints, string! outputDir, string! intermediateDir, eQuantic.UI.Compiler.SourceMapMode sourceMaps, System.Action<string!>? warn = null) -> string?
+static eQuantic.UI.Compiler.Services.ModuleBundler.Bundle(string! bunPath, string! workingDirectory, System.Collections.Generic.IReadOnlyCollection<string!>! entryPoints, string! outputDir, string! intermediateDir, eQuantic.UI.Compiler.SourceMapMode sourceMaps, System.Action<string!>? warn = null) -> string?

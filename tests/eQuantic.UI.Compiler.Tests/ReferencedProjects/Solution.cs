@@ -43,7 +43,17 @@ internal sealed class Solution : IDisposable
             .Distinct(StringComparer.Ordinal)
             .ToArray());
 
-    private readonly string _root = Directory.CreateTempSubdirectory("eq-solution-").FullName;
+    private readonly string _temporary = Directory.CreateTempSubdirectory("eq-solution-").FullName;
+    private readonly string _root;
+
+    /// <summary>A solution in a directory of its own.</summary>
+    /// <param name="folder">The name of the folder the projects sit in, inside that directory: a name
+    /// that holds what a path may hold, a dollar sign, a bar, a space. None puts them in it.</param>
+    public Solution(string? folder = null)
+    {
+        _root = folder is null ? _temporary : Path.Combine(_temporary, folder);
+        Directory.CreateDirectory(_root);
+    }
     private readonly List<Project> _projects = [];
 
     private sealed record Project(string Name, string[] References, string GlobalUsings, bool IsApp, bool IsPackage = false,
@@ -150,8 +160,9 @@ internal sealed class Solution : IDisposable
         var referencesFile = Path.Combine(obj, "equantic.refs.txt");
         File.WriteAllLines(referencesFile, Framework.Value.Concat(libraries.Select(library => library.Assembly!)));
         var projectsFile = Path.Combine(obj, "equantic.projects.txt");
-        File.WriteAllLines(projectsFile, libraries.Where(library => !library.IsPackage).Select(library =>
-            $"{library.Assembly}|{Path.Combine(DirectoryOf(library.Name), library.Name + ".csproj")}"));
+        // Two lines a project, as the SDK writes it: the assembly, then the project file (#836).
+        File.WriteAllLines(projectsFile, libraries.Where(library => !library.IsPackage).SelectMany(library =>
+            new[] { library.Assembly!, Path.Combine(DirectoryOf(library.Name), library.Name + ".csproj") }));
 
         var output = new StringWriter();
         var errors = new StringWriter();
@@ -223,6 +234,6 @@ internal sealed class Solution : IDisposable
 
     public void Dispose()
     {
-        try { Directory.Delete(_root, recursive: true); } catch (IOException) { /* best effort */ }
+        try { Directory.Delete(_temporary, recursive: true); } catch (IOException) { /* best effort */ }
     }
 }
