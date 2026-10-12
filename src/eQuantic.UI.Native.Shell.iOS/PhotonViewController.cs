@@ -305,6 +305,27 @@ public sealed class PhotonViewController : UIViewController
         PhotonLog.Write("[photon] accessibility activate: no button on this screen");
     }
 
+    /// <summary>
+    /// The scene went to the background, where the system refuses GPU work: the clock stops
+    /// rather than ask for a drawable it will not get.
+    /// </summary>
+    internal void Pause()
+    {
+        if (_clock is not null) _clock.Paused = true;
+    }
+
+    /// <summary>
+    /// The scene is coming back. The clock runs again and the next tick presents a frame, because
+    /// what the system kept of the last one while the app was away is not something to rely on.
+    /// A self-test whose clock already stopped stays stopped.
+    /// </summary>
+    internal void Resume()
+    {
+        if (_clock is null) return;
+        _clock.Paused = false;
+        _host?.Invalidate();
+    }
+
     private void Stop()
     {
         _clock?.RemoveFromRunLoop(NSRunLoop.Main, NSRunLoopMode.Common);

@@ -16,6 +16,16 @@
 	-->
 	<key>UILaunchScreen</key>
 	<dict/>
+	<!--
+	    The scene life cycle, which an app built with the iOS 27 SDK cannot launch without
+	    (TN3187). One scene: Photon draws one window. The delegate class is not named here: the
+	    shell's app delegate answers it in code, where the compiler checks the type it names.
+	-->
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>metal</string>
