@@ -218,6 +218,33 @@ public class ListDetailTests
         BackButtons(Render(shape.Expanded!)).Should().Be(0);
     }
 
+    /// <summary>
+    /// The compact detail binds Escape to back (#772): the key a desktop closes a layer with, and the
+    /// one Android's shell sends its back gesture to. Wide, there is nowhere to go back to, so the
+    /// key is left to whatever else wants it; and with the list on screen there is nothing to leave.
+    /// </summary>
+    [Fact]
+    public void OnlyTheCompactDetailBindsEscapeToBack()
+    {
+        static int EscapeBindings(HtmlNode html) =>
+            Walk(html).Count(node => (node.Attributes.GetValueOrDefault("data-eq-shortcut") ?? "")
+                .Split(' ').Contains("escape"));
+
+        var chosen = (AdaptiveNode)new ListDetail(Inbox, () => new Text("Body"), onBack: () => { })
+        {
+            Title = "Message detail",
+        }.BuildContained(Context());
+        var nothingChosen = (AdaptiveNode)new ListDetail(Inbox, onBack: () => { })
+            .BuildContained(Context());
+        var noWayBack = (AdaptiveNode)new ListDetail(Inbox, () => new Text("Body"))
+            .BuildContained(Context());
+
+        EscapeBindings(Render(chosen.Compact)).Should().Be(1);
+        EscapeBindings(Render(chosen.Expanded!)).Should().Be(0, "both panes are on screen");
+        EscapeBindings(Render(nothingChosen.Compact)).Should().Be(0, "the list is the first screen");
+        EscapeBindings(Render(noWayBack.Compact)).Should().Be(0, "an app that gave no OnBack has no back");
+    }
+
     /// <summary>A wide window with nothing chosen still shows a DESIGNED screen. The alternative —
     /// choosing the first row on the app's behalf — would fire a handler for a choice nobody made.
     /// </summary>

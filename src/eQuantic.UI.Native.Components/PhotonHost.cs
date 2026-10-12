@@ -2495,19 +2495,11 @@ public sealed class PhotonHost
     public bool KeyDown(string key, KeyModifiers modifiers = KeyModifiers.None)
     {
         // An app's own chord wins: ⌘K is the app's, and a control holding focus has no claim on it.
-        var bindings = _lastFrame?.Shortcuts;
-        if (bindings is not null)
+        if (BindingFor(key, modifiers) is { } binding)
         {
-            for (var i = bindings.Count - 1; i >= 0; i--)
-            {
-                var chord = bindings[i].Chord;
-                if (chord.Modifiers != modifiers) continue;
-                if (!string.Equals(chord.Key, key, StringComparison.OrdinalIgnoreCase)) continue;
-                if (bindings[i].Scope is { } scope && !FocusIsWithin(scope)) continue;
-                bindings[i].OnPressed();
-                NeedsRender = true;
-                return true;
-            }
+            binding.OnPressed();
+            NeedsRender = true;
+            return true;
         }
 
         // A SPREADSHEET under the selection speaks Excel: arrows move (⌘ jumps to the data edge,
@@ -2594,8 +2586,54 @@ public sealed class PhotonHost
 
             // A blinking caret is a running animation: the frame clock has to keep turning for it,
             // and only while a field is actually being edited.
-            
+
         }
         return false;
     }
+
+    /// <summary>The binding of THIS frame that answers a chord: the last one declared (the dialog on
+    /// top wins), skipping a focus-scoped one whose subtree does not hold the focus.</summary>
+    private ShortcutBinding? BindingFor(string key, KeyModifiers modifiers)
+    {
+        var bindings = _lastFrame?.Shortcuts;
+        if (bindings is null) return null;
+        for (var i = bindings.Count - 1; i >= 0; i--)
+        {
+            var chord = bindings[i].Chord;
+            if (chord.Modifiers != modifiers) continue;
+            if (!string.Equals(chord.Key, key, StringComparison.OrdinalIgnoreCase)) continue;
+            if (bindings[i].Scope is { } scope && !FocusIsWithin(scope)) continue;
+            return bindings[i];
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Whether the platform's back has anything to do on this frame: an Escape the frame binds, which
+    /// is every open dialog, sheet, drawer, menu and picker, and a <c>ListDetail</c> showing its detail
+    /// on a phone. An edit is not one of them (see <see cref="Back"/>).
+    /// <para>
+    /// A shell reads it after each frame because Android asks UP FRONT. Its predictive back plays
+    /// the "leave the app" animation while the gesture is still under the finger, so an app takes
+    /// back by registering for it before the gesture starts, and only while it has somewhere to go.
+    /// False leaves back to the system, which leaves the app.
+    /// </para>
+    /// </summary>
+    public bool CanGoBack => BindingFor(KeyChord.Escape.Key, KeyChord.Escape.Modifiers) is not null;
+
+    /// <summary>
+    /// The platform's back, Android's gesture and button: the layer on top (a dialog, a sheet, a
+    /// drawer, a menu, a phone's detail pane) closes, through the Escape it already declares, because
+    /// every layer back should close already answers to it. A field inside a dialog leaves with the
+    /// dialog, as a binding answers every key before the field does.
+    /// <para>
+    /// Unlike <see cref="KeyDown"/>, neither an edit nor a focus ring takes it, as a focused
+    /// <c>TextField</c> never holds Flutter's back and an <c>EditText</c> never holds Android's. On a
+    /// phone the soft keyboard has already spent the first back going down, keeping the caret; a
+    /// second back spent on the caret, or on a ring, would be a press the person saw nothing useful
+    /// come of. With nothing open, back is the system's, and it leaves the app with the field still
+    /// focused. Answers whether anything took it.
+    /// </para>
+    /// </summary>
+    public bool Back() => CanGoBack && KeyDown(KeyChord.Escape.Key, KeyChord.Escape.Modifiers);
 }

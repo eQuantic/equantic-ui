@@ -167,6 +167,7 @@ prose, and cannot go on claiming an absence that has ended.
 | `WidgetsFlutterBinding` — seven bindings mixed in, one class each: gesture, scheduler, services, painting, semantics, renderer, widgets | `PhotonHost` — one class, 2,074 lines, 44 fields, 27 public methods; a shell drives up to 18 of them, with no interface between them | **DIFFERENT, and heavier.** Everything Flutter splits by concern is one object here, which is why editing a spreadsheet and routing a hover live in the same file. |
 | `View` / `PlatformDispatcher`, multiple windows | `WindowChrome` and the desktop shells | **PARTIAL** |
 | `devicePixelRatio` | Render scale, realizer-side | **PARTIAL** — used, not authorable. |
+| Android's back — `PopScope`, `canPop`, `didPopRoute` | `PhotonHost.Back()` and `CanGoBack`, through the Escape every dismissible layer binds | **DIFFERENT.** Flutter's back pops the `Navigator`'s route stack and a `PopScope` vetoes it; Photon has no native route stack, so back closes the topmost thing that binds Escape (a dismissible `Dialog`, a sheet, a drawer, a menu), and an app's own place takes part by binding the same key, as a `ListDetail`'s compact detail does. A layer that refuses dismissal is the `canPop: false` case, and `CanGoBack` is what predictive back reads before the gesture ends, as Flutter's `canPop` is. A field being edited does not take it, as a focused `TextField` does not hold Flutter's back. Back to a previous PAGE is not reproduced (#772). |
 
 ---
 

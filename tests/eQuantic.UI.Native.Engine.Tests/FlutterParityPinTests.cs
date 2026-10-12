@@ -334,6 +334,9 @@ public class FlutterParityPinTests
             "RendererBinding", "WidgetsBinding"),
         ["View"] = () => Has("WindowChrome"),
         ["devicePixelRatio"] = () => Nothing("DevicePixelRatio"),
+        // Back runs the Escape binding the open layer declares; no route stack, nothing to veto a pop.
+        ["PopScope"] = () => HasMember("PhotonHost", "Back") && HasMember("PhotonHost", "CanGoBack")
+            && Nothing("PopScope", "WillPopScope", "BackButtonListener"),
     };
 
     // ---- the assertions ---------------------------------------------------------------------------

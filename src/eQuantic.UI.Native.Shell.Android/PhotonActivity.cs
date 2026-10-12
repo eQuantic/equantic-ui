@@ -3,6 +3,7 @@ using Android.Content.PM;
 using Android.Graphics;
 using Android.Runtime;
 using Android.Views;
+using System.Runtime.Versioning;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Engine.Reference;
@@ -33,6 +34,19 @@ namespace eQuantic.UI.Native.Shell.Android;
 /// by definition, slower, and invisible to everything above it.
 /// </para>
 /// <para>
+/// The HOST lives as long as the activity, and the SURFACE does not. Android takes a
+/// <c>SurfaceView</c>'s surface away whenever the activity leaves the screen (Home, another app, the
+/// screen turning off) and hands a new one back on return. Only what DRAWS goes with it (the
+/// swapchain, the window, the backend), so the app comes back on the screen it left, with its
+/// state. Building the host again from the app's root there would open the app on its first
+/// screen every time the person looked away.
+/// </para>
+/// <para>
+/// The system's BACK reaches <see cref="PhotonHost.Back"/>, which closes what is open: a dialog, a
+/// sheet, a drawer, a menu, a phone's detail pane. Only when nothing is open does the system's own
+/// back run, and that leaves the app, a field being edited or not.
+/// </para>
+/// <para>
 /// The LAUNCHER activity is generated into the app's own assembly, not this one. Android would
 /// otherwise never load the app: nothing would have referenced it, so the registration that names
 /// its program would never run. Subclassing is also what gives an app somewhere to override.
@@ -48,6 +62,9 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     private ReferenceBackend? _reference;
     private Bitmap? _bitmap;
     private long _startedAt;
+    private BackCallback? _back;
+    private bool _backRegistered;
+    private bool _backKeyTaken;
 
     /// <summary>Frames actually presented — the self-test's exit evidence, as on every other shell.</summary>
     public int FramesPresented { get; private set; }
@@ -156,14 +173,6 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
 
     public void SurfaceCreated(ISurfaceHolder holder)
     {
-        // Android launched us; nobody ran a Main. The app describes itself in a CreateApp the
-        // host can find, which is the same method every other platform's entry point calls.
-        var app = Application ??= PhotonApplication.Create();
-
-        var metrics = Resources!.DisplayMetrics!;
-        var scale = metrics.Density;
-        var text = new AndroidTextService();
-
         // The window behind the Surface is what Vulkan draws at. Holding it keeps the surface
         // alive for as long as the swapchain does.
         _window = AndroidWindow.FromSurface(holder.Surface!);
@@ -180,6 +189,23 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         global::Android.Util.Log.Info("Photon", _vulkan is not null
             ? "presenting through Vulkan"
             : "presenting through the Reference backend (no Vulkan surface)");
+
+        // A surface handed BACK: the app is returning to the screen it left, so the host it left
+        // there draws into the new one. Its tree, its state and its focus are exactly as they were.
+        if (_host is not null)
+        {
+            _host.Invalidate();
+            Choreographer.Instance!.PostFrameCallback(this);
+            return;
+        }
+
+        // Android launched us; nobody ran a Main. The app describes itself in a CreateApp the
+        // host can find, which is the same method every other platform's entry point calls.
+        var app = Application ??= PhotonApplication.Create();
+
+        var metrics = Resources!.DisplayMetrics!;
+        var scale = metrics.Density;
+        var text = new AndroidTextService();
 
         // The device's locale, copied onto .NET before the first realize (I18N-PLAN D5/W6):
         // Android's Locale.getDefault() carries language and region in one, so the D13 pair
@@ -229,6 +255,11 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         _bitmap = Bitmap.CreateBitmap(width, height, Bitmap.Config.Argb8888!);
     }
 
+    /// <summary>
+    /// The activity left the screen and took its surface with it. What DRAWS goes (the swapchain,
+    /// the window, the backend); the host stays, because it holds the app's tree and its state, and
+    /// <see cref="SurfaceCreated"/> draws it into the surface handed back.
+    /// </summary>
     public void SurfaceDestroyed(ISurfaceHolder holder)
     {
         Choreographer.Instance!.RemoveFrameCallback(this);
@@ -242,7 +273,26 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         _bitmap = null;
         _reference?.Dispose();
         _reference = null;
-        _host = null;
+    }
+
+    /// <summary>
+    /// The system's appearance or the display changed while the activity kept running: the manifest
+    /// declares these changes as the activity's own to handle, so nothing rebuilds it. Light or dark
+    /// follows the system unless the app fixed it, and a new density re-rasters at the new scale AND
+    /// lays out at the new size in dp: "Display size" changes the density and not the pixels, so no
+    /// surface change arrives to do it.
+    /// </summary>
+    public override void OnConfigurationChanged(global::Android.Content.Res.Configuration newConfig)
+    {
+        base.OnConfigurationChanged(newConfig);
+        if (_host is null) return;
+        _host.Mode = Mode();
+        var scale = Resources!.DisplayMetrics!.Density;
+        _host.RenderScale = scale;
+        if (_view?.Holder?.SurfaceFrame is { } frame && !frame.IsEmpty)
+            _host.Resize(frame.Width() / scale, frame.Height() / scale);
+        ApplyInsets(scale);
+        _host.Invalidate();
     }
 
     /// <summary>
@@ -294,6 +344,9 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             if (!_vulkan.Present(displayList, _swapchain))
             {
                 _swapchain.Resize(holder.SurfaceFrame!.Width(), holder.SurfaceFrame.Height());
+                // Nothing was shown, and rendering marked the host clean: the next tick draws it
+                // again, into the rebuilt swapchain, and syncs back after it.
+                _host.Invalidate();
                 return;
             }
             FramesPresented++;
@@ -323,6 +376,9 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
 
         // The screen just changed: if that changed what a screen reader would read, tell the system.
         _view.Semantics?.FrameRendered();
+
+        // And whether back has anywhere to go now, which Android has to know BEFORE the gesture.
+        SyncBack();
 
         if (forced == true && FramesPresented >= Application!.Options.MaxFrames)
         {
@@ -376,6 +432,83 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             return;
         }
         global::Android.Util.Log.Info("Photon", "accessibility activate: no button on this screen");
+    }
+
+    // ---- Back -----------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tells the system whether this app takes back right now, from Android 13 on. Predictive back
+    /// starts its animation while the gesture is still under the finger, "leave the app" or "stay",
+    /// so the app registers a callback while it has somewhere to go and unregisters it when it has
+    /// not. Unregistered, the system's own back runs, which leaves the app with the animation
+    /// Android draws for that. Where the platform does not deliver back this way (before 13, or an
+    /// app that has not opted into predictive back), the registration is ignored and back arrives as
+    /// a key instead: <see cref="DispatchKeyEvent"/>.
+    /// </summary>
+    private void SyncBack()
+    {
+        if (!OperatingSystem.IsAndroidVersionAtLeast(33)) return;
+        var wanted = _host?.CanGoBack == true;
+        if (wanted == _backRegistered) return;
+        _back ??= new BackCallback(this);
+        if (wanted)
+        {
+            // OnBackInvokedDispatcher.PRIORITY_DEFAULT: the app's own content, below an IME or a
+            // system overlay, which take back first.
+            OnBackInvokedDispatcher.RegisterOnBackInvokedCallback(0, _back);
+        }
+        else
+        {
+            OnBackInvokedDispatcher.UnregisterOnBackInvokedCallback(_back);
+        }
+        _backRegistered = wanted;
+    }
+
+    /// <summary>
+    /// Back, as Android delivers it: the callback above, or this key. Before Android 13 it is always
+    /// the key, and from 13 it still is for an app the platform does not treat as opted into
+    /// predictive back; when the platform calls the callback, the key never arrives, so the two
+    /// cannot both run for one press.
+    /// <para>
+    /// The DOWN decides, and the UP follows it. Taken, the activity never starts tracking a back of
+    /// its own and cannot finish on the UP; and the UP is taken even when what was open closed in
+    /// between, where <see cref="GoBack"/> then does what the system would have. Deciding again on
+    /// the UP lost that press: the activity ignores an UP whose DOWN it never saw.
+    /// </para>
+    /// </summary>
+    public override bool DispatchKeyEvent(KeyEvent? e)
+    {
+        if (e?.KeyCode != Keycode.Back) return base.DispatchKeyEvent(e);
+        if (e.Action == KeyEventActions.Down && e.RepeatCount == 0) _backKeyTaken = _host?.CanGoBack == true;
+        if (!_backKeyTaken) return base.DispatchKeyEvent(e);
+        if (e.Action == KeyEventActions.Up)
+        {
+            _backKeyTaken = false;
+            if (!e.IsCanceled) GoBack();
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Back reached the app. The host closes what is open; when it finds nothing (the callback was
+    /// still registered from a frame ago), this does what the system would have: the launcher's own
+    /// activity sends its task to the background, keeping it alive as Android does from 12 on, and
+    /// any other activity finishes.
+    /// </summary>
+    private void GoBack()
+    {
+        if (_host?.Back() == true) return;
+        SyncBack();
+        if (IsTaskRoot) MoveTaskToBack(true);
+        else Finish();
+    }
+
+    /// <summary>The platform's callback object for back. A Java interface, so a Java object.</summary>
+    [SupportedOSPlatform("android33.0")]
+    private sealed class BackCallback(PhotonActivity activity)
+        : Java.Lang.Object, global::Android.Window.IOnBackInvokedCallback
+    {
+        public void OnBackInvoked() => activity.GoBack();
     }
 
     // ---- Touches --------------------------------------------------------------------------------

@@ -46,15 +46,18 @@ public sealed unsafe class VulkanSwapchain : IDisposable
     /// <summary>
     /// Draws one frame and shows it. Returns false when the presentation engine says the swapchain
     /// no longer matches the surface — a rotation, a resize — which is a fact about the WINDOW, not
-    /// an error: the caller rebuilds and carries on.
+    /// an error: the caller rebuilds and carries on. A swapchain that only matches it less than
+    /// exactly still draws and shows (see <see cref="SwapchainStatus"/>).
     /// </summary>
     public bool Present(DisplayList displayList, RhiRenderer renderer)
     {
+        // None made yet: the window has had no area since this was created.
+        if (_swapchain == 0) return false;
+
         uint index;
         var acquire = VkSurface.vkAcquireNextImageKHR(_device.Device, _swapchain, ulong.MaxValue,
             _acquired, 0, &index);
-        if (acquire is -1000001004 or -1000001002) return false; // OUT_OF_DATE / SUBOPTIMAL
-        Vk.Check(acquire, "swapchain acquire");
+        if (!SwapchainStatus.Usable(acquire, "swapchain acquire")) return false;
 
         var target = _targets[index];
         var commands = (VulkanCommandList)_device.Begin(target, RhiRenderer.ClearColorOf(displayList));
@@ -73,17 +76,11 @@ public sealed unsafe class VulkanSwapchain : IDisposable
             PImageIndices = &index,
         };
         var present = VkSurface.vkQueuePresentKHR(_device.Queue, &presentInfo);
-        if (present is -1000001004 or -1000001002) return false;
-        Vk.Check(present, "queue present");
-        return true;
+        return SwapchainStatus.Usable(present, "queue present");
     }
 
     /// <summary>Rebuilds for the surface's current size — a rotation, a resize, a keyboard.</summary>
-    public void Resize(int width, int height)
-    {
-        DestroyTargets();
-        Create(width, height);
-    }
+    public void Resize(int width, int height) => Create(width, height);
 
     private void Create(int width, int height)
     {
@@ -91,11 +88,16 @@ public sealed unsafe class VulkanSwapchain : IDisposable
         Vk.Check(VkSurface.vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
             _device.PhysicalDevice, _surface, &capabilities), "surface capabilities");
 
-        // The surface's own extent wins when it states one: on a phone it always does, and a size
-        // we picked ourselves would simply be rejected.
-        var extent = capabilities.CurrentExtent.Width != uint.MaxValue
-            ? capabilities.CurrentExtent
-            : new VkExtent2D { Width = (uint)width, Height = (uint)height };
+        // A window with no area (a minimised desktop window) has no swapchain to make: the one it
+        // has stays, out of date, and the next present asks again.
+        if (SwapchainShape.Extent(width, height,
+                (capabilities.MinImageExtent.Width, capabilities.MinImageExtent.Height),
+                (capabilities.MaxImageExtent.Width, capabilities.MaxImageExtent.Height))
+            is not { } size)
+            return;
+        DestroyTargets();
+
+        var extent = new VkExtent2D { Width = size.Width, Height = size.Height };
         Width = (int)extent.Width;
         Height = (int)extent.Height;
 
@@ -117,7 +119,8 @@ public sealed unsafe class VulkanSwapchain : IDisposable
             ImageArrayLayers = 1,
             ImageUsage = 0x10,          // COLOR_ATTACHMENT
             ImageSharingMode = 0,       // EXCLUSIVE — one queue family draws and presents
-            PreTransform = capabilities.CurrentTransform,
+            PreTransform = SwapchainShape.PreTransform(capabilities.SupportedTransforms,
+                capabilities.CurrentTransform),
             CompositeAlpha = 0x1,       // OPAQUE — the app owns every pixel of its window
             PresentMode = PresentModeFifo,
             Clipped = 1,
