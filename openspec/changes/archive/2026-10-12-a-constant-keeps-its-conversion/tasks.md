@@ -20,6 +20,6 @@
 
 ## 4. Proof and documents
 
-- [ ] 4.1 Run the Compiler, Web, Server and Conformance suites, build the dashboard sample and compare it file by file with a build of main, and build the shared-library sample and run its check
+- [x] 4.1 Run the Compiler, Web, Server and Conformance suites, build the dashboard sample and compare it file by file with a build of main, and build the shared-library sample and run its check
 - [x] 4.2 One `docs/LEDGER.md` line citing the three issues, and the wiki's EQ0001 row in English and Portuguese
-- [ ] 4.3 Archive the change with `openspec archive a-constant-keeps-its-conversion --yes`
+- [x] 4.3 Archive the change with `openspec archive a-constant-keeps-its-conversion --yes`
