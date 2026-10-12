@@ -30,9 +30,9 @@ Measured on the Android emulator (API 36, Android 16, Vulkan through the host GP
   generated launcher activity also handles a resize into split screen or onto a foldable's other
   display (`SmallestScreenSize`) and a hardware keyboard attached (`Keyboard`, `KeyboardHidden`),
   which rebuilt the activity before.
-- **Back closes what is open.** `PhotonHost.Back()` runs what Escape runs on a desktop: the edit ends,
-  or the layer on top closes through the Escape binding it already declares (a dismissible `Dialog`, a
-  `BottomSheet`, a `Drawer`, an `Anchored` menu, a picker). A focus ring alone does not take it.
+- **Back closes what is open.** `PhotonHost.Back()` closes the layer on top through the Escape binding
+  it already declares (a dismissible `Dialog`, a `BottomSheet`, a `Drawer`, an `Anchored` menu, a
+  picker). A field being edited does not take it, nor does a focus ring alone, as in Flutter.
   `PhotonHost.CanGoBack` says up front whether back has anywhere to go.
 - **The Android activity answers back.** From Android 13 it registers an `OnBackInvokedCallback` only
   while `CanGoBack` is true, so Android keeps its predictive "leave the app" animation for the rest;

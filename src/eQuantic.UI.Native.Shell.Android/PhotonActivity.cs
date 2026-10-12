@@ -42,9 +42,9 @@ namespace eQuantic.UI.Native.Shell.Android;
 /// screen every time the person looked away.
 /// </para>
 /// <para>
-/// The system's BACK reaches <see cref="PhotonHost.Back"/>, which closes what is open: the edit, a
-/// dialog, a sheet, a drawer, a menu, a phone's detail pane. Only when nothing is open does the
-/// system's own back run, and that leaves the app.
+/// The system's BACK reaches <see cref="PhotonHost.Back"/>, which closes what is open: a dialog, a
+/// sheet, a drawer, a menu, a phone's detail pane. Only when nothing is open does the system's own
+/// back run, and that leaves the app, a field being edited or not.
 /// </para>
 /// <para>
 /// The LAUNCHER activity is generated into the app's own assembly, not this one. Android would

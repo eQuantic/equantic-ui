@@ -22,17 +22,19 @@ takes away, and it is a drawing resource; the host is the app. Holding the host 
 would also survive back from the first screen, but two activities of one app would then share one host
 at two sizes, and nothing here needs that.
 
-**The layer goes before the edit.** A binding answers every key before the field holding the caret
-does, Escape included, so a field inside a dialog leaves with the dialog, as the web's own modal does.
-The same order holds for a `ListDetail`'s compact detail, where Escape in a reply field leaves the
-detail on a narrow web window or a desktop; on Android the soft keyboard takes the first back itself.
-Giving the edit Escape first would need a binding that stands aside while a field is edited, which no
-`Shortcut` declares today.
+**The layer goes before the edit, and the edit never takes back.** #772 asked for the edit to end
+first. Flutter answers otherwise, and for reasons that hold here: its back pops the topmost route, and
+a focused `TextField` holds none of it, so a field inside a dialog leaves with the dialog and, with
+nothing open, back leaves the app with the field still focused. Android's own `EditText` is the same.
+On a phone the soft keyboard spends the first back going down and keeps the caret, so a back that
+then only took the caret away would be a press with nothing useful coming of it. A binding already
+answers every key before the field holding the caret, so the order costs nothing; on a desktop,
+Escape still ends an edit when no layer binds it, as before.
 
-**Back is the Escape binding, minus the focus ring.** `KeyDown("Escape")` also clears a focus ring
-when nothing else takes the key. On a phone that ring is not drawn, so a back spent on it would be a
-press with nothing visible happening; `Back` takes the key only when `CanGoBack` says there is an edit
-or a binding.
+**Back is the Escape binding, and only that.** `KeyDown("Escape")` also ends an edit and clears a
+focus ring when nothing else takes the key. `Back` takes the key only when `CanGoBack` says a binding
+answers it: an edit is the reason above, and a ring is not drawn on a phone, so a back spent on it
+would be a press with nothing visible happening.
 
 **Registered only while there is somewhere to go.** Predictive back plays its animation while the
 gesture is under the finger, so Android has to know before the gesture whether the app takes it. A

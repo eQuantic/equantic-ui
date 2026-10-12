@@ -2,7 +2,7 @@
 
 ## 1. Back in the host
 
-- [x] 1.1 `PhotonHost.Back()` and `PhotonHost.CanGoBack`: the topmost Escape binding runs, or with none the edit ends; a focus ring alone takes nothing. Verify: `SystemBackTests` (12 cases)
+- [x] 1.1 `PhotonHost.Back()` and `PhotonHost.CanGoBack`: the topmost Escape binding runs; an edit and a focus ring alone take nothing. Verify: `SystemBackTests` (12 cases), `AFieldBeingEditedDoesNotHoldBack` failing with the edit taking back
 - [x] 1.2 `ListDetail`'s compact detail binds Escape to `OnBack`, in the compact arm only. Verify: `SystemBackTests.OnAPhone_BackLeavesTheDetailForTheList`, failing against main, and the web's `ListDetailTests.OnlyTheCompactDetailBindsEscapeToBack`
 - [x] 1.3 The transpiled library's pin regenerated and read: `ListDetail` binds the Shortcut
 

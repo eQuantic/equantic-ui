@@ -101,22 +101,25 @@ public class SystemBackTests
         closed.Should().Be(1);
     }
 
-    /// <summary>The edit ends first: the caret leaves the field, and the next back goes on to the
-    /// layer or the system.</summary>
+    /// <summary>
+    /// An edit does not hold back, as a focused <c>TextField</c> does not hold Flutter's: on a phone
+    /// the keyboard has already spent the first back going down, and a back that only took the caret
+    /// away would be a press with nothing useful coming of it. With nothing open, back is the
+    /// system's, and the field keeps the caret.
+    /// </summary>
     [Fact]
-    public void BackEndsTheEdit()
+    public void AFieldBeingEditedDoesNotHoldBack()
     {
         var host = Open(new Column(gap: 0) { new TextEntry("", _ => { }) { Placeholder = "Name" } });
         host.KeyDown("Tab");
         host.RenderFrame(new DisplayListBuilder());
         host.TextTarget.Should().NotBeNull();
 
-        host.CanGoBack.Should().BeTrue();
-        host.Back().Should().BeTrue();
+        host.CanGoBack.Should().BeFalse("nothing is open, so back leaves the app");
+        host.Back().Should().BeFalse();
         host.RenderFrame(new DisplayListBuilder());
 
-        host.TextTarget.Should().BeNull("back left the field");
-        host.CanGoBack.Should().BeFalse("and with nothing else open, the next back is the system's");
+        host.TextTarget.Should().NotBeNull("back took nothing, so the field still has the caret");
     }
 
     /// <summary>The layer goes first, as a binding does for every key: a field inside a sheet leaves
