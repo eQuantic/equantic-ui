@@ -215,7 +215,7 @@ public sealed class AppBuild
                         string.Join(", ", built.Keys.Select(project => project.AssemblyName)));
                     if (built.Count > 0)
                     {
-                        _referenced = new ReferencedModules(built);
+                        _referenced = new ReferencedModules(built, _primarySourceDir);
                         _compiler.SetReferencedModules(_referenced);
                         // One catalogue id per resource class for the whole build: two projects may
                         // each have a Strings, and a file sees only its own project's.

@@ -2534,6 +2534,12 @@ public class TypeScriptEmitter
         return true;
     }
 
+    /// <summary>Whether <paramref name="emitted"/> names <paramref name="name"/> as a whole
+    /// identifier. Lookarounds rather than <c>\b</c>: a twin's name can hold a <c>$</c>.</summary>
+    private static bool NamedIn(string emitted, string name) =>
+        System.Text.RegularExpressions.Regex.IsMatch(emitted,
+            $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(name)}(?![\w$])");
+
     /// <summary>Whether the per-app scan knows this name at all: one of the app's own modules, or a
     /// type the app declares <c>[RuntimeProvided]</c>, which the runtime exports instead.</summary>
     private bool Resolvable(string name) =>
@@ -2663,8 +2669,13 @@ public class TypeScriptEmitter
             if (string.IsNullOrEmpty(ct) || ct == name || ct == baseName
                 || ct == "HtmlNode" || NonImportableTypes.Contains(ct)) continue;
             if (runtimeProvided.Contains(ct) || referencedEnums.Contains(ct)) continue;
-            if (IsAppModule(ct)) imports.Add(new JsImport([ct], $"./{ct}"));
-            else ReportIfKeptOut(ct, cls);
+            // A type of a referenced project is imported where the emitted text names it, as the
+            // component and the record paths import: a constant read off one is inlined and leaves
+            // no reference, and importing it there compiled a whole class of another project for a
+            // literal. Measured on an app's `const string Serif = Theme.Serif;` (#624).
+            if (_dependencyResolver?.IsModule(ct) == true || Referenced.IsModule(ct) && NamedIn(emitted, ct))
+                imports.Add(new JsImport([ct], $"./{ct}"));
+            else if (!Referenced.IsModule(ct)) ReportIfKeptOut(ct, cls);
         }
         var module = new JsModule(imports, builder.ToString());
         // The class's mappings were recorded against its own text; the imports stand above it.

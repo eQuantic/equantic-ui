@@ -161,6 +161,43 @@ public sealed class ReferencedProjectRefusalTests
     }
 
     [Fact]
+    public void AConstantReadOffAReferencedProjectsClass_IsInlined_AndBringsNoModule()
+    {
+        // The app's static class reads a const of the library's class, which is written where it is
+        // read as the literal it is. Nothing in the emitted module names the library's class, so it
+        // is not imported and never compiled: here it reads a file, and importing it for a literal
+        // would have failed the build. Measured on a real app's `const string Serif = Theme.Serif;`,
+        // which brought its whole theme class into the build.
+        using var solution = new Solution()
+            .Library("Common", files:
+            [
+                ("Theme.cs",
+                    """
+                    namespace Common;
+
+                    public sealed class Theme
+                    {
+                        public const string Serif = "Newsreader";
+
+                        public string Face() => File.ReadAllText("face.txt");
+                    }
+                    """),
+            ])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files:
+            [
+                ("Model/Faces.cs", "using Common;\n\nnamespace App.Model;\n\npublic static class Faces\n{\n    private const string Serif = Theme.Serif;\n\n    public static string Heading => Serif;\n}\n"),
+                ("Screens/Home.cs", Home("App.Model.Faces.Heading")),
+            ]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Errors.Should().BeEmpty();
+        built.Module("Faces").Should().Contain("'Newsreader'");
+        built.SiblingImportsOf("Faces").Should().BeEmpty("an inlined constant leaves no reference to the class that held it");
+        built.Module("Theme").Should().BeNull();
+    }
+
+    [Fact]
     public void ANameBoundToAPackagesType_NeverImportsAReferencedProjectsModuleOfThatName()
     {
         // The page reads a member of Vendor.Status, a type of a PACKAGE. A referenced project happens

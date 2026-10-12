@@ -438,7 +438,8 @@ public class ComponentCompiler
     /// </summary>
     private ReferencedNames ReferencedNamesOf(ComponentDefinition component)
     {
-        if (_referencedModules is null || component.SyntaxTree is null || DeclarationOf(component) is not { } declaration)
+        if (_referencedModules is null || component.SyntaxTree is null || DeclarationOf(component) is not { } declaration
+            || !_referencedModules.CanBeNamedFrom(component.SyntaxTree.FilePath))
             return ReferencedNames.None;
         var model = _semanticModelProvider.GetSemanticModel(component.SyntaxTree);
         var declarations = new List<SyntaxNode> { declaration };
