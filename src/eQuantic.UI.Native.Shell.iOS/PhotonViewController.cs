@@ -31,6 +31,10 @@ namespace eQuantic.UI.Native.Shell.iOS;
 /// <see cref="PhotonHost.SafeAreaInsets"/>, so a <c>SafeArea</c> node lays out against what the
 /// device actually reserves instead of numbers guessed at build time.
 /// </para>
+/// <para>
+/// The KEYBOARD follows the host's edit (<see cref="PhotonKeyboard"/>): it opens when a field, a code
+/// surface or a sheet takes the caret and closes when it lets go, and the tree lays out above it.
+/// </para>
 /// </summary>
 [Register("PhotonViewController")]
 public sealed class PhotonViewController : UIViewController
@@ -43,6 +47,7 @@ public sealed class PhotonViewController : UIViewController
     private PhotonHost? _host;
     private CADisplayLink? _clock;
     private CoreTextService? _text;
+    private PhotonKeyboard? _keyboard;
     private double _startedAt;
     private nfloat _lastWidth;
     private nfloat _lastHeight;
@@ -111,6 +116,8 @@ public sealed class PhotonViewController : UIViewController
             IconRasterizer = new CoreGraphicsIconRasterizer(),
             ReducedMotion = UIAccessibility.IsReduceMotionEnabled,
             SmoothScroll = SmoothScroll,
+            // What ⌘C, X and V on a keyboard attached to the device copy, cut and paste through.
+            Clipboard = new IosClipboard(),
         };
 
         // The semantics bridge: VoiceOver reads the SAME target-neutral tree the macOS bridge
@@ -120,6 +127,8 @@ public sealed class PhotonViewController : UIViewController
             () => _host?.Semantics() ?? [],
             path => _host?.ActivatePath(path) ?? false,
             (path, direction) => _host?.AdjustPath(path, direction) ?? false);
+
+        _keyboard = new PhotonKeyboard(view, _host);
 
         _clock = CADisplayLink.Create(OnFrame);
         _clock.AddToRunLoop(NSRunLoop.Main, NSRunLoopMode.Common);
@@ -240,6 +249,8 @@ public sealed class PhotonViewController : UIViewController
         FramesPresented++;
         // The screen just changed: if that changed what a screen reader would read, tell it.
         view.Semantics?.FrameRendered();
+        // And whether the keyboard has to open, start over, close or take a new value.
+        _keyboard?.Sync();
 
         if (forced && FramesPresented >= MaxFrames)
         {
@@ -306,6 +317,8 @@ public sealed class PhotonViewController : UIViewController
         if (disposing)
         {
             Stop();
+            _keyboard?.Dispose();
+            _keyboard = null;
             _backend?.Dispose();
             _backend = null;
         }
