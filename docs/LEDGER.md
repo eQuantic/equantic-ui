@@ -2528,6 +2528,18 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#836](https://github.com/eQuantic/equantic-ui/issues/836)), and three more shapes of a type named
   where nothing is written joined [#830](https://github.com/eQuantic/equantic-ui/issues/830). Proposed
   and archived through OpenSpec (`openspec/specs/referenced-projects`, `openspec/specs/transpiler-bcl`).
+- **2026-10-12 · The Apple shells call back through entry points a device build prepares**: the
+  shared Apple shell turned delegates into native function pointers, which a JIT wraps on demand and
+  an iPhone's ahead-of-time build never does, so the camera, location, biometrics, motion and network
+  status would have failed at their first callback on a device
+  ([#795](https://github.com/eQuantic/equantic-ui/issues/795)). A block now calls a static
+  `[UnmanagedCallersOnly]` entry point and carries its context as a `GCHandle` after its descriptor
+  (`ObjCBlock.Context<T>`), and the methods registered with the Objective-C runtime are static entry
+  points routing to their one instance. `AppleCallbackTests` fails when the shared Apple shell or the
+  iOS shell calls `Marshal.GetFunctionPointerForDelegate`, and the block tests run against the real
+  runtime on the Mac. The run on a physical iPhone belongs to the device pass
+  ([#792](https://github.com/eQuantic/equantic-ui/issues/792)). Proposed and archived through OpenSpec
+  (`openspec/specs/native-callbacks`).
 
 ## Retired documents
 
