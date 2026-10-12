@@ -43,6 +43,31 @@ public class CameraPreviewTests
         commands.Should().NotContain(c => c.Kind == DrawCommandKind.Texture);
     }
 
+    /// <summary>
+    /// A camera answers its start before its first frame: the first render with a session has no
+    /// pixels to draw. The host still has to keep asking, or nothing ever redraws the screen and the
+    /// preview sits on its placeholder with the camera running behind it (#775, found on an Android
+    /// emulator, where no pointer moves to redraw the screen by accident).
+    /// </summary>
+    [Fact]
+    public void ASessionWithNoFrameYet_KeepsTheHostAsking()
+    {
+        var session = new FakeSession();   // started, nothing delivered
+
+        var (frame, commands) = Render(new CameraPreview(session, 320, 240));
+
+        frame.HasActiveMotion.Should().BeTrue("frames are about to arrive, and only a redraw shows them");
+        commands.Should().NotContain(c => c.Kind == DrawCommandKind.Texture, "there is no pixel to draw yet");
+
+        // The first frame lands in the session; the NEXT render, which the host now asks for, draws it.
+        session.FrameWidth = 4;
+        session.FrameHeight = 2;
+        session.FrameBytes = new byte[4 * 2 * 4];
+        session.FrameVersion = 1;
+        var (_, next) = Render(new CameraPreview(session, 320, 240));
+        next.Should().Contain(c => c.Kind == DrawCommandKind.Texture);
+    }
+
     [Fact]
     public void WithFrames_OneTextureLivesAndItsVersionFollowsTheFeed()
     {

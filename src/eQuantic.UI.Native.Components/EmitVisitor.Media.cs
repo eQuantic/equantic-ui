@@ -242,14 +242,19 @@ internal sealed partial class EmitVisitor
         ThemeMode mode, DisplayListBuilder builder, MotionScope motion)
     {
         var rrect = new RRect(node.Bounds, camera.CornerRadius);
+
+        // A session is running: frames are arriving or about to, and the host must keep asking for
+        // them. From the FIRST render that has a session, not from the first that has pixels: a
+        // camera answers its start before its first frame, and a host told nothing would sit on
+        // the placeholder until something else redrew the screen.
+        if (camera.Session is not null) motion.Active = true;
+
         if (camera.Session is not { FrameBytes: { } bytes, FrameWidth: > 0 } session)
         {
             // Not started (or no pixels yet): the same SurfaceSubtle placeholder Image degrades to.
             builder.FillRRect(rrect, Paint.Solid(theme.SurfaceSubtle.Resolve(mode)));
             return;
         }
-
-        motion.Active = true;   // frames keep arriving; the host must keep asking for them
 
         if (!LiveFrames.TryGetValue(session, out var texture)
             || texture.Width != session.FrameWidth || texture.Height != session.FrameHeight
