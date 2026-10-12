@@ -23,8 +23,9 @@ does the same.
 - **The renderer releases what no frame draws.** Each upload remembers the last frame that drew it,
   and a raster that went undrawn for more than thirty whole frames gives its texture back as the next
   frame starts, before anything is encoded. Drawn again later, it is uploaded again from the bytes its
-  owner still holds. At most sixty-four go in one frame, so leaving a screen is not one frame that
-  pays for all of it.
+  owner still holds. A frame releases sixty-four at most, or as many as the frame before uploaded
+  when that is more: leaving a screen is not one frame that pays for all of it, and a screen that
+  draws more new rasters than that every frame still gives back as fast as it takes.
 - **A released texture leaves the Metal device.** `MetalTexture.Dispose` was an empty body behind the
   device's per-process fence, so on Metal the release above would have done nothing. The texture now
   gives back the reference it was created with.

@@ -5,7 +5,9 @@
 The shared renderer SHALL release the GPU texture of a raster that went undrawn for more than thirty
 whole frames, on every backend, and SHALL upload it again when a later frame draws it. A raster drawn
 in every frame SHALL be uploaded once. A release SHALL happen as a frame starts, before anything is
-encoded, and no more than sixty-four rasters SHALL be released in one frame.
+encoded. A frame SHALL release no more than sixty-four rasters, or as many as the frame before it
+uploaded when that is more, so that what the renderer holds stays bounded however many new rasters
+each frame draws.
 
 #### Scenario: A thousand rasters, one a frame
 
@@ -33,6 +35,11 @@ encoded, and no more than sixty-four rasters SHALL be released in one frame.
 - **THEN** the first frame to find them away for longer than they are kept releases sixty-four, and
   four frames later none of them is held
 
+#### Scenario: More new rasters a frame than the share
+
+- **WHEN** each of five hundred frames draws a hundred rasters no other frame draws
+- **THEN** the renderer holds the last thirty frames' worth or so, not all fifty thousand
+
 #### Scenario: Every way into the encoder
 
 - **WHEN** a window path encodes five hundred frames through the overload that takes its layers
@@ -41,7 +48,8 @@ encoded, and no more than sixty-four rasters SHALL be released in one frame.
 ### Requirement: A released texture leaves the device
 
 A backend SHALL give back the device memory of a texture the renderer released, and SHALL keep a
-texture a frame still in flight reads until that frame has been drawn.
+texture alive until the work it already submitted that reads it is done. The renderer's count of
+frames SHALL NOT be what that safety rests on.
 
 #### Scenario: Four hundred rasters on Metal
 

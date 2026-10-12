@@ -134,7 +134,16 @@ public struct DrawUniforms
         new(color.R / 255f, color.G / 255f, color.B / 255f, color.A / 255f);
 }
 
-/// <summary>A GPU texture the encoder can bind for sampling (A8 coverage or straight-sRGB RGBA).</summary>
+/// <summary>
+/// A GPU texture the encoder can bind for sampling (A8 coverage or straight-sRGB RGBA).
+/// <para>
+/// DISPOSED WHILE WORK MAY STILL READ IT. The renderer lets a texture go by what frames draw, and
+/// knows nothing of what the GPU has finished, so the lifetime is the backend's to keep: a texture
+/// stays alive until the work already submitted that reads it is done. Metal's command buffers
+/// retain what they bind; the Vulkan backend waits for each frame before the next begins. A backend
+/// that stops waiting defers the destroy itself.
+/// </para>
+/// </summary>
 public interface IRhiTexture : IDisposable
 {
     int Width { get; }
@@ -223,8 +232,13 @@ public sealed class RhiRenderer : IDisposable
     /// <summary>
     /// How many frames a raster may go undrawn and stay uploaded. Long enough that what leaves the
     /// screen for a moment (a row scrolled past and back, a state that flickers) is not uploaded
-    /// again, and far longer than any frame still in flight on the GPU; short enough that a text
-    /// changing every frame holds a handful of textures rather than all of them.
+    /// again; short enough that a text changing every frame holds a handful of textures rather
+    /// than all of them.
+    /// <para>
+    /// It is a number about uploads, NOT a fence against the GPU: a window may have more frames in
+    /// flight than this, and what keeps a released texture alive for them is the backend (see
+    /// <see cref="IRhiTexture"/>).
+    /// </para>
     /// <para>
     /// FRAMES, and the shells render on demand: a screen that goes still stops the count, and what
     /// its last frames stopped drawing waits for the next ones. Nothing is uploaded while nothing
@@ -234,9 +248,15 @@ public sealed class RhiRenderer : IDisposable
     internal const int RetainFrames = 30;
 
     /// <summary>
-    /// The most rasters released at the start of one frame. Leaving a screen retires all of its
-    /// rasters in the same frame, and each release costs the backend a destroy; spread over a few
-    /// frames it is not a hitch in the transition that follows.
+    /// How many rasters a frame releases when no more than that were uploaded by the frame before.
+    /// Leaving a screen retires all of its rasters in the same frame, and each release costs the
+    /// backend a destroy; spread over a few frames it is not a hitch in the transition that follows.
+    /// <para>
+    /// A SHARE, not a ceiling. A frame releases at least as many rasters as the one before it
+    /// uploaded, so what the renderer gives back keeps pace with what it takes: a screen that draws
+    /// a hundred new rasters every frame releases a hundred a frame, where a fixed share would let
+    /// the difference accumulate for as long as the screen ran.
+    /// </para>
     /// </summary>
     internal const int ReleasesPerFrame = 64;
 
@@ -244,6 +264,7 @@ public sealed class RhiRenderer : IDisposable
     private readonly Dictionary<TextureData, Uploaded> _textures = new();
     private readonly List<TextureData> _retired = new();
     private long _frame;
+    private int _uploads;   // new rasters uploaded by the frame being encoded
     private IRhiTexture? _dummy;
 
     /// <summary>A raster on the GPU: the texture, the version of the bytes it holds, and the last
@@ -695,6 +716,7 @@ public sealed class RhiRenderer : IDisposable
         }
         var texture = _device.CreateTexture(data);
         _textures[data] = new Uploaded(texture, data.Version, _frame);
+        _uploads++;
         return texture;
     }
 
@@ -707,13 +729,16 @@ public sealed class RhiRenderer : IDisposable
     private void BeginFrame()
     {
         _frame++;
+        // As many as the last frame uploaded, and never fewer than the share: see ReleasesPerFrame.
+        var releases = Math.Max(ReleasesPerFrame, _uploads);
+        _uploads = 0;
         // The frame that is starting has drawn nothing yet, so it is not one of the frames a raster
         // "went undrawn" for: one drawn at frame f was away for (_frame - f - 1) frames.
         foreach (var entry in _textures)
         {
             if (_frame - entry.Value.LastFrame - 1 <= RetainFrames) continue;
             _retired.Add(entry.Key);
-            if (_retired.Count == ReleasesPerFrame) break;
+            if (_retired.Count == releases) break;
         }
         if (_retired.Count == 0) return;
 

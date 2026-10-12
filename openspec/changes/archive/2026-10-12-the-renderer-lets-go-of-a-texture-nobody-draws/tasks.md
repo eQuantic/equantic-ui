@@ -2,7 +2,7 @@
 
 ## 1. The renderer
 
-- [x] 1.1 Each upload remembers the last frame that drew it; a frame's start releases what went undrawn for more than thirty whole frames, at most sixty-four a frame, in `Render` and in both `Encode` overloads. Verify: `RendererTextureReleaseTests` (11 cases) with a counting device whose pass refuses a released texture, and the same tests with the release switched off, where five cases fail
+- [x] 1.1 Each upload remembers the last frame that drew it; a frame's start releases what went undrawn for more than thirty whole frames, sixty-four a frame or as many as the frame before uploaded, in `Render` and in both `Encode` overloads. Verify: `RendererTextureReleaseTests` (12 cases) with a counting device whose pass refuses a released texture; the same tests with the release switched off, where six cases fail; and with the share fixed, where the hundred-a-frame case fails
 
 ## 2. The backends
 
@@ -17,4 +17,4 @@
 ## 4. Documentation and the suites
 
 - [x] 4.1 One `docs/LEDGER.md` line citing #858. No wiki page describes the renderer's texture cache
-- [x] 4.2 The Native.Engine suite, alone and read by its exit code: 2,131 passed, 19 skipped, exit 0
+- [x] 4.2 The Native.Engine suite, alone and read by its exit code: 2,132 passed, 19 skipped, exit 0

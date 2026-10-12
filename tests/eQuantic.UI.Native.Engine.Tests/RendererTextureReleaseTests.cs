@@ -140,6 +140,26 @@ public class RendererTextureReleaseTests
     }
 
     /// <summary>
+    /// A screen that draws more NEW rasters every frame than the share a frame releases: a table of
+    /// live values, a list flung. A fixed share would fall behind by the difference on every frame,
+    /// for as long as the screen ran, which is the growth this renderer was changed to end. A frame
+    /// releases at least as many as the one before it uploaded, so the count levels off.
+    /// </summary>
+    [Fact]
+    public void MoreNewRastersAFrameThanTheShare_AreStillNotAllHeld()
+    {
+        const int aFrame = RhiRenderer.ReleasesPerFrame + 36;
+        var device = new CountingDevice();
+        using var renderer = new RhiRenderer(device);
+
+        for (var frame = 0; frame < 500; frame++)
+            renderer.Encode(Frame(Enumerable.Range(0, aFrame).Select(_ => Raster()).ToArray()), new Pass());
+
+        device.Live.Should().BeLessThanOrEqualTo(aFrame * (RhiRenderer.RetainFrames + 3),
+            "what is held is the last few frames' worth, however many frames there were");
+    }
+
+    /// <summary>
     /// Leaving a screen retires all of its rasters at once. They go a bounded number per frame, so
     /// the frame after is not the one that pays for the whole screen, and they all go.
     /// </summary>

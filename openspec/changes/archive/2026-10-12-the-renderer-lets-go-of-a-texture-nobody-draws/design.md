@@ -16,9 +16,15 @@ to decide what goes first, which is the same age. A frame count needs one number
 
 **Thirty frames.** Long enough that what leaves the screen for a moment (a row scrolled past and
 back, a state that flickers, a tab switched and switched back within half a second) is not uploaded
-again, and far longer than any frame still in flight on the GPU, so a released texture is never one a
-pending command buffer reads. Short enough that a text changing every frame holds thirty textures,
-where it held all of them. The number is internal: no app compiles it in, and the suite reads it.
+again. Short enough that a text changing every frame holds thirty textures, where it held all of
+them. The number is internal: no app compiles it in, and the suite reads it.
+
+**The backend keeps a released texture alive, not the count.** Thirty frames is a number about
+uploads. It is not a fence against the GPU: a window may have more frames in flight than that, and
+the Metal test below queues hundreds. What keeps a released texture until the work that reads it is
+done is the backend: Metal's command buffers retain what they bind, and the Vulkan backend waits for
+each frame before the next begins. `IRhiTexture` states that duty, so a backend that stops waiting
+knows the deferral is its own.
 
 **Frames are the clock.** The shells render on demand, so a screen that goes still stops the count,
 and what its last frames stopped drawing waits for the next ones. Nothing is uploaded while nothing is
@@ -31,10 +37,14 @@ frame. Releasing happens there, before anything is encoded, so nothing bound in 
 encoded can be the thing released. The frame that is starting has drawn nothing yet, so it is not
 counted among the frames a raster went undrawn for.
 
-**A few a frame.** Leaving a screen retires all of its rasters in the same frame, and each release is a
-destroy on the backend. At most sixty-four go as a frame starts and the rest in the frames after, so
-the transition that follows is not where the cost lands. A release that throws leaves neither an
-entry whose texture is gone nor a list for the next frame to trip over.
+**A few a frame, and never fewer than were taken.** Leaving a screen retires all of its rasters in
+the same frame, and each release is a destroy on the backend. Sixty-four go as a frame starts and the
+rest in the frames after, so the transition that follows is not where the cost lands. That share is
+not a ceiling: a frame releases at least as many rasters as the one before it uploaded. A fixed
+share would fall behind by the difference on every frame of a screen that draws more new rasters
+than that (a table of live values, a list flung), which is the unbounded growth this change exists
+to end. A release that throws leaves neither an entry whose texture is gone nor a list for the next
+frame to trip over.
 
 **Metal gives the texture back.** The Metal device keeps its fixed objects (queue, pipelines,
 samplers) for the life of the process, and `MetalTexture.Dispose` sat behind that same fence as an
@@ -52,9 +62,10 @@ Both codes are read, because the driver that was measured answers the older one.
 A counting device in the engine's suite shows what the renderer holds: the last few of a thousand
 rasters fed one a frame, one upload for a raster drawn every frame, a second only for one left out of
 more frames than it is kept for (a case on each side of the boundary), one slot for a live texture, a
-screen of two hundred released sixty-four a frame, and the same count through the overload that takes
-layers. Its pass refuses a texture that was already released. With the release switched off, five of
-those cases fail.
+screen of two hundred released sixty-four a frame, a hundred new rasters a frame for five hundred
+frames levelling off, and the same count through the overload that takes layers. Its pass refuses a
+texture that was already released. With the release switched off, six of those cases fail, and with
+the share fixed at sixty-four the hundred-a-frame case holds twenty thousand.
 
 The real Metal device answers for Metal: four hundred frames, each with a new 256 by 256 raster, and
 `currentAllocatedSize` must not grow by the 100 MB that keeping them costs. Once on the waited path,
