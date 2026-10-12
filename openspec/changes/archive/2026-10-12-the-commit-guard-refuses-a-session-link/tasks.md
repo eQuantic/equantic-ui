@@ -9,6 +9,7 @@
 - [x] 2.1 Name the three shapes in rule 2 and read rule 2 across a line break
 - [x] 2.2 Give each new entry a fixture that isolates it, and prove it: with each entry taken out, its fixture fails the self-test, and the guard on main passes all five new refusals
 - [x] 2.3 Scan main's 1,422 commit messages with the new rules: the five refused before and the six of #851 are refused, and nothing else
+- [x] 2.4 Say in step 4 of the Workflow section that the squash takes the commits' messages, never the body; the repository's setting itself is its owner's to change
 
 ## 3. Documentation
 

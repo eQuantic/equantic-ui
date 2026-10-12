@@ -41,11 +41,13 @@
 #
 # It grew once already (#851). A pull request opened from a Claude Code project carries, in its BODY,
 # a comment naming the attribution, a link to the conversation it was requested in and a signature
-# line that links to the tool, sometimes to a session. A squash merge takes that body, and six squash
+# line that links to the tool, sometimes to a session. The squash took that body, and six squash
 # messages reached main with all three while this guard passed them, because none of the three was
-# on the list. So the list names them: the comment by its token, the signature by its phrase, and any
-# link into the tool's own pages, which a commit has no reason to carry (prose that names the tool,
-# or quotes CLAUDE.md's first line, writes no scheme and stays clean).
+# on the list. The squash now takes the pull request's commits' messages instead, which this job reads
+# on the pull request before the merge, and the list names the three for the message that still
+# reaches main another way: the comment by its token, the signature by its phrase, and any link into
+# the tool's own pages, which a commit has no reason to carry (prose that names the tool, or quotes
+# CLAUDE.md's first line, writes no scheme and stays clean).
 #
 # AND RULE 2 READS ACROSS A LINE BREAK. The squash composer wraps a body at 72 columns, and in two of
 # those six it broke the signature's link text in two. A named phrase is matched once more over the

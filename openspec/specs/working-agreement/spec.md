@@ -257,7 +257,9 @@ naming the tool, an assistant's co-authorship, the attribution comment a project
 opens with, or a link into the tool's own pages, a session's or a conversation's. A named phrase
 SHALL be refused wherever a line break falls in it. Prose that names the tool, and a balanced markup
 snippet a message quotes, SHALL pass. The guard's self-test SHALL hold a fixture that isolates each
-named shape, and CI SHALL run it on every push.
+named shape, and CI SHALL run it on every push. The repository's squash default SHALL take a pull
+request's title and its commits' messages, never its body, so the message a squash writes on main is
+one the job already read on the pull request.
 
 #### Scenario: A squash message that took a project's pull request body
 
@@ -269,6 +271,11 @@ named shape, and CI SHALL run it on every push.
 
 - **WHEN** a signature line's phrase is broken across two lines, with no link on either
 - **THEN** the guard refuses it, reported as wrapped
+
+#### Scenario: A pull request whose body carries a tool's attribution
+
+- **WHEN** it is squash-merged with the repository's default
+- **THEN** the commit on main carries its title and its commits' messages, and nothing of its body
 
 #### Scenario: Prose that names the tool
 

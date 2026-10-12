@@ -22,12 +22,17 @@ that reads one line at a time was also one wrap away from missing a named phrase
   tool, or quotes CLAUDE.md's first line, writes no scheme and stays clean.
 - The named list is read once more over the message with its line breaks taken out, so a phrase a
   wrap split is refused as one on a single line is; such a match is reported as `wrapped:`.
+- The repository's squash default takes the pull request's title and its commits' messages
+  (`squash_merge_commit_message` from `PR_BODY` to `COMMIT_MESSAGES`), so the body, where a tool
+  writes its attribution, never reaches main, and the message that does is one the job already read
+  on the pull request. Step 4 of the Workflow section, in `CLAUDE.md` and `AGENTS.md`, says so.
 - The self-test gains a fixture that isolates each new entry, one for the reading across a line
   break, and one of prose that names the tool, which must pass; it counts its fixtures rather than
   printing a number written by hand.
 
 ## Impact
 
-- `scripts/check-commit-messages.sh`.
+- `scripts/check-commit-messages.sh`, and the Workflow section of `CLAUDE.md` and `AGENTS.md`.
+- The repository's squash setting, which only its owner can change.
 - The six squash commits stay on main, whose history is not rewritten: the job reads a push's own
   range, so it reports the next one and none of these.

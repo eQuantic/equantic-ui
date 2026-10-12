@@ -2611,8 +2611,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   job passed each one, since none of the three was on its list
   ([#851](https://github.com/eQuantic/equantic-ui/issues/851)). The guard names them, reads its named
   phrases across a line break, and holds a fixture that isolates each new entry; over main's 1,422
-  commit messages it refuses those six and the five it refused before, and nothing else. Proposed and
-  archived through OpenSpec (`openspec/specs/working-agreement`).
+  commit messages it refuses those six and the five it refused before, and nothing else. The squash
+  now takes the pull request's commits' messages, which the job reads before the merge, and never its
+  body. Proposed and archived through OpenSpec (`openspec/specs/working-agreement`).
 
 ## Retired documents
 
