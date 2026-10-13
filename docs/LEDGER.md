@@ -2603,6 +2603,23 @@ record of a release, the wiki's Upgrading page is the distillate.
   runtime on the Mac. The run on a physical iPhone belongs to the device pass
   ([#792](https://github.com/eQuantic/equantic-ui/issues/792)). Proposed and archived through OpenSpec
   (`openspec/specs/native-callbacks`).
+- **2026-10-13 · A walk over a collection ends when the collection changes**: a `foreach` over the
+  runtime's `Queue`, `Stack`, `LinkedList` or `SortedSet` went on after the collection changed under
+  it. A queue and a stack walked a copy, and a linked list and a sorted set walked themselves, so
+  `foreach (var x in s) s.Add(x + 10);` never ended in the browser
+  ([#765](https://github.com/eQuantic/equantic-ui/issues/765)); a sorted set's `Reverse()` was a
+  TypeError. Each now keeps a version, bumped where .NET 10 bumps its own, a sorted set's `Add` of an
+  element it holds and its set operations along .NET's path included, and refuses a change at the next
+  step with .NET's `InvalidOperationException`, in CoreLib's words for a queue and System.Collections'
+  for the other three. 25 of the 36 conformance cases fail at 9b43eb2b; the 11 that pass are the walks
+  with no change in them. Measuring them found a `List<T>` that keeps walking
+  ([#863](https://github.com/eQuantic/equantic-ui/issues/863)), the sorted dictionary's and sorted
+  list's views walked as a copy ([#864](https://github.com/eQuantic/equantic-ui/issues/864)), and
+  members of the four that compile and are TypeErrors in the browser, `GetViewBetween`
+  ([#865](https://github.com/eQuantic/equantic-ui/issues/865)), `TryDequeue` and `TryPop` among them
+  ([#866](https://github.com/eQuantic/equantic-ui/issues/866)). The served
+  runtime grows 225 gzipped bytes. Proposed and archived through OpenSpec
+  (`openspec/specs/runtime-collections`).
 
 ## Retired documents
 
