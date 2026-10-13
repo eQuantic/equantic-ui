@@ -214,7 +214,6 @@ List<Int32>.FindLastIndex(Predicate<Int32>) match  type  lowered to the array's 
 List<Int32>.ForEach(Action<Int32>) action  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
 List<Int32>.InsertRange(Int32,IEnumerable<Int32>) collection  type  lowered to a spread, which reads a null collection through null: refusing it by name is a guard at every call, which is a design decision
 List<Int32>.TrueForAll(Predicate<Int32>) match  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
-SortedSet<Int32>.CreateSetComparer(IEqualityComparer<Int32>) memberEqualityComparer  type  the runtime's sorted set has no createSetComparer
 String.Concat(IEnumerable<String>) values  type  string.Concat of one argument is lowered to a spread of it, which reads a null through null, and an object that is no sequence too
 String.Concat(IEnumerable<T>) values  type  string.Concat of one argument is lowered to a spread of it, which reads a null through null, and an object that is no sequence too
 String.Concat(Object) arg0  type  string.Concat of one argument is lowered to a spread of it, which reads a null through null, and an object that is no sequence too

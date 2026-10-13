@@ -54,3 +54,9 @@ eQuantic.UI.Compiler.Services.AppBuildOptions.ReferenceReader.get -> System.Func
 eQuantic.UI.Compiler.Services.AppBuildOptions.ReferenceReader.init -> void
 *REMOVED*static eQuantic.UI.Compiler.Services.ModuleBundler.Bundle(string! bunPath, System.Collections.Generic.IReadOnlyCollection<string!>! entryPoints, string! outputDir, string! intermediateDir, eQuantic.UI.Compiler.SourceMapMode sourceMaps, System.Action<string!>? warn = null) -> string?
 static eQuantic.UI.Compiler.Services.ModuleBundler.Bundle(string! bunPath, string! workingDirectory, System.Collections.Generic.IReadOnlyCollection<string!>! entryPoints, string! outputDir, string! intermediateDir, eQuantic.UI.Compiler.SourceMapMode sourceMaps, System.Action<string!>? warn = null) -> string?
+*REMOVED*override eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+*REMOVED*override eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+*REMOVED*override eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.Priority.get -> int
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.Priority.get -> int
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
