@@ -43,6 +43,7 @@
     <ItemGroup>
         <None Include="$(MSBuildThisFileDirectory)assets\Icon.png" Pack="true" PackagePath="\" />
         <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="\" />
-        <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" />
+        <!-- The readme is not here: a package's is written when it packs (WritePackageReadme, in
+             Directory.Build.targets), from README.md with its pictures' addresses written out. -->
     </ItemGroup>
 </Project>
