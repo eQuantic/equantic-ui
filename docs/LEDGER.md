@@ -2711,6 +2711,26 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#866](https://github.com/eQuantic/equantic-ui/issues/866)). The served
   runtime grows 208 gzipped bytes. Proposed and archived through OpenSpec
   (`openspec/specs/runtime-collections`).
+- **2026-10-13 · The README shows the samples, and asks for a new picture when a screen changes**:
+  the root README, which is also every package's readme on nuget.org, showed no picture of anything
+  it describes. It now shows the three samples as they build: a tour of the dashboard's pages in a
+  browser and three of its screens, the component gallery drawn by Photon in dark and in light, and
+  the Wallet on an iPhone and on Android, each a Markdown image named by its full address, which
+  nuget.org draws too.
+  They are captures `scripts/capture-readme.sh` takes with nothing clicked, since each sample opens a
+  screen by configuration: a headless Chrome, `--Photon:ScreenshotPath`, a simulator of its own and
+  the running emulator. `assets/readme/captures.json` names the files each picture's screen is
+  written in, and `ReadmeCapturesTests` fails when one changes, naming the picture and its target,
+  until the picture is taken again and the files are recorded (`EQ_UPDATE_README_CAPTURES=1`). A
+  capture that drew nothing is refused: two of the first six iOS captures were a black screen, taken
+  before the app's first frame, a fixed wait gave a third, which the check stopped, and a simulator
+  just booted refused a launch, so the script asks until the app starts and photographs until the
+  screen holds a picture. A picture is a Markdown image, since nuget.org shows a readme's HTML as
+  text: the README's own badges and title are on the package's page as tags
+  ([#882](https://github.com/eQuantic/equantic-ui/issues/882)). Found on the way: in the light theme the Android shell leaves the status bar's icons white
+  on a light screen ([#881](https://github.com/eQuantic/equantic-ui/issues/881))
+  ([#880](https://github.com/eQuantic/equantic-ui/issues/880)). Proposed and archived through
+  OpenSpec (`openspec/specs/working-agreement`).
 
 ## Retired documents
 

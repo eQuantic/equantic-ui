@@ -159,6 +159,16 @@ shares, so keep that clone on master: to run them against a pull request's wiki 
 `EQ_WIKI_DIR` at a worktree of it (`git -C ../equantic-ui.wiki worktree add <dir> <branch>`).
 `docs/LEDGER.md` keeps the history, one line per event, citing the issue.
 
+The pictures in the root `README.md` are captures of the samples, and a picture is taken again when
+the screen it shows changes. `assets/readme/captures.json` names the files each picture's screen is
+written in, and `ReadmeCapturesTests` fails when one of them changes, naming the picture and its
+target. In the same pull request as the change: take the picture again with
+`./scripts/capture-readme.sh <target> compose`, look at it, and only then record the files as they
+are with `EQ_UPDATE_README_CAPTURES=1` on that test. Recording alone makes the guard pass over a
+picture of the old screen. A new picture gets its entry by hand, and the README writes it as a
+Markdown image named by its full address: the README is every package's readme on nuget.org too,
+which shows HTML as text and draws nothing from a relative path.
+
 ### OpenSpec
 
 Specs are versioned in the repository, under `openspec/`, with the project's context and the rules

@@ -24,6 +24,7 @@
 </p>
 
 <p align="center">
+  <a href="#see-it-running">See it running</a> •
   <a href="#quick-start">Quick Start</a> •
   <a href="#why-equanticui">Why eQuantic.UI</a> •
   <a href="#features">Features</a> •
@@ -31,6 +32,8 @@
   <a href="#how-it-works">How It Works</a> •
   <a href="#documentation">Documentation</a>
 </p>
+
+![The dashboard sample in a browser, page by page: payments, charts, a spreadsheet, a code editor, a diff, Markdown, a form, ten thousand rows, localization and colours](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/web-tour.gif)
 
 ---
 
@@ -41,6 +44,40 @@
 > the way in; you do not need to build from source. Each preview's breaking changes, with the line
 > to write instead, are on the [Upgrading](https://github.com/equantic/equantic-ui/wiki/Upgrading)
 > page. Early adopters and feedback are very welcome!
+
+---
+
+## See it running
+
+Every screen shown here is a capture of a sample in this repository, taken from the code as it builds
+by [`scripts/capture-readme.sh`](https://github.com/eQuantic/equantic-ui/blob/main/scripts/capture-readme.sh).
+The one at the top walks through the dashboard sample in a browser.
+
+### On the web
+
+[`samples/DefaultUIDashboard`](https://github.com/eQuantic/equantic-ui/tree/main/samples/DefaultUIDashboard): pages rendered on the server and hydrated
+in the browser, written in C# and nothing else.
+
+| Charts | A diff of two versions of a file | A form, in the light theme |
+| :---: | :---: | :---: |
+| ![Grouped, stacked and horizontal bar charts](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/web-charts.png) | ![A side-by-side diff of two versions of a C# file](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/web-code-diff.png) | ![A sign-up form in the light theme](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/web-forms.png) |
+
+### On a desktop
+
+[`samples/PhotonDesktop`](https://github.com/eQuantic/equantic-ui/tree/main/samples/PhotonDesktop): the component gallery in a native window, drawn on
+the GPU by Photon. The same components and the same theme, dark and light.
+
+| The gallery's charts, dark | The gallery's buttons, light |
+| :---: | :---: |
+| ![The component gallery's charts, in the dark theme](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/desktop-gallery.png) | ![The component gallery's buttons, in the light theme](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/desktop-gallery-light.png) |
+
+### On a phone
+
+[`samples/WalletMobile`](https://github.com/eQuantic/equantic-ui/tree/main/samples/WalletMobile): one app in C#, on an iPhone and on Android.
+
+| iPhone | iPhone, light theme | Android | Android |
+| :---: | :---: | :---: | :---: |
+| ![The Wallet's home screen on an iPhone](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/ios-home.png) | ![A transfer sheet on an iPhone, in the light theme](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/ios-transfer.png) | ![The Wallet's transactions on Android](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/android-transactions.png) | ![A dialog and a toast on Android](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/android-cards.png) |
 
 ---
 
