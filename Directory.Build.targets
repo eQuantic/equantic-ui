@@ -81,6 +81,60 @@
     </Target>
 
     <!--
+      A PACKAGE'S README IS THE REPOSITORY'S, WITH ITS PICTURES' ADDRESSES WRITTEN OUT (#880).
+
+      README.md names a picture by its path in the repository, `assets/readme/<file>`, so GitHub
+      draws it on every branch, in a fork, and in the pull request that takes it again. nuget.org
+      draws nothing from a relative path: there a picture needs its full address, and it names the
+      release's own tag, `v<PackageVersion>`, so a package's page goes on showing the screens of
+      ITS version, whatever main shows later.
+
+      A program writes the copy, and the README's text never crosses MSBuild. It was tried: on a
+      Mac MSBuild takes a backslash in an item for a path separator, so the README's `\e` was
+      packed as `/e`, and WriteLinesToFile cuts an item at every semicolon and reads the `%20` of a
+      badge's address as a space. A task written here is compiled when a project first packs, 0.3
+      seconds a process, and holds no file of the tree.
+
+      ReadmeCapturesTests runs the target and compares what it wrote with README.md, byte for
+      byte but for the addresses, and scripts/check-package-readme.cs reads the readme inside
+      every package CI packs.
+    -->
+    <UsingTask TaskName="AddressReadmePictures" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+        <ParameterGroup>
+            <Readme ParameterType="System.String" Required="true" />
+            <Pictures ParameterType="System.String" Required="true" />
+            <Address ParameterType="System.String" Required="true" />
+            <Destination ParameterType="System.String" Required="true" />
+        </ParameterGroup>
+        <Task>
+            <Using Namespace="System.IO" />
+            <Code Type="Fragment" Language="cs"><![CDATA[
+                var text = File.ReadAllText(Readme).Replace("](" + Pictures, "](" + Address);
+                if (!File.Exists(Destination) || File.ReadAllText(Destination) != text)
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(Destination)));
+                    File.WriteAllText(Destination, text);
+                }
+            ]]></Code>
+        </Task>
+    </UsingTask>
+
+    <PropertyGroup>
+        <EqPackageReadme Condition="'$(EqPackageReadme)' == ''">$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)', 'package-readme', 'README.md'))</EqPackageReadme>
+    </PropertyGroup>
+
+    <Target Name="WritePackageReadme" BeforeTargets="_GetPackageFiles">
+        <AddressReadmePictures
+            Readme="$(MSBuildThisFileDirectory)README.md"
+            Pictures="assets/readme/"
+            Address="$(RepositoryUrl.Replace('https://github.com/', 'https://raw.githubusercontent.com/'))/v$(PackageVersion)/assets/readme/"
+            Destination="$(EqPackageReadme)" />
+        <ItemGroup>
+            <None Include="$(EqPackageReadme)" Pack="true" PackagePath="\" />
+        </ItemGroup>
+    </Target>
+
+    <!--
       Development helper target: clears NuGet cache for eQuantic packages
       Usage: dotnet msbuild -t:ClearEQuanticCache
     -->

@@ -403,6 +403,15 @@ jobs:
           # Copy core packages
           find src -name "*.nupkg" -path "*/bin/Release/*" -exec cp {} nupkgs/ \;
 
+      # README.md names a picture by its path in the repository, which GitHub draws on every branch
+      # and nuget.org does not draw at all. So a package's readme is written when it packs, with
+      # each picture at its address under the release's tag (#880). A test runs that target. This
+      # reads the readme a pack put in each package, the per-OS runtime packages the Linux and
+      # Windows runners packed among them, and compares it with README.md byte for byte.
+      - name: Every package's readme names its pictures by their address
+        shell: bash
+        run: dotnet run scripts/check-package-readme.cs -- nupkgs
+
       - name: Upload All NuGet Packages
         uses: actions/upload-artifact@v4
         with:

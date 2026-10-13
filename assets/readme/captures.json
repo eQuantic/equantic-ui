@@ -1,0 +1,102 @@
+{
+  "$comment": [
+    "The pictures README.md shows, and the files each one's screen is written in (#880).",
+    "",
+    "A picture is a capture of a sample, taken by scripts/capture-readme.sh <target> compose. Each",
+    "source below carries the SHA-256 it had when the picture was taken, and ReadmeCapturesTests fails",
+    "when one of them changes, naming the picture and its target.",
+    "",
+    "Then: take the picture again, LOOK at it, and record the files as they are now with",
+    "EQ_UPDATE_README_CAPTURES=1 on that test. Recording alone makes the guard pass over a picture",
+    "that still shows the old screen.",
+    "",
+    "A new picture gets an entry here by hand: its target and the files its screen is written in."
+  ],
+  "captures": {
+    "web-dashboard.png": {
+      "target": "web",
+      "sources": {
+        "samples/DefaultUIDashboard/Program.cs": "1b6e5ece18e9768aed85983ad7522786068229a0f6bb7f0e9248d47b7629bfdd",
+        "samples/DefaultUIDashboard/Screens/ConsoleShell.cs": "aa5b69eda567b6dcdb8461e0c37ca8960106ac571af9cedd82a7d66daa829088",
+        "samples/DefaultUIDashboard/Screens/ConsoleData.cs": "abcb0a957c3823167118ea3f6ea2f100dc9e0aab969910388f3e3d4c4c91403e",
+        "samples/DefaultUIDashboard/Screens/PaymentsPage.cs": "945748db6e09ed08198d5e1c788bbd706171542a5b3ab7f79ad2af31f1631808"
+      }
+    },
+    "web-charts.png": {
+      "target": "web",
+      "sources": {
+        "samples/DefaultUIDashboard/Program.cs": "1b6e5ece18e9768aed85983ad7522786068229a0f6bb7f0e9248d47b7629bfdd",
+        "samples/DefaultUIDashboard/Screens/ConsoleShell.cs": "aa5b69eda567b6dcdb8461e0c37ca8960106ac571af9cedd82a7d66daa829088",
+        "samples/DefaultUIDashboard/Screens/ChartsScreen.cs": "707f5ad95f6ed64e8cb7cc436996f8c06676b5ba6f85044469a6062861131342"
+      }
+    },
+    "web-code-diff.png": {
+      "target": "web",
+      "sources": {
+        "samples/DefaultUIDashboard/Program.cs": "1b6e5ece18e9768aed85983ad7522786068229a0f6bb7f0e9248d47b7629bfdd",
+        "samples/DefaultUIDashboard/Screens/ConsoleShell.cs": "aa5b69eda567b6dcdb8461e0c37ca8960106ac571af9cedd82a7d66daa829088",
+        "samples/DefaultUIDashboard/Screens/DiffScreen.cs": "270ed999ea61baf467a6be6eed75d503bd964ade2cbb7796670eb82d4be5d8d6"
+      }
+    },
+    "web-forms.png": {
+      "target": "web",
+      "sources": {
+        "samples/DefaultUIDashboard/Program.cs": "1b6e5ece18e9768aed85983ad7522786068229a0f6bb7f0e9248d47b7629bfdd",
+        "samples/DefaultUIDashboard/Screens/ConsoleShell.cs": "aa5b69eda567b6dcdb8461e0c37ca8960106ac571af9cedd82a7d66daa829088",
+        "samples/DefaultUIDashboard/Screens/FormScreen.cs": "dedae4f32851e8b17cf9978c93535cdb3c68421159310e7a9c32cfec2d067f14"
+      }
+    },
+    "desktop-gallery.png": {
+      "target": "desktop",
+      "sources": {
+        "samples/PhotonDesktop/Program.cs": "da31da3e50f4af51a9350fc1a97b32143b73900183d568937fcbef389c99cfb9",
+        "samples/PhotonDesktop/Studio/StudioShell.cs": "aa94aec855783419731248e34222bd84cdb06aae7cb0b289c70fa2ac9dded552",
+        "samples/PhotonDesktop/Studio/Gallery.cs": "2d9bc706bf82700cf80e13d0b39903e1911125b69bfa9edfe2f68389814ca6b3"
+      }
+    },
+    "desktop-gallery-light.png": {
+      "target": "desktop",
+      "sources": {
+        "samples/PhotonDesktop/Program.cs": "da31da3e50f4af51a9350fc1a97b32143b73900183d568937fcbef389c99cfb9",
+        "samples/PhotonDesktop/Studio/StudioShell.cs": "aa94aec855783419731248e34222bd84cdb06aae7cb0b289c70fa2ac9dded552",
+        "samples/PhotonDesktop/Studio/Gallery.cs": "2d9bc706bf82700cf80e13d0b39903e1911125b69bfa9edfe2f68389814ca6b3"
+      }
+    },
+    "ios-home.png": {
+      "target": "ios",
+      "sources": {
+        "samples/WalletMobile/Program.cs": "eb4a91665d0b92cc4ab2ac613202b77fde1c6d1b82398c98ccb617fad65220e0",
+        "samples/WalletMobile/WalletApp.cs": "78c430a9b29d96e4499c87c4b919940e5bb26526cb736e6282aafb4b30233b28",
+        "samples/WalletMobile/WalletData.cs": "2aa75cac4f7b755ed1747b1596db4b06c417cc2c6ebb0580abdc1e1d820b5ae7",
+        "samples/WalletMobile/WalletLedger.cs": "fa8929ceff492bab8e27a905fcc0d201a0c6bf0dc9b6d5cb19352507f087f6bf"
+      }
+    },
+    "ios-transfer.png": {
+      "target": "ios",
+      "sources": {
+        "samples/WalletMobile/Program.cs": "eb4a91665d0b92cc4ab2ac613202b77fde1c6d1b82398c98ccb617fad65220e0",
+        "samples/WalletMobile/WalletApp.cs": "78c430a9b29d96e4499c87c4b919940e5bb26526cb736e6282aafb4b30233b28",
+        "samples/WalletMobile/WalletData.cs": "2aa75cac4f7b755ed1747b1596db4b06c417cc2c6ebb0580abdc1e1d820b5ae7",
+        "samples/WalletMobile/WalletLedger.cs": "fa8929ceff492bab8e27a905fcc0d201a0c6bf0dc9b6d5cb19352507f087f6bf"
+      }
+    },
+    "android-transactions.png": {
+      "target": "android",
+      "sources": {
+        "samples/WalletMobile/Program.cs": "eb4a91665d0b92cc4ab2ac613202b77fde1c6d1b82398c98ccb617fad65220e0",
+        "samples/WalletMobile/WalletApp.cs": "78c430a9b29d96e4499c87c4b919940e5bb26526cb736e6282aafb4b30233b28",
+        "samples/WalletMobile/WalletData.cs": "2aa75cac4f7b755ed1747b1596db4b06c417cc2c6ebb0580abdc1e1d820b5ae7",
+        "samples/WalletMobile/WalletLedger.cs": "fa8929ceff492bab8e27a905fcc0d201a0c6bf0dc9b6d5cb19352507f087f6bf"
+      }
+    },
+    "android-cards.png": {
+      "target": "android",
+      "sources": {
+        "samples/WalletMobile/Program.cs": "eb4a91665d0b92cc4ab2ac613202b77fde1c6d1b82398c98ccb617fad65220e0",
+        "samples/WalletMobile/WalletApp.cs": "78c430a9b29d96e4499c87c4b919940e5bb26526cb736e6282aafb4b30233b28",
+        "samples/WalletMobile/WalletData.cs": "2aa75cac4f7b755ed1747b1596db4b06c417cc2c6ebb0580abdc1e1d820b5ae7",
+        "samples/WalletMobile/WalletLedger.cs": "fa8929ceff492bab8e27a905fcc0d201a0c6bf0dc9b6d5cb19352507f087f6bf"
+      }
+    }
+  }
+}
