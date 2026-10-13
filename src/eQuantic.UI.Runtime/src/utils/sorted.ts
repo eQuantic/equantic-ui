@@ -137,6 +137,13 @@ export class SortedSet<T> implements Iterable<T> {
     return this.indexOf(value) >= 0;
   }
 
+  /** `TryGetValue`: the element the set holds that its comparer finds equal to `value`, which may be
+   *  another instance (`1.0m` for `1.00m`), or undefined where .NET answers false (#866). */
+  tryGetValue(value: T): T | undefined {
+    const i = this.indexOf(value);
+    return i >= 0 ? this.items[i] : undefined;
+  }
+
   clear(): void {
     this.items.length = 0;
     this.version++;

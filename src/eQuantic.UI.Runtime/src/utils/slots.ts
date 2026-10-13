@@ -50,16 +50,25 @@ function isPrime(candidate: number): boolean {
 /**
  * How many a collection holds, where .NET reads an `ICollection<T>`'s `Count` to size what it copies
  * into: an array (a list, an array, a dictionary's keys or values), a set or a dictionary by its
- * size, a linked list or a sorted set by its count. Null for any other sequence, which .NET reads
- * only by walking it, a queue and a stack among them, which are no `ICollection<T>`. A dictionary and
- * a set both copy by it, so it lives where both find it.
+ * size, and by its count anything with the `CopyTo` every `ICollection<T>` has, a linked list, a sorted
+ * set and a type of the app's own among them. Null for any other sequence, which .NET reads only by
+ * walking it: a queue and a stack, which are no `ICollection<T>` although each has a `CopyTo`, and a
+ * type that counts its elements without being one, an `IReadOnlyList<T>` alone. A count was enough
+ * here, so such a type sized a queue, a stack or a set to its count, where .NET grows each one as it
+ * walks the type (#866). A dictionary and a set both copy by it, so it lives where both find it.
  */
 export function collectionCount(source: unknown): number | null {
   if (Array.isArray(source)) return source.length;
   if (source == null || typeof source !== 'object') return null;
-  const counted = source as { size?: unknown; count?: unknown; dequeue?: unknown; pop?: unknown };
+  const counted = source as {
+    size?: unknown;
+    count?: unknown;
+    copyTo?: unknown;
+    dequeue?: unknown;
+    pop?: unknown;
+  };
   if (typeof counted.size === 'number') return counted.size;
-  if (typeof counted.count !== 'number') return null;
+  if (typeof counted.count !== 'number' || typeof counted.copyTo !== 'function') return null;
   return typeof counted.dequeue === 'function' || typeof counted.pop === 'function' ? null : counted.count;
 }
 
