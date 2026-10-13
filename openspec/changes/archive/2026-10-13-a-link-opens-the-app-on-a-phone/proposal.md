@@ -28,11 +28,17 @@ C#, built green, and carried neither key.
   the relay what the app was started with (`DeepLinkRelay.StartedWith`): an app opened from its icon
   answers `null`, a link that arrives later is heard and does not become it, and the first tree
   already reads it.
-- **The Android launcher is a single task**, so a link opened by another app reaches the running
-  activity instead of starting a second one over it.
-- **What an iPhone app declares reaches its Info.plist** (#872). The manifest target runs where the
-  iOS SDK collects partial manifests, and a file left by an earlier build is removed when nothing is
-  declared any more.
+- **The Android launcher of an app that links open is a single task**, so a link opened by another
+  app reaches the running activity instead of starting a second one over it. An app that declares no
+  scheme keeps Android's own launch mode.
+- **On Android only a declared scheme is a link.** The launcher is exported, so the shell holds an
+  intent against the schemes the app declared, which the launcher carries as code.
+- **A tree is taken down with its activity.** `PhotonHost.Unmount` tells every component that mounted
+  that it left, and the Android shell calls it. Android keeps the process, and a tree left mounted
+  went on hearing every link beside the live one.
+- **What an iPhone app declares reaches its Info.plist** (#872). The partial manifest is handed over
+  where the iOS SDK writes the final manifest, it is rewritten only when it changed, and a file left
+  by an earlier build is removed when nothing is declared any more.
 
 For a developer: nothing new to write. `builder.Bundle.UrlScheme("acme")` and the two lines that
 read `IDeepLinks` work on a phone as they do on a desktop.
@@ -55,8 +61,10 @@ None.
   launch mode.
 - **The build tool** (`eQuantic.UI.Native.Build`, `eqicon`): the `capabilities` verb writes the URL
   types and takes the app's identifier.
-- **The native SDK** (`eQuantic.UI.Sdk.Native`): when `EQuanticCapabilityManifest` runs.
+- **The native SDK** (`eQuantic.UI.Sdk.Native`): when the manifest is handed over.
+- **The native components** (`eQuantic.UI.Native.Components`): `PhotonHost.Unmount`.
 - **The phone shells** (`eQuantic.UI.Native.Shell.Android`, `eQuantic.UI.Native.Shell.iOS`).
-- **Public surface moves** by additions only: `DeepLinkRelay.StartedWith`, and the overrides
-  `PhotonActivity.OnNewIntent` and `PhotonSceneDelegate.OpenUrlContexts`. The developer surface does
+- **Public surface moves** by additions only: `DeepLinkRelay.StartedWith`, `PhotonHost.Unmount`,
+  `PhotonActivity.UrlSchemes`, and the overrides `PhotonActivity.OnNewIntent`,
+  `PhotonActivity.OnDestroy` and `PhotonSceneDelegate.OpenUrlContexts`. The developer surface does
   not move. Nothing breaks.

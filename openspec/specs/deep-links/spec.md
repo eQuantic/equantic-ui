@@ -34,6 +34,12 @@ declares none SHALL get none.
 - **WHEN** a link on an undeclared scheme is opened on the Android emulator
 - **THEN** the system resolves it to nothing
 
+#### Scenario: An intent aimed at the launcher by name
+
+- **WHEN** another sender aims a VIEW intent at the exported launcher by name, with a URL on a scheme
+  the app did not declare, with the app running and again with it stopped
+- **THEN** no subscriber hears it, and `Launch` is null for the start it caused
+
 ### Requirement: A phone tells the app what it was started with
 
 On a phone `IDeepLinks.Launch` SHALL answer the URL the app was started with, readable when the first
@@ -63,21 +69,73 @@ SHALL replace the answer.
 - **THEN** a subscriber hears it, `Launch` is unchanged, and on Android there is still one activity
   in the same process
 
-### Requirement: The Android launcher is a single task
+#### Scenario: A return after the system took the process
 
-The launcher activity the generator writes SHALL be a single task, whether or not the app declares a
-scheme.
+- **WHEN** an app started by a link is sent home, its process is killed, and the app is opened again
+- **THEN** `Launch` is null: the person opened the app, not the link again
+
+#### Scenario: A re-creation in a live process
+
+- **WHEN** an app started by a link has its activity re-created in the same process (the font size
+  changes)
+- **THEN** the new tree reads the same `Launch`, and no subscriber is told of a new link
+
+### Requirement: The Android launcher of an app that links open is a single task
+
+The launcher activity the generator writes SHALL be a single task when the app declares a scheme, and
+SHALL keep Android's own launch mode when it declares none.
 
 #### Scenario: The launcher's launch mode
 
-- **WHEN** the generator writes the launcher for an app with no scheme
-- **THEN** it declares the single-task launch mode
+- **WHEN** the generator writes the launcher for an app with a scheme, and for one with none
+- **THEN** the first declares the single-task launch mode and the second declares no launch mode
+
+### Requirement: A tree is taken down with its surface
+
+A host SHALL be able to take its tree down, telling every component that mounted that it left, once.
+The Android shell SHALL do so when an activity is destroyed, and for the activity before it when a
+new one is created first, so that a link is heard once, by the tree that is alive.
+
+#### Scenario: A host unmounted
+
+- **WHEN** a host that drew a root and a nested stateful component is unmounted, twice
+- **THEN** each of the two is told it left, once
+
+#### Scenario: A subscription the tree held
+
+- **WHEN** a component subscribed to the relay in its mount, its host is unmounted, and a URL is
+  offered
+- **THEN** the component does not hear it
+
+#### Scenario: A link after the activity before it ended
+
+- **WHEN** an app is opened from its icon, left with Back, started again by a link, and handed a link
+  while it runs, on the Android emulator
+- **THEN** the link is heard once
 
 ### Requirement: What an iPhone app declares reaches its Info.plist
 
-The partial manifest of what an app declares SHALL be contributed where the iOS SDK collects partial
-manifests, so that its keys are in the built `Info.plist`. With nothing declared, a file from an
-earlier build SHALL be removed.
+The partial manifest of what an app declares SHALL be written after the compiler and handed over
+where the iOS SDK writes the final manifest, so that its keys are in the built `Info.plist`. Handing
+it over SHALL NOT bring the compiler forward in the build. The file SHALL be rewritten only when what
+it says changed, and with nothing declared a file from an earlier build SHALL be removed.
+
+#### Scenario: The shape of the targets
+
+- **WHEN** the SDK's targets are read
+- **THEN** the manifest is written after `Compile` with no dependency on it, the early list of
+  manifests is not touched, and the file is added to the late list before the final manifest is
+  written
+
+#### Scenario: An app with a resource file
+
+- **WHEN** an iPhone app with a `.resx` is built from a clean tree
+- **THEN** its assembly carries the resource, and its `Info.plist` carries what the app declared
+
+#### Scenario: Written again with nothing changed
+
+- **WHEN** the manifest is written twice for the same declarations
+- **THEN** the second leaves the file's time as it was
 
 #### Scenario: The sample's declared sentences
 
