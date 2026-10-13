@@ -58,10 +58,16 @@ go while the person looks at it. The session releases on stop and opens again on
 again on resume, which costs nothing when the camera is open and is how a camera lost to the window
 that had the focus comes back.
 
-**One state for "not now".** The activity may leave the screen while the camera is still opening.
-The session records that it is suspended before it releases anything, and a camera that arrives
-after that is closed where it arrives. A start that is cancelled disposes the session it was
-opening, and a failed open is settled the same way whether the failure came back or was thrown.
+**An open is an attempt, and callbacks carry theirs.** The activity may leave the screen at any
+point of an open: before the device arrives, or between the device and its capture session. The
+callbacks first spoke for "the session", and a release in the middle left the open pending with
+nobody to finish it: measured on the emulator with the camera's thread held between the two steps,
+a first start never answered and a reopen never came back (found by Copilot's review). Each open is
+now an `Opening` the platform's callbacks are constructed with. Whoever gives the camera up settles
+the attempt it abandons, and what that attempt still has to say arrives for an attempt that is no
+longer the session's own, where it closes what it was handed and changes nothing. A start that is
+cancelled disposes the session it was opening, and a failed open ends the same way whether the
+failure came back or was thrown.
 
 **A frame is read under the session's gate.** Disposing closes the image reader, which closes the
 image a frame in the middle of its conversion is still reading, on a thread where nothing would

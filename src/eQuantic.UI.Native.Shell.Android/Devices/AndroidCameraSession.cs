@@ -57,7 +57,7 @@ internal sealed class AndroidCameraSession : ICameraSession
 
     private CameraDevice? _device;
     private CameraCaptureSession? _capture;
-    private TaskCompletionSource<bool>? _opening;
+    private Opening? _opening;   // the open this session stands on: in flight, or the one that succeeded
     private readonly FramePair _frames = new();
     private int _width;
     private int _height;
@@ -167,49 +167,73 @@ internal sealed class AndroidCameraSession : ICameraSession
 
     // ---- the device ------------------------------------------------------------------------------
 
+    /// <summary>
+    /// One attempt to open the camera, from the request to a configured capture session. Every
+    /// callback of the platform carries the attempt it belongs to, and counts only while that
+    /// attempt is still the session's own.
+    /// <para>
+    /// Without it the callbacks spoke for "the session", and the activity can leave the screen at
+    /// any point of an open: a release in the middle left the open pending with nobody to finish
+    /// it, so no later return to the screen asked for the camera again and a first start waited
+    /// for ever. Now whoever gives the camera up settles the attempt it abandons, and whatever
+    /// that attempt still has to say arrives for an attempt that is no longer current.
+    /// </para>
+    /// </summary>
+    private sealed class Opening
+    {
+        private readonly TaskCompletionSource<bool> _result = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        /// <summary>True once a capture session is running, false when the attempt ended without one.</summary>
+        public Task<bool> Result => _result.Task;
+
+        /// <summary>The first answer is the answer: an attempt abandoned and then heard from again
+        /// stays abandoned.</summary>
+        public void Settle(bool opened) => _result.TrySetResult(opened);
+    }
+
+    /// <summary>Asks for the camera, or answers with the open already under way or done.</summary>
     private Task<bool> OpenDeviceAsync()
     {
-        TaskCompletionSource<bool> opening;
+        Opening opening;
         lock (_gate)
         {
             if (_disposed || _suspended) return Task.FromResult(false);
-            if (_device is not null) return Task.FromResult(true);
-            if (_opening is not null) return _opening.Task;
-            _opening = opening = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (_opening is { } standing) return standing.Result;
+            _opening = opening = new Opening();
         }
 
         try
         {
-            _manager.OpenCamera(_camera, new DeviceCallback(this), _handler);
+            _manager.OpenCamera(_camera, new DeviceCallback(this, opening), _handler);
         }
         catch (Exception failure) when (failure is CameraAccessException or Java.Lang.SecurityException)
         {
-            // In use by another app, disabled by policy, or the permission was taken back. Settled
+            // In use by another app, disabled by policy, or the permission was taken back. Ended
             // like any other failure, so the next time the activity comes back it may try again.
-            Settle(false);
+            Failed(opening);
         }
-        return opening.Task;
+        return opening.Result;
     }
 
-    private void Opened(CameraDevice device)
+    private void Opened(Opening opening, CameraDevice device)
     {
-        bool unwanted;
+        bool current;
         lock (_gate)
         {
-            unwanted = _disposed || _suspended;
-            if (!unwanted) _device = device;
+            current = ReferenceEquals(_opening, opening);
+            if (current) _device = device;
         }
-        if (unwanted)
+        if (!current)
         {
-            // Disposed, or the activity left the screen while the camera was opening.
+            // The session gave this attempt up while the camera was opening (the activity left the
+            // screen, or the session was disposed): the device has nobody to belong to.
             device.Close();
-            Settle(false);
             return;
         }
 
         try
         {
-            var callback = new CaptureCallback(this);
+            var callback = new CaptureCallback(this, opening);
             if (OperatingSystem.IsAndroidVersionAtLeast(28))
             {
                 device.CreateCaptureSession(new SessionConfiguration((int)SessionType.Regular,
@@ -226,18 +250,23 @@ internal sealed class AndroidCameraSession : ICameraSession
             // The device was closed under this call (the activity left, or the session was
             // disposed, between the gate and here), which the camera reports as an illegal state
             // and the closed reader's surface as an illegal argument.
-            Failed();
+            Failed(opening);
         }
     }
 
-    private void Configured(CameraCaptureSession capture)
+    private void Configured(Opening opening, CameraCaptureSession capture)
     {
         CameraDevice? device;
         lock (_gate)
         {
-            device = _device;
-            if (_disposed || _suspended || device is null) { capture.Close(); return; }
-            _capture = capture;
+            device = ReferenceEquals(_opening, opening) ? _device : null;
+            if (device is not null) _capture = capture;
+        }
+        if (device is null)
+        {
+            // Given up between the device and its capture session. Whoever gave it up settled it.
+            capture.Close();
+            return;
         }
 
         try
@@ -245,52 +274,46 @@ internal sealed class AndroidCameraSession : ICameraSession
             var request = device.CreateCaptureRequest(CameraTemplate.Preview);
             request.AddTarget(_reader.Surface!);
             capture.SetRepeatingRequest(request.Build(), null, _handler);
-            Settle(true);
+            opening.Settle(true);
         }
         catch (Exception failure) when (failure is CameraAccessException or Java.Lang.IllegalStateException)
         {
-            Failed();
+            Failed(opening);
         }
     }
 
-    /// <summary>The device did not open, was taken away, or refused its session.</summary>
-    private void Failed()
-    {
-        Release();
-        Settle(false);
-    }
+    /// <summary>The device did not open, was taken away, or refused its capture session. Said by an
+    /// attempt the session has already left, it changes nothing.</summary>
+    private void Failed(Opening opening) => Release(opening);
 
-    private void Settle(bool opened)
-    {
-        TaskCompletionSource<bool>? opening;
-        lock (_gate)
-        {
-            opening = _opening;
-            _opening = null;
-        }
-        opening?.TrySetResult(opened);
-    }
-
-    /// <summary>Lets the hardware go and keeps the session: the reader, the thread and the last
-    /// frame stay.</summary>
-    private void Release()
+    /// <summary>
+    /// Lets the hardware go and keeps the session: the reader, the thread and the last frame stay.
+    /// The open the session stood on ends here too, so the next return to the screen starts
+    /// another. Given an attempt, it does this only while that attempt is the session's own.
+    /// </summary>
+    private void Release(Opening? only = null)
     {
         CameraCaptureSession? capture;
         CameraDevice? device;
+        Opening? ended;
         lock (_gate)
         {
+            if (only is not null && !ReferenceEquals(_opening, only)) return;
             capture = _capture;
             device = _device;
+            ended = _opening;
             _capture = null;
             _device = null;
+            _opening = null;
         }
         try { capture?.Close(); } catch (Java.Lang.IllegalStateException) { /* the device went first */ }
         device?.Close();
+        ended?.Settle(false);
     }
 
     private void Suspend()
     {
-        // Said before the release: a camera still opening finds it when it arrives, and closes.
+        // Said before the release, so that nothing asks for the camera in between.
         lock (_gate) _suspended = true;
         Release();
     }
@@ -384,28 +407,28 @@ internal sealed class AndroidCameraSession : ICameraSession
 
     // ---- the platform's callbacks ----------------------------------------------------------------
 
-    private sealed class DeviceCallback(AndroidCameraSession session) : CameraDevice.StateCallback
+    private sealed class DeviceCallback(AndroidCameraSession session, Opening opening) : CameraDevice.StateCallback
     {
-        public override void OnOpened(CameraDevice camera) => session.Opened(camera);
+        public override void OnOpened(CameraDevice camera) => session.Opened(opening, camera);
 
         public override void OnDisconnected(CameraDevice camera)
         {
             camera.Close();
-            session.Failed();
+            session.Failed(opening);
         }
 
         public override void OnError(CameraDevice camera, CameraError error)
         {
             camera.Close();
-            session.Failed();
+            session.Failed(opening);
         }
     }
 
-    private sealed class CaptureCallback(AndroidCameraSession session) : CameraCaptureSession.StateCallback
+    private sealed class CaptureCallback(AndroidCameraSession session, Opening opening) : CameraCaptureSession.StateCallback
     {
-        public override void OnConfigured(CameraCaptureSession capture) => session.Configured(capture);
+        public override void OnConfigured(CameraCaptureSession capture) => session.Configured(opening, capture);
 
-        public override void OnConfigureFailed(CameraCaptureSession capture) => session.Failed();
+        public override void OnConfigureFailed(CameraCaptureSession capture) => session.Failed(opening);
     }
 
     /// <summary>

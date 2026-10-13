@@ -145,6 +145,13 @@ camera up for good, and a start that is cancelled SHALL leave no camera open.
 - **WHEN** another camera app is opened over a running preview and then closed
 - **THEN** the same session's frames continue
 
+#### Scenario: Leaving while the camera is being configured
+
+- **WHEN** the app is sent home between the camera opening and its capture session being configured,
+  on a first start and again on a reopen, and is then brought back
+- **THEN** the first start answers `null` instead of never answering, and the reopened session's
+  camera is listed by the camera service again
+
 #### Scenario: Stopped and started five times
 
 - **WHEN** a page disposes its session and starts a new one, five times over
