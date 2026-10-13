@@ -3333,12 +3333,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Spinner.cs`
 - **Handoff**: Appears only after a 400ms delay (skip flash for fast ops).
-- **Code**: Spinner.AppearDelayMs has exactly one consumer, the generated web stylesheet (TokenCss.cs:474). EmitVisitor.EmitSpinner (EmitVisitor.Media.cs:287-315) paints the bars from frame 0 with no appear gate, so the native spinner flashes on fast operations. The Spinner doc names the fence: the delay "is generated CSS on web and joins the native transition animator".
+- **Code**: Spinner.AppearDelayMs has exactly one consumer, the generated web stylesheet (TokenCss.cs:474). EmitVisitor.EmitSpinner (EmitVisitor.Media.cs:292-320) paints the bars from frame 0 with no appear gate, so the native spinner flashes on fast operations. The Spinner doc names the fence: the delay "is generated CSS on web and joins the native transition animator".
 - **Evidence**:
 
   ```
   TokenCss.cs:601  css.AppendLine($".eq-spinner {{ opacity: 0; animation: eq-appear 1ms linear {Spinner.AppearDelayMs}ms forwards; }}");
-  EmitVisitor.Media.cs:290  motion.Active = true;   // EmitSpinner — no AppearDelayMs anywhere
+  EmitVisitor.Media.cs:295  motion.Active = true;   // EmitSpinner — no AppearDelayMs anywhere
   ```
 
 ### B16 Skeleton · semantics · **CONFIRMED**

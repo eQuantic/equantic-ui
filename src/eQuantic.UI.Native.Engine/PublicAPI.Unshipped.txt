@@ -1,1 +1,9 @@
 #nullable enable
+eQuantic.UI.Native.Engine.FramePair
+eQuantic.UI.Native.Engine.FramePair.FramePair() -> void
+eQuantic.UI.Native.Engine.FramePair.Next(int length) -> byte[]!
+eQuantic.UI.Native.Engine.FramePair.Publish() -> void
+eQuantic.UI.Native.Engine.FramePair.Published.get -> byte[]?
+eQuantic.UI.Native.Engine.Yuv420
+static eQuantic.UI.Native.Engine.Yuv420.ToRgba(System.ReadOnlySpan<byte> y, int yRowStride, System.ReadOnlySpan<byte> u, System.ReadOnlySpan<byte> v, int chromaRowStride, int chromaPixelStride, int width, int height, int quarterTurns, System.Span<byte> rgba) -> void
+static eQuantic.UI.Native.Engine.Yuv420.Turned(int width, int height, int quarterTurns) -> (int Width, int Height)
