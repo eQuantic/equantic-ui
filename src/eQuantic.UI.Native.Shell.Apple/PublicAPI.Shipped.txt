@@ -77,7 +77,12 @@ eQuantic.UI.Native.Shell.Apple.ObjC
 eQuantic.UI.Native.Shell.Apple.ObjCBlock
 eQuantic.UI.Native.Shell.Apple.ObjCBlock.Dispose() -> void
 eQuantic.UI.Native.Shell.Apple.ObjCBlock.Handle.get -> nint
-eQuantic.UI.Native.Shell.Apple.ObjCBlock.ObjCBlock(System.Delegate! callback) -> void
+eQuantic.UI.Native.Shell.Apple.ObjCBlock.ObjCBlock(nint invoke, object! context) -> void
+eQuantic.UI.Native.Shell.Apple.ObjCBlock.ReleaseContext() -> void
+eQuantic.UI.Native.Shell.Apple.ObjCDelegateClass
+eQuantic.UI.Native.Shell.Apple.ObjCDelegateClass.Context<T>(nint self) -> T?
+eQuantic.UI.Native.Shell.Apple.ObjCDelegateClass.Handle.get -> nint
+eQuantic.UI.Native.Shell.Apple.ObjCDelegateClass.New(System.Runtime.InteropServices.GCHandle context) -> nint
 static eQuantic.UI.Native.Shell.Apple.AppleAppearance.Resolve() -> eQuantic.UI.Primitives.ThemeMode?
 static eQuantic.UI.Native.Shell.Apple.AppleBiometry.AuthenticateAsync(string! reason, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<eQuantic.UI.Primitives.BiometricResult>!
 static eQuantic.UI.Native.Shell.Apple.AppleBiometry.IsAvailable() -> bool
@@ -101,6 +106,8 @@ static eQuantic.UI.Native.Shell.Apple.ObjC.objc_allocateClassPair(nint superclas
 static eQuantic.UI.Native.Shell.Apple.ObjC.objc_getClass(string! name) -> nint
 static eQuantic.UI.Native.Shell.Apple.ObjC.objc_getProtocol(string! name) -> nint
 static eQuantic.UI.Native.Shell.Apple.ObjC.sel_registerName(string! name) -> nint
+static eQuantic.UI.Native.Shell.Apple.ObjCBlock.Context<T>(nint block) -> T?
+static eQuantic.UI.Native.Shell.Apple.ObjCDelegateClass.Define(string! name, params (string! Selector, nint Implementation, string! Types)[]! methods) -> eQuantic.UI.Native.Shell.Apple.ObjCDelegateClass!
 static extern eQuantic.UI.Native.Shell.Apple.ObjC.Send(nint receiver, nint selector) -> nint
 static extern eQuantic.UI.Native.Shell.Apple.ObjC.Send(nint receiver, nint selector, double arg1) -> nint
 static extern eQuantic.UI.Native.Shell.Apple.ObjC.Send(nint receiver, nint selector, eQuantic.UI.Native.Shell.Apple.CGRect rect, ulong options, nint owner, nint userInfo) -> nint
