@@ -128,6 +128,38 @@ public sealed class AClassNamedLikeADotNetTypeTests
         built.SiblingImportsOf("Home").Should().Contain("Math", "the module names Math, which the conversion wrote for the solution's class");
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void APlainClass_ImportsTheSolutionsMath_OnlyWhereItsOwnCodeMeansIt(bool declaredByTheLibrary)
+    {
+        // A class that is no component is written by another path of the emitter, with its own list
+        // of imports. Three of them here, each called by the page: one calls the solution's Math, one
+        // calls an extension that Math declares, and one calls System.Math.
+        var declaredIn = declaredByTheLibrary ? "Common" : "App.Util";
+        var math = $"namespace {declaredIn};\n\npublic static class Math\n{{\n    public static string Family() => \"Newsreader\";\n\n    public static int Twice(this int value) => value * 2;\n}}\n";
+        var files = new List<(string Path, string Text)>
+        {
+            ("Screens/Home.cs", Page("Type").Replace("Common.Type.Family()",
+                "App.Helpers.Names.Family() + App.Helpers.Doubles.Four() + App.Helpers.Sizes.Larger()")),
+            ("Helpers/Names.cs", $"namespace App.Helpers;\n\npublic static class Names\n{{\n    public static string Family() => {declaredIn}.Math.Family();\n}}\n"),
+            ("Helpers/Doubles.cs", $"using {declaredIn};\n\nnamespace App.Helpers;\n\npublic static class Doubles\n{{\n    public static string Four() => 2.Twice().ToString();\n}}\n"),
+            ("Helpers/Sizes.cs", "namespace App.Helpers;\n\npublic static class Sizes\n{\n    public static string Larger() => System.Math.Max(1, 2).ToString();\n}\n"),
+        };
+        if (!declaredByTheLibrary) files.Add(("Util/Math.cs", math));
+        using var solution = new Solution()
+            .Library("Common", files: declaredByTheLibrary ? [("Math.cs", math)] : [("Nothing.cs", "namespace Common;\n\npublic static class Nothing\n{\n}\n")])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files: [.. files]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.SiblingImportsOf("Names").Should().Contain("Math", "this class calls the solution's Math");
+        built.Module("Doubles").Should().Contain("Math.twice(2)");
+        built.SiblingImportsOf("Doubles").Should().Contain("Math", "the conversion wrote the name for the solution's Math");
+        built.Module("Sizes").Should().Contain("Math.max(1, 2)");
+        built.SiblingImportsOf("Sizes").Should().NotContain("Math", "this class calls System.Math");
+    }
+
     [Fact]
     public void ANameWithNoModuleBehindIt_IsStillDotNets()
     {
