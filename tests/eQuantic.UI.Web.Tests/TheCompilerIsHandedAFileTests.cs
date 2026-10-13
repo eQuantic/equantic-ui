@@ -1,10 +1,9 @@
-using System.Diagnostics;
-using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using eQuantic.UI.Compiler;
 using eQuantic.UI.Compiler.Services;
 using FluentAssertions;
 using Xunit;
+using static eQuantic.UI.Web.Tests.SdkProbe;
 
 namespace eQuantic.UI.Web.Tests;
 
@@ -15,54 +14,15 @@ namespace eQuantic.UI.Web.Tests;
 /// projects was one line a project, <c>assembly|project file</c>, which a bar in a path cut in the wrong
 /// place.
 /// <para>
-/// The first case runs the target that writes what eqc is handed, taken from the <c>Sdk.targets</c>
-/// that ships, in a real MSBuild, in a folder whose name holds what a shell reads, and reads the file
-/// back the way eqc does. The second holds the command to the compiler and that file, so no value of the
-/// project goes through a shell again.
+/// The case runs the target that writes what eqc is handed, taken from the <c>Sdk.targets</c> that
+/// ships, in a real MSBuild, in a folder whose name holds what a shell reads, and reads the file back
+/// the way eqc does. How eqc itself is started, with no shell at all since #841, is
+/// <see cref="EveryProgramTheSdksStartTests"/>'s to show, with every other program the SDKs start.
 /// </para>
 /// </summary>
 public class TheCompilerIsHandedAFileTests
 {
-    private static string RepoRoot([System.Runtime.CompilerServices.CallerFilePath] string sourcePath = "") =>
-        Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, "..", ".."));
-
-    private static XDocument ShippedSdk() =>
-        XDocument.Load(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Sdk", "Sdk", "Sdk.targets"));
-
-    private static XElement ShippedTarget(string name) =>
-        ShippedSdk().Root!.Elements("Target").Single(target => (string?)target.Attribute("Name") == name);
-
-    private static readonly TimeSpan Deadline = TimeSpan.FromMinutes(3);
-
-    /// <summary>Runs <c>dotnet</c> from the repository root, whose global.json picks the SDK, and fails
-    /// with the child's output, which it returns. Its arguments go to it as a list, never through a
-    /// shell.</summary>
-    private static string Dotnet(params string[] args)
-    {
-        var info = new ProcessStartInfo("dotnet")
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            WorkingDirectory = RepoRoot(),
-        };
-        foreach (var arg in args) info.ArgumentList.Add(arg);
-        using var process = Process.Start(info)!;
-        var output = process.StandardOutput.ReadToEndAsync();
-        var error = process.StandardError.ReadToEndAsync();
-        using var deadline = new CancellationTokenSource(Deadline);
-        try
-        {
-            process.WaitForExitAsync(deadline.Token).GetAwaiter().GetResult();
-        }
-        catch (OperationCanceledException)
-        {
-            try { process.Kill(entireProcessTree: true); }
-            catch (InvalidOperationException) { /* it exited between the deadline and the kill */ }
-            throw new TimeoutException($"dotnet {string.Join(' ', args)} did not finish within {Deadline}.");
-        }
-        process.ExitCode.Should().Be(0, output.Result + error.Result);
-        return output.Result;
-    }
+    private static XElement ShippedTarget(string name) => Target(Shipped("eQuantic.UI.Sdk"), name);
 
     /// <summary>A name a shell reads as its own: a variable, a command, quotes. Windows takes no bar in
     /// a file's name, and macOS and Linux take all of it.</summary>
@@ -107,7 +67,7 @@ public class TheCompilerIsHandedAFileTests
             var probe = Path.Combine(directory, "probe.proj");
             File.WriteAllText(probe, Project());
 
-            Dotnet("msbuild", probe, "-t:_EQuanticCompilerArguments", "-nologo", "-v:m");
+            Dotnet(null, null, "msbuild", probe, "-t:_EQuanticCompilerArguments", "-nologo", "-v:m");
 
             var file = Path.Combine(directory, "obj", "equantic.eqc.rsp");
             var options = AppBuildOptions.FromArguments(AppBuildOptions.ReadArguments(["@" + file]));
@@ -129,49 +89,5 @@ public class TheCompilerIsHandedAFileTests
         {
             Directory.Delete(Path.GetDirectoryName(directory)!, recursive: true);
         }
-    }
-
-    [Theory]
-    [InlineData("obj/Rel$ease `x` 'y'/", "the obj folder's own path holds what a shell reads")]
-    [InlineData("$(MSBuildProjectDirectory)/../artifacts/obj/", "an artifacts layout makes the obj folder absolute")]
-    public void EqcRunsInTheFolderOfItsResponseFile_WhereverObjIsAndWhateverItHolds(string intermediateOutputPath, string because)
-    {
-        // The command names the file by its name alone, and MSBuild sets the folder eqc runs in, which
-        // no shell reads. Named by a path, even one relative to the project, the file carried what the
-        // obj folder's path holds into the command: a Configuration, a target framework, an artifacts
-        // layout's folders (found in review of #843).
-        var root = Path.Combine(Directory.CreateTempSubdirectory("eq-handed-").FullName, Odd);
-        var directory = Path.Combine(root, "App");
-        Directory.CreateDirectory(directory);
-        try
-        {
-            var probe = Path.Combine(directory, "probe.proj");
-            File.WriteAllText(probe, Project(intermediateOutputPath));
-
-            var folder = Dotnet("msbuild", probe, "-t:_EQuanticCompilerArguments", "-nologo",
-                "-getProperty:_EqcArgumentsDirectory").Trim();
-
-            var expected = Path.GetFullPath(Path.Combine(directory,
-                intermediateOutputPath.Replace("$(MSBuildProjectDirectory)/", "")));
-            folder.Should().Be(Path.TrimEndingDirectorySeparator(expected), because);
-            File.Exists(Path.Combine(folder, "equantic.eqc.rsp")).Should().BeTrue(because);
-        }
-        finally
-        {
-            Directory.Delete(Path.GetDirectoryName(root)!, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void TheShippedCommand_NamesTheCompilerAndTheFile_AndNoValueOfTheProject()
-    {
-        var exec = ShippedTarget("CompileEQuanticUI").Descendants("Exec").Single();
-        var command = (string)exec.Attribute("Command")!;
-
-        Regex.Matches(command, @"\$\(([^)]+)\)").Select(match => match.Groups[1].Value)
-            .Should().Equal(["EqcCliPath"], "a value written into the command is read by a shell before eqc reads it");
-        command.Should().EndWith(" @equantic.eqc.rsp", "the file is named by its name, in the folder eqc runs in");
-        command.Should().NotContain("@(").And.NotContain("%(");
-        ((string?)exec.Attribute("WorkingDirectory")).Should().Be("$(_EqcArgumentsDirectory)");
     }
 }
