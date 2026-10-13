@@ -19,6 +19,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// </summary>
 public class TimeParseStrategy : IExpressionIrStrategy
 {
+    /// <summary>What a reader of a date does, as EQ2108 names it for a culture the browser does not know;
+    /// <c>Convert.ToDateTime</c> reads by the same rule.</summary>
+    internal const string ReadingADate = "reading a date or a time";
+
     /// <summary>Each type's twin, by the name C# spells the type with.</summary>
     private static readonly Dictionary<string, string> Twins = new(StringComparer.Ordinal)
     {
@@ -111,7 +115,7 @@ public class TimeParseStrategy : IExpressionIrStrategy
                 && constant is int styles && (styles & ~WhiteSpaceStyles) == 0))
             return JsExpr.Opaque(context.Unhandled(invocation, $"{kind}.{name} with styles that are not white space"));
 
-        var invariant = ReadsInvariant(invocation, call.Provider?.Expression, context);
+        var invariant = NamedCulture.ReadsInvariant(invocation, call.Provider?.Expression, context, ReadingADate);
         context.UsedHelpers.Add(Eq.Import);
         List<JsExpr> read = [context.Converter.ConvertIr(call.Text.Expression)];
         if (invariant) read.Add(JsExpr.Literal("true"));
@@ -119,23 +123,6 @@ public class TimeParseStrategy : IExpressionIrStrategy
         return JsExpr.Callish(OutArgument.TryAnswer(call.Result!, call.Text.SpanStart,
             JsExpr.Call(JsExpr.Identifier($"{Twins[kind]}.tryParse"), read),
             DefaultValue.TimeZero("System." + kind)!, context));
-    }
-
-    /// <summary>
-    /// Whether a date or a time is read in the invariant culture, where <paramref name="provider"/> is
-    /// <c>CultureInfo.InvariantCulture</c>, or in the page's, where it is none, the current culture or a
-    /// null. Any other culture, one read from a variable included, has no counterpart in the browser,
-    /// which reads those two: the build fails (EQ2108). <c>Convert.ToDateTime</c> reads by the same rule.
-    /// </summary>
-    internal static bool ReadsInvariant(InvocationExpressionSyntax invocation, ExpressionSyntax? provider, ConversionContext context)
-    {
-        if (provider is null || NamedCulture.IsCurrent(provider, context)) return false;
-        if (NamedCulture.IsInvariant(provider, context)) return true;
-        context.Report(invocation, ConversionSeverity.Error, "EQ2108",
-            "Only CultureInfo.InvariantCulture and CultureInfo.CurrentCulture cross for reading a date or "
-            + "a time: the browser reads the page's culture, which is the current one, and the invariant "
-            + "one. Read it with one of those.");
-        return false;
     }
 
     // Above the five types' own strategies (15), which claim every member of their type.

@@ -45,10 +45,13 @@ public class DateTimeConstructionTests
     }
 
     /// <summary>The browser has none of .NET's calendars: an overload that takes one is a build error,
-    /// where the factory read the calendar as a component.</summary>
+    /// where the factory read the calendar as a component, and where DateOnly's dropped it, a null
+    /// one included, which .NET refuses (#725).</summary>
     [Theory]
     [InlineData("new DateTime(2026, 1, 2, new System.Globalization.GregorianCalendar())")]
     [InlineData("new DateTimeOffset(2026, 1, 2, 3, 4, 5, 6, new System.Globalization.GregorianCalendar(), TimeSpan.Zero)")]
+    [InlineData("new DateOnly(2026, 1, 2, new System.Globalization.GregorianCalendar())")]
+    [InlineData("new DateOnly(2026, 1, 2, null)")]
     public void AConstructorWithACalendar_IsABuildError(string creation)
     {
         TestHelper.DiagnosticsFor(creation).Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("Calendar"));

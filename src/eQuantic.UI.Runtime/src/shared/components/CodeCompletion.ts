@@ -209,7 +209,7 @@ export class CodeCompletion {
                     $eq.mapSet(groups, key, group);
                 }
                 offer.group = group;
-                offer.sortKey = (item.sortText ?? item.label).toLowerCase();
+                offer.sortKey = $eq.text.toLower((item.sortText ?? item.label), true);
                 this._candidates.push(offer);
             }
         }

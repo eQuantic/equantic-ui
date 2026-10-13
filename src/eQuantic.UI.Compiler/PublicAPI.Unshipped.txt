@@ -13,6 +13,8 @@ const eQuantic.UI.Compiler.CodeGen.Eq.ToBase64CharArray = "$eq.convert.toBase64C
 const eQuantic.UI.Compiler.CodeGen.Eq.ToBase64String = "$eq.convert.toBase64String" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ToHexString = "$eq.convert.toHexString" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ToHexStringLower = "$eq.convert.toHexStringLower" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ToLower = "$eq.text.toLower" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ToUpper = "$eq.text.toUpper" -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.TimeParseStrategy
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.TimeParseStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.TimeParseStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!

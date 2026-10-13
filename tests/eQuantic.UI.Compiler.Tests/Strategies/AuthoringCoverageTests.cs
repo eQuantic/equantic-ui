@@ -62,7 +62,7 @@ public class AuthoringCoverageTests
                     "public string Upper { get { return T.ToUpper(); } } " +
                     "public override IComponent Build(RenderContext c) => new Text(Upper); }");
         ts.Should().Contain("get upper() {");
-        ts.Should().Contain("toUpperCase()");
+        ts.Should().Contain("$eq.text.toUpper(this.t)");
     }
 
     [Fact]
