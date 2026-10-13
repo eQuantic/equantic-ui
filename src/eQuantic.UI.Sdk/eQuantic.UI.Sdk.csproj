@@ -21,15 +21,17 @@
         <Content Include="Sdk\Sdk.targets" PackagePath="build\eQuantic.UI.Sdk.targets" />
     </ItemGroup>
 
-    <!-- The two tools the package ships under tools/, as edges of THIS project's build graph: the
-         build that precedes the pack builds them, restored with the rest of the graph, as the one
-         instance the solution builds. Nothing links against them (ReferenceOutputAssembly=false),
-         nothing copies them here (Private=false), and they are not package dependencies
-         (PrivateAssets=All) — CollectBuildOutput carries their files instead. -->
+    <!-- The two tools the package ships under tools/, and the tasks that start them, as edges of
+         THIS project's build graph: the build that precedes the pack builds them, restored with the
+         rest of the graph, as the one instance the solution builds. Nothing links against them
+         (ReferenceOutputAssembly=false), nothing copies them here (Private=false), and they are not
+         package dependencies (PrivateAssets=All) — CollectBuildOutput carries their files instead. -->
     <ItemGroup>
         <ProjectReference Include="..\eQuantic.Build\eQuantic.Build.csproj"
             ReferenceOutputAssembly="false" Private="false" PrivateAssets="All" />
         <ProjectReference Include="..\eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj"
+            ReferenceOutputAssembly="false" Private="false" PrivateAssets="All" />
+        <ProjectReference Include="..\eQuantic.UI.Sdk.Tasks\eQuantic.UI.Sdk.Tasks.csproj"
             ReferenceOutputAssembly="false" Private="false" PrivateAssets="All" />
     </ItemGroup>
 
@@ -53,6 +55,10 @@
         </ItemGroup>
         <ItemGroup>
             <TfmSpecificPackageFile Include="@(_BuildOutput)" PackagePath="tools\net10.0" />
+            <!-- The tasks Sdk.targets starts every program with: netstandard2.0, which every MSBuild
+                 loads, and nothing beside it, since MSBuild brings the assemblies it references. -->
+            <TfmSpecificPackageFile Include="..\eQuantic.UI.Sdk.Tasks\bin\$(Configuration)\netstandard2.0\eQuantic.UI.Sdk.Tasks.dll"
+                PackagePath="tools\netstandard2.0" />
         </ItemGroup>
     </Target>
 
