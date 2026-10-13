@@ -1,12 +1,1 @@
 #nullable enable
-*REMOVED*override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonAppDelegate.Window.get -> UIKit.UIWindow?
-*REMOVED*override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonAppDelegate.Window.set -> void
-eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonSceneDelegate
-eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonSceneDelegate.PhotonSceneDelegate() -> void
-override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonAppDelegate.GetConfiguration(UIKit.UIApplication! application, UIKit.UISceneSession! connectingSceneSession, UIKit.UISceneConnectionOptions! options) -> UIKit.UISceneConfiguration!
-override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonSceneDelegate.DidDisconnect(UIKit.UIScene! scene) -> void
-override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonSceneDelegate.DidEnterBackground(UIKit.UIScene! scene) -> void
-override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonSceneDelegate.WillConnect(UIKit.UIScene! scene, UIKit.UISceneSession! session, UIKit.UISceneConnectionOptions! connectionOptions) -> void
-override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonSceneDelegate.WillEnterForeground(UIKit.UIScene! scene) -> void
-override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonSceneDelegate.Window.get -> UIKit.UIWindow?
-override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonSceneDelegate.Window.set -> void
