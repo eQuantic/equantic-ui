@@ -2683,6 +2683,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   commit messages it refuses those six and the five it refused before, and nothing else. The squash
   now takes the pull request's commits' messages, which the job reads before the merge, and never its
   body. Proposed and archived through OpenSpec (`openspec/specs/working-agreement`).
+- **2026-10-12 · A TimeSpan is read as .NET reads it**: `TimeSpan.Parse` and `TryParse` read one
+  shape, `[-][d.]hh:mm:ss[.f]`, and checked no part against its bound, so `10` and `1:2` were refused,
+  `24:00:00` was a day where .NET reads twenty-four, and `00:60:00` an hour where .NET answers none
+  ([#857](https://github.com/eQuantic/equantic-ui/issues/857), split from
+  [#807](https://github.com/eQuantic/equantic-ui/issues/807)). The runtime reads a text as .NET 10's
+  `TimeSpanParse` does with no format: by how many numbers it has and the runs between them, against
+  the invariant pattern and the culture's own, each part against its bound, a long fraction rounded
+  as .NET rounds it and the whole a long's arithmetic, with .NET's FormatException and
+  OverflowException in its words. Over 9,305 texts in three cultures whose decimal separators differ,
+  its 27,915 answers are .NET's; all 36 conformance cases fail at 9b43eb2b. Proposed and archived
+  through OpenSpec (`openspec/specs/runtime-dates`).
 - **2026-10-13 · A walk over a collection ends when the collection changes**: a `foreach` over the
   runtime's `Queue`, `Stack`, `LinkedList` or `SortedSet` went on after the collection changed under
   it. A queue and a stack walked a copy, and a linked list and a sorted set walked themselves, so
