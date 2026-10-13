@@ -25,8 +25,11 @@ override eQuantic.UI.Native.Shell.Android.PhotonActivity.DispatchKeyEvent(Androi
 override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnActivityResult(int requestCode, Android.App.Result resultCode, Android.Content.Intent? data) -> void
 override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnConfigurationChanged(Android.Content.Res.Configuration! newConfig) -> void
 override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnCreate(Android.OS.Bundle? savedInstanceState) -> void
+override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnDestroy() -> void
+override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnNewIntent(Android.Content.Intent? intent) -> void
 override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnRequestPermissionsResult(int requestCode, string![]! permissions, Android.Content.PM.Permission[]! grantResults) -> void
 override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnResume() -> void
 override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnStart() -> void
 override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnStop() -> void
 override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnTouchEvent(Android.Views.MotionEvent? e) -> bool
+virtual eQuantic.UI.Native.Shell.Android.PhotonActivity.UrlSchemes.get -> System.Collections.Generic.IReadOnlyList<string!>!

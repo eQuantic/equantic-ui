@@ -1426,6 +1426,9 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Types.NumericConstantStrategy.Convert(Mi
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.NumericConstantStrategy.NumericConstantStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.NumericConstantStrategy.Priority.get -> int
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.Priority.get -> int
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.QueueStackStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.ReferenceEqualsStrategy
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.ReferenceEqualsStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
@@ -1756,6 +1759,8 @@ eQuantic.UI.Compiler.Services.AppBuildOptions.GeneratedDirectory.get -> string?
 eQuantic.UI.Compiler.Services.AppBuildOptions.GeneratedDirectory.init -> void
 eQuantic.UI.Compiler.Services.AppBuildOptions.OutputDirectory.get -> string!
 eQuantic.UI.Compiler.Services.AppBuildOptions.OutputDirectory.init -> void
+eQuantic.UI.Compiler.Services.AppBuildOptions.ProjectAssetsFile.get -> string?
+eQuantic.UI.Compiler.Services.AppBuildOptions.ProjectAssetsFile.init -> void
 eQuantic.UI.Compiler.Services.AppBuildOptions.ProjectsFile.get -> string?
 eQuantic.UI.Compiler.Services.AppBuildOptions.ProjectsFile.init -> void
 eQuantic.UI.Compiler.Services.AppBuildOptions.ReferenceReader.get -> System.Func<string!, Microsoft.CodeAnalysis.MetadataReference!>?
@@ -2105,9 +2110,6 @@ override eQuantic.UI.Compiler.CodeGen.Strategies.Types.DateTimeOffsetStrategy.Pr
 override eQuantic.UI.Compiler.CodeGen.Strategies.Types.DateTimeStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
 override eQuantic.UI.Compiler.CodeGen.Strategies.Types.DateTimeStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
 override eQuantic.UI.Compiler.CodeGen.Strategies.Types.DateTimeStrategy.Priority.get -> int
-override eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
-override eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
-override eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.Priority.get -> int
 override eQuantic.UI.Compiler.CodeGen.Strategies.Types.StringBuilderStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
 override eQuantic.UI.Compiler.CodeGen.Strategies.Types.StringBuilderStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
 override eQuantic.UI.Compiler.CodeGen.Strategies.Types.StringBuilderStrategy.Priority.get -> int

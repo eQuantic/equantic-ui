@@ -1,4 +1,1 @@
 #nullable enable
-override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnDestroy() -> void
-override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnNewIntent(Android.Content.Intent? intent) -> void
-virtual eQuantic.UI.Native.Shell.Android.PhotonActivity.UrlSchemes.get -> System.Collections.Generic.IReadOnlyList<string!>!

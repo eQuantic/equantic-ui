@@ -1,9 +1,1 @@
 #nullable enable
-eQuantic.UI.Compiler.Services.AppBuildOptions.ProjectAssetsFile.get -> string?
-eQuantic.UI.Compiler.Services.AppBuildOptions.ProjectAssetsFile.init -> void
-*REMOVED*override eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
-*REMOVED*override eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
-*REMOVED*override eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.Priority.get -> int
-eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.Priority.get -> int
-eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
-eQuantic.UI.Compiler.CodeGen.Strategies.Types.QueueStackStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!

@@ -418,6 +418,7 @@ eQuantic.UI.Primitives.DeepLinkRelay
 eQuantic.UI.Primitives.DeepLinkRelay.DeepLinkRelay() -> void
 eQuantic.UI.Primitives.DeepLinkRelay.Launch.get -> System.Uri?
 eQuantic.UI.Primitives.DeepLinkRelay.Offer(string? text) -> bool
+eQuantic.UI.Primitives.DeepLinkRelay.StartedWith(string? text) -> bool
 eQuantic.UI.Primitives.DeepLinkRelay.Subscribe(System.Action<System.Uri!>! onOpened) -> System.IDisposable!
 eQuantic.UI.Primitives.Density
 eQuantic.UI.Primitives.Density.Comfortable = 0 -> eQuantic.UI.Primitives.Density

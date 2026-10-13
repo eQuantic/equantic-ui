@@ -1,2 +1,1 @@
 #nullable enable
-override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonSceneDelegate.OpenUrlContexts(UIKit.UIScene! scene, Foundation.NSSet<UIKit.UIOpenUrlContext!>! urlContexts) -> void
