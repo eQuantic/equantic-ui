@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=293 · fenced=92 · invalid-probe=6 · native=642
+# totals: eq=301 · fenced=92 · invalid-probe=6 · native=634
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -86,12 +86,12 @@ eq             Char.IsWhiteSpace(String,Int32)
 native         Char.MaxValue
 native         Char.MinValue
 eq             Char.Parse(String)
-native         Char.ToLower(Char)
-native         Char.ToLowerInvariant(Char)
+eq             Char.ToLower(Char)
+eq             Char.ToLowerInvariant(Char)
 native         Char.ToString()
 native         Char.ToString(Char)
-native         Char.ToUpper(Char)
-native         Char.ToUpperInvariant(Char)
+eq             Char.ToUpper(Char)
+eq             Char.ToUpperInvariant(Char)
 native         Convert.DBNull
 fenced:EQ2004  Convert.FromBase64CharArray(Char[],Int32,Int32)
 fenced:EQ2004  Convert.FromBase64String(String)
@@ -867,11 +867,11 @@ eq             String.Substring(Int32)
 eq             String.Substring(Int32,Int32)
 native         String.ToCharArray()
 eq             String.ToCharArray(Int32,Int32)
-native         String.ToLower()
-native         String.ToLowerInvariant()
+eq             String.ToLower()
+eq             String.ToLowerInvariant()
 native         String.ToString()
-native         String.ToUpper()
-native         String.ToUpperInvariant()
+eq             String.ToUpper()
+eq             String.ToUpperInvariant()
 eq             String.Trim()
 eq             String.Trim(Char)
 eq             String.Trim(Char[])
