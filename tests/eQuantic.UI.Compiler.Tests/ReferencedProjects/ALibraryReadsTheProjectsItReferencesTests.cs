@@ -88,6 +88,25 @@ public sealed class ALibraryReadsTheProjectsItReferencesTests
     }
 
     [Fact]
+    public void TheLibraryReadsAProject_ReachedThroughOneWithNoSourceOfItsOwn()
+    {
+        // Common references Facade, and Facade references Theme: references flow, so Common's code
+        // reads Theme. Facade holds no C# of its own, so the build keeps its assembly and compiles
+        // nothing for it. The walk over the graph still goes through it: stopped there, it never
+        // reached Theme, whose assembly is not among the references either, since Theme is compiled.
+        using var solution = new Solution()
+            .Library("Theme", files: [("Fonts.cs", Fonts), ("Ruler.cs", Ruler)])
+            .Library("Facade", references: ["Theme"])
+            .Library("Common", references: ["Facade"], files: [("Typography.cs", Typography)])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files: [("Screens/Home.cs", Home)]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Errors.Should().BeEmpty("the library's code binds as the C# compiler bound it");
+        built.SiblingImportsOf("Typography").Should().Contain("Ruler");
+    }
+
+    [Fact]
     public void AGraphWithoutTheEdge_CompilesTheLibraryWithoutTheProject()
     {
         // The control: the same solution, handed an assets file that says Common references nothing.

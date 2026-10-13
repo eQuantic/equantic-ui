@@ -317,6 +317,12 @@ projects' assemblies, which name no reference that only a constant or a method b
   signature of the library names it
 - **THEN** the build succeeds and the library's module imports `Ruler`'s module
 
+#### Scenario: A project reached through one with no source of its own
+
+- **WHEN** the library references a project that holds no C# of its own, which references the
+  project the library's code reads
+- **THEN** the build succeeds, as references flow through the project in between
+
 #### Scenario: Projects handed with no graph
 
 - **WHEN** the build is handed the projects and no assets file

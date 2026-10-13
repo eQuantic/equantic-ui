@@ -65,32 +65,35 @@ internal static class ProjectCompilations
         }
 
         var compilations = new Dictionary<ReferencedProject, Compilation>();
-        var reaches = new Dictionary<ReferencedProject, List<ReferencedProject>>();
+        var reaches = new Dictionary<string, List<string>>(graph.Paths);
 
-        List<ReferencedProject> Reaches(ReferencedProject project, HashSet<ReferencedProject> onPath)
+        // Every project file one reaches through the graph, whether or not the project is compiled
+        // here. A project with no C# of its own keeps its assembly, and the references it makes
+        // still flow through it: with the walk stopped there, a library that reaches a project
+        // through such a one was compiled without it, since that project's assembly is not among the
+        // references either (found in review of #887).
+        List<string> Reaches(string file, HashSet<string> onPath)
         {
-            if (reaches.TryGetValue(project, out var known)) return known;
-            var reached = new List<ReferencedProject>();
+            if (reaches.TryGetValue(file, out var known)) return known;
+            var reached = new List<string>();
             // Projects cannot reference one another in a circle, which restore refuses, so a project
             // met again on its own path is a graph written by hand: it is left out where it closes
             // the circle.
-            if (!onPath.Add(project)) return reached;
-            foreach (var file in graph.ReferencesOf(project.ProjectFile))
-            {
-                if (!byProjectFile.TryGetValue(file, out var dependency) || dependency == project) continue;
-                foreach (var further in Reaches(dependency, onPath).Append(dependency))
-                    if (!reached.Contains(further)) reached.Add(further);
-            }
-            onPath.Remove(project);
-            return reaches[project] = reached;
+            if (!onPath.Add(file)) return reached;
+            foreach (var reference in graph.ReferencesOf(file))
+            foreach (var further in Reaches(reference, onPath).Append(reference))
+                if (!graph.Paths.Equals(further, file) && !reached.Contains(further, graph.Paths)) reached.Add(further);
+            onPath.Remove(file);
+            return reaches[file] = reached;
         }
 
         Compilation Build(ReferencedProject project)
         {
             if (compilations.TryGetValue(project, out var known)) return known;
             var references = new List<MetadataReference>(metadata);
-            foreach (var dependency in Reaches(project, []))
-                references.Add(Build(dependency).ToMetadataReference());
+            foreach (var file in Reaches(project.ProjectFile, new HashSet<string>(graph.Paths)))
+                if (byProjectFile.TryGetValue(file, out var dependency) && dependency != project)
+                    references.Add(Build(dependency).ToMetadataReference());
             var trees = Parse(sources[project]);
             if (Friends(project) is { } friends) trees.Add(friends);
             return compilations[project] = CSharpCompilation.Create(
