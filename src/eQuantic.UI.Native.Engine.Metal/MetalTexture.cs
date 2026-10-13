@@ -11,11 +11,14 @@ internal interface IMetalBindable
 }
 
 /// <summary>An uploaded sampled texture (A8 → <c>R8Unorm</c>, Rgba8 → <c>RGBA8Unorm_sRGB</c>),
-/// shared storage. Lifetime is per-process (the documented ObjC fence).</summary>
+/// shared storage. Released when the renderer lets it go: it is the one Objective-C object here
+/// whose count grows with what an app DRAWS, so it does not share the per-process fence the
+/// device's fixed objects live behind (#858).</summary>
 public sealed class MetalTexture : IRhiTexture, IMetalBindable
 {
     IntPtr IMetalBindable.Texture => Texture;
     internal IntPtr Texture { get; }
+    private bool _released;
 
     internal MetalTexture(IntPtr texture, int width, int height)
     {
@@ -27,9 +30,15 @@ public sealed class MetalTexture : IRhiTexture, IMetalBindable
     public int Width { get; }
     public int Height { get; }
 
+    /// <summary>
+    /// Gives up the one reference <c>newTextureWithDescriptor:</c> handed over. A command buffer
+    /// retains what it binds, so a frame still in flight keeps the texture until it has been drawn.
+    /// </summary>
     public void Dispose()
     {
-        // Per-process leak fence — see MetalDevice.Dispose.
+        if (_released) return;
+        _released = true;
+        ObjC.SendVoid(Texture, ObjC.sel_registerName("release"));
     }
 }
 

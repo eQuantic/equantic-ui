@@ -107,6 +107,10 @@
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj"
                           ReferenceOutputAssembly="false" Private="false" SkipGetTargetFrameworkProperties="true"
                           GlobalPropertiesToRemove="$(_EqToolGlobalsToRemove)" />
+        <!-- And the tasks that start them: Sdk.targets loads RunProgram from this project's output. -->
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Sdk.Tasks\eQuantic.UI.Sdk.Tasks.csproj"
+                          ReferenceOutputAssembly="false" Private="false" SkipGetTargetFrameworkProperties="true"
+                          GlobalPropertiesToRemove="$(_EqToolGlobalsToRemove)" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Code\eQuantic.UI.Code.csproj" />
         <ProjectReference
