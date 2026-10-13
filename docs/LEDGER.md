@@ -2644,6 +2644,20 @@ record of a release, the wiki's Upgrading page is the distillate.
   not ask for the next frame, on every shell. The wiki's Capabilities page says which shell answers
   which contract, and `WikiShellRealizationsTests` compares it with the registrations. Proposed and
   archived through OpenSpec (`openspec/specs/device-camera`).
+- **2026-10-12 · The embedded bun is 1.4.3, and the code engine's cell widths follow its Unicode 17**:
+  the six platform runtime packages move from bun 1.3.14 to 1.4.3, each the build it replaces, taken
+  from the release, checked against its `SHASUMS256.txt` and repacked as the packages hold them.
+  `Bun.stringWidth`, the oracle `CellWidthOracleTests` holds the code engine's width table to, went
+  from Unicode 15.1 to 17 with it, and 616 characters changed their answer. The table and its twin
+  follow where a font agrees: the Yijing and Tai Xuan Jing symbols and the newest emoji take two
+  cells, and a directional embedding, override or isolate takes none. A Hangul vowel or final that
+  begins an element keeps its cell, though the oracle now counts none: a browser draws every one of
+  them with an advance, and the test names the parting
+  ([#860](https://github.com/eQuantic/equantic-ui/issues/860)). The pin's regeneration
+  (`EQ_UPDATE_BUN_MANIFEST=1`) wrote `$1` before each digest, and one that starts with a digit lost
+  its line's key: four lines of six, on the pin's first update
+  ([#854](https://github.com/eQuantic/equantic-ui/issues/854)).
+  Proposed and archived through OpenSpec (`openspec/specs/code-cells`).
 
 ## Retired documents
 
