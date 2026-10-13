@@ -2723,7 +2723,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   member with EQ2004, `SortedSet.GetViewBetween`
   ([#865](https://github.com/eQuantic/equantic-ui/issues/865)) and `Comparer` included, so the BCL
   audit counts them as fenced where it counted them native. 73 of the 74 conformance cases fail before
-  the change. The served runtime grows 962 gzipped bytes. Proposed and archived through OpenSpec
+  the change. The served runtime grows 928 gzipped bytes. Proposed and archived through OpenSpec
   (`openspec/specs/runtime-collections`, `openspec/specs/transpiler-bcl`).
 
 ## Retired documents
