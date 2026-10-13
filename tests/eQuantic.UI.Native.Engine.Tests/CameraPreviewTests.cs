@@ -95,6 +95,37 @@ public class CameraPreviewTests
         textures[0].Alpha.Should().BeSameAs(session.FrameBytes, "no copy sits between the feed and the GPU upload");
     }
 
+    /// <summary>
+    /// A session that alternates between two arrays, so the frame being drawn is not the one being
+    /// written (Android does). The realizer keeps a texture PER ARRAY: keyed by the session it
+    /// changed texture on every frame the camera delivered, and each one was a new upload for the
+    /// renderer to hold.
+    /// </summary>
+    [Fact]
+    public void ASessionThatAlternatesBetweenTwoArrays_CostsTwoTexturesAndNotOneAFrame()
+    {
+        byte[][] arrays = [new byte[4 * 2 * 4], new byte[4 * 2 * 4]];
+        var session = new FakeSession { FrameWidth = 4, FrameHeight = 2 };
+        var node = new CameraPreview(session, 320, 240);
+        var seen = new HashSet<TextureData>(ReferenceEqualityComparer.Instance);
+
+        for (var frame = 1; frame <= 20; frame++)
+        {
+            session.FrameBytes = arrays[frame % 2];
+            session.FrameVersion = frame;
+
+            var builder = new DisplayListBuilder();
+            PhotonRealizer.Realize(node, 400, 300, PhotonTheme.Instance, ThemeMode.Light, builder);
+            var texture = builder.Build().Textures.Should().ContainSingle().Subject;
+
+            texture.Alpha.Should().BeSameAs(session.FrameBytes, "the frame drawn is the one published");
+            texture.Version.Should().Be(frame, "and the renderer is told its bytes moved");
+            seen.Add(texture);
+        }
+
+        seen.Should().HaveCount(2);
+    }
+
     [Fact]
     public void TheBmpItCaptures_IsAValidBottomUpBgra()
     {

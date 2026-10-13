@@ -11,8 +11,9 @@ namespace eQuantic.UI.Native.Shell.Android;
 
 /// <summary>
 /// One running feed. The camera delivers YUV frames to an <see cref="ImageReader"/> on a thread of
-/// its own; each is converted to RGBA, turned upright, into one reused buffer, and the engine uploads
-/// that buffer as a texture when the version moves.
+/// its own; each is converted to RGBA, turned upright, into the one of two buffers the renderer was
+/// not handed (see <see cref="FramePair"/>), and the engine uploads the published one as a texture
+/// when the version moves.
 /// <para>
 /// UPRIGHT is the session's job, not the page's: a phone's sensor is mounted sideways, and the frame
 /// is turned by the sensor's orientation less the display's rotation, read per frame, so a phone
@@ -57,7 +58,7 @@ internal sealed class AndroidCameraSession : ICameraSession
     private CameraDevice? _device;
     private CameraCaptureSession? _capture;
     private TaskCompletionSource<bool>? _opening;
-    private byte[]? _rgba;
+    private readonly FramePair _frames = new();
     private int _width;
     private int _height;
     private int _version;
@@ -84,7 +85,7 @@ internal sealed class AndroidCameraSession : ICameraSession
 
     public int FrameWidth => _width;
     public int FrameHeight => _height;
-    public byte[]? FrameBytes => _rgba;
+    public byte[]? FrameBytes => _frames.Published;
     public int FrameVersion => _version;
 
     /// <summary>Opens the camera and waits for its first configured session. Null when the device
@@ -132,8 +133,8 @@ internal sealed class AndroidCameraSession : ICameraSession
         int width, height;
         lock (_gate)
         {
-            if (_rgba is null || _width == 0) return null;
-            snapshot = (byte[])_rgba.Clone();
+            if (_frames.Published is not { } frame || _width == 0) return null;
+            snapshot = (byte[])frame.Clone();
             width = _width;
             height = _height;
         }
@@ -323,16 +324,15 @@ internal sealed class AndroidCameraSession : ICameraSession
             {
                 if (planes is not { Length: 3 }) return;
                 var (width, height) = Yuv420.Turned(image.Width, image.Height, turns);
-                if (_rgba is null || _width != width || _height != height)
-                {
-                    _rgba = new byte[width * height * 4];
-                    _width = width;
-                    _height = height;
-                }
 
+                // Into the array the renderer was not handed, and published only when it is whole:
+                // the render thread uploads the published frame with no lock on this one.
                 Yuv420.ToRgba(Bytes(planes[0]), planes[0].RowStride,
                     Bytes(planes[1]), Bytes(planes[2]), planes[1].RowStride, planes[1].PixelStride,
-                    image.Width, image.Height, turns, _rgba);
+                    image.Width, image.Height, turns, _frames.Next(width * height * 4));
+                _width = width;
+                _height = height;
+                _frames.Publish();
                 _version++;
             }
             finally

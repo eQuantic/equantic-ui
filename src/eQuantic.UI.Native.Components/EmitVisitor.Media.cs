@@ -172,12 +172,14 @@ internal sealed partial class EmitVisitor
     }
 
     /// <summary>
-    /// The live camera surface. The session mutates ONE byte array and bumps a version; this keeps
-    /// ONE TextureData wrapping that array and mirrors the version, so the renderer's identity
-    /// cache re-uploads the same GPU slot instead of minting a leaked texture per frame. While a
-    /// session is on screen the frame clock keeps turning — video IS motion.
+    /// The live camera surface. The session writes its frames into an array it reuses and bumps a
+    /// version; this keeps ONE TextureData per ARRAY and mirrors the version, so the renderer's
+    /// identity cache re-uploads the same GPU slot instead of minting a texture per frame. Per
+    /// array, not per session: a session that alternates between two arrays, so that the frame
+    /// being drawn is not the one being written, would otherwise change texture on every frame it
+    /// delivers. While a session is on screen the frame clock keeps turning — video IS motion.
     /// </summary>
-    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ICameraSession, TextureData>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<byte[], TextureData>
         LiveFrames = new();
 
     /// <summary>
@@ -256,13 +258,11 @@ internal sealed partial class EmitVisitor
             return;
         }
 
-        if (!LiveFrames.TryGetValue(session, out var texture)
-            || texture.Width != session.FrameWidth || texture.Height != session.FrameHeight
-            || !ReferenceEquals(texture.Alpha, bytes))
+        if (!LiveFrames.TryGetValue(bytes, out var texture)
+            || texture.Width != session.FrameWidth || texture.Height != session.FrameHeight)
         {
             texture = TextureData.Rgba(session.FrameWidth, session.FrameHeight, bytes);
-            LiveFrames.Remove(session);
-            LiveFrames.Add(session, texture);
+            LiveFrames.AddOrUpdate(bytes, texture);
         }
         texture.Version = session.FrameVersion;
 

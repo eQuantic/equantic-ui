@@ -15,8 +15,11 @@ public interface ICameraSession : IDisposable
     int FrameWidth { get; }
     int FrameHeight { get; }
 
-    /// <summary>Straight sRGB RGBA bytes of the LATEST frame, written into the same array each
-    /// time. Null on targets that never hand pixels over (the web shows the stream directly).</summary>
+    /// <summary>Straight sRGB RGBA bytes of the LATEST frame, in an array the session reuses.
+    /// A session may alternate between two, so that the frame a renderer is reading is not the one
+    /// the camera is writing: a realizer keeps one texture per array, and re-reads when
+    /// <see cref="FrameVersion"/> moved. Null on targets that never hand pixels over (the web shows
+    /// the stream directly).</summary>
     byte[]? FrameBytes { get; }
 
     /// <summary>Bumped once per delivered frame — a renderer re-reads when the number moved and a
