@@ -347,11 +347,17 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
             // The application-level spelling Android 13 also reads has no attribute in .NET for
             // Android, and there the back KEY reaches the same handler.
             activity.AppendLine("    EnableOnBackInvokedCallback = true,");
-            // ONE activity, in one task. A link opened by another app starts the activity it names,
-            // and by default that is a second instance on top of the running one: a second surface,
-            // a second tree built from the app's root, and the first one's state under it. Asked
-            // for as a single task, the running activity is handed the link instead.
-            activity.AppendLine("    LaunchMode = global::Android.Content.PM.LaunchMode.SingleTask,");
+            if (schemes.Count > 0)
+            {
+                // ONE activity, in one task, for an app that links open. A link opened by another
+                // app starts the activity it names, and by default that is a second instance on top
+                // of the running one: a second surface, a second tree built from the app's root, and
+                // the first one's state under it. Asked for as a single task, the running activity
+                // is handed the link instead. It has a price, which is why an app with no scheme
+                // does not pay it: re-entered from its icon, a single task ends whatever it had
+                // opened on top of itself, a photo picker among them.
+                activity.AppendLine("    LaunchMode = global::Android.Content.PM.LaunchMode.SingleTask,");
+            }
             // Each change listed here is the HOST's to follow, so Android keeps the activity, and the
             // app's state with it, instead of building a new one: a rotation, a window resized into
             // split screen or onto a foldable's other display (screen size and smallest screen
@@ -386,6 +392,15 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
             }
             activity.AppendLine("public sealed class MainActivity : global::eQuantic.UI.Native.Shell.Android.PhotonActivity");
             activity.AppendLine("{");
+            if (schemes.Count > 0)
+            {
+                // The same schemes as CODE, for the shell to hold an intent against: the filter
+                // above is the system's, and an intent aimed at this activity by name skips it.
+                var known = new System.Collections.Generic.List<string>();
+                foreach (var scheme in schemes) known.Add(Quote(scheme));
+                activity.AppendLine("    protected override global::System.Collections.Generic.IReadOnlyList<string> UrlSchemes { get; } =");
+                activity.AppendLine($"        new[] {{ {string.Join(", ", known)} }};");
+            }
             activity.AppendLine("}");
             context.AddSource("PhotonMainActivity.g.cs", activity.ToString());
         }

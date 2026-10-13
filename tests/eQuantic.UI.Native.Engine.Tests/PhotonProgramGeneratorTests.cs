@@ -249,15 +249,34 @@ public class PhotonProgramGeneratorTests
             "each scheme once, lower-cased, in the order the app declared them");
     }
 
+    /// <summary>
+    /// The filter is the SYSTEM's, and an intent aimed at the exported launcher by name is not held
+    /// against it. The shell holds it against the same schemes, which the launcher carries as code.
+    /// </summary>
+    [Fact]
+    public void TheAndroidLauncherKnowsTheSchemesItAnswers()
+    {
+        var launcher = AndroidLauncher(WithSchemes);
+
+        launcher.Should().Contain("IReadOnlyList<string> UrlSchemes { get; } =");
+        Regex.IsMatch(launcher, @"UrlSchemes \{ get; \} =\s+new\[\] \{ ""acme"", ""acme-beta"" \};").Should().BeTrue();
+        AndroidLauncher().Should().NotContain("UrlSchemes", "an app that declares none overrides nothing");
+    }
+
     [Fact]
     public void AnAppThatDeclaresNoScheme_GetsNoFilterForLinks() =>
         AndroidLauncher().Should().NotContain("IntentFilter");
 
     /// <summary>
-    /// One activity in one task, whether or not the app declares a scheme: a second instance is a
-    /// second surface and a second tree over the first one's state.
+    /// One activity in one task for an app that links open: a second instance is a second surface
+    /// and a second tree over the first one's state. An app that declares no scheme keeps Android's
+    /// own launch mode, since a single task re-entered from its icon ends what it had opened on top
+    /// of itself, a photo picker among them.
     /// </summary>
     [Fact]
-    public void TheAndroidLauncherIsASingleTask() =>
-        AndroidLauncher().Should().Contain("LaunchMode = global::Android.Content.PM.LaunchMode.SingleTask");
+    public void TheAndroidLauncherIsASingleTask_OnlyWhenLinksOpenIt()
+    {
+        AndroidLauncher(WithSchemes).Should().Contain("LaunchMode = global::Android.Content.PM.LaunchMode.SingleTask");
+        AndroidLauncher().Should().NotContain("LaunchMode");
+    }
 }

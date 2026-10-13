@@ -137,7 +137,9 @@ public static class PhotonApp
 
         /// <summary>
         /// Tells the relay. A start says what it came with, a link or nothing, exactly once; every
-        /// other URL is one the running app was opened with.
+        /// other URL is one the running app was opened with. A scene connects with one URL. Were
+        /// it handed several, the first the set yields is the launch and the rest are offered to a
+        /// tree that does not exist yet: an app has one answer to "what was I started with".
         /// </summary>
         private static void Opened(NSSet<UIOpenUrlContext>? contexts, bool starting)
         {
