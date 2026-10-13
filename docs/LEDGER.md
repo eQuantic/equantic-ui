@@ -2603,19 +2603,6 @@ record of a release, the wiki's Upgrading page is the distillate.
   runtime on the Mac. The run on a physical iPhone belongs to the device pass
   ([#792](https://github.com/eQuantic/equantic-ui/issues/792)). Proposed and archived through OpenSpec
   (`openspec/specs/native-callbacks`).
-- **2026-10-13 · A camera preview shows on Android**: the Android shell registered no `ICamera`, so
-  a `CameraPreview` drew its unavailable state there while `UseCamera` still wrote the permission
-  ([#775](https://github.com/eQuantic/equantic-ui/issues/775)). It now realizes the contract through
-  Camera2 over Mono.Android, with no CameraX connector: the permission is asked inside
-  `StartPreviewAsync` and reads `Denied` only once Android will not prompt again, frames arrive as
-  YUV and the engine's `Yuv420.ToRgba` turns them into upright RGBA, written into the one of two
-  arrays the renderer was not handed (`FramePair`) so a frame is drawn whole, `Capture()` answers a
-  JPEG, and the camera is given up and taken back as the app leaves the screen and returns. Proved
-  on the emulator (API 36) against the camera service's own list of clients, and turned both ways
-  beside the system's camera app. Found on the way: a preview with a session and no frame yet did
-  not ask for the next frame, on every shell. The wiki's Capabilities page says which shell answers
-  which contract, and `WikiShellRealizationsTests` compares it with the registrations. Proposed and
-  archived through OpenSpec (`openspec/specs/device-camera`).
 - **2026-10-12 · Every program the SDKs start goes through RunProgram, with no shell**: the two SDKs
   started every program with MSBuild's `Exec`, which writes the command into a script for `/bin/sh` or
   `cmd.exe`, and each read it first: with the NuGet package folder under a folder named `nuget $b`, a
@@ -2644,6 +2631,19 @@ record of a release, the wiki's Upgrading page is the distillate.
   pool. Found while proving the camera preview of
   [#775](https://github.com/eQuantic/equantic-ui/issues/775). Proposed and archived through OpenSpec
   (`openspec/specs/renderer-textures`).
+- **2026-10-13 · A camera preview shows on Android**: the Android shell registered no `ICamera`, so
+  a `CameraPreview` drew its unavailable state there while `UseCamera` still wrote the permission
+  ([#775](https://github.com/eQuantic/equantic-ui/issues/775)). It now realizes the contract through
+  Camera2 over Mono.Android, with no CameraX connector: the permission is asked inside
+  `StartPreviewAsync` and reads `Denied` only once Android will not prompt again, frames arrive as
+  YUV and the engine's `Yuv420.ToRgba` turns them into upright RGBA, written into the one of two
+  arrays the renderer was not handed (`FramePair`) so a frame is drawn whole, `Capture()` answers a
+  JPEG, and the camera is given up and taken back as the app leaves the screen and returns. Proved
+  on the emulator (API 36) against the camera service's own list of clients, and turned both ways
+  beside the system's camera app. Found on the way: a preview with a session and no frame yet did
+  not ask for the next frame, on every shell. The wiki's Capabilities page says which shell answers
+  which contract, and `WikiShellRealizationsTests` compares it with the registrations. Proposed and
+  archived through OpenSpec (`openspec/specs/device-camera`).
 
 ## Retired documents
 
