@@ -15,9 +15,9 @@ where the README is every package's readme, draws nothing from a path and shows 
 
 ## What Changes
 
-- `README.md` shows the three samples: a tour of the dashboard's pages and three of its screens, the
-  gallery in dark and in light, and the Wallet on an iPhone and on Android. Each picture is a
-  Markdown image named by its path in the repository.
+- `README.md` shows the three samples: the dashboard's first page and three more of its screens, the
+  gallery in dark and in light, and the Wallet on an iPhone and on Android. Each picture is a still
+  PNG, written as a Markdown image named by its path in the repository.
 - A package's readme is written when it packs: the README, with each picture at its full address
   under the tag of the package's own release. `scripts/check-package-readme.cs` reads it inside
   every package CI packs.
@@ -41,5 +41,5 @@ None.
 
 ### Modified Capabilities
 
-- `working-agreement`: a picture in the README is a capture on record, taken again when its screen
-  changes, named by its path in the README and by its address in a package's readme.
+- `working-agreement`: a picture in the README is a still capture on record, taken again when its
+  screen changes, named by its path in the README and by its address in a package's readme.

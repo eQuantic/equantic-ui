@@ -22,7 +22,8 @@ its own front page true.
 - Comparing pixels. A frame drawn again and compared with the committed picture would hold a
   component's look too, and it would differ by the fonts and the browser of the machine that drew it.
 - A video in the page. GitHub plays only a file uploaded through its own editor, whose address a
-  README then names. The tour is an animated picture meanwhile.
+  README then names, and it gives that file a player. An animated picture is not the stand-in: see
+  "Every picture is still".
 
 ## Decisions
 
@@ -45,6 +46,14 @@ two of the first six iOS captures were a black screen under a status bar. The sc
 launch before the first picture, and every capture is read: one with almost no colour under its top
 twelfth is refused where it is taken. An emulator booted with no window is asleep, and its screen
 photographs as black too, so each Android photograph wakes it.
+
+**Every picture is still.** The page opened with a tour of the dashboard's pages, a GIF of ten
+pages that looped for good. Something that moves by itself for more than five seconds needs a way to
+pause it (WCAG 2.2.2). GitHub gives one, and marks the image `data-animated-image` for it, but
+nuget.org gives an animated image nothing, and the README is every package's readme there. So the
+page opens with the dashboard's first page, still, whose sidebar names the rest, and a test refuses a
+picture that moves: a GIF, or a PNG with an animation chunk. Motion comes back as a video, with the
+player GitHub gives an uploaded file.
 
 **A page that never finishes loading has no picture.** A headless Chrome writes its picture when the
 page has loaded, and the dashboard's Live page keeps a connection open: it held the browser for ten

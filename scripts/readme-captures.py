@@ -10,9 +10,11 @@ the first six iOS captures were that. So `check` counts the colours under the st
 a picture that has almost none, and `compose` checks every capture it reads.
 
 A still is scaled to twice the width the README draws it at. A phone's and a window's picture get
-round corners on a transparent ground, so they sit on GitHub's light page and its dark one alike. The
-tour is ten pages of the dashboard on ONE palette, so its frames do not flicker and the file stays
-small.
+round corners on a transparent ground, so they sit on GitHub's light page and its dark one alike.
+
+Every picture is still. One that moved would start by itself and go on, and nuget.org, where the
+README is every package's readme, gives an animated image no control to stop it: a tour of the
+dashboard's pages was a GIF here until that was read.
 
 Needs Pillow (`python3 -m pip install pillow`), and says so when it is not there.
 """
@@ -28,12 +30,11 @@ except ImportError:
 FEWEST_COLOURS = 40
 
 STILLS = (
+    ("web-dark-payments", "web-dashboard.png", 1200),
     ("web-dark-charts", "web-charts.png", 1200),
     ("web-dark-diff", "web-code-diff.png", 1200),
     ("web-light-form", "web-forms.png", 1200),
 )
-TOUR = ("payments", "charts", "sheet", "code", "diff", "markdown", "form", "rows", "i18n", "colors")
-TOUR_SIZE = (1200, 750)
 WINDOWS = (
     ("desktop-dark-charts", "desktop-gallery.png"),
     ("desktop-light-buttons", "desktop-gallery-light.png"),
@@ -88,17 +89,6 @@ def compose(raw, out):
 
     for source, name, width in STILLS:
         save(scaled(capture(source), width), name)
-
-    width, height = TOUR_SIZE
-    frames = [capture("web-dark-" + page).resize(TOUR_SIZE, Image.LANCZOS) for page in TOUR]
-    mosaic = Image.new("RGB", (width * 5, height * 2))
-    for index, frame in enumerate(frames):
-        mosaic.paste(frame, ((index % 5) * width, (index // 5) * height))
-    palette = mosaic.quantize(colors=255, method=Image.MEDIANCUT, dither=Image.NONE)
-    pages = [frame.quantize(palette=palette, dither=Image.NONE) for frame in frames]
-    path = os.path.join(out, "web-tour.gif")
-    pages[0].save(path, save_all=True, append_images=pages[1:], duration=1600, loop=0, optimize=True, disposal=1)
-    print(f"web-tour.gif: {width}x{height}, {len(pages)} pages, {os.path.getsize(path) // 1024} KB")
 
     for source, name in WINDOWS:
         save(rounded(capture(source), 10), name)

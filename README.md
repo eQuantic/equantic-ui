@@ -33,7 +33,7 @@
   <a href="#documentation">Documentation</a>
 </p>
 
-![The dashboard sample in a browser, page by page: payments, charts, a spreadsheet, a code editor, a diff, Markdown, a form, ten thousand rows, localization and colours](assets/readme/web-tour.gif)
+![The dashboard sample in a browser, on its payments page, with a sidebar of pages for rows, a spreadsheet, Markdown, a code editor, a diff, forms, localization and charts](assets/readme/web-dashboard.png)
 
 ---
 
@@ -51,7 +51,7 @@
 
 Every screen shown here is a capture of a sample in this repository, taken from the code as it builds
 by [`scripts/capture-readme.sh`](https://github.com/eQuantic/equantic-ui/blob/main/scripts/capture-readme.sh).
-The one at the top walks through the dashboard sample in a browser.
+The one at the top is the dashboard sample in a browser, on its first page.
 
 ### On the web
 

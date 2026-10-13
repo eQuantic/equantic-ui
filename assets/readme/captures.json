@@ -13,23 +13,13 @@
     "A new picture gets an entry here by hand: its target and the files its screen is written in."
   ],
   "captures": {
-    "web-tour.gif": {
+    "web-dashboard.png": {
       "target": "web",
       "sources": {
         "samples/DefaultUIDashboard/Program.cs": "1b6e5ece18e9768aed85983ad7522786068229a0f6bb7f0e9248d47b7629bfdd",
         "samples/DefaultUIDashboard/Screens/ConsoleShell.cs": "aa5b69eda567b6dcdb8461e0c37ca8960106ac571af9cedd82a7d66daa829088",
         "samples/DefaultUIDashboard/Screens/ConsoleData.cs": "abcb0a957c3823167118ea3f6ea2f100dc9e0aab969910388f3e3d4c4c91403e",
-        "samples/DefaultUIDashboard/Screens/PaymentsPage.cs": "945748db6e09ed08198d5e1c788bbd706171542a5b3ab7f79ad2af31f1631808",
-        "samples/DefaultUIDashboard/Screens/ChartsScreen.cs": "707f5ad95f6ed64e8cb7cc436996f8c06676b5ba6f85044469a6062861131342",
-        "samples/DefaultUIDashboard/Screens/SheetScreen.cs": "ebb3ff8d4aa0441def0d9177c555a5132479fbb1980463c94d0b592a28038b89",
-        "samples/DefaultUIDashboard/Screens/CodeScreen.cs": "0cdb48df9413b3403102237974447c76665f41eba3d718828cd26af866ff2891",
-        "samples/DefaultUIDashboard/Screens/DiffScreen.cs": "270ed999ea61baf467a6be6eed75d503bd964ade2cbb7796670eb82d4be5d8d6",
-        "samples/DefaultUIDashboard/Screens/MarkdownScreen.cs": "3ecfdb26c025c24b8c9afc7cb8aa31ece5a6bb912272284feb562d1b95eec5c2",
-        "samples/DefaultUIDashboard/Screens/FormScreen.cs": "dedae4f32851e8b17cf9978c93535cdb3c68421159310e7a9c32cfec2d067f14",
-        "samples/DefaultUIDashboard/Screens/RowsScreen.cs": "1bbb5be9b1d567d39485f6f4b63cebf2ac7ecbd493e72616d9a5f471f81f7634",
-        "samples/DefaultUIDashboard/Screens/I18nScreen.cs": "e4851d2c2e9531c2b5b35afd1334deb67e9508bfe443ce798c6cc290ee172612",
-        "samples/DefaultUIDashboard/Screens/ColorScreen.cs": "fc037c5811681683e2a7cce2a30f9c98ac22b1b184c4592dd69d33e1d9c2a24b",
-        "samples/DefaultUIDashboard/Resources/Strings.resx": "369fa9c1e7bdd55b86bce8698b95f9fc6138631d507b0c9e65a14e026771f859"
+        "samples/DefaultUIDashboard/Screens/PaymentsPage.cs": "945748db6e09ed08198d5e1c788bbd706171542a5b3ab7f79ad2af31f1631808"
       }
     },
     "web-charts.png": {

@@ -127,7 +127,7 @@ web() {
     kill -0 "$server" 2> /dev/null || fail "the dashboard stopped: see $RAW/dashboard.log"
 
     local route
-    for route in / /charts /sheet /code /diff /markdown /form /rows /i18n /colors; do
+    for route in / /charts /diff; do
         web_picture "$chrome" "$profile" "$port" dark "$route"
     done
     web_picture "$chrome" "$profile" "$port" light /form

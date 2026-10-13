@@ -288,9 +288,9 @@ Every picture the root `README.md` shows of a sample SHALL be a capture on recor
 `assets/readme/captures.json`, which names the files the pictured screen is written in and the digest
 each had when the picture was taken. The test suite SHALL fail when one of those files changes,
 naming the picture and the target of `scripts/capture-readme.sh` that takes it again, and SHALL pass
-again only when the record holds the files as they are. A picture SHALL be written in the README as
-a Markdown image named by its path in the repository, which GitHub draws on every branch and in a
-fork. A package's readme SHALL be that README with each picture at its full address under the tag of
+again only when the record holds the files as they are. A picture SHALL be still, since nuget.org
+gives an animated image no control to stop it, and SHALL be written in the README as a Markdown
+image named by its path in the repository, which GitHub draws on every branch and in a fork. A package's readme SHALL be that README with each picture at its full address under the tag of
 the package's own release, written when the package packs, since nuget.org shows a readme's HTML as
 text and draws nothing from a path.
 
@@ -315,6 +315,11 @@ text and draws nothing from a path.
 - **WHEN** `README.md` names a file of `assets/readme` through an `<img>` tag, a link, a full address
   or a path written another way
 - **THEN** the test fails, naming it, since GitHub or nuget.org would not draw it
+
+#### Scenario: A picture that moves
+
+- **WHEN** the folder holds a picture that moves, an animated GIF or a PNG with an animation chunk
+- **THEN** the test fails, naming it
 
 #### Scenario: A package packs
 

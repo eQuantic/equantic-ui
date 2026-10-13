@@ -12,6 +12,7 @@
 - [x] 2.1 `assets/readme/captures.json` names each picture's target and the files its screen is written in
 - [x] 2.2 `ReadmeCapturesTests`: every picture shown is on record and in the folder, the README names a picture only as a Markdown image by its path in the repository, and a changed file fails naming the picture
 - [x] 2.3 Each case fails when what it guards is taken away: a changed file, a picture off the record, a link, an HTML image, a full address, a path written another way, a blank capture
+- [x] 2.4 Every picture is still: a GIF, a PNG with an animation chunk and a GIF named `.png` each fail `ReadmeCapturesTests`
 
 ## 3. The package's readme
 

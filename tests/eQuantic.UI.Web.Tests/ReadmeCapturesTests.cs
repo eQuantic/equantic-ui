@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -60,19 +61,32 @@ public class ReadmeCapturesTests
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToList();
         var recorded = Captures(root).Select(capture => capture.Picture).OrderBy(name => name, StringComparer.Ordinal).ToList();
-        // A hidden file is the system's, not the repository's: a Mac writes .DS_Store into a folder
-        // somebody opened, and git ignores it.
-        var files = Directory.GetFiles(Path.Combine(root, Folder))
-            .Select(path => Path.GetFileName(path))
-            .Where(name => name != Path.GetFileName(Record) && !name.StartsWith('.'))
-            .OrderBy(name => name, StringComparer.Ordinal)
-            .ToList();
+        var files = Pictures(root);
 
         shown.Count.Should().BeGreaterThanOrEqualTo(FewestPictures,
             $"README.md shows its samples through the pictures in {Folder}");
         recorded.Should().Equal(shown,
             $"{Record} holds one entry for each picture README.md shows, and none it does not show");
         files.Should().Equal(recorded, $"{Folder} holds the pictures on record and no other file");
+    }
+
+    /// <summary>
+    /// Every picture is still. One that moves starts by itself and goes on, and nuget.org gives an
+    /// animated image no control to stop it, which fails the pause rule of WCAG 2.2.2 for anything
+    /// that moves for more than five seconds. GitHub does give one, so the README looked fine there:
+    /// the tour of the dashboard's pages was a GIF that looped for good until that was read. A PNG
+    /// moves when it carries an animation chunk, <c>acTL</c>, before its first image data.
+    /// </summary>
+    [Fact]
+    public void EveryPictureIsStill()
+    {
+        var root = SdkProbe.RepoRoot();
+
+        Pictures(root)
+            .Where(name => !IsStillPng(Path.Combine(root, Folder, name)))
+            .Should().BeEmpty(
+                $"every picture in {Folder} is a PNG that does not move: an animated one starts by itself, "
+                + "and on nuget.org nothing stops it");
     }
 
     /// <summary>
@@ -166,6 +180,32 @@ public class ReadmeCapturesTests
     }
 
     private sealed record Capture(string Picture, string Target, IReadOnlyList<(string Source, string Digest)> Sources);
+
+    /// <summary>The files of the folder but the record. A hidden file is the system's, not the
+    /// repository's: a Mac writes .DS_Store into a folder somebody opened, and git ignores it.</summary>
+    private static List<string> Pictures(string root) =>
+        Directory.GetFiles(Path.Combine(root, Folder))
+            .Select(path => Path.GetFileName(path))
+            .Where(name => name != Path.GetFileName(Record) && !name.StartsWith('.'))
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToList();
+
+    /// <summary>A PNG, read chunk by chunk up to its first image data, with no animation control
+    /// chunk on the way.</summary>
+    private static bool IsStillPng(string path)
+    {
+        ReadOnlySpan<byte> signature = [0x89, (byte)'P', (byte)'N', (byte)'G', 0x0D, 0x0A, 0x1A, 0x0A];
+        var bytes = File.ReadAllBytes(path);
+        if (!bytes.AsSpan().StartsWith(signature)) return false;
+        for (var at = signature.Length; at + 8 <= bytes.Length;)
+        {
+            var type = Encoding.ASCII.GetString(bytes, at + 4, 4);
+            if (type == "acTL") return false;
+            if (type == "IDAT") return true;
+            at += 12 + BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(at));
+        }
+        return false;
+    }
 
     private static List<Capture> Captures(string root)
     {
