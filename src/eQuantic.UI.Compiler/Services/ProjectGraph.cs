@@ -72,7 +72,8 @@ internal sealed class ProjectGraph
 
             return new ProjectGraph(references.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<string>)pair.Value, Paths));
         }
-        catch (Exception exception) when (exception is JsonException or KeyNotFoundException or InvalidOperationException or InvalidDataException)
+        catch (Exception exception) when (exception is JsonException or KeyNotFoundException or InvalidOperationException
+            or InvalidDataException or ArgumentException)
         {
             throw new InvalidDataException(
                 $"the restore graph at '{assetsFile}' does not hold the shape NuGet writes: {exception.Message}", exception);
