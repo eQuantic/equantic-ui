@@ -69,6 +69,7 @@ export {
   LinkedList,
   LinkedListNode,
   linkedList,
+  linkedListNode,
 } from './utils/collections';
 export { Dictionary, dictionary, type Pair } from './utils/dictionary';
 export { HashSet, hashSet } from './utils/hash-set';

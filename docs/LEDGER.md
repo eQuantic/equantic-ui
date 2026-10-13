@@ -2752,6 +2752,20 @@ record of a release, the wiki's Upgrading page is the distillate.
   final manifest is written, and `scripts/check-ios-launch.sh` compares the two and fails with main's
   targets. Proved on the Android emulator and the iOS 27 simulator.
   Proposed and archived through OpenSpec (`openspec/specs/deep-links`).
+- **2026-10-13 · Every member of a queue, a stack, a linked list and a sorted set answers or fails the
+  build**: eqc lowered any member of `Queue<T>`, `Stack<T>`, `LinkedList<T>`, `LinkedListNode<T>` and
+  `SortedSet<T>` to its camel-cased name whether or not the runtime's twin carried it, so `TryDequeue`,
+  `TryPop`, `TryPeek`, `TryGetValue`, the capacity members and a linked list's node operations compiled
+  and were TypeErrors in the browser, `LinkedList.Remove(node)` removed nothing, and
+  `new LinkedListNode<T>(value)` built a linked list
+  ([#866](https://github.com/eQuantic/equantic-ui/issues/866)). The twins now carry them, a capacity
+  grown, sized and trimmed by .NET's own rules and a node that belongs to one list at a time, and
+  `QueueStackStrategy`, moved onto the IR, claims each type by a members table and refuses any other
+  member with EQ2004, `SortedSet.GetViewBetween`
+  ([#865](https://github.com/eQuantic/equantic-ui/issues/865)) and `Comparer` included, so the BCL
+  audit counts them as fenced where it counted them native. 73 of the 74 conformance cases fail before
+  the change. The served runtime grows 971 gzipped bytes. Proposed and archived through OpenSpec
+  (`openspec/specs/runtime-collections`, `openspec/specs/transpiler-bcl`).
 
 ## Retired documents
 

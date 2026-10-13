@@ -278,3 +278,10 @@ describe('SortedSet — a change while it is walked (#765)', () => {
     expect(walk(s.reverse(), (v) => s.add(v + 10))).toBe(`7|${modified}`);
   });
 });
+
+describe('SortedSet — TryGetValue (#866)', () => {
+  it('answers the element the set holds, or undefined', () => {
+    const s = sortedSet([3, 1]);
+    expect([s.tryGetValue(3), s.tryGetValue(2)]).toEqual([3, undefined]);
+  });
+});

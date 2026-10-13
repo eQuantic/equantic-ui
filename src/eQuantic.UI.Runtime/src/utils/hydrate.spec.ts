@@ -400,6 +400,19 @@ describe('a collection the browser holds as its own class', () => {
     expect(sorted.min).toBe(1);
   });
 
+  it('grows a queue and a stack one element at a time, to the capacity .NET reads them at', async () => {
+    const { Queue, Stack } = await import('./collections');
+    // Measured on .NET 10: JsonSerializer.Deserialize<Queue<int>> and <Stack<int>> of [], [1], five
+    // elements and nine hold them at a capacity of 0, 4, 8 and 16. The payload carries no capacity.
+    for (const [json, capacity] of [[[], 0], [[1], 4], [[1, 2, 3, 4, 5], 8], [[1, 2, 3, 4, 5, 6, 7, 8, 9], 16]] as const) {
+      const queue = hydrate([...json], { collection: 'queue', of: null }) as InstanceType<typeof Queue<number>>;
+      const stack = hydrate([...json], { collection: 'stack', of: null }) as InstanceType<typeof Stack<number>>;
+      expect([queue.capacity, stack.capacity]).toEqual([capacity, capacity]);
+      expect([...queue]).toEqual([...json]);
+      expect([...stack]).toEqual([...json]);
+    }
+  });
+
   it('keeps a sorted one in its element type\'s order, which `<` does not give', async () => {
     const { SortedSet } = await import('./sorted');
     // Decimals compared by their text put 10 before 9 and kept 1.0 beside 1.00, which .NET finds equal.
