@@ -183,25 +183,28 @@ public sealed class CodeLineCells
     /// so it is written here, as terminals and editors write it, and <c>CellWidthOracleTests</c>
     /// compares it with the SDK's own embedded Bun (<c>Bun.stringWidth</c>) for every assigned
     /// character: a range bridges only characters that never begin an element (unassigned, marks,
-    /// private use). The block draws a wide element in a box two cells wide, so a font that
-    /// disagrees by a little cannot move the rest of the line off the grid.
+    /// private use). It follows the Unicode that Bun does, 17 since Bun 1.4.3, which made the Yijing
+    /// and Tai Xuan Jing symbols and the counting rods wide and added the newest emoji. The block
+    /// draws a wide element in a box two cells wide, so a font that disagrees by a little cannot move
+    /// the rest of the line off the grid.
     /// </summary>
     public static bool IsWide(int codePoint) =>
         codePoint is
         (>= 0x1100 and <= 0x115F) or (>= 0x231A and <= 0x231B) or (>= 0x2329 and <= 0x232A)
         or (>= 0x23E9 and <= 0x23EC) or 0x23F0 or 0x23F3 or (>= 0x25FD and <= 0x25FE)
-        or (>= 0x2614 and <= 0x2615) or (>= 0x2648 and <= 0x2653) or 0x267F or 0x2693 or 0x26A1
+        or (>= 0x2614 and <= 0x2615) or (>= 0x2630 and <= 0x2637) or (>= 0x2648 and <= 0x2653)
+        or 0x267F or (>= 0x268A and <= 0x268F) or 0x2693 or 0x26A1
         or (>= 0x26AA and <= 0x26AB) or (>= 0x26BD and <= 0x26BE) or (>= 0x26C4 and <= 0x26C5)
         or 0x26CE or 0x26D4 or 0x26EA or (>= 0x26F2 and <= 0x26F3) or 0x26F5 or 0x26FA or 0x26FD
         or 0x2705 or (>= 0x270A and <= 0x270B) or 0x2728 or 0x274C or 0x274E
         or (>= 0x2753 and <= 0x2755) or 0x2757 or (>= 0x2795 and <= 0x2797) or 0x27B0 or 0x27BF
         or (>= 0x2B1B and <= 0x2B1C) or 0x2B50 or 0x2B55 or (>= 0x2E80 and <= 0x303E)
-        or (>= 0x3041 and <= 0x31E3) or (>= 0x31EF and <= 0x3247) or (>= 0x3250 and <= 0x4DBF)
-        or (>= 0x4E00 and <= 0xA4C6) or (>= 0xA960 and <= 0xA97C) or (>= 0xAC00 and <= 0xD7A3)
+        or (>= 0x3041 and <= 0x31E5) or (>= 0x31EF and <= 0x3247) or (>= 0x3250 and <= 0xA4C6)
+        or (>= 0xA960 and <= 0xA97C) or (>= 0xAC00 and <= 0xD7A3)
         or (>= 0xF900 and <= 0xFAD9) or (>= 0xFE10 and <= 0xFE6B) or (>= 0xFF01 and <= 0xFF60)
-        or (>= 0xFFE0 and <= 0xFFE6) or (>= 0x16FE0 and <= 0x16FE3) or (>= 0x17000 and <= 0x187F7)
-        or (>= 0x18800 and <= 0x18CD5) or (>= 0x18D00 and <= 0x18D08)
-        or (>= 0x1AFF0 and <= 0x1B2FB) or 0x1F004 or 0x1F0CF or 0x1F18E
+        or (>= 0xFFE0 and <= 0xFFE6) or (>= 0x16FE0 and <= 0x16FE3) or (>= 0x16FF2 and <= 0x16FF6)
+        or (>= 0x17000 and <= 0x18CD5) or (>= 0x18CFF and <= 0x18D1E) or (>= 0x18D80 and <= 0x18DF2)
+        or (>= 0x1AFF0 and <= 0x1B2FB) or (>= 0x1D300 and <= 0x1D376) or 0x1F004 or 0x1F0CF or 0x1F18E
         or (>= 0x1F191 and <= 0x1F19A) or (>= 0x1F200 and <= 0x1F320)
         or (>= 0x1F32D and <= 0x1F335) or (>= 0x1F337 and <= 0x1F37C)
         or (>= 0x1F37E and <= 0x1F393) or (>= 0x1F3A0 and <= 0x1F3CA)
@@ -210,23 +213,26 @@ public sealed class CodeLineCells
         or (>= 0x1F4FF and <= 0x1F53D) or (>= 0x1F54B and <= 0x1F54E)
         or (>= 0x1F550 and <= 0x1F567) or 0x1F57A or (>= 0x1F595 and <= 0x1F596) or 0x1F5A4
         or (>= 0x1F5FB and <= 0x1F64F) or (>= 0x1F680 and <= 0x1F6C5) or 0x1F6CC
-        or (>= 0x1F6D0 and <= 0x1F6D2) or (>= 0x1F6D5 and <= 0x1F6D7)
+        or (>= 0x1F6D0 and <= 0x1F6D2) or (>= 0x1F6D5 and <= 0x1F6D8)
         or (>= 0x1F6DC and <= 0x1F6DF) or (>= 0x1F6EB and <= 0x1F6EC)
         or (>= 0x1F6F4 and <= 0x1F6FC) or (>= 0x1F7E0 and <= 0x1F7F0)
         or (>= 0x1F90C and <= 0x1F93A) or (>= 0x1F93C and <= 0x1F945)
-        or (>= 0x1F947 and <= 0x1F9FF) or (>= 0x1FA70 and <= 0x1FA88)
-        or (>= 0x1FA90 and <= 0x1FABD) or (>= 0x1FABF and <= 0x1FAC5)
-        or (>= 0x1FACE and <= 0x1FADB) or (>= 0x1FAE0 and <= 0x1FAE8)
-        or (>= 0x1FAF0 and <= 0x1FAF8) or (>= 0x20000 and <= 0x33479);
+        or (>= 0x1F947 and <= 0x1F9FF) or (>= 0x1FA70 and <= 0x1FAF8) or (>= 0x20000 and <= 0x33479);
 
     /// <summary>
     /// Whether a character takes NO cell: the zero-width space and joiners, the direction marks, the
-    /// word joiner and invisible operators, the byte-order mark, the soft hyphen, and the format
-    /// characters that are drawn only as part of what follows them. Compared with the same oracle as
-    /// <see cref="IsWide"/>.
+    /// directional embeddings, overrides and isolates, the word joiner and invisible operators, the
+    /// byte-order mark, the soft hyphen, the Hangul vowel filler, and the format characters that are
+    /// drawn only as part of what follows them. Compared with the same oracle as
+    /// <see cref="IsWide"/>, which parts from this in one place: it counts every Hangul vowel and
+    /// final as no cell. That is what one takes after its consonant, where it is part of the
+    /// consonant's element and this is never asked. One that BEGINS an element has no consonant to
+    /// join and a font draws it standing alone, so it is not here.
     /// </summary>
     public static bool IsZeroWidth(int codePoint) =>
         codePoint is
-        0xAD or (>= 0x600 and <= 0x605) or 0x6DD or 0x70F or 0x8E2 or (>= 0x200B and <= 0x200F)
-        or (>= 0x2060 and <= 0x2064) or 0xFEFF or (>= 0xE0001 and <= 0xE007F);
+        0xAD or (>= 0x600 and <= 0x605) or 0x61C or 0x6DD or 0x70F or 0x8E2 or 0x1160 or 0x180E
+        or (>= 0x200B and <= 0x200F) or (>= 0x202A and <= 0x202E) or (>= 0x2060 and <= 0x206F)
+        or 0xFEFF or (>= 0x1BCA0 and <= 0x1BCA3) or (>= 0x1D173 and <= 0x1D17A)
+        or (>= 0xE0001 and <= 0xE007F);
 }

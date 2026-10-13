@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <!-- Embedded into the two SDK packages beside their tools: never published on its own. -->
+        <IsPackable>false</IsPackable>
+        <!-- netstandard2.0 is what every MSBuild loads a task assembly as, in its own process: the
+             .NET SDK's, and the .NET Framework one Visual Studio builds with. -->
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>latest</LangVersion>
+        <Description>The MSBuild tasks the two eQuantic.UI SDKs run: a program started with a list of arguments, and a folder linked, with no shell between the build and either.</Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- MSBuild brings its own copy of these when it loads a task: compile against them, ship none. -->
+        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.28" PrivateAssets="all" ExcludeAssets="runtime" />
+    </ItemGroup>
+
+</Project>

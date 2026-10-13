@@ -2603,6 +2603,61 @@ record of a release, the wiki's Upgrading page is the distillate.
   runtime on the Mac. The run on a physical iPhone belongs to the device pass
   ([#792](https://github.com/eQuantic/equantic-ui/issues/792)). Proposed and archived through OpenSpec
   (`openspec/specs/native-callbacks`).
+- **2026-10-12 · Every program the SDKs start goes through RunProgram, with no shell**: the two SDKs
+  started every program with MSBuild's `Exec`, which writes the command into a script for `/bin/sh` or
+  `cmd.exe`, and each read it first: with the NuGet package folder under a folder named `nuget $b`, a
+  build stopped at `chmod +x` on bun's own path, before eqc ran. `eQuantic.UI.Sdk.Tasks`, a
+  netstandard2.0 assembly both SDK packages ship under `tools/netstandard2.0/`, holds `RunProgram`, a
+  ToolTask that hands a program a list of arguments whose values are item metadata, and `LinkDirectory`,
+  which makes the `node_modules` link through the system's own call where `mklink /D` was a command of
+  `cmd.exe`. The 26 `Exec` tasks of the two SDKs are gone, and a guard fails on one under `src/`. eqc runs
+  in the project's folder again, its response file named by its full path. A program that fails in
+  silence is EQ4004, naming its arguments, and the notary's password is not echoed, which ToolTask did
+  whatever `EchoOff` said. Measured on the way: MSBuild's own command line drops the double quotes of a
+  project's path, and ToolTask turns every backslash of a command line into a slash on macOS and Linux
+  ([#841](https://github.com/eQuantic/equantic-ui/issues/841)). Proposed and archived through OpenSpec
+  (`openspec/specs/build-programs`).
+- **2026-10-12 · The renderer lets go of a texture nobody draws**: the shared renderer kept every
+  raster it ever uploaded for its own life, and on Vulkan each one held descriptor sets out of a pool
+  of 1,024, so an Android app that drew a thousand different texts died at the 1,025th with
+  "descriptor set allocation failed": measured on the emulator with a text changing every 16 ms, about
+  17 seconds in, with no camera in the app
+  ([#858](https://github.com/eQuantic/equantic-ui/issues/858)). A raster that went undrawn for more
+  than thirty frames now gives its texture back, a few a frame and never fewer than the frame before
+  uploaded, on every backend: on Metal `MetalTexture.Dispose` was an empty body, and the real
+  device's allocated size is what the test reads. A Vulkan pool that is full hands over to a new
+  one. On the emulator the same text then ran past 6,400 different contents with fewer than a
+  hundred sets allocated, and a screen of 1,296 different texts took its 1,025th set from a second
+  pool. Found while proving the camera preview of
+  [#775](https://github.com/eQuantic/equantic-ui/issues/775). Proposed and archived through OpenSpec
+  (`openspec/specs/renderer-textures`).
+- **2026-10-12 · The embedded bun is 1.4.3, and the code engine's cell widths follow its Unicode 17**:
+  the six platform runtime packages move from bun 1.3.14 to 1.4.3, each the build it replaces, taken
+  from the release, checked against its `SHASUMS256.txt` and repacked as the packages hold them.
+  `Bun.stringWidth`, the oracle `CellWidthOracleTests` holds the code engine's width table to, went
+  from Unicode 15.1 to 17 with it, and 616 characters changed their answer. The table and its twin
+  follow where a font agrees: the Yijing and Tai Xuan Jing symbols and the newest emoji take two
+  cells, and a directional embedding, override or isolate takes none. A Hangul vowel or final that
+  begins an element keeps its cell, though the oracle now counts none: a browser draws every one of
+  them with an advance, and the test names the parting
+  ([#860](https://github.com/eQuantic/equantic-ui/issues/860)). The pin's regeneration
+  (`EQ_UPDATE_BUN_MANIFEST=1`) wrote `$1` before each digest, and one that starts with a digit lost
+  its line's key: four lines of six, on the pin's first update
+  ([#854](https://github.com/eQuantic/equantic-ui/issues/854)).
+  Proposed and archived through OpenSpec (`openspec/specs/code-cells`).
+- **2026-10-13 · A camera preview shows on Android**: the Android shell registered no `ICamera`, so
+  a `CameraPreview` drew its unavailable state there while `UseCamera` still wrote the permission
+  ([#775](https://github.com/eQuantic/equantic-ui/issues/775)). It now realizes the contract through
+  Camera2 over Mono.Android, with no CameraX connector: the permission is asked inside
+  `StartPreviewAsync` and reads `Denied` only once Android will not prompt again, frames arrive as
+  YUV and the engine's `Yuv420.ToRgba` turns them into upright RGBA, written into the one of two
+  arrays the renderer was not handed (`FramePair`) so a frame is drawn whole, `Capture()` answers a
+  JPEG, and the camera is given up and taken back as the app leaves the screen and returns. Proved
+  on the emulator (API 36) against the camera service's own list of clients, and turned both ways
+  beside the system's camera app. Found on the way: a preview with a session and no frame yet did
+  not ask for the next frame, on every shell. The wiki's Capabilities page says which shell answers
+  which contract, and `WikiShellRealizationsTests` compares it with the registrations. Proposed and
+  archived through OpenSpec (`openspec/specs/device-camera`).
 - **2026-10-13 · A walk over a collection ends when the collection changes**: a `foreach` over the
   runtime's `Queue`, `Stack`, `LinkedList` or `SortedSet` went on after the collection changed under
   it. A queue and a stack walked a copy, and a linked list and a sorted set walked themselves, so

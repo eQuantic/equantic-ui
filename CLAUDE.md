@@ -405,6 +405,8 @@ src/
 │                               # Shell.Apple (shared Apple code), Shell.MacOS, Shell.iOS, Shell.Android,
 │                               # Shell.Windows (Win32 + DirectWrite/Direct2D/WIC; Vulkan or the Reference backend)
 ├── eQuantic.UI.Sdk.Native/     # MSBuild SDK for Photon apps: picks the shell per TFM and, on desktop, per host OS
+├── eQuantic.UI.Sdk.Tasks/      # The MSBuild tasks both SDKs ship (netstandard2.0, tools/netstandard2.0/): RunProgram
+│                               # starts every program with a list of arguments and no shell; LinkDirectory
 ├── eQuantic.UI.Templates/      # dotnet new equantic-app / equantic-native
 ├── eQuantic.UI.Codegen/        # Writers for generated files (one CodeWriter, one writer per file type)
 ├── eQuantic.UI.Web.Build/      # Generators of the runtime's TypeScript twins (design system, enum unions, icons, SDK strings)
@@ -466,8 +468,9 @@ compilation of its own SOURCE: `Sdk.targets` writes `obj/…/equantic.projects.t
 MSBuild resolved (`--projects`), without the SDK's own projects and icon packs, and hands the app's
 assembly name as the project evaluates it (`--assembly-name`), which is the name a library's
 `InternalsVisibleTo` names. Everything eqc is handed reaches it in a response file,
-`obj/…/equantic.eqc.rsp`, one argument a line, and the command names only the compiler and that file:
-a shell read each value written into it first, and `Cash$Flow` arrived as `Cash` (#836). A type of one is a
+`obj/…/equantic.eqc.rsp`, one argument a line (#836), and the SDKs start eqc, as every other program,
+with `RunProgram`, which hands a program a list of arguments with no shell (#841): a shell read each
+value written into a command first, and `Cash$Flow` arrived as `Cash`. A type of one is a
 module of the bundle when a written module imports it, and only then, so a class library shared by a
 solution's apps works in a page and a Domain project costs what the pages use of it
 (`openspec/specs/referenced-projects`, `samples/SharedLibrary`).
