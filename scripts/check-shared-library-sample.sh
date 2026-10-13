@@ -61,12 +61,14 @@ fi
 
 # AND THE RESTORE GRAPH WITH THEM, which says which project references which: the assemblies cannot,
 # since the library reads the Theme project through a constant alone (#887).
+# The option is looked for before its value is read: under `set -e` with pipefail, reading the value
+# of an option that is not there ends the script on the spot, with nothing said.
 if [ -n "$arguments" ]; then
-    assets=$(grep -A1 -xF -- "--project-assets" "$arguments" | tail -1)
     if ! grep -qxF -- "--project-assets" "$arguments"; then
         fail "$arguments hands the projects with no --project-assets, so the compiler cannot tell which project references which"
-    elif [ ! -f "$assets" ]; then
-        fail "$arguments names $assets as the restore graph, and it is not there"
+    else
+        assets=$(grep -A1 -xF -- "--project-assets" "$arguments" | tail -1)
+        [ -f "$assets" ] || fail "$arguments names $assets as the restore graph, and it is not there"
     fi
 fi
 
