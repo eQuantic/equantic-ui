@@ -80,6 +80,8 @@ public class LedgerTests
         new LedgerEntry("a-class-named-type-is-a-module.md", Entry).Problems.Should().BeEmpty();
         new LedgerEntry("0.2.0-preview.63-released.md", "- **2026-10-20 · 0.2.0-preview.63 released** from `1b8eca6a` (#900).\n")
             .Problems.Should().BeEmpty("a release is an event like another, and its file is named by its version");
+        new LedgerEntry("an-entry.md", "- **2026-10-13 · An event**: its text wraps where it wraps, on line\n  22) and after it, and\n  **bold** text or a -1 may open a line (#1).\n")
+            .Problems.Should().BeEmpty("a line that starts with a number, with bold text or with a sign opens no list item");
     }
 
     /// <summary>Each shape the fold would write into the chronology as something that is not one
@@ -97,6 +99,9 @@ public class LedgerTests
     [InlineData("an-entry.md", "- **2026-10-13 · An event**: what happened\nat the margin (#1).\n", "line 2")]
     [InlineData("an-entry.md", "- **2026-10-13 · An event**: what happened\n\n  after an empty line (#1).\n", "line 2")]
     [InlineData("an-entry.md", "- **2026-10-13 · An event**: what happened\n  and more (#1).\n\n## A heading\n", "line 3")]
+    [InlineData("an-entry.md", "- **2026-10-13 · An event**: what happened (#1).\n  - **2026-10-13 · A second, typed below it**: more (#2).\n", "line 2 opens a list item")]
+    [InlineData("an-entry.md", "- **2026-10-13 · An event**: what happened\n  and more,\n  * with an item under it (#1).\n", "line 3 opens a list item")]
+    [InlineData("an-entry.md", "- **2026-10-13 · An event**: what happened\n  + with an item under it (#1).\n", "line 2 opens a list item")]
     [InlineData("an-entry.md", "- **2026-10-13 · An event**: what happened, and no link.\n", "cites no")]
     public void AFileThatIsNotOneDatedEvent_IsRefused_ForWhatItLacks(string name, string text, string lacks)
     {

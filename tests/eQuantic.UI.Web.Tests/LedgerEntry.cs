@@ -21,6 +21,18 @@ internal sealed record LedgerEntry(string Name, string Text)
     /// An empty line, a line at the margin and a second item are each not one.</summary>
     private static readonly Regex Continuation = new(@"^  \S", RegexOptions.Compiled);
 
+    /// <summary>
+    /// A line that opens a list item of its own under the entry: a bullet, then a space.
+    /// <para>
+    /// It is indented, so it reads as a continuation, and it is how an editor that keeps the
+    /// indentation writes a second event typed below the first. The fold would write it as an item
+    /// under the first one, and the chronology counts an entry by a line that opens at the margin,
+    /// so that event would be in the ledger and counted nowhere. No line of the chronology on record
+    /// opens one. A line that starts with a number, with bold text or with a sign is text.
+    /// </para>
+    /// </summary>
+    private static readonly Regex Item = new(@"^\s+[-*+]\s", RegexOptions.Compiled);
+
     /// <summary>A name every host writes the same way: lower-case letters, digits, dots and hyphens.
     /// Two names that differ by case alone are one file on a Mac and on Windows.</summary>
     private static readonly Regex Named = new(@"^[a-z0-9][a-z0-9.-]*\.md$", RegexOptions.Compiled);
@@ -64,8 +76,12 @@ internal sealed record LedgerEntry(string Name, string Text)
 
             for (var at = 1; at < lines.Count; at++)
             {
-                if (Continuation.IsMatch(lines[at])) continue;
-                problems.Add($"line {at + 1} is no continuation of the entry: every line after the first starts with two spaces and holds text, and a second event is a second file");
+                if (!Continuation.IsMatch(lines[at]))
+                    problems.Add($"line {at + 1} is no continuation of the entry: every line after the first starts with two spaces and holds text, and a second event is a second file");
+                else if (Item.IsMatch(lines[at]))
+                    problems.Add($"line {at + 1} opens a list item of its own: an entry is one item, and a second event is a second file");
+                else
+                    continue;
                 break;
             }
 
