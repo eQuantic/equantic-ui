@@ -391,6 +391,9 @@ public class EveryProgramTheSdksStartTests
                     ("_EqCapabilityPlist", "$(MSBuildProjectDirectory)/obj/eQuantic/Capabilities.plist")),
                 new XElement("ItemGroup", new XElement("IntermediateAssembly", new XAttribute("Include", "obj/Cash$Flow.dll"))),
                 UsingTasks(shipped),
+                // The manifest target waits for the compiler, whose output it reads. The probe
+                // compiles nothing, so the target it names is an empty one.
+                new XElement("Target", new XAttribute("Name", "Compile")),
                 Target(shipped, "EQuanticAndroidIcon"),
                 Target(shipped, "EQuanticCapabilityManifest"),
                 Target(shipped, "EQuanticAppIcon"))).Save(probe);

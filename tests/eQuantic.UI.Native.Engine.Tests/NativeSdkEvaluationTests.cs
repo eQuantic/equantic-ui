@@ -95,7 +95,7 @@ public class NativeSdkEvaluationTests
                 "msbuild", Path.Combine(dir, "EvalConsumer.csproj"), "-nologo",
                 "-getProperty:_EqPlatform", "-getProperty:ValidateXcodeVersion",
                 "-getProperty:SupportedOSPlatformVersion", "-getProperty:_EqDesktopShell",
-                "-getProperty:_EqMacHead",
+                "-getProperty:_EqMacHead", "-getProperty:CollectAppManifestsDependsOn",
                 "-getItem:ProjectReference", "-getItem:PackageReference",
                 "-getItem:PartialAppManifest", "-getItem:TrimmerRootAssembly",
             };
@@ -206,6 +206,13 @@ public class NativeSdkEvaluationTests
         ios.Property("_EqMacHead").Should().BeEmpty("an iPhone app is not a macOS head");
 
         Shell(ios).Should().Be("eQuantic.UI.Native.Shell.iOS");
+        // WHEN the app's declared keys are written decides whether they ship. Apple's packaging
+        // compiles the manifest early, from what this property's targets contributed. Hooked after
+        // Compile instead, the file was written and never merged, and an iPhone app shipped an
+        // Info.plist without the sentences it declared for its permissions (#777 found it).
+        ios.Property("CollectAppManifestsDependsOn").Split(';', StringSplitOptions.TrimEntries)
+            .Should().Contain("EQuanticCapabilityManifest",
+                "the partial manifest of what the app declares is collected with the others");
         ios.Identities("PartialAppManifest").Select(Path.GetFileName)
             .Should().Contain("PhotonApp.plist",
                 "without UILaunchScreen iOS runs the app in a compatibility window and every " +

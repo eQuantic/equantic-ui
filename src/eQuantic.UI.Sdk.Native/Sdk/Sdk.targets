@@ -695,6 +695,12 @@
     -->
     <PropertyGroup Condition="'$(_EqPlatform)' == 'ios'">
         <_EqCapabilityPlist>$(_EqIconDir)/Capabilities.plist</_EqCapabilityPlist>
+        <!-- WHEN this runs is the whole of it. Apple's packaging compiles the app's manifest early in
+             the build, from the partial manifests it has collected by then, and names this property
+             as the place for a target that contributes one. Run after Compile instead, as it was,
+             the file was written and never merged: an iPhone app declared its camera sentence in C#
+             and shipped an Info.plist without it. -->
+        <CollectAppManifestsDependsOn>$(CollectAppManifestsDependsOn);EQuanticCapabilityManifest</CollectAppManifestsDependsOn>
     </PropertyGroup>
 
     <!-- The MSBuild-resolved reference list, for TOOLING rather than for eqc: the native SDK never
@@ -712,7 +718,9 @@
             Condition="'@(ReferencePathWithRefAssemblies)' != ''" />
     </Target>
 
-    <Target Name="EQuanticCapabilityManifest" AfterTargets="Compile"
+    <!-- The declarations are read off the COMPILED assembly, so collecting the manifests waits for
+         the compiler: the dependency says so, and MSBuild orders the two. -->
+    <Target Name="EQuanticCapabilityManifest" DependsOnTargets="Compile"
             Condition="'$(_EqPlatform)' == 'ios'">
         <ItemGroup>
             <_EqCapabilitiesArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
