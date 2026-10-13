@@ -219,3 +219,62 @@ describe('the sorted factories refuse a null source by the name the compiler han
     expect(sortedSet('ba', undefined, 'collection').toArray()).toEqual(['a', 'b']);
   });
 });
+
+describe('SortedSet — a change while it is walked (#765)', () => {
+  const modified = 'Collection was modified after the enumerator was instantiated.';
+  const set = () => sortedSet([1, 3, 5]);
+
+  /** What a walk saw before it ended, and what it ended with; a walk that runs on is cut at 20. */
+  function walk(source: Iterable<number>, step: (value: number) => void): string {
+    let seen = '';
+    try {
+      for (const value of source) {
+        seen += String(value);
+        if (seen.length > 20) return `${seen}: ran on`;
+        step(value);
+      }
+      return seen;
+    } catch (error) {
+      return `${seen}|${(error as Error).message}`;
+    }
+  }
+
+  it('ends the walk at any Add or Remove, one that changes nothing included', () => {
+    const added = set();
+    expect(walk(added, (v) => added.add(v + 10))).toBe(`1|${modified}`);
+    const again = set();
+    expect(walk(again, (v) => again.add(v))).toBe(`1|${modified}`);
+    const missed = set();
+    expect(walk(missed, () => missed.remove(9))).toBe(`1|${modified}`);
+    const cleared = set();
+    expect(walk(cleared, (v) => v === 5 && cleared.clear())).toBe(`135|${modified}`);
+  });
+
+  it('counts a set operation as .NET counts it: a sequence asked with Contains, a sorted set not', () => {
+    const united = set();
+    expect(walk(united, (v) => united.unionWith([v]))).toBe('135');
+    const excepted = set();
+    expect(walk(excepted, () => excepted.exceptWith([2]))).toBe('135');
+    const exceptedBySet = set();
+    expect(walk(exceptedBySet, (v) => v === 1 && exceptedBySet.exceptWith(sortedSet([2])))).toBe(
+      `1|${modified}`,
+    );
+    const intersected = set();
+    expect(
+      walk(intersected, (v) => v === 1 && intersected.intersectWith(sortedSet([1, 3, 5]))),
+    ).toBe(`1|${modified}`);
+    const itself = set();
+    expect(walk(itself, () => itself.intersectWith(itself))).toBe('135');
+    const unmatched = set();
+    expect(walk(unmatched, () => unmatched.removeWhere((v) => v > 9))).toBe('135');
+  });
+
+  it('walks backwards with Reverse, when walked and each time, and ends as the forward walk ends', () => {
+    const s = set();
+    const backwards = s.reverse();
+    s.add(7);
+    expect([...backwards]).toEqual([7, 5, 3, 1]);
+    expect([...backwards]).toEqual([7, 5, 3, 1]);
+    expect(walk(s.reverse(), (v) => s.add(v + 10))).toBe(`7|${modified}`);
+  });
+});

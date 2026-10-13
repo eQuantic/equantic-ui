@@ -2672,6 +2672,59 @@ record of a release, the wiki's Upgrading page is the distillate.
   final manifest is written, and `scripts/check-ios-launch.sh` compares the two and fails with main's
   targets. Proved on the Android emulator and the iOS 27 simulator.
   Proposed and archived through OpenSpec (`openspec/specs/deep-links`).
+- **2026-10-12 · A text changes case as .NET changes it**: `ToUpper` and `ToLower` and their
+  invariant pair were the engine's full mappings, which lengthen `ß` to `SS` and read a final sigma in
+  its context, where .NET changes a code unit to exactly one other
+  ([#848](https://github.com/eQuantic/equantic-ui/issues/848)), and eqc dropped the culture a call
+  named, so a tr-TR page upper-cased `i` to `I` and a char's null culture was never refused
+  ([#725](https://github.com/eQuantic/equantic-ui/issues/725)). The runtime cases a text by .NET 10's
+  simple mappings, the two i's by the culture's language and the code points a later Unicode cases and
+  .NET 10 does not over a Linux or Windows server's ICU left alone (.NET on macOS 26 cases them by
+  Apple's ICU, so the conformance cases that read them are skipped on such a Mac); eqc reads the culture as it reads a date's, any other being EQ2108, and
+  `new DateOnly(…, calendar)` fails the build as `DateTime`'s does. The ordinal comparison that ignores
+  case reads the same table. 72 of the 96 conformance cases (12, each run in eight cultures, four of
+  them over every code unit of the BMP) fail at 9b43eb2b; 3 entries leave the null-argument baseline,
+  which were the whole of #725. Proposed and archived through OpenSpec (`openspec/specs/transpiler-bcl`,
+  `openspec/specs/runtime-dates`).
+- **2026-10-12 · The commit-message guard refuses a signature line and a link to a session**: a
+  pull request opened from a Claude Code project carries, in its body, a comment naming the
+  attribution, a link to the conversation it was requested in and a signature line that links to the
+  tool, and a squash merge takes the body. Six squash commits on main carry all three, two of them
+  with the link to a session and the signature's link text wrapped in two, and the `commit-messages`
+  job passed each one, since none of the three was on its list
+  ([#851](https://github.com/eQuantic/equantic-ui/issues/851)). The guard names them, reads its named
+  phrases across a line break, and holds a fixture that isolates each new entry; over main's 1,422
+  commit messages it refuses those six and the five it refused before, and nothing else. The squash
+  now takes the pull request's commits' messages, which the job reads before the merge, and never its
+  body. Proposed and archived through OpenSpec (`openspec/specs/working-agreement`).
+- **2026-10-12 · A TimeSpan is read as .NET reads it**: `TimeSpan.Parse` and `TryParse` read one
+  shape, `[-][d.]hh:mm:ss[.f]`, and checked no part against its bound, so `10` and `1:2` were refused,
+  `24:00:00` was a day where .NET reads twenty-four, and `00:60:00` an hour where .NET answers none
+  ([#857](https://github.com/eQuantic/equantic-ui/issues/857), split from
+  [#807](https://github.com/eQuantic/equantic-ui/issues/807)). The runtime reads a text as .NET 10's
+  `TimeSpanParse` does with no format: by how many numbers it has and the runs between them, against
+  the invariant pattern and the culture's own, each part against its bound, a long fraction rounded
+  as .NET rounds it and the whole a long's arithmetic, with .NET's FormatException and
+  OverflowException in its words. Over 9,305 texts in three cultures whose decimal separators differ,
+  its 27,915 answers are .NET's; all 36 conformance cases fail at 9b43eb2b. Proposed and archived
+  through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-13 · A walk over a collection ends when the collection changes**: a `foreach` over the
+  runtime's `Queue`, `Stack`, `LinkedList` or `SortedSet` went on after the collection changed under
+  it. A queue and a stack walked a copy, and a linked list and a sorted set walked themselves, so
+  `foreach (var x in s) s.Add(x + 10);` never ended in the browser
+  ([#765](https://github.com/eQuantic/equantic-ui/issues/765)); a sorted set's `Reverse()` was a
+  TypeError. Each now keeps a version, bumped where .NET 10 bumps its own, a sorted set's `Add` of an
+  element it holds and its set operations along .NET's path included, and refuses a change at the next
+  step with .NET's `InvalidOperationException`, in CoreLib's words for a queue and System.Collections'
+  for the other three. 25 of the 36 conformance cases fail at 9b43eb2b; the 11 that pass are the walks
+  with no change in them. Measuring them found a `List<T>` that keeps walking
+  ([#863](https://github.com/eQuantic/equantic-ui/issues/863)), the sorted dictionary's and sorted
+  list's views walked as a copy ([#864](https://github.com/eQuantic/equantic-ui/issues/864)), and
+  members of the four that compile and are TypeErrors in the browser, `GetViewBetween`
+  ([#865](https://github.com/eQuantic/equantic-ui/issues/865)), `TryDequeue` and `TryPop` among them
+  ([#866](https://github.com/eQuantic/equantic-ui/issues/866)). The served
+  runtime grows 208 gzipped bytes. Proposed and archived through OpenSpec
+  (`openspec/specs/runtime-collections`).
 
 ## Retired documents
 

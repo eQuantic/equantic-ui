@@ -55,8 +55,7 @@ public class TranspilationCapabilityTests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
-        result.Should().Contain("$eq.text.trim(");
-        result.Should().Contain("toLowerCase()");
+        result.Should().Contain("$eq.text.toLower($eq.text.trim(");
     }
 
     [Fact]
@@ -125,8 +124,7 @@ public class TranspilationCapabilityTests
 
         result.Should().Contain("??");
         result.Should().Contain("'name'");
-        result.Should().Contain("$eq.text.trim(");
-        result.Should().Contain("toLowerCase()");
+        result.Should().Contain("$eq.text.toLower($eq.text.trim(");
     }
 
     // ============ TESTES QUE VAMOS COMPARAR COM OS QUE FALHARAM ============

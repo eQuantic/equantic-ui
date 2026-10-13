@@ -18,6 +18,7 @@ public class CollectionJsonConformanceTests
     [InlineData("new Stack<int>(new[] { 1, 2, 3 })")]                                    // [3,2,1]: from the top, as it enumerates
     [InlineData("new LinkedList<string>(new[] { \"a\", \"b\" })")]                       // ["a","b"]
     [InlineData("new SortedSet<int> { 3, 1, 2 }")]                                       // [1,2,3]
+    [InlineData("new SortedSet<int> { 3, 1, 2 }.Reverse()")]                             // [3,2,1]: a sequence, from the largest (#765)
     [InlineData("new Dictionary<string, Queue<int>> { [\"a\"] = new Queue<int>(new[] { 1 }) }")] // {"a":[1]}: nested
     [InlineData("new List<Stack<int>> { new Stack<int>(new[] { 1, 2 }) }")]              // [[2,1]]
     public void ACollection_IsWrittenAsDotNetWritesIt(string expression)

@@ -13,6 +13,7 @@
 
 import {
   collectionModified,
+  collectionModifiedAfterInstantiation,
   containsValue,
   keyText,
   pair,
@@ -72,6 +73,13 @@ export function defaultCompare<T>(a: T, b: T): number {
 export class SortedSet<T> implements Iterable<T> {
   private readonly items: T[] = [];
   private readonly compare: (a: T, b: T) => number;
+  /**
+   * Bumped where .NET's `version` is: by every `Add`, by every `Remove` of a set that holds anything,
+   * each whether or not it changes the set, as .NET's red-black tree may turn on the way down, by
+   * `Clear`, and by a set operation along the path .NET takes through it. A walk that sees it move
+   * refuses to go on (#765).
+   */
+  private version = 0;
 
   constructor(initial?: Iterable<T>, compare: (a: T, b: T) => number = defaultCompare) {
     this.compare = compare;
@@ -109,6 +117,7 @@ export class SortedSet<T> implements Iterable<T> {
   }
 
   add(value: T): boolean {
+    this.version++;
     const i = this.indexOf(value);
     if (i >= 0) return false;
     this.items.splice(~i, 0, value);
@@ -116,6 +125,8 @@ export class SortedSet<T> implements Iterable<T> {
   }
 
   remove(value: T): boolean {
+    if (this.items.length === 0) return false;
+    this.version++;
     const i = this.indexOf(value);
     if (i < 0) return false;
     this.items.splice(i, 1);
@@ -128,10 +139,38 @@ export class SortedSet<T> implements Iterable<T> {
 
   clear(): void {
     this.items.length = 0;
+    this.version++;
   }
 
-  [Symbol.iterator](): Iterator<T> {
-    return this.items[Symbol.iterator]();
+  /** In order. A change while it is walked ends the walk at its next step, the one after the last
+   *  element included, with .NET's InvalidOperationException in System.Collections' words, where it
+   *  walked the elements as they changed, and a walk that added as it went never ended (#765). */
+  *[Symbol.iterator](): Generator<T, undefined, unknown> {
+    const version = this.version;
+    for (let at = 0; at < this.items.length; at++) {
+      yield this.items[at];
+      if (this.version !== version) throw collectionModifiedAfterInstantiation();
+    }
+    return undefined;
+  }
+
+  /** `Reverse()`: the elements from the largest, read when they are walked and each time they are,
+   *  and refused as the forward walk is when the set changes under it, written to JSON as the array
+   *  System.Text.Json writes for a sequence. It was a TypeError (#765). */
+  reverse(): Iterable<T> & { toJSON(): T[] } {
+    return {
+      [Symbol.iterator]: () => this.walkBackwards(),
+      toJSON: () => [...this.walkBackwards()],
+    };
+  }
+
+  private *walkBackwards(): Generator<T, undefined, unknown> {
+    const version = this.version;
+    for (let at = this.items.length - 1; at >= 0; at--) {
+      yield this.items[at];
+      if (this.version !== version) throw collectionModifiedAfterInstantiation();
+    }
+    return undefined;
   }
 
   toArray(): T[] {
@@ -158,20 +197,23 @@ export class SortedSet<T> implements Iterable<T> {
     return other instanceof SortedSet && other.compare === this.compare;
   }
 
-  /** The elements, replaced by `items`, which are in this set's order already. */
+  /** The elements, replaced by `items`, which are in this set's order already: the tree .NET builds
+   *  anew from a sorted array, which is a change whatever it holds. */
   private replace(items: T[]): void {
     this.items.splice(0, this.items.length, ...items);
+    this.version++;
   }
 
   /**
    * `UnionWith`. An empty set takes a sorted set's elements; a set of the same comparer no more than
    * twice this one's size is merged in, its element kept of two equal ones; anything else is added
-   * element by element, which keeps this set's.
+   * element by element, which keeps this set's, each asked with `Contains` first, as .NET asks it.
    */
   unionWith(other: Iterable<T> | string): void {
     if (other == null) throw argumentNull('other');
     if (other instanceof SortedSet && this.items.length === 0) {
       for (const value of (other as SortedSet<T>).items) this.add(value);
+      this.version++;
       return;
     }
     if (this.sharesOrder(other) && other.items.length > Math.trunc(this.items.length / 2)) {
@@ -191,7 +233,7 @@ export class SortedSet<T> implements Iterable<T> {
       this.replace([...merged, ...mine.slice(i), ...theirs.slice(j)]);
       return;
     }
-    for (const value of elements(other)) this.add(value);
+    for (const value of elements(other)) if (!this.contains(value)) this.add(value);
   }
 
   /**
@@ -227,7 +269,8 @@ export class SortedSet<T> implements Iterable<T> {
   }
 
   /** `ExceptWith`: each element of `other` removed; a set of the same comparer only where its range
-   *  meets this one's, and only up to this one's largest. */
+   *  meets this one's, and only up to this one's largest, and any other sequence's elements only where
+   *  this set holds them, as .NET asks `Contains` of them first. */
   exceptWith(other: Iterable<T> | string): void {
     if (other == null) throw argumentNull('other');
     if (this.items.length === 0) return;
@@ -247,7 +290,7 @@ export class SortedSet<T> implements Iterable<T> {
       }
       return;
     }
-    for (const value of elements(other)) this.remove(value);
+    for (const value of elements(other)) if (this.contains(value)) this.remove(value);
   }
 
   /**

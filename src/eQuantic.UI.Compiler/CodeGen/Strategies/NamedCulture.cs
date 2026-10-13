@@ -4,12 +4,13 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 
 /// <summary>
-/// Which culture a format provider NAMES, for the two policies that read one: formatting
-/// (<c>ToString</c>) and reading a number from text (<see cref="ParseCulture"/>). Asked of the bound
-/// symbol, so only <c>System.Globalization.CultureInfo</c>'s own properties count: a member of
-/// another type that happens to be called <c>InvariantCulture</c> may return any culture, and its
-/// getter may have an effect that leaving the argument out would lose. Where the model cannot be
-/// asked (no model, or a node a strategy rewrote), the author's spelling decides, and only the
+/// Which culture a format provider NAMES, for the policies that read one: formatting
+/// (<c>ToString</c>), reading a number from text (<see cref="ParseCulture"/>), and reading a date and
+/// changing case, which take the page's culture and the invariant one (<see cref="ReadsInvariant"/>).
+/// Asked of the bound symbol, so only <c>System.Globalization.CultureInfo</c>'s own properties count:
+/// a member of another type that happens to be called <c>InvariantCulture</c> may return any culture,
+/// and its getter may have an effect that leaving the argument out would lose. Where the model cannot
+/// be asked (no model, or a node a strategy rewrote), the author's spelling decides, and only the
 /// exact one: <c>CultureInfo.InvariantCulture</c>, with or without its namespace.
 /// <para>
 /// A NULL provider names the current culture, as .NET reads it: <c>string.Format(null, …)</c> and
@@ -24,7 +25,24 @@ internal static class NamedCulture
     public static bool IsCurrent(ExpressionSyntax provider, ConversionContext context) =>
         IsNull(provider, context) || Names(provider, "CurrentCulture", context);
 
-    private static bool IsNull(ExpressionSyntax provider, ConversionContext context) =>
+    /// <summary>
+    /// Whether a call that reads a culture reads the invariant one, where <paramref name="provider"/> is
+    /// <c>CultureInfo.InvariantCulture</c>, or the page's, where it is none, the current culture or a
+    /// null. Any other culture, one held in a variable included, has no counterpart in the browser,
+    /// which knows those two: the build fails (EQ2108), naming what the call was <paramref name="doing"/>.
+    /// </summary>
+    public static bool ReadsInvariant(SyntaxNode call, ExpressionSyntax? provider, ConversionContext context, string doing)
+    {
+        if (provider is null || IsCurrent(provider, context)) return false;
+        if (IsInvariant(provider, context)) return true;
+        context.Report(call, ConversionSeverity.Error, "EQ2108",
+            $"Only CultureInfo.InvariantCulture and CultureInfo.CurrentCulture cross for {doing}: the browser "
+            + "knows the page's culture, which is the current one, and the invariant one. Use one of those.");
+        return false;
+    }
+
+    /// <summary>Whether a culture argument is a null, by the model or, with none, by its spelling.</summary>
+    public static bool IsNull(ExpressionSyntax provider, ConversionContext context) =>
         context.SemanticHelper.KnowsOrMapped(provider)
             ? context.SemanticHelper.IsNullConstant(provider)
             : Bare(provider).Kind() is Microsoft.CodeAnalysis.CSharp.SyntaxKind.NullLiteralExpression

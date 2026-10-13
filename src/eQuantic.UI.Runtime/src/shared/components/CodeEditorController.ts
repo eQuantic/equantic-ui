@@ -774,10 +774,10 @@ export class CodeEditorController {
     findAll(needle: string, matchCase: boolean = false) {
         let matches: CodeRange[] = [];
         if (needle.length === 0) return matches;
-        let pin = matchCase ? needle : needle.toLowerCase();
+        let pin = matchCase ? needle : $eq.text.toLower(needle, true);
         for (let line = 0; line < this._document.lineCount; line++) {
             let raw = this._document.line(line);
-            let text = matchCase ? raw : raw.toLowerCase();
+            let text = matchCase ? raw : $eq.text.toLower(raw, true);
             let at = $eq.text.indexOf(text, pin, 'ordinal');
             while (at >= 0) {
                 matches.push(new CodeRange(new CodePosition(line, at), new CodePosition(line, at + needle.length)));
