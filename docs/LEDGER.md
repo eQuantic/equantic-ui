@@ -1,10 +1,14 @@
 # The ledger
 
-What happened, when, and where the record is. One line per event, oldest first, each pointing at
+What happened, when, and where the record is. One entry per event, oldest first, each pointing at
 the pull request, the release, the issue or the document section that holds the evidence. This file
 is the chronology; [`ARCHITECTURE-AUDIT.md`](ARCHITECTURE-AUDIT.md) is the measured state; the
 [board](https://github.com/orgs/eQuantic/projects/11) is the work, and its snapshot at the foot of
 this file names every issue.
+
+An event since the last release is not in this file yet. It is a file of its own under
+[`ledger/`](ledger/README.md), and a release folds those files into the chronology below, so the
+two together are the whole record.
 
 A plan whose slices are all delivered is retired into this ledger rather than kept: its dated status
 lines come here, condensed, and whatever it still owed became an issue. A plan that code or other
@@ -2984,8 +2988,16 @@ whose subtree is as of that day.
 
 ## How to add an entry
 
-One line under the date, oldest first: what happened, then the link that holds the evidence — a
-pull request, a release tag, an issue, a document section. When a plan's last slice lands, move its
-dated lines here, condensed, and retire the plan in the same pull request — unless code or another
-document cites it, in which case the citation moves first. The board snapshot is regenerated when
-the hierarchy changes shape, not on every issue.
+One file under [`ledger/`](ledger/README.md), named for the change and holding one list item: the
+day and what happened, then the link that holds the evidence — a pull request, a release tag, an
+issue, a document section. That folder's README has the shape. Never a line written into the
+chronology above: every pull request used to add one at its end, so any two open ones conflicted
+there on every merge (#892). A release folds the files in, oldest first
+(`./scripts/fold-ledger.sh`), and `LedgerTests` compares the chronology with what the last fold
+left.
+
+When a plan's last slice lands, its dated lines go into the chronology at their dates, condensed,
+and the plan is retired in the same pull request — unless code or another document cites it, in
+which case the citation moves first. That is a deliberate change to the chronology itself, recorded
+with `EQ_UPDATE_LEDGER=1` on `LedgerTests`. The board snapshot is regenerated when the hierarchy
+changes shape, not on every issue.

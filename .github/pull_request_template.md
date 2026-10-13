@@ -39,6 +39,6 @@ Closes #
 - [ ] `dotnet build samples/DefaultUIDashboard` (and `PhotonDesktop` / `WalletMobile` if the native track changed) — CI's `samples` job builds all three on macOS only (#149); the other hosts are yours
 - [ ] A broken contract has a line in the migration notes (we are in preview: break freely, hide nothing)
 - [ ] The documentation changed with the behaviour: this repository's Markdown here, and the wiki page in every language it is written in, English, Portuguese, Spanish, French and German, a new page in all five, in one commit on a branch of the [wiki repository](https://github.com/eQuantic/equantic-ui/wiki) named exactly like this pull request's branch, merged into the wiki's master when this merges (a translation lives at `locale/<culture>/<Page>-<culture>.md` there)
-- [ ] One `docs/LEDGER.md` line for this event, citing the issue
+- [ ] One entry for this event, citing the issue, as a file of its own under `docs/ledger/` (never a line in `docs/LEDGER.md`: a release folds the files into the chronology)
 - [ ] The diff reviewed by its author before the PR opened (in Claude Code, `/code-review high`); every Copilot thread answered and resolved; a new round asked for (`gh pr edit <n> --add-reviewer @copilot`) only after a defect, and three rounds at most
 - [ ] No "widget" in prose; the project's word is *component*
