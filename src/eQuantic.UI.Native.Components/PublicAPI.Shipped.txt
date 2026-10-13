@@ -161,6 +161,8 @@ eQuantic.UI.Native.Components.PhotonHost
 eQuantic.UI.Native.Components.PhotonHost.ActivateFocused() -> bool
 eQuantic.UI.Native.Components.PhotonHost.ActivatePath(string! path) -> bool
 eQuantic.UI.Native.Components.PhotonHost.AdjustPath(string! path, int direction) -> bool
+eQuantic.UI.Native.Components.PhotonHost.Back() -> bool
+eQuantic.UI.Native.Components.PhotonHost.CanGoBack.get -> bool
 eQuantic.UI.Native.Components.PhotonHost.CaretIndex.get -> int
 eQuantic.UI.Native.Components.PhotonHost.CaretRect() -> eQuantic.UI.Primitives.Rect?
 eQuantic.UI.Native.Components.PhotonHost.CaretVisible.get -> bool
@@ -172,6 +174,8 @@ eQuantic.UI.Native.Components.PhotonHost.CommitText(string! text) -> bool
 eQuantic.UI.Native.Components.PhotonHost.CursorAt(float x, float y) -> eQuantic.UI.Native.Components.CursorShape
 eQuantic.UI.Native.Components.PhotonHost.Density.get -> eQuantic.UI.Primitives.Density
 eQuantic.UI.Native.Components.PhotonHost.Density.set -> void
+eQuantic.UI.Native.Components.PhotonHost.EditingValue.get -> eQuantic.UI.Native.Components.TextEditingValue?
+eQuantic.UI.Native.Components.PhotonHost.EndEditing() -> void
 eQuantic.UI.Native.Components.PhotonHost.Focus(eQuantic.UI.Primitives.Pressable! node, string? path = null, bool visible = true) -> void
 eQuantic.UI.Native.Components.PhotonHost.FocusNext() -> bool
 eQuantic.UI.Native.Components.PhotonHost.FocusPrevious() -> bool
@@ -233,6 +237,9 @@ eQuantic.UI.Native.Components.PhotonHost.TextInput(string! text) -> bool
 eQuantic.UI.Native.Components.PhotonHost.TextRasterizer.get -> eQuantic.UI.Native.Framework.ITextRasterizer?
 eQuantic.UI.Native.Components.PhotonHost.TextRasterizer.set -> void
 eQuantic.UI.Native.Components.PhotonHost.TextTarget.get -> eQuantic.UI.Primitives.TextEntry?
+eQuantic.UI.Native.Components.PhotonHost.UpdateEditingValue(eQuantic.UI.Native.Components.TextEditingValue value) -> bool
+eQuantic.UI.Native.Components.PhotonHost.ViewInsets.get -> eQuantic.UI.Primitives.EdgeInsets
+eQuantic.UI.Native.Components.PhotonHost.ViewInsets.set -> void
 eQuantic.UI.Native.Components.PhotonHost.Width.get -> float
 eQuantic.UI.Native.Components.PhotonHost.WindowControlsInsets.get -> eQuantic.UI.Primitives.EdgeInsets
 eQuantic.UI.Native.Components.PhotonHost.WindowControlsInsets.set -> void
@@ -299,6 +306,42 @@ eQuantic.UI.Native.Components.ShortcutBinding.Scope.get -> string?
 eQuantic.UI.Native.Components.ShortcutBinding.Scope.init -> void
 eQuantic.UI.Native.Components.ShortcutBinding.ShortcutBinding() -> void
 eQuantic.UI.Native.Components.ShortcutBinding.ShortcutBinding(eQuantic.UI.Primitives.KeyChord Chord, System.Action! OnPressed, string? Scope = null) -> void
+eQuantic.UI.Native.Components.TextEditingValue
+eQuantic.UI.Native.Components.TextEditingValue.ComposingEnd.get -> int
+eQuantic.UI.Native.Components.TextEditingValue.ComposingEnd.init -> void
+eQuantic.UI.Native.Components.TextEditingValue.ComposingStart.get -> int
+eQuantic.UI.Native.Components.TextEditingValue.ComposingStart.init -> void
+eQuantic.UI.Native.Components.TextEditingValue.Deconstruct(out string! Text, out int SelectionBase, out int SelectionExtent, out int ComposingStart, out int ComposingEnd) -> void
+eQuantic.UI.Native.Components.TextEditingValue.Equals(eQuantic.UI.Native.Components.TextEditingValue other) -> bool
+eQuantic.UI.Native.Components.TextEditingValue.HasComposing.get -> bool
+eQuantic.UI.Native.Components.TextEditingValue.SelectionBase.get -> int
+eQuantic.UI.Native.Components.TextEditingValue.SelectionBase.init -> void
+eQuantic.UI.Native.Components.TextEditingValue.SelectionEnd.get -> int
+eQuantic.UI.Native.Components.TextEditingValue.SelectionExtent.get -> int
+eQuantic.UI.Native.Components.TextEditingValue.SelectionExtent.init -> void
+eQuantic.UI.Native.Components.TextEditingValue.SelectionStart.get -> int
+eQuantic.UI.Native.Components.TextEditingValue.Text.get -> string!
+eQuantic.UI.Native.Components.TextEditingValue.Text.init -> void
+eQuantic.UI.Native.Components.TextEditingValue.TextEditingValue() -> void
+eQuantic.UI.Native.Components.TextEditingValue.TextEditingValue(string! Text, int SelectionBase, int SelectionExtent, int ComposingStart = -1, int ComposingEnd = -1) -> void
+eQuantic.UI.Native.Components.TextInputChange
+eQuantic.UI.Native.Components.TextInputChange.Began = 1 -> eQuantic.UI.Native.Components.TextInputChange
+eQuantic.UI.Native.Components.TextInputChange.Ended = 3 -> eQuantic.UI.Native.Components.TextInputChange
+eQuantic.UI.Native.Components.TextInputChange.None = 0 -> eQuantic.UI.Native.Components.TextInputChange
+eQuantic.UI.Native.Components.TextInputChange.Retargeted = 2 -> eQuantic.UI.Native.Components.TextInputChange
+eQuantic.UI.Native.Components.TextInputChange.ValueChanged = 4 -> eQuantic.UI.Native.Components.TextInputChange
+eQuantic.UI.Native.Components.TextInputSession
+eQuantic.UI.Native.Components.TextInputSession.Obscure.get -> bool
+eQuantic.UI.Native.Components.TextInputSession.Poll() -> eQuantic.UI.Native.Components.TextInputChange
+eQuantic.UI.Native.Components.TextInputSession.Submit() -> bool
+eQuantic.UI.Native.Components.TextInputSession.Target.get -> eQuantic.UI.Native.Components.TextInputTarget
+eQuantic.UI.Native.Components.TextInputSession.TextInputSession(eQuantic.UI.Native.Components.PhotonHost! host) -> void
+eQuantic.UI.Native.Components.TextInputSession.Update(eQuantic.UI.Native.Components.TextEditingValue value) -> bool
+eQuantic.UI.Native.Components.TextInputSession.Value.get -> eQuantic.UI.Native.Components.TextEditingValue
+eQuantic.UI.Native.Components.TextInputTarget
+eQuantic.UI.Native.Components.TextInputTarget.Keys = 2 -> eQuantic.UI.Native.Components.TextInputTarget
+eQuantic.UI.Native.Components.TextInputTarget.None = 0 -> eQuantic.UI.Native.Components.TextInputTarget
+eQuantic.UI.Native.Components.TextInputTarget.Text = 1 -> eQuantic.UI.Native.Components.TextInputTarget
 eQuantic.UI.Native.Components.TextRasterCache
 eQuantic.UI.Native.Components.TextRasterCache.Clear() -> void
 eQuantic.UI.Native.Components.TextRasterCache.Entry
@@ -346,6 +389,7 @@ override eQuantic.UI.Native.Components.NativeRole.GetHashCode() -> int
 override eQuantic.UI.Native.Components.ScrollRegion.GetHashCode() -> int
 override eQuantic.UI.Native.Components.SheetRegion.GetHashCode() -> int
 override eQuantic.UI.Native.Components.ShortcutBinding.GetHashCode() -> int
+override eQuantic.UI.Native.Components.TextEditingValue.GetHashCode() -> int
 override eQuantic.UI.Native.Components.TextRasterCache.Entry.Equals(object? obj) -> bool
 override eQuantic.UI.Native.Components.TextRasterCache.Entry.GetHashCode() -> int
 override eQuantic.UI.Native.Components.TextRasterCache.Entry.ToString() -> string!
@@ -374,7 +418,7 @@ static eQuantic.UI.Native.Components.NativeRole.operator ==(eQuantic.UI.Native.C
 static eQuantic.UI.Native.Components.PhotonHotReload.ClearCache(System.Type![]? updatedTypes) -> void
 static eQuantic.UI.Native.Components.PhotonHotReload.Generation.get -> int
 static eQuantic.UI.Native.Components.PhotonHotReload.UpdateApplication(System.Type![]? updatedTypes) -> void
-static eQuantic.UI.Native.Components.PhotonRealizer.Realize(eQuantic.UI.Primitives.VisualNode! root, float viewportWidth, float viewportHeight, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode mode, eQuantic.UI.Native.Engine.DisplayListBuilder! builder, eQuantic.UI.Native.Framework.ITextMeasurer? measurer = null, float typeScale = 1, eQuantic.UI.Primitives.Pressable? pressed = null, eQuantic.UI.Primitives.Pressable? focused = null, eQuantic.UI.Primitives.VisualNode? hovered = null, eQuantic.UI.Primitives.ComponentInstanceStore? instances = null, float timeMs = 0, bool reducedMotion = false, eQuantic.UI.Native.Framework.TransitionStore? transitions = null, eQuantic.UI.Native.Framework.ScrollStore? scrollOffsets = null, eQuantic.UI.Native.Framework.PresenceStore? presences = null, eQuantic.UI.Native.Framework.DragStore? drags = null, eQuantic.UI.Native.Framework.ITextRasterizer? textRasterizer = null, eQuantic.UI.Native.Components.TextRasterCache? textCache = null, float renderScale = 1, eQuantic.UI.Native.Framework.IIconRasterizer? iconRasterizer = null, eQuantic.UI.Native.Components.IconRasterCache? iconCache = null, eQuantic.UI.Native.Framework.IImageLoader? imageLoader = null, System.Collections.Generic.Dictionary<string!, eQuantic.UI.Native.Engine.TextureData?>? imageCache = null, eQuantic.UI.Primitives.EdgeInsets safeAreaInsets = default(eQuantic.UI.Primitives.EdgeInsets), string? pressedPath = null, string? focusedPath = null, string? textPath = null, int caretIndex = 0, bool caretVisible = true, int selectionStart = 0, int selectionEnd = 0, System.Func<string!, float?>? scrollOffset = null, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, string! markedText = "", System.Collections.Generic.Dictionary<(string! Parent, int Index, string? Key), string!>? pathCache = null, eQuantic.UI.Native.Framework.LayoutNodePool? nodePool = null, eQuantic.UI.Native.Framework.InViewStore? inViewStore = null, System.Collections.Generic.IReadOnlyList<string!>? hoveredPaths = null, eQuantic.UI.Primitives.EdgeInsets windowControlsInsets = default(eQuantic.UI.Primitives.EdgeInsets), eQuantic.UI.Native.Components.RealizeResult? sizedLike = null) -> eQuantic.UI.Native.Components.RealizeResult!
+static eQuantic.UI.Native.Components.PhotonRealizer.Realize(eQuantic.UI.Primitives.VisualNode! root, float viewportWidth, float viewportHeight, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode mode, eQuantic.UI.Native.Engine.DisplayListBuilder! builder, eQuantic.UI.Native.Framework.ITextMeasurer? measurer = null, float typeScale = 1, eQuantic.UI.Primitives.Pressable? pressed = null, eQuantic.UI.Primitives.Pressable? focused = null, eQuantic.UI.Primitives.VisualNode? hovered = null, eQuantic.UI.Primitives.ComponentInstanceStore? instances = null, float timeMs = 0, bool reducedMotion = false, eQuantic.UI.Native.Framework.TransitionStore? transitions = null, eQuantic.UI.Native.Framework.ScrollStore? scrollOffsets = null, eQuantic.UI.Native.Framework.PresenceStore? presences = null, eQuantic.UI.Native.Framework.DragStore? drags = null, eQuantic.UI.Native.Framework.ITextRasterizer? textRasterizer = null, eQuantic.UI.Native.Components.TextRasterCache? textCache = null, float renderScale = 1, eQuantic.UI.Native.Framework.IIconRasterizer? iconRasterizer = null, eQuantic.UI.Native.Components.IconRasterCache? iconCache = null, eQuantic.UI.Native.Framework.IImageLoader? imageLoader = null, System.Collections.Generic.Dictionary<string!, eQuantic.UI.Native.Engine.TextureData?>? imageCache = null, eQuantic.UI.Primitives.EdgeInsets safeAreaInsets = default(eQuantic.UI.Primitives.EdgeInsets), string? pressedPath = null, string? focusedPath = null, string? textPath = null, int caretIndex = 0, bool caretVisible = true, int selectionStart = 0, int selectionEnd = 0, System.Func<string!, float?>? scrollOffset = null, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, string! markedText = "", (int Start, int End, string! Text)? composing = null, System.Collections.Generic.Dictionary<(string! Parent, int Index, string? Key), string!>? pathCache = null, eQuantic.UI.Native.Framework.LayoutNodePool? nodePool = null, eQuantic.UI.Native.Framework.InViewStore? inViewStore = null, System.Collections.Generic.IReadOnlyList<string!>? hoveredPaths = null, eQuantic.UI.Primitives.EdgeInsets windowControlsInsets = default(eQuantic.UI.Primitives.EdgeInsets), eQuantic.UI.Native.Components.RealizeResult? sizedLike = null) -> eQuantic.UI.Native.Components.RealizeResult!
 static eQuantic.UI.Native.Components.ScrollRegion.operator !=(eQuantic.UI.Native.Components.ScrollRegion left, eQuantic.UI.Native.Components.ScrollRegion right) -> bool
 static eQuantic.UI.Native.Components.ScrollRegion.operator ==(eQuantic.UI.Native.Components.ScrollRegion left, eQuantic.UI.Native.Components.ScrollRegion right) -> bool
 static eQuantic.UI.Native.Components.SemanticsTree.Collect(eQuantic.UI.Native.Components.RealizeResult! frame) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.SemanticNode>!
@@ -382,6 +426,9 @@ static eQuantic.UI.Native.Components.SheetRegion.operator !=(eQuantic.UI.Native.
 static eQuantic.UI.Native.Components.SheetRegion.operator ==(eQuantic.UI.Native.Components.SheetRegion left, eQuantic.UI.Native.Components.SheetRegion right) -> bool
 static eQuantic.UI.Native.Components.ShortcutBinding.operator !=(eQuantic.UI.Native.Components.ShortcutBinding left, eQuantic.UI.Native.Components.ShortcutBinding right) -> bool
 static eQuantic.UI.Native.Components.ShortcutBinding.operator ==(eQuantic.UI.Native.Components.ShortcutBinding left, eQuantic.UI.Native.Components.ShortcutBinding right) -> bool
+static eQuantic.UI.Native.Components.TextEditingValue.Collapsed(string! text, int caret) -> eQuantic.UI.Native.Components.TextEditingValue
+static eQuantic.UI.Native.Components.TextEditingValue.operator !=(eQuantic.UI.Native.Components.TextEditingValue left, eQuantic.UI.Native.Components.TextEditingValue right) -> bool
+static eQuantic.UI.Native.Components.TextEditingValue.operator ==(eQuantic.UI.Native.Components.TextEditingValue left, eQuantic.UI.Native.Components.TextEditingValue right) -> bool
 static eQuantic.UI.Native.Components.TextRasterCache.Entry.operator !=(eQuantic.UI.Native.Components.TextRasterCache.Entry? left, eQuantic.UI.Native.Components.TextRasterCache.Entry? right) -> bool
 static eQuantic.UI.Native.Components.TextRasterCache.Entry.operator ==(eQuantic.UI.Native.Components.TextRasterCache.Entry? left, eQuantic.UI.Native.Components.TextRasterCache.Entry? right) -> bool
 static eQuantic.UI.Native.Components.TextRegion.operator !=(eQuantic.UI.Native.Components.TextRegion left, eQuantic.UI.Native.Components.TextRegion right) -> bool
@@ -416,5 +463,7 @@ static readonly eQuantic.UI.Native.Components.TextRasterCache.Shared -> eQuantic
 ~override eQuantic.UI.Native.Components.SheetRegion.ToString() -> string
 ~override eQuantic.UI.Native.Components.ShortcutBinding.Equals(object obj) -> bool
 ~override eQuantic.UI.Native.Components.ShortcutBinding.ToString() -> string
+~override eQuantic.UI.Native.Components.TextEditingValue.Equals(object obj) -> bool
+~override eQuantic.UI.Native.Components.TextEditingValue.ToString() -> string
 ~override eQuantic.UI.Native.Components.TextRegion.Equals(object obj) -> bool
 ~override eQuantic.UI.Native.Components.TextRegion.ToString() -> string
