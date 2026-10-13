@@ -686,10 +686,12 @@
     </Target>
 
     <!--
-        The permission keys an Apple platform reads, from what the app declared on its builder. The
-        generator put the declarations on the assembly; this reads them back off the compiled
-        output and writes the partial manifest. One statement in C#, and no app author opens an
-        Info.plist — which is the promise the whole SDK is making.
+        The keys an Apple platform reads, from what the app declared on its builder: the sentence
+        behind each permission, and the URL schemes that open the app. The generator put the
+        declarations on the assembly; this reads them back off the compiled output and writes the
+        partial manifest. One statement in C#, and no app author opens an Info.plist, which is the
+        promise the whole SDK is making. The app's identifier names its URL type, as the Mac's
+        bundle does.
     -->
     <PropertyGroup Condition="'$(_EqPlatform)' == 'ios'">
         <_EqCapabilityPlist>$(_EqIconDir)/Capabilities.plist</_EqCapabilityPlist>
@@ -717,6 +719,8 @@
             <_EqCapabilitiesArgument Include="command" Value="capabilities" />
             <_EqCapabilitiesArgument Include="assembly" Option="--assembly" Value="@(IntermediateAssembly)" />
             <_EqCapabilitiesArgument Include="plist" Option="--plist" Value="$(_EqCapabilityPlist)" />
+            <_EqCapabilitiesArgument Include="id" Option="--id" Value="$(ApplicationId)"
+                Condition="'$(ApplicationId)' != ''" />
         </ItemGroup>
         <RunProgram Program="dotnet" Arguments="@(_EqCapabilitiesArgument)" StandardOutputImportance="normal" />
         <ItemGroup Condition="Exists('$(_EqCapabilityPlist)')">
