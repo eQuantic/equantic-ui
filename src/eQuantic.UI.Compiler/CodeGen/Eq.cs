@@ -120,6 +120,12 @@ public static class Eq
     public const string TrimStart = "$eq.text.trimStart";
     /// <summary><c>string.TrimEnd()</c> of .NET's white space.</summary>
     public const string TrimEnd = "$eq.text.trimEnd";
+    /// <summary><c>ToUpper</c>, <c>ToUpperInvariant</c> and <c>ToUpper(culture)</c> of a string and of a
+    /// char, as .NET changes case: a code unit to one code unit, in the page's culture or, told so, the
+    /// invariant one (#848, #725).</summary>
+    public const string ToUpper = "$eq.text.toUpper";
+    /// <summary><c>ToLower</c> and its overloads, as <see cref="ToUpper"/>.</summary>
+    public const string ToLower = "$eq.text.toLower";
     /// <summary><c>string.Split</c> by one separator, a char or a string, with its count and its
     /// options: a null or an empty separator splits nothing.</summary>
     public const string StringSplit = "$eq.text.split";

@@ -98,7 +98,7 @@ export class CodeLanguages {
     }
 
     static keyOf(name: string) {
-        return $eq.text.trimStart(name, '.').toLowerCase();
+        return $eq.text.toLower($eq.text.trimStart(name, '.'), true);
     }
 }
 

@@ -65,7 +65,7 @@ export class DataTable extends StatelessComponent {
             let column = $eq.collections.item(this.columns, i);
             let sorted = i === this.sortColumn && this.sortDirection !== 'none';
             let label = new Row(4, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center', main: column.align === 'start' ? 'start' : 'end' });
-            label.add(new Text(column.header.toUpperCase(), 'caption', sorted ? theme.textPrimary : theme.textMuted, 1));
+            label.add(new Text($eq.text.toUpper(column.header, true), 'caption', sorted ? theme.textPrimary : theme.textMuted, 1));
             if (sorted) {
                 label.add(new Icon(IconGlyph.fromIcons(this.sortDirection === 'ascending' ? 'chevronUp' : 'chevronDown'), 16, theme.textPrimary));
             }

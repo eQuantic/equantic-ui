@@ -421,6 +421,21 @@ a boxed value does not carry its type (#552).
 - **WHEN** `Convert.ToDateTime(1)` runs
 - **THEN** it throws an InvalidCastException, `Invalid cast from 'Int32' to 'DateTime'.`, as in .NET
 
+### Requirement: A date built with a calendar fails the build
+
+A constructor of a `DateTime`, a `DateTimeOffset` or a `DateOnly` that takes a `Calendar` SHALL fail
+the build (EQ1004), a null calendar included, since the browser has none of .NET's calendars.
+
+#### Scenario: A DateOnly with a calendar
+
+- **WHEN** `new DateOnly(2024, 1, 2, new GregorianCalendar())` is built
+- **THEN** the build fails with EQ1004, where the calendar was dropped
+
+#### Scenario: A DateOnly with a null calendar
+
+- **WHEN** `new DateOnly(2024, 1, 2, null)` is built
+- **THEN** the build fails with EQ1004, where .NET throws and the browser answered the date
+
 ### Requirement: A TimeSpan is read as .NET reads it
 
 `TimeSpan.Parse` and `TryParse` SHALL read a text as .NET 10 reads one with no format, in the culture

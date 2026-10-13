@@ -388,7 +388,7 @@ public class ConvertStrategy : IExpressionIrStrategy
 
     /// <summary>
     /// <c>Convert.ToDateTime</c> by the overload C# bound (#844): a text reads as <c>DateTime.Parse</c>
-    /// reads it, in the culture the call names (<see cref="Types.TimeParseStrategy.ReadsInvariant"/>),
+    /// reads it, in the culture the call names (<see cref="NamedCulture.ReadsInvariant"/>),
     /// except that a null one is <c>MinValue</c>; an object is read by what it holds when the call runs,
     /// so is a call no model binds; a date is itself; and a value of any other type has no conversion to
     /// a date, which .NET throws after evaluating it. A char held in an object is read as a text of one
@@ -408,7 +408,8 @@ public class ConvertStrategy : IExpressionIrStrategy
         if (type is null or { SpecialType: SpecialType.System_String or SpecialType.System_Object })
         {
             List<JsExpr> read = [converted];
-            if (Types.TimeParseStrategy.ReadsInvariant(invocation, provider, context)) read.Add(JsExpr.Literal("true"));
+            if (NamedCulture.ReadsInvariant(invocation, provider, context, Types.TimeParseStrategy.ReadingADate))
+                read.Add(JsExpr.Literal("true"));
             return JsExpr.Call(JsExpr.Identifier($"{Eq.DateTime}.convert"), read);
         }
         var parameter = context.TypeAnnotations ? "(_: unknown)" : "(_)";
