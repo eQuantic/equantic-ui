@@ -28,6 +28,9 @@ internal sealed record LedgerEntry(string Name, string Text)
     /// <summary>An issue or a pull request, which share one numbering.</summary>
     private static readonly Regex Evidence = new(@"#\d+", RegexOptions.Compiled);
 
+    /// <summary>Code between backticks, where two asterisks are a glob and open nothing.</summary>
+    private static readonly Regex Code = new("`[^`]*`", RegexOptions.Compiled);
+
     public static LedgerEntry Read(string path) =>
         new(Path.GetFileName(path), File.ReadAllText(path).ReplaceLineEndings("\n"));
 
@@ -56,8 +59,8 @@ internal sealed record LedgerEntry(string Name, string Text)
 
             if (Day is null)
                 problems.Add("its first line opens `- **<year>-<month>-<day> · <what happened>`, with a day the calendar holds");
-            else if (Text.IndexOf("**", 4, StringComparison.Ordinal) < 0)
-                problems.Add("its title never closes: a second `**` ends what happened");
+            else if (Regex.Count(Code.Replace(Text, string.Empty), @"\*\*") % 2 != 0)
+                problems.Add("its title never closes: every `**` that opens bold text has one that ends it");
 
             for (var at = 1; at < lines.Count; at++)
             {

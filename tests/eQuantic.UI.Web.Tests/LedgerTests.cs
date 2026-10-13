@@ -28,7 +28,9 @@ namespace eQuantic.UI.Web.Tests;
 /// </summary>
 public class LedgerTests
 {
-    private const string Chronology =
+    /// <summary>A ledger of twelve lines. Its line endings are made LF here, whatever the checkout
+    /// gave this file, since every case below writes and compares with LF.</summary>
+    private static readonly string Chronology =
         """
         # The ledger
 
@@ -47,15 +49,15 @@ public class LedgerTests
         | Document | Where it went |
         |---|---|
 
-        """;
+        """.ReplaceLineEndings("\n");
 
-    private const string Entry =
+    private static readonly string Entry =
         """
         - **2026-10-13 · A class named as .NET names one of its types is a module the page
           imports**: a library's `Type` got no module
           ([#888](https://github.com/eQuantic/equantic-ui/issues/888)).
 
-        """;
+        """.ReplaceLineEndings("\n");
 
     [Fact]
     public void EveryEventWaitingForAFold_IsOneDatedEntryThatCitesItsEvidence()
@@ -65,13 +67,11 @@ public class LedgerTests
         File.Exists(Path.Combine(root, Ledger.Folder, Ledger.Guide)).Should().BeTrue(
             $"{Ledger.Folder}/{Ledger.Guide} says what a file beside it is, and keeps the folder there after a fold");
 
-        var refused = new Ledger(root).Waiting()
-            .SelectMany(entry => entry.Problems.Select(problem => $"{Ledger.Folder}/{entry.Name}: {problem}"));
-
         // Joined, so the failure names every one of them rather than the first.
-        string.Join(Environment.NewLine, refused).Should().BeEmpty(
+        string.Join(Environment.NewLine, new Ledger(root).Refused()).Should().BeEmpty(
             "a file here is folded into the chronology as it is, so it holds one event as the chronology "
-            + "holds one: a list item that opens with its day, continues indented, and cites its evidence");
+            + "holds one: a list item that opens with its day, continues indented, and cites its evidence. "
+            + "What a release's fold would refuse fails here, in the pull request that wrote it");
     }
 
     [Fact]
@@ -92,6 +92,7 @@ public class LedgerTests
     [InlineData("an-entry.md", "- **2026-02-30 · A day the calendar does not hold**: what happened (#1).\n", "its first line")]
     [InlineData("an-entry.md", "**2026-10-13 · No list item**: what happened (#1).\n", "its first line")]
     [InlineData("an-entry.md", "- **2026-10-13 · A title that never closes: what happened (#1).\n", "never closes")]
+    [InlineData("an-entry.md", "- **2026-10-13 · A title that never closes: what happened to **one** word (#1).\n", "never closes")]
     [InlineData("an-entry.md", "- **2026-10-13 · An event**: what happened (#1).\n- **2026-10-13 · A second**: more (#2).\n", "line 2")]
     [InlineData("an-entry.md", "- **2026-10-13 · An event**: what happened\nat the margin (#1).\n", "line 2")]
     [InlineData("an-entry.md", "- **2026-10-13 · An event**: what happened\n\n  after an empty line (#1).\n", "line 2")]
@@ -108,6 +109,47 @@ public class LedgerTests
     public void AnEmptyFile_IsRefused()
     {
         new LedgerEntry("an-entry.md", string.Empty).Problems.Should().NotBeEmpty();
+    }
+
+    /// <summary>Two asterisks inside code are a glob, and open no bold text.</summary>
+    [Fact]
+    public void AGlobInCode_OpensNoBoldText()
+    {
+        new LedgerEntry("an-entry.md", "- **2026-10-13 · An event**: it reads `**/PublicAPI.Unshipped.txt` (#1).\n")
+            .Problems.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// Whatever the folder holds is read, so nothing waits there for ever. A scan of <c>*.md</c>
+    /// alone let an event saved under another extension, or in a folder of its own, pass this guard
+    /// and miss every fold, with nothing saying so.
+    /// </summary>
+    [Fact]
+    public void AFileOfAnotherKind_OrAFolder_IsRefused_RatherThanLeftWaiting()
+    {
+        var root = Tree(Chronology,
+            ("an-event.txt", "- **2026-10-03 · An event**: saved as text (#20).\n"),
+            ("AN-EVENT.MD", "- **2026-10-03 · Another event**: saved in capitals (#21).\n"),
+            (".DS_Store", "what a Mac leaves in a folder somebody opened"),
+            (Ledger.Guide, "# Events waiting for a fold\n"));
+        Directory.CreateDirectory(Path.Combine(root, Ledger.Folder, "2026"));
+        try
+        {
+            var ledger = new Ledger(root);
+
+            ledger.Refused().Should().BeEquivalentTo(new[]
+            {
+                "docs/ledger/an-event.txt: its name is lower-case words joined by hyphens, ending in .md",
+                "docs/ledger/AN-EVENT.MD: its name is lower-case words joined by hyphens, ending in .md",
+                "docs/ledger/2026/: an event is a file of this folder, not of one inside it",
+            });
+            var fold = () => ledger.Fold();
+            fold.Should().Throw<InvalidOperationException>().Which.Message.Should().Contain("docs/ledger/2026/");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     /// <summary>
@@ -136,14 +178,15 @@ public class LedgerTests
         var left = ledger.Recorded().GetValueOrDefault();
 
         var now = ledger.Chronology();
-        var differs = now.Entries == left.Entries
-            ? $"its text changed, with the {now.Entries} entries the last fold left"
-            : $"it holds {now.Entries} entries where the last fold left {left.Entries}";
+        var differs = now.Entries > left.Entries
+            ? $"it holds {now.Entries} entries where the last fold left {left.Entries}. An event is a file of "
+                + $"its own under {Ledger.Folder}/ (its {Ledger.Guide} says how), so that two pull requests never "
+                + "write at the same point: move the entry there"
+            : $"its text changed since the last fold, which left {left.Entries} entries";
         now.Should().Be(left,
-            $"the chronology of {Ledger.Document} is written by a release's fold, and {differs}. An event is "
-            + $"a file of its own under {Ledger.Folder}/ (its {Ledger.Guide} says how), so that two pull requests "
-            + "never write at the same point: move the entry there. A deliberate change to the chronology "
-            + "itself is recorded with EQ_UPDATE_LEDGER=1 on this test, which folds nothing");
+            $"the chronology of {Ledger.Document} is written by a release's fold, and {differs}. A deliberate "
+            + "change to the chronology itself, a citation that moved with its document, is recorded with "
+            + "EQ_UPDATE_LEDGER=1 on this test, which folds nothing");
     }
 
     [Fact]

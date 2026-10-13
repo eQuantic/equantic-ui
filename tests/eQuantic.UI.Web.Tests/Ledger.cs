@@ -44,22 +44,58 @@ internal sealed class Ledger(string root)
         "EQ_UPDATE_LEDGER=1 on LedgerTests, which folds nothing.",
     ];
 
-    private string DocumentPath => Path.Combine(root, "docs", "LEDGER.md");
-    private string FolderPath => Path.Combine(root, "docs", "ledger");
-    private string RecordPath => Path.Combine(FolderPath, "folded.json");
+    private string DocumentPath => Path.Combine(root, Document);
+    private string FolderPath => Path.Combine(root, Folder);
+    private string RecordPath => Path.Combine(root, Record);
 
-    /// <summary>The events waiting for a fold, in the order a fold writes them: by the day each
-    /// states, then by name. Entries of one day have no order worth keeping, and a name gives the
-    /// same one on every clone.</summary>
+    /// <summary>
+    /// The events waiting for a fold, in the order a fold writes them: by the day each states, then
+    /// by name. Entries of one day have no order worth keeping, and a name gives the same one on
+    /// every clone.
+    /// <para>
+    /// EVERY file of the folder is one, but its own page, the record, and what a system leaves
+    /// behind (a Mac writes .DS_Store into a folder somebody opened). Reading only <c>*.md</c> would
+    /// let an event saved as <c>.txt</c>, or as <c>.MD</c> on Linux, wait for ever with nothing
+    /// saying so: it is read here, and its name is what refuses it.
+    /// </para>
+    /// </summary>
     public IReadOnlyList<LedgerEntry> Waiting() =>
         Directory.Exists(FolderPath)
-            ? Directory.GetFiles(FolderPath, "*.md")
-                .Where(path => Path.GetFileName(path) != Guide)
+            ? Directory.GetFiles(FolderPath)
+                .Where(path => Path.GetFileName(path) is var name
+                    && name != Guide && name != Path.GetFileName(Record) && !name.StartsWith('.'))
                 .Select(LedgerEntry.Read)
                 .OrderBy(entry => entry.Day)
                 .ThenBy(entry => entry.Name, StringComparer.Ordinal)
                 .ToList()
             : [];
+
+    /// <summary>
+    /// What keeps the folder from being folded as it is, and nothing when a fold would take all of
+    /// it: a file that is not one entry, a folder inside it, two files that open the same way, and
+    /// an entry whose first line the chronology already holds. The guard and the fold both ask
+    /// here, so what a release would refuse fails in the pull request that wrote it.
+    /// </summary>
+    public IReadOnlyList<string> Refused()
+    {
+        var waiting = Waiting();
+        var (lines, from, to) = Read();
+        var held = lines[from..to].ToHashSet(StringComparer.Ordinal);
+
+        return waiting
+            .SelectMany(entry => entry.Problems.Select(problem => $"{Folder}/{entry.Name}: {problem}"))
+            .Concat((Directory.Exists(FolderPath) ? Directory.GetDirectories(FolderPath) : [])
+                .Select(folder => $"{Folder}/{Path.GetFileName(folder)}/: an event is a file of this folder, not of one inside it"))
+            .Concat(waiting
+                .Where(entry => held.Contains(entry.Lines[0]))
+                .Select(entry => $"{Folder}/{entry.Name}: the chronology already holds an entry that opens as this "
+                    + "one does. If a fold that stopped halfway wrote it, the file is what is left to remove"))
+            .Concat(waiting
+                .GroupBy(entry => entry.Lines[0], StringComparer.Ordinal)
+                .Where(same => same.Count() > 1)
+                .Select(same => $"{string.Join(" and ", same.Select(entry => $"{Folder}/{entry.Name}"))}: they open the same way"))
+            .ToList();
+    }
 
     /// <summary>The chronology as it is: how many entries it holds, and the digest of its lines.</summary>
     public (int Entries, string Sha256) Chronology()
@@ -98,32 +134,22 @@ internal sealed class Ledger(string root)
     /// Writes every waiting entry after the chronology's last, removes its file, and records the
     /// chronology. It answers with the entries it wrote.
     /// <para>
-    /// Every file is read before a line is written, and one refused entry stops the fold with the
-    /// document and every file as they were. An entry whose first line the chronology already holds
-    /// is refused too: that is what a fold run a second time over the same files would write.
+    /// Every file is read before a line is written, and one refusal stops the fold with the
+    /// document and every file as they were (<see cref="Refused"/>). An entry whose first line the
+    /// chronology already holds is one of them: that is what a fold run a second time over the same
+    /// files would write.
     /// </para>
     /// </summary>
     public IReadOnlyList<LedgerEntry> Fold()
     {
-        var waiting = Waiting();
-        var (lines, from, to) = Read();
-        var held = lines[from..to].ToHashSet(StringComparer.Ordinal);
-
-        var refused = waiting
-            .SelectMany(entry => entry.Problems.Select(problem => $"{entry.Name}: {problem}"))
-            .Concat(waiting
-                .Where(entry => held.Contains(entry.Lines[0]))
-                .Select(entry => $"{entry.Name}: the chronology already holds an entry that opens as this one does"))
-            .Concat(waiting
-                .GroupBy(entry => entry.Lines[0], StringComparer.Ordinal)
-                .Where(same => same.Count() > 1)
-                .Select(same => $"{string.Join(" and ", same.Select(entry => entry.Name))}: they open the same way"))
-            .ToList();
+        var refused = Refused();
         if (refused.Count > 0)
             throw new InvalidOperationException(
                 "the fold writes nothing while it refuses an entry:" + Environment.NewLine
                 + string.Join(Environment.NewLine, refused));
 
+        var waiting = Waiting();
+        var (lines, _, to) = Read();
         if (waiting.Count > 0)
         {
             var folded = lines[..to].Concat(waiting.SelectMany(entry => entry.Lines)).Concat(lines[to..]);
