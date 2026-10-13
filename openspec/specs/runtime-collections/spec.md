@@ -116,7 +116,7 @@ the largest element and SHALL read the set when it is walked, each time it is.
 #### Scenario: A walk that adds as it goes
 
 - **WHEN** browser-side code runs `foreach (var x in s) s.Add(x + 10);` over `new SortedSet<int> { 1, 3, 5 }`
-- **THEN** it throws an InvalidOperationException, "Collection was modified after the enumerator was instantiated.", after the first element, as in .NET, where the walk never ended
+- **THEN** it throws an InvalidOperationException, "Collection was modified after the enumerator was instantiated.", after the first element, as in .NET; the browser's walk never ended
 
 #### Scenario: A change after the last element
 
@@ -141,4 +141,4 @@ the largest element and SHALL read the set when it is walked, each time it is.
 #### Scenario: A sorted set walked backwards
 
 - **WHEN** browser-side code takes `s.Reverse()` of `new SortedSet<int> { 1, 3, 5 }`, adds 7 to the set, and walks the reverse twice
-- **THEN** each walk sees 7, 5, 3 and 1, as in .NET, where `Reverse()` was a TypeError
+- **THEN** each walk sees 7, 5, 3 and 1, as in .NET; in the browser `Reverse()` was a TypeError
