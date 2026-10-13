@@ -22,22 +22,47 @@ public static class CapabilityManifest
     /// Writes the partial Info.plist for whatever this assembly declared, and returns whether there
     /// was anything to write. Apple's key names are historical rather than derivable, so they are
     /// simply stated — the same table the generator uses for Android's.
+    /// <para>
+    /// The URL schemes travel here too. On the Mac the whole Info.plist is the SDK's, and the
+    /// bundle writer puts them in it; on a phone Apple's packaging owns that file and takes what an
+    /// app declares as a PARTIAL manifest, which is this one. <paramref name="identifier"/> names
+    /// the entry, as the Mac's does: it is the app's own identifier, and with none the name is
+    /// left out, which Apple allows.
+    /// </para>
+    /// <para>
+    /// With nothing declared the file is REMOVED, not merely left unwritten: the SDK merges it
+    /// whenever it exists, so one left by an earlier build would go on asking for a permission, or
+    /// answering a scheme, the app has since stopped declaring. And it is written only when what it
+    /// says CHANGED: Apple's packaging rewrites the app's manifest whenever this file is newer, so
+    /// a file touched on every build would cost every build that work.
+    /// </para>
     /// </summary>
-    public static bool Write(string assemblyPath, string plistPath)
+    public static bool Write(string assemblyPath, string plistPath, string? identifier = null)
     {
         var declared = Read(assemblyPath);
         var keys = declared
             .Select(pair => (Key: AppleKey(pair.Capability), pair.Reason))
             .Where(entry => entry.Key is not null)
             .ToArray();
+        var schemes = BundleManifest.Schemes(BundleManifest.Read(assemblyPath));
 
-        if (keys.Length == 0) return false;
+        if (keys.Length == 0 && schemes.Length == 0)
+        {
+            // Asked of the file: Delete answers a missing DIRECTORY with an exception, and a
+            // first build has not made it yet.
+            if (File.Exists(plistPath)) File.Delete(plistPath);
+            return false;
+        }
 
-        Directory.CreateDirectory(Path.GetDirectoryName(plistPath)!);
-        File.WriteAllText(plistPath, PropertyListWriter.Document(plist =>
+        var document = PropertyListWriter.Document(plist =>
         {
             foreach (var (key, reason) in keys) plist.String(key!, reason);
-        }));
+            BundleManifest.WriteUrlTypes(plist, identifier, schemes);
+        });
+        if (File.Exists(plistPath) && File.ReadAllText(plistPath) == document) return true;
+
+        Directory.CreateDirectory(Path.GetDirectoryName(plistPath)!);
+        File.WriteAllText(plistPath, document);
         return true;
     }
 

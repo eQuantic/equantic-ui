@@ -2912,4 +2912,23 @@ public sealed class PhotonHost
     /// </para>
     /// </summary>
     public bool Back() => CanGoBack && KeyDown(KeyChord.Escape.Key, KeyChord.Escape.Modifiers);
+
+    /// <summary>
+    /// Takes the tree down: every component that mounted is told it left, the root among them.
+    /// What a shell calls when the surface this host drew for is
+    /// gone for good, so that what the tree subscribed to (a clock, the network, the links the app
+    /// is opened with) stops calling into components nobody will draw again. Idempotent.
+    /// <para>
+    /// A phone ends an activity and keeps the process: without this the tree of every activity the
+    /// process ever had stayed subscribed to the process's services, and each heard every event
+    /// the live one did.
+    /// </para>
+    /// </summary>
+    public void Unmount()
+    {
+        _instances.UnmountAll();
+        if (!_rootMounted || _root is not StatefulComponent rootStateful) return;
+        _rootMounted = false;
+        rootStateful.NotifyUnmounted();
+    }
 }
