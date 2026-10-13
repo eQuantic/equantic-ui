@@ -109,6 +109,17 @@ assembly's IL, so renumbering is silent rather than a break a compiler would rep
 correctness pin (`EnumValueAbiTests`), not a shape kept alive — a member is never deleted or moved
 there, and nothing is kept beside anything.
 
+**At 1.0 the rule inverts, and the version decides it, not someone's memory (#323).** It holds while
+the version in `Directory.Build.props` carries a prerelease label. The day the label goes, the
+compatibility promise starts, for the contract assemblies (Version Management names them): a member
+leaves only in a major, after at least one minor carrying `[Obsolete(message, DiagnosticId = "EQO…",
+UrlFormat = …)]` whose message names the major it is removed in, and the removal itself is made in
+that major's preview, where this rule holds again. Three guards switch on the version by themselves:
+the build of a contract project refuses a `*REMOVED*` line in its `PublicAPI.Unshipped.txt`
+(`EqStableVersionRemovesNoContractMember`, `Directory.Build.targets`), `NoOldShapeSurvivesTests`
+refuses an `[Obsolete]` that does not say all three, and `DeveloperSurfaceContractTests` refuses a
+contract line leaving the developer surface. A second `Deconstruct` is refused at every version.
+
 ---
 
 ## Workflow
@@ -776,6 +787,25 @@ the tag is what triggers publication to nuget.org. Never bump on your own initia
 release is Edgar's call, and a version number in the tree that nobody released is worse than none.
 (Do not quote the current version here; it changes every release and a stale number in the docs is
 how a reader is misled — read `Directory.Build.props`.)
+
+**What a release promises, and to which assembly (#899).** Every project that ships an assembly has
+a surface class, derived in `Directory.Build.targets` from its name and written into the assembly as
+`[assembly: AssemblyMetadata("eQuantic.Surface", …)]`:
+
+- `contract`: what an app compiles against, and what the compatibility promise covers from 1.0. The
+  vocabulary, the components, the charts, the web realizer, the server, the integrations and the
+  icon packs, and every new project unless it says otherwise.
+- `tool`: the SDK's own tools, `eQuantic.UI.Compiler` and `eQuantic.UI.Codegen`. A package publishes
+  them (the site's playground compiles C# through the compiler's), and their surface serves the SDK,
+  so it is never promised and its removals are free at any version. The packages' descriptions say so.
+- `experimental`: the native track, `eQuantic.UI.Native.*`, which 1.0 does not promise yet (#324).
+  Each assembly carries .NET's `[Experimental("EQX0001")]`, so a project that uses one fails until it
+  says it means to, and the analyzer declares its API with the `[EQX0001]` prefix. An app built with
+  `eQuantic.UI.Sdk.Native` chose the track by choosing the SDK, so the SDK suppresses the id and the
+  app writes nothing. A project of this repository that ships nothing suppresses it too, since it
+  passes nothing on.
+
+The release notes split their breaks by the class: a contract break is the one an app meets.
 
 **A publish that stops halfway is finished, never recut.** The tag's `publish-nuget` job pushes with
 `scripts/publish-packages.sh`: it skips what nuget.org already lists, goes on to the next package
