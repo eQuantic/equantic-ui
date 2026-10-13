@@ -129,12 +129,20 @@ public class QueueStackStrategy : IExpressionIrStrategy
         var result = arguments.First(argument => argument.RefKindKeyword.IsKind(SyntaxKind.OutKeyword));
         var input = arguments.FirstOrDefault(argument => !argument.RefKindKeyword.IsKind(SyntaxKind.OutKeyword));
         var name = method.Name.ToCamelCase();
+        // C# reads the receiver before every argument. An out named before the value the set is asked
+        // for has its place read first (`Get().TryGetValue(actualValue: out slots[i++], equalValue: k)`),
+        // and a receiver read inside the call ran after it: the receiver is then bound first.
+        var placeFirst = input is not null && result.SpanStart < input.SpanStart
+            && !OutArgument.IsDiscard(result, context) && !OutArgument.IsBareName(OutArgument.Target(result, context))
+            && receiver is not JsLiteral and not JsIdentifier { Name: "this" };
+        var target = placeFirst ? JsExpr.Identifier("$receiver") : receiver;
         var read = input is null
-            ? JsExpr.Call(JsExpr.Member(receiver, name))
-            : JsExpr.Call(JsExpr.Member(receiver, name), context.Converter.ConvertIr(input.Expression));
+            ? JsExpr.Call(JsExpr.Member(target, name))
+            : JsExpr.Call(JsExpr.Member(target, name), context.Converter.ConvertIr(input.Expression));
         var outType = method.Parameters.First(parameter => parameter.RefKind == RefKind.Out).Type;
-        return JsExpr.Callish(OutArgument.TryAnswer(result, input?.SpanStart ?? invocation.SpanStart, read,
+        var answer = JsExpr.Callish(OutArgument.TryAnswer(result, input?.SpanStart ?? invocation.SpanStart, read,
             DefaultValue.Of(outType, context), context));
+        return placeFirst ? JsExpr.Call(JsExpr.Arrow("$receiver", answer), receiver) : answer;
     }
 
     /// <summary>The twin's name for a member: its own in camelCase, and for an overload that takes a node

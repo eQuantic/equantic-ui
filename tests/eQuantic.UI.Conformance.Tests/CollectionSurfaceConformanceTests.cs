@@ -56,6 +56,8 @@ public class CollectionSurfaceConformanceTests
     [InlineData("var s = new SortedSet<int> { 1, 3 }; var a = s.TryGetValue(3, out var x); var b = s.TryGetValue(2, out var y); return a + \":\" + x + \",\" + b + \":\" + y;")] // True:3,False:0
     [InlineData("var s = new SortedSet<decimal> { 1.0m, 2m }; var a = s.TryGetValue(1.00m, out var x); return a + \":\" + x;")] // True:1.0
     [InlineData("var s = new SortedSet<string> { \"a\" }; var a = s.TryGetValue(\"b\", out var x); return a + \":\" + (x == null);")] // False:True
+    // The receiver is read before every argument, an out named before the value included.
+    [InlineData("var log = \"\"; var s = new SortedSet<int> { 1, 2 }; var slots = new int[2]; var i = 0; SortedSet<int> Get() { log += \"g\" + i; return s; } int Key() { log += \"k\" + i; return 2; } var a = Get().TryGetValue(actualValue: out slots[i++], equalValue: Key()); return log + \"|\" + a + \"|\" + string.Join(\",\", slots) + \"|\" + i;")] // g0k1|True|2,0|1
     public void ATake_AnswersAsDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
