@@ -6,8 +6,9 @@ A queue's `TryDequeue` and `TryPeek`, a stack's `TryPop` and `TryPeek`, and a so
 `TryGetValue` SHALL answer as .NET's do: true and the element when there is one, and false and the
 type's default otherwise, written into the `out` argument whatever it held. The argument SHALL be
 written in place, whether it is a variable, a discard, an array element or a field, each part of it
-read once. A sorted set's `TryGetValue` SHALL write the element the set holds, not the one it was
-asked for.
+read once, after the receiver, which SHALL be read before every argument as C# reads it, an `out`
+named before the value included. A sorted set's `TryGetValue` SHALL write the element the set holds,
+not the one it was asked for.
 
 #### Scenario: A queue drained
 
@@ -24,6 +25,11 @@ asked for.
 - **WHEN** browser-side code calls `TryGetValue(1.00m, out var x)` on `new SortedSet<decimal> { 1.0m, 2m }`
 - **THEN** the answer is True and `x` prints `1.0`, as in .NET
 
+#### Scenario: The receiver before an out named first
+
+- **WHEN** browser-side code calls `Get().TryGetValue(actualValue: out slots[i++], equalValue: Key())`, where `Get` and `Key` each log `i`
+- **THEN** the log is `g0k1`, as in .NET; in the browser the receiver was read after `i++`, and logged `g1`
+
 ### Requirement: A queue and a stack keep .NET's capacity
 
 A queue and a stack SHALL answer `Capacity`, `EnsureCapacity` and `TrimExcess` as .NET's do. A queue
@@ -33,7 +39,9 @@ collection to the count of an `ICollection<T>`, and by doubling from four for an
 queue, a stack and a string among them. `TrimExcess()` SHALL trim to the count below nine tenths of
 the capacity, and `TrimExcess(capacity)` to the capacity it is handed. A negative capacity, and a
 `TrimExcess(capacity)` below the count, SHALL be refused with .NET's `ArgumentOutOfRangeException`. A
-queue's capacity changed SHALL end a walk over it, and a stack's SHALL NOT, as in .NET.
+queue's capacity changed SHALL end a walk over it, and a stack's SHALL NOT, as in .NET. A queue and a
+stack read from the JSON the server wrote SHALL grow one element at a time, as System.Text.Json reads
+them, since the payload carries no capacity.
 
 #### Scenario: A queue grows
 
@@ -44,6 +52,11 @@ queue's capacity changed SHALL end a walk over it, and a stack's SHALL NOT, as i
 
 - **WHEN** browser-side code reads the `Capacity` of `new Queue<char>("abcde")` and of `new Queue<int>(new List<int> { 1, 2 })`
 - **THEN** it reads 8 and 2, as in .NET
+
+#### Scenario: A queue read from the server's JSON
+
+- **WHEN** the browser hydrates a `Queue<int>` the server wrote as `[1]`
+- **THEN** its `Capacity` is 4, as .NET's `JsonSerializer.Deserialize<Queue<int>>("[1]")` holds it, where it was 1
 
 #### Scenario: A trim below the count
 
