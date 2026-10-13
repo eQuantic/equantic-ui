@@ -18,7 +18,7 @@
 - [x] 3.2 It writes nothing when one entry is refused, and refuses an entry whose first line the chronology holds
 - [x] 3.3 `docs/ledger/folded.json` records the chronology, and `LedgerTests` fails when the chronology differs, with `EQ_FOLD_LEDGER=1` to fold and `EQ_UPDATE_LEDGER=1` to record
 - [x] 3.4 `./scripts/fold-ledger.sh` runs the fold
-- [ ] 3.5 Run the script in a scratch worktree over this tree's ledger and this change's own entry, and read what it wrote
+- [x] 3.5 Run the script in a scratch worktree over this tree's ledger and this change's own entry, and read what it wrote
 
 ## 4. The agreement
 
@@ -28,5 +28,5 @@
 
 ## 5. The proof on GitHub
 
-- [ ] 5.1 Two scratch branches that each add a file under `docs/ledger/` merge through GitHub's API, beside two that each add a line at the chronology's end
-- [ ] 5.2 Archive the change with `openspec archive a-ledger-entry-is-a-file --yes`
+- [x] 5.1 Two scratch branches that each add a file under `docs/ledger/` merge through GitHub's API, beside two that each add a line at the chronology's end
+- [x] 5.2 Archive the change with `openspec archive a-ledger-entry-is-a-file --yes`

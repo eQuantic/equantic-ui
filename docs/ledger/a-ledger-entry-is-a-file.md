@@ -7,8 +7,10 @@
   conflict is the shared point alone: with `git merge-file`, a branch whose entry is the
   chronology's last conflicts with an entry main gained, and with its entry one place up it merges.
   An event is now a file of its own under `docs/ledger/`, which a release folds into the chronology
-  in order of date (`./scripts/fold-ledger.sh`). `LedgerTests` fails on a file that is not one dated
-  event citing its evidence, and on a chronology no fold wrote, saying where an event goes. Of the
-  175 dated entries on record the guard accepts 171, every one since issues were cited
+  in order of date (`./scripts/fold-ledger.sh`). On GitHub two branches that each add a file there
+  merge, and two that each write at the chronology's end conflict. `LedgerTests` fails on a file
+  that is not one dated event citing its evidence, and on a chronology no fold wrote, saying where
+  an event goes. Of the 175 dated entries on record the guard accepts 171, every one since issues
+  were cited
   ([#892](https://github.com/eQuantic/equantic-ui/issues/892)). Proposed and archived through
   OpenSpec (`openspec/specs/working-agreement`).
