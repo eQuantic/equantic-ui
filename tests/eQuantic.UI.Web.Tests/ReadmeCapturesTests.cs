@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using FluentAssertions;
@@ -25,15 +26,23 @@ namespace eQuantic.UI.Web.Tests;
 /// sample: the digests hold the sample's own screens, and a redrawn button reaches the pictures the
 /// next time one of them is taken.
 /// </para>
+/// <para>
+/// A picture is read in two places, and each draws one form. GitHub draws a path in the repository
+/// on every branch, in a fork and in the pull request that takes the picture again, and it drew
+/// nothing on this change's own branch while the README named the pictures by their address on
+/// <c>main</c>. nuget.org, where the README is every package's readme, draws nothing from a path:
+/// it needs the full address. So README.md names a picture by its path, and a package's readme is
+/// written when it packs, with each picture at the address of the release's own tag.
+/// </para>
 /// </summary>
 public class ReadmeCapturesTests
 {
     private const string Record = "assets/readme/captures.json";
     private const string Folder = "assets/readme";
 
-    /// <summary>Where a picture is read from. The README is every package's readme on nuget.org
-    /// too, which draws a Markdown image from this host and nothing from a relative path.</summary>
-    private const string Address = "https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/";
+    /// <summary>The one way README.md names a picture: a Markdown image that says what it shows, by
+    /// the picture's path in the repository.</summary>
+    private static readonly Regex Image = new(@"!\[[^\]\r\n]+\]\(assets/readme/(?<name>[A-Za-z0-9._-]+)\)");
 
     /// <summary>A floor against the vacuous pass: a README that lost its pictures and a record that
     /// lost its entries would agree with each other.</summary>
@@ -42,10 +51,10 @@ public class ReadmeCapturesTests
     [Fact]
     public void EveryPictureTheReadmeShows_IsACaptureOnRecord_AndEveryCaptureIsShown()
     {
-        var root = Root();
+        var root = SdkProbe.RepoRoot();
         var readme = File.ReadAllText(Path.Combine(root, "README.md"));
 
-        var shown = Regex.Matches(readme, Regex.Escape(Address) + @"(?<name>[A-Za-z0-9._-]+)")
+        var shown = Image.Matches(readme)
             .Select(match => match.Groups["name"].Value)
             .Distinct()
             .OrderBy(name => name, StringComparer.Ordinal)
@@ -60,39 +69,74 @@ public class ReadmeCapturesTests
             .ToList();
 
         shown.Count.Should().BeGreaterThanOrEqualTo(FewestPictures,
-            $"README.md shows its samples through pictures under {Address}");
+            $"README.md shows its samples through the pictures in {Folder}");
         recorded.Should().Equal(shown,
             $"{Record} holds one entry for each picture README.md shows, and none it does not show");
         files.Should().Equal(recorded, $"{Folder} holds the pictures on record and no other file");
     }
 
     /// <summary>
-    /// nuget.org shows a readme's HTML as text. Measured on the page of 0.2.0-preview.61: the
-    /// README's own <c>&lt;img src="https://img.shields.io/…"&gt;</c> badges are there as
-    /// <c>&amp;lt;img src</c>, drawn by nothing. A Markdown image from this host is drawn.
+    /// Anything else that names the folder is a picture one of the two readers does not draw. A
+    /// full address is tied to one branch. nuget.org shows a readme's HTML as text: on the page of
+    /// 0.2.0-preview.61 the README's own <c>&lt;img src="https://img.shields.io/…"&gt;</c> badges
+    /// are there as <c>&amp;lt;img src</c>. And a path written any other way is one the pack does
+    /// not turn into an address.
     /// </summary>
     [Fact]
-    public void APictureIsAMarkdownImage_NamedByItsFullAddress()
+    public void TheReadmeNamesAPicture_OnlyAsAMarkdownImage_ByItsPathInTheRepository()
     {
-        var readme = File.ReadAllText(Path.Combine(Root(), "README.md"));
+        var readme = File.ReadAllText(Path.Combine(SdkProbe.RepoRoot(), "README.md"));
 
-        Regex.Matches(readme, @"(?:src=[""']|\]\()(?<path>\.?/?assets/readme/[^""'\)\s]+)")
-            .Select(match => match.Groups["path"].Value)
+        Regex.Matches(Image.Replace(readme, string.Empty), @"\S*assets/readme\S*")
+            .Select(match => match.Value)
             .Should().BeEmpty(
-                "README.md is also the readme of every package on nuget.org, which draws nothing from a "
-                + $"relative path: a picture is named by {Address}<file>");
+                "README.md names a picture one way, ![what it shows](assets/readme/<file>): GitHub draws "
+                + "that path on every branch and in a fork, and a package's readme gets the full address "
+                + "when it packs. A link, an <img>, a full address or a path written another way is not "
+                + "drawn by one of the two");
+    }
 
-        Regex.Matches(readme, @"<img[^>]*" + Regex.Escape(Address) + @"(?<name>[A-Za-z0-9._-]+)")
-            .Select(match => match.Groups["name"].Value)
-            .Should().BeEmpty(
-                "nuget.org shows a readme's HTML as text, so an <img> draws nothing there: a picture is "
-                + $"written ![what it shows]({Address}<file>)");
+    /// <summary>
+    /// The target every package packs its readme through, run as a pack runs it. What it writes is
+    /// README.md byte for byte, but for each picture's path, which is the address of the picture at
+    /// the release's tag.
+    /// <para>
+    /// The comparison is the point. The text was first handed to MSBuild's own tasks, and on macOS
+    /// the README's one backslash was packed as a slash, with every picture's address right.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void APackagesReadme_IsTheReadme_WithEachPictureAtItsReleasesAddress()
+    {
+        var root = SdkProbe.RepoRoot();
+        var scratch = Directory.CreateTempSubdirectory("eq-readme-").FullName;
+        try
+        {
+            var written = Path.Combine(scratch, "README.md");
+            SdkProbe.Dotnet(null, null, "msbuild",
+                Path.Combine("src", "eQuantic.UI.Primitives", "eQuantic.UI.Primitives.csproj"),
+                "-nologo", "-nr:false", "-v:m", "-t:WritePackageReadme",
+                "-p:Version=9.9.9-probe", $"-p:EqPackageReadme={written}");
+
+            var expected = File.ReadAllText(Path.Combine(root, "README.md")).Replace(
+                "](assets/readme/",
+                "](https://raw.githubusercontent.com/eQuantic/equantic-ui/v9.9.9-probe/assets/readme/");
+
+            File.ReadAllText(written).Should().Be(expected,
+                "a package's readme is README.md with each picture at the address of its release's tag");
+            File.ReadAllBytes(written).AsSpan().SequenceEqual(Encoding.UTF8.GetBytes(expected)).Should().BeTrue(
+                "the package's readme holds the README's own bytes, with no mark in front of them");
+        }
+        finally
+        {
+            Directory.Delete(scratch, recursive: true);
+        }
     }
 
     [Fact]
     public void APictureIsTakenAgain_WhenAFileItsScreenIsWrittenInChanges()
     {
-        var root = Root();
+        var root = SdkProbe.RepoRoot();
         var captures = Captures(root);
 
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_README_CAPTURES") == "1")
@@ -156,13 +200,4 @@ public class ReadmeCapturesTests
 
     private static string Digest(string path) =>
         Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant();
-
-    private static string Root()
-    {
-        var here = new DirectoryInfo(AppContext.BaseDirectory);
-        while (here is not null && !Directory.Exists(Path.Combine(here.FullName, "src", "eQuantic.UI.Runtime")))
-            here = here.Parent;
-        here.Should().NotBeNull("the suite runs inside the repository, whose root holds src/eQuantic.UI.Runtime");
-        return here!.FullName;
-    }
 }

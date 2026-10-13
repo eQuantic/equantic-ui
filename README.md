@@ -33,7 +33,7 @@
   <a href="#documentation">Documentation</a>
 </p>
 
-![The dashboard sample in a browser, page by page: payments, charts, a spreadsheet, a code editor, a diff, Markdown, a form, ten thousand rows, localization and colours](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/web-tour.gif)
+![The dashboard sample in a browser, page by page: payments, charts, a spreadsheet, a code editor, a diff, Markdown, a form, ten thousand rows, localization and colours](assets/readme/web-tour.gif)
 
 ---
 
@@ -60,7 +60,7 @@ in the browser, written in C# and nothing else.
 
 | Charts | A diff of two versions of a file | A form, in the light theme |
 | :---: | :---: | :---: |
-| ![Grouped, stacked and horizontal bar charts](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/web-charts.png) | ![A side-by-side diff of two versions of a C# file](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/web-code-diff.png) | ![A sign-up form in the light theme](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/web-forms.png) |
+| ![Grouped, stacked and horizontal bar charts](assets/readme/web-charts.png) | ![A side-by-side diff of two versions of a C# file](assets/readme/web-code-diff.png) | ![A sign-up form in the light theme](assets/readme/web-forms.png) |
 
 ### On a desktop
 
@@ -69,7 +69,7 @@ the GPU by Photon. The same components and the same theme, dark and light.
 
 | The gallery's charts, dark | The gallery's buttons, light |
 | :---: | :---: |
-| ![The component gallery's charts, in the dark theme](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/desktop-gallery.png) | ![The component gallery's buttons, in the light theme](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/desktop-gallery-light.png) |
+| ![The component gallery's charts, in the dark theme](assets/readme/desktop-gallery.png) | ![The component gallery's buttons, in the light theme](assets/readme/desktop-gallery-light.png) |
 
 ### On a phone
 
@@ -77,7 +77,7 @@ the GPU by Photon. The same components and the same theme, dark and light.
 
 | iPhone | iPhone, light theme | Android | Android |
 | :---: | :---: | :---: | :---: |
-| ![The Wallet's home screen on an iPhone](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/ios-home.png) | ![A transfer sheet on an iPhone, in the light theme](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/ios-transfer.png) | ![The Wallet's transactions on Android](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/android-transactions.png) | ![A dialog and a toast on Android](https://raw.githubusercontent.com/eQuantic/equantic-ui/main/assets/readme/android-cards.png) |
+| ![The Wallet's home screen on an iPhone](assets/readme/ios-home.png) | ![A transfer sheet on an iPhone, in the light theme](assets/readme/ios-transfer.png) | ![The Wallet's transactions on Android](assets/readme/android-transactions.png) | ![A dialog and a toast on Android](assets/readme/android-cards.png) |
 
 ---
 
