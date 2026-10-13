@@ -15,9 +15,11 @@ name.
 
 ## What Changes
 
-- A name of the list is skipped only when the build writes no module of it. A class called `Type`,
-  `Uri`, `Console`, `Convert`, `Math` or `Regex` that the app or a referenced project declares is
-  imported where a module names it, and so is an exception class one of them declares.
+- A name of the list is the app's where the module's own code names a type of the app, or of a
+  project it references, by it. A class called `Type`, `Uri`, `Console`, `Convert`, `Math` or `Regex`
+  is imported by the file that means it, and so is an exception class one of them declares.
+- A file that calls `System.Math` beside an app that declares its own `Math` still imports nothing
+  of that name.
 
 For a developer who uses the SDK: a class may be called what .NET calls one of its own.
 
