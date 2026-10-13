@@ -67,8 +67,8 @@ them, since the payload carries no capacity.
 
 A linked list SHALL answer `Find`, `FindLast`, `AddAfter`, `AddBefore`, the `AddFirst`, `AddLast` and
 `Remove` that take a node, and `CopyTo` as .NET's do, and a node SHALL answer `List`, `Next`,
-`Previous` and `Value`. `new LinkedListNode<T>(value)` SHALL build a node that belongs to no list. A
-node removed from its list, by itself, by its value, from either end or by `Clear`, SHALL belong to no
+`Previous` and `Value`. `new LinkedListNode<T>(value)` SHALL build a node that belongs to no list, and
+an object initializer SHALL set its `Value` after the construction. A node removed from its list, by itself, by its value, from either end or by `Clear`, SHALL belong to no
 list and link to nothing. A node that is null SHALL be refused with .NET's `ArgumentNullException`
 naming `node`, one of another list or of none with "The LinkedList node does not belong to current
 LinkedList.", and a new node that already belongs to a list with "The LinkedList node already belongs
@@ -83,6 +83,11 @@ to a LinkedList.", each as an `InvalidOperationException`.
 
 - **WHEN** browser-side code adds `new LinkedListNode<int>(1)` before the first node of `new LinkedList<int>(new[] { 2 })`
 - **THEN** the list is `1,2` and the node's `List` is the list, as in .NET
+
+#### Scenario: A node built with an object initializer
+
+- **WHEN** browser-side code builds `new LinkedListNode<int>(1) { Value = 2 }`
+- **THEN** its `Value` is 2, as in .NET; in the browser the initializer went out as a call to an `add` no node has
 
 #### Scenario: A node already linked
 
