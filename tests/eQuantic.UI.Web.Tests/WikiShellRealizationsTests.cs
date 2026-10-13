@@ -42,6 +42,9 @@ public class WikiShellRealizationsTests
     {
         ["English"] = new() { ["✓"] = Answer.Realized, ["unavailable"] = Answer.Unavailable, ["`null`"] = Answer.Null },
         ["pt-BR"] = new() { ["✓"] = Answer.Realized, ["indisponível"] = Answer.Unavailable, ["`null`"] = Answer.Null },
+        ["de"] = new() { ["✓"] = Answer.Realized, ["nicht verfügbar"] = Answer.Unavailable, ["`null`"] = Answer.Null },
+        ["es"] = new() { ["✓"] = Answer.Realized, ["no disponible"] = Answer.Unavailable, ["`null`"] = Answer.Null },
+        ["fr"] = new() { ["✓"] = Answer.Realized, ["indisponible"] = Answer.Unavailable, ["`null`"] = Answer.Null },
     };
 
     /// <summary>The comment that precedes the table, in every language: prose around it is free.</summary>
