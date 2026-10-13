@@ -326,6 +326,15 @@ export function collectionModified(): Error {
   );
 }
 
+/** The same refusal in the words of System.Collections, the assembly `Stack<T>`, `LinkedList<T>` and
+ * `SortedSet<T>` live in, where CoreLib's `Queue<T>`, `List<T>` and `Dictionary` word it as above. */
+export function collectionModifiedAfterInstantiation(): Error {
+  return exception(
+    'System.InvalidOperationException',
+    'Collection was modified after the enumerator was instantiated.',
+  );
+}
+
 /**
  * A dictionary refuses a null key in every member, `ContainsKey`, `TryGetValue` and `Remove`
  * included, with .NET's words: a `Map` would have answered a miss, or filed an entry under null.

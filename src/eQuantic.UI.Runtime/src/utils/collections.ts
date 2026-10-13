@@ -9,7 +9,11 @@
  * hydration builds with, from an array it already holds.
  */
 
-import { Dictionary as RuntimeDictionary } from './dictionary';
+import {
+  collectionModified,
+  collectionModifiedAfterInstantiation,
+  Dictionary as RuntimeDictionary,
+} from './dictionary';
 import { equals } from './equals';
 import { exception } from './exceptions';
 import { HashSet } from './hash-set';
@@ -81,6 +85,8 @@ function constructorElements<T>(
 
 export class Queue<T> {
   private readonly items: T[];
+  /** Bumped by every change, as .NET's `_version` is: a walk that sees it move refuses to go on. */
+  private version = 0;
 
   constructor(initial?: Iterable<T>) {
     this.items = initial ? Array.from(initial) : [];
@@ -92,10 +98,12 @@ export class Queue<T> {
 
   enqueue(item: T): void {
     this.items.push(item);
+    this.version++;
   }
 
   dequeue(): T {
     if (this.items.length === 0) throw exception('System.InvalidOperationException', 'Queue empty.');
+    this.version++;
     return this.items.shift() as T;
   }
 
@@ -111,6 +119,7 @@ export class Queue<T> {
 
   clear(): void {
     this.items.length = 0;
+    this.version++;
   }
 
   /** Front-to-back order (FIFO), matching .NET. */
@@ -123,9 +132,16 @@ export class Queue<T> {
     copyInto(this.items, array, arrayIndex, false);
   }
 
-  /** Enumerates front to back, as .NET's does, for a `foreach` and LINQ alike. */
-  [Symbol.iterator](): Iterator<T> {
-    return this.items.slice()[Symbol.iterator]();
+  /** Enumerates front to back, as .NET's does, for a `foreach` and LINQ alike. A change while it is
+   *  walked ends the walk at its next step, the one after the last element included, with .NET's
+   *  InvalidOperationException: it walked a copy, and walked on (#765). */
+  *[Symbol.iterator](): Generator<T, undefined, unknown> {
+    const version = this.version;
+    for (let at = 0; at < this.items.length; at++) {
+      yield this.items[at];
+      if (this.version !== version) throw collectionModified();
+    }
+    return undefined;
   }
 
   /**
@@ -140,6 +156,8 @@ export class Queue<T> {
 
 export class Stack<T> {
   private readonly items: T[];
+  /** Bumped by every change, as .NET's `_version` is: a walk that sees it move refuses to go on. */
+  private version = 0;
 
   constructor(initial?: Iterable<T>) {
     this.items = initial ? Array.from(initial) : [];
@@ -151,10 +169,12 @@ export class Stack<T> {
 
   push(item: T): void {
     this.items.push(item);
+    this.version++;
   }
 
   pop(): T {
     if (this.items.length === 0) throw exception('System.InvalidOperationException', 'Stack empty.');
+    this.version++;
     return this.items.pop() as T;
   }
 
@@ -170,6 +190,7 @@ export class Stack<T> {
 
   clear(): void {
     this.items.length = 0;
+    this.version++;
   }
 
   /** Top-to-bottom order (LIFO), matching .NET `Stack<T>.ToArray()`. */
@@ -182,9 +203,15 @@ export class Stack<T> {
     copyInto(this.toArray(), array, arrayIndex, true);
   }
 
-  /** Enumerates from the top, as .NET's does, for a `foreach` and LINQ alike. */
-  [Symbol.iterator](): Iterator<T> {
-    return this.items.slice().reverse()[Symbol.iterator]();
+  /** Enumerates from the top, as .NET's does, for a `foreach` and LINQ alike. A change while it is
+   *  walked ends the walk as a queue's ends, in System.Collections' words (#765). */
+  *[Symbol.iterator](): Generator<T, undefined, unknown> {
+    const version = this.version;
+    for (let at = this.items.length - 1; at >= 0; at--) {
+      yield this.items[at];
+      if (this.version !== version) throw collectionModifiedAfterInstantiation();
+    }
+    return undefined;
   }
 
   /** The array System.Text.Json writes for a stack: its enumeration, from the top (#597). */
@@ -229,6 +256,9 @@ export class LinkedList<T> implements Iterable<T> {
   private head: LinkedListNode<T> | null = null;
   private tail: LinkedListNode<T> | null = null;
   private _count = 0;
+  /** Bumped by every node added or removed and by `Clear`, as .NET's `version` is; a value written into
+   *  a node is no change. */
+  private version = 0;
 
   constructor(initial?: Iterable<T>) {
     if (initial) {
@@ -260,6 +290,7 @@ export class LinkedList<T> implements Iterable<T> {
       this.head = node;
     }
     this._count++;
+    this.version++;
     return node;
   }
 
@@ -273,6 +304,7 @@ export class LinkedList<T> implements Iterable<T> {
       this.tail = node;
     }
     this._count++;
+    this.version++;
     return node;
   }
 
@@ -307,6 +339,7 @@ export class LinkedList<T> implements Iterable<T> {
   clear(): void {
     this.head = this.tail = null;
     this._count = 0;
+    this.version++;
   }
 
   private unlink(node: LinkedListNode<T>): void {
@@ -315,10 +348,18 @@ export class LinkedList<T> implements Iterable<T> {
     if (node.next !== null) node.next.previous = node.previous;
     else this.tail = node.previous;
     this._count--;
+    this.version++;
   }
 
-  *[Symbol.iterator](): Iterator<T> {
-    for (let n = this.head; n !== null; n = n.next) yield n.value;
+  /** Front to back. A node added or removed while it is walked ends the walk as a stack's ends, where
+   *  it walked on, through every node added at the end (#765). */
+  *[Symbol.iterator](): Generator<T, undefined, unknown> {
+    const version = this.version;
+    for (let n = this.head; n !== null; n = n.next) {
+      yield n.value;
+      if (this.version !== version) throw collectionModifiedAfterInstantiation();
+    }
+    return undefined;
   }
 
   /** Front-to-back order, matching .NET enumeration. */

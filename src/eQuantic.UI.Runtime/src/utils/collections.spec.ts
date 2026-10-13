@@ -337,3 +337,59 @@ describe('the queue, stack and linked list factories, as their constructors buil
     expect(linkedList('ab').count).toBe(2);
   });
 });
+
+describe('a change while a queue, a stack or a linked list is walked (#765)', () => {
+  const coreLib = 'Collection was modified; enumeration operation may not execute.';
+  const collections = 'Collection was modified after the enumerator was instantiated.';
+
+  /** What a walk saw before it ended, and what it ended with; a walk that runs on is cut at 20. */
+  function walk<T>(source: Iterable<T>, step: (value: T) => void): string {
+    let seen = '';
+    try {
+      for (const value of source) {
+        seen += String(value);
+        if (seen.length > 20) return `${seen}: ran on`;
+        step(value);
+      }
+      return seen;
+    } catch (error) {
+      return `${seen}|${(error as Error).message}`;
+    }
+  }
+
+  it('ends a queue walk at the step after any enqueue, dequeue or clear, the last included', () => {
+    const q = () => queue([1, 2, 3]);
+    const enqueued = q();
+    expect(walk(enqueued, (v) => enqueued.enqueue(v))).toBe(`1|${coreLib}`);
+    const dequeued = q();
+    expect(walk(dequeued, () => dequeued.dequeue())).toBe(`1|${coreLib}`);
+    const cleared = q();
+    expect(walk(cleared, (v) => v === 3 && cleared.clear())).toBe(`123|${coreLib}`);
+    const read = q();
+    expect(walk(read, (v) => read.peek() + Number(read.contains(v)) + read.count)).toBe('123');
+  });
+
+  it('ends a stack walk from the top, in System.Collections words', () => {
+    const s = () => stack([1, 2, 3]);
+    const pushed = s();
+    expect(walk(pushed, (v) => pushed.push(v))).toBe(`3|${collections}`);
+    const popped = s();
+    expect(walk(popped, () => popped.pop())).toBe(`3|${collections}`);
+    const cleared = s();
+    expect(walk(cleared, (v) => v === 1 && cleared.clear())).toBe(`321|${collections}`);
+  });
+
+  it('ends a linked list walk at a node added or removed, and reads a value written in place', () => {
+    const l = () => linkedList([1, 2, 3]);
+    const appended = l();
+    expect(walk(appended, (v) => appended.addLast(v))).toBe(`1|${collections}`);
+    const prepended = l();
+    expect(walk(prepended, (v) => prepended.addFirst(v))).toBe(`1|${collections}`);
+    const removed = l();
+    expect(walk(removed, (v) => v === 1 && removed.remove(3))).toBe(`1|${collections}`);
+    const missed = l();
+    expect(walk(missed, () => missed.remove(9))).toBe('123');
+    const written = l();
+    expect(walk(written, (v) => v === 1 && (written.last!.value = 9))).toBe('129');
+  });
+});
