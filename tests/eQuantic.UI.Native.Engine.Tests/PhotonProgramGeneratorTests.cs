@@ -169,11 +169,17 @@ public class PhotonProgramGeneratorTests
     /// host has no Android, so a stand-in <c>ActivityAttribute</c> is what tells the generator it is
     /// building one. What the manifest then says is proved on the emulator, from the APK.
     /// </summary>
-    private static string AndroidLauncher()
+    private static string AndroidLauncher(string program = WellFormed)
     {
-        var app = CSharpSyntaxTree.ParseText(WellFormed, path: "Program.cs");
+        var app = CSharpSyntaxTree.ParseText(program, path: "Program.cs");
         var android = CSharpSyntaxTree.ParseText(
-            "namespace Android.App { public sealed class ActivityAttribute : System.Attribute { } }",
+            """
+            namespace Android.App
+            {
+                public sealed class ActivityAttribute : System.Attribute { }
+                public sealed class IntentFilterAttribute : System.Attribute { }
+            }
+            """,
             path: "Android.cs");
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
@@ -207,4 +213,51 @@ public class PhotonProgramGeneratorTests
             Regex.IsMatch(launcher, $@"ConfigChanges\.{change}\b").Should().BeTrue(
                 $"a {change} change is the host's to follow, not a reason to rebuild the activity");
     }
+
+    private const string WithSchemes = """
+        using eQuantic.UI.Native.Hosting;
+
+        public partial class Program
+        {
+            public static PhotonApplication CreateApp(string[] args)
+            {
+                var builder = PhotonApplication.CreateBuilder(args);
+                builder.Bundle.UrlScheme("acme");
+                builder.Bundle.UrlScheme("Acme-Beta");
+                builder.Bundle.UrlScheme("acme");
+                return builder.Build();
+            }
+        }
+        """;
+
+    /// <summary>
+    /// The scheme an app declares once on the builder is the filter Android matches a link against,
+    /// on the launcher the generator writes: until #777 it reached the Mac's bundle and nothing on
+    /// a phone, so a link opened nothing there.
+    /// </summary>
+    [Fact]
+    public void TheAndroidLauncherIsOpenedByTheSchemesTheAppDeclared()
+    {
+        var launcher = AndroidLauncher(WithSchemes);
+
+        launcher.Should().Contain("[global::Android.App.IntentFilter(");
+        launcher.Should().Contain("global::Android.Content.Intent.ActionView");
+        launcher.Should().Contain("global::Android.Content.Intent.CategoryDefault");
+        launcher.Should().Contain("global::Android.Content.Intent.CategoryBrowsable",
+            "a link in a browser reaches only an activity that says it may");
+        launcher.Should().Contain("DataSchemes = new[] { \"acme\", \"acme-beta\" }",
+            "each scheme once, lower-cased, in the order the app declared them");
+    }
+
+    [Fact]
+    public void AnAppThatDeclaresNoScheme_GetsNoFilterForLinks() =>
+        AndroidLauncher().Should().NotContain("IntentFilter");
+
+    /// <summary>
+    /// One activity in one task, whether or not the app declares a scheme: a second instance is a
+    /// second surface and a second tree over the first one's state.
+    /// </summary>
+    [Fact]
+    public void TheAndroidLauncherIsASingleTask() =>
+        AndroidLauncher().Should().Contain("LaunchMode = global::Android.Content.PM.LaunchMode.SingleTask");
 }

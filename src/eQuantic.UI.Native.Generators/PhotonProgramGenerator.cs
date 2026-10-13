@@ -225,13 +225,14 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
             facts.Add(declaration);
         }
 
+        // The schemes outlive this block: Android reads them off the launcher activity, below.
+        var schemes = new System.Collections.Generic.List<string>();
         if (facts.Count > 0)
         {
             // LAST WINS for a repeated key, and the URL schemes accumulate — the same semantics the
             // builder itself has, so what the generated file declares is what the C# said.
             var byKey = new System.Collections.Generic.Dictionary<string, BundleDeclarations.Declaration>(
                 System.StringComparer.Ordinal);
-            var schemes = new System.Collections.Generic.List<string>();
             foreach (var fact in facts)
             {
                 if (fact.Kind == "UrlScheme")
@@ -346,6 +347,11 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
             // The application-level spelling Android 13 also reads has no attribute in .NET for
             // Android, and there the back KEY reaches the same handler.
             activity.AppendLine("    EnableOnBackInvokedCallback = true,");
+            // ONE activity, in one task. A link opened by another app starts the activity it names,
+            // and by default that is a second instance on top of the running one: a second surface,
+            // a second tree built from the app's root, and the first one's state under it. Asked
+            // for as a single task, the running activity is handed the link instead.
+            activity.AppendLine("    LaunchMode = global::Android.Content.PM.LaunchMode.SingleTask,");
             // Each change listed here is the HOST's to follow, so Android keeps the activity, and the
             // app's state with it, instead of building a new one: a rotation, a window resized into
             // split screen or onto a foldable's other display (screen size and smallest screen
@@ -361,6 +367,23 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
             activity.AppendLine("        | global::Android.Content.PM.ConfigChanges.Navigation");
             activity.AppendLine("        | global::Android.Content.PM.ConfigChanges.UiMode");
             activity.AppendLine("        | global::Android.Content.PM.ConfigChanges.Density)]");
+            if (schemes.Count > 0
+                && compilation.GetTypeByMetadataName("Android.App.IntentFilterAttribute") is not null)
+            {
+                // The schemes the app declared on the builder, as the filter Android matches a link
+                // against: VIEW is "open this", DEFAULT is what an implicit intent needs to reach
+                // an activity at all, and BROWSABLE is what lets a link in a browser do it.
+                var quoted = new System.Collections.Generic.List<string>();
+                foreach (var scheme in schemes) quoted.Add(Quote(scheme));
+                activity.AppendLine("[global::Android.App.IntentFilter(");
+                activity.AppendLine("    new[] { global::Android.Content.Intent.ActionView },");
+                activity.AppendLine("    Categories = new[]");
+                activity.AppendLine("    {");
+                activity.AppendLine("        global::Android.Content.Intent.CategoryDefault,");
+                activity.AppendLine("        global::Android.Content.Intent.CategoryBrowsable,");
+                activity.AppendLine("    },");
+                activity.AppendLine($"    DataSchemes = new[] {{ {string.Join(", ", quoted)} }})]");
+            }
             activity.AppendLine("public sealed class MainActivity : global::eQuantic.UI.Native.Shell.Android.PhotonActivity");
             activity.AppendLine("{");
             activity.AppendLine("}");
