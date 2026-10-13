@@ -2617,6 +2617,20 @@ record of a release, the wiki's Upgrading page is the distillate.
   pool. Found while proving the camera preview of
   [#775](https://github.com/eQuantic/equantic-ui/issues/775). Proposed and archived through OpenSpec
   (`openspec/specs/renderer-textures`).
+- **2026-10-12 · Every program the SDKs start goes through RunProgram, with no shell**: the two SDKs
+  started every program with MSBuild's `Exec`, which writes the command into a script for `/bin/sh` or
+  `cmd.exe`, and each read it first: with the NuGet package folder under a folder named `nuget $b`, a
+  build stopped at `chmod +x` on bun's own path, before eqc ran. `eQuantic.UI.Sdk.Tasks`, a
+  netstandard2.0 assembly both SDK packages ship under `tools/netstandard2.0/`, holds `RunProgram`, a
+  ToolTask that hands a program a list of arguments whose values are item metadata, and `LinkDirectory`,
+  which makes the `node_modules` link through the system's own call where `mklink /D` was a command of
+  `cmd.exe`. The 26 `Exec` tasks of the two SDKs are gone, and a guard fails on one under `src/`. eqc runs
+  in the project's folder again, its response file named by its full path. A program that fails in
+  silence is EQ4004, naming its arguments, and the notary's password is not echoed, which ToolTask did
+  whatever `EchoOff` said. Measured on the way: MSBuild's own command line drops the double quotes of a
+  project's path, and ToolTask turns every backslash of a command line into a slash on macOS and Linux
+  ([#841](https://github.com/eQuantic/equantic-ui/issues/841)). Proposed and archived through OpenSpec
+  (`openspec/specs/build-programs`).
 
 ## Retired documents
 
