@@ -2777,6 +2777,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#888](https://github.com/eQuantic/equantic-ui/issues/888))
   ([#887](https://github.com/eQuantic/equantic-ui/issues/887)). Proposed and archived through
   OpenSpec (`openspec/specs/referenced-projects`).
+- **2026-10-13 · The wiki's guards read every language a page is written in**: the wiki gained
+  Spanish, French and German beside English and Portuguese, and its guards knew two. An allowance to
+  name a retired spelling was one entry per page file, so the new copies of `PackageArchitecture`,
+  which tell the history of `eQuantic.UI.Core` their English page is allowed to tell, failed the
+  `test` job of every pull request reading the wiki's master. An allowance now covers every copy of
+  its page, and the Diagnostics and Capabilities guards read each language the page is written in,
+  the Capabilities one failing on a language it has no word for. The working agreement says a page
+  changes in every language it is written in, and a new page is written in all five
+  ([#885](https://github.com/eQuantic/equantic-ui/issues/885)). Proposed and archived through
+  OpenSpec (`openspec/specs/working-agreement`).
 - **2026-10-13 · A link opens the app on a phone**: `IDeepLinks` was realized on the desktop and
   `builder.Bundle.UrlScheme` reached only the Mac's bundle, so a link opened nothing on a phone
   ([#777](https://github.com/eQuantic/equantic-ui/issues/777)). The same declaration now writes the
@@ -2791,16 +2801,6 @@ record of a release, the wiki's Upgrading page is the distillate.
   final manifest is written, and `scripts/check-ios-launch.sh` compares the two and fails with main's
   targets. Proved on the Android emulator and the iOS 27 simulator.
   Proposed and archived through OpenSpec (`openspec/specs/deep-links`).
-- **2026-10-13 · The wiki's guards read every language a page is written in**: the wiki gained
-  Spanish, French and German beside English and Portuguese, and its guards knew two. An allowance to
-  name a retired spelling was one entry per page file, so the new copies of `PackageArchitecture`,
-  which tell the history of `eQuantic.UI.Core` their English page is allowed to tell, failed the
-  `test` job of every pull request reading the wiki's master. An allowance now covers every copy of
-  its page, and the Diagnostics and Capabilities guards read each language the page is written in,
-  the Capabilities one failing on a language it has no word for. The working agreement says a page
-  changes in every language it is written in, and a new page is written in all five
-  ([#885](https://github.com/eQuantic/equantic-ui/issues/885)). Proposed and archived through
-  OpenSpec (`openspec/specs/working-agreement`).
 
 ## Retired documents
 
