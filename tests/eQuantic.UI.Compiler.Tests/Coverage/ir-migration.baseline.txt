@@ -35,7 +35,6 @@ NullableStrategy
 NumericConstantStrategy
 OfTypeStrategy
 QueryExpressionStrategy
-QueueStackStrategy
 RangeExpressionStrategy
 ReferenceEqualsStrategy
 RegexStrategy
