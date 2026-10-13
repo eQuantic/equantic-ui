@@ -237,6 +237,7 @@ eQuantic.UI.Native.Components.PhotonHost.TextInput(string! text) -> bool
 eQuantic.UI.Native.Components.PhotonHost.TextRasterizer.get -> eQuantic.UI.Native.Framework.ITextRasterizer?
 eQuantic.UI.Native.Components.PhotonHost.TextRasterizer.set -> void
 eQuantic.UI.Native.Components.PhotonHost.TextTarget.get -> eQuantic.UI.Primitives.TextEntry?
+eQuantic.UI.Native.Components.PhotonHost.Unmount() -> void
 eQuantic.UI.Native.Components.PhotonHost.UpdateEditingValue(eQuantic.UI.Native.Components.TextEditingValue value) -> bool
 eQuantic.UI.Native.Components.PhotonHost.ViewInsets.get -> eQuantic.UI.Primitives.EdgeInsets
 eQuantic.UI.Native.Components.PhotonHost.ViewInsets.set -> void
