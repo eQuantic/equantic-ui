@@ -1,6 +1,6 @@
 # The ledger
 
-What happened, when, and where the record is. One line per event, oldest first, each pointing at
+What happened, when, and where the record is. One entry per event, oldest first, each pointing at
 the pull request, the release, the issue or the document section that holds the evidence. This file
 is the chronology; [`ARCHITECTURE-AUDIT.md`](ARCHITECTURE-AUDIT.md) is the measured state; the
 [board](https://github.com/orgs/eQuantic/projects/11) is the work, and its snapshot at the foot of

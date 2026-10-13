@@ -43,7 +43,7 @@ owed turned into an issue — unless code or another document cites it.
 
 | Document | What it is |
 |---|---|
-| [LEDGER.md](LEDGER.md) | The chronology: one line per event, oldest first, each with the pull request, release, issue or section that holds the evidence; the retired plans' status lines; a snapshot of the [board](https://github.com/orgs/eQuantic/projects/11) naming every issue. An event since the last release waits as a file of its own under [`ledger/`](ledger/README.md), which a release folds in. Held to the folder by `DocsIndexTests`, and to its fold by `LedgerTests`. |
+| [LEDGER.md](LEDGER.md) | The chronology: one entry per event, oldest first, each with the pull request, release, issue or section that holds the evidence; the retired plans' status lines; a snapshot of the [board](https://github.com/orgs/eQuantic/projects/11) naming every issue. An event since the last release waits as a file of its own under [`ledger/`](ledger/README.md), which a release folds in. Held to the folder by `DocsIndexTests`, and to its fold by `LedgerTests`. |
 | [DOTNET-COVERAGE-PROGRAM.md](DOTNET-COVERAGE-PROGRAM.md) | The program behind phases 5 and 6: maximal C# → JS fidelity, three mechanisms per construct. |
 
 ## The rules these documents follow
