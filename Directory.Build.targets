@@ -81,6 +81,98 @@
     </Target>
 
     <!--
+      WHAT A RELEASE PROMISES, AND TO WHICH ASSEMBLY (#899, #324).
+
+      Every project that ships an assembly has a surface class:
+        contract      what an app compiles against. The compatibility promise covers it.
+        tool          the SDK's own tools: the compiler and the code writers. A package publishes
+                      them (the site's playground compiles C# through the compiler's), and their
+                      surface serves the SDK. It is never promised.
+        experimental  the native track, which 1.0 does not promise yet.
+      Derived from the name here and nowhere else, and a project may set _EqSurface itself. A new
+      project is contract, the stricter answer and the one the promise covers.
+
+      The class is written into the assembly as AssemblyMetadata, .NET's own key and value, so a
+      test, a tool or a person reads it from what ships. An experimental assembly carries .NET's own
+      ExperimentalAttribute too: a project that uses one fails with EQX0001 until it says it means
+      to. Measured before it was chosen, on three class libraries: an assembly marked with the same
+      id uses another one in silence, so the native assemblies need nothing between them, and
+      eQuantic.UI.Sdk.Native suppresses the id for the app that chose the native track.
+    -->
+    <PropertyGroup Condition="'$(_EqDeclaresPublicApi)' == 'true'">
+        <_EqSurface Condition="'$(_EqSurface)' == '' AND $(MSBuildProjectName.StartsWith('eQuantic.UI.Native.'))">experimental</_EqSurface>
+        <_EqSurface Condition="'$(_EqSurface)' == '' AND ('$(MSBuildProjectName)' == 'eQuantic.UI.Compiler' OR '$(MSBuildProjectName)' == 'eQuantic.UI.Codegen')">tool</_EqSurface>
+        <_EqSurface Condition="'$(_EqSurface)' == ''">contract</_EqSurface>
+        <_EqUnshippedFile Condition="'$(_EqUnshippedFile)' == ''">$(MSBuildProjectDirectory)/PublicAPI.Unshipped.txt</_EqUnshippedFile>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(_EqDeclaresPublicApi)' == 'true'">
+        <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+            <_Parameter1>eQuantic.Surface</_Parameter1>
+            <_Parameter2>$(_EqSurface)</_Parameter2>
+        </AssemblyAttribute>
+        <AssemblyAttribute Include="System.Diagnostics.CodeAnalysis.ExperimentalAttribute" Condition="'$(_EqSurface)' == 'experimental'">
+            <_Parameter1>EQX0001</_Parameter1>
+            <UrlFormat>https://github.com/eQuantic/equantic-ui/wiki/Photon#the-native-track-is-experimental-in-10</UrlFormat>
+        </AssemblyAttribute>
+    </ItemGroup>
+
+    <!--
+      This repository's own projects that ship nothing use the native track because they are the
+      SDK: the native assemblies' tests, the icon tool, the Photon design host. A project that ships
+      nothing passes nothing on, so the mark has nobody here to warn. A shipping assembly never gets
+      this: a contract assembly that used the native track would pass it on to every app, and the
+      native ones are marked themselves, which silences it between them.
+    -->
+    <PropertyGroup Condition="'$(_EqDeclaresPublicApi)' != 'true'">
+        <NoWarn>$(NoWarn);EQX0001</NoWarn>
+    </PropertyGroup>
+
+    <!--
+      A STABLE VERSION REMOVES NO MEMBER OF THE CONTRACT (#323).
+
+      The preview's rule (CLAUDE.md, "No member survives to keep an old shape alive") removes a member
+      the day its shape changes, and it holds while the version carries a prerelease label. The day
+      the label goes, at the 1.0 cut, the promise starts: a contract project's PublicAPI.Unshipped.txt
+      holds no *REMOVED* line, since the release would break every app that upgrades. The way on is an
+      [Obsolete] that names the major it leaves in, and the removal itself in that major's preview.
+      Read here, at the build, so it fails the pull request that removes the member and not the
+      release a week later, and the release's own step needs no check of its own.
+
+      The lines go through a task written in C#, never through MSBuild's items or its text: a
+      declared signature holds `*` and `?`, which an item takes for a wildcard (#880 measured what
+      else MSBuild does to text on its way).
+    -->
+    <UsingTask TaskName="EqRefuseRemovalAtStableVersion" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+        <ParameterGroup>
+            <Unshipped ParameterType="System.String" Required="true" />
+            <Project ParameterType="System.String" Required="true" />
+            <Version ParameterType="System.String" Required="true" />
+        </ParameterGroup>
+        <Task>
+            <Using Namespace="System.Linq" />
+            <Code Type="Fragment" Language="cs"><![CDATA[
+                const string Mark = "*REMOVED*";
+                var removed = System.IO.File.Exists(Unshipped)
+                    ? System.IO.File.ReadAllLines(Unshipped).Where(line => line.StartsWith(Mark)).Select(line => line.Substring(Mark.Length)).ToList()
+                    : new System.Collections.Generic.List<string>();
+                if (removed.Count > 0)
+                    Log.LogError(
+                        Project + " is part of the contract, and its PublicAPI.Unshipped.txt removes " + removed.Count
+                        + " member(s) at version " + Version + ", which carries no prerelease label: " + string.Join(" | ", removed.Take(3))
+                        + (removed.Count > 3 ? " | ..." : "")
+                        + ". A stable version removes no member of the contract. Mark the member [Obsolete] with an EQO id, a URL and the major it leaves in (CLAUDE.md),"
+                        + " or move the version to the next major's preview, where the removal belongs.");
+            ]]></Code>
+        </Task>
+    </UsingTask>
+
+    <Target Name="EqStableVersionRemovesNoContractMember" BeforeTargets="CoreCompile"
+            Condition="'$(_EqDeclaresPublicApi)' == 'true' AND '$(_EqSurface)' == 'contract' AND '$(Version.Contains(`-`))' == 'false'">
+        <EqRefuseRemovalAtStableVersion Unshipped="$(_EqUnshippedFile)" Project="$(MSBuildProjectName)" Version="$(Version)" />
+    </Target>
+
+    <!--
       A PACKAGE'S README IS THE REPOSITORY'S, WITH ITS PICTURES' ADDRESSES WRITTEN OUT (#880).
 
       README.md names a picture by its path in the repository, `assets/readme/<file>`, so GitHub
