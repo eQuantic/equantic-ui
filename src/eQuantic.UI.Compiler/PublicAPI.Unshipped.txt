@@ -1,1 +1,3 @@
 #nullable enable
+eQuantic.UI.Compiler.Services.AppBuildOptions.ProjectAssetsFile.get -> string?
+eQuantic.UI.Compiler.Services.AppBuildOptions.ProjectAssetsFile.init -> void

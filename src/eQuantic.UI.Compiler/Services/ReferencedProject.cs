@@ -10,12 +10,13 @@ namespace eQuantic.UI.Compiler.Services;
 /// </summary>
 internal sealed class ReferencedProject
 {
-    private ReferencedProject(string assemblyPath, string directory)
+    private ReferencedProject(string assemblyPath, string projectFile)
     {
         AssemblyPath = assemblyPath;
-        Directory = directory;
+        ProjectFile = projectFile;
+        Directory = Path.TrimEndingDirectorySeparator(Path.GetDirectoryName(projectFile)!) + Path.DirectorySeparatorChar;
         AssemblyFileName = Path.GetFileName(assemblyPath);
-        (AssemblyName, AssemblyReferences, FriendAssemblies) = Describe(assemblyPath);
+        (AssemblyName, FriendAssemblies) = Describe(assemblyPath);
     }
 
     /// <summary>The assembly the app's reference list holds for the project.</summary>
@@ -24,15 +25,15 @@ internal sealed class ReferencedProject
     /// <summary>That assembly's file name, which is how a reference list names it.</summary>
     public string AssemblyFileName { get; }
 
+    /// <summary>The project file's full path, which is how the restore graph names the project.</summary>
+    public string ProjectFile { get; }
+
     /// <summary>The project's directory, with a trailing separator, so a path inside it starts with it.</summary>
     public string Directory { get; }
 
     /// <summary>The assembly's own name, which its compilation takes: another assembly that names it
     /// in a friend declaration or a reference names this.</summary>
     public string AssemblyName { get; }
-
-    /// <summary>The names of the assemblies it references, which is what orders the projects.</summary>
-    public IReadOnlyList<string> AssemblyReferences { get; }
 
     /// <summary>The assemblies it declares as friends. A project file's <c>InternalsVisibleTo</c> item
     /// is written into a generated file under <c>obj</c>, which is not among the sources read, so the
@@ -90,7 +91,7 @@ internal sealed class ReferencedProject
                 || !System.IO.Directory.Exists(directory))
                 throw new DirectoryNotFoundException($"the project line {projectNumber} lists is not there: '{projectFile}'");
             if (!seen.Add(Path.GetFileName(assembly))) continue;
-            projects.Add(new ReferencedProject(assembly, Path.TrimEndingDirectorySeparator(directory) + Path.DirectorySeparatorChar));
+            projects.Add(new ReferencedProject(assembly, Path.GetFullPath(projectFile)));
         }
         if (projects.Count == 0)
             throw new InvalidDataException($"the list of projects holds no project: '{projectsFile}'");
@@ -121,24 +122,21 @@ internal sealed class ReferencedProject
         return files;
     }
 
-    /// <summary>What the assembly says of itself: its name, the assemblies it references and its
-    /// friends. An assembly that cannot be read is named by its file and references nothing.</summary>
-    private static (string Name, IReadOnlyList<string> References, IReadOnlyList<string> Friends) Describe(string assemblyPath)
+    /// <summary>What the assembly says of itself: its name and its friends. Which projects it
+    /// references is the restore graph's to say (<see cref="ProjectGraph"/>). An assembly that cannot
+    /// be read is named by its file and has no friend.</summary>
+    private static (string Name, IReadOnlyList<string> Friends) Describe(string assemblyPath)
     {
         try
         {
             using var stream = File.OpenRead(assemblyPath);
             using var image = new PEReader(stream);
             var metadata = image.GetMetadataReader();
-            var name = metadata.GetString(metadata.GetAssemblyDefinition().Name);
-            var references = metadata.AssemblyReferences
-                .Select(handle => metadata.GetString(metadata.GetAssemblyReference(handle).Name))
-                .ToList();
-            return (name, references, Friends(metadata));
+            return (metadata.GetString(metadata.GetAssemblyDefinition().Name), Friends(metadata));
         }
         catch (Exception exception) when (exception is IOException or BadImageFormatException or InvalidOperationException)
         {
-            return (Path.GetFileNameWithoutExtension(assemblyPath), [], []);
+            return (Path.GetFileNameWithoutExtension(assemblyPath), []);
         }
     }
 

@@ -32,12 +32,13 @@ internal static class ProjectCompilations
     /// app's projects need too, since references flow, so each project is compiled against it.</param>
     /// <param name="addStandardReferences">See <see cref="ProjectCompilationHelper.CreateCompilationFromSources"/>.</param>
     /// <param name="projects">The referenced projects, in any order.</param>
+    /// <param name="graph">Which project references which, as restore wrote it.</param>
     /// <param name="read">How an assembly is read; null reads each file anew.</param>
     /// <param name="built">Each project a compilation was built for, with that compilation. A project
     /// with no C# source (another language's) keeps its assembly and is not here.</param>
     public static Compilation Create(string assemblyName, IEnumerable<string> sourceFiles,
         IEnumerable<string> assemblyPaths, bool addStandardReferences,
-        IReadOnlyList<ReferencedProject> projects, Func<string, MetadataReference>? read,
+        IReadOnlyList<ReferencedProject> projects, ProjectGraph graph, Func<string, MetadataReference>? read,
         out IReadOnlyDictionary<ReferencedProject, Compilation> built)
     {
         var sources = projects.ToDictionary(project => project, project => project.SourceFiles());
@@ -48,11 +49,20 @@ internal static class ProjectCompilations
         var metadata = ProjectCompilationHelper.LoadReferences(assemblyPaths, addStandardReferences,
             compiled.Select(project => project.AssemblyFileName).ToHashSet(StringComparer.OrdinalIgnoreCase), read);
 
-        // In the order the assemblies reference one another, each project referencing the ones it
-        // reaches, directly or through another: a type of a third project named in a signature of a
-        // second resolves only where the third is referenced too.
-        var byAssembly = new Dictionary<string, ReferencedProject>(StringComparer.OrdinalIgnoreCase);
-        foreach (var project in compiled) byAssembly.TryAdd(project.AssemblyName, project);
+        // In the order the projects reference one another, each referencing the ones it reaches,
+        // directly or through another: a type of a third project named in a signature of a second
+        // resolves only where the third is referenced too. The order is the restore graph's, never
+        // the assemblies': a constant read from another project is copied into the reader, and a
+        // reference assembly keeps no method body, so a library that reads only a constant of a
+        // project names no reference to it, and was compiled without it (#887).
+        var byProjectFile = new Dictionary<string, ReferencedProject>(StringComparer.OrdinalIgnoreCase);
+        foreach (var project in compiled)
+        {
+            if (!graph.Holds(project.ProjectFile))
+                throw new InvalidDataException(
+                    $"the restore graph does not hold '{project.ProjectFile}', so which projects it references is not known: restore the app again");
+            byProjectFile.TryAdd(project.ProjectFile, project);
+        }
 
         var compilations = new Dictionary<ReferencedProject, Compilation>();
         var reaches = new Dictionary<ReferencedProject, List<ReferencedProject>>();
@@ -61,12 +71,13 @@ internal static class ProjectCompilations
         {
             if (reaches.TryGetValue(project, out var known)) return known;
             var reached = new List<ReferencedProject>();
-            // Assemblies cannot reference one another in a circle, so a project met again on its own
-            // path is a list written by hand: it is left out where it closes the circle.
+            // Projects cannot reference one another in a circle, which restore refuses, so a project
+            // met again on its own path is a graph written by hand: it is left out where it closes
+            // the circle.
             if (!onPath.Add(project)) return reached;
-            foreach (var name in project.AssemblyReferences)
+            foreach (var file in graph.ReferencesOf(project.ProjectFile))
             {
-                if (!byAssembly.TryGetValue(name, out var dependency) || dependency == project) continue;
+                if (!byProjectFile.TryGetValue(file, out var dependency) || dependency == project) continue;
                 foreach (var further in Reaches(dependency, onPath).Append(dependency))
                     if (!reached.Contains(further)) reached.Add(further);
             }

@@ -460,6 +460,12 @@
             <_EqcArgument Include="refs-file" Value="$(_EqcRefsFile)" />
             <_EqcArgument Include="projects" Value="--projects" Condition="'@(_EqcProject)' != ''" />
             <_EqcArgument Include="projects-file" Value="$(_EqcProjectsFile)" Condition="'@(_EqcProject)' != ''" />
+            <!-- Which of those projects references which, from the graph NuGet's restore wrote for the
+                 app. Their assemblies cannot say it: a constant read from another project is copied
+                 into the reader, so a library that reads only a constant of a project names no
+                 reference to it, and eqc compiled it without that project (#887). -->
+            <_EqcArgument Include="project-assets" Value="--project-assets" Condition="'@(_EqcProject)' != ''" />
+            <_EqcArgument Include="project-assets-file" Value="$(ProjectAssetsFile)" Condition="'@(_EqcProject)' != ''" />
             <!-- The app's assembly name as MSBuild evaluated it. A project file may set it apart from
                  its own name, and it is the name another assembly knows the app by: a referenced
                  project's InternalsVisibleTo opens its internal types to this name and to no other. -->
