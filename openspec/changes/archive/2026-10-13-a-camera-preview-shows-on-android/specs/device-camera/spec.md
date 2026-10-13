@@ -67,6 +67,35 @@ SHALL turn each frame so that it is upright for the display's rotation at that f
 - **THEN** the frame is 640 by 480 in landscape and 480 by 640 in portrait, and in each posture the
   picture stands the way the system's own camera app shows it
 
+### Requirement: A frame is handed over whole
+
+A session that converts its frames on a thread of its own SHALL write each frame into an array the
+renderer was not handed, and SHALL publish it only when it is whole, so that a frame is never
+uploaded while it is being written. A realizer SHALL keep one texture for each array a session
+publishes, so that a session alternating between two costs two textures and not one per frame.
+
+#### Scenario: The frame handed over
+
+- **WHEN** a frame has been published and the following one is being written
+- **THEN** the array that was published is not the one written, and it is written again only after
+  the following frame has been published
+
+#### Scenario: A source that runs
+
+- **WHEN** a source publishes a hundred frames of one size
+- **THEN** it has published two arrays, turn about
+
+#### Scenario: Two textures, not one a frame
+
+- **WHEN** a camera preview is emitted twenty times for a session that alternates between two arrays
+- **THEN** two textures are drawn in all, each with the array of its frame and the frame's version
+
+#### Scenario: A minute of preview on Android
+
+- **WHEN** a preview runs for a minute on the Android emulator
+- **THEN** the renderer has allocated fewer than a hundred descriptor sets, where a texture per frame
+  would have taken one for every frame delivered
+
 ### Requirement: A preview is an ordinary node from its first render
 
 A `CameraPreview` with a session SHALL keep the host rendering before the session's first frame

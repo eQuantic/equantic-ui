@@ -25,6 +25,16 @@ strides, which is how every platform hands YUV over, so it is not Android's. It 
 range in 16.16 fixed point, and it turns the frame by quarter turns while it converts, so an upright
 frame costs one pass.
 
+**Two arrays, turn about.** The camera converts a frame on its own thread and the renderer uploads
+the published one on another. A lock between them would hold the render thread for as long as a
+conversion takes, so there is none, and with one array an upload that landed in the middle of a
+conversion drew the top of one frame over the bottom of another (found by Copilot's review). The
+session writes the array the renderer was not handed and publishes it when it is whole, so what a
+renderer reads stays untouched for a whole frame of the camera. `FramePair` is that handoff, in the
+engine because it is no platform's. The realizer then keeps a texture per ARRAY: per session, as it
+was, a session that alternates would change texture on every frame it delivers. The Apple session
+still writes one array, which is #870.
+
 **Upright is the session's job.** A phone's sensor is mounted sideways. The frame turns by the
 sensor's orientation less the display's rotation (their sum for a front camera), read for every
 frame, so a phone turned while the preview runs keeps the picture the right way up.
@@ -70,9 +80,12 @@ the guard reads the third from the implementation, whose `IsAvailable` is the li
 ## What is proved where
 
 `Yuv420Tests` (14 cases) holds the conversion: grey and the primaries, padded rows and interleaved
-chroma, the corner each quarter turn moves, every pixel written once. `CameraPreviewTests` holds the
-emit step, and fails with main's. `WikiShellRealizationsTests` holds the table, and fails with the
-Android registration removed and against a wiki without the table.
+chroma, the corner each quarter turn moves, every pixel written once. `FramePairTests` holds the
+handoff: the array handed over is not written until another frame has been published after it, and a
+source that runs uses two arrays. `CameraPreviewTests` holds the emit step: the case with no frame
+yet fails with main's, and the case of two alternating arrays fails with the texture kept per
+session. `WikiShellRealizationsTests` holds the table, and fails with the Android registration
+removed and against a wiki without the table.
 
 The shell itself is Camera2 on a device, so it is proved on the Android emulator (API 36). The
 prompt: refused once, `NotDetermined` and the prompt again; refused twice, `Denied` and no prompt;
@@ -81,4 +94,5 @@ A still that is a JPEG of the same size. The camera service's own list of client
 step: empty after each of five stops and after the app goes home, one entry after each start and
 after it comes back, in one process. The device turned to each landscape and back, with the system's
 own camera app opened in the same posture as the reference: the two show the picture the same way up
-each time, and the session takes the camera back from it.
+each time, and the session takes the camera back from it. A minute of preview allocates fewer than
+a hundred descriptor sets, which is two textures for the feed and not one per frame.

@@ -4,6 +4,7 @@
 
 - [x] 1.1 `Yuv420.ToRgba` and `Yuv420.Turned`: YUV 4:2:0 planes with their strides to upright RGBA. Verify: `Yuv420Tests` (14 cases)
 - [x] 1.2 A camera preview with a session asks for the next frame before its first frame arrives. Verify: `CameraPreviewTests.ASessionWithNoFrameYet_KeepsTheHostAsking`, which fails with main's emit step
+- [x] 1.3 `FramePair`: a source writes the array that was not handed over and publishes it whole; the emit step keeps a texture per array. Verify: `FramePairTests` (6 cases), and `CameraPreviewTests.ASessionThatAlternatesBetweenTwoArrays_CostsTwoTexturesAndNotOneAFrame`, which fails with the texture kept per session
 
 ## 2. The Android shell
 
@@ -16,6 +17,7 @@
 - [x] 3.2 A fresh install, granted: the feed shows upright at 480 by 640, clipped by its corner radius with text drawn over it, and `Capture()` answers `image/jpeg`, 480 by 640, starting `ffd8`
 - [x] 3.3 The camera service's list of active clients: empty after each of five stops and after Home, one entry after each start and after the return, the process the same throughout
 - [x] 3.4 The device turned to each landscape and back, beside the system's camera app in the same posture: the frame is 640 by 480 and 480 by 640 again, the picture stands as the reference shows it, and the session takes the camera back each time the reference lets it go
+- [x] 3.5 A minute of preview with the two arrays: fewer than a hundred descriptor sets allocated, read from a temporary counter in the Vulkan device
 
 ## 4. Documentation and the suites
 

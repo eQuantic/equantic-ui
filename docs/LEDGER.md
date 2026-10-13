@@ -2608,12 +2608,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#775](https://github.com/eQuantic/equantic-ui/issues/775)). It now realizes the contract through
   Camera2 over Mono.Android, with no CameraX connector: the permission is asked inside
   `StartPreviewAsync` and reads `Denied` only once Android will not prompt again, frames arrive as
-  YUV and the engine's `Yuv420.ToRgba` turns them into upright RGBA, `Capture()` answers a JPEG, and
-  the camera is given up and taken back as the app leaves the screen and returns. Proved on the
-  emulator (API 36) against the camera service's own list of clients, and turned both ways beside
-  the system's camera app. Found on the way: a preview with a session and no frame yet did not ask
-  for the next frame, on every shell. The wiki's Capabilities page says which shell answers which
-  contract, and `WikiShellRealizationsTests` compares it with the registrations. Proposed and
+  YUV and the engine's `Yuv420.ToRgba` turns them into upright RGBA, written into the one of two
+  arrays the renderer was not handed (`FramePair`) so a frame is drawn whole, `Capture()` answers a
+  JPEG, and the camera is given up and taken back as the app leaves the screen and returns. Proved
+  on the emulator (API 36) against the camera service's own list of clients, and turned both ways
+  beside the system's camera app. Found on the way: a preview with a session and no frame yet did
+  not ask for the next frame, on every shell. The wiki's Capabilities page says which shell answers
+  which contract, and `WikiShellRealizationsTests` compares it with the registrations. Proposed and
   archived through OpenSpec (`openspec/specs/device-camera`).
 
 ## Retired documents

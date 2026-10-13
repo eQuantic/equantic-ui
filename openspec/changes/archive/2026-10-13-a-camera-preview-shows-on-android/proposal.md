@@ -22,6 +22,9 @@ permission the shell never used.
   new `Yuv420.ToRgba` converts it and turns it upright for the way the device is held, into one
   reused buffer the renderer uploads when its version moves. The preview stays an ordinary node that
   clips, takes a corner radius and sits under what is drawn over it.
+- **A frame is drawn whole.** The camera converts on its own thread and the renderer uploads on
+  another with no lock between them, so the session writes the one of two arrays the renderer was
+  not handed (`FramePair`, in the engine), and the realizer keeps a texture per array.
 - **`Capture()`** returns the frame on screen as an encoded still (`image/jpeg`).
 - **The camera follows the app's place on screen.** It closes when the activity leaves the screen
   and opens again when it returns, in the same session. A paused activity that is still in view
@@ -52,8 +55,11 @@ None.
   `AndroidPermissions` (the three answers, for any permission), the registration in
   `AndroidCapabilities`, and `PhotonActivity`, which tells the session when it starts, stops and
   resumes, and now says whether a permission request was granted, refused or left unanswered.
-- **The engine** (`eQuantic.UI.Native.Engine`): `Yuv420`.
-- **The native components** (`eQuantic.UI.Native.Components`): the camera preview's emit step.
-- **Public surface moves** by additions only: `Yuv420` with `ToRgba` and `Turned`, and
+- **The engine** (`eQuantic.UI.Native.Engine`): `Yuv420` and `FramePair`.
+- **The native components** (`eQuantic.UI.Native.Components`): the camera preview's emit step, which
+  asks for the next frame from its first render and keeps a texture per array.
+- **The vocabulary** (`eQuantic.UI.Primitives`): `ICameraSession.FrameBytes` says a session may
+  alternate between two arrays. Its shape does not change.
+- **Public surface moves** by additions only: `Yuv420` with `ToRgba` and `Turned`, `FramePair`, and
   `PhotonActivity`'s `OnStart`, `OnStop` and `OnResume` overrides. The developer surface does not
   move. Nothing breaks.
