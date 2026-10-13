@@ -32,7 +32,9 @@ public static class CapabilityManifest
     /// <para>
     /// With nothing declared the file is REMOVED, not merely left unwritten: the SDK merges it
     /// whenever it exists, so one left by an earlier build would go on asking for a permission, or
-    /// answering a scheme, the app has since stopped declaring.
+    /// answering a scheme, the app has since stopped declaring. And it is written only when what it
+    /// says CHANGED: Apple's packaging rewrites the app's manifest whenever this file is newer, so
+    /// a file touched on every build would cost every build that work.
     /// </para>
     /// </summary>
     public static bool Write(string assemblyPath, string plistPath, string? identifier = null)
@@ -42,10 +44,7 @@ public static class CapabilityManifest
             .Select(pair => (Key: AppleKey(pair.Capability), pair.Reason))
             .Where(entry => entry.Key is not null)
             .ToArray();
-        var schemes = BundleManifest.Read(assemblyPath)
-            .Where(fact => fact.Kind == BundleManifest.ValueKind.UrlScheme)
-            .Select(fact => fact.Value)
-            .ToArray();
+        var schemes = BundleManifest.Schemes(BundleManifest.Read(assemblyPath));
 
         if (keys.Length == 0 && schemes.Length == 0)
         {
@@ -55,18 +54,15 @@ public static class CapabilityManifest
             return false;
         }
 
-        Directory.CreateDirectory(Path.GetDirectoryName(plistPath)!);
-        File.WriteAllText(plistPath, PropertyListWriter.Document(plist =>
+        var document = PropertyListWriter.Document(plist =>
         {
             foreach (var (key, reason) in keys) plist.String(key!, reason);
-            if (schemes.Length == 0) return;
+            BundleManifest.WriteUrlTypes(plist, identifier, schemes);
+        });
+        if (File.Exists(plistPath) && File.ReadAllText(plistPath) == document) return true;
 
-            plist.DictionaryArray("CFBundleURLTypes", entry =>
-            {
-                if (!string.IsNullOrWhiteSpace(identifier)) entry.String("CFBundleURLName", identifier);
-                entry.StringArray("CFBundleURLSchemes", schemes);
-            });
-        }));
+        Directory.CreateDirectory(Path.GetDirectoryName(plistPath)!);
+        File.WriteAllText(plistPath, document);
         return true;
     }
 

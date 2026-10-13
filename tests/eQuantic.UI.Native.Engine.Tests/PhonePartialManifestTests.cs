@@ -66,6 +66,34 @@ public class PhonePartialManifestTests
     }
 
     /// <summary>
+    /// Apple's packaging rewrites the app's manifest whenever this file is newer than it, so a file
+    /// touched on every build makes every build do that work. It is written when what it says
+    /// changed, and left alone when it did not.
+    /// </summary>
+    [Fact]
+    public void WrittenAgainWithNothingChanged_TheFileIsLeftAsItWas()
+    {
+        var directory = Scratch();
+        try
+        {
+            var plist = Path.Combine(directory, "Capabilities.plist");
+            CapabilityManifest.Write(Declaring, plist, "com.acme.app");
+            var longAgo = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            File.SetLastWriteTimeUtc(plist, longAgo);
+
+            CapabilityManifest.Write(Declaring, plist, "com.acme.app").Should().BeTrue("it is still what the app declares");
+            File.GetLastWriteTimeUtc(plist).Should().Be(longAgo);
+
+            CapabilityManifest.Write(Declaring, plist, "com.acme.other");
+            File.GetLastWriteTimeUtc(plist).Should().BeAfter(longAgo, "the identifier changed, so the file did");
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    /// <summary>
     /// The SDK merges the file whenever it exists. Left by an earlier build, it went on answering a
     /// scheme (and asking for a permission) the app had stopped declaring.
     /// </summary>

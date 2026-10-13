@@ -695,12 +695,6 @@
     -->
     <PropertyGroup Condition="'$(_EqPlatform)' == 'ios'">
         <_EqCapabilityPlist>$(_EqIconDir)/Capabilities.plist</_EqCapabilityPlist>
-        <!-- WHEN this runs is the whole of it. Apple's packaging compiles the app's manifest early in
-             the build, from the partial manifests it has collected by then, and names this property
-             as the place for a target that contributes one. Run after Compile instead, as it was,
-             the file was written and never merged: an iPhone app declared its camera sentence in C#
-             and shipped an Info.plist without it. -->
-        <CollectAppManifestsDependsOn>$(CollectAppManifestsDependsOn);EQuanticCapabilityManifest</CollectAppManifestsDependsOn>
     </PropertyGroup>
 
     <!-- The MSBuild-resolved reference list, for TOOLING rather than for eqc: the native SDK never
@@ -718,9 +712,27 @@
             Condition="'@(ReferencePathWithRefAssemblies)' != ''" />
     </Target>
 
-    <!-- The declarations are read off the COMPILED assembly, so collecting the manifests waits for
-         the compiler: the dependency says so, and MSBuild orders the two. -->
-    <Target Name="EQuanticCapabilityManifest" DependsOnTargets="Compile"
+    <!--
+        TWO moments, and each has its reason.
+
+        WRITTEN after the compiler, because the declarations are read off the compiled assembly.
+
+        HANDED OVER when Apple's packaging writes the FINAL manifest, not when it compiles the first
+        one. It compiles a first manifest early in the build, from the PartialAppManifest items
+        collected by then, and merges what later steps contribute (the asset catalog's keys, a
+        Core ML model's) as it writes the bundle's Info.plist. Added to PartialAppManifest after
+        Compile, as this was, the file arrived after the first and was never part of the second:
+        an iPhone app declared its camera sentence in C# and shipped without it (#872).
+
+        The early list has a public door, CollectAppManifestsDependsOn, and it is the wrong one
+        here: a target on it that needs the compiled assembly drags Compile in front of the rest of
+        the build, and the compiler then runs before the app's resources are prepared. Measured: an
+        app's .resx is no longer embedded in its assembly. So this uses the late list, whose names
+        are the iOS SDK's own and carry its underscore. scripts/check-ios-launch.sh compares the
+        built Info.plist with this file, so a release of that SDK that renames them fails there
+        instead of shipping an app without its keys.
+    -->
+    <Target Name="EQuanticCapabilityManifest" AfterTargets="Compile"
             Condition="'$(_EqPlatform)' == 'ios'">
         <ItemGroup>
             <_EqCapabilitiesArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
@@ -731,8 +743,15 @@
                 Condition="'$(ApplicationId)' != ''" />
         </ItemGroup>
         <RunProgram Program="dotnet" Arguments="@(_EqCapabilitiesArgument)" StandardOutputImportance="normal" />
+    </Target>
+
+    <!-- Its own target, because a build of several runtime identifiers writes the final manifest
+         in an outer build that compiles nothing: the inner builds wrote the file, and the outer one
+         still has to hand it over. -->
+    <Target Name="EQuanticContributeCapabilityManifest" BeforeTargets="_WriteAppManifest"
+            Condition="'$(_EqPlatform)' == 'ios'">
         <ItemGroup Condition="Exists('$(_EqCapabilityPlist)')">
-            <PartialAppManifest Include="$(_EqCapabilityPlist)" />
+            <_PostCompilePartialAppManifest Include="$(_EqCapabilityPlist)" />
         </ItemGroup>
     </Target>
 
