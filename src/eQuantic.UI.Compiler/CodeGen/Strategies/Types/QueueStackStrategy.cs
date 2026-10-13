@@ -176,10 +176,13 @@ public class QueueStackStrategy : IExpressionIrStrategy
             : JsExpr.Call(JsExpr.Identifier($"$eq.collections.{kind}"),
                 (creation.ArgumentList?.Arguments ?? default).Select(argument => context.Converter.ConvertIr(argument.Expression)).ToList());
         // `new SortedSet<int> { 2, 1 }` is a construction and then one Add per element, as C# runs it.
-        // The initializer was dropped, so the set began empty in the browser alone.
-        return creation.Initializer is { } initializer && initializer.Expressions.Count > 0
-            ? Expressions.ObjectCreationStrategy.AddPerElementConstruction(initializer, construction, context)
-            : construction;
+        // The initializer was dropped, so the set began empty in the browser alone. A node's `Value` is
+        // settable, so `new LinkedListNode<int>(1) { Value = 2 }` assigns it, where it went out as a
+        // call to an `add` no node has.
+        if (creation.Initializer is not { Expressions.Count: > 0 } initializer) return construction;
+        return initializer.IsKind(SyntaxKind.ObjectInitializerExpression)
+            ? Expressions.ObjectInitializer.Apply(construction, initializer, context)
+            : Expressions.ObjectCreationStrategy.AddPerElementConstruction(initializer, construction, context);
     }
 
     /// <summary>
