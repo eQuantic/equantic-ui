@@ -122,7 +122,8 @@ public class LedgerTests
     /// <summary>
     /// Whatever the folder holds is read, so nothing waits there for ever. A scan of <c>*.md</c>
     /// alone let an event saved under another extension, or in a folder of its own, pass this guard
-    /// and miss every fold, with nothing saying so.
+    /// and miss every fold, with nothing saying so. Skipping every hidden file did the same for an
+    /// event saved with a dot first: what is skipped is two files a system writes, by name.
     /// </summary>
     [Fact]
     public void AFileOfAnotherKind_OrAFolder_IsRefused_RatherThanLeftWaiting()
@@ -130,7 +131,9 @@ public class LedgerTests
         var root = Tree(Chronology,
             ("an-event.txt", "- **2026-10-03 · An event**: saved as text (#20).\n"),
             ("AN-EVENT.MD", "- **2026-10-03 · Another event**: saved in capitals (#21).\n"),
+            (".an-event.md", "- **2026-10-03 · A hidden event**: saved with a dot first (#22).\n"),
             (".DS_Store", "what a Mac leaves in a folder somebody opened"),
+            ("Thumbs.db", "what Windows leaves in a folder somebody opened"),
             (Ledger.Guide, "# Events waiting for a fold\n"));
         Directory.CreateDirectory(Path.Combine(root, Ledger.Folder, "2026"));
         try
@@ -141,6 +144,7 @@ public class LedgerTests
             {
                 "docs/ledger/an-event.txt: its name is lower-case words joined by hyphens, ending in .md",
                 "docs/ledger/AN-EVENT.MD: its name is lower-case words joined by hyphens, ending in .md",
+                "docs/ledger/.an-event.md: its name is lower-case words joined by hyphens, ending in .md",
                 "docs/ledger/2026/: an event is a file of this folder, not of one inside it",
             });
             var fold = () => ledger.Fold();

@@ -25,8 +25,10 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 # `dotnet test` answers 0 when its filter matches no test, so its exit code alone would call a fold
-# that never ran a success. A fold that ran wrote the record, whatever it found waiting: the record
-# is read back, and so is the folder.
+# that never ran a success. The fold writes the record LAST, after it removed every file it folded,
+# and it writes nothing when it refuses one. So a record newer than this run's start is a fold that
+# ran to its end, whatever it found waiting. Which files wait is the fold's to say, in one place
+# (Ledger.Waiting): this script lists none of its own.
 started="$(mktemp)"
 trap 'rm -f "$started"' EXIT
 
@@ -35,13 +37,6 @@ EQ_FOLD_LEDGER=1 dotnet test tests/eQuantic.UI.Web.Tests --nologo \
 
 if [ ! docs/ledger/folded.json -nt "$started" ]; then
     echo "The fold did not run: docs/ledger/folded.json was not written. Does LedgerTests still fold under EQ_FOLD_LEDGER=1?" >&2
-    exit 1
-fi
-
-waiting="$(find docs/ledger -mindepth 1 ! -name README.md ! -name folded.json ! -name '.*')"
-if [ -n "$waiting" ]; then
-    echo "The fold ran and these are still waiting:" >&2
-    echo "$waiting" >&2
     exit 1
 fi
 

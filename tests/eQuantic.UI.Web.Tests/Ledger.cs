@@ -30,6 +30,18 @@ internal sealed class Ledger(string root)
 
     private const string Heading = "## Chronology";
 
+    /// <summary>
+    /// What a system writes into a folder somebody opened, which is no event: a Mac's and Windows'
+    /// own, the two the repository's <c>.gitignore</c> names.
+    /// <para>
+    /// The list is by name and short on purpose. Skipping every file that starts with a dot would
+    /// let an event saved as <c>.an-event.md</c> pass the guard and miss every fold, in silence. A
+    /// file this does not name is read as an entry and refused by its name, which is loud, and a
+    /// system file met later is one more name here.
+    /// </para>
+    /// </summary>
+    private static readonly string[] LeftByASystem = [".DS_Store", "Thumbs.db"];
+
     /// <summary>What the record says of itself, for whoever opens it.</summary>
     private static readonly string[] Comment =
     [
@@ -53,17 +65,17 @@ internal sealed class Ledger(string root)
     /// by name. Entries of one day have no order worth keeping, and a name gives the same one on
     /// every clone.
     /// <para>
-    /// EVERY file of the folder is one, but its own page, the record, and what a system leaves
-    /// behind (a Mac writes .DS_Store into a folder somebody opened). Reading only <c>*.md</c> would
-    /// let an event saved as <c>.txt</c>, or as <c>.MD</c> on Linux, wait for ever with nothing
-    /// saying so: it is read here, and its name is what refuses it.
+    /// EVERY file of the folder is one, but its own page, the record, and the two files a system
+    /// leaves behind (<see cref="LeftByASystem"/>). Reading only <c>*.md</c> would let an event
+    /// saved as <c>.txt</c>, or as <c>.MD</c> on Linux, wait for ever with nothing saying so: it is
+    /// read here, and its name is what refuses it. A hidden file is read the same way.
     /// </para>
     /// </summary>
     public IReadOnlyList<LedgerEntry> Waiting() =>
         Directory.Exists(FolderPath)
             ? Directory.GetFiles(FolderPath)
                 .Where(path => Path.GetFileName(path) is var name
-                    && name != Guide && name != Path.GetFileName(Record) && !name.StartsWith('.'))
+                    && name != Guide && name != Path.GetFileName(Record) && !LeftByASystem.Contains(name))
                 .Select(LedgerEntry.Read)
                 .OrderBy(entry => entry.Day)
                 .ThenBy(entry => entry.Name, StringComparer.Ordinal)
