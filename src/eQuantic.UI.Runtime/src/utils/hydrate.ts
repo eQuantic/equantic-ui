@@ -169,8 +169,10 @@ export function hydrate(incoming: unknown, spec: HydrationSpec): unknown {
 /**
  * A collection from the array System.Text.Json wrote for it, in the order the collection enumerates
  * on the server. A stack enumerates from its top, which the runtime's `Stack` keeps at the END of its
- * items, so it is built from the reversed array and its top still comes off first. A value that is
- * already its class is not an array, and passes through.
+ * items, so it is pushed from the array's end and its top still comes off first. A queue and a stack
+ * grow one element at a time, as System.Text.Json reads them: the payload carries no capacity, and
+ * .NET's reading of `[1]` holds it in an array of 4, where one sized to the elements held 1 (#866). A
+ * value that is already its class is not an array, and passes through.
  */
 function collection(incoming: unknown, spec: CollectionSpec): unknown {
   if (!Array.isArray(incoming)) return incoming;
@@ -180,10 +182,16 @@ function collection(incoming: unknown, spec: CollectionSpec): unknown {
       return hashSet(spec.byValue ?? false, items);
     case 'sortedSet':
       return new SortedSet(items, spec.order === undefined ? undefined : comparerOf(spec.order));
-    case 'queue':
-      return new Queue(items);
-    case 'stack':
-      return new Stack(items.slice().reverse());
+    case 'queue': {
+      const queue = new Queue<unknown>();
+      for (const item of items) queue.enqueue(item);
+      return queue;
+    }
+    case 'stack': {
+      const stack = new Stack<unknown>();
+      for (let at = items.length - 1; at >= 0; at--) stack.push(items[at]);
+      return stack;
+    }
     case 'linkedList':
       return new LinkedList(items);
   }
