@@ -26,7 +26,9 @@ On `main` at `2006921`: twelve device contracts exist; the iOS shell realizes ei
 shell seven. Android has no `ICamera`; neither phone realizes `ITextClipboard` or `IDeepLinks`;
 `IWorkspace` and `IFileDialogs` are desktop-only by their own contracts. Four declarations
 (`UseContacts`, `UseNotifications`, `UseMicrophone`, `UsePhotoLibraryAdd`) write a permission no
-API uses. Nothing has run on a physical device.
+API uses. Nothing has run on a physical device. Since then the Android shell realizes `ICamera`
+([#775](https://github.com/eQuantic/equantic-ui/issues/775)), and the wiki's Capabilities page keeps
+the count per contract and shell, compared with the registrations by `WikiShellRealizationsTests`.
 
 Two defects found while cataloguing come before any new capability on iOS:
 

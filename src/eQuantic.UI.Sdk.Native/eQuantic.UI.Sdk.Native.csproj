@@ -13,13 +13,15 @@
         <Content Include="Sdk\**" PackagePath="Sdk" />
     </ItemGroup>
 
-    <!-- The tool the package ships under tools/, as an edge of THIS project's build graph: the
-         build that precedes the pack builds it, restored with the rest of the graph, as the one
-         instance the solution builds. Nothing links against it (ReferenceOutputAssembly=false),
-         nothing copies it here (Private=false), and it is not a package dependency
-         (PrivateAssets=All) — CollectIconTool carries its files instead. -->
+    <!-- The tool the package ships under tools/, and the tasks that start it, as edges of THIS
+         project's build graph: the build that precedes the pack builds them, restored with the rest
+         of the graph, as the one instance the solution builds. Nothing links against them
+         (ReferenceOutputAssembly=false), nothing copies them here (Private=false), and they are not
+         package dependencies (PrivateAssets=All) — CollectIconTool carries their files instead. -->
     <ItemGroup>
         <ProjectReference Include="..\eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj"
+            ReferenceOutputAssembly="false" Private="false" PrivateAssets="All" />
+        <ProjectReference Include="..\eQuantic.UI.Sdk.Tasks\eQuantic.UI.Sdk.Tasks.csproj"
             ReferenceOutputAssembly="false" Private="false" PrivateAssets="All" />
     </ItemGroup>
 
@@ -41,6 +43,9 @@
         </ItemGroup>
         <ItemGroup>
             <TfmSpecificPackageFile Include="@(_IconTool)" PackagePath="tools\net10.0" />
+            <!-- The tasks Sdk.targets starts every program with, as the web SDK ships them. -->
+            <TfmSpecificPackageFile Include="..\eQuantic.UI.Sdk.Tasks\bin\$(Configuration)\netstandard2.0\eQuantic.UI.Sdk.Tasks.dll"
+                PackagePath="tools\netstandard2.0" />
         </ItemGroup>
     </Target>
 

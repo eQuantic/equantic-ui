@@ -52,7 +52,7 @@ internal sealed class AndroidLocation : ILocation
         if (PhotonActivity.Current is not { } activity || Manager is not { } manager) return null;
 
         if (Permission != PermissionState.Granted
-            && !await activity.RequestPermissionsAsync([Fine, Coarse], cancellationToken))
+            && await activity.RequestPermissionsAsync([Fine, Coarse], cancellationToken) != true)
             return null;
 
         var completion = new TaskCompletionSource<GeoLocation?>();

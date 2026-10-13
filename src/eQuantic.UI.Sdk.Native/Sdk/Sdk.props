@@ -106,6 +106,11 @@
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj"
                           ReferenceOutputAssembly="false" Private="false" SkipGetTargetFrameworkProperties="true"
                           GlobalPropertiesToRemove="$(_EqToolGlobalsToRemove)" EqBuildTool="true" />
+        <!-- The tasks Sdk.targets starts every program with: an edge of the same kind, named for the
+             same InitialTarget, which starts eqicon with one of them. -->
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Sdk.Tasks\eQuantic.UI.Sdk.Tasks.csproj"
+                          ReferenceOutputAssembly="false" Private="false" SkipGetTargetFrameworkProperties="true"
+                          GlobalPropertiesToRemove="$(_EqToolGlobalsToRemove)" EqBuildTool="true" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Code\eQuantic.UI.Code.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Components\eQuantic.UI.Components.csproj" />

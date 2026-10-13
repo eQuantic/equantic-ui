@@ -25,8 +25,8 @@ public class StaleGeneratedFilesArePrunedTests
 
     /// <summary>
     /// The prune's two targets and the vector catalog's two, exactly as <c>Sdk.targets</c> declares
-    /// them, except for the one task a test cannot carry: the catalog target starts eqicon with an
-    /// Exec, and that Exec is swapped for a writer that lists the drawings it was given.
+    /// them, except for the one task a test cannot carry: the catalog target starts eqicon with
+    /// RunProgram, and that task is swapped for a writer that lists the drawings it was given.
     /// </summary>
     private static IEnumerable<XElement> ShippedTargets()
     {
@@ -41,7 +41,7 @@ public class StaleGeneratedFilesArePrunedTests
             .ToList();
         targets.Should().HaveCount(names.Length, "the test must run the targets the SDK ships, all of them");
 
-        var eqicon = targets.Single(t => (string?)t.Attribute("Name") == "EQuanticVectors").Elements("Exec").Single();
+        var eqicon = targets.Single(t => (string?)t.Attribute("Name") == "EQuanticVectors").Elements("RunProgram").Single();
         eqicon.ReplaceWith(new XElement("WriteLinesToFile",
             new XAttribute("File", "$(EQuanticVectorsFile)"),
             new XAttribute("Lines", "@(_EqVectorSource->'%(Filename)')"),
