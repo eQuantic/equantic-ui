@@ -120,7 +120,7 @@ export class MarkdownParser {
     }
 
     static slug(text: string) {
-        let plain = MarkdownParser.strip(text).toLowerCase();
+        let plain = $eq.text.toLower(MarkdownParser.strip(text), true);
         let slug = '';
         for (let i = 0; i < plain.length; i++) {
             let ch = plain[i];

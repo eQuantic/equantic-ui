@@ -9,13 +9,14 @@
  * two code units that differ, or of the lengths: `Compare("a", "c", Ordinal)` is -2, not -1.
  *
  * An ordinal comparison that ignores case compares each code point's SIMPLE upper case, as .NET's
- * `OrdinalCasing` does. That is `toUpperCase` wherever it maps one code point to one, with the
- * differences measured against .NET 10 over the BMP: .NET leaves the dotless i and the long s alone
- * (no Turkish i in an ordinal comparison), and takes the Greek letters with an iota subscript to
- * their title case, which `toUpperCase` expands to two letters. So the Kelvin sign is not a k. A
- * surrogate pair is read as the code point it encodes, whose upper case is compared whole, and it
- * orders after anything that is not a pair, whatever the code units say.
+ * `OrdinalCasing` does. That is the invariant culture's upper case (`casing.ts`), measured against
+ * .NET 10 over the BMP, but for the long s, which it keeps: the dotless i stays (no Turkish i in an
+ * ordinal comparison), and a Greek letter with an iota subscript is its title case, which
+ * `toUpperCase` expands to two letters. So the Kelvin sign is not a k. A surrogate pair is read as
+ * the code point it encodes, whose upper case is compared whole, and it orders after anything that
+ * is not a pair, whatever the code units say.
  */
+import { invariantUpper } from './casing';
 import { formatLocale } from './culture';
 import { exception } from './exceptions';
 
@@ -91,26 +92,11 @@ function collator(invariant: boolean, ignoreCase: boolean): Intl.Collator {
 
 // ---- ordinal ---------------------------------------------------------------------------------
 
-/** Where .NET's `OrdinalCasing` differs from `toUpperCase` kept to one code point. */
-const ORDINAL_UPPER = new Map<number, number>([
-  [0x0131, 0x0131],
-  [0x017f, 0x017f],
-  [0x1fb3, 0x1fbc],
-  [0x1fc3, 0x1fcc],
-  [0x1ff3, 0x1ffc],
-]);
-for (const start of [0x1f80, 0x1f90, 0x1fa0]) {
-  for (let unit = start; unit < start + 8; unit++) ORDINAL_UPPER.set(unit, unit + 8);
-}
-
-/** A code point's simple upper case, as .NET's ordinal comparison takes it. */
+/** A code point's simple upper case, as .NET's ordinal comparison takes it: the invariant culture's,
+ * but for the long s, which it keeps. */
 export function ordinalUpper(codePoint: number): number {
-  if (codePoint < 0x61) return codePoint;
-  const known = ORDINAL_UPPER.get(codePoint);
-  if (known !== undefined) return known;
-  const text = String.fromCodePoint(codePoint);
-  const upper = text.toUpperCase();
-  return upper.length === text.length ? (upper.codePointAt(0) as number) : codePoint;
+  if (codePoint < 0x61 || codePoint === 0x017f) return codePoint;
+  return invariantUpper(codePoint);
 }
 
 export function isHigh(unit: number): boolean {

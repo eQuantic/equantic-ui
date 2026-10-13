@@ -266,33 +266,15 @@ public class StringStrategyTests
         result.Should().Be("$eq.text.trim(this.str)");
     }
 
-    [Fact]
-    public void ToUpper_MapsToToUpperCase()
-    {
-        var result = TestHelper.ConvertExpression("str.ToUpper()");
-        result.Should().Be("this.str.toUpperCase()");
-    }
-
-    [Fact]
-    public void ToLower_MapsToToLowerCase()
-    {
-        var result = TestHelper.ConvertExpression("str.ToLower()");
-        result.Should().Be("this.str.toLowerCase()");
-    }
-
-    [Fact]
-    public void ToUpperInvariant_MapsToToUpperCase()
-    {
-        var result = TestHelper.ConvertExpression("str.ToUpperInvariant()");
-        result.Should().Be("this.str.toUpperCase()");
-    }
-
-    [Fact]
-    public void ToLowerInvariant_MapsToToLowerCase()
-    {
-        var result = TestHelper.ConvertExpression("str.ToLowerInvariant()");
-        result.Should().Be("this.str.toLowerCase()");
-    }
+    /// <summary>The casing is the runtime's, which changes a code unit to one as .NET does, in the
+    /// page's culture or, for the invariant pair, the invariant one (#848).</summary>
+    [Theory]
+    [InlineData("str.ToUpper()", "$eq.text.toUpper(this.str)")]
+    [InlineData("str.ToLower()", "$eq.text.toLower(this.str)")]
+    [InlineData("str.ToUpperInvariant()", "$eq.text.toUpper(this.str, true)")]
+    [InlineData("str.ToLowerInvariant()", "$eq.text.toLower(this.str, true)")]
+    public void Casing_IsDotNets(string code, string expected) =>
+        TestHelper.ConvertExpression(code).Should().Be(expected);
 
     // ============ Static Methods ============
 

@@ -22,6 +22,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// - PadLeft(width, char?) -> padStart(width, char)
 /// - PadRight(width, char?) -> padEnd(width, char)
 /// - Trim(), TrimStart(), TrimEnd() -> $eq.text.trim/trimStart/trimEnd, .NET's white space
+/// - ToUpper(), ToLower() and their invariant pair -> $eq.text.toUpper/toLower, .NET's casing in a culture
 /// - an overload that compares (a StringComparison, a CultureInfo) and Replace(string, string) ->
 ///   the runtime's searches, chosen by the bound method
 /// </summary>
@@ -83,6 +84,8 @@ public class StringMethodStrategy : IConversionStrategy
             return ComparingCall(invocation, methodName, shape, context);
         if (CharSearch(invocation, methodName, context) is { } charSearch)
             return charSearch;
+        if (methodName is "ToUpper" or "ToLower" or "ToUpperInvariant" or "ToLowerInvariant")
+            return Casing(invocation, memberAccess, methodName, context);
 
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
         var args = invocation.ArgumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)).ToList();
@@ -104,10 +107,6 @@ public class StringMethodStrategy : IConversionStrategy
             "TrimStart" => ConvertTrim(caller, args, "start", context),
             "TrimEnd" => ConvertTrim(caller, args, "end", context),
             "Trim" => ConvertTrim(caller, args, "both", context),
-            "ToUpper" => $"{caller}.toUpperCase()",
-            "ToLower" => $"{caller}.toLowerCase()",
-            "ToUpperInvariant" => $"{caller}.toUpperCase()",
-            "ToLowerInvariant" => $"{caller}.toLowerCase()",
             // Its chars, the UTF-16 code units: a spread gives code points, one where .NET has two (#524).
             // The (startIndex, length) overload takes its range, refused where it leaves the string,
             // as .NET refuses it: `slice` clamped a negative start and a long length in silence.
@@ -119,6 +118,29 @@ public class StringMethodStrategy : IConversionStrategy
             _ => $"{caller}.{methodName.ToCamelCase()}({JoinArgs(args)})"
         };
     }
+
+    /// <summary>
+    /// <c>ToUpper</c> and <c>ToLower</c>, and their invariant pair, by .NET's casing (#848): a code unit
+    /// to one code unit, in the page's culture with no culture, the current one or a null one, and in
+    /// the invariant culture where the call names it or is the invariant pair; any other culture fails
+    /// the build (EQ2108). They were the engine's <c>toUpperCase</c> and <c>toLowerCase</c>, which
+    /// lengthen <c>ß</c> to <c>SS</c>, read a final sigma in its context and know no culture, and the
+    /// culture a call named was dropped.
+    /// </summary>
+    private static string Casing(InvocationExpressionSyntax invocation, MemberAccessExpressionSyntax memberAccess,
+        string methodName, ConversionContext context)
+    {
+        var caller = context.Converter.ConvertExpression(memberAccess.Expression);
+        var invariant = methodName.EndsWith("Invariant", StringComparison.Ordinal)
+            || invocation.ArgumentList.Arguments is [var culture]
+                && NamedCulture.ReadsInvariant(invocation, culture.Expression, context, ChangingCase);
+        context.UsedHelpers.Add(Eq.Import);
+        var twin = methodName.StartsWith("ToUpper", StringComparison.Ordinal) ? Eq.ToUpper : Eq.ToLower;
+        return invariant ? $"{twin}({caller}, true)" : $"{twin}({caller})";
+    }
+
+    /// <summary>What a casing does, as EQ2108 names it for a culture the browser does not know.</summary>
+    internal const string ChangingCase = "changing case";
 
     /// <summary>
     /// The shape of an overload that compares, one letter per parameter (s a string, c a char, i an

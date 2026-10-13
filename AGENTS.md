@@ -72,7 +72,9 @@ And a job compares, because reading it back is not enough: `scripts/check-commit
 by the `commit-messages` job, reads every commit message of a pull request and of `main`. Five squash
 messages reached main carrying their composer's scaffolding while this rule was already written, and
 all five came from the message composed at merge time, the one artefact nobody re-reads. That is why
-the merge below composes nothing.
+the merge below composes nothing. Six more came from the pull request's body, which the squash took
+whole, attribution a tool writes there included (#851): that is why the squash takes the messages of
+the pull request's commits, which this job has already read, and never its body.
 
 ### Identity
 
@@ -120,7 +122,8 @@ is not the owner's.
    and a branch up to date with `main` (#287), so when `main` moved after the CI ran, merge `main`
    into the pull request first: CI runs again, and it costs no Copilot round. Then
    `gh pr merge <n> --squash` takes the repository's squash default, the pull request's title and
-   body, so the commit's subject IS the title that was already read. If a message is composed
+   its commits' messages, so the commit's subject IS the title that was already read and its body is
+   what the `commit-messages` job read on the pull request. If a message is composed
    anyway, it goes in a file and `./scripts/check-commit-messages.sh --file <file>` reads it before
    the merge. Last, merge the pull request's wiki branch, when it has one, into the wiki's master
    (see Documentation below): main and the wiki move in the same step, and the next pull request's
