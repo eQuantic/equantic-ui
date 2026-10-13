@@ -2738,6 +2738,18 @@ record of a release, the wiki's Upgrading page is the distillate.
   on a light screen ([#881](https://github.com/eQuantic/equantic-ui/issues/881))
   ([#880](https://github.com/eQuantic/equantic-ui/issues/880)). Proposed and archived through
   OpenSpec (`openspec/specs/working-agreement`).
+- **2026-10-13 · A class named as .NET names one of its types is a module the page imports**: a
+  library's `static class Type` reached the page as `Type.family()` with no import and no module of
+  `Type`, the build said nothing, and the browser met a name nothing defined. The emitter keeps a list
+  of names it takes for .NET's (`Type`, `Uri`, `Console`, `Convert`, `Math`, `Regex` among them) and
+  dropped the import of any name on it before it asked whether the build writes a module of that
+  name, and the rule that takes a name ending in `Exception` for .NET's did the same to a library's
+  own exception class. Both now yield to that question. Six names of the list, the app's own class
+  named `Type` and a library's exception class each fail on main's emitter, and a page that calls
+  `System.Math` with no class of that name still imports nothing. Found while testing #887, whose
+  test library's class was first called `Type`
+  ([#888](https://github.com/eQuantic/equantic-ui/issues/888)). Proposed and archived through
+  OpenSpec (`openspec/specs/module-imports`).
 
 ## Retired documents
 
