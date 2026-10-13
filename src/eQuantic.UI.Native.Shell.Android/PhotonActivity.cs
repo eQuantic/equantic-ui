@@ -200,6 +200,12 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     /// <summary>
     /// A link opened while the app runs. The launcher is a single task, so Android hands the
     /// running activity the intent instead of starting another one over it.
+    /// <para>
+    /// The icon tapped while the app runs arrives here too, as the launcher's own intent, and it is
+    /// NOT a start: the tree is alive and the person came back to it, as on an iPhone or a Mac,
+    /// where coming to the front tells an app nothing. What the app was started with is still what
+    /// it was, for as long as this tree lives. A start is a create, and a create says so.
+    /// </para>
     /// </summary>
     protected override void OnNewIntent(Intent? intent)
     {

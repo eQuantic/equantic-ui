@@ -31,6 +31,9 @@ the contract keeps saying to subscribe as well.
 **A start, or a link to a running app.** The rule is whether the tree is rebuilt. Android builds a
 new one on every `onCreate`, so each create is a start. iOS keeps the screen for the process, so only
 the first connection is a start, and a scene that reconnects with a link is a link to a running app.
+Coming to the front is not a start on any of them: the icon tapped while an Android app runs reaches
+the single task as the launcher's own intent, the tree is alive, and `Launch` stays what it was, as
+it does on an iPhone and on a Mac.
 
 **One activity, one task, for an app that links open.** By default a link opened by another app
 starts the activity it names, which is a second instance over the running one: a second surface, a
