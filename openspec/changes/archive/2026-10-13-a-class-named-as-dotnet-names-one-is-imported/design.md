@@ -34,6 +34,7 @@ main's emitter, and the last fails on the first form of the fix too.
 
 ## Risks / Trade-offs
 
-- A file that names both the app's `Math` and `System.Math` imports the app's, and the import hides
-  JavaScript's own for the whole module. C# tells the two apart by their namespaces, and a module has
-  one binding of the name. Not measured, and a file that needs both is rare.
+- A file that names both a solution's `Math` and `System.Math` imports the solution's, and the import
+  hides JavaScript's own for the whole module: measured, `Math.twice(2) + Math.max(1, 2)` under one
+  import. C# tells the two apart by their namespaces, and a module has one binding of the name. Before
+  this change the same file failed on the other call. It is #890.

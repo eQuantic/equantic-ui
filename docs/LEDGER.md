@@ -2763,7 +2763,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   the list, the app's own class named `Type`, a library's exception class and a solution's `Math`
   beside a file that calls `System.Math` each fail on main's emitter, and a page that calls
   `System.Math` with no class of that name still imports nothing. Found while testing #887, whose
-  test library's class was first called `Type`
+  test library's class was first called `Type`. Left for its own change: a file that names both a
+  solution's `Math` and `System.Math` has one binding for the two
+  ([#890](https://github.com/eQuantic/equantic-ui/issues/890))
   ([#888](https://github.com/eQuantic/equantic-ui/issues/888)). Proposed and archived through
   OpenSpec (`openspec/specs/module-imports`).
 
