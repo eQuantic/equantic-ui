@@ -289,8 +289,10 @@ Every picture the root `README.md` shows of a sample SHALL be a capture on recor
 each had when the picture was taken. The test suite SHALL fail when one of those files changes,
 naming the picture and the target of `scripts/capture-readme.sh` that takes it again, and SHALL pass
 again only when the record holds the files as they are. A picture SHALL be written in the README as
-a Markdown image named by its full address, since the README is also every package's readme on
-nuget.org, which shows HTML as text and draws nothing from a relative path.
+a Markdown image named by its path in the repository, which GitHub draws on every branch and in a
+fork. A package's readme SHALL be that README with each picture at its full address under the tag of
+the package's own release, written when the package packs, since nuget.org shows a readme's HTML as
+text and draws nothing from a path.
 
 #### Scenario: A pictured screen changes
 
@@ -308,15 +310,17 @@ nuget.org, which shows HTML as text and draws nothing from a relative path.
   the README does not show
 - **THEN** the test fails, naming it
 
-#### Scenario: A relative path
+#### Scenario: A picture named another way
 
-- **WHEN** `README.md` names a picture by a path relative to the repository
-- **THEN** the test fails, since nuget.org draws nothing from it
+- **WHEN** `README.md` names a file of `assets/readme` through an `<img>` tag, a link, a full address
+  or a path written another way
+- **THEN** the test fails, naming it, since GitHub or nuget.org would not draw it
 
-#### Scenario: An HTML image
+#### Scenario: A package packs
 
-- **WHEN** `README.md` shows a picture through an `<img>` tag
-- **THEN** the test fails, since nuget.org shows the tag as text
+- **WHEN** a package packs
+- **THEN** the readme inside it is `README.md` byte for byte, but for each picture's path, which is
+  the picture's address under `v<the package's version>`
 
 #### Scenario: A capture of nothing
 

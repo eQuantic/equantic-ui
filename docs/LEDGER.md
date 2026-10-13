@@ -2715,8 +2715,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   the root README, which is also every package's readme on nuget.org, showed no picture of anything
   it describes. It now shows the three samples as they build: a tour of the dashboard's pages in a
   browser and three of its screens, the component gallery drawn by Photon in dark and in light, and
-  the Wallet on an iPhone and on Android, each a Markdown image named by its full address, which
-  nuget.org draws too.
+  the Wallet on an iPhone and on Android, each a Markdown image named by its path in the
+  repository, which GitHub draws on every branch. The first version named each picture by its
+  address on `main`, and on the pull request's own branch all ten were broken. nuget.org draws
+  nothing from a path, so a package's readme is written when it packs (`WritePackageReadme`): the
+  README with each picture at its address under the release's tag, by a task MSBuild compiles,
+  since MSBuild's own tasks packed the README's `\e` as `/e` on a Mac.
+  `scripts/check-package-readme.cs` reads the readme inside every package CI packs.
   They are captures `scripts/capture-readme.sh` takes with nothing clicked, since each sample opens a
   screen by configuration: a headless Chrome, `--Photon:ScreenshotPath`, a simulator of its own and
   the running emulator. `assets/readme/captures.json` names the files each picture's screen is

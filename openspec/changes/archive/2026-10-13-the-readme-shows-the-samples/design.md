@@ -14,7 +14,8 @@ its own front page true.
 
 - Pictures anyone can take again, with nothing to click.
 - A guard that fails when a pictured screen changes, and says which picture and how to take it.
-- Pictures that draw on nuget.org as they do on GitHub.
+- Pictures that draw wherever the README is read: on GitHub on any branch and in a fork, and on
+  nuget.org.
 
 **Non-Goals:**
 
@@ -42,28 +43,56 @@ is a launch and a wait. A screen reached only by a press is not pictured.
 **A capture that drew nothing is refused.** The first launch of an app after its install is slow, and
 two of the first six iOS captures were a black screen under a status bar. The script spends that
 launch before the first picture, and every capture is read: one with almost no colour under its top
-twelfth is refused where it is taken.
+twelfth is refused where it is taken. An emulator booted with no window is asleep, and its screen
+photographs as black too, so each Android photograph wakes it.
 
 **A page that never finishes loading has no picture.** A headless Chrome writes its picture when the
 page has loaded, and the dashboard's Live page keeps a connection open: it held the browser for ten
 minutes. Each capture has forty seconds, and that page is not pictured.
 
-**Markdown images, with full addresses.** The README is packed into every package, and nuget.org
-shows a readme's HTML as text: on the page of 0.2.0-preview.61 the README's own badges are there as
-`&lt;img src`, drawn by nothing. So a picture is `![what it shows](address)`, with the address
-`raw.githubusercontent.com/…/main/assets/readme/<file>`, a host nuget.org draws from, and pictures
-that sit side by side are the cells of a table, whose header row says what each one is. The title and
-the badges above them stay as they were, and what to do about them is #882.
+**A path in the README, an address in the package.** The first version named each picture by its
+address on `main`, and on the change's own branch the README showed ten broken pictures: the files
+were on the branch and the addresses were not. A path in the repository is what GitHub draws on every
+branch, in a fork and in the pull request that takes a picture again. nuget.org draws nothing from a
+path, and it shows a readme's HTML as text: on the page of 0.2.0-preview.61 the README's own badges
+are there as `&lt;img src`. It does draw a Markdown image from `raw.githubusercontent.com`, as the
+pages of Refit and Serilog show. So the README writes `![what it shows](assets/readme/<file>)`, and
+a package's readme is written when the package packs: the README with each of those paths turned
+into the picture's address under `v<the package's version>`. That tag is the release's own, and a
+tag's address answers (asked of `v0.2.0-preview.61`), so a package's page goes on showing the screens
+of its version whatever `main` shows later. Pictures that sit side by side are the cells of a table,
+whose header row says what each one is. The title and the badges above them stay as they were, and
+what to do about them is #882.
+
+**A program writes the package's readme, and the README's text never crosses MSBuild.** Handing the
+text to MSBuild's own tasks was tried, and on macOS it packed a different README. A backslash in an
+item is taken for a path separator, so the README's `\e` became `/e`. `WriteLinesToFile` cuts an item
+at every semicolon and reads the `%20` of a badge's address as a space. And a backslash given to a
+property function as an argument arrives as a slash: a replacement meant for the README's one
+backslash changed its 365 slashes. So `Directory.Build.targets` declares a task in C#, which MSBuild
+compiles when a project first packs. It reads the README, replaces the paths and writes the copy,
+0.3 seconds a process. `ReadmeCapturesTests` runs the target and compares what it wrote with the
+README byte for byte, but for the addresses.
+
+**The readme is read inside every package.** A target can be right and not run for a project, and the
+per-OS runtime packages are packed on Linux and on Windows. `scripts/check-package-readme.cs` opens
+each package CI packed and compares its readme with the README, the addresses at that package's own
+version.
 
 **A simulator of its own, and the emulator as found.** The iOS target makes a simulator on the newest
 runtime installed and deletes it, as the launch check does, so a developer's own is never touched.
-The Android target uses the emulator that is running and puts back its night mode, its status bar
-and the property that names a screen.
+The Android target uses the emulator that is running, and what is on it is its owner's. It replaces
+no Wallet already installed, uninstalls the one it installs, and puts back what it changes from what
+it read first: the night mode, whether the status bar may be staged, a screen that was off, and
+`debug.mono.env`, which is a developer's own list of variables with `|` between them and goes back
+quoted for the device's shell.
 
 ## Risks / Trade-offs
 
 - The pictures are about 2 MB in the repository, and each new take adds its bytes to the history.
-- A picture's address names `main`, so on the pull request that adds one it draws nothing until the
-  merge.
+- A package packed at a version that has no tag names addresses nothing answers at: a local pack, a
+  pull request's packages. Those readmes are read by no one, and a release's tag is pushed before
+  its packages are published.
+- nuget.org drawing these pictures is first seen on the page of the release after this change.
 - The Android target needs an emulator with room for the app. One short of storage refuses the
   install, and `EQ_README_ANDROID_INSTALLED=1` takes the pictures from a build already on it.

@@ -267,8 +267,10 @@ target. In the same pull request as the change: take the picture again with
 `./scripts/capture-readme.sh <target> compose`, look at it, and only then record the files as they
 are with `EQ_UPDATE_README_CAPTURES=1` on that test. Recording alone makes the guard pass over a
 picture of the old screen. A new picture gets its entry by hand, and the README writes it as a
-Markdown image named by its full address: the README is every package's readme on nuget.org too,
-which shows HTML as text and draws nothing from a relative path.
+Markdown image named by its path in the repository, `assets/readme/<file>`, which GitHub draws on
+every branch. nuget.org, where the README is every package's readme, shows HTML as text and draws
+nothing from a path, so a package's readme is written when it packs, with each picture at its
+address under the release's tag (`WritePackageReadme`, in `Directory.Build.targets`).
 
 ### OpenSpec
 
