@@ -82,6 +82,8 @@ public class LedgerTests
             .Problems.Should().BeEmpty("a release is an event like another, and its file is named by its version");
         new LedgerEntry("an-entry.md", "- **2026-10-13 · An event**: its text wraps where it wraps, on line\n  22) and after it, and\n  **bold** text or a -1 may open a line (#1).\n")
             .Problems.Should().BeEmpty("a line that starts with a number, with bold text or with a sign opens no list item");
+        new LedgerEntry("an-entry.md", "- **2026-10-13 · An event**: a list under a paragraph starts at one, so\n  2. is text, and so is\n  10. and so is\n  1.with no space after it (#1).\n")
+            .Problems.Should().BeEmpty("GitHub draws each of these lines as text of the entry");
     }
 
     /// <summary>Each shape the fold would write into the chronology as something that is not one
@@ -102,6 +104,9 @@ public class LedgerTests
     [InlineData("an-entry.md", "- **2026-10-13 · An event**: what happened (#1).\n  - **2026-10-13 · A second, typed below it**: more (#2).\n", "line 2 opens a list item")]
     [InlineData("an-entry.md", "- **2026-10-13 · An event**: what happened\n  and more,\n  * with an item under it (#1).\n", "line 3 opens a list item")]
     [InlineData("an-entry.md", "- **2026-10-13 · An event**: what happened\n  + with an item under it (#1).\n", "line 2 opens a list item")]
+    [InlineData("an-entry.md", "- **2026-10-13 · An event**: what happened (#1).\n  1. **2026-10-13 · A second, numbered**: more (#2).\n", "line 2 opens a list item")]
+    [InlineData("an-entry.md", "- **2026-10-13 · An event**: what happened\n  1) with a numbered item under it (#1).\n", "line 2 opens a list item")]
+    [InlineData("an-entry.md", "- **2026-10-13 · An event**: what happened\n  01. with a numbered item under it (#1).\n", "line 2 opens a list item")]
     [InlineData("an-entry.md", "- **2026-10-13 · An event**: what happened, and no link.\n", "cites no")]
     public void AFileThatIsNotOneDatedEvent_IsRefused_ForWhatItLacks(string name, string text, string lacks)
     {
@@ -276,6 +281,28 @@ public class LedgerTests
             File.ReadAllBytes(document).Should().Equal(before);
             Directory.GetFiles(Path.Combine(root, Ledger.Folder)).Select(Path.GetFileName)
                 .Should().BeEquivalentTo(new[] { "a-good-one.md", "not-an-entry.md" }, "no file went, and no record was written");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    /// <summary>
+    /// The folder's own page and its record are no events, by their exact names. A file named as
+    /// one of them but for case is two files on Linux and one on a Mac or on Windows, where a
+    /// checkout keeps one of the two: the guide, or the event.
+    /// </summary>
+    [Theory]
+    [InlineData("readme.md")]
+    [InlineData("folded.JSON")]
+    public void AFileNamedAsTheFoldersOwnButForCase_IsRefused(string name)
+    {
+        var root = Tree(Chronology, (name, "- **2026-10-03 · An event**: named as the folder's own page (#20).\n"));
+        try
+        {
+            new Ledger(root).Refused().Should().Contain(refusal =>
+                refusal.StartsWith($"docs/ledger/{name}: ") && refusal.Contains("but for case"));
         }
         finally
         {

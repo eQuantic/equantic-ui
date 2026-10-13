@@ -22,16 +22,23 @@ internal sealed record LedgerEntry(string Name, string Text)
     private static readonly Regex Continuation = new(@"^  \S", RegexOptions.Compiled);
 
     /// <summary>
-    /// A line that opens a list item of its own under the entry: a bullet, then a space.
+    /// A line that opens a list item of its own under the entry: a bullet, or the number one of a
+    /// numbered list, then a space.
     /// <para>
     /// It is indented, so it reads as a continuation, and it is how an editor that keeps the
     /// indentation writes a second event typed below the first. The fold would write it as an item
     /// under the first one, and the chronology counts an entry by a line that opens at the margin,
     /// so that event would be in the ledger and counted nowhere. No line of the chronology on record
-    /// opens one. A line that starts with a number, with bold text or with a sign is text.
+    /// opens one.
+    /// </para>
+    /// <para>
+    /// The shapes are the ones GitHub draws as a list, asked of its own renderer. A numbered list
+    /// under a paragraph starts at one, written <c>1.</c>, <c>1)</c> or with zeros before it. Any
+    /// other number is text, as the <c>22)</c> that opens a line of the chronology is, and so is a
+    /// line that starts with bold text, with a sign, or with <c>1.</c> and no space.
     /// </para>
     /// </summary>
-    private static readonly Regex Item = new(@"^\s+[-*+]\s", RegexOptions.Compiled);
+    private static readonly Regex Item = new(@"^\s+(?:[-*+]|0*1[.)])\s", RegexOptions.Compiled);
 
     /// <summary>A name every host writes the same way: lower-case letters, digits, dots and hyphens.
     /// Two names that differ by case alone are one file on a Mac and on Windows.</summary>

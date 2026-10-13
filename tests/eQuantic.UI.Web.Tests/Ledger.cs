@@ -84,9 +84,15 @@ internal sealed class Ledger(string root)
 
     /// <summary>
     /// What keeps the folder from being folded as it is, and nothing when a fold would take all of
-    /// it: a file that is not one entry, a folder inside it, two files that open the same way, and
-    /// an entry whose first line the chronology already holds. The guard and the fold both ask
-    /// here, so what a release would refuse fails in the pull request that wrote it.
+    /// it: a file that is not one entry, a file named as the folder's own page or record but for
+    /// case, a folder inside it, two files that open the same way, and an entry whose first line
+    /// the chronology already holds. The guard and the fold both ask here, so what a release would
+    /// refuse fails in the pull request that wrote it.
+    /// <para>
+    /// The name's case: <c>readme.md</c> is a name an entry may have, and beside <c>README.md</c> it
+    /// is a second file on Linux and the same file on a Mac or on Windows, where a checkout keeps
+    /// one of the two. The guard would pass on the host that holds both.
+    /// </para>
     /// </summary>
     public IReadOnlyList<string> Refused()
     {
@@ -96,6 +102,11 @@ internal sealed class Ledger(string root)
 
         return waiting
             .SelectMany(entry => entry.Problems.Select(problem => $"{Folder}/{entry.Name}: {problem}"))
+            .Concat(waiting
+                .SelectMany(entry => new[] { Guide, Path.GetFileName(Record) }
+                    .Where(own => string.Equals(own, entry.Name, StringComparison.OrdinalIgnoreCase))
+                    .Select(own => $"{Folder}/{entry.Name}: its name is {own} but for case, which is the folder's "
+                        + "own, and a Mac or Windows holds one file where Linux holds two")))
             .Concat((Directory.Exists(FolderPath) ? Directory.GetDirectories(FolderPath) : [])
                 .Select(folder => $"{Folder}/{Path.GetFileName(folder)}/: an event is a file of this folder, not of one inside it"))
             .Concat(waiting
