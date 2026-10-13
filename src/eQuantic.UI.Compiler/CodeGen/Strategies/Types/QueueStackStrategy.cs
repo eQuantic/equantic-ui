@@ -105,7 +105,8 @@ public class QueueStackStrategy : IExpressionIrStrategy
                 var symbol = context.SemanticHelper.GetSymbol(access)!;
                 if (!Supported(symbol)) return Refused(access, symbol, context);
                 var receiver = context.Converter.ConvertIr(access.Expression);
-                if (symbol is not IMethodSymbol method) return JsExpr.Member(receiver, symbol.Name.ToCamelCase());
+                if (symbol is not IMethodSymbol method)
+                    return SortedSetEnd(receiver, symbol, context) ?? JsExpr.Member(receiver, symbol.Name.ToCamelCase());
                 // A method REFERENCE is a method group, and a group keeps its receiver, read once, as C#
                 // reads it when the delegate is made: `items.ForEach(queue.Enqueue)` lost it, and each
                 // call threw a TypeError on `this`. A take answers through an out, which no group can.
@@ -114,6 +115,26 @@ public class QueueStackStrategy : IExpressionIrStrategy
             }
         }
         return JsExpr.Opaque(context.Unhandled(node, "Queue/Stack"));
+    }
+
+    /// <summary>
+    /// A sorted set's <c>Min</c> or <c>Max</c> over a value type: the twin's element, or the type's default
+    /// where the set holds nothing, as .NET answers it. The twin has no element to answer then, so
+    /// <c>new SortedSet&lt;int&gt;().Min + 1</c> was NaN where .NET says 1. A reference or a nullable
+    /// element's default is null, which the twin's nothing already reads as, and a type parameter's is
+    /// unknown here. ONE rule for a member access, a <c>?.</c>, which reads its member as one, and a
+    /// property pattern. The read is grouped, so a strategy that still writes text can take it as a
+    /// receiver (<c>s.Min.Year</c>), and a <c>?.</c> guards it rather than chain into it, where
+    /// <c>s?.min ?? 0</c> would answer 0 for a set that is null. Null for any other member.
+    /// </summary>
+    internal static JsExpr? SortedSetEnd(JsExpr receiver, ISymbol? member, ConversionContext context)
+    {
+        if (member is not IPropertySymbol { Name: "Min" or "Max" } end || DeclaringType(end) != SortedSet
+            || end.Type is not { IsValueType: true } element || element is ITypeParameterSymbol
+            || element.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+            return null;
+        return JsExpr.Group(JsExpr.Binary(JsExpr.Member(receiver, end.Name.ToCamelCase()), "??",
+            JsExpr.Opaque(DefaultValue.Of(element, context))));
     }
 
     /// <summary>

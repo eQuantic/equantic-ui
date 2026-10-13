@@ -147,6 +147,20 @@ public class CollectionSurfaceConformanceTests
     public void ASequence_IsACollectionByItsType(string name, bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Sequences, typeAnnotations, SequenceCases.Single(c => c.Name == name));
 
+    /// <summary>An empty sorted set's <c>Min</c> and <c>Max</c> are its element type's default, as .NET
+    /// answers them, where the twin has no element to answer.</summary>
+    [SkippableTheory]
+    [InlineData("var s = new SortedSet<int>(); var t = new SortedSet<int> { 3, 1 }; return (s.Min + 1) + \",\" + (s.Max + 1) + \"|\" + t.Min + \",\" + t.Max;")] // 1,1|1,3
+    [InlineData("var s = new SortedSet<string>(); return (s.Min == null) + \",\" + (s.Max is null) + \",\" + (s.Min ?? \"none\");")]                // True,True,none
+    [InlineData("var s = new SortedSet<decimal>(); return (s.Min + 1.5m) + \",\" + s.Max;")]                                                       // 1.5,0
+    [InlineData("SortedSet<int>? s = new SortedSet<int>(); SortedSet<int>? none = null; return (s?.Min + 1) + \",\" + (none?.Max + 1 ?? -1);")]   // 1,-1
+    [InlineData("var s = new SortedSet<int>(); return (s is { Min: 0, Max: 0 }) + \",\" + (s.Min.CompareTo(0));")]                             // True,0
+    public void AnEmptySortedSet_AnswersItsDefault(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
     /// <summary>A capacity refused with its actual value, which <c>ArgumentOutOfRangeException</c> writes
     /// after <c>Environment.NewLine</c>.</summary>
     [SkippableTheory]
