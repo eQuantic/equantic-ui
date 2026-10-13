@@ -104,6 +104,30 @@ public sealed class AClassNamedLikeADotNetTypeTests
         built.Module("Other").Should().Contain("Math.max(1, 2)");
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AnExtensionDeclaredInAClassNamedMath_IsImported_ThoughTheSourceNamesNoMath(bool declaredByTheLibrary)
+    {
+        // The page writes `2.Twice()`, and the conversion writes `Math.twice(2)`: the name is in the
+        // module and nowhere in its source, so no identifier of the source can be asked what it means.
+        // The conversion introduced it for a type of the solution, by that type's symbol.
+        var declaredIn = declaredByTheLibrary ? "Common" : "App.Util";
+        var math = $"namespace {declaredIn};\n\npublic static class Math\n{{\n    public static int Twice(this int value) => value * 2;\n}}\n";
+        var page = Page("Type").Replace("namespace App.Screens;", $"using {declaredIn};\n\nnamespace App.Screens;")
+            .Replace("Common.Type.Family()", "2.Twice().ToString()");
+        var files = new List<(string Path, string Text)> { ("Screens/Home.cs", page) };
+        if (!declaredByTheLibrary) files.Add(("Util/Math.cs", math));
+        using var solution = new Solution()
+            .Library("Common", files: declaredByTheLibrary ? [("Math.cs", math)] : [("Nothing.cs", "namespace Common;\n\npublic static class Nothing\n{\n}\n")])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files: [.. files]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Module("Home").Should().Contain("Math.twice(2)");
+        built.SiblingImportsOf("Home").Should().Contain("Math", "the module names Math, which the conversion wrote for the solution's class");
+    }
+
     [Fact]
     public void ANameWithNoModuleBehindIt_IsStillDotNets()
     {

@@ -2524,12 +2524,16 @@ public class TypeScriptEmitter
     /// <c>System.Math</c> from another file, and only the symbol tells which one a file means: taken by
     /// the name, the file that calls <c>System.Math</c> imported the app's <c>Math</c>, which hides
     /// JavaScript's own inside that module (#888). A type of a referenced project is known by symbol
-    /// already (<see cref="Referenced"/>). With no model to ask, the scan's word is all there is.
+    /// already (<see cref="Referenced"/>), and so is a name the conversion itself wrote for a type of
+    /// the app: an extension call reduced to <c>Math.twice(2)</c> names no <c>Math</c> in the source
+    /// at all, so no identifier of it can be asked. With no model to ask, the scan's word is all
+    /// there is.
     /// </summary>
     private bool NamesAppType(string name, SyntaxNode? scope)
     {
         if (Referenced.IsModule(name)) return true;
         if (_dependencyResolver?.IsModule(name) != true) return false;
+        if (_converter.UsedAppTypes.Contains(name)) return true;
         if (_semanticModel is not { } model || scope is null || scope.SyntaxTree != model.SyntaxTree) return true;
         return scope.DescendantNodes().OfType<SimpleNameSyntax>()
             .Where(named => named.Identifier.ValueText == name)
