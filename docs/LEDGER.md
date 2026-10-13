@@ -2672,6 +2672,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   them over every code unit of the BMP) fail at 9b43eb2b; 3 entries leave the null-argument baseline,
   which were the whole of #725. Proposed and archived through OpenSpec (`openspec/specs/transpiler-bcl`,
   `openspec/specs/runtime-dates`).
+- **2026-10-12 · The commit-message guard refuses a signature line and a link to a session**: a
+  pull request opened from a Claude Code project carries, in its body, a comment naming the
+  attribution, a link to the conversation it was requested in and a signature line that links to the
+  tool, and a squash merge takes the body. Six squash commits on main carry all three, two of them
+  with the link to a session and the signature's link text wrapped in two, and the `commit-messages`
+  job passed each one, since none of the three was on its list
+  ([#851](https://github.com/eQuantic/equantic-ui/issues/851)). The guard names them, reads its named
+  phrases across a line break, and holds a fixture that isolates each new entry; over main's 1,422
+  commit messages it refuses those six and the five it refused before, and nothing else. The squash
+  now takes the pull request's commits' messages, which the job reads before the merge, and never its
+  body. Proposed and archived through OpenSpec (`openspec/specs/working-agreement`).
 
 ## Retired documents
 
