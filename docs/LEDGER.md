@@ -2709,7 +2709,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   members of the four that compile and are TypeErrors in the browser, `GetViewBetween`
   ([#865](https://github.com/eQuantic/equantic-ui/issues/865)), `TryDequeue` and `TryPop` among them
   ([#866](https://github.com/eQuantic/equantic-ui/issues/866)). The served
-  runtime grows 225 gzipped bytes. Proposed and archived through OpenSpec
+  runtime grows 208 gzipped bytes. Proposed and archived through OpenSpec
   (`openspec/specs/runtime-collections`).
 
 ## Retired documents
