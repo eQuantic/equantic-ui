@@ -425,6 +425,19 @@ describe("the members .NET's queue, stack and linked list have beyond the basics
     expect(() => t.trimExcess(4)).toThrow("capacity ('4') must be greater than or equal to '5'.");
   });
 
+  it('sizes by a count only a collection with a CopyTo has, as .NET reads an ICollection<T>', () => {
+    // An IReadOnlyList<T> of the app's own: a count and its elements, and no CopyTo.
+    const counted = {
+      count: 3,
+      *[Symbol.iterator]() {
+        yield* [1, 2, 3];
+      },
+    };
+    const copied = { ...counted, copyTo() {} };
+    expect([queue(counted).capacity, stack(counted).capacity]).toEqual([4, 4]);
+    expect([queue(copied).capacity, stack(copied).capacity]).toEqual([3, 3]);
+  });
+
   it('links a node of its own after, before and at the ends, and lets go of one it removes', () => {
     const l = linkedList([2]);
     const one = linkedListNode(1);

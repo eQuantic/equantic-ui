@@ -86,6 +86,67 @@ public class CollectionSurfaceConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
 
+    private const string Sequences = """
+        using System.Collections;
+        using System.Collections.Generic;
+
+        public class Ring : IReadOnlyList<int>
+        {
+            private readonly int[] _v;
+            public Ring(int count) { _v = new int[count]; for (var i = 0; i < count; i++) _v[i] = i; }
+            public int Count => _v.Length;
+            public int this[int i] => _v[i];
+            public IEnumerator<int> GetEnumerator() { foreach (var v in _v) yield return v; }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        public class Bag : ICollection<int>
+        {
+            private readonly List<int> _v = new();
+            public Bag(int count) { for (var i = 0; i < count; i++) _v.Add(i); }
+            public int Count => _v.Count;
+            public bool IsReadOnly => false;
+            public void Add(int item) => _v.Add(item);
+            public void Clear() => _v.Clear();
+            public bool Contains(int item) => _v.Contains(item);
+            void ICollection<int>.CopyTo(int[] array, int arrayIndex) => _v.CopyTo(array, arrayIndex);
+            public bool Remove(int item) => _v.Remove(item);
+            public IEnumerator<int> GetEnumerator() { foreach (var v in _v) yield return v; }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+        """;
+
+    private static readonly (string Name, string Statements)[] SequenceCases =
+    [
+        // "4,8": a count beside the elements makes no ICollection<T>, so the array doubles from four
+        ("a counted sequence that is no collection", "return new Queue<int>(new Ring(3)).Capacity + \",\" + new Stack<int>(new Ring(5)).Capacity;"),
+        // "3,5": an ICollection<T> of the app's own, its CopyTo implemented explicitly, is copied at its count
+        ("a collection of the app's own", "return new Queue<int>(new Bag(3)).Capacity + \",\" + new Stack<int>(new Bag(5)).Capacity;"),
+        // "17,11": a set sizes itself by the same rule, growing from three for the sequence and taking the collection's count
+        ("a set built from either", "return new HashSet<int>(new Ring(8)).EnsureCapacity(0) + \",\" + new HashSet<int>(new Bag(8)).EnsureCapacity(0);"),
+    ];
+
+    public static TheoryData<string, bool> SequenceCaseNames()
+    {
+        var data = new TheoryData<string, bool>();
+        foreach (var (name, _) in SequenceCases)
+        {
+            data.Add(name, true);
+            data.Add(name, false);
+        }
+        return data;
+    }
+
+    /// <summary>
+    /// A sequence is an <c>ICollection&lt;T&gt;</c> by its type, never by a count beside its elements: a
+    /// type of the app's own that is an <c>IReadOnlyList&lt;T&gt;</c> alone has a <c>Count</c>, and .NET
+    /// still reads it by walking it.
+    /// </summary>
+    [SkippableTheory]
+    [MemberData(nameof(SequenceCaseNames))]
+    public void ASequence_IsACollectionByItsType(string name, bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Sequences, typeAnnotations, SequenceCases.Single(c => c.Name == name));
+
     /// <summary>A capacity refused with its actual value, which <c>ArgumentOutOfRangeException</c> writes
     /// after <c>Environment.NewLine</c>.</summary>
     [SkippableTheory]
