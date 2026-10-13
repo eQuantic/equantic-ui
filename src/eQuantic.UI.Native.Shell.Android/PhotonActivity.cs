@@ -179,6 +179,12 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         base.OnCreate(savedInstanceState);
         Current = this;
 
+        // What this start came with: a link, or nothing (the launcher's intent carries none). Said
+        // here, before the app's tree exists, so the first screen already reads it. And said on
+        // EVERY create: Android keeps the process and starts the activity in it again, and a start
+        // from the icon was launched with nothing, whatever the one before it was launched with.
+        AndroidDeepLinks.Relay.StartedWith(AndroidDeepLinks.LinkOf(Intent));
+
         // The keyboard is given room rather than drawn over the app. Edge to edge, which Android 15
         // enforces, the window keeps its size and the keyboard arrives as an inset; before that, the
         // system shortens the window. The host reveals the edited field either way.
@@ -188,6 +194,16 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         _view.Holder!.AddCallback(this);
         _view.InsetsChanged = InsetsChanged;
         SetContentView(_view);
+    }
+
+    /// <summary>
+    /// A link opened while the app runs. The launcher is a single task, so Android hands the
+    /// running activity the intent instead of starting another one over it.
+    /// </summary>
+    protected override void OnNewIntent(Intent? intent)
+    {
+        base.OnNewIntent(intent);
+        AndroidDeepLinks.Relay.Offer(AndroidDeepLinks.LinkOf(intent));
     }
 
     /// <summary>

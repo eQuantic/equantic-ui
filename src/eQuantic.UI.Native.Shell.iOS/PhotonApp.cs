@@ -108,6 +108,11 @@ public static class PhotonApp
         public override void WillConnect(UIScene scene, UISceneSession session, UISceneConnectionOptions connectionOptions)
         {
             if (scene is not UIWindowScene windowScene) return;
+
+            // BEFORE the screen is built, so the first tree already reads what the app was started
+            // with. A scene that connects to a screen the process kept is a link arriving in a
+            // running app: the tree is alive, and it is told rather than started.
+            Opened(connectionOptions.UrlContexts, starting: _screen is null);
             var screen = Screen();
             Window = new UIWindow(windowScene) { RootViewController = screen };
             Window.MakeKeyAndVisible();
@@ -124,6 +129,27 @@ public static class PhotonApp
             // The window goes with the scene; the screen does not (see Screen()).
             if (Window is not null) Window.RootViewController = null;
             Window = null;
+        }
+
+        /// <summary>A link opened while the scene is connected.</summary>
+        public override void OpenUrlContexts(UIScene scene, NSSet<UIOpenUrlContext> urlContexts) =>
+            Opened(urlContexts, starting: false);
+
+        /// <summary>
+        /// Tells the relay. A start says what it came with, a link or nothing, exactly once; every
+        /// other URL is one the running app was opened with.
+        /// </summary>
+        private static void Opened(NSSet<UIOpenUrlContext>? contexts, bool starting)
+        {
+            var relay = IosDeepLinks.Relay;
+            foreach (var context in contexts?.ToArray() ?? [])
+            {
+                var link = context.Url.AbsoluteString;
+                if (starting) relay.StartedWith(link);
+                else relay.Offer(link);
+                starting = false;
+            }
+            if (starting) relay.StartedWith(null);
         }
 
         public override void DidEnterBackground(UIScene scene) => _screen?.Pause();
