@@ -147,8 +147,10 @@ workspace and pull request numbers repeat across them, so confirm the run's `rep
 ### Documentation and the ledger
 
 Documentation changes with the behaviour it describes. This repository's Markdown changes in the
-same pull request. The wiki page changes in English AND Portuguese, in one commit on a branch of the
-wiki repository named exactly like the pull request's own branch. CI checks that branch out for the
+same pull request. The wiki reads in five languages, English at its root and Portuguese, Spanish,
+French and German at `locale/<culture>/<Page>-<culture>.md`, and a wiki page changes in every one of
+them it is written in, a new page in all five, in one commit on a branch of the wiki repository named
+exactly like the pull request's own branch. CI checks that branch out for the
 docs guards when it exists (`scripts/checkout-wiki.sh`), so the pull request is checked against the
 pages it brings, while every other one still reads master, and so does a pull request from a fork,
 whose branch name can repeat one of this repository's. When the pull request merges, its wiki

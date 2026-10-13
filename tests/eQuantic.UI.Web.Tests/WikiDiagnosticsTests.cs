@@ -5,7 +5,8 @@ using Xunit;
 namespace eQuantic.UI.Web.Tests;
 
 /// <summary>
-/// The wiki's Diagnostics page names the same codes as <c>docs/DIAGNOSTICS.md</c>, in both languages.
+/// The wiki's Diagnostics page names the same codes as <c>docs/DIAGNOSTICS.md</c>, in every language it is
+/// written in.
 ///
 /// <para>
 /// <c>DiagnosticsDocumentedTests</c> holds <c>docs/DIAGNOSTICS.md</c> to the codes <c>src/</c>
@@ -48,31 +49,23 @@ public class WikiDiagnosticsTests
         new(Row.Matches(File.ReadAllText(path)).Select(m => m.Groups["code"].Value), StringComparer.Ordinal);
 
     [Fact]
-    public void TheWikisDiagnosticsPageCarriesEveryCodeTheDocsDo_InBothLanguages()
+    public void TheWikisDiagnosticsPageCarriesEveryCodeTheDocsDo_InEveryLanguage()
     {
         if (WikiClone.Absent()) return;
-        var wiki = WikiClone.Location!;
 
         var documented = CodesIn(Path.Combine(Root!, "docs", "DIAGNOSTICS.md"));
         documented.Should().NotBeEmpty("docs/DIAGNOSTICS.md is the source this page mirrors");
 
-        // Named rather than discovered: these two pages are the contract, and a rename that lost one
-        // would otherwise leave the guard reading an empty set and reporting agreement.
-        (string Language, string Path)[] pages =
-        [
-            ("English", Path.Combine(wiki, "Diagnostics.md")),
-            ("pt-BR", Path.Combine(wiki, "locale", "pt-BR", "Diagnostics-pt-BR.md")),
-        ];
-
+        // The English and the Portuguese page are named rather than discovered: they are the contract,
+        // and a rename that lost one would otherwise leave the guard reading an empty set and reporting
+        // agreement. Every other language the page is written in is read as well (#885).
+        var pages = WikiClone.Copies("Diagnostics");
         var offences = new List<string>();
+        foreach (var language in new[] { "English", "pt-BR" }.Where(language => pages.All(page => page.Language != language)))
+            offences.Add($"the {language} Diagnostics page is missing from the wiki");
+
         foreach (var (language, path) in pages)
         {
-            if (!File.Exists(path))
-            {
-                offences.Add($"the {language} Diagnostics page is missing from the wiki ({path})");
-                continue;
-            }
-
             var page = CodesIn(path);
 
             var missing = documented.Except(page, StringComparer.Ordinal).ToList();
@@ -89,12 +82,13 @@ public class WikiDiagnosticsTests
         }
 
         // Joined rather than asserted as a collection: a collection assertion reports "at least one
-        // item" and prints the first, so the English drift would be fixed and the identical pt-BR
-        // drift would come back red on the next run. Both languages always drift together, because
-        // the rule is that both change in one commit.
+        // item" and prints the first, so the English drift would be fixed and the identical drift of
+        // every translation would come back red on the next run. The languages always drift together,
+        // because the rule is that every copy of a page changes in one commit.
         string.Join("\n", offences).Should().BeEmpty(
-            "the wiki's Diagnostics page is what a reader sees, and every wiki edit is EN + pt-BR in "
-            + "the same commit — mirror the row from docs/DIAGNOSTICS.md into both pages, on the wiki branch "
+            "the wiki's Diagnostics page is what a reader sees, and a wiki edit changes every language "
+            + "the page is written in, in the same commit — mirror the row from docs/DIAGNOSTICS.md into each "
+            + "of them, on the wiki branch "
             + $"named like this pull request's, which CI reads (#406). Read from {WikiClone.Describe()}");
     }
 

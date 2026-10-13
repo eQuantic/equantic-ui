@@ -19,12 +19,12 @@ namespace eQuantic.UI.Web.Tests;
 ///
 /// <para>
 /// So the retired spellings are listed here with the decision that retired each, and every wiki page
-/// is read against them, in both languages. A page that needs one of these words to tell HISTORY —
-/// the Upgrading page, the package page that explains the dissolution — names itself in the allowance
-/// list with the reason, and the allowance is checked in the other direction too: an allowed page
-/// that no longer contains the word has to leave the list, or the list becomes a record of what
-/// somebody once believed. The same shape as the handoff's <c>HandoffVocabularyTests</c> and the
-/// vocabulary's coverage pin, because it is the same disease on a third support.
+/// is read against them, in every language it is written in. A page that needs one of these words to
+/// tell HISTORY — the Upgrading page, the package page that explains the dissolution — names itself in
+/// the allowance list with the reason, and the allowance is checked in the other direction too: an
+/// allowed page that no longer contains the word has to leave the list, or the list becomes a record
+/// of what somebody once believed. The same shape as the handoff's <c>HandoffVocabularyTests</c> and
+/// the vocabulary's coverage pin, because it is the same disease on a third support.
 /// </para>
 ///
 /// <para>
@@ -70,8 +70,10 @@ public class WikiVocabularyTests
 
     /// <summary>
     /// The pages allowed to carry a retired spelling, each for a stated reason — history, a quoted
-    /// platform name, an HTML attribute the page documents as HTML. Keyed by the page's file name as
-    /// the wiki spells it (the pt-BR twin is a separate entry, because it is a separate page).
+    /// platform name, an HTML attribute the page documents as HTML. Keyed by the English page's file
+    /// name, and an allowance covers every translation of the page (<see cref="WikiClone.PageOf"/>),
+    /// which tells the same history: an entry per language failed every pull request the day the wiki
+    /// gained three (#885).
     /// <para>
     /// Not here on purpose: the pages that say "there is no <c>UseTailwind()</c>" or "by the makers
     /// of Tailwind CSS" — the pattern is the PACKAGE name <c>eQuantic.UI.Tailwind</c>, and a plain
@@ -83,15 +85,10 @@ public class WikiVocabularyTests
     private static readonly (string Page, string Name, string Why)[] Allowed =
     [
         ("Upgrading.md", "Core", "the migration notes tell what moved where"),
-        ("Upgrading-pt-BR.md", "Core", "the same notes in Portuguese"),
         ("PackageArchitecture.md", "Core", "explains the dissolution and where each part went"),
-        ("PackageArchitecture-pt-BR.md", "Core", "the same explanation"),
         ("Icons.md", "Core", "history: the provider interface that lived there once"),
-        ("Icons-pt-BR.md", "Core", "the same history"),
         ("CodeEditor.md", "Core", "a layering bug the page explains by the assembly it involved"),
-        ("CodeEditor-pt-BR.md", "Core", "the same explanation"),
         ("Photon.md", "widget", "android.widget.Button is Android's class name"),
-        ("Photon-pt-BR.md", "widget", "the same class name"),
     ];
 
     /// <summary>True when the guard may skip: no wiki, and nobody promised one (<see cref="WikiClone"/>).</summary>
@@ -117,7 +114,7 @@ public class WikiVocabularyTests
             var lines = File.ReadAllLines(page);
             foreach (var retired in RetiredSpellings)
             {
-                if (Allowed.Any(a => a.Page == file && a.Name == retired.Name)) continue;
+                if (Allowed.Any(a => a.Page == WikiClone.PageOf(page) && a.Name == retired.Name)) continue;
                 for (var i = 0; i < lines.Length; i++)
                 {
                     foreach (Match match in retired.Pattern.Matches(lines[i]))
@@ -127,8 +124,8 @@ public class WikiVocabularyTests
         }
 
         offences.Should().BeEmpty(
-            $"a wiki page ({WikiClone.Describe()}) names something by a spelling the tree retired. Correct the page, in both "
-            + $"languages, or allow it here with the reason:{Environment.NewLine}  "
+            $"a wiki page ({WikiClone.Describe()}) names something by a spelling the tree retired. Correct the page, in every "
+            + $"language it is written in, or allow it here with the reason:{Environment.NewLine}  "
             + string.Join(Environment.NewLine + "  ", offences) + Environment.NewLine);
     }
 
@@ -138,17 +135,17 @@ public class WikiVocabularyTests
     {
         if (NoWikiHere()) return;
 
-        // A LAMBDA, not the method group: `GetFileName` is annotated [NotNullIfNotNull(path)] and
-        // a method group converts to Func<string, string?>, which drops it — so TKey infers as
-        // `string?` and fails the notnull constraint. Same shape as the refs table in the design host.
-        var byName = Pages().ToDictionary(path => Path.GetFileName(path), StringComparer.Ordinal);
+        // An allowance is needed while any copy of its page still carries the word: a translation
+        // tells the history its English page tells, and one that dropped it is no reason to drop the
+        // allowance the others still need.
+        var byPage = Pages().ToLookup(WikiClone.PageOf, StringComparer.Ordinal);
         var stale = Allowed
-            .Where(a => byName.TryGetValue(a.Page, out var path)
-                && !RetiredSpellings.Single(r => r.Name == a.Name).Pattern.IsMatch(File.ReadAllText(path)))
+            .Where(a => byPage.Contains(a.Page)
+                && !byPage[a.Page].Any(path => RetiredSpellings.Single(r => r.Name == a.Name).Pattern.IsMatch(File.ReadAllText(path))))
             .Select(a => $"{a.Page} / {a.Name}")
             .ToArray();
 
-        stale.Should().BeEmpty($"these pages of {WikiClone.Describe()} no longer contain the word they are allowed; "
+        stale.Should().BeEmpty($"no copy of these pages of {WikiClone.Describe()} contains the word they are allowed; "
             + "remove the allowance: " + string.Join(", ", stale));
     }
 

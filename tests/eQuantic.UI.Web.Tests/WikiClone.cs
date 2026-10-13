@@ -75,6 +75,40 @@ internal static class WikiClone
     /// <summary>The wiki's root page, which every checkout of it has.</summary>
     private static bool IsWiki(string directory) => File.Exists(Path.Combine(directory, "Home.md"));
 
+    /// <summary>
+    /// Every copy of <paramref name="page"/> the wiki has, by its language: the English page at the
+    /// root, named <c>English</c>, and each translation at <c>locale/&lt;culture&gt;/&lt;page&gt;-&lt;culture&gt;.md</c>,
+    /// named by its culture, in the order of the cultures' names. A language the page is not written in
+    /// yet has no entry. The wiki reads in five languages (#885), and a guard that named two read
+    /// none of the other three.
+    /// </summary>
+    public static IReadOnlyList<(string Language, string Path)> Copies(string page)
+    {
+        var copies = new List<(string Language, string Path)>();
+        var english = Path.Combine(Location!, page + ".md");
+        if (File.Exists(english)) copies.Add(("English", english));
+        var locale = Path.Combine(Location!, "locale");
+        if (!Directory.Exists(locale)) return copies;
+        foreach (var culture in Directory.GetDirectories(locale).Select(directory => Path.GetFileName(directory)).Order(StringComparer.Ordinal))
+        {
+            var translation = Path.Combine(locale, culture, $"{page}-{culture}.md");
+            if (File.Exists(translation)) copies.Add((culture, translation));
+        }
+        return copies;
+    }
+
+    /// <summary>The page a file of the wiki is a copy of, by the English page's file name: its own name
+    /// at the root, and its name without the culture under <c>locale/&lt;culture&gt;/</c>.</summary>
+    public static string PageOf(string path)
+    {
+        var name = Path.GetFileNameWithoutExtension(path);
+        var folder = Path.GetFileName(Path.GetDirectoryName(path));
+        var parent = Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(path)));
+        return parent == "locale" && folder is { Length: > 0 } culture && name.EndsWith("-" + culture, StringComparison.Ordinal)
+            ? name[..^(culture.Length + 1)] + ".md"
+            : name + ".md";
+    }
+
     /// <summary>What a guard read, for its failure message: the directory, and the branch and commit
     /// checked out there. A red run then names its input, which is what would have said in one line
     /// that #354's failure came from another pull request's wiki branch.</summary>
