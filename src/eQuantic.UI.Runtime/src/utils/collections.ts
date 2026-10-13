@@ -18,6 +18,7 @@ import { equals } from './equals';
 import { exception } from './exceptions';
 import { HashSet } from './hash-set';
 import { sameBy, sameItem, type KeyEquality } from './key-equality';
+import { collectionCount } from './slots';
 import { SortedMap } from './sorted';
 
 export { pairComparer, sameItem } from './key-equality';
@@ -64,39 +65,77 @@ function elements<T>(source: Iterable<T> | string): Iterable<T> {
 }
 
 /**
- * The elements a constructor's argument hands it: none for no argument and for a capacity, which a
- * negative value is refused as, and a collection's own, a null one refused by its parameter's name,
- * as `Queue<T>`, `Stack<T>` and `LinkedList<T>` refuse it (#726), where the factories read a null as
- * no collection.
+ * What a constructor's argument hands it: nothing for no argument, a capacity, which a negative value
+ * is refused as, or a collection, a null one refused by its parameter's name, as `Queue<T>`,
+ * `Stack<T>` and `LinkedList<T>` refuse it (#726), where the factories read a null as no collection.
  */
-function constructorElements<T>(
+function constructorArgument<T>(
   argument: [] | [Iterable<T> | string | number | null | undefined],
   takesACapacity: boolean,
-): T[] {
-  if (argument.length === 0) return [];
+): { items: T[]; capacity: number } {
+  if (argument.length === 0) return { items: [], capacity: 0 };
   const [source] = argument;
   if (typeof source === 'number' && takesACapacity) {
     if (source < 0) throw negative('capacity', source);
-    return [];
+    return { items: [], capacity: source };
   }
   if (source == null) throw argumentNull('collection');
-  return Array.from(elements(source as Iterable<T> | string));
+  const items = Array.from(elements(source as Iterable<T> | string));
+  return { items, capacity: sequenceCapacity(source, items.length) };
+}
+
+/** `Array.MaxLength`, past which no capacity grows. */
+const MAX_LENGTH = 0x7fffffc7;
+
+/**
+ * The capacity .NET's `EnumerableHelpers.ToArray` gives a queue or a stack built from a sequence: the
+ * count of an `ICollection<T>`, and for anything else, a queue, a stack and a string among them, the
+ * array it doubles from four as it reads. A sequence with nothing in it has none (#866).
+ */
+function sequenceCapacity(source: unknown, length: number): number {
+  if (length === 0) return 0;
+  if (collectionCount(source) !== null) return length;
+  let capacity = 4;
+  while (capacity < length) capacity = Math.min(capacity * 2, MAX_LENGTH);
+  return capacity;
+}
+
+/** `ArgumentOutOfRangeException.ThrowIfLessThan(capacity, count)`'s words. */
+function lessThanCount(capacity: number, count: number): Error {
+  return exception(
+    'System.ArgumentOutOfRangeException',
+    `capacity ('${capacity}') must be greater than or equal to '${count}'. (Parameter 'capacity')\nActual value was ${capacity}.`,
+  );
+}
+
+/** `TrimExcess()`'s threshold: a capacity is trimmed while what it holds is under nine tenths of it. */
+function trimThreshold(capacity: number): number {
+  return Math.trunc(capacity * 0.9);
 }
 
 export class Queue<T> {
   private readonly items: T[];
   /** Bumped by every change, as .NET's `_version` is: a walk that sees it move refuses to go on. */
   private version = 0;
+  /** The length of the array .NET would hold the elements in, which decides `Capacity`, what
+   *  `EnsureCapacity` answers and when `TrimExcess` reallocates (#866). */
+  private _capacity: number;
 
-  constructor(initial?: Iterable<T>) {
+  constructor(initial?: Iterable<T>, capacity?: number) {
     this.items = initial ? Array.from(initial) : [];
+    this._capacity = capacity ?? sequenceCapacity(initial, this.items.length);
   }
 
   get count(): number {
     return this.items.length;
   }
 
+  get capacity(): number {
+    return this._capacity;
+  }
+
   enqueue(item: T): void {
+    if (this.items.length === this._capacity) this.grow(this.items.length + 1);
     this.items.push(item);
     this.version++;
   }
@@ -107,9 +146,19 @@ export class Queue<T> {
     return this.items.shift() as T;
   }
 
+  /** `TryDequeue`: the element at the front, taken, or undefined where .NET answers false. */
+  tryDequeue(): T | undefined {
+    return this.items.length === 0 ? undefined : this.dequeue();
+  }
+
   peek(): T {
     if (this.items.length === 0) throw exception('System.InvalidOperationException', 'Queue empty.');
     return this.items[0];
+  }
+
+  /** `TryPeek`: the element at the front, or undefined where .NET answers false. */
+  tryPeek(): T | undefined {
+    return this.items.length === 0 ? undefined : this.items[0];
   }
 
   /** By `EqualityComparer<T>.Default`, as .NET's does: a decimal, a date or a record by its value. */
@@ -119,6 +168,38 @@ export class Queue<T> {
 
   clear(): void {
     this.items.length = 0;
+    this.version++;
+  }
+
+  /** `EnsureCapacity`: grown, by the rule an `Enqueue` grows by, to hold `capacity` at least. */
+  ensureCapacity(capacity: number): number {
+    if (capacity < 0) throw negative('capacity', capacity);
+    if (this._capacity < capacity) this.grow(capacity);
+    return this._capacity;
+  }
+
+  /** `TrimExcess()`, under nine tenths of the capacity, and `TrimExcess(capacity)`, to that capacity;
+   *  each reallocation a change, as .NET's `SetCapacity` is. */
+  trimExcess(...capacity: [] | [number]): void {
+    if (capacity.length === 0) {
+      if (this.items.length < trimThreshold(this._capacity)) this.setCapacity(this.items.length);
+      return;
+    }
+    const [asked] = capacity;
+    if (asked < 0) throw negative('capacity', asked);
+    if (asked < this.items.length) throw lessThanCount(asked, this.items.length);
+    if (asked !== this._capacity) this.setCapacity(asked);
+  }
+
+  /** .NET's `Queue<T>.Grow`: twice the array, four more at least, and `capacity` at least. */
+  private grow(capacity: number): void {
+    let next = Math.min(2 * this._capacity, MAX_LENGTH);
+    next = Math.max(next, this._capacity + 4);
+    this.setCapacity(Math.max(next, capacity));
+  }
+
+  private setCapacity(capacity: number): void {
+    this._capacity = capacity;
     this.version++;
   }
 
@@ -158,16 +239,25 @@ export class Stack<T> {
   private readonly items: T[];
   /** Bumped by every change, as .NET's `_version` is: a walk that sees it move refuses to go on. */
   private version = 0;
+  /** The length of the array .NET would hold the elements in (#866). A stack's capacity changes
+   *  without a change of version, as .NET's `Array.Resize` of it does. */
+  private _capacity: number;
 
-  constructor(initial?: Iterable<T>) {
+  constructor(initial?: Iterable<T>, capacity?: number) {
     this.items = initial ? Array.from(initial) : [];
+    this._capacity = capacity ?? sequenceCapacity(initial, this.items.length);
   }
 
   get count(): number {
     return this.items.length;
   }
 
+  get capacity(): number {
+    return this._capacity;
+  }
+
   push(item: T): void {
+    if (this.items.length === this._capacity) this.grow(this.items.length + 1);
     this.items.push(item);
     this.version++;
   }
@@ -178,9 +268,19 @@ export class Stack<T> {
     return this.items.pop() as T;
   }
 
+  /** `TryPop`: the element on top, taken, or undefined where .NET answers false. */
+  tryPop(): T | undefined {
+    return this.items.length === 0 ? undefined : this.pop();
+  }
+
   peek(): T {
     if (this.items.length === 0) throw exception('System.InvalidOperationException', 'Stack empty.');
     return this.items[this.items.length - 1];
+  }
+
+  /** `TryPeek`: the element on top, or undefined where .NET answers false. */
+  tryPeek(): T | undefined {
+    return this.items.length === 0 ? undefined : this.items[this.items.length - 1];
   }
 
   /** By `EqualityComparer<T>.Default`, as .NET's does: a decimal, a date or a record by its value. */
@@ -191,6 +291,31 @@ export class Stack<T> {
   clear(): void {
     this.items.length = 0;
     this.version++;
+  }
+
+  /** `EnsureCapacity`: grown, by the rule a `Push` grows by, to hold `capacity` at least. */
+  ensureCapacity(capacity: number): number {
+    if (capacity < 0) throw negative('capacity', capacity);
+    if (this._capacity < capacity) this.grow(capacity);
+    return this._capacity;
+  }
+
+  /** `TrimExcess()`, under nine tenths of the capacity, and `TrimExcess(capacity)`, to that capacity. */
+  trimExcess(...capacity: [] | [number]): void {
+    if (capacity.length === 0) {
+      if (this.items.length < trimThreshold(this._capacity)) this._capacity = this.items.length;
+      return;
+    }
+    const [asked] = capacity;
+    if (asked < 0) throw negative('capacity', asked);
+    if (asked < this.items.length) throw lessThanCount(asked, this.items.length);
+    this._capacity = asked;
+  }
+
+  /** .NET's `Stack<T>.Grow`: four from empty, twice the array otherwise, and `capacity` at least. */
+  private grow(capacity: number): void {
+    const next = this._capacity === 0 ? 4 : Math.min(2 * this._capacity, MAX_LENGTH);
+    this._capacity = Math.max(next, capacity);
   }
 
   /** Top-to-bottom order (LIFO), matching .NET `Stack<T>.ToArray()`. */
@@ -222,35 +347,70 @@ export class Stack<T> {
 
 /** `new Queue<T>()`, `new Queue<T>(capacity)` and `new Queue<T>(collection)`. */
 export function queue<T>(...argument: [] | [Iterable<T> | string | number | null]): Queue<T> {
-  return new Queue<T>(constructorElements(argument, true));
+  const { items, capacity } = constructorArgument(argument, true);
+  return new Queue<T>(items, capacity);
 }
 
 /** `new Stack<T>()`, `new Stack<T>(capacity)` and `new Stack<T>(collection)`. */
 export function stack<T>(...argument: [] | [Iterable<T> | string | number | null]): Stack<T> {
-  return new Stack<T>(constructorElements(argument, true));
+  const { items, capacity } = constructorArgument(argument, true);
+  return new Stack<T>(items, capacity);
+}
+
+/** `InvalidOperationException`'s words for a node of another list, or of none. */
+function foreignNode(): Error {
+  return exception('System.InvalidOperationException', 'The LinkedList node does not belong to current LinkedList.');
+}
+
+/** `InvalidOperationException`'s words for a new node that is already in a list. */
+function attachedNode(): Error {
+  return exception('System.InvalidOperationException', 'The LinkedList node already belongs to a LinkedList.');
 }
 
 /**
- * A node of {@link LinkedList} — mirrors .NET `LinkedListNode<T>`: a value plus links to the adjacent
- * nodes (`next`/`previous` are `null` at the ends). The transpiler maps `.Value`/`.Next`/`.Previous`
- * to these camelCase members, so `list.First.Value` and node traversal work as in .NET.
+ * A node of {@link LinkedList} — mirrors .NET `LinkedListNode<T>`: a value, the list it belongs to and
+ * the nodes beside it, `null` at the ends. A node built on its own, or removed from its list, belongs
+ * to none and links to nothing, as .NET's `Invalidate` leaves it (#866). Only the list links it.
  */
 export class LinkedListNode<T> {
   value: T;
-  next: LinkedListNode<T> | null = null;
-  previous: LinkedListNode<T> | null = null;
+  /** @internal The list's to write. */
+  _list: LinkedList<T> | null = null;
+  /** @internal */
+  _next: LinkedListNode<T> | null = null;
+  /** @internal */
+  _previous: LinkedListNode<T> | null = null;
 
   constructor(value: T) {
     this.value = value;
   }
+
+  get list(): LinkedList<T> | null {
+    return this._list;
+  }
+
+  get next(): LinkedListNode<T> | null {
+    return this._next;
+  }
+
+  get previous(): LinkedListNode<T> | null {
+    return this._previous;
+  }
+
+  /** @internal What .NET's `Invalidate` does to a node its list lets go of. */
+  _invalidate(): void {
+    this._list = this._next = this._previous = null;
+  }
 }
 
 /**
- * .NET-compat `LinkedList<T>` — a doubly-linked list with the .NET API: `AddFirst`/`AddLast` (return the
- * new node), `RemoveFirst`/`RemoveLast`, `Remove(value)`, `Contains`, `Clear`, `Count`, and the `First`/
- * `Last` node accessors. Real nodes (not an array) so `First.Next` traversal is faithful. Value lookup
- * (`Contains`/`Remove`) uses `$eq.equals`, matching `EqualityComparer<T>.Default` for primitives and
- * value types. The transpiler emits `$eq.collections.linkedList(...)` and maps members to camelCase.
+ * .NET-compat `LinkedList<T>` — a doubly-linked list with the .NET API: every `Add` of a value or of a
+ * node of its own, `Remove` of a value or of a node, `RemoveFirst`/`RemoveLast`, `Find`/`FindLast`,
+ * `Contains`, `CopyTo`, `Clear`, `Count`, and the `First`/`Last` node accessors. Real nodes (not an
+ * array) so `First.Next` traversal is faithful. Value lookup (`Contains`/`Remove`/`Find`) uses
+ * `$eq.equals`, matching `EqualityComparer<T>.Default` for primitives and value types. The transpiler
+ * emits `$eq.collections.linkedList(...)` and maps each member to its twin here; an overload that takes
+ * a node is the twin named for the node (`addNodeAfter`, `removeNode`).
  */
 export class LinkedList<T> implements Iterable<T> {
   private head: LinkedListNode<T> | null = null;
@@ -282,30 +442,52 @@ export class LinkedList<T> implements Iterable<T> {
 
   addFirst(value: T): LinkedListNode<T> {
     const node = new LinkedListNode(value);
-    if (this.head === null) {
-      this.head = this.tail = node;
-    } else {
-      node.next = this.head;
-      this.head.previous = node;
-      this.head = node;
-    }
-    this._count++;
-    this.version++;
+    this.insertBefore(this.head, node);
     return node;
   }
 
   addLast(value: T): LinkedListNode<T> {
     const node = new LinkedListNode(value);
-    if (this.tail === null) {
-      this.head = this.tail = node;
-    } else {
-      node.previous = this.tail;
-      this.tail.next = node;
-      this.tail = node;
-    }
-    this._count++;
-    this.version++;
+    this.insertBefore(null, node);
     return node;
+  }
+
+  /** `AddFirst(node)`: a node of no list, put at the front. */
+  addNodeFirst(node: LinkedListNode<T> | null): void {
+    this.insertBefore(this.head, this.unattached(node));
+  }
+
+  /** `AddLast(node)`: a node of no list, put at the back. */
+  addNodeLast(node: LinkedListNode<T> | null): void {
+    this.insertBefore(null, this.unattached(node));
+  }
+
+  /** `AddAfter(node, value)`: a new node after a node of this list, answered. */
+  addAfter(node: LinkedListNode<T> | null, value: T): LinkedListNode<T> {
+    const after = this.own(node);
+    const added = new LinkedListNode(value);
+    this.insertBefore(after._next, added);
+    return added;
+  }
+
+  /** `AddAfter(node, newNode)`: a node of no list after a node of this list. */
+  addNodeAfter(node: LinkedListNode<T> | null, newNode: LinkedListNode<T> | null): void {
+    const after = this.own(node);
+    this.insertBefore(after._next, this.unattached(newNode));
+  }
+
+  /** `AddBefore(node, value)`: a new node before a node of this list, answered. */
+  addBefore(node: LinkedListNode<T> | null, value: T): LinkedListNode<T> {
+    const before = this.own(node);
+    const added = new LinkedListNode(value);
+    this.insertBefore(before, added);
+    return added;
+  }
+
+  /** `AddBefore(node, newNode)`: a node of no list before a node of this list. */
+  addNodeBefore(node: LinkedListNode<T> | null, newNode: LinkedListNode<T> | null): void {
+    const before = this.own(node);
+    this.insertBefore(before, this.unattached(newNode));
   }
 
   removeFirst(): void {
@@ -320,33 +502,101 @@ export class LinkedList<T> implements Iterable<T> {
 
   /** Removes the first node whose value equals `value`; true when one was found. */
   remove(value: T): boolean {
-    for (let n = this.head; n !== null; n = n.next) {
-      if (equals(n.value, value)) {
-        this.unlink(n);
-        return true;
-      }
+    const node = this.find(value);
+    if (node === null) return false;
+    this.unlink(node);
+    return true;
+  }
+
+  /** `Remove(node)`: a node of this list, removed. It looked for the node among the values, and
+   *  removed nothing (#866). */
+  removeNode(node: LinkedListNode<T> | null): void {
+    this.unlink(this.own(node));
+  }
+
+  /** `Find`: the first node whose value equals `value`, or null. */
+  find(value: T): LinkedListNode<T> | null {
+    for (let n = this.head; n !== null; n = n._next) {
+      if (equals(n.value, value)) return n;
     }
-    return false;
+    return null;
+  }
+
+  /** `FindLast`: the last node whose value equals `value`, or null. */
+  findLast(value: T): LinkedListNode<T> | null {
+    for (let n = this.tail; n !== null; n = n._previous) {
+      if (equals(n.value, value)) return n;
+    }
+    return null;
   }
 
   contains(value: T): boolean {
-    for (let n = this.head; n !== null; n = n.next) {
-      if (equals(n.value, value)) return true;
-    }
-    return false;
+    return this.find(value) !== null;
   }
 
+  /** `Clear`: every node let go of, as .NET invalidates each. */
   clear(): void {
+    for (let n = this.head; n !== null; ) {
+      const next = n._next;
+      n._invalidate();
+      n = next;
+    }
     this.head = this.tail = null;
     this._count = 0;
     this.version++;
   }
 
+  /** `CopyTo(array, index)`: front to back, after .NET's checks in .NET's order. */
+  copyTo(array: T[] | null, index: number): void {
+    if (array == null) throw argumentNull('array');
+    if (index < 0) throw negative('index', index);
+    if (index > array.length) {
+      throw exception(
+        'System.ArgumentOutOfRangeException',
+        `Must be less than or equal to the size of the collection. (Parameter 'index')\nActual value was ${index}.`,
+      );
+    }
+    if (array.length - index < this._count) {
+      throw exception('System.ArgumentException', 'Insufficient space in the target location to copy the information.');
+    }
+    let at = index;
+    for (let n = this.head; n !== null; n = n._next) array[at++] = n.value;
+  }
+
+  /** .NET's `ValidateNode`: a node of this list. */
+  private own(node: LinkedListNode<T> | null): LinkedListNode<T> {
+    if (node == null) throw argumentNull('node');
+    if (node._list !== this) throw foreignNode();
+    return node;
+  }
+
+  /** .NET's `ValidateNewNode`: a node of no list, refused by the name `node` whichever parameter it is. */
+  private unattached(node: LinkedListNode<T> | null): LinkedListNode<T> {
+    if (node == null) throw argumentNull('node');
+    if (node._list !== null) throw attachedNode();
+    return node;
+  }
+
+  /** `node` linked in before `before`, or at the back for null. */
+  private insertBefore(before: LinkedListNode<T> | null, node: LinkedListNode<T>): void {
+    const after = before === null ? this.tail : before._previous;
+    node._list = this;
+    node._previous = after;
+    node._next = before;
+    if (after === null) this.head = node;
+    else after._next = node;
+    if (before === null) this.tail = node;
+    else before._previous = node;
+    this._count++;
+    this.version++;
+  }
+
   private unlink(node: LinkedListNode<T>): void {
-    if (node.previous !== null) node.previous.next = node.next;
-    else this.head = node.next;
-    if (node.next !== null) node.next.previous = node.previous;
-    else this.tail = node.previous;
+    if (node._previous !== null) node._previous._next = node._next;
+    else this.head = node._next;
+    if (node._next !== null) node._next._previous = node._previous;
+    else this.tail = node._previous;
+    node._invalidate();
     this._count--;
     this.version++;
   }
@@ -355,7 +605,7 @@ export class LinkedList<T> implements Iterable<T> {
    *  it walked on, through every node added at the end (#765). */
   *[Symbol.iterator](): Generator<T, undefined, unknown> {
     const version = this.version;
-    for (let n = this.head; n !== null; n = n.next) {
+    for (let n = this.head; n !== null; n = n._next) {
       yield n.value;
       if (this.version !== version) throw collectionModifiedAfterInstantiation();
     }
@@ -376,7 +626,13 @@ export class LinkedList<T> implements Iterable<T> {
 
 /** `new LinkedList<T>()` and `new LinkedList<T>(collection)`. */
 export function linkedList<T>(...argument: [] | [Iterable<T> | string | null]): LinkedList<T> {
-  return new LinkedList<T>(constructorElements(argument, false));
+  return new LinkedList<T>(constructorArgument(argument, false).items);
+}
+
+/** `new LinkedListNode<T>(value)`: a node of no list. It was built as a linked list of the value,
+ *  which a number is not (#866). */
+export function linkedListNode<T>(value: T): LinkedListNode<T> {
+  return new LinkedListNode(value);
 }
 
 /**

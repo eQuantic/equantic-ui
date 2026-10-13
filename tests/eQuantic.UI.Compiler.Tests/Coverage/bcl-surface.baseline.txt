@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=301 · fenced=92 · invalid-probe=6 · native=634
+# totals: eq=301 · fenced=94 · invalid-probe=6 · native=632
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -749,11 +749,11 @@ native         SortedDictionary<String,Int32>.Remove(String)
 native         SortedDictionary<String,Int32>.Values
 native         SortedSet<Int32>.Add(Int32)
 native         SortedSet<Int32>.Clear()
-native         SortedSet<Int32>.Comparer
+fenced:EQ2004  SortedSet<Int32>.Comparer
 native         SortedSet<Int32>.Contains(Int32)
 native         SortedSet<Int32>.Count
 native         SortedSet<Int32>.ExceptWith(IEnumerable<Int32>)
-native         SortedSet<Int32>.GetViewBetween(Int32,Int32)
+fenced:EQ2004  SortedSet<Int32>.GetViewBetween(Int32,Int32)
 native         SortedSet<Int32>.IntersectWith(IEnumerable<Int32>)
 native         SortedSet<Int32>.IsProperSubsetOf(IEnumerable<Int32>)
 native         SortedSet<Int32>.IsProperSupersetOf(IEnumerable<Int32>)

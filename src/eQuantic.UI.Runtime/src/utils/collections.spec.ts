@@ -9,6 +9,7 @@ import {
   stack,
   LinkedList,
   linkedList,
+  linkedListNode,
   remove,
   add,
   clear,
@@ -391,5 +392,70 @@ describe('a change while a queue, a stack or a linked list is walked (#765)', ()
     expect(walk(missed, () => missed.remove(9))).toBe('123');
     const written = l();
     expect(walk(written, (v) => v === 1 && (written.last!.value = 9))).toBe('129');
+  });
+});
+
+describe("the members .NET's queue, stack and linked list have beyond the basics (#866)", () => {
+  it('takes and looks with undefined for nothing, as TryDequeue, TryPeek and TryPop answer false', () => {
+    const q = queue([1, 2]);
+    expect([q.tryPeek(), q.tryDequeue(), q.tryDequeue(), q.tryDequeue(), q.tryPeek()]).toEqual([1, 1, 2, undefined, undefined]);
+    const s = stack([1, 2]);
+    expect([s.tryPeek(), s.tryPop(), s.tryPop(), s.tryPop(), s.tryPeek()]).toEqual([2, 2, 1, undefined, undefined]);
+  });
+
+  it("keeps .NET's capacity: each one's growth, a sequence's, EnsureCapacity and TrimExcess", () => {
+    const q = queue<number>(1);
+    const s = stack<number>(1);
+    const grown: string[] = [];
+    for (let i = 0; i < 4; i++) {
+      q.enqueue(i);
+      s.push(i);
+      grown.push(`${q.capacity}/${s.capacity}`);
+    }
+    expect(grown).toEqual(['1/1', '5/2', '5/4', '5/4']);
+    expect([queue([1, 2, 3]).capacity, queue('abcde').capacity, queue(stack([1, 2, 3])).capacity, queue([]).capacity]).toEqual([3, 8, 4, 0]);
+    const e = queue<number>();
+    expect([e.ensureCapacity(3), e.ensureCapacity(10), e.ensureCapacity(11)]).toEqual([4, 10, 20]);
+    const t = queue<number>();
+    for (let i = 0; i < 5; i++) t.enqueue(i);
+    t.trimExcess();
+    expect(t.capacity).toBe(5);
+    t.trimExcess(9);
+    expect(t.capacity).toBe(9);
+    expect(() => t.trimExcess(4)).toThrow("capacity ('4') must be greater than or equal to '5'.");
+  });
+
+  it('sizes by a count only a collection with a CopyTo has, as .NET reads an ICollection<T>', () => {
+    // An IReadOnlyList<T> of the app's own: a count and its elements, and no CopyTo.
+    const counted = {
+      count: 3,
+      *[Symbol.iterator]() {
+        yield* [1, 2, 3];
+      },
+    };
+    const copied = { ...counted, copyTo() {} };
+    expect([queue(counted).capacity, stack(counted).capacity]).toEqual([4, 4]);
+    expect([queue(copied).capacity, stack(copied).capacity]).toEqual([3, 3]);
+  });
+
+  it('links a node of its own after, before and at the ends, and lets go of one it removes', () => {
+    const l = linkedList([2]);
+    const one = linkedListNode(1);
+    expect([one.list, one.next, one.previous]).toEqual([null, null, null]);
+    l.addNodeBefore(l.first, one);
+    l.addNodeAfter(l.last, linkedListNode(3));
+    l.addNodeFirst(linkedListNode(0));
+    l.addAfter(l.last, 4);
+    expect([...l]).toEqual([0, 1, 2, 3, 4]);
+    expect(one.list).toBe(l);
+    expect(l.find(3)!.next!.value).toBe(4);
+    expect(l.findLast(9)).toBeNull();
+    l.removeNode(one);
+    expect([one.list, one.next, one.previous, [...l]]).toEqual([null, null, null, [0, 2, 3, 4]]);
+    expect(() => l.removeNode(one)).toThrow('The LinkedList node does not belong to current LinkedList.');
+    expect(() => l.addNodeLast(l.first)).toThrow('The LinkedList node already belongs to a LinkedList.');
+    const kept = l.first!;
+    l.clear();
+    expect([kept.list, kept.next]).toEqual([null, null]);
   });
 });

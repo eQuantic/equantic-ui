@@ -535,6 +535,8 @@ public static class PatternConverter
         (context.SemanticHelper.GetSymbol(name), name.Identifier.ValueText) switch
         {
             (IFieldSymbol field, _) => $"{at}.{field.TwinSlot()}",
+            (var member, _) when Strategies.Types.QueueStackStrategy.SortedSetEnd(JsExpr.Opaque(at), member, context) is { } end =>
+                JsExprWriter.WriteIn(end, JsPrecedence.Call),
             (_, "Count") => JsExprWriter.Write(Strategies.CountSpelling.Read(JsExpr.Opaque(at), receiver, context)),
             (_, "Length") => $"{at}.length",
             (_, var member) => $"{at}.{TwinName.Of(member)}",
