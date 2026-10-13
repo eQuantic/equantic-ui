@@ -77,6 +77,22 @@ public sealed class AClassNamedLikeADotNetTypeTests
     }
 
     [Fact]
+    public void ANameWithNoModuleBehindIt_IsStillDotNets()
+    {
+        // The control, and why the list stays: no class of the solution is called Math, so the name
+        // is System.Math's, which lowers to JavaScript's own, and nothing is imported for it.
+        using var solution = new Solution()
+            .Library("Common", files: [("Type.cs", Library("Type"))])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files:
+                [("Screens/Home.cs", Page("Type").Replace("Common.Type.Family()", "Math.Max(1, 2).ToString()"))]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Module("Math").Should().BeNull("no class of the solution is called Math");
+        built.SiblingImportsOf("Home").Should().BeEmpty();
+    }
+
+    [Fact]
     public void TheAppsOwnClassNamedType_IsAModuleThePageImports()
     {
         using var solution = new Solution()
