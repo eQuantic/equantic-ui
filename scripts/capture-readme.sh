@@ -20,7 +20,8 @@
 #
 # What each target needs: `web` a Google Chrome (EQ_CHROME names another), `desktop` and `ios` a Mac,
 # `ios` an iOS simulator runtime, `android` an emulator already booted, and every one a python3 with
-# Pillow, which reads each capture.
+# Pillow, which reads each capture. The emulator is its owner's: `android` replaces no Wallet it
+# finds there, and photographs one only when EQ_README_ANDROID_INSTALLED=1 says it is this tree's.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -227,7 +228,10 @@ android_screen() {
     when_drawn "$out" android_photograph
 }
 
+# A screen that is off photographs as black, and an emulator booted with no window is asleep. Each
+# photograph wakes it, which also keeps it from going back to sleep while an app takes its time.
 android_photograph() {
+    adb shell input keyevent KEYCODE_WAKEUP
     adb exec-out screencap -p > "$1"
 }
 
@@ -235,35 +239,70 @@ android_demo() {
     adb shell am broadcast -a com.android.systemui.demo "$@" > /dev/null
 }
 
+# quoted <text>: the text as ONE word for the shell `adb shell` hands its command to. What is put
+# back was read from the device, and debug.mono.env is a list its developer wrote with `|` between
+# the names, which that shell would take for a pipe.
+quoted() {
+    printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
+}
+
+# The emulator as android() found it, put back from what it read before it changed anything.
+android_restore() {
+    adb shell am force-stop "$ANDROID_PACKAGE"
+    android_demo -e command exit
+    adb shell "cmd uimode night $(quoted "$ANDROID_NIGHT")"
+    adb shell "setprop debug.mono.env $(quoted "$ANDROID_ENVIRONMENT")"
+    if [ "$ANDROID_DEMO" = null ]; then
+        adb shell settings delete global sysui_demo_allowed
+    else
+        adb shell "settings put global sysui_demo_allowed $(quoted "$ANDROID_DEMO")"
+    fi
+    case "$ANDROID_AWAKE" in
+        Asleep | Dozing) adb shell input keyevent KEYCODE_SLEEP ;;
+    esac
+}
+
 android() {
     command -v adb > /dev/null || fail "no adb on the PATH"
     [ "$(adb get-state 2> /dev/null)" = device ] || fail "no Android emulator is running. Boot one with a GPU the app can present through (-gpu host)"
-    local package=tech.equantic.wallet sample="$ROOT/samples/WalletMobile" apk installed night answer activity
-    # The assemblies inside the package: a Debug build leaves them out for a fast deployment, and
-    # that package starts nothing when it is installed by hand.
-    dotnet build "$sample" -f net10.0-android -c Debug -p:EmbedAssembliesIntoApk=true -v:q -nologo
-    apk="$(ls -t "$sample"/bin/Debug/net10.0-android/*-Signed.apk | head -1)"
+    local sample="$ROOT/samples/WalletMobile" apk there version answer activity
+    ANDROID_PACKAGE=tech.equantic.wallet
 
-    # The emulator is left as it was found: its night mode, its status bar, the property that names
-    # a screen, and the app uninstalled when this installed it.
-    installed="$(adb shell pm list packages | grep -c "package:$package" || true)"
-    night="$(adb shell cmd uimode night | tr -d '\r' | sed -E 's/.*: //')"
-    [ "$installed" != 0 ] || UNDO+=("adb uninstall $package")
-    UNDO+=("adb shell am force-stop $package" "adb shell cmd uimode night $night"
-        "adb shell am broadcast -a com.android.systemui.demo -e command exit"
-        "adb shell \"setprop debug.mono.env ''\"")
-
-    # EQ_README_ANDROID_INSTALLED=1 says this build is on the device already. An emulator short of
-    # storage refuses an install it has room for, and what to do about that is its owner's to say.
-    if [ -z "${EQ_README_ANDROID_INSTALLED:-}" ]; then
-        answer="$(adb install -r "$apk" 2>&1 | grep -m1 -E 'Success|Failure' || true)"
+    # What is on the emulator is its owner's. A Wallet already there is never replaced: it is
+    # photographed when the caller says it is this tree's build (EQ_README_ANDROID_INSTALLED=1),
+    # which is also the way through for an emulator short of storage, since that one refuses an
+    # install it has room for and what to do about it is its owner's to say. A Wallet this
+    # installs, it uninstalls.
+    there="$(adb shell pm path "$ANDROID_PACKAGE" 2> /dev/null | tr -d '\r' || true)"
+    if [ -n "$there" ]; then
+        version="$(adb shell dumpsys package "$ANDROID_PACKAGE" | tr -d '\r' | sed -n 's/^ *versionName=//p' | head -1 || true)"
+        [ -n "${EQ_README_ANDROID_INSTALLED:-}" ] || fail "$ANDROID_PACKAGE is on this emulator already (version ${version:-unknown}), and this replaces nothing its owner installed. Uninstall it and this installs the build of this tree, or say EQ_README_ANDROID_INSTALLED=1 when it IS the build of this tree, to photograph it as it is"
+    else
+        [ -z "${EQ_README_ANDROID_INSTALLED:-}" ] || fail "EQ_README_ANDROID_INSTALLED=1 says the Wallet is on the emulator already, and $ANDROID_PACKAGE is not there"
+        # The assemblies inside the package: a Debug build leaves them out for a fast deployment,
+        # and that package starts nothing when it is installed by hand.
+        dotnet build "$sample" -f net10.0-android -c Debug -p:EmbedAssembliesIntoApk=true -v:q -nologo
+        apk="$(ls -t "$sample"/bin/Debug/net10.0-android/*-Signed.apk | head -1)"
+        UNDO+=("adb uninstall $ANDROID_PACKAGE")
+        answer="$(adb install "$apk" 2>&1 | grep -m1 -E 'Success|Failure' || true)"
         case "$answer" in
             Success*) ;;
             *) fail "the emulator refused the install: ${answer:-no answer}" ;;
         esac
     fi
-    activity="$(adb shell cmd package resolve-activity --brief "$package" | tail -1 | tr -d '\r')"
 
+    # And its settings are left as they were found: its night mode, whether its status bar may be
+    # staged, the property that names a screen, which is a developer's own list of variables, and
+    # a screen that was off.
+    ANDROID_AWAKE="$(adb shell dumpsys power | tr -d '\r' | sed -n 's/^ *mWakefulness=//p' | head -1 || true)"
+    ANDROID_NIGHT="$(adb shell cmd uimode night | tr -d '\r' | sed -E 's/.*: //')"
+    ANDROID_ENVIRONMENT="$(adb shell getprop debug.mono.env | tr -d '\r')"
+    ANDROID_DEMO="$(adb shell settings get global sysui_demo_allowed | tr -d '\r')"
+    UNDO+=("android_restore")
+    activity="$(adb shell cmd package resolve-activity --brief "$ANDROID_PACKAGE" | tail -1 | tr -d '\r')"
+
+    adb shell input keyevent KEYCODE_WAKEUP
+    adb shell wm dismiss-keyguard
     adb shell cmd uimode night yes > /dev/null
     adb shell settings put global sysui_demo_allowed 1
     android_demo -e command enter
@@ -273,8 +312,8 @@ android() {
     android_demo -e command network -e mobile show -e datatype none -e level 4
     android_demo -e command notifications -e visible false
 
-    android_screen "$package" "$activity" Transactions
-    android_screen "$package" "$activity" Cards
+    android_screen "$ANDROID_PACKAGE" "$activity" Transactions
+    android_screen "$ANDROID_PACKAGE" "$activity" Cards
     undo
 }
 
