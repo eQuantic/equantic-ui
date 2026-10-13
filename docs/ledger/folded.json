@@ -1,0 +1,15 @@
+{
+  "$comment": [
+    "The chronology of docs/LEDGER.md as the last fold left it (#892): how many entries it holds, and",
+    "the SHA-256 of its lines. LedgerTests fails when the chronology differs.",
+    "",
+    "An event is a file of its own in this folder, never a line written into the chronology, so that",
+    "two pull requests never write at the same point. README.md beside this file says how.",
+    "",
+    "A release folds the files and writes this record: ./scripts/fold-ledger.sh. A deliberate change",
+    "to the chronology itself, a citation that moved with its document, is recorded with",
+    "EQ_UPDATE_LEDGER=1 on LedgerTests, which folds nothing."
+  ],
+  "entries": 186,
+  "sha256": "0799000c5c8d94984396ae663af9ca3608e344e37415c0961c81d3e2cf905943"
+}
