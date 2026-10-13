@@ -29,8 +29,9 @@ using Microsoft.CodeAnalysis.CSharp;
 // manifest's install icons, the one iOS Safari pins, the one in the tab. Same source, both ways:
 // an app states its icon ONCE and it appears everywhere it belongs.
 
-// `capabilities` — the Apple manifest keys for what the app declared. Read off the compiled
-// assembly, where the generator put them; written where the SDK hands them to Apple's packaging.
+// `capabilities` — the Apple manifest keys for what the app declared: the sentence behind each
+// permission, and the URL schemes that open it. Read off the compiled assembly, where the generator
+// put them; written where the SDK hands them to Apple's packaging.
 if (args.Length > 0 && args[0] == "entitlements") return Entitlements(args);
 
 if (args.Length > 0 && args[0] == "capabilities")
@@ -45,15 +46,15 @@ if (args.Length > 0 && args[0] == "capabilities")
     var plist = Arg("--plist");
     if (appAssembly is null || plist is null)
     {
-        Console.Error.WriteLine("Usage: eqicon capabilities --assembly <app.dll> --plist <out.plist>");
+        Console.Error.WriteLine("Usage: eqicon capabilities --assembly <app.dll> --plist <out.plist> [--id <app identifier>]");
         return 1;
     }
 
     if (!File.Exists(appAssembly)) return 0;      // nothing built yet; the build will come back
-    var wrote = CapabilityManifest.Write(appAssembly, plist);
+    var wrote = CapabilityManifest.Write(appAssembly, plist, Arg("--id"));
     Console.WriteLine(wrote
         ? $"eqicon: wrote {plist}"
-        : "eqicon: no device capabilities declared");
+        : "eqicon: no device capabilities or URL schemes declared");
     return 0;
 }
 

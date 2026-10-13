@@ -9,14 +9,21 @@
 # The simulator is a fresh one, made on the newest iOS runtime installed (or EQ_IOS_RUNTIME, a runtime
 # identifier) and deleted on the way out, so a developer's own booted simulator is never touched.
 #
+# And what the app DECLARED in C# has to be in the bundle (#777): the SDK writes a partial manifest
+# from the compiled assembly, with the sentence behind each permission and the URL schemes, and
+# Apple's packaging merges it only when it is handed over in time. Handed over late, the build is
+# green, the file is there, and the Info.plist ships without a key the app said it needed.
+#
 #   ./scripts/check-ios-launch.sh            # build the sample in Release, then launch it
 #   EQ_IOS_APP=<path>.app ./scripts/...      # launch an app that is already built
+#   EQ_IOS_DECLARED=<path>.plist             # with EQ_IOS_APP: the partial manifest that app's build wrote
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)
 frames=60
 
 app=${EQ_IOS_APP:-}
+declared=${EQ_IOS_DECLARED:-}
 if [ -z "$app" ]; then
   # Release: a Debug build installs a .app without its assemblies, which crashes on launch. The
   # simulator runs the machine's own architecture.
@@ -27,6 +34,8 @@ if [ -z "$app" ]; then
   dotnet build "$root/samples/WalletMobile" -f net10.0-ios -r "$rid" -c Release
   # Read back from what the build wrote, rather than a path spelled here.
   app=$(find "$root/samples/WalletMobile/bin/Release" -maxdepth 4 -path "*/$rid/*" -name "*.app" | head -1)
+  # The sample declares what it asks of the device, so its build writes this file.
+  declared="$root/samples/WalletMobile/obj/eQuantic/Capabilities.plist"
 fi
 if [ ! -f "$app/Info.plist" ]; then
   echo "::error::no app at $app, so this would launch nothing"
@@ -42,6 +51,26 @@ echo "App: $app ($bundle), linked against $(plist DTSDKName)."
 if [ "$(plist UIApplicationSceneManifest:UIApplicationSupportsMultipleScenes)" != "false" ]; then
   echo "::error::$app/Info.plist declares no scene manifest with one scene"
   exit 1
+fi
+
+# Every key the SDK wrote from the app's own declarations, compared with what the bundle carries.
+# Derived from the partial manifest, never listed here: a key the sample starts declaring is checked
+# the day it is declared.
+if [ -n "$declared" ]; then
+  if [ ! -f "$declared" ]; then
+    echo "::error::no partial manifest at $declared, so nothing the app declared was checked"
+    exit 1
+  fi
+  missing=$(jq -rn \
+    --argjson declared "$(plutil -convert json -o - "$declared")" \
+    --argjson built "$(plutil -convert json -o - "$app/Info.plist")" \
+    '$declared | to_entries[] | select($built[.key] != .value) | .key')
+  if [ -n "$missing" ]; then
+    echo "::error::$app/Info.plist does not carry what the app declared. Written to $declared and not merged:"
+    echo "$missing"
+    exit 1
+  fi
+  echo "Declared and in the Info.plist: $(plutil -convert json -o - "$declared" | jq -r 'keys | join(", ")')."
 fi
 
 runtime=${EQ_IOS_RUNTIME:-$(xcrun simctl list runtimes --json | jq -r '

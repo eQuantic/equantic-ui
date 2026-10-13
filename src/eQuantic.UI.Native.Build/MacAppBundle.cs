@@ -28,10 +28,7 @@ public static class MacAppBundle
         var stated = declared
             .Where(fact => fact.Kind != BundleManifest.ValueKind.UrlScheme)
             .ToDictionary(fact => fact.Key, fact => fact, StringComparer.Ordinal);
-        var schemes = declared
-            .Where(fact => fact.Kind == BundleManifest.ValueKind.UrlScheme)
-            .Select(fact => fact.Value)
-            .ToList();
+        var schemes = BundleManifest.Schemes(declared);
 
         // Every key the framework writes, recorded as it is written — see Text/Flag below.
         var written = new HashSet<string>(StringComparer.Ordinal);
@@ -72,16 +69,8 @@ public static class MacAppBundle
                      Flag("NSSupportsAutomaticGraphicsSwitching", @default: true));
             if (icon is not null) plist.String("CFBundleIconFile", Text("CFBundleIconFile", icon));
 
-            // The URLs this app answers to. One array with one type in it: a Photon app declares
-            // schemes, not document types, and CFBundleURLName is the bundle id by convention so
-            // two apps claiming the same scheme are at least distinguishable in the registry.
-            if (schemes.Count > 0)
-            {
-                written.Add("CFBundleURLTypes");
-                plist.DictionaryArray("CFBundleURLTypes", entry => entry
-                    .String("CFBundleURLName", identifier)
-                    .StringArray("CFBundleURLSchemes", [.. schemes]));
-            }
+            // The URLs this app answers to, written as the phones' partial manifest writes them.
+            if (BundleManifest.WriteUrlTypes(plist, identifier, schemes)) written.Add("CFBundleURLTypes");
 
             // What the app DECLARED about the DEVICE, straight off its compiled assembly — the same
             // attributes the iOS partial plist is written from. The Mac spelling of the location key

@@ -95,7 +95,7 @@ public class NativeSdkEvaluationTests
                 "msbuild", Path.Combine(dir, "EvalConsumer.csproj"), "-nologo",
                 "-getProperty:_EqPlatform", "-getProperty:ValidateXcodeVersion",
                 "-getProperty:SupportedOSPlatformVersion", "-getProperty:_EqDesktopShell",
-                "-getProperty:_EqMacHead",
+                "-getProperty:_EqMacHead", "-getProperty:CollectAppManifestsDependsOn",
                 "-getItem:ProjectReference", "-getItem:PackageReference",
                 "-getItem:PartialAppManifest", "-getItem:TrimmerRootAssembly",
             };
@@ -206,6 +206,11 @@ public class NativeSdkEvaluationTests
         ios.Property("_EqMacHead").Should().BeEmpty("an iPhone app is not a macOS head");
 
         Shell(ios).Should().Be("eQuantic.UI.Native.Shell.iOS");
+        // The early list of manifests has a public door, and the SDK stays off it: a target there
+        // that reads the compiled assembly drags the compiler in front of the rest of the build,
+        // and an app's .resx is then no longer embedded in its assembly (measured, #777).
+        ios.Property("CollectAppManifestsDependsOn").Should().NotContain("EQuantic",
+            "what the app declares is handed over when the final manifest is written, not here");
         ios.Identities("PartialAppManifest").Select(Path.GetFileName)
             .Should().Contain("PhotonApp.plist",
                 "without UILaunchScreen iOS runs the app in a compatibility window and every " +

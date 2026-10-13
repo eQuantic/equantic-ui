@@ -1,5 +1,6 @@
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using eQuantic.UI.Codegen;
 
 namespace eQuantic.UI.Build;
 
@@ -36,6 +37,28 @@ public static class BundleManifest
 
     /// <summary>One declared fact.</summary>
     public readonly record struct Fact(string Key, string Value, ValueKind Kind);
+
+    /// <summary>The URL schemes among the facts, in the order they were declared.</summary>
+    public static string[] Schemes(IEnumerable<Fact> facts) =>
+        [.. facts.Where(fact => fact.Kind == ValueKind.UrlScheme).Select(fact => fact.Value)];
+
+    /// <summary>
+    /// The URLs an app answers to, as Apple reads them on a Mac and on a phone alike: one array
+    /// with one type in it, since a Photon app declares schemes and no document types. The type is
+    /// named by the app's identifier, by convention, so two apps that claim one scheme can at least
+    /// be told apart; with no identifier the name is left out, which Apple allows. Writes nothing
+    /// for an app that declares none, and says whether it wrote.
+    /// </summary>
+    public static bool WriteUrlTypes(PropertyListWriter plist, string? identifier, string[] schemes)
+    {
+        if (schemes.Length == 0) return false;
+        plist.DictionaryArray("CFBundleURLTypes", entry =>
+        {
+            if (!string.IsNullOrWhiteSpace(identifier)) entry.String("CFBundleURLName", identifier);
+            entry.StringArray("CFBundleURLSchemes", schemes);
+        });
+        return true;
+    }
 
     /// <summary>
     /// The facts, in a stable order. Later declarations of the same key win, which is what the
