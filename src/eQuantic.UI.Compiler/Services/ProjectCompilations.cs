@@ -32,12 +32,13 @@ internal static class ProjectCompilations
     /// app's projects need too, since references flow, so each project is compiled against it.</param>
     /// <param name="addStandardReferences">See <see cref="ProjectCompilationHelper.CreateCompilationFromSources"/>.</param>
     /// <param name="projects">The referenced projects, in any order.</param>
+    /// <param name="graph">Which project references which, as restore wrote it.</param>
     /// <param name="read">How an assembly is read; null reads each file anew.</param>
     /// <param name="built">Each project a compilation was built for, with that compilation. A project
     /// with no C# source (another language's) keeps its assembly and is not here.</param>
     public static Compilation Create(string assemblyName, IEnumerable<string> sourceFiles,
         IEnumerable<string> assemblyPaths, bool addStandardReferences,
-        IReadOnlyList<ReferencedProject> projects, Func<string, MetadataReference>? read,
+        IReadOnlyList<ReferencedProject> projects, ProjectGraph graph, Func<string, MetadataReference>? read,
         out IReadOnlyDictionary<ReferencedProject, Compilation> built)
     {
         var sources = projects.ToDictionary(project => project, project => project.SourceFiles());
@@ -48,38 +49,51 @@ internal static class ProjectCompilations
         var metadata = ProjectCompilationHelper.LoadReferences(assemblyPaths, addStandardReferences,
             compiled.Select(project => project.AssemblyFileName).ToHashSet(StringComparer.OrdinalIgnoreCase), read);
 
-        // In the order the assemblies reference one another, each project referencing the ones it
-        // reaches, directly or through another: a type of a third project named in a signature of a
-        // second resolves only where the third is referenced too.
-        var byAssembly = new Dictionary<string, ReferencedProject>(StringComparer.OrdinalIgnoreCase);
-        foreach (var project in compiled) byAssembly.TryAdd(project.AssemblyName, project);
+        // In the order the projects reference one another, each referencing the ones it reaches,
+        // directly or through another: a type of a third project named in a signature of a second
+        // resolves only where the third is referenced too. The order is the restore graph's, never
+        // the assemblies': a constant read from another project is copied into the reader, and a
+        // reference assembly keeps no method body, so a library that reads only a constant of a
+        // project names no reference to it, and was compiled without it (#887).
+        var byProjectFile = new Dictionary<string, ReferencedProject>(graph.Paths);
+        foreach (var project in compiled)
+        {
+            if (!graph.Holds(project.ProjectFile))
+                throw new InvalidDataException(
+                    $"the restore graph does not hold '{project.ProjectFile}', so which projects it references is not known: restore the app again");
+            byProjectFile.TryAdd(project.ProjectFile, project);
+        }
 
         var compilations = new Dictionary<ReferencedProject, Compilation>();
-        var reaches = new Dictionary<ReferencedProject, List<ReferencedProject>>();
+        var reaches = new Dictionary<string, List<string>>(graph.Paths);
 
-        List<ReferencedProject> Reaches(ReferencedProject project, HashSet<ReferencedProject> onPath)
+        // Every project file one reaches through the graph, whether or not the project is compiled
+        // here. A project with no C# of its own keeps its assembly, and the references it makes
+        // still flow through it: with the walk stopped there, a library that reaches a project
+        // through such a one was compiled without it, since that project's assembly is not among the
+        // references either (found in review of #887).
+        List<string> Reaches(string file, HashSet<string> onPath)
         {
-            if (reaches.TryGetValue(project, out var known)) return known;
-            var reached = new List<ReferencedProject>();
-            // Assemblies cannot reference one another in a circle, so a project met again on its own
-            // path is a list written by hand: it is left out where it closes the circle.
-            if (!onPath.Add(project)) return reached;
-            foreach (var name in project.AssemblyReferences)
-            {
-                if (!byAssembly.TryGetValue(name, out var dependency) || dependency == project) continue;
-                foreach (var further in Reaches(dependency, onPath).Append(dependency))
-                    if (!reached.Contains(further)) reached.Add(further);
-            }
-            onPath.Remove(project);
-            return reaches[project] = reached;
+            if (reaches.TryGetValue(file, out var known)) return known;
+            var reached = new List<string>();
+            // Projects cannot reference one another in a circle, which restore refuses, so a project
+            // met again on its own path is a graph written by hand: it is left out where it closes
+            // the circle.
+            if (!onPath.Add(file)) return reached;
+            foreach (var reference in graph.ReferencesOf(file))
+            foreach (var further in Reaches(reference, onPath).Append(reference))
+                if (!graph.Paths.Equals(further, file) && !reached.Contains(further, graph.Paths)) reached.Add(further);
+            onPath.Remove(file);
+            return reaches[file] = reached;
         }
 
         Compilation Build(ReferencedProject project)
         {
             if (compilations.TryGetValue(project, out var known)) return known;
             var references = new List<MetadataReference>(metadata);
-            foreach (var dependency in Reaches(project, []))
-                references.Add(Build(dependency).ToMetadataReference());
+            foreach (var file in Reaches(project.ProjectFile, new HashSet<string>(graph.Paths)))
+                if (byProjectFile.TryGetValue(file, out var dependency) && dependency != project)
+                    references.Add(Build(dependency).ToMetadataReference());
             var trees = Parse(sources[project]);
             if (Friends(project) is { } friends) trees.Add(friends);
             return compilations[project] = CSharpCompilation.Create(

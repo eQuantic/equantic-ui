@@ -1,15 +1,19 @@
+using System.Text.Json.Nodes;
 using eQuantic.UI.Compiler.Services;
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
 
 namespace eQuantic.UI.Compiler.Tests.ReferencedProjects;
 
 /// <summary>
 /// An app and the projects it references, written to a temporary directory and built AS THE SDK BUILDS
 /// THEM: each referenced project is compiled to an assembly first, as MSBuild compiles it, and eqc's
-/// own build (<see cref="AppBuild"/>) is then handed what the SDK hands it, the reference list with
-/// those assemblies in it and the list of projects with the directory each one's source is in.
+/// own build (<see cref="AppBuild"/>) is then handed what the SDK hands it: the reference list with
+/// each project's REFERENCE assembly in it, as <c>@(ReferencePathWithRefAssemblies)</c> holds it, the
+/// list of projects with the project file each one came from, and the app's assets file, where
+/// restore wrote which project references which (#887).
 /// <para>
 /// So a test here runs the loop the CLI runs, over real files: which projects are read, which of
 /// their types become modules, what each module imports and what the build refuses. A snippet
@@ -65,6 +69,10 @@ internal sealed class Solution : IDisposable
 
         public Compilation? Compilation { get; set; }
         public string? Assembly { get; set; }
+
+        /// <summary>The reference assembly MSBuild writes beside it under <c>obj</c>: its metadata
+        /// with no method body and no private member, which is what the SDK hands the build.</summary>
+        public string? ReferenceAssembly { get; set; }
     }
 
     /// <summary>The directory the solution's projects are in, each in a folder of its name.</summary>
@@ -149,8 +157,12 @@ internal sealed class Solution : IDisposable
     /// build ends: a file the C# compiler could read and eqc then cannot.</param>
     /// <param name="handAssemblyName">False builds the app as an SDK that hands eqc no assembly name
     /// does, which is every build before the review of #827: the build takes the project file's.</param>
+    /// <param name="handGraph">False hands the projects with no assets file, which the build refuses.</param>
+    /// <param name="graph">The references the assets file says each project makes, by project name,
+    /// in place of the ones the solution declares: a graph that leaves an edge out is how a test shows
+    /// the build follows the graph and nothing else.</param>
     public Built Build(bool handProjects = true, string? bun = null, Func<IDisposable>? whileEqcRuns = null,
-        bool handAssemblyName = true)
+        bool handAssemblyName = true, bool handGraph = true, IReadOnlyDictionary<string, string[]>? graph = null)
     {
         foreach (var project in _projects) Compile(project);
 
@@ -158,11 +170,15 @@ internal sealed class Solution : IDisposable
         var libraries = _projects.Where(project => !project.IsApp).ToList();
         var obj = Path.Combine(DirectoryOf(app.Name), "obj", "Debug", "net10.0");
         var referencesFile = Path.Combine(obj, "equantic.refs.txt");
-        File.WriteAllLines(referencesFile, Framework.Value.Concat(libraries.Select(library => library.Assembly!)));
+        // A project's reference assembly, as the SDK's list holds it, and a package's own assembly.
+        File.WriteAllLines(referencesFile, Framework.Value.Concat(libraries.Select(library =>
+            library.IsPackage ? library.Assembly! : library.ReferenceAssembly!)));
         var projectsFile = Path.Combine(obj, "equantic.projects.txt");
         // Two lines a project, as the SDK writes it: the assembly, then the project file (#836).
         File.WriteAllLines(projectsFile, libraries.Where(library => !library.IsPackage).SelectMany(library =>
-            new[] { library.Assembly!, Path.Combine(DirectoryOf(library.Name), library.Name + ".csproj") }));
+            new[] { library.ReferenceAssembly!, ProjectFileOf(library.Name) }));
+        var assetsFile = Path.Combine(DirectoryOf(app.Name), "obj", "project.assets.json");
+        WriteAssets(assetsFile, app, graph);
 
         var output = new StringWriter();
         var errors = new StringWriter();
@@ -175,6 +191,7 @@ internal sealed class Solution : IDisposable
             // The SDK hands a list only when it wrote a line: an app that references no project
             // is handed none, and an empty one is a list that does not hold (#835).
             ProjectsFile = handProjects && libraries.Any(library => !library.IsPackage) ? projectsFile : null,
+            ProjectAssetsFile = handProjects && handGraph ? assetsFile : null,
             AssemblyName = handAssemblyName ? app.AssemblyName : null,
             BunPath = bun,
             // One reference per assembly for the whole test process (#481).
@@ -212,6 +229,56 @@ internal sealed class Solution : IDisposable
         using (var image = File.Create(assembly))
             compilation.Emit(image).Success.Should().BeTrue($"{project.Name} emits its assembly");
         project.Assembly = assembly;
+
+        var reference = Path.Combine(directory, "obj", "Debug", "net10.0", "ref", project.AssemblyName + ".dll");
+        Directory.CreateDirectory(Path.GetDirectoryName(reference)!);
+        using (var image = File.Create(reference))
+            compilation.Emit(image, options: new EmitOptions(metadataOnly: true, includePrivateMembers: false))
+                .Success.Should().BeTrue($"{project.Name} emits its reference assembly");
+        project.ReferenceAssembly = reference;
+    }
+
+    private string ProjectFileOf(string project) => Path.Combine(DirectoryOf(project), project + ".csproj");
+
+    /// <summary>
+    /// The app's assets file, in the shape NuGet's restore writes it: each project the app reaches
+    /// as a library of the <c>project</c> type, named by its project file's path from the app's, and
+    /// under the target framework the libraries each one depends on. A package is a library of the
+    /// <c>package</c> type.
+    /// </summary>
+    private void WriteAssets(string path, Project app, IReadOnlyDictionary<string, string[]>? graph)
+    {
+        var appDirectory = DirectoryOf(app.Name);
+        var targets = new JsonObject();
+        var libraries = new JsonObject();
+        foreach (var project in _projects.Where(project => !project.IsApp))
+        {
+            var key = project.Name + "/1.0.0";
+            var dependencies = new JsonObject();
+            foreach (var reference in graph is not null && graph.TryGetValue(project.Name, out var given) ? given : project.References)
+                dependencies[reference] = "1.0.0";
+            targets[key] = new JsonObject
+            {
+                ["type"] = project.IsPackage ? "package" : "project",
+                ["dependencies"] = dependencies,
+            };
+            var relative = Path.GetRelativePath(appDirectory, ProjectFileOf(project.Name)).Replace('\\', '/');
+            libraries[key] = project.IsPackage
+                ? new JsonObject { ["type"] = "package", ["path"] = project.Name.ToLowerInvariant() + "/1.0.0" }
+                : new JsonObject { ["type"] = "project", ["path"] = relative, ["msbuildProject"] = relative };
+        }
+        var assets = new JsonObject
+        {
+            ["version"] = 3,
+            ["targets"] = new JsonObject { ["net10.0"] = targets },
+            ["libraries"] = libraries,
+            ["project"] = new JsonObject
+            {
+                ["restore"] = new JsonObject { ["projectPath"] = ProjectFileOf(app.Name) },
+            },
+        };
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, assets.ToJsonString());
     }
 
     /// <summary>The projects one reaches, directly or through another, as MSBuild lets references flow.</summary>

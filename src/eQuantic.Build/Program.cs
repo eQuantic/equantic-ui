@@ -14,7 +14,7 @@ try
 catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
 {
     Console.Error.WriteLine($"eqc: {ex.Message}");
-    Console.Error.WriteLine("Usage: eqc <source-dir>[;<source-dir>...] <output-dir> [--refs <file>] [--projects <file>] [--assembly-name <name>] [--ref-sources <file>] [--generated <dir>] [--bun <path>] [--source-maps full|external|none] [--watch]");
+    Console.Error.WriteLine("Usage: eqc <source-dir>[;<source-dir>...] <output-dir> [--refs <file>] [--projects <file> --project-assets <file>] [--assembly-name <name>] [--ref-sources <file>] [--generated <dir>] [--bun <path>] [--source-maps full|external|none] [--watch]");
     Console.Error.WriteLine("       eqc @<file>, the same arguments one a line");
     return 1;
 }

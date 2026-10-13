@@ -33,8 +33,9 @@ public class TheCompilerIsHandedAFileTests
     /// the two targets it depends on standing in empty, and the target itself as <c>Sdk.targets</c>
     /// ships it.
     /// </summary>
-    private static string Project(string intermediateOutputPath = "obj/") => new XDocument(new XElement("Project",
+    private static string Project(string intermediateOutputPath = "obj/", bool assets = true) => new XDocument(new XElement("Project",
         new XElement("PropertyGroup",
+            assets ? new XElement("ProjectAssetsFile", "$(MSBuildProjectDirectory)/obj/project.assets.json") : null,
             new XElement("EnableEQuanticUICompilation", "true"),
             new XElement("IntermediateOutputPath", intermediateOutputPath),
             new XElement("EQuanticOutputPath", "wwwroot/_equantic/"),
@@ -76,6 +77,8 @@ public class TheCompilerIsHandedAFileTests
             options.OutputDirectory.Should().Be(directory + "/wwwroot/_equantic/");
             options.ReferencesFile.Should().Be(directory + "/obj/equantic.refs.txt");
             options.ProjectsFile.Should().Be(directory + "/obj/equantic.projects.txt");
+            options.ProjectAssetsFile.Should().Be(directory + "/obj/project.assets.json",
+                "the restore graph says which of the projects references which (#887)");
             options.ReferenceSourcesFile.Should().Be(directory + "/obj/equantic.ref-sources.txt");
             options.GeneratedDirectory.Should().Be(directory + "/generated");
             options.BunPath.Should().Be(directory + "/tools/bun");
@@ -84,6 +87,34 @@ public class TheCompilerIsHandedAFileTests
             File.ReadAllLines(Path.Combine(directory, "obj", "equantic.projects.txt")).Should().Equal(
                 [directory + "/Common/bin/Common.dll", Path.GetFullPath(Path.Combine(directory, "Common", "Common.csproj"))],
                 "a project is two lines, so a path is a line whole whatever it holds");
+        }
+        finally
+        {
+            Directory.Delete(Path.GetDirectoryName(directory)!, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AProjectWithNoAssetsFile_IsHandedNoEmptyValue()
+    {
+        // An empty line is no argument, so an option handed with an empty value takes the next line
+        // for its own and every argument after it shifts: the first version of #887 lost the app's
+        // assembly name that way. The option is left out, and eqc stops on the projects it was handed
+        // with no graph.
+        var directory = Path.Combine(Directory.CreateTempSubdirectory("eq-handed-").FullName, Odd);
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var probe = Path.Combine(directory, "probe.proj");
+            File.WriteAllText(probe, Project(assets: false));
+
+            Dotnet(null, null, "msbuild", probe, "-t:_EQuanticCompilerArguments", "-nologo", "-v:m");
+
+            var file = Path.Combine(directory, "obj", "equantic.eqc.rsp");
+            File.ReadAllLines(file).Should().NotContain("--project-assets");
+            var options = AppBuildOptions.FromArguments(AppBuildOptions.ReadArguments(["@" + file]));
+            options.ProjectAssetsFile.Should().BeNull();
+            options.AssemblyName.Should().Be("Cash$Flow`Back`", "every argument after the one left out is where it was");
         }
         finally
         {

@@ -480,9 +480,11 @@ MSBuild: CompileEQuanticUI (BeforeTargets="Build")
 
 A project the app references with a `ProjectReference`, directly or through another, reaches eqc as a
 compilation of its own SOURCE: `Sdk.targets` writes `obj/…/equantic.projects.txt` from the references
-MSBuild resolved (`--projects`), without the SDK's own projects and icon packs, and hands the app's
-assembly name as the project evaluates it (`--assembly-name`), which is the name a library's
-`InternalsVisibleTo` names. Everything eqc is handed reaches it in a response file,
+MSBuild resolved (`--projects`), without the SDK's own projects and icon packs, hands which of them
+references which from the graph restore wrote into the app's assets file (`--project-assets`: a
+constant read from another project leaves no reference to it in the reader's assembly, #887), and
+hands the app's assembly name as the project evaluates it (`--assembly-name`), which is the name a
+library's `InternalsVisibleTo` names. Everything eqc is handed reaches it in a response file,
 `obj/…/equantic.eqc.rsp`, one argument a line (#836), and the SDKs start eqc, as every other program,
 with `RunProgram`, which hands a program a list of arguments with no shell (#841): a shell read each
 value written into a command first, and `Cash$Flow` arrived as `Cash`. A type of one is a
