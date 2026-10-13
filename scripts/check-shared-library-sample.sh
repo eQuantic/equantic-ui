@@ -30,21 +30,21 @@ if [ ! -d "$modules" ] || [ ! -f "$output/HomePage.js" ]; then
     exit 1
 fi
 
-# THE SDK FOUND THE PROJECTS BY ITSELF: the library the app references and the one that library
+# THE SDK FOUND THE PROJECTS BY ITSELF: the library the app references and the two that library
 # references, and none of the SDK's own, which the app references too beside the source tree.
 projects=$(find "$web/obj" -name equantic.projects.txt | sort | head -1)
 if [ -z "$projects" ]; then
     fail "the SDK wrote no equantic.projects.txt for the sample, so the compiler was handed no referenced project"
 else
-    for project in SharedLibrary.Common SharedLibrary.Domain; do
+    for project in SharedLibrary.Common SharedLibrary.Domain SharedLibrary.Theme; do
         grep -q "/$project/$project.csproj\$" "$projects" \
             || fail "$projects does not list $project, a project the app references"
     done
     # Two lines a project, the assembly MSBuild resolved for it and then its project file, so a path
     # is a line whole whatever it holds (#836).
     lines=$(grep -c . "$projects")
-    if [ $((lines % 2)) -ne 0 ] || [ "$lines" -ne 4 ]; then
-        fail "$projects holds $lines lines where the app's own 2 projects are 4: the SDK's projects and icon packs are read another way"
+    if [ $((lines % 2)) -ne 0 ] || [ "$lines" -ne 6 ]; then
+        fail "$projects holds $lines lines where the app's own 3 projects are 6: the SDK's projects and icon packs are read another way"
         cat "$projects"
     fi
 fi
@@ -59,6 +59,17 @@ elif ! grep -qxF -- "$assembly" "$arguments"; then
     fail "$arguments does not hold the app's assembly name, $assembly, as a line of its own"
 fi
 
+# AND THE RESTORE GRAPH WITH THEM, which says which project references which: the assemblies cannot,
+# since the library reads the Theme project through a constant alone (#887).
+if [ -n "$arguments" ]; then
+    assets=$(grep -A1 -xF -- "--project-assets" "$arguments" | tail -1)
+    if ! grep -qxF -- "--project-assets" "$arguments"; then
+        fail "$arguments hands the projects with no --project-assets, so the compiler cannot tell which project references which"
+    elif [ ! -f "$assets" ]; then
+        fail "$arguments names $assets as the restore graph, and it is not there"
+    fi
+fi
+
 # EVERY TYPE THE PAGE REACHES IS A MODULE, in whichever project: a static class, a record, a
 # component, a record a Server Action answers, and the record of the second project inside it.
 #
@@ -66,15 +77,21 @@ fi
 # (InternalsVisibleTo), and the app's project file names its assembly apart from itself. So Imprint
 # is a module only when the SDK handed the compiler the name MSBuild evaluated: under the project
 # file's name the friend declaration opens nothing, and the page that builds it does not compile.
-for type in Palette Cursor Wordmark Receipt Money Imprint; do
+for type in Palette Cursor Wordmark Receipt Money Imprint Typeface; do
     [ -f "$modules/$type.ts" ] || fail "no module was written for $type, a type of a referenced project the page uses"
 done
-for type in Palette Cursor Wordmark Receipt Imprint; do
+for type in Palette Cursor Wordmark Receipt Imprint Typeface; do
     grep -q "^import { $type } from \"./$type\";" "$modules/HomePage.ts" \
         || fail "HomePage.ts does not import $type, which it names"
 done
 grep -q "^import { Money } from \"./Money\";" "$modules/Receipt.ts" 2>/dev/null \
     || fail "Receipt.ts does not import Money, the record of the project it references"
+
+# A VALUE THE LIBRARY READS FROM A PROJECT THROUGH A CONSTANT ALONE reaches the page: the library's
+# assembly names no reference to the Theme project, and the library was compiled without it, so the
+# name failed to bind and the build stopped (#887).
+grep -q "Newsreader" "$output/HomePage.js" \
+    || fail "the page's bundle does not hold Newsreader, the Theme project's constant the library reads"
 
 # AND NOTHING ELSE OF THEM: the page names ReceiptArchive only in a Server Action's body, which
 # does not cross. It reads a file, so compiling it would have failed the build above.

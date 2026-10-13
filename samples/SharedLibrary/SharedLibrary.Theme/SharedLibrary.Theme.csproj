@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- The solution's theme: plain .NET, read by SharedLibrary.Common through a constant and nothing
+         else. A constant is copied into the code that reads it, so the library's assembly names no
+         reference to this project, and only the restore graph says the library reads it (#887). -->
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+</Project>
