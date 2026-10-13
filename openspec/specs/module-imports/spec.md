@@ -37,6 +37,12 @@ where the module's own code names a type of the app, or of a project it referenc
   file calls `System.Math`
 - **THEN** the first file's module imports `Math`, and the second imports no module of that name
 
+#### Scenario: An extension declared in a class named Math
+
+- **WHEN** the app or a referenced project declares a class `Math` with an extension method `Twice`,
+  and a page calls `2.Twice()`, which the build writes `Math.twice(2)`
+- **THEN** the page's module imports `Math`, though its source names no `Math`
+
 #### Scenario: A name with no module behind it
 
 - **WHEN** a module names `DateTime` or `Math`, and neither the app nor a referenced project declares

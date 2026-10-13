@@ -12,6 +12,7 @@
 - [x] 2.1 Six names of the list as a library's class, the app's own class named `Type` and a library's exception class: each is a module the page imports
 - [x] 2.2 A solution's `Math` beside a file that calls `System.Math`: the file that means it imports it, and the other imports nothing of that name
 - [x] 2.3 Each case fails on main's emitter, and 2.2 on the first form of the fix
+- [x] 2.5 An extension declared in a class named `Math`, called as `2.Twice()`: the module imports `Math` though its source names none
 - [x] 2.4 The Compiler, Web and Conformance suites
 
 ## 3. The record

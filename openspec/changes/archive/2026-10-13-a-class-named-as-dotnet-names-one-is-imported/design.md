@@ -24,8 +24,10 @@ names, by a symbol of its own, a type declared in source under that name (`Names
 form asked only whether the build writes a module of the name, and for the app's own types that is
 asked by the name alone: an app with a class `Math` and a file that calls `System.Math` had that file
 import the app's `Math`, which hides JavaScript's own inside the module. Found in review, before any
-release. A type of a referenced project was known by symbol already (`ReferencedNames`). Nothing else
-changes: the emitted text is the same, and the import filter still keeps only names the text holds.
+release. A type of a referenced project was known by symbol already (`ReferencedNames`), and so is a
+name the conversion itself introduced (`UsedAppTypes`): an extension call reduced to `Math.twice(2)`
+names no `Math` in the source, which Copilot's first round found. Nothing else changes: the emitted
+text is the same, and the import filter still keeps only names the text holds.
 
 **The class of names, not the one reported.** The report was `Type`. Six names of the list are held
 by a test, each as a library's class a page calls, with the app's own class named `Type`, a library's
