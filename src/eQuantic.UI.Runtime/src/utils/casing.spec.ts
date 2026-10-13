@@ -33,7 +33,7 @@ describe('casing: one code unit to one', () => {
     expect(toLower('\udc28𐐀')).toBe('\udc28𐐨');
   });
 
-  it('leaves a letter .NET 10 does not case, whatever the engine’s Unicode says', () => {
+  it('leaves a letter a server’s .NET 10 does not case, whatever the engine’s Unicode says', () => {
     expect(toUpper('ƛɤ')).toBe('ƛɤ');
     expect(toLower('ꟜꟋ')).toBe('ꟜꟋ');
   });

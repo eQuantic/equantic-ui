@@ -17,15 +17,19 @@ import { exception } from './exceptions';
  * - the dotted and the dotless i are the culture's: tr and az upper-case `i` to `İ` and lower-case `I`
  *   to `ı`, every other culture upper-cases `ı` to `I` and lower-cases `İ` to `i`, and the invariant
  *   culture leaves both as they are;
- * - a code point the engine's Unicode cases and .NET 10's does not keeps its case: `ƛ`, whose capital
- *   is Unicode 16's, and the scripts that came with it.
+ * - a code point the engine's Unicode cases and a server's .NET does not keeps its case: `ƛ`, whose
+ *   capital is Unicode 16's, and the scripts that came with it.
  *
- * The last list is the difference measured, code point by code point over every plane, between .NET
- * 10 and engines of a later Unicode (bun 1.4, Node 22, and the browsers of their year). The bun this
- * repository ships cases as .NET 10 does, so the conformance suite, which compares every code unit of
- * the BMP and every code point of the first supplementary plane with .NET's own answer, proves the
- * rest of the rules there. An engine whose Unicode is older than .NET's can still leave out a mapping
- * .NET has; the list moves when either side does.
+ * .NET cases by the ICU of the machine it runs on, so for those letters its answer is the host's: the
+ * Linux servers of .NET 10's year carry ICU 74, which is Unicode 15.1, and Windows its own of the same
+ * casing, while Apple's ICU on macOS 26 cases by Unicode 16. The runtime follows the servers, where a
+ * page is rendered and hydrated: the last list is the difference measured, code point by code point
+ * over every plane, between .NET 10 over ICU 74 and engines of a later Unicode (bun 1.4, Node 22, and
+ * the browsers of their year). The bun this repository ships cases as .NET 10 does there, so the
+ * conformance suite, which compares every code unit of the BMP and every code point of the first
+ * supplementary plane with .NET's own answer on Linux and Windows, proves the rest of the rules. An
+ * engine whose Unicode is older than the server's can still leave out a mapping .NET has; the list
+ * moves when either side does.
  */
 
 /** How a culture cases the two i's. */
@@ -34,7 +38,8 @@ type Casing = 'invariant' | 'turkic' | 'other';
 /** `ArgumentNullException` for a char's culture handed as null, in .NET's words. */
 const NULL_CULTURE = "Value cannot be null. (Parameter 'culture')";
 
-/** The code points .NET 10 does not case and an engine of a later Unicode does, as ranges. */
+/** The code points .NET 10 does not case over a server's ICU and an engine of a later Unicode does,
+ * as ranges. */
 const KEEPS_CASE: readonly (readonly [number, number])[] = [
   [0x019b, 0x019b],
   [0x0264, 0x0264],

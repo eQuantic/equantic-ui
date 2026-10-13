@@ -2610,7 +2610,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   named, so a tr-TR page upper-cased `i` to `I` and a char's null culture was never refused
   ([#725](https://github.com/eQuantic/equantic-ui/issues/725)). The runtime cases a text by .NET 10's
   simple mappings, the two i's by the culture's language and the code points a later Unicode cases and
-  .NET 10 does not left alone; eqc reads the culture as it reads a date's, any other being EQ2108, and
+  .NET 10 does not over a Linux or Windows server's ICU left alone (.NET on macOS 26 cases them by
+  Apple's ICU, so the conformance cases that read them are skipped on such a Mac); eqc reads the culture as it reads a date's, any other being EQ2108, and
   `new DateOnly(…, calendar)` fails the build as `DateTime`'s does. The ordinal comparison that ignores
   case reads the same table. 72 of the 96 conformance cases (12, each run in eight cultures, four of
   them over every code unit of the BMP) fail at 9b43eb2b; 3 entries leave the null-argument baseline,

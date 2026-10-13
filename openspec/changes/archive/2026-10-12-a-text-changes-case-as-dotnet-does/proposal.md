@@ -21,9 +21,11 @@ each run in the invariant culture, en-US, pt-BR, de-DE, tr-TR, az-Latn-AZ, lt-LT
 - `new DateOnly(year, month, day, calendar)` dropped its calendar, a null one included, which .NET
   refuses; the `DateTime` and `DateTimeOffset` constructors with a calendar already failed the build
   (#725's null-argument baseline carried it).
-- Engines of a later Unicode than .NET 10's (bun 1.4, Node 22, the browsers of their year) case
-  letters .NET does not, such as `ƛ`, whose capital came with Unicode 16; the ordinal comparison that
-  ignores case read the same engine and shared that difference.
+- Engines of a later Unicode than the ICU .NET 10 cases by on a Linux or Windows server (bun 1.4,
+  Node 22, the browsers of their year) case letters .NET does not there, such as `ƛ`, whose capital came
+  with Unicode 16; the ordinal comparison that ignores case read the same engine and shared that
+  difference. .NET cases by the host's ICU, and Apple's on macOS 26 is Unicode 16's: the runtime
+  follows the servers, where a page is rendered and hydrated.
 
 ## What Changes
 
@@ -31,7 +33,7 @@ each run in the invariant culture, en-US, pt-BR, de-DE, tr-TR, az-Latn-AZ, lt-LT
   the characters an engine cases otherwise is cased by the engine whole, and any other one code point
   at a time, each taking .NET's simple mapping: a mapping that lengthens is the code point itself, but
   for the Greek letters with an iota subscript, which take the capital with a prosgegrammeni; a capital
-  sigma is the medial one; a code point .NET 10 does not case keeps its case; and the two i's are the
+  sigma is the medial one; a code point a server's .NET 10 does not case keeps its case; and the two i's are the
   culture's, tr and az by their language, the invariant culture keeping `İ` and `ı`. A char's culture
   handed as null throws .NET's ArgumentNullException, after the char is evaluated.
 - eqc lowers `ToUpper` and `ToLower` and their invariant pair to the twins, of a string and of a char:
@@ -45,7 +47,8 @@ each run in the invariant culture, en-US, pt-BR, de-DE, tr-TR, az-Latn-AZ, lt-LT
   constructors with a calendar do.
 - The ordinal comparison that ignores case reads the invariant culture's simple upper case from the
   same table, but for the long s, which it keeps, so the table of the Greek letters with an iota
-  subscript is written once and the letters .NET 10 does not case match only themselves on any engine.
+  subscript is written once and the letters a server's .NET 10 does not case match only themselves on
+  any engine.
 
 For a developer: `"straße".ToUpper()` is `STRAßE` in the browser as on the server, `"i".ToUpper()` on a
 tr-TR page is `İ`, `ToUpperInvariant()` is the same on every page, and a culture the browser does not

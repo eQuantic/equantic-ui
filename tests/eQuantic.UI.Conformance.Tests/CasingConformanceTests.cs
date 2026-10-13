@@ -5,12 +5,20 @@ namespace eQuantic.UI.Conformance.Tests;
 
 /// <summary>
 /// A text and a char change case as .NET 10 changes them (#848), in the culture the call names (#725).
-/// .NET changes each code unit, or surrogate pair, to exactly one other, by the simple mappings of its
-/// own Unicode data and the culture's rule for the two i's; the browser ran JavaScript's full mappings,
-/// which lengthen <c>ß</c> to <c>SS</c>, read a final sigma in its context and know no culture.
+/// .NET changes each code unit, or surrogate pair, to exactly one other, by the simple mappings of the
+/// host's ICU and the culture's rule for the two i's; the browser ran JavaScript's full mappings, which
+/// lengthen <c>ß</c> to <c>SS</c>, read a final sigma in its context and know no culture.
 /// Measured on .NET 10 in eight cultures: the invariant one, three whose casing is the common one, the
 /// two whose i's differ (tr and az), and the two whose JavaScript locale casing differs from the plain
 /// one (lt, el), which .NET does not follow.
+/// <para>
+/// The runtime follows the servers a page is rendered on, Linux's ICU 74 (Unicode 15.1) and Windows'
+/// own, and the cases that read every code point, or a letter Unicode 16 cased, compare there. Apple's
+/// ICU is the operating system's and moved first: .NET 10 on macOS 26 upper-cases <c>ƛ</c> to
+/// <c>Ƛ</c>, so on a Mac whose ICU does, those cases are skipped rather than held against a casing no
+/// server has. On Linux and Windows they fail when the host's ICU moves, which is when the runtime's
+/// list has to.
+/// </para>
 /// </summary>
 public class CasingConformanceTests
 {
@@ -55,7 +63,12 @@ public class CasingConformanceTests
         // A surrogate pair is cased as its code point, and a lone surrogate is left as it is.
         "var s = \"\\ud801\\udc28x\\ud801\".ToUpper() + \"\\ud801\\udc00X\".ToLower(); var r = \"\"; "
             + "for (var k = 0; k < s.Length; k++) r += (int)s[k] + \",\"; return r;",
-        // Unicode 16's capital of a letter .NET 10 does not case.
+    ];
+
+    /// <summary>The cases whose answer is the Unicode version of the host's ICU.</summary>
+    private static readonly string[] EveryCodePoint =
+    [
+        // Unicode 16's capital of a letter the servers' ICU does not case.
         "return \"\\u019b\\u0264\".ToUpper() + \"|\" + \"\\ua7dc\\ua7cb\".ToLower();",
         // Every code unit, through the string's casing and the char's.
         EveryCodeUnit("text.ToUpper()", "text.ToLower()"),
@@ -71,14 +84,32 @@ public class CasingConformanceTests
             + "s += count + \":\" + hash + \"|\"; } return s;",
     ];
 
-    public static IEnumerable<object?[]> CasesInEveryCulture() =>
-        Cases.SelectMany(statements => Cultures.Select(culture => new object?[] { statements, culture }));
+    /// <summary>Whether this host is a Mac whose ICU cases by a later Unicode than the servers'.</summary>
+    private static readonly bool CasesAheadOfTheServers =
+        OperatingSystem.IsMacOS() && "ƛ".ToUpperInvariant() != "ƛ";
+
+    public static IEnumerable<object?[]> CasesInEveryCulture() => InEveryCulture(Cases);
+
+    public static IEnumerable<object?[]> EveryCodePointInEveryCulture() => InEveryCulture(EveryCodePoint);
+
+    private static IEnumerable<object?[]> InEveryCulture(string[] cases) =>
+        cases.SelectMany(statements => Cultures.Select(culture => new object?[] { statements, culture }));
 
     [SkippableTheory]
     [MemberData(nameof(CasesInEveryCulture))]
     public void ATextOrAChar_ChangesCaseAsDotNetDoes(string statements, string? culture)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, culture: culture);
+    }
+
+    [SkippableTheory]
+    [MemberData(nameof(EveryCodePointInEveryCulture))]
+    public void EveryCodePoint_ChangesCaseAsAServersDotNetDoes(string statements, string? culture)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        Skip.If(CasesAheadOfTheServers,
+            "This Mac's ICU cases by Unicode 16, ahead of the Linux and Windows servers the runtime follows.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, culture: culture);
     }
 }

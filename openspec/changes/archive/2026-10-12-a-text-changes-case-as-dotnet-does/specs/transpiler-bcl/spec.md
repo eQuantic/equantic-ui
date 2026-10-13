@@ -7,7 +7,8 @@ UTF-16 code unit, or surrogate pair, to exactly one other, by .NET 10's simple c
 text's length never changes: a letter whose full mapping lengthens SHALL keep its case, but for the
 Greek letters with an iota subscript, which SHALL upper-case to the capital with a prosgegrammeni; a
 capital sigma SHALL lower-case to the medial one wherever it stands; a lone surrogate SHALL stay as it
-is; and a code point .NET 10 does not case SHALL keep its case on an engine of a later Unicode. The two
+is; and a code point .NET 10 does not case over a Linux or Windows server's ICU SHALL keep its case
+on an engine of a later Unicode, where .NET on macOS 26 cases it by Apple's ICU. The two
 i's SHALL be the culture's: tr and az, by their language, SHALL upper-case `i` to `İ` and lower-case
 `I` to `ı`, every other culture SHALL upper-case `ı` to `I` and lower-case `İ` to `i`, and the
 invariant culture SHALL leave `İ` and `ı` as they are. No culture, `CultureInfo.CurrentCulture` and a
