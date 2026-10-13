@@ -59,6 +59,24 @@ public sealed class AClassNamedLikeADotNetTypeTests
     }
 
     [Fact]
+    public void AReferencedProjectsExceptionClass_IsAModuleThePageImports()
+    {
+        // A name ending in Exception was taken for .NET's, whose construction lowers to an Error. A
+        // library's own exception class is a class of its own (#611), and the page wrote
+        // `new OrderException('x').code` with no import of it.
+        using var solution = new Solution()
+            .Library("Common", files: [("OrderException.cs",
+                "namespace Common;\n\npublic sealed class OrderException(string message) : Exception(message)\n{\n    public string Code => \"E1\";\n}\n")])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files:
+                [("Screens/Home.cs", Page("Type").Replace("Common.Type.Family()", "new Common.OrderException(\"x\").Code"))]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Module("OrderException").Should().NotBeNull("the page builds the library's exception");
+        built.SiblingImportsOf("Home").Should().Contain("OrderException");
+    }
+
+    [Fact]
     public void TheAppsOwnClassNamedType_IsAModuleThePageImports()
     {
         using var solution = new Solution()
