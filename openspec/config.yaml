@@ -34,7 +34,7 @@ rules:
     - "Prefer the structural fix to the patch and the mechanism .NET already has to a home-grown one; an instrument that fails beats one that warns"
   tasks:
     - "End every task group with the check that proves it against the real thing (the conformance suite executed on both sides, a sample in a browser, a shell in a simulator), not only a unit test"
-    - "Include the documentation in the same pull request: the wiki page in English and Portuguese, and one docs/LEDGER.md line citing the issue"
+    - "Include the documentation in the same pull request: the wiki page in English and Portuguese, and one entry for the ledger citing the issue, as a file of its own under docs/ledger/"
 
 operations:
   apply:

@@ -162,7 +162,8 @@ any jobs at all.
   when it is opened.
 - **Documentation and the ledger change with the code**: the Markdown here, the wiki in English and
   Portuguese on a wiki branch named like the pull request's, merged into the wiki's master when the
-  pull request merges, and one `docs/LEDGER.md` line citing the issue.
+  pull request merges, and one entry for the ledger citing the issue, as a file of its own under
+  `docs/ledger/` (never a line in `docs/LEDGER.md`: a release folds the files into it).
 - **Do not open thin PRs.** Group a coherent body of work — a slice, a family of fixes, a refactor and
   the test that proves it — so it can be reviewed as a unit.
 

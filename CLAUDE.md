@@ -258,7 +258,12 @@ A page pushed to master before its change merges fails the wiki guards of every 
 (#406). Locally the guards read `equantic-ui.wiki` beside the repository, which every local run
 shares, so keep that clone on master: to run them against a pull request's wiki branch, point
 `EQ_WIKI_DIR` at a worktree of it (`git -C ../equantic-ui.wiki worktree add <dir> <branch>`).
-`docs/LEDGER.md` keeps the history, one line per event, citing the issue.
+`docs/LEDGER.md` keeps the history, one entry per event, citing the issue. The entry is written as a
+file of its own under `docs/ledger/`, never into `docs/LEDGER.md`: every pull request used to add
+its line at the chronology's end, so any two open ones conflicted there on every merge, and a merge
+GitHub performs reads no `.gitattributes` that could resolve it (#892). A release folds the files
+into the chronology (`./scripts/fold-ledger.sh`), and `LedgerTests` fails on a file that is not one
+dated entry and on a chronology no fold wrote.
 
 The pictures in the root `README.md` are captures of the samples, and a picture is taken again when
 the screen it shows changes. `assets/readme/captures.json` names the files each picture's screen is
@@ -816,6 +821,18 @@ parameter and choice — pinned by `DeveloperSurfaceContractTests` and regenerat
 `EQ_UPDATE_DEVELOPER_SURFACE=1`. A line that leaves it is a break an app meets as a setting silently
 ignored, so it goes in the notes beside the `*REMOVED*` lines: `git diff v<previous>..v<this> --
 tests/eQuantic.UI.Web.Tests/developer-surface.baseline.txt` is the rest of the change of surface.
+
+**The same step folds the ledger.** An event since the last release is a file of its own under
+`docs/ledger/` (the Workflow section says why), and the release is the chronology's one writer:
+
+```bash
+./scripts/fold-ledger.sh
+```
+
+writes every waiting entry into the chronology of `docs/LEDGER.md`, in order of date, removes its
+file and records the chronology in `docs/ledger/folded.json`. It writes nothing when one file is
+not an entry. The line that says the release happened is an event like another: a file, written
+after the tag, that the next release folds.
 
 ## Compiler Boundaries (Server vs Client)
 
