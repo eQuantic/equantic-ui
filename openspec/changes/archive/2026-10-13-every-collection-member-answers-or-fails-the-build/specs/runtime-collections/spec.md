@@ -30,13 +30,30 @@ not the one it was asked for.
 - **WHEN** browser-side code calls `Get().TryGetValue(actualValue: out slots[i++], equalValue: Key())`, where `Get` and `Key` each log `i`
 - **THEN** the log is `g0k1`, as in .NET; in the browser the receiver was read after `i++`, and logged `g1`
 
+### Requirement: An empty sorted set's ends are its element type's default
+
+A sorted set's `Min` and `Max` SHALL answer its least and its greatest element, and its element
+type's default when it holds nothing, as .NET's do, whether they are read by a member access, through
+`?.` or by a property pattern. Through `?.`, a set that is null SHALL answer null.
+
+#### Scenario: The least of nothing
+
+- **WHEN** browser-side code computes `new SortedSet<int>().Min + 1`
+- **THEN** it is 1, as in .NET; in the browser it was NaN
+
+#### Scenario: The least of nothing, through `?.`
+
+- **WHEN** browser-side code computes `s?.Min + 1`, where `s` is an empty `SortedSet<int>`, and `none?.Max + 1 ?? -1`, where `none` is a `SortedSet<int>` that is null
+- **THEN** they are 1 and -1, as in .NET; in the browser the first was null
+
 ### Requirement: A queue and a stack keep .NET's capacity
 
 A queue and a stack SHALL answer `Capacity`, `EnsureCapacity` and `TrimExcess` as .NET's do. A queue
 SHALL grow to twice its capacity, four more at least, and a stack to twice its capacity, four from
 empty, each to the capacity asked for at least. A construction from a sequence SHALL size the
-collection to the count of an `ICollection<T>`, and by doubling from four for any other sequence, a
-queue, a stack and a string among them. `TrimExcess()` SHALL trim to the count below nine tenths of
+collection to the count of an `ICollection<T>`, the runtime's or a type of the app's own, and by
+doubling from four for any other sequence, a queue, a stack, a string and a type that counts its
+elements without being an `ICollection<T>` among them. `TrimExcess()` SHALL trim to the count below nine tenths of
 the capacity, and `TrimExcess(capacity)` to the capacity it is handed. A negative capacity, and a
 `TrimExcess(capacity)` below the count, SHALL be refused with .NET's `ArgumentOutOfRangeException`. A
 queue's capacity changed SHALL end a walk over it, and a stack's SHALL NOT, as in .NET. A queue and a
@@ -52,6 +69,11 @@ them, since the payload carries no capacity.
 
 - **WHEN** browser-side code reads the `Capacity` of `new Queue<char>("abcde")` and of `new Queue<int>(new List<int> { 1, 2 })`
 - **THEN** it reads 8 and 2, as in .NET
+
+#### Scenario: A counted sequence that is no collection
+
+- **WHEN** browser-side code reads the `Capacity` of `new Queue<int>(ring)`, where `ring` is an app's `IReadOnlyList<int>` of three elements and no `ICollection<int>`
+- **THEN** it reads 4, as in .NET; in the browser it read the ring's count, 3
 
 #### Scenario: A queue read from the server's JSON
 
