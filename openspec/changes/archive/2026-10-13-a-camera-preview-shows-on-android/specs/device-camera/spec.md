@@ -35,6 +35,12 @@ otherwise, so that `Denied` is never read while asking would still prompt.
 - **THEN** `StartPreviewAsync` answers `null`, `Permission` reads `Denied`, and starting again shows
   no prompt
 
+#### Scenario: Granted from outside, then reset
+
+- **WHEN** a permission refused for good is granted outside the app, the app reads it as granted, and
+  the grant is then taken back so that Android would ask again
+- **THEN** `Permission` reads `NotDetermined`, and starting a preview shows the prompt
+
 #### Scenario: Granted
 
 - **WHEN** the prompt is granted

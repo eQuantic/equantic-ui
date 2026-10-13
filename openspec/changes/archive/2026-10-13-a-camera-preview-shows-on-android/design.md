@@ -23,7 +23,9 @@ engine, above every clip, corner radius and overlay the display list draws. An `
 **The conversion lives in the engine.** `Yuv420.ToRgba` takes planes with their row and pixel
 strides, which is how every platform hands YUV over, so it is not Android's. It uses BT.601 full
 range in 16.16 fixed point, and it turns the frame by quarter turns while it converts, so an upright
-frame costs one pass.
+frame costs one pass. BT.601 full range is what an Android `YUV_420_888` reader is given (the public
+format maps to the JFIF data space), and the first frame on the emulator reported exactly that:
+`0x8c20000`. A stream in another range or matrix is one a session would have to ask for by name.
 
 **Two arrays, turn about.** The camera converts a frame on its own thread and the renderer uploads
 the published one on another. A lock between them would hold the render thread for as long as a
@@ -33,7 +35,9 @@ session writes the array the renderer was not handed and publishes it when it is
 renderer reads stays untouched for a whole frame of the camera. `FramePair` is that handoff, in the
 engine because it is no platform's. The realizer then keeps a texture per ARRAY: per session, as it
 was, a session that alternates would change texture on every frame it delivers. The Apple session
-still writes one array, which is #870.
+still writes one array, which is #870. What this does not close is the frame's size, which a
+realizer reads apart from its bytes: a phone turned between the two reads gives one render the old
+scanlines in the new shape. That is the contract's four separate reads, and it is #871.
 
 **Upright is the session's job.** A phone's sensor is mounted sideways. The frame turns by the
 sensor's orientation less the display's rotation (their sum for a front camera), read for every
@@ -48,8 +52,11 @@ permission is refused for good when two facts hold together: the last answer the
 refusal, which the shell records, and Android no longer asks for a rationale, which is how it says it
 will not prompt. Only an answer is recorded (a prompt interrupted refused nothing), a grant clears
 the record (so a grant "only this time" that expired reads as askable), and the record lives outside
-the app's backup, where a restore onto a new phone cannot bring a refusal nobody gave. This is
-`AndroidPermissions`, written for any permission: location still answers two ways and can take it.
+the app's backup, where a restore onto a new phone cannot bring a refusal nobody gave. A grant the
+shell merely SEES clears it too: one made in the system's settings never passes through the prompt,
+and a record left behind it read `Denied` again once that grant was reset, while Android prompted
+(found by Copilot's review, and measured). This is `AndroidPermissions`, written for any permission:
+location still answers two ways and can take it.
 
 **Stopped, not paused.** Android takes the camera from an app nobody sees anyway, and closing it
 first is what keeps the session able to open it again. But a paused activity may be in full view,

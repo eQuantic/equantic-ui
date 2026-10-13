@@ -348,6 +348,10 @@ internal sealed class AndroidCameraSession : ICameraSession
                 if (planes is not { Length: 3 }) return;
                 var (width, height) = Yuv420.Turned(image.Width, image.Height, turns);
 
+                // BT.601 full range, which is what a YUV_420_888 reader is given: the public format
+                // maps to the JFIF data space, and a frame read here reported exactly that
+                // (0x8c20000). Another range or matrix would be a stream asked for by name.
+                //
                 // Into the array the renderer was not handed, and published only when it is whole:
                 // the render thread uploads the published frame with no lock on this one.
                 Yuv420.ToRgba(Bytes(planes[0]), planes[0].RowStride,

@@ -19,6 +19,8 @@
 - [x] 3.4 The device turned to each landscape and back, beside the system's camera app in the same posture: the frame is 640 by 480 and 480 by 640 again, the picture stands as the reference shows it, and the session takes the camera back each time the reference lets it go
 - [x] 3.5 A minute of preview with the two arrays: fewer than a hundred descriptor sets allocated, read from a temporary counter in the Vulkan device
 - [x] 3.6 Home pressed between the device opening and its capture session being configured (the bench build holds the camera's thread there for 2.5 s), on a first start and on a reopen, with one script for both sides: as first written the start stays at "starting" and the reopen never lists the camera again; here the start answers `null` and the reopen lists it
+- [x] 3.7 A permission refused twice, granted with `pm grant`, read as granted, then revoked with its flags cleared, with one script for both sides: as first written `Permission` reads `Denied` while Android prompts; here it reads `NotDetermined`
+- [x] 3.8 The first frame's data space on the emulator: `0x8c20000`, JFIF, which is BT.601 full range
 
 ## 4. Documentation and the suites
 

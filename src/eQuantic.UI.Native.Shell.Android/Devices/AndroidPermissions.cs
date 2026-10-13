@@ -16,8 +16,10 @@ namespace eQuantic.UI.Native.Shell.Android;
 /// <para>
 /// Only an ANSWER is remembered. A prompt that went away unanswered refused nothing, and a grant
 /// clears the record, so a grant "only this time" that has since expired reads as askable, which it
-/// is. The record lives outside the app's backup: restored onto a new phone, it would call a
-/// permission nobody was asked for refused.
+/// is. A grant SEEN clears it too, wherever it was given: one made in the system's settings never
+/// passes through this shell's prompt, and a record left behind it would call the permission
+/// refused again the day that grant was reset. The record lives outside the app's backup: restored
+/// onto a new phone, it would call a permission nobody was asked for refused.
 /// </para>
 /// </summary>
 internal static class AndroidPermissions
@@ -27,7 +29,10 @@ internal static class AndroidPermissions
     internal static PermissionState State(PhotonActivity activity, string permission)
     {
         if (activity.CheckSelfPermission(permission) == global::Android.Content.PM.Permission.Granted)
+        {
+            Remember(activity, permission, refused: false);
             return PermissionState.Granted;
+        }
         return File.Exists(Record(activity, permission)) && !activity.ShouldShowRequestPermissionRationale(permission)
             ? PermissionState.Denied
             : PermissionState.NotDetermined;
