@@ -12,7 +12,7 @@ asked for.
 #### Scenario: A queue drained
 
 - **WHEN** browser-side code runs `while (q.TryDequeue(out var x)) s += x;` over `new Queue<int>(new[] { 1, 2, 3 })`
-- **THEN** `s` is `123`, as in .NET, where `tryDequeue` was not a function
+- **THEN** `s` is `123`, as in .NET; in the browser `tryDequeue` was not a function
 
 #### Scenario: Nothing to take
 
@@ -38,7 +38,7 @@ queue's capacity changed SHALL end a walk over it, and a stack's SHALL NOT, as i
 #### Scenario: A queue grows
 
 - **WHEN** browser-side code enqueues six values on `new Queue<int>(1)`, reading `Capacity` after each
-- **THEN** it reads 1, 5, 5, 5, 5 and 10, as in .NET, where `capacity` was undefined
+- **THEN** it reads 1, 5, 5, 5, 5 and 10, as in .NET; in the browser `capacity` was undefined
 
 #### Scenario: A capacity from a sequence
 
@@ -64,7 +64,7 @@ to a LinkedList.", each as an `InvalidOperationException`.
 #### Scenario: A node removed
 
 - **WHEN** browser-side code removes `l.First!.Next!` from `new LinkedList<int>(new[] { 1, 2, 3 })`
-- **THEN** the list is `1,3` and the node's `List` is null, as in .NET, where the node was looked for among the values and nothing was removed
+- **THEN** the list is `1,3` and the node's `List` is null, as in .NET; in the browser the node was looked for among the values and nothing was removed
 
 #### Scenario: A node of its own
 
