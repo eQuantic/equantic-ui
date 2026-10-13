@@ -20,8 +20,10 @@ namespace eQuantic.UI.Native.Shell.Android;
 /// </para>
 /// <para>
 /// The hardware goes when the activity leaves the screen and comes back with it. Android takes the
-/// camera from an app in the background anyway; letting it go first is what keeps the session able
-/// to open it again, and the last frame stays in the buffer meanwhile. Disposing stops it for good.
+/// camera from an app nobody sees anyway; letting it go first is what keeps the session able to open
+/// it again, and the last frame stays in the buffer meanwhile. A camera lost while the app stayed on
+/// screen (to the window that had the focus) is asked for again when the focus returns. Disposing
+/// stops it for good.
 /// </para>
 /// </summary>
 internal sealed class AndroidCameraSession : ICameraSession
@@ -30,14 +32,26 @@ internal sealed class AndroidCameraSession : ICameraSession
     private const int PreferredWidth = 640;
     private const int PreferredHeight = 480;
 
+    /// <summary>
+    /// The camera's thread, one for the process and never told to quit. A thread per session would
+    /// have to outlive the session by exactly as long as the camera goes on reporting about a
+    /// device being closed, and one that quit sooner turns each of those reports into a message
+    /// posted to a dead thread. A looper with nothing to do costs nothing.
+    /// </summary>
+    private static readonly Lazy<Handler> Worker = new(() =>
+    {
+        var thread = new HandlerThread("eq.camera");
+        thread.Start();
+        return new Handler(thread.Looper!);
+    });
+
     private readonly Lock _gate = new();
     private readonly PhotonActivity _activity;
     private readonly CameraManager _manager;
     private readonly string _camera;
     private readonly int _sensorOrientation;
     private readonly bool _facesFront;
-    private readonly HandlerThread _thread;
-    private readonly Handler _handler;
+    private readonly Handler _handler = Worker.Value;
     private readonly ImageReader _reader;
 
     private CameraDevice? _device;
@@ -47,6 +61,7 @@ internal sealed class AndroidCameraSession : ICameraSession
     private int _width;
     private int _height;
     private int _version;
+    private bool _suspended;   // the activity is off the screen: no camera until it is back
     private bool _disposed;
 
     private AndroidCameraSession(PhotonActivity activity, CameraManager manager, string camera)
@@ -59,10 +74,6 @@ internal sealed class AndroidCameraSession : ICameraSession
         _sensorOrientation = (characteristics.Get(CameraCharacteristics.SensorOrientation) as Java.Lang.Integer)?.IntValue() ?? 0;
         _facesFront = (characteristics.Get(CameraCharacteristics.LensFacing) as Java.Lang.Integer)?.IntValue() == (int)LensFacing.Front;
         var size = ChooseSize(characteristics);
-
-        _thread = new HandlerThread("eq.camera");
-        _thread.Start();
-        _handler = new Handler(_thread.Looper!);
 
         // Two images: the one being converted, and the next the camera is already filling.
         _reader = ImageReader.NewInstance(size.Width, size.Height, ImageFormatType.Yuv420888, 2);
@@ -91,15 +102,28 @@ internal sealed class AndroidCameraSession : ICameraSession
             return null;
         }
 
-        if (!await session.OpenDeviceAsync().WaitAsync(cancellationToken))
+        // Before the camera opens: an activity that leaves the screen while it is opening must be
+        // heard, or the camera would open behind it.
+        activity.Stopped += session.Suspend;
+        activity.Started += session.Resume;
+        activity.Resumed += session.Resume;
+
+        bool opened;
+        try
         {
+            opened = await session.OpenDeviceAsync().WaitAsync(cancellationToken);
+        }
+        catch (System.OperationCanceledException)
+        {
+            // The wait was abandoned and the open was not: without this the camera would open with
+            // nobody holding the session that owns it.
             session.Dispose();
-            return null;
+            throw;
         }
 
-        activity.Paused += session.Suspend;
-        activity.Resumed += session.Resume;
-        return session;
+        if (opened) return session;
+        session.Dispose();
+        return null;
     }
 
     public ImageData? Capture()
@@ -131,22 +155,26 @@ internal sealed class AndroidCameraSession : ICameraSession
             if (_disposed) return;
             _disposed = true;
         }
-        _activity.Paused -= Suspend;
+        _activity.Stopped -= Suspend;
+        _activity.Started -= Resume;
         _activity.Resumed -= Resume;
         Release();
-        _reader.Close();
-        _thread.QuitSafely();
+        // Under the gate: a frame being converted holds it, and closing the reader closes the image
+        // that frame is still reading.
+        lock (_gate) _reader.Close();
     }
 
     // ---- the device ------------------------------------------------------------------------------
 
     private Task<bool> OpenDeviceAsync()
     {
-        var opening = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> opening;
         lock (_gate)
         {
-            if (_disposed) return Task.FromResult(false);
-            _opening = opening;
+            if (_disposed || _suspended) return Task.FromResult(false);
+            if (_device is not null) return Task.FromResult(true);
+            if (_opening is not null) return _opening.Task;
+            _opening = opening = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
         try
@@ -155,18 +183,27 @@ internal sealed class AndroidCameraSession : ICameraSession
         }
         catch (Exception failure) when (failure is CameraAccessException or Java.Lang.SecurityException)
         {
-            // In use by another app, disabled by policy, or the permission was taken back.
-            opening.TrySetResult(false);
+            // In use by another app, disabled by policy, or the permission was taken back. Settled
+            // like any other failure, so the next time the activity comes back it may try again.
+            Settle(false);
         }
         return opening.Task;
     }
 
     private void Opened(CameraDevice device)
     {
+        bool unwanted;
         lock (_gate)
         {
-            if (_disposed) { device.Close(); return; }
-            _device = device;
+            unwanted = _disposed || _suspended;
+            if (!unwanted) _device = device;
+        }
+        if (unwanted)
+        {
+            // Disposed, or the activity left the screen while the camera was opening.
+            device.Close();
+            Settle(false);
+            return;
         }
 
         try
@@ -182,8 +219,12 @@ internal sealed class AndroidCameraSession : ICameraSession
                 device.CreateCaptureSession([_reader.Surface!], callback, _handler);
             }
         }
-        catch (CameraAccessException)
+        catch (Exception failure) when (failure is CameraAccessException
+            or Java.Lang.IllegalStateException or Java.Lang.IllegalArgumentException)
         {
+            // The device was closed under this call (the activity left, or the session was
+            // disposed, between the gate and here), which the camera reports as an illegal state
+            // and the closed reader's surface as an illegal argument.
             Failed();
         }
     }
@@ -194,7 +235,7 @@ internal sealed class AndroidCameraSession : ICameraSession
         lock (_gate)
         {
             device = _device;
-            if (_disposed || device is null) { capture.Close(); return; }
+            if (_disposed || _suspended || device is null) { capture.Close(); return; }
             _capture = capture;
         }
 
@@ -246,33 +287,42 @@ internal sealed class AndroidCameraSession : ICameraSession
         device?.Close();
     }
 
-    private void Suspend() => Release();
+    private void Suspend()
+    {
+        // Said before the release: a camera still opening finds it when it arrives, and closes.
+        lock (_gate) _suspended = true;
+        Release();
+    }
 
     private void Resume()
     {
-        lock (_gate)
-        {
-            if (_disposed || _device is not null || _opening is not null) return;
-        }
-        _ = OpenDeviceAsync();
+        lock (_gate) _suspended = false;
+        _ = OpenDeviceAsync();   // answers at once when the camera is open or already opening
     }
 
     // ---- frames ----------------------------------------------------------------------------------
 
     private void FrameArrived(ImageReader reader)
     {
-        var image = reader.AcquireLatestImage();
-        if (image is null) return;
-        try
-        {
-            var planes = image.GetPlanes();
-            if (planes is not { Length: 3 }) return;
-            var turns = QuarterTurns();
-            var (width, height) = Yuv420.Turned(image.Width, image.Height, turns);
+        var turns = QuarterTurns();
 
-            lock (_gate)
+        // The whole frame under the gate. Dispose closes the reader under it too, and a closed
+        // reader has closed its images: read outside, a frame in the middle of its conversion
+        // would find its image gone, on a thread where nothing catches that.
+        lock (_gate)
+        {
+            if (_disposed) return;
+
+            // Every Java object here is disposed as soon as it is read. Each holds a global
+            // reference until a collection runs, and this path allocates nothing managed to cause
+            // one: thirty frames a second would fill the table of references instead.
+            using var image = reader.AcquireLatestImage();
+            if (image is null) return;
+            var planes = image.GetPlanes();
+            try
             {
-                if (_disposed) return;
+                if (planes is not { Length: 3 }) return;
+                var (width, height) = Yuv420.Turned(image.Width, image.Height, turns);
                 if (_rgba is null || _width != width || _height != height)
                 {
                     _rgba = new byte[width * height * 4];
@@ -285,17 +335,20 @@ internal sealed class AndroidCameraSession : ICameraSession
                     image.Width, image.Height, turns, _rgba);
                 _version++;
             }
-        }
-        finally
-        {
-            image.Close();
+            finally
+            {
+                if (planes is not null)
+                    foreach (var plane in planes) plane.Dispose();
+                image.Close();
+            }
         }
     }
 
-    /// <summary>A plane's bytes where the camera wrote them, with no copy.</summary>
+    /// <summary>A plane's bytes where the camera wrote them, with no copy. The memory is the
+    /// image's, and stays until the image closes; the buffer object that names it is let go here.</summary>
     private static unsafe ReadOnlySpan<byte> Bytes(global::Android.Media.Image.Plane plane)
     {
-        var buffer = plane.Buffer!;
+        using var buffer = plane.Buffer!;
         return new ReadOnlySpan<byte>((void*)buffer.GetDirectBufferAddress(), buffer.Capacity());
     }
 
@@ -355,7 +408,10 @@ internal sealed class AndroidCameraSession : ICameraSession
         public override void OnConfigureFailed(CameraCaptureSession capture) => session.Failed();
     }
 
-    /// <summary>The camera's thread as the executor a session configuration asks for.</summary>
+    /// <summary>
+    /// The camera's thread as the executor a session configuration asks for. The platform has one
+    /// (<c>android.os.HandlerExecutor</c>, API 28), and the .NET binding does not carry it.
+    /// </summary>
     private sealed class HandlerExecutor(Handler handler) : Java.Lang.Object, Java.Util.Concurrent.IExecutor
     {
         public void Execute(Java.Lang.IRunnable? command)

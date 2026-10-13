@@ -18,8 +18,6 @@ namespace eQuantic.UI.Native.Shell.Android;
 internal sealed class AndroidCamera : ICamera
 {
     private const string CameraPermission = global::Android.Manifest.Permission.Camera;
-    private const string Preferences = "eq.capabilities";
-    private const string AskedKey = "camera.asked";
 
     private static CameraManager? Manager =>
         PhotonActivity.Current?.GetSystemService(Context.CameraService) as CameraManager;
@@ -27,34 +25,23 @@ internal sealed class AndroidCamera : ICamera
     public bool IsAvailable => Manager is { } manager && Choose(manager) is not null;
 
     /// <summary>
-    /// Three answers, though Android itself gives two: it says "granted" or "not", and cannot tell
-    /// "never asked" from "refused". The shell remembers that it asked, so a refusal reads as one
-    /// and a page can point at Settings instead of asking again.
+    /// Three answers, though Android itself gives two (see <see cref="AndroidPermissions"/>):
+    /// <see cref="PermissionState.Denied"/> is a refusal Android will not ask about again, which is
+    /// when a page points at Settings instead of asking.
     /// </summary>
-    public PermissionState Permission
-    {
-        get
-        {
-            if (PhotonActivity.Current is not { } activity) return PermissionState.NotDetermined;
-            if (activity.CheckSelfPermission(CameraPermission) == global::Android.Content.PM.Permission.Granted)
-                return PermissionState.Granted;
-            return Asked(activity) ? PermissionState.Denied : PermissionState.NotDetermined;
-        }
-    }
+    public PermissionState Permission =>
+        PhotonActivity.Current is { } activity
+            ? AndroidPermissions.State(activity, CameraPermission)
+            : PermissionState.NotDetermined;
 
     public async ValueTask<ICameraSession?> StartPreviewAsync(CancellationToken cancellationToken = default)
     {
         if (PhotonActivity.Current is not { } activity || Manager is not { } manager) return null;
         if (Choose(manager) is not { } camera) return null;
 
-        if (Permission != PermissionState.Granted)
-        {
-            // Recorded AFTER the answer, whatever it is: while the prompt is up nobody has refused
-            // anything, and a page that reads the permission then must not be told "denied".
-            var granted = await activity.RequestPermissionsAsync([CameraPermission], cancellationToken);
-            RememberAsked(activity);
-            if (!granted) return null;
-        }
+        if (Permission != PermissionState.Granted
+            && !await AndroidPermissions.RequestAsync(activity, CameraPermission, cancellationToken))
+            return null;
 
         return await AndroidCameraSession.OpenAsync(activity, manager, camera, cancellationToken);
     }
@@ -79,10 +66,4 @@ internal sealed class AndroidCamera : ICamera
             return null;
         }
     }
-
-    private static bool Asked(Context context) =>
-        context.GetSharedPreferences(Preferences, FileCreationMode.Private)?.GetBoolean(AskedKey, false) ?? false;
-
-    private static void RememberAsked(Context context) =>
-        context.GetSharedPreferences(Preferences, FileCreationMode.Private)?.Edit()?.PutBoolean(AskedKey, true)?.Apply();
 }
