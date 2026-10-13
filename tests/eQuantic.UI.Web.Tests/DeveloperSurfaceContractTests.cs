@@ -118,6 +118,17 @@ public class DeveloperSurfaceContractTests
         current.Should().Contain(line => line.StartsWith("template ", StringComparison.Ordinal),
             "the templates declare parameters, and the scan must reach them");
 
+        // From 1.0 a line of the contract may only be added (#323). At a stable version neither the
+        // comparison nor the regeneration lets one go, since an app may still write it. During a
+        // preview, and for the native track's lines at any version, the regeneration writes what it
+        // finds and the diff is read into the notes.
+        var version = ReleaseVersion.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly);
+        var refused = DeveloperSurfaceRule.Refused(version, Committed().Except(current, StringComparer.Ordinal));
+        refused.Should().BeEmpty(
+            $"at {version}, which carries no prerelease label, a setting an app may write stays until a "
+            + "major: keep reading it beside its replacement, or move the version to the next major's "
+            + "preview, where it may go");
+
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_DEVELOPER_SURFACE") == "1")
         {
             File.WriteAllText(BaselinePath, string.Join("\n", current) + "\n");
@@ -126,8 +137,7 @@ public class DeveloperSurfaceContractTests
 
         File.Exists(BaselinePath).Should().BeTrue(
             "no committed baseline — run once with EQ_UPDATE_DEVELOPER_SURFACE=1 and commit the file");
-        var committed = File.ReadAllText(BaselinePath).Replace("\r\n", "\n")
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries).ToList();
+        var committed = Committed();
 
         var gone = committed.Except(current, StringComparer.Ordinal).ToList();
         var added = current.Except(committed, StringComparer.Ordinal).ToList();
@@ -139,4 +149,25 @@ public class DeveloperSurfaceContractTests
             "the developer's surface grew — regenerate with EQ_UPDATE_DEVELOPER_SURFACE=1 so the new "
             + "setting is on record");
     }
+
+    /// <summary>The rule at both versions, on lines made for the case: the comparison above reads one
+    /// version, the one this tree is at, and the other one has to be proved here.</summary>
+    [Theory]
+    [InlineData("1.1.0", "msbuild eQuantic.UI.Sdk EQuanticSourceMaps", true)]
+    [InlineData("1.1.0", "config EQuantic:ServerActions", true)]
+    [InlineData("1.1.0", "template equantic-app shell", true)]
+    [InlineData("1.1.0", "msbuild eQuantic.UI.Sdk.Native EQuanticBundleId", false)]
+    [InlineData("1.1.0", "template equantic-native shell", false)]
+    [InlineData("1.1.0", "config Photon", false)]
+    [InlineData("2.0.0-preview.1", "msbuild eQuantic.UI.Sdk EQuanticSourceMaps", false)]
+    [InlineData("0.2.0-preview.63", "config EQuantic:ServerActions", false)]
+    public void ALineThatLeaves_IsRefused_OnlyWhenItIsTheContractsAtAStableVersion(string version, string line, bool refused)
+    {
+        DeveloperSurfaceRule.Refused(version, [line]).Should().HaveCount(refused ? 1 : 0);
+    }
+
+    private static List<string> Committed() =>
+        File.Exists(BaselinePath)
+            ? File.ReadAllText(BaselinePath).Replace("\r\n", "\n").Split('\n', StringSplitOptions.RemoveEmptyEntries).ToList()
+            : [];
 }
