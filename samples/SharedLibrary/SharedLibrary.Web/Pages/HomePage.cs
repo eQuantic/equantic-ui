@@ -10,8 +10,9 @@ namespace SharedLibrary.Web.Pages;
 /// One page that uses a class library the way an app that outgrew one project does. Everything it
 /// takes from <c>SharedLibrary.Common</c> works in the browser as it does on the server: the
 /// component in its tree, the static tokens it reads, the record it builds on a click, the record a
-/// Server Action answers, the strings of the library's own catalogue, and an internal record the
-/// library opens to this app by its assembly's name.
+/// Server Action answers, the strings of the library's own catalogue, an internal record the
+/// library opens to this app by its assembly's name, and a value the library reads from a project it
+/// references through a constant alone.
 /// </summary>
 [Page("/", Title = "Shared library")]
 public sealed class HomePage : StatefulComponent
@@ -93,6 +94,10 @@ public sealed class HomePage : StatefulComponent
 
             // An INTERNAL record of the library, which it opens to this app by its assembly's name.
             Text(new Imprint("sample").Line, TypeRole.Caption, theme.TextMuted, maxLines: 1),
+
+            // A value the library reads from the Theme project through a constant, which leaves no
+            // trace of that project in the library's assembly (#887).
+            Text($"Headings in {Typeface.Family}", TypeRole.Caption, theme.TextMuted, maxLines: 1),
         ]));
     }
 

@@ -43,6 +43,14 @@ public sealed class AppBuildOptions
     public string? ProjectsFile { get; init; }
 
     /// <summary>
+    /// The app's assets file (<c>$(ProjectAssetsFile)</c>), where NuGet's restore wrote which project
+    /// references which. The projects are compiled in that order, each against the ones it reaches:
+    /// the assemblies cannot give it, since a constant read from another project leaves no reference
+    /// to it in the reader's assembly (#887). Handed with <see cref="ProjectsFile"/>, and required by it.
+    /// </summary>
+    public string? ProjectAssetsFile { get; init; }
+
+    /// <summary>
     /// The app's assembly name as its project evaluates it (<c>$(AssemblyName)</c>), which a project
     /// file may set apart from its own name. The app's compilation takes it, because it is the name
     /// another assembly knows the app by: a referenced project's <c>InternalsVisibleTo</c> opens its
@@ -69,7 +77,8 @@ public sealed class AppBuildOptions
     /// <summary>The options that are followed by a value.</summary>
     private static readonly HashSet<string> ValueOptions = new(StringComparer.Ordinal)
     {
-        "--refs", "--ref-sources", "--generated", "--projects", "--assembly-name", "--bun", "--source-maps",
+        "--refs", "--ref-sources", "--generated", "--projects", "--project-assets", "--assembly-name", "--bun",
+        "--source-maps",
     };
 
     /// <summary>
@@ -146,6 +155,9 @@ public sealed class AppBuildOptions
             // or through another, each as two lines, the assembly MSBuild resolved for it and its
             // project file. Their source is compiled in place of their assemblies (#624).
             ProjectsFile = Value("--projects")?.Trim(),
+            // --project-assets <file>: the app's assets file, where restore wrote which project
+            // references which, the order the projects are compiled in (#887).
+            ProjectAssetsFile = Value("--project-assets")?.Trim(),
             // --assembly-name <name>: the app's assembly name as its project evaluates it, which a
             // project file may set apart from its own name, and which a referenced project's
             // InternalsVisibleTo names.

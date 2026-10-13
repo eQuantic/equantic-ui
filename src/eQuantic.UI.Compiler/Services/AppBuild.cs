@@ -210,7 +210,7 @@ public sealed class AppBuild
                     var projects = ReferencedProjects();
                     if (projects.Count > 0)
                         projectCompilation = ProjectCompilations.Create(assemblyName, allSourceFiles, assemblyPaths,
-                            addStandardReferences, projects, _options.ReferenceReader, out built);
+                            addStandardReferences, projects, Graph(), _options.ReferenceReader, out built);
                 }
                 catch (Exception ex)
                 {
@@ -293,6 +293,12 @@ public sealed class AppBuild
     /// build transpiles whole, or a pack whose sources joined the app's compilation. Its types would
     /// be declared twice, and a name declared twice binds to neither.
     /// </summary>
+    /// <summary>Which project references which, read from the assets file the SDK hands with the
+    /// projects. Projects handed with no graph cannot be ordered, and the build stops on it.</summary>
+    private ProjectGraph Graph() =>
+        ProjectGraph.Read(_options.ProjectAssetsFile is { Length: > 0 } assets ? assets
+            : throw new InvalidDataException("the projects were handed with no restore graph (--project-assets), which says which project references which"));
+
     private IReadOnlyList<ReferencedProject> ReferencedProjects()
     {
         var alreadyRead = _options.SourceDirectories.Select(Normalize).ToHashSet(StringComparer.Ordinal);

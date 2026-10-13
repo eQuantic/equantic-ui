@@ -2738,6 +2738,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   on a light screen ([#881](https://github.com/eQuantic/equantic-ui/issues/881))
   ([#880](https://github.com/eQuantic/equantic-ui/issues/880)). Proposed and archived through
   OpenSpec (`openspec/specs/working-agreement`).
+- **0.2.0-preview.62 released** from `7bdb0a81`: a phone that opens its keyboard (#812), an Android
+  app that keeps its screen, turns and answers back (#811) and shows a camera preview (#869), an iOS
+  app that launches under the scene life cycle (#842) and calls back through entry points a device
+  build prepares (#846), a renderer that lets go of a texture nobody draws (#861), a type of a
+  referenced project that reaches the browser (#827, #838), a build that starts no program through
+  a shell (#843, #855), the embedded bun at 1.4.3 (#862), and the browser's answers made .NET's for
+  LINQ's overloads (#763), a queue, a stack and a sorted set (#767, #867), a string split and
+  searched (#769), a value converted and a date parsed (#808, #850), a time span written and read
+  (#840, #859) and a text's case (#856), with a release that finishes what nuget.org refused (#773),
+  the commit-message guard (#853), Track D on the roadmap (#810) and the release's own issue (#875).
 - **2026-10-13 · Every member of a queue, a stack, a linked list and a sorted set answers or fails the
   build**: eqc lowered any member of `Queue<T>`, `Stack<T>`, `LinkedList<T>`, `LinkedListNode<T>` and
   `SortedSet<T>` to its camel-cased name whether or not the runtime's twin carried it, so `TryDequeue`,
@@ -2752,6 +2762,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   audit counts them as fenced where it counted them native. 73 of the 74 conformance cases fail before
   the change. The served runtime grows 971 gzipped bytes. Proposed and archived through OpenSpec
   (`openspec/specs/runtime-collections`, `openspec/specs/transpiler-bcl`).
+- **2026-10-13 · A library's code reads the projects it references**: Cura's shared library read its
+  theme project's font through a constant and nothing else, and on 0.2.0-preview.62 both of Cura's
+  apps stopped with `EQ2006: 'Serif' does not bind`, while the C# compiled. eqc compiled each
+  referenced project against the projects its assembly referenced, and a constant is copied into the
+  code that reads it: the library's assemblies referenced `System.Runtime` and
+  `eQuantic.UI.Primitives`, and not the theme. A type used only inside a method met the same, since
+  the reference assembly the SDK hands keeps no body. The order is the restore graph's now: the SDK
+  hands eqc the app's assets file (`--project-assets`), and projects handed with no graph stop the
+  build (EQ0001). The test solution hands reference assemblies and an assets file as the SDK does,
+  and the shared-library sample gained `SharedLibrary.Theme`, read through a constant alone: it
+  fails EQ2006 on main's compiler, and shows `Newsreader` in the browser with the fix. Found on the
+  way: a class named `Type` in a referenced project gets no module and no import
+  ([#888](https://github.com/eQuantic/equantic-ui/issues/888))
+  ([#887](https://github.com/eQuantic/equantic-ui/issues/887)). Proposed and archived through
+  OpenSpec (`openspec/specs/referenced-projects`).
 
 ## Retired documents
 
