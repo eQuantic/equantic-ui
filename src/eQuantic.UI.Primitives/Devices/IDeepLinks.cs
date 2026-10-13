@@ -24,7 +24,8 @@ namespace eQuantic.UI.Primitives;
 /// SUBSCRIBE if you must not miss it. <see cref="Launch"/> is not readable in a constructor on
 /// macOS, measured rather than assumed: the launch URL arrives as an AppleEvent, AppleEvents are
 /// delivered BY the run loop, and the run loop starts after the first tree is built. A cold launch
-/// therefore reaches a subscriber and finds <see cref="Launch"/> still null a moment earlier. The
+/// therefore reaches a subscriber and finds <see cref="Launch"/> still null a moment earlier. A
+/// phone hands the link over WITH the launch, so there the first tree already reads it. The
 /// property is for asking later — "what was this app opened with" — and the subscription is for
 /// acting on it. An app that does both is right on every platform, which is why the sample does.
 /// </para>
@@ -70,9 +71,16 @@ public interface IDeepLinks
 /// The BUFFERING and the fan-out, which every platform needs and none of them does differently.
 /// <para>
 /// A shell feeds it whatever its own mechanism produced — an AppleEvent's direct object on macOS,
-/// <c>application:openURL:</c> on iOS, an Intent's data on Android — and this decides the rest:
-/// what the launch URL was, who hears about the later ones, and what to do with a string that is
-/// not a URL at all.
+/// a scene's URL contexts on iOS, an Intent's data on Android — and this decides the rest: what
+/// the launch URL was, who hears about the later ones, and what to do with a string that is not a
+/// URL at all.
+/// </para>
+/// <para>
+/// Two shells, two kinds of knowledge. A phone is handed the link WITH the launch, so its shell
+/// says <see cref="StartedWith"/> and <see cref="Launch"/> is exact: null for an app started
+/// normally, whatever arrives an hour later. The Mac cannot tell (a launch link and a later one
+/// are the same AppleEvent through the same run loop), so its shell only ever says
+/// <see cref="Offer"/>, and the first URL stands for the launch.
 /// </para>
 /// <para>
 /// Separated from the platform because the interesting part is not the plumbing. "The FIRST URL is
@@ -85,6 +93,7 @@ public sealed class DeepLinkRelay : IDeepLinks
     private readonly Lock _gate = new();
     private readonly List<Action<Uri>> _listeners = [];
     private Uri? _launch;
+    private bool _started;   // a shell said what the app was started with: Launch is settled
 
     /// <inheritdoc />
     public Uri? Launch
@@ -113,18 +122,50 @@ public sealed class DeepLinkRelay : IDeepLinks
         Action<Uri>[] listeners;
         lock (_gate)
         {
-            // The FIRST one is the launch URL, whoever else also hears it. Recording it is what
-            // lets an app ASK later what it was opened with — including the app that heard it
-            // through a subscription a moment ago and wants to answer the question again on a
-            // screen built after.
-            _launch ??= url;
+            // The FIRST one is the launch URL, whoever else also hears it, unless a shell already
+            // said what the app was started with. Recording it is what lets an app ASK later what
+            // it was opened with — including the app that heard it through a subscription a moment
+            // ago and wants to answer the question again on a screen built after.
+            if (!_started) _launch ??= url;
             listeners = [.. _listeners];
         }
 
-        // OUTSIDE the lock: a listener that subscribes or disposes from inside its own callback is
-        // an ordinary thing for a component to do while it is being torn down.
-        foreach (var listener in listeners) listener(url);
+        Deliver(url, listeners);
         return true;
+    }
+
+    /// <summary>
+    /// The app has just been started, and this is what it was started with: a URL, or nothing. For
+    /// the shell that knows. Returns whether there was a URL, under <see cref="Offer"/>'s rule for
+    /// what one is, and a URL is delivered to whoever is already listening.
+    /// <para>
+    /// From here on <see cref="Launch"/> answers exactly this, and a URL offered later is heard and
+    /// does not become it. Said AGAIN, it replaces the answer: a phone keeps a process alive and
+    /// starts the app in it a second time, from its icon, and that start was a normal one.
+    /// </para>
+    /// </summary>
+    public bool StartedWith(string? text)
+    {
+        var url = Uri.TryCreate(text?.Trim(), UriKind.Absolute, out var parsed) ? parsed : null;
+
+        Action<Uri>[] listeners;
+        lock (_gate)
+        {
+            _started = true;
+            _launch = url;
+            listeners = [.. _listeners];
+        }
+
+        if (url is null) return false;
+        Deliver(url, listeners);
+        return true;
+    }
+
+    // OUTSIDE the lock: a listener that subscribes or disposes from inside its own callback is an
+    // ordinary thing for a component to do while it is being torn down.
+    private static void Deliver(Uri url, Action<Uri>[] listeners)
+    {
+        foreach (var listener in listeners) listener(url);
     }
 
     private sealed class Subscription(DeepLinkRelay relay, Action<Uri> listener) : IDisposable
