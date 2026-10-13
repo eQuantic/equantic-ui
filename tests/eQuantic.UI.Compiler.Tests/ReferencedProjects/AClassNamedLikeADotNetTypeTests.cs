@@ -76,6 +76,34 @@ public sealed class AClassNamedLikeADotNetTypeTests
         built.SiblingImportsOf("Home").Should().Contain("OrderException");
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AClassNamedMath_IsImportedOnlyByTheFileThatMeansIt(bool declaredByTheLibrary)
+    {
+        // The name is both at once here: one file calls the solution's own Math, and another calls
+        // System.Math. Asked by the name alone, the second imported the solution's Math, which hides
+        // JavaScript's own inside that module, and `Math.max` was then undefined. Each file's own
+        // symbols say which Math it means.
+        var declaredIn = declaredByTheLibrary ? "Common" : "App.Util";
+        var math = Library("Math").Replace("namespace Common;", $"namespace {declaredIn};");
+        var files = new List<(string Path, string Text)>
+        {
+            ("Screens/Home.cs", Page("Type").Replace("Common.Type.Family()", $"{declaredIn}.Math.Family()")),
+            ("Screens/Other.cs", Page("Type").Replace("class Home", "class Other").Replace("Common.Type.Family()", "Math.Max(1, 2).ToString()")),
+        };
+        if (!declaredByTheLibrary) files.Add(("Util/Math.cs", math));
+        using var solution = new Solution()
+            .Library("Common", files: declaredByTheLibrary ? [("Math.cs", math)] : [("Nothing.cs", "namespace Common;\n\npublic static class Nothing\n{\n}\n")])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files: [.. files]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.SiblingImportsOf("Home").Should().Contain("Math", "this file calls the solution's Math");
+        built.SiblingImportsOf("Other").Should().NotContain("Math", "this file calls System.Math, and the import would hide JavaScript's");
+        built.Module("Other").Should().Contain("Math.max(1, 2)");
+    }
+
     [Fact]
     public void ANameWithNoModuleBehindIt_IsStillDotNets()
     {

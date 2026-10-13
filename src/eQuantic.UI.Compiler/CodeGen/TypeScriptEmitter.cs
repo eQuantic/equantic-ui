@@ -256,9 +256,10 @@ public class TypeScriptEmitter
     /// <summary>
     /// C# primitive and .NET-compat type names that map to JS primitives or the <c>$eq.*</c> runtime,
     /// excluded from generated <c>import { X } from "./X"</c> lines. A NAME, so it yields to what the
-    /// build knows: a class of the app or of a project it references that is called <c>Type</c> or
-    /// <c>Uri</c> is a module the build writes, and a page that names it imports it (#888). Before, the
-    /// name alone dropped the import, the build said nothing, and the browser met a name nothing defined.
+    /// module's own symbols say (<see cref="NamesAppType"/>): a class of the app or of a project it
+    /// references that is called <c>Type</c> or <c>Uri</c> is a module the build writes, and a page that
+    /// names it imports it (#888). Before, the name alone dropped the import, the build said nothing,
+    /// and the browser met a name nothing defined.
     /// </summary>
     private static readonly HashSet<string> NonImportableTypes = new(StringComparer.Ordinal)
     {
@@ -1029,9 +1030,9 @@ public class TypeScriptEmitter
 
             // C# primitives and .NET-compat types map to JS primitives or the `$eq.*` runtime, so a stray
             // reference (an `int` property type, a `DateTime`/`Math` usage) must not become
-            // `import { int } from "./int"`. Unless the build writes a module of that name: then it is
-            // the app's own type, whatever .NET calls one of its own (#888).
-            if (NonImportableTypes.Contains(cleanType) && !IsAppModule(cleanType))
+            // `import { int } from "./int"`. Unless this module names a type of the app that is called
+            // so: then it is the app's own, whatever .NET calls one of its own (#888).
+            if (NonImportableTypes.Contains(cleanType) && !NamesAppType(cleanType, component.ClassSyntax))
             {
                 // …unless the RUNTIME provides it. The list exists to stop `import { X } from
                 // "./X"` for a type no module declares; a compat value type is a different case —
@@ -1063,7 +1064,7 @@ public class TypeScriptEmitter
             // Exception types lower to `new Error(...)` (ObjectCreationStrategy) — the type name never
             // survives into emitted code, so importing it would reference a module that doesn't exist.
             // An exception class the app declares is a module of its own (#611), and is imported (#888).
-            if (cleanType.EndsWith("Exception") && !IsAppModule(cleanType))
+            if (cleanType.EndsWith("Exception") && !NamesAppType(cleanType, component.ClassSyntax))
                 continue;
 
             // Types the runtime provides (the shared vocabulary — discovered semantically by the parser,
@@ -2517,6 +2518,24 @@ public class TypeScriptEmitter
     /// only kind a <c>./Name</c> import may point at.</summary>
     private bool IsAppModule(string name) => _dependencyResolver?.IsModule(name) == true || Referenced.IsModule(name);
 
+    /// <summary>
+    /// Whether the module being written names a type the build writes a module for, under a name .NET
+    /// also uses. Such a name is both at once in an app that declares a class <c>Math</c> and calls
+    /// <c>System.Math</c> from another file, and only the symbol tells which one a file means: taken by
+    /// the name, the file that calls <c>System.Math</c> imported the app's <c>Math</c>, which hides
+    /// JavaScript's own inside that module (#888). A type of a referenced project is known by symbol
+    /// already (<see cref="Referenced"/>). With no model to ask, the scan's word is all there is.
+    /// </summary>
+    private bool NamesAppType(string name, SyntaxNode? scope)
+    {
+        if (Referenced.IsModule(name)) return true;
+        if (_dependencyResolver?.IsModule(name) != true) return false;
+        if (_semanticModel is not { } model || scope is null || scope.SyntaxTree != model.SyntaxTree) return true;
+        return scope.DescendantNodes().OfType<SimpleNameSyntax>()
+            .Where(named => named.Identifier.ValueText == name)
+            .Any(named => model.GetSymbolInfo(named).Symbol is INamedTypeSymbol { DeclaringSyntaxReferences.Length: > 0 });
+    }
+
     /// <summary>What the module being written names of the projects the app references: a type of
     /// one is a sibling module too, where a symbol of this module names it (#624). The compiler sets
     /// it for each module, and a build with no referenced project leaves it naming none.</summary>
@@ -2672,7 +2691,7 @@ public class TypeScriptEmitter
             if (ct.Contains('<')) ct = ct.Split('<')[0];
             if (ct.Contains('.')) ct = ct.Substring(ct.LastIndexOf('.') + 1);
             if (string.IsNullOrEmpty(ct) || ct == name || ct == baseName
-                || ct == "HtmlNode" || NonImportableTypes.Contains(ct) && !IsAppModule(ct)) continue;
+                || ct == "HtmlNode" || NonImportableTypes.Contains(ct) && !NamesAppType(ct, cls)) continue;
             if (runtimeProvided.Contains(ct) || referencedEnums.Contains(ct)) continue;
             // A type of a referenced project is imported where the emitted text names it, as the
             // component and the record paths import: a constant read off one is inlined and leaves
