@@ -51,7 +51,8 @@ public sealed unsafe class VulkanDevice : IRhiDevice
     private readonly bool _pipelineCacheExisted;
     private readonly ulong _descriptorSetLayout;
     private readonly ulong _pipelineLayout;
-    private readonly ulong _descriptorPool;
+    // Sets come from the newest pool; when it is full another is made. All go with the device.
+    private readonly List<ulong> _descriptorPools = new();
     private readonly ulong _uniformBuffer;
     private readonly ulong _uniformMemory;
     private readonly byte* _uniformMapped;
@@ -106,7 +107,7 @@ public sealed unsafe class VulkanDevice : IRhiDevice
             _linearSampler = CreateSampler(linear: true);
             _descriptorSetLayout = CreateDescriptorSetLayout();
             _pipelineLayout = CreatePipelineLayout();
-            _descriptorPool = CreateDescriptorPool();
+            _descriptorPools.Add(CreateDescriptorPool());
             (_uniformBuffer, _uniformMemory, var uniformMapped) = CreateUniformRing();
             _uniformMapped = (byte*)uniformMapped;
 
@@ -326,15 +327,16 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         }
         else
         {
-            var layout = _descriptorSetLayout;
-            var allocateInfo = new VkDescriptorSetAllocateInfo
+            // A full pool is not the end: the set comes from a new one. What is live at once is
+            // bounded by what the renderer keeps uploaded, so this is the scene that truly draws
+            // more than one pool's worth, not a leak catching up with a limit.
+            var result = AllocateDescriptorSet(_descriptorPools[^1], &set);
+            if (DescriptorPoolStatus.IsFull(result))
             {
-                SType = VkStructureType.DescriptorSetAllocateInfo,
-                DescriptorPool = _descriptorPool,
-                DescriptorSetCount = 1,
-                PSetLayouts = &layout,
-            };
-            Vk.Check(Vk.vkAllocateDescriptorSets(_device, &allocateInfo, &set), "descriptor set allocation");
+                _descriptorPools.Add(CreateDescriptorPool());
+                result = AllocateDescriptorSet(_descriptorPools[^1], &set);
+            }
+            Vk.Check(result, "descriptor set allocation");
         }
 
         var bufferInfo = new VkDescriptorBufferInfo
@@ -897,6 +899,19 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         return layout;
     }
 
+    private int AllocateDescriptorSet(ulong pool, ulong* set)
+    {
+        var layout = _descriptorSetLayout;
+        var allocateInfo = new VkDescriptorSetAllocateInfo
+        {
+            SType = VkStructureType.DescriptorSetAllocateInfo,
+            DescriptorPool = pool,
+            DescriptorSetCount = 1,
+            PSetLayouts = &layout,
+        };
+        return Vk.vkAllocateDescriptorSets(_device, &allocateInfo, set);
+    }
+
     private ulong CreateDescriptorPool()
     {
         var sizes = stackalloc VkDescriptorPoolSize[3];
@@ -906,7 +921,7 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         var createInfo = new VkDescriptorPoolCreateInfo
         {
             SType = VkStructureType.DescriptorPoolCreateInfo,
-            MaxSets = 1024, // (coverage, color) pairs ≈ live textures + 1 — orders above scene scale
+            MaxSets = 1024, // (coverage, color) pairs ≈ live textures + 1; a scene past it gets another pool
             PoolSizeCount = 3,
             PPoolSizes = sizes,
         };
@@ -1132,7 +1147,7 @@ public sealed unsafe class VulkanDevice : IRhiDevice
             foreach (var renderPass in _renderPasses.Values) Vk.vkDestroyRenderPass(_device, renderPass, IntPtr.Zero);
             Vk.vkDestroySampler(_device, _nearestSampler, IntPtr.Zero);
             Vk.vkDestroySampler(_device, _linearSampler, IntPtr.Zero);
-            Vk.vkDestroyDescriptorPool(_device, _descriptorPool, IntPtr.Zero); // reclaims every set
+            foreach (var pool in _descriptorPools) Vk.vkDestroyDescriptorPool(_device, pool, IntPtr.Zero); // reclaims every set
             Vk.vkDestroyPipelineLayout(_device, _pipelineLayout, IntPtr.Zero);
             Vk.vkDestroyDescriptorSetLayout(_device, _descriptorSetLayout, IntPtr.Zero);
             Vk.vkDestroyShaderModule(_device, _vertexModule, IntPtr.Zero);

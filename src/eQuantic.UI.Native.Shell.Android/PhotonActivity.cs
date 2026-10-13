@@ -124,17 +124,19 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         return completion.Task;
     }
 
-    private readonly Dictionary<int, TaskCompletionSource<bool>> _pendingPermissions = new();
+    private readonly Dictionary<int, TaskCompletionSource<bool?>> _pendingPermissions = new();
 
     /// <summary>
     /// The permission twin of <see cref="PickAsync"/>: Android answers permission requests through
     /// a callback on the activity, and this bridges it once so a capability can simply await.
-    /// True = every requested permission was granted.
+    /// True when every requested permission was granted, false when one was refused, and null
+    /// when the request came back with no answer at all: Android does that when the prompt was
+    /// interrupted, and nobody refused anything then.
     /// </summary>
-    internal Task<bool> RequestPermissionsAsync(string[] permissions,
+    internal Task<bool?> RequestPermissionsAsync(string[] permissions,
         CancellationToken cancellationToken = default)
     {
-        var completion = new TaskCompletionSource<bool>();
+        var completion = new TaskCompletionSource<bool?>();
         int request;
         lock (_pendingPermissions)
         {
@@ -150,14 +152,14 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         global::Android.Content.PM.Permission[] grantResults)
     {
         base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
-        TaskCompletionSource<bool>? completion;
+        TaskCompletionSource<bool?>? completion;
         lock (_pendingPermissions)
         {
             if (!_pendingPermissions.Remove(requestCode, out completion)) return;
         }
-        var granted = grantResults.Length > 0
-            && grantResults.All(g => g == global::Android.Content.PM.Permission.Granted);
-        completion.TrySetResult(granted);
+        completion.TrySetResult(grantResults.Length == 0
+            ? null
+            : grantResults.All(g => g == global::Android.Content.PM.Permission.Granted));
     }
 
     protected override void OnActivityResult(int requestCode, Result resultCode, Intent? data)
@@ -186,6 +188,43 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         _view.Holder!.AddCallback(this);
         _view.InsetsChanged = InsetsChanged;
         SetContentView(_view);
+    }
+
+    /// <summary>
+    /// The activity left the screen, and came back onto it. What a capability holds that Android
+    /// will not leave with an app nobody sees (the camera) is let go on the first and taken again
+    /// on the second.
+    /// <para>
+    /// STOPPED, not paused. A paused activity may still be in full view: beside another window, or
+    /// under a permission prompt or a share sheet. A preview that froze each time one of those
+    /// took the focus would be letting the camera go while the person is looking at it.
+    /// </para>
+    /// </summary>
+    internal event Action? Stopped;
+
+    /// <inheritdoc cref="Stopped"/>
+    internal event Action? Started;
+
+    /// <summary>The activity is the one in front again. It may never have left the screen, so this
+    /// is where a capability that lost its hardware to the window that had the focus asks again.</summary>
+    internal event Action? Resumed;
+
+    protected override void OnStart()
+    {
+        base.OnStart();
+        Started?.Invoke();
+    }
+
+    protected override void OnStop()
+    {
+        base.OnStop();
+        Stopped?.Invoke();
+    }
+
+    protected override void OnResume()
+    {
+        base.OnResume();
+        Resumed?.Invoke();
     }
 
     public void SurfaceCreated(ISurfaceHolder holder)

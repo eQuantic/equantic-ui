@@ -43,6 +43,31 @@ public class CameraPreviewTests
         commands.Should().NotContain(c => c.Kind == DrawCommandKind.Texture);
     }
 
+    /// <summary>
+    /// A camera answers its start before its first frame: the first render with a session has no
+    /// pixels to draw. The host still has to keep asking, or nothing ever redraws the screen and the
+    /// preview sits on its placeholder with the camera running behind it (#775, found on an Android
+    /// emulator, where no pointer moves to redraw the screen by accident).
+    /// </summary>
+    [Fact]
+    public void ASessionWithNoFrameYet_KeepsTheHostAsking()
+    {
+        var session = new FakeSession();   // started, nothing delivered
+
+        var (frame, commands) = Render(new CameraPreview(session, 320, 240));
+
+        frame.HasActiveMotion.Should().BeTrue("frames are about to arrive, and only a redraw shows them");
+        commands.Should().NotContain(c => c.Kind == DrawCommandKind.Texture, "there is no pixel to draw yet");
+
+        // The first frame lands in the session; the NEXT render, which the host now asks for, draws it.
+        session.FrameWidth = 4;
+        session.FrameHeight = 2;
+        session.FrameBytes = new byte[4 * 2 * 4];
+        session.FrameVersion = 1;
+        var (_, next) = Render(new CameraPreview(session, 320, 240));
+        next.Should().Contain(c => c.Kind == DrawCommandKind.Texture);
+    }
+
     [Fact]
     public void WithFrames_OneTextureLivesAndItsVersionFollowsTheFeed()
     {
@@ -68,6 +93,37 @@ public class CameraPreviewTests
         textures.Should().HaveCount(1);
         textures[0].Version.Should().Be(2);
         textures[0].Alpha.Should().BeSameAs(session.FrameBytes, "no copy sits between the feed and the GPU upload");
+    }
+
+    /// <summary>
+    /// A session that alternates between two arrays, so the frame being drawn is not the one being
+    /// written (Android does). The realizer keeps a texture PER ARRAY: keyed by the session it
+    /// changed texture on every frame the camera delivered, and each one was a new upload for the
+    /// renderer to hold.
+    /// </summary>
+    [Fact]
+    public void ASessionThatAlternatesBetweenTwoArrays_CostsTwoTexturesAndNotOneAFrame()
+    {
+        byte[][] arrays = [new byte[4 * 2 * 4], new byte[4 * 2 * 4]];
+        var session = new FakeSession { FrameWidth = 4, FrameHeight = 2 };
+        var node = new CameraPreview(session, 320, 240);
+        var seen = new HashSet<TextureData>(ReferenceEqualityComparer.Instance);
+
+        for (var frame = 1; frame <= 20; frame++)
+        {
+            session.FrameBytes = arrays[frame % 2];
+            session.FrameVersion = frame;
+
+            var builder = new DisplayListBuilder();
+            PhotonRealizer.Realize(node, 400, 300, PhotonTheme.Instance, ThemeMode.Light, builder);
+            var texture = builder.Build().Textures.Should().ContainSingle().Subject;
+
+            texture.Alpha.Should().BeSameAs(session.FrameBytes, "the frame drawn is the one published");
+            texture.Version.Should().Be(frame, "and the renderer is told its bytes moved");
+            seen.Add(texture);
+        }
+
+        seen.Should().HaveCount(2);
     }
 
     [Fact]
