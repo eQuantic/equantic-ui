@@ -15,13 +15,33 @@ namespace eQuantic.UI.Compiler.Services;
 /// </summary>
 internal sealed class ProjectGraph
 {
-    /// <summary>Two names of one project file: the assets file and the build each write a full path,
-    /// and a file system that ignores case takes them as one file however they are cased.</summary>
-    private static readonly StringComparer Paths = StringComparer.OrdinalIgnoreCase;
-
     private readonly IReadOnlyDictionary<string, IReadOnlyList<string>> _references;
 
-    private ProjectGraph(IReadOnlyDictionary<string, IReadOnlyList<string>> references) => _references = references;
+    private ProjectGraph(IReadOnlyDictionary<string, IReadOnlyList<string>> references, StringComparer paths)
+    {
+        _references = references;
+        Paths = paths;
+    }
+
+    /// <summary>
+    /// How two spellings of a project file's path compare on the file system the app is on. The assets
+    /// file and the build each write a full path, and one file system takes two paths that differ only
+    /// by case for one file where another takes them for two: asked by case everywhere, two projects of
+    /// a Linux solution whose paths differ only so were one node of the graph. Every map keyed by a
+    /// project file uses this one.
+    /// </summary>
+    public StringComparer Paths { get; }
+
+    /// <summary>The comparer of the file system <paramref name="file"/> is on, asked as MSBuild asks:
+    /// one that ignores case answers for the file under another casing.</summary>
+    private static StringComparer PathsWhere(string file)
+    {
+        var upper = file.ToUpperInvariant();
+        var lower = file.ToLowerInvariant();
+        return upper != lower && File.Exists(upper) && File.Exists(lower)
+            ? StringComparer.OrdinalIgnoreCase
+            : StringComparer.Ordinal;
+    }
 
     /// <summary>Whether the graph holds <paramref name="projectFile"/>.</summary>
     public bool Holds(string projectFile) => _references.ContainsKey(Path.GetFullPath(projectFile));
@@ -59,7 +79,8 @@ internal sealed class ProjectGraph
                 projects[NameOf(library.Name)] = Path.GetFullPath(Path.Combine(appDirectory, path.GetString()!));
             }
 
-            var references = new Dictionary<string, List<string>>(Paths);
+            var paths = PathsWhere(Path.GetFullPath(assetsFile));
+            var references = new Dictionary<string, List<string>>(paths);
             foreach (var target in root.GetProperty("targets").EnumerateObject())
             foreach (var library in target.Value.EnumerateObject())
             {
@@ -67,10 +88,11 @@ internal sealed class ProjectGraph
                 if (!references.TryGetValue(from, out var list)) references[from] = list = [];
                 if (!library.Value.TryGetProperty("dependencies", out var dependencies)) continue;
                 foreach (var dependency in dependencies.EnumerateObject())
-                    if (projects.TryGetValue(dependency.Name, out var to) && !list.Contains(to, Paths)) list.Add(to);
+                    if (projects.TryGetValue(dependency.Name, out var to) && !list.Contains(to, paths)) list.Add(to);
             }
 
-            return new ProjectGraph(references.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<string>)pair.Value, Paths));
+            return new ProjectGraph(
+                references.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<string>)pair.Value, paths), paths);
         }
         catch (Exception exception) when (exception is JsonException or KeyNotFoundException or InvalidOperationException
             or InvalidDataException or ArgumentException)

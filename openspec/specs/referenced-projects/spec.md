@@ -315,7 +315,7 @@ projects' assemblies, which name no reference that only a constant or a method b
 
 - **WHEN** a method body of the library builds `new Ruler()`, a class of that project, and no
   signature of the library names it
-- **THEN** the build succeeds and the library's module imports `Ruler`'s
+- **THEN** the build succeeds and the library's module imports `Ruler`'s module
 
 #### Scenario: Projects handed with no graph
 

@@ -55,7 +55,7 @@ internal static class ProjectCompilations
         // the assemblies': a constant read from another project is copied into the reader, and a
         // reference assembly keeps no method body, so a library that reads only a constant of a
         // project names no reference to it, and was compiled without it (#887).
-        var byProjectFile = new Dictionary<string, ReferencedProject>(StringComparer.OrdinalIgnoreCase);
+        var byProjectFile = new Dictionary<string, ReferencedProject>(graph.Paths);
         foreach (var project in compiled)
         {
             if (!graph.Holds(project.ProjectFile))
