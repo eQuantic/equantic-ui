@@ -14,16 +14,18 @@ permission the shell never used.
 - **`ICamera` on Android**, through Camera2 over the Mono.Android binding the shell already uses.
   CameraX is a Jetpack library on top of the same API, and a preview and a still need nothing it adds,
   so the SDK ships no connector and an app gains no dependency.
-- **The permission is inside `StartPreviewAsync`**, as on iOS: it shows the system prompt when the
-  permission was never asked and answers `null` when it is refused. `Permission` reports three
-  answers, though Android gives two: the shell remembers that it asked, after the prompt is answered.
+- **The permission is inside `StartPreviewAsync`**, as on iOS: it shows the system prompt whenever
+  Android still shows one, and answers `null` when the permission is not granted. `Permission`
+  reports three answers, though Android gives two: `Denied` is a refusal Android will not ask about
+  again, which on Android 11 and later is the second one.
 - **Frames reach the engine as pixels.** An `ImageReader` hands each YUV frame over, and the engine's
   new `Yuv420.ToRgba` converts it and turns it upright for the way the device is held, into one
   reused buffer the renderer uploads when its version moves. The preview stays an ordinary node that
   clips, takes a corner radius and sits under what is drawn over it.
 - **`Capture()`** returns the frame on screen as an encoded still (`image/jpeg`).
-- **The camera follows the app's place on screen.** It closes when the activity pauses and opens
-  again when it resumes, in the same session.
+- **The camera follows the app's place on screen.** It closes when the activity leaves the screen
+  and opens again when it returns, in the same session. A paused activity that is still in view
+  (beside another window, under a prompt) keeps its preview.
 - **A preview with a session keeps the host rendering from its first render.** The emit step asked
   for the next frame only once a frame had arrived, so a preview started on a still screen stayed
   blank until something else redrew. Found on the emulator, and it affected every shell.
@@ -47,10 +49,11 @@ None.
 ## Impact
 
 - **The Android shell** (`eQuantic.UI.Native.Shell.Android`): `AndroidCamera`, `AndroidCameraSession`,
-  the registration in `AndroidCapabilities`, and `PhotonActivity`, which tells the session when it
-  pauses and resumes.
+  `AndroidPermissions` (the three answers, for any permission), the registration in
+  `AndroidCapabilities`, and `PhotonActivity`, which tells the session when it starts, stops and
+  resumes, and now says whether a permission request was granted, refused or left unanswered.
 - **The engine** (`eQuantic.UI.Native.Engine`): `Yuv420`.
 - **The native components** (`eQuantic.UI.Native.Components`): the camera preview's emit step.
 - **Public surface moves** by additions only: `Yuv420` with `ToRgba` and `Turned`, and
-  `PhotonActivity`'s `OnPause` and `OnResume` overrides. The developer surface does not move. Nothing
-  breaks.
+  `PhotonActivity`'s `OnStart`, `OnStop` and `OnResume` overrides. The developer surface does not
+  move. Nothing breaks.

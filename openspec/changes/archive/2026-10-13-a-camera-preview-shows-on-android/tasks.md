@@ -7,14 +7,15 @@
 
 ## 2. The Android shell
 
-- [x] 2.1 `AndroidCamera` and `AndroidCameraSession` through Camera2, registered in `AndroidCapabilities`; `PhotonActivity` tells the session when it pauses and resumes. Verify: on the emulator below
+- [x] 2.1 `AndroidCamera` and `AndroidCameraSession` through Camera2, registered in `AndroidCapabilities`; `PhotonActivity` tells the session when it starts, stops and resumes. Verify: on the emulator below
+- [x] 2.2 `AndroidPermissions`: `Denied` when the last answer was a refusal and Android asks for no rationale, recorded outside the backup. Verify: on the emulator below
 
 ## 3. The device
 
-- [x] 3.1 On the Android emulator (API 36): the prompt appears on the first start; refused, `StartPreviewAsync` answers `null` and `Permission` reads `Denied`; granted, the feed shows upright at 480 by 640, clipped by its corner radius with text drawn over it
-- [x] 3.2 `Capture()` answers `image/jpeg`, 480 by 640, starting `ffd8`
-- [x] 3.3 Home and back, and another app taking the camera: the session gives the camera up and takes it back, and frames continue
-- [x] 3.4 The device turned to each landscape and back: the frame becomes 640 by 480 and 480 by 640 again, and the picture's top follows the device's top edge
+- [x] 3.1 On the Android emulator (API 36), a fresh install: the prompt appears on the first start; refused, `StartPreviewAsync` answers `null` and `Permission` reads `NotDetermined`; the next start prompts again; refused again, `Permission` reads `Denied` and a third start shows no prompt
+- [x] 3.2 A fresh install, granted: the feed shows upright at 480 by 640, clipped by its corner radius with text drawn over it, and `Capture()` answers `image/jpeg`, 480 by 640, starting `ffd8`
+- [x] 3.3 The camera service's list of active clients: empty after each of five stops and after Home, one entry after each start and after the return, the process the same throughout
+- [x] 3.4 The device turned to each landscape and back, beside the system's camera app in the same posture: the frame is 640 by 480 and 480 by 640 again, the picture stands as the reference shows it, and the session takes the camera back each time the reference lets it go
 
 ## 4. Documentation and the suites
 

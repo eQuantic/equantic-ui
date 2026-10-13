@@ -18,14 +18,22 @@ a realization, an object that always reports itself unavailable, or nothing.
 
 ### Requirement: The permission is asked where the preview starts
 
-`StartPreviewAsync` SHALL show the system prompt when the camera permission was never asked, and
-SHALL answer `null` when the permission is refused. `Permission` SHALL read `NotDetermined` until the
-prompt is answered, `Denied` after a refusal and `Granted` after a grant.
+`StartPreviewAsync` SHALL show the system prompt whenever Android still shows one, and SHALL answer
+`null` when the permission is not granted. `Permission` SHALL read `Granted` after a grant, `Denied`
+when the last answer was a refusal and Android will not show the prompt again, and `NotDetermined`
+otherwise, so that `Denied` is never read while asking would still prompt.
 
-#### Scenario: Refused
+#### Scenario: Refused once
 
 - **WHEN** an app on the Android emulator starts a preview for the first time and the prompt is refused
-- **THEN** `StartPreviewAsync` answers `null`, and `Permission` reads `Denied`
+- **THEN** `StartPreviewAsync` answers `null`, `Permission` reads `NotDetermined`, and starting again
+  shows the prompt again
+
+#### Scenario: Refused for good
+
+- **WHEN** the second prompt is refused too
+- **THEN** `StartPreviewAsync` answers `null`, `Permission` reads `Denied`, and starting again shows
+  no prompt
 
 #### Scenario: Granted
 
@@ -55,8 +63,9 @@ SHALL turn each frame so that it is upright for the display's rotation at that f
 
 #### Scenario: The device turned
 
-- **WHEN** a preview runs on the Android emulator and the device is turned to a landscape and back
-- **THEN** the frame is 640 by 480 in landscape and 480 by 640 in portrait, and the app keeps running
+- **WHEN** a preview runs on the Android emulator and the device is turned to each landscape and back
+- **THEN** the frame is 640 by 480 in landscape and 480 by 640 in portrait, and in each posture the
+  picture stands the way the system's own camera app shows it
 
 ### Requirement: A preview is an ordinary node from its first render
 
@@ -85,10 +94,22 @@ dimensions, and `null` before the first frame.
 
 ### Requirement: The camera follows the app's place on screen
 
-A session SHALL give the camera up when the app leaves the foreground and SHALL take it back when the
-app returns, without the page starting a new session.
+A session SHALL give the camera up when the app leaves the screen and SHALL take it back when the
+app returns, without the page starting a new session. A session that is disposed SHALL give the
+camera up for good, and a start that is cancelled SHALL leave no camera open.
+
+#### Scenario: Home and back
+
+- **WHEN** a preview runs on the Android emulator, the app is sent home and then brought back
+- **THEN** the camera service lists no client for the app while it is away, and lists it again when
+  it is back, in the same process
 
 #### Scenario: Another app takes the camera
 
 - **WHEN** another camera app is opened over a running preview and then closed
 - **THEN** the same session's frames continue
+
+#### Scenario: Stopped and started five times
+
+- **WHEN** a page disposes its session and starts a new one, five times over
+- **THEN** the camera service lists no client after each stop and one after each start
