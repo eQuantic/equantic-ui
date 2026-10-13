@@ -16,4 +16,10 @@
     <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- How long the renderer keeps a raster uploaded is a tuning number, not a surface: the suite
+         names it so its boundary cases move with it, and no consumer compiles it in. -->
+    <InternalsVisibleTo Include="eQuantic.UI.Native.Engine.Tests" />
+  </ItemGroup>
+
 </Project>
