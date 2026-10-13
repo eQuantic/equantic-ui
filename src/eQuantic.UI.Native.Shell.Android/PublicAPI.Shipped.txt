@@ -21,7 +21,12 @@ eQuantic.UI.Native.Shell.Android.PhotonActivity.SurfaceCreated(Android.Views.ISu
 eQuantic.UI.Native.Shell.Android.PhotonActivity.SurfaceDestroyed(Android.Views.ISurfaceHolder! holder) -> void
 eQuantic.UI.Native.Shell.Android.Resource
 eQuantic.UI.Native.Shell.Android.Resource.Resource() -> void
+override eQuantic.UI.Native.Shell.Android.PhotonActivity.DispatchKeyEvent(Android.Views.KeyEvent? e) -> bool
 override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnActivityResult(int requestCode, Android.App.Result resultCode, Android.Content.Intent? data) -> void
+override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnConfigurationChanged(Android.Content.Res.Configuration! newConfig) -> void
 override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnCreate(Android.OS.Bundle? savedInstanceState) -> void
 override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnRequestPermissionsResult(int requestCode, string![]! permissions, Android.Content.PM.Permission[]! grantResults) -> void
+override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnResume() -> void
+override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnStart() -> void
+override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnStop() -> void
 override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnTouchEvent(Android.Views.MotionEvent? e) -> bool

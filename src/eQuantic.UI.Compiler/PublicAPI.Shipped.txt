@@ -84,17 +84,24 @@ const eQuantic.UI.Compiler.CodeGen.Eq.Json = "$eq.json" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LiftArith = "$eq.nullable.arith" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LiftCmp = "$eq.nullable.cmp" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LiftUnary = "$eq.nullable.unary" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqAverage = "$eq.linq.average" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqEnumerable = "$eq.linq.enumerable" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqFirstOrDefault = "$eq.linq.firstOrDefault" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqIterate = "$eq.linq.iterate" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqLastOrDefault = "$eq.linq.lastOrDefault" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqMax = "$eq.linq.max" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqMin = "$eq.linq.min" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqRange = "$eq.linq.range" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqRepeat = "$eq.linq.repeat" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqSeq = "$eq.linq.seq" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqSequenceEqual = "$eq.linq.sequenceEqual" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqSingleOrDefault = "$eq.linq.singleOrDefault" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqToArray = "$eq.linq.toArray" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqToDictionary = "$eq.linq.toDictionary" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqZipTuples = "$eq.linq.zipTuples" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListBinarySearch = "$eq.collections.binarySearch" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListCapacity = "$eq.collections.listCapacity" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ListCopy = "$eq.collections.listCopy" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListCopyRangeTo = "$eq.collections.copyRangeTo" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListCopyTo = "$eq.collections.copyTo" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListFind = "$eq.collections.find" -> string!
@@ -145,7 +152,6 @@ const eQuantic.UI.Compiler.CodeGen.Eq.SortOrder = "$eq.collections.order" -> str
 const eQuantic.UI.Compiler.CodeGen.Eq.SortedDictionary = "$eq.collections.sortedDictionary" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.SortedList = "$eq.collections.sortedList" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.SortedSet = "$eq.collections.sortedSet" -> string!
-const eQuantic.UI.Compiler.CodeGen.Eq.SplitOnWhiteSpace = "$eq.text.splitOnWhiteSpace" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Str = "$eq.str" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.StringBuilder = "$eq.text.stringBuilder" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.StringCompare = "$eq.text.compare" -> string!
@@ -166,6 +172,8 @@ const eQuantic.UI.Compiler.CodeGen.Eq.StringLastIndexOf = "$eq.text.lastIndexOf"
 const eQuantic.UI.Compiler.CodeGen.Eq.StringLastIndexOfChar = "$eq.text.lastIndexOfChar" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.StringOrder = "$eq.collections.stringOrder" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.StringReplace = "$eq.text.replace" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringSplit = "$eq.text.split" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringSplitAny = "$eq.text.splitAny" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.StringStartsWith = "$eq.text.startsWith" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Substring = "$eq.text.substring" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TextChars = "$eq.text.chars" -> string!
@@ -173,6 +181,12 @@ const eQuantic.UI.Compiler.CodeGen.Eq.TextElementStarts = "$eq.text.textElementS
 const eQuantic.UI.Compiler.CodeGen.Eq.Thrown = "$eq.exceptions.thrown" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TimeSpan = "$eq.time.timeSpan" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ToBase = "$eq.num.toBase" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ToBase64CharArray = "$eq.convert.toBase64CharArray" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ToBase64String = "$eq.convert.toBase64String" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ToHexString = "$eq.convert.toHexString" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ToHexStringLower = "$eq.convert.toHexStringLower" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ToLower = "$eq.text.toLower" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ToUpper = "$eq.text.toUpper" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Trim = "$eq.text.trim" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TrimEnd = "$eq.text.trimEnd" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TrimStart = "$eq.text.trimStart" -> string!
@@ -1430,6 +1444,11 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Types.StructuralEqualsStrategy.CanConver
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.StructuralEqualsStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.StructuralEqualsStrategy.Priority.get -> int
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.StructuralEqualsStrategy.StructuralEqualsStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.TimeParseStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.TimeParseStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.TimeParseStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.TimeParseStrategy.Priority.get -> int
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.TimeParseStrategy.TimeParseStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.TimeSpanStrategy
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.TimeSpanStrategy.TimeSpanStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.TupleExpressionStrategy
@@ -1721,6 +1740,36 @@ eQuantic.UI.Compiler.Parser.ComponentParser.DiscoveredResources.get -> System.Co
 eQuantic.UI.Compiler.Parser.ComponentParser.Parse(string! filePath) -> System.Collections.Generic.IEnumerable<eQuantic.UI.Compiler.Models.ComponentDefinition!>!
 eQuantic.UI.Compiler.Parser.ComponentParser.ParseSource(string! sourceCode, string! sourcePath = "") -> System.Collections.Generic.IEnumerable<eQuantic.UI.Compiler.Models.ComponentDefinition!>!
 eQuantic.UI.Compiler.Parser.ComponentParser.SetSemanticModelProvider(eQuantic.UI.Compiler.Services.SemanticModelProvider! provider) -> void
+eQuantic.UI.Compiler.Services.AppBuild
+eQuantic.UI.Compiler.Services.AppBuild.AppBuild(eQuantic.UI.Compiler.Services.AppBuildOptions! options, System.IO.TextWriter? output = null, System.IO.TextWriter? errors = null) -> void
+eQuantic.UI.Compiler.Services.AppBuild.Compilation.get -> Microsoft.CodeAnalysis.Compilation?
+eQuantic.UI.Compiler.Services.AppBuild.CompileAndBundle() -> bool
+eQuantic.UI.Compiler.Services.AppBuild.IntermediateDirectory.get -> string!
+eQuantic.UI.Compiler.Services.AppBuild.Load() -> bool
+eQuantic.UI.Compiler.Services.AppBuildOptions
+eQuantic.UI.Compiler.Services.AppBuildOptions.AppBuildOptions() -> void
+eQuantic.UI.Compiler.Services.AppBuildOptions.AssemblyName.get -> string?
+eQuantic.UI.Compiler.Services.AppBuildOptions.AssemblyName.init -> void
+eQuantic.UI.Compiler.Services.AppBuildOptions.BunPath.get -> string?
+eQuantic.UI.Compiler.Services.AppBuildOptions.BunPath.init -> void
+eQuantic.UI.Compiler.Services.AppBuildOptions.GeneratedDirectory.get -> string?
+eQuantic.UI.Compiler.Services.AppBuildOptions.GeneratedDirectory.init -> void
+eQuantic.UI.Compiler.Services.AppBuildOptions.OutputDirectory.get -> string!
+eQuantic.UI.Compiler.Services.AppBuildOptions.OutputDirectory.init -> void
+eQuantic.UI.Compiler.Services.AppBuildOptions.ProjectsFile.get -> string?
+eQuantic.UI.Compiler.Services.AppBuildOptions.ProjectsFile.init -> void
+eQuantic.UI.Compiler.Services.AppBuildOptions.ReferenceReader.get -> System.Func<string!, Microsoft.CodeAnalysis.MetadataReference!>?
+eQuantic.UI.Compiler.Services.AppBuildOptions.ReferenceReader.init -> void
+eQuantic.UI.Compiler.Services.AppBuildOptions.ReferenceSourcesFile.get -> string?
+eQuantic.UI.Compiler.Services.AppBuildOptions.ReferenceSourcesFile.init -> void
+eQuantic.UI.Compiler.Services.AppBuildOptions.ReferencesFile.get -> string?
+eQuantic.UI.Compiler.Services.AppBuildOptions.ReferencesFile.init -> void
+eQuantic.UI.Compiler.Services.AppBuildOptions.SourceDirectories.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Compiler.Services.AppBuildOptions.SourceDirectories.init -> void
+eQuantic.UI.Compiler.Services.AppBuildOptions.SourceMaps.get -> eQuantic.UI.Compiler.SourceMapMode
+eQuantic.UI.Compiler.Services.AppBuildOptions.SourceMaps.init -> void
+eQuantic.UI.Compiler.Services.AppBuildOptions.Watch.get -> bool
+eQuantic.UI.Compiler.Services.AppBuildOptions.Watch.init -> void
 eQuantic.UI.Compiler.Services.ComponentDependencyResolver
 eQuantic.UI.Compiler.Services.ComponentDependencyResolver.ComponentDependencyResolver(Microsoft.CodeAnalysis.Compilation? projectCompilation = null) -> void
 eQuantic.UI.Compiler.Services.ComponentDependencyResolver.GeneratedDirectory.get -> string?
@@ -2361,10 +2410,12 @@ static eQuantic.UI.Compiler.CodeGen.ValueMember.operator !=(eQuantic.UI.Compiler
 static eQuantic.UI.Compiler.CodeGen.ValueMember.operator ==(eQuantic.UI.Compiler.CodeGen.ValueMember left, eQuantic.UI.Compiler.CodeGen.ValueMember right) -> bool
 static eQuantic.UI.Compiler.ComponentCompiler.AggregatedResource.operator !=(eQuantic.UI.Compiler.ComponentCompiler.AggregatedResource? left, eQuantic.UI.Compiler.ComponentCompiler.AggregatedResource? right) -> bool
 static eQuantic.UI.Compiler.ComponentCompiler.AggregatedResource.operator ==(eQuantic.UI.Compiler.ComponentCompiler.AggregatedResource? left, eQuantic.UI.Compiler.ComponentCompiler.AggregatedResource? right) -> bool
+static eQuantic.UI.Compiler.Services.AppBuildOptions.FromArguments(System.Collections.Generic.IReadOnlyList<string!>! arguments) -> eQuantic.UI.Compiler.Services.AppBuildOptions!
+static eQuantic.UI.Compiler.Services.AppBuildOptions.ReadArguments(System.Collections.Generic.IReadOnlyList<string!>! commandLine) -> System.Collections.Generic.IReadOnlyList<string!>!
 static eQuantic.UI.Compiler.Services.ComponentDependencyResolver.From(Microsoft.CodeAnalysis.Compilation! compilation) -> eQuantic.UI.Compiler.Services.ComponentDependencyResolver!
 static eQuantic.UI.Compiler.Services.FormatSubset.Allows(string! spec) -> bool
 static eQuantic.UI.Compiler.Services.FormatSubset.Read(string! template, out string? error) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.Services.TemplateHole>?
-static eQuantic.UI.Compiler.Services.ModuleBundler.Bundle(string! bunPath, System.Collections.Generic.IReadOnlyCollection<string!>! entryPoints, string! outputDir, string! intermediateDir, eQuantic.UI.Compiler.SourceMapMode sourceMaps, System.Action<string!>? warn = null) -> string?
+static eQuantic.UI.Compiler.Services.ModuleBundler.Bundle(string! bunPath, string! workingDirectory, System.Collections.Generic.IReadOnlyCollection<string!>! entryPoints, string! outputDir, string! intermediateDir, eQuantic.UI.Compiler.SourceMapMode sourceMaps, System.Action<string!>? warn = null) -> string?
 static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.CreateCompilationFromSources(System.Collections.Generic.IEnumerable<string!>! sourceFiles, System.Collections.Generic.IEnumerable<string!>! assemblyPaths, string! assemblyName = "DynamicAssembly", bool addStandardReferences = true) -> Microsoft.CodeAnalysis.Compilation!
 static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.GetCompilationUnits(System.Collections.Generic.IReadOnlyList<string!>! sourceDirectories, string? generatedDirectory) -> System.Collections.Generic.IEnumerable<(string! Directory, string! File, bool IsGenerated)>!
 static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.GetCompilerGeneratedFiles(string! projectDirectory) -> System.Collections.Generic.IEnumerable<string!>!

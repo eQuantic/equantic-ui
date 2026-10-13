@@ -8,6 +8,8 @@ eQuantic.UI.Native.Shell.iOS.IosPhotonRunner.Run(eQuantic.UI.Native.Hosting.Phot
 eQuantic.UI.Native.Shell.iOS.PhotonApp
 eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonAppDelegate
 eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonAppDelegate.PhotonAppDelegate() -> void
+eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonSceneDelegate
+eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonSceneDelegate.PhotonSceneDelegate() -> void
 eQuantic.UI.Native.Shell.iOS.PhotonView
 eQuantic.UI.Native.Shell.iOS.PhotonView.AccessibilityElements() -> Foundation.NSObject![]!
 eQuantic.UI.Native.Shell.iOS.PhotonView.MetalLayer.get -> CoreAnimation.CAMetalLayer!
@@ -22,8 +24,13 @@ eQuantic.UI.Native.Shell.iOS.PhotonViewController.PhotonViewController(eQuantic.
 eQuantic.UI.Native.Shell.iOS.PhotonViewController.SmoothScroll.get -> bool
 eQuantic.UI.Native.Shell.iOS.PhotonViewController.SmoothScroll.set -> void
 override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonAppDelegate.FinishedLaunching(UIKit.UIApplication! application, Foundation.NSDictionary? launchOptions) -> bool
-override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonAppDelegate.Window.get -> UIKit.UIWindow?
-override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonAppDelegate.Window.set -> void
+override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonAppDelegate.GetConfiguration(UIKit.UIApplication! application, UIKit.UISceneSession! connectingSceneSession, UIKit.UISceneConnectionOptions! options) -> UIKit.UISceneConfiguration!
+override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonSceneDelegate.DidDisconnect(UIKit.UIScene! scene) -> void
+override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonSceneDelegate.DidEnterBackground(UIKit.UIScene! scene) -> void
+override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonSceneDelegate.WillConnect(UIKit.UIScene! scene, UIKit.UISceneSession! session, UIKit.UISceneConnectionOptions! connectionOptions) -> void
+override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonSceneDelegate.WillEnterForeground(UIKit.UIScene! scene) -> void
+override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonSceneDelegate.Window.get -> UIKit.UIWindow?
+override eQuantic.UI.Native.Shell.iOS.PhotonApp.PhotonSceneDelegate.Window.set -> void
 override eQuantic.UI.Native.Shell.iOS.PhotonViewController.LoadView() -> void
 override eQuantic.UI.Native.Shell.iOS.PhotonViewController.TouchesBegan(Foundation.NSSet! touches, UIKit.UIEvent? evt) -> void
 override eQuantic.UI.Native.Shell.iOS.PhotonViewController.TouchesCancelled(Foundation.NSSet! touches, UIKit.UIEvent? evt) -> void

@@ -83,6 +83,11 @@ eQuantic.UI.Native.Engine.Float4.W -> float
 eQuantic.UI.Native.Engine.Float4.X -> float
 eQuantic.UI.Native.Engine.Float4.Y -> float
 eQuantic.UI.Native.Engine.Float4.Z -> float
+eQuantic.UI.Native.Engine.FramePair
+eQuantic.UI.Native.Engine.FramePair.FramePair() -> void
+eQuantic.UI.Native.Engine.FramePair.Next(int length) -> byte[]!
+eQuantic.UI.Native.Engine.FramePair.Publish() -> void
+eQuantic.UI.Native.Engine.FramePair.Published.get -> byte[]?
 eQuantic.UI.Native.Engine.IRenderBackend
 eQuantic.UI.Native.Engine.IRenderBackend.CreateSurface(int width, int height) -> eQuantic.UI.Native.Engine.IRenderSurface!
 eQuantic.UI.Native.Engine.IRenderBackend.Kind.get -> eQuantic.UI.Native.Engine.RenderBackendKind
@@ -182,6 +187,7 @@ eQuantic.UI.Native.Engine.TextureData.Width.get -> int
 eQuantic.UI.Native.Engine.TextureFormat
 eQuantic.UI.Native.Engine.TextureFormat.A8 = 0 -> eQuantic.UI.Native.Engine.TextureFormat
 eQuantic.UI.Native.Engine.TextureFormat.Rgba8 = 1 -> eQuantic.UI.Native.Engine.TextureFormat
+eQuantic.UI.Native.Engine.Yuv420
 override eQuantic.UI.Native.Engine.DrawCommand.GetHashCode() -> int
 override eQuantic.UI.Native.Engine.LinearColor.GetHashCode() -> int
 override eQuantic.UI.Native.Engine.Paint.GetHashCode() -> int
@@ -215,6 +221,8 @@ static eQuantic.UI.Native.Engine.Sdf.RoundedRect(eQuantic.UI.Primitives.Point p,
 static eQuantic.UI.Native.Engine.Sdf.ShadowCoverage(float deviceDistance, float deviceBlur) -> float
 static eQuantic.UI.Native.Engine.Sdf.Stroke(float distance, float strokeWidth) -> float
 static eQuantic.UI.Native.Engine.TextureData.Rgba(int width, int height, byte[]! rgba) -> eQuantic.UI.Native.Engine.TextureData!
+static eQuantic.UI.Native.Engine.Yuv420.ToRgba(System.ReadOnlySpan<byte> y, int yRowStride, System.ReadOnlySpan<byte> u, System.ReadOnlySpan<byte> v, int chromaRowStride, int chromaPixelStride, int width, int height, int quarterTurns, System.Span<byte> rgba) -> void
+static eQuantic.UI.Native.Engine.Yuv420.Turned(int width, int height, int quarterTurns) -> (int Width, int Height)
 static readonly eQuantic.UI.Native.Engine.LinearColor.Transparent -> eQuantic.UI.Native.Engine.LinearColor
 ~override eQuantic.UI.Native.Engine.DrawCommand.Equals(object obj) -> bool
 ~override eQuantic.UI.Native.Engine.DrawCommand.ToString() -> string

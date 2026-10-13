@@ -1,10 +1,1 @@
 #nullable enable
-*REMOVED*eQuantic.UI.Native.Shell.Apple.ObjCBlock.ObjCBlock(System.Delegate! callback) -> void
-eQuantic.UI.Native.Shell.Apple.ObjCBlock.ObjCBlock(nint invoke, object! context) -> void
-static eQuantic.UI.Native.Shell.Apple.ObjCBlock.Context<T>(nint block) -> T?
-eQuantic.UI.Native.Shell.Apple.ObjCBlock.ReleaseContext() -> void
-eQuantic.UI.Native.Shell.Apple.ObjCDelegateClass
-eQuantic.UI.Native.Shell.Apple.ObjCDelegateClass.Context<T>(nint self) -> T?
-eQuantic.UI.Native.Shell.Apple.ObjCDelegateClass.Handle.get -> nint
-eQuantic.UI.Native.Shell.Apple.ObjCDelegateClass.New(System.Runtime.InteropServices.GCHandle context) -> nint
-static eQuantic.UI.Native.Shell.Apple.ObjCDelegateClass.Define(string! name, params (string! Selector, nint Implementation, string! Types)[]! methods) -> eQuantic.UI.Native.Shell.Apple.ObjCDelegateClass!
