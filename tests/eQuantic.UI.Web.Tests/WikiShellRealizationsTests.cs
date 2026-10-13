@@ -8,7 +8,7 @@ namespace eQuantic.UI.Web.Tests;
 
 /// <summary>
 /// The wiki's Capabilities page says, per contract, what each native shell hands a component, and the
-/// shells' own registrations say the same, in both languages.
+/// shells' own registrations say the same, in every language the page is written in.
 ///
 /// <para>
 /// The table answers "does my target have a camera", and nothing held it to the code. Android
@@ -36,37 +36,43 @@ public class WikiShellRealizationsTests
 
     private const string ShellPrefix = "eQuantic.UI.Native.Shell.";
 
+    /// <summary>The words a cell answers in, by the language of the page: a mark and <c>`null`</c> in
+    /// every one, and the word for a contract a shell registers as unavailable in each.</summary>
+    private static readonly Dictionary<string, Dictionary<string, Answer>> Words = new(StringComparer.Ordinal)
+    {
+        ["English"] = new() { ["✓"] = Answer.Realized, ["unavailable"] = Answer.Unavailable, ["`null`"] = Answer.Null },
+        ["pt-BR"] = new() { ["✓"] = Answer.Realized, ["indisponível"] = Answer.Unavailable, ["`null`"] = Answer.Null },
+    };
+
     /// <summary>The comment that precedes the table, in every language: prose around it is free.</summary>
     private static readonly Regex Marker = new(@"<!--\s*eq:shell-realizations\s*-->", RegexOptions.Compiled);
 
     private static readonly string? Root = LocateRoot();
 
     [Fact]
-    public void TheTableSaysWhatEachShellRegisters_InBothLanguages()
+    public void TheTableSaysWhatEachShellRegisters_InEveryLanguage()
     {
         if (WikiClone.Absent()) return;
-        var wiki = WikiClone.Location!;
 
         var registered = Registered(Path.Combine(Root!, "src"));
         registered.Should().NotBeEmpty("the native shells register their capabilities in Devices/*Capabilities.cs");
         var contracts = new SortedSet<string>(registered.Values.SelectMany(shell => shell.Keys), StringComparer.Ordinal);
 
-        // Named rather than discovered: these two pages are the contract, and a rename that lost one
-        // would otherwise leave the guard reading nothing and reporting agreement.
-        (string Language, string Path, Dictionary<string, Answer> Words)[] pages =
-        [
-            ("English", Path.Combine(wiki, "Capabilities.md"),
-                new() { ["✓"] = Answer.Realized, ["unavailable"] = Answer.Unavailable, ["`null`"] = Answer.Null }),
-            ("pt-BR", Path.Combine(wiki, "locale", "pt-BR", "Capabilities-pt-BR.md"),
-                new() { ["✓"] = Answer.Realized, ["indisponível"] = Answer.Unavailable, ["`null`"] = Answer.Null }),
-        ];
-
+        // The English and the Portuguese page are named rather than discovered: they are the contract,
+        // and a rename that lost one would otherwise leave the guard reading nothing and reporting
+        // agreement. Every other language the page is written in is read as well, by the words it
+        // writes its answers in, and a language with no words here fails rather than go unread (#885).
+        var pages = WikiClone.Copies("Capabilities");
         var offences = new List<string>();
-        foreach (var (language, path, words) in pages)
+        foreach (var language in new[] { "English", "pt-BR" }.Where(language => pages.All(page => page.Language != language)))
+            offences.Add($"the {language} Capabilities page is missing from the wiki");
+
+        foreach (var (language, path) in pages)
         {
-            if (!File.Exists(path))
+            if (!Words.TryGetValue(language, out var words))
             {
-                offences.Add($"the {language} Capabilities page is missing from the wiki ({path})");
+                offences.Add($"{language}: the Capabilities page is written in a language whose word for an "
+                    + "unavailable contract this guard does not know: add it to Words");
                 continue;
             }
             if (Table(File.ReadAllText(path)) is not { } table)
@@ -103,10 +109,11 @@ public class WikiShellRealizationsTests
             }
         }
 
-        // Joined rather than asserted as a collection, so one run names both languages' drift.
+        // Joined rather than asserted as a collection, so one run names every language's drift.
         string.Join("\n", offences).Should().BeEmpty(
-            "the table is what tells a reader which target answers a contract: change the cell in both "
-            + "pages in one commit, on the wiki branch named like this pull request's, which CI reads (#406). "
+            "the table is what tells a reader which target answers a contract: change the cell in every "
+            + "language the page is written in, in one commit, on the wiki branch named like this pull request's, "
+            + "which CI reads (#406). "
             + $"Read from {WikiClone.Describe()}");
     }
 
