@@ -383,6 +383,7 @@ public class EveryProgramTheSdksStartTests
                     ("_EqSourceTree", "false"),
                     ("_EqTasksAssembly", typeof(RunProgram).Assembly.Location),
                     ("TargetFramework", "net10.0-ios"),
+                    ("ApplicationId", "com.acme.cash-flow"),
                     ("EQuanticAppIconSource", "$(MSBuildProjectDirectory)/icon `i`.png"),
                     ("_EqIconToolDir", "$(MSBuildProjectDirectory)/tools $x/"),
                     ("_EqIconSetDir", "$(MSBuildProjectDirectory)/obj/eQuantic/Assets.xcassets"),
@@ -405,7 +406,7 @@ public class EveryProgramTheSdksStartTests
             var icon = directory + "/icon `i`.png";
             Calls(record).Should().Equal([
                 Call("dotnet", tool, "capabilities", "--assembly", "obj/Cash$Flow.dll",
-                    "--plist", directory + "/obj/eQuantic/Capabilities.plist"),
+                    "--plist", directory + "/obj/eQuantic/Capabilities.plist", "--id", "com.acme.cash-flow"),
                 Call("dotnet", tool, "--source", icon, "--out", directory + "/obj/eQuantic/Assets.xcassets"),
                 Call("dotnet", tool, "--source", icon, "--android", directory + "/generated $g/android/res"),
                 Call("dotnet", tool, "--source", icon, "--android", directory + "/generated $g/android/res"),

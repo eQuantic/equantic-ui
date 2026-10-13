@@ -1,1 +1,2 @@
 #nullable enable
+eQuantic.UI.Primitives.DeepLinkRelay.StartedWith(string? text) -> bool

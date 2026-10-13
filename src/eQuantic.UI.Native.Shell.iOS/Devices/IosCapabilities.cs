@@ -29,5 +29,8 @@ public sealed class IosCapabilities : IPhotonCapabilities
         // The platform's vault, for what IAppStorage must never hold. Keychain on both Apple
         // platforms — one realization, because SecItem* is one API on both.
         services.TryAddSingleton<ISecretStore, AppleSecretStore>();
+        // The URLs this app is opened WITH. The scene told the relay as it connected, before the
+        // first tree was built, so the container hands out that same one.
+        services.TryAddSingleton<IDeepLinks>(_ => IosDeepLinks.Relay);
     }
 }

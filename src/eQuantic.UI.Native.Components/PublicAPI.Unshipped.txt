@@ -1,1 +1,2 @@
 #nullable enable
+eQuantic.UI.Native.Components.PhotonHost.Unmount() -> void

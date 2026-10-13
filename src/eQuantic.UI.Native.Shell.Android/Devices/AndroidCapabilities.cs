@@ -27,5 +27,8 @@ public sealed class AndroidCapabilities : IPhotonCapabilities
         // The vault, for what IAppStorage must never hold: a hardware-backed KeyStore key
         // encrypts the value and only the ciphertext reaches a preferences file.
         services.TryAddSingleton<ISecretStore, AndroidSecretStore>();
+        // The URLs this app is opened WITH. The activity told the relay in onCreate, long before
+        // this container existed, so the container hands out that same one.
+        services.TryAddSingleton<IDeepLinks>(_ => AndroidDeepLinks.Relay);
     }
 }

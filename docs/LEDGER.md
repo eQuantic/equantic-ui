@@ -2791,6 +2791,20 @@ record of a release, the wiki's Upgrading page is the distillate.
   changes in every language it is written in, and a new page is written in all five
   ([#885](https://github.com/eQuantic/equantic-ui/issues/885)). Proposed and archived through
   OpenSpec (`openspec/specs/working-agreement`).
+- **2026-10-13 · A link opens the app on a phone**: `IDeepLinks` was realized on the desktop and
+  `builder.Bundle.UrlScheme` reached only the Mac's bundle, so a link opened nothing on a phone
+  ([#777](https://github.com/eQuantic/equantic-ui/issues/777)). The same declaration now writes the
+  iOS URL type and the Android link filter, both phone shells feed a relay, and the relay is told
+  what the app was started with (`StartedWith`), so `Launch` is null for an app opened from its icon
+  whatever arrives later. On Android an app that declares a scheme is a single task, only a declared
+  scheme is a link, and a tree is taken down with its activity (`PhotonHost.Unmount`), where it had
+  gone on hearing every link beside the live one. Found on the way
+  ([#872](https://github.com/eQuantic/equantic-ui/issues/872)): on iOS nothing an app declared reached
+  its `Info.plist`, because the partial manifest was handed over after Apple's packaging had compiled
+  the first one, and the Wallet shipped without its Face ID sentence. It is handed over where the
+  final manifest is written, and `scripts/check-ios-launch.sh` compares the two and fails with main's
+  targets. Proved on the Android emulator and the iOS 27 simulator.
+  Proposed and archived through OpenSpec (`openspec/specs/deep-links`).
 
 ## Retired documents
 

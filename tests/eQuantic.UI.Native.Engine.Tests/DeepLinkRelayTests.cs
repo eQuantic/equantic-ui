@@ -5,11 +5,72 @@ namespace eQuantic.UI.Native.Engine.Tests;
 
 /// <summary>
 /// What a deep link DOES once a platform has produced one. The plumbing differs on every target —
-/// an AppleEvent on macOS, <c>application:openURL:</c> on iOS, an Intent on Android — and none of
-/// them differs in what happens next, which is why the rules live here where they can be tested.
+/// an AppleEvent on macOS, a scene's URL contexts on iOS, an Intent on Android — and none of them
+/// differs in what happens next, which is why the rules live here where they can be tested.
 /// </summary>
 public class DeepLinkRelayTests
 {
+    /// <summary>
+    /// A phone's shell KNOWS what the app was started with, and says so. An app opened from its
+    /// icon was launched with nothing, and a link tapped an hour later did not launch it: read as
+    /// the first URL ever seen, <c>Launch</c> answered that link, against its own contract.
+    /// </summary>
+    [Fact]
+    public void StartedNormally_ALinkThatArrivesLaterIsHeardAndIsNotTheLaunchUrl()
+    {
+        var relay = new DeepLinkRelay();
+        var heard = new List<Uri>();
+        using var _ = relay.Subscribe(heard.Add);
+
+        relay.StartedWith(null).Should().BeFalse("there was no URL");
+        relay.Offer("acme://later").Should().BeTrue();
+
+        relay.Launch.Should().BeNull("the app was started from its icon");
+        heard.Should().Equal(new Uri("acme://later"));
+    }
+
+    [Fact]
+    public void StartedWithALink_ItIsTheLaunchUrl_AndALaterOneDoesNotReplaceIt()
+    {
+        var relay = new DeepLinkRelay();
+
+        relay.StartedWith(" acme://activate?key=abc ").Should().BeTrue();
+        relay.Offer("acme://later");
+
+        relay.Launch.Should().Be(new Uri("acme://activate?key=abc"));
+    }
+
+    /// <summary>A phone keeps the process and starts the app in it again. The second start is its
+    /// own: from the icon, it was launched with nothing, whatever the first one was launched with.</summary>
+    [Fact]
+    public void StartedAgain_TheAnswerIsTheNewStarts()
+    {
+        var relay = new DeepLinkRelay();
+        relay.StartedWith("acme://first");
+
+        relay.StartedWith(null);
+        relay.Launch.Should().BeNull();
+
+        relay.StartedWith("acme://third");
+        relay.Launch.Should().Be(new Uri("acme://third"));
+    }
+
+    /// <summary>Whoever is already listening hears the link a start came with: on a phone that is a
+    /// tree kept alive across the start.</summary>
+    [Fact]
+    public void AStartWithALink_IsDeliveredToWhoeverIsListening()
+    {
+        var relay = new DeepLinkRelay();
+        var heard = new List<Uri>();
+        using var _ = relay.Subscribe(heard.Add);
+
+        relay.StartedWith("acme://open/7");
+        relay.StartedWith("not a url").Should().BeFalse();
+
+        heard.Should().Equal(new Uri("acme://open/7"));
+        relay.Launch.Should().BeNull("the second start came with nothing that is a URL");
+    }
+
     [Fact]
     public void TheFirstUrlIsTheLaunchUrl_AndIsAnsweredRatherThanDelivered()
     {
