@@ -2711,6 +2711,33 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#866](https://github.com/eQuantic/equantic-ui/issues/866)). The served
   runtime grows 208 gzipped bytes. Proposed and archived through OpenSpec
   (`openspec/specs/runtime-collections`).
+- **2026-10-13 · The README shows the samples, and asks for a new picture when a screen changes**:
+  the root README, which is also every package's readme on nuget.org, showed no picture of anything
+  it describes. It now shows the three samples as they build: the dashboard in a browser, on its
+  first page and three more, the component gallery drawn by Photon in dark and in light, and
+  the Wallet on an iPhone and on Android, each a Markdown image named by its path in the
+  repository, which GitHub draws on every branch. The first version named each picture by its
+  address on `main`, and on the pull request's own branch all ten were broken. nuget.org draws
+  nothing from a path, so a package's readme is written when it packs (`WritePackageReadme`): the
+  README with each picture at its address under the release's tag, by a task MSBuild compiles,
+  since MSBuild's own tasks packed the README's `\e` as `/e` on a Mac. Every picture is still: the
+  page opened with a GIF of the dashboard's pages that looped for good, and nuget.org gives an
+  animated image no control to stop it (WCAG 2.2.2), so a test refuses a picture that moves.
+  `scripts/check-package-readme.cs` reads the readme inside every package CI packs.
+  They are captures `scripts/capture-readme.sh` takes with nothing clicked, since each sample opens a
+  screen by configuration: a headless Chrome, `--Photon:ScreenshotPath`, a simulator of its own and
+  the running emulator. `assets/readme/captures.json` names the files each picture's screen is
+  written in, and `ReadmeCapturesTests` fails when one changes, naming the picture and its target,
+  until the picture is taken again and the files are recorded (`EQ_UPDATE_README_CAPTURES=1`). A
+  capture that drew nothing is refused: two of the first six iOS captures were a black screen, taken
+  before the app's first frame, a fixed wait gave a third, which the check stopped, and a simulator
+  just booted refused a launch, so the script asks until the app starts and photographs until the
+  screen holds a picture. A picture is a Markdown image, since nuget.org shows a readme's HTML as
+  text: the README's own badges and title are on the package's page as tags
+  ([#882](https://github.com/eQuantic/equantic-ui/issues/882)). Found on the way: in the light theme the Android shell leaves the status bar's icons white
+  on a light screen ([#881](https://github.com/eQuantic/equantic-ui/issues/881))
+  ([#880](https://github.com/eQuantic/equantic-ui/issues/880)). Proposed and archived through
+  OpenSpec (`openspec/specs/working-agreement`).
 - **2026-10-13 · Every member of a queue, a stack, a linked list and a sorted set answers or fails the
   build**: eqc lowered any member of `Queue<T>`, `Stack<T>`, `LinkedList<T>`, `LinkedListNode<T>` and
   `SortedSet<T>` to its camel-cased name whether or not the runtime's twin carried it, so `TryDequeue`,
