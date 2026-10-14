@@ -61,25 +61,51 @@ public class HarnessSelfChecksTests
     public void APreludeTheBuildRefuses_FailsTheCase_NamingTheModule()
     {
         var refused = Assert.Throws<RefusedByTheBuildException>(() => Transpiler.TranspileStatements(
-            "return new Twice(1).Plus(2);",
-            "public record Twice(int X) { public int Plus(int y) => X + y; public int Plus(int y, int z) => X + y + z; }"));
+            "return new Twice(1).Plus(2);", Twice));
 
         refused.Refusals.Should().ContainSingle(refusal => refusal.Id == "EQ1007" && refusal.Module == "Twice");
     }
 
+    /// <summary>A record the build refuses, two methods of one name (EQ1007).</summary>
+    private const string Twice =
+        "public record Twice(int X) { public int Plus(int y) => X + y; public int Plus(int y, int z) => X + y + z; }";
+
+    /// <summary>A record the build refuses with a query's fence (EQ2008), in a method of its own.</summary>
+    private const string Box =
+        "public record Box(int X) { public int Doubled() => (from a in new[] { X } let f = a * 2 select f).Sum(); }";
+
+    private const string LetQuery = "return (from a in new[] { 1, 2 } let f = a * 2 select f).Sum();";
+
     /// <summary>
-    /// A case written for a fence pins THAT fence: it fails when the build accepts its C#, when the
-    /// build refuses it for another reason, and when it is not C# the compiler accepts.
+    /// A case written for a fence pins THAT fence, in its OWN C#: it fails when the build accepts the
+    /// case's C#, its prelude's refusal not standing in for it, when the build refuses it for another
+    /// reason, its prelude's included, and when it is not C# the compiler accepts.
     /// </summary>
     [Theory]
-    [InlineData("return 1;", "EQ2008", "the build accepts it")]
-    [InlineData("return (from a in new[] { 1, 2 } let f = a * 2 select f).Sum();", "EQ2004", "EQ2008")]
-    [InlineData("return (from a in nothing let f = a * 2 select f).Sum();", "EQ2008", "C# that compiles")]
-    public void AnExpectedRefusal_FailsWhereTheBuildSaysOtherwise(string statements, string id, string named)
+    [InlineData("return 1;", "EQ2008", "", "the build accepts the case's own C#")]
+    [InlineData(LetQuery, "EQ2004", "", "EQ2008")]
+    [InlineData("return (from a in nothing let f = a * 2 select f).Sum();", "EQ2008", "", "C# that compiles")]
+    // The prelude alone is refused with the id: the case's own C# is not, so the case does not pin it.
+    [InlineData("return new Twice(1).Plus(2);", "EQ1007", Twice, "the build accepts the case's own C#")]
+    // The case's own C# is refused with the id, and its prelude for another reason.
+    [InlineData(LetQuery, "EQ2008", Twice, "EQ1007 in Twice")]
+    public void AnExpectedRefusal_FailsWhereTheBuildSaysOtherwise(string statements, string id, string prelude, string named)
     {
-        var failure = Assert.ThrowsAny<Exception>(() => ConformanceRunner.AssertStatementsRefusedByTheBuild(statements, id));
+        var failure = Assert.ThrowsAny<Exception>(() => ConformanceRunner.AssertStatementsRefusedByTheBuild(statements, id, prelude));
         failure.Should().NotBeOfType<RefusedByTheBuildException>();
         failure.Message.Should().Contain(named);
+    }
+
+    /// <summary>
+    /// A prelude refused with the SAME id as the case's own C# stands beside it: the case pins its own
+    /// refusal, and nothing in the prelude is another reason.
+    /// </summary>
+    [Fact]
+    public void APreludeRefusedWithTheSameId_StandsBesideTheCasesOwn()
+    {
+        Transpiler.TranslateStatements("return 0;", Box).PreludeRefusals
+            .Should().Contain(refusal => refusal.Id == "EQ2008" && refusal.Module == "Box");
+        ConformanceRunner.AssertStatementsRefusedByTheBuild(LetQuery, "EQ2008", Box);
     }
 
     /// <summary>

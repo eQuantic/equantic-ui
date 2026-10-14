@@ -64,8 +64,11 @@ what a build accepts. No case of the suite calls an API it forbids.
 **A refusal a case pins is declared by its id.** `AssertStatementsRefusedByTheBuild` and
 `AssertRefusedByTheBuild` take the id. They require C# that compiles (the C# compiler's errors over
 the model the converter read, asked only there, since binding a whole compilation for every case is
-time the suite would pay for nothing), at least one refusal, and no refusal of another id, and run
-nothing on either side. `Transpiler.TranslateStatements` and its siblings answer the text with its
+time the suite would pay for nothing), at least one refusal of the case's OWN C#, the converter's
+over the text the case would run, and no refusal of another id, its prelude's included, and run
+nothing on either side. A refusal of the prelude alone never stands in for the case's own: a case
+whose prelude met the fence would go on passing after the fence lifted for the case itself, so a
+`Translation` keeps its own refusals apart from its prelude's. `Transpiler.TranslateStatements` and its siblings answer the text with its
 refusals for a case that pins the text of a refused construct, the routing of #394's gap.
 
 **The module harness asks every module first.** `ModuleGraph` and the four tests that call

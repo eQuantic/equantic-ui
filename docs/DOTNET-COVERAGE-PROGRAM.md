@@ -49,8 +49,9 @@ either side runs, naming each refusal by its id and text, read where the build r
 converter's errors over the case's own text, and the build's own verdict on the prelude's
 declarations (#907). A case written FOR a fence says so, with
 `ConformanceRunner.AssertStatementsRefusedByTheBuild(statements, "EQ2008")` (or
-`AssertRefusedByTheBuild` for an expression): it asserts the id, runs nothing, and fails the day the
-fence lifts. That is the conformance side of the negative tests the definition of done below asks for.
+`AssertRefusedByTheBuild` for an expression): it asserts that the case's own C# is refused with that
+id, its prelude's refusals allowed only with the same one, runs nothing, and fails the day the fence
+lifts. That is the conformance side of the negative tests the definition of done below asks for.
 
 **Faithful semantic model.** Type-gated strategies (e.g. record-keyed dictionaries) rely on Roslyn
 resolving BCL generics like `Dictionary<RecordKey,V>`. The eqc build reconstructs the project's

@@ -2,24 +2,36 @@ namespace eQuantic.UI.Conformance.Tests.Infrastructure;
 
 /// <summary>
 /// What the build makes of a case's C#: the JavaScript the converter wrote, and every reason the build
-/// refuses the C# (<see cref="Refusal"/>). The runner reaches the text through <see cref="Accepted"/>
-/// only, so text written where the build refused is never run.
+/// refuses the C# (<see cref="Refusal"/>), the text's own apart from the prelude's. The runner reaches
+/// the text through <see cref="Accepted"/> only, so text written where the build refused is never run.
 /// </summary>
 public sealed class Translation
 {
     private readonly Lazy<IReadOnlyList<string>> _csharpErrors;
 
-    public Translation(string js, IReadOnlyList<Refusal> refusals, Func<IReadOnlyList<string>> csharpErrors)
+    public Translation(string js, IReadOnlyList<Refusal> ownRefusals, IReadOnlyList<Refusal> preludeRefusals,
+        Func<IReadOnlyList<string>> csharpErrors)
     {
         Js = js;
-        Refusals = refusals;
+        OwnRefusals = ownRefusals;
+        PreludeRefusals = preludeRefusals;
+        Refusals = [.. ownRefusals, .. preludeRefusals];
         _csharpErrors = new Lazy<IReadOnlyList<string>>(csharpErrors);
     }
 
     /// <summary>What the converter wrote, a fallback wherever it refused.</summary>
     public string Js { get; }
 
-    /// <summary>Every reason the build refuses the C#, none for C# it accepts.</summary>
+    /// <summary>What the build refuses in the text this translation wrote: the converter's errors over
+    /// it. For a case, its own C#, which is where a refusal the case pins has to come from.</summary>
+    public IReadOnlyList<Refusal> OwnRefusals { get; }
+
+    /// <summary>What the build refuses among the declarations of the case's prelude, by its own
+    /// verdict.</summary>
+    public IReadOnlyList<Refusal> PreludeRefusals { get; }
+
+    /// <summary>Every reason the build refuses the case: its own first, then its prelude's. None for
+    /// C# it accepts.</summary>
     public IReadOnlyList<Refusal> Refusals { get; }
 
     /// <summary>

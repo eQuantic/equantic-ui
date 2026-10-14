@@ -289,9 +289,12 @@ public static class ConformanceRunner
     /// refuses its C# (<see cref="Translation.Accepted"/>), so this is how a case says the refusal is
     /// what it pins.
     /// <para>
-    /// The C# compiles, since a case the C# compiler refuses says nothing of a fence, and every refusal
-    /// carries the id, so a case pins the fence it names and no other. When the fence lifts, the case
-    /// fails, saying so: it becomes a comparison with .NET like its neighbours.
+    /// The C# compiles, since a case the C# compiler refuses says nothing of a fence. The refusal comes
+    /// from the case's OWN C#, the converter's over the text the case would run, and every refusal
+    /// carries the id, the prelude's included, so a case pins the fence it names and no other: a case
+    /// whose prelude alone met the fence would otherwise go on passing after the fence lifted for the
+    /// case itself. When the fence lifts, the case fails, saying so: it becomes a comparison with .NET
+    /// like its neighbours.
     /// </para>
     /// </summary>
     public static void AssertStatementsRefusedByTheBuild(string csharpStatements, string id, string prelude = "") =>
@@ -308,12 +311,16 @@ public static class ConformanceRunner
         translation.CSharpErrors.Should().BeEmpty(
             $"{what} is C# that compiles: a case the C# compiler refuses says nothing of a fence");
 
-        var refusals = translation.Refusals.Concat(types.Refusals).Distinct().ToList();
-        refusals.Should().NotBeEmpty(
-            $"{what} is written for {id}, and the build accepts it: the fence has lifted, so the case is "
-            + $"compared with .NET like its neighbours now (the JavaScript it writes: `{translation.Js}`)");
-        refusals.Where(refusal => refusal.Id != id).Select(refusal => refusal.ToString()).Should().BeEmpty(
-            $"{what} pins {id}, and a refusal for any other reason is not the fence it names");
+        // The case's own refusals, apart from its prelude's: the build's verdict on the declarations,
+        // and the converter's over the prelude's records as the harness writes them.
+        translation.OwnRefusals.Should().NotBeEmpty(
+            $"{what} is written for {id}, and the build accepts the case's own C#: the fence has lifted, so "
+            + $"the case is compared with .NET like its neighbours now (the JavaScript it writes: `{translation.Js}`)");
+        var prelude = translation.PreludeRefusals.Concat(types.Refusals);
+        translation.OwnRefusals.Concat(prelude).Where(refusal => refusal.Id != id)
+            .Select(refusal => refusal.ToString()).Distinct().Should().BeEmpty(
+                $"{what} pins {id}, and a refusal for any other reason, its prelude's included, is not the "
+                + "fence it names");
     }
 
     /// <summary>

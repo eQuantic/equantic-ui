@@ -415,7 +415,8 @@ the text the case would run, an error refusing and a warning not, and the build'
 declarations of the case's prelude, every check a build runs beside the converter included. A case
 whose C# the build refuses SHALL fail before either side runs, naming each refusal by its id and
 text, unless the case declares the refusal it pins. A case that declares one SHALL pass only when its
-C# compiles and the build refuses it with that id and no other, and SHALL run nothing on either side.
+C# compiles, the build refuses the case's own C# with that id, and every other refusal of the case or
+of its prelude carries the same id, and SHALL run nothing on either side.
 A path of the harness that compiles a source as an app's build does SHALL read the errors of every
 module before it keeps the modules that wrote text.
 
@@ -433,13 +434,33 @@ module before it keeps the modules that wrote text.
 
 #### Scenario: The fence lifts
 
-- **WHEN** a case declares a refusal and the build accepts its C#
-- **THEN** it fails, saying the build accepts it and showing the JavaScript the build writes
+- **WHEN** a case declares a refusal and the build accepts the case's own C#
+- **THEN** it fails, saying the build accepts the case's own C# and showing the JavaScript the build
+  writes
 
 #### Scenario: A refusal the case does not name
 
 - **WHEN** a case declares EQ2004 and the build refuses its C# with EQ2008
 - **THEN** it fails, naming the EQ2008 refusal
+
+#### Scenario: A refusal of the prelude alone
+
+- **WHEN** a case declares EQ1007, its prelude declares a record with two methods of one name, and
+  the build accepts the case's own C#
+- **THEN** it fails, saying the build accepts the case's own C#, where the prelude's refusal used to
+  stand in for it and would have kept the case passing after its own fence lifted
+
+#### Scenario: A prelude refused for the same reason
+
+- **WHEN** a case declares EQ2008, its own C# holds a query with a `let`, and its prelude declares a
+  record whose method holds one too
+- **THEN** it passes
+
+#### Scenario: A prelude refused for another reason
+
+- **WHEN** a case declares EQ2008, its own C# holds a query with a `let`, and its prelude declares a
+  record with two methods of one name
+- **THEN** it fails, naming EQ1007 and the record
 
 #### Scenario: A case that is not C#
 

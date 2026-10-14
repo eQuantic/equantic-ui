@@ -9,9 +9,9 @@
 
 ## 2. A case that pins a refusal
 
-- [x] 2.1 `ConformanceRunner.AssertStatementsRefusedByTheBuild` and `AssertRefusedByTheBuild`: C# that compiles, a refusal by the id and no other, nothing run
+- [x] 2.1 `ConformanceRunner.AssertStatementsRefusedByTheBuild` and `AssertRefusedByTheBuild`: C# that compiles, a refusal of the case's own C# by the id, no refusal of another id (its prelude's included), nothing run
 - [x] 2.2 `Transpiler.TranslateStatements` and its siblings, for a case that pins the text of a refused construct
-- [x] 2.3 The harness checked against itself: a refused case fails naming its id, a warning refuses nothing, a prelude's EQ1007 and a module's EQ1007 fail their case, and an expected refusal fails when the build accepts the C#, refuses it for another reason, or the C# does not compile
+- [x] 2.3 The harness checked against itself: a refused case fails naming its id, a warning refuses nothing, a prelude's EQ1007 and a module's EQ1007 fail their case, and an expected refusal fails when the build accepts the case's own C# (its prelude's refusal not standing in for it), refuses it or its prelude for another reason, or the C# does not compile, and passes beside a prelude refused with the same id
 - [x] 2.4 #761's three queries pinned as EQ2008
 
 ## 3. The suite with the rule

@@ -96,7 +96,7 @@ public static class Transpiler
     /// the build refuses in the prelude.</summary>
     public static Translation TranslateDeclaredRecordTypes(string prelude)
     {
-        if (string.IsNullOrWhiteSpace(prelude)) return new Translation(string.Empty, [], () => []);
+        if (string.IsNullOrWhiteSpace(prelude)) return new Translation(string.Empty, [], [], () => []);
 
         var program = Compile("return 0;", prelude);
         var emitter = new RecordTypeEmitter(program.Converter);
@@ -239,10 +239,10 @@ public class __Conformance
     private sealed record Program(SyntaxTree Tree, CSharpCompilation Compilation, CSharpToJsConverter Converter,
         string Prelude)
     {
-        /// <summary>The text the converter wrote, with every refusal: the converter's own over this
-        /// text first, then the build's over the prelude.</summary>
+        /// <summary>The text the converter wrote, with the converter's refusals over this text as its
+        /// own, apart from the build's over the prelude.</summary>
         public Translation Translated(string js) => new(js,
-            [.. Refusal.Of(Converter.Diagnostics), .. PreludeRefusals(Prelude)],
+            Refusal.Of(Converter.Diagnostics), PreludeRefusals(Prelude),
             () => Compilation.GetDiagnostics()
                 .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
                 .Select(diagnostic => diagnostic.ToString())

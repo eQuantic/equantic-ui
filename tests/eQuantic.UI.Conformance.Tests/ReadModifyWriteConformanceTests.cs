@@ -184,7 +184,7 @@ public class ReadModifyWriteConformanceTests
     public void AnIndexKey_IsLookedUp_NotCountedBackFromALength()
     {
         var translation = Transpiler.TranslateStatements("var d = new Dictionary<Index, int>(); d[2] = 1; return d[^1];");
-        translation.Refusals.Select(refusal => refusal.Id).Should().Equal("EQ1004");
+        translation.OwnRefusals.Select(refusal => refusal.Id).Should().Equal("EQ1004");
         translation.Js.Should().Contain("return $eq.mapGet(d, ");
         translation.Js.Should().NotContain(".length -");
     }
