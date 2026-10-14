@@ -808,8 +808,9 @@ a surface class, derived in `Directory.Build.targets` from its name and written 
   Each assembly carries .NET's `[Experimental("EQX0001")]`, so a project that uses one fails until it
   says it means to, and the analyzer declares its API with the `[EQX0001]` prefix. An app built with
   `eQuantic.UI.Sdk.Native` chose the track by choosing the SDK, so the SDK suppresses the id and the
-  app writes nothing. A project of this repository that ships nothing suppresses it too, since it
-  passes nothing on.
+  app writes nothing. Inside this repository three projects use the track without its SDK on
+  purpose, the native tests, eqicon and the Photon design host, and each says so in its own project
+  file. Any other one that reaches a native assembly meets EQX0001, as an app's would.
 
 The release notes split their breaks by the class: a contract break is the one an app meets.
 

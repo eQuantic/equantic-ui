@@ -43,7 +43,8 @@ assembly of this repository inside a package CI packs SHALL say one.
 An experimental assembly SHALL carry `[assembly: Experimental("EQX0001")]` with a URL to the wiki
 section that says what experimental means in 1.0. An app built with `eQuantic.UI.Sdk.Native` SHALL
 NOT see EQX0001, and its publish SHALL say once that the native track is experimental in 1.0. Any other
-project that uses a type of an experimental assembly SHALL fail with EQX0001 until it suppresses it.
+project that uses a type of an experimental assembly SHALL fail with EQX0001 until it suppresses it
+in its own project file, inside this repository too.
 An experimental assembly that uses another one SHALL NOT see it.
 
 #### Scenario: A Photon app

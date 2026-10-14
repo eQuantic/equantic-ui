@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <!-- This project uses the native track without the native SDK, on purpose: it is the design host that draws a screen with Photon. So it says it
+             means to (#324). Every other project of the repository that reaches a native assembly meets
+             EQX0001, as an app's would. -->
+        <NoWarn>$(NoWarn);EQX0001</NoWarn>
         <!-- Spawned BY the design host, one short-lived process per frame: it loads and RUNS the
              user's compiled page, and a Build() that loops forever must take this process down,
              never the host that owns the preview. -->

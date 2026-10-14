@@ -24,6 +24,12 @@ internal static class DeveloperSurfaceRule
         || line == PhotonSection
         || line.StartsWith(PhotonSection + ":", StringComparison.Ordinal);
 
+    /// <summary>Whether the committed baseline has to be there before anything is compared or written:
+    /// at a stable version it is the contract, and a regeneration with no baseline to read would see
+    /// no line leave and write the contract down to what the tree still holds. During a preview a
+    /// missing baseline is the bootstrap.</summary>
+    public static bool BaselineRequired(string version) => ReleaseVersion.IsStable(version);
+
     /// <summary>The lines among <paramref name="gone"/> that <paramref name="version"/> may not
     /// lose: every one that is the contract's at a stable version, and none during a preview.</summary>
     public static IReadOnlyList<string> Refused(string version, IEnumerable<string> gone) =>

@@ -178,9 +178,13 @@ public class NoOldShapeSurvivesTests
         static string? Literal(ExpressionSyntax expression) =>
             expression is LiteralExpressionSyntax { Token.Value: string text } ? text : null;
 
+        // The message is the constructor's first argument, written in its place or by its name,
+        // `message:`, which may come after `error:`.
         var positional = arguments.Where(argument => argument.NameEquals is null && argument.NameColon is null).ToList();
-        var message = positional.Count > 0 ? Literal(positional[0].Expression) : null;
-        if (positional.Count > 0 && message is null) return null;
+        var written = arguments.FirstOrDefault(argument => argument.NameColon?.Name.Identifier.ValueText == "message")
+            ?? (positional.Count > 0 ? positional[0] : null);
+        var message = written is null ? null : Literal(written.Expression);
+        if (written is not null && message is null) return null;
 
         var obsolete = new ObsoleteAttribute(message);
         foreach (var named in arguments.Where(argument => argument.NameEquals is not null))
@@ -214,6 +218,25 @@ public class NoOldShapeSurvivesTests
         var obsolete = new ObsoleteAttribute(message) { DiagnosticId = id, UrlFormat = url };
 
         ObsoleteMark.Problems(version, obsolete).Should().ContainSingle().Which.Should().Contain(lacks);
+    }
+
+    /// <summary>The reader takes the attribute as C# takes it: the message by position or by name,
+    /// in any order with <c>error</c>.</summary>
+    [Theory]
+    [InlineData("[Obsolete(\"Use Bar. Removed in 2.0.\", DiagnosticId = \"EQO0001\", UrlFormat = \"https://example.org/{0}\")]")]
+    [InlineData("[Obsolete(\"Use Bar. Removed in 2.0.\", false, DiagnosticId = \"EQO0001\", UrlFormat = \"https://example.org/{0}\")]")]
+    [InlineData("[Obsolete(message: \"Use Bar. Removed in 2.0.\", error: false, DiagnosticId = \"EQO0001\", UrlFormat = \"https://example.org/{0}\")]")]
+    [InlineData("[System.Obsolete(error: false, message: \"Use Bar. Removed in 2.0.\", DiagnosticId = \"EQO0001\", UrlFormat = \"https://example.org/{0}\")]")]
+    public void AnObsoleteIsReadAsCSharpReadsIt(string attribute)
+    {
+        var syntax = CSharpSyntaxTree.ParseText($"{attribute} public class Probe {{ }}", ParseDefaults.Options)
+            .GetRoot().DescendantNodes().OfType<AttributeSyntax>().Single();
+
+        var read = Read(syntax);
+
+        read.Should().NotBeNull();
+        read!.Message.Should().Be("Use Bar. Removed in 2.0.");
+        ObsoleteMark.Problems("1.2.0", read).Should().BeEmpty();
     }
 
     [Theory]

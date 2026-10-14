@@ -123,6 +123,10 @@ public class DeveloperSurfaceContractTests
         // preview, and for the native track's lines at any version, the regeneration writes what it
         // finds and the diff is read into the notes.
         var version = ReleaseVersion.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly);
+        if (DeveloperSurfaceRule.BaselineRequired(version))
+            File.Exists(BaselinePath).Should().BeTrue(
+                $"at {version} the committed baseline is the contract an app relies on, and a regeneration "
+                + "needs it to know what may not leave");
         var refused = DeveloperSurfaceRule.Refused(version, Committed().Except(current, StringComparer.Ordinal));
         refused.Should().BeEmpty(
             $"at {version}, which carries no prerelease label, a setting an app may write stays until a "
@@ -166,6 +170,15 @@ public class DeveloperSurfaceContractTests
     public void ALineThatLeaves_IsRefused_OnlyWhenItIsTheContractsAtAStableVersion(string version, string line, bool refused)
     {
         DeveloperSurfaceRule.Refused(version, [line]).Should().HaveCount(refused ? 1 : 0);
+    }
+
+    [Theory]
+    [InlineData("1.1.0", true)]
+    [InlineData("2.0.0", true)]
+    [InlineData("0.2.0-preview.63", false)]
+    public void TheBaselineHasToBeThere_AtAStableVersion(string version, bool required)
+    {
+        DeveloperSurfaceRule.BaselineRequired(version).Should().Be(required);
     }
 
     private static List<string> Committed() =>

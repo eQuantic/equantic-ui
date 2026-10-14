@@ -125,17 +125,6 @@
     </ItemGroup>
 
     <!--
-      This repository's own projects that ship nothing use the native track because they are the
-      SDK: the native assemblies' tests, the icon tool, the Photon design host. A project that ships
-      nothing passes nothing on, so the mark has nobody here to warn. A shipping assembly never gets
-      this: a contract assembly that used the native track would pass it on to every app, and the
-      native ones are marked themselves, which silences it between them.
-    -->
-    <PropertyGroup Condition="'$(_EqDeclaresPublicApi)' != 'true'">
-        <NoWarn>$(NoWarn);EQX0001</NoWarn>
-    </PropertyGroup>
-
-    <!--
       A STABLE VERSION REMOVES NO MEMBER OF THE CONTRACT (#323).
 
       The preview's rule (CLAUDE.md, "No member survives to keep an old shape alive") removes a member
