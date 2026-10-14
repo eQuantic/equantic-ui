@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=301 · fenced=111 · invalid-probe=6 · native=615
+# totals: eq=301 · fenced=110 · invalid-probe=6 · native=616
 fenced:EQ2004  Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -282,7 +282,7 @@ fenced:EQ2004  Decimal.Remainder(Decimal,Decimal)
 eq             Decimal.Round(Decimal)
 eq             Decimal.Round(Decimal,Int32)
 eq             Decimal.Round(Decimal,Int32,MidpointRounding)
-fenced:EQ2004  Decimal.Scale
+native         Decimal.Scale
 fenced:EQ2004  Decimal.Sign(Decimal)
 fenced:EQ2004  Decimal.Subtract(Decimal,Decimal)
 fenced:EQ2004  Decimal.ToByte(Decimal)

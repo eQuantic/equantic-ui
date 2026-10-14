@@ -6,6 +6,7 @@
   `?.` too, unless the browser carries it by its name: a string's or an array's length, an
   exception's twin, a dictionary's pair, an interface's member. Every read of the kind the suites
   make was logged first, which found a char's casing converting its culture as a value. The BCL
-  audit's 17 reads that were `native` and named nothing are fenced; a property pattern is still not
-  asked (#920) ([#847](https://github.com/eQuantic/equantic-ui/issues/847)). Proposed and archived
+  audit's 16 reads that were `native` and named nothing are fenced, and a decimal's `Scale`, which
+  the runtime's `Decimal` keeps, is held against .NET instead; a property pattern is still not asked
+  (#920) ([#847](https://github.com/eQuantic/equantic-ui/issues/847)). Proposed and archived
   through OpenSpec (`openspec/specs/transpiler-bcl`).

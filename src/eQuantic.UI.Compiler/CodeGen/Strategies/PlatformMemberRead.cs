@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
@@ -40,6 +41,8 @@ internal static class PlatformMemberRead
         ("System.ObjectDisposedException", "ObjectName"),
         ("System.TypeInitializationException", "TypeName"),
         ("System.AggregateException", "InnerExceptions"),
+        // The runtime's Decimal, whose scale is the one .NET keeps (DecimalConformanceTests).
+        ("System.Decimal", "Scale"),
         // The pair a dictionary yields, which $eq.collections.pair makes.
         ("System.Collections.Generic.KeyValuePair`2", "Key"),
         ("System.Collections.Generic.KeyValuePair`2", "Value"),
@@ -50,15 +53,25 @@ internal static class PlatformMemberRead
     /// is a property or a field of a .NET type that no value in the browser carries by its name. A chain
     /// is refused once, at its first such member (<c>CultureInfo.CurrentCulture</c> in
     /// <c>CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator</c>), through <c>?.</c> as
-    /// through <c>.</c>: what is read from that member's value is the same refusal. The report is
-    /// placed at the in-tree read, which a <c>?.</c> tail stands for after it is rebuilt.
+    /// through <c>.</c>: what is read from a refused read is the same refusal. A receiver is converted
+    /// before what is read from it, so it has been refused, or not, by then; one a strategy translated
+    /// (an indexer, <c>Nullable&lt;T&gt;.Value</c>) was not, and a read made on it is asked as any
+    /// other. The report is placed at the in-tree read, which a <c>?.</c> tail stands for after it is
+    /// rebuilt.
     /// </summary>
     internal static bool ReportIfUntranslated(ISymbol? symbol, SyntaxNode node, ConversionContext context)
     {
-        if (!NothingCarries(symbol)) return false;
         var read = context.SemanticHelper.Original(node);
-        if (ReceiverOf(read) is { } receiver && NothingCarries(context.SemanticHelper.GetSymbol(receiver))) return false;
+        if (ReceiverOf(read) is { } receiver && context.RefusedReads.Contains(receiver))
+        {
+            // Read from a refused read, and so refused with it, whatever it is: what is read from it
+            // next is too.
+            context.RefusedReads.Add(read);
+            return false;
+        }
+        if (!NothingCarries(symbol)) return false;
 
+        context.RefusedReads.Add(read);
         context.Report(read, ConversionSeverity.Error, "EQ2004",
             $"'{symbol!.ContainingType.ToDisplayString()}.{symbol.Name}' has no JavaScript translation: no value the "
             + "browser holds carries it, so the read would name a member nothing defines. Read it in a "
@@ -76,13 +89,25 @@ internal static class PlatformMemberRead
         && !symbol.Locations.Any(location => location.IsInSource)
         && !CarriedByName.Contains(Root(symbol));
 
-    /// <summary>What a read is made on: the left of a <c>.</c>, and for a <c>?.</c> binding the
-    /// receiver its conditional access tests.</summary>
-    private static ExpressionSyntax? ReceiverOf(SyntaxNode read) => read switch
+    /// <summary>
+    /// What a read is made on, its parentheses and a <c>!</c> looked through: the left of a <c>.</c>,
+    /// and for a <c>?.</c> binding the receiver of the conditional access whose tail holds it. Not the
+    /// nearest conditional access: <c>a?.B?.C</c> is <c>a?.(.B?.C)</c>, and <c>.B</c> is the inner
+    /// one's receiver, not part of its tail.
+    /// </summary>
+    private static SyntaxNode? ReceiverOf(SyntaxNode read) => Bare(read switch
     {
         MemberAccessExpressionSyntax access => access.Expression,
-        MemberBindingExpressionSyntax binding => binding.FirstAncestorOrSelf<ConditionalAccessExpressionSyntax>()?.Expression,
+        MemberBindingExpressionSyntax binding => binding.Ancestors().OfType<ConditionalAccessExpressionSyntax>()
+            .FirstOrDefault(conditional => conditional.WhenNotNull.Span.Contains(binding.Span))?.Expression,
         _ => null,
+    });
+
+    private static ExpressionSyntax? Bare(ExpressionSyntax? expression) => expression switch
+    {
+        ParenthesizedExpressionSyntax parenthesized => Bare(parenthesized.Expression),
+        PostfixUnaryExpressionSyntax { RawKind: (int)SyntaxKind.SuppressNullableWarningExpression } suppressed => Bare(suppressed.Operand),
+        _ => expression,
     };
 
     /// <summary>The type that declares the member first, by its metadata name, and the member's name.</summary>
