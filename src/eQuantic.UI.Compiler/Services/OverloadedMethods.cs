@@ -575,7 +575,10 @@ internal static class OverloadedMethods
     /// <summary>
     /// A member that lands on the slot of a field a base from another project holds on each instance
     /// (<see cref="FieldSlotExtensions.FieldItLandsOn"/>, #740): the field would hide it, so every access
-    /// to the member would answer the field.
+    /// to the member would answer the field. A partial method with no implementation is no member of the
+    /// twin, and lands on nothing (found in Copilot's review of #931). A component's server-only method
+    /// never meets one either: every class a component derives from is a component, whose fields keep
+    /// their own refusal and never move.
     /// </summary>
     private static void CheckInheritedFields(TypeDeclarationSyntax type, string sourcePath, SemanticModel model,
         List<CompilationError> errors)
@@ -583,6 +586,7 @@ internal static class OverloadedMethods
         if (model.SyntaxTree != type.SyntaxTree || model.GetDeclaredSymbol(type) is not INamedTypeSymbol declared) return;
         foreach (var member in declared.GetMembers())
         {
+            if (member is IMethodSymbol { IsPartialDefinition: true, PartialImplementationPart: null }) continue;
             if (member.FieldItLandsOn() is not { } field) continue;
             if (member.Locations.FirstOrDefault(location => location.SourceTree == type.SyntaxTree
                     && type.Span.Contains(location.SourceSpan)) is not { } declaredAt)

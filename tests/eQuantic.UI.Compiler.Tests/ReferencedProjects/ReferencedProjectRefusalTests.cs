@@ -728,11 +728,13 @@ public sealed class ReferencedProjectRefusalTests
         built.Modules.Should().NotContain("Status", "and nothing reached the library's, so it is no module");
     }
 
+    /// <summary>A plain class of the base project's, with a field a member of a derived class can land on.</summary>
+    private const string Holder = "namespace Domain;\n\npublic class Holder\n{\n    int amount = 1;\n    public int Read() => amount;\n}\n";
+
     /// <summary>A class of the base project's, and one that derives from it declaring a member a case
     /// apart from its field, in the project <paramref name="derivedIn"/> names.</summary>
     private static Solution Shadowed(string derivedIn)
     {
-        const string Holder = "namespace Domain;\n\npublic class Holder\n{\n    int amount = 1;\n    public int Read() => amount;\n}\n";
         const string Shadow = "namespace Domain;\n\npublic class Shadow : Holder\n{\n    public int Amount => 99;\n}\n";
         var home = Home("(new Domain.Shadow().Amount * 1000 + new Domain.Shadow().Read()).ToString()");
         return derivedIn == "Domain"
@@ -762,6 +764,24 @@ public sealed class ReferencedProjectRefusalTests
             .Which.Should().StartWith(solution.FileOf("App", "Shadow.cs") + "(")
             .And.Contain("error EQ1007").And.Contain("'Shadow.Amount'").And.Contain("'Holder.amount'");
         built.ErrorsIn("Domain").Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// A partial method with no implementation is no member of the twin, so its name lands on no field
+    /// (found in Copilot's review of #931): the refusal above counts what the twin carries.
+    /// </summary>
+    [Fact]
+    public void AnUnimplementedPartialMethodACaseApartFromAnotherProjectsField_IsNotRefused()
+    {
+        const string Shadow = "namespace Domain;\n\npublic partial class Shadow : Holder\n{\n    partial void Amount();\n    public int Twice() => Read() * 2;\n}\n";
+        using var solution = new Solution()
+            .Library("Domain", files: [("Holder.cs", Holder)])
+            .App("App", references: ["Domain"], globalUsings: SharedLibrary.Factories, files:
+                [("Model/Shadow.cs", Shadow), ("Screens/Home.cs", Home("new Domain.Shadow().Twice().ToString()"))]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Module("Shadow").Should().NotContain("amount(", "a partial method with no implementation writes nothing");
     }
 
     [Fact]
