@@ -1,1 +1,5 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Types.StructuralEqualsStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TupleText = "$eq.text.tuple" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TupleTextGroup = "$eq.text.tupleGroup" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.StructuralEqualsStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!

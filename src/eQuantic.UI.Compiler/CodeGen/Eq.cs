@@ -190,6 +190,12 @@ public static class Eq
     /// <summary>The method group <c>value.ToString</c> of a value the browser holds as plain data: a
     /// delegate writing <see cref="RecordText"/> of the value it was made with.</summary>
     public const string RecordTextGroup = "$eq.text.recordGroup";
+    /// <summary>The text .NET writes for a value tuple (<c>(1, a)</c>), an array here, each element as
+    /// its type writes it, and the empty string for a null one.</summary>
+    public const string TupleText = "$eq.text.tuple";
+    /// <summary>The method group <c>value.ToString</c> of a value tuple: a delegate writing
+    /// <see cref="TupleText"/> of the value it was made with.</summary>
+    public const string TupleTextGroup = "$eq.text.tupleGroup";
     public const string StringFormat = "$eq.text.stringFormat";
     /// <summary><c>string.Compare</c> by a <c>StringComparison</c>: a null first, a culture comparison
     /// by the platform's collator, an ordinal one answering .NET's difference.</summary>
