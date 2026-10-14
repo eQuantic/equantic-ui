@@ -79,6 +79,8 @@ public class LinqKeyEqualityConformanceTests
             "var c = new[] { new Code(1), new Code(1), new Code(2) }; return c.Distinct().Count() + \"|\" + c.Union(new[] { new Code(2) }).Count() + \"|\" + c.Intersect(new[] { new Code(1) }).Count() + \"|\" + c.Except(new[] { new Code(1) }).Count();"), // 2|2|1|1
         ("GroupBy, a join, DistinctBy and a lookup ask its own Equals",
             "var c = new[] { new Code(1), new Code(1), new Code(2) }; return c.GroupBy(x => x).Count() + \"|\" + c.Join(new[] { new Code(1) }, x => x, y => y, (x, y) => 0).Count() + \"|\" + c.DistinctBy(x => x).Count() + \"|\" + c.ToLookup(x => x)[new Code(1)].Count();"), // 2|2|2|2
+        ("GroupJoin, the other By forms and a lookup's grouping ask its own Equals",
+            "var c = new[] { new Code(1), new Code(1), new Code(2) }; return c.GroupJoin(new[] { new Code(1) }, x => x, y => y, (x, ys) => ys.Count()).Sum() + \"|\" + c.UnionBy(new[] { new Code(3) }, x => x).Count() + \"|\" + c.IntersectBy(new[] { new Code(1) }, x => x).Count() + \"|\" + c.ExceptBy(new[] { new Code(1) }, x => x).Count() + \"|\" + c.ToLookup(x => x).Count;"), // 2|3|1|1|2
         ("a class that does not override Equals is found by reference",
             "var p = new Plain(1); var ps = new[] { p, p, new Plain(1) }; return ps.Distinct().Count() + \"|\" + ps.GroupBy(x => x).Count() + \"|\" + ps.Union(new[] { p }).Count() + \"|\" + ps.Join(new[] { p }, x => x, y => y, (x, y) => 0).Count();"), // 2|2|2|2
         ("a class that does not override Equals asks the Equals its subclass overrides",
