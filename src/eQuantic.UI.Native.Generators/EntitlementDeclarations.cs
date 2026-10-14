@@ -24,10 +24,7 @@ internal static class EntitlementDeclarations
         "eQuantic.UI", DiagnosticSeverity.Error, isEnabledByDefault: true);
 
     internal static bool MightDeclare(SyntaxNode node) =>
-        node is InvocationExpressionSyntax
-        {
-            Expression: MemberAccessExpressionSyntax { Name.Identifier.ValueText: var name },
-        } && name.StartsWith("Require", System.StringComparison.Ordinal);
+        BuilderCall.MethodName(node) is { } name && name.StartsWith("Require", System.StringComparison.Ordinal);
 
     /// <summary>The entitlement key, or null when this call is not one of ours. The location comes
     /// back with it so a non-constant key can be reported where it was written.</summary>
