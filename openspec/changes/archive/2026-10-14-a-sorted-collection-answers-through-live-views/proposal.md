@@ -40,15 +40,18 @@ held their keys or values, and `SortedSet.GetViewBetween` did not compile:
   operations: it never merges, a set compared with it asks it for a view of its own range, and its
   `ExceptWith` asks the count it last counted, which is taken again where .NET reads the view as a
   collection: its `Count`, a copy into a list or a set, and a set's operation that asks it its count.
+  Two sorted sets of one enum share its comparer, as two of any other element type do, so a set of an
+  enum takes a view's paths too.
 - A dictionary's `TryAdd` is the runtime class's, through the extension and its static form alike, and a
   lookup or a `TryAdd` is the dictionary's only when the call binds to System.Collections.Generic's: an
   extension of the app's own under one of those names was lowered as the dictionary's own.
 
 ## Impact
 
-- Runtime: `utils/view.ts` (new, the live view), `utils/dictionary.ts`, `utils/sorted.ts`, and
-  `utils/linq.ts` and `utils/list.ts`, which read a sorted set's count before they copy it, and
-  `utils/collections.ts`, whose `Remove` asks a view to refuse before it searches.
+- Runtime: `utils/view.ts` (new, the live view), `utils/dictionary.ts` and `utils/sorted.ts`;
+  `utils/linq.ts` and `utils/list.ts`, which read a sorted set's count before they copy it;
+  `utils/collections.ts`, whose `Remove` asks a view to refuse before it searches; and
+  `utils/ordering.ts`, which answers one comparer per enum.
 - eqc: `QueueStackStrategy` lowers `GetViewBetween`, and `DictionaryStrategy` with `DictionaryLookup`
   lowers `TryAdd` through `CollectionExtensions`, asks a lookup's method which type declares it, and
   lowers a `Remove(key, out _)` that finds nothing to no change. The BCL surface baseline moves

@@ -271,7 +271,7 @@ an ArgumentOutOfRangeException for the bound outside the view's range, before th
 The view SHALL take .NET's paths through the set operations: it SHALL never merge, so a `UnionWith` or a
 `SymmetricExceptWith` adds element by element and refuses the first outside the range; a set of its
 comparer compared with another SHALL be asked for a view of the other's range, which a narrower view
-refuses; and its `ExceptWith` SHALL ask the count it last counted. The count SHALL be taken again where
+refuses, two sets of one element type, an enum's included, having one comparer; and its `ExceptWith` SHALL ask the count it last counted. The count SHALL be taken again where
 .NET reads the view as a collection: reading `Count`, a copy into a list or a set, and a set's operation
 that asks the view its count; a walk SHALL NOT take it again. Two divergences are known: LINQ takes it again
 before every operator, `First` and `Where` included, which only walk the view in .NET, and `AddRange` does
@@ -291,6 +291,11 @@ not take it, where .NET's does.
 
 - **WHEN** browser-side code calls `v.ExceptWith(new[] { 3, 7 })` on a view whose `Count` was never read, and again on one whose `Count` was read
 - **THEN** the first removes nothing and the second removes 3, as in .NET
+
+#### Scenario: A set of an enum compared with a view
+
+- **WHEN** browser-side code asks `v.IsSupersetOf(new SortedSet<Rank> { Rank.Zeta, Rank.Mid })` of a view from `Rank.Alpha` to `Rank.Mid`, `Rank.Zeta` ordered before `Rank.Alpha`
+- **THEN** it throws "Specified argument was out of the range of valid values. (Parameter 'lowerValue')", as in .NET; it answered false, each set of the enum having a comparer of its own
 
 #### Scenario: A count another set asked
 

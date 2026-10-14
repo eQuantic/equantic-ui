@@ -85,8 +85,7 @@ function outOfRange(parameter: string): Error {
  * shows (`1.0m` and `1.00m`): where .NET merges two sets of one comparer, the other set's; where it
  * adds the other's elements one by one, the first added. Two sets have one comparer here when they
  * compare with the same function, which two sets of one element type do ({@link comparerOf} answers
- * one function per {@link Ordering}), an enum's aside, whose names are equal only when identical, so
- * either path keeps the same elements.
+ * one function per {@link Ordering}, an enum's included).
  *
  * `RemoveWhere` asks its predicate in this set's order, where .NET walks its red-black tree breadth
  * first (#766): a predicate with no effect of its own answers the same, and nothing else here sees

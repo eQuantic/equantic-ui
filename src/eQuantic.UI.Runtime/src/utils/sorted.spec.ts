@@ -382,6 +382,13 @@ describe('SortedSet — GetViewBetween (#865)', () => {
   const outOfRange = (parameter: string) =>
     `Specified argument was out of the range of valid values. (Parameter '${parameter}')`;
 
+  it('shares one comparer between two sets of one enum, each built with its own order', () => {
+    const set = sortedSet(['zeta', 'alpha', 'mid'], { zeta: 0, alpha: 1, mid: 5 });
+    const v = set.getViewBetween('alpha', 'mid');
+    const other = sortedSet(['zeta', 'mid'], { zeta: 0, alpha: 1, mid: 5 });
+    expect(() => v.isSupersetOf(other)).toThrow(outOfRange('lowerValue'));
+  });
+
   it('holds the range of its set, live both ways', () => {
     const { set, view: v } = view();
     expect([...v]).toEqual([3, 5]);

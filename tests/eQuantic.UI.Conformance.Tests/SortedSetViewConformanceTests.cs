@@ -134,4 +134,22 @@ public class SortedSetViewConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    private const string Ranks = "var t = new SortedSet<Rank> { Rank.Zeta, Rank.Alpha, Rank.Mid, Rank.Top }; var v = t.GetViewBetween(Rank.Alpha, Rank.Mid); ";
+
+    /// <summary>
+    /// Two sorted sets of one enum share its comparer, as .NET's share <c>Comparer&lt;T&gt;.Default</c>, so a
+    /// set of an enum compared with a view takes the view's paths, and a view narrower than the other's range
+    /// refuses it. Each set had a comparer of its own, and the question walked the elements and answered
+    /// false (found in review, #865).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData(Ranks + "try { return v.IsSupersetOf(new SortedSet<Rank> { Rank.Zeta, Rank.Mid }).ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }")] // "… (Parameter 'lowerValue')"
+    [InlineData(Ranks + "try { return new SortedSet<Rank> { Rank.Zeta }.IsSubsetOf(v).ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }")]         // the same
+    [InlineData(Ranks + "return new SortedSet<Rank> { Rank.Alpha }.IsSubsetOf(v) + \",\" + v.IsSupersetOf(new SortedSet<Rank> { Rank.Mid }) + \",\" + v.SetEquals(new SortedSet<Rank> { Rank.Mid, Rank.Alpha });")] // "True,True,True"
+    public void ASetOfAnEnum_SharesItsComparerWithAView(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public enum Rank { Zeta, Alpha, Mid = 5, Top = 9 }");
+    }
 }
