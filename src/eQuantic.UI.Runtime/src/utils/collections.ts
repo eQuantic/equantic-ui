@@ -20,6 +20,7 @@ import { HashSet } from './hash-set';
 import { sameBy, sameItem, type KeyEquality } from './key-equality';
 import { collectionCount } from './slots';
 import { SortedMap } from './sorted';
+import { refuseAChangeOf } from './view';
 
 export { pairComparer, sameItem } from './key-equality';
 
@@ -714,7 +715,8 @@ function removePair(dictionary: Dictionary<unknown, unknown>, pair: unknown, equ
  * asks the value what it is: a set (`HashSet<T>`) through `delete`, the way `set.Remove(x)` lowers; a
  * dictionary (`ICollection<KeyValuePair<K, V>>`) the pair whose key it holds with an equal value, as
  * .NET's does, the runtime's `Dictionary` and a sorted map alike; and a twin
- * with a `remove` of its own (`LinkedList<T>`, `SortedSet<T>`) through it. An
+ * with a `remove` of its own (`LinkedList<T>`, `SortedSet<T>`) through it. A dictionary's view of its
+ * keys or values refuses, as .NET's do, whether or not it holds the value (#864). An
  * array stands for a `List<T>` and for a `T[]` alike, and .NET throws for the second, which this side
  * cannot tell apart.
  */
@@ -726,6 +728,8 @@ export function remove<T>(
   if (list instanceof HashSet || list instanceof Set) return list.delete(value);
   if (isDictionary(list)) return removePair(list, value, equality);
   if (!Array.isArray(list)) return (list as { remove(value: T): boolean }).remove(value);
+  // A dictionary's view is an array to everything here, and refuses before it is searched.
+  refuseAChangeOf(list);
   const same = sameBy(equality);
   for (let index = 0; index < list.length; index++) {
     if (same(list[index], value)) {

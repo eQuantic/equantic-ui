@@ -2,6 +2,7 @@ import { exception } from './exceptions';
 import { identityHash } from './hash';
 import { sameBy, type KeyEquality } from './key-equality';
 import { collectionCount, getPrime, SlotTable } from './slots';
+import { liveView } from './view';
 // The pairs carry a long key as the BigInt it is, which JSON.stringify writes through the `toJSON`
 // this module installs: without it, a dictionary keyed by a long could not be written at all.
 import './long';
@@ -23,9 +24,6 @@ export type Pair<K, V> = [K, V] & { readonly key: K; readonly value: V };
 export function pair<K, V>(key: K, value: V): Pair<K, V> {
   return Object.assign([key, value] as [K, V], { key, value });
 }
-
-/** The array methods that change an array, which a dictionary's view refuses. */
-const MUTATORS: ReadonlySet<string> = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin']);
 
 /**
  * .NET's `Dictionary<TKey, TValue>`, the class every C# `Dictionary`, `IDictionary` and
@@ -196,66 +194,21 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
     return (this.valueView ??= this.view('value', (entry) => entry.value));
   }
 
-  /**
-   * A view that reads the dictionary when it is read. It is an array to everything a lowering hands
-   * it to, `length`, an index, the array methods and `JSON.stringify` alike, through a Proxy over a
-   * frozen snapshot taken again whenever the dictionary changed, so reading it costs a copy once per
-   * change and never per element. Read-only, as .NET's collections of a dictionary are: a write to it
-   * throws.
-   */
+  /** A live view of the keys or the values ({@link liveView}), which refuses a change in a dictionary's
+   *  words, as .NET's collections of a dictionary refuse ICollection<T>'s mutators. */
   private view<T>(collection: 'key' | 'value', pick: (entry: { key: K; value: V }) => T): T[] {
-    let snapshot: readonly T[] = [];
-    let seen = -1;
-    const current = (): readonly T[] => {
-      if (seen !== this.revision) {
+    return liveView({
+      read: () => {
         const items: T[] = [];
         for (const entry of this.table.entries) if (entry !== undefined) items.push(pick(entry));
-        snapshot = Object.freeze(items);
-        seen = this.revision;
-      }
-      return snapshot;
-    };
-    const walk = (): Iterator<T> => this.walk(pick);
-    const refuseMutation = (): never => {
-      throw exception('System.NotSupportedException', `Mutating a ${collection} collection derived from a dictionary is not allowed.`);
-    };
-    // `KeyCollection.Contains`: a key found as the dictionary finds one, by its own comparison.
-    const contains = (key: K): boolean => this.has(key);
-    return new Proxy([] as T[], {
-      get: (_target, property) => {
-        if (property === Symbol.iterator) return walk;
-        if (property === 'contains' && collection === 'key') return contains;
-        // ICollection<T>.IsReadOnly: a dictionary's collections are, as .NET's answer, where it read
-        // undefined and a caller that asked before changing one went on to change it.
-        if (property === 'isReadOnly') return true;
-        // The count without a snapshot: a loop that changes the dictionary and reads the count each
-        // pass would copy every entry each time.
-        if (property === 'length') return this.size;
-        // A method that would change the view is refused as .NET's collections of a dictionary refuse
-        // ICollection<T>'s Add, Remove and Clear, where the frozen snapshot threw a TypeError, read as
-        // a NullReferenceException.
-        if (typeof property === 'string' && MUTATORS.has(property)) return refuseMutation;
-        const array = current();
-        // An element as it is, a delegate held as a value included: only the array's own methods
-        // are bound to the snapshot they read, where every function was, and a delegate read back
-        // was another one.
-        if (Object.prototype.hasOwnProperty.call(array, property)) return Reflect.get(array, property, array);
-        const value: unknown = Reflect.get(array, property, array);
-        return typeof value === 'function' ? value.bind(array) : value;
+        return items;
       },
-      has: (_target, property) => Reflect.has(current(), property),
-      ownKeys: () => Reflect.ownKeys(current()),
-      // An index is reported configurable, as a proxy must report a property its target lacks, and
-      // the length as the target's own is, with the view's count.
-      getOwnPropertyDescriptor: (target, property) => {
-        const array = current();
-        if (property === 'length') return { ...Reflect.getOwnPropertyDescriptor(target, 'length'), value: array.length };
-        const own = Reflect.getOwnPropertyDescriptor(array, property);
-        return own === undefined ? undefined : { ...own, configurable: true };
-      },
-      set: () => {
-        throw exception('System.NotSupportedException', `Mutating a ${collection} collection derived from a dictionary is not allowed.`);
-      },
+      revision: () => this.revision,
+      count: () => this.size,
+      walk: () => this.walk(pick),
+      // `KeyCollection.Contains`: a key found as the dictionary finds one, by its own comparison.
+      contains: collection === 'key' ? (key: T) => this.has(key as unknown as K) : undefined,
+      refusal: () => mutatingAView(collection),
     });
   }
 
@@ -333,6 +286,12 @@ export function collectionModifiedAfterInstantiation(): Error {
     'System.InvalidOperationException',
     'Collection was modified after the enumerator was instantiated.',
   );
+}
+
+/** What a view of a dictionary's keys or values throws for a change asked of it, in .NET's words, a
+ * sorted dictionary's and a sorted list's key written through the indexer included. */
+export function mutatingAView(collection: 'key' | 'value'): Error {
+  return exception('System.NotSupportedException', `Mutating a ${collection} collection derived from a dictionary is not allowed.`);
 }
 
 /**

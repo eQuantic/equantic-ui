@@ -42,4 +42,17 @@ public class QuerySyntaxConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>
+    /// A clause whose C# lowering runs through compiler-generated transparent identifiers is refused by
+    /// the build by name (EQ2008), and nothing of the query reaches a browser. #761 measured these three
+    /// through the runner before it read the build's refusals, and took the fallback (the query's source
+    /// alone) for the browser's answer: the first answered 3 where .NET answers 6.
+    /// </summary>
+    [Theory]
+    [InlineData("return (from a in new[] { 1, 2 } let f = a * 2 select f).Sum();")]                     // let
+    [InlineData("return (from a in new[] { 1, 2 } from b in new[] { 10, 20 } select a + b).Sum();")]    // a second from
+    [InlineData("return string.Join(\";\", from a in new[] { 1, 2, 3 } group a by a % 2 into g select g.Key + \":\" + g.Count());")] // into
+    public void QuerySyntax_AClauseItDoesNotLower_IsRefusedByTheBuild(string statements) =>
+        ConformanceRunner.AssertStatementsRefusedByTheBuild(statements, "EQ2008");
 }
