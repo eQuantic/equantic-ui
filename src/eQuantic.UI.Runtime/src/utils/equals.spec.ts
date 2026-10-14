@@ -71,4 +71,17 @@ describe('equalsGroup', () => {
     expect(same(held)).toBe(false);
     expect(same('standard')).toBe(false);
   });
+
+  // A tuple holding an array compares that element by reference, which the compiler says by handing
+  // the comparison its type compares by.
+  it('compares by the comparison it is handed, where the type has one of its own', () => {
+    const xs = [1];
+    const byReference = (a: unknown, b: unknown) =>
+      Array.isArray(a) && Array.isArray(b) && a[0] === b[0] && a[1] === b[1];
+    const same = equalsGroup([xs, 1], byReference);
+
+    expect(same([xs, 1])).toBe(true);
+    expect(same([[1], 1])).toBe(false);
+    expect(equalsGroup([xs, 1])([[1], 1])).toBe(true);
+  });
 });

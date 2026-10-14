@@ -118,6 +118,8 @@ import {
   recordTextGroup,
   stringFormat,
   stringFormatInvariant,
+  tupleText,
+  tupleTextGroup,
 } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
@@ -438,6 +440,9 @@ export const $eq = {
     format,
     record: recordText,
     recordGroup: recordTextGroup,
+    /** A value tuple's text, `(1, a)`, and its `ToString` method group. */
+    tuple: tupleText,
+    tupleGroup: tupleTextGroup,
     stringFormat,
     stringFormatInvariant,
     /** A number boxed with its .NET type for `string.Format`, whose arguments are objects. */
