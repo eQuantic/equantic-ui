@@ -4,8 +4,9 @@
   answer of 3 where .NET answers 6, and the build refuses the query (EQ2008), so nothing of it ever
   reaches a browser. Every entry of the harness now reads the build's refusals where the build reads
   them: the converter's errors over the text the case would run, a warning refusing nothing, and the
-  build's own verdict on the prelude's declarations, asked of `ComponentCompiler`, which brings every
-  check a build runs beside the converter (EQ1007 among them) with nothing encoded twice. A refused
+  build's own verdict on the prelude's declarations, asked of `ComponentCompiler` with the scan eqc
+  hands it, which brings every check a build runs beside the converter (EQ1007 and EQ2010 among them)
+  with nothing encoded twice. A refused
   case fails before either side runs, naming each refusal by its id and text, and a case written for
   a fence declares it (`AssertStatementsRefusedByTheBuild`) and runs nothing. The module harness reads
   every module before it keeps the ones that wrote text, where a module refused before its emitter

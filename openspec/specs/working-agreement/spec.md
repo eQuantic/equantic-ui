@@ -479,10 +479,15 @@ module before it keeps the modules that wrote text.
 - **WHEN** a case's prelude declares a record with two methods of one name
 - **THEN** the case fails before anything runs, naming EQ1007 and the record
 
+#### Scenario: A prelude only the build's scan refuses
+
+- **WHEN** a case's prelude declares a class with a field typed as a nested type of a server-only owner
+- **THEN** the case fails before anything runs, naming EQ2010 and the class
+
 #### Scenario: Two preludes that declare one type name
 
-- **WHEN** two preludes declare one type name differently, one refused with EQ1007 and one accepted,
-  and the build's verdict is asked of each in both orders
+- **WHEN** two preludes declare one type name differently, one refused (with EQ1007, or with EQ2010
+  by the build's scan) and one accepted, and the build's verdict is asked of each in both orders
 - **THEN** each answers its own verdict in either order
 
 #### Scenario: A module refused before it writes text

@@ -56,10 +56,15 @@ asked once per prelude (the cases of a class share a few), by one compiler under
 reads its standard references into native memory when it is made, which one per prelude would pay
 hundreds of times (#481, measured at about 34 MB a compiler), and one instance compiling file after
 file is how a build uses it. What one prelude leaves in that compiler decides nothing for the next,
-read in `ComponentCompiler` and what it holds: the project compilation is replaced, no resolver is
-ever handed over, the emitter clears what a module reports and names, and what survives is keyed by
-identity, never read for an error, or keyed by a name only a type .NET loads answers. The harness
-asks two preludes that declare one type name differently, in both orders, and each answers its own.
+read in `ComponentCompiler` and what it holds: the project compilation is replaced, and so is the
+scan of it eqc hands the compiler before it compiles a file (`ComponentDependencyResolver.From`), the
+emitter clears what a module reports and names, and what survives is keyed by identity, never read
+for an error, or keyed by a name only a type .NET loads answers. The scan is part of the verdict: a
+module's import net reads it, and refuses a field typed as a nested type of a server-only owner
+(EQ2010) where no fence of the converter looks, which a verdict asked with no scan accepted (found by
+Copilot's first review of #914). The harness asks two pairs of preludes that declare one type name
+differently, one told apart by the emitter's own check and one by the scan, in both orders, and
+each answers its own.
 
 **Nothing beside the converter is asked of the body.** A build would compile the body as the method
 of a plain class, the program the harness writes, and runs nothing else over such a method: the
