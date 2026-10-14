@@ -149,6 +149,36 @@ public class TupleAndAnonymousObjectConformanceTests
         """Color? some = Color.FromRgba(1, 2, 3, 4); Color? none = null; return $"[{some,40}]|[{none,4}]|" + string.Format("[{0}]", none);""",
     ];
 
+    /// <summary>
+    /// The <c>ToString</c> method group of a value whose type writes its text (an array, a list, a
+    /// dictionary, a set, a delegate, an enum): the delegate writes what the call writes, of the value as it
+    /// is when the delegate is made, read once there and refused there when it is null (#913).
+    /// </summary>
+    public static readonly string[] ToStringGroups =
+    [
+        """var xs = new[] { 1, 2 }; Func<string> text = xs.ToString; xs = new[] { 3 }; return text();""", // System.Int32[]
+        """var l = new List<int> { 1 }; var d = new Dictionary<string, int>(); var h = new HashSet<int>(); Func<int> f = () => 1; Func<string> a = l.ToString, b = d.ToString, c = h.ToString, e = f.ToString; return a() + "|" + b() + "|" + c() + "|" + e();""",
+        """int[] xs = null!; try { Func<string> t = xs.ToString; return "made"; } catch (NullReferenceException) { return "NRE"; }""", // NRE
+        """Func<string> f = Scale.Large.ToString; var s = Scale.Small; Func<string> g = s.ToString; s = Scale.Large; return f() + "|" + g();""", // Large|Small
+        """var log = ""; int[] Make() { log += "m"; return new[] { 1 }; } Func<string> t = Make().ToString; return log + "|" + t() + t() + "|" + log;""", // m|System.Int32[]System.Int32[]|m
+    ];
+
+    /// <summary>
+    /// An anonymous object or a tuple as the KEY of a LINQ operator: found as the key type's default
+    /// comparer finds it, an array member by reference, where the operators compared by `$eq.equals`, which
+    /// walks an array element by element, or by a JavaScript `Map` or `Set`, which compares by reference.
+    /// </summary>
+    public static readonly string[] LinqKeys =
+    [
+        """return new[] { 1, 2 }.GroupBy(_ => new { L = new[] { 1 } }).Count() + "|" + new[] { 1, 2 }.GroupBy(_ => (new[] { 1 }, 1)).Count() + "|" + new[] { 1, 2, 3 }.GroupBy(n => (n % 2, "x")).Count();""", // 2|2|2
+        """var xs = new[] { 1 }; var lk = new[] { 1, 2 }.ToLookup(_ => new { L = new[] { 1 } }); var same = new[] { 1, 2 }.ToLookup(_ => new { L = xs }); return lk.Count + "|" + same.Count + "|" + same[new { L = xs }].Count() + "|" + same[new { L = new[] { 1 } }].Count();""", // 2|1|2|0
+        """var a = new[] { (K: 1, V: "a"), (K: 2, V: "b") }; var b = new[] { (K: 1, W: "x") }; return string.Join(",", a.Join(b, x => new { x.K }, y => new { y.K }, (x, y) => x.V + y.W)) + "|" + string.Join(",", a.Join(b, x => (x.K, 0), y => (y.K, 0), (x, y) => x.V + y.W)) + "|" + string.Join(",", a.GroupJoin(b, x => new { x.K }, y => new { y.K }, (x, ys) => x.V + ys.Count()));""", // ax|ax|a1,b0
+        """var p = new[] { new { A = 1 }, new { A = 2 } }; var q = new[] { new { A = 1 }, new { A = 3 } }; return p.Union(q).Count() + "|" + p.Intersect(q).Count() + "|" + p.Except(q).Count();""", // 3|1|1
+        """var p = new[] { (1, "a"), (2, "b") }; var q = new[] { (1, "a") }; return p.Union(q).Count() + "|" + p.Intersect(q).Count() + "|" + p.Except(q).Count();""", // 2|1|1
+        """var xs = new[] { 1, 2, 3, 4 }; return xs.DistinctBy(n => new { Odd = n % 2 }).Count() + "|" + xs.ExceptBy(new[] { new { Odd = 1 } }, n => new { Odd = n % 2 }).Count() + "|" + xs.IntersectBy(new[] { new { Odd = 1 } }, n => new { Odd = n % 2 }).Count() + "|" + xs.UnionBy(new[] { 5 }, n => (n % 2, 0)).Count();""", // 2|1|1|2
+        """var xs = new[] { 1 }; var d = new[] { 1 }.ToDictionary(_ => new { L = xs }); var list = new List<(int[], int)> { (xs, 1) }; return d.ContainsKey(new { L = xs }) + "|" + d.ContainsKey(new { L = new[] { 1 } }) + "|" + list.Contains((new[] { 1 }, 1)) + "|" + list.IndexOf((xs, 1)) + "|" + new[] { new { L = xs } }.Contains(new { L = new[] { 1 } });""", // True|False|False|0|False
+    ];
+
     /// <summary>A value tuple's <c>Equals</c> and <c>GetHashCode</c>, measured beside its text.</summary>
     public static readonly string[] TupleEquality =
     [
@@ -176,6 +206,8 @@ public class TupleAndAnonymousObjectConformanceTests
     public static IEnumerable<object?[]> TupleTextCases() => InEveryCulture(TupleText);
     public static IEnumerable<object?[]> TupleEqualityCases() => Each(TupleEquality);
     public static IEnumerable<object?[]> AnonymousKeyCases() => Each(AnonymousKeys);
+    public static IEnumerable<object?[]> ToStringGroupCases() => Each(ToStringGroups);
+    public static IEnumerable<object?[]> LinqKeyCases() => Each(LinqKeys);
     public static IEnumerable<object?[]> DataTwinCases() => Each(DataTwinThroughTheFormatter);
 
     [SkippableTheory]
@@ -205,6 +237,22 @@ public class TupleAndAnonymousObjectConformanceTests
     [SkippableTheory]
     [MemberData(nameof(AnonymousKeyCases))]
     public void AnAnonymousKey_FindsItsEqualAsDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Prelude);
+    }
+
+    [SkippableTheory]
+    [MemberData(nameof(ToStringGroupCases))]
+    public void AToStringMethodGroup_WritesWhatTheCallWrites(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Prelude);
+    }
+
+    [SkippableTheory]
+    [MemberData(nameof(LinqKeyCases))]
+    public void AnAnonymousOrTupleKey_IsFoundByLinqAsDotNetFindsIt(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Prelude);
