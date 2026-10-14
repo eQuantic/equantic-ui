@@ -73,16 +73,24 @@ internal sealed class MethodLowering
             .OfType<IdentifierNameSyntax>()
             .Select(identifier => identifier.Identifier.ValueText)
             .ToHashSet(StringComparer.Ordinal) ?? [];
-        var parameters = string.Join(", ", method.ParameterList.Parameters
-            .Where(parameter => !OutParameters.IsOut(parameter))
+        var signature = method.ParameterList.Parameters.Where(parameter => !OutParameters.IsOut(parameter)).ToList();
+        // The names the read parameters keep, and those the unread ones took so far: an unread `y`
+        // beside a read `_y` is `__y`, never a second `_y`, which no module parses.
+        var named = signature.Where(parameter => mentioned.Contains(parameter.Identifier.ValueText))
+            .Select(parameter => parameter.Identifier.ValueText.ToJsIdentifier())
+            .ToHashSet(StringComparer.Ordinal);
+        var parameters = string.Join(", ", signature
             .Select(parameter =>
             {
                 // A parameter the body never mentions takes the underscore convention — the
                 // interface a tokenizer implements hands over state that a simple language never
                 // reads, and the runtime's own build rejects an unused name.
-                var name = mentioned.Contains(parameter.Identifier.ValueText)
-                    ? parameter.Identifier.ValueText.ToJsIdentifier()
-                    : "_" + parameter.Identifier.ValueText.ToJsIdentifier();
+                var name = parameter.Identifier.ValueText.ToJsIdentifier();
+                if (!mentioned.Contains(parameter.Identifier.ValueText))
+                {
+                    do name = "_" + name;
+                    while (!named.Add(name));
+                }
                 // An optional parameter keeps its default, converted for the parameter's type, so a
                 // caller that omits the trailing arguments runs it.
                 return ParamWithDefault(name, declaredType(parameter.Type),

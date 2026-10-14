@@ -118,6 +118,10 @@ public class RecordMethodLoweringConformanceTests
     [InlineData(
         "public record R(int V) { public int Pick(int x, int _x) => V; public int Both(int y, int _y) => _y + V; }",
         "var r = new R(1); return $\"{r.Pick(5, 6)}|{r.Both(2, 3)}\";")]
+    // …in either order, and whichever of them the body reads: the underscore never names two of them.
+    [InlineData(
+        "public record R(int V) { public int Swap(int _z, int z) => _z * 100 + V; public int Tri(int w, int _w, int __w) => __w + V; }",
+        "var r = new R(1); return $\"{r.Swap(2, 3)}|{r.Tri(4, 5, 6)}\";")]
     public void ARecordsMember_RunsAsAClassMemberDoes(string prelude, string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
