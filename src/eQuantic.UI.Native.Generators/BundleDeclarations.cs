@@ -61,10 +61,7 @@ internal static class BundleDeclarations
     ];
 
     internal static bool MightDeclare(SyntaxNode node) =>
-        node is InvocationExpressionSyntax
-        {
-            Expression: MemberAccessExpressionSyntax { Name.Identifier.ValueText: var name },
-        } && System.Array.IndexOf(Methods, name) >= 0;
+        BuilderCall.MethodName(node) is { } name && System.Array.IndexOf(Methods, name) >= 0;
 
     /// <summary>The fact, or null when this call is not one of ours.</summary>
     internal static Declaration? Read(GeneratorSyntaxContext context)
