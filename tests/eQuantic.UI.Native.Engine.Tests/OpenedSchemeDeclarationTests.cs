@@ -141,6 +141,24 @@ public class OpenedSchemeDeclarationTests
     }
 
     /// <summary>
+    /// .NET's own scheme names are <c>static readonly</c>, not <c>const</c>, and the builder's
+    /// documentation offers them: the build reads what they hold. <c>file</c> passes as a NAME and
+    /// is refused by the policy, so it is never listed.
+    /// </summary>
+    [Fact]
+    public void DotNetsOwnSchemeNames_AreReadAtBuildTime()
+    {
+        var (diagnostics, declared) = Run("""
+            builder.Workspace.Opens(System.Uri.UriSchemeMailto).Opens(System.Uri.UriSchemeHttps);
+            """, IosStandIn);
+
+        diagnostics.Should().BeEmpty();
+        Schemes(declared).Should().Equal("https", "mailto");
+        Run("builder.Workspace.Opens(System.Uri.UriSchemeFile);", IosStandIn).Declared
+            .Should().BeNull("the builder refuses file at this line when the app starts");
+    }
+
+    /// <summary>
     /// The named doors open at run time exactly the scheme the build lists. DERIVED: every public
     /// <c>Opens…</c> method of the builder that takes nothing is called both ways, so a door added
     /// without its scheme in the shared rule fails here instead of opening a link a phone then says

@@ -21,7 +21,7 @@ public sealed class MacUrlLauncher(OpenUrlPolicy policy, ILogger<MacUrlLauncher>
     protected override ValueTask<bool> Hand(Uri url)
     {
         var native = Url(url);
-        return new(native != IntPtr.Zero && SendBool(Workspace(), Sel("openURL:"), native));
+        return new(native != IntPtr.Zero && SendBool(SharedWorkspace.Get(), Sel("openURL:"), native));
     }
 
     /// <summary>
@@ -33,18 +33,9 @@ public sealed class MacUrlLauncher(OpenUrlPolicy policy, ILogger<MacUrlLauncher>
     {
         var native = Url(url);
         return native != IntPtr.Zero
-            && Send(Workspace(), Sel("URLForApplicationToOpenURL:"), native) != IntPtr.Zero;
+            && Send(SharedWorkspace.Get(), Sel("URLForApplicationToOpenURL:"), native) != IntPtr.Zero;
     }
 
     private static IntPtr Url(Uri url) =>
         Send(AppKit.Class("NSURL"), Sel("URLWithString:"), NSString(url.AbsoluteUri));
-
-    /// <summary>
-    /// The shared workspace, with AppKit LOADED first. Nothing here can assume the runner already
-    /// did it: a capability is resolved from the container and the container is built before the
-    /// window, and a test or a tool may hold one with no window at all. Without the dlopen,
-    /// <c>AppKit.Class("NSWorkspace")</c> answers nil and every method returns false, which looks
-    /// exactly like "the system declined" and is not.
-    /// </summary>
-    private static IntPtr Workspace() => Send(AppKit.Class("NSWorkspace"), Sel("sharedWorkspace"));
 }

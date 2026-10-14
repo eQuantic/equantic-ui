@@ -24,7 +24,7 @@ public sealed class MacWorkspace : IWorkspace
         // `selectFile:inFileViewerRootedAtPath:` with an EMPTY root is the documented way to say
         // "wherever it lives" — a root of the file's own directory opens a second window rooted
         // there instead, which is not what "show me where this is" means.
-        return SendBool(Workspace(), Sel("selectFile:inFileViewerRootedAtPath:"),
+        return SendBool(SharedWorkspace.Get(), Sel("selectFile:inFileViewerRootedAtPath:"),
             NSString(path), NSString(""));
     }
 
@@ -36,18 +36,8 @@ public sealed class MacWorkspace : IWorkspace
         // Reveal's job and not this one's — and a caller who meant Reveal would never find out.
         if (!File.Exists(path)) return false;
         var url = Send(AppKit.Class("NSURL"), Sel("fileURLWithPath:"), NSString(path));
-        return url != IntPtr.Zero && SendBool(Workspace(), Sel("openURL:"), url);
+        return url != IntPtr.Zero && SendBool(SharedWorkspace.Get(), Sel("openURL:"), url);
     }
-
-    /// <summary>
-    /// The shared workspace, with AppKit LOADED first. Nothing here can assume the runner already
-    /// did it: a capability is resolved from the container and the container is built before the
-    /// window, and a test or a tool may hold one with no window at all. Without the dlopen,
-    /// <c>AppKit.Class("NSWorkspace")</c> answers nil and every method returns false — which looks
-    /// exactly like "the system declined" and is not. Found by a probe that revealed /Applications
-    /// and was told no.
-    /// </summary>
-    private static IntPtr Workspace() => Send(AppKit.Class("NSWorkspace"), Sel("sharedWorkspace"));
 
     /// <summary>
     /// A relative path is refused, not resolved. Resolving it — here or in NSWorkspace — means

@@ -9,8 +9,9 @@ namespace eQuantic.UI.Native.Shell.Android;
 /// A VIEW intent, which is how Android is handed a URL: the system resolves it to whatever claims
 /// the scheme (a browser, the mail app, the dialer, a map) and starts it.
 /// <para>
-/// <c>startActivity</c> answers before it returns: it throws when nothing claims the intent, and
-/// that is this contract's ordinary false.
+/// <c>startActivity</c> answers before it returns: it throws when nothing claims the intent, or when
+/// what claims it may not be started by this app (an activity that is not exported, or one behind a
+/// permission), and both are this contract's ordinary false: the system declined.
 /// </para>
 /// <para>
 /// The QUESTION needs the manifest. Since Android 11 an app sees only the other apps its manifest
@@ -33,6 +34,10 @@ internal sealed class AndroidUrlLauncher(OpenUrlPolicy policy, ILogger<AndroidUr
             return new(true);
         }
         catch (ActivityNotFoundException)
+        {
+            return new(false);
+        }
+        catch (Java.Lang.SecurityException)
         {
             return new(false);
         }

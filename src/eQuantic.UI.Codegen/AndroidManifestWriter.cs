@@ -1,3 +1,5 @@
+using System.Security;
+
 namespace eQuantic.UI.Codegen;
 
 /// <summary>
@@ -32,13 +34,10 @@ public sealed class AndroidManifestWriter : CodeWriter
                 using (BeginScope("<intent>", "</intent>"))
                 {
                     AppendLine("<action android:name=\"android.intent.action.VIEW\" />");
-                    AppendLine($"<data android:scheme=\"{Escape(scheme)}\" />");
+                    AppendLine($"<data android:scheme=\"{SecurityElement.Escape(scheme)}\" />");
                 }
             }
         }
         return this;
     }
-
-    private static string Escape(string value) => value
-        .Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
 }

@@ -26,7 +26,7 @@ internal static class WorkspaceDeclarations
         "The scheme passed to builder.Workspace.Opens() is built at run time, and a phone answers "
         + "CanOpen only for the schemes its manifest lists, which is written at BUILD time. The "
         + "app would open the link and still be told nothing opens it. Pass something the "
-        + "compiler can evaluate: a literal or a const.",
+        + "build can read: a literal, a const, or one of .NET's own scheme names (Uri.UriSchemeMailto).",
         "eQuantic.UI", DiagnosticSeverity.Error, isEnabledByDefault: true);
 
     /// <summary>
@@ -44,10 +44,7 @@ internal static class WorkspaceDeclarations
     }
 
     internal static bool MightDeclare(SyntaxNode node) =>
-        node is InvocationExpressionSyntax
-        {
-            Expression: MemberAccessExpressionSyntax { Name.Identifier.ValueText: var name },
-        } && name.StartsWith("Opens", System.StringComparison.Ordinal);
+        BuilderCall.MethodName(node) is { } name && name.StartsWith("Opens", System.StringComparison.Ordinal);
 
     /// <summary>The scheme a call opens, or null when this call is not one of ours, or opens
     /// nothing the builder would accept.</summary>
@@ -64,8 +61,31 @@ internal static class WorkspaceDeclarations
         // The general form, `Opens("slack")`. A name the builder refuses is nothing to write: the
         // builder says so itself when the app starts, by throwing at this very line.
         if (invocation.Arguments.Length != 1) return null;
-        return invocation.Arguments[0].Value.ConstantValue is { HasValue: true, Value: string declared }
-            ? BundleFactRule.Scheme(declared) is { } scheme ? new Declaration(scheme, location) : null
+        return Constant(invocation.Arguments[0].Value) is { } declared
+            ? BundleFactRule.Scheme(declared) is { } scheme && scheme != FileScheme ? new Declaration(scheme, location) : null
             : new Declaration(null, location);
+    }
+
+    /// <summary><c>file</c> passes as a scheme NAME and is refused by the policy itself: a file has
+    /// typed doors. Declaring it would list a scheme the app can never open.</summary>
+    private const string FileScheme = "file";
+
+    /// <summary>
+    /// The text an argument is known to hold at build time: a constant, or one of .NET's own scheme
+    /// names. <c>Uri.UriSchemeMailto</c> and its siblings are <c>static readonly</c>, not <c>const</c>,
+    /// so the compiler has no value for them, and the builder's own documentation offers them. Their
+    /// value is read from the <see cref="System.Uri"/> this generator runs on, by the field's name, so
+    /// no list here can fall behind the ones .NET adds.
+    /// </summary>
+    private static string? Constant(IOperation argument)
+    {
+        if (argument.ConstantValue is { HasValue: true, Value: string constant }) return constant;
+        return argument is IFieldReferenceOperation
+        {
+            Field: { IsStatic: true, IsReadOnly: true, Name: var name, ContainingType: var type },
+        } && type?.ToDisplayString() == "System.Uri" && name.StartsWith("UriScheme", System.StringComparison.Ordinal)
+            ? typeof(System.Uri).GetField(name, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+                ?.GetValue(null) as string
+            : null;
     }
 }
