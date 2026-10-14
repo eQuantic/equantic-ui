@@ -59,6 +59,23 @@ public class TupleAndAnonymousObjectLoweringTests
     }
 
     [Fact]
+    public void DistinctOverAnonymousObjects_KeepsTheFirstOfEachByTheirTypesEquality()
+    {
+        // A Set kept every anonymous object, each a reference of its own.
+        TestHelper.ConvertExpression("new[] { new { A = 1 } }.Distinct()")
+            .Should().Be("[...$eq.collections.hashSet(true, [{ a: 1 }])]");
+        TestHelper.ConvertExpression("new[] { new { L = new[] { 1 } } }.Distinct()")
+            .Should().Be("[...$eq.collections.hashSet($eq.collections.memberEquality({ l: false }), [{ l: [1] }])]");
+    }
+
+    [Fact]
+    public void AnAnonymousObject_ReachesStringFormatAsItsText()
+    {
+        TestHelper.ConvertExpression("{ var s = string.Format(\"{0,5}\", new { A = 1 }); }")
+            .Should().Contain("$eq.text.stringFormat('{0,5}', $eq.text.record({ a: 1 }, '', [['A', 'int32']]))");
+    }
+
+    [Fact]
     public void ATuplesEquals_IsEqEquals_UnlessAnElementComparesOtherwise()
     {
         TestHelper.ConvertExpression("(1, \"a\").Equals((1, \"a\"))").Should().Be("$eq.equals([1, 'a'], [1, 'a'])");

@@ -184,15 +184,17 @@ public static class StringConversion
     }
 
     /// <summary>
-    /// Whether a value of the type reaches a formatter as its TEXT: a value tuple and an anonymous object,
-    /// which the browser holds as an array and a plain object, whose text only the static type can write,
-    /// and which .NET never formats, neither being <c>IFormattable</c>: a format written for one is
-    /// ignored, and an alignment pads its <c>ToString</c>. An interpolation hole with a format or an
-    /// alignment and an argument of <c>string.Format</c> hand the formatter that text, which it pads;
-    /// handed the value, it wrote JavaScript's <c>1,2</c> and <c>[object Object]</c> (#762).
+    /// Whether a value of the type reaches a formatter as its TEXT: a value tuple, an anonymous object and
+    /// a value the browser holds as data (<c>[TwinIsData]</c>, <c>Color</c>, <c>Curve</c>), held as an array
+    /// and as plain objects, whose text only the static type can write, and which .NET never formats, none
+    /// being <c>IFormattable</c>: a format written for one is ignored, and an alignment pads its
+    /// <c>ToString</c>. An interpolation hole with a format or an alignment and an argument of
+    /// <c>string.Format</c> hand the formatter that text, which it pads; handed the value, it wrote
+    /// JavaScript's <c>1,2</c> and <c>[object Object]</c> (#762).
     /// </summary>
     internal static bool ReachesTheFormatterAsText(ITypeSymbol? type) =>
-        type.UnwrapNullable() is INamedTypeSymbol { IsTupleType: true } or INamedTypeSymbol { IsAnonymousType: true };
+        type.UnwrapNullable() is INamedTypeSymbol { IsTupleType: true } or INamedTypeSymbol { IsAnonymousType: true }
+        || type.UnwrapNullable().TwinIsData();
 
     /// <summary>
     /// The value's text, as its <c>ToString()</c> writes it: what a concatenation writes, and

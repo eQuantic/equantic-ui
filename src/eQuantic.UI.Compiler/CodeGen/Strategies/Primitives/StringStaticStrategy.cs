@@ -333,11 +333,15 @@ public class StringStaticStrategy : IConversionStrategy
                 ? BoxOf(ElementTypeOf(context.SemanticHelper.GetType(value.Value))) is { } spreadBox
                     ? $"...Array.from({text}, ($value) => {spreadBox("$value")})"
                     : $"...{text}"
-                : Boxed(value.Value, context) is { } boxed && StringConversion.ReachesTheFormatterAsText(boxed)
-                    ? JsExprWriter.Write(StringConversion.Of(boxed, JsExpr.Opaque(text), context))
-                    : BoxOf(Boxed(value.Value, context)) is { } box
-                        ? box(text)
-                        : text;
+                : Written(Boxed(value.Value, context), text);
+        // A value written in place: as its text where only its type can write that, boxed with its kind
+        // where it is a number, and as it is otherwise.
+        string Written(ITypeSymbol? boxed, string text) =>
+            StringConversion.ReachesTheFormatterAsText(boxed)
+                ? JsExprWriter.Write(StringConversion.Of(boxed!, JsExpr.Opaque(text), context))
+                : BoxOf(boxed) is { } box
+                    ? box(text)
+                    : text;
 
         // In the written order, the call is text as it always was. Out of it, the parts are the
         // arguments in the order C# evaluates them and the call names them where it passes them:
