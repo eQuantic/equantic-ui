@@ -1,27 +1,19 @@
 using eQuantic.UI.Primitives;
-using Microsoft.Extensions.Logging;
 using static eQuantic.UI.Native.Shell.Apple.ObjC;
 
 namespace eQuantic.UI.Native.Shell.MacOS;
 
 /// <summary>
-/// <c>NSWorkspace</c>, which is the Mac's one answer to every one of these and has been since
-/// before any of this was a framework.
+/// <c>NSWorkspace</c>, which is the Mac's one answer to both of these and has been since before any
+/// of this was a framework.
 /// <para>
 /// Each call answers with what NSWorkspace answered, unchanged. A false here means the system
-/// declined — the path vanished, no app claims the scheme — and inventing an exception for it would
-/// turn an ordinary outcome into one every call site has to guard.
-/// </para>
-/// <para>
-/// Except for what never reaches NSWorkspace at all. A URL is handed over only if this app's
-/// <see cref="OpenUrlPolicy"/> hands its scheme over — the web, the app's own schemes, and what
-/// <c>builder.Workspace</c> opened — because <c>openURL:</c> routes to whatever claims the scheme,
-/// and a URL that arrived in content must not get to pick. A refusal answers false, as the system
-/// would for a scheme nothing claims, and is logged so a developer who typed the URL themselves is
-/// told the one line that opens it.
+/// declined (the path vanished, nothing claims that kind of file), and inventing an exception for
+/// it would turn an ordinary outcome into one every call site has to guard. A link is
+/// <see cref="MacUrlLauncher"/>'s.
 /// </para>
 /// </summary>
-public sealed class MacWorkspace(OpenUrlPolicy policy, ILogger<MacWorkspace> logger) : IWorkspace
+public sealed class MacWorkspace : IWorkspace
 {
     /// <inheritdoc />
     public bool Reveal(string path)
@@ -32,7 +24,7 @@ public sealed class MacWorkspace(OpenUrlPolicy policy, ILogger<MacWorkspace> log
         // `selectFile:inFileViewerRootedAtPath:` with an EMPTY root is the documented way to say
         // "wherever it lives" — a root of the file's own directory opens a second window rooted
         // there instead, which is not what "show me where this is" means.
-        return SendBool(Workspace(), Sel("selectFile:inFileViewerRootedAtPath:"),
+        return SendBool(SharedWorkspace.Get(), Sel("selectFile:inFileViewerRootedAtPath:"),
             NSString(path), NSString(""));
     }
 
@@ -44,65 +36,8 @@ public sealed class MacWorkspace(OpenUrlPolicy policy, ILogger<MacWorkspace> log
         // Reveal's job and not this one's — and a caller who meant Reveal would never find out.
         if (!File.Exists(path)) return false;
         var url = Send(AppKit.Class("NSURL"), Sel("fileURLWithPath:"), NSString(path));
-        return url != IntPtr.Zero && SendBool(Workspace(), Sel("openURL:"), url);
+        return url != IntPtr.Zero && SendBool(SharedWorkspace.Get(), Sel("openURL:"), url);
     }
-
-    /// <inheritdoc />
-    public bool OpenUrl(Uri url)
-    {
-        ArgumentNullException.ThrowIfNull(url);
-        // A relative Uri is not something the system declined — no system could ever have been
-        // asked. Answering false would send the developer looking at LaunchServices for a mistake
-        // that is in their own call, which is the exact shape of lie this class exists to avoid.
-        if (!url.IsAbsoluteUri)
-            throw new ArgumentException("A URL to open must be absolute — nothing can route "
-                + $"\"{url.OriginalString}\" without a scheme.", nameof(url));
-        // The POLICY, before the platform: a refused URL never becomes an NSURL, let alone a message
-        // to NSWorkspace. Logged, because false alone is the one answer nobody can diagnose — and a
-        // developer who typed mailto: themselves should find the fix at the first click.
-        if (policy.Refusal(url) is { } refusal)
-        {
-            logger.LogWarning("{Refusal}", refusal);
-            return false;
-        }
-        // AbsoluteUri and not ToString(): the second gives back what the app typed, and a space or
-        // an accent that was never percent-encoded produces a null NSURL and a silent no-op.
-        var native = Send(AppKit.Class("NSURL"), Sel("URLWithString:"), NSString(url.AbsoluteUri));
-        return native != IntPtr.Zero && SendBool(Workspace(), Sel("openURL:"), native);
-    }
-
-    /// <inheritdoc />
-    public bool CanOpen(Uri url)
-    {
-        ArgumentNullException.ThrowIfNull(url);
-        // The same rule as OpenUrl, or the two would disagree about the same argument: a relative
-        // Uri is nobody's to route, so it is the caller's mistake and not a "no" from the system.
-        // The first version of this returned false here, which is precisely the confusion the
-        // contract forbids — written one method up, by the same hand.
-        if (!url.IsAbsoluteUri)
-            throw new ArgumentException("A URL to check must be absolute — nothing can route "
-                + $"\"{url.OriginalString}\" without a scheme.", nameof(url));
-        // And the same policy, for the same reason: a button gated by CanOpen has to disappear for
-        // exactly the links OpenUrl would refuse. Not logged — a QUESTION has no side effect, and a
-        // screen may ask it on every build.
-        if (!policy.Allows(url)) return false;
-        // `URLForApplicationToOpenURL:` is the QUERY form of openURL: — nil when nothing claims the
-        // scheme, and no dialog either way. The action form puts up "There is no application set to
-        // open the URL…" on the person's screen, which is exactly what a check must not do.
-        var native = Send(AppKit.Class("NSURL"), Sel("URLWithString:"), NSString(url.AbsoluteUri));
-        return native != IntPtr.Zero
-            && Send(Workspace(), Sel("URLForApplicationToOpenURL:"), native) != IntPtr.Zero;
-    }
-
-    /// <summary>
-    /// The shared workspace, with AppKit LOADED first. Nothing here can assume the runner already
-    /// did it: a capability is resolved from the container and the container is built before the
-    /// window, and a test or a tool may hold one with no window at all. Without the dlopen,
-    /// <c>AppKit.Class("NSWorkspace")</c> answers nil and every method returns false — which looks
-    /// exactly like "the system declined" and is not. Found by a probe that revealed /Applications
-    /// and was told no.
-    /// </summary>
-    private static IntPtr Workspace() => Send(AppKit.Class("NSWorkspace"), Sel("sharedWorkspace"));
 
     /// <summary>
     /// A relative path is refused, not resolved. Resolving it — here or in NSWorkspace — means

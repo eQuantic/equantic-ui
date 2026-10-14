@@ -20,7 +20,7 @@
  * - a negative count and an option .NET does not define are refused, in that order.
  */
 import { exception } from './exceptions';
-import { receiver } from './string-search';
+import { receiver } from './exceptions';
 import { requireNonNegative } from './string-statics';
 import { isWhiteSpace, trim } from './white-space';
 

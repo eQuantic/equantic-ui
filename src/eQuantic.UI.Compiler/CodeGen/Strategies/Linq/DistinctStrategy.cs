@@ -63,6 +63,14 @@ public class DistinctStrategy : IExpressionIrStrategy
         // need a value-based dedup (keeping the first occurrence, like Distinct). The filter's
         // names take a `$`, which no C# name holds (#397), and the set it remembers is made once.
         var elementType = context.SemanticHelper.GetType(memberAccess.Expression).GetEnumerableElementType();
+        // An ANONYMOUS object is found as its type's default comparer finds it, member by member
+        // (ElementEquality), where a Set found each by reference and kept every one: the runtime's set
+        // keeps the first of each, in the order they come, as Distinct does.
+        if (elementType is INamedTypeSymbol { IsAnonymousType: true } anonymous)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Template($"[...{Eq.HashSet}({ElementEquality.Of(anonymous) ?? "false"}, {{0}})]", [source]);
+        }
         if (elementType is { } et && !IsPrimitiveOrString(et) && (et.IsRecord || et.TypeKind == TypeKind.Struct))
         {
             return JsExpr.Template("{0}.filter((($seen) => ($x) => { const $k = JSON.stringify($x); " +

@@ -99,6 +99,17 @@ public class InterpolatedStringStrategy : IConversionStrategy
                 return expr;
         }
 
+        // A TUPLE and an ANONYMOUS object are not IFormattable: .NET writes their ToString, ignoring a
+        // format, and pads that text. The text is written from the static type (StringConversion), and
+        // only the alignment is left for the formatter (#762).
+        if ((format != null || alignment != null) && StringConversion.ReachesTheFormatterAsText(holeType))
+        {
+            expr = JsExprWriter.Write(StringConversion.Of(holeType!, JsExpr.Opaque(expr), context));
+            format = null;
+            if (alignment == null || !padded)
+                return expr;
+        }
+
         if (format == null && alignment == null)
             return expr;
 

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { equals, equalsGroup } from './equals';
+import { equals, equalsGroup, equalsInstance } from './equals';
+import { is } from './exceptions';
 import { dec } from './decimal';
 import { dateTime } from './datetime';
 
@@ -70,5 +71,41 @@ describe('equalsGroup', () => {
     expect(same({ x1: 0.2, y1: 0, x2: 0, y2: 1 })).toBe(true);
     expect(same(held)).toBe(false);
     expect(same('standard')).toBe(false);
+  });
+
+  // A tuple holding an array compares that element by reference, which the compiler says by handing
+  // the comparison its type compares by.
+  it('compares by the comparison it is handed, where the type has one of its own', () => {
+    const xs = [1];
+    const byReference = (a: unknown, b: unknown) =>
+      Array.isArray(a) && Array.isArray(b) && a[0] === b[0] && a[1] === b[1];
+    const same = equalsGroup([xs, 1], byReference);
+
+    expect(same([xs, 1])).toBe(true);
+    expect(same([[1], 1])).toBe(false);
+    expect(equalsGroup([xs, 1])([[1], 1])).toBe(true);
+  });
+});
+
+// An anonymous object's Equals is an instance call: through null it throws .NET's NullReferenceException,
+// after its argument was evaluated, and a value the compiler knows is of another type is unequal.
+describe('equalsInstance', () => {
+  it('refuses a null receiver as a call through null', () => {
+    let caught: unknown;
+    try {
+      equalsInstance(null, null);
+    } catch (error) {
+      caught = error;
+    }
+    expect(is(caught, 'System.NullReferenceException')).toBe(true);
+    expect((caught as Error).message).toBe('Object reference not set to an instance of an object.');
+  });
+
+  it('compares by the comparison it is handed, and finds a value of another type unequal', () => {
+    expect(equalsInstance({ a: 1 }, { a: 1 })).toBe(true);
+    expect(equalsInstance({ a: 1 }, null)).toBe(false);
+    expect(equalsInstance({ a: [1] }, { a: [1] }, (a, b) => a === b)).toBe(false);
+    expect(equalsInstance({ a: 1 }, { a: 1 }, null)).toBe(false);
+    expect(equalsInstance([1, 2], [1, 2], null)).toBe(false);
   });
 });

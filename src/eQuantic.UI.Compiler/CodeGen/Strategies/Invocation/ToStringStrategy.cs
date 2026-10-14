@@ -53,6 +53,13 @@ public class ToStringStrategy : IConversionStrategy
             return JsExprWriter.Write(StringConversion.ToDotNetString(memberAccess.Expression,
                 context.Converter.ConvertIr(memberAccess.Expression), context));
 
+        // A receiver of a reference type whose text its type writes (an anonymous object, an array, a list, a
+        // delegate) writes it as a concatenation does, refused through null as .NET's instance call is,
+        // where a hole and a concatenation of a null one write nothing.
+        if (args.Count == 0
+            && StringConversion.InstanceText(receiverType, context.Converter.ConvertIr(memberAccess.Expression), context) is { } own)
+            return JsExprWriter.Write(own);
+
         // A BOOL writes True or False, what a concatenation already writes it as (StringConversion):
         // `String(b)` lowercased it (#381). Its provider changes nothing, and a null bool? is empty.
         // C# still evaluates the provider, after the receiver: one that could have an effect runs,

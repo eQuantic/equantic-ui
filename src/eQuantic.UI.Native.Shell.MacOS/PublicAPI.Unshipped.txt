@@ -1,1 +1,7 @@
 #nullable enable
+*REMOVED*[EQX0001]eQuantic.UI.Native.Shell.MacOS.MacWorkspace.CanOpen(System.Uri! url) -> bool
+*REMOVED*[EQX0001]eQuantic.UI.Native.Shell.MacOS.MacWorkspace.MacWorkspace(eQuantic.UI.Primitives.OpenUrlPolicy! policy, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Native.Shell.MacOS.MacWorkspace!>! logger) -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Shell.MacOS.MacWorkspace.OpenUrl(System.Uri! url) -> bool
+[EQX0001]eQuantic.UI.Native.Shell.MacOS.MacUrlLauncher
+[EQX0001]eQuantic.UI.Native.Shell.MacOS.MacUrlLauncher.MacUrlLauncher(eQuantic.UI.Primitives.OpenUrlPolicy! policy, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Native.Shell.MacOS.MacUrlLauncher!>! logger) -> void
+[EQX0001]eQuantic.UI.Native.Shell.MacOS.MacWorkspace.MacWorkspace() -> void

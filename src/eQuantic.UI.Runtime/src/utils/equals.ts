@@ -1,3 +1,5 @@
+import { receiver } from './exceptions';
+
 /**
  * Structural (value) equality for .NET value-shaped data: records, `record struct`/`struct`, value
  * tuples, and anonymous types — all represented as plain JS objects / arrays by the transpiler.
@@ -65,12 +67,35 @@ export function equals(a: unknown, b: unknown): boolean {
 }
 
 /**
+ * An instance `value.Equals(other)` whose receiver may be null, an anonymous object's: refused as .NET
+ * refuses a call through null, after the argument was evaluated, then compared as `same` compares, the
+ * comparison its type compares by. `same` is null where the compiler knows the other value is of another
+ * type (a tuple or an anonymous object of other element or member types, which the browser holds as the
+ * same array or plain object), which .NET finds unequal before it reads a member.
+ */
+export function equalsInstance(
+  value: unknown,
+  other: unknown,
+  same: ((a: unknown, b: unknown) => boolean) | null = equals,
+): boolean {
+  receiver(value);
+  return same !== null && same(value, other);
+}
+
+/**
  * The method group `value.Equals` of a value the browser holds as data, `Func<object, bool> same =
  * color.Equals`: a delegate over the value as it is when the delegate is made, comparing as
- * {@link equals} does. The compiler passes the receiver here, so it is read once, where C# copies it
- * into the delegate: a receiver that is a call runs once, and a local reassigned afterwards leaves the
- * delegate holding the value it was made with. A value type is never null, so there is no refusal.
+ * {@link equals} does, or as `same` does where the compiler hands the comparison the value's type
+ * compares by: a tuple holding an array compares that element by reference, and an anonymous object
+ * compares only with one of its own members (`utils/key-equality.ts`). The compiler passes the
+ * receiver here, so it is read once, where C# copies it into the delegate: a receiver that is a call
+ * runs once, and a local reassigned afterwards leaves the delegate holding the value it was made with.
+ * The receiver is a value type's or an anonymous object the compiler made, never null, so there is no
+ * refusal.
  */
-export function equalsGroup(value: unknown): (other: unknown) => boolean {
-  return (other) => equals(value, other);
+export function equalsGroup(
+  value: unknown,
+  same: (a: unknown, b: unknown) => boolean = equals,
+): (other: unknown) => boolean {
+  return (other) => same(value, other);
 }

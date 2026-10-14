@@ -34,6 +34,10 @@ using Microsoft.CodeAnalysis.CSharp;
 // put them; written where the SDK hands them to Apple's packaging.
 if (args.Length > 0 && args[0] == "entitlements") return Entitlements(args);
 
+// `queries` — the links an Android app may ask the system about: the web's, and what the app
+// opened with builder.Workspace.Opens…, as the manifest fragment the Android build merges.
+if (args.Length > 0 && args[0] == "queries") return Queries(args);
+
 if (args.Length > 0 && args[0] == "capabilities")
 {
     string? Arg(string flag)
@@ -131,6 +135,29 @@ static int Entitlements(string[] args)
         }
     }
 
+    return 0;
+}
+
+// The links an Android app may ASK the system about, as the manifest fragment its build merges.
+static int Queries(string[] args)
+{
+    string? Arg(string flag)
+    {
+        var index = Array.IndexOf(args, flag);
+        return index >= 0 && args.Length > index + 1 ? args[index + 1].Trim() : null;
+    }
+
+    var appAssembly = Arg("--assembly");
+    var manifest = Arg("--manifest");
+    if (appAssembly is null || manifest is null)
+    {
+        Console.Error.WriteLine("Usage: eqicon queries --assembly <app.dll> --manifest <out.xml>");
+        return 1;
+    }
+
+    if (!File.Exists(appAssembly)) return 0;      // nothing built yet; the build will come back
+    AndroidQueries.Write(appAssembly, manifest);
+    Console.WriteLine($"eqicon: wrote {manifest}");
     return 0;
 }
 

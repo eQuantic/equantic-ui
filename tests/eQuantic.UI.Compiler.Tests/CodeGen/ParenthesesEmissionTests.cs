@@ -23,7 +23,9 @@ public class ParenthesesEmissionTests
     // ToString lowers through a template strategy (`String(…)`): an UNMIGRATED consumer, so the
     // author's parentheses around a number stay — which is also what keeps `(1).x` parsing.
     [InlineData("var r = (1).ToString();", "let r = String((1));")]
-    [InlineData("var r = (list1).ToString();", "let r = String(this.list1);")]
+    // A list's text is its type's name, as Object.ToString writes it, its receiver refused through null.
+    [InlineData("var r = (list1).ToString();",
+                "let r = $eq.receiver(this.list1) == null ? '' : 'System.Collections.Generic.List`1[System.String]';")]
     public void AuthorParentheses_AreRederived(string code, string expected)
     {
         TestHelper.ConvertCodeBlock(code).Trim().Should().Be(expected);
