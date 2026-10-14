@@ -11,7 +11,8 @@ otherwise, and a value behind an interface or `object` by what it turns out to b
 `DistinctBy`, `UnionBy`, `IntersectBy` and `ExceptBy` by their key, and `GroupBy`, `ToLookup` and a
 lookup's indexer by their key. A float or a double key SHALL find a NaN equal to itself, and 0 equal to
 -0, as .NET does. A null key SHALL match nothing in `Join` and `GroupJoin`, as .NET's join lookup skips
-an inner one and finds no group for an outer one.
+an inner one and finds no group for an outer one. An enum with two members of one value is outside this
+requirement, as it is outside every equality the browser asks today, its members two names there (#927).
 
 #### Scenario: A join by a composite key
 
