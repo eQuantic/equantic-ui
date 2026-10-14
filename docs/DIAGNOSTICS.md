@@ -105,7 +105,7 @@ than pick for you, eqc asks.
 | `EQ2111` | `GetService` with no type argument to cross — the registry is keyed by the interface NAME, and there is nothing to key on. | Call the generic overload. |
 | `EQ2113` | `ConfigureAwait` is dropped — there is one context to resume on — and dropping it would discard a NON-CONSTANT argument without evaluating it. | Pass a constant, or evaluate the expression into a local first. |
 
-## EQ3001–EQ3006 — the Photon app generator
+## EQ3001–EQ3007 — the Photon app generator
 
 | Code | Meaning |
 |---|---|
@@ -115,6 +115,7 @@ than pick for you, eqc asks.
 | `EQ3004` | An entitlement's key must be a constant — it is signed into the app at build time, so a key built at run time never reaches the signature. |
 | `EQ3005` | A bundle fact must be constant — the Info.plist is written at build time, so an argument built at run time never reaches the app's manifest. Either argument counts, and whatever the method takes: a string, a bool, an `AppCategory`. |
 | `EQ3006` | A Photon app writes its own entry point. The SDK generates one from `CreateApp`, so an app that kept its `Main` (or its top-level statements) has two — which the compiler reports as `CS0017` against a generated file the app has never seen. Delete the app's: whatever it did first belongs in `CreateApp`, which is the only half Android runs. |
+| `EQ3007` | A scheme a phone app opens must be a constant. A phone answers `CanOpen` only for the schemes its manifest lists (`LSApplicationQueriesSchemes` on iOS, `queries` on Android), and the manifest is written at build time, so a scheme passed to `builder.Workspace.Opens(…)` that is built at run time would open its links and still be told nothing opens them. Reported only where a manifest is written: a desktop app reads the line at run time alone. |
 
 ## EQ3101–EQ3105 — the source generators
 

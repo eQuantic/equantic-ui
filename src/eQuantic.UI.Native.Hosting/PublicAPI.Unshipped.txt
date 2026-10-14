@@ -1,4 +1,7 @@
 #nullable enable
+[EQX0001]eQuantic.UI.Native.Hosting.PhotonOpenedSchemeAttribute
+[EQX0001]eQuantic.UI.Native.Hosting.PhotonOpenedSchemeAttribute.PhotonOpenedSchemeAttribute(string! scheme) -> void
+[EQX0001]eQuantic.UI.Native.Hosting.PhotonOpenedSchemeAttribute.Scheme.get -> string!
 [EQX0001]eQuantic.UI.Native.Hosting.UrlLauncher
 [EQX0001]eQuantic.UI.Native.Hosting.UrlLauncher.UrlLauncher(eQuantic.UI.Primitives.OpenUrlPolicy! policy, Microsoft.Extensions.Logging.ILogger! logger) -> void
 [EQX0001]eQuantic.UI.Native.Hosting.UrlLauncher.OpenUrlAsync(System.Uri! url) -> System.Threading.Tasks.ValueTask<bool>
