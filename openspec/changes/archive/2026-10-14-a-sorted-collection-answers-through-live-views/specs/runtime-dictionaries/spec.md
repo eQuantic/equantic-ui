@@ -5,7 +5,9 @@
 `Count`, `ContainsKey`, `TryGetValue`, `TryAdd`, `ContainsValue`, `Remove`, `Keys.Contains` and
 `Keys.Count` SHALL answer as .NET's `Dictionary` answers them. A sorted dictionary's and a sorted list's
 `TryAdd`, which C# binds to `CollectionExtensions`' extension, SHALL be the runtime class's, through the
-extension's static form too.
+extension's static form too. A lookup or a `TryAdd` SHALL be the dictionary's only when the call binds to a
+member of System.Collections.Generic: an extension of the app's own under one of those names SHALL stay the
+app's call.
 
 #### Scenario: TryAdd keeps a present key's value
 
@@ -22,6 +24,11 @@ extension's static form too.
 - **WHEN** browser-side code calls `d.TryAdd(k, 9)` on a `SortedDictionary<int, int>` holding `k`
 - **THEN** it answers false and the walk over the keys goes on, as in .NET; the browser threw a ReferenceError, `CollectionExtensions is not defined`
 
+#### Scenario: An extension of the app's own
+
+- **WHEN** a component calls `s.TryAdd("a", 1)` on a `SortedDictionary<string, int>`, and its own static class `Ledger` declares `TryAdd(this SortedDictionary<string, int>, string, int)`
+- **THEN** the lowering is `Ledger.tryAdd(s, 'a', 1)`, the call C# binds; it was the runtime class's
+
 ### Requirement: A change while the pairs are walked answers as .NET's
 
 A dictionary SHALL end a walk over its pairs with an InvalidOperationException when a new key is added
@@ -31,7 +38,9 @@ words, "Collection was modified after the enumerator was instantiated.", at the 
 after the last element included. A change SHALL be what .NET counts as one: an addition, an overwrite, a
 removal and `Clear`; for a sorted dictionary that holds anything, also a `Remove` of a key it does not hold
 and an `Add` of a key it holds, which its red-black tree counts before it answers; for a sorted list,
-neither. A `TryAdd` of a key either holds SHALL be no change.
+neither. A `TryAdd` of a key either holds SHALL be no change, and so SHALL a `Remove(key, out value)` of a
+key a sorted dictionary does not hold, which reaches it through `CollectionExtensions`, which asks for the
+key before it removes it.
 
 #### Scenario: A key added while walking
 
@@ -53,6 +62,11 @@ neither. A `TryAdd` of a key either holds SHALL be no change.
 - **WHEN** browser-side code calls `Remove(42)` at each step of a walk over the keys of a `SortedDictionary<int, int>` and of a `SortedList<int, int>`, each holding 1 and 2
 - **THEN** the sorted dictionary's walk ends after the first key and the sorted list's sees both, as in .NET
 
+#### Scenario: A removal with an out that finds nothing
+
+- **WHEN** browser-side code calls `d.Remove(42, out _)` at each step of a walk over the keys of a `SortedDictionary<int, int>` holding 1 and 2
+- **THEN** the walk sees both keys, as in .NET; it ended after the first
+
 ### Requirement: A dictionary's keys and values are live views
 
 `Keys` and `Values` of a dictionary, a sorted dictionary and a sorted list SHALL read the collection when
@@ -63,7 +77,8 @@ in a dictionary's words for a dictionary's and a sorted dictionary's views ("Mut
 derived from a dictionary is not allowed.", and a value collection's likewise); for a sorted list's, a
 call (`Add`, `Remove`, `Clear`) and a value written through `Values[i]` in its nested types' words ("This
 operation is not supported on SortedList nested types because they require modifying the original
-SortedList."), and a key written through `Keys[i]` in a dictionary's.
+SortedList."), and a key written through `Keys[i]` in a dictionary's. A `Remove` SHALL be refused whether
+or not the view holds the value.
 
 #### Scenario: A view read after a change
 
@@ -84,3 +99,8 @@ SortedList."), and a key written through `Keys[i]` in a dictionary's.
 
 - **WHEN** browser-side code calls `d.Keys.Add(2)` and writes `d.Keys[0] = 3` on a `SortedList<int, int>`
 - **THEN** each throws a NotSupportedException, the first in the nested types' words and the second in a dictionary's, as in .NET
+
+#### Scenario: A removal of a key a view does not hold
+
+- **WHEN** browser-side code calls `keys.Remove("z")` through an `ICollection<string>` holding a dictionary's keys, `z` not among them
+- **THEN** it throws "Mutating a key collection derived from a dictionary is not allowed.", as .NET does; it answered false

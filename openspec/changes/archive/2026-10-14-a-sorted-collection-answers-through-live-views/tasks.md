@@ -11,7 +11,8 @@
 - [x] 2.2 The sorted dictionary's and the sorted list's walks, their views' walks and what each counts as a change
 - [x] 2.3 `SortedSet.getViewBetween`, a view over its set's elements, with .NET's paths through the set operations
 - [x] 2.4 eqc lowers `GetViewBetween` and a dictionary's `TryAdd` through `CollectionExtensions`; the BCL baseline and the translation tests follow
-- [x] 2.5 Prove it both ways: the conformance cases pass and the whole suite with them, and the compiler, Server and Web suites and the runtime's tsc and vitest pass
+- [x] 2.5 Answer the review of the whole diff: a lookup is the dictionary's only when it binds to System.Collections.Generic's, a `Remove(key, out _)` that finds nothing is no change, a view refuses `Remove` before it searches, and a view counts again wherever .NET reads it as a collection
+- [x] 2.6 Prove it both ways: the conformance cases pass and the whole suite with them, and the compiler, Server and Web suites and the runtime's tsc and vitest pass
 
 ## 3. Documentation
 
