@@ -11,7 +11,7 @@
 - [x] 2.1 An experimental assembly carries `[assembly: Experimental("EQX0001", UrlFormat = …)]`
 - [x] 2.2 `eQuantic.UI.Sdk.Native` adds EQX0001 to `NoWarn` and says once, at a publish, that the native track is experimental in 1.0
 - [x] 2.3 The projects of this repository that use a native assembly without the native SDK suppress EQX0001, each saying why
-- [ ] 2.4 The samples and both templates build with no warning, and a plain project that uses a native type fails with EQX0001, measured
+- [x] 2.4 The samples and both templates build with no warning, and a plain project that uses a native type fails with EQX0001, measured
 - [x] 2.5 The wiki's Photon page says what experimental means in 1.0, in English and Portuguese, under the heading the URL names
 
 ## 3. The rule that follows the version
@@ -26,5 +26,5 @@
 
 - [x] 4.1 `CLAUDE.md`: the section on old shapes says when it inverts and what holds it, and Version Management names the three classes
 - [x] 4.2 One entry for the ledger, as a file under `docs/ledger/`
-- [ ] 4.3 Run the Web, Compiler and Native.Engine suites, and build the samples and both templates from the tree
-- [ ] 4.4 Archive the change with `openspec archive what-1-0-promises --yes`
+- [x] 4.3 Run the Web, Compiler and Native.Engine suites, and build the samples and both templates from the tree
+- [x] 4.4 Archive the change with `openspec archive what-1-0-promises --yes`
