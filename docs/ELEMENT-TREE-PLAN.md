@@ -142,6 +142,15 @@ subtree and mounts a new one. Keyed siblings are matched by key, unkeyed ones by
 was a dictionary entry is a field of the element, so it dies with the element, and no other node can
 inherit it.
 
+One state outlives its element on purpose: a `Presence` that leaves animates out. Today the presence
+store keeps the departed subtree's last draw commands and replays them until the exit finishes
+(`PresenceMotionTests.Realizer_DepartedPresence_ReplaysAsPixelsOnly_ThenSettlesClean` pins it). With
+elements the departure is the same, moved off the path: when a presence's element unmounts, its
+components unmount at once and it takes no more input, and its last paint is handed to the owner as
+a detached, paint-only exit, replayed at the departed position until the animation completes or the
+user asked for reduced motion. Nothing in the exit can be built, pressed or focused, which is what
+the test already asserts.
+
 A `StatefulComponent` keeps the shape the parity audit calls SAME: one class, not two. Its element
 retains the first instance it mounted, and every rebuild's fresh instance hands over its
 configuration through `AdoptConfig`, which is what the instance store does today, keyed by element
@@ -153,11 +162,18 @@ across a pass: what leaves unmounts before what arrives mounts.
 Today `Build` runs inside measure. With elements it runs in a build phase of its own, before
 layout, and only for the elements marked dirty, as Flutter's `BuildOwner.buildScope` does. A
 `SetState` marks its own element dirty and asks the host for a frame; the frame rebuilds the dirty
-elements, deepest first, then lays out and paints.
+elements, then lays out and paints.
+
+The dirty elements build shallowest first, ancestors before descendants, as `buildScope` sorts them by
+depth: a parent that rebuilds hands its children their new configuration (through `AdoptConfig` for a
+retained instance) or removes them, so a child built before its parent would be built twice or with
+a stale configuration. A child its parent's build already rebuilt is no longer dirty and is skipped,
+one that left the tree is dropped, and one marked dirty during the phase joins it in depth order.
 
 Layout measures what the elements already built and builds nothing. A container that measures a
 child twice measures one built subtree twice, and intrinsic sizing reads that subtree too, so a
-stateful child is measured with its own state. A `NodeElement` owns its `LayoutNode` and updates it in place, where today a
+stateful child is measured with its own state. A `NodeElement` owns its `LayoutNode` and updates it
+in place, where today a
 frame produces a new tree of them; whether the pool is still needed afterwards is measured, not
 assumed (section 5).
 
@@ -228,7 +244,8 @@ looked up from a flow.
 Each tree has one owner, after Flutter's `BuildOwner`: the dirty list, the build phase, the
 pass's unmount-then-mount order, the error boundary's report and tally, the dispatcher, and the
 diagnostics. A Photon host owns one per window, the server one per request, the browser one per
-page root and one per island (`VisualNodeComponent`), and an email render one per message.
+document and one per island (`VisualNodeComponent`), and an email render one per message. The
+browser's is the document's and not the page's, so it outlives a client navigation.
 
 ### 3.7 Per target
 
@@ -242,11 +259,20 @@ page root and one per island (`VisualNodeComponent`), and an email render one pe
 - **Server.** A request mounts a tree, builds it, and lowers it. A prefetch that completes marks its
   element dirty and rebuilds that subtree, with the element's own instance, so the by-name field
   copy between rounds goes.
-- **Browser.** The runtime keeps the same element tree. Hydration builds it from the page root and
-  walks it against the server's DOM in the same order as today. A client navigation updates the page
-  root's child under the same app root, so a shell keeps its element and its instance, and its old
-  configuration unmounts before anything new mounts. The per-page stores, the module maps and the
-  path attributes become element state and element ids.
+- **Browser.** The runtime keeps the same element tree. Hydration builds it from the page and walks
+  it against the server's DOM in the same order as today. The per-page stores, the module maps and
+  the path attributes become element state and element ids.
+
+  A client navigation changes the page's type, and by the rule of 3.1 that replaces the page's
+  element with everything the page built. The samples build their frame inside each page today
+  (`ConsoleShell.Frame(…)` in every screen's `Build`, the sidebar's open state a field of each page),
+  so for them a navigation stays what it is now: the DOM is patched position by position, and no
+  instance survives. What survives a navigation is what sits ABOVE the page. *How does Flutter solve
+  it?* go_router's `ShellRoute`: the shell is a route of its own, and the pages are its child. Here the
+  app declares its shell once, in `Program.cs`, as a component with a slot the router fills with the
+  page; the shell's element and its instance stay mounted across navigations, the page's element is
+  replaced under it, and the old page unmounts before the new one mounts. E3 moves the dashboard
+  sample's frame there, which is its proof.
 - **Email.** A message mounts a tree once, lowers it and discards it.
 
 ### 3.8 The strings that stay, at the seams
@@ -353,7 +379,7 @@ and E6 brings them under the same rules: `MarkdownStyle` becomes a slot, and all
   `AdoptConfig`, `Key`, the factories, and every member `ComponentContext` has today.
 - **New:** `InheritedComponent`, `ComponentContext.DependOn<T>()` and `Find<T>()`,
   `StatefulComponent.OnDependenciesChanged()`, `Theme(theme, child)`, the slots on `IAppTheme`,
-  and `Navigator.Of(context)`.
+  `Navigator.Of(context)`, and a shell declared once in `Program.cs` (3.7).
 - **Gone from the public surface:** `ComponentInstanceStore`, `NotifyMounted`, `NotifyUnmounted`
   and `StateInvalidated` (the host's, never the app's), the constructor of `ComponentContext`,
   `Navigator.Handler` and the static `Navigator.Go`, and the setters of `UiDispatcher.Current` and
@@ -376,13 +402,15 @@ the parity rows it closes flip.
    `ComponentInstanceStore` goes. Closes #935 by construction. Proof: the native suites and goldens
    unchanged, retention by element across rebuilds and keyed moves, the unmount-then-mount order,
    and the frame budget measured on a scene that has stateful components.
-2. **E2, Photon's node state.** The five other stores become state slots, the host's path fields
-   become element references, the shells' accessibility ids become element ids, and the path cache
-   goes. Proof: a node that takes another's position starts with its own state.
+2. **E2, Photon's node state.** The five other stores become state slots, the presence exits move
+   to the owner as detached, paint-only replays, the host's path fields become element references,
+   the shells' accessibility ids become element ids, and the path cache goes. Proof: a node that
+   takes another's position starts with its own state, and the presence tests pass unchanged.
 3. **E3, the browser.** The runtime's stores, module maps and path attributes move onto the
-   transpiled engine; hydration builds the element tree; a client navigation keeps the shell's
-   instance. Proof: the runtime's own suites, the hydration contract, and a shell's state across a
-   navigation.
+   transpiled engine; hydration builds the element tree; the shell an app declares in `Program.cs`
+   stays mounted across client navigations, and the dashboard sample moves its frame into it. Proof:
+   the runtime's own suites, the hydration contract, the sidebar's state across a navigation, and a
+   page that still builds its own frame patching as it does today.
 4. **E4, the server.** An owner per request; a prefetch rebuilds its subtree; the five Web channels
    and the Primitives ones the tree owns move to the owner. Proof: the SSR fixtures unchanged, and a
    prefetch round that keeps a component's instance.
