@@ -13,7 +13,12 @@ namespace eQuantic.UI.Web.Tests;
 /// </summary>
 public class AppFactorySurfaceGeneratorTests
 {
-    private static (string Source, IReadOnlyList<Diagnostic> Diagnostics) Run(string appCode)
+    private static (string Source, IReadOnlyList<Diagnostic> Diagnostics) Run(string appCode) =>
+        RunCompiled(appCode) is var (source, diagnostics, _) ? (source, diagnostics) : default;
+
+    /// <summary>The surface for <paramref name="appCode"/>, and the errors of the app compiled with it.</summary>
+    private static (string Source, IReadOnlyList<Diagnostic> Diagnostics, IReadOnlyList<Diagnostic> Errors) RunCompiled(
+        string appCode)
     {
         var tree = CSharpSyntaxTree.ParseText(appCode, path: "App.cs");
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
@@ -27,13 +32,14 @@ public class AppFactorySurfaceGeneratorTests
                 nullableContextOptions: NullableContextOptions.Enable));
 
         var driver = CSharpGeneratorDriver.Create(new AppFactorySurfaceGenerator())
-            .RunGeneratorsAndUpdateCompilation(compilation, out _, out _);
+            .RunGeneratorsAndUpdateCompilation(compilation, out var withSurface, out _);
         var result = driver.GetRunResult().Results.Single();
 
         var generated = result.GeneratedSources.Length > 0
             ? result.GeneratedSources[0].SourceText.ToString()
             : "";
-        return (generated, result.Diagnostics);
+        var errors = withSurface.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
+        return (generated, result.Diagnostics, errors);
     }
 
     /// <summary>
@@ -270,5 +276,70 @@ public class AppFactorySurfaceGeneratorTests
 
         source.Should().NotContain("CardBase(");
         source.Should().Contain("RealCard(");
+    }
+
+    /// <summary>
+    /// A component the generated file cannot reach gets no factory. Its own accessibility said public,
+    /// and the surface named a type inside a private or an internal owner, which failed in a file the
+    /// developer never wrote: CS0122 behind a private owner, CS0050 behind an internal one, a public
+    /// factory returning a type that is not (#703). Nor does a component inside an owner marked
+    /// server-only, which never reaches the browser, nor one marked so itself.
+    /// </summary>
+    [Theory]
+    [InlineData("internal sealed class Vault { DOOR }")]
+    [InlineData("public sealed class Outer { private sealed class Vault { DOOR } }")]
+    [InlineData("public sealed class Outer { protected internal sealed class Vault { DOOR } }")]
+    [InlineData("public sealed class Outer { internal sealed class Vault { public sealed class Inner { DOOR } } }")]
+    [InlineData("[ServerOnly] public sealed class Vault { DOOR }")]
+    [InlineData("public sealed class Vault { [ServerOnly] DOOR }")]
+    public void AComponentTheSurfaceCannotReach_GetsNoFactory(string owner)
+    {
+        const string Door = """
+            public sealed class Door : StatelessComponent
+            {
+                public Door(string label) { }
+                public override VisualNode Build(ComponentContext context) => new Text("door");
+            }
+            """;
+        var (source, _, errors) = RunCompiled($$"""
+            using eQuantic.UI.Primitives;
+
+            namespace Demo;
+
+            {{owner.Replace("DOOR", Door)}}
+
+            public sealed class Card : StatelessComponent
+            {
+                public Card(string title) { }
+                public override VisualNode Build(ComponentContext context) => new Text("card");
+            }
+            """);
+
+        source.Should().Contain("Card(", "the surface still holds every component it reaches");
+        source.Should().NotContain("Door(");
+        errors.Should().BeEmpty("the generated surface compiles");
+    }
+
+    [Fact]
+    public void APublicComponentInsideAPublicOwner_KeepsItsFactory()
+    {
+        // The control of the test above: every type around it public, and none server-only.
+        var (source, _, errors) = RunCompiled("""
+            using eQuantic.UI.Primitives;
+
+            namespace Demo;
+
+            public sealed class Vault
+            {
+                public sealed class Door : StatelessComponent
+                {
+                    public Door(string label) { }
+                    public override VisualNode Build(ComponentContext context) => new Text("door");
+                }
+            }
+            """);
+
+        source.Should().Contain("public static global::Demo.Vault.Door Door(string label)");
+        errors.Should().BeEmpty();
     }
 }

@@ -20,17 +20,34 @@ internal static class FactorySurface
     private const string PageAttribute = "PageAttribute";
 
     /// <summary>
-    /// Whether the surface writes a factory for <paramref name="symbol"/>: a public, concrete,
-    /// non-generic component in a namespace. A PAGE is reached by its route, never composed by hand, so
-    /// a factory for one would be an offer to do the wrong thing.
+    /// Whether the surface writes a factory for <paramref name="symbol"/>: a concrete, non-generic
+    /// component in a namespace that the generated file reaches and the browser receives. A PAGE is
+    /// reached by its route, never composed by hand, so a factory for one would be an offer to do the
+    /// wrong thing.
     /// </summary>
     public static bool HasFactory(INamedTypeSymbol symbol) =>
         !symbol.IsAbstract
         && !symbol.IsGenericType
-        && symbol.DeclaredAccessibility == Accessibility.Public
+        && Crosses(symbol)
         && !symbol.ContainingNamespace.IsGlobalNamespace
         && IsComponent(symbol)
         && !IsPage(symbol);
+
+    /// <summary>
+    /// Whether the component and every type it is declared in are public and none is server-only. A
+    /// public component inside a private or an internal owner got a public factory naming a type the
+    /// generated file cannot reach, CS0122 or CS0050 in a file the developer never wrote (#703), and
+    /// one inside a server-only owner has no module in the browser to build (#584).
+    /// </summary>
+    private static bool Crosses(INamedTypeSymbol symbol)
+    {
+        for (var type = symbol; type is not null; type = type.ContainingType)
+        {
+            if (type.DeclaredAccessibility != Accessibility.Public) return false;
+            if (type.GetAttributes().Any(a => a.AttributeClass?.Name is "ServerOnlyAttribute")) return false;
+        }
+        return true;
+    }
 
     public static bool IsComponent(INamedTypeSymbol symbol)
     {
