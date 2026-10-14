@@ -141,12 +141,12 @@ public class RecordTypeEmitter
         var appTypes = new HashSet<string>();
         if (ModelFor(type) is { } model)
         {
-            Services.RuntimeProvidedTypeScanner.Collect(type, model, runtimeProvided, new HashSet<string>(), appTypes);
+            Services.RuntimeProvidedTypeScanner.Collect(type, model, asComponent: false, runtimeProvided, new HashSet<string>(), appTypes);
             // The defaults the type takes from its interfaces (#414) name types the type never does.
             if (model.GetDeclaredSymbol(type) is INamedTypeSymbol self)
                 foreach (var inherited in DefaultInterfaceMembers.Of(self, model.Compilation))
                     if (inherited.Declaration is { } declaration && ModelFor(declaration) is { } inheritedModel)
-                        Services.RuntimeProvidedTypeScanner.Collect(declaration, inheritedModel, runtimeProvided,
+                        Services.RuntimeProvidedTypeScanner.Collect(declaration, inheritedModel, asComponent: false, runtimeProvided,
                             new HashSet<string>(), appTypes);
         }
 
@@ -452,6 +452,9 @@ public class RecordTypeEmitter
         var userToString = false;
         foreach (var method in type.Members.OfType<MethodDeclarationSyntax>())
         {
+            // A [ServerOnly] method is no member of the twin, as a component's and a class's are not:
+            // the server code in it was refused as the record's (#816).
+            if (Parser.ComponentParser.StaysOnTheServer(method, inAComponent: false)) continue;
             // The non-generic IEnumerable.GetEnumerator() beside the generic one holds its name, and is
             // the same sequence (#612).
             if (ModelFor(method)?.GetDeclaredSymbol(method) is IMethodSymbol declared && IterableTwin.LeavesOut(declared)) continue;
@@ -477,6 +480,7 @@ public class RecordTypeEmitter
         // two objects concatenate their toString()s, which is wrong output with nothing to see.
         foreach (var op in type.Members.OfType<OperatorDeclarationSyntax>())
         {
+            if (Parser.ComponentParser.StaysOnTheServer(op, inAComponent: false)) continue;
             var opName = op.ParameterList.Parameters.Count == 1
                 ? UnaryOperatorMethodName(op.OperatorToken.Text)
                 : OperatorMethodName(op.OperatorToken.Text);
@@ -494,6 +498,7 @@ public class RecordTypeEmitter
         // for an explicit one); without it the value crossed RAW, an int where a Money was expected.
         foreach (var conversion in type.Members.OfType<ConversionOperatorDeclarationSyntax>())
         {
+            if (Parser.ComponentParser.StaysOnTheServer(conversion, inAComponent: false)) continue;
             var parameter = conversion.ParameterList.Parameters[0];
             // The NAME comes from the symbol wherever there is one, through the same function the
             // call site uses. The two used to compute it apart — this side compared type SYNTAX
@@ -571,7 +576,8 @@ public class RecordTypeEmitter
                 }
                 switch (member)
                 {
-                    case MethodDeclarationSyntax method when method.Body != null || method.ExpressionBody != null:
+                    case MethodDeclarationSyntax method when (method.Body != null || method.ExpressionBody != null)
+                                                            && !Parser.ComponentParser.StaysOnTheServer(method, inAComponent: false):
                         _converter.InFileOf(method, () => sb.Append(EmitMethod(method, name)));
                         break;
                     case PropertyDeclarationSyntax property when ComputedGetter(property) is not null || IsSetterOnly(property):

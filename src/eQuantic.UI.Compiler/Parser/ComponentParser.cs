@@ -527,12 +527,31 @@ public class ComponentParser
             .Any(attribute => attribute.IsNamed("RuntimeProvided"));
     }
 
-    /// <summary>A method a component keeps on the server whole: not parsed, not transpiled, and no
-    /// member of its twin. Asked by the parser and by whoever reads what a component's code names
-    /// (<see cref="Services.NamedSourceTypes"/>), so the two cannot disagree on what crosses.</summary>
-    internal static bool IsServerOnly(MethodDeclarationSyntax method) =>
-        method.AttributeLists.SelectMany(list => list.Attributes)
-            .Any(attribute => attribute.IsNamed("ServerOnly"));
+    /// <summary>
+    /// Whether <paramref name="node"/> is code no twin is written from: a method, an operator or a
+    /// conversion marked <c>[ServerOnly]</c>, which no twin holds whatever type declares it, and the
+    /// body of a component's <c>[ServerAction]</c>, whose twin is a stub written from its SIGNATURE.
+    /// <para>
+    /// The one rule for what crosses, asked by everything that reads a declaration for the browser:
+    /// the parser and the emitters, which leave such code out, and the scans that decide what a module
+    /// imports and refuses (<see cref="Services.RuntimeProvidedTypeScanner"/>,
+    /// <see cref="Services.NamedSourceTypes"/>). The client boundary is asked where the conversion writes
+    /// a symbol, so it never meets this code at all. It was a validator that walked the whole FILE, and
+    /// refused a Server Action that read a file as client code (#816); and a class's, a static class's
+    /// or a record's <c>[ServerOnly]</c> method was written into its twin, its server code refused there.
+    /// </para>
+    /// </summary>
+    /// <param name="node">A node of the declaration being read.</param>
+    /// <param name="inAComponent">Whether that declaration is a component's: a <c>[ServerAction]</c> is
+    /// served for a component alone, so on any other type it is a method like the rest.</param>
+    internal static bool StaysOnTheServer(SyntaxNode node, bool inAComponent) => node switch
+    {
+        MethodDeclarationSyntax or OperatorDeclarationSyntax or ConversionOperatorDeclarationSyntax =>
+            PlainClassModule.IsServerOnlyDeclaration((MemberDeclarationSyntax)node),
+        BlockSyntax or ArrowExpressionClauseSyntax => inAComponent
+            && node.Parent is MethodDeclarationSyntax action && IsServerAction(action),
+        _ => false,
+    };
 
     /// <summary>A method a component runs on the server and calls from the browser: its twin is a stub
     /// written from its SIGNATURE, and its body never crosses.</summary>
@@ -569,7 +588,7 @@ public class ComponentParser
         
         foreach (var method in methods)
         {
-            if (IsServerOnly(method)) continue;
+            if (StaysOnTheServer(method, inAComponent: true)) continue;
             // A [ServerAction] body runs on the SERVER; the client twin is the RPC stub the
             // emitter writes from definition.ServerActions. Transpiling the body here shipped
             // server code (DbContexts, Stopwatches, the compiler itself) into the browser.
@@ -778,7 +797,7 @@ public class ComponentParser
         // fallback, or the whole vocabulary becomes imports of modules that exist nowhere.
         definition.ResolvedSemantically =
             model.Compilation.GetTypeByMetadataName("eQuantic.UI.Primitives.VisualNode") is not null;
-        RuntimeProvidedTypeScanner.Collect(classDecl, model, definition.RuntimeProvidedTypes,
+        RuntimeProvidedTypeScanner.Collect(classDecl, model, asComponent: true, definition.RuntimeProvidedTypes,
             definition.EnumTypes, definition.AppTypes, definition.HostOnlyTypes);
     }
 

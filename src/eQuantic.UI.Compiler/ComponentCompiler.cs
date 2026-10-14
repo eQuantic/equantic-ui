@@ -468,8 +468,8 @@ public class ComponentCompiler
         if (model.GetDeclaredSymbol(declaration) is INamedTypeSymbol self)
             declarations.AddRange(DefaultInterfaceMembers.Of(self, model.Compilation)
                 .Select(inherited => inherited.Declaration).OfType<SyntaxNode>());
-        // A component's server code stays on the server, and what it names is not what the module
-        // names. The other shapes write every method they declare.
+        // Server code stays on the server, and what it names is not what the module names: a
+        // [ServerOnly] method of any shape, and a component's Server Action body.
         var asComponent = !component.IsRecordType && !component.IsPlainClass && !component.IsStaticHelper && !component.IsUnionType;
         return new ReferencedNames(_referencedModules, NamedSourceTypes.Of(declarations,
             node => ReferenceEquals(node.SyntaxTree, model.SyntaxTree) ? model : model.Compilation.ModelOf(node.SyntaxTree),
@@ -599,8 +599,7 @@ public class ComponentCompiler
             }
 
             // A member that would land on a name the runtime's component already uses is refused
-            // HERE rather than in the branch below: that one validates client LOGIC and returns
-            // early for a stateless component, and #245's StatTile is one.
+            // before the emitter runs, for every component, stateless ones included (#245's StatTile).
             // The MODEL is handed over so the guard can walk the base chain: an app's own base
             // (`class Child : MyStatelessBase`) is ordinary, and the runtime members it inherits are
             // exactly what a declared NAME cannot answer.
@@ -615,23 +614,13 @@ public class ComponentCompiler
                 return result;
             }
 
-            // Semantic Analysis
-            SemanticModel? semanticModel = null;
-            if (component.SyntaxTree != null)
-            {
-                semanticModel = _semanticModelProvider.GetSemanticModel(component.SyntaxTree);
-                
-                // Validate Component Rules
-                var validator = new SemanticValidator(semanticModel);
-                var semanticErrors = validator.Validate(component);
-                
-                if (semanticErrors.Count > 0)
-                {
-                    result.Success = false;
-                    result.Errors.AddRange(semanticErrors);
-                    return result;
-                }
-            }
+            // The client boundary is not a pass of its own: what a component may not reach is refused
+            // where the conversion writes it (HostOnlySymbolExtensions), so the code checked is the code
+            // the module holds. A validator walked the whole FILE here, and refused a Server Action that
+            // read a file as client code, while a stateless component was never checked (#816).
+            SemanticModel? semanticModel = component.SyntaxTree != null
+                ? _semanticModelProvider.GetSemanticModel(component.SyntaxTree)
+                : null;
 
             // Generate TypeScript (preferred for Bun bundling)
             var tsBuilder = new TypeScriptCodeBuilder();

@@ -96,7 +96,9 @@ public class IdentifierStrategy : IExpressionIrStrategy
                 {
                     // A method GROUP names the symbol without calling it — `Func<…> f = Usable` emits
                     // `FaceName.usable` just as a call would, and fails at hydration just as hard.
-                    symbol.ReportIfHostOnly(identifier, context);
+                    // Refused, it is written as nothing more: a platform member reached bare would
+                    // otherwise be told again as untranslatable (EQ2004) beside it (#816).
+                    if (symbol.ReportIfHostOnly(identifier, context)) return JsExpr.Literal("undefined");
 
                     // An enum's member reached bare (`using static`) is the member, as its qualified
                     // spelling is: it was `Level.high`, a member of a class nothing defines (#485).

@@ -23,7 +23,7 @@ namespace eQuantic.UI.Compiler.Services;
 /// <para>
 /// Everything that is WRITTEN, that is. A name in code the twin does not carry is no name of the
 /// module, and it is left out by the rule of whoever leaves the code out, asked through that
-/// owner's own function and never repeated here: the parser's for a component's server code, the
+/// owner's own function and never repeated here: the parser's for server code, the
 /// constant strategy's for a read written as its value, and <c>nameof</c> and an attribute, which
 /// are text and metadata (<see cref="DefaultInterfaceMembers"/> reads a default's names the same
 /// way). It matters when two types share a simple name. A page that shows the app's own
@@ -50,13 +50,12 @@ internal sealed class NamedSourceTypes
     /// <param name="declarations">The declarations a module is written from.</param>
     /// <param name="modelFor">The model of a declaration's own file.</param>
     /// <param name="asComponent">
-    /// Whether the module is a component's, whose server code stays on the server: a
-    /// <c>[ServerOnly]</c> method is no member of its twin, and a <c>[ServerAction]</c> crosses as a
-    /// stub written from its signature. What such code names is not what the module names. Read with
+    /// Whether the module is a component's, whose <c>[ServerAction]</c> crosses as a stub written from
+    /// its signature. What server code names is not what the module names: a <c>[ServerOnly]</c> method
+    /// is no member of any twin (#816), and a Server Action's body is no part of a component's. Read with
     /// the rest of the class, a Server Action that mapped the Domain's <c>Order</c> into the app's own
     /// <c>Order</c> had the Domain's reached: compiled for the browser, where its server code is
-    /// refused, and in collision with the app's (found in review of #827). A record's, a plain
-    /// class's and a static class's methods are all written, so all are read.
+    /// refused, and in collision with the app's (found in review of #827).
     /// </param>
     public static NamedSourceTypes Of(IEnumerable<SyntaxNode> declarations, Func<SyntaxNode, SemanticModel?> modelFor,
         bool asComponent)
@@ -67,15 +66,6 @@ internal sealed class NamedSourceTypes
                 named.Read(declaration, model, asComponent);
         return named;
     }
-
-    /// <summary>A node whose code stays on the server, by the parser's own two rules.</summary>
-    private static bool StaysOnTheServer(SyntaxNode node) => node switch
-    {
-        MethodDeclarationSyntax method => Parser.ComponentParser.IsServerOnly(method),
-        BlockSyntax or ArrowExpressionClauseSyntax => node.Parent is MethodDeclarationSyntax action
-            && Parser.ComponentParser.IsServerAction(action),
-        _ => false,
-    };
 
     /// <summary>
     /// A node that writes nothing of what it names, each by its owner's rule: an attribute is
@@ -100,7 +90,8 @@ internal sealed class NamedSourceTypes
         {
             try
             {
-                if (asComponent && StaysOnTheServer(node)) continue;
+                // The code no twin is written from, by the parser's own rule.
+                if (Parser.ComponentParser.StaysOnTheServer(node, asComponent)) continue;
                 if (WritesNothing(node, model))
                 {
                     // Nothing of what it NAMES is written. What is written in its place is a value,

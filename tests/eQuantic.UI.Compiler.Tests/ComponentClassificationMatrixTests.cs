@@ -475,35 +475,34 @@ public class ComponentClassificationMatrixTests
     }
 
     /// <summary>
-    /// <c>IsStateful</c> follows the RESOLVED base, asserted through the one thing it actually
-    /// changes.
+    /// The client boundary holds for a component whatever base it was written over, the stateful ones
+    /// and the stateless ones alike (#816).
     ///
     /// <para>
-    /// The matrix's member cells cannot see it: stateful and stateless emit identical bodies, and
-    /// the <c>extends</c> clause beside them comes from <c>BaseClassName</c> — the WRITTEN name —
-    /// not from <c>IsStateful</c>. So a guard that asserted the emitted runtime base would pin the
-    /// written name and pass with <c>IsStateful</c> stuck at false, which is the trap this whole
-    /// file keeps falling into.
-    /// </para>
-    ///
-    /// <para>
-    /// What it really gates is <c>SemanticValidator</c>: the client/server boundary is enforced for
-    /// STATEFUL components only. Measured — a component over a base that ultimately extends
-    /// <c>StatefulComponent</c> is refused EQ2112 for touching <c>System.IO</c>, and on main, where
-    /// the fourth arm hardcoded <c>IsStateful = false</c>, the same component was waved through.
+    /// It was the one thing <c>IsStateful</c> gated: a validator ran for STATEFUL components only, so
+    /// this test pinned that the flag followed the resolved base, measured through EQ2112 — on main,
+    /// where the fourth arm hardcoded <c>IsStateful = false</c>, a component over an app base that
+    /// ultimately extends <c>StatefulComponent</c> was waved through. The boundary is asked now where
+    /// the conversion writes a symbol, for every module, so no base can wave anything through: the
+    /// stateless shapes below were exactly the ones the validator never read.
     /// </para>
     /// </summary>
-    [Fact]
-    public void TheClientBoundaryFollowsTheResolvedBase()
+    [Theory]
+    [InlineData("direct-stateless")]
+    [InlineData("direct-stateful")]
+    [InlineData("app-base")]
+    [InlineData("app-base-twice")]
+    [InlineData("app-base-over-stateful")]
+    public void TheClientBoundaryHolds_WhateverBaseItWasWrittenOver(string baseId)
     {
-        const string source = """
+        var source = $$"""
             using eQuantic.UI.Primitives;
 
             namespace Demo;
 
-            public abstract class StatefulBase : StatefulComponent { }
+            {{Bases[baseId].Preamble}}
 
-            public sealed class Probe : StatefulBase
+            public sealed class Probe : {{Bases[baseId].Written}}
             {
                 private string Read() => System.IO.File.ReadAllText("x");
                 public override VisualNode Build(ComponentContext context) => new Text(Read());

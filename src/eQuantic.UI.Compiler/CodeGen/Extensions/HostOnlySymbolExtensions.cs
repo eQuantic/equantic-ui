@@ -44,6 +44,14 @@ namespace eQuantic.UI.Compiler.CodeGen.Extensions;
 /// <para>
 /// A new branch that returns a name owes this call.
 /// </para>
+/// <para>
+/// The same question covers what .NET keeps on the host (<see cref="ServerPlatform"/>): a member of
+/// <c>System.IO</c>, of the networking, threading and interop namespaces, is refused at the site that
+/// writes it, with the code that names its API (EQ2102–EQ2107, EQ2112). So what is checked is what the
+/// module holds, stateless and stateful components and every class a page reaches alike, and a
+/// <c>[ServerAction]</c>'s body or a <c>[ServerOnly]</c> member, which no module holds, is never
+/// asked (#816).
+/// </para>
 /// </summary>
 internal static class HostOnlySymbolExtensions
 {
@@ -78,9 +86,10 @@ internal static class HostOnlySymbolExtensions
     }
 
     /// <summary>
-    /// Reports and returns true when <paramref name="symbol"/> may not be named from client code.
-    /// Says nothing about a symbol declared in THIS compilation: an app's own <c>[ServerOnly]</c>
-    /// member is handled by the parser, which emits no module for it at all.
+    /// Reports and returns true when <paramref name="symbol"/> may not be named from client code: it
+    /// is marked <c>[ServerOnly]</c> itself, it belongs to an API only a server has
+    /// (<see cref="ServerPlatform"/>), or the type it is declared on is marked <c>[ServerOnly]</c>
+    /// and is not this compilation's own.
     /// <para>
     /// <paramref name="through"/> is the type the member was reached THROUGH, where the call site
     /// has a receiver to ask about. A host-only type fences the members a component could only
@@ -106,11 +115,12 @@ internal static class HostOnlySymbolExtensions
         var declaring = symbol.ContainingType;
         if (declaring is null) return false;
         // The MEMBER first, whoever declares it. A member marked [ServerOnly] is refused where
-        // client code names it, this compilation's own included: a component leaves such a method
-        // out of its twin, so a call to it from the component's own Build was written as a call to
-        // a member the twin does not have, with no diagnostic (found in review of #827). Only the
-        // TYPE-level question below is this compilation's own business.
+        // client code names it, this compilation's own included: a twin leaves such a method out,
+        // so a call to it from the component's own Build was written as a call to a member the twin
+        // does not have, with no diagnostic (found in review of #827).
         if (symbol.IsHostOnly()) return Report(declaring, symbol.Name, node, context);
+        // What .NET keeps on the host, whatever the call goes through (#816).
+        if (declaring.ReportIfServerPlatform(node, context)) return true;
         if (context.Declares(declaring)) return false;
         if (!declaring.IsHostOnly()) return false;
         if (ReachedThroughAClientVisibleType(through)) return false;
@@ -139,6 +149,7 @@ internal static class HostOnlySymbolExtensions
     internal static bool ReportIfHostOnlyType(this ITypeSymbol? type, SyntaxNode node, ConversionContext context)
     {
         if (type is not INamedTypeSymbol named) return false;
+        if (named.ReportIfServerPlatform(node, context)) return true;
         if (context.Declares(named)) return false;
         if (!named.IsHostOnly()) return false;
         return Report(named, node, context);

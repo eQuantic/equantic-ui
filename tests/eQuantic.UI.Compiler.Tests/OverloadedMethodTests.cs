@@ -217,6 +217,28 @@ public class OverloadedMethodTests
         result.Errors.Should().NotContain(error => error.Code == "EQ1007");
     }
 
+    /// <summary>A class's, a static class's and a record's server-only method never reaches their twin
+    /// either (#816), so it names nothing there: it was written, and refused as an overload.</summary>
+    [Theory]
+    [InlineData("public sealed class Bag", "")]
+    [InlineData("public static class Bag", "static ")]
+    [InlineData("public sealed record Bag(int N)", "")]
+    public void AModulesServerOnlyMethod_TakesNoName(string declaration, string modifier)
+    {
+        var result = Compile($$"""
+            using eQuantic.UI.Primitives;
+
+            {{declaration}}
+            {
+                [ServerOnly] public {{modifier}}string Label(System.Net.Http.HttpClient client) => "";
+                public {{modifier}}string Label(string s) => s;
+            }
+            """, "Bag");
+
+        result.Errors.Should().NotContain(error => error.Code == "EQ1007");
+        result.TypeScript.Should().Contain("label(", Exactly.Once(), "the twin holds the method that crosses, and only it");
+    }
+
     /// <summary>A static class nested in a component is embedded in its module, a class of its own.</summary>
     [Fact]
     public void AStaticClassNestedInAComponent_IsCheckedToo()
@@ -319,12 +341,13 @@ public class OverloadedMethodTests
     }
 
     /// <summary>
-    /// A server-only method is left out of a COMPONENT's twin, and only there: a plain class's twin
-    /// writes every method, server-only ones too, so a derived <c>Foo(int)</c> takes over the base's
-    /// server-only <c>Foo(string)</c> in JavaScript as it would any other.
+    /// A server-only method is left out of every twin, a plain class's as much as a component's (#816),
+    /// so in a plain class's chain too it takes no name, and a derived <c>Foo(int)</c> beside the base's
+    /// server-only <c>Foo(string)</c> is the one <c>foo</c> there is. A plain class's twin wrote it, and
+    /// the two were refused as overloads.
     /// </summary>
     [Fact]
-    public void AnInheritedServerOnlyMethod_TakesItsName_InAPlainClassChain()
+    public void AnInheritedServerOnlyMethod_TakesNoName_InAPlainClassChain()
     {
         var results = new ComponentCompiler().CompileSource("""
             using eQuantic.UI.Primitives;
@@ -340,8 +363,9 @@ public class OverloadedMethodTests
             }
             """, "Probe.cs");
 
-        results.Single(result => result.ComponentName == "Derived").Errors.Should().ContainSingle()
-            .Which.Code.Should().Be("EQ1007");
+        results.Single(result => result.ComponentName == "Derived").Errors.Should().BeEmpty();
+        results.Single(result => result.ComponentName == "Base").TypeScript.Should().NotContain("foo(",
+            "the base's twin holds no server-only method");
     }
 
     /// <summary>In a component's chain a base's server-only method reaches no twin, so it takes no name.</summary>
