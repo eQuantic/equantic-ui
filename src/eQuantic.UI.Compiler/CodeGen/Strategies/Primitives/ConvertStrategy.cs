@@ -26,14 +26,14 @@ public class ConvertStrategy : IExpressionIrStrategy
         if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { ContainingType: { } type }
             && type.ToDisplayString() != "System.Convert") return false;
 
-        return memberAccess.Name.Identifier.Text.StartsWith("To");
+        return memberAccess.Name.Identifier.ValueText.StartsWith("To");
     }
 
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var name = memberAccess.Name.Identifier.Text;
+        var name = memberAccess.Name.Identifier.ValueText;
         var args = invocation.ArgumentList.Arguments;
         if (Encodings.TryGetValue(name, out var encoding))
             return Encoded(invocation, name, encoding, context);

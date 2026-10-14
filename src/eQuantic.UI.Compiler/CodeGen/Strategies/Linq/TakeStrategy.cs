@@ -17,7 +17,7 @@ public class TakeStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
-        if (memberAccess.Name.Identifier.Text != "Take")
+        if (memberAccess.Name.Identifier.ValueText != "Take")
             return false;
 
         // Semantic Check

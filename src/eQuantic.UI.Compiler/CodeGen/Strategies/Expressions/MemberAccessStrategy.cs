@@ -94,7 +94,7 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         if (symbol is null && !context.CanGuess(node))
         {
             context.Report(node, ConversionSeverity.Error, "EQ2006",
-                $"'{memberAccess.Name.Identifier.Text}' does not bind in the compiler's semantic model, "
+                $"'{memberAccess.Name.Identifier.ValueText}' does not bind in the compiler's semantic model, "
                 + "so any translation would be a guess. Either this code does not compile, or the "
                 + "compiler is missing references/generated sources — the SDK passes them via "
                 + "--refs/--generated; a custom host must do the same.");

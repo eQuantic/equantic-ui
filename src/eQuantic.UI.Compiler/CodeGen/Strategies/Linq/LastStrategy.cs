@@ -21,7 +21,7 @@ public class LastStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
-        var methodName = memberAccess.Name.Identifier.Text;
+        var methodName = memberAccess.Name.Identifier.ValueText;
         if (methodName != "Last" && methodName != "LastOrDefault")
             return false;
 
@@ -39,7 +39,7 @@ public class LastStrategy : IConversionStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var methodName = memberAccess.Name.Identifier.Text;
+        var methodName = memberAccess.Name.Identifier.ValueText;
 
         if (LinqArguments.WithADefaultValue(invocation, memberAccess, Eq.LinqLastOrDefault, context) is { } withDefault)
             return withDefault;

@@ -27,7 +27,7 @@ public class FieldExpressionStrategy : IConversionStrategy
 
     /// <summary>The name of the emitted backing slot for a property that uses <c>field</c>.</summary>
     public static string BackingSlot(PropertyDeclarationSyntax property) =>
-        eQuantic.UI.TwinName.BackingSlot(property.Identifier.Text);
+        eQuantic.UI.TwinName.BackingSlot(property.Identifier.ValueText);
 
     /// <summary>Whether this property's accessors read or write the compiler-provided store — the
     /// emitter needs the slot declared before the accessors that name it.</summary>

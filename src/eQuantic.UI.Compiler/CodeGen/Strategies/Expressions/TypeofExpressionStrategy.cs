@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -16,7 +17,7 @@ public class TypeofExpressionStrategy : IConversionStrategy
         // typeof(T) -> "T"
         // This is a simplification. Real Type objects don't exist in JS usually.
         // We return the type name as a string literal.
-        var typeName = typeOf.Type.ToString();
+        var typeName = typeOf.Type.ValueText();
         return $"'{typeName}'";
     }
 

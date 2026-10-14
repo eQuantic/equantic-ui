@@ -71,7 +71,7 @@ public static class ResourceClasses
             if (reference.GetSyntax() is not PropertyDeclarationSyntax declaration) continue;
             foreach (var invocation in declaration.DescendantNodes().OfType<InvocationExpressionSyntax>())
             {
-                if (invocation.Expression is not MemberAccessExpressionSyntax { Name.Identifier.Text: "GetString" }) continue;
+                if (invocation.Expression is not MemberAccessExpressionSyntax { Name.Identifier.ValueText: "GetString" }) continue;
                 if (invocation.ArgumentList.Arguments.Count > 0
                     && invocation.ArgumentList.Arguments[0].Expression is LiteralExpressionSyntax literal
                     && literal.Token.Value is string key)

@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
@@ -27,7 +28,7 @@ public class OfTypeStrategy : IConversionStrategy
             var typeArg = genericName.TypeArgumentList.Arguments.FirstOrDefault();
             if (typeArg != null)
             {
-                var typeName = typeArg.ToString();
+                var typeName = typeArg.ValueText();
 
                 // For primitive types, use typeof
                 if (IsPrimitiveType(typeName))

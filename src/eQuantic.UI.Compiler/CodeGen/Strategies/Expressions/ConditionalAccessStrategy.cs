@@ -63,7 +63,7 @@ public class ConditionalAccessStrategy : IConversionStrategy
             && !context.CanGuess(binding))
         {
             context.Report(node, ConversionSeverity.Error, "EQ2006",
-                $"'{binding.Name.Identifier.Text}' does not bind in the compiler's semantic model, so any "
+                $"'{binding.Name.Identifier.ValueText}' does not bind in the compiler's semantic model, so any "
                 + "translation would be a guess. Either this code does not compile, or the compiler "
                 + "is missing references/generated sources — the SDK passes them via --refs/--generated; "
                 + "a custom host must do the same.");

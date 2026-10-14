@@ -63,7 +63,7 @@ public class EnumerableFactoryStrategy : IExpressionIrStrategy
 
     /// <summary>The member name, with any type argument (<c>Empty&lt;string&gt;</c>) set aside.</summary>
     private static string Name(MemberAccessExpressionSyntax memberAccess) =>
-        memberAccess.Name.Identifier.Text;
+        memberAccess.Name.Identifier.ValueText;
 
     public int Priority => 12;
 }

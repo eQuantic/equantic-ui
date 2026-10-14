@@ -32,7 +32,7 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
             {
                 var kept = string.Join(", ", parenthesized.ParameterList.Parameters
                     .Where(p => !OutParameters.IsOut(p))
-                    .Select(p => Typed(p.Identifier.Text.ToJsIdentifier(), p, context)));
+                    .Select(p => Typed(p.Identifier.ValueText.ToJsIdentifier(), p, context)));
                 // Never async: C# refuses an `out` or a `ref` parameter on an async lambda (CS1988).
                 return JsExpr.ArrowBlock(kept,
                     OutParameters.Body(parenthesized.Block, parenthesized.ExpressionBody, byReference, context.Converter),
@@ -43,7 +43,7 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
             // has nothing to infer from on the other side, and an untyped parameter is an error in
             // the runtime's own build rather than merely a missing type.
             var parameters = string.Join(", ", parenthesized.ParameterList.Parameters
-                .Select(p => Typed(p.Identifier.Text.ToJsIdentifier(), p, context)));
+                .Select(p => Typed(p.Identifier.ValueText.ToJsIdentifier(), p, context)));
             var isAsyncLambda = parenthesized.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
             return parenthesized.Block != null
                 ? Block(parameters, parenthesized.Block, isAsyncLambda, context)
@@ -52,7 +52,7 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
         
         if (node is SimpleLambdaExpressionSyntax simple)
         {
-            var param = Typed(simple.Parameter.Identifier.Text.ToJsIdentifier(), simple.Parameter, context);
+            var param = Typed(simple.Parameter.Identifier.ValueText.ToJsIdentifier(), simple.Parameter, context);
             var isAsyncLambda = simple.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
             return simple.Block != null
                 ? Block(param, simple.Block, isAsyncLambda, context)

@@ -133,7 +133,7 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
         {
             return null;
         }
-        return generic.Identifier.Text switch
+        return generic.Identifier.ValueText switch
         {
             "Dictionary" => Eq.Dictionary,
             "SortedDictionary" => Eq.SortedDictionary,
@@ -241,7 +241,7 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
     private static string? CallOf(InvocationExpressionSyntax invocation, MemberAccessExpressionSyntax member,
         ConversionContext context)
     {
-        var name = member.Name.Identifier.Text;
+        var name = member.Name.Identifier.ValueText;
         // Unbound where the model cannot be asked: the two names only a dictionary answers.
         if (context.SemanticHelper.GetSymbol(invocation) is null && context.CanGuess(invocation))
         {
@@ -261,7 +261,7 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
             // Membership through the keys is the dictionary's own, found by its comparison: the keys'
             // array compares by SameValueZero whatever the key type.
             case "Contains" when invocation.ArgumentList.Arguments.Count == 1
-                && member.Expression is MemberAccessExpressionSyntax { Name.Identifier.Text: "Keys" } keys
+                && member.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Keys" } keys
                 && IsDictionary(keys.Expression, context):
                 return "Keys.Contains";
             default:
@@ -314,10 +314,10 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
     /// count through its keys or values included — or null when it reads none of them.</summary>
     private static string? ReadOf(MemberAccessExpressionSyntax member, ConversionContext context)
     {
-        var name = member.Name.Identifier.Text;
+        var name = member.Name.Identifier.ValueText;
         if (name is "Keys" or "Values" or "Count" && IsDictionary(member.Expression, context)) return name;
         return name == "Count"
-            && member.Expression is MemberAccessExpressionSyntax { Name.Identifier.Text: "Keys" or "Values" } view
+            && member.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Keys" or "Values" } view
             && IsDictionary(view.Expression, context)
                 ? "View.Count"
                 : null;

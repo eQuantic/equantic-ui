@@ -16,14 +16,14 @@ public class TupleMemberAccessStrategy : IConversionStrategy
     {
         if (node is not MemberAccessExpressionSyntax ma) return false;
         var type = context.SemanticHelper.GetType(ma.Expression);
-        return type.TupleElementIndex(ma.Name.Identifier.Text) >= 0;
+        return type.TupleElementIndex(ma.Name.Identifier.ValueText) >= 0;
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var ma = (MemberAccessExpressionSyntax)node;
         var type = context.SemanticHelper.GetType(ma.Expression);
-        var index = type.TupleElementIndex(ma.Name.Identifier.Text);
+        var index = type.TupleElementIndex(ma.Name.Identifier.ValueText);
         var receiver = context.Converter.ConvertExpression(ma.Expression);
         return $"{receiver}[{index}]";
     }

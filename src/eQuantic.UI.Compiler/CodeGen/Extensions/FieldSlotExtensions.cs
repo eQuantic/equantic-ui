@@ -45,7 +45,7 @@ internal static class FieldSlotExtensions
     internal static string MemberSlot(this SimpleNameSyntax name, ConversionContext context) =>
         context.SemanticHelper.GetSymbol(name) is IFieldSymbol field
             ? field.TwinSlot()
-            : name.Identifier.Text.ToCamelCase();
+            : name.Identifier.ValueText.ToCamelCase();
 
     /// <summary>An instance field of a plain class the source declares, whose twin eqc writes by this
     /// same rule: a framework type's twin is the runtime's, and names its members as they are.</summary>

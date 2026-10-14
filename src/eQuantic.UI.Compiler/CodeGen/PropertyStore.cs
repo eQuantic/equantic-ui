@@ -58,7 +58,7 @@ internal static class PropertyStore
         KeepsAStore(property) ? FieldExpressionStrategy.BackingSlot(property)
         : !property.Modifiers.Any(SyntaxKind.StaticKeyword) && !property.Modifiers.Any(SyntaxKind.AbstractKeyword)
           && IsAuto(property)
-            ? TwinName.Of(property.Identifier.Text)
+            ? TwinName.Of(property.Identifier.ValueText)
             : null;
 
     /// <summary>
@@ -115,7 +115,7 @@ internal static class PropertyStore
     public static IEnumerable<JsClassMember> CompilerAccessors(PropertyDeclarationSyntax property, SemanticModel? model,
         string getterAnnotation, string valueParameter)
     {
-        var name = TwinName.Of(property.Identifier.Text);
+        var name = TwinName.Of(property.Identifier.ValueText);
         var accessors = property.AccessorList?.Accessors ?? default;
         var getter = accessors.FirstOrDefault(accessor => accessor.IsKind(SyntaxKind.GetAccessorDeclaration));
         var setter = accessors.FirstOrDefault(accessor =>

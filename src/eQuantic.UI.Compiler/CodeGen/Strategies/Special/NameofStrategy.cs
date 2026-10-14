@@ -20,7 +20,7 @@ public class NameofStrategy : IConversionStrategy
         if (invocation.Expression is not IdentifierNameSyntax identifier)
             return false;
 
-        return identifier.Identifier.Text == "nameof";
+        return identifier.Identifier.ValueText == "nameof";
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

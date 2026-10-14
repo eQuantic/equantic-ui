@@ -22,7 +22,7 @@ public class SumStrategy : IExpressionIrStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
-        if (memberAccess.Name.Identifier.Text != "Sum")
+        if (memberAccess.Name.Identifier.ValueText != "Sum")
             return false;
 
         var symbol = context.SemanticHelper.GetSymbol(invocation);
@@ -62,7 +62,7 @@ public class SumStrategy : IExpressionIrStrategy
         // with a block goes down the selector's path, where it stays a lambda written in place.
         if (args.Count > 0 && args[0].Expression is SimpleLambdaExpressionSyntax { ExpressionBody: { } expression } lambda)
         {
-            var param = lambda.Parameter.Identifier.Text.ToJsIdentifier();
+            var param = lambda.Parameter.Identifier.ValueText.ToJsIdentifier();
             var body = context.Converter.ConvertIr(expression);
             var callback = JsExpr.Arrow($"$sum, {param}", LinqAccumulation.Add(JsExpr.Identifier("$sum"), body, exact));
             return Settle(JsExpr.Template($"{{0}}.reduce({{1}}, {seed})", [source, callback]));

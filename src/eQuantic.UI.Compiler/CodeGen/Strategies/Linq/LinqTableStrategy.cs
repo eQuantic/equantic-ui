@@ -34,10 +34,10 @@ public class LinqTableStrategy : IExpressionIrStrategy
         // The shape is the one of the arguments the template takes, a key comparer the fence passes
         // being dropped. A ToDictionary of three arguments no model binds has no shape of its own: its
         // third is a comparer, which nothing can judge without a model, and ConvertIr refuses it.
-        var shaped = Shaped(name.Identifier.Text, invocation, context).Count;
-        if (Template(name.Identifier.Text, shaped) is null
-            && !IsToDictionaryWithAComparer(name.Identifier.Text, shaped)
-            && name.Identifier.Text != "ToHashSet") return false;
+        var shaped = Shaped(name.Identifier.ValueText, invocation, context).Count;
+        if (Template(name.Identifier.ValueText, shaped) is null
+            && !IsToDictionaryWithAComparer(name.Identifier.ValueText, shaped)
+            && name.Identifier.ValueText != "ToHashSet") return false;
 
         // The SYMBOL decides when there is one; a NAME may decide only where the model cannot be
         // asked at all (CanGuess — the documented policy). Claiming by name FIRST and checking the
@@ -52,23 +52,23 @@ public class LinqTableStrategy : IExpressionIrStrategy
         var invocation = (InvocationExpressionSyntax)node;
         invocation.TryGetInstanceCall(out var receiverSyntax, out var name);
 
-        if (name.Identifier.Text == "ToHashSet") return ToHashSet(invocation, receiverSyntax, context);
+        if (name.Identifier.ValueText == "ToHashSet") return ToHashSet(invocation, receiverSyntax, context);
 
         // A key comparer is the collection fence's to judge (#578): one that asks for what the shape
         // already does is dropped, and any other is refused, the call written as its own C# text, as
         // ToHashSet's is. ToDictionary refused every comparer, StringComparer.Ordinal included, and
         // ToLookup took one for an element selector and called it.
-        foreach (var comparer in KeyComparers(name.Identifier.Text, invocation, context))
-            if (comparer.RefusesAsUntranslatable(name.Identifier.Text, context)) return JsExpr.Opaque(invocation.ToString());
-        var shaped = Shaped(name.Identifier.Text, invocation, context);
+        foreach (var comparer in KeyComparers(name.Identifier.ValueText, invocation, context))
+            if (comparer.RefusesAsUntranslatable(name.Identifier.ValueText, context)) return JsExpr.Opaque(invocation.ToString());
+        var shaped = Shaped(name.Identifier.ValueText, invocation, context);
 
         var receiver = LinqSource.Ir(receiverSyntax, context);
         var args = shaped
             .Select(a => LinqSource.Argument(a, invocation, context))
             .ToArray();
 
-        var template = Template(name.Identifier.Text, args.Length);
-        if (name.Identifier.Text == "ToDictionary" && ToDictionary(invocation, args.Length, context) is var (dictionary, refusal))
+        var template = Template(name.Identifier.ValueText, args.Length);
+        if (name.Identifier.ValueText == "ToDictionary" && ToDictionary(invocation, args.Length, context) is var (dictionary, refusal))
         {
             if (refusal is not null) return JsExpr.Opaque(context.Unhandled(invocation, refusal));
             template = dictionary;
@@ -78,13 +78,13 @@ public class LinqTableStrategy : IExpressionIrStrategy
         if (template is null) return JsExpr.Opaque(context.Unhandled(invocation, "ToDictionary with a comparer"));
         // A lookup groups by the key type's equality, as GroupBy does: by === two equal records
         // were two groups.
-        if (name.Identifier.Text == "ToLookup"
+        if (name.Identifier.ValueText == "ToLookup"
             && context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { TypeArguments: [_, var lookupKey, ..] })
         {
             template = template.Replace("$x.key === $key", LinqKeys.Matches(lookupKey, "$x.key", "$key"));
         }
         // A lookup's accumulator is typed where the output is TypeScript, as GroupBy's is (#727).
-        if (name.Identifier.Text == "ToLookup" && context.TypeAnnotations)
+        if (name.Identifier.ValueText == "ToLookup" && context.TypeAnnotations)
             template = template.Replace("($groups, $item)", "($groups: any[], $item)");
         if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
 

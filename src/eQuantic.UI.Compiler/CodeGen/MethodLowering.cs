@@ -67,7 +67,12 @@ internal sealed class MethodLowering
         if (method.Body == null && method.ExpressionBody == null) return null;
 
         var byReference = OutParameters.Of(method.ParameterList);
-        var text = method.Body?.ToString() ?? method.ExpressionBody?.ToString() ?? "";
+        // The names the body mentions, by their value: a search of its TEXT found `class` inside a
+        // function `_class`, and `@class` nowhere a body reads it as `class` (#704).
+        var mentioned = ((SyntaxNode?)method.Body ?? method.ExpressionBody)?.DescendantNodes()
+            .OfType<IdentifierNameSyntax>()
+            .Select(identifier => identifier.Identifier.ValueText)
+            .ToHashSet(StringComparer.Ordinal) ?? [];
         var parameters = string.Join(", ", method.ParameterList.Parameters
             .Where(parameter => !OutParameters.IsOut(parameter))
             .Select(parameter =>
@@ -75,15 +80,15 @@ internal sealed class MethodLowering
                 // A parameter the body never mentions takes the underscore convention — the
                 // interface a tokenizer implements hands over state that a simple language never
                 // reads, and the runtime's own build rejects an unused name.
-                var name = text.Contains(parameter.Identifier.Text)
-                    ? parameter.Identifier.Text.ToJsIdentifier()
-                    : "_" + parameter.Identifier.Text.ToJsIdentifier();
+                var name = mentioned.Contains(parameter.Identifier.ValueText)
+                    ? parameter.Identifier.ValueText.ToJsIdentifier()
+                    : "_" + parameter.Identifier.ValueText.ToJsIdentifier();
                 // An optional parameter keeps its default, converted for the parameter's type, so a
                 // caller that omits the trailing arguments runs it.
                 return ParamWithDefault(name, declaredType(parameter.Type),
                     parameter.Default is null
                         ? null
-                        : _converter.ConvertExpression(parameter.Default.Value, parameter.Type?.ToString()),
+                        : _converter.ConvertExpression(parameter.Default.Value, parameter.Type?.ValueText()),
                     parameter.Modifiers.Any(SyntaxKind.ParamsKeyword));
             }));
 
@@ -194,7 +199,7 @@ internal sealed class MethodLowering
         var returned = model?.GetSymbolInfo(method.ReturnType).Symbol as ITypeSymbol
             ?? model?.GetTypeInfo(method.ReturnType).Type;
         if (returned is null || returned.TypeKind == TypeKind.Error)
-            return method.ReturnType.ToString().StartsWith("Task");
+            return method.ReturnType.ValueText().StartsWith("Task");
         return returned.OriginalDefinition.ToDisplayString()
             is "System.Threading.Tasks.Task" or "System.Threading.Tasks.Task<TResult>";
     }

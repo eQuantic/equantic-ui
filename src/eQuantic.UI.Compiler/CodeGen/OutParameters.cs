@@ -70,8 +70,8 @@ internal static class OutParameters
         IReadOnlyList<ParameterSyntax> byReference, CSharpToJsConverter converter)
     {
         var owner = byReference[0].Parent?.Parent ?? byReference[0];
-        var declared = byReference.Where(IsOut).Select(p => p.Identifier.Text.ToJsIdentifier()).ToArray();
-        var carried = byReference.Select(p => p.Identifier.Text.ToJsIdentifier());
+        var declared = byReference.Where(IsOut).Select(p => p.Identifier.ValueText.ToJsIdentifier()).ToArray();
+        var carried = byReference.Select(p => p.Identifier.ValueText.ToJsIdentifier());
 
         // The wrapper's statements stand one level into the body, the arrow's head among them, and
         // the arrow's block one level further: the body converts there, so what it lays out (a

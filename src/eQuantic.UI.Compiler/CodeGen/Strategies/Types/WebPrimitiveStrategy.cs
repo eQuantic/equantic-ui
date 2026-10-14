@@ -16,7 +16,7 @@ public class WebPrimitiveStrategy : IConversionStrategy
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
 
-        var name = memberAccess.Name.Identifier.Text;
+        var name = memberAccess.Name.Identifier.ValueText;
 
         if (name is "EscapeDataString" or "UnescapeDataString" or "EscapeUriString" or "UnescapeUriString")
         {
@@ -34,7 +34,7 @@ public class WebPrimitiveStrategy : IConversionStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var name = memberAccess.Name.Identifier.Text;
+        var name = memberAccess.Name.Identifier.ValueText;
         var arg = invocation.ArgumentList.Arguments.Count > 0
             ? context.Converter.ConvertExpression(invocation.ArgumentList.Arguments[0].Expression)
             : "''";

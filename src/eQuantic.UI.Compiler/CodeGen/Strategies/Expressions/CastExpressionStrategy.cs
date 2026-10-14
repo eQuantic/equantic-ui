@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
@@ -101,7 +102,7 @@ public class CastExpressionStrategy : IExpressionIrStrategy
         // the truncation stays even for sources that would not need it.
         var inner = context.Converter.ConvertIr(cast.Expression);
         var text = JsExprWriter.WriteIn(inner, JsPrecedence.Call);
-        return cast.Type.ToString() switch
+        return cast.Type.ValueText() switch
         {
             "char" => JsExpr.Callish($"String.fromCharCode({text})"),
             "string" => JsExpr.Callish($"String({text})"),

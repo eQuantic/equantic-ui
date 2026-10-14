@@ -108,7 +108,7 @@ internal static class OverloadedMethods
             errors.Add(new CompilationError
             {
                 Code = "EQ1007",
-                Message = Message(type.Identifier.Text, name, earlier, earlierLine),
+                Message = Message(type.Identifier.ValueText, name, earlier, earlierLine),
                 SourcePath = sourcePath,
                 Line = position.Line + 1,
                 Column = position.Character + 1,
@@ -159,7 +159,7 @@ internal static class OverloadedMethods
         {
             var (get, set) = Indexer.NamesOf(indexer, model);
             var bearer = indexer.ExplicitInterfaceSpecifier is null ? Bearer.Indexer : Bearer.ExplicitIndexer;
-            var keys = string.Join(", ", indexer.ParameterList.Parameters.Select(parameter => parameter.Type?.ToString() ?? parameter.Identifier.Text));
+            var keys = string.Join(", ", indexer.ParameterList.Parameters.Select(parameter => parameter.Type?.ValueText() ?? parameter.Identifier.ValueText));
             var shown = indexer.ExplicitInterfaceSpecifier is { } face ? $"{face.Name}.this[{keys}]" : $"this[{keys}]";
             if (indexer.ExpressionBody is not null
                 || indexer.AccessorList?.Accessors.Any(accessor => accessor.IsKind(SyntaxKind.GetAccessorDeclaration)) == true)
@@ -222,7 +222,7 @@ internal static class OverloadedMethods
             errors.Add(new CompilationError
             {
                 Code = "EQ1007",
-                Message = $"'{type.Identifier.Text}.{member.Shown}' lowers to `{lowered}`, and so does '{earlier.Shown}' "
+                Message = $"'{type.Identifier.ValueText}.{member.Shown}' lowers to `{lowered}`, and so does '{earlier.Shown}' "
                     + $"(line {earlierLine}). The twin of a record or a struct holds its state on each instance and its methods "
                     + "and computed properties on its prototype, one member per name, so the two would share one value, or "
                     + $"the constructor would write one over the other. Rename one of them (a private field `_{lowered}`, "
@@ -257,8 +257,8 @@ internal static class OverloadedMethods
             errors.Add(new CompilationError
             {
                 Code = "EQ1007",
-                Message = $"'{type.Identifier.Text}({parameter.Identifier.ValueText})' lowers to `{lowered}`, and so does "
-                    + $"'{type.Identifier.Text}({earlier.Identifier.ValueText})'. The twin's constructor names a primary "
+                Message = $"'{type.Identifier.ValueText}({parameter.Identifier.ValueText})' lowers to `{lowered}`, and so does "
+                    + $"'{type.Identifier.ValueText}({earlier.Identifier.ValueText})'. The twin's constructor names a primary "
                     + "constructor's parameters camelCased, and a function cannot take two parameters of one name. Rename one "
                     + "of them by what it holds.",
                 SourcePath = sourcePath,
@@ -300,7 +300,7 @@ internal static class OverloadedMethods
             errors.Add(new CompilationError
             {
                 Code = "EQ1007",
-                Message = $"'{type.Identifier.Text}({name})' lowers to `{lowered}`, and so does '{other.Shown}' (line {otherLine}). "
+                Message = $"'{type.Identifier.ValueText}({name})' lowers to `{lowered}`, and so does '{other.Shown}' (line {otherLine}). "
                     + "A member reads the primary constructor's parameter, so the twin holds it on each instance under that "
                     + "name, where the member of the same name stands, and one would hide the other. Rename the parameter by "
                     + $"what it holds, or hold it in a field of your own (`private readonly {parameter.Type} _{lowered} = {name};`).",
@@ -321,7 +321,7 @@ internal static class OverloadedMethods
     {
         foreach (var parameter in type.ParameterList?.Parameters ?? default)
             if (type.HoldsParameter(parameter, model))
-                yield return (parameter.Identifier.ValueText, $"{type.Identifier.Text}({parameter.Identifier.ValueText})", parameter.Identifier);
+                yield return (parameter.Identifier.ValueText, $"{type.Identifier.ValueText}({parameter.Identifier.ValueText})", parameter.Identifier);
         foreach (var member in type.Members)
         {
             if (member.Modifiers.Any(SyntaxKind.StaticKeyword) || member.Modifiers.Any(SyntaxKind.ConstKeyword)) continue;
@@ -495,7 +495,7 @@ internal static class OverloadedMethods
             : type.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax())
                 .OfType<TypeDeclarationSyntax>()
                 .SelectMany(declaration => declaration.ParameterList?.Parameters ?? default)
-                .Select(parameter => parameter.Identifier.Text);
+                .Select(parameter => parameter.Identifier.ValueText);
 
     /// <summary>A name along a twin's chain: who holds it, whether it came from an interface, and the
     /// interface member it answers (none for a member a class declares, or for a private helper).</summary>
@@ -559,7 +559,7 @@ internal static class OverloadedMethods
             {
                 Code = "EQ1007",
                 Message =
-                    $"'{type.Identifier.Text}.{Signature(method)}' lowers to `{(isStatic ? "static " : "")}{name}()`, "
+                    $"'{type.Identifier.ValueText}.{Signature(method)}' lowers to `{(isStatic ? "static " : "")}{name}()`, "
                     + $"and so does '{inherited.ContainingType.Name}.{inherited.Name}("
                     + $"{string.Join(", ", inherited.Parameters.Select(p => p.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)))})', "
                     + $"which it inherits{at}. A JavaScript class chain has one member per name, so the derived "
@@ -804,5 +804,5 @@ internal static class OverloadedMethods
     /// <summary><c>Compare(CodeDocument, CodeDocument)</c>: the name and the parameter types, which is
     /// what tells a reader the two apart.</summary>
     private static string Signature(MethodDeclarationSyntax method) =>
-        $"{method.Identifier.Text}({string.Join(", ", method.ParameterList.Parameters.Select(parameter => parameter.Type?.ToString() ?? parameter.Identifier.Text))})";
+        $"{method.Identifier.ValueText}({string.Join(", ", method.ParameterList.Parameters.Select(parameter => parameter.Type?.ValueText() ?? parameter.Identifier.ValueText))})";
 }

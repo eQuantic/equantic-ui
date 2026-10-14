@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -13,7 +14,7 @@ public class SizeOfExpressionStrategy : IConversionStrategy
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var sizeOf = (SizeOfExpressionSyntax)node;
-        var type = sizeOf.Type.ToString();
+        var type = sizeOf.Type.ValueText();
 
         // Standard C# sizes
         return type switch

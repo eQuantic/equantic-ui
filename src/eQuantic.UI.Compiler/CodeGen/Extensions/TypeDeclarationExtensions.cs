@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen;
@@ -161,7 +162,7 @@ public static class TypeDeclarationExtensions
     /// </summary>
     internal static string TsTypeFor(TypeSyntax? type, SemanticModel? model = null)
     {
-        var raw = type?.ToString() ?? "";
+        var raw = type?.ValueText() ?? "";
         var name = raw.TrimEnd('?');
 
         // A type whose C# name names nothing in TypeScript crosses as its stand-in (TsStandIn): an
@@ -213,7 +214,7 @@ public static class TypeDeclarationExtensions
     /// <c>System.</c> is the same type as its keyword, and a char's default is U+0000.</summary>
     internal static string DefaultFor(TypeSyntax? type)
     {
-        var name = type?.ToString() ?? "";
+        var name = type?.ValueText() ?? "";
         if (name.EndsWith("?")) return "null"; // Nullable<T> / nullable reference
         if (name.StartsWith("System.", System.StringComparison.Ordinal)) name = name["System.".Length..];
 

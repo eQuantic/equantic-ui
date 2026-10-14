@@ -83,7 +83,7 @@ public class QueryExpressionStrategy : IConversionStrategy
         {
             _context = context;
             _query = query;
-            _rangeVariable = query.FromClause.Identifier.Text;
+            _rangeVariable = query.FromClause.Identifier.ValueText;
             _chain = Reparent(query.FromClause.Expression);
         }
 
@@ -141,7 +141,7 @@ public class QueryExpressionStrategy : IConversionStrategy
 
         private bool IsIdentity(ExpressionSyntax expression) =>
             expression is IdentifierNameSyntax identifier
-            && identifier.Identifier.Text == _rangeVariable;
+            && identifier.Identifier.ValueText == _rangeVariable;
 
         private void Apply(string name, ExpressionSyntax body, IMethodSymbol? symbol) =>
             Call(name, new[] { Lambda(body) }, symbol);

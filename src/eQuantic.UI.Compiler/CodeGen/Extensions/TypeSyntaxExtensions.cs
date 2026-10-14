@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -51,6 +52,6 @@ internal static class TypeSyntaxExtensions
         QualifiedNameSyntax qualified => SimpleName(qualified.Right),
         AliasQualifiedNameSyntax alias => SimpleName(alias.Name),
         SimpleNameSyntax simple => simple.Identifier.ValueText,
-        _ => type.ToString(),
+        _ => type.ValueText(),
     };
 }

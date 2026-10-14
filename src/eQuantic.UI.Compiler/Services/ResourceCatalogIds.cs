@@ -61,7 +61,7 @@ internal sealed class ResourceCatalogIds
                              .OfType<ClassDeclarationSyntax>())
                 {
                     if (!candidate.Members.OfType<PropertyDeclarationSyntax>()
-                            .Any(property => property.Identifier.Text == "ResourceManager"))
+                            .Any(property => property.Identifier.ValueText == "ResourceManager"))
                         continue;
                     model ??= compilation.GetSemanticModel(tree);
                     if (model.GetDeclaredSymbol(candidate) is INamedTypeSymbol type

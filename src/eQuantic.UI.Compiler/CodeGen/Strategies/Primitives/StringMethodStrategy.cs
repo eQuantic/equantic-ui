@@ -44,7 +44,7 @@ public class StringMethodStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
-        var methodName = memberAccess.Name.Identifier.Text;
+        var methodName = memberAccess.Name.Identifier.ValueText;
         if (!SupportedMethods.Contains(methodName))
             return false;
 
@@ -69,7 +69,7 @@ public class StringMethodStrategy : IConversionStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var methodName = memberAccess.Name.Identifier.Text;
+        var methodName = memberAccess.Name.Identifier.ValueText;
 
         if (methodName == "Split")
             return SplitCall(invocation, context);

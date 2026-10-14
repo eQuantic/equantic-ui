@@ -35,7 +35,7 @@ public class GuidTypeStrategy : IExpressionIrStrategy
     private static bool IsGuid(ExpressionSyntax receiver, ConversionContext context) =>
         context.SemanticHelper.GetSymbol(receiver) is ITypeSymbol type
             ? type.ToDisplayString() == "System.Guid"
-            : receiver is IdentifierNameSyntax { Identifier.Text: "Guid" } && context.CanGuess(receiver);
+            : receiver is IdentifierNameSyntax { Identifier.ValueText: "Guid" } && context.CanGuess(receiver);
 
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
@@ -47,11 +47,11 @@ public class GuidTypeStrategy : IExpressionIrStrategy
                 ? Parsed(list.Arguments[0].Expression, context, Eq.GuidOf)
                 : JsExpr.Literal(Empty);
 
-        if (node is MemberAccessExpressionSyntax { Name.Identifier.Text: "Empty" })
+        if (node is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Empty" })
             return JsExpr.Literal(Empty);
 
         // `Guid.Parse` handed on as a function (`texts.Select(Guid.Parse)`) is the runtime's reader.
-        if (node is MemberAccessExpressionSyntax { Name.Identifier.Text: "Parse" })
+        if (node is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Parse" })
         {
             context.UsedHelpers.Add(Eq.Import);
             return JsExpr.Identifier(Eq.GuidParse);
@@ -60,7 +60,7 @@ public class GuidTypeStrategy : IExpressionIrStrategy
         if (node is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax method } invocation)
         {
             var arguments = invocation.ArgumentList.Arguments;
-            switch (method.Name.Identifier.Text)
+            switch (method.Name.Identifier.ValueText)
             {
                 case "NewGuid":
                     return JsExpr.Callish("crypto.randomUUID()");
