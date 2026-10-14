@@ -1,0 +1,126 @@
+# Spec Delta
+
+## ADDED Requirements
+
+### Requirement: The build reads the code that crosses as client code, and nothing else
+
+The build SHALL check against the client boundary exactly the code a module holds: every member of a
+component its twin holds, a stateless component's as much as a stateful one's, and every class, record
+and static class that becomes a module. It SHALL NOT check code that never crosses: the body of a
+component's `[ServerAction]`, whose twin is a stub written from its signature, a method, an operator or a
+conversion marked `[ServerOnly]`, whatever type declares it, and a class marked `[ServerOnly]`. Such a
+member SHALL be no member of any twin, and what it names SHALL be neither imported nor refused by a module.
+
+#### Scenario: A Server Action that reads a file
+
+- **WHEN** a stateful or a stateless page declares `[ServerAction] public Task<bool> Archived() => Task.FromResult(File.Exists(Path.Combine(Path.GetTempPath(), "receipt-1.txt")));`, expression-bodied or block-bodied
+- **THEN** the build succeeds, and the page's module holds the action's stub and no name of `File` or `Path`
+
+#### Scenario: A server-only member of a page
+
+- **WHEN** a page declares `[ServerOnly] public bool Warm() => File.Exists("x");`, or a block-bodied one that builds an `HttpClient` and sleeps a `Thread`
+- **THEN** the build succeeds, and the page's module holds no member of that name
+
+#### Scenario: A server-only class beside a page in its file
+
+- **WHEN** a page's file declares `[ServerOnly] public static class Disk { public static bool Has(string p) => File.Exists(p); }`
+- **THEN** the build succeeds, and writes no module for `Disk`
+
+#### Scenario: A server-only member of a class, a static class or a record
+
+- **WHEN** a class, a static class or a record declares a `[ServerOnly]` method or operator that reads a file
+- **THEN** the build succeeds, and its twin holds no such member
+
+#### Scenario: A framework host-only type read by a Server Action
+
+- **WHEN** a page's Server Action returns `Task.FromResult(Matrix2D.Identity.M11)`
+- **THEN** the build succeeds, where it was refused with EQ2010 as a type position of the page
+
+### Requirement: Client code that reaches an API only a server has is refused once, where it is written
+
+Client code that calls, reads, constructs, groups or extends a member of an API only a server has SHALL
+fail the build at that site, with the code of the API: `EQ2112` for `System.IO`, `EQ2102` for
+`Microsoft.EntityFrameworkCore` and `System.Data`, `EQ2103` for `System.Net.Http` and
+`System.Net.Sockets`, `EQ2104` for `Thread`, `Monitor`, `Mutex` and `Semaphore` of `System.Threading`,
+`EQ2105` for `Process` of `System.Diagnostics`, `EQ2106` for `System.Runtime.InteropServices` and
+`EQ2107` for `System.Reflection.Emit`. The API SHALL be decided by the namespace of the type that
+declares the member, a whole namespace or a type of one, and never by a prefix of the type's name. An
+exception type of those namespaces SHALL NOT be refused: it is a value the browser builds and tests by
+its type names. Each site SHALL be told once, never also as a member with no translation (EQ2004).
+
+#### Scenario: A call in a stateless page
+
+- **WHEN** a stateless page's Build shows `File.Exists("x") ? "y" : "n"`
+- **THEN** the build fails with one EQ2112 at the call, where it was EQ2004
+
+#### Scenario: A construction, a read and a method group
+
+- **WHEN** a page passes `new FileInfo("x")` to a method, shows `Path.DirectorySeparatorChar.ToString()`, or holds `Func<string, bool> Has = File.Exists`
+- **THEN** each fails the build with one EQ2112 at the site, where each built and named a class the browser does not have
+
+#### Scenario: A member of a page that crosses
+
+- **WHEN** a field's initializer, a lambda, a private method or a local function of a page calls `File.Exists`
+- **THEN** the build fails with one EQ2112 there
+
+#### Scenario: A class a page reaches
+
+- **WHEN** a class, a static class or a record of the app calls `File.Exists`
+- **THEN** the build fails with one EQ2112 at the class's file, where it was EQ2004
+
+#### Scenario: An extension and a call through using static
+
+- **WHEN** a page calls `client.GetFromJsonAsync<int>("x")` on an `HttpClient`, or `Exists("x")` under `using static System.IO.File`
+- **THEN** the build fails with one EQ2103, or one EQ2112, at the call
+
+#### Scenario: What is no server API
+
+- **WHEN** a page subscribes to an `IObservable<int>`, throws and catches an `IOException`, and holds a field of type `FileInfo?`
+- **THEN** none is refused as a server API: the `Subscribe` call is EQ2004, a member with no translation, and the rest builds
+
+### Requirement: A type the build writes no module for is refused where client code names it
+
+A type of source, the app's or a referenced project's, for which the build writes no module because it
+or a class it derives from is marked `[ServerOnly]` or is an attribute, or because it is declared inside
+such a type, SHALL fail the build with EQ2010 at every site where client code writes its name: a call, a
+static read, a name qualified by its namespace, `using static`, a method group, a construction, an
+operator, an extension's home, a type test, an `as`, a struct's zero, a local's annotation, a member's
+annotation in a class or a record, and a Server Action's answer or parameter. Each site SHALL be told
+once. A position the module writes as nothing SHALL be free: a component's field or parameter, which is
+annotated `any`, a cast, a list of the type, a reference type's zero and `nameof`. A component SHALL
+cross whatever it is marked, where it is not declared inside a type that never crosses.
+
+#### Scenario: The app's own server-only class
+
+- **WHEN** the app declares `[ServerOnly] public static class Vault { public static string Key() => "k"; }` and a stateless or a stateful page shows `Vault.Key()`, in an expression body or a block
+- **THEN** the build fails with one EQ2010 at the page, where it built and the browser threw `Vault is not defined`
+
+#### Scenario: Every way of naming it
+
+- **WHEN** a page names the app's `[ServerOnly]` types through `App.Model.Vault.Key()`, `Vault.Name`, `new Ledger()`, `Ledger.Open()`, `Key()` under `using static`, `Func<string> f = Vault.Key`, `"x".Sealed()` over a `[ServerOnly]` extension class, `new Secret("x")` of a `[ServerOnly]` record, `new Savings()` over a `[ServerOnly]` base, `o is Ledger`, `o as Ledger`, `default(Amount)` of a `[ServerOnly]` struct, a field of that struct, a local `Ledger? held`, or a Server Action that answers or takes a `Secret`
+- **THEN** each fails the build with one EQ2010 at the page, in the app as in a referenced project
+
+#### Scenario: An attribute class
+
+- **WHEN** a page shows `new MarkAttribute().Of` of the app's `class MarkAttribute : Attribute`
+- **THEN** the build fails with EQ2010 at the page, where it built and named a class nothing wrote
+
+#### Scenario: A struct's zero in a type that crosses
+
+- **WHEN** `public static class Shop { public static Amount Price() => default; }` over a `[ServerOnly] struct Amount`, and a page shows `Shop.Price().V.ToString()`
+- **THEN** the build fails with one EQ2010 at `Shop`'s file, where `Shop.Price()` answered undefined
+
+#### Scenario: A position written as nothing
+
+- **WHEN** a page declares a field `Ledger? _ledger`, a method taking `Ledger? ledger`, a `List<Ledger>` and its `FirstOrDefault()`, a cast `(Ledger)o`, or shows `nameof(Ledger)`
+- **THEN** the build succeeds, and the page's module names no `Ledger`
+
+#### Scenario: Server code names it freely
+
+- **WHEN** a page's Server Action body or `[ServerOnly]` member, a `[ServerOnly]` method of a class that crosses, or another `[ServerOnly]` class names `Vault` and `Ledger`
+- **THEN** the build succeeds, and no module names either
+
+#### Scenario: A component marked server-only
+
+- **WHEN** a page places `new Badge()`, a top-level component marked `[ServerOnly]`
+- **THEN** the build succeeds, writes `Badge`'s module, and the page imports it

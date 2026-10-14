@@ -875,9 +875,15 @@ after the tag, that the next release folds.
 
 ## Compiler Boundaries (Server vs Client)
 
-**Client Components (StatefulComponent/StatelessComponent):**
+**Client code** is what crosses to the browser: every member of a component its twin holds, stateful
+and stateless alike, and every class, record and static class a page's module reaches.
 - Allowed: UI Logic, State Management, `System.Linq`, Basic Types
-- Forbidden: `System.IO`, `System.Net.Http` (direct), blocking `.Wait()`
-- Bridge: Data fetching MUST use `[ServerAction]`
+- Forbidden: `System.IO`, `System.Net.Http` (direct) and sockets, OS threading and locking, processes,
+  native interop, `System.Reflection.Emit`, direct database access (EQ2102–EQ2107, EQ2112), a type or
+  member the build keeps on the server, the app's own `[ServerOnly]` types included (EQ2010), blocking
+  `.Wait()`
+- Bridge: Data fetching MUST use `[ServerAction]`. A Server Action's body, a `[ServerOnly]` member of
+  any type and a `[ServerOnly]` class never cross, so they may use all of the above
 
-**The compiler validates these boundaries before emitting JS.**
+**The compiler refuses these where it writes the code that crosses, before any JS is written for the
+module, and reads nothing that stays on the server (#816, #823).**

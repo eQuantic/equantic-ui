@@ -4,14 +4,14 @@ namespace eQuantic.UI.Primitives;
 
 /// <summary>
 /// The method NEVER crosses to the client: the transpiler omits it from the TypeScript twin
-/// entirely, so it may use the whole server surface (HttpClient, EF, file IO) without tripping the
-/// client-boundary validation — and no trace of it ships in the bundle.
+/// entirely, whatever type declares it, so it may use the whole server surface (HttpClient, EF, file
+/// IO) without tripping the client-boundary validation — and no trace of it ships in the bundle.
 /// <para>
 /// The counterpart of <see cref="ServerActionAttribute"/>, which keeps the method callable from the
 /// browser through an RPC stub. Reach for ServerOnly when the SERVER calls the method itself: SSR
 /// prefetch (<c>IServerPrefetch.PrefetchAsync</c>), request-time composition, background work.
-/// A method the client's own code calls must NOT be ServerOnly — the call would resolve to nothing
-/// at runtime; make it a ServerAction instead.
+/// A method the client's own code calls must NOT be ServerOnly — no twin holds it, so the build
+/// refuses the call (EQ2010); make it a ServerAction instead.
 /// </para>
 /// <para>
 /// On a CLASS it says the same of the whole type: the transpiler emits no module for it. Every
@@ -20,8 +20,8 @@ namespace eQuantic.UI.Primitives;
 /// build with EQ2004 on their first server-only call, and nothing short of moving them to another
 /// assembly could say "this never ships". On a COMPONENT it has no effect — the component path
 /// ignores it, because a component always ships. And a class the client's code instantiates or
-/// calls must not carry it, for the same reason as the method: the reference would resolve to
-/// nothing at runtime.
+/// calls must not carry it, for the same reason as the method: no module is written for it, so the
+/// build refuses every reference client code makes to it (EQ2010), a class derived from it included.
 /// </para>
 /// <para>
 /// On a STRUCT it says the same, and the compiler calls the whole rule the HOST-ONLY fence — which
