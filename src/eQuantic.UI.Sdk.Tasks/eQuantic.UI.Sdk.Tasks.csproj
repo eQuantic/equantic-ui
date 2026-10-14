@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <!-- A tool of the SDK (#899): the MSBuild tasks both SDKs carry, shipped inside a package and never compiled
+             against by an app. Its surface class says so, written into the assembly. -->
+        <_EqSurface>tool</_EqSurface>
         <!-- Embedded into the two SDK packages beside their tools: never published on its own. -->
         <IsPackable>false</IsPackable>
         <!-- netstandard2.0 is what every MSBuild loads a task assembly as, in its own process: the

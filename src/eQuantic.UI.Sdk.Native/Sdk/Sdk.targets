@@ -181,6 +181,28 @@
         <PartialAppManifest Include="$(MSBuildThisFileDirectory)PhotonApp.plist" />
     </ItemGroup>
 
+    <!--
+        THE NATIVE TRACK IS EXPERIMENTAL IN 1.0 (#324). Every native assembly carries .NET's
+        [Experimental("EQX0001")], so a project that uses one fails until it says it means to. An app
+        built with this SDK chose the native track by choosing the SDK, which is the whole opt-in: the
+        id goes into NoWarn here, after the app's own project, so a NoWarn the app sets does not drop
+        it. Nothing for the developer to write. A web app that references a native assembly by
+        accident still meets EQX0001, which is the case the mark exists for.
+    -->
+    <PropertyGroup>
+        <NoWarn>$(NoWarn);EQX0001</NoWarn>
+    </PropertyGroup>
+
+    <!--
+        And it is said once, where it matters: when the app is published, which is when something
+        built on the track leaves the machine. A line on every build would be read by nobody after
+        the first day, which is how a notice stops working.
+    -->
+    <Target Name="EQuanticNativeTrackIsExperimental" AfterTargets="Publish">
+        <Message Importance="high"
+                 Text="eQuantic.UI: the native track is experimental in 1.0, so its API may change in a minor release. https://github.com/eQuantic/equantic-ui/wiki/Photon#the-native-track-is-experimental-in-10" />
+    </Target>
+
     <PropertyGroup>
         <!-- A build from this repository's own tree, as opposed to a consumer restoring the SDK from
              NuGet — the same distinction the web Sdk.targets draws. A source tree runs the tool its
