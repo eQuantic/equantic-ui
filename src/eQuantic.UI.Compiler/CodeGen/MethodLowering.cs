@@ -69,15 +69,21 @@ internal sealed class MethodLowering
         var byReference = OutParameters.Of(method.ParameterList);
         // The names the body mentions, by their value: a search of its TEXT found `class` inside a
         // function `_class`, and `@class` nowhere a body reads it as `class` (#704).
-        var mentioned = ((SyntaxNode?)method.Body ?? method.ExpressionBody)?.DescendantNodes()
+        var source = (SyntaxNode?)method.Body ?? method.ExpressionBody;
+        var mentioned = source?.DescendantNodes()
             .OfType<IdentifierNameSyntax>()
             .Select(identifier => identifier.Identifier.ValueText)
             .ToHashSet(StringComparer.Ordinal) ?? [];
         var signature = method.ParameterList.Parameters.Where(parameter => !OutParameters.IsOut(parameter)).ToList();
-        // The names the read parameters keep, and those the unread ones took so far: an unread `y`
-        // beside a read `_y` is `__y`, never a second `_y`, which no module parses.
+        // The names an unread parameter's underscore must not meet: those the read parameters keep,
+        // every name the body declares or reads, and those the unread ones took so far. An unread `y`
+        // beside a read `_y`, or beside a body's own `int _y`, is `__y`, never a second `_y`, which no
+        // module parses.
         var named = signature.Where(parameter => mentioned.Contains(parameter.Identifier.ValueText))
-            .Select(parameter => parameter.Identifier.ValueText.ToJsIdentifier())
+            .Select(parameter => parameter.Identifier.ValueText)
+            .Concat(source?.DescendantTokens().Where(token => token.IsKind(SyntaxKind.IdentifierToken))
+                .Select(token => token.ValueText) ?? [])
+            .Select(name => name.ToJsIdentifier())
             .ToHashSet(StringComparer.Ordinal);
         var parameters = string.Join(", ", signature
             .Select(parameter =>

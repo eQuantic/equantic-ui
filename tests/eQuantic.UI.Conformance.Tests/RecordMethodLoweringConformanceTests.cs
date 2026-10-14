@@ -122,6 +122,13 @@ public class RecordMethodLoweringConformanceTests
     [InlineData(
         "public record R(int V) { public int Swap(int _z, int z) => _z * 100 + V; public int Tri(int w, int _w, int __w) => __w + V; }",
         "var r = new R(1); return $\"{r.Swap(2, 3)}|{r.Tri(4, 5, 6)}\";")]
+    // …nor a name the body declares: a local, a pattern's variable or a lambda's parameter `_y` beside an
+    // unread `y` (found in Copilot's review of #931).
+    [InlineData(
+        "public record R(int V) { public int Local(int y) { var _y = 4; return _y + V; } "
+        + "public int Pattern(int y, object o) => o is int _y ? _y + V : V; "
+        + "public int Lambda(int y) { Func<int, int> f = _y => _y * 2; return f(V); } }",
+        "var r = new R(1); return $\"{r.Local(2)}|{r.Pattern(2, 5)}|{r.Lambda(2)}\";")]
     public void ARecordsMember_RunsAsAClassMemberDoes(string prelude, string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
