@@ -114,8 +114,11 @@ public class BclSurfaceTailStrategy : IExpressionIrStrategy
         }
 
         // The keys' own Contains, read through a variable that holds them, finds a key as the dictionary
-        // does: the view is an array to everything else, which has no `contains` (#463).
-        if (definition == "System.Collections.Generic.Dictionary<TKey, TValue>.KeyCollection" && (name, argCount) is ("Contains", 1))
+        // does: the view is an array to everything else, which has no `contains` (#463). A sorted
+        // dictionary's keys are the same view (#864), and declare the same member (#928).
+        if (definition is "System.Collections.Generic.Dictionary<TKey, TValue>.KeyCollection"
+                or "System.Collections.Generic.SortedDictionary<TKey, TValue>.KeyCollection"
+            && (name, argCount) is ("Contains", 1))
             return "{0}.contains({1})";
 
         if (definition == "System.Collections.Generic.List<T>")
