@@ -108,7 +108,8 @@ describe('SortedMap<K, V> — key-sorted dictionary (SortedDictionary / SortedLi
 });
 
 describe('SortedMap — a change while its pairs are walked', () => {
-  const modified = 'Collection was modified; enumeration operation may not execute.';
+  // System.Collections' words, where the two sorted dictionaries live, and not CoreLib's (#864).
+  const modified = 'Collection was modified after the enumerator was instantiated.';
   const two = () =>
     sortedDictionary<number, number>([
       [1, 1],
@@ -136,6 +137,93 @@ describe('SortedMap — a change while its pairs are walked', () => {
     expect(() => {
       for (const _ of cleared) cleared.clear();
     }).toThrow(modified);
+  });
+
+  it('ends a walk of its keys or values as it ends one of its pairs', () => {
+    const keys = two();
+    expect(() => {
+      for (const key of keys.keys()) keys.set(key + 10, 0);
+    }).toThrow(modified);
+    const values = two();
+    expect(() => {
+      for (const _ of values.values()) values.delete(1);
+    }).toThrow(modified);
+  });
+
+  it('bumps a sorted dictionary on a missing key removed and a key added twice, and a sorted list on neither', () => {
+    const missed = two();
+    expect(() => {
+      for (const _ of missed) missed.delete(42);
+    }).toThrow(modified);
+    const twice = two();
+    expect(() => {
+      for (const [key] of twice) {
+        try {
+          twice.add(key, 0);
+        } catch {
+          // refused, after the tree turned
+        }
+      }
+    }).toThrow(modified);
+    const list = sortedList<number, number>([
+      [1, 1],
+      [2, 2],
+    ]);
+    const walked: number[] = [];
+    for (const [key] of list) {
+      list.delete(42);
+      try {
+        list.add(key, 0);
+      } catch {
+        // refused before anything moved
+      }
+      walked.push(key);
+    }
+    expect(walked).toEqual([1, 2]);
+  });
+});
+
+describe('SortedMap — its keys and values are live views (#864)', () => {
+  const map = () =>
+    sortedDictionary<number, string>([
+      [3, 'c'],
+      [1, 'a'],
+    ]);
+
+  it("reads the collection when read, as .NET's KeyCollection and ValueCollection do", () => {
+    const m = map();
+    const keys = m.keys();
+    const values = m.values();
+    m.set(2, 'b');
+    expect([...keys]).toEqual([1, 2, 3]);
+    expect(values.length).toBe(3);
+    expect(values[1]).toBe('b');
+    expect(m.keys()).toBe(keys);
+    expect((keys as unknown as { contains(k: number): boolean }).contains(2)).toBe(true);
+    expect((keys as unknown as { isReadOnly: boolean }).isReadOnly).toBe(true);
+    expect(JSON.stringify(values)).toBe('["a","b","c"]');
+  });
+
+  it("refuses a change in each collection's words", () => {
+    const dictionaryWords = 'Mutating a key collection derived from a dictionary is not allowed.';
+    expect(() => map().keys().push(4)).toThrow(dictionaryWords);
+    expect(() => {
+      map().values().length = 0;
+    }).toThrow('Mutating a value collection derived from a dictionary is not allowed.');
+    const nested =
+      'This operation is not supported on SortedList nested types because they require modifying the original SortedList.';
+    const list = () =>
+      sortedList<number, string>([
+        [1, 'a'],
+        [2, 'b'],
+      ]);
+    expect(() => list().keys().push(3)).toThrow(nested);
+    expect(() => {
+      list().keys()[0] = 9;
+    }).toThrow(dictionaryWords);
+    expect(() => {
+      list().values()[0] = 'z';
+    }).toThrow(nested);
   });
 });
 
@@ -283,5 +371,89 @@ describe('SortedSet — TryGetValue (#866)', () => {
   it('answers the element the set holds, or undefined', () => {
     const s = sortedSet([3, 1]);
     expect([s.tryGetValue(3), s.tryGetValue(2)]).toEqual([3, undefined]);
+  });
+});
+
+describe('SortedSet — GetViewBetween (#865)', () => {
+  const view = () => {
+    const set = sortedSet([1, 3, 5, 7]);
+    return { set, view: set.getViewBetween(2, 6) };
+  };
+  const outOfRange = (parameter: string) =>
+    `Specified argument was out of the range of valid values. (Parameter '${parameter}')`;
+
+  it('shares one comparer between two sets of one enum, each built with its own order', () => {
+    const set = sortedSet(['zeta', 'alpha', 'mid'], { zeta: 0, alpha: 1, mid: 5 });
+    const v = set.getViewBetween('alpha', 'mid');
+    const other = sortedSet(['zeta', 'mid'], { zeta: 0, alpha: 1, mid: 5 });
+    expect(() => v.isSupersetOf(other)).toThrow(outOfRange('lowerValue'));
+  });
+
+  it('holds the range of its set, live both ways', () => {
+    const { set, view: v } = view();
+    expect([...v]).toEqual([3, 5]);
+    expect([v.count, v.min, v.max]).toEqual([2, 3, 5]);
+    set.add(4);
+    set.add(9);
+    expect([...v]).toEqual([3, 4, 5]);
+    expect(v.add(6)).toBe(true);
+    expect(v.remove(3)).toBe(true);
+    expect(set.toArray()).toEqual([1, 4, 5, 6, 7, 9]);
+    expect([v.contains(7), v.contains(5), v.tryGetValue(7), v.tryGetValue(5)]).toEqual([
+      false,
+      true,
+      undefined,
+      5,
+    ]);
+    v.clear();
+    expect(set.toArray()).toEqual([1, 7, 9]);
+    expect(JSON.stringify(v)).toBe('[]');
+  });
+
+  it('refuses an element outside its range before it changes anything, and its bounds as .NET does', () => {
+    const { set, view: v } = view();
+    expect(() => v.add(9)).toThrow(outOfRange('item'));
+    expect(v.remove(9)).toBe(false);
+    expect(set.toArray()).toEqual([1, 3, 5, 7]);
+    expect(() => set.getViewBetween(6, 2)).toThrow(
+      "Must be less than or equal to upperValue. (Parameter 'lowerValue')",
+    );
+    expect(() => v.getViewBetween(1, 5)).toThrow(outOfRange('lowerValue'));
+    expect(() => v.getViewBetween(3, 9)).toThrow(outOfRange('upperValue'));
+    expect([...v.getViewBetween(3, 4)]).toEqual([3]);
+  });
+
+  it('ends a walk at any change to its set, and a walk of its set at a change made through it', () => {
+    const { set, view: v } = view();
+    expect(() => {
+      for (const _ of v) set.add(100);
+    }).toThrow('Collection was modified after the enumerator was instantiated.');
+    const other = view();
+    const walked: number[] = [];
+    for (const value of other.set) {
+      walked.push(value);
+      other.view.remove(9);
+    }
+    expect(walked).toEqual([1, 3, 5, 7]);
+  });
+
+  it("removes nothing through ExceptWith until its count is read, as .NET's stale count does", () => {
+    const never = view();
+    never.view.exceptWith([3]);
+    expect(never.set.toArray()).toEqual([1, 3, 5, 7]);
+    const counted = view();
+    expect(counted.view.count).toBe(2);
+    counted.view.exceptWith([3]);
+    expect(counted.set.toArray()).toEqual([1, 5, 7]);
+  });
+
+  it("asks a set it is compared with for a view of that set's range", () => {
+    const { set, view: v } = view();
+    expect([v.isSubsetOf(set), set.isSupersetOf(v), set.isProperSupersetOf(v)]).toEqual([
+      true,
+      true,
+      true,
+    ]);
+    expect(() => v.isSupersetOf(sortedSet([1, 9]))).toThrow(outOfRange('lowerValue'));
   });
 });

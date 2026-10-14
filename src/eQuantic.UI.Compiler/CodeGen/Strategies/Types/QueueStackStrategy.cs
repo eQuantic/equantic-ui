@@ -34,8 +34,9 @@ public class QueueStackStrategy : IExpressionIrStrategy
     private const string SortedSet = "System.Collections.Generic.SortedSet<T>";
 
     /// <summary>The members each runtime twin carries, by the type that declares them. What is not here
-    /// is refused: serialization's hooks, a node's <c>ValueRef</c>, a sorted set's <c>Comparer</c>,
-    /// <c>CreateSetComparer</c> and <c>GetViewBetween</c> (#865), and an explicit <c>GetEnumerator</c>.</summary>
+    /// is refused: serialization's hooks, a node's <c>ValueRef</c>, a sorted set's <c>Comparer</c> and
+    /// <c>CreateSetComparer</c>, and an explicit <c>GetEnumerator</c>. A sorted set's
+    /// <c>GetViewBetween</c> is the twin's since #865, a view sharing the set's elements.</summary>
     private static readonly Dictionary<string, HashSet<string>> Members = new()
     {
         [Queue] =
@@ -59,6 +60,7 @@ public class QueueStackStrategy : IExpressionIrStrategy
             "Count", "Min", "Max", "Add", "Remove", "Contains", "TryGetValue", "Clear", "CopyTo", "UnionWith",
             "IntersectWith", "ExceptWith", "SymmetricExceptWith", "IsSubsetOf", "IsProperSubsetOf",
             "IsSupersetOf", "IsProperSupersetOf", "Overlaps", "SetEquals", "RemoveWhere", "Reverse",
+            "GetViewBetween",
         ],
     };
 

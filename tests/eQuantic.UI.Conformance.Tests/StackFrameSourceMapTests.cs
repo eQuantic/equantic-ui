@@ -488,11 +488,8 @@ public class StackFrameSourceMapTests
         // The app's own modules, as eqc scans them, so a module imports the type it constructs.
         compiler.SetDependencyResolver(ComponentDependencyResolver.From(compilation));
         var results = compiler.CompileSource(source, path).ToList();
-        foreach (var result in results)
-        {
-            Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
-            result.SourceMap.Should().NotBeNullOrEmpty();
-        }
+        Assert.Empty(Refusal.Of(results).Select(refusal => refusal.ToString()));
+        foreach (var result in results) result.SourceMap.Should().NotBeNullOrEmpty();
         results.Should().Contain(result => $"{result.ComponentName}.cs" == path, "the file is named for the type the test throws in");
         return results;
     }

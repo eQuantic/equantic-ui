@@ -38,11 +38,9 @@ public class PlainClassStoreConformanceTests
     public void AStaticFieldBackedProperty_StartsAsItsInitializer_AndWritesThroughItsSetter()
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
-        var modules = new ComponentCompiler { TypeAnnotations = false }.CompileSource(Source, "Stores.cs")
-            .Where(result => result.TypeScript.Length > 0)
-            .ToList();
-        Assert.All(modules, module => Assert.True(module.Success,
-            $"{module.ComponentName}: {string.Join("\n", module.Errors.Select(e => e.Message))}"));
+        var results = new ComponentCompiler { TypeAnnotations = false }.CompileSource(Source, "Stores.cs").ToList();
+        Assert.Empty(Refusal.Of(results).Select(refusal => refusal.ToString()));
+        var modules = results.Where(result => result.TypeScript.Length > 0).ToList();
 
         var program = string.Join("\n", modules.Select(module => module.TypeScript)) + """
 
