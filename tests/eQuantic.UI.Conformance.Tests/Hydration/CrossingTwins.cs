@@ -35,12 +35,14 @@ public sealed class CrossingTwins : IDisposable
 
         Directory.CreateDirectory(_folder);
         foreach (var source in sources)
-        foreach (var twin in compiler.CompileSource(File.ReadAllText(source), source))
         {
-            twin.Success.Should().BeTrue(string.Join("\n", twin.Errors.Select(e => e.Message)));
+            var twins = compiler.CompileSource(File.ReadAllText(source), source).ToList();
+            Refusal.Of(twins).Select(refusal => refusal.ToString())
+                .Should().BeEmpty($"the build accepts every module of {Path.GetFileName(source)}");
             // The bare module the page's import map names, which a script has no map for.
-            File.WriteAllText(Path.Combine(_folder, twin.ComponentName + ".ts"),
-                twin.TypeScript.Replace("\"@equantic/runtime\"", $"\"{runtime}\""));
+            foreach (var twin in twins)
+                File.WriteAllText(Path.Combine(_folder, twin.ComponentName + ".ts"),
+                    twin.TypeScript.Replace("\"@equantic/runtime\"", $"\"{runtime}\""));
         }
     }
 
