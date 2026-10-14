@@ -234,6 +234,25 @@ public class CSharpToJsConverter
         }
     }
 
+    /// <summary>
+    /// Reports EQ2010 at <paramref name="at"/> for a type of source in <paramref name="type"/> the build
+    /// writes no module for, the type itself, an array's element or a type argument, where an emitter
+    /// writes its name with no expression being converted: a Server Action stub's parameter (#823).
+    /// </summary>
+    internal void RefuseKeptOutIn(ITypeSymbol? type, SyntaxNode at)
+    {
+        switch (type)
+        {
+            case IArrayTypeSymbol array:
+                RefuseKeptOutIn(array.ElementType, at);
+                return;
+            case INamedTypeSymbol named:
+                if (named.ReportIfKeptOut(at, _context)) return;
+                foreach (var argument in named.TypeArguments) RefuseKeptOutIn(argument, at);
+                return;
+        }
+    }
+
     /// <summary>A compile-time constant of <paramref name="type"/> as its JavaScript value, by the one
     /// writer of every constant's value (<see cref="ConstantLiteral"/>), the runtime import a decimal
     /// needs registered; null where the value has no spelling here.</summary>

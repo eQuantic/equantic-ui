@@ -52,6 +52,13 @@ namespace eQuantic.UI.Compiler.CodeGen.Extensions;
 /// <c>[ServerAction]</c>'s body or a <c>[ServerOnly]</c> member, which no module holds, is never
 /// asked (#816).
 /// </para>
+/// <para>
+/// A TYPE of source answers by one rule wherever it is declared, the app or a project it references:
+/// the build writes no module for it when it, or a type it is declared in, never crosses
+/// (<see cref="ReportIfKeptOut"/>), asked where client code writes its name. The app's own top-level
+/// <c>[ServerOnly]</c> class was the case left out: the fence said nothing of a type this compilation
+/// declares, so <c>Vault.Key()</c> was written as a call on a class nothing wrote (#823).
+/// </para>
 /// </summary>
 internal static class HostOnlySymbolExtensions
 {
@@ -88,8 +95,9 @@ internal static class HostOnlySymbolExtensions
     /// <summary>
     /// Reports and returns true when <paramref name="symbol"/> may not be named from client code: it
     /// is marked <c>[ServerOnly]</c> itself, it belongs to an API only a server has
-    /// (<see cref="ServerPlatform"/>), or the type it is declared on is marked <c>[ServerOnly]</c>
-    /// and is not this compilation's own.
+    /// (<see cref="ServerPlatform"/>), or the metadata type it is declared on is marked
+    /// <c>[ServerOnly]</c>. The type of a symbol declared in source is the kept-out rule's
+    /// (<see cref="ReportIfKeptOut"/>), asked where the code names it, so one site says it once.
     /// <para>
     /// <paramref name="through"/> is the type the member was reached THROUGH, where the call site
     /// has a receiver to ask about. A host-only type fences the members a component could only
@@ -121,7 +129,10 @@ internal static class HostOnlySymbolExtensions
         if (symbol.IsHostOnly()) return Report(declaring, symbol.Name, node, context);
         // What .NET keeps on the host, whatever the call goes through (#816).
         if (declaring.ReportIfServerPlatform(node, context)) return true;
-        if (context.Declares(declaring)) return false;
+        // A type of source, this compilation's or a referenced project's, is refused where its name
+        // is written (ReportIfKeptOut), never here as well: a page that named a referenced project's
+        // [ServerOnly] class was told twice, once at the class and once at its member (#823).
+        if (declaring.Locations.Any(location => location.IsInSource)) return false;
         if (!declaring.IsHostOnly()) return false;
         if (ReachedThroughAClientVisibleType(through)) return false;
         return Report(declaring, symbol.Name, node, context);
@@ -144,13 +155,14 @@ internal static class HostOnlySymbolExtensions
     /// <summary>
     /// The TYPE named on its own — a construction, where there is no member to ask about. Same
     /// rule, same message, through the same function: the branch that reported it inline for one
-    /// release is how two pieces come to answer the same question each in its own words.
+    /// release is how two pieces come to answer the same question each in its own words. A type of
+    /// source is the kept-out rule's, which the construction asks first (<see cref="ReportIfKeptOut"/>).
     /// </summary>
     internal static bool ReportIfHostOnlyType(this ITypeSymbol? type, SyntaxNode node, ConversionContext context)
     {
         if (type is not INamedTypeSymbol named) return false;
         if (named.ReportIfServerPlatform(node, context)) return true;
-        if (context.Declares(named)) return false;
+        if (named.Locations.Any(location => location.IsInSource)) return false;
         if (!named.IsHostOnly()) return false;
         return Report(named, node, context);
     }
@@ -159,25 +171,37 @@ internal static class HostOnlySymbolExtensions
         Report(declaring, member: null, node, context);
 
     /// <summary>
-    /// A NESTED type of this compilation the build writes no twin for, named from client code (#584):
-    /// one marked [ServerOnly], or declared inside a type that never crosses (one marked [ServerOnly],
-    /// an attribute). Its owner has no module, so it has none, and the reference named
-    /// `Vault$Key`, a twin nothing wrote, which the page met at load.
+    /// A type of source the build writes no twin for, named from client code: it, or a class it
+    /// derives from, is marked <c>[ServerOnly]</c> or is an attribute, or it is declared inside a type
+    /// that is (<see cref="Services.PlainClassModule.NeverCrosses"/>). The reference named a twin
+    /// nothing wrote, <c>Vault$Key</c> for a nested one (#584) and <c>Vault</c> for the app's own
+    /// top-level class (#823), which the page met at load.
+    /// <para>
+    /// Whichever compilation declares it: a type of a project the app references is in source too
+    /// (#624), and the type-level fence that refused it while it was read from its assembly said
+    /// nothing once it had a source.
+    /// </para>
+    /// <para>
+    /// A component crosses whatever it is marked, where it is declared at the top of its file: the
+    /// parser writes a module for every one of those, as <c>[ServerOnly]</c>'s own doc says, so a
+    /// page that places it names a twin that exists.
+    /// </para>
     /// </summary>
     internal static bool ReportIfKeptOut(this INamedTypeSymbol type, SyntaxNode node, ConversionContext context)
     {
-        if (type.ContainingType is null || !type.Locations.Any(location => location.IsInSource)) return false;
-        if (!Services.PlainClassModule.OwnerKeptOut(type) && !Services.PlainClassModule.ServerOnlyAlongChain(type)) return false;
+        if (!type.Locations.Any(location => location.IsInSource)) return false;
+        if (type.ContainingType is null && type.IsUiComponent()) return false;
+        if (!Services.PlainClassModule.NeverCrosses(type)) return false;
         context.Report(node, ConversionSeverity.Error, "EQ2010", KeptOutMessage(type.ToDisplayString()));
         context.RefusedTwins.Add(type.TwinReference());
         return true;
     }
 
-    /// <summary>What EQ2010 says of a nested type the build writes no twin for (#584): where a fence
-    /// names it, and where a module's import net does.</summary>
+    /// <summary>What EQ2010 says of a type of source the build writes no twin for (#584, #823): where
+    /// a fence names it, and where a module's import net does.</summary>
     internal static string KeptOutMessage(string named) =>
         $"'{named}' never reaches the browser: it, or a type it is declared in, is [ServerOnly] "
-        + "or an attribute, which the build writes no module for, so it has none either. "
+        + "or an attribute, which the build writes no module for. "
         + "Use it from server code — a [ServerAction] or a [ServerOnly] class — never from a component's Build.";
 
     private static bool Report(

@@ -63,8 +63,8 @@ internal sealed class ReferencedModules
     public bool IsModule(string name, IEnumerable<string> declaredIn) =>
         Scans(declaredIn).Any(scan => scan.IsModule(name));
 
-    /// <summary>Whether <paramref name="name"/> is the twin of a nested type the build writes no
-    /// module for, as <see cref="ComponentDependencyResolver.IsKeptOut"/> answers for the app's own.</summary>
+    /// <summary>Whether <paramref name="name"/> is the twin of a type the build writes no module for,
+    /// as <see cref="ComponentDependencyResolver.IsKeptOut"/> answers for the app's own.</summary>
     public bool IsKeptOut(string name, IEnumerable<string> declaredIn) =>
         Scans(declaredIn).Any(scan => scan.IsKeptOut(name));
 

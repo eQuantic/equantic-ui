@@ -36,6 +36,12 @@ public class IdentifierStrategy : IExpressionIrStrategy
         // mapped first it read the inherited value instead (Copilot's review of #399).
         if (name == "Component" && !BoundInScope(symbol, identifier, name)) return JsExpr.ThisMember("_component");
 
+        // A type the build writes no module for, named here: `Vault.Key()` reaches `Vault` through this
+        // name, and a top-level [ServerOnly] class of the app's was written as a class nothing wrote
+        // (#823), where a nested one was refused already (#584).
+        if (symbol is INamedTypeSymbol keptOut && keptOut.ReportIfKeptOut(identifier, context))
+            return JsExpr.Identifier("undefined");
+
         // A nested type of the app's is its twin, named by its owner (#584): `Ops` inside Calc is
         // `Calc$Ops`, which a top-level `Ops` can never be.
         if (symbol is INamedTypeSymbol nested && nested.NestedTwinName() is not null)

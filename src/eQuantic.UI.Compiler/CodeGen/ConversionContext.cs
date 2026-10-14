@@ -53,28 +53,6 @@ public class ConversionContext
     /// </summary>
     internal Services.ResourceCatalogIds? ResourceIds { get; set; }
 
-    /// <summary>
-    /// Whether <paramref name="type"/> is declared in the compilation being converted: the app's own
-    /// for a file of the app, a referenced project's for a file of that project.
-    /// <para>
-    /// "Declared in source" was this question while a build had one compilation, and stopped being it
-    /// when the projects an app references became compilations of their own (#624): a type of one is
-    /// in source, in ANOTHER compilation. A fence that says nothing of a symbol of this compilation,
-    /// because the scan writes no module for it, must still refuse the same symbol of a referenced
-    /// project, as it refused it while that project was read from its assembly. Measured: a page
-    /// calling a library's <c>[ServerOnly]</c> class was EQ2010 before, and built in silence once the
-    /// library had a source.
-    /// </para>
-    /// <para>
-    /// By the assembly's name and not by the symbol: every file is compiled in a compilation of its
-    /// own (its tree replaces the project's), and two of those hold two assembly symbols for one
-    /// project.
-    /// </para>
-    /// </summary>
-    internal bool Declares(ITypeSymbol type) =>
-        type.Locations.Any(location => location.IsInSource)
-        && (SemanticModel is null || type.ContainingAssembly?.Name == SemanticModel.Compilation.AssemblyName);
-
     /// <summary>The catalogue id a read of <paramref name="resourceClass"/> is written with, which
     /// the catalogs are keyed by.</summary>
     internal string CatalogIdOf(INamedTypeSymbol resourceClass) =>

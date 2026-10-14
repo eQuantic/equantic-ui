@@ -202,30 +202,35 @@ public class RecordTypeEmitter
         // the map is the only place the emitted JS names them (types erase), so import them here.
         if (declared is not null)
         {
+            // The net under the fences, as a class's and a component's module has it (TypeScriptEmitter):
+            // a twin the build writes no module for, which the body names, is reported, never imported
+            // (#584). Said once: a fence that refused it where the code named it said it there.
+            bool ReportIfKeptOut(string name)
+            {
+                if (_modules?.IsKeptOut(name) != true && !Referenced.IsKeptOut(name)) return false;
+                if (!_converter.RefusedTwins.Contains(name))
+                    _converter.Report(type, ConversionSeverity.Error, "EQ2010",
+                        Extensions.HostOnlySymbolExtensions.KeptOutMessage(name.Replace('$', '.')));
+                return true;
+            }
             // The APP-declared half of the same thing: an extension home the app itself owns is its
             // own module, and the call names it without ever mentioning it in the C#.
             foreach (var introduced in _converter.UsedAppTypes)
-                if (Names(introduced))
-                {
-                    // The net under the fences, as a class module has it (TypeScriptEmitter): a twin
-                    // the build writes no module for is reported, never imported (#584).
-                    if (_modules?.IsKeptOut(introduced) == true || Referenced.IsKeptOut(introduced))
-                    {
-                        if (!_converter.RefusedTwins.Contains(introduced))
-                            _converter.Report(type, ConversionSeverity.Error, "EQ2010",
-                                Extensions.HostOnlySymbolExtensions.KeptOutMessage(introduced.Replace('$', '.')));
-                        continue;
-                    }
+                if (Names(introduced) && !ReportIfKeptOut(introduced))
                     specReferences.Add(introduced);
-                }
             // And the app's own types the BODY names: a sibling record a method constructs, and a
             // struct member's zero (`span: any = new Span2()`), which the constructor writes for a
             // member that has no default of its own. This path imported only what the hydration map
             // named, so both were a name the module never imported — `new Holder()` on the web threw
-            // where C# built a zeroed Span2.
+            // where C# built a zeroed Span2. A member's annotation (`declare ledger: Ledger`) names its
+            // type too, and one that never crosses is the net's (#823): it was refused by its zero
+            // alone, which for a class is null and names nothing.
             foreach (var appType in appTypes)
-                if ((_modules?.IsModule(appType) == true || Referenced.IsModule(appType)) && Names(appType))
-                    specReferences.Add(appType);
+            {
+                if (!Names(appType)) continue;
+                if (_modules?.IsModule(appType) == true || Referenced.IsModule(appType)) specReferences.Add(appType);
+                else ReportIfKeptOut(appType);
+            }
             specReferences.Remove(type.TwinTypeName());
             if (baseName != null) specReferences.Remove(baseName);
             // A reference the RUNTIME provides is imported from there already, and a second import

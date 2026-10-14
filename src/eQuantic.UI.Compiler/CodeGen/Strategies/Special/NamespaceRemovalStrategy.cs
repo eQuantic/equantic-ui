@@ -35,6 +35,11 @@ public class NamespaceRemovalStrategy : IConversionStrategy
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var memberAccess = (MemberAccessExpressionSyntax)node;
+        // A type the build writes no module for, named through its namespace, is refused here as it is
+        // by its bare name: `App.Model.Vault.Key()` reached the app's own [ServerOnly] class through
+        // this branch alone, which wrote `Vault` (#823).
+        if (context.SemanticHelper.GetSymbol(memberAccess) is INamedTypeSymbol keptOut && keptOut.ReportIfKeptOut(memberAccess, context))
+            return "undefined";
         // A TYPE reached through its namespace is imported by the symbol it binds, however much of the
         // namespace the C# spells (#625): inside `Falei.Web.Chat`, `Portal.Fold.Text(n)` wrote
         // `Fold.text(n)` and imported nothing, because the import was decided by the name as written,

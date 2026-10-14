@@ -745,6 +745,10 @@ public class TypeScriptEmitter
                     // Each parameter under a legal JS name, the same one the invocation passes on:
                     // `Run(int @class)` wrote `run(class)` and `[class]`, a module that did not parse.
                     var paramsList = string.Join(", ", action.Parameters.Select(p => Lowering.Param(p.Name.ToJsIdentifier(), Annotate(p.Type))));
+                    // The stub annotates each parameter with its type's name, so one the build writes no
+                    // module for names a twin nothing declares, where the module writes it (#823).
+                    foreach (var parameter in action.SyntaxNode?.ParameterList.Parameters ?? default)
+                        if (parameter.Type is { } typed) _converter.RefuseKeptOutIn(BindType(typed), typed);
                     var argsList = string.Join(", ", action.Parameters.Select(p => p.Name.ToJsIdentifier()));
                     var returnType = Annotate(action.ReturnType);
 
@@ -1160,8 +1164,11 @@ public class TypeScriptEmitter
         // assigned (TS2564) and `=== null` reads as a value.
         if (csharpType.EndsWith('?')) return "null";
         if (ImplicitValueTypeDefault(csharpType) is { } byName) return byName;
-        if (BindType(typeNode) is not { } symbol) return null;
-        var bySymbol = _converter.DefaultOf(symbol);
+        if (typeNode is null || BindType(typeNode) is not { } symbol) return null;
+        // Asked AT the declaration, as a class's and a record's fields ask it (DefaultAt): a struct the
+        // build writes no twin for has no zero to write, and a component's field of one held undefined
+        // where C# holds the zero, with nothing said (#823).
+        var bySymbol = _converter.DefaultAt(symbol, typeNode);
         return bySymbol == "null" ? null : bySymbol;
     }
 
@@ -1210,7 +1217,7 @@ public class TypeScriptEmitter
 
         // A struct whose twin cannot build its zero answers `undefined`, which IS the slot left
         // alone: writing it would only emit `if (this.width === undefined) this.width = undefined`.
-        var value = _converter.DefaultOf(type);
+        var value = _converter.DefaultAt(type, node.Type);
         return value is "null" or "undefined" ? null : value;
     }
 

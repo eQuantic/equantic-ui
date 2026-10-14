@@ -458,6 +458,10 @@ public class InvocationStrategy : IExpressionIrStrategy
             {
                 return null;
             }
+            // A home of source the build writes no module for is refused where the call names it:
+            // `"x".Sealed()` over the app's own [ServerOnly] `Seal` was written as `Seal.sealed('x')`,
+            // a class nothing wrote (#823).
+            if (symbol.ContainingType.ReportIfKeptOut(at, context)) return null;
             // The declaring class never appears in the SOURCE (the call is reduced), so the
             // syntax-walking import collector can't see it — register the name we introduced,
             // in the bucket its namespace decides (runtime-provided or app-level).
@@ -470,6 +474,7 @@ public class InvocationStrategy : IExpressionIrStrategy
         // there. A STATIC extension member (receiver-type-only block) takes no receiver.
         if (symbol.ExtensionBlockHome() is { } extensionHome)
         {
+            if (extensionHome.ReportIfKeptOut(at, context)) return null;
             extensionHome.RegisterIntroduced(context);
             return (extensionHome, !symbol!.IsStatic);
         }
