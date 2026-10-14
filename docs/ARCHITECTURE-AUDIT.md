@@ -387,10 +387,11 @@ what replaces those calls.
 foundation only, and what makes a component look like itself is written in the component (its
 constants) and in `Sizing`, a static ladder no theme reaches. The shape: one record per component
 family, every member nullable and every member data (so it crosses to the browser in the theme's
-JSON), each a default member of `IAppTheme` that answers null, as `MonoFamily`, `Data` and `Code`
-did; plus one shared slot, `Controls`, for the ladder `Sizing` holds. The order: the instance's own
-argument, then its family's slot in the nearest `Theme` above it, then that theme's `Controls` for a
-sized control, then the component's default. The families, the subtree override and the rule that
+JSON), with both densities wherever the component varies by density, each a default member of
+`IAppTheme` that answers null, as `MonoFamily`, `Data` and `Code` did; plus one shared slot,
+`Controls`, for the ladder `Sizing` holds. The order: the instance's own argument, then its family's
+slot in the nearest `Theme` above it, then that theme's `Controls` for a sized control, then the
+component's default, each read at the context's density. The families, the subtree override and the rule that
 every member of the theme reaches the browser are in [ELEMENT-TREE-PLAN.md](ELEMENT-TREE-PLAN.md),
 section 3.10, because a theme found per position is the Element's.
 

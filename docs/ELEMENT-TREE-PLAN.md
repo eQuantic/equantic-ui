@@ -281,8 +281,14 @@ Some identities cross a boundary, and a boundary needs a string. They stay, comp
 element when crossing and never used as an address inside a tree:
 
 - the hydration payload's key, `Type#ordinal`, which the server and the browser already agree on;
-- hot reload's capture, which can now carry every stateful element's fields under that same key
-  instead of the page root's alone;
+- hot reload's capture, which can now carry every stateful element's fields instead of the page
+  root's alone. Not under `Type#ordinal`: the hydration key holds because the server and the browser
+  render the same tree, and an edit is exactly what changes the tree between a capture and its
+  replay, so an inserted component or two keyed siblings that swapped would hand one component
+  another's fields. The capture keys each element by its position as a chain from the root, every
+  step its component type and its key or, unkeyed, its slot among siblings of that type. The replay
+  restores an element only when its chain and its type match exactly, and an element with no match,
+  or with more than one, starts fresh;
 - the shells' accessibility ids, as the element's integer id;
 - the visual editor's `VisualNode.Origin`, which identifies source, not position, and is unchanged.
 
@@ -309,8 +315,14 @@ kind), not values.
 
 **What a slot is.** One record per component family (`ButtonTheme`, `InputTheme`…), every member
 nullable, meaning "the component's own default", and every member data: numbers, tokens, enums, and
-tables keyed by `SizeVariant` or `Variant` where the component varies by them. No delegate, because
-a slot crosses to the browser as JSON (below).
+tables keyed by `SizeVariant`, `Variant` or `Density` where the component varies by them. No
+delegate, because a slot crosses to the browser as JSON (below).
+
+`Density` is not optional where the component reads it today: the ladder's height, padding, label
+size and hit target vary by size AND density (a medium control is 40 comfortable and 32 compact), and
+so do the switch and the selection box. A slot entry for such a value holds both densities, the
+component picks with `context.Density` as it does now, and the browser's JSON carries both, because
+the density is the browser's to report and can change after the server wrote the shell.
 
 **What it carries.** What the component hard-codes that is LOOK: heights, paddings, gaps, minimum
 and maximum sizes, border widths, the shape, the colours per state, the label's type and the
@@ -323,8 +335,9 @@ app wrote keeps compiling, and eqc carries a default of `IAppTheme` into a theme
 SDK's two themes fill them: `PhotonTheme` with today's constants, which become the design system's
 instead of each component's, and `MaterialTheme` with Material 3's component specifications. One
 slot is shared rather than per family: `Controls`, the ladder `Sizing` holds today (height, padding,
-label size, gap, icon and radius per `SizeVariant`), so a theme that changes how tall a control is
-changes every control of that size at once, which is the rule `Sizing` states.
+label size, gap, icon and radius per `SizeVariant`, and per `Density` where `Sizing` varies by it),
+so a theme that changes how tall a control is changes every control of that size at once, which is
+the rule `Sizing` states.
 
 **The order.** A component resolves each value, and the first that answers wins:
 
@@ -332,6 +345,9 @@ changes every control of that size at once, which is the rule `Sizing` states.
 2. its family's slot in the nearest `Theme` above it (`context.Theme` is positional, E5);
 3. for a sized control, the `Controls` slot of that theme;
 4. the component's default, today's constant or `Sizing` rung.
+
+At every step a value that varies by density is read at `context.Density`, so a slot never bypasses
+the compact layout the fallback would have given.
 
 The precedent is already in the tree three times: `Text.StyleOverride ?? theme.Type(role)`, a code
 decoration's colour or its kind's, and `Markdown.Style ?? new MarkdownStyle()`.
