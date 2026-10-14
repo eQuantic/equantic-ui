@@ -27,17 +27,33 @@ public class NoNameReadAsSpelledTests
         foreach (var file in SourceFiles(Path.Combine(RepoRoot(), "src")))
         {
             var tree = CSharpSyntaxTree.ParseText(File.ReadAllText(file), new CSharpParseOptions(LanguageVersion.Preview));
-            offenders.AddRange(tree.GetCompilationUnitRoot().DescendantNodes().OfType<MemberAccessExpressionSyntax>()
-                .Where(access => access.Name.Identifier.ValueText == "Text"
-                                 && access.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Identifier" }
-                                     or IdentifierNameSyntax { Identifier.ValueText: "Identifier" })
-                .Select(access => Where(file, tree, access)));
+            offenders.AddRange(tree.GetCompilationUnitRoot().DescendantNodes().Where(ReadsTheSpelling)
+                .Select(node => Where(file, tree, node)));
         }
 
         Assert.True(offenders.Count == 0,
             "A name is read by its spelling, so `@Shelf` is not `Shelf`. Read `Identifier.ValueText`:\n  "
             + string.Join("\n  ", offenders));
     }
+
+    /// <summary>
+    /// An identifier's <c>Text</c> read in any of the shapes C# writes it: <c>x.Identifier.Text</c>,
+    /// <c>Identifier.Text</c>, <c>x?.Identifier.Text</c>, and the patterns that read the same,
+    /// <c>{ Identifier.Text: … }</c> (a member access too) and <c>{ Identifier: { Text: … } }</c> (found in
+    /// Copilot's second review of #931).
+    /// </summary>
+    private static bool ReadsTheSpelling(SyntaxNode node) => node switch
+    {
+        MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Text" } access => NamesIdentifier(access.Expression),
+        SubpatternSyntax { ExpressionColon.Expression: IdentifierNameSyntax { Identifier.ValueText: "Text" } } inner =>
+            inner.Parent?.Parent?.Parent is SubpatternSyntax { ExpressionColon.Expression: var outer } && NamesIdentifier(outer),
+        _ => false,
+    };
+
+    private static bool NamesIdentifier(ExpressionSyntax expression) =>
+        expression is IdentifierNameSyntax { Identifier.ValueText: "Identifier" }
+            or MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Identifier" }
+            or MemberBindingExpressionSyntax { Name.Identifier.ValueText: "Identifier" };
 
     [Fact]
     public void NoTypeSyntaxBecomesANameByItsSpelling()
