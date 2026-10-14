@@ -138,7 +138,7 @@ public class StringBuilderConformanceTests
     [InlineData("return new StringBuilder(4, 8).MaxCapacity + \",\" + new StringBuilder().MaxCapacity;")]                  // "8,2147483647"
     [InlineData("var b = new StringBuilder(\"12\"); b[0] = 'x'; return b[0] + b.ToString();")]                               // "xx2"
     [InlineData("var b = new StringBuilder(\"12\"); b.Length = 4; var four = b.ToString().Replace(\"\\0\", \"0\"); b.Length = 1; return four + \",\" + b;")] // "1200,1"
-    [InlineData("return new StringBuilder(\"12\").Equals(new StringBuilder(\"12\", 100)) + \",\" + new StringBuilder(\"12\").Equals((object)new StringBuilder(\"12\"));")] // "True,False"
+    [InlineData("return new StringBuilder(\"12\").Equals(new StringBuilder(\"12\", 100));")]                              // "True"
     [InlineData("var a = new[] { '-', '-', '-', '-' }; new StringBuilder(\"12\").CopyTo(0, a, 1, 2); return new string(a);")] // "-12-"
     [InlineData("var b = new StringBuilder(5).Append(\"abcde\"); b.Insert(0, \"x\"); b.Clear(); return b.Capacity;")]   // 16
     [InlineData("var b = new StringBuilder(5).Append(\"abcde\"); b.Replace(\"e\", \"ff\"); var c = b.Capacity; b.Clear(); return c + \",\" + b.Capacity;")] // "6,16"
@@ -149,6 +149,18 @@ public class StringBuilderConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>
+    /// <c>Equals(object)</c>, which a builder takes from <c>object</c> and .NET answers by reference,
+    /// is refused by the build (EQ2004: <c>object.Equals</c> has no translation on a receiver of a
+    /// class type), where the overload over a builder is translated and compared above. The case ran
+    /// the refused call's text and matched .NET until the runner read the build's refusals (#907); it
+    /// pins the refusal until the build translates the call.
+    /// </summary>
+    [Fact]
+    public void EqualsOverAnObject_IsRefusedByTheBuild() =>
+        ConformanceRunner.AssertStatementsRefusedByTheBuild(
+            "return new StringBuilder(\"12\").Equals((object)new StringBuilder(\"12\"));", "EQ2004");
 
     /// <summary>Their refusals, each .NET's.</summary>
     [SkippableTheory]

@@ -11,6 +11,11 @@ namespace eQuantic.UI.Conformance.Tests.Infrastructure;
 /// to JS and running it under embedded Bun (or Node fallback), and by evaluating it directly in
 /// .NET — and asserts the JSON results are identical. Divergence means the transpiler miscompiled
 /// the construct.
+/// <para>
+/// A case whose C# the build refuses fails before either side runs, naming each refusal by its id
+/// and text (<see cref="Transpiler"/>, #907), unless it says the refusal is what it pins
+/// (<see cref="AssertStatementsRefusedByTheBuild"/>).
+/// </para>
 /// </summary>
 public static class ConformanceRunner
 {
@@ -276,6 +281,39 @@ public static class ConformanceRunner
         actual.Should().Be(
             expected,
             $"C# `{csharpExpression}` (transpiled to JS `{js}`) must behave identically to .NET");
+    }
+
+    /// <summary>
+    /// For a case written FOR a fence: the build refuses <paramref name="csharpStatements"/> with
+    /// <paramref name="id"/>, and nothing runs on either side. Every other case fails where the build
+    /// refuses its C# (<see cref="Translation.Accepted"/>), so this is how a case says the refusal is
+    /// what it pins.
+    /// <para>
+    /// The C# compiles, since a case the C# compiler refuses says nothing of a fence, and every refusal
+    /// carries the id, so a case pins the fence it names and no other. When the fence lifts, the case
+    /// fails, saying so: it becomes a comparison with .NET like its neighbours.
+    /// </para>
+    /// </summary>
+    public static void AssertStatementsRefusedByTheBuild(string csharpStatements, string id, string prelude = "") =>
+        AssertRefused($"C# block `{csharpStatements}`", id,
+            Transpiler.TranslateStatements(csharpStatements, prelude), Transpiler.TranslateDeclaredRecordTypes(prelude));
+
+    /// <summary>As <see cref="AssertStatementsRefusedByTheBuild"/>, for a case written as an expression.</summary>
+    public static void AssertRefusedByTheBuild(string csharpExpression, string id, string prelude = "") =>
+        AssertRefused($"C# `{csharpExpression}`", id,
+            Transpiler.TranslateExpression(csharpExpression, prelude), Transpiler.TranslateDeclaredRecordTypes(prelude));
+
+    private static void AssertRefused(string what, string id, Translation translation, Translation types)
+    {
+        translation.CSharpErrors.Should().BeEmpty(
+            $"{what} is C# that compiles: a case the C# compiler refuses says nothing of a fence");
+
+        var refusals = translation.Refusals.Concat(types.Refusals).Distinct().ToList();
+        refusals.Should().NotBeEmpty(
+            $"{what} is written for {id}, and the build accepts it: the fence has lifted, so the case is "
+            + $"compared with .NET like its neighbours now (the JavaScript it writes: `{translation.Js}`)");
+        refusals.Where(refusal => refusal.Id != id).Select(refusal => refusal.ToString()).Should().BeEmpty(
+            $"{what} pins {id}, and a refusal for any other reason is not the fence it names");
     }
 
     /// <summary>

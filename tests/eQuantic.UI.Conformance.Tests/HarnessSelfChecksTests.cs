@@ -1,4 +1,6 @@
+using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Conformance.Tests.Infrastructure;
+using FluentAssertions;
 using Xunit;
 
 namespace eQuantic.UI.Conformance.Tests;
@@ -18,6 +20,66 @@ public class HarnessSelfChecksTests
         // Not valid C# in any language version, so neither side can produce a value.
         Assert.ThrowsAny<Exception>(() =>
             ConformanceRunner.AssertStatementsSameAsDotNet("var x = ; return $\"{x}\";", ""));
+    }
+
+    /// <summary>
+    /// A case whose C# the build refuses fails before anything runs, naming the refusal (#907). The
+    /// converter still writes text where it refuses, the query's source alone here, and the runner ran
+    /// it: this case answered 3 where .NET answers 6, and read as a translation bug (#761).
+    /// </summary>
+    [Fact]
+    public void ACaseTheBuildRefuses_FailsNamingTheRefusal_AndRunsNothing()
+    {
+        var refused = Assert.Throws<RefusedByTheBuildException>(() =>
+            ConformanceRunner.AssertStatementsSameAsDotNet("return (from a in new[] { 1, 2 } let f = a * 2 select f).Sum();"));
+
+        refused.Refusals.Select(refusal => refusal.Id).Should().Equal("EQ2008");
+        refused.Message.Should().Contain("EQ2008: query syntax with a 'let' clause is not lowered");
+    }
+
+    /// <summary>
+    /// What refuses is the build's error, never its warning: a number read with no culture is warned
+    /// about (EQ2110) and built, so the case runs.
+    /// </summary>
+    [Fact]
+    public void AWarning_RefusesNothing()
+    {
+        Refusal.Of([
+                new ConversionDiagnostic(ConversionSeverity.Warning, "EQ2110", "a warning", 1, 1),
+                new ConversionDiagnostic(ConversionSeverity.Error, "EQ2008", "an error", 1, 1),
+            ])
+            .Select(refusal => refusal.Id).Should().Equal("EQ2008");
+        Transpiler.TranslateStatements("return double.Parse(\"2.5\", null);").Refusals.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// What a build runs BESIDE the converter is read too, over the prelude's declarations: a record
+    /// with two methods of one name is refused (EQ1007), where the harness alone would have written
+    /// both and JavaScript kept the second.
+    /// </summary>
+    [Fact]
+    public void APreludeTheBuildRefuses_FailsTheCase_NamingTheModule()
+    {
+        var refused = Assert.Throws<RefusedByTheBuildException>(() => Transpiler.TranspileStatements(
+            "return new Twice(1).Plus(2);",
+            "public record Twice(int X) { public int Plus(int y) => X + y; public int Plus(int y, int z) => X + y + z; }"));
+
+        refused.Refusals.Should().ContainSingle(refusal => refusal.Id == "EQ1007" && refusal.Module == "Twice");
+    }
+
+    /// <summary>
+    /// A case written for a fence pins THAT fence: it fails when the build accepts its C#, when the
+    /// build refuses it for another reason, and when it is not C# the compiler accepts.
+    /// </summary>
+    [Theory]
+    [InlineData("return 1;", "EQ2008", "the build accepts it")]
+    [InlineData("return (from a in new[] { 1, 2 } let f = a * 2 select f).Sum();", "EQ2004", "EQ2008")]
+    [InlineData("return (from a in nothing let f = a * 2 select f).Sum();", "EQ2008", "C# that compiles")]
+    public void AnExpectedRefusal_FailsWhereTheBuildSaysOtherwise(string statements, string id, string named)
+    {
+        var failure = Assert.ThrowsAny<Exception>(() => ConformanceRunner.AssertStatementsRefusedByTheBuild(statements, id));
+        failure.Should().NotBeOfType<RefusedByTheBuildException>();
+        failure.Message.Should().Contain(named);
     }
 
     /// <summary>

@@ -27,7 +27,7 @@ public class ValueTextConformanceTests
     [InlineData("return string.Format(null, \"{0}\", 2.5);")]                                                          // "2.5"
     [InlineData("double d = 2.5; return d.ToString((IFormatProvider?)null);")]                                         // "2.5"
     [InlineData("double d = 2.5; return d.ToString(\"F2\", null);")]                                                   // "2.50"
-    [InlineData("return double.Parse(\"2.5\", (IFormatProvider?)null).ToString(System.Globalization.CultureInfo.InvariantCulture);")] // "2.5"
+    [InlineData("return double.Parse(\"2.5\", null).ToString(System.Globalization.CultureInfo.InvariantCulture);")] // "2.5"
     // A bool's provider changes nothing, but C# evaluates it, after the receiver.
     [InlineData("var log = \"\"; bool B() { log += \"b\"; return true; } IFormatProvider? P() { log += \"p\"; return null; } var s = B().ToString(P()); return s + log;")] // "Truebp"
     [InlineData("bool? b = null; return \"[\" + b.ToString() + \"]\";")]                                               // "[]"
@@ -90,6 +90,20 @@ public class ValueTextConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>
+    /// A null provider behind a cast is refused where a bare null is not. A number read with no
+    /// culture is a warning (EQ2110), and a null literal counts as none, but the build takes
+    /// <c>(IFormatProvider?)null</c> for a culture it cannot name and refuses it (EQ2108), where
+    /// <c>ToString</c> and <c>string.Format</c> read the same cast as the null it is. This case ran the
+    /// parse's text and matched .NET until the runner read the build's refusals (#907); it pins the
+    /// refusal until the build reads the cast's null as a null.
+    /// </summary>
+    [Fact]
+    public void ANullProviderBehindACast_IsRefusedForAParse_WhereABareNullIsNot() =>
+        ConformanceRunner.AssertStatementsRefusedByTheBuild(
+            "return double.Parse(\"2.5\", (IFormatProvider?)null).ToString(System.Globalization.CultureInfo.InvariantCulture);",
+            "EQ2108");
 
     /// <summary>A bool's provider named by a bare identifier that binds to a PROPERTY: its getter
     /// runs, after the receiver, as C# runs it.</summary>

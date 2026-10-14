@@ -76,8 +76,6 @@ public class AsyncConformanceTests
     // …and a SEQUENCE, which must still go through unwrapped.
     [InlineData("async Task<int> F(int v) => v; var ts = new[] { F(1), F(2) }.ToList(); "
         + "var xs = await Task.WhenAll(ts); return $\"{xs[0]}{xs[1]}\";")]
-    [InlineData("var r = 0; try { await Task.FromException(new InvalidOperationException(\"x\")); } "
-        + "catch { r = -1; } var ok = 5; return $\"{r}{ok}\";")]
     [InlineData("async ValueTask<int> F() => 3; var r = await F(); return $\"{r}\";")]
     [InlineData("async Task F(int v) { var _ = v; } await F(2); return \"done\";")]
     [InlineData("Func<Task<int>> f = async () => { await Task.Yield(); return 11; }; return $\"{await f()}\";")]
@@ -86,6 +84,19 @@ public class AsyncConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(program);
     }
+
+    /// <summary>
+    /// <c>Task.FromException</c> has no translation, and the build refuses it (EQ2004). Swept with the
+    /// rest of the surface above, it passed there by accident: the call was left as written, the
+    /// browser threw a ReferenceError for the <c>Task</c> it names, and the case's own catch took that
+    /// for the exception .NET throws. It pins the refusal until the call is translated.
+    /// </summary>
+    [Fact]
+    public void TaskFromException_IsRefusedByTheBuild() =>
+        ConformanceRunner.AssertStatementsRefusedByTheBuild(
+            "var r = 0; try { await Task.FromException(new InvalidOperationException(\"x\")); } "
+            + "catch { r = -1; } var ok = 5; return $\"{r}{ok}\";",
+            "EQ2004");
 
     /// <summary>
     /// A null-conditional call whose translation is a helper was wrapped in an arrow that binds the
