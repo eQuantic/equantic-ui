@@ -50,7 +50,6 @@ StackAllocArrayCreationStrategy
 StringBuilderStrategy
 StringMethodStrategy
 StringStaticStrategy
-StructuralEqualsStrategy
 SwitchExpressionStrategy
 TakeStrategy
 TaskMethodStrategy

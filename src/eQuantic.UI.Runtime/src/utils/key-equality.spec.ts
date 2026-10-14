@@ -40,6 +40,23 @@ describe('the equality a type compares by', () => {
     expect(same({ a: 1, b }, { a: 1, b: [1] })).toBe(false);
   });
 
+  // It is Equals(object): a value of another type is unequal before a member is read (#743).
+  it('takes only an anonymous object of the same members, in the same order', () => {
+    class Point {
+      a = 1;
+      b = 2;
+    }
+    const same = memberEquality({ a: false, b: true });
+    expect(same({ a: 1, b: 2 }, { a: 1, b: 2 })).toBe(true);
+    expect(same({ a: 1, b: 2 }, { b: 2, a: 1 })).toBe(false);
+    expect(same({ a: 1, b: 2 }, { a: 1, b: 2, c: 3 })).toBe(false);
+    expect(same({ a: 1, b: 2 }, { a: 1 })).toBe(false);
+    expect(same({ a: 1, b: 2 }, [1, 2])).toBe(false);
+    expect(same({ a: 1, b: 2 }, new Point())).toBe(false);
+    expect(same({ a: 1, b: 2 }, null)).toBe(false);
+    expect(memberEquality({})({}, {})).toBe(true);
+  });
+
   it('compares a pair by its halves', () => {
     const same = pairComparer<string, number[]>(false, false);
     const v = [1];

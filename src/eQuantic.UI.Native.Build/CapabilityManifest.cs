@@ -30,6 +30,11 @@ public static class CapabilityManifest
     /// left out, which Apple allows.
     /// </para>
     /// <para>
+    /// And the schemes the app OPENS, as <c>LSApplicationQueriesSchemes</c>: an iPhone answers
+    /// "does something open this link" only for the schemes listed there, so they are written from
+    /// the same <c>builder.Workspace.Opens…</c> lines the policy is built from, with the app's own.
+    /// </para>
+    /// <para>
     /// With nothing declared the file is REMOVED, not merely left unwritten: the SDK merges it
     /// whenever it exists, so one left by an earlier build would go on asking for a permission, or
     /// answering a scheme, the app has since stopped declaring. And it is written only when what it
@@ -45,8 +50,13 @@ public static class CapabilityManifest
             .Where(entry => entry.Key is not null)
             .ToArray();
         var schemes = BundleManifest.Schemes(BundleManifest.Read(assemblyPath));
+        // The schemes the app may ASK about. An iPhone answers canOpenURL only for what is listed
+        // here, so the list is what the app's policy hands over beyond the web: what it opened with
+        // builder.Workspace.Opens…, and its own.
+        var asked = OpenedSchemes.Read(assemblyPath).Union(schemes, StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal).ToArray();
 
-        if (keys.Length == 0 && schemes.Length == 0)
+        if (keys.Length == 0 && asked.Length == 0)
         {
             // Asked of the file: Delete answers a missing DIRECTORY with an exception, and a
             // first build has not made it yet.
@@ -58,6 +68,7 @@ public static class CapabilityManifest
         {
             foreach (var (key, reason) in keys) plist.String(key!, reason);
             BundleManifest.WriteUrlTypes(plist, identifier, schemes);
+            if (asked.Length > 0) plist.StringArray("LSApplicationQueriesSchemes", asked);
         });
         if (File.Exists(plistPath) && File.ReadAllText(plistPath) == document) return true;
 

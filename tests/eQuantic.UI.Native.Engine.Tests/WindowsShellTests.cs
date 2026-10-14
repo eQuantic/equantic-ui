@@ -272,18 +272,25 @@ public class WindowsShellTests
     [WindowsFact]
     public void TheWorkspaceRefusesRelativePaths_AndAnswersFalseForWhatIsGone()
     {
-        // The web policy and no logger: what the container hands it, minus the app's own schemes.
-        var workspace = new WindowsWorkspace(OpenUrlPolicy.Web,
-            Microsoft.Extensions.Logging.Abstractions.NullLogger<WindowsWorkspace>.Instance);
+        var workspace = new WindowsWorkspace();
         var reveal = () => workspace.Reveal("relative/path");
         reveal.Should().Throw<ArgumentException>();
-        var open = () => workspace.OpenUrl(new Uri("about", UriKind.Relative));
-        open.Should().Throw<ArgumentException>();
 
         workspace.Reveal(Path.Combine(Path.GetTempPath(), "gone-" + Guid.NewGuid())).Should().BeFalse();
         workspace.OpenFile(Path.Combine(Path.GetTempPath(), "gone-" + Guid.NewGuid() + ".txt")).Should().BeFalse();
-        workspace.CanOpen(new Uri("https://equantic.tech")).Should().BeTrue("a browser always claims https");
-        workspace.CanOpen(new Uri("nobody-claims-this-" + Guid.NewGuid().ToString("N")[..8] + "://x")).Should().BeFalse();
+    }
+
+    [WindowsFact]
+    public void TheLauncherAsksTheShell_ForASchemeTheAppOpens()
+    {
+        // A scheme nobody claims has to pass the POLICY to reach the shell at all: under the web's
+        // policy the answer would be the policy's no, and the shell would never be asked.
+        var unclaimed = "nobody-claims-this-" + Guid.NewGuid().ToString("N")[..8];
+        var launcher = new WindowsUrlLauncher(OpenUrlPolicy.Web.Allowing(unclaimed),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<WindowsUrlLauncher>.Instance);
+
+        launcher.CanOpen(new Uri("https://equantic.tech")).Should().BeTrue("a browser always claims https");
+        launcher.CanOpen(new Uri(unclaimed + "://x")).Should().BeFalse("the shell knows no command for it");
     }
 
     [WindowsFact]

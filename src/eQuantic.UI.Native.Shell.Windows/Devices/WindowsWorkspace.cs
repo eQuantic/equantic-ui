@@ -1,61 +1,21 @@
 using System.Runtime.InteropServices;
 using eQuantic.UI.Primitives;
-using Microsoft.Extensions.Logging;
 
 namespace eQuantic.UI.Native.Shell.Windows;
 
 /// <summary>
-/// The Windows shell as the answer to every one of these: <c>SHOpenFolderAndSelectItems</c> for
-/// showing where a file is, <c>ShellExecuteEx</c> for handing a file or a URL to whatever owns it,
-/// and the association API for asking without acting.
+/// The Windows shell as the answer to both of these: <c>SHOpenFolderAndSelectItems</c> for showing
+/// where a file is, and <c>ShellExecuteEx</c> for handing a file to whatever owns it.
 /// <para>
-/// Each call answers with what the shell answered, unchanged. False means the system declined —
-/// the path vanished, no app claims the scheme — and inventing an exception for it would turn an
-/// ordinary outcome into one every call site has to guard. An argument the system could never have
-/// been handed (a relative path, a relative URL) is the caller's mistake and throws, as the
-/// contract says.
-/// </para>
-/// <para>
-/// Except for what never reaches the shell at all. A URL is handed over only if this app's
-/// <see cref="OpenUrlPolicy"/> hands its scheme over — the web, the app's own schemes, and what
-/// <c>builder.Workspace</c> opened — because <c>ShellExecuteEx</c> routes to whatever claims the
-/// scheme, and a URL that arrived in content must not get to pick. The same rule the Mac applies,
-/// from the same object, so the two shells cannot disagree about one URL. A refusal answers false,
-/// as the shell would for a scheme nothing claims, and is logged so a developer who typed the URL
-/// themselves is told the one line that opens it.
+/// Each call answers with what the shell answered, unchanged. False means the system declined (the
+/// path vanished, nothing claims that kind of file), and inventing an exception for it would turn
+/// an ordinary outcome into one every call site has to guard. An argument the system could never
+/// have been handed (a relative path) is the caller's mistake and throws, as the contract says. A
+/// link is <see cref="WindowsUrlLauncher"/>'s.
 /// </para>
 /// </summary>
-public sealed unsafe class WindowsWorkspace(OpenUrlPolicy policy, ILogger<WindowsWorkspace> logger) : IWorkspace
+public sealed unsafe class WindowsWorkspace : IWorkspace
 {
-    private const uint SEE_MASK_NOASYNC = 0x00000100;
-    private const uint SEE_MASK_FLAG_NO_UI = 0x00000400;
-    private const int SW_SHOWNORMAL = 1;
-    private const uint ASSOCF_IS_PROTOCOL = 0x00001000;
-    private const uint ASSOCSTR_COMMAND = 1;
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct SHELLEXECUTEINFOW
-    {
-        public uint Size;
-        public uint Mask;
-        public IntPtr Hwnd;
-        public char* Verb;
-        public char* File;
-        public char* Parameters;
-        public char* Directory;
-        public int Show;
-        public IntPtr Instance;
-        public IntPtr IdList;
-        public char* Class;
-        public IntPtr ClassKey;
-        public uint HotKey;
-        public IntPtr IconOrMonitor;
-        public IntPtr Process;
-    }
-
-    [DllImport("shell32.dll", EntryPoint = "ShellExecuteExW")]
-    private static extern int ShellExecuteEx(SHELLEXECUTEINFOW* info);
-
     [DllImport("shell32.dll", EntryPoint = "ILCreateFromPathW", CharSet = CharSet.Unicode)]
     private static extern IntPtr ILCreateFromPath(string path);
 
@@ -64,10 +24,6 @@ public sealed unsafe class WindowsWorkspace(OpenUrlPolicy policy, ILogger<Window
 
     [DllImport("shell32.dll")]
     private static extern int SHOpenFolderAndSelectItems(IntPtr folder, uint count, IntPtr* items, uint flags);
-
-    [DllImport("shlwapi.dll", EntryPoint = "AssocQueryStringW", CharSet = CharSet.Unicode)]
-    private static extern int AssocQueryString(uint flags, uint kind, string association, string? extra,
-        char* buffer, uint* size);
 
     /// <inheritdoc />
     public bool Reveal(string path)
@@ -98,68 +54,7 @@ public sealed unsafe class WindowsWorkspace(OpenUrlPolicy policy, ILogger<Window
         // A FILE, as the contract says. Opening a folder would open Explorer, which is Reveal's job
         // — and a caller who meant Reveal would never find out.
         if (!File.Exists(path)) return false;
-        return Execute(path);
-    }
-
-    /// <inheritdoc />
-    public bool OpenUrl(Uri url)
-    {
-        ArgumentNullException.ThrowIfNull(url);
-        // A relative Uri is not something the system declined — no system could ever have been
-        // asked. Answering false would send the developer looking at the shell for a mistake that
-        // is in their own call.
-        if (!url.IsAbsoluteUri)
-            throw new ArgumentException("A URL to open must be absolute — nothing can route "
-                + $"\"{url.OriginalString}\" without a scheme.", nameof(url));
-        // The POLICY, before the platform: a refused URL never reaches ShellExecuteEx. Logged,
-        // because false alone is the one answer nobody can diagnose — and a developer who typed
-        // mailto: themselves should find the fix at the first click.
-        if (policy.Refusal(url) is { } refusal)
-        {
-            logger.LogWarning("{Refusal}", refusal);
-            return false;
-        }
-        return Execute(url.AbsoluteUri);
-    }
-
-    /// <inheritdoc />
-    public bool CanOpen(Uri url)
-    {
-        ArgumentNullException.ThrowIfNull(url);
-        if (!url.IsAbsoluteUri)
-            throw new ArgumentException("A URL to check must be absolute — nothing can route "
-                + $"\"{url.OriginalString}\" without a scheme.", nameof(url));
-        // The same policy OpenUrl applies, or the two would disagree about the same URL: a button
-        // gated by CanOpen has to disappear for exactly the links OpenUrl would refuse. Not logged —
-        // a QUESTION has no side effect, and a screen may ask it on every build.
-        if (!policy.Allows(url)) return false;
-        // The QUERY form: which command opens this protocol. S_OK with a command means something
-        // claims it; anything else means nothing does — and no dialog either way, which is exactly
-        // what a check must not put on the person's screen.
-        uint size = 0;
-        var probe = AssocQueryString(ASSOCF_IS_PROTOCOL, ASSOCSTR_COMMAND, url.Scheme, "open", null, &size);
-        // S_FALSE with a size means "here is how big the answer is" — a handler exists.
-        return probe is Com.S_OK or 1 && size > 1;
-    }
-
-    private static bool Execute(string target)
-    {
-        Com.EnsureInitialized();
-        fixed (char* verb = "open")
-        fixed (char* file = target)
-        {
-            var info = new SHELLEXECUTEINFOW
-            {
-                Size = (uint)sizeof(SHELLEXECUTEINFOW),
-                // No UI of the shell's own on failure: a false here IS the report, and the contract
-                // promises the caller decides what the person sees.
-                Mask = SEE_MASK_NOASYNC | SEE_MASK_FLAG_NO_UI,
-                Verb = verb,
-                File = file,
-                Show = SW_SHOWNORMAL,
-            };
-            return ShellExecuteEx(&info) != 0;
-        }
+        return ShellOpen.Execute(path);
     }
 
     /// <summary>

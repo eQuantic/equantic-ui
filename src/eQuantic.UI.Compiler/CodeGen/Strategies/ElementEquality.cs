@@ -64,6 +64,31 @@ internal static class ElementEquality
         };
     }
 
+    /// <summary>
+    /// The JavaScript of the function a tuple's or an anonymous type's own <c>Equals(object)</c> compares
+    /// by, which its call and its method group both use, or null where <c>$eq.equals</c> answers it: a
+    /// tuple's whose elements all compare by value. An anonymous type's is always the comparison generated
+    /// from its members, which takes only an anonymous object of the same members, in the same order, for
+    /// one of its type, as .NET checks the type before it reads a member: <c>$eq.equals</c> matches two
+    /// plain objects by their keys in any order, and a record by its members (#743).
+    /// </summary>
+    internal static string? OwnEquals(INamedTypeSymbol type)
+    {
+        if (type.IsAnonymousType)
+            return MemberEquality(type, MembersOf(type).Select(member => Describe(member.Type).Equality ?? "false").ToList());
+        var (equality, valueSafe) = Describe(type);
+        return valueSafe ? null : equality;
+    }
+
+    /// <summary>An anonymous type's members, in the order C# declares them and its object literal is written.</summary>
+    private static IReadOnlyList<IPropertySymbol> MembersOf(INamedTypeSymbol anonymous) =>
+        anonymous.GetMembers().OfType<IPropertySymbol>().ToList();
+
+    /// <summary>An anonymous type's comparison, each member under the name it crosses as, by the equality
+    /// <paramref name="parts"/> gives it, in the members' order.</summary>
+    private static string MemberEquality(INamedTypeSymbol anonymous, IReadOnlyList<string> parts) =>
+        $"{Eq.MemberEquality}({{ {string.Join(", ", MembersOf(anonymous).Zip(parts, (member, part) => $"{member.Name.ToCamelCase()}: {part}"))} }})";
+
     /// <summary>The equality, and whether <c>$eq.equals</c> answers what it answers for a value of the
     /// type: what lets a tuple of such members be compared by <c>$eq.equals</c> whole.</summary>
     /// <summary>Whether a class, or a base of it below <c>object</c>, overrides <c>Equals(object)</c>,
@@ -104,11 +129,7 @@ internal static class ElementEquality
                 return Composite(tuple.TupleElements.Select(element => element.Type),
                     parts => $"{Eq.TupleEquality}({string.Join(", ", parts)})");
             case INamedTypeSymbol { IsAnonymousType: true } anonymous:
-            {
-                var members = anonymous.GetMembers().OfType<IPropertySymbol>().ToList();
-                return Composite(members.Select(member => member.Type),
-                    parts => $"{Eq.MemberEquality}({{ {string.Join(", ", members.Zip(parts, (member, part) => $"{member.Name.ToCamelCase()}: {part}"))} }})");
-            }
+                return Composite(MembersOf(anonymous).Select(member => member.Type), parts => MemberEquality(anonymous, parts));
             case INamedTypeSymbol { Name: "KeyValuePair", TypeArguments.Length: 2 } pair
                 when pair.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic":
                 return Composite(pair.TypeArguments, parts => $"{Eq.PairComparer}({string.Join(", ", parts)})");

@@ -118,6 +118,8 @@ import {
   recordTextGroup,
   stringFormat,
   stringFormatInvariant,
+  tupleText,
+  tupleTextGroup,
 } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
@@ -177,7 +179,7 @@ import {
 import { boolConvert, boolParse, boolTryParse } from './utils/boolean-text';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary } from './utils/nullable';
-import { equals, equalsGroup } from './utils/equals';
+import { equals, equalsGroup, equalsInstance } from './utils/equals';
 import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
 import { guidOf, guidParse, guidTryParse } from './utils/guid';
 import { CancellationToken, CancellationTokenRegistration, CancellationTokenSource } from './utils/cancellation';
@@ -189,6 +191,7 @@ import {
   filter as exceptionFilter,
   is as isException,
   raise,
+  receiver,
   thrown,
   construct as constructException,
   typeInitialization,
@@ -438,6 +441,9 @@ export const $eq = {
     format,
     record: recordText,
     recordGroup: recordTextGroup,
+    /** A value tuple's text, `(1, a)`, and its `ToString` method group. */
+    tuple: tupleText,
+    tupleGroup: tupleTextGroup,
     stringFormat,
     stringFormatInvariant,
     /** A number boxed with its .NET type for `string.Format`, whose arguments are objects. */
@@ -567,6 +573,10 @@ export const $eq = {
   equals,
   /** The method group `value.Equals` of a value the browser holds as data: a delegate over it. */
   equalsGroup,
+  /** An instance `Equals` whose receiver may be null, an anonymous object's: refused through null. */
+  equalsInstance,
+  /** The receiver of an instance call, refused as .NET refuses a call through null. */
+  receiver,
   /**
    * `GetHashCode` by .NET's contract, values `equals` finds equal hashing equal (`hash`), an instance
    * call refused on null (`instance`), the method group (`group`), `HashCode.Combine` (`combine`),

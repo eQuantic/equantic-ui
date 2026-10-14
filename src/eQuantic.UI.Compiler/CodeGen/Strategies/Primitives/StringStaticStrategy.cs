@@ -320,7 +320,8 @@ public class StringStaticStrategy : IConversionStrategy
         // hole's does (FormatKind.OfText): a float writes its own digits, and an integer no sign on a
         // zero. Where the template writes a specifier, a double says so too: an integer rounds a
         // formatted half away from zero where a double rounds it to even (#393), and only an integer
-        // takes D, X and B, at its type's width (#445, #455).
+        // takes D, X and B, at its type's width (#445, #455). A tuple and an anonymous object go as their
+        // text, which only the static type can write and which a specifier leaves as it is (#762).
         var specified = MayWriteASpecifier(template, context);
         // The call that boxes one value of the type, or null where the value goes as it is.
         Func<string, string>? BoxOf(ITypeSymbol? type) =>
@@ -332,7 +333,13 @@ public class StringStaticStrategy : IConversionStrategy
                 ? BoxOf(ElementTypeOf(context.SemanticHelper.GetType(value.Value))) is { } spreadBox
                     ? $"...Array.from({text}, ($value) => {spreadBox("$value")})"
                     : $"...{text}"
-                : BoxOf(Boxed(value.Value, context)) is { } box
+                : Written(Boxed(value.Value, context), text);
+        // A value written in place: as its text where only its type can write that, boxed with its kind
+        // where it is a number, and as it is otherwise.
+        string Written(ITypeSymbol? boxed, string text) =>
+            StringConversion.ReachesTheFormatterAsText(boxed)
+                ? JsExprWriter.Write(StringConversion.Of(boxed!, JsExpr.Opaque(text), context))
+                : BoxOf(boxed) is { } box
                     ? box(text)
                     : text;
 

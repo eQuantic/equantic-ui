@@ -46,6 +46,7 @@
          one of them trimmed. -->
     <ItemGroup>
         <Compile Include="../Shared/BundleFactRule.cs" Link="Shared/BundleFactRule.cs" />
+        <Compile Include="../Shared/OpenedSchemeRule.cs" Link="Shared/OpenedSchemeRule.cs" />
     </ItemGroup>
 
 </Project>

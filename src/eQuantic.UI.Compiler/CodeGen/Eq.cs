@@ -190,6 +190,12 @@ public static class Eq
     /// <summary>The method group <c>value.ToString</c> of a value the browser holds as plain data: a
     /// delegate writing <see cref="RecordText"/> of the value it was made with.</summary>
     public const string RecordTextGroup = "$eq.text.recordGroup";
+    /// <summary>The text .NET writes for a value tuple (<c>(1, a)</c>), an array here, each element as
+    /// its type writes it, and the empty string for a null one.</summary>
+    public const string TupleText = "$eq.text.tuple";
+    /// <summary>The method group <c>value.ToString</c> of a value tuple: a delegate writing
+    /// <see cref="TupleText"/> of the value it was made with.</summary>
+    public const string TupleTextGroup = "$eq.text.tupleGroup";
     public const string StringFormat = "$eq.text.stringFormat";
     /// <summary><c>string.Compare</c> by a <c>StringComparison</c>: a null first, a culture comparison
     /// by the platform's collator, an ordinal one answering .NET's difference.</summary>
@@ -343,6 +349,15 @@ public static class Eq
     /// <summary>The method group <c>value.Equals</c> of a value the browser holds as plain data: a
     /// delegate comparing the value it was made with as <see cref="Equals"/> does.</summary>
     public const string EqualsGroup = "$eq.equalsGroup";
+
+    /// <summary>An instance <c>Equals</c> whose receiver may be null, an anonymous object's: the receiver
+    /// refused as .NET refuses a call through null, after the argument is evaluated, then compared by the
+    /// comparison passed third, or found unequal where that is null, the other value being of another type.</summary>
+    public const string EqualsInstance = "$eq.equalsInstance";
+
+    /// <summary>The receiver of an instance call that has no helper of its own, refused as .NET refuses a
+    /// call through null (<c>NullReferenceException</c>), and handed on otherwise.</summary>
+    public const string Receiver = "$eq.receiver";
 
     /// <summary><c>GetHashCode()</c> by .NET's contract: values <see cref="Equals"/> finds equal hash
     /// equal, and a value with its own <c>getHashCode</c> answers it.</summary>

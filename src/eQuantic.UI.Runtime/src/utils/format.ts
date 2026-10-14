@@ -195,16 +195,25 @@ function formatCore(value: any, format: string | null, kind: NumberKind): string
 }
 
 /**
+ * What the type says of a value that the value cannot, where the compiler writes it into text: a
+ * number's kind (a float's own digits, an integer's unsigned zero), or a function that writes a value
+ * the formatter cannot read (an enum's member name, a data twin's own record text, a tuple's and an
+ * anonymous object's own text). A `Curve`'s points are floats, `'single'`, and a float writes the
+ * single's own digits, `0.2` where the double under it reads `0.20000000298023224` (#518). A value
+ * that says nothing (`null`, or no entry at all) is written from what it holds, a number as a double.
+ */
+export type Printed = NumberKind | ((value: any) => string);
+
 /**
  * A member a record's text prints: its C# name, read under its twin's name (the name with its first
- * letter lowered, as `TwinName` names it), with what the type says that the value cannot: a number's
- * kind (a float's own digits, an integer's unsigned zero), or a function that writes a value the
- * formatter cannot read (an enum's member name, a data twin's own record text). A `Curve`'s points
- * are floats, `['X1', 'single']`, and a float writes the single's own digits, `0.2` where the double
- * under it reads `0.20000000298023224` (#518). A member that says nothing is written from its value,
- * a number as a double.
+ * letter lowered, as `TwinName` names it), with what its type says ({@link Printed}).
  */
-export type PrintedMember = string | readonly [string, NumberKind | ((value: any) => string)];
+export type PrintedMember = string | readonly [string, Printed];
+
+/** A value written as a concatenation writes it (#454), by what its type says ({@link Printed}). */
+function printed(value: unknown, how: Printed | null | undefined): string {
+  return typeof how === 'function' ? how(value) : format(value, null, undefined, undefined, how ?? undefined);
+}
 
 /**
  * The text .NET writes for a record, `Name { A = 1, B = x }` as `PrintMembers` lists it: the members
@@ -212,17 +221,41 @@ export type PrintedMember = string | readonly [string, NumberKind | ((value: any
  * culture in force, a null as nothing, a bool as `True`. A record the browser holds as a class and one
  * it holds as plain data (`[TwinIsData]`, whose own string would be `[object Object]`) both write it
  * here, from the same members the compiler writes for its `ToString` method group
- * ({@link recordTextGroup}). A null value is the empty string, as `$"{value}"` is.
+ * ({@link recordTextGroup}). An anonymous object's text is a record's with no name, `{ A = 1, B = x }`
+ * and `{ }`, as the `ToString` C# writes for an anonymous type has it: the compiler passes an empty
+ * name for one. A null value is the empty string, as `$"{value}"` is.
  */
 export function recordText(value: unknown, name: string, members: readonly PrintedMember[]): string {
   if (value === null || value === undefined) return '';
   const data = value as Record<string, unknown>;
   const written = members.map((member) => {
     const [label, how] = typeof member === 'string' ? [member, undefined] : member;
-    const held = data[label.charAt(0).toLowerCase() + label.slice(1)];
-    return `${label} = ${typeof how === 'function' ? how(held) : format(held, null, undefined, undefined, how)}`;
+    return `${label} = ${printed(data[label.charAt(0).toLowerCase() + label.slice(1)], how)}`;
   });
-  return written.length === 0 ? `${name} { }` : `${name} { ${written.join(', ')} }`;
+  const body = written.length === 0 ? '{ }' : `{ ${written.join(', ')} }`;
+  return name === '' ? body : `${name} ${body}`;
+}
+
+/**
+ * The text .NET writes for a value tuple, `(1, a)` as `ValueTuple.ToString` writes it (#762): each
+ * element as its own `ToString` writes it in the culture in force, a null one as nothing, between
+ * parentheses and separated by `, `. A tuple is an array here, whose own string is JavaScript's
+ * `1,a`, and one of eight elements or more is ONE array, which .NET nests in `Rest` and writes flat.
+ * The compiler hands what each element's type says ({@link Printed}), in order, up to the last that
+ * says anything. A null value, an empty `Nullable` tuple, is the empty string.
+ */
+export function tupleText(value: unknown, elements: readonly (Printed | null)[] = []): string {
+  if (value === null || value === undefined) return '';
+  return `(${(value as readonly unknown[]).map((item, at) => printed(item, elements[at])).join(', ')})`;
+}
+
+/**
+ * The method group `value.ToString` of a value tuple, `Func<string> text = pair.ToString`: a delegate
+ * writing the {@link tupleText} of the value as it is when the delegate is made, which the compiler
+ * passes here, so it is read once, where C# copies it into the delegate.
+ */
+export function tupleTextGroup(value: unknown, elements: readonly (Printed | null)[] = []): () => string {
+  return () => tupleText(value, elements);
 }
 
 /**

@@ -43,9 +43,12 @@ internal static class ValueCopies
 
         // A boxing makes a box of its own: `object a = p; object b = p;` are two boxes in C#, which
         // ReferenceEquals tells apart, where the twin handed both the one object (found by Copilot's
-        // review of #697).
+        // review of #697). A tuple boxed on its way into TEXT is not kept: ValueFlow has already written
+        // its text from it, which reads the tuple and holds nothing of it, and a copy taken around that
+        // text spread the string into its characters, `(,1,,, ,2,)` (#762).
         if (IsMutableValue(operation.Type) && operation.Parent is IConversionOperation { Type.IsReferenceType: true } boxing
-            && ReferenceEquals(boxing.Operand, operation))
+            && ReferenceEquals(boxing.Operand, operation)
+            && !(operation.Type is INamedTypeSymbol { IsTupleType: true } && ValueFlow.FlowsIntoText(operation)))
             return Copy(operation.Type!, translated);
 
         // A delegate made from a method of a value is made over a copy of it, as C# boxes the receiver when
