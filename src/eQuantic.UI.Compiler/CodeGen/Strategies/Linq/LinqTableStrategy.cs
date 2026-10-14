@@ -297,11 +297,13 @@ public class LinqTableStrategy : IExpressionIrStrategy
         ("ToLookup", 1) =>
             "{0}.reduce(($groups, $item) => { const $key = ({1})($item); let $g = $groups.find(($x) => $x.key === $key); if (!$g) { $g = []; $g.key = $key; $groups.push($g); } $g.push($item); return $groups; }, [])",
         // Both joins index the INNER sequence once and then walk the outer, which is the shape
-        // that keeps a join linear instead of quadratic.
+        // that keeps a join linear instead of quadratic. A null key matches nothing, as .NET's join
+        // lookup skips an inner one and finds no group for an outer one: a Map matched two nulls, and
+        // the runtime's dictionary a key compared by value is held in refuses a null key.
         ("Join", 4) =>
-            "(() => { const $m = new Map(); for (const $x of {1}) { const $k = ({3})($x); let $g = $m.get($k); if (!$g) $m.set($k, $g = []); $g.push($x); } const $r = []; for (const $y of {0}) { const $g = $m.get(({2})($y)); if ($g) for (const $z of $g) $r.push(({4})($y, $z)); } return $r; })()",
+            "(() => { const $m = new Map(); for (const $x of {1}) { const $k = ({3})($x); if ($k == null) continue; let $g = $m.get($k); if (!$g) $m.set($k, $g = []); $g.push($x); } const $r = []; for (const $y of {0}) { const $k = ({2})($y); const $g = $k == null ? undefined : $m.get($k); if ($g) for (const $z of $g) $r.push(({4})($y, $z)); } return $r; })()",
         ("GroupJoin", 4) =>
-            "(() => { const $m = new Map(); for (const $x of {1}) { const $k = ({3})($x); let $g = $m.get($k); if (!$g) $m.set($k, $g = []); $g.push($x); } return {0}.map(($y) => ({4})($y, $m.get(({2})($y)) ?? [])); })()",
+            "(() => { const $m = new Map(); for (const $x of {1}) { const $k = ({3})($x); if ($k == null) continue; let $g = $m.get($k); if (!$g) $m.set($k, $g = []); $g.push($x); } return {0}.map(($y) => { const $k = ({2})($y); return ({4})($y, ($k == null ? undefined : $m.get($k)) ?? []); }); })()",
         ("Append", 1) => "[...{0}, {1}]",
         ("Prepend", 1) => "[{1}, ...{0}]",
         ("AsEnumerable", 0) => "{0}",

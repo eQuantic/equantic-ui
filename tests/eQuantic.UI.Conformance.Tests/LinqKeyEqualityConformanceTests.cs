@@ -33,6 +33,10 @@ public class LinqKeyEqualityConformanceTests
         """IShape[] s = { new Square(1), new Square(1) }; return s.Distinct().Count() + "|" + s.GroupBy(x => x).Count() + "|" + s.Union(new IShape[] { new Square(2) }).Count();""", // 1|1|2
         // A tuple holding an array, the array by reference.
         """var xs = new[] { 1 }; var t = new[] { (xs, 1), (xs, 1), (new[] { 1 }, 1) }; return t.Distinct().Count() + "|" + t.Union(t).Count() + "|" + t.GroupBy(x => x).Count();""", // 2|2|2
+        // A null key matches nothing in a join, as .NET skips it: a record compared by value, which the
+        // runtime's dictionary refuses as a key, and a string, which a Map found equal to another null.
+        """var a = new[] { (K: (Point?)null, V: "a"), (K: new Point(1, 2), V: "b") }; var b = new[] { (K: (Point?)null, W: "n"), (K: new Point(1, 2), W: "y") }; return string.Join(",", a.Join(b, x => x.K, y => y.K, (x, y) => x.V + y.W)) + "|" + string.Join(",", a.GroupJoin(b, x => x.K, y => y.K, (x, ys) => x.V + ys.Count()));""", // by|a0,b1
+        """var a = new[] { (K: (string?)null, V: "a"), (K: "x", V: "b") }; var b = new[] { (K: (string?)null, W: "n"), (K: "x", W: "y") }; return string.Join(",", a.Join(b, x => x.K, y => y.K, (x, y) => x.V + y.W)) + "|" + string.Join(",", a.GroupJoin(b, x => x.K, y => y.K, (x, ys) => x.V + ys.Count()));""", // by|a0,b1
         // A double, NaN equal to NaN and 0 to -0, as SameValueZero already answers.
         """var n = new[] { double.NaN, double.NaN, 0.0, -0.0 }; return n.Distinct().Count() + "|" + n.GroupBy(x => x).Count() + "|" + n.Union(n).Count();""", // 2|2|2
     ];
