@@ -67,7 +67,7 @@ differently, and the new ones a week falling two weeks in a row.
 | Forms & validation | **Shipped** — `FormController`/`FormField`/`Rules` in Primitives (write-once, quiet-until-touched, cross-field, conditional via `Rules.When`/`relevantWhen`), `FormInput`/`FormSubmit` surface, async submit through Server Actions with `ApplyServerErrors`, and the `[FormModel]` DataAnnotations bridge (build-time, no second engine) |
 | State management | Component-local `SetState`, and a page's state survives a hot reload. Shared state (signals, context): #289 |
 | Server | SSR with hydration, Server Actions behind `[Authorize]`, server data before the first paint (`IServerPrefetch`), and server events: typed topics over one Server-Sent Events stream per page (#291) |
-| Hot reload | **Shipped on both targets** — on the web a rebuild captures the page's fields and reloads, and the new code renders client-side with those fields handed back (module hot-swap without the reload is the v2 fence); on native it applies in process under `dotnet watch`. Edit-to-view under a second is not measured yet (#900) |
+| Hot reload | **Shipped on the web and on the desktop** — on the web a rebuild captures the page's fields and reloads, and the new code renders client-side with those fields handed back (module hot-swap without the reload is the v2 fence); a Photon desktop app applies an edit in process under `dotnet watch`. On a simulator or an emulator it is ahead: redeploy-on-save first, in-process reload across the device boundary later (Track W's W7). Edit-to-view under a second is not measured yet (#900) |
 | Styling | The framework ships **one** styling engine: typed C# lowered to deduplicated atomic classes, byte-identical between SSR (C#) and hydration (TS) and cross-pinned by a shared fixture. Authoring is CSS-free; external CSS a consumer brings is their own build concern |
 | Debugging | C# in the browser: statement-level source maps, so a thrown error's frame names its C# statement (#293); `EQuanticSourceMaps` writes them with the C# in Debug, none elsewhere, and without the C# for an error reporter (#352); the development error overlay remaps a stack to C# frames |
 | Performance | The served runtime's gzip budget fails the suite, each page module's size is reported on every pull request, and the Photon frame has allocation ceilings (#290). Not yet: hydration-time benchmarks, tree-shaking verification |
@@ -105,10 +105,10 @@ pull request, and the Photon frame has allocation ceilings for a dense scene and
 once. Still missing: hydration-time benchmarks and tree-shaking verification.
 
 ### 3. Flutter-like DX
-The `Build(context)` model is genuinely Flutter-like, and hot reload keeps state on both targets
-(Phase 3). Missing the rest of the productivity multipliers: edit-to-view measured under a second
-(#900), module hot-swap without a page reload on the web, richer/more predictable layout
-components, and layout/diagnostic tooling.
+The `Build(context)` model is genuinely Flutter-like, and hot reload keeps state on the web and on
+the desktop (Phase 3; the simulators and emulators are W7's). Missing the rest of the productivity
+multipliers: edit-to-view measured under a second (#900), module hot-swap without a page reload on
+the web, richer/more predictable layout components, and layout/diagnostic tooling.
 
 ### 4. shadcn-like components
 The catalog (the wiki's Components page is its index) is a respectable start, but shadcn's value is **polish + accessibility + variants**.
@@ -171,11 +171,13 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
   layout (reconcile-on-navigate), route guards, `<Link>` with hover/focus prefetch, route-based
   code-splitting, scroll restoration. Demonstrated end-to-end by `samples/DefaultUIDashboard`.
   → the plan is retired into `docs/LEDGER.md` (2026-06 entries).
-- **Phase 3 — Hot reload with state preservation** — **✅ complete on both targets**: the web
-  captures the page's fields on a rebuild, reloads, and renders the new code client-side with those
-  fields handed back (`HotReloadService`, an SSE channel with ping and reconnect), and the native side applies in-process under `dotnet watch` (`PhotonHotReload`, with
+- **Phase 3 — Hot reload with state preservation** — **✅ complete on the web and the desktop**: the
+  web captures the page's fields on a rebuild, reloads, and renders the new code client-side with
+  those fields handed back (`HotReloadService`, an SSE channel with ping and reconnect), and a Photon
+  desktop app applies an edit in process under `dotnet watch` (`PhotonHotReload`, with
   per-generation caches on the render thread). The piece that took the longest was not the reload
-  but WAKING the window.
+  but WAKING the window. On a simulator or an emulator the loop is a hand recipe today, and hot
+  reload there comes with the developer loop (Track W's W7).
 - **Phase 4 — Forms & validation engine** — **✅ complete**: the model in Primitives (dirty/touched
   as separate questions, `Error` vs `VisibleError`, cross-field and conditional rules), the thin
   `FormInput`/`FormSubmit` surface, async submit through Server Actions with the server's verdict
@@ -476,8 +478,9 @@ The bar 1.0 holds the web track to (#898, criterion 3); each line says whether i
 - **Performance**: documented bundle budgets enforced in CI; code-splitting per route. Met by
   #290 for the runtime every page loads (its budget fails the suite) and by the module graph for
   the routes (a page's module loads on the first navigation to it).
-- **Flutter DX**: hot reload preserves state; <1s edit-to-view. The state is kept on both targets
-  (Phase 3); the second has never been measured (#900).
+- **Flutter DX**: hot reload preserves state; <1s edit-to-view. The state is kept on the web and on
+  the desktop (Phase 3), and on a simulator or an emulator hot reload waits for W7; the second has
+  never been measured (#900).
 - **Components**: every shipped component passes an a11y checklist + variant matrix tests. Not met
   (#294).
 - **CSS**: at least one first-party engine ships. Met by Phase 6; a provider contract was the
