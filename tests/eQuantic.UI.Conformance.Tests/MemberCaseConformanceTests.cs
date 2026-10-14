@@ -18,6 +18,8 @@ namespace eQuantic.UI.Conformance.Tests;
 /// operation calls a Deconstruct the app wrote once for each value, in an initializer, across the arms of
 /// a switch and the alternatives of an `or` (Copilot's second review of #696). An explicit implementation
 /// counts under the name of the member it implements, as the emitter writes it (Copilot's third review).
+/// A member a DERIVED class declares a case apart from a field moves the field too, however far down it
+/// is declared: the base's own field hid the getter the derived class put on its prototype (#740).
 /// </summary>
 public class MemberCaseConformanceTests
 {
@@ -87,6 +89,13 @@ public class MemberCaseConformanceTests
             public int Bound = new Tracked(1, 2) is (var a, var b) ? a * 10 + b : -1;
             public string Arm = new Tracked(3, 4) switch { (1, _) => "one", (var a, var b) => $"{a}{b}" };
         }
+        public class Holder { int amount = 1; public int Read() => amount; }
+        public class Shadow : Holder { public int Amount => 99; }
+        public class Keeper { int level = 2; public int Read() => level; }
+        public class Middle : Keeper { }
+        public class Grandchild : Middle { public int Level() => 40; }
+        public class Boxed<T> { T item; public Boxed(T item) { this.item = item; } public T Read() => item; }
+        public class IntBox : Boxed<int> { public IntBox() : base(5) { } public int Item => 70; }
         """;
 
     public static TheoryData<string, string, bool> Cases()
@@ -126,6 +135,9 @@ public class MemberCaseConformanceTests
             ("a field beside an explicit method a case apart", "IReads r = new ReadsExplicitly(); return r.Value() + ((ReadsExplicitly)r).Own();"),
             ("a field beside an explicit property a case apart", "ISized s = new SizedExplicitly(); return s.Size + ((SizedExplicitly)s).Own();"),
             ("a field beside an explicit event a case apart", "var n = new NotifiesExplicitly(); INotifies i = n; i.Changed += () => { }; return n.Own();"),
+            ("a derived property a case apart from an inherited field", "var s = new Shadow(); return s.Amount * 1000 + s.Read();"),
+            ("a method a case apart from a field two classes up", "var g = new Grandchild(); return g.Level() * 10 + g.Read();"),
+            ("a derived property a case apart from a generic base's field", "var b = new IntBox(); return b.Item * 10 + b.Read();"),
         };
         var data = new TheoryData<string, string, bool>();
         foreach (var (name, statements) in cases)

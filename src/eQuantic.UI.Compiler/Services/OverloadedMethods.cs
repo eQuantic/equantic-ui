@@ -71,6 +71,7 @@ internal static class OverloadedMethods
         if (errors.Count == 0 && model is not null) CheckHidingImplementations(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckDefaults(type, sourcePath, isComponent, model, errors);
         if (errors.Count == 0 && model is not null) CheckInterfaceIndexers(type, sourcePath, model, errors);
+        if (errors.Count == 0 && model is not null) CheckInheritedFields(type, sourcePath, model, errors);
         if (isComponent)
         {
             foreach (var nested in type.Members.OfType<ClassDeclarationSyntax>()
@@ -568,6 +569,41 @@ internal static class OverloadedMethods
                 Line = position.Line + 1,
                 Column = position.Character + 1,
             });
+        }
+    }
+
+    /// <summary>
+    /// A member that lands on the slot of a field a base from another project holds on each instance
+    /// (<see cref="FieldSlotExtensions.FieldItLandsOn"/>, #740): the field would hide it, so every access
+    /// to the member would answer the field.
+    /// </summary>
+    private static void CheckInheritedFields(TypeDeclarationSyntax type, string sourcePath, SemanticModel model,
+        List<CompilationError> errors)
+    {
+        if (model.SyntaxTree != type.SyntaxTree || model.GetDeclaredSymbol(type) is not INamedTypeSymbol declared) return;
+        foreach (var member in declared.GetMembers())
+        {
+            if (member.FieldItLandsOn() is not { } field) continue;
+            if (member.Locations.FirstOrDefault(location => location.SourceTree == type.SyntaxTree
+                    && type.Span.Contains(location.SourceSpan)) is not { } declaredAt)
+                continue;
+            var position = declaredAt.GetLineSpan().StartLinePosition;
+            var where = field.Locations.FirstOrDefault(location => location.IsInSource)?.GetLineSpan();
+            var at = where is { } span ? $" ({Path.GetFileName(span.Path)} line {span.StartLinePosition.Line + 1})" : "";
+            errors.Add(new CompilationError
+            {
+                Code = "EQ1007",
+                Message =
+                    $"'{type.Identifier.ValueText}.{member.DeclaredName()}' lowers to `{member.MemberTwinName()}`, and so does the "
+                    + $"field '{field.ContainingType.Name}.{field.Name}', which it inherits from {field.ContainingAssembly.Name}{at}. "
+                    + "The base's twin holds the field on each instance, where it hides the member, so every access to "
+                    + $"'{member.DeclaredName()}' would answer the field. A field moves aside for a member its own project "
+                    + "declares, never for one another project declares: rename one of them.",
+                SourcePath = sourcePath,
+                Line = position.Line + 1,
+                Column = position.Character + 1,
+            });
+            return;
         }
     }
 
