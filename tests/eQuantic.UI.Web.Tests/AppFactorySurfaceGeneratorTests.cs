@@ -283,7 +283,8 @@ public class AppFactorySurfaceGeneratorTests
     /// and the surface named a type inside a private or an internal owner, which failed in a file the
     /// developer never wrote: CS0122 behind a private owner, CS0050 behind an internal one, a public
     /// factory returning a type that is not (#703). Nor does a component inside an owner marked
-    /// server-only, which never reaches the browser, nor one marked so itself.
+    /// server-only, which never reaches the browser, nor one marked so itself, nor one under a base
+    /// marked so: the attribute is inherited (found in Copilot's review of #931).
     /// </summary>
     [Theory]
     [InlineData("internal sealed class Vault { DOOR }")]
@@ -292,6 +293,8 @@ public class AppFactorySurfaceGeneratorTests
     [InlineData("public sealed class Outer { internal sealed class Vault { public sealed class Inner { DOOR } } }")]
     [InlineData("[ServerOnly] public sealed class Vault { DOOR }")]
     [InlineData("public sealed class Vault { [ServerOnly] DOOR }")]
+    [InlineData("[ServerOnly] public class Keep { } public sealed class Vault : Keep { DOOR }")]
+    [InlineData("[ServerOnly] public abstract class Guarded : StatelessComponent { } DOOR")]
     public void AComponentTheSurfaceCannotReach_GetsNoFactory(string owner)
     {
         const string Door = """
@@ -301,12 +304,14 @@ public class AppFactorySurfaceGeneratorTests
                 public override VisualNode Build(ComponentContext context) => new Text("door");
             }
             """;
+        // Under a server-only base component, the door derives from it.
+        var door = owner.Contains("class Guarded") ? Door.Replace(": StatelessComponent", ": Guarded") : Door;
         var (source, _, errors) = RunCompiled($$"""
             using eQuantic.UI.Primitives;
 
             namespace Demo;
 
-            {{owner.Replace("DOOR", Door)}}
+            {{owner.Replace("DOOR", door)}}
 
             public sealed class Card : StatelessComponent
             {

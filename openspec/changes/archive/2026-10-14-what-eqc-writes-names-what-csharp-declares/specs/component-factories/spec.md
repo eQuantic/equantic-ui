@@ -4,7 +4,8 @@
 
 The generated declarative surface SHALL write a factory for a concrete, non-generic component in a
 namespace that is not a page only when the component and every type it is declared in are public and
-none of them is marked `[ServerOnly]`. The surface SHALL compile whatever the app declares.
+none of them is marked `[ServerOnly]`, itself or through a class it derives from, since the attribute
+is inherited. The surface SHALL compile whatever the app declares.
 
 #### Scenario: A public component inside an owner that is not public
 
@@ -15,7 +16,8 @@ none of them is marked `[ServerOnly]`. The surface SHALL compile whatever the ap
 
 #### Scenario: A component that never crosses
 
-- **WHEN** the component, or the class it is declared in, is marked `[ServerOnly]`
+- **WHEN** the component, or the class it is declared in, is marked `[ServerOnly]`, or derives from a
+  class that is
 - **THEN** the surface writes no factory for it
 
 #### Scenario: A public component inside a public owner

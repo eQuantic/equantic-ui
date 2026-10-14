@@ -44,9 +44,22 @@ internal static class FactorySurface
         for (var type = symbol; type is not null; type = type.ContainingType)
         {
             if (type.DeclaredAccessibility != Accessibility.Public) return false;
-            if (type.GetAttributes().Any(a => a.AttributeClass?.Name is "ServerOnlyAttribute")) return false;
+            if (ServerOnlyAlongChain(type)) return false;
         }
         return true;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="type"/>, or a type it derives from, is marked <c>[ServerOnly]</c>: the
+    /// attribute is inherited, and eqc writes no module for a type under it, as it writes none for one
+    /// marked itself (found in Copilot's review of #931). By the name as written too, where the attribute
+    /// binds to an error type, as eqc reads it.
+    /// </summary>
+    private static bool ServerOnlyAlongChain(INamedTypeSymbol type)
+    {
+        for (var at = type; at is not null; at = at.BaseType)
+            if (at.GetAttributes().Any(a => a.AttributeClass?.Name is "ServerOnly" or "ServerOnlyAttribute")) return true;
+        return false;
     }
 
     public static bool IsComponent(INamedTypeSymbol symbol)
