@@ -75,6 +75,8 @@ public class DictionaryViewConformanceTests
     [InlineData("var d = new SortedDictionary<int, int> { [2] = 2 }; var ks = d.Keys; d[1] = 1; return ks.Count + \"|\" + string.Join(\",\", ks);")]   // "2|1,2"
     [InlineData("var d = new SortedDictionary<int, int> { [2] = 2 }; var vs = d.Values; d[2] = 5; d[1] = 6; return string.Join(\",\", vs);")]          // "6,5"
     [InlineData("var d = new SortedDictionary<int, int> { [1] = 1, [2] = 2 }; var ks = d.Keys; d.Remove(1); return string.Join(\",\", ks) + \"|\" + ks.Contains(1);")] // "2|False"
+    // The keys' own Contains finds a key the dictionary gained after the view was read (#928).
+    [InlineData("var d = new SortedDictionary<string, int> { [\"b\"] = 2 }; var ks = d.Keys; d[\"a\"] = 1; return ks.Contains(\"a\") + \"|\" + ks.Contains(\"z\");")] // "True|False"
     [InlineData("var d = new SortedList<int, int> { [2] = 2 }; var ks = d.Keys; d[1] = 1; return ks.Count + \"|\" + string.Join(\",\", ks) + \"|\" + ks[0];")] // "2|1,2|1"
     [InlineData("var d = new SortedList<int, int> { [2] = 2 }; var vs = d.Values; d[1] = 6; d.Clear(); return vs.Count;")]                               // 0
     [InlineData("var d = new SortedList<string, int> { [\"b\"] = 2 }; var ks = d.Keys; d[\"a\"] = 1; return ks.IndexOf(\"b\") + \"|\" + ks.Where(k => k != \"a\").Count();")] // "1|1"
