@@ -779,13 +779,20 @@ parameter, or a path whose evaluation has effects is done in place.
 A value tuple's text SHALL be the text `ValueTuple.ToString` writes: its elements between parentheses,
 separated by `, `, each as its type's `ToString` writes it in the culture in force (a float in its own
 digits, an enum by its member's name, a bool as `True`, a nested tuple and an anonymous object by their
-own text), a null element as nothing, and a tuple of eight elements or more flat, as .NET writes the
+own text, and an array, a list, a dictionary, a set or a delegate, whose text is `Object.ToString`'s, by
+its type's name, `System.Int32[]`, as the same value writes itself in every route into text), a null
+element as nothing, and a tuple of eight elements or more flat, as .NET writes the
 elements it nests in `Rest`. It SHALL be that text wherever C# writes the value into text: `ToString()`
 and its method group, an interpolation hole, one with an alignment or a format included, which a tuple
 ignores as it is not `IFormattable`, a concatenation, `string.Concat`, `string.Join`, `string.Format`, a
 `StringBuilder`, `Convert.ToString`, and a record's, a tuple's or an anonymous object's member. An empty
 `Nullable` tuple SHALL write nothing. A tuple's `Equals` method group SHALL compare as its call does, and
-a `Nullable` tuple's `Equals` SHALL be its value's, an empty one equal only to null.
+a `Nullable` tuple's `Equals` SHALL be its value's, an empty one equal only to null. A tuple's
+`Equals(object)` SHALL find a value unequal whose type, before C# boxed it, is another tuple type (other
+element types: a byte and an int, an int and a double, a string and a char) or any other type a tuple
+cannot be, both values still evaluated, while the same type under other element names SHALL be the same
+type. A value held only as `object`, or handed to the method group's delegate, is outside this: the
+browser holds it as an array and compares its elements.
 
 #### Scenario: A pair, wherever it is written
 
@@ -823,6 +830,13 @@ a `Nullable` tuple's `Equals` SHALL be its value's, an empty one equal only to n
 - **WHEN** `new Segment((1, 2), "s").ToString()` runs for `record Segment((int, int) Ends, string Name);`
 - **THEN** it writes `Segment { Ends = (1, 2), Name = s }`, as in .NET
 
+#### Scenario: A tuple of other element types, and an array as an element
+
+- **WHEN** `((byte)1, 2).Equals((object)(1, 2))`, `(1, 2).Equals((object)(1.0, 2.0))` and `p.Equals((object)(1, 2))`
+  run with `(int X, int Y) p = (1, 2);`, and `(xs, 3).ToString()` with `var xs = new[] { 1, 2 };`
+- **THEN** they answer false, false and true, and write `(System.Int32[], 3)`, as in .NET; the browser
+  answered true twice and wrote `(1,2, 3)`
+
 #### Scenario: The Equals method group and a Nullable tuple
 
 - **WHEN** `Func<object?, bool> eq = t.Equals;` is made over `var t = (xs, 1);` with `var xs = new[] { 1 };`,
@@ -835,7 +849,12 @@ a `Nullable` tuple's `Equals` SHALL be its value's, an empty one equal only to n
 An anonymous object's `Equals`, a call or a method group, SHALL compare as the `Equals` C# writes for an
 anonymous type: each member by its type's default comparer, and only another anonymous object of the
 same members in the same order can be equal to it, so an anonymous object of other members or of the
-same members in another order, a record with the same members, a tuple and null SHALL be unequal. Its
+same members in another order, a record with the same members, a tuple and null SHALL be unequal, and so
+SHALL an anonymous object of the same names whose type, before C# boxed it, holds members of other types
+(a byte and an int), both values still evaluated; one held only as `object`, or handed to the method
+group's delegate, is outside this. Its `Equals` and `ToString` calls SHALL throw .NET's
+`NullReferenceException` through null, the `Equals` after its argument is evaluated, and so SHALL making
+the delegate of either method group, while a hole and a concatenation of a null one write nothing. Its
 `==` SHALL stay reference equality, and its `GetHashCode` SHALL hash equal objects equal. As a key of a
 set or a dictionary, and to `Distinct` and `GroupBy`, equal anonymous objects SHALL be one key. Its text SHALL
 be the text C# writes for an anonymous type: `{ R = 255, Name = a }`, its members under their C# names
@@ -853,6 +872,14 @@ nothing, and `{ }` for none, wherever C# writes the value into text, as a tuple'
 - **WHEN** `new { R = 1 }.Equals(new { G = 1 })`, `new { R = 1 }.Equals(new { R = 1, G = 2 })` and
   `new { R = 1, G = 2 }.Equals(new { G = 2, R = 1 })` run
 - **THEN** each answers false, as in .NET
+
+#### Scenario: Another member type, and a call through null
+
+- **WHEN** `new { A = (byte)1 }.Equals(new { A = 1 })` runs, and `a.Equals(F())`, `a.ToString()` and
+  `Func<string> f = a.ToString;` run after `a = null!;`
+- **THEN** the first answers false, `F` runs and the `Equals` throws `NullReferenceException`, and so do
+  the `ToString` and making the delegate, as in .NET; the browser answered true, true, `""` and made the
+  delegate
 
 #### Scenario: A member compared by its type
 

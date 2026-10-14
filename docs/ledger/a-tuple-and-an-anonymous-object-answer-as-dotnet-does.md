@@ -19,5 +19,14 @@
   `object` still prints as the browser holds it. A `Color` and a `Curve`, held as data too, write their
   record text in an aligned hole, a hole with a format and `string.Format`, where they wrote
   `[object Object]`, and `Distinct` over anonymous objects keeps the first of each, where a `Set` kept
-  every one. The served runtime grows about 170 gzipped bytes.
+  every one. The first review of the pull request found five more, each measured and fixed: a tuple or
+  an anonymous object of other element or member types (a byte and an int) equalled in the browser,
+  which holds both alike, and `Equals(object)` now reads the other value's type before C# boxed it; an
+  anonymous object's `Equals` and `ToString` through null, and the delegates of their method groups,
+  answered where .NET throws, and now refuse the receiver as a string's instance methods already did; and
+  an array, a list, a dictionary, a set and a delegate printed `1,2` or a function's source where .NET
+  writes the type's name, `System.Int32[]`, on their own and inside a tuple or an anonymous object. A
+  value held only as `object`, or handed to an `Equals` method group's delegate, still compares by what
+  the browser holds ([#768](https://github.com/eQuantic/equantic-ui/issues/768)). The served runtime
+  grows about 170 gzipped bytes.
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-records`).
