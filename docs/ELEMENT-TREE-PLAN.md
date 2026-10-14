@@ -186,7 +186,8 @@ Two members are added:
 
 The constructor leaves the public surface. A context is a position and only an owner can make one.
 A test that needs one mounts a component through the testing harness (#294) instead of calling
-`new ComponentContext(theme)`, which about 25 tests do today.
+`new ComponentContext(theme)`, which about 25 tests do today. So the constructor goes in the slice
+that follows the harness, not in E1: until then the owner makes contexts and the tests keep theirs.
 
 ### 3.4 Inherited components, and what depends on them
 
