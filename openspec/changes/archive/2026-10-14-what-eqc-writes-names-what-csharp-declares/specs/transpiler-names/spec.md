@@ -42,6 +42,12 @@ A name written with C#'s verbatim escape SHALL be written without it: a member a
   pattern, an array and a `List<Store.@Box>` name the type, in a module written with type annotations
 - **THEN** every annotation says `Point` or `Box`, the module bundles, and each answers as in .NET
 
+#### Scenario: A method named nameof
+
+- **WHEN** a static class declares `public static int nameof(int x) => x * 2;` and returns
+  `@nameof(x) + nameof(x)` from another of its methods, given 3
+- **THEN** both are calls of the method, by the bound tree, and the method answers 12, as in .NET
+
 #### Scenario: A source that reads a name by its spelling
 
 - **WHEN** a source of the SDK reads `Identifier.Text`, or the compiler calls `ToString()` on a

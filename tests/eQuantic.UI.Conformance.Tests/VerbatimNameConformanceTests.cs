@@ -44,6 +44,12 @@ public class VerbatimNameConformanceTests
 
             public class Derived : @Base { public override int Level() => 2; }
 
+            public static class Calc
+            {
+                public static int nameof(int x) => x * 2;
+                public static int Twice(int x) => @nameof(x) + nameof(x);
+            }
+
             public class Holder
             {
                 public @Point Where { get; set; } = new @Point(3, 4);
@@ -73,6 +79,7 @@ public class VerbatimNameConformanceTests
         ("a property and a parameter typed verbatim", "var h = new Store.Holder(); return h.Where.X + Store.Holder.Twice(new Store.@Box());"),
         ("a local, a pattern and a cast typed verbatim", "object o = new Store.@Box(); Store.@Box typed = (Store.@Box)o; return (o is Store.@Box b ? b.@value : 0) + typed.Count;"),
         ("an array and a list of a type spelled verbatim", "var boxes = new Store.@Box[] { new Store.Box() }; var list = new System.Collections.Generic.List<Store.@Box> { new Store.@Box() }; return boxes.Length + list.Count + boxes[0].Count;"),
+        ("a method named nameof, called with the escape and without it", "return Store.Calc.Twice(3);"),
         ("an enum spelled verbatim named by typeof", "return string.Join(\",\", System.Enum.GetNames(typeof(Store.@Tone)));"),
     ];
 
