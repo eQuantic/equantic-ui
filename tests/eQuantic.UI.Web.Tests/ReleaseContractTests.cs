@@ -195,7 +195,5 @@ public class ReleaseContractTests
     }
 
     private static string Expected(string name) =>
-        name.StartsWith("eQuantic.UI.Native.", StringComparison.Ordinal) ? SurfaceClass.Experimental
-        : name is "eQuantic.UI.Compiler" or "eQuantic.UI.Codegen" ? SurfaceClass.Tool
-        : SurfaceClass.Contract;
+        SurfaceClass.ForProject(Path.Combine(SdkProbe.RepoRoot(), "src", name));
 }

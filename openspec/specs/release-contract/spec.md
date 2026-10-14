@@ -16,7 +16,9 @@ promise does not cover, or `experimental`, an assembly the promise does not cove
 SHALL be derived from the project's name unless the project sets it: a native project is
 experimental, the compiler and the code writers are tools, and every other project is contract. The
 class SHALL be written into the assembly as `[assembly: AssemblyMetadata("eQuantic.Surface", class)]`,
-so it can be read from what ships.
+so it can be read from what ships. A project that ships its assembly inside a package without
+declaring an API, a tool inside an SDK or a source generator, SHALL set its class itself, and every
+assembly of this repository inside a package CI packs SHALL say one.
 
 #### Scenario: The classes the tree holds
 
@@ -28,6 +30,13 @@ so it can be read from what ships.
 
 - **WHEN** a project that ships an assembly is added and sets no class
 - **THEN** it is contract, which is the class the promise covers
+
+#### Scenario: A tool inside a package
+
+- **WHEN** CI packs the packages, among them the SDKs that carry eqc, eqicon and the MSBuild tasks,
+  and the generators under analyzers/
+- **THEN** every assembly of this repository they hold says its class, and one that says none fails
+  the packaging job, naming the package and the path
 
 ### Requirement: The native track is marked experimental
 
@@ -79,16 +88,17 @@ experimental project, and any project while the version carries a prerelease lab
 
 ### Requirement: An obsolete member is a promise with a date
 
-While the version carries a prerelease label, no member of the contract assemblies the guard scans
-SHALL be marked `[Obsolete]`, since the preview removes it now. Without one, every `[Obsolete]`
-member of those assemblies SHALL carry a `DiagnosticId` that starts with `EQO`, a `UrlFormat`, and a
-message that names the major version it leaves in, greater than the current major. A second
-`Deconstruct` SHALL be refused at any version.
+While the version carries a prerelease label, no member in the source of a contract project SHALL
+be marked `[Obsolete]`, since the preview removes it now. Without one, every `[Obsolete]` there SHALL
+carry a `DiagnosticId` that starts with `EQO`, a `UrlFormat` that links what to write instead, and a
+message that names the major version it leaves in, greater than the current major, each written as a
+literal so the guard can read it. A second `Deconstruct` SHALL be refused at any version.
 
 #### Scenario: An obsolete member during the preview
 
-- **WHEN** the version is `0.2.0-preview.63` and a member of `eQuantic.UI.Primitives` is `[Obsolete]`
-- **THEN** the guard fails, naming it
+- **WHEN** the version is `0.2.0-preview.63` and a member of `eQuantic.UI.Server`, which no test
+  references, is `[Obsolete]`
+- **THEN** the guard fails, naming its file and line
 
 #### Scenario: An obsolete member at a stable version
 

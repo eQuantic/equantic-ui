@@ -113,12 +113,13 @@ there, and nothing is kept beside anything.
 the version in `Directory.Build.props` carries a prerelease label. The day the label goes, the
 compatibility promise starts, for the contract assemblies (Version Management names them): a member
 leaves only in a major, after at least one minor carrying `[Obsolete(message, DiagnosticId = "EQO…",
-UrlFormat = …)]` whose message names the major it is removed in, and the removal itself is made in
+UrlFormat = …)]` whose URL says what to write instead and whose message names the major it is
+removed in, and the removal itself is made in
 that major's preview, where this rule holds again. Three guards switch on the version by themselves:
 the build of a contract project refuses a `*REMOVED*` line in its `PublicAPI.Unshipped.txt` at any
 stable version but a major's first, `x.0.0`, where the removals ship
 (`EqStableVersionRemovesNoContractMember`, `Directory.Build.targets`), `NoOldShapeSurvivesTests`
-refuses an `[Obsolete]` that does not say all three, and `DeveloperSurfaceContractTests` refuses a
+reads the source of every contract project and refuses an `[Obsolete]` that does not say all three, and `DeveloperSurfaceContractTests` refuses a
 contract line leaving the developer surface. A second `Deconstruct` is refused at every version.
 
 ---
@@ -799,6 +800,10 @@ a surface class, derived in `Directory.Build.targets` from its name and written 
 - `tool`: the SDK's own tools, `eQuantic.UI.Compiler` and `eQuantic.UI.Codegen`. A package publishes
   them (the site's playground compiles C# through the compiler's), and their surface serves the SDK,
   so it is never promised and its removals are free at any version. The packages' descriptions say so.
+  eqc, eqicon, the MSBuild tasks inside the SDKs and the two source generators ship inside packages
+  without declaring an API, and each sets `_EqSurface` to `tool` itself. `scripts/check-package-surface.cs`,
+  in CI's packaging job, reads every assembly of this repository in every package and fails on one
+  with no class.
 - `experimental`: the native track, `eQuantic.UI.Native.*`, which 1.0 does not promise yet (#324).
   Each assembly carries .NET's `[Experimental("EQX0001")]`, so a project that uses one fails until it
   says it means to, and the analyzer declares its API with the `[EQX0001]` prefix. An app built with

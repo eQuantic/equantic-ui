@@ -79,9 +79,11 @@ it scans, so its cases run both versions on synthetic input, and the scan calls 
   EQX0001: the Photon design host, and the native test projects. Each says why it suppresses the id.
 - The notice shows at a publish and not at a build: a line on every build would be read by nobody
   after the first day, which the native SDK's own notice of a source-tree build already says.
-- The scan of obsolete members reads the contract assemblies the web tests reference: the
-  vocabulary, the components, the charts and the web realizer. The server, the integrations and the
-  icon packs are held for removals by the build target, which reads every contract project, and for
-  the form of an `[Obsolete]` by the rule in `CLAUDE.md` alone.
+- The scan of obsolete members reads the SOURCE of every contract project, so it holds the server,
+  the integrations and the icon packs too, which no test references. It reads literals: a message,
+  an id or a URL written as a constant is refused, since the guard could not read it.
+- An embedded tool or a generator sets its class itself. `scripts/check-package-surface.cs` reads
+  every assembly of this repository in every package CI packs, so one that ships with no class
+  fails the packaging job.
 - A stable version with a removal waiting cannot build. That is the point, and the message names the
   two ways on.

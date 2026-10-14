@@ -1,3 +1,6 @@
+using eQuantic.UI.Compiler.Services;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Reflection;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
@@ -89,6 +92,13 @@ public class NoOldShapeSurvivesTests
     /// and left in place. Deprecation is a promise to remove something later, and "later" is what a
     /// preview does not have — the removal is now. At a stable version it is the only way a member
     /// leaves, and it has to say when.
+    /// <para>
+    /// Read from the SOURCE of every contract project, not from the assemblies this run happens to
+    /// reference: the server, the integrations and the icon packs are the contract too, and a test
+    /// that reflected over its own references never saw them. The source also holds only what a
+    /// person wrote, where an assembly holds the <c>[Obsolete]</c> C# writes on the constructors of a
+    /// type with a <c>required</c> member, for a compiler too old to set it.
+    /// </para>
     /// </summary>
     [Fact]
     public void EveryObsoleteMemberKeepsTheRuleOfItsVersion()
@@ -96,35 +106,68 @@ public class NoOldShapeSurvivesTests
         var version = ReleaseVersion.Of(typeof(VisualNode).Assembly);
         version.Should().NotBeEmpty("the vocabulary carries the version Directory.Build.props gave the build");
 
-        var wrong = Surface
-            .SelectMany(assembly => assembly.GetExportedTypes())
-            .SelectMany(type => type
-                .GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static
-                    | BindingFlags.DeclaredOnly)
-                .Concat([(MemberInfo)type])
-                .Where(member => !WrittenByTheCompiler(member))
-                .Select(member => (Name: $"{type.Name}.{member.Name}", Obsolete: member.GetCustomAttribute<ObsoleteAttribute>()))
-                .Where(member => member.Obsolete is not null)
-                .SelectMany(member => ObsoleteMark.Problems(version, member.Obsolete!)
-                    .Select(problem => $"{member.Name}: {problem}")))
-            .Distinct(StringComparer.Ordinal)
-            .OrderBy(line => line, StringComparer.Ordinal)
-            .ToArray();
+        var projects = SurfaceClass.ContractProjects();
+        projects.Select(Path.GetFileName).Should().Contain(
+            ["eQuantic.UI.Primitives", "eQuantic.UI.Server", "eQuantic.UI.Lucide"],
+            "the scan reads every contract project, the server and the icon packs among them");
 
+        var files = 0;
+        var wrong = new List<string>();
+        foreach (var project in projects)
+        {
+            foreach (var file in Directory.GetFiles(project, "*.cs", SearchOption.AllDirectories)
+                         .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                             && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)))
+            {
+                files++;
+                var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), ParseDefaults.Options, file).GetRoot();
+                foreach (var attribute in root.DescendantNodes().OfType<AttributeSyntax>().Where(IsObsolete))
+                {
+                    var where = $"{Path.GetRelativePath(SdkProbe.RepoRoot(), file)}:{attribute.GetLocation().GetLineSpan().StartLinePosition.Line + 1}";
+                    if (Read(attribute) is not { } obsolete)
+                    {
+                        wrong.Add($"{where}: its message, DiagnosticId and UrlFormat are written as literals, so this guard can read them");
+                        continue;
+                    }
+                    wrong.AddRange(ObsoleteMark.Problems(version, obsolete).Select(problem => $"{where}: {problem}"));
+                }
+            }
+        }
+
+        files.Should().BeGreaterThan(300, "the scan has to read the contract's source it clears");
         wrong.Should().BeEmpty(
             $"at {version} an obsolete member of the contract keeps the rule of the version: "
             + string.Join("; ", wrong));
     }
 
-    /// <summary>
-    /// The one <c>[Obsolete]</c> nobody wrote: C# marks the constructors of a type with a
-    /// <c>required</c> member obsolete for a compiler too old to set them, beside a
-    /// <c>CompilerFeatureRequired("RequiredMembers")</c> that says why. <c>HtmlNode</c>'s are the ones
-    /// the scan met the day it read the web realizer.
-    /// </summary>
-    private static bool WrittenByTheCompiler(MemberInfo member) =>
-        member.GetCustomAttribute<System.Runtime.CompilerServices.CompilerFeatureRequiredAttribute>() is
-            { FeatureName: System.Runtime.CompilerServices.CompilerFeatureRequiredAttribute.RequiredMembers };
+    private static bool IsObsolete(AttributeSyntax attribute) =>
+        attribute.Name.ToString() is "Obsolete" or "ObsoleteAttribute" or "System.Obsolete" or "System.ObsoleteAttribute"
+            or "global::System.Obsolete" or "global::System.ObsoleteAttribute";
+
+    /// <summary>The attribute as written, or nothing when one of the three is not a literal.</summary>
+    private static ObsoleteAttribute? Read(AttributeSyntax attribute)
+    {
+        var arguments = attribute.ArgumentList?.Arguments.ToList() ?? [];
+        static string? Literal(ExpressionSyntax expression) =>
+            expression is LiteralExpressionSyntax { Token.Value: string text } ? text : null;
+
+        var positional = arguments.Where(argument => argument.NameEquals is null && argument.NameColon is null).ToList();
+        var message = positional.Count > 0 ? Literal(positional[0].Expression) : null;
+        if (positional.Count > 0 && message is null) return null;
+
+        var obsolete = new ObsoleteAttribute(message);
+        foreach (var named in arguments.Where(argument => argument.NameEquals is not null))
+        {
+            var value = Literal(named.Expression);
+            if (value is null) return null;
+            switch (named.NameEquals!.Name.Identifier.ValueText)
+            {
+                case nameof(ObsoleteAttribute.DiagnosticId): obsolete.DiagnosticId = value; break;
+                case nameof(ObsoleteAttribute.UrlFormat): obsolete.UrlFormat = value; break;
+            }
+        }
+        return obsolete;
+    }
 
     /// <summary>The rule at both versions, on attributes made for the case: the scan above reads one
     /// version, the one this tree is at, and the other one has to be proved here.</summary>

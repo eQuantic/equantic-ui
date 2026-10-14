@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <!-- A tool of the SDK (#899): eqc, which the web SDK runs, shipped inside a package and never compiled
+             against by an app. Its surface class says so, written into the assembly. -->
+        <_EqSurface>tool</_EqSurface>
         <!-- Embedded into the SDK packages as a tool — never published on its own. -->
         <IsPackable>false</IsPackable>
         <OutputType>Exe</OutputType>

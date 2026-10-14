@@ -106,7 +106,14 @@
         <_EqUnshippedFile Condition="'$(_EqUnshippedFile)' == ''">$(MSBuildProjectDirectory)/PublicAPI.Unshipped.txt</_EqUnshippedFile>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(_EqDeclaresPublicApi)' == 'true'">
+    <!--
+      A project that declares no API can still ship its assembly inside a package: eqc, eqicon and
+      the MSBuild tasks inside the SDKs, the source generators under analyzers/. Each of those sets
+      _EqSurface itself, and its class is written the same way. scripts/check-package-surface.cs
+      reads every assembly of this repository inside every package CI packs, so one that ships with
+      no class fails there.
+    -->
+    <ItemGroup Condition="'$(_EqSurface)' != ''">
         <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
             <_Parameter1>eQuantic.Surface</_Parameter1>
             <_Parameter2>$(_EqSurface)</_Parameter2>

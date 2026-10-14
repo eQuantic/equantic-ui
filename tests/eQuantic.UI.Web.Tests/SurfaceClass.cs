@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Xml.Linq;
 
 namespace eQuantic.UI.Web.Tests;
 
@@ -24,6 +25,34 @@ internal static class SurfaceClass
             .Where(arguments => arguments.Count == 2 && arguments[0].Value as string == Key)
             .Select(arguments => arguments[1].Value as string)
             .FirstOrDefault();
+
+    /// <summary>
+    /// The class <c>Directory.Build.targets</c> gives the project in <paramref name="directory"/>: the
+    /// one its project file sets, or else the one its name gives. Restated here as the oracle the tests
+    /// hold the build to: <c>ReleaseContractTests</c> compares it with what every assembly the run
+    /// carries says. <c>scripts/check-package-surface.cs</c> needs no oracle: it asks every assembly
+    /// a package holds to say a class.
+    /// </summary>
+    public static string ForProject(string directory)
+    {
+        var name = Path.GetFileName(directory);
+        var project = Path.Combine(directory, $"{name}.csproj");
+        var set = File.Exists(project)
+            ? XDocument.Load(project).Descendants("_EqSurface").Select(element => element.Value.Trim()).FirstOrDefault()
+            : null;
+        return set is { Length: > 0 } ? set
+            : name.StartsWith("eQuantic.UI.Native.", StringComparison.Ordinal) ? Experimental
+            : name is "eQuantic.UI.Compiler" or "eQuantic.UI.Codegen" ? Tool
+            : Contract;
+    }
+
+    /// <summary>Every project of <c>src/</c> that declares a public API and is the contract's.</summary>
+    public static IReadOnlyList<string> ContractProjects() =>
+        Directory.GetDirectories(Path.Combine(SdkProbe.RepoRoot(), "src"))
+            .Where(directory => File.Exists(Path.Combine(directory, "PublicAPI.Shipped.txt")))
+            .Where(directory => ForProject(directory) == Contract)
+            .OrderBy(directory => directory, StringComparer.Ordinal)
+            .ToList();
 
     /// <summary>
     /// The shipping assemblies this test run carries, which are the ones a project of <c>src/</c>
