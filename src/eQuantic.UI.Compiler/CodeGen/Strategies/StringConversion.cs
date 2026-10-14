@@ -147,11 +147,25 @@ public static class StringConversion
                 when !named.IsTupleType && !named.IsAnonymousType && !named.TwinIsData() && !named.IsNullableValue()
                     && !named.Locations.Any(location => location.IsInSource)
                     && !named.AllInterfaces.Any(face => face is { Name: "IFormattable", ContainingNamespace.Name: "System" })
-                    && WritesItsName(named) && Nameable(named):
+                    && IsTheRuntimeType(named) && WritesItsName(named) && Nameable(named):
                 return ReflectionName.Of(named);
             default:
                 return null;
         }
+    }
+
+    /// <summary>
+    /// Whether a value of the static type is of that type at run time, whose name is the one .NET writes: a
+    /// struct, a sealed class, and a class of .NET's own that is not abstract (a list, a dictionary, a set),
+    /// whose subclasses the browser never holds, as a class over a base the app does not declare has no twin
+    /// (<see cref="DefaultText"/>). A class of another library may hold a subclass's value, whose name is
+    /// another (a vocabulary node is a text or a column), and an abstract one always does.
+    /// </summary>
+    private static bool IsTheRuntimeType(INamedTypeSymbol type)
+    {
+        if (type.TypeKind == TypeKind.Struct || type.IsSealed) return true;
+        var space = type.ContainingNamespace?.ToDisplayString() ?? "";
+        return !type.IsAbstract && (space == "System" || space.StartsWith("System.", StringComparison.Ordinal));
     }
 
     /// <summary>Whether a type's text is the name <c>Object.ToString</c> and <c>ValueType.ToString</c> write:
