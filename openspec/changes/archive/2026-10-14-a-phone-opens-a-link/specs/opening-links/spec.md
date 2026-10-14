@@ -107,3 +107,16 @@ app. A name the builder refuses SHALL declare nothing.
 
 - **WHEN** an iOS app calls `Opens(Chat)` with `const string Chat = "slack"`
 - **THEN** nothing is reported and `slack` is declared
+
+#### Scenario: .NET's own scheme names
+
+- **WHEN** an iOS app calls `Opens(Uri.UriSchemeMailto)` and `Opens(Uri.UriSchemeHttps)`, which are
+  `static readonly` and not `const`
+- **THEN** nothing is reported and `https` and `mailto` are declared, and `Opens(Uri.UriSchemeFile)`
+  declares nothing
+
+#### Scenario: A call through a conditional access
+
+- **WHEN** an app writes `builder.Workspace?.OpensMail()`, `builder.Bundle?.UrlScheme("acme")`,
+  `builder.Capabilities?.UseCamera(…)` and `builder.Entitlements?.RequireNetworkClient()`
+- **THEN** each is declared on the assembly as the same call through `.` is
