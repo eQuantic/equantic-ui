@@ -83,6 +83,23 @@ public class HarnessSelfChecksTests
     }
 
     /// <summary>
+    /// A source compiled as an app's build compiles it is asked about EVERY module before the modules
+    /// that wrote text are kept: a class with two methods of one name stops the build before its
+    /// emitter runs (EQ1007), so it writes none, and a case that never names it passed while it was
+    /// dropped with its refusal.
+    /// </summary>
+    [SkippableFact]
+    public void AModuleTheBuildRefusesBeforeItWritesText_FailsTheSource()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        var failure = Assert.ThrowsAny<Exception>(() => ModuleGraph.AssertSameAsDotNet(
+            "public class Twice { public int Plus(int y) => y; public int Plus(int y, int z) => y + z; }",
+            typeAnnotations: false,
+            ("Untouched", "return 1;")));
+        failure.Message.Should().Contain("EQ1007 in Twice");
+    }
+
+    /// <summary>
     /// The bundle every helper-using case imports LOADS. When it did not — a hydration map named a
     /// class, as a static field initializer, inside an import cycle that had not defined it yet — a
     /// few hundred cases failed at once, each naming its own expression and none naming the one
