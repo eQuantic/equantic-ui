@@ -176,14 +176,17 @@ public class ReadModifyWriteConformanceTests
     /// <summary>
     /// An Index key is looked up too, where the index-from-end indexer counted back from a length a
     /// map does not have (<c>d[d.length - 1]</c>). What the key itself becomes is not settled here: a
-    /// standalone <c>^1</c> still has no translation of its own, so this pins the routing, not a run.
+    /// standalone <c>^1</c> still has no translation of its own (#394), so the build refuses the case
+    /// (EQ1004) and nothing of it runs. This pins the routing in the text the build refuses, and the
+    /// refusal, which goes when #394 gives the key a translation and the case can run.
     /// </summary>
     [Fact]
     public void AnIndexKey_IsLookedUp_NotCountedBackFromALength()
     {
-        var js = Transpiler.TranspileStatements("var d = new Dictionary<Index, int>(); d[2] = 1; return d[^1];");
-        js.Should().Contain("return $eq.mapGet(d, ");
-        js.Should().NotContain(".length -");
+        var translation = Transpiler.TranslateStatements("var d = new Dictionary<Index, int>(); d[2] = 1; return d[^1];");
+        translation.OwnRefusals.Select(refusal => refusal.Id).Should().Equal("EQ1004");
+        translation.Js.Should().Contain("return $eq.mapGet(d, ");
+        translation.Js.Should().NotContain(".length -");
     }
 
     [SkippableFact]

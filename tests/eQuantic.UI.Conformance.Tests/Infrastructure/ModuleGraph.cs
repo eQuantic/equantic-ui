@@ -174,10 +174,11 @@ public static class ModuleGraph
         var compiler = new ComponentCompiler { TypeAnnotations = typeAnnotations };
         compiler.SetProjectCompilation(compilation);
         compiler.SetDependencyResolver(resolver);
-        var modules = compiler.CompileFile(path).Where(result => result.TypeScript.Length > 0).ToList();
-        modules.Where(module => !module.Success)
-            .Select(module => $"{module.ComponentName}: {string.Join("\n", module.Errors.Select(e => $"{e.Code} {e.Message}"))}")
-            .Should().BeEmpty("every module of the source compiles");
-        return modules;
+        // Every module is asked before any is dropped for having no text: a module the build stops at
+        // before its emitter runs writes none, and its refusal went with it.
+        var results = compiler.CompileFile(path).ToList();
+        Refusal.Of(results).Select(refusal => refusal.ToString())
+            .Should().BeEmpty("the build accepts every module of the source");
+        return results.Where(result => result.TypeScript.Length > 0).ToList();
     }
 }
