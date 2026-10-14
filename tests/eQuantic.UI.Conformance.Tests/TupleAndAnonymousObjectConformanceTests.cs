@@ -104,6 +104,33 @@ public class TupleAndAnonymousObjectConformanceTests
         """var set = new HashSet<(int, string)> { (1, "a") }; var d = new Dictionary<object, int> { [new { A = 1 }] = 1 }; return set.Contains((1, "a")) + "|" + d.ContainsKey(new { A = 1 }) + "|" + string.Join(",", set);""", // True|True|(1, a)
     ];
 
+    /// <summary>
+    /// An anonymous object as a KEY: a set's element, <c>Distinct</c>'s and <c>GroupBy</c>'s key. Two keys of
+    /// one anonymous type are always of the same members in the same order, so the comparison that refuses
+    /// another member set must still find them equal, whether the members compare by value (<c>$eq.equals</c>)
+    /// or one of them by reference (the comparison generated from the member types).
+    /// </summary>
+    public static readonly string[] AnonymousKeys =
+    [
+        """var set = new HashSet<object>(); var a = set.Add(new { A = 1, B = "x" }); var b = set.Add(new { A = 1, B = "x" }); var typed = new[] { new { A = 1 }, new { A = 1 }, new { A = 2 } }.ToHashSet(); return a + "|" + b + "|" + set.Count + "|" + typed.Count;""", // True|False|1|2
+        """var xs = new[] { 1 }; var set = new[] { new { L = xs, N = 1 }, new { L = xs, N = 1 }, new { L = new[] { 1 }, N = 1 } }.ToHashSet(); return set.Count + "|" + set.Contains(new { L = xs, N = 1 });""", // 2|True
+        """var xs = new[] { 1 }; return new[] { new { A = 1, B = "x" }, new { A = 1, B = "x" }, new { A = 2, B = "x" } }.Distinct().Count() + "|" + new[] { new { L = xs }, new { L = xs }, new { L = new[] { 1 } } }.Distinct().Count();""", // 2|2
+        """var xs = new[] { 1 }; var g = new[] { 1, 2, 3, 4 }.GroupBy(n => new { Odd = n % 2 == 1, L = xs }).Select(x => x.Key.Odd + ":" + x.Count()); var h = new[] { 1, 2, 3 }.GroupBy(n => new { Big = n > 1 }).Select(x => x.Key + "=" + x.Count()); return string.Join(",", g) + "|" + string.Join(",", h);""", // True:2,False:2|{ Big = False }=1,{ Big = True }=2
+    ];
+
+    /// <summary>
+    /// A value the browser holds as DATA (<c>Color</c>, <c>Curve</c>, <c>[TwinIsData]</c>) is a plain object too, and
+    /// not <c>IFormattable</c>: an aligned hole, a hole with a format and <c>string.Format</c> write its record
+    /// text, as its <c>ToString</c> does, where the formatter wrote <c>[object Object]</c>.
+    /// </summary>
+    public static readonly string[] DataTwinThroughTheFormatter =
+    [
+        """var c = Color.FromRgba(1, 2, 3, 4); return $"[{c,40}]|[{c,-40}]|[{c:X}]";""",
+        """var c = Color.FromRgba(1, 2, 3, 4); return string.Format("[{0}]|[{0,40}]|[{1}]", c, (object)c);""",
+        """var c = Curve.Standard; return $"[{c,50}]|[{c:N2}]|" + string.Format("[{0,-50}]", c);""",
+        """Color? some = Color.FromRgba(1, 2, 3, 4); Color? none = null; return $"[{some,40}]|[{none,4}]|" + string.Format("[{0}]", none);""",
+    ];
+
     /// <summary>A value tuple's <c>Equals</c> and <c>GetHashCode</c>, measured beside its text.</summary>
     public static readonly string[] TupleEquality =
     [
@@ -126,6 +153,8 @@ public class TupleAndAnonymousObjectConformanceTests
     public static IEnumerable<object?[]> AnonymousTextCases() => InEveryCulture(AnonymousText);
     public static IEnumerable<object?[]> TupleTextCases() => InEveryCulture(TupleText);
     public static IEnumerable<object?[]> TupleEqualityCases() => Each(TupleEquality);
+    public static IEnumerable<object?[]> AnonymousKeyCases() => Each(AnonymousKeys);
+    public static IEnumerable<object?[]> DataTwinCases() => Each(DataTwinThroughTheFormatter);
 
     [SkippableTheory]
     [MemberData(nameof(AnonymousEqualityCases))]
@@ -149,6 +178,22 @@ public class TupleAndAnonymousObjectConformanceTests
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Prelude, culture);
+    }
+
+    [SkippableTheory]
+    [MemberData(nameof(AnonymousKeyCases))]
+    public void AnAnonymousKey_FindsItsEqualAsDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Prelude);
+    }
+
+    [SkippableTheory]
+    [MemberData(nameof(DataTwinCases))]
+    public void AValueHeldAsData_IsWrittenThroughTheFormatterAsDotNetWritesIt(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertVocabularyStatementsSameAsDotNet(statements);
     }
 
     [SkippableTheory]
