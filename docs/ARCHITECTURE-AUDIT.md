@@ -373,7 +373,26 @@ assembly of its own, `eQuantic.UI.Code`, between `Primitives` and `Components`; 
 depends only on `ICodeSurfaceModel` — what a realizer may tell the engine (a key, text, a pointer)
 and ask it (the caret and selection rectangles) — and neither realizer references the engine.
 `CodeTokenKind` stayed, because it is a key of the theme's code palette (`IAppTheme.Code`), not a
-piece of the editor. `Sheet/` is the same question, still open (docs/CODE-EDITOR-PLAN.md).
+piece of the editor.
+
+**Decided for the spreadsheet (2026-10-14, #185): the same road, before 1.0.** `SheetSurface` will
+depend on an `ISheetSurfaceModel` in `Primitives`, and the engine (`SheetController`, its document,
+its editing, its keymap and its model: 1,062 lines and 11 public types, 9% of the assembly) moves to
+an assembly of its own, `eQuantic.UI.Sheet`, as the code editor's did. It is decided for 1.0 because
+afterwards the move is a break: both samples write `new SheetController(…)`. The realizers call the
+engine directly today, on 19 lines (17 in `PhotonHost`, 2 in `lowering.ts`), and the interface is
+what replaces those calls.
+
+**Decided too (2026-10-14, #186): per-component theme slots ship in 1.0.** `IAppTheme` carries
+foundation only, and what makes a component look like itself is written in the component (its
+constants) and in `Sizing`, a static ladder no theme reaches. The shape: one record per component
+family, every member nullable and every member data (so it crosses to the browser in the theme's
+JSON), each a default member of `IAppTheme` that answers null, as `MonoFamily`, `Data` and `Code`
+did; plus one shared slot, `Controls`, for the ladder `Sizing` holds. The order: the instance's own
+argument, then its family's slot in the nearest `Theme` above it, then that theme's `Controls` for a
+sized control, then the component's default. The families, the subtree override and the rule that
+every member of the theme reaches the browser are in [ELEMENT-TREE-PLAN.md](ELEMENT-TREE-PLAN.md),
+section 3.10, because a theme found per position is the Element's.
 
 **Three more that belong a layer up or out**, each small:
 
@@ -465,6 +484,11 @@ without string keys, positional lookup (`InheritedWidget`), dependency-driven re
 `didChangeDependencies` in one move. It is also the largest move in this document, and the stores
 above are the inventory of what it would absorb. The two-of-everything at the web seam does not wait
 for it: `RouteData` → `RouteValues` and the provider → `CapabilityScope` are a morning's work each.
+
+**Decided (2026-10-14, #169): the Element is built before 1.0.** The design is
+[ELEMENT-TREE-PLAN.md](ELEMENT-TREE-PLAN.md), whose section 2 re-measures this inventory: six stores
+of twelve dictionaries and a set, twelve `AsyncLocal` channels, four spellings of identity, and three
+defects the string model already costs.
 
 ---
 
@@ -817,8 +841,9 @@ makes the rest safe.
    — M, done ([#162](https://github.com/eQuantic/equantic-ui/issues/162))
 5. **The Primitives diet**: ~~`ButtonStyles` → `Components`~~ (it is gone instead); ~~`PaletteAudit` → tests~~ (#128);
    `Photon*` attributes → `Native.Hosting`; `Navigator.Go(href)` → `destination`; `Nodes/` holds
-   nodes. And Edgar's decision on the editor models (Flutter: controllers in `widgets`). — S, plus a
-   decision
+   nodes. And the editor models, decided by Edgar (Flutter: controllers in `widgets`): the code
+   editor's in an assembly of its own (2026-09-23), the spreadsheet's the same way before 1.0
+   (2026-10-14, #185, section 4). — S, and M for the spreadsheet
 6. ~~**Two of everything at the web seam**~~ done: `RouteData` → `RouteValues` (C# and TypeScript),
    `RenderContext`'s provider, global fallback and instance dictionary → `CapabilityScope`, and the
    link policy left on the web with the reason written where it is felt. — S
@@ -835,9 +860,10 @@ makes the rest safe.
 11. **`PhotonHost` split** (Flutter: seven bindings): `FocusManager`, a `TextEditingSession` per
     surface kind, a `GestureRouter`, and `IPhotonHost` as the shell contract; the server's shell moves
     to a writer. — L
-12. **The Element decision** — the one move that closes `InheritedWidget`, `didChangeDependencies`,
-    dependency-driven rebuild and string identity together. A design document of its own, with
-    section 5 as its inventory. — L, and a decision first
+12. **The Element** — the one move that closes `InheritedWidget`, `didChangeDependencies`,
+    dependency-driven rebuild and string identity together. Decided on 2026-10-14 for 1.0 (#169),
+    with per-component theme slots on top of it (#186); the design, with section 5 re-measured as its
+    inventory, is [ELEMENT-TREE-PLAN.md](ELEMENT-TREE-PLAN.md). — L, in six slices
 
 ## Not yet measured
 

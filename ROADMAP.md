@@ -49,9 +49,11 @@ What exists, held by suites that fail rather than warn:
 What is not there yet, each with its issue: shared state beyond a component (#289), routes as types
 for programmatic navigation (#292), a component test harness an app can use and the variant matrix
 it carries (#294), the security review and a CSP the SDK writes (#306), and edit-to-view measured
-under a second (#900). Three decisions can still change a shape an app writes, and 1.0 waits for
-them: the Element (#169), where the editors' models live (#185) and per-component theme slots on
-`IAppTheme` (#186).
+under a second (#900). Three decisions could still change a shape an app writes, and Edgar took
+them on 2026-10-14, each now 1.0 work: the Element is built before the release (#169), the
+spreadsheet's engine leaves Primitives as the code editor's did (#185), and per-component theme
+slots ship in it (#186). The design of the first and the last is
+[`docs/ELEMENT-TREE-PLAN.md`](docs/ELEMENT-TREE-PLAN.md).
 
 The bugs are part of the state. They are on the board, the transpiler's fidelity under #164, #565,
 #845 and #849, and 1.0 reads them as an exit criterion: no bug open where code compiles and answers
