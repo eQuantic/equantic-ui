@@ -1,10 +1,12 @@
-import { $eq, BuildContext, StatelessComponent, Text } from "@equantic/runtime";
+import { $eq, BuildContext, Decimal, StatelessComponent, Text } from "@equantic/runtime";
 
 export class BoundReceivers extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Web.Tests.Fixtures.BoundReceivers';
     _items: number[] = [3, 1, 2];
     _pairs: any[] = [[1, 'a'], [1, 'a'], [2, 'b']];
     _counts: any = $eq.collections.dictionary().set('a', 1);
+    _ticks: bigint[] = [4n, 6n];
+    _prices: Decimal[] = [$eq.num.dec("1.5"), $eq.num.dec("2.25")];
     _seen: boolean = false;
 
     build(_context: BuildContext) {
@@ -24,8 +26,10 @@ export class BoundReceivers extends StatelessComponent {
         let zipped = $eq.linq.zipTuples(this.items(), this.items(), undefined).reduce(($sum, pair) => $sum + pair[0] * pair[1], 0);
         let triples = $eq.linq.zipTuples(this.items(), this.items(), this.pairs()).reduce(($sum, triple) => $sum + triple[2][0], 0);
         let same = $eq.linq.sequenceEqual(this.items(), this.items());
+        let ticks = this._ticks.map((tick: bigint) => tick * 2n).reduce(($a, $b) => $a + $b, 0n);
+        let price = $eq.linq.average(this._prices, (each: Decimal) => each, 'decimal', false);
         let fallback = $eq.linq.firstOrDefault(this.items(), undefined, 9) + $eq.linq.lastOrDefault(this.items(), (item: number) => item > 1, 9) + $eq.linq.singleOrDefault(this.items(), (item: number) => item > 2, 9);
-        return new Text(`${$eq.text.format(average, null)} ${$eq.text.format(doubled, null)} ${$eq.text.format(sum, null, undefined, undefined, 'int32')} ${$eq.text.format(total, null, undefined, undefined, 'int32')} ${first} ${$eq.text.format(distinct, null, undefined, undefined, 'int32')} ${$eq.text.format(this._seen, null)} ${$eq.text.format(count, null, undefined, undefined, 'int32')} ` + `${$eq.text.format(groups, null, undefined, undefined, 'int32')} ${$eq.text.format(found, null, undefined, undefined, 'int32')} ${$eq.text.format(zipped, null, undefined, undefined, 'int32')} ${$eq.text.format(triples, null, undefined, undefined, 'int32')} ${$eq.text.format(same, null)} ${$eq.text.format(fallback, null, undefined, undefined, 'int32')}`, 'caption');
+        return new Text(`${$eq.text.format(average, null)} ${$eq.text.format(doubled, null)} ${$eq.text.format(sum, null, undefined, undefined, 'int32')} ${$eq.text.format(total, null, undefined, undefined, 'int32')} ${first} ${$eq.text.format(distinct, null, undefined, undefined, 'int32')} ${$eq.text.format(this._seen, null)} ${$eq.text.format(count, null, undefined, undefined, 'int32')} ` + `${$eq.text.format(groups, null, undefined, undefined, 'int32')} ${$eq.text.format(found, null, undefined, undefined, 'int32')} ${$eq.text.format(zipped, null, undefined, undefined, 'int32')} ${$eq.text.format(triples, null, undefined, undefined, 'int32')} ${$eq.text.format(same, null)} ${$eq.text.format(fallback, null, undefined, undefined, 'int32')} ${$eq.text.format(ticks, null)} ${$eq.text.format(price, null)}`, 'caption');
     }
 
     items() {
