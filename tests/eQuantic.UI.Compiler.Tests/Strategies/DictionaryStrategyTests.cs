@@ -67,12 +67,33 @@ public class DictionaryStrategyTests
     /// extension, which went out under that class's name, a ReferenceError in the browser (#864), and so
     /// did the extension's static form.</summary>
     [Fact]
-    public void TryAdd_ThroughCollectionExtensions_IsTheClasss()
+    public void TryAdd_ThroughCollectionExtensions_IsTheClassOwn()
     {
         TestHelper.ConvertCodeBlock("var s = new SortedDictionary<string, int>(); s.TryAdd(\"a\", 1);")
             .Should().Contain("s.tryAdd('a', 1)");
         TestHelper.ConvertCodeBlock("IDictionary<string, string> d = new Dictionary<string, string>(); CollectionExtensions.TryAdd(d, \"a\", \"b\");")
             .Should().Contain("d.tryAdd('a', 'b')");
+    }
+
+    /// <summary>An extension of the app's own under a lookup's name stays the app's call: a lookup is the
+    /// collections' own by the method's type, where TryAdd and GetValueOrDefault went to the runtime
+    /// class's whatever they bound to (found in review, #864). TryGetValue is every dictionary's instance
+    /// member, which no extension takes from it.</summary>
+    [Fact]
+    public void AnExtensionOfTheApps_UnderALookupsName_StaysTheApps()
+    {
+        var js = TestHelper.ConvertClass("""
+                public bool Fill(SortedDictionary<string, int> s) => s.TryAdd("a", 1);
+                public int Read(SortedDictionary<string, int> s) => s.GetValueOrDefault("a");
+            }
+
+            public static class Ledger
+            {
+                public static bool TryAdd(this SortedDictionary<string, int> s, string key, int value) => false;
+                public static int GetValueOrDefault(this SortedDictionary<string, int> s, string key) => -1;
+            """);
+
+        js.Should().Contain("Ledger.tryAdd(s, 'a', 1)").And.Contain("Ledger.getValueOrDefault(s, 'a')");
     }
 
     [Fact]

@@ -335,6 +335,8 @@ export class SortedSet<T> implements Iterable<T> {
   unionWith(other: Iterable<T> | string): void {
     if (other == null) throw argumentNull('other');
     if (this.range === undefined && other instanceof SortedSet && this.count === 0) {
+      // Copied as `new SortedSet<T>(other)` copies it, which counts a view first.
+      readAsACollection(other);
       for (const value of (other as SortedSet<T>).held()) this.add(value);
       this.tree.version++;
       return;
@@ -440,6 +442,7 @@ export class SortedSet<T> implements Iterable<T> {
       for (const value of other) if (!this.remove(value)) this.add(value);
       return;
     }
+    readAsACollection(other);
     const sorted = Array.from(elements(other));
     introSort(sorted, 0, sorted.length, { compare: this.compare, kind: 'comparer', name: '' });
     sorted.forEach((value, at) => {
@@ -494,6 +497,8 @@ export class SortedSet<T> implements Iterable<T> {
   /** `IsProperSubsetOf`. */
   isProperSubsetOf(other: Iterable<T> | string): boolean {
     if (other == null) throw argumentNull('other');
+    // An empty set asks a collection its count before anything else.
+    if (this.count === 0) readAsACollection(other);
     if (this.sharesOrder(other)) return this.count < other.count && (this.count === 0 || other.holdsAllOf(this));
     const [unique, unfound] = this.uniqueAndUnfound(other, false);
     return unique === this.count && unfound > 0;
@@ -502,6 +507,7 @@ export class SortedSet<T> implements Iterable<T> {
   /** `IsSupersetOf`. */
   isSupersetOf(other: Iterable<T> | string): boolean {
     if (other == null) throw argumentNull('other');
+    readAsACollection(other);
     if (this.sharesOrder(other)) return other.count === 0 || (this.count >= other.count && this.holdsAllOf(other));
     for (const value of elements(other)) if (!this.contains(value)) return false;
     return true;
@@ -511,6 +517,7 @@ export class SortedSet<T> implements Iterable<T> {
   isProperSupersetOf(other: Iterable<T> | string): boolean {
     if (other == null) throw argumentNull('other');
     if (this.count === 0) return false;
+    readAsACollection(other);
     if (this.sharesOrder(other)) return other.count === 0 || (other.count < this.count && this.holdsAllOf(other));
     const [unique, unfound] = this.uniqueAndUnfound(other, true);
     return unique < this.count && unfound === 0;
@@ -520,6 +527,7 @@ export class SortedSet<T> implements Iterable<T> {
   overlaps(other: Iterable<T> | string): boolean {
     if (other == null) throw argumentNull('other');
     if (this.count === 0) return false;
+    readAsACollection(other);
     for (const value of elements(other)) if (this.contains(value)) return true;
     return false;
   }
@@ -555,10 +563,11 @@ export class SortedSet<T> implements Iterable<T> {
 }
 
 /**
- * What .NET's LINQ and `new List<T>(…)` read of a collection before they copy or count it: its `Count`,
- * as an `ICollection<T>`, which is where a view counts again (#865). Every LINQ operator reads its source
- * through here, where .NET's `First` or `Where` only walk it, so a view counts again on more paths than
- * .NET's does: its `ExceptWith` may then remove what it was asked to where .NET's removes nothing.
+ * What .NET reads of a collection before it copies or counts it: its `Count`, as an `ICollection<T>`,
+ * which is where a view counts again (#865). LINQ, `new List<T>(…)`, `new SortedSet<T>(…)` and a sorted
+ * set's own operations ask it where .NET's do. Every LINQ operator reads its source through here, where
+ * .NET's `First` or `Where` only walk it, and `AddRange` does not, where .NET's counts: a view's
+ * `ExceptWith` after one of those may remove what .NET's would not, or keep what it would remove.
  */
 export function readAsACollection(source: unknown): void {
   if (source instanceof SortedSet) void source.count;
@@ -576,6 +585,7 @@ export function sortedSet<T>(
   collection?: string,
 ): SortedSet<T> {
   if (collection !== undefined && initial == null) throw argumentNull(collection);
+  readAsACollection(initial);
   return new SortedSet<T>(initial == null ? undefined : elements(initial), orderOf(compare));
 }
 

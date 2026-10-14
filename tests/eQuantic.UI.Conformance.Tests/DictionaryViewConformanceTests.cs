@@ -44,6 +44,7 @@ public class DictionaryViewConformanceTests
     [InlineData("ICollection<string> keys = new Dictionary<string, int> { [\"a\"] = 1 }.Keys; try { keys.Clear(); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")]     // the same
     [InlineData("ICollection<int> values = new Dictionary<string, int> { [\"a\"] = 1 }.Values; try { values.Add(2); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")] // "Mutating a value collection derived from a dictionary is not allowed."
     [InlineData("ICollection<int> values = new Dictionary<string, int> { [\"a\"] = 1 }.Values; try { values.Remove(1); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")] // the same
+    [InlineData("ICollection<string> keys = new Dictionary<string, int> { [\"a\"] = 1 }.Keys; try { keys.Remove(\"z\"); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")] // the same: a key it does not hold
     // Both views say they are read-only, as ICollection<T>.IsReadOnly does for them.
     [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; ICollection<string> keys = d.Keys; ICollection<int> values = d.Values; return keys.IsReadOnly + \",\" + values.IsReadOnly;")] // "True,True"
     // The values' Contains finds a value by its type's equality.
@@ -82,10 +83,12 @@ public class DictionaryViewConformanceTests
     // A sorted dictionary's views refuse a change as a dictionary's do.
     [InlineData("ICollection<int> keys = new SortedDictionary<int, int> { [1] = 1 }.Keys; try { keys.Add(2); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")]   // "Mutating a key collection derived from a dictionary is not allowed."
     [InlineData("ICollection<int> values = new SortedDictionary<int, int> { [1] = 1 }.Values; try { values.Clear(); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")] // "Mutating a value collection derived from a dictionary is not allowed."
+    [InlineData("ICollection<int> keys = new SortedDictionary<int, int> { [1] = 1 }.Keys; try { keys.Remove(9); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")]  // "Mutating a key collection derived from a dictionary is not allowed.": not held
     // A sorted list's views refuse a call in their own words, and a key written through the indexer in a dictionary's.
     [InlineData("var d = new SortedList<int, int> { [1] = 1 }; try { d.Keys.Add(2); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")]      // "This operation is not supported on SortedList nested types because they require modifying the original SortedList."
     [InlineData("var d = new SortedList<int, int> { [1] = 1 }; try { d.Keys.Clear(); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")]     // the same
     [InlineData("var d = new SortedList<int, int> { [1] = 1 }; try { d.Values.Remove(1); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")] // the same
+    [InlineData("var d = new SortedList<int, int> { [1] = 1 }; try { d.Keys.Remove(9); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")]   // the same: not held
     [InlineData("var d = new SortedList<int, int> { [1] = 1 }; try { d.Keys[0] = 3; return \"no\"; } catch (NotSupportedException e) { return e.Message; }")]      // "Mutating a key collection derived from a dictionary is not allowed."
     [InlineData("var d = new SortedList<int, int> { [1] = 1 }; try { d.Values[0] = 3; return \"no\"; } catch (NotSupportedException e) { return e.Message; }")]    // the nested types' words
     [InlineData("var d = new SortedList<int, int> { [1] = 1 }; return d.Keys.IsReadOnly + \",\" + d.Values.IsReadOnly;")]                               // "True,True"

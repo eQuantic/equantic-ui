@@ -8,6 +8,9 @@
 /** The array methods that change an array, which a view refuses. */
 const MUTATORS: ReadonlySet<string> = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin']);
 
+/** Every view {@link liveView} made, and what it refuses a change with. */
+const refusals = new WeakMap<object, () => never>();
+
 /** What a view reads its collection through, and what it refuses a change with. */
 export interface ViewSource<T> {
   /** The elements now, in the collection's order, copied into the view's snapshot whenever
@@ -48,7 +51,7 @@ export function liveView<T>(source: ViewSource<T>): T[] {
   const refuseCall = (): never => {
     throw source.refusal('call');
   };
-  return new Proxy([] as T[], {
+  const view = new Proxy([] as T[], {
     get: (_target, property) => {
       if (property === Symbol.iterator) return walk;
       if (property === 'contains' && source.contains !== undefined) return source.contains;
@@ -84,4 +87,15 @@ export function liveView<T>(source: ViewSource<T>): T[] {
       throw source.refusal(property === 'length' ? 'call' : 'element');
     },
   });
+  refusals.set(view, refuseCall);
+  return view;
+}
+
+/**
+ * Throws what a view refuses a change with when `value` is one {@link liveView} made: `ICollection<T>`'s
+ * `Remove`, which .NET's views refuse whether or not they hold the value, where the search a list's
+ * removal starts with answered false for one they did not (found in review, #864).
+ */
+export function refuseAChangeOf(value: unknown): void {
+  if (typeof value === 'object' && value !== null) refusals.get(value)?.();
 }

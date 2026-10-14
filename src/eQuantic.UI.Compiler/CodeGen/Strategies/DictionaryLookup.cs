@@ -49,9 +49,12 @@ internal static class DictionaryLookup
         IntoOut(invocation, "Dictionary.TryGetValue", Has, "true", context);
 
     /// <summary><c>dictionary.Remove(key, out value)</c>: the value moves into the out and the key's
-    /// slot is freed, and a miss writes the default and answers false.</summary>
+    /// slot is freed, and a miss writes the default and answers false. A miss removes nothing, a
+    /// discarded out included: a sorted dictionary reaches the call through <c>CollectionExtensions</c>,
+    /// which asks <c>TryGetValue</c> first, so its version stays where a <c>Remove(key)</c> of a key it
+    /// lacks moves it, and a walk goes on (#864).</summary>
     public static JsExpr Remove(InvocationExpressionSyntax invocation, ConversionContext context) =>
-        IntoOut(invocation, "Dictionary.Remove", "{r}.delete({k})", "{r}.delete({k})", context);
+        IntoOut(invocation, "Dictionary.Remove", $"({Has} && {{r}}.delete({{k}}))", "{r}.delete({k})", context);
 
     /// <summary>A lookup that writes what it found into an out: <paramref name="discarded"/> is the
     /// whole call when the out is a discard, and <paramref name="hit"/> what a hit answers once the

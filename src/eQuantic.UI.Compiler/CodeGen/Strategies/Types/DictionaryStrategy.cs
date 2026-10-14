@@ -254,10 +254,15 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
             case "ContainsKey" or "Add" or "Remove" or "Clear":
                 return IsDictionary(member.Expression, context) ? name : null;
             // The dictionary a lookup reads is its receiver, or the first argument of an extension's
-            // static form (DictionaryLookup.DictionaryOf), and so is the one TryAdd adds to.
+            // static form (DictionaryLookup.DictionaryOf), and so is the one TryAdd adds to. The method
+            // is the collections' own, the dictionary's or CollectionExtensions': an extension of the
+            // app's that takes a dictionary under one of these names stays the app's call.
             case "TryGetValue" or "GetValueOrDefault" or "TryAdd":
-                return DictionaryLookup.DictionaryOf(invocation, context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol)
-                    is { } dictionary && IsDictionary(dictionary, context) ? name : null;
+                var method = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
+                return IsTheCollections(method)
+                    && DictionaryLookup.DictionaryOf(invocation, method) is { } dictionary && IsDictionary(dictionary, context)
+                        ? name
+                        : null;
             // Membership through the keys is the dictionary's own, found by its comparison: the keys'
             // array compares by SameValueZero whatever the key type.
             case "Contains" when invocation.ArgumentList.Arguments.Count == 1
@@ -340,4 +345,10 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
 
     private static bool IsDictionary(ExpressionSyntax expression, ConversionContext context) =>
         context.SemanticHelper.GetType(expression).IsDictionary();
+
+    /// <summary>Whether a call binds to a member of System.Collections.Generic, or binds to nothing the
+    /// model can name, where the receiver's type is all there is to go by.</summary>
+    private static bool IsTheCollections(IMethodSymbol? method) =>
+        method is null
+        || method.ContainingType?.OriginalDefinition.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic";
 }

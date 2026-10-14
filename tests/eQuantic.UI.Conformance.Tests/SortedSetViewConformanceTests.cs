@@ -97,13 +97,25 @@ public class SortedSetViewConformanceTests
     [InlineData("var t = new SortedSet<int> { 1, 9 }; var v = t.GetViewBetween(2, 6); var c = v.Count; t.Add(4); v.ExceptWith(new[] { 4 }); return string.Join(\",\", t);")] // "1,4,9": counted empty
     [InlineData("var t = new SortedSet<int> { 1, 9 }; var v = t.GetViewBetween(2, 6); var c = v.Count; t.Add(4); c = v.Count; v.ExceptWith(new[] { 4 }); return string.Join(\",\", t);")] // "1,9": counted again
     [InlineData(View + "var c = v.Count; v.ExceptWith(v); return string.Join(\",\", t);")]                                        // "1,7"
-    // LINQ and a list's copy read the count as ICollection<T>.Count, which counts again; a walk does not.
+    // LINQ, a copy and another set's operations read the count as ICollection<T>.Count, which counts
+    // again; a walk does not.
     [InlineData(View + "var l = v.ToList(); v.ExceptWith(new[] { 3 }); return string.Join(\",\", t);")]                            // "1,5,7"
     [InlineData(View + "var a = v.ToArray(); v.ExceptWith(new[] { 3 }); return string.Join(\",\", t);")]                           // "1,5,7"
     [InlineData(View + "var n = v.Count(); v.ExceptWith(new[] { 3 }); return string.Join(\",\", t);")]                             // "1,5,7"
     [InlineData(View + "var a = v.Any(); v.ExceptWith(new[] { 3 }); return string.Join(\",\", t);")]                               // "1,5,7"
     [InlineData(View + "var l = new List<int>(v); v.ExceptWith(new[] { 3 }); return string.Join(\",\", t);")]                      // "1,5,7"
     [InlineData(View + "foreach (var x in v) { } v.ExceptWith(new[] { 3 }); return string.Join(\",\", t);")]                       // "1,3,5,7"
+    [InlineData(View + "var u = new SortedSet<int>(v); v.ExceptWith(new[] { 3 }); return string.Join(\",\", t);")]                // "1,5,7"
+    [InlineData(View + "new SortedSet<int>().UnionWith(v); v.ExceptWith(new[] { 3 }); return string.Join(\",\", t);")]             // "1,5,7": copied as a new set copies it
+    [InlineData(View + "new SortedSet<int> { 9 }.UnionWith(v); v.ExceptWith(new[] { 3 }); return string.Join(\",\", t);")]         // "1,5,7": merged, by its count
+    [InlineData(View + "new SortedSet<int> { 1, 9, 11, 13, 15 }.UnionWith(v); v.ExceptWith(new[] { 3 }); return string.Join(\",\", t);")]  // "1,5,7": added one by one, its count read first
+    [InlineData(View + "var o = new SortedSet<int> { 3 }.Overlaps(v); v.ExceptWith(new[] { 3 }); return o + \"|\" + string.Join(\",\", t);")] // "True|1,5,7"
+    [InlineData(View + "var o = new SortedSet<int> { 3 }.IsSupersetOf(v); v.ExceptWith(new[] { 3 }); return o + \"|\" + string.Join(\",\", t);")] // "False|1,5,7"
+    [InlineData(View + "var o = new SortedSet<int> { 1, 3, 5, 7 }.IsProperSupersetOf(v); v.ExceptWith(new[] { 3 }); return o + \"|\" + string.Join(\",\", t);")] // "True|1,5,7"
+    [InlineData(View + "var o = new SortedSet<int>().IsProperSubsetOf(v); v.ExceptWith(new[] { 3 }); return o + \"|\" + string.Join(\",\", t);")] // "True|1,5,7": an empty set asks
+    [InlineData(View + "var o = new SortedSet<int> { 3 }.IsProperSubsetOf(v); v.ExceptWith(new[] { 3 }); return o + \"|\" + string.Join(\",\", t);")] // "True|1,5,7": by its count
+    [InlineData(View + "var o = new SortedSet<int> { 3, 5 }.SetEquals(v); v.ExceptWith(new[] { 3 }); return o + \"|\" + string.Join(\",\", t);")] // "True|1,3,5,7": walked
+    [InlineData("var t = new SortedSet<string> { \"a\", \"c\", \"e\" }; var v = t.GetViewBetween(\"b\", \"d\"); new SortedSet<string>(StringComparer.Ordinal) { \"z\" }.SymmetricExceptWith(v); v.ExceptWith(new[] { \"c\" }); return string.Join(\",\", t);")] // "a,e": another comparer's copied
     // A set that walks a view of its own elements while it removes them refuses the walk.
     [InlineData(View + "try { t.ExceptWith(v); return \"no\"; } catch (InvalidOperationException e) { return e.Message + \"|\" + string.Join(\",\", t); }")] // "Collection was modified after the enumerator was instantiated.|1,5,7"
     [InlineData(View + "try { t.SymmetricExceptWith(v); return \"no\"; } catch (InvalidOperationException e) { return e.Message + \"|\" + string.Join(\",\", t); }")] // the same
