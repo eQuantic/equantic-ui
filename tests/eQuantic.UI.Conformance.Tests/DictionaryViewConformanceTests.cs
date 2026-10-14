@@ -44,6 +44,7 @@ public class DictionaryViewConformanceTests
     [InlineData("ICollection<string> keys = new Dictionary<string, int> { [\"a\"] = 1 }.Keys; try { keys.Clear(); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")]     // the same
     [InlineData("ICollection<int> values = new Dictionary<string, int> { [\"a\"] = 1 }.Values; try { values.Add(2); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")] // "Mutating a value collection derived from a dictionary is not allowed."
     [InlineData("ICollection<int> values = new Dictionary<string, int> { [\"a\"] = 1 }.Values; try { values.Remove(1); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")] // the same
+    [InlineData("ICollection<string> keys = new Dictionary<string, int> { [\"a\"] = 1 }.Keys; try { keys.Remove(\"z\"); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")] // the same: a key it does not hold
     // Both views say they are read-only, as ICollection<T>.IsReadOnly does for them.
     [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; ICollection<string> keys = d.Keys; ICollection<int> values = d.Values; return keys.IsReadOnly + \",\" + values.IsReadOnly;")] // "True,True"
     // The values' Contains finds a value by its type's equality.
@@ -60,6 +61,38 @@ public class DictionaryViewConformanceTests
     [InlineData(Five + "d.TrimExcess(3); d[\"n\"] = 1; return string.Join(\",\", d.Keys) + \"|\" + d.EnsureCapacity(0);")]                                // "k2,k3,k4,n|7"
     [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1, [\"b\"] = 2 }; try { d.TrimExcess(1); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")] // "… (Parameter 'capacity')"
     public void ADictionary_ViewsAndSizesAsDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>
+    /// A <c>SortedDictionary</c>'s and a <c>SortedList</c>'s <c>Keys</c> and <c>Values</c> are live views
+    /// too (#864): they were arrays copied when they were read. A sorted list's views are lists, which
+    /// refuse a change in their own words, where a sorted dictionary's refuse it in a dictionary's.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var d = new SortedDictionary<int, int> { [2] = 2 }; var ks = d.Keys; d[1] = 1; return ks.Count + \"|\" + string.Join(\",\", ks);")]   // "2|1,2"
+    [InlineData("var d = new SortedDictionary<int, int> { [2] = 2 }; var vs = d.Values; d[2] = 5; d[1] = 6; return string.Join(\",\", vs);")]          // "6,5"
+    [InlineData("var d = new SortedDictionary<int, int> { [1] = 1, [2] = 2 }; var ks = d.Keys; d.Remove(1); return string.Join(\",\", ks) + \"|\" + ks.Contains(1);")] // "2|False"
+    [InlineData("var d = new SortedList<int, int> { [2] = 2 }; var ks = d.Keys; d[1] = 1; return ks.Count + \"|\" + string.Join(\",\", ks) + \"|\" + ks[0];")] // "2|1,2|1"
+    [InlineData("var d = new SortedList<int, int> { [2] = 2 }; var vs = d.Values; d[1] = 6; d.Clear(); return vs.Count;")]                               // 0
+    [InlineData("var d = new SortedList<string, int> { [\"b\"] = 2 }; var ks = d.Keys; d[\"a\"] = 1; return ks.IndexOf(\"b\") + \"|\" + ks.Where(k => k != \"a\").Count();")] // "1|1"
+    // A copy of a view is a copy.
+    [InlineData("var d = new SortedDictionary<int, int> { [2] = 2 }; var l = d.Keys.ToList(); d[1] = 1; return l.Count;")]                            // 1
+    // A sorted dictionary's views refuse a change as a dictionary's do.
+    [InlineData("ICollection<int> keys = new SortedDictionary<int, int> { [1] = 1 }.Keys; try { keys.Add(2); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")]   // "Mutating a key collection derived from a dictionary is not allowed."
+    [InlineData("ICollection<int> values = new SortedDictionary<int, int> { [1] = 1 }.Values; try { values.Clear(); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")] // "Mutating a value collection derived from a dictionary is not allowed."
+    [InlineData("ICollection<int> keys = new SortedDictionary<int, int> { [1] = 1 }.Keys; try { keys.Remove(9); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")]  // "Mutating a key collection derived from a dictionary is not allowed.": not held
+    // A sorted list's views refuse a call in their own words, and a key written through the indexer in a dictionary's.
+    [InlineData("var d = new SortedList<int, int> { [1] = 1 }; try { d.Keys.Add(2); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")]      // "This operation is not supported on SortedList nested types because they require modifying the original SortedList."
+    [InlineData("var d = new SortedList<int, int> { [1] = 1 }; try { d.Keys.Clear(); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")]     // the same
+    [InlineData("var d = new SortedList<int, int> { [1] = 1 }; try { d.Values.Remove(1); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")] // the same
+    [InlineData("var d = new SortedList<int, int> { [1] = 1 }; try { d.Keys.Remove(9); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")]   // the same: not held
+    [InlineData("var d = new SortedList<int, int> { [1] = 1 }; try { d.Keys[0] = 3; return \"no\"; } catch (NotSupportedException e) { return e.Message; }")]      // "Mutating a key collection derived from a dictionary is not allowed."
+    [InlineData("var d = new SortedList<int, int> { [1] = 1 }; try { d.Values[0] = 3; return \"no\"; } catch (NotSupportedException e) { return e.Message; }")]    // the nested types' words
+    [InlineData("var d = new SortedList<int, int> { [1] = 1 }; return d.Keys.IsReadOnly + \",\" + d.Values.IsReadOnly;")]                               // "True,True"
+    public void ASortedDictionary_ViewsAsDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);

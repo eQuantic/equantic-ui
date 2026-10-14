@@ -283,9 +283,9 @@ public class ExpressionVariableEmissionTests
             var compiler = new ComponentCompiler { TypeAnnotations = typeAnnotations };
             compiler.SetProjectCompilation(compilation);
             compiler.SetDependencyResolver(resolver);
-            var modules = compiler.CompileFile(path).Where(result => result.TypeScript.Length > 0).ToList();
-            Assert.All(modules, module => Assert.True(module.Success,
-                $"{module.ComponentName}: {string.Join("\n", module.Errors.Select(e => e.Message))}"));
+            var results = compiler.CompileFile(path).ToList();
+            Assert.Empty(Refusal.Of(results).Select(refusal => refusal.ToString()));
+            var modules = results.Where(result => result.TypeScript.Length > 0).ToList();
             modules.Select(module => module.ComponentName).Should().BeEquivalentTo(["Probe", "Money", "Screen"]);
             return modules;
         }

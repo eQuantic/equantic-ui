@@ -16,7 +16,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// class it is on this side: the runtime's <c>Dictionary</c>, which holds its entries by slot as .NET's
 /// does, or the <c>SortedMap</c> of a sorted one. This strategy owns construction (a copy included),
 /// both initializer forms, the entry's plain write, the members the classes answer
-/// (<c>ContainsKey</c>, <c>Add</c>, <c>Remove</c>, <c>Clear</c>, <c>TryGetValue</c>,
+/// (<c>ContainsKey</c>, <c>Add</c>, <c>TryAdd</c>, <c>Remove</c>, <c>Clear</c>, <c>TryGetValue</c>,
 /// <c>GetValueOrDefault</c>, <c>Keys</c>, <c>Values</c>, <c>Count</c>), and a lookup through the keys
 /// (<c>d.Keys.Contains(k)</c>, <c>d.Keys.Count</c>).
 /// <para>
@@ -254,10 +254,15 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
             case "ContainsKey" or "Add" or "Remove" or "Clear":
                 return IsDictionary(member.Expression, context) ? name : null;
             // The dictionary a lookup reads is its receiver, or the first argument of an extension's
-            // static form (DictionaryLookup.DictionaryOf).
-            case "TryGetValue" or "GetValueOrDefault":
-                return DictionaryLookup.DictionaryOf(invocation, context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol)
-                    is { } dictionary && IsDictionary(dictionary, context) ? name : null;
+            // static form (DictionaryLookup.DictionaryOf), and so is the one TryAdd adds to. The method
+            // is the collections' own, the dictionary's or CollectionExtensions': an extension of the
+            // app's that takes a dictionary under one of these names stays the app's call.
+            case "TryGetValue" or "GetValueOrDefault" or "TryAdd":
+                var method = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
+                return IsTheCollections(method)
+                    && DictionaryLookup.DictionaryOf(invocation, method) is { } dictionary && IsDictionary(dictionary, context)
+                        ? name
+                        : null;
             // Membership through the keys is the dictionary's own, found by its comparison: the keys'
             // array compares by SameValueZero whatever the key type.
             case "Contains" when invocation.ArgumentList.Arguments.Count == 1
@@ -280,6 +285,8 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
                 return DictionaryLookup.TryGetValue(invocation, context);
             case "GetValueOrDefault" when arguments.Count > 0:
                 return DictionaryLookup.GetValueOrDefault(invocation, context);
+            case "TryAdd" when arguments.Count > 1:
+                return DictionaryLookup.TryAdd(invocation, context);
             case "Remove" when arguments.Count == 2:
                 return DictionaryLookup.Remove(invocation, context);
             case "Keys.Contains":
@@ -338,4 +345,16 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
 
     private static bool IsDictionary(ExpressionSyntax expression, ConversionContext context) =>
         context.SemanticHelper.GetType(expression).IsDictionary();
+
+    /// <summary>Whether a call binds to a dictionary's own member or to <c>CollectionExtensions</c>', the
+    /// framework's, or binds to nothing the model can name, where the receiver's type is all there is to go
+    /// by. A type declared in the source, the app's or a project's it references, is never the framework's,
+    /// whatever namespace it is written in.</summary>
+    private static bool IsTheCollections(IMethodSymbol? method) =>
+        method is null
+        || method.ContainingType is { } type
+            && !type.Locations.Any(location => location.IsInSource)
+            && (type.IsDictionary()
+                || type.OriginalDefinition is { Name: "CollectionExtensions" } extensions
+                    && extensions.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic");
 }
