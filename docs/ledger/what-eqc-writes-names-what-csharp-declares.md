@@ -9,9 +9,9 @@
   and, asked of the model, `ToString()` on a type's syntax; a field moves aside for a member any class
   derived from it in its project declares, and one in another project is refused with EQ1007; a lambda's
   parameter is annotated `bigint` and `Decimal`; and a factory is written only for a component that
-  crosses. Fifteen verbatim-name cases and three inherited-member cases executed on both sides, two
-  referenced-project tests, the generator's six unreachable owners and the shared library's `tsc` pin
-  them, and each bug failed them before
+  crosses. Sixteen verbatim-name cases and three inherited-member cases executed on both sides, three
+  referenced-project tests, the generator's eight unreachable owners beside the top-level components
+  that keep theirs, and the shared library's `tsc` pin them, and each bug failed them before
   ([#704](https://github.com/eQuantic/equantic-ui/issues/704),
   [#740](https://github.com/eQuantic/equantic-ui/issues/740),
   [#758](https://github.com/eQuantic/equantic-ui/issues/758),
