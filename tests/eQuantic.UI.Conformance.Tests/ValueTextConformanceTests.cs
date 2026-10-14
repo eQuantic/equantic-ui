@@ -97,7 +97,7 @@ public class ValueTextConformanceTests
     /// <c>(IFormatProvider?)null</c> for a culture it cannot name and refuses it (EQ2108), where
     /// <c>ToString</c> and <c>string.Format</c> read the same cast as the null it is. This case ran the
     /// parse's text and matched .NET until the runner read the build's refusals (#907); it pins the
-    /// refusal until the build reads the cast's null as a null.
+    /// refusal until the build reads the cast's null as a null (#908).
     /// </summary>
     [Fact]
     public void ANullProviderBehindACast_IsRefusedForAParse_WhereABareNullIsNot() =>

@@ -155,7 +155,7 @@ public class StringBuilderConformanceTests
     /// is refused by the build (EQ2004: <c>object.Equals</c> has no translation on a receiver of a
     /// class type), where the overload over a builder is translated and compared above. The case ran
     /// the refused call's text and matched .NET until the runner read the build's refusals (#907); it
-    /// pins the refusal until the build translates the call.
+    /// pins the refusal until the build translates the call (#909).
     /// </summary>
     [Fact]
     public void EqualsOverAnObject_IsRefusedByTheBuild() =>

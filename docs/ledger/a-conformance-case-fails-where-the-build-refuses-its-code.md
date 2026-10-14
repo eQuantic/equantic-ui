@@ -11,7 +11,12 @@
   every module before it keeps the ones that wrote text, where a module refused before its emitter
   ran was dropped with its refusal. The whole suite with the rule refused four cases that had been
   passing: a dictionary keyed by `^1`, the gap of #394, now pinned as its EQ1004, and three refusals a
-  build should not make, each pinned until it is fixed: `Task.FromException` (EQ2004),
-  `Equals(object)` on a builder (EQ2004) and a number parsed with `(IFormatProvider?)null` (EQ2108)
-  ([#907](https://github.com/eQuantic/equantic-ui/issues/907)). Proposed and archived through
+  build should not make, each pinned until it is fixed: `Task.FromException` (EQ2004,
+  [#910](https://github.com/eQuantic/equantic-ui/issues/910)), `Equals(object)` on a builder (EQ2004,
+  [#909](https://github.com/eQuantic/equantic-ui/issues/909)) and a number parsed with
+  `(IFormatProvider?)null` (EQ2108, [#908](https://github.com/eQuantic/equantic-ui/issues/908)). The
+  three queries of #761, a `let`, a second `from` and an `into`, are cases that expect EQ2008 now,
+  pinned from the runner's side
+  ([#907](https://github.com/eQuantic/equantic-ui/issues/907),
+  [#761](https://github.com/eQuantic/equantic-ui/issues/761)). Proposed and archived through
   OpenSpec (`openspec/specs/working-agreement`).

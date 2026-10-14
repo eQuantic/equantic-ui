@@ -89,7 +89,7 @@ public class AsyncConformanceTests
     /// <c>Task.FromException</c> has no translation, and the build refuses it (EQ2004). Swept with the
     /// rest of the surface above, it passed there by accident: the call was left as written, the
     /// browser threw a ReferenceError for the <c>Task</c> it names, and the case's own catch took that
-    /// for the exception .NET throws. It pins the refusal until the call is translated.
+    /// for the exception .NET throws. It pins the refusal until the call is translated (#910).
     /// </summary>
     [Fact]
     public void TaskFromException_IsRefusedByTheBuild() =>
