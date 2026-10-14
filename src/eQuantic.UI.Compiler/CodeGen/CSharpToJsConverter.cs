@@ -184,7 +184,7 @@ public class CSharpToJsConverter
     /// writer outside the expression tree: a record twin's <c>toString</c>.
     /// </summary>
     internal string RecordText(string value, string name, IEnumerable<(string Name, ITypeSymbol? Type)> members) =>
-        StringConversion.RecordText(Eq.RecordText, value, name, members, _context);
+        JsExprWriter.Write(StringConversion.RecordText(Eq.RecordText, JsExpr.Identifier(value), name, members, _context));
 
     /// <summary>The statement layout in force — what the emitter hands its builder.</summary>
     public JsLayout Layout => _context.Layout;

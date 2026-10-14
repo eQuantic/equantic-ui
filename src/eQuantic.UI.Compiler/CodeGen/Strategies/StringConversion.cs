@@ -11,7 +11,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// decided in one: a null is the empty string (JavaScript writes <c>null</c>), a bool is
 /// <c>True</c>/<c>False</c> (JavaScript lowercases), a nullable value type follows its value or
 /// the empty string, an enum is its member NAME, a value the browser holds as data is its record
-/// text, and a number and a date are written in the culture in force, as .NET writes them (#454): a
+/// text, a value tuple is <c>(1, a)</c> and an anonymous object <c>{ A = 1 }</c> (#762), and a
+/// number and a date are written in the culture in force, as .NET writes them (#454): a
 /// fraction with the culture's separator (<c>1,5</c> in pt-BR), a negative integer with its minus
 /// sign (sv-SE's is U+2212), a float in its own digits, a date in its type's own pattern. An
 /// unsigned integer and a char read the same in every culture, and are left as they are, as is a
@@ -50,11 +51,10 @@ public static class StringConversion
     /// </summary>
     internal static JsExpr Of(ITypeSymbol type, JsExpr converted, ConversionContext context)
     {
+        // A value whose type writes its text, which the formatter cannot read from the value alone.
+        if (OwnText(type, converted, context) is { } own) return own;
+
         var text = JsExprWriter.Write(converted);
-        // An enum prints its value's name, a [Flags] one its set flags, and a NULLABLE one nothing for
-        // null (#452).
-        if (type.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
-            return JsExpr.Callish(Types.EnumShape.Text(enumType, text, context));
 
         // A string that MAY be null reads as itself or as nothing — the cheapest faithful spelling.
         // Annotated `string?` says so; a string from code with no nullable context (annotation
@@ -65,14 +65,6 @@ public static class StringConversion
                 : JsExpr.Binary(converted, "??", JsExpr.Literal("''"));
 
         var real = type.UnwrapNullable() ?? type;
-
-        // A value the browser holds as DATA (`[TwinIsData]`, `Color`) is a plain object, whose own
-        // string is `[object Object]`. It reads as the record text .NET writes, from the members
-        // .NET prints, and a null one as nothing. A member whose own text its type decides says so,
-        // as RecordText writes it: a `Curve`'s points are floats, and JavaScript's digits for 0.2f
-        // are the double's, 0.20000000298023224 (#518).
-        if (real is INamedTypeSymbol data && data.TwinIsData())
-            return RecordText(data, converted, Eq.RecordText, context);
 
         // A number or a date is its text in the culture in force, through the formatter that writes
         // every other number and date (#454): JavaScript's own string of it is invariant, so a
@@ -92,42 +84,222 @@ public static class StringConversion
     }
 
     /// <summary>
+    /// The text of a value whose TYPE writes it, where the formatter could not read it from the value:
+    /// an enum's member name (a [Flags] one its set flags, a NULLABLE one nothing for null, #452), a
+    /// value tuple's and an anonymous object's own text (#762), a data twin's record text (#518), and the
+    /// type's name for a type whose text is <c>Object.ToString</c>'s (<see cref="TypeNameText"/>). What
+    /// a concatenation writes for such a value, and what a tuple's element and a record's or an anonymous
+    /// object's member is handed (<see cref="Printed"/>): one rule, so a value prints alike on its own and
+    /// inside another. Null for a type whose value says its text: a string, a number, a date, a bool, a
+    /// class whose twin writes its own.
+    /// </summary>
+    private static JsExpr? OwnText(ITypeSymbol type, JsExpr converted, ConversionContext context)
+    {
+        if (type.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+            return JsExpr.Callish(Types.EnumShape.Text(enumType, JsExprWriter.Write(converted), context));
+
+        var real = type.UnwrapNullable() ?? type;
+
+        // A value TUPLE is an array here and an ANONYMOUS object a plain object, whose own strings are
+        // JavaScript's, `1,2` and `[object Object]`. Each reads as the text .NET writes, from what only
+        // its static type knows: a tuple's element types, and an anonymous type's C# member names in
+        // their declared order (#762). A null one, an empty Nullable tuple, writes nothing.
+        if (real is INamedTypeSymbol { IsTupleType: true } tuple)
+            return TupleText(tuple, converted, Eq.TupleText, context);
+        if (real is INamedTypeSymbol { IsAnonymousType: true } anonymous)
+            return AnonymousText(anonymous, converted, Eq.RecordText, context);
+
+        // A value the browser holds as DATA (`[TwinIsData]`, `Color`) is a plain object, whose own
+        // string is `[object Object]`. It reads as the record text .NET writes, from the members
+        // .NET prints, and a null one as nothing. A member whose own text its type decides says so,
+        // as RecordText writes it: a `Curve`'s points are floats, and JavaScript's digits for 0.2f
+        // are the double's, 0.20000000298023224 (#518).
+        if (real is INamedTypeSymbol data && data.TwinIsData())
+            return RecordText(data, converted, Eq.RecordText, context);
+
+        // A type whose text is its name, which only the static type can say: a null one writes nothing.
+        return TypeNameText(real) is { } name
+            ? JsExpr.Conditional(JsExpr.Binary(converted, "==", JsExpr.Literal("null")), JsExpr.Literal("''"),
+                JsExpr.Literal(JsStringLiteral.Quote(name)))
+            : null;
+    }
+
+    /// <summary>
+    /// The text a value of the type writes where its text is <c>Object.ToString</c>'s, its runtime type's
+    /// name (<see cref="ReflectionName"/>, <c>System.Int32[]</c>), and the browser holds it as a JavaScript
+    /// value of its own, with no twin to write the name (<see cref="DefaultText"/> is the twin's): an array,
+    /// a list, a dictionary, a set, a delegate. Their own text in JavaScript is <c>1,2</c>,
+    /// <c>[object Object]</c> or a function's source. Null for a type that writes another text (one
+    /// that declares or derives a <c>ToString</c>, or is <c>IFormattable</c>), for one whose twin writes its
+    /// own (a type of the compilation, a delegate's excepted), and where the static type does not say the
+    /// runtime type's name: <c>object</c>, an interface, a type parameter, <c>dynamic</c>, or a name that
+    /// holds an anonymous type or a type parameter.
+    /// </summary>
+    private static string? TypeNameText(ITypeSymbol type)
+    {
+        switch (type)
+        {
+            case IArrayTypeSymbol array:
+                return Nameable(array.ElementType) ? ReflectionName.Of(array) : null;
+            case INamedTypeSymbol { TypeKind: TypeKind.Delegate } @delegate:
+                return Nameable(@delegate) ? ReflectionName.Of(@delegate) : null;
+            case INamedTypeSymbol { TypeKind: TypeKind.Class or TypeKind.Struct, SpecialType: SpecialType.None } named
+                when !named.IsTupleType && !named.IsAnonymousType && !named.TwinIsData() && !named.IsNullableValue()
+                    && !named.Locations.Any(location => location.IsInSource)
+                    && !named.AllInterfaces.Any(face => face is { Name: "IFormattable", ContainingNamespace.Name: "System" })
+                    && IsTheRuntimeType(named) && WritesItsName(named) && Nameable(named):
+                return ReflectionName.Of(named);
+            default:
+                return null;
+        }
+    }
+
+    /// <summary>
+    /// Whether a value of the static type is of that type at run time, whose name is the one .NET writes: a
+    /// struct, a sealed class, and a class of .NET's own that is not abstract (a list, a dictionary, a set),
+    /// whose subclasses the browser never holds, as a class over a base the app does not declare has no twin
+    /// (<see cref="DefaultText"/>). A class of another library may hold a subclass's value, whose name is
+    /// another (a vocabulary node is a text or a column), and an abstract one always does.
+    /// </summary>
+    private static bool IsTheRuntimeType(INamedTypeSymbol type)
+    {
+        if (type.TypeKind == TypeKind.Struct || type.IsSealed) return true;
+        var space = type.ContainingNamespace?.ToDisplayString() ?? "";
+        return !type.IsAbstract && (space == "System" || space.StartsWith("System.", StringComparison.Ordinal));
+    }
+
+    /// <summary>Whether a type's text is the name <c>Object.ToString</c> and <c>ValueType.ToString</c> write:
+    /// no type below them declares a <c>ToString</c>.</summary>
+    private static bool WritesItsName(INamedTypeSymbol type)
+    {
+        for (var at = type; at is not null && at.SpecialType is not (SpecialType.System_Object or SpecialType.System_ValueType);
+             at = at.BaseType)
+        {
+            if (at.GetMembers(nameof(object.ToString)).OfType<IMethodSymbol>()
+                .Any(method => !method.IsStatic && method.Parameters.Length == 0))
+                return false;
+        }
+        return true;
+    }
+
+    /// <summary>Whether <see cref="ReflectionName"/> writes the runtime type's name for this static type:
+    /// nothing in it is a type parameter, <c>dynamic</c>, an anonymous type or a type that did not bind.</summary>
+    private static bool Nameable(ITypeSymbol type) => type switch
+    {
+        IArrayTypeSymbol array => Nameable(array.ElementType),
+        INamedTypeSymbol { IsAnonymousType: true } or INamedTypeSymbol { TypeKind: TypeKind.Error } => false,
+        INamedTypeSymbol named => named.TypeArguments.All(Nameable),
+        _ => false,
+    };
+
+    /// <summary>
     /// The record text of a value the browser holds as data, written by <paramref name="helper"/> over
     /// the members .NET prints: <see cref="Eq.RecordText"/> for the text itself, and
     /// <see cref="Eq.RecordTextGroup"/> for the delegate a <c>ToString</c> method group is, which writes
     /// the same text of the value it was made with (#518).
     /// </summary>
     internal static JsExpr RecordText(INamedTypeSymbol data, JsExpr value, string helper, ConversionContext context) =>
-        JsExpr.Callish(RecordText(helper, JsExprWriter.Write(value), data.Name,
-            data.PrintedMembers().Select(member => (member.Name, (ITypeSymbol?)TwinData.TypeOf(member))), context));
+        RecordText(helper, value, data.Name,
+            data.PrintedMembers().Select(member => (member.Name, (ITypeSymbol?)TwinData.TypeOf(member))), context);
+
+    /// <summary>
+    /// An anonymous object's text, as the <c>ToString</c> C# writes for an anonymous type writes it: a
+    /// record's text with no name, <c>{ R = 255, Name = a }</c> and <c>{ }</c>, its members under their C#
+    /// names in the order they are declared, each as a concatenation writes it. <paramref name="helper"/>
+    /// is <see cref="Eq.RecordText"/> for the text itself and <see cref="Eq.RecordTextGroup"/> for the
+    /// delegate a <c>ToString</c> method group is.
+    /// </summary>
+    internal static JsExpr AnonymousText(INamedTypeSymbol anonymous, JsExpr value, string helper, ConversionContext context) =>
+        RecordText(helper, value, "",
+            anonymous.GetMembers().OfType<IPropertySymbol>().Select(member => (member.Name, (ITypeSymbol?)member.Type)), context);
+
+    /// <summary>
+    /// A value tuple's text, as <c>ValueTuple.ToString</c> writes it (<c>(1, a)</c>), through the runtime's
+    /// tuple text, which writes each element as a concatenation writes it: from the element itself where
+    /// its type says nothing more, and from what the compiler hands where it does (<see cref="Printed"/>),
+    /// up to the last element that says anything. A tuple of eight elements or more is one array here,
+    /// and <c>TupleElements</c> lists every one of them, as .NET writes them flat from its <c>Rest</c>.
+    /// <paramref name="helper"/> is <see cref="Eq.TupleText"/> for the text itself and
+    /// <see cref="Eq.TupleTextGroup"/> for the delegate a <c>ToString</c> method group is (#762).
+    /// </summary>
+    internal static JsExpr TupleText(INamedTypeSymbol tuple, JsExpr value, string helper, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        var elements = tuple.TupleElements.Select(element => Printed(element.Type, context)).ToList();
+        var said = elements.FindLastIndex(element => element is not null) + 1;
+        return said == 0
+            ? JsExpr.Call(JsExpr.Identifier(helper), value)
+            : JsExpr.Call(JsExpr.Identifier(helper), value,
+                JsExpr.Array(elements.Take(said).Select(element => element ?? JsExpr.Literal("null")).ToList()));
+    }
 
     /// <summary>
     /// A record's text, as its PrintMembers writes it (<c>Name { A = 1, B = x }</c>), through the
     /// runtime's record text, which reads each member under its twin's name: a record the browser holds
-    /// as a class (its <c>toString</c>) and one it holds as data alike, and the delegate of a data
-    /// twin's <c>ToString</c> method group, which <paramref name="helper"/> names. Each member is
-    /// written as a concatenation would write it, which the runtime's formatter answers from the value
-    /// alone where its type says nothing more, and from the member's kind or a function of the value
-    /// where it does: a float's own digits (a <c>Curve</c>'s points), an integer's unsigned zero, an
-    /// enum's member name, a data twin's own text. A member whose type is not known is written from
-    /// its value. One call shape for all three, <c>helper(value, 'Name', [members])</c>.
+    /// as a class (its <c>toString</c>) and one it holds as data alike, the delegate of a data twin's
+    /// <c>ToString</c> method group, which <paramref name="helper"/> names, and an anonymous object's text,
+    /// whose <paramref name="name"/> is empty. Each member is written as a concatenation would write it,
+    /// which the runtime's formatter answers from the value alone where its type says nothing more, and
+    /// from what the compiler hands where it does (<see cref="Printed"/>). A member whose type is not known
+    /// is written from its value. One call shape for all of them, <c>helper(value, 'Name', [members])</c>.
     /// </summary>
-    internal static string RecordText(string helper, string value, string name,
+    internal static JsExpr RecordText(string helper, JsExpr value, string name,
         IEnumerable<(string Name, ITypeSymbol? Type)> members, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
-        string Member((string Name, ITypeSymbol? Type) member)
+        JsExpr Member((string Name, ITypeSymbol? Type) member)
         {
-            var label = JsStringLiteral.Quote(member.Name);
-            var real = member.Type.UnwrapNullable() ?? member.Type;
-            if (real is INamedTypeSymbol named && (named.TypeKind == TypeKind.Enum || named.TwinIsData()))
-                return $"[{label}, {JsExprWriter.Write(JsExpr.Arrow(context.TypeAnnotations ? "$v: any" : "$v",
-                    Of(member.Type!, JsExpr.Identifier("$v"), context)))}]";
-            return real is not null && WritesInTheCulture(real) && FormatKind.OfText(real) is { } kind
-                ? $"[{label}, '{kind}']"
-                : label;
+            var label = JsExpr.Literal(JsStringLiteral.Quote(member.Name));
+            return Printed(member.Type, context) is { } how ? JsExpr.Array([label, how]) : label;
         }
-        return $"{helper}({value}, {JsStringLiteral.Quote(name)}, [{string.Join(", ", members.Select(Member))}])";
+        return JsExpr.Call(JsExpr.Identifier(helper), value, JsExpr.Literal(JsStringLiteral.Quote(name)),
+            JsExpr.Array(members.Select(Member).ToList()));
+    }
+
+    /// <summary>
+    /// What the runtime is told of a record's member or a tuple's element whose type says what its value
+    /// cannot (the runtime's <c>Printed</c>): a function of the value writing the text its type writes,
+    /// where <see cref="Of"/> writes one the formatter could not read from the value (<see cref="OwnText"/>),
+    /// so an element prints as the same value prints on its own; a number's kind where it writes its own
+    /// digits (a float) or no sign on a zero (an integer); and null where the value says all there is.
+    /// </summary>
+    private static JsExpr? Printed(ITypeSymbol? type, ConversionContext context)
+    {
+        var real = type.UnwrapNullable() ?? type;
+        if (real is null) return null;
+        if (OwnText(type!, JsExpr.Identifier("$v"), context) is { } own)
+            return JsExpr.Arrow(context.TypeAnnotations ? "$v: any" : "$v", own);
+        return WritesInTheCulture(real) && FormatKind.OfText(real) is { } kind
+            ? JsExpr.Literal($"'{kind}'")
+            : null;
+    }
+
+    /// <summary>
+    /// Whether a value of the type reaches a formatter as its TEXT: one whose type writes its text
+    /// (<see cref="OwnText"/>), an enum's excepted, which formats itself: a value tuple, an anonymous object,
+    /// a value the browser holds as data (<c>[TwinIsData]</c>, <c>Color</c>, <c>Curve</c>) and a type whose
+    /// text is its name (an array, a list, a delegate), none of them <c>IFormattable</c>, so a format written
+    /// for one is ignored and an alignment pads its <c>ToString</c>. An interpolation hole with a format or an
+    /// alignment and an argument of <c>string.Format</c> hand the formatter that text, which it pads; handed
+    /// the value, it wrote JavaScript's <c>1,2</c> and <c>[object Object]</c> (#762).
+    /// </summary>
+    internal static bool ReachesTheFormatterAsText(ITypeSymbol? type) =>
+        type.UnwrapNullable() is { } real && real is not INamedTypeSymbol { TypeKind: TypeKind.Enum }
+        && (real is INamedTypeSymbol { IsTupleType: true } or INamedTypeSymbol { IsAnonymousType: true }
+            || real.TwinIsData() || TypeNameText(real) is not null);
+
+    /// <summary>
+    /// The text an instance <c>ToString()</c> writes where its receiver's type writes it, for a receiver
+    /// of a REFERENCE type (an anonymous object, an array, a list, a delegate): as a concatenation writes
+    /// it, with the receiver refused when it is null (<see cref="Eq.Receiver"/>), as .NET's call through null
+    /// throws, where a hole and a concatenation of a null write nothing. Null for any other receiver,
+    /// whose call the caller writes as it always did.
+    /// </summary>
+    internal static JsExpr? InstanceText(ITypeSymbol? type, JsExpr receiver, ConversionContext context)
+    {
+        if (type is not { IsReferenceType: true } || !ReachesTheFormatterAsText(type)) return null;
+        context.UsedHelpers.Add(Eq.Import);
+        return OwnText(type, JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver), context);
     }
 
     /// <summary>
