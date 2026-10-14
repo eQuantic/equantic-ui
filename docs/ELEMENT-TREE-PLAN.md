@@ -157,6 +157,12 @@ configuration through `AdoptConfig`, which is what the instance store does today
 instead of string. `OnMount` and `OnUnmount` run when the element mounts and unmounts, in that order
 across a pass: what leaves unmounts before what arrives mounts.
 
+That holds on a LIVE tree, Photon's and the browser's. A static render, the server's and an email's,
+mounts its elements structurally and calls neither hook: both expand `Build` with no lifecycle
+today, and a mount hook there would subscribe, set state or start work during a render whose output
+is pinned. The browser keeps its hydration timing: a page's hooks run once the server's DOM has
+been adopted, as they do now.
+
 ### 3.2 Build leaves layout
 
 Today `Build` runs inside measure. With elements it runs in a build phase of its own, before
@@ -173,9 +179,14 @@ one that left the tree is dropped, and one marked dirty during the phase joins i
 Layout measures what the elements already built and builds nothing. A container that measures a
 child twice measures one built subtree twice, and intrinsic sizing reads that subtree too, so a
 stateful child is measured with its own state. A `NodeElement` owns its `LayoutNode` and updates it
-in place, where today a
-frame produces a new tree of them; whether the pool is still needed afterwards is measured, not
-assumed (section 5).
+in place, where today a frame produces a new tree of them; whether the pool is still needed
+afterwards is measured, not assumed (section 5).
+
+What leaves the host as a frame keeps today's contract. With `RecycleFrames`, which every shell
+sets, the published frame is the live tree and the next frame overwrites it, as recycling does now.
+Without it, the default that tests and tooling use, the host publishes a detached copy, so a frame
+someone retained never changes, and `NodePoolTests.DefaultHost_NeverTouchesARetainedFrame` stays as
+it is.
 
 Nothing an app writes asks for constraints during `Build`, so moving it out of layout costs no
 author anything. The one consumer that will (`LayoutBuilder`, which the parity audit lists as
@@ -256,9 +267,9 @@ browser's is the document's and not the page's, so it outlives a client navigati
   instead of a path, and focus-within walks the parents instead of comparing prefixes. The shells'
   accessibility ids, which are paths today, become the element's id: an integer assigned at mount
   and kept while it lives.
-- **Server.** A request mounts a tree, builds it, and lowers it. A prefetch that completes marks its
-  element dirty and rebuilds that subtree, with the element's own instance, so the by-name field
-  copy between rounds goes.
+- **Server.** A request mounts a tree structurally (no lifecycle, 3.1), builds it, and lowers it.
+  A prefetch that completes marks its element dirty and rebuilds that subtree, with the element's
+  own instance, so the by-name field copy between rounds goes.
 - **Browser.** The runtime keeps the same element tree. Hydration builds it from the page and walks
   it against the server's DOM in the same order as today. The per-page stores, the module maps and
   the path attributes become element state and element ids.
@@ -273,7 +284,7 @@ browser's is the document's and not the page's, so it outlives a client navigati
   page; the shell's element and its instance stay mounted across navigations, the page's element is
   replaced under it, and the old page unmounts before the new one mounts. E3 moves the dashboard
   sample's frame there, which is its proof.
-- **Email.** A message mounts a tree once, lowers it and discards it.
+- **Email.** A message mounts a tree once, structurally, lowers it and discards it.
 
 ### 3.8 The strings that stay, at the seams
 
