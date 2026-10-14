@@ -315,10 +315,10 @@
         unhealthy one, once, before any of them would have skipped.
     -->
     <Target Name="EQuanticRequireIconTool"
-            BeforeTargets="EQuanticResolveMacPackaging;EQuanticMacAppBundle;EQuanticMacAppPackage;EQuanticCapabilityManifest;EQuanticAppIcon"
-            Condition="('$(_EqMacHead)' == 'true' OR '$(_EqPlatform)' == 'ios' OR '$(EQuanticAppIconSource)' != '') AND !Exists('$(_EqIconToolDir)eqicon.dll')">
+            BeforeTargets="EQuanticResolveMacPackaging;EQuanticMacAppBundle;EQuanticMacAppPackage;EQuanticCapabilityManifest;EQuanticAndroidQueries;EQuanticAppIcon"
+            Condition="('$(_EqMacHead)' == 'true' OR '$(_EqPlatform)' == 'ios' OR '$(_EqPlatform)' == 'android' OR '$(EQuanticAppIconSource)' != '') AND !Exists('$(_EqIconToolDir)eqicon.dll')">
         <Error Code="EQ4001"
-               Text="This app needs the eQuantic icon tool (app icon, bundle, capability manifest) and it is missing at '$(_EqIconToolDir)eqicon.dll'. In a source-tree build this is a broken build graph (eQuantic.UI.Native.Build did not build); from a package the SDK package is broken. Neither is fixed by building twice." />
+               Text="This app needs the eQuantic icon tool (app icon, bundle, capability manifest, Android queries) and it is missing at '$(_EqIconToolDir)eqicon.dll'. In a source-tree build this is a broken build graph (eQuantic.UI.Native.Build did not build); from a package the SDK package is broken. Neither is fixed by building twice." />
     </Target>
 
     <!--
@@ -775,6 +775,49 @@
         <ItemGroup Condition="Exists('$(_EqCapabilityPlist)')">
             <_PostCompilePartialAppManifest Include="$(_EqCapabilityPlist)" />
         </ItemGroup>
+    </Target>
+
+    <!--
+        The links an Android app may ASK the system about. Since Android 11 an app sees only the
+        apps its manifest lists under queries, so "does something open this link" answers no for
+        every scheme that is not there. The Android build writes the manifest from attributes and
+        has none for that element, so the SDK writes it as a fragment (an AndroidManifestOverlay,
+        the Android SDK's own item for one) from what the compiled assembly declares: the web's two
+        schemes, and each builder.Workspace.Opens… line. No app author opens an AndroidManifest.xml.
+
+        Before the merge, which is after the compiler: the declarations are read off the compiled
+        assembly.
+    -->
+    <PropertyGroup Condition="'$(_EqPlatform)' == 'android'">
+        <_EqAndroidQueries>$(_EqIconDir)/Queries.xml</_EqAndroidQueries>
+        <_EqAndroidMergedManifest>$(IntermediateOutputPath)android/AndroidManifest.xml</_EqAndroidMergedManifest>
+    </PropertyGroup>
+
+    <Target Name="EQuanticAndroidQueries" BeforeTargets="_ManifestMerger"
+            Condition="'$(_EqPlatform)' == 'android'">
+        <ItemGroup>
+            <_EqQueriesArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
+            <_EqQueriesArgument Include="command" Value="queries" />
+            <_EqQueriesArgument Include="assembly" Option="--assembly" Value="@(IntermediateAssembly)" />
+            <_EqQueriesArgument Include="manifest" Option="--manifest" Value="$(_EqAndroidQueries)" />
+        </ItemGroup>
+        <RunProgram Program="dotnet" Arguments="@(_EqQueriesArgument)" StandardOutputImportance="normal" />
+        <ItemGroup Condition="Exists('$(_EqAndroidQueries)')">
+            <AndroidManifestOverlay Include="$(_EqAndroidQueries)" />
+        </ItemGroup>
+    </Target>
+
+    <!--
+        The merge does not count its overlays among its inputs, so an app that adds
+        builder.Workspace.OpensMail() and builds again would keep the manifest it had. The fragment
+        is rewritten only when what it says changed, and a merged manifest older than it is stale:
+        removing it is what makes the merge run.
+    -->
+    <Target Name="EQuanticAndroidQueriesChanged" BeforeTargets="_ManifestMerger"
+            AfterTargets="EQuanticAndroidQueries"
+            Condition="'$(_EqPlatform)' == 'android'"
+            Inputs="$(_EqAndroidQueries)" Outputs="$(_EqAndroidMergedManifest)">
+        <Delete Files="$(_EqAndroidMergedManifest)" />
     </Target>
 
     <Target Name="EQuanticAppIcon"

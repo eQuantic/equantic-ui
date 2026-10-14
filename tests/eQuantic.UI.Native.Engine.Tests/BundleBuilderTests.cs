@@ -38,7 +38,7 @@ public class BundleBuilderTests
     /// <summary>
     /// `file` is refused HERE, at the line that declared it, and not later: no app answers to the
     /// system's own scheme however the manifest is written, and the policy that inherits an app's
-    /// schemes at Build() would otherwise be the one to throw, about OpenUrl, for a line about the
+    /// schemes at Build() would otherwise be the one to throw, about OpenUrlAsync, for a line about the
     /// bundle.
     /// </summary>
     [Theory]

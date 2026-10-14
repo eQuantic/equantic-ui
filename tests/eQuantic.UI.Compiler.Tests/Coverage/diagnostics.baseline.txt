@@ -44,6 +44,7 @@ EQ3003 eQuantic.UI.Native.Generators/CapabilityDeclarations.cs
 EQ3004 eQuantic.UI.Native.Generators/EntitlementDeclarations.cs
 EQ3005 eQuantic.UI.Native.Generators/BundleDeclarations.cs
 EQ3006 eQuantic.UI.Native.Generators/PhotonProgramGenerator.cs
+EQ3007 eQuantic.UI.Native.Generators/WorkspaceDeclarations.cs
 EQ3101 eQuantic.UI.Generators/AppFactorySurfaceGenerator.cs
 EQ3102 eQuantic.UI.Generators/AppFactorySurfaceGenerator.cs
 EQ3103 eQuantic.UI.Generators/FormModelGenerator.cs

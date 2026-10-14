@@ -12,7 +12,6 @@
 # A .ts citation cannot be anchored this way (the member guard reads C# through Roslyn); it
 # earns its check by moving into a fence beside the line it quotes.
 
-ROADMAP.md TypeScriptEmitter.cs 1
 docs/DESKTOP-PLAN.md PhotonHost.cs 1
 docs/DESKTOP-PLAN.md PhotonWindow.cs 2
 docs/HANDOFF-FIDELITY-AUDIT.md Accordion.cs 6

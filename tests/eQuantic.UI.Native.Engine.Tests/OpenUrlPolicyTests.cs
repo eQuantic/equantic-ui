@@ -4,9 +4,9 @@ using FluentAssertions;
 namespace eQuantic.UI.Native.Engine.Tests;
 
 /// <summary>
-/// The one rule every <see cref="IWorkspace"/> realization applies before a URL reaches the
-/// platform. The platform half — NSWorkspace on a Mac — is proved live, and PR #86 says why it has
-/// no unit test; the DECISION is pure and lives in Primitives, so it is pinned here, where a Mac
+/// The one rule every <see cref="IUrlLauncher"/> realization applies before a URL reaches the
+/// platform. The platform half (NSWorkspace, ShellExecuteEx, UIApplication, a VIEW intent) is proved
+/// on each system; the DECISION is pure and lives in Primitives, so it is pinned here, where a Mac
 /// and a phone cannot come to disagree about the same URL.
 /// </summary>
 public class OpenUrlPolicyTests

@@ -6,6 +6,8 @@ import {
   asNumber,
   recordText,
   recordTextGroup,
+  tupleText,
+  tupleTextGroup,
 } from './format';
 import { INVARIANT_FORMAT, installCulture, type CultureFormat } from './culture';
 
@@ -325,6 +327,15 @@ describe('recordText', () => {
     expect(recordText(undefined, 'Color', ['R'])).toBe('');
   });
 
+  // The ToString C# writes for an anonymous type is a record's text with no name.
+  it('writes an anonymous object, whose name is empty, as a record with none', () => {
+    expect(recordText({ r: 255, name: 'a' }, '', ['R', 'Name'])).toBe('{ R = 255, Name = a }');
+    expect(recordText({ x: 1, s: null }, '', ['x', 'S'])).toBe('{ x = 1, S =  }');
+    expect(recordText({}, '', [])).toBe('{ }');
+    expect(recordText(null, '', ['R'])).toBe('');
+    expect(recordTextGroup({ a: 1.5 }, '', ['A'])()).toBe('{ A = 1.5 }');
+  });
+
   // The method group `value.ToString`: the delegate writes the record text of the value it was made
   // with, over the same members a call passes (#731).
   it('makes the delegate of a ToString method group, over the value it was made with', () => {
@@ -337,6 +348,41 @@ describe('recordText', () => {
 
     expect(text()).toBe('Curve { X1 = 0.2, Y1 = 0, X2 = 0, Y2 = 1 }');
     expect(text()).toBe(text());
+  });
+});
+
+// A value tuple is an array here, whose own string is `1,2`: its text is .NET's `(1, 2)`, each element
+// written as its type writes it, from what the compiler hands where the value cannot say (#762).
+describe('tupleText', () => {
+  afterEach(() => installCulture('', '', {}));
+
+  it('writes the elements between parentheses, separated as .NET separates them', () => {
+    expect(tupleText([1, 2])).toBe('(1, 2)');
+    expect(tupleText(['a', null, 1])).toBe('(a, , 1)');
+    expect(tupleText([true, 'c', 2n, -1.5])).toBe('(True, c, 2, -1.5)');
+    expect(tupleText([1, 2, 3, 4, 5, 6, 7, 8, 9])).toBe('(1, 2, 3, 4, 5, 6, 7, 8, 9)');
+  });
+
+  it('writes an element by what its type says: a kind, or a function of the value', () => {
+    const scale = (value: string) => (value === 'large' ? 'Large' : 'Small');
+    expect(tupleText([Math.fround(0.1), -0, 'large'], ['single', 'int32', scale])).toBe('(0.1, 0, Large)');
+    expect(tupleText([1, [2, 3]], [null, (inner: unknown) => tupleText(inner)])).toBe('(1, (2, 3))');
+    expect(tupleText([Math.fround(0.1)])).toBe('(0.10000000149011612)');
+  });
+
+  it('writes each element in the culture in force', () => {
+    installCulture('pt-BR', 'pt-BR', {}, PT_BR);
+    expect(tupleText([1.5, -3], [null, 'int32'])).toBe('(1,5, -3)');
+  });
+
+  it('writes nothing for a null tuple, and makes the delegate of a ToString method group', () => {
+    expect(tupleText(null)).toBe('');
+    expect(tupleText(undefined, ['int32'])).toBe('');
+    let held = [1, 2];
+    const text = tupleTextGroup(held, ['int32', 'int32']);
+    held = [3, 4];
+    expect(text()).toBe('(1, 2)');
+    expect(held).toEqual([3, 4]);
   });
 });
 
