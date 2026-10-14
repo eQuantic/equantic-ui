@@ -41,6 +41,17 @@ add conformance cases  ──▶  run  ──▶  failures
 
 The corpus simultaneously becomes the supported-subset spec (W1) and the permanent regression net.
 
+**A case the build refuses runs nothing.** Where eqc refuses a construct (an `EQ` error: a fence, a
+member with no translation), the converter still writes text, and the harness once ran that text as
+if it had compiled: #761 read a query's `let` as answering 3 in the browser, where the build refuses
+the query (EQ2008) and no browser ever meets it. A case whose C# the build refuses now fails before
+either side runs, naming each refusal by its id and text, read where the build reads it: the
+converter's errors over the case's own text, and the build's own verdict on the prelude's
+declarations (#907). A case written FOR a fence says so, with
+`ConformanceRunner.AssertStatementsRefusedByTheBuild(statements, "EQ2008")` (or
+`AssertRefusedByTheBuild` for an expression): it asserts the id, runs nothing, and fails the day the
+fence lifts. That is the conformance side of the negative tests the definition of done below asks for.
+
 **Faithful semantic model.** Type-gated strategies (e.g. record-keyed dictionaries) rely on Roslyn
 resolving BCL generics like `Dictionary<RecordKey,V>`. The eqc build reconstructs the project's
 compilation from its `.cs` files, which skip `obj/` — and that's where the SDK writes
