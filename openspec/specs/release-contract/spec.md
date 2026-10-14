@@ -90,7 +90,8 @@ experimental project, and any project while the version carries a prerelease lab
 
 While the version carries a prerelease label, no member in the source of a contract project SHALL
 be marked `[Obsolete]`, since the preview removes it now. Without one, every `[Obsolete]` there SHALL
-carry a `DiagnosticId` that starts with `EQO`, a `UrlFormat` that links what to write instead, and a
+carry a `DiagnosticId` that starts with `EQO`, a `UrlFormat` that formats into an absolute https
+address linking what to write instead, and a
 message that names the major version it leaves in, greater than the current major, each written as a
 literal so the guard can read it. A second `Deconstruct` SHALL be refused at any version.
 

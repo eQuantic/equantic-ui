@@ -29,12 +29,29 @@ internal static class ObsoleteMark
         var problems = new List<string>();
         if (obsolete.DiagnosticId is not { } id || !id.StartsWith("EQO", StringComparison.Ordinal))
             problems.Add("its DiagnosticId starts with EQO, so an app can silence this member and nothing else");
-        if (string.IsNullOrWhiteSpace(obsolete.UrlFormat))
-            problems.Add("its UrlFormat links what to write instead");
+        if (!Links(obsolete.UrlFormat, obsolete.DiagnosticId))
+            problems.Add("its UrlFormat is an absolute https address that links what to write instead, with {0} where the id goes if it names one");
         if (obsolete.Message is not { } message
             || RemovedIn.Match(message) is not { Success: true } removal
             || int.Parse(removal.Groups["major"].Value, NumberStyles.None, CultureInfo.InvariantCulture) <= major)
             problems.Add($"its message names the major it is removed in, later than {major}, as \"removed in {major + 1}.0\"");
         return problems;
+    }
+
+    /// <summary>Whether <paramref name="format"/>, given the id as .NET gives it, is an address a
+    /// developer can open: a format that formats, into an absolute https address.</summary>
+    private static bool Links(string? format, string? id)
+    {
+        if (string.IsNullOrWhiteSpace(format)) return false;
+        string address;
+        try
+        {
+            address = string.Format(CultureInfo.InvariantCulture, format, id ?? string.Empty);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+        return Uri.TryCreate(address, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps;
     }
 }

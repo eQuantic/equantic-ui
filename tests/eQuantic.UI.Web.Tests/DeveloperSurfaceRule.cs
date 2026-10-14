@@ -13,11 +13,16 @@ namespace eQuantic.UI.Web.Tests;
 /// </summary>
 internal static class DeveloperSurfaceRule
 {
-    private static readonly string[] NativeTrack =
-        ["msbuild eQuantic.UI.Sdk.Native ", "template equantic-native ", "config Photon"];
+    private static readonly string[] NativeTrack = ["msbuild eQuantic.UI.Sdk.Native ", "template equantic-native "];
+
+    /// <summary>The <c>Photon</c> section and its own sections, and no other: a section of the
+    /// contract whose name only starts the same way, a <c>PhotonWeb</c>, is the contract's.</summary>
+    private const string PhotonSection = "config Photon";
 
     public static bool IsNativeTrack(string line) =>
-        NativeTrack.Any(prefix => line.StartsWith(prefix, StringComparison.Ordinal));
+        NativeTrack.Any(prefix => line.StartsWith(prefix, StringComparison.Ordinal))
+        || line == PhotonSection
+        || line.StartsWith(PhotonSection + ":", StringComparison.Ordinal);
 
     /// <summary>The lines among <paramref name="gone"/> that <paramref name="version"/> may not
     /// lose: every one that is the contract's at a stable version, and none during a preview.</summary>

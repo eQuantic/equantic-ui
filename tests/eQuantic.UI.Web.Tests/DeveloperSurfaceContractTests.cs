@@ -159,6 +159,8 @@ public class DeveloperSurfaceContractTests
     [InlineData("1.1.0", "msbuild eQuantic.UI.Sdk.Native EQuanticBundleId", false)]
     [InlineData("1.1.0", "template equantic-native shell", false)]
     [InlineData("1.1.0", "config Photon", false)]
+    [InlineData("1.1.0", "config Photon:Desktop", false)]
+    [InlineData("1.1.0", "config PhotonWeb", true)]
     [InlineData("2.0.0-preview.1", "msbuild eQuantic.UI.Sdk EQuanticSourceMaps", false)]
     [InlineData("0.2.0-preview.63", "config EQuantic:ServerActions", false)]
     public void ALineThatLeaves_IsRefused_OnlyWhenItIsTheContractsAtAStableVersion(string version, string line, bool refused)

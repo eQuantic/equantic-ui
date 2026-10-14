@@ -1,7 +1,7 @@
 using eQuantic.UI.Compiler.Services;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Reflection;
+using Microsoft.CodeAnalysis;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 
@@ -35,23 +35,33 @@ namespace eQuantic.UI.Web.Tests;
 /// <c>Directory.Build.targets</c>). A second <c>Deconstruct</c> is refused at every version.
 /// </para>
 /// <para>
-/// What it scans is every CONTRACT assembly this run carries, read from what ships
-/// (<see cref="SurfaceClass"/>): the tools and the native track are outside the promise.
+/// What it reads is the SOURCE of every contract project (<see cref="SurfaceClass"/>): the tools and
+/// the native track are outside the promise. An assembly this run references would leave out the
+/// server, the integrations and the icon packs, which no test references, and a scan of those was
+/// what Copilot found missing twice.
 /// </para>
 /// </summary>
 public class NoOldShapeSurvivesTests
 {
-    private static readonly Assembly[] Surface = SurfaceClass.ShippingAssemblies()
-        .Where(assembly => SurfaceClass.Of(assembly) == SurfaceClass.Contract)
-        .ToArray();
+    /// <summary>Every source file of every contract project, parsed once, with what the build writes
+    /// under <c>obj/</c> and <c>bin/</c> left out.</summary>
+    private static readonly Lazy<IReadOnlyList<(string Path, SyntaxNode Root)>> ContractSource = new(() =>
+        SurfaceClass.ContractProjects()
+            .SelectMany(project => Directory.GetFiles(project, "*.cs", SearchOption.AllDirectories))
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(path => (path, CSharpSyntaxTree.ParseText(File.ReadAllText(path), ParseDefaults.Options, path).GetRoot()))
+            .ToList());
 
-    /// <summary>The scan has to hold the two assemblies it was written for, or it lost its way.</summary>
+    /// <summary>The scans have to read the contract they clear, the server and an icon pack among it.</summary>
     [Fact]
-    public void TheScanReadsTheContractAssembliesThisRunCarries()
+    public void TheScansReadTheSourceOfEveryContractProject()
     {
-        Surface.Select(assembly => assembly.GetName().Name).Should().Contain(
-            ["eQuantic.UI.Primitives", "eQuantic.UI.Components", "eQuantic.UI.Web"],
-            "the guard reads every contract assembly this run carries, the vocabulary and the components among them");
+        SurfaceClass.ContractProjects().Select(Path.GetFileName).Should().Contain(
+            ["eQuantic.UI.Primitives", "eQuantic.UI.Components", "eQuantic.UI.Web", "eQuantic.UI.Server", "eQuantic.UI.Lucide"],
+            "the guard reads every contract project, the server and the icon packs among them");
+        ContractSource.Value.Count.Should().BeGreaterThan(300, "the scans have to read the contract's source they clear");
     }
 
     /// <summary>
@@ -60,27 +70,37 @@ public class NoOldShapeSurvivesTests
     /// is precise — a legitimate second CONSTRUCTOR is common here (<c>ColorToken(light, dark)</c>
     /// beside <c>ColorToken(both)</c>, <c>CornerRadii</c>'s four corners beside its one), which is
     /// why the constructor count is deliberately NOT what this asks about.
+    /// <para>
+    /// Read from the source, a type counts the instance <c>Deconstruct</c> methods it declares in
+    /// every part of it, and one more when it is a positional record with a parameter, whose
+    /// <c>Deconstruct</c> the compiler writes. An extension method of that name declares nothing on
+    /// the type it extends.
+    /// </para>
     /// </summary>
     [Fact]
     public void NoTypeDeclaresASecondDeconstruct()
     {
-        var scanned = 0;
-        var doubled = new List<string>();
-
-        foreach (var type in Surface.SelectMany(a => a.GetExportedTypes()))
+        var types = new Dictionary<string, (int Count, string Where)>(StringComparer.Ordinal);
+        foreach (var (path, root) in ContractSource.Value)
         {
-            scanned++;
-            var arities = type
-                .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                .Where(method => method.Name == "Deconstruct")
-                .Select(method => method.GetParameters().Length)
-                .OrderBy(count => count)
-                .ToArray();
-            if (arities.Length > 1)
-                doubled.Add($"{type.Name} ({string.Join(", ", arities)} outputs)");
+            foreach (var type in root.DescendantNodes().OfType<TypeDeclarationSyntax>())
+            {
+                var declared = type.Members.OfType<MethodDeclarationSyntax>().Count(method =>
+                    method.Identifier.ValueText == "Deconstruct" && !method.Modifiers.Any(SyntaxKind.StaticKeyword));
+                var written = type is RecordDeclarationSyntax { ParameterList.Parameters.Count: > 0 } ? 1 : 0;
+                if (declared + written == 0) continue;
+
+                var name = FullName(type);
+                var where = $"{Path.GetRelativePath(SdkProbe.RepoRoot(), path)}:{type.GetLocation().GetLineSpan().StartLinePosition.Line + 1}";
+                types[name] = types.TryGetValue(name, out var seen) ? (seen.Count + declared + written, seen.Where) : (declared + written, where);
+            }
         }
 
-        scanned.Should().BeGreaterThan(200, "the scan has to see the surface it clears");
+        var doubled = types.Where(type => type.Value.Count > 1)
+            .Select(type => $"{type.Key} ({type.Value.Count}, at {type.Value.Where})")
+            .OrderBy(line => line, StringComparer.Ordinal)
+            .ToList();
+        types.Should().NotBeEmpty("the contract has positional records, and a scan that found none has lost its way");
         doubled.Should().BeEmpty(
             "a second Deconstruct keeps an older shape readable, which preview does not buy — "
             + "widen the record, fix the call sites, and let the old arity go: "
@@ -106,38 +126,45 @@ public class NoOldShapeSurvivesTests
         var version = ReleaseVersion.Of(typeof(VisualNode).Assembly);
         version.Should().NotBeEmpty("the vocabulary carries the version Directory.Build.props gave the build");
 
-        var projects = SurfaceClass.ContractProjects();
-        projects.Select(Path.GetFileName).Should().Contain(
-            ["eQuantic.UI.Primitives", "eQuantic.UI.Server", "eQuantic.UI.Lucide"],
-            "the scan reads every contract project, the server and the icon packs among them");
-
-        var files = 0;
         var wrong = new List<string>();
-        foreach (var project in projects)
+        foreach (var (path, root) in ContractSource.Value)
         {
-            foreach (var file in Directory.GetFiles(project, "*.cs", SearchOption.AllDirectories)
-                         .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
-                             && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)))
+            foreach (var attribute in root.DescendantNodes().OfType<AttributeSyntax>().Where(IsObsolete))
             {
-                files++;
-                var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), ParseDefaults.Options, file).GetRoot();
-                foreach (var attribute in root.DescendantNodes().OfType<AttributeSyntax>().Where(IsObsolete))
+                var where = $"{Path.GetRelativePath(SdkProbe.RepoRoot(), path)}:{attribute.GetLocation().GetLineSpan().StartLinePosition.Line + 1}";
+                if (Read(attribute) is not { } obsolete)
                 {
-                    var where = $"{Path.GetRelativePath(SdkProbe.RepoRoot(), file)}:{attribute.GetLocation().GetLineSpan().StartLinePosition.Line + 1}";
-                    if (Read(attribute) is not { } obsolete)
-                    {
-                        wrong.Add($"{where}: its message, DiagnosticId and UrlFormat are written as literals, so this guard can read them");
-                        continue;
-                    }
-                    wrong.AddRange(ObsoleteMark.Problems(version, obsolete).Select(problem => $"{where}: {problem}"));
+                    wrong.Add($"{where}: its message, DiagnosticId and UrlFormat are written as literals, so this guard can read them");
+                    continue;
                 }
+                wrong.AddRange(ObsoleteMark.Problems(version, obsolete).Select(problem => $"{where}: {problem}"));
             }
         }
 
-        files.Should().BeGreaterThan(300, "the scan has to read the contract's source it clears");
         wrong.Should().BeEmpty(
             $"at {version} an obsolete member of the contract keeps the rule of the version: "
             + string.Join("; ", wrong));
+    }
+
+    /// <summary>A type's name with its namespace, the types it is nested in and its arity, so the
+    /// parts of a partial type count as one.</summary>
+    private static string FullName(TypeDeclarationSyntax type)
+    {
+        var names = new List<string>();
+        for (SyntaxNode? node = type; node is not null; node = node.Parent)
+        {
+            switch (node)
+            {
+                case TypeDeclarationSyntax declared:
+                    names.Add(declared.Identifier.ValueText + (declared.TypeParameterList is { } generic ? $"`{generic.Parameters.Count}" : string.Empty));
+                    break;
+                case BaseNamespaceDeclarationSyntax space:
+                    names.Add(space.Name.ToString());
+                    break;
+            }
+        }
+        names.Reverse();
+        return string.Join(".", names);
     }
 
     private static bool IsObsolete(AttributeSyntax attribute) =>
@@ -176,6 +203,9 @@ public class NoOldShapeSurvivesTests
     [InlineData("1.2.0", null, "https://example.org/{0}", "Use Bar instead. Removed in 2.0.", "DiagnosticId")]
     [InlineData("1.2.0", "CS0618", "https://example.org/{0}", "Use Bar instead. Removed in 2.0.", "DiagnosticId")]
     [InlineData("1.2.0", "EQO0001", null, "Use Bar instead. Removed in 2.0.", "UrlFormat")]
+    [InlineData("1.2.0", "EQO0001", "not a link", "Use Bar instead. Removed in 2.0.", "UrlFormat")]
+    [InlineData("1.2.0", "EQO0001", "https://example.org/{1}", "Use Bar instead. Removed in 2.0.", "UrlFormat")]
+    [InlineData("1.2.0", "EQO0001", "http://example.org/{0}", "Use Bar instead. Removed in 2.0.", "UrlFormat")]
     [InlineData("1.2.0", "EQO0001", "https://example.org/{0}", "Use Bar instead.", "removed in 2.0")]
     [InlineData("1.2.0", "EQO0001", "https://example.org/{0}", "Use Bar instead. Removed in 1.0.", "removed in 2.0")]
     public void AnObsoleteMemberThatBreaksTheRuleOfItsVersion_IsNamedForWhatItLacks(
