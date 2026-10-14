@@ -305,7 +305,8 @@ otherwise, and a value behind an interface or `object` by what it turns out to b
 `Join` and `GroupJoin` by their key, `Union`, `Intersect`, `Except` and `Distinct` by their element,
 `DistinctBy`, `UnionBy`, `IntersectBy` and `ExceptBy` by their key, and `GroupBy`, `ToLookup` and a
 lookup's indexer by their key. A float or a double key SHALL find a NaN equal to itself, and 0 equal to
--0, as .NET does.
+-0, as .NET does. A null key SHALL match nothing in `Join` and `GroupJoin`, as .NET's join lookup skips
+an inner one and finds no group for an outer one.
 
 #### Scenario: A join by a composite key
 
@@ -338,6 +339,13 @@ lookup's indexer by their key. A float or a double key SHALL find a NaN equal to
   over a class that overrides `Equals` and `GetHashCode`, and over an `Animal[]` of a `Dog` that does
 - **THEN** each asks that `Equals`, as in .NET, while a class that overrides nothing is found by
   reference
+
+#### Scenario: A null key in a join
+
+- **WHEN** `Join` and `GroupJoin` pair `(K: null, V: "a")` and `(K: new Point(1, 2), V: "b")` with
+  `(K: null, W: "n")` and `(K: new Point(1, 2), W: "y")`, and the same by string keys
+- **THEN** they answer `by` and `a0,b1`, as in .NET, where the record key threw ArgumentNullException
+  and the string key paired the two nulls
 
 #### Scenario: A NaN key
 
