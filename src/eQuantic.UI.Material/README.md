@@ -27,8 +27,9 @@ theme.Type(TypeRole.Title);           // title-large 22/28
 ```
 
 The web realizer generates the embedded CSS from this theme; the native host renders Photon pixels
-from it. A custom brand theme is the same: implement `IAppTheme` (or, later, derive one from a seed
-color).
+from it. A custom brand theme is the same: implement `IAppTheme`, or derive the whole scheme from one
+seed color with `MaterialTheme.FromSeed(color)` (M3 dynamic color, TonalSpot over HCT tonal
+palettes).
 
 ## Mapping (M3 role → eQuantic token)
 
@@ -43,7 +44,14 @@ color).
 
 `Success` / `Warning` / `Info` are eQuantic extensions toned within the M3 language.
 
-## Status
+## Selecting it
 
-v1: the fixed M3 baseline scheme. Dynamic color from a seed (HCT tonal palettes) and the app-wide
-theme-selection wiring (SSR bridge + client boot picking Material) are later slices.
+The app picks its theme where it configures the UI, and nothing else names it:
+
+```csharp
+builder.Services.AddUI(options => options
+    .ScanAssembly(typeof(Program).Assembly)
+    .UseTheme(MaterialTheme.FromSeed(Color.FromRgb(0x00, 0x6A, 0x60))));
+```
+
+A Photon app says the same on its builder, `UseTheme(...)`.
