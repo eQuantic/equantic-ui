@@ -115,7 +115,8 @@ compatibility promise starts, for the contract assemblies (Version Management na
 leaves only in a major, after at least one minor carrying `[Obsolete(message, DiagnosticId = "EQO…",
 UrlFormat = …)]` whose message names the major it is removed in, and the removal itself is made in
 that major's preview, where this rule holds again. Three guards switch on the version by themselves:
-the build of a contract project refuses a `*REMOVED*` line in its `PublicAPI.Unshipped.txt`
+the build of a contract project refuses a `*REMOVED*` line in its `PublicAPI.Unshipped.txt` at any
+stable version but a major's first, `x.0.0`, where the removals ship
 (`EqStableVersionRemovesNoContractMember`, `Directory.Build.targets`), `NoOldShapeSurvivesTests`
 refuses an `[Obsolete]` that does not say all three, and `DeveloperSurfaceContractTests` refuses a
 contract line leaving the developer surface. A second `Deconstruct` is refused at every version.

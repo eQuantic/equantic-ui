@@ -139,6 +139,12 @@
       Read here, at the build, so it fails the pull request that removes the member and not the
       release a week later, and the release's own step needs no check of its own.
 
+      A major's first release, x.0.0, is where those removals ship, so it is not refused: the bump
+      to 2.0.0 builds with the 2.0 preview's removals still waiting for the fold. A version is read
+      as SemVer reads it, with any build metadata after `+` left out, the rule the tests use too. The patterns
+      spell a digit and a dot as classes, since MSBuild on a Mac turns a backslash in a function's
+      argument into a slash (#880).
+
       The lines go through a task written in C#, never through MSBuild's items or its text: a
       declared signature holds `*` and `?`, which an item takes for a wildcard (#880 measured what
       else MSBuild does to text on its way).
@@ -168,7 +174,7 @@
     </UsingTask>
 
     <Target Name="EqStableVersionRemovesNoContractMember" BeforeTargets="CoreCompile"
-            Condition="'$(_EqDeclaresPublicApi)' == 'true' AND '$(_EqSurface)' == 'contract' AND '$(Version.Contains(`-`))' == 'false'">
+            Condition="'$(_EqDeclaresPublicApi)' == 'true' AND '$(_EqSurface)' == 'contract' AND $([System.Text.RegularExpressions.Regex]::IsMatch('$(Version)', '^[0-9]+[.][0-9]+[.][0-9]+([+].*)?$')) AND !$([System.Text.RegularExpressions.Regex]::IsMatch('$(Version)', '^[0-9]+[.]0[.]0([+].*)?$'))">
         <EqRefuseRemovalAtStableVersion Unshipped="$(_EqUnshippedFile)" Project="$(MSBuildProjectName)" Version="$(Version)" />
     </Target>
 

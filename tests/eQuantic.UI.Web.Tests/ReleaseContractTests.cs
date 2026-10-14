@@ -47,6 +47,8 @@ public class ReleaseContractTests
     [Theory]
     [InlineData("eQuantic.UI.Primitives", "1.1.0", true, false)]
     [InlineData("eQuantic.UI.Primitives", "2.0.0-preview.1", true, true)]
+    [InlineData("eQuantic.UI.Primitives", "2.0.0", true, true)]
+    [InlineData("eQuantic.UI.Primitives", "1.1.0+5a1b2c3", true, false)]
     [InlineData("eQuantic.UI.Primitives", "1.1.0", false, true)]
     [InlineData("eQuantic.UI.Compiler", "1.1.0", true, true)]
     public void AStableVersionRemovesNoContractMember_AndTheBuildSaysSo(
@@ -176,6 +178,20 @@ public class ReleaseContractTests
             headings.Should().Contain(anchor,
                 $"the address names {page}#{anchor}, which has to be a heading of that page. Read from {WikiClone.Describe()}");
         }
+    }
+
+    /// <summary>
+    /// The native SDK is the one place an app's suppression of EQX0001 comes from, and nothing that
+    /// runs on a pull request builds a Photon app outside this repository, where the repository's own
+    /// suppression does not reach. So the targets the SDK ships are read: the id goes into NoWarn in
+    /// Sdk.targets, after the app's own project, so a NoWarn the app sets does not drop it.
+    /// </summary>
+    [Fact]
+    public void TheNativeSdkSuppressesEqx0001_AfterTheAppsOwnProject()
+    {
+        SdkProbe.Shipped("eQuantic.UI.Sdk.Native").Descendants("NoWarn").Select(element => element.Value)
+            .Should().Contain(value => value.Contains("$(NoWarn)", StringComparison.Ordinal) && value.Contains("EQX0001", StringComparison.Ordinal),
+                "an app built with the native SDK chose the native track, and writes nothing for it");
     }
 
     private static string Expected(string name) =>

@@ -27,15 +27,15 @@ so it can be read from what ships.
 
 An experimental assembly SHALL carry `[assembly: Experimental("EQX0001")]` with a URL to the wiki
 section that says what experimental means in 1.0. An app built with `eQuantic.UI.Sdk.Native` SHALL
-NOT see EQX0001, and its build SHALL say once that the native track is experimental in 1.0. Any other
+NOT see EQX0001, and its publish SHALL say once that the native track is experimental in 1.0. Any other
 project that uses a type of an experimental assembly SHALL fail with EQX0001 until it suppresses it.
 An experimental assembly that uses another one SHALL NOT see it.
 
 #### Scenario: A Photon app
 
-- **WHEN** an app made by `dotnet new equantic-native` is built
-- **THEN** it builds with no EQX0001, and its build output says the native track is experimental in
-  1.0
+- **WHEN** an app made by `dotnet new equantic-native` is built and published
+- **THEN** it builds with no EQX0001, and its publish says the native track is experimental in 1.0,
+  where a web app's says nothing of it
 
 #### Scenario: A project that uses the native track without its SDK
 
@@ -44,8 +44,8 @@ An experimental assembly that uses another one SHALL NOT see it.
 
 ### Requirement: A stable version removes no member of the contract
 
-When the version in `Directory.Build.props` carries no prerelease label, a build of a contract
-project whose `PublicAPI.Unshipped.txt` holds a `*REMOVED*` line SHALL fail, naming the line and the
+When the version in `Directory.Build.props` carries no prerelease label and is not a major's first
+release, `x.0.0`, where the major's removals ship, a build of a contract project whose `PublicAPI.Unshipped.txt` holds a `*REMOVED*` line SHALL fail, naming the line and the
 two ways on: mark the member obsolete, or move the version to the next major's preview. A tool or an
 experimental project, and any project while the version carries a prerelease label, SHALL build.
 
@@ -58,6 +58,11 @@ experimental project, and any project while the version carries a prerelease lab
 #### Scenario: The same removal during a preview
 
 - **WHEN** the version is `2.0.0-preview.1` and the same line is there
+- **THEN** the project builds
+
+#### Scenario: A major's first release
+
+- **WHEN** the version is `2.0.0` and the 2.0 preview's `*REMOVED*` lines still wait for the fold
 - **THEN** the project builds
 
 #### Scenario: A tool's removal at a stable version

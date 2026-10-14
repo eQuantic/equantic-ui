@@ -77,7 +77,8 @@ it scans, so its cases run both versions on synthetic input, and the scan calls 
 
 - A project in this repository that uses a native assembly without the native SDK fails with
   EQX0001: the Photon design host, and the native test projects. Each says why it suppresses the id.
-- The build message of the native SDK shows on every build of a Photon app. It is one line.
+- The notice shows at a publish and not at a build: a line on every build would be read by nobody
+  after the first day, which the native SDK's own notice of a source-tree build already says.
 - The scan of obsolete members reads the contract assemblies the web tests reference: the
   vocabulary, the components, the charts and the web realizer. The server, the integrations and the
   icon packs are held for removals by the build target, which reads every contract project, and for

@@ -28,7 +28,7 @@ on a release day is the one that does not.
   it is written into the assembly as `[assembly: AssemblyMetadata("eQuantic.Surface", …)]`.
 - An experimental assembly carries `[assembly: Experimental("EQX0001", UrlFormat = …)]`, .NET's own
   mark since .NET 8. An app built with `eQuantic.UI.Sdk.Native` does not see it, since choosing that
-  SDK is the opt-in, and its build says once that the native track is experimental in 1.0. Any other
+  SDK is the opt-in, and its publish says once that the native track is experimental in 1.0. Any other
   project that uses a native assembly fails with EQX0001 until it suppresses it.
 - A tool's package says it is a tool of the SDK, outside the compatibility promise.
 - The rule follows the version in `Directory.Build.props`. While it carries a prerelease label, the
@@ -40,8 +40,8 @@ on a release day is the one that does not.
   names the three classes. The wiki's Photon page says the native track is experimental in 1.0, in
   the two languages it is written in.
 
-For a developer who uses the SDK: a Photon app built with the native SDK sees one line in its build
-and nothing else. A web app that references a native assembly by accident is told so, with
+For a developer who uses the SDK: a Photon app built with the native SDK sees one line when it is
+published, and nothing else. A web app that references a native assembly by accident is told so, with
 EQX0001. Nothing else changes before 1.0. No public signature moves. The developer surface gains no
 property, setting or template parameter.
 
