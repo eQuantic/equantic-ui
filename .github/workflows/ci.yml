@@ -412,6 +412,13 @@ jobs:
         shell: bash
         run: dotnet run scripts/check-package-readme.cs -- nupkgs
 
+      # Every assembly of this repository inside these packages says what 1.0 promises it (#899): a
+      # contract, a tool of the SDK, or the native track. What ships is what the packages hold, so an
+      # assembly the build's rule missed (a tool inside an SDK, a generator under analyzers/) shows here.
+      - name: Every assembly a package ships says its surface class
+        shell: bash
+        run: dotnet run scripts/check-package-surface.cs -- nupkgs
+
       - name: Upload All NuGet Packages
         uses: actions/upload-artifact@v4
         with:

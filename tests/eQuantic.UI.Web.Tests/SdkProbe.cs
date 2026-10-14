@@ -51,6 +51,17 @@ internal static class SdkProbe
     /// </summary>
     public static string Dotnet(string? workingDirectory, IReadOnlyDictionary<string, string>? environment, params string[] args)
     {
+        var (exitCode, output, error) = Run(workingDirectory, environment, args);
+        exitCode.Should().Be(0, output + error);
+        return output;
+    }
+
+    /// <summary>
+    /// dotnet with <paramref name="args"/>, answering its exit code and what it wrote to each stream,
+    /// so a case can hold a command to FAILING: a build a rule stops is the proof the rule runs.
+    /// </summary>
+    public static (int ExitCode, string Output, string Error) Run(string? workingDirectory, IReadOnlyDictionary<string, string>? environment, params string[] args)
+    {
         var info = new ProcessStartInfo("dotnet")
         {
             RedirectStandardOutput = true,
@@ -73,8 +84,7 @@ internal static class SdkProbe
             catch (InvalidOperationException) { /* it exited between the deadline and the kill */ }
             throw new TimeoutException($"dotnet {string.Join(' ', args)} did not finish within {Deadline}.");
         }
-        process.ExitCode.Should().Be(0, output.Result + error.Result);
-        return output.Result;
+        return (process.ExitCode, output.Result, error.Result);
     }
 
     /// <summary>

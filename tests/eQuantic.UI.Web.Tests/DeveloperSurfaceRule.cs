@@ -1,0 +1,37 @@
+namespace eQuantic.UI.Web.Tests;
+
+/// <summary>
+/// Which lines of the developer surface a stable version keeps (#323).
+/// <para>
+/// A line that leaves <c>developer-surface.baseline.txt</c> is a setting an app may still write and
+/// that now means nothing: a property its csproj sets, a section its appsettings binds, a parameter
+/// its <c>dotnet new</c> line passes. During a preview that is a break like any other, regenerated and
+/// written in the notes. At a stable version it is the contract's, and it stays until a major. The
+/// native SDK's properties, the native template's parameters and the <c>Photon</c> section are the
+/// native track's, experimental in 1.0 (#324), and free to go.
+/// </para>
+/// </summary>
+internal static class DeveloperSurfaceRule
+{
+    private static readonly string[] NativeTrack = ["msbuild eQuantic.UI.Sdk.Native ", "template equantic-native "];
+
+    /// <summary>The <c>Photon</c> section and its own sections, and no other: a section of the
+    /// contract whose name only starts the same way, a <c>PhotonWeb</c>, is the contract's.</summary>
+    private const string PhotonSection = "config Photon";
+
+    public static bool IsNativeTrack(string line) =>
+        NativeTrack.Any(prefix => line.StartsWith(prefix, StringComparison.Ordinal))
+        || line == PhotonSection
+        || line.StartsWith(PhotonSection + ":", StringComparison.Ordinal);
+
+    /// <summary>Whether the committed baseline has to be there before anything is compared or written:
+    /// at a stable version it is the contract, and a regeneration with no baseline to read would see
+    /// no line leave and write the contract down to what the tree still holds. During a preview a
+    /// missing baseline is the bootstrap.</summary>
+    public static bool BaselineRequired(string version) => ReleaseVersion.IsStable(version);
+
+    /// <summary>The lines among <paramref name="gone"/> that <paramref name="version"/> may not
+    /// lose: every one that is the contract's at a stable version, and none during a preview.</summary>
+    public static IReadOnlyList<string> Refused(string version, IEnumerable<string> gone) =>
+        ReleaseVersion.IsStable(version) ? gone.Where(line => !IsNativeTrack(line)).ToList() : [];
+}

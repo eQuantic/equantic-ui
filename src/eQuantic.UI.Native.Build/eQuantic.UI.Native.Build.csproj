@@ -1,6 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <!-- This project uses the native track without the native SDK, on purpose: eqicon rasterizes the app's icons with the native engine. So it says it
+             means to (#324). Every other project of the repository that reaches a native assembly meets
+             EQX0001, as an app's would. -->
+        <NoWarn>$(NoWarn);EQX0001</NoWarn>
+        <!-- A tool of the SDK (#899): eqicon, which the native SDK runs, shipped inside a package and never compiled
+             against by an app. Its surface class says so, written into the assembly. -->
+        <_EqSurface>tool</_EqSurface>
         <!-- Embedded into the SDK packages as a tool — never published on its own. -->
         <IsPackable>false</IsPackable>
         <OutputType>Exe</OutputType>

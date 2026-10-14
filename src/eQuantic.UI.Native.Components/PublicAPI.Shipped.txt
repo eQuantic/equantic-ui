@@ -1,470 +1,470 @@
 #nullable enable
-eQuantic.UI.Native.Components.CanvasRegion
-eQuantic.UI.Native.Components.CanvasRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
-eQuantic.UI.Native.Components.CanvasRegion.Bounds.init -> void
-eQuantic.UI.Native.Components.CanvasRegion.CanvasRegion() -> void
-eQuantic.UI.Native.Components.CanvasRegion.CanvasRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.Canvas! Node, string! Path) -> void
-eQuantic.UI.Native.Components.CanvasRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.Canvas! Node, out string! Path) -> void
-eQuantic.UI.Native.Components.CanvasRegion.Equals(eQuantic.UI.Native.Components.CanvasRegion other) -> bool
-eQuantic.UI.Native.Components.CanvasRegion.Node.get -> eQuantic.UI.Primitives.Canvas!
-eQuantic.UI.Native.Components.CanvasRegion.Node.init -> void
-eQuantic.UI.Native.Components.CanvasRegion.Path.get -> string!
-eQuantic.UI.Native.Components.CanvasRegion.Path.init -> void
-eQuantic.UI.Native.Components.CodeRegion
-eQuantic.UI.Native.Components.CodeRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
-eQuantic.UI.Native.Components.CodeRegion.Bounds.init -> void
-eQuantic.UI.Native.Components.CodeRegion.CodeRegion() -> void
-eQuantic.UI.Native.Components.CodeRegion.CodeRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.CodeSurface! Surface, string! Path, eQuantic.UI.Primitives.Rect? Offered = null, eQuantic.UI.Primitives.Rect? Visible = null) -> void
-eQuantic.UI.Native.Components.CodeRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.CodeSurface! Surface, out string! Path, out eQuantic.UI.Primitives.Rect? Offered, out eQuantic.UI.Primitives.Rect? Visible) -> void
-eQuantic.UI.Native.Components.CodeRegion.Equals(eQuantic.UI.Native.Components.CodeRegion other) -> bool
-eQuantic.UI.Native.Components.CodeRegion.Offered.get -> eQuantic.UI.Primitives.Rect?
-eQuantic.UI.Native.Components.CodeRegion.Offered.init -> void
-eQuantic.UI.Native.Components.CodeRegion.Path.get -> string!
-eQuantic.UI.Native.Components.CodeRegion.Path.init -> void
-eQuantic.UI.Native.Components.CodeRegion.Surface.get -> eQuantic.UI.Primitives.CodeSurface!
-eQuantic.UI.Native.Components.CodeRegion.Surface.init -> void
-eQuantic.UI.Native.Components.CodeRegion.Visible.get -> eQuantic.UI.Primitives.Rect?
-eQuantic.UI.Native.Components.CodeRegion.Visible.init -> void
-eQuantic.UI.Native.Components.CursorRegion
-eQuantic.UI.Native.Components.CursorRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
-eQuantic.UI.Native.Components.CursorRegion.Bounds.init -> void
-eQuantic.UI.Native.Components.CursorRegion.Cursor.get -> eQuantic.UI.Primitives.PointerCursor
-eQuantic.UI.Native.Components.CursorRegion.Cursor.init -> void
-eQuantic.UI.Native.Components.CursorRegion.CursorRegion() -> void
-eQuantic.UI.Native.Components.CursorRegion.CursorRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.PointerCursor Cursor) -> void
-eQuantic.UI.Native.Components.CursorRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.PointerCursor Cursor) -> void
-eQuantic.UI.Native.Components.CursorRegion.Equals(eQuantic.UI.Native.Components.CursorRegion other) -> bool
-eQuantic.UI.Native.Components.CursorShape
-eQuantic.UI.Native.Components.CursorShape.ColResize = 5 -> eQuantic.UI.Native.Components.CursorShape
-eQuantic.UI.Native.Components.CursorShape.Crosshair = 4 -> eQuantic.UI.Native.Components.CursorShape
-eQuantic.UI.Native.Components.CursorShape.Default = 0 -> eQuantic.UI.Native.Components.CursorShape
-eQuantic.UI.Native.Components.CursorShape.NotAllowed = 3 -> eQuantic.UI.Native.Components.CursorShape
-eQuantic.UI.Native.Components.CursorShape.Pointer = 1 -> eQuantic.UI.Native.Components.CursorShape
-eQuantic.UI.Native.Components.CursorShape.RowResize = 6 -> eQuantic.UI.Native.Components.CursorShape
-eQuantic.UI.Native.Components.CursorShape.Text = 2 -> eQuantic.UI.Native.Components.CursorShape
-eQuantic.UI.Native.Components.DragRegion
-eQuantic.UI.Native.Components.DragRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
-eQuantic.UI.Native.Components.DragRegion.Bounds.init -> void
-eQuantic.UI.Native.Components.DragRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out string! Path, out eQuantic.UI.Primitives.VisualNode! Node) -> void
-eQuantic.UI.Native.Components.DragRegion.DragRegion() -> void
-eQuantic.UI.Native.Components.DragRegion.DragRegion(eQuantic.UI.Primitives.Rect Bounds, string! Path, eQuantic.UI.Primitives.VisualNode! Node) -> void
-eQuantic.UI.Native.Components.DragRegion.Equals(eQuantic.UI.Native.Components.DragRegion other) -> bool
-eQuantic.UI.Native.Components.DragRegion.Node.get -> eQuantic.UI.Primitives.VisualNode!
-eQuantic.UI.Native.Components.DragRegion.Node.init -> void
-eQuantic.UI.Native.Components.DragRegion.Path.get -> string!
-eQuantic.UI.Native.Components.DragRegion.Path.init -> void
-eQuantic.UI.Native.Components.FocusStop
-eQuantic.UI.Native.Components.FocusStop.Adjustable.get -> eQuantic.UI.Primitives.Adjustable?
-eQuantic.UI.Native.Components.FocusStop.Adjustable.init -> void
-eQuantic.UI.Native.Components.FocusStop.Bounds.get -> eQuantic.UI.Primitives.Rect
-eQuantic.UI.Native.Components.FocusStop.Bounds.init -> void
-eQuantic.UI.Native.Components.FocusStop.Code.get -> eQuantic.UI.Primitives.CodeSurface?
-eQuantic.UI.Native.Components.FocusStop.Code.init -> void
-eQuantic.UI.Native.Components.FocusStop.Deconstruct(out string! Path, out eQuantic.UI.Primitives.Pressable? Pressable, out eQuantic.UI.Primitives.TextEntry? Entry, out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.Adjustable? Adjustable, out eQuantic.UI.Primitives.CodeSurface? Code, out eQuantic.UI.Primitives.Navigable? Grid, out eQuantic.UI.Primitives.SheetSurface? Sheet) -> void
-eQuantic.UI.Native.Components.FocusStop.Entry.get -> eQuantic.UI.Primitives.TextEntry?
-eQuantic.UI.Native.Components.FocusStop.Entry.init -> void
-eQuantic.UI.Native.Components.FocusStop.Equals(eQuantic.UI.Native.Components.FocusStop other) -> bool
-eQuantic.UI.Native.Components.FocusStop.FocusStop() -> void
-eQuantic.UI.Native.Components.FocusStop.FocusStop(string! Path, eQuantic.UI.Primitives.Pressable? Pressable, eQuantic.UI.Primitives.TextEntry? Entry, eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.Adjustable? Adjustable = null, eQuantic.UI.Primitives.CodeSurface? Code = null, eQuantic.UI.Primitives.Navigable? Grid = null, eQuantic.UI.Primitives.SheetSurface? Sheet = null) -> void
-eQuantic.UI.Native.Components.FocusStop.Grid.get -> eQuantic.UI.Primitives.Navigable?
-eQuantic.UI.Native.Components.FocusStop.Grid.init -> void
-eQuantic.UI.Native.Components.FocusStop.Path.get -> string!
-eQuantic.UI.Native.Components.FocusStop.Path.init -> void
-eQuantic.UI.Native.Components.FocusStop.Pressable.get -> eQuantic.UI.Primitives.Pressable?
-eQuantic.UI.Native.Components.FocusStop.Pressable.init -> void
-eQuantic.UI.Native.Components.FocusStop.Sheet.get -> eQuantic.UI.Primitives.SheetSurface?
-eQuantic.UI.Native.Components.FocusStop.Sheet.init -> void
-eQuantic.UI.Native.Components.HitRegion
-eQuantic.UI.Native.Components.HitRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
-eQuantic.UI.Native.Components.HitRegion.Bounds.init -> void
-eQuantic.UI.Native.Components.HitRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.Rect Drawn, out eQuantic.UI.Primitives.Pressable! Node, out string! Path) -> void
-eQuantic.UI.Native.Components.HitRegion.Drawn.get -> eQuantic.UI.Primitives.Rect
-eQuantic.UI.Native.Components.HitRegion.Drawn.init -> void
-eQuantic.UI.Native.Components.HitRegion.Equals(eQuantic.UI.Native.Components.HitRegion other) -> bool
-eQuantic.UI.Native.Components.HitRegion.HitRegion() -> void
-eQuantic.UI.Native.Components.HitRegion.HitRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.Rect Drawn, eQuantic.UI.Primitives.Pressable! Node, string! Path = "") -> void
-eQuantic.UI.Native.Components.HitRegion.Node.get -> eQuantic.UI.Primitives.Pressable!
-eQuantic.UI.Native.Components.HitRegion.Node.init -> void
-eQuantic.UI.Native.Components.HitRegion.Path.get -> string!
-eQuantic.UI.Native.Components.HitRegion.Path.init -> void
-eQuantic.UI.Native.Components.HoverRegion
-eQuantic.UI.Native.Components.HoverRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
-eQuantic.UI.Native.Components.HoverRegion.Bounds.init -> void
-eQuantic.UI.Native.Components.HoverRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.VisualNode! Node, out string! Path) -> void
-eQuantic.UI.Native.Components.HoverRegion.Equals(eQuantic.UI.Native.Components.HoverRegion other) -> bool
-eQuantic.UI.Native.Components.HoverRegion.HoverRegion() -> void
-eQuantic.UI.Native.Components.HoverRegion.HoverRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.VisualNode! Node, string! Path) -> void
-eQuantic.UI.Native.Components.HoverRegion.Node.get -> eQuantic.UI.Primitives.VisualNode!
-eQuantic.UI.Native.Components.HoverRegion.Node.init -> void
-eQuantic.UI.Native.Components.HoverRegion.Path.get -> string!
-eQuantic.UI.Native.Components.HoverRegion.Path.init -> void
-eQuantic.UI.Native.Components.IconRasterCache
-eQuantic.UI.Native.Components.IconRasterCache.Clear() -> void
-eQuantic.UI.Native.Components.IconRasterCache.Get(eQuantic.UI.Native.Framework.IIconRasterizer! rasterizer, eQuantic.UI.Primitives.IconGlyph glyph, float widthDp, float heightDp, float scale) -> eQuantic.UI.Native.Engine.TextureData?
-eQuantic.UI.Native.Components.IconRasterCache.IconRasterCache() -> void
-eQuantic.UI.Native.Components.LinkRegion
-eQuantic.UI.Native.Components.LinkRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
-eQuantic.UI.Native.Components.LinkRegion.Bounds.init -> void
-eQuantic.UI.Native.Components.LinkRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out string! Destination, out string! Path) -> void
-eQuantic.UI.Native.Components.LinkRegion.Destination.get -> string!
-eQuantic.UI.Native.Components.LinkRegion.Destination.init -> void
-eQuantic.UI.Native.Components.LinkRegion.Equals(eQuantic.UI.Native.Components.LinkRegion other) -> bool
-eQuantic.UI.Native.Components.LinkRegion.LinkRegion() -> void
-eQuantic.UI.Native.Components.LinkRegion.LinkRegion(eQuantic.UI.Primitives.Rect Bounds, string! Destination, string! Path) -> void
-eQuantic.UI.Native.Components.LinkRegion.Path.get -> string!
-eQuantic.UI.Native.Components.LinkRegion.Path.init -> void
-eQuantic.UI.Native.Components.LiveAnnouncement
-eQuantic.UI.Native.Components.LiveAnnouncement.Deconstruct(out string! Path, out string! Label, out string! Text, out eQuantic.UI.Primitives.LiveRegionUrgency Urgency) -> void
-eQuantic.UI.Native.Components.LiveAnnouncement.Equals(eQuantic.UI.Native.Components.LiveAnnouncement other) -> bool
-eQuantic.UI.Native.Components.LiveAnnouncement.Label.get -> string!
-eQuantic.UI.Native.Components.LiveAnnouncement.Label.init -> void
-eQuantic.UI.Native.Components.LiveAnnouncement.LiveAnnouncement() -> void
-eQuantic.UI.Native.Components.LiveAnnouncement.LiveAnnouncement(string! Path, string! Label, string! Text, eQuantic.UI.Primitives.LiveRegionUrgency Urgency) -> void
-eQuantic.UI.Native.Components.LiveAnnouncement.Path.get -> string!
-eQuantic.UI.Native.Components.LiveAnnouncement.Path.init -> void
-eQuantic.UI.Native.Components.LiveAnnouncement.Text.get -> string!
-eQuantic.UI.Native.Components.LiveAnnouncement.Text.init -> void
-eQuantic.UI.Native.Components.LiveAnnouncement.Urgency.get -> eQuantic.UI.Primitives.LiveRegionUrgency
-eQuantic.UI.Native.Components.LiveAnnouncement.Urgency.init -> void
-eQuantic.UI.Native.Components.NativeRole
-eQuantic.UI.Native.Components.NativeRole.Activatable.get -> bool
-eQuantic.UI.Native.Components.NativeRole.Activatable.init -> void
-eQuantic.UI.Native.Components.NativeRole.Adjustable.get -> bool
-eQuantic.UI.Native.Components.NativeRole.Adjustable.init -> void
-eQuantic.UI.Native.Components.NativeRole.Android.get -> string!
-eQuantic.UI.Native.Components.NativeRole.Android.init -> void
-eQuantic.UI.Native.Components.NativeRole.AppKit.get -> string!
-eQuantic.UI.Native.Components.NativeRole.AppKit.init -> void
-eQuantic.UI.Native.Components.NativeRole.AppKitSubrole.get -> string?
-eQuantic.UI.Native.Components.NativeRole.AppKitSubrole.init -> void
-eQuantic.UI.Native.Components.NativeRole.Deconstruct(out string! AppKit, out string! Android, out eQuantic.UI.Native.Components.UIKitTrait UIKit, out bool Activatable, out bool Adjustable, out string? AppKitSubrole, out bool UIKitCheckAsSelected) -> void
-eQuantic.UI.Native.Components.NativeRole.Equals(eQuantic.UI.Native.Components.NativeRole other) -> bool
-eQuantic.UI.Native.Components.NativeRole.NativeRole() -> void
-eQuantic.UI.Native.Components.NativeRole.NativeRole(string! AppKit, string! Android, eQuantic.UI.Native.Components.UIKitTrait UIKit, bool Activatable, bool Adjustable, string? AppKitSubrole = null, bool UIKitCheckAsSelected = false) -> void
-eQuantic.UI.Native.Components.NativeRole.UIKit.get -> eQuantic.UI.Native.Components.UIKitTrait
-eQuantic.UI.Native.Components.NativeRole.UIKit.init -> void
-eQuantic.UI.Native.Components.NativeRole.UIKitCheckAsSelected.get -> bool
-eQuantic.UI.Native.Components.NativeRole.UIKitCheckAsSelected.init -> void
-eQuantic.UI.Native.Components.PhotonDispatcher
-eQuantic.UI.Native.Components.PhotonDispatcher.BindToCurrentThread() -> void
-eQuantic.UI.Native.Components.PhotonDispatcher.Drain() -> void
-eQuantic.UI.Native.Components.PhotonDispatcher.IsOnUiThread.get -> bool
-eQuantic.UI.Native.Components.PhotonDispatcher.PhotonDispatcher() -> void
-eQuantic.UI.Native.Components.PhotonDispatcher.Post(System.Action! work) -> void
-eQuantic.UI.Native.Components.PhotonDispatcher.WakeOnPost(eQuantic.UI.Native.Components.PhotonHost! host) -> void
-eQuantic.UI.Native.Components.PhotonFrameTicker
-eQuantic.UI.Native.Components.PhotonFrameTicker.Fire(float timeMs) -> void
-eQuantic.UI.Native.Components.PhotonFrameTicker.HasSubscribers.get -> bool
-eQuantic.UI.Native.Components.PhotonFrameTicker.OnFrame(System.Action<eQuantic.UI.Primitives.FrameTick>! onFrame) -> System.IDisposable!
-eQuantic.UI.Native.Components.PhotonFrameTicker.PhotonFrameTicker() -> void
-eQuantic.UI.Native.Components.PhotonHost
-eQuantic.UI.Native.Components.PhotonHost.ActivateFocused() -> bool
-eQuantic.UI.Native.Components.PhotonHost.ActivatePath(string! path) -> bool
-eQuantic.UI.Native.Components.PhotonHost.AdjustPath(string! path, int direction) -> bool
-eQuantic.UI.Native.Components.PhotonHost.Back() -> bool
-eQuantic.UI.Native.Components.PhotonHost.CanGoBack.get -> bool
-eQuantic.UI.Native.Components.PhotonHost.CaretIndex.get -> int
-eQuantic.UI.Native.Components.PhotonHost.CaretRect() -> eQuantic.UI.Primitives.Rect?
-eQuantic.UI.Native.Components.PhotonHost.CaretVisible.get -> bool
-eQuantic.UI.Native.Components.PhotonHost.ClearFocus() -> void
-eQuantic.UI.Native.Components.PhotonHost.Clipboard.get -> eQuantic.UI.Primitives.ITextClipboard?
-eQuantic.UI.Native.Components.PhotonHost.Clipboard.set -> void
-eQuantic.UI.Native.Components.PhotonHost.CodeTarget.get -> eQuantic.UI.Primitives.CodeSurface?
-eQuantic.UI.Native.Components.PhotonHost.CommitText(string! text) -> bool
-eQuantic.UI.Native.Components.PhotonHost.CursorAt(float x, float y) -> eQuantic.UI.Native.Components.CursorShape
-eQuantic.UI.Native.Components.PhotonHost.Density.get -> eQuantic.UI.Primitives.Density
-eQuantic.UI.Native.Components.PhotonHost.Density.set -> void
-eQuantic.UI.Native.Components.PhotonHost.EditingValue.get -> eQuantic.UI.Native.Components.TextEditingValue?
-eQuantic.UI.Native.Components.PhotonHost.EndEditing() -> void
-eQuantic.UI.Native.Components.PhotonHost.Focus(eQuantic.UI.Primitives.Pressable! node, string? path = null, bool visible = true) -> void
-eQuantic.UI.Native.Components.PhotonHost.FocusNext() -> bool
-eQuantic.UI.Native.Components.PhotonHost.FocusPrevious() -> bool
-eQuantic.UI.Native.Components.PhotonHost.FocusVisible.get -> bool
-eQuantic.UI.Native.Components.PhotonHost.Focused.get -> eQuantic.UI.Primitives.Pressable?
-eQuantic.UI.Native.Components.PhotonHost.FocusedPath.get -> string?
-eQuantic.UI.Native.Components.PhotonHost.HasMarkedText.get -> bool
-eQuantic.UI.Native.Components.PhotonHost.HasSelection.get -> bool
-eQuantic.UI.Native.Components.PhotonHost.HasTextFocus.get -> bool
-eQuantic.UI.Native.Components.PhotonHost.Height.get -> float
-eQuantic.UI.Native.Components.PhotonHost.Hovered.get -> eQuantic.UI.Primitives.VisualNode?
-eQuantic.UI.Native.Components.PhotonHost.IconRasterizer.get -> eQuantic.UI.Native.Framework.IIconRasterizer?
-eQuantic.UI.Native.Components.PhotonHost.IconRasterizer.set -> void
-eQuantic.UI.Native.Components.PhotonHost.ImageLoader.get -> eQuantic.UI.Native.Framework.IImageLoader?
-eQuantic.UI.Native.Components.PhotonHost.ImageLoader.set -> void
-eQuantic.UI.Native.Components.PhotonHost.Invalidate() -> void
-eQuantic.UI.Native.Components.PhotonHost.IsFrameDue(float nowMs) -> bool
-eQuantic.UI.Native.Components.PhotonHost.KeyDown(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers = eQuantic.UI.Primitives.KeyModifiers.None) -> bool
-eQuantic.UI.Native.Components.PhotonHost.KeyboardConvention.get -> eQuantic.UI.Primitives.KeyboardConvention
-eQuantic.UI.Native.Components.PhotonHost.KeyboardConvention.init -> void
-eQuantic.UI.Native.Components.PhotonHost.LastFrame.get -> eQuantic.UI.Native.Components.RealizeResult?
-eQuantic.UI.Native.Components.PhotonHost.MarkedRange.get -> (int Start, int Length)
-eQuantic.UI.Native.Components.PhotonHost.MarkedText.get -> string!
-eQuantic.UI.Native.Components.PhotonHost.Mode.get -> eQuantic.UI.Primitives.ThemeMode
-eQuantic.UI.Native.Components.PhotonHost.Mode.set -> void
-eQuantic.UI.Native.Components.PhotonHost.NavigationRequested.get -> System.Action<string!>?
-eQuantic.UI.Native.Components.PhotonHost.NavigationRequested.set -> void
-eQuantic.UI.Native.Components.PhotonHost.NeedsRender.get -> bool
-eQuantic.UI.Native.Components.PhotonHost.PhotonHost(eQuantic.UI.Primitives.VisualNode! root, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode mode, float width, float height, eQuantic.UI.Native.Framework.ITextMeasurer? measurer = null, float typeScale = 1) -> void
-eQuantic.UI.Native.Components.PhotonHost.PointerCancel(eQuantic.UI.Native.Components.PointerKind kind = eQuantic.UI.Native.Components.PointerKind.Mouse) -> void
-eQuantic.UI.Native.Components.PhotonHost.PointerLeave() -> void
-eQuantic.UI.Native.Components.PhotonHost.PointerMove(float x, float y, eQuantic.UI.Native.Components.PointerKind kind = eQuantic.UI.Native.Components.PointerKind.Mouse) -> void
-eQuantic.UI.Native.Components.PhotonHost.PressDown(float x, float y, int clickCount = 1, eQuantic.UI.Primitives.KeyModifiers modifiers = eQuantic.UI.Primitives.KeyModifiers.None) -> bool
-eQuantic.UI.Native.Components.PhotonHost.PressUp(float x, float y, eQuantic.UI.Native.Components.PointerKind kind = eQuantic.UI.Native.Components.PointerKind.Mouse) -> bool
-eQuantic.UI.Native.Components.PhotonHost.Pressed.get -> eQuantic.UI.Primitives.Pressable?
-eQuantic.UI.Native.Components.PhotonHost.RecycleFrames.get -> bool
-eQuantic.UI.Native.Components.PhotonHost.RecycleFrames.init -> void
-eQuantic.UI.Native.Components.PhotonHost.ReducedMotion.get -> bool
-eQuantic.UI.Native.Components.PhotonHost.ReducedMotion.set -> void
-eQuantic.UI.Native.Components.PhotonHost.RenderFrame(eQuantic.UI.Native.Engine.DisplayListBuilder! builder, float timeMs = 0) -> eQuantic.UI.Native.Components.RealizeResult!
-eQuantic.UI.Native.Components.PhotonHost.RenderScale.get -> float
-eQuantic.UI.Native.Components.PhotonHost.RenderScale.set -> void
-eQuantic.UI.Native.Components.PhotonHost.Resize(float width, float height) -> void
-eQuantic.UI.Native.Components.PhotonHost.SafeAreaInsets.get -> eQuantic.UI.Primitives.EdgeInsets
-eQuantic.UI.Native.Components.PhotonHost.SafeAreaInsets.set -> void
-eQuantic.UI.Native.Components.PhotonHost.ScrollBy(float x, float y, float delta) -> bool
-eQuantic.UI.Native.Components.PhotonHost.ScrollOffsetOf(string! path) -> float
-eQuantic.UI.Native.Components.PhotonHost.Selection.get -> (int Start, int End)
-eQuantic.UI.Native.Components.PhotonHost.SelectionRange.get -> (int Start, int Length)
-eQuantic.UI.Native.Components.PhotonHost.Semantics() -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.SemanticNode>!
-eQuantic.UI.Native.Components.PhotonHost.SetHovered(eQuantic.UI.Primitives.VisualNode? node) -> void
-eQuantic.UI.Native.Components.PhotonHost.SetMarkedText(string! text) -> bool
-eQuantic.UI.Native.Components.PhotonHost.SheetTarget.get -> eQuantic.UI.Primitives.SheetSurface?
-eQuantic.UI.Native.Components.PhotonHost.SmoothScroll.get -> bool
-eQuantic.UI.Native.Components.PhotonHost.SmoothScroll.set -> void
-eQuantic.UI.Native.Components.PhotonHost.TakeAnnouncements() -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.LiveAnnouncement>!
-eQuantic.UI.Native.Components.PhotonHost.Tap(float x, float y) -> bool
-eQuantic.UI.Native.Components.PhotonHost.TextInput(string! text) -> bool
-eQuantic.UI.Native.Components.PhotonHost.TextRasterizer.get -> eQuantic.UI.Native.Framework.ITextRasterizer?
-eQuantic.UI.Native.Components.PhotonHost.TextRasterizer.set -> void
-eQuantic.UI.Native.Components.PhotonHost.TextTarget.get -> eQuantic.UI.Primitives.TextEntry?
-eQuantic.UI.Native.Components.PhotonHost.Unmount() -> void
-eQuantic.UI.Native.Components.PhotonHost.UpdateEditingValue(eQuantic.UI.Native.Components.TextEditingValue value) -> bool
-eQuantic.UI.Native.Components.PhotonHost.ViewInsets.get -> eQuantic.UI.Primitives.EdgeInsets
-eQuantic.UI.Native.Components.PhotonHost.ViewInsets.set -> void
-eQuantic.UI.Native.Components.PhotonHost.Width.get -> float
-eQuantic.UI.Native.Components.PhotonHost.WindowControlsInsets.get -> eQuantic.UI.Primitives.EdgeInsets
-eQuantic.UI.Native.Components.PhotonHost.WindowControlsInsets.set -> void
-eQuantic.UI.Native.Components.PhotonHotReload
-eQuantic.UI.Native.Components.PhotonRealizer
-eQuantic.UI.Native.Components.PointerKind
-eQuantic.UI.Native.Components.PointerKind.Mouse = 0 -> eQuantic.UI.Native.Components.PointerKind
-eQuantic.UI.Native.Components.PointerKind.Touch = 1 -> eQuantic.UI.Native.Components.PointerKind
-eQuantic.UI.Native.Components.RealizeResult
-eQuantic.UI.Native.Components.RealizeResult.CanvasRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.CanvasRegion>!
-eQuantic.UI.Native.Components.RealizeResult.CodeRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.CodeRegion>!
-eQuantic.UI.Native.Components.RealizeResult.CursorRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.CursorRegion>!
-eQuantic.UI.Native.Components.RealizeResult.DragRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.DragRegion>!
-eQuantic.UI.Native.Components.RealizeResult.FocusStops.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.FocusStop>!
-eQuantic.UI.Native.Components.RealizeResult.HasActiveMotion.get -> bool
-eQuantic.UI.Native.Components.RealizeResult.HitRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.HitRegion>!
-eQuantic.UI.Native.Components.RealizeResult.HoverRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.HoverRegion>!
-eQuantic.UI.Native.Components.RealizeResult.LinkRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.LinkRegion>!
-eQuantic.UI.Native.Components.RealizeResult.OverlayLayers.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Overlay!>!
-eQuantic.UI.Native.Components.RealizeResult.OverlayRoots.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Framework.LayoutNode!>!
-eQuantic.UI.Native.Components.RealizeResult.RealizeResult(eQuantic.UI.Native.Framework.LayoutNode! root, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.HitRegion>! hitRegions, bool hasActiveMotion, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.HoverRegion>? hoverRegions = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.ScrollRegion>? scrollRegions = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.DragRegion>? dragRegions = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.LinkRegion>? linkRegions = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.ShortcutBinding>? shortcuts = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.TextRegion>? textRegions = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.FocusStop>? focusStops = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.CodeRegion>? codeRegions = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Framework.LayoutNode!>? overlayRoots = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Overlay!>? overlayLayers = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.SheetRegion>? sheetRegions = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.CursorRegion>? cursorRegions = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.CanvasRegion>? canvasRegions = null) -> void
-eQuantic.UI.Native.Components.RealizeResult.Root.get -> eQuantic.UI.Native.Framework.LayoutNode!
-eQuantic.UI.Native.Components.RealizeResult.ScrollRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.ScrollRegion>!
-eQuantic.UI.Native.Components.RealizeResult.SheetRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.SheetRegion>!
-eQuantic.UI.Native.Components.RealizeResult.Shortcuts.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.ShortcutBinding>!
-eQuantic.UI.Native.Components.RealizeResult.TextRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.TextRegion>!
-eQuantic.UI.Native.Components.ScrollRegion
-eQuantic.UI.Native.Components.ScrollRegion.Axis.get -> eQuantic.UI.Primitives.ScrollAxis
-eQuantic.UI.Native.Components.ScrollRegion.Axis.init -> void
-eQuantic.UI.Native.Components.ScrollRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
-eQuantic.UI.Native.Components.ScrollRegion.Bounds.init -> void
-eQuantic.UI.Native.Components.ScrollRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out string! Path, out float MaxOffset, out eQuantic.UI.Primitives.ScrollAxis Axis, out float Fallback) -> void
-eQuantic.UI.Native.Components.ScrollRegion.Equals(eQuantic.UI.Native.Components.ScrollRegion other) -> bool
-eQuantic.UI.Native.Components.ScrollRegion.Fallback.get -> float
-eQuantic.UI.Native.Components.ScrollRegion.Fallback.init -> void
-eQuantic.UI.Native.Components.ScrollRegion.MaxOffset.get -> float
-eQuantic.UI.Native.Components.ScrollRegion.MaxOffset.init -> void
-eQuantic.UI.Native.Components.ScrollRegion.Path.get -> string!
-eQuantic.UI.Native.Components.ScrollRegion.Path.init -> void
-eQuantic.UI.Native.Components.ScrollRegion.ScrollRegion() -> void
-eQuantic.UI.Native.Components.ScrollRegion.ScrollRegion(eQuantic.UI.Primitives.Rect Bounds, string! Path, float MaxOffset, eQuantic.UI.Primitives.ScrollAxis Axis, float Fallback) -> void
-eQuantic.UI.Native.Components.SemanticsTree
-eQuantic.UI.Native.Components.SheetRegion
-eQuantic.UI.Native.Components.SheetRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
-eQuantic.UI.Native.Components.SheetRegion.Bounds.init -> void
-eQuantic.UI.Native.Components.SheetRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.SheetSurface! Surface, out string! Path, out eQuantic.UI.Primitives.Rect? Visible) -> void
-eQuantic.UI.Native.Components.SheetRegion.Equals(eQuantic.UI.Native.Components.SheetRegion other) -> bool
-eQuantic.UI.Native.Components.SheetRegion.Path.get -> string!
-eQuantic.UI.Native.Components.SheetRegion.Path.init -> void
-eQuantic.UI.Native.Components.SheetRegion.SheetRegion() -> void
-eQuantic.UI.Native.Components.SheetRegion.SheetRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.SheetSurface! Surface, string! Path, eQuantic.UI.Primitives.Rect? Visible = null) -> void
-eQuantic.UI.Native.Components.SheetRegion.Surface.get -> eQuantic.UI.Primitives.SheetSurface!
-eQuantic.UI.Native.Components.SheetRegion.Surface.init -> void
-eQuantic.UI.Native.Components.SheetRegion.Visible.get -> eQuantic.UI.Primitives.Rect?
-eQuantic.UI.Native.Components.SheetRegion.Visible.init -> void
-eQuantic.UI.Native.Components.ShortcutBinding
-eQuantic.UI.Native.Components.ShortcutBinding.Chord.get -> eQuantic.UI.Primitives.KeyChord
-eQuantic.UI.Native.Components.ShortcutBinding.Chord.init -> void
-eQuantic.UI.Native.Components.ShortcutBinding.Deconstruct(out eQuantic.UI.Primitives.KeyChord Chord, out System.Action! OnPressed, out string? Scope) -> void
-eQuantic.UI.Native.Components.ShortcutBinding.Equals(eQuantic.UI.Native.Components.ShortcutBinding other) -> bool
-eQuantic.UI.Native.Components.ShortcutBinding.OnPressed.get -> System.Action!
-eQuantic.UI.Native.Components.ShortcutBinding.OnPressed.init -> void
-eQuantic.UI.Native.Components.ShortcutBinding.Scope.get -> string?
-eQuantic.UI.Native.Components.ShortcutBinding.Scope.init -> void
-eQuantic.UI.Native.Components.ShortcutBinding.ShortcutBinding() -> void
-eQuantic.UI.Native.Components.ShortcutBinding.ShortcutBinding(eQuantic.UI.Primitives.KeyChord Chord, System.Action! OnPressed, string? Scope = null) -> void
-eQuantic.UI.Native.Components.TextEditingValue
-eQuantic.UI.Native.Components.TextEditingValue.ComposingEnd.get -> int
-eQuantic.UI.Native.Components.TextEditingValue.ComposingEnd.init -> void
-eQuantic.UI.Native.Components.TextEditingValue.ComposingStart.get -> int
-eQuantic.UI.Native.Components.TextEditingValue.ComposingStart.init -> void
-eQuantic.UI.Native.Components.TextEditingValue.Deconstruct(out string! Text, out int SelectionBase, out int SelectionExtent, out int ComposingStart, out int ComposingEnd) -> void
-eQuantic.UI.Native.Components.TextEditingValue.Equals(eQuantic.UI.Native.Components.TextEditingValue other) -> bool
-eQuantic.UI.Native.Components.TextEditingValue.HasComposing.get -> bool
-eQuantic.UI.Native.Components.TextEditingValue.SelectionBase.get -> int
-eQuantic.UI.Native.Components.TextEditingValue.SelectionBase.init -> void
-eQuantic.UI.Native.Components.TextEditingValue.SelectionEnd.get -> int
-eQuantic.UI.Native.Components.TextEditingValue.SelectionExtent.get -> int
-eQuantic.UI.Native.Components.TextEditingValue.SelectionExtent.init -> void
-eQuantic.UI.Native.Components.TextEditingValue.SelectionStart.get -> int
-eQuantic.UI.Native.Components.TextEditingValue.Text.get -> string!
-eQuantic.UI.Native.Components.TextEditingValue.Text.init -> void
-eQuantic.UI.Native.Components.TextEditingValue.TextEditingValue() -> void
-eQuantic.UI.Native.Components.TextEditingValue.TextEditingValue(string! Text, int SelectionBase, int SelectionExtent, int ComposingStart = -1, int ComposingEnd = -1) -> void
-eQuantic.UI.Native.Components.TextInputChange
-eQuantic.UI.Native.Components.TextInputChange.Began = 1 -> eQuantic.UI.Native.Components.TextInputChange
-eQuantic.UI.Native.Components.TextInputChange.Ended = 3 -> eQuantic.UI.Native.Components.TextInputChange
-eQuantic.UI.Native.Components.TextInputChange.None = 0 -> eQuantic.UI.Native.Components.TextInputChange
-eQuantic.UI.Native.Components.TextInputChange.Retargeted = 2 -> eQuantic.UI.Native.Components.TextInputChange
-eQuantic.UI.Native.Components.TextInputChange.ValueChanged = 4 -> eQuantic.UI.Native.Components.TextInputChange
-eQuantic.UI.Native.Components.TextInputSession
-eQuantic.UI.Native.Components.TextInputSession.Obscure.get -> bool
-eQuantic.UI.Native.Components.TextInputSession.Poll() -> eQuantic.UI.Native.Components.TextInputChange
-eQuantic.UI.Native.Components.TextInputSession.Submit() -> bool
-eQuantic.UI.Native.Components.TextInputSession.Target.get -> eQuantic.UI.Native.Components.TextInputTarget
-eQuantic.UI.Native.Components.TextInputSession.TextInputSession(eQuantic.UI.Native.Components.PhotonHost! host) -> void
-eQuantic.UI.Native.Components.TextInputSession.Update(eQuantic.UI.Native.Components.TextEditingValue value) -> bool
-eQuantic.UI.Native.Components.TextInputSession.Value.get -> eQuantic.UI.Native.Components.TextEditingValue
-eQuantic.UI.Native.Components.TextInputTarget
-eQuantic.UI.Native.Components.TextInputTarget.Keys = 2 -> eQuantic.UI.Native.Components.TextInputTarget
-eQuantic.UI.Native.Components.TextInputTarget.None = 0 -> eQuantic.UI.Native.Components.TextInputTarget
-eQuantic.UI.Native.Components.TextInputTarget.Text = 1 -> eQuantic.UI.Native.Components.TextInputTarget
-eQuantic.UI.Native.Components.TextRasterCache
-eQuantic.UI.Native.Components.TextRasterCache.Clear() -> void
-eQuantic.UI.Native.Components.TextRasterCache.Entry
-eQuantic.UI.Native.Components.TextRasterCache.Entry.<Clone>$() -> eQuantic.UI.Native.Components.TextRasterCache.Entry!
-eQuantic.UI.Native.Components.TextRasterCache.Entry.Deconstruct(out eQuantic.UI.Native.Engine.TextureData! Texture, out int PadTop) -> void
-eQuantic.UI.Native.Components.TextRasterCache.Entry.Entry(eQuantic.UI.Native.Engine.TextureData! Texture, int PadTop = 0) -> void
-eQuantic.UI.Native.Components.TextRasterCache.Entry.Equals(eQuantic.UI.Native.Components.TextRasterCache.Entry? other) -> bool
-eQuantic.UI.Native.Components.TextRasterCache.Entry.PadTop.get -> int
-eQuantic.UI.Native.Components.TextRasterCache.Entry.PadTop.init -> void
-eQuantic.UI.Native.Components.TextRasterCache.Entry.Texture.get -> eQuantic.UI.Native.Engine.TextureData!
-eQuantic.UI.Native.Components.TextRasterCache.Entry.Texture.init -> void
-eQuantic.UI.Native.Components.TextRasterCache.Get(eQuantic.UI.Native.Framework.ITextRasterizer! rasterizer, string! content, eQuantic.UI.Primitives.TypeStyle style, float typeScale, float maxWidth, int maxLines, float scale, eQuantic.UI.Primitives.TextAlignment align) -> eQuantic.UI.Native.Components.TextRasterCache.Entry?
-eQuantic.UI.Native.Components.TextRasterCache.TextRasterCache() -> void
-eQuantic.UI.Native.Components.TextRegion
-eQuantic.UI.Native.Components.TextRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
-eQuantic.UI.Native.Components.TextRegion.Bounds.init -> void
-eQuantic.UI.Native.Components.TextRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.TextEntry! Entry, out string! Path, out eQuantic.UI.Primitives.Rect? Visible) -> void
-eQuantic.UI.Native.Components.TextRegion.Entry.get -> eQuantic.UI.Primitives.TextEntry!
-eQuantic.UI.Native.Components.TextRegion.Entry.init -> void
-eQuantic.UI.Native.Components.TextRegion.Equals(eQuantic.UI.Native.Components.TextRegion other) -> bool
-eQuantic.UI.Native.Components.TextRegion.Path.get -> string!
-eQuantic.UI.Native.Components.TextRegion.Path.init -> void
-eQuantic.UI.Native.Components.TextRegion.TextRegion() -> void
-eQuantic.UI.Native.Components.TextRegion.TextRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.TextEntry! Entry, string! Path, eQuantic.UI.Primitives.Rect? Visible = null) -> void
-eQuantic.UI.Native.Components.TextRegion.Visible.get -> eQuantic.UI.Primitives.Rect?
-eQuantic.UI.Native.Components.TextRegion.Visible.init -> void
-eQuantic.UI.Native.Components.UIKitTrait
-eQuantic.UI.Native.Components.UIKitTrait.Adjustable = 4 -> eQuantic.UI.Native.Components.UIKitTrait
-eQuantic.UI.Native.Components.UIKitTrait.Button = 1 -> eQuantic.UI.Native.Components.UIKitTrait
-eQuantic.UI.Native.Components.UIKitTrait.Image = 3 -> eQuantic.UI.Native.Components.UIKitTrait
-eQuantic.UI.Native.Components.UIKitTrait.Link = 2 -> eQuantic.UI.Native.Components.UIKitTrait
-eQuantic.UI.Native.Components.UIKitTrait.None = 0 -> eQuantic.UI.Native.Components.UIKitTrait
-eQuantic.UI.Native.Components.UIKitTrait.StaticText = 6 -> eQuantic.UI.Native.Components.UIKitTrait
-eQuantic.UI.Native.Components.UIKitTrait.UpdatesFrequently = 5 -> eQuantic.UI.Native.Components.UIKitTrait
-override eQuantic.UI.Native.Components.CanvasRegion.GetHashCode() -> int
-override eQuantic.UI.Native.Components.CodeRegion.GetHashCode() -> int
-override eQuantic.UI.Native.Components.CursorRegion.GetHashCode() -> int
-override eQuantic.UI.Native.Components.DragRegion.GetHashCode() -> int
-override eQuantic.UI.Native.Components.FocusStop.GetHashCode() -> int
-override eQuantic.UI.Native.Components.HitRegion.GetHashCode() -> int
-override eQuantic.UI.Native.Components.HoverRegion.GetHashCode() -> int
-override eQuantic.UI.Native.Components.LinkRegion.GetHashCode() -> int
-override eQuantic.UI.Native.Components.LiveAnnouncement.GetHashCode() -> int
-override eQuantic.UI.Native.Components.NativeRole.GetHashCode() -> int
-override eQuantic.UI.Native.Components.ScrollRegion.GetHashCode() -> int
-override eQuantic.UI.Native.Components.SheetRegion.GetHashCode() -> int
-override eQuantic.UI.Native.Components.ShortcutBinding.GetHashCode() -> int
-override eQuantic.UI.Native.Components.TextEditingValue.GetHashCode() -> int
-override eQuantic.UI.Native.Components.TextRasterCache.Entry.Equals(object? obj) -> bool
-override eQuantic.UI.Native.Components.TextRasterCache.Entry.GetHashCode() -> int
-override eQuantic.UI.Native.Components.TextRasterCache.Entry.ToString() -> string!
-override eQuantic.UI.Native.Components.TextRegion.GetHashCode() -> int
-static eQuantic.UI.Native.Components.CanvasRegion.operator !=(eQuantic.UI.Native.Components.CanvasRegion left, eQuantic.UI.Native.Components.CanvasRegion right) -> bool
-static eQuantic.UI.Native.Components.CanvasRegion.operator ==(eQuantic.UI.Native.Components.CanvasRegion left, eQuantic.UI.Native.Components.CanvasRegion right) -> bool
-static eQuantic.UI.Native.Components.CodeRegion.operator !=(eQuantic.UI.Native.Components.CodeRegion left, eQuantic.UI.Native.Components.CodeRegion right) -> bool
-static eQuantic.UI.Native.Components.CodeRegion.operator ==(eQuantic.UI.Native.Components.CodeRegion left, eQuantic.UI.Native.Components.CodeRegion right) -> bool
-static eQuantic.UI.Native.Components.CursorRegion.operator !=(eQuantic.UI.Native.Components.CursorRegion left, eQuantic.UI.Native.Components.CursorRegion right) -> bool
-static eQuantic.UI.Native.Components.CursorRegion.operator ==(eQuantic.UI.Native.Components.CursorRegion left, eQuantic.UI.Native.Components.CursorRegion right) -> bool
-static eQuantic.UI.Native.Components.DragRegion.operator !=(eQuantic.UI.Native.Components.DragRegion left, eQuantic.UI.Native.Components.DragRegion right) -> bool
-static eQuantic.UI.Native.Components.DragRegion.operator ==(eQuantic.UI.Native.Components.DragRegion left, eQuantic.UI.Native.Components.DragRegion right) -> bool
-static eQuantic.UI.Native.Components.FocusStop.operator !=(eQuantic.UI.Native.Components.FocusStop left, eQuantic.UI.Native.Components.FocusStop right) -> bool
-static eQuantic.UI.Native.Components.FocusStop.operator ==(eQuantic.UI.Native.Components.FocusStop left, eQuantic.UI.Native.Components.FocusStop right) -> bool
-static eQuantic.UI.Native.Components.HitRegion.operator !=(eQuantic.UI.Native.Components.HitRegion left, eQuantic.UI.Native.Components.HitRegion right) -> bool
-static eQuantic.UI.Native.Components.HitRegion.operator ==(eQuantic.UI.Native.Components.HitRegion left, eQuantic.UI.Native.Components.HitRegion right) -> bool
-static eQuantic.UI.Native.Components.HoverRegion.operator !=(eQuantic.UI.Native.Components.HoverRegion left, eQuantic.UI.Native.Components.HoverRegion right) -> bool
-static eQuantic.UI.Native.Components.HoverRegion.operator ==(eQuantic.UI.Native.Components.HoverRegion left, eQuantic.UI.Native.Components.HoverRegion right) -> bool
-static eQuantic.UI.Native.Components.LinkRegion.operator !=(eQuantic.UI.Native.Components.LinkRegion left, eQuantic.UI.Native.Components.LinkRegion right) -> bool
-static eQuantic.UI.Native.Components.LinkRegion.operator ==(eQuantic.UI.Native.Components.LinkRegion left, eQuantic.UI.Native.Components.LinkRegion right) -> bool
-static eQuantic.UI.Native.Components.LiveAnnouncement.operator !=(eQuantic.UI.Native.Components.LiveAnnouncement left, eQuantic.UI.Native.Components.LiveAnnouncement right) -> bool
-static eQuantic.UI.Native.Components.LiveAnnouncement.operator ==(eQuantic.UI.Native.Components.LiveAnnouncement left, eQuantic.UI.Native.Components.LiveAnnouncement right) -> bool
-static eQuantic.UI.Native.Components.NativeRole.Of(eQuantic.UI.Primitives.SemanticRole role) -> eQuantic.UI.Native.Components.NativeRole
-static eQuantic.UI.Native.Components.NativeRole.operator !=(eQuantic.UI.Native.Components.NativeRole left, eQuantic.UI.Native.Components.NativeRole right) -> bool
-static eQuantic.UI.Native.Components.NativeRole.operator ==(eQuantic.UI.Native.Components.NativeRole left, eQuantic.UI.Native.Components.NativeRole right) -> bool
-static eQuantic.UI.Native.Components.PhotonHotReload.ClearCache(System.Type![]? updatedTypes) -> void
-static eQuantic.UI.Native.Components.PhotonHotReload.Generation.get -> int
-static eQuantic.UI.Native.Components.PhotonHotReload.UpdateApplication(System.Type![]? updatedTypes) -> void
-static eQuantic.UI.Native.Components.PhotonRealizer.Realize(eQuantic.UI.Primitives.VisualNode! root, float viewportWidth, float viewportHeight, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode mode, eQuantic.UI.Native.Engine.DisplayListBuilder! builder, eQuantic.UI.Native.Framework.ITextMeasurer? measurer = null, float typeScale = 1, eQuantic.UI.Primitives.Pressable? pressed = null, eQuantic.UI.Primitives.Pressable? focused = null, eQuantic.UI.Primitives.VisualNode? hovered = null, eQuantic.UI.Primitives.ComponentInstanceStore? instances = null, float timeMs = 0, bool reducedMotion = false, eQuantic.UI.Native.Framework.TransitionStore? transitions = null, eQuantic.UI.Native.Framework.ScrollStore? scrollOffsets = null, eQuantic.UI.Native.Framework.PresenceStore? presences = null, eQuantic.UI.Native.Framework.DragStore? drags = null, eQuantic.UI.Native.Framework.ITextRasterizer? textRasterizer = null, eQuantic.UI.Native.Components.TextRasterCache? textCache = null, float renderScale = 1, eQuantic.UI.Native.Framework.IIconRasterizer? iconRasterizer = null, eQuantic.UI.Native.Components.IconRasterCache? iconCache = null, eQuantic.UI.Native.Framework.IImageLoader? imageLoader = null, System.Collections.Generic.Dictionary<string!, eQuantic.UI.Native.Engine.TextureData?>? imageCache = null, eQuantic.UI.Primitives.EdgeInsets safeAreaInsets = default(eQuantic.UI.Primitives.EdgeInsets), string? pressedPath = null, string? focusedPath = null, string? textPath = null, int caretIndex = 0, bool caretVisible = true, int selectionStart = 0, int selectionEnd = 0, System.Func<string!, float?>? scrollOffset = null, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, string! markedText = "", (int Start, int End, string! Text)? composing = null, System.Collections.Generic.Dictionary<(string! Parent, int Index, string? Key), string!>? pathCache = null, eQuantic.UI.Native.Framework.LayoutNodePool? nodePool = null, eQuantic.UI.Native.Framework.InViewStore? inViewStore = null, System.Collections.Generic.IReadOnlyList<string!>? hoveredPaths = null, eQuantic.UI.Primitives.EdgeInsets windowControlsInsets = default(eQuantic.UI.Primitives.EdgeInsets), eQuantic.UI.Native.Components.RealizeResult? sizedLike = null) -> eQuantic.UI.Native.Components.RealizeResult!
-static eQuantic.UI.Native.Components.ScrollRegion.operator !=(eQuantic.UI.Native.Components.ScrollRegion left, eQuantic.UI.Native.Components.ScrollRegion right) -> bool
-static eQuantic.UI.Native.Components.ScrollRegion.operator ==(eQuantic.UI.Native.Components.ScrollRegion left, eQuantic.UI.Native.Components.ScrollRegion right) -> bool
-static eQuantic.UI.Native.Components.SemanticsTree.Collect(eQuantic.UI.Native.Components.RealizeResult! frame) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.SemanticNode>!
-static eQuantic.UI.Native.Components.SheetRegion.operator !=(eQuantic.UI.Native.Components.SheetRegion left, eQuantic.UI.Native.Components.SheetRegion right) -> bool
-static eQuantic.UI.Native.Components.SheetRegion.operator ==(eQuantic.UI.Native.Components.SheetRegion left, eQuantic.UI.Native.Components.SheetRegion right) -> bool
-static eQuantic.UI.Native.Components.ShortcutBinding.operator !=(eQuantic.UI.Native.Components.ShortcutBinding left, eQuantic.UI.Native.Components.ShortcutBinding right) -> bool
-static eQuantic.UI.Native.Components.ShortcutBinding.operator ==(eQuantic.UI.Native.Components.ShortcutBinding left, eQuantic.UI.Native.Components.ShortcutBinding right) -> bool
-static eQuantic.UI.Native.Components.TextEditingValue.Collapsed(string! text, int caret) -> eQuantic.UI.Native.Components.TextEditingValue
-static eQuantic.UI.Native.Components.TextEditingValue.operator !=(eQuantic.UI.Native.Components.TextEditingValue left, eQuantic.UI.Native.Components.TextEditingValue right) -> bool
-static eQuantic.UI.Native.Components.TextEditingValue.operator ==(eQuantic.UI.Native.Components.TextEditingValue left, eQuantic.UI.Native.Components.TextEditingValue right) -> bool
-static eQuantic.UI.Native.Components.TextRasterCache.Entry.operator !=(eQuantic.UI.Native.Components.TextRasterCache.Entry? left, eQuantic.UI.Native.Components.TextRasterCache.Entry? right) -> bool
-static eQuantic.UI.Native.Components.TextRasterCache.Entry.operator ==(eQuantic.UI.Native.Components.TextRasterCache.Entry? left, eQuantic.UI.Native.Components.TextRasterCache.Entry? right) -> bool
-static eQuantic.UI.Native.Components.TextRegion.operator !=(eQuantic.UI.Native.Components.TextRegion left, eQuantic.UI.Native.Components.TextRegion right) -> bool
-static eQuantic.UI.Native.Components.TextRegion.operator ==(eQuantic.UI.Native.Components.TextRegion left, eQuantic.UI.Native.Components.TextRegion right) -> bool
-static readonly eQuantic.UI.Native.Components.IconRasterCache.Shared -> eQuantic.UI.Native.Components.IconRasterCache!
-static readonly eQuantic.UI.Native.Components.PhotonDispatcher.Shared -> eQuantic.UI.Native.Components.PhotonDispatcher!
-static readonly eQuantic.UI.Native.Components.PhotonFrameTicker.Shared -> eQuantic.UI.Native.Components.PhotonFrameTicker!
-static readonly eQuantic.UI.Native.Components.TextRasterCache.Shared -> eQuantic.UI.Native.Components.TextRasterCache!
-~override eQuantic.UI.Native.Components.CanvasRegion.Equals(object obj) -> bool
-~override eQuantic.UI.Native.Components.CanvasRegion.ToString() -> string
-~override eQuantic.UI.Native.Components.CodeRegion.Equals(object obj) -> bool
-~override eQuantic.UI.Native.Components.CodeRegion.ToString() -> string
-~override eQuantic.UI.Native.Components.CursorRegion.Equals(object obj) -> bool
-~override eQuantic.UI.Native.Components.CursorRegion.ToString() -> string
-~override eQuantic.UI.Native.Components.DragRegion.Equals(object obj) -> bool
-~override eQuantic.UI.Native.Components.DragRegion.ToString() -> string
-~override eQuantic.UI.Native.Components.FocusStop.Equals(object obj) -> bool
-~override eQuantic.UI.Native.Components.FocusStop.ToString() -> string
-~override eQuantic.UI.Native.Components.HitRegion.Equals(object obj) -> bool
-~override eQuantic.UI.Native.Components.HitRegion.ToString() -> string
-~override eQuantic.UI.Native.Components.HoverRegion.Equals(object obj) -> bool
-~override eQuantic.UI.Native.Components.HoverRegion.ToString() -> string
-~override eQuantic.UI.Native.Components.LinkRegion.Equals(object obj) -> bool
-~override eQuantic.UI.Native.Components.LinkRegion.ToString() -> string
-~override eQuantic.UI.Native.Components.LiveAnnouncement.Equals(object obj) -> bool
-~override eQuantic.UI.Native.Components.LiveAnnouncement.ToString() -> string
-~override eQuantic.UI.Native.Components.NativeRole.Equals(object obj) -> bool
-~override eQuantic.UI.Native.Components.NativeRole.ToString() -> string
-~override eQuantic.UI.Native.Components.ScrollRegion.Equals(object obj) -> bool
-~override eQuantic.UI.Native.Components.ScrollRegion.ToString() -> string
-~override eQuantic.UI.Native.Components.SheetRegion.Equals(object obj) -> bool
-~override eQuantic.UI.Native.Components.SheetRegion.ToString() -> string
-~override eQuantic.UI.Native.Components.ShortcutBinding.Equals(object obj) -> bool
-~override eQuantic.UI.Native.Components.ShortcutBinding.ToString() -> string
-~override eQuantic.UI.Native.Components.TextEditingValue.Equals(object obj) -> bool
-~override eQuantic.UI.Native.Components.TextEditingValue.ToString() -> string
-~override eQuantic.UI.Native.Components.TextRegion.Equals(object obj) -> bool
-~override eQuantic.UI.Native.Components.TextRegion.ToString() -> string
+[EQX0001]eQuantic.UI.Native.Components.CanvasRegion
+[EQX0001]eQuantic.UI.Native.Components.CanvasRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
+[EQX0001]eQuantic.UI.Native.Components.CanvasRegion.Bounds.init -> void
+[EQX0001]eQuantic.UI.Native.Components.CanvasRegion.CanvasRegion() -> void
+[EQX0001]eQuantic.UI.Native.Components.CanvasRegion.CanvasRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.Canvas! Node, string! Path) -> void
+[EQX0001]eQuantic.UI.Native.Components.CanvasRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.Canvas! Node, out string! Path) -> void
+[EQX0001]eQuantic.UI.Native.Components.CanvasRegion.Equals(eQuantic.UI.Native.Components.CanvasRegion other) -> bool
+[EQX0001]eQuantic.UI.Native.Components.CanvasRegion.Node.get -> eQuantic.UI.Primitives.Canvas!
+[EQX0001]eQuantic.UI.Native.Components.CanvasRegion.Node.init -> void
+[EQX0001]eQuantic.UI.Native.Components.CanvasRegion.Path.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.CanvasRegion.Path.init -> void
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.Bounds.init -> void
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.CodeRegion() -> void
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.CodeRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.CodeSurface! Surface, string! Path, eQuantic.UI.Primitives.Rect? Offered = null, eQuantic.UI.Primitives.Rect? Visible = null) -> void
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.CodeSurface! Surface, out string! Path, out eQuantic.UI.Primitives.Rect? Offered, out eQuantic.UI.Primitives.Rect? Visible) -> void
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.Equals(eQuantic.UI.Native.Components.CodeRegion other) -> bool
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.Offered.get -> eQuantic.UI.Primitives.Rect?
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.Offered.init -> void
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.Path.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.Path.init -> void
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.Surface.get -> eQuantic.UI.Primitives.CodeSurface!
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.Surface.init -> void
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.Visible.get -> eQuantic.UI.Primitives.Rect?
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.Visible.init -> void
+[EQX0001]eQuantic.UI.Native.Components.CursorRegion
+[EQX0001]eQuantic.UI.Native.Components.CursorRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
+[EQX0001]eQuantic.UI.Native.Components.CursorRegion.Bounds.init -> void
+[EQX0001]eQuantic.UI.Native.Components.CursorRegion.Cursor.get -> eQuantic.UI.Primitives.PointerCursor
+[EQX0001]eQuantic.UI.Native.Components.CursorRegion.Cursor.init -> void
+[EQX0001]eQuantic.UI.Native.Components.CursorRegion.CursorRegion() -> void
+[EQX0001]eQuantic.UI.Native.Components.CursorRegion.CursorRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.PointerCursor Cursor) -> void
+[EQX0001]eQuantic.UI.Native.Components.CursorRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.PointerCursor Cursor) -> void
+[EQX0001]eQuantic.UI.Native.Components.CursorRegion.Equals(eQuantic.UI.Native.Components.CursorRegion other) -> bool
+[EQX0001]eQuantic.UI.Native.Components.CursorShape
+[EQX0001]eQuantic.UI.Native.Components.CursorShape.ColResize = 5 -> eQuantic.UI.Native.Components.CursorShape
+[EQX0001]eQuantic.UI.Native.Components.CursorShape.Crosshair = 4 -> eQuantic.UI.Native.Components.CursorShape
+[EQX0001]eQuantic.UI.Native.Components.CursorShape.Default = 0 -> eQuantic.UI.Native.Components.CursorShape
+[EQX0001]eQuantic.UI.Native.Components.CursorShape.NotAllowed = 3 -> eQuantic.UI.Native.Components.CursorShape
+[EQX0001]eQuantic.UI.Native.Components.CursorShape.Pointer = 1 -> eQuantic.UI.Native.Components.CursorShape
+[EQX0001]eQuantic.UI.Native.Components.CursorShape.RowResize = 6 -> eQuantic.UI.Native.Components.CursorShape
+[EQX0001]eQuantic.UI.Native.Components.CursorShape.Text = 2 -> eQuantic.UI.Native.Components.CursorShape
+[EQX0001]eQuantic.UI.Native.Components.DragRegion
+[EQX0001]eQuantic.UI.Native.Components.DragRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
+[EQX0001]eQuantic.UI.Native.Components.DragRegion.Bounds.init -> void
+[EQX0001]eQuantic.UI.Native.Components.DragRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out string! Path, out eQuantic.UI.Primitives.VisualNode! Node) -> void
+[EQX0001]eQuantic.UI.Native.Components.DragRegion.DragRegion() -> void
+[EQX0001]eQuantic.UI.Native.Components.DragRegion.DragRegion(eQuantic.UI.Primitives.Rect Bounds, string! Path, eQuantic.UI.Primitives.VisualNode! Node) -> void
+[EQX0001]eQuantic.UI.Native.Components.DragRegion.Equals(eQuantic.UI.Native.Components.DragRegion other) -> bool
+[EQX0001]eQuantic.UI.Native.Components.DragRegion.Node.get -> eQuantic.UI.Primitives.VisualNode!
+[EQX0001]eQuantic.UI.Native.Components.DragRegion.Node.init -> void
+[EQX0001]eQuantic.UI.Native.Components.DragRegion.Path.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.DragRegion.Path.init -> void
+[EQX0001]eQuantic.UI.Native.Components.FocusStop
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Adjustable.get -> eQuantic.UI.Primitives.Adjustable?
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Adjustable.init -> void
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Bounds.get -> eQuantic.UI.Primitives.Rect
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Bounds.init -> void
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Code.get -> eQuantic.UI.Primitives.CodeSurface?
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Code.init -> void
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Deconstruct(out string! Path, out eQuantic.UI.Primitives.Pressable? Pressable, out eQuantic.UI.Primitives.TextEntry? Entry, out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.Adjustable? Adjustable, out eQuantic.UI.Primitives.CodeSurface? Code, out eQuantic.UI.Primitives.Navigable? Grid, out eQuantic.UI.Primitives.SheetSurface? Sheet) -> void
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Entry.get -> eQuantic.UI.Primitives.TextEntry?
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Entry.init -> void
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Equals(eQuantic.UI.Native.Components.FocusStop other) -> bool
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.FocusStop() -> void
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.FocusStop(string! Path, eQuantic.UI.Primitives.Pressable? Pressable, eQuantic.UI.Primitives.TextEntry? Entry, eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.Adjustable? Adjustable = null, eQuantic.UI.Primitives.CodeSurface? Code = null, eQuantic.UI.Primitives.Navigable? Grid = null, eQuantic.UI.Primitives.SheetSurface? Sheet = null) -> void
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Grid.get -> eQuantic.UI.Primitives.Navigable?
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Grid.init -> void
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Path.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Path.init -> void
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Pressable.get -> eQuantic.UI.Primitives.Pressable?
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Pressable.init -> void
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Sheet.get -> eQuantic.UI.Primitives.SheetSurface?
+[EQX0001]eQuantic.UI.Native.Components.FocusStop.Sheet.init -> void
+[EQX0001]eQuantic.UI.Native.Components.HitRegion
+[EQX0001]eQuantic.UI.Native.Components.HitRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
+[EQX0001]eQuantic.UI.Native.Components.HitRegion.Bounds.init -> void
+[EQX0001]eQuantic.UI.Native.Components.HitRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.Rect Drawn, out eQuantic.UI.Primitives.Pressable! Node, out string! Path) -> void
+[EQX0001]eQuantic.UI.Native.Components.HitRegion.Drawn.get -> eQuantic.UI.Primitives.Rect
+[EQX0001]eQuantic.UI.Native.Components.HitRegion.Drawn.init -> void
+[EQX0001]eQuantic.UI.Native.Components.HitRegion.Equals(eQuantic.UI.Native.Components.HitRegion other) -> bool
+[EQX0001]eQuantic.UI.Native.Components.HitRegion.HitRegion() -> void
+[EQX0001]eQuantic.UI.Native.Components.HitRegion.HitRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.Rect Drawn, eQuantic.UI.Primitives.Pressable! Node, string! Path = "") -> void
+[EQX0001]eQuantic.UI.Native.Components.HitRegion.Node.get -> eQuantic.UI.Primitives.Pressable!
+[EQX0001]eQuantic.UI.Native.Components.HitRegion.Node.init -> void
+[EQX0001]eQuantic.UI.Native.Components.HitRegion.Path.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.HitRegion.Path.init -> void
+[EQX0001]eQuantic.UI.Native.Components.HoverRegion
+[EQX0001]eQuantic.UI.Native.Components.HoverRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
+[EQX0001]eQuantic.UI.Native.Components.HoverRegion.Bounds.init -> void
+[EQX0001]eQuantic.UI.Native.Components.HoverRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.VisualNode! Node, out string! Path) -> void
+[EQX0001]eQuantic.UI.Native.Components.HoverRegion.Equals(eQuantic.UI.Native.Components.HoverRegion other) -> bool
+[EQX0001]eQuantic.UI.Native.Components.HoverRegion.HoverRegion() -> void
+[EQX0001]eQuantic.UI.Native.Components.HoverRegion.HoverRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.VisualNode! Node, string! Path) -> void
+[EQX0001]eQuantic.UI.Native.Components.HoverRegion.Node.get -> eQuantic.UI.Primitives.VisualNode!
+[EQX0001]eQuantic.UI.Native.Components.HoverRegion.Node.init -> void
+[EQX0001]eQuantic.UI.Native.Components.HoverRegion.Path.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.HoverRegion.Path.init -> void
+[EQX0001]eQuantic.UI.Native.Components.IconRasterCache
+[EQX0001]eQuantic.UI.Native.Components.IconRasterCache.Clear() -> void
+[EQX0001]eQuantic.UI.Native.Components.IconRasterCache.Get(eQuantic.UI.Native.Framework.IIconRasterizer! rasterizer, eQuantic.UI.Primitives.IconGlyph glyph, float widthDp, float heightDp, float scale) -> eQuantic.UI.Native.Engine.TextureData?
+[EQX0001]eQuantic.UI.Native.Components.IconRasterCache.IconRasterCache() -> void
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.Bounds.init -> void
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out string! Destination, out string! Path) -> void
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.Destination.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.Destination.init -> void
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.Equals(eQuantic.UI.Native.Components.LinkRegion other) -> bool
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.LinkRegion() -> void
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.LinkRegion(eQuantic.UI.Primitives.Rect Bounds, string! Destination, string! Path) -> void
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.Path.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.Path.init -> void
+[EQX0001]eQuantic.UI.Native.Components.LiveAnnouncement
+[EQX0001]eQuantic.UI.Native.Components.LiveAnnouncement.Deconstruct(out string! Path, out string! Label, out string! Text, out eQuantic.UI.Primitives.LiveRegionUrgency Urgency) -> void
+[EQX0001]eQuantic.UI.Native.Components.LiveAnnouncement.Equals(eQuantic.UI.Native.Components.LiveAnnouncement other) -> bool
+[EQX0001]eQuantic.UI.Native.Components.LiveAnnouncement.Label.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.LiveAnnouncement.Label.init -> void
+[EQX0001]eQuantic.UI.Native.Components.LiveAnnouncement.LiveAnnouncement() -> void
+[EQX0001]eQuantic.UI.Native.Components.LiveAnnouncement.LiveAnnouncement(string! Path, string! Label, string! Text, eQuantic.UI.Primitives.LiveRegionUrgency Urgency) -> void
+[EQX0001]eQuantic.UI.Native.Components.LiveAnnouncement.Path.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.LiveAnnouncement.Path.init -> void
+[EQX0001]eQuantic.UI.Native.Components.LiveAnnouncement.Text.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.LiveAnnouncement.Text.init -> void
+[EQX0001]eQuantic.UI.Native.Components.LiveAnnouncement.Urgency.get -> eQuantic.UI.Primitives.LiveRegionUrgency
+[EQX0001]eQuantic.UI.Native.Components.LiveAnnouncement.Urgency.init -> void
+[EQX0001]eQuantic.UI.Native.Components.NativeRole
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.Activatable.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.Activatable.init -> void
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.Adjustable.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.Adjustable.init -> void
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.Android.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.Android.init -> void
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.AppKit.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.AppKit.init -> void
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.AppKitSubrole.get -> string?
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.AppKitSubrole.init -> void
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.Deconstruct(out string! AppKit, out string! Android, out eQuantic.UI.Native.Components.UIKitTrait UIKit, out bool Activatable, out bool Adjustable, out string? AppKitSubrole, out bool UIKitCheckAsSelected) -> void
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.Equals(eQuantic.UI.Native.Components.NativeRole other) -> bool
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.NativeRole() -> void
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.NativeRole(string! AppKit, string! Android, eQuantic.UI.Native.Components.UIKitTrait UIKit, bool Activatable, bool Adjustable, string? AppKitSubrole = null, bool UIKitCheckAsSelected = false) -> void
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.UIKit.get -> eQuantic.UI.Native.Components.UIKitTrait
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.UIKit.init -> void
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.UIKitCheckAsSelected.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.NativeRole.UIKitCheckAsSelected.init -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonDispatcher
+[EQX0001]eQuantic.UI.Native.Components.PhotonDispatcher.BindToCurrentThread() -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonDispatcher.Drain() -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonDispatcher.IsOnUiThread.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonDispatcher.PhotonDispatcher() -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonDispatcher.Post(System.Action! work) -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonDispatcher.WakeOnPost(eQuantic.UI.Native.Components.PhotonHost! host) -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonFrameTicker
+[EQX0001]eQuantic.UI.Native.Components.PhotonFrameTicker.Fire(float timeMs) -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonFrameTicker.HasSubscribers.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonFrameTicker.OnFrame(System.Action<eQuantic.UI.Primitives.FrameTick>! onFrame) -> System.IDisposable!
+[EQX0001]eQuantic.UI.Native.Components.PhotonFrameTicker.PhotonFrameTicker() -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.ActivateFocused() -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.ActivatePath(string! path) -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.AdjustPath(string! path, int direction) -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Back() -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.CanGoBack.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.CaretIndex.get -> int
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.CaretRect() -> eQuantic.UI.Primitives.Rect?
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.CaretVisible.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.ClearFocus() -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Clipboard.get -> eQuantic.UI.Primitives.ITextClipboard?
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Clipboard.set -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.CodeTarget.get -> eQuantic.UI.Primitives.CodeSurface?
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.CommitText(string! text) -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.CursorAt(float x, float y) -> eQuantic.UI.Native.Components.CursorShape
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Density.get -> eQuantic.UI.Primitives.Density
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Density.set -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.EditingValue.get -> eQuantic.UI.Native.Components.TextEditingValue?
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.EndEditing() -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Focus(eQuantic.UI.Primitives.Pressable! node, string? path = null, bool visible = true) -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.FocusNext() -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.FocusPrevious() -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.FocusVisible.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Focused.get -> eQuantic.UI.Primitives.Pressable?
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.FocusedPath.get -> string?
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.HasMarkedText.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.HasSelection.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.HasTextFocus.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Height.get -> float
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Hovered.get -> eQuantic.UI.Primitives.VisualNode?
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.IconRasterizer.get -> eQuantic.UI.Native.Framework.IIconRasterizer?
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.IconRasterizer.set -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.ImageLoader.get -> eQuantic.UI.Native.Framework.IImageLoader?
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.ImageLoader.set -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Invalidate() -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.IsFrameDue(float nowMs) -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.KeyDown(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers = eQuantic.UI.Primitives.KeyModifiers.None) -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.KeyboardConvention.get -> eQuantic.UI.Primitives.KeyboardConvention
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.KeyboardConvention.init -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.LastFrame.get -> eQuantic.UI.Native.Components.RealizeResult?
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.MarkedRange.get -> (int Start, int Length)
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.MarkedText.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Mode.get -> eQuantic.UI.Primitives.ThemeMode
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Mode.set -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.NavigationRequested.get -> System.Action<string!>?
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.NavigationRequested.set -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.NeedsRender.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PhotonHost(eQuantic.UI.Primitives.VisualNode! root, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode mode, float width, float height, eQuantic.UI.Native.Framework.ITextMeasurer? measurer = null, float typeScale = 1) -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PointerCancel(eQuantic.UI.Native.Components.PointerKind kind = eQuantic.UI.Native.Components.PointerKind.Mouse) -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PointerLeave() -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PointerMove(float x, float y, eQuantic.UI.Native.Components.PointerKind kind = eQuantic.UI.Native.Components.PointerKind.Mouse) -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PressDown(float x, float y, int clickCount = 1, eQuantic.UI.Primitives.KeyModifiers modifiers = eQuantic.UI.Primitives.KeyModifiers.None) -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PressUp(float x, float y, eQuantic.UI.Native.Components.PointerKind kind = eQuantic.UI.Native.Components.PointerKind.Mouse) -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Pressed.get -> eQuantic.UI.Primitives.Pressable?
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.RecycleFrames.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.RecycleFrames.init -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.ReducedMotion.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.ReducedMotion.set -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.RenderFrame(eQuantic.UI.Native.Engine.DisplayListBuilder! builder, float timeMs = 0) -> eQuantic.UI.Native.Components.RealizeResult!
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.RenderScale.get -> float
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.RenderScale.set -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Resize(float width, float height) -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.SafeAreaInsets.get -> eQuantic.UI.Primitives.EdgeInsets
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.SafeAreaInsets.set -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.ScrollBy(float x, float y, float delta) -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.ScrollOffsetOf(string! path) -> float
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Selection.get -> (int Start, int End)
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.SelectionRange.get -> (int Start, int Length)
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Semantics() -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.SemanticNode>!
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.SetHovered(eQuantic.UI.Primitives.VisualNode? node) -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.SetMarkedText(string! text) -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.SheetTarget.get -> eQuantic.UI.Primitives.SheetSurface?
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.SmoothScroll.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.SmoothScroll.set -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.TakeAnnouncements() -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.LiveAnnouncement>!
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Tap(float x, float y) -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.TextInput(string! text) -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.TextRasterizer.get -> eQuantic.UI.Native.Framework.ITextRasterizer?
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.TextRasterizer.set -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.TextTarget.get -> eQuantic.UI.Primitives.TextEntry?
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Unmount() -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.UpdateEditingValue(eQuantic.UI.Native.Components.TextEditingValue value) -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.ViewInsets.get -> eQuantic.UI.Primitives.EdgeInsets
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.ViewInsets.set -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Width.get -> float
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.WindowControlsInsets.get -> eQuantic.UI.Primitives.EdgeInsets
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.WindowControlsInsets.set -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHotReload
+[EQX0001]eQuantic.UI.Native.Components.PhotonRealizer
+[EQX0001]eQuantic.UI.Native.Components.PointerKind
+[EQX0001]eQuantic.UI.Native.Components.PointerKind.Mouse = 0 -> eQuantic.UI.Native.Components.PointerKind
+[EQX0001]eQuantic.UI.Native.Components.PointerKind.Touch = 1 -> eQuantic.UI.Native.Components.PointerKind
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult.CanvasRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.CanvasRegion>!
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult.CodeRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.CodeRegion>!
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult.CursorRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.CursorRegion>!
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult.DragRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.DragRegion>!
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult.FocusStops.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.FocusStop>!
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult.HasActiveMotion.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult.HitRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.HitRegion>!
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult.HoverRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.HoverRegion>!
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult.LinkRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.LinkRegion>!
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult.OverlayLayers.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Overlay!>!
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult.OverlayRoots.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Framework.LayoutNode!>!
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult.RealizeResult(eQuantic.UI.Native.Framework.LayoutNode! root, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.HitRegion>! hitRegions, bool hasActiveMotion, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.HoverRegion>? hoverRegions = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.ScrollRegion>? scrollRegions = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.DragRegion>? dragRegions = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.LinkRegion>? linkRegions = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.ShortcutBinding>? shortcuts = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.TextRegion>? textRegions = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.FocusStop>? focusStops = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.CodeRegion>? codeRegions = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Framework.LayoutNode!>? overlayRoots = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Overlay!>? overlayLayers = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.SheetRegion>? sheetRegions = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.CursorRegion>? cursorRegions = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.CanvasRegion>? canvasRegions = null) -> void
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult.Root.get -> eQuantic.UI.Native.Framework.LayoutNode!
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult.ScrollRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.ScrollRegion>!
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult.SheetRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.SheetRegion>!
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult.Shortcuts.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.ShortcutBinding>!
+[EQX0001]eQuantic.UI.Native.Components.RealizeResult.TextRegions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Components.TextRegion>!
+[EQX0001]eQuantic.UI.Native.Components.ScrollRegion
+[EQX0001]eQuantic.UI.Native.Components.ScrollRegion.Axis.get -> eQuantic.UI.Primitives.ScrollAxis
+[EQX0001]eQuantic.UI.Native.Components.ScrollRegion.Axis.init -> void
+[EQX0001]eQuantic.UI.Native.Components.ScrollRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
+[EQX0001]eQuantic.UI.Native.Components.ScrollRegion.Bounds.init -> void
+[EQX0001]eQuantic.UI.Native.Components.ScrollRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out string! Path, out float MaxOffset, out eQuantic.UI.Primitives.ScrollAxis Axis, out float Fallback) -> void
+[EQX0001]eQuantic.UI.Native.Components.ScrollRegion.Equals(eQuantic.UI.Native.Components.ScrollRegion other) -> bool
+[EQX0001]eQuantic.UI.Native.Components.ScrollRegion.Fallback.get -> float
+[EQX0001]eQuantic.UI.Native.Components.ScrollRegion.Fallback.init -> void
+[EQX0001]eQuantic.UI.Native.Components.ScrollRegion.MaxOffset.get -> float
+[EQX0001]eQuantic.UI.Native.Components.ScrollRegion.MaxOffset.init -> void
+[EQX0001]eQuantic.UI.Native.Components.ScrollRegion.Path.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.ScrollRegion.Path.init -> void
+[EQX0001]eQuantic.UI.Native.Components.ScrollRegion.ScrollRegion() -> void
+[EQX0001]eQuantic.UI.Native.Components.ScrollRegion.ScrollRegion(eQuantic.UI.Primitives.Rect Bounds, string! Path, float MaxOffset, eQuantic.UI.Primitives.ScrollAxis Axis, float Fallback) -> void
+[EQX0001]eQuantic.UI.Native.Components.SemanticsTree
+[EQX0001]eQuantic.UI.Native.Components.SheetRegion
+[EQX0001]eQuantic.UI.Native.Components.SheetRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
+[EQX0001]eQuantic.UI.Native.Components.SheetRegion.Bounds.init -> void
+[EQX0001]eQuantic.UI.Native.Components.SheetRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.SheetSurface! Surface, out string! Path, out eQuantic.UI.Primitives.Rect? Visible) -> void
+[EQX0001]eQuantic.UI.Native.Components.SheetRegion.Equals(eQuantic.UI.Native.Components.SheetRegion other) -> bool
+[EQX0001]eQuantic.UI.Native.Components.SheetRegion.Path.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.SheetRegion.Path.init -> void
+[EQX0001]eQuantic.UI.Native.Components.SheetRegion.SheetRegion() -> void
+[EQX0001]eQuantic.UI.Native.Components.SheetRegion.SheetRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.SheetSurface! Surface, string! Path, eQuantic.UI.Primitives.Rect? Visible = null) -> void
+[EQX0001]eQuantic.UI.Native.Components.SheetRegion.Surface.get -> eQuantic.UI.Primitives.SheetSurface!
+[EQX0001]eQuantic.UI.Native.Components.SheetRegion.Surface.init -> void
+[EQX0001]eQuantic.UI.Native.Components.SheetRegion.Visible.get -> eQuantic.UI.Primitives.Rect?
+[EQX0001]eQuantic.UI.Native.Components.SheetRegion.Visible.init -> void
+[EQX0001]eQuantic.UI.Native.Components.ShortcutBinding
+[EQX0001]eQuantic.UI.Native.Components.ShortcutBinding.Chord.get -> eQuantic.UI.Primitives.KeyChord
+[EQX0001]eQuantic.UI.Native.Components.ShortcutBinding.Chord.init -> void
+[EQX0001]eQuantic.UI.Native.Components.ShortcutBinding.Deconstruct(out eQuantic.UI.Primitives.KeyChord Chord, out System.Action! OnPressed, out string? Scope) -> void
+[EQX0001]eQuantic.UI.Native.Components.ShortcutBinding.Equals(eQuantic.UI.Native.Components.ShortcutBinding other) -> bool
+[EQX0001]eQuantic.UI.Native.Components.ShortcutBinding.OnPressed.get -> System.Action!
+[EQX0001]eQuantic.UI.Native.Components.ShortcutBinding.OnPressed.init -> void
+[EQX0001]eQuantic.UI.Native.Components.ShortcutBinding.Scope.get -> string?
+[EQX0001]eQuantic.UI.Native.Components.ShortcutBinding.Scope.init -> void
+[EQX0001]eQuantic.UI.Native.Components.ShortcutBinding.ShortcutBinding() -> void
+[EQX0001]eQuantic.UI.Native.Components.ShortcutBinding.ShortcutBinding(eQuantic.UI.Primitives.KeyChord Chord, System.Action! OnPressed, string? Scope = null) -> void
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue.ComposingEnd.get -> int
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue.ComposingEnd.init -> void
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue.ComposingStart.get -> int
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue.ComposingStart.init -> void
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue.Deconstruct(out string! Text, out int SelectionBase, out int SelectionExtent, out int ComposingStart, out int ComposingEnd) -> void
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue.Equals(eQuantic.UI.Native.Components.TextEditingValue other) -> bool
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue.HasComposing.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue.SelectionBase.get -> int
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue.SelectionBase.init -> void
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue.SelectionEnd.get -> int
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue.SelectionExtent.get -> int
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue.SelectionExtent.init -> void
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue.SelectionStart.get -> int
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue.Text.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue.Text.init -> void
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue.TextEditingValue() -> void
+[EQX0001]eQuantic.UI.Native.Components.TextEditingValue.TextEditingValue(string! Text, int SelectionBase, int SelectionExtent, int ComposingStart = -1, int ComposingEnd = -1) -> void
+[EQX0001]eQuantic.UI.Native.Components.TextInputChange
+[EQX0001]eQuantic.UI.Native.Components.TextInputChange.Began = 1 -> eQuantic.UI.Native.Components.TextInputChange
+[EQX0001]eQuantic.UI.Native.Components.TextInputChange.Ended = 3 -> eQuantic.UI.Native.Components.TextInputChange
+[EQX0001]eQuantic.UI.Native.Components.TextInputChange.None = 0 -> eQuantic.UI.Native.Components.TextInputChange
+[EQX0001]eQuantic.UI.Native.Components.TextInputChange.Retargeted = 2 -> eQuantic.UI.Native.Components.TextInputChange
+[EQX0001]eQuantic.UI.Native.Components.TextInputChange.ValueChanged = 4 -> eQuantic.UI.Native.Components.TextInputChange
+[EQX0001]eQuantic.UI.Native.Components.TextInputSession
+[EQX0001]eQuantic.UI.Native.Components.TextInputSession.Obscure.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.TextInputSession.Poll() -> eQuantic.UI.Native.Components.TextInputChange
+[EQX0001]eQuantic.UI.Native.Components.TextInputSession.Submit() -> bool
+[EQX0001]eQuantic.UI.Native.Components.TextInputSession.Target.get -> eQuantic.UI.Native.Components.TextInputTarget
+[EQX0001]eQuantic.UI.Native.Components.TextInputSession.TextInputSession(eQuantic.UI.Native.Components.PhotonHost! host) -> void
+[EQX0001]eQuantic.UI.Native.Components.TextInputSession.Update(eQuantic.UI.Native.Components.TextEditingValue value) -> bool
+[EQX0001]eQuantic.UI.Native.Components.TextInputSession.Value.get -> eQuantic.UI.Native.Components.TextEditingValue
+[EQX0001]eQuantic.UI.Native.Components.TextInputTarget
+[EQX0001]eQuantic.UI.Native.Components.TextInputTarget.Keys = 2 -> eQuantic.UI.Native.Components.TextInputTarget
+[EQX0001]eQuantic.UI.Native.Components.TextInputTarget.None = 0 -> eQuantic.UI.Native.Components.TextInputTarget
+[EQX0001]eQuantic.UI.Native.Components.TextInputTarget.Text = 1 -> eQuantic.UI.Native.Components.TextInputTarget
+[EQX0001]eQuantic.UI.Native.Components.TextRasterCache
+[EQX0001]eQuantic.UI.Native.Components.TextRasterCache.Clear() -> void
+[EQX0001]eQuantic.UI.Native.Components.TextRasterCache.Entry
+[EQX0001]eQuantic.UI.Native.Components.TextRasterCache.Entry.<Clone>$() -> eQuantic.UI.Native.Components.TextRasterCache.Entry!
+[EQX0001]eQuantic.UI.Native.Components.TextRasterCache.Entry.Deconstruct(out eQuantic.UI.Native.Engine.TextureData! Texture, out int PadTop) -> void
+[EQX0001]eQuantic.UI.Native.Components.TextRasterCache.Entry.Entry(eQuantic.UI.Native.Engine.TextureData! Texture, int PadTop = 0) -> void
+[EQX0001]eQuantic.UI.Native.Components.TextRasterCache.Entry.Equals(eQuantic.UI.Native.Components.TextRasterCache.Entry? other) -> bool
+[EQX0001]eQuantic.UI.Native.Components.TextRasterCache.Entry.PadTop.get -> int
+[EQX0001]eQuantic.UI.Native.Components.TextRasterCache.Entry.PadTop.init -> void
+[EQX0001]eQuantic.UI.Native.Components.TextRasterCache.Entry.Texture.get -> eQuantic.UI.Native.Engine.TextureData!
+[EQX0001]eQuantic.UI.Native.Components.TextRasterCache.Entry.Texture.init -> void
+[EQX0001]eQuantic.UI.Native.Components.TextRasterCache.Get(eQuantic.UI.Native.Framework.ITextRasterizer! rasterizer, string! content, eQuantic.UI.Primitives.TypeStyle style, float typeScale, float maxWidth, int maxLines, float scale, eQuantic.UI.Primitives.TextAlignment align) -> eQuantic.UI.Native.Components.TextRasterCache.Entry?
+[EQX0001]eQuantic.UI.Native.Components.TextRasterCache.TextRasterCache() -> void
+[EQX0001]eQuantic.UI.Native.Components.TextRegion
+[EQX0001]eQuantic.UI.Native.Components.TextRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
+[EQX0001]eQuantic.UI.Native.Components.TextRegion.Bounds.init -> void
+[EQX0001]eQuantic.UI.Native.Components.TextRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.TextEntry! Entry, out string! Path, out eQuantic.UI.Primitives.Rect? Visible) -> void
+[EQX0001]eQuantic.UI.Native.Components.TextRegion.Entry.get -> eQuantic.UI.Primitives.TextEntry!
+[EQX0001]eQuantic.UI.Native.Components.TextRegion.Entry.init -> void
+[EQX0001]eQuantic.UI.Native.Components.TextRegion.Equals(eQuantic.UI.Native.Components.TextRegion other) -> bool
+[EQX0001]eQuantic.UI.Native.Components.TextRegion.Path.get -> string!
+[EQX0001]eQuantic.UI.Native.Components.TextRegion.Path.init -> void
+[EQX0001]eQuantic.UI.Native.Components.TextRegion.TextRegion() -> void
+[EQX0001]eQuantic.UI.Native.Components.TextRegion.TextRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.TextEntry! Entry, string! Path, eQuantic.UI.Primitives.Rect? Visible = null) -> void
+[EQX0001]eQuantic.UI.Native.Components.TextRegion.Visible.get -> eQuantic.UI.Primitives.Rect?
+[EQX0001]eQuantic.UI.Native.Components.TextRegion.Visible.init -> void
+[EQX0001]eQuantic.UI.Native.Components.UIKitTrait
+[EQX0001]eQuantic.UI.Native.Components.UIKitTrait.Adjustable = 4 -> eQuantic.UI.Native.Components.UIKitTrait
+[EQX0001]eQuantic.UI.Native.Components.UIKitTrait.Button = 1 -> eQuantic.UI.Native.Components.UIKitTrait
+[EQX0001]eQuantic.UI.Native.Components.UIKitTrait.Image = 3 -> eQuantic.UI.Native.Components.UIKitTrait
+[EQX0001]eQuantic.UI.Native.Components.UIKitTrait.Link = 2 -> eQuantic.UI.Native.Components.UIKitTrait
+[EQX0001]eQuantic.UI.Native.Components.UIKitTrait.None = 0 -> eQuantic.UI.Native.Components.UIKitTrait
+[EQX0001]eQuantic.UI.Native.Components.UIKitTrait.StaticText = 6 -> eQuantic.UI.Native.Components.UIKitTrait
+[EQX0001]eQuantic.UI.Native.Components.UIKitTrait.UpdatesFrequently = 5 -> eQuantic.UI.Native.Components.UIKitTrait
+[EQX0001]override eQuantic.UI.Native.Components.CanvasRegion.GetHashCode() -> int
+[EQX0001]override eQuantic.UI.Native.Components.CodeRegion.GetHashCode() -> int
+[EQX0001]override eQuantic.UI.Native.Components.CursorRegion.GetHashCode() -> int
+[EQX0001]override eQuantic.UI.Native.Components.DragRegion.GetHashCode() -> int
+[EQX0001]override eQuantic.UI.Native.Components.FocusStop.GetHashCode() -> int
+[EQX0001]override eQuantic.UI.Native.Components.HitRegion.GetHashCode() -> int
+[EQX0001]override eQuantic.UI.Native.Components.HoverRegion.GetHashCode() -> int
+[EQX0001]override eQuantic.UI.Native.Components.LinkRegion.GetHashCode() -> int
+[EQX0001]override eQuantic.UI.Native.Components.LiveAnnouncement.GetHashCode() -> int
+[EQX0001]override eQuantic.UI.Native.Components.NativeRole.GetHashCode() -> int
+[EQX0001]override eQuantic.UI.Native.Components.ScrollRegion.GetHashCode() -> int
+[EQX0001]override eQuantic.UI.Native.Components.SheetRegion.GetHashCode() -> int
+[EQX0001]override eQuantic.UI.Native.Components.ShortcutBinding.GetHashCode() -> int
+[EQX0001]override eQuantic.UI.Native.Components.TextEditingValue.GetHashCode() -> int
+[EQX0001]override eQuantic.UI.Native.Components.TextRasterCache.Entry.Equals(object? obj) -> bool
+[EQX0001]override eQuantic.UI.Native.Components.TextRasterCache.Entry.GetHashCode() -> int
+[EQX0001]override eQuantic.UI.Native.Components.TextRasterCache.Entry.ToString() -> string!
+[EQX0001]override eQuantic.UI.Native.Components.TextRegion.GetHashCode() -> int
+[EQX0001]static eQuantic.UI.Native.Components.CanvasRegion.operator !=(eQuantic.UI.Native.Components.CanvasRegion left, eQuantic.UI.Native.Components.CanvasRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.CanvasRegion.operator ==(eQuantic.UI.Native.Components.CanvasRegion left, eQuantic.UI.Native.Components.CanvasRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.CodeRegion.operator !=(eQuantic.UI.Native.Components.CodeRegion left, eQuantic.UI.Native.Components.CodeRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.CodeRegion.operator ==(eQuantic.UI.Native.Components.CodeRegion left, eQuantic.UI.Native.Components.CodeRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.CursorRegion.operator !=(eQuantic.UI.Native.Components.CursorRegion left, eQuantic.UI.Native.Components.CursorRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.CursorRegion.operator ==(eQuantic.UI.Native.Components.CursorRegion left, eQuantic.UI.Native.Components.CursorRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.DragRegion.operator !=(eQuantic.UI.Native.Components.DragRegion left, eQuantic.UI.Native.Components.DragRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.DragRegion.operator ==(eQuantic.UI.Native.Components.DragRegion left, eQuantic.UI.Native.Components.DragRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.FocusStop.operator !=(eQuantic.UI.Native.Components.FocusStop left, eQuantic.UI.Native.Components.FocusStop right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.FocusStop.operator ==(eQuantic.UI.Native.Components.FocusStop left, eQuantic.UI.Native.Components.FocusStop right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.HitRegion.operator !=(eQuantic.UI.Native.Components.HitRegion left, eQuantic.UI.Native.Components.HitRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.HitRegion.operator ==(eQuantic.UI.Native.Components.HitRegion left, eQuantic.UI.Native.Components.HitRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.HoverRegion.operator !=(eQuantic.UI.Native.Components.HoverRegion left, eQuantic.UI.Native.Components.HoverRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.HoverRegion.operator ==(eQuantic.UI.Native.Components.HoverRegion left, eQuantic.UI.Native.Components.HoverRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.LinkRegion.operator !=(eQuantic.UI.Native.Components.LinkRegion left, eQuantic.UI.Native.Components.LinkRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.LinkRegion.operator ==(eQuantic.UI.Native.Components.LinkRegion left, eQuantic.UI.Native.Components.LinkRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.LiveAnnouncement.operator !=(eQuantic.UI.Native.Components.LiveAnnouncement left, eQuantic.UI.Native.Components.LiveAnnouncement right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.LiveAnnouncement.operator ==(eQuantic.UI.Native.Components.LiveAnnouncement left, eQuantic.UI.Native.Components.LiveAnnouncement right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.NativeRole.Of(eQuantic.UI.Primitives.SemanticRole role) -> eQuantic.UI.Native.Components.NativeRole
+[EQX0001]static eQuantic.UI.Native.Components.NativeRole.operator !=(eQuantic.UI.Native.Components.NativeRole left, eQuantic.UI.Native.Components.NativeRole right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.NativeRole.operator ==(eQuantic.UI.Native.Components.NativeRole left, eQuantic.UI.Native.Components.NativeRole right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.PhotonHotReload.ClearCache(System.Type![]? updatedTypes) -> void
+[EQX0001]static eQuantic.UI.Native.Components.PhotonHotReload.Generation.get -> int
+[EQX0001]static eQuantic.UI.Native.Components.PhotonHotReload.UpdateApplication(System.Type![]? updatedTypes) -> void
+[EQX0001]static eQuantic.UI.Native.Components.PhotonRealizer.Realize(eQuantic.UI.Primitives.VisualNode! root, float viewportWidth, float viewportHeight, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode mode, eQuantic.UI.Native.Engine.DisplayListBuilder! builder, eQuantic.UI.Native.Framework.ITextMeasurer? measurer = null, float typeScale = 1, eQuantic.UI.Primitives.Pressable? pressed = null, eQuantic.UI.Primitives.Pressable? focused = null, eQuantic.UI.Primitives.VisualNode? hovered = null, eQuantic.UI.Primitives.ComponentInstanceStore? instances = null, float timeMs = 0, bool reducedMotion = false, eQuantic.UI.Native.Framework.TransitionStore? transitions = null, eQuantic.UI.Native.Framework.ScrollStore? scrollOffsets = null, eQuantic.UI.Native.Framework.PresenceStore? presences = null, eQuantic.UI.Native.Framework.DragStore? drags = null, eQuantic.UI.Native.Framework.ITextRasterizer? textRasterizer = null, eQuantic.UI.Native.Components.TextRasterCache? textCache = null, float renderScale = 1, eQuantic.UI.Native.Framework.IIconRasterizer? iconRasterizer = null, eQuantic.UI.Native.Components.IconRasterCache? iconCache = null, eQuantic.UI.Native.Framework.IImageLoader? imageLoader = null, System.Collections.Generic.Dictionary<string!, eQuantic.UI.Native.Engine.TextureData?>? imageCache = null, eQuantic.UI.Primitives.EdgeInsets safeAreaInsets = default(eQuantic.UI.Primitives.EdgeInsets), string? pressedPath = null, string? focusedPath = null, string? textPath = null, int caretIndex = 0, bool caretVisible = true, int selectionStart = 0, int selectionEnd = 0, System.Func<string!, float?>? scrollOffset = null, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, string! markedText = "", (int Start, int End, string! Text)? composing = null, System.Collections.Generic.Dictionary<(string! Parent, int Index, string? Key), string!>? pathCache = null, eQuantic.UI.Native.Framework.LayoutNodePool? nodePool = null, eQuantic.UI.Native.Framework.InViewStore? inViewStore = null, System.Collections.Generic.IReadOnlyList<string!>? hoveredPaths = null, eQuantic.UI.Primitives.EdgeInsets windowControlsInsets = default(eQuantic.UI.Primitives.EdgeInsets), eQuantic.UI.Native.Components.RealizeResult? sizedLike = null) -> eQuantic.UI.Native.Components.RealizeResult!
+[EQX0001]static eQuantic.UI.Native.Components.ScrollRegion.operator !=(eQuantic.UI.Native.Components.ScrollRegion left, eQuantic.UI.Native.Components.ScrollRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.ScrollRegion.operator ==(eQuantic.UI.Native.Components.ScrollRegion left, eQuantic.UI.Native.Components.ScrollRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.SemanticsTree.Collect(eQuantic.UI.Native.Components.RealizeResult! frame) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.SemanticNode>!
+[EQX0001]static eQuantic.UI.Native.Components.SheetRegion.operator !=(eQuantic.UI.Native.Components.SheetRegion left, eQuantic.UI.Native.Components.SheetRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.SheetRegion.operator ==(eQuantic.UI.Native.Components.SheetRegion left, eQuantic.UI.Native.Components.SheetRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.ShortcutBinding.operator !=(eQuantic.UI.Native.Components.ShortcutBinding left, eQuantic.UI.Native.Components.ShortcutBinding right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.ShortcutBinding.operator ==(eQuantic.UI.Native.Components.ShortcutBinding left, eQuantic.UI.Native.Components.ShortcutBinding right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.TextEditingValue.Collapsed(string! text, int caret) -> eQuantic.UI.Native.Components.TextEditingValue
+[EQX0001]static eQuantic.UI.Native.Components.TextEditingValue.operator !=(eQuantic.UI.Native.Components.TextEditingValue left, eQuantic.UI.Native.Components.TextEditingValue right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.TextEditingValue.operator ==(eQuantic.UI.Native.Components.TextEditingValue left, eQuantic.UI.Native.Components.TextEditingValue right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.TextRasterCache.Entry.operator !=(eQuantic.UI.Native.Components.TextRasterCache.Entry? left, eQuantic.UI.Native.Components.TextRasterCache.Entry? right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.TextRasterCache.Entry.operator ==(eQuantic.UI.Native.Components.TextRasterCache.Entry? left, eQuantic.UI.Native.Components.TextRasterCache.Entry? right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.TextRegion.operator !=(eQuantic.UI.Native.Components.TextRegion left, eQuantic.UI.Native.Components.TextRegion right) -> bool
+[EQX0001]static eQuantic.UI.Native.Components.TextRegion.operator ==(eQuantic.UI.Native.Components.TextRegion left, eQuantic.UI.Native.Components.TextRegion right) -> bool
+[EQX0001]static readonly eQuantic.UI.Native.Components.IconRasterCache.Shared -> eQuantic.UI.Native.Components.IconRasterCache!
+[EQX0001]static readonly eQuantic.UI.Native.Components.PhotonDispatcher.Shared -> eQuantic.UI.Native.Components.PhotonDispatcher!
+[EQX0001]static readonly eQuantic.UI.Native.Components.PhotonFrameTicker.Shared -> eQuantic.UI.Native.Components.PhotonFrameTicker!
+[EQX0001]static readonly eQuantic.UI.Native.Components.TextRasterCache.Shared -> eQuantic.UI.Native.Components.TextRasterCache!
+~[EQX0001]override eQuantic.UI.Native.Components.CanvasRegion.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Components.CanvasRegion.ToString() -> string
+~[EQX0001]override eQuantic.UI.Native.Components.CodeRegion.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Components.CodeRegion.ToString() -> string
+~[EQX0001]override eQuantic.UI.Native.Components.CursorRegion.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Components.CursorRegion.ToString() -> string
+~[EQX0001]override eQuantic.UI.Native.Components.DragRegion.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Components.DragRegion.ToString() -> string
+~[EQX0001]override eQuantic.UI.Native.Components.FocusStop.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Components.FocusStop.ToString() -> string
+~[EQX0001]override eQuantic.UI.Native.Components.HitRegion.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Components.HitRegion.ToString() -> string
+~[EQX0001]override eQuantic.UI.Native.Components.HoverRegion.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Components.HoverRegion.ToString() -> string
+~[EQX0001]override eQuantic.UI.Native.Components.LinkRegion.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Components.LinkRegion.ToString() -> string
+~[EQX0001]override eQuantic.UI.Native.Components.LiveAnnouncement.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Components.LiveAnnouncement.ToString() -> string
+~[EQX0001]override eQuantic.UI.Native.Components.NativeRole.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Components.NativeRole.ToString() -> string
+~[EQX0001]override eQuantic.UI.Native.Components.ScrollRegion.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Components.ScrollRegion.ToString() -> string
+~[EQX0001]override eQuantic.UI.Native.Components.SheetRegion.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Components.SheetRegion.ToString() -> string
+~[EQX0001]override eQuantic.UI.Native.Components.ShortcutBinding.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Components.ShortcutBinding.ToString() -> string
+~[EQX0001]override eQuantic.UI.Native.Components.TextEditingValue.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Components.TextEditingValue.ToString() -> string
+~[EQX0001]override eQuantic.UI.Native.Components.TextRegion.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Components.TextRegion.ToString() -> string

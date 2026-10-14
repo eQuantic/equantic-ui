@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- This project uses the native track without the native SDK, on purpose: it tests the native
+         track. So it says it means to (#324). Every other project of the repository that reaches a
+         native assembly meets EQX0001, as an app's would. -->
+    <NoWarn>$(NoWarn);EQX0001</NoWarn>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

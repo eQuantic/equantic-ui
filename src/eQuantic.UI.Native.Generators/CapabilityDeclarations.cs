@@ -42,10 +42,7 @@ internal static class CapabilityDeclarations
 
     /// <summary>Whether a syntax node is worth looking at — cheap, and runs on every keystroke.</summary>
     internal static bool MightDeclare(SyntaxNode node) =>
-        node is InvocationExpressionSyntax
-        {
-            Expression: MemberAccessExpressionSyntax { Name.Identifier.ValueText: var name },
-        } && name.StartsWith("Use", System.StringComparison.Ordinal);
+        BuilderCall.MethodName(node) is { } name && name.StartsWith("Use", System.StringComparison.Ordinal);
 
     /// <summary>The declaration a call makes, or null when the call is something else entirely.</summary>
     internal static CapabilityDeclaration? Read(GeneratorSyntaxContext context)

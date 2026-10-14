@@ -4,7 +4,7 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <Description>Writing generated files: one indentation engine, and a writer per file type. Nothing here knows what eQuantic.UI is — it knows what a line, a scope and an escape are.</Description>
+        <Description>Writing generated files: one indentation engine, and a writer per file type. Nothing here knows what eQuantic.UI is — it knows what a line, a scope and an escape are. A tool of the eQuantic.UI SDK: its API serves the SDK and is outside the SDK's compatibility promise.</Description>
     </PropertyGroup>
 
 </Project>
