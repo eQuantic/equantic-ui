@@ -45,7 +45,6 @@ public class CollectionSurfaceTranslationTests
     [Theory]
     [InlineData("var c = s.Comparer;")]
     [InlineData("var c = SortedSet<int>.CreateSetComparer();")]
-    [InlineData("var v = s.GetViewBetween(1, 2);")]
     [InlineData("var e = q.GetEnumerator();")]
     [InlineData("var e = t.GetEnumerator();")]
     [InlineData("var e = l.GetEnumerator();")]

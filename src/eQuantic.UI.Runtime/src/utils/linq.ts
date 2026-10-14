@@ -19,6 +19,7 @@ import { exception } from './exceptions';
 import { sameBy } from './key-equality';
 import { comparerOf, type Ordering } from './ordering';
 import { checked } from './overflow';
+import { readAsACollection } from './sorted';
 
 /**
  * How the values a `Max` or `Min` answers are ordered, the table every ordering of the runtime reads
@@ -433,6 +434,7 @@ export function seq<T>(source: Iterable<T> | string, parameter = 'source'): T[] 
   if (typeof (source as { [Symbol.iterator]?: unknown })[Symbol.iterator] !== 'function') {
     throw new TypeError(`A sequence was expected: ${Object.prototype.toString.call(source)}`);
   }
+  readAsACollection(source);
   return Array.from(source);
 }
 
