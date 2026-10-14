@@ -74,9 +74,10 @@ public static class Transpiler
     /// of times (#481).
     /// <para>
     /// What one prelude leaves in it decides nothing for the next, read in <c>ComponentCompiler</c> and
-    /// what it holds. The project compilation is replaced, with the referenced trees beside it. No
-    /// dependency resolver or referenced modules are ever handed over, so a record takes a resolver of
-    /// its own compilation and a class reads its chains from its own file. The emitter clears the
+    /// what it holds. The project compilation is replaced, with the referenced trees beside it, and so
+    /// is the dependency resolver, scanned from that compilation (the emitter's import net, the
+    /// parser's chains and the converter's fallback receivers all read the new one). No referenced
+    /// modules are ever handed over: a prelude references no project. The emitter clears the
     /// converter's diagnostics, its refused twins and the names it used at every module, and builds a
     /// new semantic helper with each model. What survives is keyed by identity (the converter's node
     /// cache, and the static tables of <c>ValueCopies</c>, <c>LocalFunctionName</c>,
@@ -216,6 +217,10 @@ public static class Transpiler
         lock (BuildGate)
         {
             Build.SetProjectCompilation(compilation);
+            // The scan eqc hands the compiler before it compiles a file of the app (AppBuild), here over
+            // the one file there is: a module's import net asks it which types became modules, and
+            // refuses a type whose owner never crosses (EQ2010) where no fence of the converter looks.
+            Build.SetDependencyResolver(eQuantic.UI.Compiler.Services.ComponentDependencyResolver.From(compilation));
             return Refusal.Of(Build.CompileSource(source, path).ToList());
         }
     }

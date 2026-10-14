@@ -78,27 +78,72 @@ public class HarnessSelfChecksTests
 
     /// <summary>
     /// The prelude's verdict comes from ONE compiler that every prelude goes through, so it owes nothing
-    /// to the prelude asked before it. Two preludes declare one type name differently, one refused (two
-    /// methods of one name, EQ1007) and one accepted, and are asked uncached in both orders: each
-    /// answers its own verdict, the accepted one never inheriting the refused one's.
+    /// to the prelude asked before it. Two preludes declare one type name differently, one refused and
+    /// one accepted, and are asked uncached in both orders: each answers its own verdict, the accepted
+    /// one never inheriting the refused one's. One pair is refused by the emitter's own check (two
+    /// methods of one name, EQ1007), the other by the scan the compiler is handed (an owner that never
+    /// crosses, EQ2010).
     /// </summary>
-    [Fact]
-    public void APreludesVerdict_OwesNothingToThePreludeAskedBeforeIt()
+    [Theory]
+    [InlineData(
+        "public record Probe(int X) { public int Plus(int y) => X + y; public int Plus(int y, int z) => X + y + z; }",
+        "public record Probe(int X) { public int Plus(int y) => X + y; }",
+        "EQ1007 in Probe:")]
+    [InlineData(
+        "[eQuantic.UI.Primitives.ServerOnly] public class Vault { public class Key { } } public class Client { public Vault.Key Kept = null; }",
+        "public class Vault { public class Key { } } public class Client { public Vault.Key Kept = null; }",
+        "EQ2010 in Client:")]
+    public void APreludesVerdict_OwesNothingToThePreludeAskedBeforeIt(string refused, string accepted, string named)
     {
-        const string refused =
-            "public record Probe(int X) { public int Plus(int y) => X + y; public int Plus(int y, int z) => X + y + z; }";
-        const string accepted = "public record Probe(int X) { public int Plus(int y) => X + y; }";
         static string[] Verdict(string prelude) =>
             Transpiler.AskTheBuild(prelude).Select(refusal => refusal.ToString()).ToArray();
 
         var (refusedFirst, acceptedAfterIt) = (Verdict(refused), Verdict(accepted));
         var (acceptedFirst, refusedAfterIt) = (Verdict(accepted), Verdict(refused));
 
-        refusedFirst.Should().ContainSingle().Which.Should().StartWith("EQ1007 in Probe:");
+        refusedFirst.Should().ContainSingle().Which.Should().StartWith(named);
         refusedAfterIt.Should().Equal(refusedFirst);
         acceptedFirst.Should().BeEmpty();
         acceptedAfterIt.Should().BeEmpty();
     }
+
+    /// <summary>
+    /// The verdict on a prelude is the whole build's, the scan of the app's modules included: client code
+    /// that reaches a nested type whose owner never crosses (<c>[ServerOnly]</c>) is refused with EQ2010
+    /// in every way <c>NestedTwinNameTests</c> lists, and a field no fence sees is refused by the module's
+    /// import net, which reads the scan eqc hands the compiler before it compiles a file (found by
+    /// Copilot's first review of #914).
+    /// </summary>
+    [Theory]
+    [InlineData("using K = Vault.Key;", "public int Read() => K.Count;")]
+    [InlineData("using static Vault.Key;", "public int Read() => Count;")]
+    [InlineData("using static Vault.Key;", "public int Read() => Make();")]
+    [InlineData("", "public object Read() => default(Vault.Pair);")]
+    [InlineData("", "public Vault.Pair Held;")]
+    [InlineData("", "public int Read() => (Shop.Price() + Shop.Price()).V;")]
+    [InlineData("", "public int Read() => Shop.Price();")]
+    [InlineData("", "public Vault.Key Kept = null;")]
+    public void APreludeReachingAKeptOutNestedType_IsRefusedAsTheBuildRefusesIt(string usings, string member)
+    {
+        Transpiler.AskTheBuild(usings + "\n" + KeptOut + "\npublic class Client { " + member + " }")
+            .Should().Contain(refusal => refusal.Id == "EQ2010" && refusal.Module == "Client");
+    }
+
+    /// <summary>An owner that never crosses, with the nested types client code can reach.</summary>
+    private const string KeptOut = """
+        [eQuantic.UI.Primitives.ServerOnly] public class Vault
+        {
+            public class Key { public static int Count = 1; public static int Make() => 2; }
+            public struct Pair { public int A; }
+            public struct Amount
+            {
+                public int V;
+                public static Amount operator +(Amount a, Amount b) => new Amount { V = a.V + b.V };
+                public static implicit operator int(Amount a) => a.V;
+            }
+        }
+        public class Shop { public static Vault.Amount Price() => default; }
+        """;
 
     /// <summary>
     /// A case written for a fence pins THAT fence, in its OWN C#: it fails when the build accepts the
