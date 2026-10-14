@@ -127,10 +127,14 @@ public class ReleaseContractTests
 
             var copied = Directory.GetFiles(scratch, "eQuantic.UI.Native.Engine.dll", SearchOption.AllDirectories)
                 .Single(path => path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal));
+            // Loaded from its bytes, not its path: on Windows an assembly loaded from a path keeps its
+            // file locked until the collectible context is collected, which is after this test deletes
+            // the folder, and the delete fails.
             var context = new AssemblyLoadContext("eq-experimental-probe", isCollectible: true);
             try
             {
-                var native = context.LoadFromAssemblyPath(copied);
+                using var bytes = new MemoryStream(File.ReadAllBytes(copied));
+                var native = context.LoadFromStream(bytes);
                 SurfaceClass.Of(native).Should().Be(SurfaceClass.Experimental);
             }
             finally
