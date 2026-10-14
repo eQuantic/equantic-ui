@@ -1,7 +1,10 @@
 # release-contract Specification
 
 ## Purpose
-TBD - created by archiving change what-1-0-promises. Update Purpose after archive.
+What a release promises and to which assemblies: the surface class every shipping assembly carries,
+the experimental mark on the native track, and the rule that follows the version in
+`Directory.Build.props`, the preview's while it carries a prerelease label and the compatibility
+promise of a stable line from the day it does not.
 
 ## Requirements
 
