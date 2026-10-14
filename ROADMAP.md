@@ -116,7 +116,7 @@ The accessibility half is done on the web and on the three native shells with a 
 UI Automation on Windows is owed). What remains is proof per component: the variant matrix and the
 checklist, through a harness an app can use too (#294). Quality > quantity here.
 
-### 5. Pluggable CSS engine — **resolved by decision, not by plugging**
+### 5. Styling — **one engine, resolved by decision, not by plugging**
 The first-party engine shipped (Track S): typed C# styles lowered to deduplicated atomic classes,
 generated at build time from the shared `Primitives` tokens — the same design system Photon paints —
 and byte-identical between SSR and hydration. Pluggability is deliberately NOT pursued: the framework
@@ -172,8 +172,8 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
   code-splitting, scroll restoration. Demonstrated end-to-end by `samples/DefaultUIDashboard`.
   → the plan is retired into `docs/LEDGER.md` (2026-06 entries).
 - **Phase 3 — Hot reload with state preservation** — **✅ complete on both targets**: the web
-  replays page state over a mounted tree (`HotReloadService`, an SSE channel with ping and
-  reconnect) and the native side applies in-process under `dotnet watch` (`PhotonHotReload`, with
+  captures the page's fields on a rebuild, reloads, and renders the new code client-side with those
+  fields handed back (`HotReloadService`, an SSE channel with ping and reconnect), and the native side applies in-process under `dotnet watch` (`PhotonHotReload`, with
   per-generation caches on the render thread). The piece that took the longest was not the reload
   but WAKING the window.
 - **Phase 4 — Forms & validation engine** — **✅ complete**: the model in Primitives (dirty/touched
@@ -185,7 +185,7 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
   (the 2026-08 pass: state as attribute for checks/switches/tabs/options, full menu/combobox
   patterns with `aria-activedescendant`, tooltip keyboard reveal + Escape dismissal per WCAG
   1.4.13, dialog names/alertdialog/safe-action initial focus, `aria-expanded` on triggers — all
-  pinned on both producers), and the NATIVE half now matches: every shell has its bridge over the
+  pinned on both producers), and the NATIVE half matches on three shells: each has its bridge over the
   one target-neutral semantics tree (macOS `NSAccessibility`, iOS `UIAccessibility` elements,
   Android's virtual `AccessibilityNodeInfo` hierarchy), each proved by asking the platform rather
   than the tree. 2026-08-15 closed the last named gap: a navigation now says WHERE YOU ARE
@@ -402,8 +402,9 @@ English), the `CurrentCulture`/`CurrentUICulture` pair, and `<html lang>` from t
 ## Track W — Photon on the desktop
 
 Added 2026-08-25, born from the OS Cleaner migration plan (the app's own plan maps its S1–S6 onto
-W1–W6 here) — but nothing in it is app-specific: these are the fences Photon has to close to claim
-DESKTOP APP, each verified in code, not docs. Nine draw commands and no arbitrary paths
+W1–W6 here) — but nothing in it is app-specific: these are the fences Photon had to close to claim
+DESKTOP APP on that day, each verified in code, not docs (the signing and part of the shell surface
+have closed since: where it stands is below). Nine draw commands and no arbitrary paths
 (`DisplayList.cs`); a deliberately PERIODIC `IClock` whose own fence names the frame clock as the
 thing not yet built; rectangle-only hit-testing (`PhotonHost.cs` — `Bounds.Contains` on AABBs); no
 desktop shell surface (menus, tray, file dialogs, notifications, deep links); ad-hoc signing
