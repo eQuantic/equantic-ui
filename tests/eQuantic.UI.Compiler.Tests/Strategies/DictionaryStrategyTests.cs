@@ -63,6 +63,18 @@ public class DictionaryStrategyTests
         TestHelper.ConvertExpression(csharp).Should().Be(js);
     }
 
+    /// <summary>A sorted dictionary's and an <c>IDictionary</c>'s <c>TryAdd</c> is <c>CollectionExtensions</c>'
+    /// extension, which went out under that class's name, a ReferenceError in the browser (#864), and so
+    /// did the extension's static form.</summary>
+    [Fact]
+    public void TryAdd_ThroughCollectionExtensions_IsTheClasss()
+    {
+        TestHelper.ConvertCodeBlock("var s = new SortedDictionary<string, int>(); s.TryAdd(\"a\", 1);")
+            .Should().Contain("s.tryAdd('a', 1)");
+        TestHelper.ConvertCodeBlock("IDictionary<string, string> d = new Dictionary<string, string>(); CollectionExtensions.TryAdd(d, \"a\", \"b\");")
+            .Should().Contain("d.tryAdd('a', 'b')");
+    }
+
     [Fact]
     public void Foreach_WalksTheClass_ItsKeysAndItsPairs()
     {

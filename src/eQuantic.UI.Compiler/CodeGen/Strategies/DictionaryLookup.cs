@@ -7,7 +7,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// <summary>
 /// The LOOKUPS a dictionary answers beyond yes or no — <c>TryGetValue</c>, <c>GetValueOrDefault</c> and
 /// <c>Remove(key, out value)</c> — over the two questions the runtime's dictionary classes answer:
-/// whether the key is there (<c>has</c>) and what it holds (<c>get</c>).
+/// whether the key is there (<c>has</c>) and what it holds (<c>get</c>); and <c>TryAdd</c>, which an
+/// extension reaches as the lookups' extensions do.
 /// <para>
 /// Written once, for what every copy of them had got wrong:
 /// </para>
@@ -79,6 +80,28 @@ internal static class DictionaryLookup
         var fallback = DefaultValue.Of(method?.Parameters.ElementAtOrDefault(key + 1)?.Type, context);
         return parts.Template(
             $"({Has} ? (({place} = {Get}), {hit}) : (({place} = {fallback}), false))");
+    }
+
+    /// <summary>
+    /// <c>dictionary.TryAdd(key, value)</c>: the runtime classes' own, which a sorted dictionary, a sorted
+    /// list and an <c>IDictionary</c> reach through <c>CollectionExtensions</c>, an extension that went out
+    /// under that class's name, which nothing defines here (#864).
+    /// </summary>
+    public static JsExpr TryAdd(InvocationExpressionSyntax invocation, ConversionContext context)
+    {
+        var method = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
+        var arguments = invocation.ArgumentList.Arguments;
+        var key = IsStaticForm(method) ? 1 : 0;
+        if (Dictionary(invocation, method, context) is not { } parts
+            || Filling(arguments, method, key) is not { } keyArgument
+            || Filling(arguments, method, key + 1) is not { } valueArgument)
+        {
+            return context.Unhandled(invocation, "Dictionary.TryAdd");
+        }
+
+        parts.Add(arguments.IndexOf(keyArgument), "k", context.Converter.ConvertIr(keyArgument.Expression));
+        parts.Add(arguments.IndexOf(valueArgument), "v", context.Converter.ConvertIr(valueArgument.Expression));
+        return parts.Template("{r}.tryAdd({k}, {v})");
     }
 
     /// <summary><c>dictionary.GetValueOrDefault(key)</c> and <c>dictionary.GetValueOrDefault(key, defaultValue)</c>.</summary>

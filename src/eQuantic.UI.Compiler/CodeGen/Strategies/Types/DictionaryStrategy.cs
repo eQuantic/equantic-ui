@@ -16,7 +16,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// class it is on this side: the runtime's <c>Dictionary</c>, which holds its entries by slot as .NET's
 /// does, or the <c>SortedMap</c> of a sorted one. This strategy owns construction (a copy included),
 /// both initializer forms, the entry's plain write, the members the classes answer
-/// (<c>ContainsKey</c>, <c>Add</c>, <c>Remove</c>, <c>Clear</c>, <c>TryGetValue</c>,
+/// (<c>ContainsKey</c>, <c>Add</c>, <c>TryAdd</c>, <c>Remove</c>, <c>Clear</c>, <c>TryGetValue</c>,
 /// <c>GetValueOrDefault</c>, <c>Keys</c>, <c>Values</c>, <c>Count</c>), and a lookup through the keys
 /// (<c>d.Keys.Contains(k)</c>, <c>d.Keys.Count</c>).
 /// <para>
@@ -254,8 +254,8 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
             case "ContainsKey" or "Add" or "Remove" or "Clear":
                 return IsDictionary(member.Expression, context) ? name : null;
             // The dictionary a lookup reads is its receiver, or the first argument of an extension's
-            // static form (DictionaryLookup.DictionaryOf).
-            case "TryGetValue" or "GetValueOrDefault":
+            // static form (DictionaryLookup.DictionaryOf), and so is the one TryAdd adds to.
+            case "TryGetValue" or "GetValueOrDefault" or "TryAdd":
                 return DictionaryLookup.DictionaryOf(invocation, context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol)
                     is { } dictionary && IsDictionary(dictionary, context) ? name : null;
             // Membership through the keys is the dictionary's own, found by its comparison: the keys'
@@ -280,6 +280,8 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
                 return DictionaryLookup.TryGetValue(invocation, context);
             case "GetValueOrDefault" when arguments.Count > 0:
                 return DictionaryLookup.GetValueOrDefault(invocation, context);
+            case "TryAdd" when arguments.Count > 1:
+                return DictionaryLookup.TryAdd(invocation, context);
             case "Remove" when arguments.Count == 2:
                 return DictionaryLookup.Remove(invocation, context);
             case "Keys.Contains":
