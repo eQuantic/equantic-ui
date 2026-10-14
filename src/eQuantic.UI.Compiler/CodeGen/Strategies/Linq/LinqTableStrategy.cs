@@ -81,7 +81,16 @@ public class LinqTableStrategy : IExpressionIrStrategy
         if (name.Identifier.Text == "ToLookup"
             && context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { TypeArguments: [_, var lookupKey, ..] })
         {
-            template = template.Replace("$x.key === $key", LinqKeys.Matches(lookupKey, "$x.key", "$key"));
+            template = template.Replace("$x.key === $key", LinqKeys.Matches(lookupKey, "$x.key", "$key", context));
+        }
+        // A key, and the element of a set operator, is found as its type's default comparer finds it, in
+        // the runtime's dictionary and set, where a JavaScript Map and Set compare by reference: a join by
+        // a composite key matched nothing, a union of equal anonymous objects kept every one, and a class
+        // that overrides Equals was never asked it.
+        if (HeldBy(name.Identifier.Text, invocation, context) is { } equality)
+        {
+            template = ByValue(template, equality);
+            context.UsedHelpers.Add(Eq.Import);
         }
         // A lookup's accumulator is typed where the output is TypeScript, as GroupBy's is (#727).
         if (name.Identifier.Text == "ToLookup" && context.TypeAnnotations)
@@ -92,6 +101,37 @@ public class LinqTableStrategy : IExpressionIrStrategy
         return JsExpr.Template(BindNamedArguments(template, shaped, invocation, context),
             new[] { receiver }.Concat(args).ToArray());
     }
+
+    /// <summary>
+    /// The equality (<see cref="ElementEquality"/>) an operator that holds its keys or its elements in a
+    /// <c>Map</c> or a <c>Set</c> finds them by: <c>Join</c> and <c>GroupJoin</c> by their key, the set
+    /// operators by their element and their <c>By</c> forms by their key. Null for any other operator, and
+    /// for a type compared by identity, which a JavaScript <c>Map</c> and <c>Set</c> compare as .NET does,
+    /// a NaN equal to itself included (SameValueZero).
+    /// </summary>
+    private static string? HeldBy(string name, InvocationExpressionSyntax invocation, ConversionContext context)
+    {
+        var at = name switch
+        {
+            "Join" or "GroupJoin" => 2,
+            "Union" or "Intersect" or "Except" => 0,
+            "DistinctBy" or "UnionBy" or "IntersectBy" or "ExceptBy" => 1,
+            _ => -1,
+        };
+        if (at < 0 || context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol { TypeArguments: var arguments }
+            || at >= arguments.Length)
+            return null;
+        return ElementEquality.Of(arguments[at]);
+    }
+
+    /// <summary>A shape whose <c>Map</c> and <c>Set</c> find their keys by <paramref name="equality"/>: the
+    /// runtime's dictionary and set, which take the same calls, and a membership asked of the other sequence
+    /// by the same equality.</summary>
+    private static string ByValue(string template, string equality) => template
+        .Replace("new Map()", $"{Eq.Dictionary}(null, {equality})")
+        .Replace("new Set()", $"{Eq.HashSet}({equality})")
+        .Replace("new Set(", $"{Eq.HashSet}({equality}, ")
+        .Replace("{1}.includes($x)", $"{Eq.Contains}({{1}}, $x, {equality})");
 
     /// <summary>The operators of the table that take a key COMPARER beside their selectors, whose
     /// overloads with one share their argument counts with the ones with an element selector.</summary>

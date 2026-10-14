@@ -5,3 +5,4 @@ const eQuantic.UI.Compiler.CodeGen.Eq.TupleTextGroup = "$eq.text.tupleGroup" -> 
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.StructuralEqualsStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 const eQuantic.UI.Compiler.CodeGen.Eq.EqualsInstance = "$eq.equalsInstance" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Receiver = "$eq.receiver" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TextGroup = "$eq.text.group" -> string!

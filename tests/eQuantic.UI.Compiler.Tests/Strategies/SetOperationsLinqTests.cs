@@ -34,10 +34,12 @@ public class SetOperationsLinqTests
     // ============ Union ============
 
     [Fact]
-    public void Union_MapsToSetSpread()
+    public void Union_OfAClass_MapsToTheRuntimesSetSpread()
     {
+        // A class's element is found by its own Equals or by reference (ElementEquality's 'item'), so a
+        // subclass that overrides Equals is asked it, as .NET's default comparer asks it (#922).
         var result = TestHelper.ConvertExpression("list.Union(otherList)");
-        result.Should().Be("[...new Set([...this.list, ...this.otherList])]");
+        result.Should().Be("[...$eq.collections.hashSet('item', [...this.list, ...this.otherList])]");
     }
 
     [Fact]
@@ -52,17 +54,17 @@ public class SetOperationsLinqTests
     public void Union_WithWhere_MapsCorrectly()
     {
         var result = TestHelper.ConvertExpression("list.Union(otherList).Where(x => x.Id > 0)");
-        result.Should().Contain("[...new Set([...this.list, ...this.otherList])]");
+        result.Should().Contain("[...$eq.collections.hashSet('item', [...this.list, ...this.otherList])]");
         result.Should().Contain("filter");
     }
 
     // ============ Intersect ============
 
     [Fact]
-    public void Intersect_MapsToFilterWithIncludes()
+    public void Intersect_OfAClass_MapsToAFilterByItsEquality()
     {
         var result = TestHelper.ConvertExpression("list.Intersect(otherList)");
-        result.Should().Be("(($0, $1) => [...new Set($0)].filter(($x) => $1.includes($x)))(this.list, this.otherList)");
+        result.Should().Be("(($0, $1) => [...$eq.collections.hashSet('item', $0)].filter(($x) => $eq.collections.contains($1, $x, 'item')))(this.list, this.otherList)");
     }
 
     [Fact]
@@ -77,17 +79,17 @@ public class SetOperationsLinqTests
     public void Intersect_WithSelect_MapsCorrectly()
     {
         var result = TestHelper.ConvertExpression("list.Intersect(otherList).Select(x => x.Name)");
-        result.Should().Contain("(($0, $1) => [...new Set($0)].filter(($x) => $1.includes($x)))(this.list, this.otherList)");
+        result.Should().Contain("(($0, $1) => [...$eq.collections.hashSet('item', $0)].filter(($x) => $eq.collections.contains($1, $x, 'item')))(this.list, this.otherList)");
         result.Should().Contain("map");
     }
 
     // ============ Except ============
 
     [Fact]
-    public void Except_MapsToFilterWithNegatedIncludes()
+    public void Except_OfAClass_MapsToANegatedFilterByItsEquality()
     {
         var result = TestHelper.ConvertExpression("list.Except(otherList)");
-        result.Should().Be("(($0, $1) => [...new Set($0)].filter(($x) => !$1.includes($x)))(this.list, this.otherList)");
+        result.Should().Be("(($0, $1) => [...$eq.collections.hashSet('item', $0)].filter(($x) => !$eq.collections.contains($1, $x, 'item')))(this.list, this.otherList)");
     }
 
     [Fact]
@@ -102,7 +104,7 @@ public class SetOperationsLinqTests
     public void Except_WithCount_MapsCorrectly()
     {
         var result = TestHelper.ConvertExpression("list.Except(otherList).Count()");
-        result.Should().Contain("(($0, $1) => [...new Set($0)].filter(($x) => !$1.includes($x)))(this.list, this.otherList)");
+        result.Should().Contain("(($0, $1) => [...$eq.collections.hashSet('item', $0)].filter(($x) => !$eq.collections.contains($1, $x, 'item')))(this.list, this.otherList)");
         result.Should().Contain(".length");
     }
 
@@ -124,6 +126,6 @@ public class SetOperationsLinqTests
         var result = TestHelper.ConvertExpression("list.Concat(otherList).Where(x => x.Active).Distinct()");
         result.Should().Contain("[...this.list, ...this.otherList]");
         result.Should().Contain("filter");
-        result.Should().Contain("new Set");
+        result.Should().Contain("$eq.collections.hashSet('item', ");
     }
 }

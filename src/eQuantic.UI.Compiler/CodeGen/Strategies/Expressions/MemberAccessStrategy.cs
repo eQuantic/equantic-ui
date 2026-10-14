@@ -165,44 +165,38 @@ public class MemberAccessStrategy : IExpressionIrStrategy
 
     /// <summary>
     /// The method group of a record member of a value the browser holds as DATA (<c>[TwinIsData]</c>,
-    /// <c>Color</c> and <c>Curve</c>), and of a value tuple's or an anonymous object's object members,
-    /// which it holds as an array and a plain object: the delegate its call is, made by the runtime as
-    /// <c>$eq.hash.group</c> makes <c>GetHashCode</c>'s. <c>Equals</c> compares as the call compares
-    /// (<c>StructuralEqualsStrategy</c>), by <c>$eq.equals</c> or by the comparison a tuple's or an
-    /// anonymous type's members are compared by, and <c>ToString</c> writes the text
-    /// <c>ToStringStrategy</c> writes, each member's number kind included, so a <c>Curve</c>'s points print
-    /// as singles and a tuple as <c>(1, 2)</c>. Bound to the value itself, a tuple's and an anonymous
-    /// object's named a member neither has: making an <c>Equals</c> delegate threw, and a <c>ToString</c>
-    /// one wrote JavaScript's text (#762). The receiver is the helper's ARGUMENT, so it is read once, when
-    /// the delegate is made, as C# copies it into the delegate: a receiver that is a call runs once, and a
-    /// local reassigned afterwards leaves the delegate holding the value it was made with. No function is
-    /// written here as text (<c>IntroducedFunctionsCoverageTests</c>). <c>GetHashCode</c> never reaches
-    /// here: its group is <c>GetHashCodeStrategy</c>'s. An anonymous object is a reference, and .NET
-    /// throws its NullReferenceException where the delegate of a null one's method is made, so its receiver
-    /// is refused there (<see cref="Eq.Receiver"/>), where a tuple and a data value, values, are never null.
-    /// Null for any other member, and for a receiver of another type, a <c>Nullable</c> of one of these
-    /// among them, whose members are <c>Nullable</c>'s.
+    /// <c>Color</c> and <c>Curve</c>), of a value tuple's or an anonymous object's <c>Equals</c>, and the
+    /// <c>ToString</c> of every value whose type writes its text: the delegate its call is, made by the
+    /// runtime as <c>$eq.hash.group</c> makes <c>GetHashCode</c>'s. <c>Equals</c> compares as the call
+    /// compares (<c>StructuralEqualsStrategy</c>), by <c>$eq.equals</c> or by the comparison a tuple's or an
+    /// anonymous type's members are compared by, and <c>ToString</c> writes what the call writes
+    /// (<c>StringConversion.TextGroup</c>): a record's text with each member's number kind, so a
+    /// <c>Curve</c>'s points print as singles, a tuple as <c>(1, 2)</c>, an array as <c>System.Int32[]</c> and
+    /// an enum by its member's name. Bound to the value itself, a group named a member the value has not, or
+    /// one that writes JavaScript's text (#762, #913). The receiver is the helper's ARGUMENT, so it is read
+    /// once, when the delegate is made, as C# copies it into the delegate: a receiver that is a call runs
+    /// once, and a local reassigned afterwards leaves the delegate holding the value it was made with. A
+    /// reference, an anonymous object or an array, is refused there when it is null
+    /// (<see cref="Eq.Receiver"/>), as .NET refuses to make the delegate of a null one's method, where a
+    /// tuple and a data value, values, are never null. No function is written here as text
+    /// (<c>IntroducedFunctionsCoverageTests</c>). <c>GetHashCode</c> never reaches here: its group is
+    /// <c>GetHashCodeStrategy</c>'s. Null for any other member, and for a receiver of another type, a
+    /// <c>Nullable</c> of one of these among them, whose members are <c>Nullable</c>'s.
     /// </summary>
     private static JsExpr? RecordMemberGroup(IMethodSymbol method, MemberAccessExpressionSyntax group,
         JsExpr receiver, ConversionContext context)
     {
-        if (method.IsStatic
-            || context.SemanticHelper.GetType(group.Expression) is not INamedTypeSymbol data
+        if (method.IsStatic || context.SemanticHelper.GetType(group.Expression) is not { } type) return null;
+        if (method is { Name: "ToString", Parameters.Length: 0 })
+            return StringConversion.TextGroup(type, receiver, context);
+        if (method is not { Name: "Equals", Parameters.Length: 1 } || type is not INamedTypeSymbol data
             || !(data.TwinIsData() || data.IsTupleType || data.IsAnonymousType))
             return null;
-
         context.UsedHelpers.Add(Eq.Import);
-        if (data.IsAnonymousType) receiver = JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver);
-        if (method is { Name: "Equals", Parameters.Length: 1 })
-        {
-            return data.TwinIsData() || ElementEquality.OwnEquals(data) is not { } comparison
-                ? JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), receiver)
-                : JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), receiver, JsExpr.Opaque(comparison));
-        }
-        if (method is not { Name: "ToString", Parameters.Length: 0 }) return null;
-        return data.IsTupleType ? StringConversion.TupleText(data, receiver, Eq.TupleTextGroup, context)
-            : data.IsAnonymousType ? StringConversion.AnonymousText(data, receiver, Eq.RecordTextGroup, context)
-            : StringConversion.RecordText(data, receiver, Eq.RecordTextGroup, context);
+        var held = data.IsAnonymousType ? JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver) : receiver;
+        return data.TwinIsData() || ElementEquality.OwnEquals(data) is not { } comparison
+            ? JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), held)
+            : JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), held, JsExpr.Opaque(comparison));
     }
 
     public int Priority => 0; // Low priority (fallback)
