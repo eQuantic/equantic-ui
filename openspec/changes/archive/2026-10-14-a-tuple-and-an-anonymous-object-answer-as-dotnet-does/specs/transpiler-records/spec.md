@@ -62,7 +62,8 @@ An anonymous object's `Equals`, a call or a method group, SHALL compare as the `
 anonymous type: each member by its type's default comparer, and only another anonymous object of the
 same members in the same order can be equal to it, so an anonymous object of other members or of the
 same members in another order, a record with the same members, a tuple and null SHALL be unequal. Its
-`==` SHALL stay reference equality, and its `GetHashCode` SHALL hash equal objects equal. Its text SHALL
+`==` SHALL stay reference equality, and its `GetHashCode` SHALL hash equal objects equal. As a key of a
+set or a dictionary, and to `Distinct` and `GroupBy`, equal anonymous objects SHALL be one key. Its text SHALL
 be the text C# writes for an anonymous type: `{ R = 255, Name = a }`, its members under their C# names
 in the order they are declared, each as its type writes it in the culture in force, a null one as
 nothing, and `{ }` for none, wherever C# writes the value into text, as a tuple's text is.
@@ -95,6 +96,13 @@ nothing, and `{ }` for none, wherever C# writes the value into text, as a tuple'
 - **WHEN** `a == b`, `a == a` and `a.GetHashCode() == b.GetHashCode()` run over `var a = new { R = 1 };`
   and `var b = new { R = 1 };`
 - **THEN** they answer false, true and true, as in .NET
+
+#### Scenario: As a key
+
+- **WHEN** a `HashSet` holding `new { R = 1 }` twice, `Distinct()` over the same two and `GroupBy` by an
+  anonymous key run
+- **THEN** the two are one element, one distinct value and one group, as in .NET; `Distinct` kept both in
+  the browser, through a JavaScript `Set` that compares by reference
 
 #### Scenario: Its text
 
