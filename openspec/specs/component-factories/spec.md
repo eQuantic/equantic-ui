@@ -10,9 +10,12 @@ components the browser has a module for.
 ### Requirement: A factory is written for a component the surface reaches
 
 The generated declarative surface SHALL write a factory for a concrete, non-generic component in a
-namespace that is not a page only when the component and every type it is declared in are public and
-none of them is marked `[ServerOnly]`, itself or through a class it derives from, since the attribute
-is inherited. The surface SHALL compile whatever the app declares.
+namespace that is not a page only when the component and every type it is declared in are public, and
+the build writes the component a module: no type it is declared in is marked `[ServerOnly]`, and a
+nested component is not marked so either, itself or through a class it derives from, since the
+attribute is inherited. A top-level component SHALL keep its factory whatever it derives from, since
+the component path ignores the attribute and a top-level component always ships. The surface SHALL
+compile whatever the app declares.
 
 #### Scenario: A public component inside an owner that is not public
 
@@ -23,9 +26,14 @@ is inherited. The surface SHALL compile whatever the app declares.
 
 #### Scenario: A component that never crosses
 
-- **WHEN** the component, or the class it is declared in, is marked `[ServerOnly]`, or derives from a
-  class that is
+- **WHEN** the class a component is declared in is marked `[ServerOnly]` or derives from a class that
+  is, or the nested component is marked so itself or through its base
 - **THEN** the surface writes no factory for it
+
+#### Scenario: A top-level component and the attribute
+
+- **WHEN** a top-level component is marked `[ServerOnly]`, or derives from a component that is
+- **THEN** the surface writes its factory, as eqc writes its module
 
 #### Scenario: A public component inside a public owner
 

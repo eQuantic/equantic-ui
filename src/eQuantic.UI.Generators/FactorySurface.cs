@@ -34,16 +34,23 @@ internal static class FactorySurface
         && !IsPage(symbol);
 
     /// <summary>
-    /// Whether the component and every type it is declared in are public and none is server-only. A
-    /// public component inside a private or an internal owner got a public factory naming a type the
-    /// generated file cannot reach, CS0122 or CS0050 in a file the developer never wrote (#703), and
-    /// one inside a server-only owner has no module in the browser to build (#584).
+    /// Whether the component and every type it is declared in are public, and the build writes it a
+    /// module. A public component inside a private or an internal owner got a public factory naming a
+    /// type the generated file cannot reach, CS0122 or CS0050 in a file the developer never wrote
+    /// (#703), and one inside a server-only owner has no module in the browser to build (#584).
+    /// <para>
+    /// <c>[ServerOnly]</c> keeps out what eqc keeps out: an owner marked so, itself or through a class it
+    /// derives from, and a NESTED component marked so, whose twin no module may import. A top-level
+    /// component always ships, as the attribute's contract says, so it keeps its factory whatever it
+    /// derives from (found in Copilot's reviews of #931).
+    /// </para>
     /// </summary>
     private static bool Crosses(INamedTypeSymbol symbol)
     {
         for (var type = symbol; type is not null; type = type.ContainingType)
         {
             if (type.DeclaredAccessibility != Accessibility.Public) return false;
+            if (type.ContainingType is null && SymbolEqualityComparer.Default.Equals(type, symbol)) continue;
             if (ServerOnlyAlongChain(type)) return false;
         }
         return true;
@@ -51,9 +58,8 @@ internal static class FactorySurface
 
     /// <summary>
     /// Whether <paramref name="type"/>, or a type it derives from, is marked <c>[ServerOnly]</c>: the
-    /// attribute is inherited, and eqc writes no module for a type under it, as it writes none for one
-    /// marked itself (found in Copilot's review of #931). By the name as written too, where the attribute
-    /// binds to an error type, as eqc reads it.
+    /// attribute is inherited, and eqc keeps a type under it out as it keeps out one marked itself. By
+    /// the name as written too, where the attribute binds to an error type, as eqc reads it.
     /// </summary>
     private static bool ServerOnlyAlongChain(INamedTypeSymbol type)
     {

@@ -283,8 +283,8 @@ public class AppFactorySurfaceGeneratorTests
     /// and the surface named a type inside a private or an internal owner, which failed in a file the
     /// developer never wrote: CS0122 behind a private owner, CS0050 behind an internal one, a public
     /// factory returning a type that is not (#703). Nor does a component inside an owner marked
-    /// server-only, which never reaches the browser, nor one marked so itself, nor one under a base
-    /// marked so: the attribute is inherited (found in Copilot's review of #931).
+    /// server-only, which never reaches the browser, nor a nested one marked so itself: the attribute is
+    /// inherited, so a class deriving from one marked so is marked too (found in Copilot's review of #931).
     /// </summary>
     [Theory]
     [InlineData("internal sealed class Vault { DOOR }")]
@@ -294,7 +294,7 @@ public class AppFactorySurfaceGeneratorTests
     [InlineData("[ServerOnly] public sealed class Vault { DOOR }")]
     [InlineData("public sealed class Vault { [ServerOnly] DOOR }")]
     [InlineData("[ServerOnly] public class Keep { } public sealed class Vault : Keep { DOOR }")]
-    [InlineData("[ServerOnly] public abstract class Guarded : StatelessComponent { } DOOR")]
+    [InlineData("[ServerOnly] public abstract class Guarded : StatelessComponent { } public sealed class Vault { DOOR }")]
     public void AComponentTheSurfaceCannotReach_GetsNoFactory(string owner)
     {
         const string Door = """
@@ -304,7 +304,7 @@ public class AppFactorySurfaceGeneratorTests
                 public override VisualNode Build(ComponentContext context) => new Text("door");
             }
             """;
-        // Under a server-only base component, the door derives from it.
+        // Beside a server-only base component, the door derives from it.
         var door = owner.Contains("class Guarded") ? Door.Replace(": StatelessComponent", ": Guarded") : Door;
         var (source, _, errors) = RunCompiled($$"""
             using eQuantic.UI.Primitives;
@@ -345,6 +345,35 @@ public class AppFactorySurfaceGeneratorTests
             """);
 
         source.Should().Contain("public static global::Demo.Vault.Door Door(string label)");
+        errors.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// A TOP-LEVEL component always ships: the component path ignores <c>[ServerOnly]</c> on it, so eqc
+    /// writes its module whatever it derives from, and the surface writes its factory (found in
+    /// Copilot's second review of #931).
+    /// </summary>
+    [Theory]
+    [InlineData("[ServerOnly] public abstract class Guarded : StatelessComponent { }", "Guarded")]
+    [InlineData("", "StatelessComponent")]
+    public void ATopLevelComponent_KeepsItsFactory_WhateverItDerivesFrom(string bases, string baseName)
+    {
+        var (source, _, errors) = RunCompiled($$"""
+            using eQuantic.UI.Primitives;
+
+            namespace Demo;
+
+            {{bases}}
+
+            [ServerOnly]
+            public sealed class Door : {{baseName}}
+            {
+                public Door(string label) { }
+                public override VisualNode Build(ComponentContext context) => new Text("door");
+            }
+            """);
+
+        source.Should().Contain("public static global::Demo.Door Door(string label)");
         errors.Should().BeEmpty();
     }
 }
