@@ -1,17 +1,10 @@
 # eQuantic.UI — Roadmap & Honest State Assessment
 
-> Last updated: 2026-10-11 (Track D's second round added: a phone's capabilities, the native bridge
-> and on-device AI). The rest is as of the 2026-09-02 freshness pass: measured numbers replaced by
-> where the count lives, shipped work marked with the release that carries it. This document is an
-> honest, evidence-based assessment of where eQuantic.UI stands against its vision, and a
-> prioritized roadmap to close the gaps.
->
-> **Update (2026-06-10): Phase 1 (transpiler correctness & conformance) is essentially complete.** The
-> correctness net now exists — a **differential conformance harness** (emitted JS run via embedded Bun and
-> compared to .NET), **fail-on-unsupported** diagnostics (no silent miscompiles), and a documented
-> supported subset (`docs/DOTNET-COVERAGE-PROGRAM.md` + wiki `SupportedFeatures`). The "honest state"
-> below describes the pre-hardening starting point; the transpiler rows are updated inline. The forward
-> path is Phases 2–7.
+> Reviewed against the tree on 2026-10-14, at 0.2.0-preview.63: every row of the state below was
+> measured that day, and none of them quotes a count that moves with each release. A count names
+> where it lives (the suite, the board, the 1.0 epic), what shipped names the release or the issue
+> that carries it, and what is ahead names its issue. This document is an evidence-based assessment
+> of where eQuantic.UI stands against its vision, and a prioritized roadmap to close the gaps.
 
 ## The Vision
 
@@ -21,37 +14,65 @@ eQuantic.UI aims to be a **true 100% C# UI SDK**:
 2. **Performant, with Bun behind the scenes** — embedded Bun does the bundling; no Node/npm required of the user.
 3. **Flutter-like authoring** — declarative `Build(context)` component model.
 4. **Rich, ready-made components** — shadcn-like semantics and polish.
-5. **Pluggable CSS engine** — choose your preferred engine, or use an embedded one.
+5. **Styling with no CSS to write** — typed C# styles over one first-party engine; a pluggable
+   engine was weighed and declined (pillar 5).
 
 ## Current State (honest)
 
-eQuantic.UI is a **technically real, ambitious project at an advanced-alpha stage** — not vaporware.
-What genuinely exists and works: a Roslyn-based C#→JS transpiler (**one strategy per C# construct**, writing an IR),
-SSR, Server Actions with authorization, a keyed-LIS reconciler, a theming/StyleBuilder system,
-Tailwind integration, embedded Bun, and large auto-generated icon packages.
+eQuantic.UI is in **preview**: its version carries a prerelease label (read `Directory.Build.props`),
+and by rule a preview breaks its public surface whenever a shape is wrong (CLAUDE.md, "No member
+survives to keep an old shape alive"), each break listed in the release's notes and on the wiki's
+Upgrading page. The next milestone is **1.0, the web SDK stable with the native track experimental**
+([#898](https://github.com/eQuantic/equantic-ui/issues/898)). What 1.0 promises is a contract rather
+than features: an app written against it keeps compiling and keeps answering the same through the
+1.x line. Its exit criteria, and the measurements they start from, live in the epic's body.
 
-What the state honestly reflects: a **young project with the right foundation that has not yet been
-through a hardening phase.** A single review pass surfaced **24 real bugs**, several of them silent
-miscompilations (integer division producing floats, `Math.Truncate` crashing at runtime, enums
-representing as a number in one path and a string in another, `.ToString("F2")` dropping its format,
-`Text` dropping its content, SVG created in the wrong DOM namespace, source-map columns all wrong,
-hydration mis-aligning on whitespace). These have been fixed, and their *nature* was the real signal —
-so the correctness net has since been built (Phase 1): a conformance harness that executes every case on both sides (the suite counts them; this file does not), fail-on-unsupported
-diagnostics, and a documented supported subset. That was the linchpin; it is now in place.
+What exists, held by suites that fail rather than warn:
+
+- **Write-once components**: a screen is authored once against the vocabulary
+  (`eQuantic.UI.Primitives`) and realized as DOM and atomic CSS on the web, and as GPU pixels by
+  Photon on macOS, iOS, Android and Windows.
+- **eqc, the C#→JavaScript transpiler**: Roslyn, one strategy per C# construct, writing an IR with
+  one writer per level. A differential conformance suite runs every case under .NET and under Bun,
+  and what eqc cannot translate faithfully fails the build with a diagnostic instead of answering
+  differently.
+- **The web stack**: SSR with hydration, Server Actions with authorization, server events, a client
+  router, forms and validation, localization through `.resx`, hot reload that keeps a page's state,
+  and C# in the browser's debugger.
+- **The SDK**: `<Project Sdk="eQuantic.UI.Sdk">` and nothing else. Bun is embedded per OS and
+  architecture, so no Node or npm, and every package ships at one version.
+- **The release contract**: every shipping assembly names its class (contract, tool or
+  experimental, #899), the C# surface is held by `PublicAPI.*.txt` and the MSBuild and
+  configuration surface by a baseline (#322), and the rules of a stable line follow the version
+  (#323).
+
+What is not there yet, each with its issue: shared state beyond a component (#289), routes as types
+for programmatic navigation (#292), a component test harness an app can use and the variant matrix
+it carries (#294), the security review and a CSP the SDK writes (#306), and edit-to-view measured
+under a second (#900). Three decisions can still change a shape an app writes, and 1.0 waits for
+them: the Element (#169), where the editors' models live (#185) and per-component theme slots on
+`IAppTheme` (#186).
+
+The bugs are part of the state. They are on the board, the transpiler's fidelity under #164, #565,
+#845 and #849, and 1.0 reads them as an exit criterion: no bug open where code compiles and answers
+differently, and the new ones a week falling two weeks in a row.
 
 ### Evidence snapshot
 
 | Area | State |
 |------|-------|
-| Transpiler | A strategy per construct over an IR; **correctness net in place** — the Bun-vs-.NET conformance harness (over a thousand cases, counted by the suite), fail-on-unsupported diagnostics (`EQ2001/2002/21xx/1001/1002`), documented supported subset; the silent fallbacks are resolved to support or explicit diagnostics |
-| Components | The write-once catalog (index: the wiki's Components page); some were half-implemented |
-| Client routing | **Shipped** — link-driven client router (`src/router`), layout preserved across navigation by reconcile-on-navigate. A typed programmatic `Navigator` API is still ahead |
+| Transpiler | A strategy per C# construct over an IR (`CodeGen/Ir`, one writer per level). The differential conformance suite runs every case under .NET and under Bun (the suite counts them); what eqc cannot translate faithfully is a build error, listed on the wiki's Diagnostics page, and the subset is on its Supported Features page. Open fidelity bugs: the board, under #164, #565, #845 and #849 |
+| Components | The write-once catalog (index: the wiki's Components page), realized on both targets. Owed: the variant matrix and an accessibility checklist per component, through a harness an app author can use too (#294) |
+| Client routing | **Shipped** — a link-driven client router (`src/router`), layout kept across navigations, route guards, prefetch on hover and focus, one module per route, scroll restoration; `Navigator.Go` navigates from code. Routes as types instead of strings: #292 |
 | Forms & validation | **Shipped** — `FormController`/`FormField`/`Rules` in Primitives (write-once, quiet-until-touched, cross-field, conditional via `Rules.When`/`relevantWhen`), `FormInput`/`FormSubmit` surface, async submit through Server Actions with `ApplyServerErrors`, and the `[FormModel]` DataAnnotations bridge (build-time, no second engine) |
-| State management | Component-local `SetState` only; **no global state / signals / context** |
-| Hot reload | Reload-based, but the runtime **captures live page state and replays it** through the ordinary SSR-hydration mechanic — save a file, the UI updates, the state survives. Module hot-swap without a reload is the v2 fence |
-| CSS engine pluggability | The framework now ships **one** styling engine: typed C# lowered to deduplicated atomic classes, byte-identical between SSR (C#) and hydration (TS) and cross-pinned by a shared fixture. Authoring is CSS-free; external CSS a consumer brings is their own build concern |
-| Bun | Embedded per-platform; build works without Node/npm ✅ |
-| Debugging | Source maps were broken (now fixed); error overlay exists |
+| State management | Component-local `SetState`, and a page's state survives a hot reload. Shared state (signals, context): #289 |
+| Server | SSR with hydration, Server Actions behind `[Authorize]`, server data before the first paint (`IServerPrefetch`), and server events: typed topics over one Server-Sent Events stream per page (#291) |
+| Hot reload | **Shipped on both targets** — on the web a rebuild captures the page's fields and reloads, and the new code renders client-side with those fields handed back (module hot-swap without the reload is the v2 fence); on native it applies in process under `dotnet watch`. Edit-to-view under a second is not measured yet (#900) |
+| Styling | The framework ships **one** styling engine: typed C# lowered to deduplicated atomic classes, byte-identical between SSR (C#) and hydration (TS) and cross-pinned by a shared fixture. Authoring is CSS-free; external CSS a consumer brings is their own build concern |
+| Debugging | C# in the browser: statement-level source maps, so a thrown error's frame names its C# statement (#293); `EQuanticSourceMaps` writes them with the C# in Debug, none elsewhere, and without the C# for an error reporter (#352); the development error overlay remaps a stack to C# frames |
+| Performance | The served runtime's gzip budget fails the suite, each page module's size is reported on every pull request, and the Photon frame has allocation ceilings (#290). Not yet: hydration-time benchmarks, tree-shaking verification |
+| Bun | Embedded per OS and architecture; the build needs no Node or npm ✅ |
+| Native (Photon) | **Experimental** — every native assembly carries `[Experimental("EQX0001")]` (#324). Shells for macOS, iOS, Android and Windows; its bar for stable (the goldens, a frame with no allocation, physical devices) is the native track's own, after 1.0 |
 
 ---
 
@@ -64,12 +85,16 @@ appears in the browser with no C# vocabulary to debug it. The transpiler-correct
 - ✅ A **defined, documented supported subset** of C# (`DOTNET-COVERAGE-PROGRAM.md` + wiki).
 - ✅ **Compile-time errors for unsupported constructs** — never silent wrong output (`EQ20xx/21xx/10xx`).
 - ✅ A **conformance suite that executes the emitted JS (via Bun) and compares to .NET** — every case runs on both sides; the number lives in the test run, not here.
-- 🔄 **Source maps** validated (generation/decode); in-browser C# stack-trace smoke test still to add.
+- ✅ **C# in the browser's debugger**: statement-level source maps, so a thrown error's frame names
+  its C# statement (#293).
 
-Still genuinely missing (UI surface, not transpiler correctness):
-- C# abstractions for browser-only concerns currently requiring JS know-how: focus/keyboard,
-  positioned overlays/portals, intersection/resize observers, `localStorage`, timers, file upload,
-  clipboard.
+Most browser-only concerns now have a C# shape, realized on the web: focus (`RequestFocus`, initial
+focus, focus scopes), keyboard (`Shortcut`, `KeyModifiers`), positioned overlays (`Overlay`,
+`Popover`), storage (`IAppStorage`), time (`IClock`, `IFrameTicker`) and the clipboard
+(`ITextClipboard`). Still missing on the web:
+- **File upload**: `IFileDialogs` is the desktop shells', and the phones' document picker is #782.
+- **Observing an element**: whether it is visible, and its size as it changes. A scroll view
+  reports its viewport, and nothing more general exists.
 
 ### 2. Performance with Bun
 Build works without Node, and the measured part is gated (#290): the served runtime has a gzip
@@ -80,14 +105,16 @@ pull request, and the Photon frame has allocation ceilings for a dense scene and
 once. Still missing: hydration-time benchmarks and tree-shaking verification.
 
 ### 3. Flutter-like DX
-The `Build(context)` model is genuinely Flutter-like. Missing the productivity multipliers:
-**true hot reload with state preservation** (today it is full reload), richer/more predictable layout
+The `Build(context)` model is genuinely Flutter-like, and hot reload keeps state on both targets
+(Phase 3). Missing the rest of the productivity multipliers: edit-to-view measured under a second
+(#900), module hot-swap without a page reload on the web, richer/more predictable layout
 components, and layout/diagnostic tooling.
 
 ### 4. shadcn-like components
 The catalog (the wiki's Components page is its index) is a respectable start, but shadcn's value is **polish + accessibility + variants**.
-Missing: serious a11y (focus management, keyboard nav, correct `aria-*`, focus-trap in overlays),
-consistent variant coverage, and finishing the half-baked ones. Quality > quantity here.
+The accessibility half is done on the web and on the three native shells with a bridge (Phase 5;
+UI Automation on Windows is owed). What remains is proof per component: the variant matrix and the
+checklist, through a harness an app can use too (#294). Quality > quantity here.
 
 ### 5. Pluggable CSS engine — **resolved by decision, not by plugging**
 The first-party engine shipped (Track S): typed C# styles lowered to deduplicated atomic classes,
@@ -98,12 +125,15 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
 
 ### Cross-cutting maturity (framework → SDK)
 - **Compiler diagnostics**: actionable messages with C# `file:line` + suggestions.
-- **Component test harness**: app authors currently can't unit-test components (rendering a `Select`
-  throws without a registered theme).
+- **Component test harness**: the repository's suites render a component through fixtures an app
+  cannot reference, so app authors cannot unit-test theirs (#294).
 - **Docs & examples**: essential for a "0 JS" audience — the supported subset and recipes.
-- **SSR/hydration robustness**: the hydration mis-alignment shows this path is still fragile.
-- **Security**: hardened in this pass (deserialization allow-list, payload cap);
-  needs a formal hardening review + CSP guidance. **Consent before cookies (2026-09)**: `IConsent` as
+- **SSR/hydration robustness**: the build derives the hydration contract (#515), and the classes SSR
+  writes are cross-pinned with the ones hydration computes. `tests/e2e` proves adoption, live events
+  and client navigation on a real browser, but no CI job runs it: the headless-browser instrument is
+  an open decision (#286).
+- **Security**: hardened (deserialization allow-list, payload cap); needs a formal hardening review
+  and a CSP the SDK writes (#306). **Consent before cookies (2026-09)**: `IConsent` as
   a capability, the `CookieConsent` card, and `UseGtm(...).WithConsent()` — Consent Mode defaults to
   denied and the container is fetched only on a granted answer, on the first paint and live.
 - **Server events (2026-10)**: a component hears what the server publishes to a typed topic
@@ -132,9 +162,10 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
 > Rationale: nothing is stable until the transpiler is trustworthy, so it comes first. Then the
 > missing SPA primitives (routing, forms, state), then DX (hot reload) and component/CSS polish.
 
-- **Phase 1 — Transpiler correctness & conformance** *(linchpin)* — **✅ essentially complete**:
+- **Phase 1 — Transpiler correctness & conformance** *(linchpin)* — **✅ complete**:
   supported-subset spec, fail-on-unsupported diagnostics, conformance harness (emitted JS via
-  Bun vs .NET) all in place; remaining polish is the in-browser source-map smoke test.
+  Bun vs .NET) all in place, and the last polish, a thrown error's frame naming its C# statement,
+  landed with #293. What it left is a stream of fidelity bugs, read by 1.0's exit criteria.
   → the plan is retired into `docs/LEDGER.md` (2026-06 entries).
 - **Phase 2 — Client router** — **✅ complete**: navigation without reload, typed route params, persistent
   layout (reconcile-on-navigate), route guards, `<Link>` with hover/focus prefetch, route-based
@@ -159,16 +190,17 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
   Android's virtual `AccessibilityNodeInfo` hierarchy), each proved by asking the platform rather
   than the tree. 2026-08-15 closed the last named gap: a navigation now says WHERE YOU ARE
   (`PressableRole.Destination` / `Link.Current` → `aria-current="page"`, the Selected trait on both
-  mobiles), which no existing role could express. Remaining: variant coverage, a component test
-  harness.
+  mobiles), which no existing role could express. Remaining: variant coverage and a component test
+  harness (#294), and UI Automation on the Windows shell.
 - **Phase 6 — First-party embedded CSS engine** — **✅ shipped** (Track S: atomic classes deduplicated
   by a hash cross-pinned between C# and TypeScript, theme tokens as custom properties with
   fallbacks, one engine and no provider contract by decision — see pillar 5). **Normative
   (2026-07-03): the embedded CSS follows exactly the same design system as mobile** — the Photon
   Design System, generated at build time from the shared `eQuantic.UI.Primitives` tokens (single
-  source of truth; no hand-maintained CSS values, parity tested). Tailwind/other engines remain
-  interop options, never the design-system source. → `docs/SHARED-COMPONENTS-PLAN.md`.
-- **Phase 7 — Global state** (signals/context) + performance budgets & benchmarks.
+  source of truth; no hand-maintained CSS values, parity tested). No other engine is integrated:
+  CSS a consumer brings is their own build concern. → `docs/SHARED-COMPONENTS-PLAN.md`.
+- **Phase 7 — Global state** (signals/context, #289) + the rest of the performance pillar: the
+  budgets landed with #290, and hydration-time benchmarks and tree-shaking verification remain.
 
 ## Track I — Editor intelligence (`CodeEditor`)
 
@@ -317,11 +349,11 @@ Every pillar it needs already exists in the product:
   never a lookalike), with the dev server driving rebuilds (Phase 3 hot reload compounds here).
 - **Click-to-select**: the component tree + stable layout paths already power hit-testing and the
   reconciler; the same identity maps a click in the viewer to a `VisualNode`. **Correction
-  (2026-08-14): the V3 source maps CANNOT carry it** — the whole `Build` body is emitted through a
-  single `Raw(jsBody, BuildMethodNode.Body)` call (`TypeScriptEmitter.cs:252`), so the finest position
-  a map can name is the start of the method body (a measured 942-character line in `Badge.ts`).
-  Identity comes instead from a target-neutral `VisualNode.Origin` stamped by a design-mode emission,
-  which is exact rather than correlated and which the native track inherits for free.
+  (2026-08-14): the V3 source maps could not carry it** — the whole `Build` body was emitted as one
+  raw string then, so the finest position a map could name was the start of the method body (a
+  measured 942-character line in `Badge.ts`). The maps became statement-level with #293, and the
+  decision stands: identity comes from a target-neutral `VisualNode.Origin` stamped by a design-mode
+  emission, which is exact where a map is correlated, and which the native track inherits for free.
 - **Property editing**: Roslyn rewrites the component's object initializers/constructor args in
   place — the same semantic machinery the compiler uses, run in reverse; typed tokens
   (Variant/Space/Radius/TypeRole) make every property a dropdown/slider, not a string.
@@ -405,6 +437,12 @@ discovery embedded in `Sdk.Native` (`-t:RunIos` / `-t:RunAndroid`), `launchSetti
 so Rider/VS run and debug in one click, hot reload staying `dotnet watch` on desktop and
 redeploy-on-save as the first honest rung on simulators and emulators.
 
+Where it stands on 2026-10-14: W5 is delivered but for one proof and one piece. The bundle is
+assembled from the publish output, signed with a real identity, notarized and imaged as a DMG, but no
+notarized bundle has been produced yet for want of a Developer ID, and `IAppUpdater` is not started.
+W4 started with deep links, file dialogs and `IWorkspace`, and W6's Windows shell has its first
+slice. The track ships as experimental in 1.0 (#324).
+
 Full gaps-with-evidence, sequencing and per-workstream acceptance: `docs/DESKTOP-PLAN.md`.
 
 ## Track M — Email rendering
@@ -428,11 +466,19 @@ matrix (a generated sample against Gmail, Outlook and Apple Mail) and HTML pins 
 settles. Full design and fences: wiki **[Email Rendering](https://github.com/eQuantic/equantic-ui/wiki/EmailRealizer)**.
 
 ## Definition of "production-ready" (per pillar)
+
+The bar 1.0 holds the web track to (#898, criterion 3); each line says whether it is met.
+
 - **0 JS**: any unsupported C# fails the build with a clear message; conformance suite green; C#
-  debuggable in the browser.
+  debuggable in the browser. Met: the diagnostics and the suite since Phase 1, the debugger by #293.
+  What compiles and still answers differently is a bug, and 1.0's criterion 5 reads those.
 - **Performance**: documented bundle budgets enforced in CI; code-splitting per route. Met by
   #290 for the runtime every page loads (its budget fails the suite) and by the module graph for
   the routes (a page's module loads on the first navigation to it).
-- **Flutter DX**: hot reload preserves state; <1s edit-to-view.
-- **Components**: every shipped component passes an a11y checklist + variant matrix tests.
-- **CSS**: at least one first-party engine ships; provider contract documented.
+- **Flutter DX**: hot reload preserves state; <1s edit-to-view. The state is kept on both targets
+  (Phase 3); the second has never been measured (#900).
+- **Components**: every shipped component passes an a11y checklist + variant matrix tests. Not met
+  (#294).
+- **CSS**: at least one first-party engine ships. Met by Phase 6; a provider contract was the
+  other half of this line, and pillar 5 declined it.
+- **Security**: a formal hardening review, and a CSP the SDK writes. Not met (#306).
