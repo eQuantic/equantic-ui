@@ -16,5 +16,8 @@
   sending an anonymous object's `Equals` to `$eq.equals` fails three of the others. A tuple boxed into a
   concatenation is read where it stands, without the copy a boxing takes, which taken around its text
   spread the string into its characters, `(,1,,, ,2,)`, while this was measured. A value held as
-  `object` still prints as the browser holds it. The served runtime grows about 170 gzipped bytes.
+  `object` still prints as the browser holds it. A `Color` and a `Curve`, held as data too, write their
+  record text in an aligned hole, a hole with a format and `string.Format`, where they wrote
+  `[object Object]`, and `Distinct` over anonymous objects keeps the first of each, where a `Set` kept
+  every one. The served runtime grows about 170 gzipped bytes.
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-records`).
