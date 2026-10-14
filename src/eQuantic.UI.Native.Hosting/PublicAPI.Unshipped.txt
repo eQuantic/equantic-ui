@@ -1,1 +1,7 @@
 #nullable enable
+[EQX0001]eQuantic.UI.Native.Hosting.UrlLauncher
+[EQX0001]eQuantic.UI.Native.Hosting.UrlLauncher.UrlLauncher(eQuantic.UI.Primitives.OpenUrlPolicy! policy, Microsoft.Extensions.Logging.ILogger! logger) -> void
+[EQX0001]eQuantic.UI.Native.Hosting.UrlLauncher.OpenUrlAsync(System.Uri! url) -> System.Threading.Tasks.ValueTask<bool>
+[EQX0001]eQuantic.UI.Native.Hosting.UrlLauncher.CanOpen(System.Uri! url) -> bool
+[EQX0001]abstract eQuantic.UI.Native.Hosting.UrlLauncher.Hand(System.Uri! url) -> System.Threading.Tasks.ValueTask<bool>
+[EQX0001]abstract eQuantic.UI.Native.Hosting.UrlLauncher.Claimed(System.Uri! url) -> bool

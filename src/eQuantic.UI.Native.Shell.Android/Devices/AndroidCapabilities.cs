@@ -30,5 +30,7 @@ public sealed class AndroidCapabilities : IPhotonCapabilities
         // The URLs this app is opened WITH. The activity told the relay in onCreate, long before
         // this container existed, so the container hands out that same one.
         services.TryAddSingleton<IDeepLinks>(_ => AndroidDeepLinks.Relay);
+        // And the URLs this app OPENS: a VIEW intent for the schemes the policy hands over.
+        services.TryAddSingleton<IUrlLauncher, AndroidUrlLauncher>();
     }
 }

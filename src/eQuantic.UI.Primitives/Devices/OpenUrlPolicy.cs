@@ -1,7 +1,7 @@
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
-/// Which URLs <see cref="IWorkspace.OpenUrl"/> hands to the system, decided by SCHEME — and the one
+/// Which URLs <see cref="IUrlLauncher.OpenUrlAsync"/> hands to the system, decided by SCHEME — and the one
 /// rule every realization applies, so an app that passes a URL through the capability on a Mac is
 /// protected in exactly the way it will be on a phone.
 /// <para>
@@ -22,7 +22,7 @@ namespace eQuantic.UI.Primitives;
 /// <c>Opens("slack")</c> for another app's scheme.
 /// </para>
 /// <para>
-/// A refused URL answers FALSE from <see cref="IWorkspace.OpenUrl"/> — the same answer the system
+/// A refused URL answers FALSE from <see cref="IUrlLauncher.OpenUrlAsync"/> — the same answer the system
 /// gives for a scheme nothing claims — and the realization logs which scheme and what to declare.
 /// Not an exception, deliberately: the policy exists for URLs the app did not write, and a hostile
 /// link has to be something a click handler can hand over without a try/catch around it. A
@@ -32,7 +32,7 @@ namespace eQuantic.UI.Primitives;
 /// <para>
 /// <c>file</c> cannot be opted in. A file has typed doors — <see cref="IWorkspace.OpenFile"/> and
 /// <see cref="IWorkspace.Reveal"/> — which check that the path exists and never launch a folder; a
-/// <c>file:</c> URL through <c>OpenUrl</c> would be the same request with every check skipped.
+/// <c>file:</c> URL through <c>OpenUrlAsync</c> would be the same request with every check skipped.
 /// </para>
 /// <para>
 /// Immutable: widening returns a new policy, so the one registered in the container is the one the
@@ -41,7 +41,7 @@ namespace eQuantic.UI.Primitives;
 /// </summary>
 public sealed class OpenUrlPolicy
 {
-    private const string FileHasTypedDoors = "file: URLs do not go through OpenUrl. Hand the path to "
+    private const string FileHasTypedDoors = "file: URLs do not go through OpenUrlAsync. Hand the path to "
         + "IWorkspace.OpenFile or IWorkspace.Reveal, which check that it exists and never launch a "
         + "folder — the checks a file: URL would skip.";
 
@@ -84,8 +84,8 @@ public sealed class OpenUrlPolicy
         // The one scheme whose fix is NOT a declaration. Telling the developer to declare it would
         // send them to a line that throws — the answer is the typed door, said here first.
         if (url.Scheme == Uri.UriSchemeFile)
-            return $"IWorkspace.OpenUrl refused a \"{Uri.UriSchemeFile}\" URL. {FileHasTypedDoors}";
-        return $"IWorkspace.OpenUrl refused a \"{url.Scheme}\" URL: this app hands only {Describe()} "
+            return $"IUrlLauncher.OpenUrlAsync refused a \"{Uri.UriSchemeFile}\" URL. {FileHasTypedDoors}";
+        return $"IUrlLauncher.OpenUrlAsync refused a \"{url.Scheme}\" URL: this app hands only {Describe()} "
             + $"URLs to the system. If it means to open {url.Scheme}: links, declare "
             + $"builder.Workspace.Opens(\"{url.Scheme}\") in Program.cs. A URL that came from content "
             + "should stay refused.";

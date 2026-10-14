@@ -71,9 +71,9 @@ const NO_TWIN_OWED = new Set([
   // too (the code engine's completion applies a provider's answer on the thread the list is read
   // on), so it has a twin, whose `current` is null: what one thread looks like, by its own docs.
   // HOST CONFIGURATION, composed in Program.cs and consulted by the native shells: which URL
-  // schemes IWorkspace.OpenUrl hands to the operating system. A page names the capability
-  // (IWorkspace, an interface, resolved by name); the policy is what the shell behind it applies,
-  // and the browser has no IWorkspace at all — a link there is an anchor the browser already
+  // schemes IUrlLauncher.OpenUrlAsync hands to the operating system. A page names the capability
+  // (IUrlLauncher, an interface, resolved by name); the policy is what the shell behind it applies,
+  // and the browser registers no IUrlLauncher at all: a link there is an anchor the browser already
   // routes, and nothing in a page bundle ever asks this.
   'OpenUrlPolicy',
   // `CurveEvaluator`, the cubic-bezier solver behind `Curve`, used to be named here. A web transition
