@@ -368,12 +368,27 @@ export function raise(error: unknown): never {
   throw thrown(error);
 }
 
+/** What .NET's NullReferenceException says of a member read or a call through null. */
+const THROUGH_NULL = 'Object reference not set to an instance of an object.';
+
 /**
  * What a `throw` throws: the exception, or the NullReferenceException the CLR throws in its place
  * when it is null (`Exception e = null; throw e;`), which a typed catch has to see as one.
  */
 export function thrown(error: unknown): unknown {
-  return error ?? exception('System.NullReferenceException', 'Object reference not set to an instance of an object.');
+  return error ?? exception('System.NullReferenceException', THROUGH_NULL);
+}
+
+/**
+ * The instance a method is called on: .NET throws its NullReferenceException before the method runs
+ * when there is none, after the call's arguments are evaluated. A helper that lowers an instance call
+ * asks it of its receiver where its own body begins (a string's searches, an anonymous object's
+ * `Equals`), and the compiler asks it of a receiver whose instance call has no helper of its own (an
+ * anonymous object's `ToString`, and the delegate of its method group, refused where it is made).
+ */
+export function receiver<T>(value: T | null | undefined): T {
+  if (value == null) throw exception('System.NullReferenceException', THROUGH_NULL);
+  return value;
 }
 
 /**

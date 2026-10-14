@@ -29,9 +29,26 @@ public class TupleAndAnonymousObjectLoweringTests
     [Fact]
     public void AnAnonymousObjectsText_IsARecordsWithNoName()
     {
+        // Its ToString is an instance call: the receiver is refused through null, where a concatenation of
+        // a null one writes nothing.
         TestHelper.ConvertExpression("new { R = 255, Name = \"a\" }.ToString()")
-            .Should().Be("$eq.text.record({ r: 255, name: 'a' }, '', [['R', 'int32'], 'Name'])");
-        TestHelper.ConvertExpression("new { }.ToString()").Should().Be("$eq.text.record({}, '', [])");
+            .Should().Be("$eq.text.record($eq.receiver({ r: 255, name: 'a' }), '', [['R', 'int32'], 'Name'])");
+        TestHelper.ConvertExpression("new { }.ToString()").Should().Be("$eq.text.record($eq.receiver({}), '', [])");
+        TestHelper.ConvertExpression("{ var a = new { R = 1 }; var s = \"x\" + a; }")
+            .Should().Contain("'x' + $eq.text.record(a, '', [['R', 'int32']])");
+    }
+
+    [Fact]
+    public void AValueWhoseTextIsItsTypesName_WritesTheName()
+    {
+        // An array, a list, a delegate: Object.ToString writes the runtime type's name, which only the
+        // static type says here; a null one writes nothing, and an instance call through null throws.
+        TestHelper.ConvertExpression("{ var xs = new[] { 1 }; var s = \"x\" + xs; }")
+            .Should().Contain("'x' + (xs == null ? '' : 'System.Int32[]')");
+        TestHelper.ConvertExpression("{ var xs = new List<int>(); var s = (xs, 1).ToString(); }")
+            .Should().Contain("$eq.text.tuple([xs, 1], [($v) => $v == null ? '' : 'System.Collections.Generic.List`1[System.Int32]', 'int32'])");
+        TestHelper.ConvertExpression("{ Func<int, string> f = n => \"\"; var s = f.ToString(); }")
+            .Should().Contain("$eq.receiver(f) == null ? '' : 'System.Func`2[System.Int32,System.String]'");
     }
 
     [Fact]
@@ -52,10 +69,30 @@ public class TupleAndAnonymousObjectLoweringTests
     {
         // Always the generated one, which takes only another anonymous object of the same members in the
         // same order: $eq.equals matched two plain objects by their keys in any order.
+        // An instance call, whose receiver is refused through null after the argument is evaluated.
         TestHelper.ConvertExpression("new { R = 1, S = \"a\" }.Equals(new { R = 1, S = \"a\" })")
-            .Should().Be("$eq.collections.memberEquality({ r: false, s: false })({ r: 1, s: 'a' }, { r: 1, s: 'a' })");
+            .Should().Be("$eq.equalsInstance({ r: 1, s: 'a' }, { r: 1, s: 'a' }, $eq.collections.memberEquality({ r: false, s: false }))");
         TestHelper.ConvertExpression("new { M = 1.5m }.Equals(null)")
-            .Should().Be("$eq.collections.memberEquality({ m: true })({ m: $eq.num.dec(\"1.5\") }, null)");
+            .Should().Be("$eq.equalsInstance({ m: $eq.num.dec(\"1.5\") }, null, $eq.collections.memberEquality({ m: true }))");
+    }
+
+    [Fact]
+    public void AnotherTypeBeforeTheBoxing_IsUnequal_AndStillEvaluated()
+    {
+        // The other value's type before C# boxed it says what the browser cannot: another anonymous or
+        // tuple type is unequal, whatever the members hold.
+        TestHelper.ConvertExpression("new { A = (byte)1 }.Equals(new { A = 1 })")
+            .Should().Be("$eq.equalsInstance({ a: 1 }, { a: 1 }, null)");
+        TestHelper.ConvertExpression("((byte)1, 2).Equals((object)(1, 2))")
+            .Should().Be("$eq.equalsInstance([1, 2], [...[1, 2]], null)");
+        // The same type under other element names is the same type; an object compares at run time.
+        TestHelper.ConvertExpression("{ (int X, int Y) p = (1, 2); var b = (1, 2).Equals((object)p); }")
+            .Should().Contain("$eq.equals([1, 2], [...p])");
+        TestHelper.ConvertExpression("{ object o = 1; var b = new { A = 1 }.Equals(o); }")
+            .Should().Contain("$eq.equalsInstance({ a: 1 }, o, $eq.collections.memberEquality({ a: false }))");
+        // An empty Nullable tuple equals only null, both values evaluated.
+        TestHelper.ConvertExpression("{ (int, int)? n = null; var b = n.Equals((object)(1.0, 2.0)); }")
+            .Should().Contain("$eq.logic.and(n == null, [...[1.0, 2.0]] == null)");
     }
 
     [Fact]
@@ -90,9 +127,10 @@ public class TupleAndAnonymousObjectLoweringTests
             "{ var t = (1, new[] { 2 }); var a = new { R = 1 }; Func<object, bool> te = t.Equals; Func<string> tt = t.ToString; "
             + "Func<object, bool> ae = a.Equals; Func<string> at = a.ToString; }");
         js.Should().Contain("$eq.equalsGroup([...t], $eq.collections.tupleEquality(false, false))");
-        js.Should().Contain("$eq.text.tupleGroup([...t], ['int32'])");
-        js.Should().Contain("$eq.equalsGroup(a, $eq.collections.memberEquality({ r: false }))");
-        js.Should().Contain("$eq.text.recordGroup(a, '', [['R', 'int32']])");
+        js.Should().Contain("$eq.text.tupleGroup([...t], ['int32', ($v) => $v == null ? '' : 'System.Int32[]'])");
+        // An anonymous object's are refused where they are made when it is null; a tuple, a value, is never null.
+        js.Should().Contain("$eq.equalsGroup($eq.receiver(a), $eq.collections.memberEquality({ r: false }))");
+        js.Should().Contain("$eq.text.recordGroup($eq.receiver(a), '', [['R', 'int32']])");
         js.Should().NotContain(".bind(");
     }
 

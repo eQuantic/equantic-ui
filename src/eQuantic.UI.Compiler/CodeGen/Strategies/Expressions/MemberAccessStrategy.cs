@@ -177,8 +177,11 @@ public class MemberAccessStrategy : IExpressionIrStrategy
     /// the delegate is made, as C# copies it into the delegate: a receiver that is a call runs once, and a
     /// local reassigned afterwards leaves the delegate holding the value it was made with. No function is
     /// written here as text (<c>IntroducedFunctionsCoverageTests</c>). <c>GetHashCode</c> never reaches
-    /// here: its group is <c>GetHashCodeStrategy</c>'s. Null for any other member, and for a receiver of
-    /// another type, a <c>Nullable</c> of one of these among them, whose members are <c>Nullable</c>'s.
+    /// here: its group is <c>GetHashCodeStrategy</c>'s. An anonymous object is a reference, and .NET
+    /// throws its NullReferenceException where the delegate of a null one's method is made, so its receiver
+    /// is refused there (<see cref="Eq.Receiver"/>), where a tuple and a data value, values, are never null.
+    /// Null for any other member, and for a receiver of another type, a <c>Nullable</c> of one of these
+    /// among them, whose members are <c>Nullable</c>'s.
     /// </summary>
     private static JsExpr? RecordMemberGroup(IMethodSymbol method, MemberAccessExpressionSyntax group,
         JsExpr receiver, ConversionContext context)
@@ -188,9 +191,10 @@ public class MemberAccessStrategy : IExpressionIrStrategy
             || !(data.TwinIsData() || data.IsTupleType || data.IsAnonymousType))
             return null;
 
+        context.UsedHelpers.Add(Eq.Import);
+        if (data.IsAnonymousType) receiver = JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver);
         if (method is { Name: "Equals", Parameters.Length: 1 })
         {
-            context.UsedHelpers.Add(Eq.Import);
             return data.TwinIsData() || ElementEquality.OwnEquals(data) is not { } comparison
                 ? JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), receiver)
                 : JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), receiver, JsExpr.Opaque(comparison));

@@ -1,3 +1,5 @@
+import { receiver } from './exceptions';
+
 /**
  * Structural (value) equality for .NET value-shaped data: records, `record struct`/`struct`, value
  * tuples, and anonymous types — all represented as plain JS objects / arrays by the transpiler.
@@ -62,6 +64,22 @@ export function equals(a: unknown, b: unknown): boolean {
     if (!equals(ao[k], bo[k])) return false;
   }
   return true;
+}
+
+/**
+ * An instance `value.Equals(other)` whose receiver may be null, an anonymous object's: refused as .NET
+ * refuses a call through null, after the argument was evaluated, then compared as `same` compares, the
+ * comparison its type compares by. `same` is null where the compiler knows the other value is of another
+ * type (a tuple or an anonymous object of other element or member types, which the browser holds as the
+ * same array or plain object), which .NET finds unequal before it reads a member.
+ */
+export function equalsInstance(
+  value: unknown,
+  other: unknown,
+  same: ((a: unknown, b: unknown) => boolean) | null = equals,
+): boolean {
+  receiver(value);
+  return same !== null && same(value, other);
 }
 
 /**
