@@ -84,7 +84,8 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
         // desktop, and one a phone's manifest has to list as well.
         var opened = context.SyntaxProvider.CreateSyntaxProvider(
                 predicate: static (node, _) => WorkspaceDeclarations.MightDeclare(node),
-                transform: static (ctx, _) => WorkspaceDeclarations.Read(ctx))
+                transform: static (ctx, _) => System.Collections.Immutable.ImmutableArray.CreateRange(WorkspaceDeclarations.Read(ctx)))
+            .SelectMany(static (declarations, _) => declarations)
             .Where(static declaration => declaration is not null)
             .Collect();
 

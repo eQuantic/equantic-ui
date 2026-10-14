@@ -38,6 +38,12 @@ namespace eQuantic.UI.Primitives;
 /// Immutable: widening returns a new policy, so the one registered in the container is the one the
 /// program configured, and nothing that runs later can loosen it.
 /// </para>
+/// <para>
+/// A phone's build reads every <see cref="Allowing(string)"/> the app's own code writes, as it reads
+/// <c>builder.Workspace.Opens…</c>: a phone answers whether something opens a link only for the
+/// schemes its manifest lists, so a policy an app registers itself reaches the manifest too. That is
+/// why a scheme widened there is a constant on a phone (EQ3007).
+/// </para>
 /// </summary>
 public sealed class OpenUrlPolicy
 {

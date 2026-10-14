@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using eQuantic.UI;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -21,9 +22,17 @@ internal static class WorkspaceDeclarations
 {
     private const string BuilderType = "eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder";
 
+    /// <summary>
+    /// The policy itself. An app that registers its OWN policy decides what it opens without the
+    /// builder (<c>OpenUrlPolicy.Web.Allowing("slack")</c>), and the builder steps aside for it, so
+    /// the schemes it widens by have to reach a phone's manifest as well, or the app would open the
+    /// link and be told nothing opens it.
+    /// </summary>
+    private const string PolicyType = "eQuantic.UI.Primitives.OpenUrlPolicy";
+
     internal static readonly DiagnosticDescriptor SchemeMustBeConstant = new(
         "EQ3007", "A scheme a phone app opens must be a constant",
-        "The scheme passed to builder.Workspace.Opens() is built at run time, and a phone answers "
+        "The scheme passed to builder.Workspace.Opens() or OpenUrlPolicy.Allowing() is built at run time, and a phone answers "
         + "CanOpen only for the schemes its manifest lists, which is written at BUILD time. The "
         + "app would open the link and still be told nothing opens it. Pass something the "
         + "build can read: a literal, a const, or one of .NET's own scheme names (Uri.UriSchemeMailto).",
@@ -44,26 +53,63 @@ internal static class WorkspaceDeclarations
     }
 
     internal static bool MightDeclare(SyntaxNode node) =>
-        BuilderCall.MethodName(node) is { } name && name.StartsWith("Opens", System.StringComparison.Ordinal);
+        BuilderCall.MethodName(node) is { } name
+        && (name.StartsWith("Opens", System.StringComparison.Ordinal) || name == "Allowing");
 
-    /// <summary>The scheme a call opens, or null when this call is not one of ours, or opens
-    /// nothing the builder would accept.</summary>
-    internal static Declaration? Read(GeneratorSyntaxContext context)
+    /// <summary>The schemes a call opens: none when it is not one of ours, or opens nothing the
+    /// builder or the policy would accept.</summary>
+    internal static IEnumerable<Declaration?> Read(GeneratorSyntaxContext context)
     {
         if (context.SemanticModel.GetOperation(context.Node) is not IInvocationOperation invocation)
-            return null;
-        if (invocation.TargetMethod.ContainingType?.ToDisplayString() != BuilderType) return null;
+            yield break;
+        var type = invocation.TargetMethod.ContainingType?.ToDisplayString();
+        if (type != BuilderType && type != PolicyType) yield break;
 
         var location = context.Node.GetLocation();
-        if (OpenedSchemeRule.Named(invocation.TargetMethod.Name) is { } named)
-            return new Declaration(named, location);
+        if (type == BuilderType && OpenedSchemeRule.Named(invocation.TargetMethod.Name) is { } named)
+        {
+            yield return new Declaration(named, location);
+            yield break;
+        }
 
-        // The general form, `Opens("slack")`. A name the builder refuses is nothing to write: the
+        // The general form, `Opens("slack")` or `Allowing("slack")`, and the policy's several at
+        // once, `Allowing(["acme", "slack"])`. A name the builder refuses is nothing to write: the
         // builder says so itself when the app starts, by throwing at this very line.
-        if (invocation.Arguments.Length != 1) return null;
-        return Constant(invocation.Arguments[0].Value) is { } declared
-            ? BundleFactRule.Scheme(declared) is { } scheme && scheme != FileScheme ? new Declaration(scheme, location) : null
-            : new Declaration(null, location);
+        if (invocation.Arguments.Length != 1) yield break;
+        foreach (var argument in Each(invocation.Arguments[0].Value))
+        {
+            if (argument is null || Constant(argument) is not { } declared)
+                yield return new Declaration(null, location);
+            else if (BundleFactRule.Scheme(declared) is { } scheme && scheme != FileScheme)
+                yield return new Declaration(scheme, location);
+        }
+    }
+
+    /// <summary>
+    /// The scheme arguments one call passes: the argument itself for a string, each element of a
+    /// collection written at the call for a sequence, and a null for a sequence the build cannot see
+    /// into (a variable, a spread), which a phone reports.
+    /// </summary>
+    private static IEnumerable<IOperation?> Each(IOperation argument)
+    {
+        while (argument is IConversionOperation { IsImplicit: true } conversion) argument = conversion.Operand;
+        if (argument.Type?.SpecialType == SpecialType.System_String)
+        {
+            yield return argument;
+            yield break;
+        }
+        var elements = argument switch
+        {
+            ICollectionExpressionOperation collection => collection.Elements,
+            IArrayCreationOperation { Initializer: { } initializer } => initializer.ElementValues,
+            _ => default(System.Collections.Immutable.ImmutableArray<IOperation>?),
+        };
+        if (elements is not { } known)
+        {
+            yield return null;
+            yield break;
+        }
+        foreach (var element in known) yield return element is ISpreadOperation ? null : element;
     }
 
     /// <summary><c>file</c> passes as a scheme NAME and is refused by the policy itself: a file has

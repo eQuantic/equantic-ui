@@ -83,8 +83,9 @@ public sealed class PhotonApplicationBuilder
     /// <summary>
     /// What this app hands to the SYSTEM — which URL schemes <see cref="IUrlLauncher.OpenUrlAsync"/> opens.
     /// The web and the app's own schemes already; <c>mailto</c>, <c>tel</c> or another app's scheme
-    /// only when said here. Nothing about it reaches a manifest: it is composed at <see cref="Build"/>
-    /// into the <see cref="OpenUrlPolicy"/> every realization consults.
+    /// only when said here. It is composed at <see cref="Build"/> into the <see cref="OpenUrlPolicy"/>
+    /// every realization consults, and the build reads the same lines for a phone's manifest, which
+    /// lists the schemes the app may ask the system about.
     /// </summary>
     public PhotonWorkspaceBuilder Workspace { get; } = new();
 

@@ -54,7 +54,8 @@ apply the same policy and log nothing.
 
 ### Requirement: A phone's build lists the schemes the app may ask about
 
-Each scheme a `builder.Workspace.Opens…` line opens SHALL be declared on the compiled assembly, once,
+Each scheme a `builder.Workspace.Opens…` line opens, and each an `OpenUrlPolicy.Allowing(…)` in the
+app's code widens by, SHALL be declared on the compiled assembly, once,
 lower-cased, in ordinal order. The iOS partial manifest SHALL list those schemes and the app's own
 under `LSApplicationQueriesSchemes`. An Android app SHALL carry a `queries` element with a VIEW intent
 for `http`, `https` and each opened scheme, merged into the manifest it ships, and an added or removed
@@ -64,6 +65,13 @@ line SHALL reach the next build's manifest.
 
 - **WHEN** an app calls `OpensPhone().OpensMail()` and `Opens("Slack").OpensMessages().OpensMail()`
 - **THEN** the assembly declares `mailto`, `slack`, `sms` and `tel`
+
+#### Scenario: A policy the app registers itself
+
+- **WHEN** an app registers `OpenUrlPolicy.Web.Allowing("slack").Allowing(["Teams", "zoommtg"])`
+  itself, which the builder steps aside for
+- **THEN** the assembly declares `slack`, `teams` and `zoommtg`, and the Android app's merged manifest
+  lists them
 
 #### Scenario: Every named door lists what it opens
 
@@ -89,7 +97,8 @@ line SHALL reach the next build's manifest.
 
 ### Requirement: A scheme a phone app opens is a constant
 
-A scheme passed to `builder.Workspace.Opens(…)` that the compiler cannot evaluate SHALL be `EQ3007` at
+A scheme passed to `builder.Workspace.Opens(…)` or to `OpenUrlPolicy.Allowing(…)` that the build
+cannot read SHALL be `EQ3007` at
 that line when the compilation is an iOS or an Android app, and SHALL NOT be reported for a desktop
 app. A name the builder refuses SHALL declare nothing.
 

@@ -36,6 +36,7 @@ public class OpenedSchemeDeclarationTests
     {
         var program = $$"""
             using eQuantic.UI.Native.Hosting;
+            using Microsoft.Extensions.DependencyInjection;
 
             public partial class Program
             {
@@ -137,6 +138,42 @@ public class OpenedSchemeDeclarationTests
             """, IosStandIn);
 
         diagnostics.Should().BeEmpty();
+        Schemes(declared).Should().Equal("slack");
+    }
+
+    /// <summary>
+    /// An app that registers its OWN policy decides without the builder, and the builder steps aside
+    /// for it: what that policy widens by has to reach a phone's manifest as well, or the app opens a
+    /// link that <c>CanOpen</c> then says nothing opens. Every form the policy takes is read, one
+    /// scheme or several written at the call.
+    /// </summary>
+    [Fact]
+    public void APolicyTheAppRegistersItself_IsDeclaredToo()
+    {
+        var (diagnostics, declared) = Run("""
+            builder.Services.AddSingleton(eQuantic.UI.Primitives.OpenUrlPolicy.Web
+                .Allowing("slack").Allowing(["Teams", "zoommtg"]).Allowing(new[] { "msteams" }));
+            """, AndroidStandIn);
+
+        diagnostics.Should().BeEmpty();
+        Schemes(declared).Should().Equal("msteams", "slack", "teams", "zoommtg");
+    }
+
+    /// <summary>A sequence the build cannot see into, a variable or a spread, is as unreadable on a
+    /// phone as a scheme built at run time.</summary>
+    [Theory]
+    [InlineData("android")]
+    [InlineData("desktop")]
+    public void APolicysSchemesBuiltAtRunTime_AreAnErrorWhereAManifestIsWritten(string target)
+    {
+        var (diagnostics, declared) = Run("""
+            string[] more = args;
+            builder.Services.AddSingleton(eQuantic.UI.Primitives.OpenUrlPolicy.Web
+                .Allowing(more).Allowing(["slack", .. more]));
+            """, target == "android" ? AndroidStandIn : null);
+
+        diagnostics.Select(diagnostic => diagnostic.Id).Should().Equal(
+            target == "android" ? ["EQ3007", "EQ3007"] : []);
         Schemes(declared).Should().Equal("slack");
     }
 
