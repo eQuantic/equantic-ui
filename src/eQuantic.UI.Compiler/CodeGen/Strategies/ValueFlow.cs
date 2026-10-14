@@ -77,7 +77,7 @@ public static class ValueFlow
     /// <c>AppendFormatted</c> rather than of an interpolation, and plain when it is that call's only
     /// argument: it printed an enum as its camelCase key (#679's review), and <c>1.5</c> and
     /// <c>true</c> on a pt-BR page where the server printed <c>1,5</c> and <c>True</c> (#454).</summary>
-    private static bool FlowsIntoText(IOperation operation)
+    internal static bool FlowsIntoText(IOperation operation)
     {
         var parent = operation.Parent;
         if (parent is IConversionOperation { IsImplicit: true } boxing && ReferenceEquals(boxing.Operand, operation))

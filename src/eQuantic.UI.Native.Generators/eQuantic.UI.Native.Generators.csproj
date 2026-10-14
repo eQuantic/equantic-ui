@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <!-- A tool of the SDK (#899): the source generator the native SDK hands every app, shipped inside a package and never compiled
+             against by an app. Its surface class says so, written into the assembly. -->
+        <_EqSurface>tool</_EqSurface>
         <!-- netstandard2.0 is not a choice: it is what Roslyn loads analyzers as. -->
         <TargetFramework>netstandard2.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
@@ -43,6 +46,7 @@
          one of them trimmed. -->
     <ItemGroup>
         <Compile Include="../Shared/BundleFactRule.cs" Link="Shared/BundleFactRule.cs" />
+        <Compile Include="../Shared/OpenedSchemeRule.cs" Link="Shared/OpenedSchemeRule.cs" />
     </ItemGroup>
 
 </Project>

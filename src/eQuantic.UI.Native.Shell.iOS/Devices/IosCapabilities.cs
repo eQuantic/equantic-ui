@@ -32,5 +32,7 @@ public sealed class IosCapabilities : IPhotonCapabilities
         // The URLs this app is opened WITH. The scene told the relay as it connected, before the
         // first tree was built, so the container hands out that same one.
         services.TryAddSingleton<IDeepLinks>(_ => IosDeepLinks.Relay);
+        // And the URLs this app OPENS: UIApplication, for the schemes the policy hands over.
+        services.TryAddSingleton<IUrlLauncher, IosUrlLauncher>();
     }
 }

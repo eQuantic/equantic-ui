@@ -1,35 +1,35 @@
 #nullable enable
-eQuantic.UI.Native.Shell.Android.AndroidCapabilities
-eQuantic.UI.Native.Shell.Android.AndroidCapabilities.AndroidCapabilities() -> void
-eQuantic.UI.Native.Shell.Android.AndroidCapabilities.Register(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
-eQuantic.UI.Native.Shell.Android.AndroidIconRasterizer
-eQuantic.UI.Native.Shell.Android.AndroidIconRasterizer.AndroidIconRasterizer() -> void
-eQuantic.UI.Native.Shell.Android.AndroidIconRasterizer.Rasterize(eQuantic.UI.Primitives.IconGlyph glyph, float widthDp, float heightDp, float scale) -> eQuantic.UI.Native.Framework.TextRaster?
-eQuantic.UI.Native.Shell.Android.AndroidPhotonRunner
-eQuantic.UI.Native.Shell.Android.AndroidPhotonRunner.AndroidPhotonRunner() -> void
-eQuantic.UI.Native.Shell.Android.AndroidPhotonRunner.Run(eQuantic.UI.Native.Hosting.PhotonApplication! app) -> void
-eQuantic.UI.Native.Shell.Android.AndroidTextService
-eQuantic.UI.Native.Shell.Android.AndroidTextService.AndroidTextService() -> void
-eQuantic.UI.Native.Shell.Android.AndroidTextService.Measure(string! content, eQuantic.UI.Primitives.TypeStyle style, float typeScale, float maxWidth, int maxLines) -> eQuantic.UI.Native.Framework.TextMeasurement!
-eQuantic.UI.Native.Shell.Android.AndroidTextService.Rasterize(string! content, eQuantic.UI.Primitives.TypeStyle style, float typeScale, float maxWidth, int maxLines, float scale, eQuantic.UI.Primitives.TextAlignment align) -> eQuantic.UI.Native.Framework.TextRaster?
-eQuantic.UI.Native.Shell.Android.PhotonActivity
-eQuantic.UI.Native.Shell.Android.PhotonActivity.DoFrame(long frameTimeNanos) -> void
-eQuantic.UI.Native.Shell.Android.PhotonActivity.FramesPresented.get -> int
-eQuantic.UI.Native.Shell.Android.PhotonActivity.PhotonActivity() -> void
-eQuantic.UI.Native.Shell.Android.PhotonActivity.SurfaceChanged(Android.Views.ISurfaceHolder! holder, Android.Graphics.Format format, int width, int height) -> void
-eQuantic.UI.Native.Shell.Android.PhotonActivity.SurfaceCreated(Android.Views.ISurfaceHolder! holder) -> void
-eQuantic.UI.Native.Shell.Android.PhotonActivity.SurfaceDestroyed(Android.Views.ISurfaceHolder! holder) -> void
-eQuantic.UI.Native.Shell.Android.Resource
-eQuantic.UI.Native.Shell.Android.Resource.Resource() -> void
-override eQuantic.UI.Native.Shell.Android.PhotonActivity.DispatchKeyEvent(Android.Views.KeyEvent? e) -> bool
-override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnActivityResult(int requestCode, Android.App.Result resultCode, Android.Content.Intent? data) -> void
-override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnConfigurationChanged(Android.Content.Res.Configuration! newConfig) -> void
-override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnCreate(Android.OS.Bundle? savedInstanceState) -> void
-override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnDestroy() -> void
-override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnNewIntent(Android.Content.Intent? intent) -> void
-override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnRequestPermissionsResult(int requestCode, string![]! permissions, Android.Content.PM.Permission[]! grantResults) -> void
-override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnResume() -> void
-override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnStart() -> void
-override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnStop() -> void
-override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnTouchEvent(Android.Views.MotionEvent? e) -> bool
-virtual eQuantic.UI.Native.Shell.Android.PhotonActivity.UrlSchemes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+[EQX0001]eQuantic.UI.Native.Shell.Android.AndroidCapabilities
+[EQX0001]eQuantic.UI.Native.Shell.Android.AndroidCapabilities.AndroidCapabilities() -> void
+[EQX0001]eQuantic.UI.Native.Shell.Android.AndroidCapabilities.Register(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
+[EQX0001]eQuantic.UI.Native.Shell.Android.AndroidIconRasterizer
+[EQX0001]eQuantic.UI.Native.Shell.Android.AndroidIconRasterizer.AndroidIconRasterizer() -> void
+[EQX0001]eQuantic.UI.Native.Shell.Android.AndroidIconRasterizer.Rasterize(eQuantic.UI.Primitives.IconGlyph glyph, float widthDp, float heightDp, float scale) -> eQuantic.UI.Native.Framework.TextRaster?
+[EQX0001]eQuantic.UI.Native.Shell.Android.AndroidPhotonRunner
+[EQX0001]eQuantic.UI.Native.Shell.Android.AndroidPhotonRunner.AndroidPhotonRunner() -> void
+[EQX0001]eQuantic.UI.Native.Shell.Android.AndroidPhotonRunner.Run(eQuantic.UI.Native.Hosting.PhotonApplication! app) -> void
+[EQX0001]eQuantic.UI.Native.Shell.Android.AndroidTextService
+[EQX0001]eQuantic.UI.Native.Shell.Android.AndroidTextService.AndroidTextService() -> void
+[EQX0001]eQuantic.UI.Native.Shell.Android.AndroidTextService.Measure(string! content, eQuantic.UI.Primitives.TypeStyle style, float typeScale, float maxWidth, int maxLines) -> eQuantic.UI.Native.Framework.TextMeasurement!
+[EQX0001]eQuantic.UI.Native.Shell.Android.AndroidTextService.Rasterize(string! content, eQuantic.UI.Primitives.TypeStyle style, float typeScale, float maxWidth, int maxLines, float scale, eQuantic.UI.Primitives.TextAlignment align) -> eQuantic.UI.Native.Framework.TextRaster?
+[EQX0001]eQuantic.UI.Native.Shell.Android.PhotonActivity
+[EQX0001]eQuantic.UI.Native.Shell.Android.PhotonActivity.DoFrame(long frameTimeNanos) -> void
+[EQX0001]eQuantic.UI.Native.Shell.Android.PhotonActivity.FramesPresented.get -> int
+[EQX0001]eQuantic.UI.Native.Shell.Android.PhotonActivity.PhotonActivity() -> void
+[EQX0001]eQuantic.UI.Native.Shell.Android.PhotonActivity.SurfaceChanged(Android.Views.ISurfaceHolder! holder, Android.Graphics.Format format, int width, int height) -> void
+[EQX0001]eQuantic.UI.Native.Shell.Android.PhotonActivity.SurfaceCreated(Android.Views.ISurfaceHolder! holder) -> void
+[EQX0001]eQuantic.UI.Native.Shell.Android.PhotonActivity.SurfaceDestroyed(Android.Views.ISurfaceHolder! holder) -> void
+[EQX0001]eQuantic.UI.Native.Shell.Android.Resource
+[EQX0001]eQuantic.UI.Native.Shell.Android.Resource.Resource() -> void
+[EQX0001]override eQuantic.UI.Native.Shell.Android.PhotonActivity.DispatchKeyEvent(Android.Views.KeyEvent? e) -> bool
+[EQX0001]override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnActivityResult(int requestCode, Android.App.Result resultCode, Android.Content.Intent? data) -> void
+[EQX0001]override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnConfigurationChanged(Android.Content.Res.Configuration! newConfig) -> void
+[EQX0001]override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnCreate(Android.OS.Bundle? savedInstanceState) -> void
+[EQX0001]override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnDestroy() -> void
+[EQX0001]override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnNewIntent(Android.Content.Intent? intent) -> void
+[EQX0001]override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnRequestPermissionsResult(int requestCode, string![]! permissions, Android.Content.PM.Permission[]! grantResults) -> void
+[EQX0001]override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnResume() -> void
+[EQX0001]override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnStart() -> void
+[EQX0001]override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnStop() -> void
+[EQX0001]override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnTouchEvent(Android.Views.MotionEvent? e) -> bool
+[EQX0001]virtual eQuantic.UI.Native.Shell.Android.PhotonActivity.UrlSchemes.get -> System.Collections.Generic.IReadOnlyList<string!>!

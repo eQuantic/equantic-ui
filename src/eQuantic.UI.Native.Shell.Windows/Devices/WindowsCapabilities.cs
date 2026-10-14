@@ -16,6 +16,8 @@ public sealed class WindowsCapabilities : IPhotonCapabilities
         // Asking a PERSON for a file, and handing one back to the system — the two desktop seams.
         services.TryAddSingleton<IFileDialogs, WindowsFileDialogs>();
         services.TryAddSingleton<IWorkspace, WindowsWorkspace>();
+        // A link is a contract of its own, which the phones answer too.
+        services.TryAddSingleton<IUrlLauncher, WindowsUrlLauncher>();
         // The file system IS the photo library on a desktop; the picker is the grant.
         services.TryAddSingleton<IPhotoLibrary>(provider =>
             new WindowsPhotoLibrary(provider.GetRequiredService<IFileDialogs>()));

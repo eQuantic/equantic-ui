@@ -32,7 +32,7 @@ import {
   outOfRange,
   requireComparison,
 } from './string-statics';
-import { exception } from './exceptions';
+import { exception, receiver } from './exceptions';
 
 const INDEX_AT_MOST_LENGTH =
   'Index was out of range. Must be non-negative and less than or equal to the size of the collection.';
@@ -40,16 +40,6 @@ const INDEX_BELOW_LENGTH =
   'Index was out of range. Must be non-negative and less than the size of the collection.';
 const COUNT =
   'Count must be positive and count must refer to a location within the string/array/collection.';
-
-/** The instance a method is called on: .NET throws before the method runs when there is none. */
-export function receiver(source: string | null | undefined): string {
-  if (source == null)
-    throw exception(
-      'System.NullReferenceException',
-      'Object reference not set to an instance of an object.',
-    );
-  return source;
-}
 
 function argumentNull(parameter: string): Error {
   return exception(

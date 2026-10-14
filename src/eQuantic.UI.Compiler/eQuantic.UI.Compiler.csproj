@@ -17,7 +17,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>eQuantic.UI.Compiler</PackageId>
-    <Description>Roslyn-based C# to TypeScript/JavaScript compiler for eQuantic.UI components.</Description>
+    <Description>Roslyn-based C# to TypeScript/JavaScript compiler for eQuantic.UI components. A tool of the eQuantic.UI SDK: its API serves the SDK and is outside the SDK's compatibility promise.</Description>
     <!-- The C# 15 preview syntax APIs (WithElementSyntax, Break/ContinueStatementSyntax.Name, …)
          are [Experimental] in Roslyn 5.9. Understanding preview language IS this component's job —
          eqc parses with LanguageVersion.Preview on purpose (see Services/ParseDefaults) — so the
