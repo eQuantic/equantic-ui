@@ -57,6 +57,16 @@ public class TupleAndAnonymousObjectConformanceTests
         """var a = new { R = 1, Name = "x", S = (string?)null }; var b = new { R = 1, Name = "x", S = (string?)null }; Func<int> h = a.GetHashCode; return (a.GetHashCode() == b.GetHashCode()) + "|" + (h() == b.GetHashCode());""", // True|True
         // Behind object, and in a set of objects.
         """object o = new { R = 1 }; var set = new HashSet<object> { new { R = 1 } }; return o.Equals(new { R = 1 }) + "|" + set.Contains(new { R = 1 }) + "|" + (o.GetHashCode() == new { R = 1 }.GetHashCode());""", // True|True|True
+        // Members of other TYPES make another anonymous type, which the browser holds as the same plain
+        // object: a byte and an int, an int and a double, a string and a char, read where the call is.
+        """var a = new { A = (byte)1 }; return a.Equals(new { A = 1 }) + "|" + new { A = 1 }.Equals(new { A = 1.0 }) + "|" + new { S = "a" }.Equals((object)new { S = 'a' }) + "|" + a.Equals(new { A = (byte)1 });""", // False|False|False|True
+        // The other value is still evaluated, and a value of an unknown type is still compared.
+        """var log = ""; var a = new { A = (byte)1 }; object Other() { log += "o"; return new { A = (byte)1 }; } (int, int) Pair() { log += "p"; return (1, 2); } return a.Equals(Pair()) + "|" + a.Equals(Other()) + "|" + a.Equals((object)null) + "|" + log;""", // False|True|False|po
+        // An instance call through null throws, after its argument is evaluated, as .NET's callvirt does.
+        """var log = ""; object F() { log += "f"; return null; } var a = new { R = 1 }; a = null!; try { return a.Equals(F()).ToString(); } catch (NullReferenceException) { return "NRE" + log; }""", // NREf
+        """var a = new { R = 1 }; a = null!; try { return a.Equals(null).ToString(); } catch (NullReferenceException) { return "NRE"; }""", // NRE
+        // A method group of a null anonymous object is refused where the delegate is made.
+        """var a = new { R = 1 }; a = null!; var made = ""; try { Func<object?, bool> f = a.Equals; made += "e"; } catch (NullReferenceException) { made += "E"; } catch (ArgumentException) { made += "A"; } try { Func<string> g = a.ToString; made += "t"; } catch (NullReferenceException) { made += "T"; } catch (ArgumentException) { made += "A"; } return made;""",
     ];
 
     /// <summary>An anonymous object's text, <c>{ R = 255, Name = a }</c>: the C# member names in their
@@ -74,6 +84,11 @@ public class TupleAndAnonymousObjectConformanceTests
         """return new { A = new { B = 1 }, T = (1, "a"), P = new Point(1, 2) }.ToString();""", // { A = { B = 1 }, T = (1, a), P = Point { X = 1, Y = 2 } }
         // Every other route into text: the method group, Join, Format, an aligned hole, a builder, Convert.
         """var a = new { A = 1.5 }; Func<string> f = a.ToString; return f() + "|" + string.Join(";", new[] { a, new { A = 2.5 } }) + "|" + string.Format("[{0}]", a) + "|" + $"[{a,12}]" + "|" + new StringBuilder().Append(a).ToString() + "|" + Convert.ToString(a);""",
+        // An explicit ToString through null throws, where a hole and a concatenation write nothing.
+        """var a = new { R = 1 }; a = null!; string s; try { s = a.ToString(); } catch (NullReferenceException) { s = "NRE"; } return s + "|" + $"[{a}]" + "|" + ("[" + a + "]");""", // NRE|[]|[]
+        // A member whose type never says what its text is writes its type's name, as Object.ToString does:
+        // an array, a list, a dictionary, a set, a delegate; the browser wrote JavaScript's own text of it.
+        """var xs = new[] { 1, 2 }; var l = new List<int> { 1 }; var d = new Dictionary<string, int> { ["a"] = 1 }; var h = new HashSet<int> { 1 }; Func<int> f = () => 1; return new { Xs = xs, L = l, D = d, H = h, F = f }.ToString();""",
     ];
 
     /// <summary>A value tuple's text, <c>(1, 2)</c>: each element as its own <c>ToString</c> writes it in
@@ -100,6 +115,9 @@ public class TupleAndAnonymousObjectConformanceTests
         """var t = (1, 2); var s = new StringBuilder(); s.Append($"{t,8}|{t,-8}|{t:G}"); return s.ToString() + "|" + string.Format("{0,10}|{1}|{2,-12}|", t, new { A = 1 }, (object)(2.5, 'x'));""",
         // The method groups are made over a copy of the tuple, as C# copies the receiver into the delegate.
         """var p = (X: 1, Y: new { Z = "q" }); Func<object?, bool> eq = p.Equals; Func<string> text = p.ToString; p.X = 5; return eq((1, new { Z = "q" })) + "|" + text() + "|" + p;""", // True|(1, { Z = q })|(5, { Z = q })
+        // An element whose type never says what its text is writes its type's name, and so does the value
+        // itself in every route into text; a null one writes nothing.
+        """var xs = new[] { 1, 2 }; var l = new List<string> { "a" }; Func<int, string> f = n => ""; int[]? none = null; return (xs, 3).ToString() + "|" + (l, f).ToString() + "|" + xs + "|" + $"{l}|{f}|" + xs.ToString() + "|[" + none + "]|" + string.Join(";", new[] { xs }) + "|" + string.Format("{0}", xs);""",
         // A set of tuples and a dictionary keyed by anonymous objects find their values, and print them.
         """var set = new HashSet<(int, string)> { (1, "a") }; var d = new Dictionary<object, int> { [new { A = 1 }] = 1 }; return set.Contains((1, "a")) + "|" + d.ContainsKey(new { A = 1 }) + "|" + string.Join(",", set);""", // True|True|(1, a)
     ];
@@ -140,6 +158,10 @@ public class TupleAndAnonymousObjectConformanceTests
         // The method group compares as the call does: by value, and an array element by reference.
         """var t = (1, 2); Func<object?, bool> same = t.Equals; object o = (1, 2); return same((1, 2)) + "|" + same((2, 1)) + "|" + o.Equals((1, 2)) + "|" + (t == (1, 2));""", // True|False|True|True
         """var xs = new[] { 1 }; var t = (xs, 1); Func<object?, bool> eq = t.Equals; return eq((xs, 1)) + "|" + eq((new[] { 1 }, 1));""", // True|False
+        // Elements of other TYPES make another tuple type, which the browser holds as the same array: a byte
+        // and an int, an int and a double, a string and a char; a tuple's element names are no part of its type.
+        """(int X, int Y) p = (1, 2); return ((byte)1, 2).Equals((object)(1, 2)) + "|" + (1, 2).Equals((object)(1.0, 2.0)) + "|" + ("a", 1).Equals((object)('a', 1)) + "|" + p.Equals((object)(1, 2)) + "|" + (1, 2).Equals((object)p);""", // False|False|False|True|True
+        """(int, int)? n = (1, 2); (int, int)? none = null; string? s = null; return n.Equals((object)(1.0, 2.0)) + "|" + none.Equals((object)(1.0, 2.0)) + "|" + none.Equals((object?)s) + "|" + (1, 2).Equals((object?)n);""", // False|False|True|True
         // A Nullable tuple's Equals is its value's, and an empty one equals only null.
         """(int, int)? n = (1, 2); (int, int)? none = null; return n.Equals((1, 2)) + "|" + none.Equals(null) + "|" + none.Equals((1, 2)) + "|" + (n.GetHashCode() == (1, 2).GetHashCode()) + "|" + none.GetHashCode();""", // True|True|False|True|0
     ];
