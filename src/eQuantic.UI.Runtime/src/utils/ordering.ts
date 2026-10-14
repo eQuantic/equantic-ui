@@ -30,9 +30,25 @@ interface Comparable {
   compareTo(other: unknown): number;
 }
 
-/** The comparer of an ordering. */
+/**
+ * The comparer of each enum, by its members' names and values: every order the compiler writes for one
+ * enum is an object of its own, and two sorted sets of it compare with one function, as .NET's share
+ * `Comparer<T>.Default`, where each made its own and the set operations took another path (#865).
+ */
+const enumComparers = new Map<string, (a: unknown, b: unknown) => number>();
+
+/** The comparer of an ordering: one function for each, an enum's included. */
 export function comparerOf(ordering: Ordering): (a: unknown, b: unknown) => number {
-  if (typeof ordering === 'object') return byEnum(ordering);
+  if (typeof ordering === 'object') {
+    const entries = Object.entries(ordering).sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0));
+    const members = JSON.stringify(entries);
+    let comparer = enumComparers.get(members);
+    if (comparer === undefined) {
+      comparer = byEnum(ordering);
+      enumComparers.set(members, comparer);
+    }
+    return comparer;
+  }
   switch (ordering) {
     case 'text':
       return byText;

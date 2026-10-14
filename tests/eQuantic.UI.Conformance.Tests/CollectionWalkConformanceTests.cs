@@ -77,4 +77,41 @@ public class CollectionWalkConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(Walked(statements));
     }
+
+    /// <summary>
+    /// A walk over a <c>SortedDictionary</c>'s or a <c>SortedList</c>'s pairs, keys or values that the
+    /// collection changes under (#864). The keys and the values were walked as a copy, so a key added while
+    /// they were walked ran on; and the pairs' walk refused in CoreLib's words, where the two live in
+    /// System.Collections and refuse in its own. A sorted dictionary counts a removal of a key it does not
+    /// hold as a change, as the red-black tree under it may turn on the way down, and a sorted list does not;
+    /// <c>Remove(key, out value)</c> reaches a sorted dictionary through <c>CollectionExtensions</c>, which
+    /// asks for the key first and removes nothing when it is not there.
+    /// </summary>
+    [SkippableTheory]
+    // SortedDictionary: the pairs, the keys and the values, a change ending each at the next step.
+    [InlineData("var d = new SortedDictionary<int, int> { [1] = 1, [2] = 2 }; foreach (var kv in d) { s += kv.Key; if (d.Count > 9) break; d[kv.Key + 10] = 0; }")] // 1|Collection was modified after the enumerator was instantiated.
+    [InlineData("var d = new SortedDictionary<int, int> { [1] = 1, [2] = 2 }; foreach (var k in d.Keys) { s += k; if (d.Count > 9) break; d[k + 10] = 0; }")]     // 1|the same, where the copy answered 12
+    [InlineData("var d = new SortedDictionary<int, int> { [1] = 1, [2] = 2 }; foreach (var v in d.Values) { s += v; if (d.Count > 9) break; d[v + 10] = 0; }")]   // 1|the same
+    [InlineData("var d = new SortedDictionary<int, int> { [1] = 1, [2] = 2 }; foreach (var k in d.Keys) { s += k; d[k] = 5; }")]                                // 1|the same: an overwrite
+    [InlineData("var d = new SortedDictionary<int, int> { [1] = 1, [2] = 2 }; foreach (var k in d.Keys) { s += k; d.Remove(42); }")]                             // 1|the same: a key it does not hold
+    [InlineData("var d = new SortedDictionary<int, int> { [1] = 1, [2] = 2 }; foreach (var k in d.Keys) { s += k; d.Remove(42, out _); }")]                      // 12: CollectionExtensions asks first, and removes nothing
+    [InlineData("var d = new SortedDictionary<int, int> { [1] = 1, [2] = 2 }; foreach (var k in d.Keys) { s += k; d.Remove(42, out var gone); s += gone; }")]    // 1020: the same, the default written
+    [InlineData("var d = new SortedDictionary<int, int> { [1] = 1, [2] = 2 }; foreach (var k in d.Keys) { s += k; if (k == 1) d.Remove(2, out _); }")]           // 1|the same: a key it holds
+    [InlineData("var d = new SortedDictionary<int, int> { [1] = 1, [2] = 2 }; foreach (var k in d.Keys) { s += k; if (k == 2) d.Clear(); }")]                     // 12|the same: after the last
+    [InlineData("var d = new SortedDictionary<int, int> { [1] = 1, [2] = 2 }; foreach (var k in d.Keys) { s += k; d.TryAdd(k, 9); }")]                            // 12: nothing added
+    [InlineData("var d = new SortedDictionary<int, int> { [1] = 1, [2] = 2 }; foreach (var k in d.Keys) s += k + \":\" + d[k] + d.ContainsKey(k) + d.ContainsValue(k) + d.Count + \",\";")] // read: no change
+    [InlineData("var d = new SortedDictionary<int, int> { [1] = 1, [2] = 2 }; foreach (var k in d.Keys) { s += k; try { d.Add(k, 0); } catch (ArgumentException) { } }")] // 1|the same: a key it holds, refused after the tree turned
+    // SortedList: the same, but a removal that finds nothing is no change.
+    [InlineData("var d = new SortedList<int, int> { [1] = 1, [2] = 2 }; foreach (var kv in d) { s += kv.Key; if (d.Count > 9) break; d[kv.Key + 10] = 0; }")]       // 1|Collection was modified after the enumerator was instantiated.
+    [InlineData("var d = new SortedList<int, int> { [1] = 1, [2] = 2 }; foreach (var k in d.Keys) { s += k; if (d.Count > 9) break; d[k + 10] = 0; }")]           // 1|the same
+    [InlineData("var d = new SortedList<int, int> { [1] = 1, [2] = 2 }; foreach (var v in d.Values) { s += v; if (d.Count > 9) break; d[v + 10] = 0; }")]         // 1|the same
+    [InlineData("var d = new SortedList<int, int> { [1] = 1, [2] = 2 }; foreach (var k in d.Keys) { s += k; d[k] = 5; }")]                                      // 1|the same: an overwrite
+    [InlineData("var d = new SortedList<int, int> { [1] = 1, [2] = 2 }; foreach (var k in d.Keys) { s += k; d.Remove(42); }")]                                   // 12: nothing removed
+    [InlineData("var d = new SortedList<int, int> { [1] = 1, [2] = 2 }; foreach (var k in d.Keys) { s += k; try { d.Add(k, 0); } catch (ArgumentException) { } }")] // 12: refused before anything moved
+    [InlineData("var d = new SortedList<int, int> { [1] = 1, [2] = 2 }; foreach (var k in d.Keys) { s += k; if (k == 1) d.Remove(2); }")]                         // 1|the same
+    public void AWalkOverASortedDictionaryThatChanges_EndsAsDotNetEndsIt(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(Walked(statements));
+    }
 }

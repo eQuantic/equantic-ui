@@ -19,6 +19,7 @@
 import { exception } from './exceptions';
 import { sameBy, type KeyEquality } from './key-equality';
 import { binarySearchIn, introSort, type SortOrder } from './sort';
+import { readAsACollection } from './sorted';
 import { comparerOf, type Ordering } from './ordering';
 import { compare as compareStrings, type StringComparison } from './string-statics';
 
@@ -71,7 +72,9 @@ function requireAtLeastZero(parameter: string, value: number): void {
  */
 export function listCopy<T = any>(collection: Iterable<T> | string | null): T[] {
   if (collection == null) throw argumentNull('collection');
-  return typeof collection === 'string' ? (collection.split('') as unknown as T[]) : Array.from(collection);
+  if (typeof collection === 'string') return collection.split('') as unknown as T[];
+  readAsACollection(collection);
+  return Array.from(collection);
 }
 
 // ---- a list's capacity --------------------------------------------------------------------------
