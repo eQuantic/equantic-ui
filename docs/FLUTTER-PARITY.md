@@ -177,8 +177,9 @@ prose, and cannot go on claiming an absence that has ended.
 ## What this adds up to
 
 **One gap explains several others.** There is no Element tree, so there is no position to look up from,
-so there is no `InheritedWidget`, no `didChangeDependencies`, and no dependency-driven rebuild. That is
-one decision to take, not four.
+so there is no `InheritedWidget`, no `didChangeDependencies`, and no dependency-driven rebuild. That was
+one decision to take, not four, and it was taken on 2026-10-14: the Element is built before 1.0, in
+the slices of [ELEMENT-TREE-PLAN.md](ELEMENT-TREE-PLAN.md), and each flips the rows it closes.
 
 **Two gaps have a consumer already blocked behind them**, which is the only evidence that counts here:
 `LayoutBuilder` (a child built against its own box) and an authorable constraint type to go with it.
