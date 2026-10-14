@@ -43,8 +43,10 @@ held their keys or values, and `SortedSet.GetViewBetween` did not compile:
   Two sorted sets of one enum share its comparer, as two of any other element type do, so a set of an
   enum takes a view's paths too.
 - A dictionary's `TryAdd` is the runtime class's, through the extension and its static form alike, and a
-  lookup or a `TryAdd` is the dictionary's only when the call binds to System.Collections.Generic's: an
-  extension of the app's own under one of those names was lowered as the dictionary's own.
+  lookup or a `TryAdd` is the dictionary's only when the call binds to the framework's own member, a
+  dictionary's or `CollectionExtensions`', declared outside the source: an extension of the app's own under
+  one of those names was lowered as the dictionary's own, and one the app declared in
+  System.Collections.Generic still was after the first answer to the review.
 
 ## Impact
 
@@ -53,9 +55,9 @@ held their keys or values, and `SortedSet.GetViewBetween` did not compile:
   `utils/collections.ts`, whose `Remove` asks a view to refuse before it searches; and
   `utils/ordering.ts`, which answers one comparer per enum.
 - eqc: `QueueStackStrategy` lowers `GetViewBetween`, and `DictionaryStrategy` with `DictionaryLookup`
-  lowers `TryAdd` through `CollectionExtensions`, asks a lookup's method which type declares it, and
-  lowers a `Remove(key, out _)` that finds nothing to no change. The BCL surface baseline moves
-  `GetViewBetween` from `fenced:EQ2004` to `native`.
+  lowers `TryAdd` through `CollectionExtensions`, asks a lookup's method which type declares it and
+  whether the framework declares that type, and lowers a `Remove(key, out _)` that finds nothing to no
+  change. The BCL surface baseline moves `GetViewBetween` from `fenced:EQ2004` to `native`.
 - No public or developer surface moves: the runtime's TypeScript and eqc's lowering are not in
   `PublicAPI.Shipped.txt` nor in the developer-surface baseline.
 - Known divergences: LINQ reads a sorted set's count before every operator, where .NET's `First` or

@@ -346,9 +346,15 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
     private static bool IsDictionary(ExpressionSyntax expression, ConversionContext context) =>
         context.SemanticHelper.GetType(expression).IsDictionary();
 
-    /// <summary>Whether a call binds to a member of System.Collections.Generic, or binds to nothing the
-    /// model can name, where the receiver's type is all there is to go by.</summary>
+    /// <summary>Whether a call binds to a dictionary's own member or to <c>CollectionExtensions</c>', the
+    /// framework's, or binds to nothing the model can name, where the receiver's type is all there is to go
+    /// by. A type declared in the source, the app's or a project's it references, is never the framework's,
+    /// whatever namespace it is written in.</summary>
     private static bool IsTheCollections(IMethodSymbol? method) =>
         method is null
-        || method.ContainingType?.OriginalDefinition.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic";
+        || method.ContainingType is { } type
+            && !type.Locations.Any(location => location.IsInSource)
+            && (type.IsDictionary()
+                || type.OriginalDefinition is { Name: "CollectionExtensions" } extensions
+                    && extensions.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic");
 }

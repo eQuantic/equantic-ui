@@ -96,6 +96,29 @@ public class DictionaryStrategyTests
         js.Should().Contain("Ledger.tryAdd(s, 'a', 1)").And.Contain("Ledger.getValueOrDefault(s, 'a')");
     }
 
+    /// <summary>The app's extension stays the app's in System.Collections.Generic too: the namespace
+    /// is text an app may write, so the method's type must be the framework's own, a dictionary or
+    /// CollectionExtensions declared outside the source (Copilot, #919).</summary>
+    [Fact]
+    public void AnExtensionOfTheApps_InTheCollectionsNamespace_StaysTheApps()
+    {
+        var js = TestHelper.ConvertClass("""
+                public bool Fill(SortedDictionary<string, int> s) => s.TryAdd("a", 1);
+                public int Read(SortedDictionary<string, int> s) => s.GetValueOrDefault("a");
+            }
+
+            namespace System.Collections.Generic
+            {
+                public static class Ledger
+                {
+                    public static bool TryAdd(this SortedDictionary<string, int> s, string key, int value) => false;
+                    public static int GetValueOrDefault(this SortedDictionary<string, int> s, string key) => -1;
+                }
+            """);
+
+        js.Should().Contain("Ledger.tryAdd(s, 'a', 1)").And.Contain("Ledger.getValueOrDefault(s, 'a')");
+    }
+
     [Fact]
     public void Foreach_WalksTheClass_ItsKeysAndItsPairs()
     {
