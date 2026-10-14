@@ -69,7 +69,23 @@ public static class Transpiler
     /// <summary>
     /// ONE compiler asks every prelude, one prelude at a time, which is how a build uses one: every
     /// file of a project goes through the same instance. A compiler reads its standard references into
-    /// native memory when it is made, so one per prelude would pay that hundreds of times (#481).
+    /// native memory when it is made, measured at about 34 MB a compiler, with 1.2 GB of a hundred
+    /// still held after they were released and collected, so one per prelude would pay that hundreds
+    /// of times (#481).
+    /// <para>
+    /// What one prelude leaves in it decides nothing for the next, read in <c>ComponentCompiler</c> and
+    /// what it holds. The project compilation is replaced, with the referenced trees beside it. No
+    /// dependency resolver or referenced modules are ever handed over, so a record takes a resolver of
+    /// its own compilation and a class reads its chains from its own file. The emitter clears the
+    /// converter's diagnostics, its refused twins and the names it used at every module, and builds a
+    /// new semantic helper with each model. What survives is keyed by identity (the converter's node
+    /// cache, and the static tables of <c>ValueCopies</c>, <c>LocalFunctionName</c>,
+    /// <c>ResourceClasses</c> and <c>JsExprWriter</c>, keyed by a compilation, a node or an IR node),
+    /// or is never read for an error (the resource reads and the discovered resource classes), or is
+    /// keyed by name and answered by a type .NET loads, which no prelude's is
+    /// (<c>ExceptionDefaultMessage</c>). <c>HarnessSelfChecksTests</c> asks two preludes that declare
+    /// one type name differently in both orders.
+    /// </para>
     /// </summary>
     private static readonly ComponentCompiler Build = new();
 
@@ -185,7 +201,10 @@ public static class Transpiler
             : PreludeVerdicts.GetOrAdd(prelude,
                 static text => new Lazy<IReadOnlyList<Refusal>>(() => AskTheBuild(text))).Value;
 
-    private static IReadOnlyList<Refusal> AskTheBuild(string prelude)
+    /// <summary>The build's verdict on <paramref name="prelude"/>, asked now and never cached: what
+    /// <see cref="PreludeRefusals"/> remembers, and what the harness's own check asks in an order of its
+    /// choosing, to show the verdict owes nothing to the prelude asked before it.</summary>
+    internal static IReadOnlyList<Refusal> AskTheBuild(string prelude)
     {
         // A file of its own, compiled as the project's compilation holds it: eqc's tree replaces the
         // project's tree of the same path, as it does for every file of an app.

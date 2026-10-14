@@ -54,7 +54,12 @@ compilation of it, and every module's errors are the prelude's refusals. Nothing
 is encoded in the harness, so a check a build gains is read here the day it lands. The verdict is
 asked once per prelude (the cases of a class share a few), by one compiler under a lock: a compiler
 reads its standard references into native memory when it is made, which one per prelude would pay
-hundreds of times (#481), and one instance compiling file after file is how a build uses it.
+hundreds of times (#481, measured at about 34 MB a compiler), and one instance compiling file after
+file is how a build uses it. What one prelude leaves in that compiler decides nothing for the next,
+read in `ComponentCompiler` and what it holds: the project compilation is replaced, no resolver is
+ever handed over, the emitter clears what a module reports and names, and what survives is keyed by
+identity, never read for an error, or keyed by a name only a type .NET loads answers. The harness
+asks two preludes that declare one type name differently, in both orders, and each answers its own.
 
 **Nothing beside the converter is asked of the body.** A build would compile the body as the method
 of a plain class, the program the harness writes, and runs nothing else over such a method: the

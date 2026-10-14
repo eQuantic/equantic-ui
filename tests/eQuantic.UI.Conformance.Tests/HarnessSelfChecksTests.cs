@@ -77,6 +77,30 @@ public class HarnessSelfChecksTests
     private const string LetQuery = "return (from a in new[] { 1, 2 } let f = a * 2 select f).Sum();";
 
     /// <summary>
+    /// The prelude's verdict comes from ONE compiler that every prelude goes through, so it owes nothing
+    /// to the prelude asked before it. Two preludes declare one type name differently, one refused (two
+    /// methods of one name, EQ1007) and one accepted, and are asked uncached in both orders: each
+    /// answers its own verdict, the accepted one never inheriting the refused one's.
+    /// </summary>
+    [Fact]
+    public void APreludesVerdict_OwesNothingToThePreludeAskedBeforeIt()
+    {
+        const string refused =
+            "public record Probe(int X) { public int Plus(int y) => X + y; public int Plus(int y, int z) => X + y + z; }";
+        const string accepted = "public record Probe(int X) { public int Plus(int y) => X + y; }";
+        static string[] Verdict(string prelude) =>
+            Transpiler.AskTheBuild(prelude).Select(refusal => refusal.ToString()).ToArray();
+
+        var (refusedFirst, acceptedAfterIt) = (Verdict(refused), Verdict(accepted));
+        var (acceptedFirst, refusedAfterIt) = (Verdict(accepted), Verdict(refused));
+
+        refusedFirst.Should().ContainSingle().Which.Should().StartWith("EQ1007 in Probe:");
+        refusedAfterIt.Should().Equal(refusedFirst);
+        acceptedFirst.Should().BeEmpty();
+        acceptedAfterIt.Should().BeEmpty();
+    }
+
+    /// <summary>
     /// A case written for a fence pins THAT fence, in its OWN C#: it fails when the build accepts the
     /// case's C#, its prelude's refusal not standing in for it, when the build refuses it for another
     /// reason, its prelude's included, and when it is not C# the compiler accepts.

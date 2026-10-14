@@ -6,6 +6,7 @@
 - [x] 1.2 Every entry of `Transpiler` answers a `Translation`, whose text the runner reaches through `Accepted()` only, and a refused case fails with `RefusedByTheBuildException`, naming every refusal by its id and text
 - [x] 1.3 The build's own verdict on the prelude's declarations, asked of `ComponentCompiler` once per prelude by one compiler under a lock
 - [x] 1.4 `ModuleGraph` and the four places that call `ComponentCompiler` themselves read every module's errors before they keep the modules that wrote text
+- [x] 1.5 The shared compiler read for state one prelude leaves for the next, and two preludes that declare one type name differently asked in both orders
 
 ## 2. A case that pins a refusal
 

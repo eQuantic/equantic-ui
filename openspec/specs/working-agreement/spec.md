@@ -412,7 +412,8 @@ SHALL fail when the chronology differs from the record, saying where an event is
 The conformance harness SHALL read, for every case it transpiles, what the build refuses in the
 case's C#, where the build reads it and by the build's own rule: the converter's diagnostics over
 the text the case would run, an error refusing and a warning not, and the build's own verdict on the
-declarations of the case's prelude, every check a build runs beside the converter included. A case
+declarations of the case's prelude, every check a build runs beside the converter included, which
+SHALL owe nothing to a prelude asked before it. A case
 whose C# the build refuses SHALL fail before either side runs, naming each refusal by its id and
 text, unless the case declares the refusal it pins. A case that declares one SHALL pass only when its
 C# compiles, the build refuses the case's own C# with that id, and every other refusal of the case or
@@ -477,6 +478,12 @@ module before it keeps the modules that wrote text.
 
 - **WHEN** a case's prelude declares a record with two methods of one name
 - **THEN** the case fails before anything runs, naming EQ1007 and the record
+
+#### Scenario: Two preludes that declare one type name
+
+- **WHEN** two preludes declare one type name differently, one refused with EQ1007 and one accepted,
+  and the build's verdict is asked of each in both orders
+- **THEN** each answers its own verdict in either order
 
 #### Scenario: A module refused before it writes text
 
