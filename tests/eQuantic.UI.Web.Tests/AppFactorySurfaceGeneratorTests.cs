@@ -285,6 +285,8 @@ public class AppFactorySurfaceGeneratorTests
     /// factory returning a type that is not (#703). Nor does a component inside an owner marked
     /// server-only, which never reaches the browser, nor a nested one marked so itself: the attribute is
     /// inherited, so a class deriving from one marked so is marked too (found in Copilot's review of #931).
+    /// Nor one inside an attribute or a type the runtime provides, which eqc writes no module for either
+    /// (found in its third review).
     /// </summary>
     [Theory]
     [InlineData("internal sealed class Vault { DOOR }")]
@@ -295,6 +297,9 @@ public class AppFactorySurfaceGeneratorTests
     [InlineData("public sealed class Vault { [ServerOnly] DOOR }")]
     [InlineData("[ServerOnly] public class Keep { } public sealed class Vault : Keep { DOOR }")]
     [InlineData("[ServerOnly] public abstract class Guarded : StatelessComponent { } public sealed class Vault { DOOR }")]
+    [InlineData("public sealed class MarkerAttribute : System.Attribute { DOOR }")]
+    [InlineData("public class MarkerAttribute : System.Attribute { } public sealed class TagAttribute : MarkerAttribute { DOOR }")]
+    [InlineData("[RuntimeProvided] public sealed class Vault { DOOR }")]
     public void AComponentTheSurfaceCannotReach_GetsNoFactory(string owner)
     {
         const string Door = """

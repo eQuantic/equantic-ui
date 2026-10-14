@@ -36,8 +36,8 @@ For a developer:
   project's build never reads the app, so its field would hide the member.
 - A lambda's parameter is annotated `bigint` over a `long` or a `ulong` and `Decimal` over a
   `decimal`, and the module imports `Decimal`.
-- A component gets a factory when it and every class it is declared in are public and none is
-  `[ServerOnly]`.
+- A component gets a factory when it and every class it is declared in are public and eqc writes it
+  a module: no class it is declared in is `[ServerOnly]`, `[RuntimeProvided]` or an attribute.
 
 eqc and the factory generator change. The runtime, the realizers, the shells and the SDKs are
 untouched, and neither the public surface nor the developer surface moves. Nothing breaks: the
