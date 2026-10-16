@@ -82,7 +82,8 @@ a list's searches take for the same type.
 ### Requirement: A dictionary's members answer as .NET's
 
 `Count`, `ContainsKey`, `TryGetValue`, `TryAdd`, `ContainsValue`, `Remove`, `Keys.Contains` and
-`Keys.Count` SHALL answer as .NET's `Dictionary` answers them. A sorted dictionary's and a sorted list's
+`Keys.Count` SHALL answer as .NET's `Dictionary` answers them, and a sorted dictionary's `Keys.Contains`
+as .NET's `SortedDictionary` answers it. A sorted dictionary's and a sorted list's
 `TryAdd`, which C# binds to `CollectionExtensions`' extension, SHALL be the runtime class's, through the
 extension's static form too. A lookup or a `TryAdd` SHALL be the dictionary's only when the call binds to the
 framework's own member, a dictionary's or `CollectionExtensions`': an extension of the app's own under one of
@@ -97,6 +98,11 @@ those names SHALL stay the app's call, whatever namespace it is declared in.
 
 - **WHEN** a dictionary holding key 3 answers `d.Keys.Contains(3)` and `d.Keys.Count`
 - **THEN** they answer true and the dictionary's count
+
+#### Scenario: A lookup through a sorted dictionary's keys
+
+- **WHEN** a `SortedDictionary<string, int>` holding `b` hands out `var ks = d.Keys`, gains `a`, and asks `ks.Contains("a")` and `ks.Contains("z")`
+- **THEN** they answer true and false, as in .NET; the build refused the call with EQ2004
 
 #### Scenario: TryAdd on a sorted dictionary
 
