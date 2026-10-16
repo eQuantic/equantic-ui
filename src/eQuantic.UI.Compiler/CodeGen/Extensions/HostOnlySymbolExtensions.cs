@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Compiler.CodeGen.Extensions;
 
@@ -59,6 +60,13 @@ namespace eQuantic.UI.Compiler.CodeGen.Extensions;
 /// <c>[ServerOnly]</c> class was the case left out: the fence said nothing of a type this compilation
 /// declares, so <c>Vault.Key()</c> was written as a call on a class nothing wrote (#823).
 /// </para>
+/// <para>
+/// A <c>[ServerOnly]</c> method reaches no twin, whatever type declares it, and a call can reach one
+/// without naming it: through the interface member it implements, or the method it overrides, which
+/// carry no attribute. <c>((IShape)new Circle()).Area()</c> built, and the browser threw a TypeError
+/// where .NET answered. Such a call is refused where it is written, naming the method
+/// (<see cref="ServerOnlyContracts"/>), and a call that can reach no such method is not.
+/// </para>
 /// </summary>
 internal static class HostOnlySymbolExtensions
 {
@@ -94,7 +102,8 @@ internal static class HostOnlySymbolExtensions
 
     /// <summary>
     /// Reports and returns true when <paramref name="symbol"/> may not be named from client code: it
-    /// is marked <c>[ServerOnly]</c> itself, it belongs to an API only a server has
+    /// is marked <c>[ServerOnly]</c> itself, a call through it may reach a <c>[ServerOnly]</c> method
+    /// (<see cref="ServerOnlyContracts"/>), it belongs to an API only a server has
     /// (<see cref="ServerPlatform"/>), or the metadata type it is declared on is marked
     /// <c>[ServerOnly]</c>. The type of a symbol declared in source is the kept-out rule's
     /// (<see cref="ReportIfKeptOut"/>), asked where the code names it, so one site says it once.
@@ -127,6 +136,9 @@ internal static class HostOnlySymbolExtensions
         // so a call to it from the component's own Build was written as a call to a member the twin
         // does not have, with no diagnostic (found in review of #827).
         if (symbol.IsHostOnly()) return Report(declaring, symbol.Name, node, context);
+        // A contract such a member fulfils: the call binds to a member that carries no attribute, and
+        // may reach, in the browser, the one the twin leaves out (#816).
+        if (symbol.ReportIfFulfilledOnTheServer(node, context, through)) return true;
         // What .NET keeps on the host, whatever the call goes through (#816).
         if (declaring.ReportIfServerPlatform(node, context)) return true;
         // A type of source, this compilation's or a referenced project's, is refused where its name
@@ -151,6 +163,56 @@ internal static class HostOnlySymbolExtensions
     /// </summary>
     private static bool ReachedThroughAClientVisibleType(ITypeSymbol? through) =>
         through is not null && !through.IsHostOnly();
+
+    /// <summary>
+    /// Reports and returns true when a call bound to <paramref name="symbol"/>, an interface member or a
+    /// method that can be overridden, may reach a <c>[ServerOnly]</c> method of a type that crosses,
+    /// which that type's twin leaves out (<see cref="ServerOnlyContracts"/>). The call is made on
+    /// <paramref name="through"/> where it has a receiver, and on the type its code is declared in where
+    /// it is bare. A call of <c>base</c> dispatches to nothing: it runs the base's own method, which the
+    /// base's twin holds.
+    /// </summary>
+    private static bool ReportIfFulfilledOnTheServer(this ISymbol symbol, SyntaxNode node, ConversionContext context,
+        ITypeSymbol? through)
+    {
+        if (symbol is not IMethodSymbol contract || CallsTheBase(node)) return false;
+        if ((context.ProjectCompilation ?? context.SemanticModel?.Compilation) is not { } build) return false;
+        var methods = ServerOnlyContracts.FulfilledOnTheServer(contract, () => through ?? TypeOfThis(node, context), build);
+        if (methods.Count == 0) return false;
+        // At the call as written: a `?.` call reaches here rewritten, at no place of the file.
+        context.Report(context.SemanticHelper.Original(node), ConversionSeverity.Error, "EQ2010",
+            FulfilledOnTheServerMessage($"{contract.ContainingType.ToDisplayString()}.{contract.Name}", methods));
+        return true;
+    }
+
+    /// <summary>Whether the call, or the method group, is made on <c>base</c>.</summary>
+    private static bool CallsTheBase(SyntaxNode node) => node switch
+    {
+        InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Expression: BaseExpressionSyntax } } => true,
+        MemberAccessExpressionSyntax { Expression: BaseExpressionSyntax } => true,
+        _ => false,
+    };
+
+    /// <summary>The type a bare call, or a bare method group, is made on: the one its code is declared
+    /// in, which <c>this</c> is. Null for any other node, and where the model does not hold its file.</summary>
+    private static ITypeSymbol? TypeOfThis(SyntaxNode node, ConversionContext context)
+    {
+        if (node is not (InvocationExpressionSyntax { Expression: SimpleNameSyntax } or SimpleNameSyntax)) return null;
+        var declaration = context.SemanticHelper.Original(node).Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
+        return declaration is not null && context.SemanticModel is { } model && model.SyntaxTree == declaration.SyntaxTree
+            ? model.GetDeclaredSymbol(declaration) as ITypeSymbol
+            : null;
+    }
+
+    /// <summary>What EQ2010 says of a call through a contract a <c>[ServerOnly]</c> method fulfils: the
+    /// method, and why a call through the contract cannot reach it.</summary>
+    private static string FulfilledOnTheServerMessage(string contract, IReadOnlyList<string> methods)
+    {
+        var named = string.Join(" and ", methods.Select(method => $"'{method}'"));
+        return $"'{contract}' may reach {named}, marked [ServerOnly], which no module holds: a call through "
+            + "the contract would reach a member the browser does not have. Call it from server code, a "
+            + $"[ServerAction] or a [ServerOnly] member, or take [ServerOnly] off {named} so it crosses.";
+    }
 
     /// <summary>
     /// The TYPE named on its own — a construction, where there is no member to ask about. Same
@@ -190,12 +252,22 @@ internal static class HostOnlySymbolExtensions
     internal static bool ReportIfKeptOut(this INamedTypeSymbol type, SyntaxNode node, ConversionContext context)
     {
         if (!type.Locations.Any(location => location.IsInSource)) return false;
-        if (type.ContainingType is null && type.IsUiComponent()) return false;
-        if (!Services.PlainClassModule.NeverCrosses(type)) return false;
+        if (!type.IsKeptOut()) return false;
         context.Report(node, ConversionSeverity.Error, "EQ2010", KeptOutMessage(type.ToDisplayString()));
         context.RefusedTwins.Add(type.TwinReference());
         return true;
     }
+
+    /// <summary>
+    /// Whether the build writes no module for <paramref name="type"/>, a type of source: it, or a class
+    /// it derives from, is marked <c>[ServerOnly]</c> or is an attribute, or it is declared inside a type
+    /// that is (<see cref="Services.PlainClassModule.NeverCrosses"/>). A component declared at the top of
+    /// its file crosses whatever it is marked. The rule a fence asks where client code names the type,
+    /// and the one that says which types' <c>[ServerOnly]</c> methods a call can reach
+    /// (<see cref="ServerOnlyContracts"/>).
+    /// </summary>
+    internal static bool IsKeptOut(this INamedTypeSymbol type) =>
+        !(type.ContainingType is null && type.IsUiComponent()) && Services.PlainClassModule.NeverCrosses(type);
 
     /// <summary>What EQ2010 says of a type of source the build writes no twin for (#584, #823): where
     /// a fence names it, and where a module's import net does.</summary>

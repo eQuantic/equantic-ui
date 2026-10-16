@@ -75,6 +75,10 @@ public class SemanticModelProvider
     /// </summary>
     public bool HasProjectCompilation => _projectCompilation != null;
 
+    /// <summary>The compilation a host handed over, the one every file's model replaces its own tree
+    /// in; null for a host that handed none.</summary>
+    internal Compilation? ProjectCompilation => _projectCompilation;
+
     /// <summary>
     /// Parse options for a tree that must JOIN the model this provider serves. Roslyn refuses a
     /// compilation whose trees mix language versions, so when a project compilation exists, eqc's

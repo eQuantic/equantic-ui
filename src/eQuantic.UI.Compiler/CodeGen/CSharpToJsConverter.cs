@@ -56,12 +56,12 @@ public class CSharpToJsConverter
         set => _context.SymbolsAreAuthoritative = value;
     }
 
-    /// <summary>See <see cref="ConversionContext.HasProjectCompilation"/>. Survives <see cref="Reset"/>
+    /// <summary>See <see cref="ConversionContext.ProjectCompilation"/>. Survives <see cref="Reset"/>
     /// too: it describes the host, not the file.</summary>
-    internal bool HasProjectCompilation
+    internal Compilation? ProjectCompilation
     {
-        get => _context.HasProjectCompilation;
-        set => _context.HasProjectCompilation = value;
+        get => _context.ProjectCompilation;
+        set => _context.ProjectCompilation = value;
     }
 
     /// <summary>See <see cref="ConversionContext.ResourceIds"/>.</summary>

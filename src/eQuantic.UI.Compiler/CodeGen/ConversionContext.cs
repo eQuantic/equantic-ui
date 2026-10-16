@@ -43,7 +43,17 @@ public class ConversionContext
     /// library transpiled from its own sources has the compilation, and symbols that are not
     /// authoritative.
     /// </summary>
-    internal bool HasProjectCompilation { get; set; }
+    internal bool HasProjectCompilation => ProjectCompilation is not null;
+
+    /// <summary>
+    /// The project's compilation, when the host handed one over: the app's, which references each
+    /// project the app references as a compilation of its own. A question about the whole build is
+    /// asked of it, never of <see cref="SemanticModel"/>'s, which is the file's own (its tree replaces
+    /// the project's): no other file's symbols compare equal to that one's, and a file of a referenced
+    /// project sees nothing of the app (<see cref="Extensions.ServerOnlyContracts"/>). It describes the
+    /// host and survives <see cref="Reset"/>.
+    /// </summary>
+    internal Compilation? ProjectCompilation { get; set; }
 
     /// <summary>
     /// The catalogue ids of the build, when it compiles the projects the app references beside the

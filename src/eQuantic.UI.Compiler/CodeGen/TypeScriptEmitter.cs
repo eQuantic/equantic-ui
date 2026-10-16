@@ -298,11 +298,11 @@ public class TypeScriptEmitter
         set => _converter.SymbolsAreAuthoritative = value;
     }
 
-    /// <summary>Forwarded to the converter — see <see cref="CSharpToJsConverter.HasProjectCompilation"/>.</summary>
-    internal bool HasProjectCompilation
+    /// <summary>Forwarded to the converter — see <see cref="CSharpToJsConverter.ProjectCompilation"/>.</summary>
+    internal Compilation? ProjectCompilation
     {
-        get => _converter.HasProjectCompilation;
-        set => _converter.HasProjectCompilation = value;
+        get => _converter.ProjectCompilation;
+        set => _converter.ProjectCompilation = value;
     }
 
     /// <summary>Forwarded to the converter — see <see cref="CSharpToJsConverter.ResourceIds"/>.</summary>
