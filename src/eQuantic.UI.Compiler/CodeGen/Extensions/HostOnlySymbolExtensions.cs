@@ -144,8 +144,10 @@ internal static class HostOnlySymbolExtensions
         if (declaring.ReportIfServerPlatform(node, context)) return true;
         // A type of source, this compilation's or a referenced project's, is refused where its name
         // is written (ReportIfKeptOut), never here as well: a page that named a referenced project's
-        // [ServerOnly] class was told twice, once at the class and once at its member (#823).
-        if (declaring.Locations.Any(location => location.IsInSource)) return false;
+        // [ServerOnly] class was told twice, once at the class and once at its member (#823). What no
+        // name is written for is a value of it, whose member is asked here.
+        if (declaring.Locations.Any(location => location.IsInSource))
+            return symbol.ReportIfReadOffAKeptOutValue(declaring, node, context, through);
         if (!declaring.IsHostOnly()) return false;
         if (ReachedThroughAClientVisibleType(through)) return false;
         return Report(declaring, symbol.Name, node, context);
@@ -188,8 +190,57 @@ internal static class HostOnlySymbolExtensions
         if ((context.ProjectCompilation ?? context.SemanticModel?.Compilation) is not { } build) return false;
         var methods = ServerOnlyContracts.FulfilledOnTheServer(contract, () => through ?? TypeOfThis(node, context), build);
         if (methods.Count == 0) return false;
-        context.Report(node, ConversionSeverity.Error, "EQ2010",
-            FulfilledOnTheServerMessage($"{contract.ContainingType.ToDisplayString()}.{contract.Name}", methods));
+        return Refuse(node, "EQ2010",
+            FulfilledOnTheServerMessage($"{contract.ContainingType.ToDisplayString()}.{contract.Name}", methods), context);
+    }
+
+    /// <summary>
+    /// Reports and returns true when an INSTANCE member of a type of source the build writes no module for
+    /// is read off a value of it: no twin holds the member, and the value's position names no type (a
+    /// component's field and parameter are annotated <c>any</c>, a cast is the value), so the rule that
+    /// refuses the type where its name is written (<see cref="ReportIfKeptOut"/>) never meets it.
+    /// <c>ledger.Describe()</c> over a parameter was written as <c>ledger.describe()</c>, a method
+    /// nothing defines; a referenced project's type was refused here, at the type level, until #823 made
+    /// every type of source the kept-out rule's (Copilot's review of #944).
+    /// <para>
+    /// A member reached through a type that crosses is free, as one a host-only base declares is
+    /// (<see cref="ReachedThroughAClientVisibleType"/>), and so is one whose receiver holds a refusal
+    /// already: <c>new Ledger().Total</c> is told once, at the construction. A static member is reached
+    /// through the type's name, which the kept-out rule refuses, and an extension member is no member of
+    /// the type.
+    /// </para>
+    /// </summary>
+    private static bool ReportIfReadOffAKeptOutValue(this ISymbol symbol, INamedTypeSymbol declaring, SyntaxNode node,
+        ConversionContext context, ITypeSymbol? through)
+    {
+        if (symbol.IsStatic || symbol.ExtensionBlockHome() is not null || !declaring.IsKeptOut()) return false;
+        if (through is INamedTypeSymbol receiverType && receiverType.Locations.Any(location => location.IsInSource)
+            && !receiverType.IsKeptOut())
+            return false;
+        if (ReceiverOf(node) is { } receiver && context.RefusedWithin(receiver)) return false;
+        return Refuse(node, "EQ2010", KeptOutMessage($"{declaring.ToDisplayString()}.{symbol.Name}"), context);
+    }
+
+    /// <summary>The expression a member is read off: the left of a <c>.</c>, and for a <c>?.</c> binding
+    /// the receiver of the conditional access whose tail holds it. Null for a bare member.</summary>
+    private static SyntaxNode? ReceiverOf(SyntaxNode node)
+    {
+        var member = node is InvocationExpressionSyntax invocation ? invocation.Expression : node;
+        return member switch
+        {
+            MemberAccessExpressionSyntax access => access.Expression,
+            MemberBindingExpressionSyntax binding => binding.Ancestors().OfType<ConditionalAccessExpressionSyntax>()
+                .FirstOrDefault(conditional => conditional.WhenNotNull.Span.Contains(binding.Span))?.Expression,
+            _ => null,
+        };
+    }
+
+    /// <summary>Tells a refusal at <paramref name="node"/>, an in-tree node, and remembers where it was
+    /// told (<see cref="ConversionContext.Refused"/>).</summary>
+    private static bool Refuse(SyntaxNode node, string code, string message, ConversionContext context)
+    {
+        context.Report(node, ConversionSeverity.Error, code, message);
+        context.Refused.Add(node);
         return true;
     }
 
@@ -262,7 +313,7 @@ internal static class HostOnlySymbolExtensions
     {
         if (!type.Locations.Any(location => location.IsInSource)) return false;
         if (!type.IsKeptOut()) return false;
-        context.Report(WhereWritten(node, context), ConversionSeverity.Error, "EQ2010", KeptOutMessage(type.ToDisplayString()));
+        Refuse(WhereWritten(node, context), "EQ2010", KeptOutMessage(type.ToDisplayString()), context);
         context.RefusedTwins.Add(type.TwinReference());
         return true;
     }
@@ -297,8 +348,7 @@ internal static class HostOnlySymbolExtensions
         // this is a DECISION, and a reader who follows EQ2004's remedy here writes code nobody
         // wants. One code meaning two unrelated things is how EQ2101 went wrong, and the
         // diagnostics baseline asked the question directly when this gained a reporting site.
-        context.Report(node, ConversionSeverity.Error, "EQ2010", Message(named));
-        return true;
+        return Refuse(node, "EQ2010", Message(named), context);
     }
 
     /// <summary>

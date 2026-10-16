@@ -59,6 +59,7 @@ internal static class ServerPlatform
         if (type is null || Of(type) is not { } api) return false;
         context.Report(node, ConversionSeverity.Error, api.Code,
             $"'{type.ToDisplayString()}' ({api.Reason}) is not available in a client component. Move this to a [ServerAction].");
+        context.Refused.Add(node);
         return true;
     }
 

@@ -233,6 +233,7 @@ public class ConversionContext
         ResourceUses.Clear();
         RefusedTwins.Clear();
         RefusedReads.Clear();
+        Refused.Clear();
     }
 
     /// <summary>
@@ -248,6 +249,18 @@ public class ConversionContext
     /// and cleared with them.
     /// </summary>
     internal HashSet<SyntaxNode> RefusedReads { get; } = new();
+
+    /// <summary>
+    /// The in-tree nodes the client boundary refused while this module was converted
+    /// (<see cref="Extensions.HostOnlySymbolExtensions"/>): a member read off a value whose expression
+    /// holds one of them is the same refusal, and says nothing more. Kept with the diagnostics, and
+    /// cleared with them.
+    /// </summary>
+    internal HashSet<SyntaxNode> Refused { get; } = new();
+
+    /// <summary>Whether the client boundary refused a node inside <paramref name="expression"/> already.</summary>
+    internal bool RefusedWithin(SyntaxNode expression) =>
+        Refused.Any(refused => refused.SyntaxTree == expression.SyntaxTree && expression.Span.Contains(refused.Span));
 
     /// <summary>
     /// Drops everything that belonged to the PREVIOUS emission. A converter outlives the file it is
