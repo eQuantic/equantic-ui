@@ -474,6 +474,10 @@ public class InvocationStrategy : IExpressionIrStrategy
         // there. A STATIC extension member (receiver-type-only block) takes no receiver.
         if (symbol.ExtensionBlockHome() is { } extensionHome)
         {
+            // The member first, as a reduced extension's own static is asked above: no twin holds a
+            // [ServerOnly] one, and the call went home to `Exts.shout('x')`, a static nothing wrote
+            // (Copilot's review of #944).
+            if (symbol!.ReportIfHostOnly(at, context)) return null;
             if (extensionHome.ReportIfKeptOut(at, context)) return null;
             extensionHome.RegisterIntroduced(context);
             return (extensionHome, !symbol!.IsStatic);

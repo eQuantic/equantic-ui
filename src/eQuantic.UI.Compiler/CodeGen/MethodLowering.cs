@@ -48,8 +48,11 @@ internal sealed class MethodLowering
     /// A method as a class member: its modifiers, its name, its type parameters where the output is
     /// TypeScript, its parameters and its body. An <c>out</c> parameter leaves the signature, since
     /// what it carries comes back in the returned object (<see cref="OutParameters"/>). Null for a
-    /// method with nothing to emit: an abstract one, which TypeScript needs no stub for, or one with
-    /// no body.
+    /// method with nothing to emit: an abstract one, which TypeScript needs no stub for, one with no
+    /// body, and one that stays on the server (<see cref="Parser.ComponentParser.StaysOnTheServer"/>),
+    /// which no twin holds whichever emitter asks: an extension block lowered its members here without
+    /// asking, so a <c>[ServerOnly]</c> one shipped its body to the browser, or was refused as client
+    /// code where it read a file (Copilot's review of #944).
     /// </summary>
     /// <param name="method">The method, with a body or without one.</param>
     /// <param name="asStatic">Emit it as a static member whatever its modifiers say: a static
@@ -65,6 +68,7 @@ internal sealed class MethodLowering
     {
         if (method.Modifiers.Any(SyntaxKind.AbstractKeyword)) return null;
         if (method.Body == null && method.ExpressionBody == null) return null;
+        if (Parser.ComponentParser.StaysOnTheServer(method, inAComponent: false)) return null;
 
         var byReference = OutParameters.Of(method.ParameterList);
         var text = method.Body?.ToString() ?? method.ExpressionBody?.ToString() ?? "";
