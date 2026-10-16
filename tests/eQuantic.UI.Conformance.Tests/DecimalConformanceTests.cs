@@ -59,4 +59,27 @@ public class DecimalConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>
+    /// A decimal's <c>Scale</c> is the runtime Decimal's own <c>scale</c>, which keeps the digits .NET
+    /// keeps: a literal's, a sum's and a product's, a quotient's, a remainder's, a parsed text's and a
+    /// rounding's. It is read by name, so the build's fence on a .NET member nothing carries lets it
+    /// through (#847), and these hold the claim it rests on.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("return (int)100.50m.Scale;")]                                                            // 2
+    [InlineData("decimal a = 1.5m; return (int)(a * 2m).Scale;")]                                         // 1
+    [InlineData("decimal a = 1.10m, b = 2.2m; return (int)(a + b).Scale;")]                               // 2
+    [InlineData("decimal a = 1m; return (int)(a / 3m).Scale;")]                                           // 28
+    [InlineData("decimal a = 10m; return (int)(a / 4m).Scale;")]                                          // 1
+    [InlineData("decimal a = 0.3m; return (int)(a % 0.1m).Scale;")]                                       // 1
+    [InlineData("return (int)decimal.Parse(\"1.230\", System.Globalization.CultureInfo.InvariantCulture).Scale;")] // 3
+    [InlineData("decimal a = 1.2345m; return (int)Math.Round(a, 2).Scale;")]                              // 2
+    [InlineData("decimal? a = 2.50m; return a?.Scale ?? 99;")]                                            // 2
+    [InlineData("decimal a = 7m; return (int)a.Scale;")]                                                  // 0
+    public void ADecimalsScale_IsTheOneDotNetKeeps(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 }
