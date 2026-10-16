@@ -11,6 +11,13 @@ namespace eQuantic.UI.Compiler.Tests;
 /// a stateless page was never checked by it, nor a construction, a read or a method group anywhere. It
 /// is asked now where the conversion writes a symbol, so the code checked is the code converted.
 /// <para>
+/// A <c>[ServerOnly]</c> method is left out of its twin, whatever type declares it, so client code that
+/// reaches one THROUGH A CONTRACT, the interface member it implements or the method it overrides, would
+/// reach a member the browser does not have. Such a call binds to the contract, which carries no
+/// attribute: it built, and the browser threw a TypeError, or ran the base's method, where .NET ran the
+/// server's. It is refused where it is written (EQ2010), and a call that can reach no such method is not.
+/// </para>
+/// <para>
 /// Each case is built as eqc builds an app (<see cref="Solution"/>), in both bodies a member can have
 /// and on both kinds of page.
 /// </para>
@@ -227,5 +234,264 @@ public sealed class ServerCodeOfAPageTests
         Lines(built).Should().ContainSingle("an observable is no file, an exception is a value, and a type position names nothing")
             .Which.Should().Contain("error EQ2004").And.Contain("System.IObservable<int>.Subscribe",
                 "Subscribe has no translation, which is its own error");
+    }
+
+    /// <summary>
+    /// Contracts of the app, in the namespace <c>NS</c>. Each of the first four is kept on the server by
+    /// a type that crosses: an interface method <c>Circle</c> implements, a base's method
+    /// <c>Derived</c> overrides, one <c>Gem</c> implements explicitly and one <c>Disc</c> takes from its
+    /// base. Beside them, what can reach no such method: <c>Square</c>'s and <c>Plain</c>'s own,
+    /// <c>Loud</c>'s call of its base, the base's own on <c>Mute</c> and in <c>Echo</c>, which no
+    /// <c>Derived</c> can be, and a contract only types that never cross keep on the server.
+    /// </summary>
+    private const string Contracts =
+        """
+        using eQuantic.UI.Primitives;
+
+        namespace NS;
+
+        public interface IShape
+        {
+            double Area();
+        }
+
+        public sealed class Circle : IShape
+        {
+            public double R = 1;
+
+            [ServerOnly]
+            public double Area() => R * R * 3;
+        }
+
+        public sealed class Square : IShape
+        {
+            public double Area() => 4;
+        }
+
+        public interface IPriced
+        {
+            double Price();
+        }
+
+        public sealed class Gem : IPriced
+        {
+            [ServerOnly]
+            double IPriced.Price() => 9;
+        }
+
+        public interface IRound
+        {
+            double Radius();
+        }
+
+        public class Round
+        {
+            [ServerOnly]
+            public double Radius() => 1;
+        }
+
+        public sealed class Disc : Round, IRound { }
+
+        public class Named
+        {
+            public virtual string Name() => "base";
+        }
+
+        public sealed class Derived : Named
+        {
+            [ServerOnly]
+            public override string Name() => "derived";
+        }
+
+        public sealed class Plain : Named
+        {
+            public override string Name() => "plain";
+        }
+
+        public sealed class Loud : Named
+        {
+            public override string Name() => base.Name() + "!";
+        }
+
+        public sealed class Mute : Named { }
+
+        public sealed class Echo : Named
+        {
+            public string Twice() => Name() + Name();
+        }
+
+        public interface ISealed
+        {
+            string Seal();
+        }
+
+        [ServerOnly]
+        public sealed class Vault : ISealed
+        {
+            [ServerOnly]
+            public string Seal() => "vault";
+        }
+
+        public sealed class MarkAttribute : Attribute, ISealed
+        {
+            [ServerOnly]
+            public string Seal() => "mark";
+        }
+
+        public sealed class Open : ISealed
+        {
+            public string Seal() => "open";
+        }
+
+        public interface IDescribed
+        {
+            string Describe();
+        }
+        """;
+
+    /// <summary>The page in the app, and the contracts in the app or in a project it references, named
+    /// through the namespace <c>NS</c> stands for.</summary>
+    private static Solution Contracted(bool inALibrary, string kind, string members, string shown)
+    {
+        var space = SpaceOf(inALibrary);
+        var page = Page(kind, members, shown, $"using {space};");
+        var contracts = Contracts.Replace("NS", space);
+        return inALibrary
+            ? new Solution()
+                .Library("Common", files: [("Contracts.cs", contracts)])
+                .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files: [("Screens/Home.cs", page)])
+            : App(("Model/Contracts.cs", contracts), ("Screens/Home.cs", page));
+    }
+
+    private static string SpaceOf(bool inALibrary) => inALibrary ? "Common" : "App.Model";
+
+    /// <summary>Client code that calls a contract a type that crosses fulfils with a <c>[ServerOnly]</c>
+    /// method, on both kinds of page and in both bodies, with the contracts in the app or in a project it
+    /// references; and the method each call can reach, which the twin leaves out.</summary>
+    public static TheoryData<string, string, string, string, string, bool> ThroughAContract()
+    {
+        var data = new TheoryData<string, string, string, string, string, bool>();
+        foreach (var inALibrary in new[] { false, true })
+        {
+            data.Add("a call through an interface", "StatelessComponent", "",
+                "((IShape)new Circle()).Area().ToString()", "NS.Circle.Area", inALibrary);
+            data.Add("a call through an interface, on a stateful page", "StatefulComponent", "",
+                "((IShape)new Circle()).Area().ToString()", "NS.Circle.Area", inALibrary);
+            data.Add("a call through a base", "StatelessComponent", "",
+                "((Named)new Derived()).Name()", "NS.Derived.Name", inALibrary);
+            data.Add("a call through a base, on a stateful page", "StatefulComponent", "",
+                "((Named)new Derived()).Name()", "NS.Derived.Name", inALibrary);
+            data.Add("a call through a parameter, block-bodied", "StatefulComponent",
+                "    private static string Measure(IShape shape)\n    {\n        var area = shape.Area();\n        return area.ToString();\n    }",
+                "Measure(new Square())", "NS.Circle.Area", inALibrary);
+            data.Add("a method group", "StatelessComponent",
+                "    private static Func<double> Measure(IShape shape) => shape.Area;",
+                "Measure(new Square())().ToString()", "NS.Circle.Area", inALibrary);
+            data.Add("a call through a constraint", "StatelessComponent",
+                "    private static double Measure<T>(T shape) where T : IShape => shape.Area();",
+                "Measure(new Square()).ToString()", "NS.Circle.Area", inALibrary);
+            data.Add("an explicit implementation", "StatelessComponent", "",
+                "((IPriced)new Gem()).Price().ToString()", "NS.Gem.Price", inALibrary);
+            data.Add("an implementation its base declares", "StatefulComponent", "",
+                "((IRound)new Disc()).Radius().ToString()", "NS.Round.Radius", inALibrary);
+        }
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(ThroughAContract))]
+    public void ACallThroughAContractAServerOnlyMethodFulfils_IsRefusedOnceWhereThePageWritesIt(
+        string what, string kind, string members, string shown, string implementation, bool inALibrary)
+    {
+        using var solution = Contracted(inALibrary, kind, members, shown);
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue($"{what} reaches a method the twin leaves out");
+        Lines(built).Should().ContainSingle($"{what} is one site, told once and never also as untranslatable (EQ2004):\n{built.Errors}")
+            .Which.Should().StartWith(solution.FileOf("App", "Screens/Home.cs") + "(")
+            .And.Contain("error EQ2010")
+            .And.Contain($"'{implementation.Replace("NS", SpaceOf(inALibrary))}'", "the message names the method the browser lacks");
+    }
+
+    /// <summary>A call that can reach no <c>[ServerOnly]</c> method is free: one bound to a method that is
+    /// not, a call of the base in an override, a call made on a type the method's own cannot be, inside it
+    /// or through it, a contract only types that never cross keep on the server,
+    /// a contract the page fulfils on the server and no client code calls (a server interface, as
+    /// <c>IHandleMetadata</c> is), and server code, which never crosses.</summary>
+    public static TheoryData<string, string, string, string, bool> NotThroughAContract()
+    {
+        var data = new TheoryData<string, string, string, string, bool>();
+        foreach (var inALibrary in new[] { false, true })
+        {
+            data.Add("a call bound to an implementation that is not [ServerOnly]", "StatelessComponent", "",
+                "new Square().Area().ToString()", inALibrary);
+            data.Add("a call bound to another override that is not [ServerOnly]", "StatefulComponent", "",
+                "new Plain().Name()", inALibrary);
+            data.Add("a call of the base in an override", "StatelessComponent", "", "new Loud().Name()", inALibrary);
+            data.Add("a call through a type no [ServerOnly] override can be", "StatelessComponent", "",
+                "new Mute().Name()", inALibrary);
+            data.Add("a bare call in a type no [ServerOnly] override can be", "StatefulComponent", "",
+                "new Echo().Twice()", inALibrary);
+            data.Add("a contract only types that never cross keep on the server", "StatelessComponent", "",
+                "((ISealed)new Open()).Seal()", inALibrary);
+            data.Add("a contract no client code calls", "StatelessComponent, IDescribed",
+                "    [ServerOnly]\n    public string Describe() => File.ReadAllText(\"about.txt\");", "\"plain\"", inALibrary);
+            data.Add("a Server Action", "StatefulComponent",
+                "    [ServerAction]\n    public Task<double> Load() => Task.FromResult(((IShape)new Circle()).Area());", "\"plain\"", inALibrary);
+            data.Add("a [ServerOnly] member", "StatelessComponent",
+                "    [ServerOnly]\n    public string Warm()\n    {\n        IShape shape = new Circle();\n        return shape.Area() + ((Named)new Derived()).Name();\n    }",
+                "\"plain\"", inALibrary);
+        }
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(NotThroughAContract))]
+    public void ACallThatCanReachNoServerOnlyMethod_Builds(string what, string kind, string members, string shown,
+        bool inALibrary)
+    {
+        using var solution = Contracted(inALibrary, kind, members, shown);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse($"{what} reaches no method a twin leaves out:\n{built.Errors}");
+        built.Errors.Should().BeEmpty();
+    }
+
+    /// <summary>The code of a module a page reaches is client code too: a class that calls its own
+    /// virtual, which a subclass keeps on the server, is refused in its own module, where the browser ran
+    /// the base's method in the subclass's place.</summary>
+    [Fact]
+    public void AClassThatCallsItsOwnVirtual_ThatASubclassKeepsOnTheServer_IsRefusedInItsOwnModule()
+    {
+        using var solution = App(
+            ("Model/Teller.cs", "using eQuantic.UI.Primitives;\n\nnamespace App.Model;\n\npublic class Teller\n{\n    public virtual string Name() => \"teller\";\n\n    public string Told() => Name() + \"!\";\n}\n\npublic sealed class Quiet : Teller\n{\n    [ServerOnly]\n    public override string Name() => \"quiet\";\n}\n"),
+            ("Screens/Home.cs", Page("StatelessComponent", shown: "new App.Model.Teller().Told()")));
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue("a Quiet's Told would run Teller's Name in the browser");
+        Lines(built).Should().ContainSingle(built.Errors)
+            .Which.Should().StartWith(solution.FileOf("App", "Model/Teller.cs") + "(")
+            .And.Contain("error EQ2010").And.Contain("'App.Model.Quiet.Name'");
+    }
+
+    /// <summary>A project the app references calls its own contract, and the app fulfils it on the
+    /// server: the project cannot see the app, so the contracts are the build's, read over the app and
+    /// every project it references at once, and the call is refused where the project writes it.</summary>
+    [Fact]
+    public void ACallThroughAReferencedProjectsContract_ThatTheAppFulfilsOnTheServer_IsRefusedWhereTheProjectWritesIt()
+    {
+        using var solution = new Solution()
+            .Library("Common", files: [("Painter.cs", "namespace Common;\n\npublic interface IShape\n{\n    double Area();\n}\n\npublic static class Painter\n{\n    public static string Paint(IShape shape) => shape.Area().ToString();\n}\n")])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files:
+            [
+                ("Model/Circle.cs", "using Common;\nusing eQuantic.UI.Primitives;\n\nnamespace App.Model;\n\npublic sealed class Circle : IShape\n{\n    [ServerOnly]\n    public double Area() => 3;\n}\n"),
+                ("Screens/Home.cs", Page("StatelessComponent", shown: "Painter.Paint(new Circle())", usings: "using App.Model;\nusing Common;")),
+            ]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue("Painter would call a Circle's Area, which its twin leaves out");
+        Lines(built).Should().ContainSingle(built.Errors)
+            .Which.Should().StartWith(solution.FileOf("Common", "Painter.cs") + "(")
+            .And.Contain("error EQ2010").And.Contain("'App.Model.Circle.Area'");
     }
 }
