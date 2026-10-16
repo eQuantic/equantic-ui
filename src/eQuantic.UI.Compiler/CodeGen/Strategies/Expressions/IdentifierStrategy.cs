@@ -130,6 +130,17 @@ public class IdentifierStrategy : IExpressionIrStrategy
                     var slot = symbol is IFieldSymbol field ? field.TwinSlot() : Named(symbol, name);
                     if (isMemberName) return JsExpr.Identifier(slot);
 
+                    // A bare member is `this.` its name, and the fence answers it as it answers
+                    // `this.name` (MemberAccessStrategy). A [ServerOnly] method's bare group was written
+                    // as `this.read.bind(this)` on a twin that leaves `read` out, and a bare group of a
+                    // virtual a subclass keeps on the server was never asked as the contract it is
+                    // (Copilot's review of #944). Through the type `this` is, as the bound tree names it:
+                    // a contract is asked of the types that can be it, and a member a host-only base
+                    // declares stays free in a type that crosses, as `pressable.Child` does.
+                    if (symbol.ReportIfHostOnly(identifier, context,
+                            (context.SemanticHelper.GetOperation(identifier) as IMemberReferenceOperation)?.Instance?.Type))
+                        return JsExpr.Literal("undefined");
+
                     var member = JsExpr.ThisMember(slot);
 
                     // A method REFERENCE (not being called) is a method group: bind it to the instance.
