@@ -39,6 +39,7 @@ public sealed class ServerOnlyTypeOfTheAppTests
         {
             public int Total => 1;
             public static Ledger Open() => new();
+            public string Describe() => "ledger";
         }
 
         [ServerOnly]
@@ -162,6 +163,55 @@ public sealed class ServerOnlyTypeOfTheAppTests
             "a type that never crosses has no module, whoever names it");
     }
 
+    /// <summary>
+    /// An instance member of a type the build writes no module for, read off a VALUE of it: no twin holds
+    /// the member, and a value's position names no type (a component's field and parameter are annotated
+    /// <c>any</c>, a cast is the value), so no other fence refuses it. <c>ledger.Describe()</c> over a
+    /// parameter was written as <c>ledger.describe()</c>, a method nothing defines, in the app as in a
+    /// referenced project, where the type-level fence had refused it before #823 (Copilot's review of
+    /// #944). A member whose receiver was refused where its expression named the type
+    /// (<c>new Ledger().Total</c>, <c>Ledger.Open().Total</c>) is told once, by the rows of
+    /// <see cref="Named"/>.
+    /// </summary>
+    public static TheoryData<string, string, string, string, bool> ReadOffAValue()
+    {
+        var data = new TheoryData<string, string, string, string, bool>();
+        foreach (var inALibrary in new[] { false, true })
+        {
+            data.Add("a method called through a parameter", "StatelessComponent",
+                "    private static string Read(Ledger ledger) => ledger.Describe();", "Ledger.Describe", inALibrary);
+            data.Add("a property read through a parameter", "StatefulComponent",
+                "    private static string Read(Ledger ledger) => ledger.Total.ToString();", "Ledger.Total", inALibrary);
+            data.Add("a method group through a parameter", "StatelessComponent",
+                "    private static Func<string> Read(Ledger ledger) => ledger.Describe;", "Ledger.Describe", inALibrary);
+            data.Add("a call through a field and ?., block-bodied", "StatefulComponent",
+                "    private Ledger? _ledger;\n\n    private string Read()\n    {\n        var text = _ledger?.Describe();\n        return text ?? \"none\";\n    }",
+                "Ledger.Describe", inALibrary);
+            data.Add("a read through a cast", "StatelessComponent",
+                "    private static int Read(object o) => ((Ledger)o).Total;", "Ledger.Total", inALibrary);
+            data.Add("a record's member through a parameter", "StatelessComponent",
+                "    private static string Read(Secret secret) => secret.V;", "Secret.V", inALibrary);
+            data.Add("a struct's field through a parameter", "StatelessComponent",
+                "    private static int Read(Amount amount) => amount.V;", "Amount.V", inALibrary);
+        }
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(ReadOffAValue))]
+    public void AnInstanceMemberOfAKeptOutType_ReadOffAValue_IsRefusedOnceWhereThePageReadsIt(
+        string what, string kind, string members, string member, bool inALibrary)
+    {
+        using var solution = Of(inALibrary, kind, members, "\"plain\"");
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue($"{what} names a member no twin holds");
+        built.Errors.Split('\n', StringSplitOptions.RemoveEmptyEntries).Should().ContainSingle($"{what} is one site:\n{built.Errors}")
+            .Which.Should().StartWith(solution.FileOf("App", "Screens/Home.cs") + "(")
+            .And.Contain("error EQ2010").And.Contain("never reaches the browser")
+            .And.Contain($"'{(inALibrary ? "Common" : "App.Model")}.{member}'");
+    }
+
     /// <summary>A type that crosses and hands out a value of a kept-out struct, written into the
     /// project that holds the server types.</summary>
     private static string WithShop(Solution solution, bool inALibrary)
@@ -196,19 +246,40 @@ public sealed class ServerOnlyTypeOfTheAppTests
 
     /// <summary>The zero of a kept-out struct has no twin to build it, so the type that crosses and
     /// writes one is refused where it does: <c>Shop.Price()</c> answered undefined where C# answers a
-    /// zeroed <c>Amount</c>, and the page that read <c>.V</c> off it threw in the browser.</summary>
+    /// zeroed <c>Amount</c>. The page only calls it, so the zero is the one site; a page that reads a
+    /// member off the value is a site of its own (<see cref="AMemberReadOffTheKeptOutValueAMethodAnswers_IsToldAtThePage"/>).</summary>
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void AZeroOfAKeptOutStruct_IsRefusedWhereTheTypeThatCrossesWritesIt(bool inALibrary)
     {
-        using var solution = Of(inALibrary, "StatelessComponent", "", "Shop.Price().V.ToString()");
+        using var solution = Of(inALibrary, "StatelessComponent",
+            "    private static string Touch()\n    {\n        Shop.Price();\n        return \"touched\";\n    }", "Touch()");
         var shop = WithShop(solution, inALibrary);
         var built = solution.Build();
 
         built.Failed.Should().BeTrue();
         built.Errors.Split('\n', StringSplitOptions.RemoveEmptyEntries).Should().ContainSingle(built.Errors)
             .Which.Should().StartWith(shop + "(").And.Contain("error EQ2010");
+    }
+
+    /// <summary>A member read off the value a method of a type that crosses answers is a member no twin
+    /// holds, whatever the method answers: <c>Shop.Price().V</c> threw in the browser, and is told where
+    /// the page reads it, once.</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AMemberReadOffTheKeptOutValueAMethodAnswers_IsToldAtThePage(bool inALibrary)
+    {
+        using var solution = Of(inALibrary, "StatelessComponent", "", "Shop.Price().V.ToString()");
+        WithShop(solution, inALibrary);
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue();
+        built.Errors.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Where(line => line.StartsWith(solution.FileOf("App", "Screens/Home.cs") + "("))
+            .Should().ContainSingle(built.Errors)
+            .Which.Should().Contain("error EQ2010").And.Contain($"'{(inALibrary ? "Common" : "App.Model")}.Amount.V'");
     }
 
     /// <summary>A position the module writes as nothing names no twin, so it is free: a component's
