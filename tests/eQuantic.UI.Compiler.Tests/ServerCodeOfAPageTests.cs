@@ -245,6 +245,80 @@ public sealed class ServerCodeOfAPageTests
             .And.Contain("error EQ2010").And.Contain($"'App.Model.{member}'");
     }
 
+    /// <summary>
+    /// A bare member is <c>this.</c> its name, and the fence answers it as it answers <c>this.name</c>.
+    /// A <c>[ServerOnly]</c> method's bare method group was written as <c>this.read.bind(this)</c> on a
+    /// twin that leaves <c>read</c> out, with no diagnostic, while its bare call and its group through
+    /// <c>this.</c> were refused; and a bare group of a virtual a subclass keeps on the server was
+    /// never asked as the contract it is (Copilot's review of #944).
+    /// </summary>
+    public static TheoryData<string, string, string, string> BareServerOnly() => new()
+    {
+        { "a [ServerOnly] method's bare group in a class", "Model/Reader.cs",
+            "public sealed class Reader\n{\n    [ServerOnly]\n    public string Read() => \"secret\";\n\n    public Func<string> Group() => Read;\n}",
+            "App.Model.Reader.Read" },
+        { "a bare group of a virtual a subclass keeps on the server", "Model/Reader.cs",
+            "public class Reader\n{\n    public virtual string Read() => \"reader\";\n\n    public Func<string> Group() => Read;\n}\n\n"
+            + "public sealed class Secretive : Reader\n{\n    [ServerOnly]\n    public override string Read() => \"secret\";\n}",
+            "App.Model.Secretive.Read" },
+        { "a [ServerOnly] method's bare call in a class", "Model/Reader.cs",
+            "public sealed class Reader\n{\n    [ServerOnly]\n    public string Read() => \"secret\";\n\n    public string Call()\n    {\n        var read = Read();\n        return read;\n    }\n}",
+            "App.Model.Reader.Read" },
+        { "a [ServerOnly] method's group through this.", "Model/Reader.cs",
+            "public sealed class Reader\n{\n    [ServerOnly]\n    public string Read() => \"secret\";\n\n    public Func<string> Group() => this.Read;\n}",
+            "App.Model.Reader.Read" },
+    };
+
+    [Theory]
+    [MemberData(nameof(BareServerOnly))]
+    public void ABareMemberThatStaysOnTheServer_IsRefusedAsItsThisSpellingIs(string what, string file, string declaration, string member)
+    {
+        using var solution = App(
+            (file, $"using eQuantic.UI.Primitives;\n\nnamespace App.Model;\n\n{declaration}\n"),
+            ("Screens/Home.cs", Page("StatelessComponent")));
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue($"{what} names a member no twin holds");
+        Lines(built).Should().ContainSingle($"{what} is one site:\n{built.Errors}")
+            .Which.Should().StartWith(solution.FileOf("App", file) + "(")
+            .And.Contain("error EQ2010").And.Contain($"'{member}");
+    }
+
+    /// <summary>A page's own <c>[ServerOnly]</c> method taken as a bare method group, on both kinds of
+    /// page, in both body forms.</summary>
+    [Theory]
+    [InlineData("StatelessComponent", "    [ServerOnly]\n    private string Secret() => \"secret\";\n\n    private Func<string> Get() => Secret;")]
+    [InlineData("StatefulComponent", "    [ServerOnly]\n    private string Secret() => \"secret\";\n\n    private Func<string> Get()\n    {\n        Func<string> got = Secret;\n        return got;\n    }")]
+    public void APagesServerOnlyMethodTakenAsABareGroup_IsRefused(string kind, string members)
+    {
+        using var solution = App(("Screens/Home.cs", Page(kind, members)));
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue("the page's twin holds no secret");
+        Lines(built).Should().ContainSingle(built.Errors)
+            .Which.Should().StartWith(solution.FileOf("App", "Screens/Home.cs") + "(")
+            .And.Contain("error EQ2010").And.Contain("'App.Screens.Home.Secret'");
+    }
+
+    /// <summary>What a bare member reaches is free where no twin leaves it out: a method that crosses, a
+    /// property and a field, and a virtual in a type no <c>[ServerOnly]</c> override can be.</summary>
+    [Theory]
+    [InlineData("a method that crosses", "public sealed class Reader\n{\n    public string Read() => \"open\";\n\n    public Func<string> Group() => Read;\n}")]
+    [InlineData("a property and a field", "public sealed class Reader\n{\n    private readonly int _size = 2;\n\n    public int Size => _size;\n\n    public int Twice() => Size + _size;\n}")]
+    [InlineData("a virtual in a type no [ServerOnly] override can be", "public class Reader\n{\n    public virtual string Read() => \"reader\";\n}\n\n"
+        + "public sealed class Secretive : Reader\n{\n    [ServerOnly]\n    public override string Read() => \"secret\";\n}\n\n"
+        + "public sealed class Open : Reader\n{\n    public Func<string> Group() => Read;\n}")]
+    public void ABareMemberThatCrosses_IsFree(string what, string declaration)
+    {
+        using var solution = App(
+            ("Model/Reader.cs", $"using eQuantic.UI.Primitives;\n\nnamespace App.Model;\n\n{declaration}\n"),
+            ("Screens/Home.cs", Page("StatelessComponent")));
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse($"{what} names a member its twin holds:\n{built.Errors}");
+        built.Errors.Should().BeEmpty();
+    }
+
     /// <summary>Client code that reaches what only a server has, one site each, on both kinds of page.</summary>
     public static TheoryData<string, string, string, string, string, string> ClientCode()
     {
