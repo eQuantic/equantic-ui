@@ -162,6 +162,89 @@ public sealed class ServerCodeOfAPageTests
             .And.Contain("error EQ2010").And.Contain("Shout");
     }
 
+    /// <summary>A class and a record struct whose conversions and operators stay on the server, each left
+    /// out of its type's twin as a <c>[ServerOnly]</c> method is.</summary>
+    private const string Operators =
+        """
+        using eQuantic.UI.Primitives;
+
+        namespace App.Model;
+
+        public sealed class Amount
+        {
+            public int V;
+
+            [ServerOnly] public static implicit operator Amount(int v) => new Amount { V = v };
+            [ServerOnly] public static explicit operator Amount(string s) => new Amount { V = s.Length };
+            [ServerOnly] public static Amount operator +(Amount a, Amount b) => new Amount { V = a.V + b.V };
+            [ServerOnly] public static Amount operator -(Amount a) => new Amount { V = -a.V };
+            [ServerOnly] public static Amount operator ++(Amount a) => new Amount { V = a.V + 1 };
+            [ServerOnly] public static bool operator ==(Amount? a, Amount? b) => a?.V == b?.V;
+            [ServerOnly] public static bool operator !=(Amount? a, Amount? b) => !(a == b);
+
+            public override bool Equals(object? o) => o is Amount a && a.V == V;
+            public override int GetHashCode() => V;
+        }
+
+        public readonly record struct Money(int Cents)
+        {
+            [ServerOnly] public static implicit operator Money(int cents) => new(cents);
+            [ServerOnly] public static explicit operator Money(string s) => new(s.Length);
+        }
+        """;
+
+    /// <summary>
+    /// Every way client code applies a user-defined operator or conversion, each through one kept on the
+    /// server. A conversion, implicit or spelled as a cast, a compound assignment, a tuple equality and
+    /// a foreach's element conversion called a static their twin does not carry (<c>Amount.fromInt(7)</c>)
+    /// with no diagnostic, while a binary and a unary operator, an increment and an equality were
+    /// refused (Copilot's review of #944).
+    /// </summary>
+    public static TheoryData<string, string, string, string, string> ServerOnlyOperators() => new()
+    {
+        { "an implicit conversion of a class", "StatefulComponent",
+            "    private static int Of()\n    {\n        Amount a = 7;\n        return a.V;\n    }", "Of().ToString()", "Amount.op_Implicit" },
+        { "an explicit conversion of a class", "StatelessComponent",
+            "    private static int Of() => ((Amount)\"abc\").V;", "Of().ToString()", "Amount.op_Explicit" },
+        { "an implicit conversion of a record struct", "StatelessComponent",
+            "    private static int Of()\n    {\n        Money m = 5;\n        return m.Cents;\n    }", "Of().ToString()", "Money.op_Implicit" },
+        { "an explicit conversion of a record struct", "StatefulComponent",
+            "    private static int Of() => ((Money)\"abc\").Cents;", "Of().ToString()", "Money.op_Explicit" },
+        { "an argument converted on its way in", "StatelessComponent",
+            "    private static int Of(Amount a) => a.V;", "Of(3).ToString()", "Amount.op_Implicit" },
+        { "a compound assignment", "StatelessComponent",
+            "    private static int Of(Amount a, Amount b)\n    {\n        a += b;\n        return a.V;\n    }", "\"plain\"", "Amount.op_Addition" },
+        { "a tuple equality", "StatefulComponent",
+            "    private static bool Of(Amount a, Amount b) => (a, 1) == (b, 1);", "\"plain\"", "Amount.op_Equality" },
+        { "a foreach's element conversion", "StatelessComponent",
+            "    private static int Of()\n    {\n        var total = 0;\n        foreach (Amount a in new[] { 1, 2 }) total += a.V;\n        return total;\n    }", "Of().ToString()", "Amount.op_Implicit" },
+        { "a deconstruction's part", "StatelessComponent",
+            "    private static (int, int) Pair() => (3, 4);\n\n    private static int Of()\n    {\n        (Amount b, int m) = Pair();\n        return b.V + m;\n    }", "Of().ToString()", "Amount.op_Implicit" },
+        { "a binary operator", "StatelessComponent",
+            "    private static int Of(Amount a, Amount b) => (a + b).V;", "\"plain\"", "Amount.op_Addition" },
+        { "a unary operator", "StatefulComponent",
+            "    private static int Of(Amount a) => (-a).V;", "\"plain\"", "Amount.op_UnaryNegation" },
+        { "an increment", "StatelessComponent",
+            "    private static int Of(Amount a)\n    {\n        a++;\n        return a.V;\n    }", "\"plain\"", "Amount.op_Increment" },
+        { "an equality", "StatelessComponent",
+            "    private static bool Of(Amount a, Amount b) => a == b;", "\"plain\"", "Amount.op_Equality" },
+    };
+
+    [Theory]
+    [MemberData(nameof(ServerOnlyOperators))]
+    public void AServerOnlyOperatorOrConversion_IsRefusedOnceWhereClientCodeAppliesIt(
+        string what, string kind, string members, string shown, string member)
+    {
+        using var solution = App(("Model/Operators.cs", Operators),
+            ("Screens/Home.cs", Page(kind, members, shown, "using App.Model;")));
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue($"{what} calls a static no twin carries");
+        Lines(built).Should().ContainSingle($"{what} is one site:\n{built.Errors}")
+            .Which.Should().StartWith(solution.FileOf("App", "Screens/Home.cs") + "(")
+            .And.Contain("error EQ2010").And.Contain($"'App.Model.{member}'");
+    }
+
     /// <summary>Client code that reaches what only a server has, one site each, on both kinds of page.</summary>
     public static TheoryData<string, string, string, string, string, string> ClientCode()
     {
