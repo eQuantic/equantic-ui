@@ -457,6 +457,25 @@ public sealed class ServerCodeOfAPageTests
         built.Errors.Should().BeEmpty();
     }
 
+    /// <summary>A refusal through <c>?.</c> is told where it is written. The conversion rewrites the tail
+    /// of a conditional access before the fence sees it, and a refusal placed at the rewritten node was
+    /// told at the first line of the file, where no reader looks for it.</summary>
+    [Theory]
+    [InlineData("a [ServerOnly] member", "    private static string Of(Derived? named) => named?.Name() ?? \"none\";", "Of(new Derived())", "EQ2010")]
+    [InlineData("a contract a [ServerOnly] method fulfils", "    private static string Of(IShape? shape) => shape?.Area().ToString() ?? \"none\";", "Of(new Square())", "EQ2010")]
+    [InlineData("an API only a server has", "    private static bool Of(FileInfo? info) => info?.Exists ?? false;", "Of(null).ToString()", "EQ2112")]
+    public void ARefusalThroughAConditionalAccess_IsToldWhereItIsWritten(string what, string members, string shown, string code)
+    {
+        using var solution = Contracted(inALibrary: false, "StatelessComponent", members, shown);
+        var built = solution.Build();
+
+        var page = solution.FileOf("App", "Screens/Home.cs");
+        var line = Array.FindIndex(File.ReadAllLines(page), text => text.Contains("?.")) + 1;
+        Lines(built).Should().ContainSingle($"{what} is one site:\n{built.Errors}")
+            .Which.Should().StartWith($"{page}({line},", $"{what} is told on the line that writes it")
+            .And.Contain($"error {code}");
+    }
+
     /// <summary>The code of a module a page reaches is client code too: a class that calls its own
     /// virtual, which a subclass keeps on the server, is refused in its own module, where the browser ran
     /// the base's method in the subclass's place.</summary>

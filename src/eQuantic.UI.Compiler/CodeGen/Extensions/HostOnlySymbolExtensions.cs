@@ -131,6 +131,7 @@ internal static class HostOnlySymbolExtensions
     {
         var declaring = symbol.ContainingType;
         if (declaring is null) return false;
+        node = WhereWritten(node, context);
         // The MEMBER first, whoever declares it. A member marked [ServerOnly] is refused where
         // client code names it, this compilation's own included: a twin leaves such a method out,
         // so a call to it from the component's own Build was written as a call to a member the twin
@@ -165,6 +166,14 @@ internal static class HostOnlySymbolExtensions
         through is not null && !through.IsHostOnly();
 
     /// <summary>
+    /// The node a refusal is told at: the one the source writes. The conversion rewrites the tail of a
+    /// conditional access before any strategy translates it, so <c>info?.Exists</c> reaches the fence as
+    /// a rewritten read, which has no place in the file, and its refusal was told at the first line.
+    /// </summary>
+    private static SyntaxNode WhereWritten(SyntaxNode node, ConversionContext context) =>
+        context.SemanticHelper.Original(node);
+
+    /// <summary>
     /// Reports and returns true when a call bound to <paramref name="symbol"/>, an interface member or a
     /// method that can be overridden, may reach a <c>[ServerOnly]</c> method of a type that crosses,
     /// which that type's twin leaves out (<see cref="ServerOnlyContracts"/>). The call is made on
@@ -179,8 +188,7 @@ internal static class HostOnlySymbolExtensions
         if ((context.ProjectCompilation ?? context.SemanticModel?.Compilation) is not { } build) return false;
         var methods = ServerOnlyContracts.FulfilledOnTheServer(contract, () => through ?? TypeOfThis(node, context), build);
         if (methods.Count == 0) return false;
-        // At the call as written: a `?.` call reaches here rewritten, at no place of the file.
-        context.Report(context.SemanticHelper.Original(node), ConversionSeverity.Error, "EQ2010",
+        context.Report(node, ConversionSeverity.Error, "EQ2010",
             FulfilledOnTheServerMessage($"{contract.ContainingType.ToDisplayString()}.{contract.Name}", methods));
         return true;
     }
@@ -223,6 +231,7 @@ internal static class HostOnlySymbolExtensions
     internal static bool ReportIfHostOnlyType(this ITypeSymbol? type, SyntaxNode node, ConversionContext context)
     {
         if (type is not INamedTypeSymbol named) return false;
+        node = WhereWritten(node, context);
         if (named.ReportIfServerPlatform(node, context)) return true;
         if (named.Locations.Any(location => location.IsInSource)) return false;
         if (!named.IsHostOnly()) return false;
@@ -253,7 +262,7 @@ internal static class HostOnlySymbolExtensions
     {
         if (!type.Locations.Any(location => location.IsInSource)) return false;
         if (!type.IsKeptOut()) return false;
-        context.Report(node, ConversionSeverity.Error, "EQ2010", KeptOutMessage(type.ToDisplayString()));
+        context.Report(WhereWritten(node, context), ConversionSeverity.Error, "EQ2010", KeptOutMessage(type.ToDisplayString()));
         context.RefusedTwins.Add(type.TwinReference());
         return true;
     }
