@@ -73,7 +73,8 @@ public class ForEachStatementStrategy : IStatementStrategy
         if (context.SemanticHelper.GetDeclaredSymbol(foreachStmt) is not ILocalSymbol variable) return null;
 
         var element = JsExpr.Identifier("$" + item);
-        var applied = ValueFlow.Apply(conversion, info.ElementType, variable.Type, null, null, element, context);
+        var applied = context.ConvertingAt(foreachStmt.Type,
+            () => ValueFlow.Apply(conversion, info.ElementType, variable.Type, null, null, element, context));
         return JsExprWriter.Write(applied) == "$" + item ? null : applied;
     }
 

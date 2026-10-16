@@ -36,25 +36,17 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         // A USER-DEFINED operator: JavaScript cannot overload `+`, so the emitted class carries the
         // operator as a static method and the call site has to reach it. Left alone, `a + b` on two
         // objects concatenated their toString()s — wrong output, nothing to see, no error.
+        //
+        // …and a FRAMEWORK operator the runtime ships no twin for falls out of that branch into
+        // JavaScript's own `+`, which is the silent half of the same defect: two objects concatenate,
+        // an object times a number is NaN, and the page compiled. A framework value whose twin IS a
+        // primitive (SizeValue, Index) passes through correctly and is not fenced; one whose twin is an
+        // object says so with [ServerOnly]. The one lowering every user-defined operator goes through
+        // asks the fence of both, and answers a refused one as nothing, never as the native operator.
         if (context.SemanticHelper.GetSymbol(binary) is IMethodSymbol
-            { MethodKind: MethodKind.UserDefinedOperator, IsImplicitlyDeclared: false,
-              ContainingType: { } declaring } operatorSymbol)
-        {
-            // …and a FRAMEWORK operator the runtime ships no twin for falls out of that branch into
-            // JavaScript's own `+`, which is the silent half of the same defect: two objects
-            // concatenate, an object times a number is NaN, and the page compiled. A framework
-            // value whose twin IS a primitive (SizeValue, Index) passes through correctly and is
-            // not fenced; one whose twin is an object says so with [ServerOnly], and this is where
-            // that gets read. The fence's own doc counts the branches that owe it this call — an
-            // operator was the fifth, and it was not asking.
-            if (operatorSymbol.ReportIfHostOnly(binary, context)) return JsExpr.Callish("undefined");
-
-            if (RecordTypeEmitter.OperatorMethodName(op) is { } operatorMethod
-                && declaring.Locations.Any(location => location.IsInSource))
-            {
-                return JsExpr.Callish($"{declaring.IntroduceTwin(context)}.{operatorMethod}({left}, {right})");
-            }
-        }
+            { MethodKind: MethodKind.UserDefinedOperator, IsImplicitlyDeclared: false } operatorSymbol
+            && UserDefinedOperators.Binary(operatorSymbol, op, left, right, context) is { } userDefined)
+            return userDefined;
 
         // `|`, `&` and `^` on two BOOLS are C#'s non-short-circuit logical operators, and JavaScript
         // has no operator that is both: its `|`/`&` answer a number, its `||`/`&&` skip the right

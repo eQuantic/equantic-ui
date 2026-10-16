@@ -23,6 +23,26 @@ public class ConversionContext
     internal SyntaxNode? Converting { get; set; }
 
     /// <summary>
+    /// Converts with <paramref name="at"/> as the node a fence reports at (<see cref="Converting"/>),
+    /// where a statement converts a value of its own and no expression of it is being converted: a
+    /// <c>foreach</c>'s element and a deconstruction's part. A refused conversion there was told at
+    /// whatever expression enclosed the statement, or not at all.
+    /// </summary>
+    internal T ConvertingAt<T>(SyntaxNode at, Func<T> convert)
+    {
+        var outer = Converting;
+        Converting = at;
+        try
+        {
+            return convert();
+        }
+        finally
+        {
+            Converting = outer;
+        }
+    }
+
+    /// <summary>
     /// The host PROMISED the semantic model is complete — the project's real references and
     /// generated sources are in it (the SDK build, the design session). Under that promise, an
     /// in-tree call the model cannot bind is a build error (EQ2006), never a name-guessed

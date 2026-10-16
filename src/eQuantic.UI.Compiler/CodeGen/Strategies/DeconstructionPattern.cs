@@ -302,7 +302,8 @@ internal static class DeconstructionPattern
                 _ => null,
             };
             string Converted(string value) => info is { Conversion: { } conversion }
-                ? JsExprWriter.Write(ValueFlow.Apply(conversion, type, targetType, null, null, JsExpr.Identifier(value), context))
+                ? JsExprWriter.Write(context.ConvertingAt(target,
+                    () => ValueFlow.Apply(conversion, type, targetType, null, null, JsExpr.Identifier(value), context)))
                 : value;
             const string probe = "$part";
             var converts = Converted(probe) != probe;
