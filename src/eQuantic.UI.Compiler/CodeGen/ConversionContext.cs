@@ -123,7 +123,7 @@ public class ConversionContext
     {
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
-        if (memberAccess.Name.Identifier.Text != methodName) return false;
+        if (memberAccess.Name.Identifier.ValueText != methodName) return false;
 
         if (SemanticHelper.GetSymbol(node) is { } symbol)
             return SemanticHelper.IsLinqExtension(symbol.ContainingType);

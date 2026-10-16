@@ -385,8 +385,8 @@ public class TypeScriptEmitter
                     && TypeInitializer.Orders(staticsOf, ModelFor);
                 _converter.SetCurrentClass(component.Name);
                 var initializedStatics = orderedStatics
-                    ? TypeInitializer.Collect(component.ClassSyntax!, type => DeclarationType(component, type.ToString()),
-                        type => ValueTypeDefault(type.ToString(), type) ?? "null", StaticValue)
+                    ? TypeInitializer.Collect(component.ClassSyntax!, type => DeclarationType(component, type.ValueText()),
+                        type => ValueTypeDefault(type.ValueText(), type) ?? "null", StaticValue)
                     : [];
                 var slots = initializedStatics.Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
                 if (component.ComponentFields.Count > 0)
@@ -710,8 +710,8 @@ public class TypeScriptEmitter
                     var buildParamName = component.BuildMethodNode is not { } buildNode || buildParameterSyntax is null
                         ? "context"
                         : ReadsParameter(buildNode, buildParameterSyntax)
-                            ? buildParameterSyntax.Identifier.Text.ToJsIdentifier()
-                            : "_" + buildParameterSyntax.Identifier.Text.ToJsIdentifier();
+                            ? buildParameterSyntax.Identifier.ValueText.ToJsIdentifier()
+                            : "_" + buildParameterSyntax.Identifier.ValueText.ToJsIdentifier();
                     // The body converts straight to IR: a block as itself, an expression-bodied Build
                     // (`IComponent Build(ctx) => new Box {…};`) as a return, and nothing as the fallback.
                     _converter.SetCurrentClass(component.Name);
@@ -1296,7 +1296,7 @@ public class TypeScriptEmitter
         var creations = crossing.OfType<ObjectCreationExpressionSyntax>();
         foreach (var creation in creations)
         {
-             var typeName = creation.Type.ToString();
+             var typeName = creation.Type.ValueText();
              if (typeName.Contains("<")) typeName = typeName.Split('<')[0];
              // Extract simple name from fully-qualified names (e.g., "System.Collections.Generic.List" → "List")
              if (typeName.Contains('.')) typeName = typeName.Substring(typeName.LastIndexOf('.') + 1);
@@ -1334,7 +1334,7 @@ public class TypeScriptEmitter
         {
             if (memberAccess.Expression is IdentifierNameSyntax identifier)
             {
-                var name = identifier.Identifier.Text;
+                var name = identifier.Identifier.ValueText;
                 if (!string.IsNullOrEmpty(name) && char.IsUpper(name[0])
                     && (localNames == null || !localNames.Contains(name)))
                 {
@@ -1348,7 +1348,7 @@ public class TypeScriptEmitter
         // added here are dropped by the downstream filters (enums, exceptions, resolver-unknown).
         foreach (var pattern in crossing.OfType<DeclarationPatternSyntax>())
         {
-            var typeName = pattern.Type.ToString();
+            var typeName = pattern.Type.ValueText();
             if (typeName.Contains('.')) typeName = typeName[(typeName.LastIndexOf('.') + 1)..];
             types.Add(typeName);
         }
@@ -1380,8 +1380,8 @@ public class TypeScriptEmitter
                 foreach (var argument in generic.TypeArgumentList.Arguments) CollectDeclaredTypeNames(argument, types);
                 break;
             case QualifiedNameSyntax qualified: CollectDeclaredTypeNames(qualified.Right, types); break;
-            case IdentifierNameSyntax identifier when char.IsUpper(identifier.Identifier.Text[0]):
-                types.Add(identifier.Identifier.Text);
+            case IdentifierNameSyntax identifier when char.IsUpper(identifier.Identifier.ValueText[0]):
+                types.Add(identifier.Identifier.ValueText);
                 break;
         }
     }
@@ -1682,7 +1682,7 @@ public class TypeScriptEmitter
                     var isStaticMember = asStatic
                         || f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
                         || f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword);
-                    var fieldName = v.Identifier.Text.ToCamelCase();
+                    var fieldName = v.Identifier.ValueText.ToCamelCase();
                     // A static that initializes in order is its slot's, and holds no field.
                     if (isStaticMember && slots.Contains(fieldName)) continue;
                     // An instance field is state, declared and started with the class's other state, in
@@ -1708,10 +1708,10 @@ public class TypeScriptEmitter
                 if (p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword))
                 {
                     if (CanDeclareTypeOnly)
-                        c.Member(JsClassMember.Field("abstract ", p.Identifier.Text.ToCamelCase(), $": {DeclaredType(p.Type)}"), p);
+                        c.Member(JsClassMember.Field("abstract ", p.Identifier.ValueText.ToCamelCase(), $": {DeclaredType(p.Type)}"), p);
                     continue;
                 }
-                var pn = p.Identifier.Text.ToCamelCase();
+                var pn = p.Identifier.ValueText.ToCamelCase();
                 // The PROPERTY's own `static`, as a field's and an auto-property's already are: the
                 // class-level qualifier alone wrote `static int Count => …` on a plain class as an
                 // instance getter, and `Probe.count` read undefined.
@@ -1791,10 +1791,10 @@ public class TypeScriptEmitter
                 var isStaticEvent = asStatic || e.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
                 foreach (var v in e.Declaration.Variables)
                 {
-                    if (isStaticEvent && slots.Contains(v.Identifier.Text.ToCamelCase())) continue;
+                    if (isStaticEvent && slots.Contains(v.Identifier.ValueText.ToCamelCase())) continue;
                     // An instance one is state, declared and started with the class's other state
                     // (InstanceState).
-                    if (isStaticEvent) c.Field(v.Identifier.Text.ToCamelCase(), DeclaredType(e.Declaration.Type), "null", v, isStatic: true);
+                    if (isStaticEvent) c.Field(v.Identifier.ValueText.ToCamelCase(), DeclaredType(e.Declaration.Type), "null", v, isStatic: true);
                 }
             }
             if (ordered)
@@ -1832,7 +1832,7 @@ public class TypeScriptEmitter
                 if (opName is null) continue;
                 if (OperatorBody(op) is not { } opBody) continue;
                 var opPars = string.Join(", ", op.ParameterList.Parameters
-                    .Select(pp => pp.Identifier.Text.ToJsIdentifier()));
+                    .Select(pp => pp.Identifier.ValueText.ToJsIdentifier()));
                 c.Member(JsClassMember.Method("static ", opName, "", opPars, "", opBody), op);
             }
 
@@ -1844,11 +1844,11 @@ public class TypeScriptEmitter
                 var convName = declared is not null
                     ? RecordTypeEmitter.ConversionNameFor(declared)
                     : RecordTypeEmitter.ConversionMethodName(
-                        conversion.Type.ToString() == cls.Identifier.Text
-                            ? conversion.ParameterList.Parameters[0].Type!.ToString()
-                            : conversion.Type.ToString(),
-                        from: conversion.Type.ToString() == cls.Identifier.Text);
-                var convPar = conversion.ParameterList.Parameters[0].Identifier.Text.ToJsIdentifier();
+                        conversion.Type.ValueText() == cls.Identifier.ValueText
+                            ? conversion.ParameterList.Parameters[0].Type!.ValueText()
+                            : conversion.Type.ValueText(),
+                        from: conversion.Type.ValueText() == cls.Identifier.ValueText);
+                var convPar = conversion.ParameterList.Parameters[0].Identifier.ValueText.ToJsIdentifier();
                 c.Member(JsClassMember.Method("static ", convName, "", convPar, "", convBody), conversion);
             }
 
@@ -1878,7 +1878,7 @@ public class TypeScriptEmitter
     /// (<see cref="TypeInitializer.Constant"/>), and the expression converted otherwise.</summary>
     private string StaticValue(EqualsValueClauseSyntax initializer, TypeSyntax type) =>
         TypeInitializer.Constant(initializer, ModelFor(initializer), _converter)
-        ?? Initializer(initializer.Value, _converter.ConvertExpression(initializer.Value, type.ToString()));
+        ?? Initializer(initializer.Value, _converter.ConvertExpression(initializer.Value, type.ValueText()));
 
     /// <summary>
     /// A property's getter where it has one with a body: its expression body, or its get
@@ -1888,7 +1888,7 @@ public class TypeScriptEmitter
     /// </summary>
     private bool EmitGetter(PropertyDeclarationSyntax p, TypeScriptCodeBuilder.ClassBuilder c, string qualifier)
     {
-        var pn = p.Identifier.Text.ToCamelCase();
+        var pn = p.Identifier.ValueText.ToCamelCase();
         var annotation = Annotation(DeclaredType(p.Type));
         if (p.ExpressionBody != null)
         {
@@ -1918,7 +1918,7 @@ public class TypeScriptEmitter
     /// </summary>
     private void EmitSetter(PropertyDeclarationSyntax p, TypeScriptCodeBuilder.ClassBuilder c, string qualifier)
     {
-        var pn = p.Identifier.Text.ToCamelCase();
+        var pn = p.Identifier.ValueText.ToCamelCase();
         var setter = p.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text is "set" or "init");
         if (setter?.ExpressionBody != null)
             c.Member(JsClassMember.Setter(qualifier, pn, $"value{Annotation(DeclaredType(p.Type))}",
@@ -2070,7 +2070,7 @@ public class TypeScriptEmitter
         foreach (var block in cls.Members.OfType<ExtensionBlockDeclarationSyntax>())
         {
             var receiverParameter = block.ParameterList?.Parameters.FirstOrDefault();
-            var receiverName = receiverParameter?.Identifier.Text is { Length: > 0 } named
+            var receiverName = receiverParameter?.Identifier.ValueText is { Length: > 0 } named
                 ? named.ToJsIdentifier()
                 : null;
             var receiverType = receiverParameter?.Type is { } rt ? DeclaredType(rt) : "any";
@@ -2090,12 +2090,12 @@ public class TypeScriptEmitter
                         if (body is null && getterBlock is null)
                         {
                             _converter.Report(property, ConversionSeverity.Error, "EQ2008",
-                                $"extension property '{property.Identifier.Text}' has no getter body the compiler can lower — auto-accessors have no store on a receiver.");
+                                $"extension property '{property.Identifier.ValueText}' has no getter body the compiler can lower — auto-accessors have no store on a receiver.");
                             break;
                         }
-                        c.Member(JsClassMember.Method("static ", property.Identifier.Text.ToCamelCase(), "", WithReceiver(""),
+                        c.Member(JsClassMember.Method("static ", property.Identifier.ValueText.ToCamelCase(), "", WithReceiver(""),
                             Annotation(DeclaredType(property.Type)), ExtensionGetter(getterBlock, body)), property);
-                        ReportExtensionSetter(property.AccessorList?.Accessors, property.Identifier.Text);
+                        ReportExtensionSetter(property.AccessorList?.Accessors, property.Identifier.ValueText);
                         break;
                     }
 
@@ -2105,7 +2105,7 @@ public class TypeScriptEmitter
                             ?? indexer.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text == "get")?.ExpressionBody?.Expression;
                         var getterBlock = indexer.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text == "get")?.Body;
                         var pars = string.Join(", ", indexer.ParameterList.Parameters
-                            .Select(pp => Lowering.Param(pp.Identifier.Text.ToJsIdentifier(), DeclaredType(pp.Type))));
+                            .Select(pp => Lowering.Param(pp.Identifier.ValueText.ToJsIdentifier(), DeclaredType(pp.Type))));
                         if (body is null && getterBlock is null)
                         {
                             _converter.Report(indexer, ConversionSeverity.Error, "EQ2008",
@@ -2123,7 +2123,7 @@ public class TypeScriptEmitter
                         if (OutParameters.Of(method.ParameterList).Count > 0)
                         {
                             _converter.Report(method, ConversionSeverity.Error, "EQ2008",
-                                $"extension method '{method.Identifier.Text}' with out/ref parameters is not lowered yet.");
+                                $"extension method '{method.Identifier.ValueText}' with out/ref parameters is not lowered yet.");
                             break;
                         }
                         // The one method lowering, its receiver in front (#432): it wrote `yield` outside
@@ -2212,7 +2212,7 @@ public class TypeScriptEmitter
                     break;
                 case EventFieldDeclarationSyntax handler:
                     foreach (var variable in handler.Declaration.Variables)
-                        state.Add(new(variable.Identifier.Text.ToCamelCase(), DeclaredType(handler.Declaration.Type), variable));
+                        state.Add(new(variable.Identifier.ValueText.ToCamelCase(), DeclaredType(handler.Declaration.Type), variable));
                     break;
                 case PropertyDeclarationSyntax property when PropertyStore.SlotOf(property) is { } slot:
                     state.Add(new(slot, DeclaredType(property.Type), property,
@@ -2226,7 +2226,7 @@ public class TypeScriptEmitter
     /// <summary>The slot an instance field's variable lives in (<see cref="Extensions.FieldSlotExtensions"/>):
     /// its twin name, or, a case apart from another member, the name with a <c>$</c> after it.</summary>
     private static string SlotOf(VariableDeclaratorSyntax variable, SemanticModel? model) =>
-        model?.GetDeclaredSymbol(variable) is IFieldSymbol field ? field.TwinSlot() : variable.Identifier.Text.ToCamelCase();
+        model?.GetDeclaredSymbol(variable) is IFieldSymbol field ? field.TwinSlot() : variable.Identifier.ValueText.ToCamelCase();
 
     /// <summary>
     /// Whether <paramref name="method"/> reads <paramref name="parameter"/>. Asked of the model where
@@ -2281,7 +2281,7 @@ public class TypeScriptEmitter
         // Compare against the NORMALISED spelling: a generated signature writes
         // `global::Ns.Thing`, and comparing the mapper's output to the raw text would call every
         // qualified name "translated" and skip the enum/interface handling below.
-        var askedName = NormalizeQualification(asked.ToString());
+        var askedName = NormalizeQualification(asked.ValueText());
         var mapped = Annotate(askedName);
         var echoed = mapped == askedName;
 
@@ -2750,7 +2750,7 @@ public class TypeScriptEmitter
         // `out` parameters leave the signature and come back in the returned object — OutParameters.
         var byReference = OutParameters.Of(method.SyntaxNode?.ParameterList);
         var outNames = byReference.Where(OutParameters.IsOut)
-            .Select(p => p.Identifier.Text).ToHashSet(StringComparer.Ordinal);
+            .Select(p => p.Identifier.ValueText).ToHashSet(StringComparer.Ordinal);
         var parameters = string.Join(", ", method.Parameters
             .Select((p, index) => (Parameter: p, Index: index))
             .Where(entry => !outNames.Contains(entry.Parameter.Name))

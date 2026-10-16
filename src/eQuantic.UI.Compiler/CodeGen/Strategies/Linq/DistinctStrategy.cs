@@ -20,7 +20,7 @@ public class DistinctStrategy : IExpressionIrStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
-        if (memberAccess.Name.Identifier.Text != "Distinct")
+        if (memberAccess.Name.Identifier.ValueText != "Distinct")
             return false;
 
         // Semantic Check

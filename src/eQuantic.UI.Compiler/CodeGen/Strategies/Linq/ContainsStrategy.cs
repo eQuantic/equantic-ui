@@ -19,7 +19,7 @@ public class ContainsStrategy : IConversionStrategy
         if (!invocation.TryGetInstanceCall(out var receiverExpression, out var memberName))
             return false;
 
-        if (memberName.Identifier.Text != "Contains")
+        if (memberName.Identifier.ValueText != "Contains")
             return false;
 
         // Receiver-type check (most reliable): arrays and sequence types map Contains -> includes.

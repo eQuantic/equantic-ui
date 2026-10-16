@@ -64,7 +64,7 @@ public class NumberMethodStrategy : IExpressionIrStrategy
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
 
-        var name = memberAccess.Name.Identifier.Text;
+        var name = memberAccess.Name.Identifier.ValueText;
         if (name is not ("Parse" or "TryParse")) return false;
 
         return context.ReceiverIsType(memberAccess.Expression,
@@ -76,7 +76,7 @@ public class NumberMethodStrategy : IExpressionIrStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var name = memberAccess.Name.Identifier.Text;
+        var name = memberAccess.Name.Identifier.ValueText;
         var method = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
         var type = method?.ContainingType.SpecialType
             ?? Names.GetValueOrDefault(memberAccess.Expression.ToString().Replace("System.", ""));

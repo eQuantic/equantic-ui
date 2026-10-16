@@ -149,7 +149,7 @@ public sealed class DesignSession
             {
                 // First declaration wins: a partial type spread over several files is compiled from
                 // whichever one holds it, and eqc emits one module per type either way.
-                _declaringFile.TryAdd(declaration.Identifier.Text, tree.FilePath);
+                _declaringFile.TryAdd(declaration.Identifier.ValueText, tree.FilePath);
             }
         }
 
@@ -289,7 +289,7 @@ public sealed class DesignSession
             {
                 case LocalFunctionStatementSyntax local:
                     return new OriginTier("foreign",
-                        $"Built by the local function {local.Identifier.Text}(), not here.", local.Identifier.Text);
+                        $"Built by the local function {local.Identifier.ValueText}(), not here.", local.Identifier.ValueText);
 
                 case ForEachStatementSyntax:
                 case ForStatementSyntax:
@@ -313,14 +313,14 @@ public sealed class DesignSession
                         "Built inside a callback — it exists only when that callback runs.", null);
 
                 case MethodDeclarationSyntax method:
-                    return method.Identifier.Text == "Build"
+                    return method.Identifier.ValueText == "Build"
                         ? new OriginTier("literal", "Built unconditionally — safe to edit in place.", null)
                         : new OriginTier("foreign",
-                            $"Built by {method.Identifier.Text}(), not by Build().", method.Identifier.Text);
+                            $"Built by {method.Identifier.ValueText}(), not by Build().", method.Identifier.ValueText);
 
                 case PropertyDeclarationSyntax property:
                     return new OriginTier("foreign",
-                        $"Built by the {property.Identifier.Text} property, not by Build().", property.Identifier.Text);
+                        $"Built by the {property.Identifier.ValueText} property, not by Build().", property.Identifier.ValueText);
             }
         }
 
@@ -532,7 +532,7 @@ public sealed class DesignSession
             }
 
             var existing = argumentList.Arguments;
-            var children = existing.FirstOrDefault(a => a.NameColon?.Name.Identifier.Text == "children");
+            var children = existing.FirstOrDefault(a => a.NameColon?.Name.Identifier.ValueText == "children");
 
             if (children is not null)
             {
@@ -1724,7 +1724,7 @@ public sealed class DesignSession
                 + "not to a list, so it is not done for you.";
         }
 
-        return arguments is { } list && list.Any(a => a.NameColon?.Name.Identifier.Text == "children")
+        return arguments is { } list && list.Any(a => a.NameColon?.Name.Identifier.ValueText == "children")
             ? "This container's children are not written as a [ … ] list, so there is no list to insert into."
             : "This container was called without a children list. Adding one would change how it is written, "
                 + "so it is not done for you.";
@@ -1862,7 +1862,7 @@ public sealed class DesignSession
     private static ArgumentSyntax? ArgumentFor(
         SeparatedSyntaxList<ArgumentSyntax> arguments, IParameterSymbol parameter, int position)
     {
-        var named = arguments.FirstOrDefault(a => a.NameColon?.Name.Identifier.Text == parameter.Name);
+        var named = arguments.FirstOrDefault(a => a.NameColon?.Name.Identifier.ValueText == parameter.Name);
         if (named is not null) return named;
 
         // Positional only up to the first named one: after that, position means nothing.

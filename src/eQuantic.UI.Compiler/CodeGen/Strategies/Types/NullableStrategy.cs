@@ -28,14 +28,14 @@ public class NullableStrategy : IConversionStrategy
         {
             case MemberAccessExpressionSyntax member:
             {
-                var name = member.Name.Identifier.Text;
+                var name = member.Name.Identifier.ValueText;
                 if (name != "HasValue" && name != "Value") return false;
                 return IsNullableReceiver(member.Expression, context, allowShapeHeuristic: true);
             }
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
             {
-                if (ma.Name.Identifier.Text != "GetValueOrDefault") return false;
+                if (ma.Name.Identifier.ValueText != "GetValueOrDefault") return false;
                 // Precise gate only (no shape heuristic): otherwise we'd steal Dictionary.GetValueOrDefault.
                 return IsNullableReceiver(ma.Expression, context, allowShapeHeuristic: false);
             }
@@ -52,7 +52,7 @@ public class NullableStrategy : IConversionStrategy
             case MemberAccessExpressionSyntax member:
             {
                 var expr = context.Converter.ConvertExpression(member.Expression);
-                return member.Name.Identifier.Text switch
+                return member.Name.Identifier.ValueText switch
                 {
                     "HasValue" => $"({expr} != null)",
                     "Value" => expr,

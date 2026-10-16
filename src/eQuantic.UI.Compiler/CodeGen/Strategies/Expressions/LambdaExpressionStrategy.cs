@@ -32,7 +32,7 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
             {
                 var kept = string.Join(", ", parenthesized.ParameterList.Parameters
                     .Where(p => !OutParameters.IsOut(p))
-                    .Select(p => Typed(p.Identifier.Text.ToJsIdentifier(), p, context)));
+                    .Select(p => Typed(p.Identifier.ValueText.ToJsIdentifier(), p, context)));
                 // Never async: C# refuses an `out` or a `ref` parameter on an async lambda (CS1988).
                 return JsExpr.ArrowBlock(kept,
                     OutParameters.Body(parenthesized.Block, parenthesized.ExpressionBody, byReference, context.Converter),
@@ -43,7 +43,7 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
             // has nothing to infer from on the other side, and an untyped parameter is an error in
             // the runtime's own build rather than merely a missing type.
             var parameters = string.Join(", ", parenthesized.ParameterList.Parameters
-                .Select(p => Typed(p.Identifier.Text.ToJsIdentifier(), p, context)));
+                .Select(p => Typed(p.Identifier.ValueText.ToJsIdentifier(), p, context)));
             var isAsyncLambda = parenthesized.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
             return parenthesized.Block != null
                 ? Block(parameters, parenthesized.Block, isAsyncLambda, context)
@@ -52,7 +52,7 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
         
         if (node is SimpleLambdaExpressionSyntax simple)
         {
-            var param = Typed(simple.Parameter.Identifier.Text.ToJsIdentifier(), simple.Parameter, context);
+            var param = Typed(simple.Parameter.Identifier.ValueText.ToJsIdentifier(), simple.Parameter, context);
             var isAsyncLambda = simple.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
             return simple.Block != null
                 ? Block(param, simple.Block, isAsyncLambda, context)
@@ -118,24 +118,40 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
                 : null;
         if (declared is null || !context.TypeAnnotations) return name;
         // From the SPECIAL type, not the name: a `float` parameter's symbol is named "Single", and
-        // the name-keyed mapper answers "Single" — a type nothing declares.
-        var ts = declared.SpecialType switch
+        // the name-keyed mapper answers "Single" — a type nothing declares. A long is a bigint on this
+        // side and a decimal the runtime's Decimal, as a member of either is annotated: a `number`
+        // over them contradicted the array the lambda is handed, and a type-checked module failed on
+        // the first one (#758).
+        var special = declared.SpecialType switch
         {
             SpecialType.System_String or SpecialType.System_Char => "string",
             SpecialType.System_Boolean => "boolean",
-            SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_Double
-                or SpecialType.System_Single or SpecialType.System_Decimal or SpecialType.System_Int16
-                or SpecialType.System_Byte => "number",
-            _ => declared.TypeKind switch
-            {
-                TypeKind.Enum => "string",
-                TypeKind.Interface or TypeKind.TypeParameter => "any",
-                _ => TypeScriptEmitter.CSharpTypeToTypeScript(declared.Name),
-            },
+            SpecialType.System_Int64 or SpecialType.System_UInt64 => "bigint",
+            SpecialType.System_Decimal => Decimal(context),
+            SpecialType.System_Int32 or SpecialType.System_UInt32 or SpecialType.System_Double
+                or SpecialType.System_Single or SpecialType.System_Int16 or SpecialType.System_UInt16
+                or SpecialType.System_Byte or SpecialType.System_SByte => "number",
+            _ => null,
+        };
+        if (special is not null) return $"{name}: {special}";
+        var ts = declared.TypeKind switch
+        {
+            TypeKind.Enum => "string",
+            TypeKind.Interface or TypeKind.TypeParameter => "any",
+            _ => TypeScriptEmitter.CSharpTypeToTypeScript(declared.Name),
         };
         // `any` is worse than nothing: an unannotated parameter INFERS from what it is passed, and
-        // only says nothing where there was nothing to say.
+        // only says nothing where there was nothing to say. Nor is a C# name the mapper handed back
+        // as it came, which names nothing in TypeScript.
         return ts == "any" || ts == declared.Name ? name : $"{name}: {ts}";
+    }
+
+    /// <summary>The runtime's Decimal, which an annotation names and the module imports: the name is
+    /// the translation's, in no syntax the import scan reads.</summary>
+    private static string Decimal(ConversionContext context)
+    {
+        context.UsedRuntimeTypes.Add(TypeScriptEmitter.Decimal);
+        return TypeScriptEmitter.Decimal;
     }
 
     public int Priority => 10;

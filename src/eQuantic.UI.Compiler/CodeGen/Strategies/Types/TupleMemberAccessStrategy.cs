@@ -17,13 +17,13 @@ public class TupleMemberAccessStrategy : IConversionStrategy
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         if (node is not MemberAccessExpressionSyntax ma) return false;
-        return TupleOf(context.SemanticHelper.GetType(ma.Expression)).TupleElementIndex(ma.Name.Identifier.Text) >= 0;
+        return TupleOf(context.SemanticHelper.GetType(ma.Expression)).TupleElementIndex(ma.Name.Identifier.ValueText) >= 0;
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var ma = (MemberAccessExpressionSyntax)node;
-        var index = TupleOf(context.SemanticHelper.GetType(ma.Expression)).TupleElementIndex(ma.Name.Identifier.Text);
+        var index = TupleOf(context.SemanticHelper.GetType(ma.Expression)).TupleElementIndex(ma.Name.Identifier.ValueText);
         var receiver = context.Converter.ConvertExpression(ma.Expression);
         return $"{receiver}[{index}]";
     }

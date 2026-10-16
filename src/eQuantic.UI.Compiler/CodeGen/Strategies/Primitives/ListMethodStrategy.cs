@@ -51,7 +51,7 @@ public class ListMethodStrategy : IExpressionIrStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
-        var methodName = memberAccess.Name.Identifier.Text;
+        var methodName = memberAccess.Name.Identifier.ValueText;
         if (!SupportedMethods.Contains(methodName))
             return false;
 
@@ -72,7 +72,7 @@ public class ListMethodStrategy : IExpressionIrStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var methodName = memberAccess.Name.Identifier.Text;
+        var methodName = memberAccess.Name.Identifier.ValueText;
         var method = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
         var element = context.SemanticHelper.GetType(memberAccess.Expression).GetEnumerableElementType();
 

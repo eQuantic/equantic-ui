@@ -21,14 +21,14 @@ public class TaskMethodStrategy : IConversionStrategy
         if (node is MemberAccessExpressionSyntax property)
             return property.Parent is not InvocationExpressionSyntax
                 && IsTaskType(property.Expression.ToString())
-                && property.Name.Identifier.Text == "CompletedTask";
+                && property.Name.Identifier.ValueText == "CompletedTask";
 
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
 
         // Heuristic check for "Task"
         var expr = memberAccess.Expression.ToString();
-        var name = memberAccess.Name.Identifier.Text;
+        var name = memberAccess.Name.Identifier.ValueText;
         
         // ConfigureAwait is an INSTANCE call on a task, so the `Task.` gate below never saw it and
         // it went out as `.configureAwait(false)` — a method that exists nowhere. JavaScript has no
@@ -68,7 +68,7 @@ public class TaskMethodStrategy : IConversionStrategy
 
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var name = memberAccess.Name.Identifier.Text;
+        var name = memberAccess.Name.Identifier.ValueText;
         var args = invocation.ArgumentList.Arguments;
 
         // `t.ConfigureAwait(false)` IS `t` here: the flag says which context to resume on, and

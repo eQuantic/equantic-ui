@@ -28,7 +28,7 @@ public class AnonymousObjectCreationStrategy : IExpressionIrStrategy
             // A member without a name takes the one C# infers, which Roslyn answers for every form a
             // projection may take: `x`, `a.b`, and `a?.b` and `a!` too, which a name read off a
             // simple name or a member access alone missed. Code C# accepts always has one.
-            var name = decl.NameEquals?.Name.Identifier.Text ?? SyntaxFacts.TryGetInferredMemberName(decl.Expression);
+            var name = decl.NameEquals?.Name.Identifier.ValueText ?? SyntaxFacts.TryGetInferredMemberName(decl.Expression);
             members.Add(new JsProperty(name?.ToCamelCase() ?? JsExprWriter.Write(expression), expression));
         }
 

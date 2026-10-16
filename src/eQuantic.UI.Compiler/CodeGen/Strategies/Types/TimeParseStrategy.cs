@@ -47,7 +47,7 @@ public class TimeParseStrategy : IExpressionIrStrategy
     {
         if (node is not InvocationExpressionSyntax
             {
-                Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "Parse" or "TryParse" } access,
+                Expression: MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Parse" or "TryParse" } access,
             } invocation)
             return null;
         if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method)
@@ -102,7 +102,7 @@ public class TimeParseStrategy : IExpressionIrStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var kind = Kind(node, context)!;
-        var name = ((MemberAccessExpressionSyntax)invocation.Expression).Name.Identifier.Text;
+        var name = ((MemberAccessExpressionSyntax)invocation.Expression).Name.Identifier.ValueText;
         var tries = name == "TryParse";
         if (ArgumentsOf(invocation, tries, context) is not { } call || tries != (call.Result is not null))
             return JsExpr.Opaque(context.Unhandled(invocation, context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol

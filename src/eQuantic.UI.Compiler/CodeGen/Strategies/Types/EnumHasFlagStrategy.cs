@@ -15,7 +15,7 @@ public class EnumHasFlagStrategy : IConversionStrategy
     {
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
-        if (memberAccess.Name.Identifier.Text != "HasFlag" || invocation.ArgumentList.Arguments.Count != 1)
+        if (memberAccess.Name.Identifier.ValueText != "HasFlag" || invocation.ArgumentList.Arguments.Count != 1)
             return false;
 
         // HasFlag is declared on System.Enum. Confirm the receiver is an enum when we have semantics;

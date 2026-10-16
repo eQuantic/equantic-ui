@@ -75,7 +75,7 @@ public class ComponentParser
         
         if (namespaceDecl != null)
         {
-            ns = namespaceDecl.Name.ToString();
+            ns = namespaceDecl.Name.ValueText();
         }
         else
         {
@@ -84,7 +84,7 @@ public class ComponentParser
                 .FirstOrDefault();
             if (blockNamespace != null)
             {
-                ns = blockNamespace.Name.ToString();
+                ns = blockNamespace.Name.ValueText();
             }
         }
         
@@ -118,7 +118,7 @@ public class ComponentParser
         {
             results.Add(new ComponentDefinition
             {
-                Name = union.Identifier.Text,
+                Name = union.Identifier.ValueText,
                 SourcePath = sourcePath,
                 SyntaxTree = tree,
                 Namespace = ns ?? "",
@@ -264,7 +264,7 @@ public class ComponentParser
         foreach (var classDecl in classes)
         {
             if (componentNames.Contains(classDecl.TwinTypeName())) continue; // component path
-            if (stateNames.Contains(classDecl.Identifier.Text)) continue;     // owned by its page
+            if (stateNames.Contains(classDecl.Identifier.ValueText)) continue;     // owned by its page
             // The one rule the resolver reads too (#423): what the class IS decides, never whether it
             // declares a member. A class that declared none was skipped here while the resolver had
             // it imported, so the bundle could not resolve the module every user of it named. A
@@ -377,7 +377,7 @@ public class ComponentParser
         {
             foreach (var attr in attrList.Attributes)
             {
-                var attrName = attr.Name.ToString();
+                var attrName = attr.Name.ValueText();
                 if (attrName == "Page" || attrName == "PageAttribute")
                 {
                     var routeInfo = new PageRouteInfo();
@@ -390,7 +390,7 @@ public class ComponentParser
                         // Check for named Title argument
                         foreach (var arg in attr.ArgumentList.Arguments.Skip(1))
                         {
-                            if (arg.NameEquals?.Name.ToString() == "Title")
+                            if (arg.NameEquals?.Name.ValueText() == "Title")
                             {
                                 routeInfo.Title = arg.Expression.ToString().Trim('"');
                             }
@@ -411,18 +411,18 @@ public class ComponentParser
         {
             var serverActionAttr = method.AttributeLists
                 .SelectMany(al => al.Attributes)
-                .FirstOrDefault(a => a.Name.ToString() == "ServerAction" || a.Name.ToString() == "ServerActionAttribute");
+                .FirstOrDefault(a => a.Name.ValueText() == "ServerAction" || a.Name.ValueText() == "ServerActionAttribute");
             
             if (serverActionAttr != null)
             {
-                string actionName = method.Identifier.Text;
+                string actionName = method.Identifier.ValueText;
                 
                 // Check for Name parameter
                 if (serverActionAttr.ArgumentList != null)
                 {
                     foreach (var arg in serverActionAttr.ArgumentList.Arguments)
                     {
-                        if (arg.NameEquals?.Name.ToString() == "Name")
+                        if (arg.NameEquals?.Name.ValueText() == "Name")
                         {
                             actionName = arg.Expression.ToString().Trim('"');
                             break;
@@ -432,9 +432,9 @@ public class ComponentParser
 
                 var actionInfo = new ServerActionInfo
                 {
-                    MethodName = method.Identifier.Text,
+                    MethodName = method.Identifier.ValueText,
                     ActionId = $"{definition.Name}/{actionName}",
-                    ReturnType = method.ReturnType.ToString(),
+                    ReturnType = method.ReturnType.ValueText(),
                     TypeParameters = method.TypeParameterList?.Parameters.Select(p => p.Identifier.ValueText.ToJsIdentifier()).ToList() ?? new List<string>(),
                     IsAsync = method.Modifiers.Any(m => m.ValueText == "async"),
                     SyntaxNode = method
@@ -445,7 +445,7 @@ public class ComponentParser
                     actionInfo.Parameters.Add(new ParameterDefinition
                     {
                         Name = param.Identifier.ValueText,
-                        Type = param.Type?.ToString() ?? "object"
+                        Type = param.Type?.ValueText() ?? "object"
                     });
                 }
                 
@@ -569,12 +569,12 @@ public class ComponentParser
         {
             var isPublic = prop.Modifiers.Any(SyntaxKind.PublicKeyword);
             
-            if (definition.Properties.Any(p => p.Name == prop.Identifier.Text)) continue;
+            if (definition.Properties.Any(p => p.Name == prop.Identifier.ValueText)) continue;
 
             definition.Properties.Add(new PropertyDefinition
             {
-                Name = prop.Identifier.Text,
-                Type = prop.Type.ToString(),
+                Name = prop.Identifier.ValueText,
+                Type = prop.Type.ValueText(),
                 DefaultValueNode = prop.Initializer?.Value,
                 IsPublic = isPublic,
                 IsStatic = prop.Modifiers.Any(SyntaxKind.StaticKeyword),
@@ -594,14 +594,14 @@ public class ComponentParser
             // server code (DbContexts, Stopwatches, the compiler itself) into the browser.
             if (IsServerAction(method)) continue;
 
-            var methodName = method.Identifier.Text;
+            var methodName = method.Identifier.ValueText;
             if (methodName == "CreateState") continue;
             if (IsBuildEntryPoint(method, "Render", "Build"))
             {
                 // Build WINS over Render: a write-once component's contract is Build, and letting a
                 // later Render overwrite it is how the last method in the file decided the page.
                 if (definition.BuildMethodNode is null
-                    || definition.BuildMethodNode.Identifier.Text != "Build"
+                    || definition.BuildMethodNode.Identifier.ValueText != "Build"
                     || methodName == "Build")
                 {
                     definition.BuildMethodNode = method;
@@ -614,7 +614,7 @@ public class ComponentParser
             var methodDef = new MethodDefinition
             {
                 Name = methodName,
-                ReturnType = method.ReturnType.ToString(),
+                ReturnType = method.ReturnType.ValueText(),
                 TypeParameters = method.TypeParameterList?.Parameters.Select(p => p.Identifier.ValueText.ToJsIdentifier()).ToList() ?? new List<string>(),
                 Body = method.Body?.ToString() ?? method.ExpressionBody?.Expression.ToString() ?? "",
                 IsStatic = method.Modifiers.Any(SyntaxKind.StaticKeyword),
@@ -627,7 +627,7 @@ public class ComponentParser
                 methodDef.Parameters.Add(new ParameterDefinition
                 {
                     Name = param.Identifier.ValueText,
-                    Type = param.Type?.ToString() ?? "object"
+                    Type = param.Type?.ValueText() ?? "object"
                 });
             }
             
@@ -651,7 +651,7 @@ public class ComponentParser
     /// </para>
     /// </summary>
     private static bool IsBuildEntryPoint(MethodDeclarationSyntax method, params string[] names) =>
-        names.Contains(method.Identifier.Text)
+        names.Contains(method.Identifier.ValueText)
         && !method.Modifiers.Any(SyntaxKind.StaticKeyword)
         && !method.Modifiers.Any(SyntaxKind.PrivateKeyword);
 
@@ -666,7 +666,7 @@ public class ComponentParser
         {
             var ctorDef = new MethodDefinition
             {
-                Name = ctor.Identifier.Text,
+                Name = ctor.Identifier.ValueText,
                 ReturnType = "void",
                 Body = ctor.Body?.ToString() ?? ctor.ExpressionBody?.Expression.ToString() ?? "",
                 SyntaxNode = null // Marker for constructor helper
@@ -677,7 +677,7 @@ public class ComponentParser
                 ctorDef.Parameters.Add(new ParameterDefinition
                 {
                     Name = param.Identifier.ValueText,
-                    Type = param.Type?.ToString() ?? "object"
+                    Type = param.Type?.ValueText() ?? "object"
                 });
             }
 
@@ -701,7 +701,7 @@ public class ComponentParser
         {
             var primaryDef = new MethodDefinition
             {
-                Name = classDecl.Identifier.Text, ReturnType = "void", IsPrimaryConstructor = true,
+                Name = classDecl.Identifier.ValueText, ReturnType = "void", IsPrimaryConstructor = true,
             };
             foreach (var param in primary.Parameters)
             {
@@ -723,7 +723,7 @@ public class ComponentParser
             var described = new ParameterDefinition
             {
                 Name = param.Identifier.ValueText,
-                Type = param.Type?.ToString() ?? "object",
+                Type = param.Type?.ValueText() ?? "object",
                 DefaultValueNode = param.Default?.Value,
             };
 
@@ -759,7 +759,7 @@ public class ComponentParser
         {
             var ctorDef = new MethodDefinition
             {
-                Name = ctor.Identifier.Text,
+                Name = ctor.Identifier.ValueText,
                 ReturnType = "void",
                 Body = ctor.Body?.ToString() ?? ctor.ExpressionBody?.Expression.ToString() ?? "",
                 SyntaxNode = null,
@@ -787,7 +787,7 @@ public class ComponentParser
         // this tree. Without a semantic model it is the only ground truth left — a referenced name
         // outside this set cannot be user code, so it must be the runtime vocabulary.
         foreach (var declared in classDecl.SyntaxTree.GetRoot().DescendantNodes().OfType<BaseTypeDeclarationSyntax>())
-            definition.DeclaredInSource.Add(declared.Identifier.Text);
+            definition.DeclaredInSource.Add(declared.Identifier.ValueText);
 
         var model = TryGetSemanticModel(classDecl.SyntaxTree);
         if (model == null) return;
@@ -817,8 +817,8 @@ public class ComponentParser
             {
                 definition.ComponentFields.Add(new StateField
                 {
-                    Name = variable.Identifier.Text,
-                    Type = field.Declaration.Type.ToString(),
+                    Name = variable.Identifier.ValueText,
+                    Type = field.Declaration.Type.ValueText(),
                     TypeNode = field.Declaration.Type,
                     DefaultValueNode = variable.Initializer?.Value,
                     IsStatic = isStatic
@@ -839,8 +839,8 @@ public class ComponentParser
     {
         static string Own(TypeDeclarationSyntax type) =>
             type.TypeParameterList is { Parameters.Count: > 0 } parameters
-                ? $"{type.Identifier.Text}`{parameters.Parameters.Count}"
-                : type.Identifier.Text;
+                ? $"{type.Identifier.ValueText}`{parameters.Parameters.Count}"
+                : type.Identifier.ValueText;
 
         var name = Own(declaration);
         for (var parent = declaration.Parent; parent is TypeDeclarationSyntax outer; parent = parent.Parent)
@@ -849,7 +849,7 @@ public class ComponentParser
         var ns = string.Join(".", declaration.Ancestors()
             .OfType<BaseNamespaceDeclarationSyntax>()
             .Reverse()
-            .Select(n => n.Name.ToString()));
+            .Select(n => n.Name.ValueText()));
         return ns.Length == 0 ? name : $"{ns}.{name}";
     }
 }

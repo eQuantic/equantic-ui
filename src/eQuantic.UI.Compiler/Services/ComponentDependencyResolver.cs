@@ -176,7 +176,7 @@ public class ComponentDependencyResolver
 
         foreach (var classDecl in classes)
         {
-            var className = classDecl.Identifier.Text;
+            var className = classDecl.Identifier.ValueText;
 
             // [RuntimeProvided] types already exist in @equantic/runtime. The resolver is the
             // no-project-semantic-model fallback used to decide whether a referenced name is a
@@ -225,7 +225,7 @@ public class ComponentDependencyResolver
             var baseType = classDecl.BaseList?.Types.FirstOrDefault();
             if (baseType != null)
             {
-                var baseTypeName = baseType.Type.ToString();
+                var baseTypeName = baseType.Type.ValueText();
 
                 // Clean generic types
                 if (baseTypeName.Contains('<'))
@@ -371,12 +371,12 @@ public class ComponentDependencyResolver
     private static bool IsComponentLike(ClassDeclarationSyntax classDecl)
     {
         if (classDecl.Members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax>()
-            .Any(m => m.Identifier.Text is "Build" or "Render" or "CreateState"))
+            .Any(m => m.Identifier.ValueText is "Build" or "Render" or "CreateState"))
         {
             return true;
         }
 
-        var baseName = classDecl.BaseList?.Types.FirstOrDefault()?.Type.ToString();
+        var baseName = classDecl.BaseList?.Types.FirstOrDefault()?.Type.ValueText();
         if (baseName is null) return false;
         if (baseName.Contains('<')) baseName = baseName[..baseName.IndexOf('<')];
         if (baseName.Contains('.')) baseName = baseName[(baseName.LastIndexOf('.') + 1)..];

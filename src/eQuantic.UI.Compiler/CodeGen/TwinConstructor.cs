@@ -131,7 +131,7 @@ internal sealed class TwinConstructor
             parameters = string.Join(", ", single.Parameters.Select(parameter =>
             {
                 var defaulted = parameter.Default is { } given
-                    ? _converter.ConvertExpression(given.Value, parameter.Type?.ToString())
+                    ? _converter.ConvertExpression(given.Value, parameter.Type?.ValueText())
                     : single.Primary && parameter.Type is { } typed ? DefaultOf(typed)
                     : optional ? "undefined" : null;
                 // Its declared type where the emitter names one: one that may arrive missing is optional
@@ -249,7 +249,7 @@ internal sealed class TwinConstructor
         var alternates = new List<Alternate>();
         foreach (var constructor in declared.Where(Chains))
         {
-            var signature = $"'{type.Identifier.Text}{constructor.ParameterList}'";
+            var signature = $"'{type.Identifier.ValueText}{constructor.ParameterList}'";
             if (RefuseSerializationCall(constructor.Initializer!)) continue;
             if (TargetOf(constructor.Initializer!, roots) is not { } target)
             {
@@ -261,7 +261,7 @@ internal sealed class TwinConstructor
             }
             var arity = Arity.Of(constructor.ParameterList.Parameters.ToList());
             var taken = roots.Select(root => (Signature(type, root), root.Arity))
-                .Concat(alternates.Select(alternate => ($"'{type.Identifier.Text}{alternate.Constructor.ParameterList}'", alternate.Arity)));
+                .Concat(alternates.Select(alternate => ($"'{type.Identifier.ValueText}{alternate.Constructor.ParameterList}'", alternate.Arity)));
             if (Clash(taken, arity) is { } clash)
             {
                 Refuse(type, constructor, arity, clash);
@@ -340,7 +340,7 @@ internal sealed class TwinConstructor
         if (type is not RecordDeclarationSyntax || constructor.ParameterList.Parameters is not [{ Type: { } parameter }]) return false;
         if (_modelFor(constructor) is { } model && model.GetDeclaredSymbol(constructor) is { } method)
             return RecordTypeEmitter.IsCopyConstructor(method);
-        return parameter.ToString() == type.Identifier.Text;
+        return parameter.ValueText() == type.Identifier.ValueText;
     }
 
     /// <summary>The first constructor already taken whose counts of arguments meet <paramref name="arity"/>.</summary>
@@ -349,13 +349,13 @@ internal sealed class TwinConstructor
 
     private void Refuse(TypeDeclarationSyntax type, ConstructorDeclarationSyntax constructor, Arity arity, string clash) =>
         _converter.Report(constructor, ConversionSeverity.Error, "EQ1009",
-            $"'{type.Identifier.Text}{constructor.ParameterList}' takes {arity} argument(s), and {clash} takes that many too. "
+            $"'{type.Identifier.ValueText}{constructor.ParameterList}' takes {arity} argument(s), and {clash} takes that many too. "
             + "The twin has one constructor, which tells the others apart by how many arguments arrive, so no two may "
             + "take the same count: give this one a count of its own, or make it a static factory.");
 
     /// <summary>How a refusal names a root.</summary>
     private static string Signature(TypeDeclarationSyntax type, Root root) =>
-        $"'{type.Identifier.Text}({string.Join(", ", root.Parameters)})'";
+        $"'{type.Identifier.ValueText}({string.Join(", ", root.Parameters)})'";
 
     /// <summary>Whether a constructor hands its work to another with `: this(…)`.</summary>
     private static bool Chains(ConstructorDeclarationSyntax constructor) =>
@@ -446,7 +446,7 @@ internal sealed class TwinConstructor
     {
         var parameters = root.Parameters;
         JsExpr Default(int i) => JsExpr.Opaque(parameters[i].Default is { } given
-            ? _converter.ConvertExpression(given.Value, parameters[i].Type?.ToString())
+            ? _converter.ConvertExpression(given.Value, parameters[i].Type?.ValueText())
             : DefaultOf(parameters[i].Type!));
         string Name(int i) => ParameterName(parameters[i], root.Primary);
         bool IsRest(int i) => parameters[i].Modifiers.Any(SyntaxKind.ParamsKeyword);
@@ -530,7 +530,7 @@ internal sealed class TwinConstructor
                     JsExpr.Identifier(arrived), JsExpr.Literal(i.ToString())));
             return parameter.Default is { } given
                 ? (name, JsExpr.Conditional(JsExpr.Binary(argument, "===", JsExpr.Identifier("undefined")),
-                    JsExpr.Opaque(_converter.ConvertExpression(given.Value, parameter.Type?.ToString())), argument))
+                    JsExpr.Opaque(_converter.ConvertExpression(given.Value, parameter.Type?.ValueText())), argument))
                 : (name, argument);
         }).ToList();
 
@@ -775,7 +775,7 @@ internal sealed class TwinConstructor
     /// it reads (`Tag = "#" + Id`) is the parameter itself, since no member is set yet.</summary>
     private string Initialized(ExpressionSyntax initializer, TypeSyntax type) =>
         ExpressionVariableScanner.Scoped(initializer, _converter.WithConstructorParametersInScope(
-            () => _converter.ConvertExpression(initializer, type.ToString())), _annotations);
+            () => _converter.ConvertExpression(initializer, type.ValueText())), _annotations);
 
     /// <summary>
     /// The default of a declared type, asked of the SYMBOL where one is available. The syntax-only

@@ -18,7 +18,7 @@ public class HtmlNodeStrategy : IConversionStrategy
             return false;
 
         // Check for specific method call
-        if (memberAccess.Name.Identifier.Text != "Text")
+        if (memberAccess.Name.Identifier.ValueText != "Text")
             return false;
 
         // Check context via semantic model if available

@@ -19,7 +19,7 @@ public class CountStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
-        if (memberAccess.Name.Identifier.Text != "Count")
+        if (memberAccess.Name.Identifier.ValueText != "Count")
             return false;
 
         // Semantic Check

@@ -17,7 +17,7 @@ public class ConsoleStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
-        var methodName = memberAccess.Name.Identifier.Text;
+        var methodName = memberAccess.Name.Identifier.ValueText;
         if (methodName is not ("WriteLine" or "Write"))
             return false;
 

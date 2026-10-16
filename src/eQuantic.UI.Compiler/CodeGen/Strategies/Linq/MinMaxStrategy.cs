@@ -20,7 +20,7 @@ public class MinMaxStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
-        var methodName = memberAccess.Name.Identifier.Text;
+        var methodName = memberAccess.Name.Identifier.ValueText;
         if (methodName != "Min" && methodName != "Max")
             return false;
 
@@ -38,7 +38,7 @@ public class MinMaxStrategy : IConversionStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var methodName = memberAccess.Name.Identifier.Text;
+        var methodName = memberAccess.Name.Identifier.ValueText;
 
         if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method)
             return Extreme(invocation, memberAccess, method, methodName == "Min" ? Eq.LinqMin : Eq.LinqMax, context);

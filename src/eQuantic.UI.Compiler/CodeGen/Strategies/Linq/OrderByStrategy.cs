@@ -29,7 +29,7 @@ public class OrderByStrategy : IExpressionIrStrategy
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         return node is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax access }
-            && OrderMethods.Contains(access.Name.Identifier.Text);
+            && OrderMethods.Contains(access.Name.Identifier.ValueText);
     }
 
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
@@ -42,9 +42,9 @@ public class OrderByStrategy : IExpressionIrStrategy
 
         while (current is InvocationExpressionSyntax inv
                && inv.Expression is MemberAccessExpressionSyntax acc
-               && OrderMethods.Contains(acc.Name.Identifier.Text))
+               && OrderMethods.Contains(acc.Name.Identifier.ValueText))
         {
-            var method = acc.Name.Identifier.Text;
+            var method = acc.Name.Identifier.ValueText;
             if (inv.ArgumentList.Arguments.Count > 0)
             {
                 var selector = context.Converter.ConvertIr(inv.ArgumentList.Arguments[0].Expression);

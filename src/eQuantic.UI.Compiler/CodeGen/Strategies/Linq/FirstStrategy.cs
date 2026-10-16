@@ -19,7 +19,7 @@ public class FirstStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
-        var name = memberAccess.Name.Identifier.Text;
+        var name = memberAccess.Name.Identifier.ValueText;
         if (name != "First" && name != "FirstOrDefault")
             return false;
 
@@ -55,7 +55,7 @@ public class FirstStrategy : IConversionStrategy
         // sequence, not null (DefaultValue). First() keeps the bare lookup: C# throws on an empty
         // sequence and this hands back undefined, a divergence documented here since before the
         // conformance suite existed and left as it was.
-        var orDefault = memberAccess.Name.Identifier.Text == "FirstOrDefault"
+        var orDefault = memberAccess.Name.Identifier.ValueText == "FirstOrDefault"
             ? $" ?? {DefaultValue.OfElement(context.SemanticHelper.GetType(memberAccess.Expression), context)}"
             : "";
 

@@ -34,7 +34,7 @@ internal static class OutArgument
     public static string Target(ArgumentSyntax argument, ConversionContext context) => argument.Expression switch
     {
         DeclarationExpressionSyntax { Designation: SingleVariableDesignationSyntax single } =>
-            single.Identifier.Text.ToJsIdentifier(),
+            single.Identifier.ValueText.ToJsIdentifier(),
         DeclarationExpressionSyntax => "",
         var expression => context.Converter.ConvertExpression(expression),
     };

@@ -18,7 +18,7 @@ public class CollectionMaterializationStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
-        var methodName = memberAccess.Name.Identifier.Text;
+        var methodName = memberAccess.Name.Identifier.ValueText;
         if (methodName is not ("ToList" or "ToArray")) return false;
         // LINQ's, or a BCL collection's own (a list's, a queue's, an immutable array's): each answers a
         // new array of its elements in the order it enumerates them, which the runtime's twins and

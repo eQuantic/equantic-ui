@@ -52,7 +52,7 @@ public class ForStatementStrategy : IStatementStrategy
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
             var variables = declaration.Variables.Select(v =>
-                $"{v.Identifier.Text.ToJsIdentifier()} = "
+                $"{v.Identifier.ValueText.ToJsIdentifier()} = "
                 + (v.Initializer != null ? context.Converter.ConvertExpression(v.Initializer.Value) : "undefined"));
             var hoisted = once.Count == 0
                 ? variables
@@ -140,7 +140,7 @@ public class ForStatementStrategy : IStatementStrategy
                 .Select(v =>
                 {
                     // The name every reference reads (ToJsIdentifier), `@class` renamed.
-                    var name = v.Identifier.Text.ToJsIdentifier();
+                    var name = v.Identifier.ValueText.ToJsIdentifier();
                     var initializer = v.Initializer != null
                         ? context.Converter.ConvertExpression(v.Initializer.Value)
                         : "undefined";

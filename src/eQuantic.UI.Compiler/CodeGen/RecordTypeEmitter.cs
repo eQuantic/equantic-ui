@@ -248,7 +248,7 @@ public class RecordTypeEmitter
     /// (<see cref="TypeInitializer.Constant"/>), and the expression converted otherwise.</summary>
     private string StaticValue(EqualsValueClauseSyntax initializer, TypeSyntax type) =>
         TypeInitializer.Constant(initializer, ModelFor(initializer), _converter)
-        ?? ExpressionVariableScanner.Scoped(initializer.Value, _converter.ConvertExpression(initializer.Value, type.ToString()), _annotations);
+        ?? ExpressionVariableScanner.Scoped(initializer.Value, _converter.ConvertExpression(initializer.Value, type.ValueText()), _annotations);
 
     /// <summary>
     /// The annotation of a static that STARTS as null, in the TypeScript emission: its declared type
@@ -285,7 +285,7 @@ public class RecordTypeEmitter
         // The twin's name, its owners' and its own (#584), which every reference writes; the text of a
         // record prints its C# name, as .NET's does.
         var name = type.TwinTypeName();
-        var printedName = type.Identifier.Text;
+        var printedName = type.Identifier.ValueText;
         _startsInitialization = TypeInitializer.HasStaticConstructor(type) ? name : null;
         var members = type.ValueMembers(ModelFor(type));
         var (baseName, clause) = BaseInfo(type);
@@ -421,7 +421,7 @@ public class RecordTypeEmitter
             // first, which is the base's own override where it wrote one, as .NET's synthesized hash
             // calls it.
             if (!type.Members.OfType<MethodDeclarationSyntax>().Any(method =>
-                    method is { Identifier.Text: "GetHashCode", ParameterList.Parameters.Count: 0 }
+                    method is { Identifier.ValueText: "GetHashCode", ParameterList.Parameters.Count: 0 }
                     && method.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.OverrideKeyword))))
             {
                 var hashed = members.Select(m => $"this.{m.Store}");
@@ -463,7 +463,7 @@ public class RecordTypeEmitter
             // The non-generic IEnumerable.GetEnumerator() beside the generic one holds its name, and is
             // the same sequence (#612).
             if (ModelFor(method)?.GetDeclaredSymbol(method) is IMethodSymbol declared && IterableTwin.LeavesOut(declared)) continue;
-            if (method.Identifier.Text == "ToString") userToString = true;
+            if (method.Identifier.ValueText == "ToString") userToString = true;
             sb.Append(EmitMethod(method, name));
         }
 
@@ -491,7 +491,7 @@ public class RecordTypeEmitter
                 : OperatorMethodName(op.OperatorToken.Text);
             if (opName is null) continue;
             var pars = string.Join(", ", op.ParameterList.Parameters
-                .Select(p => _lowering.Param(p.Identifier.Text.ToJsIdentifier(), TsTypeOf(p.Type))));
+                .Select(p => _lowering.Param(p.Identifier.ValueText.ToJsIdentifier(), TsTypeOf(p.Type))));
             // The body is lowered as a method's (#432): an `out var` inside it is declared in front,
             // and so is a variable an expression body's pattern binds, where an ES module is strict.
             sb.Append(StaticMember(opName, pars, op.Body, op.ExpressionBody));
@@ -513,9 +513,9 @@ public class RecordTypeEmitter
             var opName = ModelFor(conversion)?.GetDeclaredSymbol(conversion) is { } symbol
                 ? ConversionNameFor(symbol)
                 : ConversionMethodName(
-                    conversion.Type.ToString() == name ? parameter.Type!.ToString() : conversion.Type.ToString(),
-                    from: conversion.Type.ToString() == name);
-            var par = _lowering.Param(parameter.Identifier.Text.ToJsIdentifier(), TsTypeOf(parameter.Type));
+                    conversion.Type.ValueText() == name ? parameter.Type!.ValueText() : conversion.Type.ValueText(),
+                    from: conversion.Type.ValueText() == name);
+            var par = _lowering.Param(parameter.Identifier.ValueText.ToJsIdentifier(), TsTypeOf(parameter.Type));
             sb.Append(StaticMember(opName, par, conversion.Body, conversion.ExpressionBody));
         }
 
@@ -541,7 +541,7 @@ public class RecordTypeEmitter
         {
             if (member is FieldDeclarationSyntax constant && constant.Modifiers.Any(SyntaxKind.ConstKeyword))
                 foreach (var variable in constant.Declaration.Variables)
-                    sb.Append($"static {variable.Identifier.Text.ToCamelCase()} = "
+                    sb.Append($"static {variable.Identifier.ValueText.ToCamelCase()} = "
                         + $"{(variable.Initializer is { } init ? StaticValue(init, constant.Declaration.Type) : DefaultOf(constant.Declaration.Type))}; ");
             else if (!ordered)
                 foreach (var store in TypeInitializer.StoresOf(member))
@@ -758,7 +758,7 @@ public class RecordTypeEmitter
         if (getter is null && !IsSetterOnly(property) && !readsItsStore && compilers.Count == 0) return "";
         _converter.SetCurrentClass(className);
         var prefix = isStatic ? "static " : "";
-        var propertyName = property.Identifier.Text.ToCamelCase();
+        var propertyName = property.Identifier.ValueText.ToCamelCase();
         // Both accessors are lowered as a method's body is (#432), so a variable an expression body's
         // pattern binds is declared in front of its use, as it is in a class.
         var text = getter switch

@@ -162,21 +162,21 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
 
     private JsExpr ConvertExplicit(ObjectCreationExpressionSyntax creation, ConversionContext context)
     {
-        var typeName = creation.Type.ToString();
+        var typeName = creation.Type.ValueText();
         // TYPE ARGUMENTS are erased at runtime, and `new Bucket<string>()` is not even valid JS —
         // `<` parses as a comparison. The generic COLLECTIONS below still match on their full text,
         // so the erasure happens after they have had their say.
         var genericTypeName = creation.Type is GenericNameSyntax generic
-            ? generic.Identifier.Text
+            ? generic.Identifier.ValueText
             : null;
         // A qualified creation (`new eQuantic.UI.Primitives.Image(...)` — the disambiguation idiom
         // when a section class shares a name) must construct the IMPORTED simple name: module
         // bindings exist in JS, namespace chains do not. The List/Dictionary specials below keep
         // matching (they see the simple generic name).
         if (creation.Type is QualifiedNameSyntax qualifiedName)
-            typeName = qualifiedName.Right.ToString();
+            typeName = qualifiedName.Right.ValueText();
         else if (creation.Type is AliasQualifiedNameSyntax aliasQualified)
-            typeName = aliasQualified.Name.ToString();
+            typeName = aliasQualified.Name.ValueText();
         var createdType = context.SemanticHelper.GetType(creation);
         // A nested type, a component among them, is constructed by its twin's name and imported from
         // there, whichever branch below builds it (#584): `new Host.Page()` constructed `Page`.
@@ -555,7 +555,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                 // A positional argument's slot is its list position: C# allows one after a named
                 // argument only when that one sits in its own position.
                 var parameter = argument.NameColon is { } named
-                    ? ctor.Parameters.FirstOrDefault(p => p.Name == named.Name.Identifier.Text)
+                    ? ctor.Parameters.FirstOrDefault(p => p.Name == named.Name.Identifier.ValueText)
                     : i < ctor.Parameters.Length ? ctor.Parameters[i] : null;
                 if (parameter is null) continue;
                 if (!members.Contains(parameter.Name))
@@ -620,7 +620,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         var slots = new JsExpr?[ctor.Parameters.Length];
         for (var i = 0; i < args.Count; i++)
         {
-            var name = args[i].NameColon?.Name.Identifier.Text;
+            var name = args[i].NameColon?.Name.Identifier.ValueText;
             // A positional argument's slot is its LIST position — C# only allows positionals after
             // a named argument when the named one sits IN its own position, so the list index IS
             // the parameter index (an independent counter clobbered slot 0 in that mixed form).

@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
@@ -32,7 +33,7 @@ public class DateTimeConstructionStrategy : IExpressionIrStrategy
         && (context.SemanticHelper.GetType(node) is { } type
             ? type.IsNamed("System.DateTime") || type.IsNamed("System.DateTimeOffset")
             : creation is ObjectCreationExpressionSyntax { Type: var named }
-                && named.ToString() is "DateTime" or "DateTimeOffset");
+                && named.ValueText() is "DateTime" or "DateTimeOffset");
 
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
@@ -40,7 +41,7 @@ public class DateTimeConstructionStrategy : IExpressionIrStrategy
         if (context.SemanticHelper.GetSymbol(creation) is not IMethodSymbol constructor)
         {
             var created = context.SemanticHelper.GetType(node)?.Name
-                ?? (creation as ObjectCreationExpressionSyntax)?.Type.ToString();
+                ?? (creation as ObjectCreationExpressionSyntax)?.Type.ValueText();
             return JsExpr.Opaque(context.Unhandled(node, $"{created} constructor"));
         }
 

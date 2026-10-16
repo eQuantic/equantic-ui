@@ -18,7 +18,7 @@ public class ReverseStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
-        if (memberAccess.Name.Identifier.Text != "Reverse")
+        if (memberAccess.Name.Identifier.ValueText != "Reverse")
             return false;
 
         var symbol = context.SemanticHelper.GetSymbol(invocation);

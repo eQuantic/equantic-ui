@@ -29,8 +29,8 @@ public class ReferenceEqualsStrategy : IConversionStrategy
         // either way, and a model that has both spellings must not translate only one of them.
         var name = invocation.Expression switch
         {
-            MemberAccessExpressionSyntax member => member.Name.Identifier.Text,
-            IdentifierNameSyntax identifier => identifier.Identifier.Text,
+            MemberAccessExpressionSyntax member => member.Name.Identifier.ValueText,
+            IdentifierNameSyntax identifier => identifier.Identifier.ValueText,
             _ => null,
         };
         if (name != "ReferenceEquals") return false;

@@ -314,7 +314,7 @@ internal static class DeconstructionPattern
 
             if (target is SingleVariableDesignationSyntax variable)
             {
-                var name = variable.Identifier.Text.ToJsIdentifier();
+                var name = variable.Identifier.ValueText.ToJsIdentifier();
                 if (temporaries)
                 {
                     var assignedTo = Fresh();

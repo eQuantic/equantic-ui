@@ -26,7 +26,7 @@ public class ArrayStaticStrategy : IConversionStrategy
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
 
-        var methodName = memberAccess.Name.Identifier.Text;
+        var methodName = memberAccess.Name.Identifier.ValueText;
         if (!SupportedMethods.Contains(methodName)) return false;
 
         // The receiver must BE System.Array — a user type merely named Array must not route here.
@@ -39,7 +39,7 @@ public class ArrayStaticStrategy : IConversionStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var methodName = memberAccess.Name.Identifier.Text;
+        var methodName = memberAccess.Name.Identifier.ValueText;
         var args = invocation.ArgumentList.Arguments;
 
         if (args.Count == 0) return context.Unhandled(node, "static Array");

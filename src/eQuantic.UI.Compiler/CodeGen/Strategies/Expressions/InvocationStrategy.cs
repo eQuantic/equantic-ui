@@ -65,14 +65,14 @@ public class InvocationStrategy : IExpressionIrStrategy
             var target = argument.Expression switch
             {
                 DeclarationExpressionSyntax { Designation: SingleVariableDesignationSyntax single }
-                    => single.Identifier.Text.ToJsIdentifier(),
+                    => single.Identifier.ValueText.ToJsIdentifier(),
                 // A discard, written either way: `out int _` carries a type, plain `out _` does not.
                 DeclarationExpressionSyntax => "",
-                IdentifierNameSyntax { Identifier.Text: "_" } => "",
+                IdentifierNameSyntax { Identifier.ValueText: "_" } => "",
                 var expression => context.Converter.ConvertExpression(expression),
             };
             var field = argument.NameColon is { } named
-                ? named.Name.Identifier.Text.ToJsIdentifier()
+                ? named.Name.Identifier.ValueText.ToJsIdentifier()
                 : symbol is not null && index < symbol.Parameters.Length
                     ? symbol.Parameters[index].Name.ToJsIdentifier()
                     : $"$out{index}";
@@ -88,14 +88,14 @@ public class InvocationStrategy : IExpressionIrStrategy
 
         if (methodExpression is MemberAccessExpressionSyntax memberAccess)
         {
-            methodName = memberAccess.Name.Identifier.Text;
+            methodName = memberAccess.Name.Identifier.ValueText;
         }
         // `a?.M(x)` — the member is a BINDING, and `.M` (dot included) as the name is what used to
         // leak a leading dot into the fallback's output. The conditional-access strategy owns the
         // guard and the receiver; the fallback only names the call.
         else if (methodExpression is MemberBindingExpressionSyntax methodBinding)
         {
-            methodName = methodBinding.Name.Identifier.Text;
+            methodName = methodBinding.Name.Identifier.ValueText;
         }
 
         // 2. Semantic Resolution (needed BEFORE argument conversion — named arguments reorder
@@ -139,7 +139,7 @@ public class InvocationStrategy : IExpressionIrStrategy
             var arguments = invocation.ArgumentList.Arguments;
             for (var i = 0; i < arguments.Count && i < argsList.Count; i++)
             {
-                var name = arguments[i].NameColon?.Name.Identifier.Text;
+                var name = arguments[i].NameColon?.Name.Identifier.ValueText;
                 // A positional argument's slot is its LIST position — C# only allows positionals
                 // after a named argument when that named argument sits IN its own position
                 // (`Column(gap: Space.S3, [children])`), so the list index is the parameter index.
@@ -560,7 +560,7 @@ public class InvocationStrategy : IExpressionIrStrategy
     private static bool HasFactoryUsingStatic(SyntaxNode node) =>
         node.SyntaxTree.GetRoot().DescendantNodes().OfType<UsingDirectiveSyntax>()
             .Any(directive => directive.StaticKeyword.IsKind(SyntaxKind.StaticKeyword)
-                && directive.Name?.ToString().EndsWith("eQuantic.UI.Components.UI") == true);
+                && directive.Name?.ValueText().EndsWith("eQuantic.UI.Components.UI") == true);
 
     /// <summary>Does the enclosing type declare a method — or any enclosing block a local function —
     /// with this name? Then the bare call is THEIRS, and the local/`this` paths keep owning it.</summary>
@@ -570,11 +570,11 @@ public class InvocationStrategy : IExpressionIrStrategy
         {
             if (ancestor is BlockSyntax block
                 && block.Statements.OfType<LocalFunctionStatementSyntax>()
-                    .Any(local => local.Identifier.Text == methodName))
+                    .Any(local => local.Identifier.ValueText == methodName))
                 return true;
             if (ancestor is TypeDeclarationSyntax type)
                 return type.Members.OfType<MethodDeclarationSyntax>()
-                    .Any(method => method.Identifier.Text == methodName);
+                    .Any(method => method.Identifier.ValueText == methodName);
         }
         return false;
     }

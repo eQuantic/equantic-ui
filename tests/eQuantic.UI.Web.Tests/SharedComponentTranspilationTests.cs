@@ -174,6 +174,8 @@ public class SharedComponentTranspilationTests
             private readonly List<int> _items = [3, 1, 2];
             private readonly List<(int Key, string Name)> _pairs = [(1, "a"), (1, "a"), (2, "b")];
             private readonly Dictionary<string, int> _counts = new() { ["a"] = 1 };
+            private readonly List<long> _ticks = [4L, 6L];
+            private readonly List<decimal> _prices = [1.5m, 2.25m];
             private bool _seen;
 
             private List<int> Items() => _items;
@@ -203,10 +205,14 @@ public class SharedComponentTranspilationTests
                 var zipped = Items().Zip(Items()).Sum(pair => pair.First * pair.Second);
                 var triples = Items().Zip(Items(), Pairs()).Sum(triple => triple.Third.Key);
                 var same = Items().SequenceEqual(Items());
+                // A lambda over a long and one over a decimal annotate their parameter as a bigint and the
+                // runtime's Decimal, the types the arrays they are handed hold (#758).
+                var ticks = _ticks.Select(tick => tick * 2L).Sum();
+                var price = _prices.Average(each => each);
                 var fallback = Items().FirstOrDefault(9) + Items().LastOrDefault(item => item > 1, 9)
                     + Items().SingleOrDefault(item => item > 2, 9);
                 return new Text($"{average} {doubled} {sum} {total} {first} {distinct} {_seen} {count} "
-                    + $"{groups} {found} {zipped} {triples} {same} {fallback}",
+                    + $"{groups} {found} {zipped} {triples} {same} {fallback} {ticks} {price}",
                     TypeRole.Caption);
             }
         }

@@ -92,7 +92,7 @@ public class CollectionExpressionStrategy : IExpressionIrStrategy
     {
         foreach (var argument in with.ArgumentList.Arguments)
         {
-            if (argument.NameColon?.Name.Identifier.Text == "capacity") continue;
+            if (argument.NameColon?.Name.Identifier.ValueText == "capacity") continue;
 
             var type = context.SemanticHelper.GetType(argument.Expression);
             if (type?.SpecialType is SpecialType.System_Int32 or SpecialType.System_Int64

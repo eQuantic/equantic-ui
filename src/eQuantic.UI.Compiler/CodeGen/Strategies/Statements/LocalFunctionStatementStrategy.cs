@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
@@ -71,7 +72,7 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
     /// </summary>
     private static string Parameter(ParameterSyntax parameter, ConversionContext context)
     {
-        var name = parameter.Identifier.Text.ToJsIdentifier();
+        var name = parameter.Identifier.ValueText.ToJsIdentifier();
         var type = ParameterType(parameter.Type, context);
         var rest = parameter.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.ParamsKeyword));
         var name_ = context.TypeAnnotations ? $"{name}: {type}" : name;
@@ -92,10 +93,10 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
     /// </summary>
     private static string ParameterType(TypeSyntax? declared, ConversionContext context)
     {
-        var mapped = TypeScriptEmitter.CSharpTypeToTypeScript(declared?.ToString());
+        var mapped = TypeScriptEmitter.CSharpTypeToTypeScript(declared?.ValueText());
         var asked = declared is NullableTypeSyntax wrapper ? wrapper.ElementType : declared;
         if (asked is null) return mapped;
-        var spelled = TypeScriptEmitter.NormalizeQualification(asked.ToString());
+        var spelled = TypeScriptEmitter.NormalizeQualification(asked.ValueText());
         if (TypeScriptEmitter.CSharpTypeToTypeScript(spelled) != spelled
             || context.SemanticHelper.GetType(asked) is not { } resolved
             || TsStandIn.For(resolved, context.UsedRuntimeTypes) is not { } standIn)

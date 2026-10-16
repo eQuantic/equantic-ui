@@ -43,7 +43,7 @@ public class MathStrategy : IExpressionIrStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = invocation.Expression as MemberAccessExpressionSyntax;
-        var methodName = memberAccess?.Name.Identifier.Text ?? ((SimpleNameSyntax)invocation.Expression).Identifier.Text;
+        var methodName = memberAccess?.Name.Identifier.ValueText ?? ((SimpleNameSyntax)invocation.Expression).Identifier.ValueText;
         var arguments = invocation.ArgumentList.Arguments;
 
         // The numeric table first, by the type the overload computes on.
