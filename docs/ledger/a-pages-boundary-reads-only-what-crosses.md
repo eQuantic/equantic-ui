@@ -11,5 +11,9 @@
   `[ServerOnly]` method fulfils, the interface member it implements or the method it overrides, is
   refused with EQ2010 too wherever its receiver can be the type that keeps the method, read over the
   whole build; measured on the branch, `((IShape)new Circle()).Area()` built and threw a TypeError
-  ([#816](https://github.com/eQuantic/equantic-ui/issues/816)). Proposed and archived through OpenSpec
-  (`openspec/specs/client-boundary`).
+  ([#816](https://github.com/eQuantic/equantic-ui/issues/816)). Review then found four more ways client
+  code reached a member no twin holds, each now refused with EQ2010 where it is written: a bare method
+  group, a `[ServerOnly]` operator or conversion applied (`Amount a = 7` wrote `Amount.fromInt(7)`), an
+  extension block's `[ServerOnly]` member, which was also emitted, and an instance member of a kept-out
+  type read off a value ([#944](https://github.com/eQuantic/equantic-ui/pull/944)). Proposed and archived
+  through OpenSpec (`openspec/specs/client-boundary`).

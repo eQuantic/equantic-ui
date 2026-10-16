@@ -8,8 +8,12 @@ The build SHALL check against the client boundary exactly the code a module hold
 component its twin holds, a stateless component's as much as a stateful one's, and every class, record
 and static class that becomes a module. It SHALL NOT check code that never crosses: the body of a
 component's `[ServerAction]`, whose twin is a stub written from its signature, a method, an operator or a
-conversion marked `[ServerOnly]`, whatever type declares it, and a class marked `[ServerOnly]`. Such a
-member SHALL be no member of any twin, and what it names SHALL be neither imported nor refused by a module.
+conversion marked `[ServerOnly]`, whatever type declares it, an extension block's member included, and a
+class marked `[ServerOnly]`. Such a member SHALL be no member of any twin, and what it names SHALL be neither
+imported nor refused by a module. Client code that calls such a member, takes it as a method group, bare or
+qualified, or applies such an operator or conversion SHALL fail the build with EQ2010 where it does: a
+binary, a unary or a compound operator, an increment, a tuple equality, and a conversion, implicit, spelled
+as a cast, a foreach's element or a deconstruction's part.
 
 #### Scenario: A Server Action that reads a file
 
@@ -30,6 +34,21 @@ member SHALL be no member of any twin, and what it names SHALL be neither import
 
 - **WHEN** a class, a static class or a record declares a `[ServerOnly]` method or operator that reads a file
 - **THEN** the build succeeds, and its twin holds no such member
+
+#### Scenario: A server-only member of an extension block
+
+- **WHEN** a static class's `extension(string s)` block declares `[ServerOnly] public string Shout() => s + "!";`, or one that reads a file, beside a member that crosses
+- **THEN** the build succeeds and the class's twin holds no such member, where the literal body was written into it and the one that reads a file refused (EQ2112); a page that calls `"x".Shout()` fails the build with one EQ2010 at the call, where it built and called `Exts.shout('x')`
+
+#### Scenario: A server-only operator or conversion that client code applies
+
+- **WHEN** a class or a record struct declares `[ServerOnly]` conversions and operators, and a page writes `Amount a = 7`, `(Amount)"abc"`, passes `3` to an `Amount` parameter, writes `a += b`, `(a, 1) == (b, 1)`, `foreach (Amount a in new[] { 1, 2 })` or `(Amount b, int m) = Pair()`
+- **THEN** each fails the build with one EQ2010 at the page, where each built and called a static no twin carries (`Amount.fromInt(7)`), as `a + b`, `-a`, `a++` and `a == b` already failed
+
+#### Scenario: A server-only method taken as a bare method group
+
+- **WHEN** a class or a page declares `[ServerOnly] string Read()` and takes `Read` as a bare method group, or a class takes as one its own virtual `Read`, which a subclass overrides with a `[ServerOnly]` method
+- **THEN** the build fails with one EQ2010 at the group, where it built and wrote `this.read.bind(this)`, as its call and its group through `this.` already failed; a bare group of a method that crosses, and of a virtual in a type no `[ServerOnly]` override can be, builds
 
 #### Scenario: A framework host-only type read by a Server Action
 
@@ -131,7 +150,9 @@ static read, a name qualified by its namespace, `using static`, a method group, 
 operator, an extension's home, a type test, an `as`, a struct's zero, a local's annotation, a member's
 annotation in a class or a record, and a Server Action's answer or parameter. Each site SHALL be told
 once. A position the module writes as nothing SHALL be free: a component's field or parameter, which is
-annotated `any`, a cast, a list of the type, a reference type's zero and `nameof`. A component SHALL
+annotated `any`, a cast, a list of the type, a reference type's zero and `nameof`. An instance member of
+such a type read off a value, which no twin holds, SHALL fail the build with EQ2010 at the read, naming the
+member, unless the value's expression holds a refusal already. A component SHALL
 cross whatever it is marked, where it is not declared inside a type that never crosses.
 
 #### Scenario: The app's own server-only class
@@ -153,6 +174,11 @@ cross whatever it is marked, where it is not declared inside a type that never c
 
 - **WHEN** `public static class Shop { public static Amount Price() => default; }` over a `[ServerOnly] struct Amount`, and a page shows `Shop.Price().V.ToString()`
 - **THEN** the build fails with one EQ2010 at `Shop`'s file, where `Shop.Price()` answered undefined
+
+#### Scenario: A member read off a value of it
+
+- **WHEN** a page reads `ledger.Describe()`, `ledger.Total` or the group `ledger.Describe` off a `Ledger` parameter, `_ledger?.Describe()` off a field, `((Ledger)o).Total`, `secret.V` off a `[ServerOnly]` record, `amount.V` off a `[ServerOnly]` struct, or `Shop.Price().V`
+- **THEN** each fails the build with one EQ2010 at the read naming the member, in the app as in a referenced project, where it built and called a member nothing defines, while `new Ledger().Total` and `Ledger.Open().Total` stay one site each, told where the type is named
 
 #### Scenario: A position written as nothing
 
