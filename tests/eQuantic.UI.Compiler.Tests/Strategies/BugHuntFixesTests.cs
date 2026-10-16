@@ -214,21 +214,22 @@ public class BugHuntFixesTests
     }
 
     [Fact]
-    public void Distinct_OnPlainClass_UsesSet()
+    public void Distinct_OnPlainClass_AsksItsOwnEquals()
     {
-        // Plain reference types use reference equality in C#, which JS Set already matches.
+        // A plain class is found by reference, or by the Equals a subclass overrides, which .NET's
+        // default comparer asks and a JS Set never did (ElementEquality's 'item', #922).
         var result = TestHelper.ConvertExpression("list.Distinct()");
-        result.Should().Be("[...new Set(this.list)]");
+        result.Should().Be("[...$eq.collections.hashSet('item', this.list)]");
     }
 
     [Fact]
-    public void Distinct_OnRecord_UsesValueDedup()
+    public void Distinct_OnRecord_FindsItByValue()
     {
-        // Records use structural equality; Set (reference) would be wrong.
+        // A record is found by value, its members each by their own type's comparer: JSON.stringify found
+        // two records holding different arrays of the same items equal (#922).
         var result = TestHelper.ConvertExpression("points.Distinct()");
-        result.Should().NotContain("new Set(this.points)");
-        result.Should().Contain("JSON.stringify");
-        result.Should().Contain("this.points.filter");
+        result.Should().Be("[...$eq.collections.hashSet(true, this.points)]");
+        result.Should().NotContain("JSON.stringify");
     }
 
     [Fact]

@@ -122,10 +122,10 @@ public class LinqStrategyTests
     }
 
     [Fact]
-    public void Distinct_MapsTo_SetSpread()
+    public void Distinct_OfAClass_MapsTo_TheRuntimesSetSpread()
     {
         var result = TestHelper.ConvertExpression("list.Distinct()");
-        result.Should().Be("[...new Set(this.list)]");
+        result.Should().Be("[...$eq.collections.hashSet('item', this.list)]");
     }
 
     [Fact]
