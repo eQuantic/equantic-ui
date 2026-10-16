@@ -43,6 +43,71 @@ describe('Decimal — exact base-10 arithmetic', () => {
     expect(dec('6').div(dec('2')).toString()).toBe('3');
   });
 
+  // Each row is .NET 10's answer (#764): 1.5 million random operations on every width DecCalc
+  // takes a path for matched it before these were written down.
+  const MAX = '79228162514264337593543950335';
+  const OVERFLOW = 'Value was either too large or too small for a Decimal.';
+
+  it("throws .NET's OverflowException for a result no decimal holds", () => {
+    expect(() => dec(MAX).add(dec(MAX))).toThrow(OVERFLOW);
+    expect(thrownType(() => dec(MAX).add(dec(MAX)))).toBe('System.OverflowException');
+    expect(() => dec(`-${MAX}`).sub(dec('1'))).toThrow(OVERFLOW);
+    expect(() => dec(MAX).mul(dec('2'))).toThrow(OVERFLOW);
+    expect(() => dec(MAX).div(dec('0.5'))).toThrow(OVERFLOW);
+    expect(() => dec(MAX).div(dec('0.1'))).toThrow(OVERFLOW);
+  });
+
+  it('rounds a sum or a product past 96 bits or 28 places half to even', () => {
+    expect(dec(MAX).sub(dec('0.1')).toString()).toBe(MAX);
+    expect(dec('7922.8162514264337593543950335').add(dec('4.012027874412007892')).toString()).toBe(
+      '7926.828279300845767246395034',
+    );
+    expect(dec('7922.8162514264337593543950335').mul(dec('-4.012027874412007892')).toString()).toBe(
+      '-31786.559644567307325397988085',
+    );
+    expect(dec('0.1234567890123456789').mul(dec('0.1234567890123456789')).toString()).toBe(
+      '0.0152415787532388367501905200',
+    );
+    expect(dec('0.0000000000000000000000000005').mul(dec('0.1')).toString()).toBe(
+      '0.0000000000000000000000000000',
+    );
+    expect(dec('0.0000000000000000000000000015').mul(dec('0.1')).toString()).toBe(
+      '0.0000000000000000000000000002',
+    );
+    expect(dec('0.0000000000000000000000000251').mul(dec('0.1')).toString()).toBe(
+      '0.0000000000000000000000000025',
+    );
+  });
+
+  it('keeps as many places in a quotient as fit, rounded half to even', () => {
+    expect(dec('1').div(dec('3')).toString()).toBe('0.3333333333333333333333333333');
+    expect(dec('2').div(dec('3')).toString()).toBe('0.6666666666666666666666666667');
+    expect(dec(MAX).div(dec('6')).toString()).toBe('13204693752377389598923991722');
+    expect(dec('15518717730321859317').div(dec('0.00000003512407616471289109')).toString()).toBe(
+      '441825648525173427785103587.23',
+    );
+    expect(dec('-55.4').div(dec('-7.9228162514264337593543950335')).toString()).toBe(
+      '6.9924630638790486431695620028',
+    );
+  });
+
+  it('gives each result the scale .NET gives it', () => {
+    expect(dec('4.00').div(dec('2')).toString()).toBe('2.00');
+    expect(dec('10').div(dec('0.1')).toString()).toBe('100');
+    expect(dec('1').div(dec('0.5')).toString()).toBe('2');
+    expect(dec('1.5').mod(dec('2.00')).toString()).toBe('1.5');
+    expect(dec('0').mod(dec('1.50')).toString()).toBe('0');
+    expect(dec('-5.5').mod(dec('5.50')).toString()).toBe('0.00');
+    expect(dec('0.00').mul(dec('1.5')).toString()).toBe('0.000');
+    expect(dec('0.00').mul(dec('12345678901.5')).toString()).toBe('0');
+    expect(
+      dec('0.0000000000000000000000000001').mul(dec('0.0000000000000000000000000001')).toString(),
+    ).toBe('0');
+    expect(dec('0.000000000000001').mul(dec('0.000000000000001')).toString()).toBe(
+      '0.0000000000000000000000000000',
+    );
+  });
+
   it('compares and tests equality by value', () => {
     expect(dec('0.1').add(dec('0.2')).equals(dec('0.3'))).toBe(true);
     expect(dec('1.10').equals(dec('1.1'))).toBe(true);
