@@ -40,6 +40,45 @@ member SHALL be no member of any twin, and what it names SHALL be neither import
 - **WHEN** a page's Server Action returns `Task.FromResult(Matrix2D.Identity.M11)`
 - **THEN** the build succeeds, where it was refused with EQ2010 as a type position of the page
 
+### Requirement: A call through a contract a server-only method fulfils is refused where it is written
+
+Client code whose call or method group binds to an interface member, or to a method that can be
+overridden, SHALL fail the build with EQ2010 at that site, naming the method, when a `[ServerOnly]`
+method of a type that crosses implements or overrides that member and the call's receiver can be that
+type: the receiver's declared type, or for a bare call the type the call is declared in, is that type
+or a type it derives from or implements. A receiver whose type is not known, a type parameter, SHALL
+be taken to be any. The contracts SHALL be the whole build's, the app's and every referenced
+project's, so a project's call through its own contract, which the app fulfils on the server, is
+refused where the project writes it. A call bound to a method that is not `[ServerOnly]`, a call
+through `base`, a call whose receiver no such type can be, a contract only types that never cross
+fulfil on the server, a contract no client code calls, and server code SHALL build. Each site SHALL be
+told once, a call through `?.` where the source writes it.
+
+#### Scenario: A call through an interface
+
+- **WHEN** `Circle : IShape` declares `[ServerOnly] public double Area()` and a stateless or a stateful page shows `((IShape)new Circle()).Area().ToString()`, or calls `Area` on an `IShape` parameter in a block body, through a constraint `where T : IShape`, as a method group or through `?.`
+- **THEN** the build fails with one EQ2010 at the page naming `Circle.Area`, in the app as in a referenced project, where it built and the browser threw a TypeError
+
+#### Scenario: A call through a base
+
+- **WHEN** `Derived : Named` declares `[ServerOnly] public override string Name()` and a page shows `((Named)new Derived()).Name()`
+- **THEN** the build fails with one EQ2010 at the page naming `Derived.Name`, where the browser ran `Named`'s method and answered "base" where .NET answers "derived"
+
+#### Scenario: An explicit implementation and one a base declares
+
+- **WHEN** a page shows `((IPriced)new Gem()).Price()` over `[ServerOnly] double IPriced.Price()`, or `((IRound)new Disc()).Radius()` over `Disc : Round, IRound`, whose base `Round` declares a `[ServerOnly] Radius()`
+- **THEN** each fails the build with one EQ2010 at the page, naming `Gem.Price` and `Round.Radius`
+
+#### Scenario: A module a page reaches
+
+- **WHEN** a class's `Told() => Name() + "!"` calls its own virtual, which a subclass overrides with a `[ServerOnly]` method, or a referenced project's `Paint(IShape shape) => shape.Area().ToString()` is handed the app's `Circle`, whose `Area` is `[ServerOnly]`
+- **THEN** the build fails with one EQ2010 in the class's file, or in the project's
+
+#### Scenario: A call that can reach no server-only method
+
+- **WHEN** a page shows `new Square().Area()`; `new Plain().Name()` over another override that is not `[ServerOnly]`; `new Loud().Name()`, whose override calls `base.Name()`; `new Mute().Name()` or `new Echo().Twice()`, which calls `Name()` bare, over siblings of `Derived` that do not override it; `((ISealed)new Open()).Seal()` where only a `[ServerOnly]` class and an attribute keep their `Seal` on the server; implements a contract with a `[ServerOnly]` method no client code calls; or calls through the contract from a Server Action or a `[ServerOnly]` member
+- **THEN** the build succeeds
+
 ### Requirement: Client code that reaches an API only a server has is refused once, where it is written
 
 Client code that calls, reads, constructs, groups or extends a member of an API only a server has SHALL
@@ -81,6 +120,11 @@ its type names. Each site SHALL be told once, never also as a member with no tra
 
 - **WHEN** a page subscribes to an `IObservable<int>`, throws and catches an `IOException`, and holds a field of type `FileInfo?`
 - **THEN** none is refused as a server API: the `Subscribe` call is EQ2004, a member with no translation, and the rest builds
+
+#### Scenario: A read through a conditional access
+
+- **WHEN** a page reads `info?.Exists` of a `FileInfo?`
+- **THEN** the build fails with one EQ2112 on the line that writes it, where it was told at the file's first line
 
 ### Requirement: A type the build writes no module for is refused where client code names it
 

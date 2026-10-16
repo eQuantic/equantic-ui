@@ -7,5 +7,9 @@
   the build writes no module for, the app's own top-level `[ServerOnly]` class or an attribute among
   them, is refused with EQ2010 where client code names it, as a nested one was; measured on main, a
   page that called `Vault.Key()` built and threw `Vault is not defined`
-  ([#823](https://github.com/eQuantic/equantic-ui/issues/823)). Proposed and archived through OpenSpec
+  ([#823](https://github.com/eQuantic/equantic-ui/issues/823)). A call through a contract a
+  `[ServerOnly]` method fulfils, the interface member it implements or the method it overrides, is
+  refused with EQ2010 too wherever its receiver can be the type that keeps the method, read over the
+  whole build; measured on the branch, `((IShape)new Circle()).Area()` built and threw a TypeError
+  ([#816](https://github.com/eQuantic/equantic-ui/issues/816)). Proposed and archived through OpenSpec
   (`openspec/specs/client-boundary`).
