@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies;
 
@@ -123,7 +124,7 @@ public class TryStatementStrategy : IStatementStrategy
     {
         if (clause.Declaration is not { } declaration) return true;
         if (context.SemanticHelper.GetSymbol(declaration.Type) is ITypeSymbol type) return ExceptionTypes.IsRoot(type);
-        return context.CanGuess(declaration.Type) && declaration.Type.ToString() is "Exception" or "System.Exception";
+        return context.CanGuess(declaration.Type) && declaration.Type.ValueText() is "Exception" or "System.Exception";
     }
 
     /// <summary>Whether the clause's own block rethrows (<c>throw;</c>), a nested clause's aside.</summary>
@@ -134,7 +135,7 @@ public class TryStatementStrategy : IStatementStrategy
     /// <summary>The name every reference reads (ToJsIdentifier, so <c>@class</c> is renamed), or null
     /// for a clause with no variable.</summary>
     private static string? VariableName(CatchClauseSyntax clause) =>
-        clause.Declaration?.Identifier.Text is { Length: > 0 } caught ? caught.ToJsIdentifier() : null;
+        clause.Declaration?.Identifier.ValueText is { Length: > 0 } caught ? caught.ToJsIdentifier() : null;
 
     /// <summary>
     /// The catch's binding, ANNOTATED <c>any</c> where the module is type-checked: a catch binding is

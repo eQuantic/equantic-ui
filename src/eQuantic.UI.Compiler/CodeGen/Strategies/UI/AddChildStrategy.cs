@@ -18,7 +18,7 @@ public class AddChildStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
-        return memberAccess.Name.Identifier.Text == "AddChild";
+        return memberAccess.Name.Identifier.ValueText == "AddChild";
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

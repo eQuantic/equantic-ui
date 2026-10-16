@@ -18,11 +18,11 @@ public class StringStaticStrategy : IConversionStrategy
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         // `string.Empty` — the static PROPERTY (no invocation): the empty string literal.
-        if (node is MemberAccessExpressionSyntax { Name.Identifier.Text: "Empty" } property
+        if (node is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Empty" } property
             && property.Expression.ToString() is "string" or "String" or "System.String")
             return true;
         // The same field reached bare through `using static System.String;`, which read `String.empty` (#485).
-        if (node is IdentifierNameSyntax { Identifier.Text: "Empty" } bare && bare.StandsAlone()
+        if (node is IdentifierNameSyntax { Identifier.ValueText: "Empty" } bare && bare.StandsAlone()
             && context.SemanticHelper.GetSymbol(bare) is IFieldSymbol { IsStatic: true, ContainingType.SpecialType: SpecialType.System_String })
             return true;
 
@@ -31,7 +31,7 @@ public class StringStaticStrategy : IConversionStrategy
         string methodName;
         if (invocation.Expression is MemberAccessExpressionSyntax methodAccess)
         {
-            methodName = methodAccess.Name.Identifier.Text;
+            methodName = methodAccess.Name.Identifier.ValueText;
             // The receiver must BE System.String — a user type merely named String must not route here.
             if (!context.ReceiverIsType(methodAccess.Expression,
                     named => named.SpecialType == SpecialType.System_String,
@@ -43,7 +43,7 @@ public class StringStaticStrategy : IConversionStrategy
         else if (invocation.Expression is SimpleNameSyntax simple
                  && context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol
                      { IsStatic: true, ContainingType.SpecialType: SpecialType.System_String })
-            methodName = simple.Identifier.Text;
+            methodName = simple.Identifier.ValueText;
         else
             return false;
 
@@ -62,13 +62,13 @@ public class StringStaticStrategy : IConversionStrategy
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
-        if (node is MemberAccessExpressionSyntax { Name.Identifier.Text: "Empty" } or IdentifierNameSyntax { Identifier.Text: "Empty" })
+        if (node is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Empty" } or IdentifierNameSyntax { Identifier.ValueText: "Empty" })
             return "''";
 
         var invocation = (InvocationExpressionSyntax)node;
         var methodName = invocation.Expression is MemberAccessExpressionSyntax memberAccess
-            ? memberAccess.Name.Identifier.Text
-            : ((SimpleNameSyntax)invocation.Expression).Identifier.Text;
+            ? memberAccess.Name.Identifier.ValueText
+            : ((SimpleNameSyntax)invocation.Expression).Identifier.ValueText;
         var args = invocation.ArgumentList.Arguments;
 
         if (methodName == "IsNullOrEmpty")

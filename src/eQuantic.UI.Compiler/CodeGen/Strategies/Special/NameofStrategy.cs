@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Special;
@@ -17,10 +18,15 @@ public class NameofStrategy : IConversionStrategy
         if (node is not InvocationExpressionSyntax invocation)
             return false;
 
-        if (invocation.Expression is not IdentifierNameSyntax identifier)
+        if (invocation.Expression is not IdentifierNameSyntax { Identifier.ValueText: "nameof" } identifier)
             return false;
 
-        return identifier.Identifier.Text == "nameof";
+        // The MODEL says whether it is the operator: a method or a delegate the code names `nameof` is
+        // called by `@nameof(…)`, and by `nameof(…)` too wherever it is in scope (found in Copilot's
+        // review of #931). Where the model cannot be asked, the escape is what says so.
+        return context.SemanticHelper.GetOperation(invocation) is { } operation
+            ? operation is not IInvocationOperation
+            : !identifier.Identifier.IsVerbatimIdentifier();
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

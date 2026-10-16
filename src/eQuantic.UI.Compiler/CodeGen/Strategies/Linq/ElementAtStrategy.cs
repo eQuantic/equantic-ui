@@ -9,7 +9,7 @@ public class ElementAtStrategy : IConversionStrategy
     {
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
-        if (memberAccess.Name.Identifier.Text != "ElementAt" && memberAccess.Name.Identifier.Text != "ElementAtOrDefault") return false;
+        if (memberAccess.Name.Identifier.ValueText != "ElementAt" && memberAccess.Name.Identifier.ValueText != "ElementAtOrDefault") return false;
 
         var symbol = context.SemanticHelper.GetSymbol(invocation);
         if (symbol is IMethodSymbol ms && context.SemanticHelper.IsLinqExtension(ms.ContainingType)) return true;
@@ -29,7 +29,7 @@ public class ElementAtStrategy : IConversionStrategy
             var index = context.Converter.ConvertExpression(args[0].Expression);
             // ElementAt(i) is source[i]; ElementAtOrDefault(i) answers the ELEMENT's default when
             // the index is out of range, where a bare lookup would hand back undefined.
-            if (memberAccess.Name.Identifier.Text != "ElementAtOrDefault") return $"{caller}[{index}]";
+            if (memberAccess.Name.Identifier.ValueText != "ElementAtOrDefault") return $"{caller}[{index}]";
             var fallback = DefaultValue.OfElement(context.SemanticHelper.GetType(memberAccess.Expression), context);
             return $"({caller}[{index}] ?? {fallback})";
         }

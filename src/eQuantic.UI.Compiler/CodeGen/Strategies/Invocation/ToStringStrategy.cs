@@ -22,12 +22,12 @@ public class ToStringStrategy : IConversionStrategy
 
         // A ToString that hides object's (`public new string ToString()`) is the app's own method, which
         // its twin holds under a name of its own, and is called as any other method is (#563).
-        if (memberAccess.Name.Identifier.Text == "ToString"
+        if (memberAccess.Name.Identifier.ValueText == "ToString"
             && context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol bound
             && TwinMethodName.HoldsANameOfItsOwn(bound))
             return false;
 
-        return memberAccess.Name.Identifier.Text == "ToString";
+        return memberAccess.Name.Identifier.ValueText == "ToString";
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)
@@ -249,7 +249,7 @@ public class ToStringStrategy : IConversionStrategy
                 || type.AllInterfaces.Any(i => i.ToDisplayString() == "System.IFormatProvider");
         }
 
-        return argument.Expression is MemberAccessExpressionSyntax { Expression: IdentifierNameSyntax { Identifier.Text: "CultureInfo" } };
+        return argument.Expression is MemberAccessExpressionSyntax { Expression: IdentifierNameSyntax { Identifier.ValueText: "CultureInfo" } };
     }
 
     public int Priority => 10;

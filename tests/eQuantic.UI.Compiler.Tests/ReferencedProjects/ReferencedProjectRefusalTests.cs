@@ -727,4 +727,71 @@ public sealed class ReferencedProjectRefusalTests
         built.SiblingImportsOf("Home").Should().BeEmpty("the library's class of that name is not what the page named");
         built.Modules.Should().NotContain("Status", "and nothing reached the library's, so it is no module");
     }
+
+    /// <summary>A plain class of the base project's, with a field a member of a derived class can land on.</summary>
+    private const string Holder = "namespace Domain;\n\npublic class Holder\n{\n    int amount = 1;\n    public int Read() => amount;\n}\n";
+
+    /// <summary>A class of the base project's, and one that derives from it declaring a member a case
+    /// apart from its field, in the project <paramref name="derivedIn"/> names.</summary>
+    private static Solution Shadowed(string derivedIn)
+    {
+        const string Shadow = "namespace Domain;\n\npublic class Shadow : Holder\n{\n    public int Amount => 99;\n}\n";
+        var home = Home("(new Domain.Shadow().Amount * 1000 + new Domain.Shadow().Read()).ToString()");
+        return derivedIn == "Domain"
+            ? new Solution()
+                .Library("Domain", files: [("Holder.cs", Holder), ("Shadow.cs", Shadow)])
+                .App("App", references: ["Domain"], globalUsings: SharedLibrary.Factories, files: [("Screens/Home.cs", home)])
+            : new Solution()
+                .Library("Domain", files: [("Holder.cs", Holder)])
+                .App("App", references: ["Domain"], globalUsings: SharedLibrary.Factories, files:
+                    [("Shadow.cs", Shadow), ("Screens/Home.cs", home)]);
+    }
+
+    /// <summary>
+    /// A member the app declares a case apart from a field a class of a referenced project holds (#740).
+    /// The field moves aside for a member a class of its own project declares, and the project's build
+    /// never reads the app, so its twin keeps the field where the app's member would stand, and the
+    /// member is refused where it is written, naming the field.
+    /// </summary>
+    [Fact]
+    public void AMemberACaseApartFromAFieldAnotherProjectHolds_IsRefusedWhereItIsDeclared()
+    {
+        using var solution = Shadowed(derivedIn: "App");
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue("the inherited field would hide the member on each instance");
+        built.ErrorsIn("App").Should().ContainSingle()
+            .Which.Should().StartWith(solution.FileOf("App", "Shadow.cs") + "(")
+            .And.Contain("error EQ1007").And.Contain("'Shadow.Amount'").And.Contain("'Holder.amount'");
+        built.ErrorsIn("Domain").Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// A partial method with no implementation is no member of the twin, so its name lands on no field
+    /// (found in Copilot's review of #931): the refusal above counts what the twin carries.
+    /// </summary>
+    [Fact]
+    public void AnUnimplementedPartialMethodACaseApartFromAnotherProjectsField_IsNotRefused()
+    {
+        const string Shadow = "namespace Domain;\n\npublic partial class Shadow : Holder\n{\n    partial void Amount();\n    public int Twice() => Read() * 2;\n}\n";
+        using var solution = new Solution()
+            .Library("Domain", files: [("Holder.cs", Holder)])
+            .App("App", references: ["Domain"], globalUsings: SharedLibrary.Factories, files:
+                [("Model/Shadow.cs", Shadow), ("Screens/Home.cs", Home("new Domain.Shadow().Twice().ToString()"))]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Module("Shadow").Should().NotContain("amount(", "a partial method with no implementation writes nothing");
+    }
+
+    [Fact]
+    public void TheSameMemberInTheFieldsOwnProject_MovesTheField()
+    {
+        // The control of the test above: the derived class beside its base, where the field moves.
+        using var solution = Shadowed(derivedIn: "Domain");
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Module("Holder").Should().Contain("amount$", "the base's field moves aside for the derived class's member");
+    }
 }

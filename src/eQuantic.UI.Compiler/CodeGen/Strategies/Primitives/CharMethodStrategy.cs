@@ -30,7 +30,7 @@ public class CharMethodStrategy : IExpressionIrStrategy
                 "char", "Char", "System.Char"))
             return false;
 
-        return Lowers(memberAccess.Name.Identifier.Text);
+        return Lowers(memberAccess.Name.Identifier.ValueText);
     }
 
     /// <summary>The methods this strategy lowers.</summary>

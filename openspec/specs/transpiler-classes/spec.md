@@ -198,7 +198,7 @@ read through the property.
 
 ### Requirement: A field a case apart from a member keeps its own slot
 
-A plain class's instance field whose twin name is another member's, a property, a method, an event or another field of its type or its bases, an explicit interface implementation counted under the name of the member it implements, SHALL live in a slot of its own, its name with a `$` after it, and a slot an ancestor already holds SHALL be taken whatever the spellings, so a field that would meet one SHALL take a `$` more until its slot is free. Every read and write of the field SHALL reach that slot, a call of a delegate field, a read of a field called `Count` and a pattern's included: a property subpattern SHALL read the member the model binds it to, each one along an extended path, and a positional pattern over a `Deconstruct` the app wrote SHALL call it and read the parts it hands back, never the members its outs are named after, and a pattern-matching operation SHALL call it once for each value, as .NET does, across the arms of a switch and the alternatives of an `or`, in an initializer too. The other member SHALL keep its name. A class with such a field SHALL be written to JSON as System.Text.Json writes it: the property, read through its getter once, and never the field.
+A plain class's instance field whose twin name is another member's, a property, a method, an event or another field of its type or its bases, or a property, a method or an event of a type derived from it that its own source declares, however far down, an explicit interface implementation counted under the name of the member it implements, SHALL live in a slot of its own, its name with a `$` after it, and a slot an ancestor already holds SHALL be taken whatever the spellings, so a field that would meet one SHALL take a `$` more until its slot is free. Every read and write of the field SHALL reach that slot, a call of a delegate field, a read of a field called `Count` and a pattern's included: a property subpattern SHALL read the member the model binds it to, each one along an extended path, and a positional pattern over a `Deconstruct` the app wrote SHALL call it and read the parts it hands back, never the members its outs are named after, and a pattern-matching operation SHALL call it once for each value, as .NET does, across the arms of a switch and the alternatives of an `or`, in an initializer too. The other member SHALL keep its name. A member a type declares on the slot of a field a base of ANOTHER project holds SHALL fail the build with EQ1007, naming the member and the field, since that project's build writes the field's slot without reading the types derived from it elsewhere. A class with such a field SHALL be written to JSON as System.Text.Json writes it: the property, read through its getter once, and never the field.
 
 #### Scenario: A setter beside its field
 
@@ -249,6 +249,20 @@ A plain class's instance field whose twin name is another member's, a property, 
 
 - **WHEN** an instance whose field moved is written to JSON
 - **THEN** the property is written under its name, read through its getter once even where a moved field and the property's store both stand for it, and the field's slot is not written
+
+#### Scenario: A member a derived class declares
+
+- **WHEN** `class Holder { int amount = 1; public int Read() => amount; }` is derived by
+  `class Shadow : Holder { public int Amount => 99; }`, and `s.Amount * 1000 + s.Read()` is read
+- **THEN** it answers 99001, as in .NET, and so does a method declared two classes down and a property
+  declared under a generic base
+
+#### Scenario: A member landing on a field another project holds
+
+- **WHEN** an app declares `class Shadow : Domain.Holder { public int Amount => 99; }`, and `Holder`,
+  which holds `int amount`, is a class of a project the app references
+- **THEN** the build fails with EQ1007 at the app's `Amount`, naming `Holder.amount`, and the same two
+  classes in one project build, the field moved
 
 ### Requirement: A nested type is a module of its own, named by its owner
 

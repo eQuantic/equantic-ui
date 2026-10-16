@@ -134,16 +134,16 @@ public static class PatternConverter
             // Each binding under the name every reference reads it by (ToJsIdentifier): as source
             // text, `is int @class` bound `@class` and `is int package` a reserved word.
             case VarPatternSyntax { Designation: SingleVariableDesignationSyntax v }:
-                bindings.Add((v.Identifier.Text.ToJsIdentifier(), access));
+                bindings.Add((v.Identifier.ValueText.ToJsIdentifier(), access));
                 break;
 
             case DeclarationPatternSyntax { Designation: SingleVariableDesignationSyntax d }:
-                bindings.Add((d.Identifier.Text.ToJsIdentifier(), access));
+                bindings.Add((d.Identifier.ValueText.ToJsIdentifier(), access));
                 break;
 
             case RecursivePatternSyntax recursive:
                 if (recursive.Designation is SingleVariableDesignationSyntax r)
-                    bindings.Add((r.Identifier.Text.ToJsIdentifier(), access));
+                    bindings.Add((r.Identifier.ValueText.ToJsIdentifier(), access));
                 if (recursive.PositionalPatternClause is { } positional)
                 {
                     // Read after the test, which called the app's Deconstruct, if the pattern has one.
@@ -248,7 +248,7 @@ public static class PatternConverter
         // The list ITSELF, when the pattern names it (`is [1, _] pair`): declared by the scanner,
         // so it must be assigned here, or it reads undefined where C# reads the list.
         if (list.Designation is SingleVariableDesignationSyntax whole)
-            bindings.Add((whole.Identifier.Text.ToJsIdentifier(), access));
+            bindings.Add((whole.Identifier.ValueText.ToJsIdentifier(), access));
         var (before, after, sliceIndex) = SliceShape(list);
         for (int i = 0; i < before; i++)
             CollectBindings(list.Patterns[i], $"{access}[{i}]", context, bindings);
@@ -328,7 +328,7 @@ public static class PatternConverter
         // a number, so `o is long` was false for every long.
         if (context.SemanticHelper.GetSymbol(typeSyntax) is INamedTypeSymbol known && ScalarCheck(known, access, context) is { } scalar)
             return scalar;
-        switch (typeSyntax.ToString())
+        switch (typeSyntax.ValueText())
         {
             case "string": return $"typeof {access} === 'string'";
             case "int" or "double" or "float" or "decimal" or "number":

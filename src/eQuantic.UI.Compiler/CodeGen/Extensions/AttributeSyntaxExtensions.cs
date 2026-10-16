@@ -23,10 +23,10 @@ public static class AttributeSyntaxExtensions
     {
         var name = attribute.Name switch
         {
-            QualifiedNameSyntax qualified => qualified.Right.Identifier.Text,
-            AliasQualifiedNameSyntax aliased => aliased.Name.Identifier.Text,
-            SimpleNameSyntax simple => simple.Identifier.Text,
-            _ => attribute.Name.ToString(),
+            QualifiedNameSyntax qualified => qualified.Right.Identifier.ValueText,
+            AliasQualifiedNameSyntax aliased => aliased.Name.Identifier.ValueText,
+            SimpleNameSyntax simple => simple.Identifier.ValueText,
+            _ => attribute.Name.ValueText(),
         };
         return name == simpleName || name == simpleName + "Attribute";
     }

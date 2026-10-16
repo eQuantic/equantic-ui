@@ -20,7 +20,7 @@ public class EnumMethodStrategy : IConversionStrategy
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
 
-        var name = memberAccess.Name.Identifier.Text;
+        var name = memberAccess.Name.Identifier.ValueText;
         if (name is not ("Parse" or "TryParse" or "GetValues" or "GetNames" or "GetName" or "IsDefined")) return false;
 
         return context.ReceiverIsType(memberAccess.Expression,
@@ -31,7 +31,7 @@ public class EnumMethodStrategy : IConversionStrategy
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
-        var name = ((MemberAccessExpressionSyntax)invocation.Expression).Name.Identifier.Text;
+        var name = ((MemberAccessExpressionSyntax)invocation.Expression).Name.Identifier.ValueText;
         if (context.SemanticHelper.GetOperation(invocation) is not IInvocationOperation call
             || EnumOf(call, context) is not { } enumType)
             return context.Unhandled(invocation, $"Enum.{name} over an enum the model cannot name");

@@ -1,6 +1,7 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
@@ -28,7 +29,7 @@ public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
         {
             case BaseObjectCreationExpressionSyntax oc:
                 return KindOf(context.SemanticHelper.GetType(oc)) != null
-                    || (oc is ObjectCreationExpressionSyntax named && KindOfName(named.Type.ToString()) != null);
+                    || (oc is ObjectCreationExpressionSyntax named && KindOfName(named.Type.ValueText()) != null);
 
             // No twin reads a date back through a format pattern: `ParseExact` emitted a call to a
             // member the runtime does not have, a TypeError the moment the page ran it, and the audit
@@ -37,7 +38,7 @@ public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
             // twin's toString knew six tokens and no culture.
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
                 return Kind(ma, context) != null
-                    && ma.Name.Identifier.Text is not ("ParseExact" or "TryParseExact" or "ToString");
+                    && ma.Name.Identifier.ValueText is not ("ParseExact" or "TryParseExact" or "ToString");
 
             case MemberAccessExpressionSyntax member:
                 return Kind(member, context) != null;
@@ -60,13 +61,13 @@ public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
                     && DateTimeConstructionStrategy.RefusesCalendar(oc, constructor, constructor.ContainingType.Name, context))
                     return oc.ToString();
                 var kind = KindOf(context.SemanticHelper.GetType(oc))
-                    ?? (oc is ObjectCreationExpressionSyntax named ? KindOfName(named.Type.ToString()) : null);
+                    ?? (oc is ObjectCreationExpressionSyntax named ? KindOfName(named.Type.ValueText()) : null);
                 return $"$eq.time.{kind}({ConvertArgs(oc.ArgumentList, context)})";
             }
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
-                var name = ma.Name.Identifier.Text;
+                var name = ma.Name.Identifier.ValueText;
                 var args = ConvertArgs(inv.ArgumentList, context);
                 if (IsStaticAccess(ma, context))
                     return $"$eq.time.{StaticKind(ma, context)}.{name.ToCamelCase()}({args})";
@@ -81,7 +82,7 @@ public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
 
             case MemberAccessExpressionSyntax member:
             {
-                var name = member.Name.Identifier.Text;
+                var name = member.Name.Identifier.ValueText;
                 if (IsStaticAccess(member, context))
                     // Static properties (MinValue/MaxValue) map to factory methods.
                     return $"$eq.time.{StaticKind(member, context)}.{name.ToCamelCase()}()";

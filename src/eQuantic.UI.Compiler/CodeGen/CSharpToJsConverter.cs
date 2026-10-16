@@ -629,9 +629,9 @@ public class CSharpToJsConverter
         // `var content = new Column(…)` — the declarator is the construction's own parent, so this
         // names only the node that IS the variable, never one merely passed to it.
         var declared = expression.Parent is EqualsValueClauseSyntax { Parent: VariableDeclaratorSyntax declarator }
-            ? declarator.Identifier.Text
+            ? declarator.Identifier.ValueText
             : expression.Parent is AssignmentExpressionSyntax { Left: IdentifierNameSyntax assigned }
-                ? assigned.Identifier.Text
+                ? assigned.Identifier.ValueText
                 : null;
 
         return declared is null ? name : $"{name} · {declared}";
@@ -767,7 +767,7 @@ public class CSharpToJsConverter
 
             var isAsync = usingDecl.AwaitKeyword.IsKind(SyntaxKind.AwaitKeyword);
             var disposes = usingDecl.Declaration.Variables.Reverse()
-                .Select(variable => Strategies.Statements.UsingLowering.Dispose(variable.Identifier.Text.ToJsIdentifier(), isAsync))
+                .Select(variable => Strategies.Statements.UsingLowering.Dispose(variable.Identifier.ValueText.ToJsIdentifier(), isAsync))
                 .ToList();
             result.Add(JsStatement.Try(JsStatement.Block(rest), null, JsStatement.Block(disposes)) with { Origin = usingDecl });
             return result;

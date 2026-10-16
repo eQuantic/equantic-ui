@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.Services;
 using Microsoft.CodeAnalysis.CSharp;
 using eQuantic.UI.Compiler.CodeGen.Ir;
@@ -25,7 +26,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
         {
             // A reserved JS word takes a trailing underscore — declaration and references go
             // through the same rule, so `var package = …` stays one identifier on both sides.
-            var name = variable.Identifier.Text.ToJsIdentifier();
+            var name = variable.Identifier.ValueText.ToJsIdentifier();
             var declared = ExpressionVariableScanner.InFrontOf(decl, variable.Initializer?.Value, context.TypeAnnotations);
             var init = variable.Initializer != null
                 ? context.Converter.ConvertIr(variable.Initializer.Value)
@@ -161,7 +162,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
             if (standIn == "any") return ": any";
             ts = standIn;
         }
-        else ts = CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(decl.Declaration.Type.ToString());
+        else ts = CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(decl.Declaration.Type.ValueText());
 
         if (ts is "any" or "void") return null;
         if (!ts.EndsWith(" | null", StringComparison.Ordinal)) ts = CodeGen.TypeScriptEmitter.OrNull(ts);

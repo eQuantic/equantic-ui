@@ -25,7 +25,7 @@ public class BclSurfaceTailStrategy : IExpressionIrStrategy
         if (!invocation.TryGetInstanceCall(out _, out var name)) return false;
 
         return context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { IsStatic: false } method
-            && Template(method, name.Identifier.Text, invocation.ArgumentList.Arguments.Count) is not null;
+            && Template(method, name.Identifier.ValueText, invocation.ArgumentList.Arguments.Count) is not null;
     }
 
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
@@ -40,7 +40,7 @@ public class BclSurfaceTailStrategy : IExpressionIrStrategy
             .ToArray();
 
         // Templates say what they compute; the writer decides what to evaluate once.
-        var template = Template(method, name.Identifier.Text, args.Length)!;
+        var template = Template(method, name.Identifier.ValueText, args.Length)!;
         return JsExpr.Template(template, new[] { receiver }.Concat(args).ToArray());
     }
 

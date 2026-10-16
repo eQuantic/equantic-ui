@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Invocation;
 
@@ -37,7 +38,7 @@ public class ServiceProviderStrategy : IConversionStrategy
         // imports a name the runtime does not export and the module fails to load whole.
         if (IsCapabilityScope(invocation, context)) return true;
 
-        var methodName = memberAccess.Name.Identifier.Text;
+        var methodName = memberAccess.Name.Identifier.ValueText;
         if (methodName is not ("GetService" or "GetRequiredService"))
             return false;
 
@@ -92,7 +93,7 @@ public class ServiceProviderStrategy : IConversionStrategy
         if (name is not GenericNameSyntax generic || generic.TypeArgumentList.Arguments.Count == 0)
             return null;
 
-        var typeName = generic.TypeArgumentList.Arguments[0].ToString();
+        var typeName = generic.TypeArgumentList.Arguments[0].ValueText();
         return typeName.Contains('.') ? typeName.Split('.')[^1] : typeName;
     }
 
@@ -124,7 +125,7 @@ public class ServiceProviderStrategy : IConversionStrategy
 
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
-        var methodName = memberAccess.Name.Identifier.Text;
+        var methodName = memberAccess.Name.Identifier.ValueText;
         var jsMethodName = methodName == "GetRequiredService" ? "getService" : methodName.ToCamelCase();
 
         // Check if generic: GetService<T>()
@@ -132,7 +133,7 @@ public class ServiceProviderStrategy : IConversionStrategy
             genericName.TypeArgumentList.Arguments.Count > 0)
         {
             var typeArg = genericName.TypeArgumentList.Arguments[0];
-            var typeName = typeArg.ToString();
+            var typeName = typeArg.ValueText();
 
             // Extract the simple interface name (e.g., IAppTheme from eQuantic.UI.Primitives.IAppTheme)
             var simpleTypeName = typeName;

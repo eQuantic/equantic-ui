@@ -289,7 +289,7 @@ public class QueueStackStrategy : IExpressionIrStrategy
             };
         }
         if (creation is not ObjectCreationExpressionSyntax { Type: var written }) return null;
-        var name = (written as GenericNameSyntax ?? (written as QualifiedNameSyntax)?.Right as GenericNameSyntax)?.Identifier.Text;
+        var name = (written as GenericNameSyntax ?? (written as QualifiedNameSyntax)?.Right as GenericNameSyntax)?.Identifier.ValueText;
         return name switch
         {
             "Queue" => "queue",

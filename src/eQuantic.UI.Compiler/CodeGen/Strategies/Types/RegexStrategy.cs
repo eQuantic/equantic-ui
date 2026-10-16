@@ -26,7 +26,7 @@ public class RegexStrategy : IConversionStrategy
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var args = invocation.ArgumentList.Arguments;
-        var name = memberAccess.Name.Identifier.Text;
+        var name = memberAccess.Name.Identifier.ValueText;
 
         if (name == "IsMatch" && args.Count >= 2)
         {

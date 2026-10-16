@@ -152,7 +152,7 @@ public static class ExpressionVariableScanner
     /// </summary>
     public static string BindingPattern(VariableDesignationSyntax designation) => designation switch
     {
-        SingleVariableDesignationSyntax single => single.Identifier.Text.ToJsIdentifier(),
+        SingleVariableDesignationSyntax single => single.Identifier.ValueText.ToJsIdentifier(),
         ParenthesizedVariableDesignationSyntax parenthesized =>
             "[" + string.Join(", ", parenthesized.Variables.Select(BindingPattern)) + "]",
         _ => "",
@@ -233,7 +233,7 @@ public static class ExpressionVariableScanner
         switch (designation)
         {
             case SingleVariableDesignationSyntax single:
-                names.Add(single.Identifier.Text.ToJsIdentifier());
+                names.Add(single.Identifier.ValueText.ToJsIdentifier());
                 break;
             case ParenthesizedVariableDesignationSyntax parenthesized:
                 foreach (var variable in parenthesized.Variables) Designate(variable, names);

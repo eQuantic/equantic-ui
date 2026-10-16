@@ -10,7 +10,7 @@ public class DefaultIfEmptyStrategy : IConversionStrategy
     {
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
-        if (memberAccess.Name.Identifier.Text != "DefaultIfEmpty") return false;
+        if (memberAccess.Name.Identifier.ValueText != "DefaultIfEmpty") return false;
 
         var symbol = context.SemanticHelper.GetSymbol(invocation);
         if (symbol is IMethodSymbol ms && context.SemanticHelper.IsLinqExtension(ms.ContainingType)) return true;

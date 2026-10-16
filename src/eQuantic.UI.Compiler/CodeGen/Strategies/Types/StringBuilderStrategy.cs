@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
@@ -49,7 +50,7 @@ public class StringBuilderStrategy : ConversionStrategyBase
         {
             case BaseObjectCreationExpressionSyntax oc:
                 return IsType(context.SemanticHelper.GetType(oc))
-                    || (oc is ObjectCreationExpressionSyntax named && named.Type.ToString() == "StringBuilder");
+                    || (oc is ObjectCreationExpressionSyntax named && named.Type.ValueText() == "StringBuilder");
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
                 return IsMember(ma, context);
@@ -86,7 +87,7 @@ public class StringBuilderStrategy : ConversionStrategyBase
                 // evaluated in the order it is written.
                 if (method is not null && !BindsItsOwnArguments(method) && ValueInTheCulture(inv, method, context) is { } value)
                     return JsExprWriter.Write(ParameterTemplate.Call(
-                        $"{{0}}.{RuntimeName(method, ma.Name.Identifier.Text)}({Holes(1, inv.ArgumentList.Arguments.Count)})",
+                        $"{{0}}.{RuntimeName(method, ma.Name.Identifier.ValueText)}({Holes(1, inv.ArgumentList.Arguments.Count)})",
                         context.Converter.ConvertIr(ma.Expression), inv, method, context,
                         argument => argument.Expression == value
                             ? StringConversion.ToDotNetString(value, context.Converter.ConvertIr(value), context)
@@ -96,7 +97,7 @@ public class StringBuilderStrategy : ConversionStrategyBase
                 // evaluated in the order written. The members below bind their own arguments.
                 if (method is not null && Named(inv.ArgumentList) && !BindsItsOwnArguments(method))
                     return JsExprWriter.Write(ParameterTemplate.Call(
-                        $"{{0}}.{RuntimeName(method, ma.Name.Identifier.Text)}({Holes(1, inv.ArgumentList.Arguments.Count)})",
+                        $"{{0}}.{RuntimeName(method, ma.Name.Identifier.ValueText)}({Holes(1, inv.ArgumentList.Arguments.Count)})",
                         context.Converter.ConvertIr(ma.Expression), inv, method, context));
                 var receiver = context.Converter.ConvertExpression(ma.Expression);
                 switch (method)
@@ -108,14 +109,14 @@ public class StringBuilderStrategy : ConversionStrategyBase
                     case { Name: "Append" or "AppendLine" } when Handled(method):
                         return Interpolated(receiver, method, inv, context);
                 }
-                var name = RuntimeName(method, ma.Name.Identifier.Text);
+                var name = RuntimeName(method, ma.Name.Identifier.ValueText);
                 return $"{receiver}.{name}({ConvertArgs(inv.ArgumentList, context)})";
             }
 
             case MemberAccessExpressionSyntax member:
             {
                 var receiver = context.Converter.ConvertExpression(member.Expression);
-                return $"{receiver}.{member.Name.Identifier.Text.ToCamelCase()}";
+                return $"{receiver}.{member.Name.Identifier.ValueText.ToCamelCase()}";
             }
 
             default:

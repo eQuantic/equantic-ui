@@ -17,7 +17,7 @@ public class EnumStrategy : IConversionStrategy
         if (node is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
-        var member = memberAccess.Name.Identifier.Text;
+        var member = memberAccess.Name.Identifier.ValueText;
 
         // Semantic check. When the semantic model resolved a symbol, TRUST it: it's an enum member only
         // if the symbol is an enum field. Anything else with the same PascalCase.Upper shape — a property
@@ -63,7 +63,7 @@ public class EnumStrategy : IConversionStrategy
         var memberAccess = (MemberAccessExpressionSyntax)node;
         return context.SemanticHelper.GetSymbol(node) is IFieldSymbol field
             ? MemberLiteral(field)
-            : $"'{memberAccess.Name.Identifier.Text.ToCamelCase()}'";
+            : $"'{memberAccess.Name.Identifier.ValueText.ToCamelCase()}'";
     }
 
     /// <summary>

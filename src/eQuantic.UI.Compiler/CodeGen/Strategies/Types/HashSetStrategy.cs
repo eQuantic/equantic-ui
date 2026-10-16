@@ -60,7 +60,7 @@ public class HashSetStrategy : IExpressionIrStrategy
         return context.CanGuess(creation)
             && creation is ObjectCreationExpressionSyntax { Type: var written }
             && (written as GenericNameSyntax ?? (written as QualifiedNameSyntax)?.Right as GenericNameSyntax)
-                is { Identifier.Text: "HashSet", TypeArgumentList.Arguments.Count: 1 };
+                is { Identifier.ValueText: "HashSet", TypeArgumentList.Arguments.Count: 1 };
     }
 
     private static bool IsHashSet(ITypeSymbol? type) =>
@@ -82,7 +82,7 @@ public class HashSetStrategy : IExpressionIrStrategy
     private static string? MemberOf(InvocationExpressionSyntax invocation, MemberAccessExpressionSyntax member,
         ConversionContext context)
     {
-        var name = member.Name.Identifier.Text;
+        var name = member.Name.Identifier.ValueText;
         if (name is not ("Add" or "Contains" or "Remove" or "Clear" or "TryGetValue") && !OwnMembers.Contains(name))
             return null;
         if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { IsExtensionMethod: true } or IMethodSymbol { ReducedFrom: not null })

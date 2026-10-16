@@ -30,7 +30,7 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
     {
         if (node is not InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv)
             return false;
-        if (ma.Name.Identifier.Text != "Equals") return false;
+        if (ma.Name.Identifier.ValueText != "Equals") return false;
         if (inv.ArgumentList.Arguments.Count != 1) return false;
         // A bare `object` may hold a boxed value, and .NET compares boxed values by VALUE —
         // `((object)5).Equals((object)5)` is true. The helper already answers that for primitives.

@@ -21,7 +21,7 @@ public class CompareToStrategy : IExpressionIrStrategy
     public bool CanConvert(SyntaxNode node, ConversionContext context) =>
         node is InvocationExpressionSyntax
         {
-            Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "CompareTo" },
+            Expression: MemberAccessExpressionSyntax { Name.Identifier.ValueText: "CompareTo" },
             ArgumentList.Arguments.Count: 1,
         } invocation
         && ReceiverKind(invocation, context) is not null;

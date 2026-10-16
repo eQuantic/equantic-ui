@@ -31,7 +31,7 @@ public class GenericNameStrategy : IConversionStrategy
         var isReceiver = name.Parent is MemberAccessExpressionSyntax access && access.Expression == name;
         if (symbol is null && !isReceiver && LocalFunctionName.InScope(name, name.Identifier.ValueText) is { } local)
             return LocalFunctionName.Of(local, context);
-        return name.Identifier.Text;
+        return name.Identifier.ValueText;
     }
 
     public int Priority => 5;

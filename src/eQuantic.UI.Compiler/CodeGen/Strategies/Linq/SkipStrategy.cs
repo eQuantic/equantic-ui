@@ -17,7 +17,7 @@ public class SkipStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
-        if (memberAccess.Name.Identifier.Text != "Skip")
+        if (memberAccess.Name.Identifier.ValueText != "Skip")
             return false;
 
         // Semantic Check

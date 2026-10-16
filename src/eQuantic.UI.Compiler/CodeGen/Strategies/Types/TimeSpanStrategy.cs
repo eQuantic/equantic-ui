@@ -1,6 +1,7 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
@@ -22,18 +23,18 @@ public class TimeSpanStrategy : ConversionStrategyBase
         {
             case BaseObjectCreationExpressionSyntax oc:
                 return IsType(context.SemanticHelper.GetType(oc))
-                    || (oc is ObjectCreationExpressionSyntax named && named.Type.ToString() == "TimeSpan");
+                    || (oc is ObjectCreationExpressionSyntax named && named.Type.ValueText() == "TimeSpan");
 
             // A value's ToString is the formatter's (ToStringStrategy), as a date's is: the twin's
             // toString takes no format, so every format wrote the constant text, and a null one was
             // read through null (#837).
-            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "ToString" } }:
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.ValueText: "ToString" } }:
                 return false;
 
             // No twin reads a time span back through a format pattern: each was a call to a member the
             // twin does not have, a TypeError on the page. Left unclaimed, each is refused at the build
             // (#717).
-            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "ParseExact" or "TryParseExact" } }:
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.ValueText: "ParseExact" or "TryParseExact" } }:
                 return false;
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
@@ -57,7 +58,7 @@ public class TimeSpanStrategy : ConversionStrategyBase
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
-                var name = ma.Name.Identifier.Text;
+                var name = ma.Name.Identifier.ValueText;
                 if (IsStaticAccess(ma, context))
                 {
                     var callee = $"{Eq.TimeSpan}.{name.ToCamelCase()}";
@@ -72,7 +73,7 @@ public class TimeSpanStrategy : ConversionStrategyBase
 
             case MemberAccessExpressionSyntax member:
             {
-                var name = member.Name.Identifier.Text;
+                var name = member.Name.Identifier.ValueText;
                 if (IsStaticAccess(member, context))
                 {
                     // Static properties (Zero/MinValue/MaxValue). Zero is a field, the others methods.

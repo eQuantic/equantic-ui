@@ -24,7 +24,7 @@ public class SingleStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
-        var methodName = memberAccess.Name.Identifier.Text;
+        var methodName = memberAccess.Name.Identifier.ValueText;
         if (methodName != "Single" && methodName != "SingleOrDefault")
             return false;
 
@@ -42,7 +42,7 @@ public class SingleStrategy : IConversionStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var methodName = memberAccess.Name.Identifier.Text;
+        var methodName = memberAccess.Name.Identifier.ValueText;
 
         if (LinqArguments.WithADefaultValue(invocation, memberAccess, Eq.LinqSingleOrDefault, context) is { } withDefault)
             return withDefault;

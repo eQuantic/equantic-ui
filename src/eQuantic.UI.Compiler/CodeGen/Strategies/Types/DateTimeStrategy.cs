@@ -34,13 +34,13 @@ public class DateTimeStrategy : ConversionStrategyBase
             // A value's ToString is the formatter's (ToStringStrategy), as a number's is: the twin's
             // toString(pattern) knew custom tokens only, so `d.ToString("D")` printed `D`, and a
             // provider crossed to the browser as a name no browser has (#388).
-            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "ToString" } }:
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.ValueText: "ToString" } }:
                 return false;
 
             // No twin reads a date back through a format pattern, nor lists a date's formats: each was a
             // call to a member the twin does not have, a TypeError on the page. Left unclaimed, each is
             // refused at the build (#717).
-            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "ParseExact" or "TryParseExact" or "GetDateTimeFormats" } }:
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.ValueText: "ParseExact" or "TryParseExact" or "GetDateTimeFormats" } }:
                 return false;
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
@@ -61,7 +61,7 @@ public class DateTimeStrategy : ConversionStrategyBase
         {
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
-                var name = ma.Name.Identifier.Text;
+                var name = ma.Name.Identifier.ValueText;
                 var args = ConvertArgs(inv.ArgumentList, context);
                 if (IsStaticAccess(ma, context))
                 {
@@ -78,7 +78,7 @@ public class DateTimeStrategy : ConversionStrategyBase
 
             case MemberAccessExpressionSyntax member:
             {
-                var name = member.Name.Identifier.Text;
+                var name = member.Name.Identifier.ValueText;
                 if (IsStaticAccess(member, context))
                 {
                     // Static properties (Now/UtcNow/Today/MinValue/MaxValue) map to factory methods.

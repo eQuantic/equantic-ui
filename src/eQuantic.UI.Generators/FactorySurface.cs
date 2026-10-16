@@ -20,17 +20,75 @@ internal static class FactorySurface
     private const string PageAttribute = "PageAttribute";
 
     /// <summary>
-    /// Whether the surface writes a factory for <paramref name="symbol"/>: a public, concrete,
-    /// non-generic component in a namespace. A PAGE is reached by its route, never composed by hand, so
-    /// a factory for one would be an offer to do the wrong thing.
+    /// Whether the surface writes a factory for <paramref name="symbol"/>: a concrete, non-generic
+    /// component in a namespace that the generated file reaches and the browser receives. A PAGE is
+    /// reached by its route, never composed by hand, so a factory for one would be an offer to do the
+    /// wrong thing.
     /// </summary>
     public static bool HasFactory(INamedTypeSymbol symbol) =>
         !symbol.IsAbstract
         && !symbol.IsGenericType
-        && symbol.DeclaredAccessibility == Accessibility.Public
+        && Crosses(symbol)
         && !symbol.ContainingNamespace.IsGlobalNamespace
         && IsComponent(symbol)
         && !IsPage(symbol);
+
+    /// <summary>
+    /// Whether the component and every type it is declared in are public, and the build writes it a
+    /// module. A public component inside a private or an internal owner got a public factory naming a
+    /// type the generated file cannot reach, CS0122 or CS0050 in a file the developer never wrote
+    /// (#703), and one inside an owner that never crosses has no module in the browser to build (#584).
+    /// <para>
+    /// A NESTED component marked <c>[ServerOnly]</c>, itself or through a class it derives from, is kept
+    /// out as eqc keeps it out: no module may import its twin. A top-level component always ships, as
+    /// the attribute's contract says, so it keeps its factory whatever it derives from (found in
+    /// Copilot's reviews of #931).
+    /// </para>
+    /// </summary>
+    private static bool Crosses(INamedTypeSymbol symbol)
+    {
+        if (symbol.DeclaredAccessibility != Accessibility.Public) return false;
+        if (symbol.ContainingType is null) return true;
+        if (ServerOnlyAlongChain(symbol)) return false;
+        for (var owner = symbol.ContainingType; owner is not null; owner = owner.ContainingType)
+            if (owner.DeclaredAccessibility != Accessibility.Public || KeepsOut(owner)) return false;
+        return true;
+    }
+
+    /// <summary>
+    /// Whether what <paramref name="owner"/> declares never crosses, by the rule eqc writes modules by
+    /// and the server maps pages by (<c>TwinName.OwnersCross</c>): the owner is marked
+    /// <c>[RuntimeProvided]</c>, which no class inherits, or <c>[ServerOnly]</c>, itself or through a
+    /// class it derives from, or it is an attribute, which has no twin.
+    /// </summary>
+    private static bool KeepsOut(INamedTypeSymbol owner)
+    {
+        if (Marked(owner, "RuntimeProvided")) return true;
+        for (var at = owner; at is not null; at = at.BaseType)
+            if (IsAttributeRoot(at)) return true;
+        return ServerOnlyAlongChain(owner);
+    }
+
+    /// <summary>
+    /// Whether <paramref name="type"/>, or a type it derives from, is marked <c>[ServerOnly]</c>: the
+    /// attribute is inherited, and eqc keeps a type under it out as it keeps out one marked itself.
+    /// </summary>
+    private static bool ServerOnlyAlongChain(INamedTypeSymbol type)
+    {
+        for (var at = type; at is not null; at = at.BaseType)
+            if (Marked(at, "ServerOnly")) return true;
+        return false;
+    }
+
+    /// <summary>Marked with the attribute named <paramref name="name"/>: by the name as written too,
+    /// where the attribute binds to an error type, as eqc reads it.</summary>
+    private static bool Marked(INamedTypeSymbol type, string name) =>
+        type.GetAttributes().Any(a => a.AttributeClass?.Name is { } written && (written == name || written == name + "Attribute"));
+
+    /// <summary>Whether <paramref name="type"/> is <c>System.Attribute</c> itself.</summary>
+    private static bool IsAttributeRoot(INamedTypeSymbol type) =>
+        type is { Name: "Attribute", ContainingType: null, Arity: 0 }
+        && type.ContainingNamespace is { Name: "System", ContainingNamespace.IsGlobalNamespace: true };
 
     public static bool IsComponent(INamedTypeSymbol symbol)
     {

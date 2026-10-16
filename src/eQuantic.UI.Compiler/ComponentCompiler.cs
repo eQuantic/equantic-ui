@@ -688,21 +688,21 @@ public class ComponentCompiler
     {
         error = null;
         var cases = (union.ParameterList?.Parameters ?? default)
-            .Select(parameter => parameter.Type?.ToString() ?? "")
+            .Select(parameter => parameter.Type?.ValueText() ?? "")
             .Where(name => name.Length > 0)
             .ToArray();
         if (cases.Length == 0)
         {
-            error = $"union '{union.Identifier.Text}' declares no case types the compiler can lower.";
+            error = $"union '{union.Identifier.ValueText}' declares no case types the compiler can lower.";
             return string.Empty;
         }
         if (union.Members.Count > 0)
         {
-            error = $"union '{union.Identifier.Text}' declares members — union bodies are not lowered yet.";
+            error = $"union '{union.Identifier.ValueText}' declares members — union bodies are not lowered yet.";
             return string.Empty;
         }
 
-        var name = union.Identifier.Text;
+        var name = union.Identifier.ValueText;
         var builder = new System.Text.StringBuilder();
         if (typeAnnotations)
         {

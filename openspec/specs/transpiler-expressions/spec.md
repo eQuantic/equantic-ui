@@ -281,7 +281,8 @@ an exception as `Error`, the JavaScript error that carries its .NET types, an in
 enum as its members (the vocabulary's union, a number when it is [Flags], a string otherwise), and a
 delegate as its function. One rule SHALL decide it on every path that writes an annotation: a class's
 members and parameters, a record's members, parameters and setters, a local, the item type of an empty
-list, and a local function's parameters. A record's static that starts as null SHALL be annotated with
+list, a local function's parameters and a lambda's. A lambda's parameter SHALL be annotated as a member
+of its type is: a `long` or a `ulong` as `bigint`, and a `decimal` as `Decimal`, which the module imports. A record's static that starts as null SHALL be annotated with
 its type and the null. The build context, which C# names `ComponentContext`, SHALL be annotated
 `BuildContext`, the name the runtime exports to every module, and a module that writes it SHALL import
 it; its `typeScale` SHALL be the number C# holds. An app's own type named `BuildContext` SHALL be the
@@ -312,6 +313,13 @@ app's: no module SHALL import that name from the runtime for it.
 
 - **WHEN** an app declares a class named `BuildContext`
 - **THEN** its module declares the class, and imports nothing of that name from the runtime
+
+#### Scenario: A lambda over a long and one over a decimal
+
+- **WHEN** a component of the shared library's fixtures maps a `List<long>` with `tick => tick * 2L`
+  and averages a `List<decimal>` with `each => each`
+- **THEN** the twin annotates `(tick: bigint)` and `(each: Decimal)`, imports `Decimal`, and passes the
+  runtime's type check
 
 ### Requirement: An enum member is its name, whatever it is called
 

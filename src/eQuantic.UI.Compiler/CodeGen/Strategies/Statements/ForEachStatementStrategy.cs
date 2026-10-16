@@ -18,7 +18,7 @@ public class ForEachStatementStrategy : IStatementStrategy
     public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var foreachStmt = (ForEachStatementSyntax)node;
-        var item = foreachStmt.Identifier.Text.ToJsIdentifier();
+        var item = foreachStmt.Identifier.ValueText.ToJsIdentifier();
         var declared = ExpressionVariableScanner.Declarations(foreachStmt.Expression, context.TypeAnnotations);
         // A string enumerates its chars, the UTF-16 code units, where JavaScript's iterator gives code
         // points: `foreach (var c in "a😀b")` counted three where .NET counts four (#524). A type that

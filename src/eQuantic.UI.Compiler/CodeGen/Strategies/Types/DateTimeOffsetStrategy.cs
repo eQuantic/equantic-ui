@@ -21,12 +21,12 @@ public class DateTimeOffsetStrategy : ConversionStrategyBase
         {
             // A value's ToString is the formatter's (ToStringStrategy), as a DateTime's is (#469): the
             // twin's toString wrote the invariant text, and ignored a format and a provider.
-            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "ToString" } }:
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.ValueText: "ToString" } }:
                 return false;
 
             // No twin reads a date back through a format pattern: each was a call to a member the twin
             // does not have, a TypeError on the page. Left unclaimed, each is refused at the build (#717).
-            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "ParseExact" or "TryParseExact" } }:
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.ValueText: "ParseExact" or "TryParseExact" } }:
                 return false;
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
                 return IsMember(ma, context);
@@ -44,7 +44,7 @@ public class DateTimeOffsetStrategy : ConversionStrategyBase
         {
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
-                var name = ma.Name.Identifier.Text;
+                var name = ma.Name.Identifier.ValueText;
                 var args = ConvertArgs(inv.ArgumentList, context);
                 if (IsStaticAccess(ma, context))
                     return $"{Eq.DateTimeOffset}.{name.ToCamelCase()}({args})";
@@ -54,7 +54,7 @@ public class DateTimeOffsetStrategy : ConversionStrategyBase
 
             case MemberAccessExpressionSyntax member:
             {
-                var name = member.Name.Identifier.Text;
+                var name = member.Name.Identifier.ValueText;
                 if (IsStaticAccess(member, context))
                     return $"{Eq.DateTimeOffset}.{name.ToCamelCase()}()"; // Now/UtcNow/MinValue/MaxValue -> factory methods
                 var receiver = context.Converter.ConvertExpression(member.Expression);

@@ -20,7 +20,7 @@ public class SequenceEqualStrategy : IConversionStrategy
     {
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
-        if (memberAccess.Name.Identifier.Text != "SequenceEqual") return false;
+        if (memberAccess.Name.Identifier.ValueText != "SequenceEqual") return false;
 
         // An ARRAY receiver binds MemoryExtensions.SequenceEqual (through ReadOnlySpan) rather
         // than Enumerable's — a better overload the modern BCL added — and the LINQ gate alone

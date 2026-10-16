@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -21,11 +22,11 @@ public class StackAllocArrayCreationStrategy : IConversionStrategy
         string typeName = "var"; // default
         if (stackAlloc.Type is ArrayTypeSyntax arrayType)
         {
-            typeName = arrayType.ElementType.ToString();
+            typeName = arrayType.ElementType.ValueText();
         }
         else 
         {
-            typeName = stackAlloc.Type.ToString();
+            typeName = stackAlloc.Type.ValueText();
         }
         
         string jsType = typeName switch

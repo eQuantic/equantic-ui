@@ -67,23 +67,42 @@ internal sealed class MethodLowering
         if (method.Body == null && method.ExpressionBody == null) return null;
 
         var byReference = OutParameters.Of(method.ParameterList);
-        var text = method.Body?.ToString() ?? method.ExpressionBody?.ToString() ?? "";
-        var parameters = string.Join(", ", method.ParameterList.Parameters
-            .Where(parameter => !OutParameters.IsOut(parameter))
+        // The names the body mentions, by their value: a search of its TEXT found `class` inside a
+        // function `_class`, and `@class` nowhere a body reads it as `class` (#704).
+        var source = (SyntaxNode?)method.Body ?? method.ExpressionBody;
+        var mentioned = source?.DescendantNodes()
+            .OfType<IdentifierNameSyntax>()
+            .Select(identifier => identifier.Identifier.ValueText)
+            .ToHashSet(StringComparer.Ordinal) ?? [];
+        var signature = method.ParameterList.Parameters.Where(parameter => !OutParameters.IsOut(parameter)).ToList();
+        // The names an unread parameter's underscore must not meet: those the read parameters keep,
+        // every name the body declares or reads, and those the unread ones took so far. An unread `y`
+        // beside a read `_y`, or beside a body's own `int _y`, is `__y`, never a second `_y`, which no
+        // module parses.
+        var named = signature.Where(parameter => mentioned.Contains(parameter.Identifier.ValueText))
+            .Select(parameter => parameter.Identifier.ValueText)
+            .Concat(source?.DescendantTokens().Where(token => token.IsKind(SyntaxKind.IdentifierToken))
+                .Select(token => token.ValueText) ?? [])
+            .Select(name => name.ToJsIdentifier())
+            .ToHashSet(StringComparer.Ordinal);
+        var parameters = string.Join(", ", signature
             .Select(parameter =>
             {
                 // A parameter the body never mentions takes the underscore convention — the
                 // interface a tokenizer implements hands over state that a simple language never
                 // reads, and the runtime's own build rejects an unused name.
-                var name = text.Contains(parameter.Identifier.Text)
-                    ? parameter.Identifier.Text.ToJsIdentifier()
-                    : "_" + parameter.Identifier.Text.ToJsIdentifier();
+                var name = parameter.Identifier.ValueText.ToJsIdentifier();
+                if (!mentioned.Contains(parameter.Identifier.ValueText))
+                {
+                    do name = "_" + name;
+                    while (!named.Add(name));
+                }
                 // An optional parameter keeps its default, converted for the parameter's type, so a
                 // caller that omits the trailing arguments runs it.
                 return ParamWithDefault(name, declaredType(parameter.Type),
                     parameter.Default is null
                         ? null
-                        : _converter.ConvertExpression(parameter.Default.Value, parameter.Type?.ToString()),
+                        : _converter.ConvertExpression(parameter.Default.Value, parameter.Type?.ValueText()),
                     parameter.Modifiers.Any(SyntaxKind.ParamsKeyword));
             }));
 
@@ -194,7 +213,7 @@ internal sealed class MethodLowering
         var returned = model?.GetSymbolInfo(method.ReturnType).Symbol as ITypeSymbol
             ?? model?.GetTypeInfo(method.ReturnType).Type;
         if (returned is null || returned.TypeKind == TypeKind.Error)
-            return method.ReturnType.ToString().StartsWith("Task");
+            return method.ReturnType.ValueText().StartsWith("Task");
         return returned.OriginalDefinition.ToDisplayString()
             is "System.Threading.Tasks.Task" or "System.Threading.Tasks.Task<TResult>";
     }
