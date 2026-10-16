@@ -100,6 +100,10 @@ public class MemberAccessStrategy : IExpressionIrStrategy
                 + "--refs/--generated; a custom host must do the same.");
         }
 
+        // A .NET member no value in the browser carries is refused, as a .NET method the invocation
+        // fallback reaches is (#847).
+        PlatformMemberRead.ReportIfUntranslated(symbol, node, context);
+
         name = name switch
         {
             "Length" => "length",

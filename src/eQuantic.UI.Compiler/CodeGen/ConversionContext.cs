@@ -224,6 +224,7 @@ public class ConversionContext
         Diagnostics.Clear();
         ResourceUses.Clear();
         RefusedTwins.Clear();
+        RefusedReads.Clear();
     }
 
     /// <summary>
@@ -232,6 +233,13 @@ public class ConversionContext
     /// where the code named it. Kept with the diagnostics, and cleared with them.
     /// </summary>
     internal HashSet<string> RefusedTwins { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// The in-tree reads <c>PlatformMemberRead</c> refused while this module was converted (#847): a
+    /// read made on one of them is the same refusal, and says nothing more. Kept with the diagnostics,
+    /// and cleared with them.
+    /// </summary>
+    internal HashSet<SyntaxNode> RefusedReads { get; } = new();
 
     /// <summary>
     /// Drops everything that belonged to the PREVIOUS emission. A converter outlives the file it is
