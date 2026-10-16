@@ -82,11 +82,14 @@ public class CharMethodStrategy : IExpressionIrStrategy
         }
 
         var invocation = (InvocationExpressionSyntax)node;
+        var method = (IMethodSymbol)context.SemanticHelper.GetSymbol(invocation)!;
+        // The culture is read from how the call names it (Culture, below) and never as a value, which
+        // the browser has none of: converted, `CultureInfo.InvariantCulture` was a read EQ2004 refuses (#847).
+        var culture = CultureArgument(invocation, method);
         var args = invocation.ArgumentList.Arguments
-            .Select(a => context.Converter.ConvertIr(a.Expression))
+            .Select(a => a == culture ? JsExpr.Identifier("undefined") : context.Converter.ConvertIr(a.Expression))
             .ToArray();
         if (args.Length == 0) return JsExpr.Identifier("undefined");
-        var method = (IMethodSymbol)context.SemanticHelper.GetSymbol(invocation)!;
         return Lowered(method, args,
             template => PrimitiveStaticStrategy.BindNamedArguments(template, invocation, method), context,
             Culture(invocation, method, context));
@@ -100,15 +103,22 @@ public class CharMethodStrategy : IExpressionIrStrategy
     /// </summary>
     private static string? Culture(InvocationExpressionSyntax invocation, IMethodSymbol method, ConversionContext context)
     {
-        if (method.Parameters.FirstOrDefault(parameter => parameter.Type.IsNamed("System.Globalization.CultureInfo")) is not { } parameter)
-            return null;
-        var argument = invocation.ArgumentList.Arguments
-            .FirstOrDefault(argument => argument.NameColon?.Name.Identifier.ValueText == parameter.Name)
-            ?? invocation.ArgumentList.Arguments[parameter.Ordinal];
+        if (CultureArgument(invocation, method) is not { } argument) return null;
         if (NamedCulture.IsNull(argument.Expression, context)) return "null";
         return NamedCulture.ReadsInvariant(invocation, argument.Expression, context, StringMethodStrategy.ChangingCase)
             ? "true"
             : null;
+    }
+
+    /// <summary>The argument a casing's <c>CultureInfo</c> parameter takes, by its name or its place, or
+    /// null for a call that takes none.</summary>
+    private static ArgumentSyntax? CultureArgument(InvocationExpressionSyntax invocation, IMethodSymbol? method)
+    {
+        if (method?.Parameters.FirstOrDefault(parameter => parameter.Type.IsNamed("System.Globalization.CultureInfo")) is not { } parameter)
+            return null;
+        return invocation.ArgumentList.Arguments
+            .FirstOrDefault(argument => argument.NameColon?.Name.Identifier.ValueText == parameter.Name)
+            ?? invocation.ArgumentList.Arguments[parameter.Ordinal];
     }
 
     /// <summary>

@@ -1,8 +1,8 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=301 · fenced=93 · invalid-probe=6 · native=633
-native         Array.MaxLength
+# totals: eq=301 · fenced=109 · invalid-probe=6 · native=617
+fenced:EQ2004  Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
 native         Boolean.Equals(Boolean)
@@ -92,7 +92,7 @@ native         Char.ToString()
 native         Char.ToString(Char)
 eq             Char.ToUpper(Char)
 eq             Char.ToUpperInvariant(Char)
-native         Convert.DBNull
+fenced:EQ2004  Convert.DBNull
 fenced:EQ2004  Convert.FromBase64CharArray(Char[],Int32,Int32)
 fenced:EQ2004  Convert.FromBase64String(String)
 fenced:EQ2004  Convert.FromHexString(String)
@@ -301,9 +301,9 @@ fenced:EQ2004  Decimal.ToUInt64(Decimal)
 fenced:EQ2004  Decimal.Truncate(Decimal)
 eq             Decimal.Zero
 native         Dictionary<String,Int32>.Add(String,Int32)
-native         Dictionary<String,Int32>.Capacity
+fenced:EQ2004  Dictionary<String,Int32>.Capacity
 native         Dictionary<String,Int32>.Clear()
-native         Dictionary<String,Int32>.Comparer
+fenced:EQ2004  Dictionary<String,Int32>.Comparer
 native         Dictionary<String,Int32>.ContainsKey(String)
 native         Dictionary<String,Int32>.ContainsValue(Int32)
 native         Dictionary<String,Int32>.Count
@@ -515,12 +515,12 @@ fenced:EQ2004  Guid.ToByteArray()
 fenced:EQ2004  Guid.ToByteArray(Boolean)
 native         Guid.ToString()
 eq             Guid.ToString(String)
-native         Guid.Variant
-native         Guid.Version
+fenced:EQ2004  Guid.Variant
+fenced:EQ2004  Guid.Version
 eq             HashSet<Int32>.Add(Int32)
-native         HashSet<Int32>.Capacity
+fenced:EQ2004  HashSet<Int32>.Capacity
 native         HashSet<Int32>.Clear()
-native         HashSet<Int32>.Comparer
+fenced:EQ2004  HashSet<Int32>.Comparer
 native         HashSet<Int32>.Contains(Int32)
 native         HashSet<Int32>.Count
 native         HashSet<Int32>.EnsureCapacity(Int32)
@@ -602,7 +602,7 @@ native         List<Int32>.Add(Int32)
 native         List<Int32>.AddRange(IEnumerable<Int32>)
 native         List<Int32>.AsReadOnly()
 eq             List<Int32>.BinarySearch(Int32)
-native         List<Int32>.Capacity
+fenced:EQ2004  List<Int32>.Capacity
 native         List<Int32>.Clear()
 native         List<Int32>.Contains(Int32)
 native         List<Int32>.Count
@@ -740,7 +740,7 @@ native         Queue<Int32>.TrimExcess()
 native         Queue<Int32>.TrimExcess(Int32)
 native         SortedDictionary<String,Int32>.Add(String,Int32)
 native         SortedDictionary<String,Int32>.Clear()
-native         SortedDictionary<String,Int32>.Comparer
+fenced:EQ2004  SortedDictionary<String,Int32>.Comparer
 native         SortedDictionary<String,Int32>.ContainsKey(String)
 native         SortedDictionary<String,Int32>.ContainsValue(Int32)
 native         SortedDictionary<String,Int32>.Count
@@ -1027,11 +1027,11 @@ native         TimeSpan.TotalNanoseconds
 native         TimeSpan.TotalSeconds
 eq             TimeSpan.Zero
 invalid-probe  int[].Get(Int32)
-native         int[].IsFixedSize
-native         int[].IsReadOnly
-native         int[].IsSynchronized
+fenced:EQ2004  int[].IsFixedSize
+fenced:EQ2004  int[].IsReadOnly
+fenced:EQ2004  int[].IsSynchronized
 native         int[].Length
-native         int[].LongLength
-native         int[].Rank
+fenced:EQ2004  int[].LongLength
+fenced:EQ2004  int[].Rank
 invalid-probe  int[].Set(Int32,Int32)
-native         int[].SyncRoot
+fenced:EQ2004  int[].SyncRoot

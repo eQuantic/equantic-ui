@@ -19,6 +19,12 @@ const PRECISION = 29;
 /** A mantissa that rounded past 96 bits, a digit shorter: 2^96 / 10, rounded up. */
 const CARRIED = 7922816251426433759354395034n;
 const OVERFLOW = 'Value was either too large or too small for a Decimal.';
+/** The largest mantissa .NET multiplies on its 32-bit path. */
+const NARROW = 0xffff_ffffn;
+/** Past this scale a product of two 32-bit mantissas rounds to nothing (2^64 is 1.8e19). */
+const VANISHED = MAX_SCALE + 19;
+/** 10^n, for every scale the arithmetic moves by: up to two scales of 28, a product's. */
+const POWERS_10 = Array.from({ length: 2 * MAX_SCALE + 2 }, (_, power) => 10n ** BigInt(power));
 
 /**
  * Each power of ten as the double nearest it, as .NET's `DecCalc.DoublePowers10` holds it. Read
@@ -54,9 +60,10 @@ const STEPS: Readonly<
  * (value = mantissa / 10^scale). The transpiler emits `dec("...")` for decimal literals and routes
  * decimal operators to these methods.
  *
- * Scope: add/sub/mul are exact; div is computed to 28 fractional digits with banker's rounding then
- * trimmed (matching .NET's typical results for terminating quotients). Trailing-zero scale is
- * preserved for +/-/* (so 1.5m * 2m renders "3.0", like .NET).
+ * Each operation answers what .NET's `DecCalc` answers, its scale included (#764): `+`, `-` and `*`
+ * are exact while the result fits 96 bits and 28 places, keeping the trailing zeros .NET keeps (so
+ * 1.5m * 2m renders "3.0"), and past that they round half to even to the places that fit, or throw
+ * the OverflowException .NET throws. `/` keeps as many places as fit; `%` is exact.
  */
 export class Decimal {
   constructor(
@@ -133,14 +140,16 @@ export class Decimal {
     return [am, bm, scale];
   }
 
+  /** `+`, as .NET's `DecAddSub` adds: exact at the larger scale, then brought into a decimal. */
   add(other: Decimal): Decimal {
     const [am, bm, scale] = Decimal.align(this, other);
-    return new Decimal(am + bm, scale);
+    return held(am + bm, scale);
   }
 
+  /** `-`, as `add`. */
   sub(other: Decimal): Decimal {
     const [am, bm, scale] = Decimal.align(this, other);
-    return new Decimal(am - bm, scale);
+    return held(am - bm, scale);
   }
 
   /** Unary minus — C#'s `-m`, exact (the sign flips on the mantissa, the scale stays). */
@@ -148,42 +157,80 @@ export class Decimal {
     return new Decimal(-this.mantissa, this.scale);
   }
 
+  /**
+   * `*`, as .NET's `VarDecMul` multiplies: exact at the sum of the scales, then brought into a
+   * decimal. Its two paths answer a zero differently, and so does this: two mantissas of 32 bits
+   * keep a zero product at its scale (`0.00m * 1.5m` is 0.000), and a scale past 47 rounds them to a
+   * plain 0, while a wider operand makes any zero product a plain 0.
+   */
   mul(other: Decimal): Decimal {
-    return new Decimal(this.mantissa * other.mantissa, this.scale + other.scale);
+    const scale = this.scale + other.scale;
+    const product = this.mantissa * other.mantissa;
+    if (narrow(this) && narrow(other)) return scale > VANISHED ? ZERO : held(product, scale);
+    return product === 0n ? ZERO : held(product, scale);
   }
 
   /**
-   * `%` — C#'s decimal remainder, exact: the dividend less the divisor times their quotient
-   * truncated toward zero, so it takes the dividend's sign, at the larger of the two scales
-   * (`5.5m % 2m` is `1.5`, `-5.5m % 2m` is `-1.5`, `0.3m % 0.1m` is `0.0`). It had none, and `%`
-   * computed on the two values as doubles. A zero divisor throws what .NET throws.
+   * `%` — C#'s decimal remainder, as .NET's `VarDecMod` takes it: the dividend less the divisor
+   * times their quotient truncated toward zero, exact, with the dividend's sign, at the larger of
+   * the two scales (`5.5m % 2m` is `1.5`, `-5.5m % 2m` is `-1.5`, `0.3m % 0.1m` is `0.0`). A
+   * dividend that is zero, or smaller than the divisor, is the answer as it is, its own scale kept
+   * (`1.5m % 2.00m` is `1.5`). A zero divisor throws what .NET throws.
    */
   mod(other: Decimal): Decimal {
-    if (other.mantissa === 0n) throw exception('System.DivideByZeroException', 'Attempted to divide by zero.');
+    if (other.mantissa === 0n)
+      throw exception('System.DivideByZeroException', 'Attempted to divide by zero.');
     const [am, bm, scale] = Decimal.align(this, other);
+    if (am === 0n || magnitude(am) < magnitude(bm)) return this;
     return new Decimal(am % bm, scale);
   }
 
+  /**
+   * `/`, as .NET's `VarDecDiv` divides. The quotient starts at the dividend's scale less the
+   * divisor's; an exact one keeps it (`4.00m / 2m` is 2.00), a scale under zero brought up to zero
+   * or an OverflowException. One with a remainder takes nine more places at a time while the
+   * mantissa fits 96 bits and the scale 28, rounds the last half to even, and loses the trailing
+   * zeros (`1m / 4m` is 0.25), so a large dividend keeps the 28 or 29 digits a decimal holds.
+   */
   div(other: Decimal): Decimal {
-    if (other.mantissa === 0n) throw exception('System.DivideByZeroException', 'Attempted to divide by zero.');
-
-    const targetFrac = 28;
-    const shift = other.scale - this.scale + targetFrac;
-    const num = shift >= 0 ? this.mantissa * 10n ** BigInt(shift) : this.mantissa;
-    const denom = shift < 0 ? other.mantissa * 10n ** BigInt(-shift) : other.mantissa;
-
-    let quotient = num / denom;
-    const remainder = num % denom;
-
-    // Round half-to-even on the remainder.
-    const absRem2 = (remainder < 0n ? -remainder : remainder) * 2n;
-    const absDenom = denom < 0n ? -denom : denom;
-    const negativeResult = num < 0n !== denom < 0n;
-    if (absRem2 > absDenom || (absRem2 === absDenom && quotient % 2n !== 0n)) {
-      quotient += negativeResult ? -1n : 1n;
+    if (other.mantissa === 0n)
+      throw exception('System.DivideByZeroException', 'Attempted to divide by zero.');
+    const negative = this.mantissa < 0n !== other.mantissa < 0n;
+    const divisor = magnitude(other.mantissa);
+    let quotient = magnitude(this.mantissa) / divisor;
+    let remainder = magnitude(this.mantissa) % divisor;
+    let scale = this.scale - other.scale;
+    let inexact = false;
+    for (;;) {
+      let step: number;
+      if (remainder === 0n) {
+        if (scale >= 0) break;
+        step = Math.min(9, -scale);
+      } else {
+        inexact = true;
+        step = scale === MAX_SCALE ? 0 : room(quotient, scale);
+        if (step === 0) {
+          const twice = remainder * 2n;
+          if (twice > divisor || (twice === divisor && quotient % 2n !== 0n)) {
+            quotient += 1n;
+            if (quotient > MAX_MANTISSA) [quotient, scale] = carried(quotient, scale, true);
+          }
+          break;
+        }
+      }
+      scale += step;
+      quotient *= POWERS_10[step];
+      if (quotient > MAX_MANTISSA) throw exception('System.OverflowException', OVERFLOW);
+      const rest = remainder * POWERS_10[step];
+      quotient += rest / divisor;
+      remainder = rest % divisor;
+      if (quotient > MAX_MANTISSA) {
+        [quotient, scale] = carried(quotient, scale, remainder !== 0n);
+        break;
+      }
     }
-
-    return new Decimal(quotient, targetFrac).trimTrailingZeros();
+    const result = new Decimal(negative ? -quotient : quotient, scale);
+    return inexact ? result.trimTrailingZeros() : result;
   }
 
   /**
@@ -271,6 +318,88 @@ export class Decimal {
 }
 
 const ZERO = new Decimal(0n, 0);
+
+function magnitude(value: bigint): bigint {
+  return value < 0n ? -value : value;
+}
+
+/** Whether a decimal's mantissa is one .NET multiplies on its 32-bit path. */
+function narrow(value: Decimal): boolean {
+  return magnitude(value.mantissa) <= NARROW;
+}
+
+/**
+ * An exact result as a decimal holds it, by .NET's `DecCalc.ScaleResult`: a mantissa past 96 bits,
+ * or a scale past 28, loses the fewest places that bring both back, rounded half to even, and the
+ * scale running out first is an OverflowException (`decimal.MaxValue + decimal.MaxValue`). A
+ * rounding that carries the mantissa past 96 bits loses one place more and rounds again, as .NET
+ * does, which is why 2^96 - 1 rounded up reads 7922816251426433759354395034.
+ */
+function held(mantissa: bigint, scale: number): Decimal {
+  const negative = mantissa < 0n;
+  let value = negative ? -mantissa : mantissa;
+  let drop = Math.max(scale - MAX_SCALE, 0);
+  if (value > MAX_MANTISSA) {
+    // .NET's lower bound on the places to lose: the bits past 96 times log10(2) (77/256), and one
+    // more, since that product rounds down. The loop below loses another where it still falls short.
+    const bound = (((value.toString(2).length - 97) * 77) >> 8) + 1;
+    if (bound > scale) throw exception('System.OverflowException', OVERFLOW);
+    drop = Math.max(drop, bound);
+  }
+  if (drop === 0) return new Decimal(mantissa, scale);
+  scale -= drop;
+  let divisor = POWERS_10[drop];
+  let remainder = value % divisor;
+  value /= divisor;
+  let sticky = false;
+  for (;;) {
+    while (value > MAX_MANTISSA) {
+      if (scale === 0) throw exception('System.OverflowException', OVERFLOW);
+      sticky ||= remainder !== 0n;
+      remainder = value % 10n;
+      value /= 10n;
+      divisor = 10n;
+      scale--;
+    }
+    const half = divisor / 2n;
+    if (remainder < half || (remainder === half && !sticky && value % 2n === 0n)) break;
+    value += 1n;
+    if (value <= MAX_MANTISSA) break;
+    if (scale === 0) throw exception('System.OverflowException', OVERFLOW);
+    sticky = false;
+    remainder = value % 10n;
+    value /= 10n;
+    divisor = 10n;
+    scale--;
+  }
+  return new Decimal(negative ? -value : value, scale);
+}
+
+/**
+ * The places a quotient can take on, as .NET's `SearchScale` counts them: the most, nine at most and
+ * never past a scale of 28, that keep its mantissa within 96 bits. A quotient with room for fewer
+ * than nine whose scale they leave under zero is an OverflowException; one with room for nine goes
+ * on, and takes nine more on the next turn.
+ */
+function room(quotient: bigint, scale: number): number {
+  let step = Math.min(9, MAX_SCALE - scale);
+  while (step > 0 && quotient * POWERS_10[step] > MAX_MANTISSA) step--;
+  if (step < 9 && step + scale < 0) throw exception('System.OverflowException', OVERFLOW);
+  return step;
+}
+
+/**
+ * A quotient that passed 96 bits, a place shorter, as .NET's `OverflowUnscale` makes it: its last
+ * digit rounds it half to even, a half with anything behind it (`sticky`) upward. A scale that has
+ * no place to lose is an OverflowException.
+ */
+function carried(quotient: bigint, scale: number, sticky: boolean): [bigint, number] {
+  if (--scale < 0) throw exception('System.OverflowException', OVERFLOW);
+  const digit = quotient % 10n;
+  quotient /= 10n;
+  if (digit > 5n || (digit === 5n && (sticky || quotient % 2n !== 0n))) quotient += 1n;
+  return [quotient, scale];
+}
 
 /**
  * A decimal from the digits of its text, as .NET makes one (`Number.TryNumberToDecimal`), or
