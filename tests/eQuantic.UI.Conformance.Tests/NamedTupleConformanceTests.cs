@@ -37,4 +37,17 @@ public class NamedTupleConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>A nullable tuple's element read through <c>?.</c>: by name it was <c>t?.a</c>, undefined
+    /// on the array, and positionally a name nothing defines (#847).</summary>
+    [SkippableTheory]
+    [InlineData("(int A, int B)? t = (1, 2); return t?.A ?? -1;")]                          // 1
+    [InlineData("(int A, int B)? t = (1, 2); return t?.Item2 ?? -1;")]                      // 2
+    [InlineData("(int A, int B)? t = null; return t?.B ?? -1;")]                            // -1
+    [InlineData("(string Name, int Age)? p = (\"Ann\", 30); return p?.Name + \":\" + p?.Age;")] // "Ann:30"
+    public void ANullableTuplesElement_ReadThroughTheGuard_MatchesDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 }
