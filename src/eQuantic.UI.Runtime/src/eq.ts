@@ -118,6 +118,7 @@ import {
   recordTextGroup,
   stringFormat,
   stringFormatInvariant,
+  textGroup,
   tupleText,
   tupleTextGroup,
 } from './utils/format';
@@ -444,6 +445,8 @@ export const $eq = {
     /** A value tuple's text, `(1, a)`, and its `ToString` method group. */
     tuple: tupleText,
     tupleGroup: tupleTextGroup,
+    /** The `ToString` method group of a value whose text its type writes, an enum's or a type's name. */
+    group: textGroup,
     stringFormat,
     stringFormatInvariant,
     /** A number boxed with its .NET type for `string.Format`, whose arguments are objects. */

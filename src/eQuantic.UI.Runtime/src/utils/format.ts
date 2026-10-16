@@ -272,6 +272,16 @@ export function recordTextGroup(
   return () => recordText(value, name, members);
 }
 
+/**
+ * The method group `value.ToString` of a value whose text the compiler writes from its type, where no
+ * group of its own writes it (an enum's member name, an array's or a list's type name): a delegate
+ * writing `write` of the value as it is when the delegate is made, which the compiler passes here, so it
+ * is read once, where C# copies it into the delegate, and refused there when it is null (#913).
+ */
+export function textGroup(value: unknown, write: (value: any) => string): () => string {
+  return () => write(value);
+}
+
 /** Text in a field of `|alignment|` characters: a positive width aligns right, a negative left. */
 function pad(result: string, alignment?: number): string {
   if (alignment) {

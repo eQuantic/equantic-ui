@@ -7,7 +7,8 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
 /// <summary>
-/// Converts LINQ .Distinct() to JavaScript [...new Set(array)]
+/// LINQ's <c>Distinct()</c>: the runtime's set over the elements, which finds them as the element type's
+/// default comparer does, or a JavaScript <c>Set</c> for a type compared by identity.
 /// </summary>
 public class DistinctStrategy : IExpressionIrStrategy
 {
@@ -57,40 +58,22 @@ public class DistinctStrategy : IExpressionIrStrategy
 
         var source = LinqSource.Ir(memberAccess.Expression, context);
 
-        // JS Set dedups by SameValueZero, which matches C# Distinct for primitives, strings,
-        // enums AND plain reference types (reference equality). Only records and structs use
-        // structural/value equality, where Set would keep equal-but-distinct instances — those
-        // need a value-based dedup (keeping the first occurrence, like Distinct). The filter's
-        // names take a `$`, which no C# name holds (#397), and the set it remembers is made once.
+        // An element is found as its type's default comparer finds it (ElementEquality): a record, a struct,
+        // a decimal and a date by value, an anonymous object and a tuple by their members, an array they
+        // hold by reference, and a class by its own Equals where it overrides one. The runtime's set keeps
+        // the first of each, in the order they come, as Distinct does. A Set kept every decimal, every
+        // anonymous object and every class that overrides Equals, and JSON.stringify found two records
+        // equal by the text of every member, an array they held included.
         var elementType = context.SemanticHelper.GetType(memberAccess.Expression).GetEnumerableElementType();
-        // An ANONYMOUS object is found as its type's default comparer finds it, member by member
-        // (ElementEquality), where a Set found each by reference and kept every one: the runtime's set
-        // keeps the first of each, in the order they come, as Distinct does.
-        if (elementType is INamedTypeSymbol { IsAnonymousType: true } anonymous)
+        if (ElementEquality.Of(elementType) is { } equality)
         {
             context.UsedHelpers.Add(Eq.Import);
-            return JsExpr.Template($"[...{Eq.HashSet}({ElementEquality.Of(anonymous) ?? "false"}, {{0}})]", [source]);
-        }
-        if (elementType is { } et && !IsPrimitiveOrString(et) && (et.IsRecord || et.TypeKind == TypeKind.Struct))
-        {
-            return JsExpr.Template("{0}.filter((($seen) => ($x) => { const $k = JSON.stringify($x); " +
-                                   "if ($seen.has($k)) return false; $seen.add($k); return true; })(new Set()))", [source]);
+            return JsExpr.Template($"[...{Eq.HashSet}({equality}, {{0}})]", [source]);
         }
 
-        // [...new Set(array)] creates a new array with unique values
+        // A type compared by identity, which a Set compares as .NET does, a NaN equal to itself included
+        // (SameValueZero).
         return JsExpr.Template("[...new Set({0})]", [source]);
-    }
-
-    private static bool IsPrimitiveOrString(ITypeSymbol type)
-    {
-        if (type.TypeKind == TypeKind.Enum) return true;
-        return type.SpecialType is
-            SpecialType.System_String or SpecialType.System_Boolean or SpecialType.System_Char or
-            SpecialType.System_SByte or SpecialType.System_Byte or
-            SpecialType.System_Int16 or SpecialType.System_UInt16 or
-            SpecialType.System_Int32 or SpecialType.System_UInt32 or
-            SpecialType.System_Int64 or SpecialType.System_UInt64 or
-            SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Decimal;
     }
 
     public int Priority => 10;

@@ -33,8 +33,7 @@ public class LookupIndexerStrategy : IExpressionIrStrategy
         var keyType = context.SemanticHelper.GetType(ea.Expression) is INamedTypeSymbol { TypeArguments: [var first, ..] }
             ? first
             : null;
-        if (LinqKeys.ComparesByValue(keyType)) context.UsedHelpers.Add(Eq.Import);
-        return JsExpr.Template($"({{0}}.find(($g) => {LinqKeys.Matches(keyType, "$g.key", "{1}")}) ?? [])", [lookup, key]);
+        return JsExpr.Template($"({{0}}.find(($g) => {LinqKeys.Matches(keyType, "$g.key", "{1}", context)}) ?? [])", [lookup, key]);
     }
 
     public int Priority => 12;

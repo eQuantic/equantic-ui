@@ -13,7 +13,7 @@ export class BoundReceivers extends StatelessComponent {
         let sum = this.items().reduce(($a, $b) => $a + $b, 0);
         let total = this.pairs().reduce(($sum, pair) => $sum + pair[0], 0);
         let first = (($0, $1) => [...$0].sort(($a, $b) => { { const $k: ($element: typeof $a) => any = $1; const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } return 0; }))(this.pairs(), BoundReceivers.keyOf)[0][1];
-        let distinct = this.pairs().filter((($seen) => ($x) => { const $k = JSON.stringify($x); if ($seen.has($k)) return false; $seen.add($k); return true; })(new Set())).length;
+        let distinct = [...$eq.collections.hashSet(true, this.pairs())].length;
         (($0) => ($0._seen = $eq.logic.or($0._seen, distinct > 1)))(this.self());
         let value: any; 
         let count = (($0) => ($0.has(first) ? ((value = $0.get(first)), true) : ((value = 0), false)))(this._counts) ? value : 0;

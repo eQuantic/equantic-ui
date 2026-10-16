@@ -289,6 +289,30 @@ public static class StringConversion
             || real.TwinIsData() || TypeNameText(real) is not null);
 
     /// <summary>
+    /// The method group <c>value.ToString</c> of a value whose type writes its text (<see cref="OwnText"/>):
+    /// the delegate the call is, writing what the call writes of the value as it is when the delegate is
+    /// made, read once there, and, for a reference, refused there when it is null (<see cref="Eq.Receiver"/>),
+    /// as .NET refuses to make the delegate of a null one's method. A tuple, an anonymous object and a data
+    /// value through their own groups, and an enum and a type whose text is its name through
+    /// <see cref="Eq.TextGroup"/>, handed the text as a function of the value. A group bound to the value's
+    /// own <c>toString</c> wrote JavaScript's text, <c>1,2</c> for an array and an enum's key (#913). Null for
+    /// any other type, and for a <c>Nullable</c> one, whose <c>ToString</c> is <c>Nullable</c>'s.
+    /// </summary>
+    internal static JsExpr? TextGroup(ITypeSymbol type, JsExpr receiver, ConversionContext context)
+    {
+        if (type.IsNullableValue()) return null;
+        var held = type.IsReferenceType ? JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver) : receiver;
+        if (type is INamedTypeSymbol { IsTupleType: true } tuple) return TupleText(tuple, held, Eq.TupleTextGroup, context);
+        if (type is INamedTypeSymbol { IsAnonymousType: true } anonymous)
+            return AnonymousText(anonymous, held, Eq.RecordTextGroup, context);
+        if (type is INamedTypeSymbol data && data.TwinIsData()) return RecordText(data, held, Eq.RecordTextGroup, context);
+        if (OwnText(type, JsExpr.Identifier("$v"), context) is not { } own) return null;
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Call(JsExpr.Identifier(Eq.TextGroup), held,
+            JsExpr.Arrow(context.TypeAnnotations ? "$v: any" : "$v", own));
+    }
+
+    /// <summary>
     /// The text an instance <c>ToString()</c> writes where its receiver's type writes it, for a receiver
     /// of a REFERENCE type (an anonymous object, an array, a list, a delegate): as a concatenation writes
     /// it, with the receiver refused when it is null (<see cref="Eq.Receiver"/>), as .NET's call through null
