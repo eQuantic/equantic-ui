@@ -31,6 +31,7 @@ Plans for work that is still landing. Each names its slices and which are done.
 | [STYLE-SEMANTICS-PLAN.md](STYLE-SEMANTICS-PLAN.md) | Track S — CSS-free authoring and the atomic style engine. |
 | [CHARTS-PLAN.md](CHARTS-PLAN.md) | The chart library, written once and drawn by both realizers. |
 | [CODE-EDITOR-PLAN.md](CODE-EDITOR-PLAN.md) | Track I — the code editor an IDE is built on: the engine, the protocol, the intelligence. |
+| [ELEMENT-TREE-PLAN.md](ELEMENT-TREE-PLAN.md) | 1.0 — the Element tree (one instance per position, on every target) and the per-component theme slots that resolve through it. |
 | [I18N-PLAN.md](I18N-PLAN.md) | Track L — localization the .NET way. |
 | [BOUND-TREE-PLAN.md](BOUND-TREE-PLAN.md) | Compiler phase 5 — translating from the bound tree. |
 | [COVERAGE-PLAN.md](COVERAGE-PLAN.md) | Compiler phase 6 — deriving the BCL mapping, with baselines that may only shrink. |
