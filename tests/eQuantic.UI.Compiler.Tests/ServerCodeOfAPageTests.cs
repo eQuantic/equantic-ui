@@ -566,6 +566,76 @@ public sealed class ServerCodeOfAPageTests
             [ServerOnly]
             public void Dispose() { }
         }
+
+        public interface ISource<out T>
+        {
+            T Read();
+        }
+
+        public sealed class StringSource : ISource<string>
+        {
+            [ServerOnly]
+            public string Read() => "s";
+        }
+
+        public sealed class IntSource : ISource<int>
+        {
+            public int Read() => 1;
+        }
+
+        public interface ISink<in T>
+        {
+            string Accept(T value);
+        }
+
+        public sealed class ObjectSink : ISink<object>
+        {
+            [ServerOnly]
+            public string Accept(object value) => "o";
+        }
+
+        public interface INarrowSink<in T>
+        {
+            string Take(T value);
+        }
+
+        public sealed class StringSink : INarrowSink<string>
+        {
+            [ServerOnly]
+            public string Take(string value) => value;
+        }
+
+        public sealed class PlainObjectSink : INarrowSink<object>
+        {
+            public string Take(object value) => "ok";
+        }
+
+        public sealed class StepEnumerator
+        {
+            public int Current => 1;
+
+            [ServerOnly]
+            public bool MoveNext() => false;
+        }
+
+        public sealed class StepBag
+        {
+            public StepEnumerator GetEnumerator() => new();
+        }
+
+        public sealed class CleanupEnumerator
+        {
+            public int Current => 1;
+            public bool MoveNext() => false;
+
+            [ServerOnly]
+            public void Dispose() { }
+        }
+
+        public sealed class CleanupBag
+        {
+            public CleanupEnumerator GetEnumerator() => new();
+        }
         """;
 
     /// <summary>The page in the app, and the contracts in the app or in a project it references, named
@@ -613,6 +683,12 @@ public sealed class ServerCodeOfAPageTests
                 "((IPriced)new Gem()).Price().ToString()", "NS.Gem.Price", inALibrary);
             data.Add("an implementation its base declares", "StatefulComponent", "",
                 "((IRound)new Disc()).Radius().ToString()", "NS.Round.Radius", inALibrary);
+            data.Add("a call through a covariant interface ISource<object>", "StatelessComponent",
+                "    private static string ReadFrom(ISource<object> source) => source.Read().ToString() ?? \"\";",
+                "ReadFrom(new StringSource())", "NS.StringSource.Read", inALibrary);
+            data.Add("a call through a contravariant interface ISink<string>", "StatefulComponent",
+                "    private static string SendTo(ISink<string> sink) => sink.Accept(\"a\");",
+                "SendTo(new ObjectSink())", "NS.ObjectSink.Accept", inALibrary);
             data.Add("a deconstruction through a [ServerOnly] Deconstruct", "StatelessComponent",
                 "    private static string Split(Pair p) { var (a, b) = p; return (a + b).ToString(); }",
                 "Split(new Pair())", "NS.Pair.Deconstruct", inALibrary);
@@ -628,6 +704,16 @@ public sealed class ServerCodeOfAPageTests
             data.Add("a spread over a [ServerOnly] GetEnumerator", "StatelessComponent",
                 "    private static int[] Copy(Bag bag) => [.. bag];",
                 "Copy(new Bag()).Length.ToString()", "NS.Bag.GetEnumerator", inALibrary);
+            data.Add("a spread over an enumerator with a [ServerOnly] MoveNext", "StatelessComponent",
+                "    private static int[] Copy(StepBag bag) => [.. bag];",
+                "Copy(new StepBag()).Length.ToString()", "NS.StepEnumerator.MoveNext", inALibrary);
+            data.Add("a spread over an enumerator with a [ServerOnly] Dispose", "StatefulComponent",
+                "    private static int[] Copy(CleanupBag bag) => [.. bag];",
+                "Copy(new CleanupBag()).Length.ToString()", "NS.CleanupEnumerator.Dispose", inALibrary);
+            data.Add("a LINQ ToArray over a [ServerOnly] GetEnumerator", "StatelessComponent", "",
+                "new Bag().ToArray().Length.ToString()", "NS.Bag.GetEnumerator", inALibrary);
+            data.Add("a LINQ sequence argument over a [ServerOnly] GetEnumerator", "StatefulComponent", "",
+                "new[] { 1 }.Concat(new Bag()).Count().ToString()", "NS.Bag.GetEnumerator", inALibrary);
             data.Add("a using declaration over a [ServerOnly] Dispose", "StatelessComponent",
                 "    private static string Use() { using var lease = new Lease(); return lease.Id.ToString(); }",
                 "Use()", "NS.Lease.Dispose", inALibrary);
@@ -679,6 +765,12 @@ public sealed class ServerCodeOfAPageTests
             data.Add("a foreach over another closed IEnumerable<string>", "StatelessComponent",
                 "    private static string Join(IEnumerable<string> items) { var s = \"\"; foreach (var item in items) s += item; return s; }",
                 "Join(new[] { \"ok\" }) + new Bag().Count", inALibrary);
+            data.Add("a call through an incompatible closed ISource<int>", "StatelessComponent",
+                "    private static string ReadInt(ISource<int> source) => source.Read().ToString();",
+                "ReadInt(new IntSource())", inALibrary);
+            data.Add("a call through a contravariant receiver INarrowSink<object> that StringSink cannot hold", "StatefulComponent",
+                "    private static string SendObj(INarrowSink<object> sink) => sink.Take(\"x\");",
+                "SendObj(new PlainObjectSink())", inALibrary);
             data.Add("a Server Action", "StatefulComponent",
                 "    [ServerAction]\n    public Task<double> Load() => Task.FromResult(((IShape)new Circle()).Area());", "\"plain\"", inALibrary);
             data.Add("a [ServerOnly] member", "StatelessComponent",
@@ -755,5 +847,21 @@ public sealed class ServerCodeOfAPageTests
         Lines(built).Should().ContainSingle(built.Errors)
             .Which.Should().StartWith(solution.FileOf("Common", "Painter.cs") + "(")
             .And.Contain("error EQ2010").And.Contain("'App.Model.Circle.Area'");
+    }
+
+    [Fact]
+    public void ASpreadOverAnInterfaceEnumerator_WhoseDisposeStaysOnTheServer_IsRefused()
+    {
+        using var solution = App(
+            ("Model/CleanupBag.cs", "using eQuantic.UI.Primitives;\n\nnamespace App.Model;\n\npublic sealed class CleanupEnumerator : System.Collections.Generic.IEnumerator<int>\n{\n    public int Current => 1;\n    object System.Collections.IEnumerator.Current => Current;\n    public bool MoveNext() => false;\n    public void Reset() { }\n\n    [ServerOnly]\n    public void Dispose() { }\n}\n\npublic sealed class CleanupBag : System.Collections.Generic.IEnumerable<int>\n{\n    public System.Collections.Generic.IEnumerator<int> GetEnumerator() => new CleanupEnumerator();\n    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();\n}\n"),
+            ("Screens/Home.cs", Page("StatelessComponent",
+                members: "    private static int[] Copy(App.Model.CleanupBag bag) => [.. bag];",
+                shown: "Copy(new App.Model.CleanupBag()).Length.ToString()")));
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue("a spread calls Dispose on IEnumerator<int>, which CleanupEnumerator keeps on the server");
+        Lines(built).Should().ContainSingle(built.Errors)
+            .Which.Should().StartWith(solution.FileOf("App", "Screens/Home.cs") + "(")
+            .And.Contain("error EQ2010").And.Contain("'App.Model.CleanupEnumerator.Dispose'");
     }
 }

@@ -286,6 +286,7 @@ internal static class IterableTwin
             FenceEnumeration(collection, statement.Expression, context);
             return;
         }
+        var before = context.Diagnostics.Count;
         if ((bound.ReducedFrom ?? bound) is { IsExtensionMethod: true } extension)
         {
             extension.ReportIfHostOnly(statement.Expression, context);
@@ -300,6 +301,7 @@ internal static class IterableTwin
         {
             bound.ReportIfHostOnly(statement.Expression, context, collection);
         }
+        if (context.Diagnostics.Count > before) return;
         var enumerator = bound.ReturnType;
         info.MoveNextMethod?.ReportIfHostOnly(statement.Expression, context, enumerator);
         ((ISymbol?)info.CurrentProperty?.GetMethod ?? info.CurrentProperty)?.ReportIfHostOnly(statement.Expression, context, enumerator);
@@ -307,16 +309,51 @@ internal static class IterableTwin
     }
 
     /// <summary>
-    /// Refuses an implicit iteration (such as a collection expression spread <c>[.. xs]</c>) over a sequence
-    /// whose <c>GetEnumerator()</c> is <c>[ServerOnly]</c>.
+    /// Refuses an implicit iteration (a collection expression spread <c>[.. xs]</c> or a LINQ source) over a
+    /// sequence whose <c>GetEnumerator()</c> or enumerator protocol (<c>MoveNext</c>, <c>Current</c>,
+    /// <c>Dispose</c>) is <c>[ServerOnly]</c>.
     /// </summary>
     public static void FenceEnumeration(ITypeSymbol? sequence, SyntaxNode at, ConversionContext context)
     {
         if (sequence.UnwrapNullable() is not INamedTypeSymbol named) return;
         var enumerator = named.TypeKind == TypeKind.Interface
             ? named.GetMembers("GetEnumerator").OfType<IMethodSymbol>().FirstOrDefault()
+              ?? named.AllInterfaces.SelectMany(face => face.GetMembers("GetEnumerator")).OfType<IMethodSymbol>().FirstOrDefault()
             : EnumeratorOf(named) ?? named.GetMembers("GetEnumerator").OfType<IMethodSymbol>()
                 .FirstOrDefault(method => method is { IsStatic: false, Parameters.Length: 0 });
-        enumerator?.ReportIfHostOnly(at, context, named);
+        if (enumerator is null) return;
+        var before = context.Diagnostics.Count;
+        enumerator.ReportIfHostOnly(at, context, named);
+        if (context.Diagnostics.Count > before || enumerator.ReturnType.UnwrapNullable() is not INamedTypeSymbol cursor) return;
+        ProtocolMethod(cursor, "MoveNext")?.ReportIfHostOnly(at, context, cursor);
+        var current = ProtocolProperty(cursor, "Current");
+        ((ISymbol?)current?.GetMethod ?? current)?.ReportIfHostOnly(at, context, cursor);
+        ProtocolMethod(cursor, "Dispose")?.ReportIfHostOnly(at, context, cursor);
+    }
+
+    private static IMethodSymbol? ProtocolMethod(INamedTypeSymbol type, string name)
+    {
+        for (var at = type; at is not null; at = at.BaseType)
+            if (at.GetMembers(name).OfType<IMethodSymbol>()
+                    .FirstOrDefault(method => method is { IsStatic: false, Parameters.Length: 0, DeclaredAccessibility: Accessibility.Public })
+                is { } own)
+                return own;
+        foreach (var face in type.AllInterfaces)
+            if (face.GetMembers(name).OfType<IMethodSymbol>().FirstOrDefault(method => method.Parameters.Length == 0) is { } contract)
+                return type.TypeKind == TypeKind.Interface
+                    ? contract
+                    : type.FindImplementationForInterfaceMember(contract) as IMethodSymbol ?? contract;
+        return null;
+    }
+
+    private static IPropertySymbol? ProtocolProperty(INamedTypeSymbol type, string name)
+    {
+        if (OwnProperty(type, name) is { } own) return own;
+        foreach (var face in type.AllInterfaces)
+            if (face.GetMembers(name).OfType<IPropertySymbol>().FirstOrDefault() is { } contract)
+                return type.TypeKind == TypeKind.Interface
+                    ? contract
+                    : type.FindImplementationForInterfaceMember(contract) as IPropertySymbol ?? contract;
+        return null;
     }
 }

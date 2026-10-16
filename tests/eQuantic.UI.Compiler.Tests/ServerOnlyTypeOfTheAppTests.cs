@@ -304,9 +304,9 @@ public sealed class ServerOnlyTypeOfTheAppTests
     [MemberData(nameof(Unnamed))]
     public void APositionTheModuleWritesAsNothing_IsFree(string what, string members, string shown, bool inALibrary)
     {
-        using var solution = Of(inALibrary, "StatefulComponent", members, shown);
+        using var solution = Of(inALibrary, "StatefulComponent", members, $"({shown}) + new App.Model.Badge(\"b\").Cast(\"x\")");
         solution.Write("App", "Model/Badge.cs",
-            $"using {(inALibrary ? "Common" : "App.Model")};\n\nnamespace App.Model;\n\npublic sealed record Badge(string Label)\n{{\n    public string Kind => nameof(Ledger) + nameof(Vault.Key) + Label;\n}}\n");
+            $"using {(inALibrary ? "Common" : "App.Model")};\n\nnamespace App.Model;\n\npublic sealed record Badge(string Label)\n{{\n    public object Cast(object x) => (Ledger)x;\n    public string Kind => \"Ledger\" + nameof(Ledger) + nameof(Vault.Key) + Label;\n}}\n");
         var built = solution.Build();
 
         built.Failed.Should().BeFalse($"{what} names no twin:\n{built.Errors}");

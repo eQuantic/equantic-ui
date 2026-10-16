@@ -186,7 +186,8 @@ public class RecordTypeEmitter
         // runtime's own build rejects.
         // Lookarounds, not `\b`: `$eq` starts with a non-word character, so a word boundary never
         // matches it and the one import every module needs would be the first to go.
-        bool Names(string name) => System.Text.RegularExpressions.Regex.IsMatch(body,
+        var code = TypeScriptEmitter.WithoutStrings(body);
+        bool Names(string name) => System.Text.RegularExpressions.Regex.IsMatch(code,
             $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(name)}(?![\w$])");
         var used = runtimeProvided
             .Where(Names)

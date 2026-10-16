@@ -86,8 +86,11 @@ public class CollectionExpressionStrategy : IExpressionIrStrategy
             case ExpressionElementSyntax expr:
                 return context.Converter.ConvertIr(expr.Expression);
             case SpreadElementSyntax spread:
-                IterableTwin.FenceEnumeration(context.SemanticHelper.GetType(spread.Expression), spread.Expression, context);
-                return JsExpr.Spread(context.Converter.ConvertIr(spread.Expression));
+                var before = context.Diagnostics.Count;
+                var spreadExpr = context.Converter.ConvertIr(spread.Expression);
+                if (context.Diagnostics.Count == before)
+                    IterableTwin.FenceEnumeration(context.SemanticHelper.GetType(spread.Expression), spread.Expression, context);
+                return JsExpr.Spread(spreadExpr);
             default:
                 return JsExpr.Opaque(context.Unhandled(element, "collection expression"));
         }

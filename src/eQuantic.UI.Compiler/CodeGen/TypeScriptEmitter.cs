@@ -2584,10 +2584,64 @@ public class TypeScriptEmitter
     }
 
     /// <summary>Whether <paramref name="emitted"/> names <paramref name="name"/> as a whole
-    /// identifier. Lookarounds rather than <c>\b</c>: a twin's name can hold a <c>$</c>.</summary>
-    private static bool NamedIn(string emitted, string name) =>
-        System.Text.RegularExpressions.Regex.IsMatch(emitted,
+    /// identifier outside string literals. Lookarounds rather than <c>\b</c>: a twin's name can hold a
+    /// <c>$</c>.</summary>
+    internal static bool NamedIn(string emitted, string name) =>
+        System.Text.RegularExpressions.Regex.IsMatch(WithoutStrings(emitted),
             $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(name)}(?![\w$])");
+
+    /// <summary>Replaces the literal text of single-, double- and backtick-quoted strings with spaces,
+    /// leaving template interpolation holes (<c>${…}</c>) intact, so a string literal never counts as a
+    /// type or identifier reference.</summary>
+    internal static string WithoutStrings(string emitted)
+    {
+        var chars = emitted.ToCharArray();
+        BlankRange(chars, 0, chars.Length);
+        return new string(chars);
+
+        static void BlankRange(char[] chars, int start, int end)
+        {
+            for (var i = start; i < end; i++)
+            {
+                var c = chars[i];
+                if (c is '\'' or '"')
+                {
+                    for (i++; i < end && chars[i] != c; i++)
+                    {
+                        if (chars[i] == '\\' && i + 1 < end) { chars[i] = ' '; i++; }
+                        chars[i] = ' ';
+                    }
+                }
+                else if (c == '`')
+                {
+                    for (i++; i < end && chars[i] != '`'; i++)
+                    {
+                        if (chars[i] == '\\' && i + 1 < end) { chars[i] = ' '; i++; chars[i] = ' '; continue; }
+                        if (chars[i] == '$' && i + 1 < end && chars[i + 1] == '{')
+                        {
+                            var holeStart = i + 2;
+                            var depth = 1;
+                            for (i = holeStart; i < end && depth > 0; i++)
+                            {
+                                if (chars[i] is '\'' or '"' or '`')
+                                {
+                                    var q = chars[i];
+                                    for (i++; i < end && chars[i] != q; i++)
+                                        if (chars[i] == '\\') i++;
+                                }
+                                else if (chars[i] == '{') depth++;
+                                else if (chars[i] == '}') depth--;
+                            }
+                            i--;
+                            BlankRange(chars, holeStart, i);
+                            continue;
+                        }
+                        chars[i] = ' ';
+                    }
+                }
+            }
+        }
+    }
 
     /// <summary>Whether the per-app scan knows this name at all: one of the app's own modules, or a
     /// type the app declares <c>[RuntimeProvided]</c>, which the runtime exports instead.</summary>

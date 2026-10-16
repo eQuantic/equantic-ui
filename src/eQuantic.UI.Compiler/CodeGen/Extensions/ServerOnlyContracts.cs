@@ -36,9 +36,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Extensions;
 internal static class ServerOnlyContracts
 {
     /// <summary>One way a contract is fulfilled on the server only: the <c>[ServerOnly]</c> method, by
-    /// name, and every type a receiver may be declared as and still hold a type that takes it, by
-    /// key: that type, each class it derives from and each interface it implements.</summary>
-    private sealed record Fulfilment(string Method, IReadOnlySet<string> Receivers);
+    /// name, and every type a receiver may be declared as and still hold a type that takes it, keyed by
+    /// the open type's key.</summary>
+    private sealed record Fulfilment(string Method, IReadOnlyDictionary<string, IReadOnlyList<INamedTypeSymbol>> Receivers);
 
     /// <summary>Each build's contracts, by the member's key.</summary>
     private static readonly ConditionalWeakTable<Compilation, IReadOnlyDictionary<string, IReadOnlyList<Fulfilment>>> Read = new();
@@ -59,8 +59,8 @@ internal static class ServerOnlyContracts
         if (!contract.IsVirtual && !contract.IsAbstract && !contract.IsOverride) return [];
         if (Key(contract) is not { } key || !Read.GetValue(build, Of).TryGetValue(key, out var fulfilments)) return [];
         var named = receiver().UnwrapNullable() as INamedTypeSymbol;
-        var through = named is { TypeKind: not TypeKind.Error } ? ReceiverLookup(named) : null;
-        return fulfilments.Where(fulfilment => through is null || through.Any(fulfilment.Receivers.Contains))
+        var open = named is { TypeKind: not TypeKind.Error } ? Key(named) : null;
+        return fulfilments.Where(fulfilment => open is null || CanHold(fulfilment.Receivers, open, named!))
             .Select(fulfilment => fulfilment.Method).Distinct().Order(StringComparer.Ordinal).ToList();
     }
 
@@ -69,7 +69,8 @@ internal static class ServerOnlyContracts
         var compilations = build.ReferencedCompilations().Prepend(build).ToList();
         var serverOnly = compilations.SelectMany(ServerOnlyMethods).ToList();
         var fulfilled = new Dictionary<string, List<Fulfilment>>(StringComparer.Ordinal);
-        var receivers = new Dictionary<INamedTypeSymbol, IReadOnlySet<string>>(SymbolEqualityComparer.Default);
+        var receivers = new Dictionary<INamedTypeSymbol, IReadOnlyDictionary<string, IReadOnlyList<INamedTypeSymbol>>>(
+            SymbolEqualityComparer.Default);
 
         void Add(IMethodSymbol contract, INamedTypeSymbol type, IMethodSymbol method)
         {
@@ -149,40 +150,78 @@ internal static class ServerOnlyContracts
         return type.AllInterfaces.Any(@interface => declaring.Contains(@interface.OriginalDefinition));
     }
 
-    /// <summary>Every type a receiver may be declared as and hold a <paramref name="type"/>, by key.
-    /// A closed generic (<c>Bag : IEnumerable&lt;int&gt;</c>) is held by that closed generic and by an
-    /// open one (<c>IEnumerable&lt;T&gt;</c>), never by one closed over another type
-    /// (<c>IEnumerable&lt;string&gt;</c>).</summary>
-    private static IReadOnlySet<string> Receivers(INamedTypeSymbol type)
+    /// <summary>Every type a receiver may be declared as and hold a <paramref name="type"/>, grouped by
+    /// the open type's key.</summary>
+    private static IReadOnlyDictionary<string, IReadOnlyList<INamedTypeSymbol>> Receivers(INamedTypeSymbol type)
     {
-        var keys = new HashSet<string>(StringComparer.Ordinal);
+        var byOpen = new Dictionary<string, List<INamedTypeSymbol>>(StringComparer.Ordinal);
         void Record(INamedTypeSymbol candidate)
         {
             if (Key(candidate) is not { } open) return;
-            keys.Add($"?:{open}");
-            keys.Add(ContainsTypeParameter(candidate) ? open : ClosedKey(candidate) ?? open);
+            if (!byOpen.TryGetValue(open, out var list)) byOpen[open] = list = [];
+            list.Add(candidate);
         }
         for (var at = type; at is not null; at = at.BaseType) Record(at);
         foreach (var @interface in type.AllInterfaces) Record(@interface);
-        return keys;
+        return byOpen.ToDictionary(entry => entry.Key, entry => (IReadOnlyList<INamedTypeSymbol>)entry.Value,
+            StringComparer.Ordinal);
     }
 
-    private static IReadOnlyList<string>? ReceiverLookup(INamedTypeSymbol receiver) =>
-        Key(receiver) is not { } open
-            ? null
-            : ContainsTypeParameter(receiver)
-                ? [$"?:{open}"]
-                : ClosedKey(receiver) is { } closed && closed != open
-                    ? [closed, open]
-                    : [open];
+    private static bool CanHold(IReadOnlyDictionary<string, IReadOnlyList<INamedTypeSymbol>> receivers,
+        string open, INamedTypeSymbol receiver) =>
+        receivers.TryGetValue(open, out var candidates)
+        && candidates.Any(candidate => GenericArgumentsMatch(candidate, receiver));
 
-    private static bool ContainsTypeParameter(ITypeSymbol type) => type switch
+    private static bool GenericArgumentsMatch(INamedTypeSymbol implemented, INamedTypeSymbol receiver)
     {
-        ITypeParameterSymbol => true,
-        IArrayTypeSymbol array => ContainsTypeParameter(array.ElementType),
-        INamedTypeSymbol { IsGenericType: true } named => named.TypeArguments.Any(ContainsTypeParameter),
-        _ => false,
-    };
+        if (!receiver.IsGenericType) return true;
+        var parameters = receiver.OriginalDefinition.TypeParameters;
+        if (implemented.TypeArguments.Length != parameters.Length || receiver.TypeArguments.Length != parameters.Length)
+            return true;
+        for (var i = 0; i < parameters.Length; i++)
+            if (!TypeArgumentMatches(implemented.TypeArguments[i], receiver.TypeArguments[i], parameters[i].Variance))
+                return false;
+        return true;
+    }
+
+    private static bool TypeArgumentMatches(ITypeSymbol implementedArg, ITypeSymbol receiverArg, VarianceKind variance)
+    {
+        if (implementedArg is ITypeParameterSymbol || receiverArg is ITypeParameterSymbol) return true;
+        if (SameClosedType(implementedArg, receiverArg)) return true;
+        return variance switch
+        {
+            VarianceKind.Out => IsReferenceAssignable(implementedArg, receiverArg),
+            VarianceKind.In => IsReferenceAssignable(receiverArg, implementedArg),
+            _ => false,
+        };
+    }
+
+    private static bool IsReferenceAssignable(ITypeSymbol subtype, ITypeSymbol supertype)
+    {
+        if (!subtype.IsReferenceType || !supertype.IsReferenceType) return false;
+        if (supertype.SpecialType == SpecialType.System_Object) return true;
+        if (subtype is IArrayTypeSymbol subArray)
+        {
+            if (supertype is IArrayTypeSymbol superArray && subArray.Rank == superArray.Rank)
+                return SameClosedType(subArray.ElementType, superArray.ElementType)
+                       || IsReferenceAssignable(subArray.ElementType, superArray.ElementType);
+            if (supertype.SpecialType == SpecialType.System_Array) return true;
+            return supertype is INamedTypeSymbol superInterface && Key(superInterface) is { } ifaceKey
+                   && subArray.AllInterfaces.Any(candidate =>
+                       Key(candidate) == ifaceKey && GenericArgumentsMatch(candidate, superInterface));
+        }
+        if (subtype is not INamedTypeSymbol subNamed
+            || supertype is not INamedTypeSymbol superNamed
+            || Key(superNamed) is not { } targetKey)
+            return false;
+        for (var at = subNamed; at is not null; at = at.BaseType)
+            if (Key(at) == targetKey && GenericArgumentsMatch(at, superNamed)) return true;
+        return subNamed.AllInterfaces.Any(@interface =>
+            Key(@interface) == targetKey && GenericArgumentsMatch(@interface, superNamed));
+    }
+
+    private static bool SameClosedType(ITypeSymbol left, ITypeSymbol right) =>
+        ClosedKey(left) is { } key && key == ClosedKey(right);
 
     private static string? ClosedKey(ITypeSymbol type) => type switch
     {

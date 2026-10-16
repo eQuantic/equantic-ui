@@ -30,8 +30,11 @@ internal static class LinqSource
     /// </summary>
     private static JsExpr Read(ExpressionSyntax source, string? parameter, ConversionContext context)
     {
+        var before = context.Diagnostics.Count;
         var converted = context.Converter.ConvertIr(source);
         if (IsArray(source, context)) return converted;
+        if (context.Diagnostics.Count == before)
+            IterableTwin.FenceEnumeration(context.SemanticHelper.GetType(source), source, context);
         context.UsedHelpers.Add(Eq.Import);
         return parameter is null or "source"
             ? JsExpr.Call(JsExpr.Identifier(Eq.LinqSeq), converted)
@@ -57,13 +60,19 @@ internal static class LinqSource
     /// </summary>
     internal static JsExpr Copy(ExpressionSyntax source, ConversionContext context)
     {
+        var before = context.Diagnostics.Count;
         var converted = context.Converter.ConvertIr(source);
         // With no model to ask, the source as every operator always took it: whether it is a fresh
         // array already cannot be told, and copying every operator's result would be the price.
-        if (context.SemanticHelper.GetType(source) is null) return converted;
-        if (IsArray(source, context)) return JsExpr.Call(JsExpr.Member(converted, "slice"));
-        context.UsedHelpers.Add(Eq.Import);
-        return JsExpr.Call(JsExpr.Identifier(Eq.LinqToArray), converted);
+        if (context.SemanticHelper.GetType(source) is { } sequenceType)
+        {
+            if (IsArray(source, context)) return JsExpr.Call(JsExpr.Member(converted, "slice"));
+            if (context.Diagnostics.Count == before)
+                IterableTwin.FenceEnumeration(sequenceType, source, context);
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Call(JsExpr.Identifier(Eq.LinqToArray), converted);
+        }
+        return converted;
     }
 
     /// <summary>
