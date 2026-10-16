@@ -79,12 +79,19 @@ public class CollectionExpressionStrategy : IExpressionIrStrategy
         return array;
     }
 
-    private static JsExpr ConvertElement(CollectionElementSyntax element, ConversionContext context) => element switch
+    private static JsExpr ConvertElement(CollectionElementSyntax element, ConversionContext context)
     {
-        ExpressionElementSyntax expr => context.Converter.ConvertIr(expr.Expression),
-        SpreadElementSyntax spread => JsExpr.Spread(context.Converter.ConvertIr(spread.Expression)),
-        _ => JsExpr.Opaque(context.Unhandled(element, "collection expression")),
-    };
+        switch (element)
+        {
+            case ExpressionElementSyntax expr:
+                return context.Converter.ConvertIr(expr.Expression);
+            case SpreadElementSyntax spread:
+                IterableTwin.FenceEnumeration(context.SemanticHelper.GetType(spread.Expression), spread.Expression, context);
+                return JsExpr.Spread(context.Converter.ConvertIr(spread.Expression));
+            default:
+                return JsExpr.Opaque(context.Unhandled(element, "collection expression"));
+        }
+    }
 
     /// <summary>Whether every <c>with(…)</c> argument is a capacity-style hint (integral, or named
     /// <c>capacity</c>) that dropping cannot change behaviour. A comparer is never that.</summary>

@@ -248,6 +248,8 @@ public class CSharpToJsConverter
                 return;
             case INamedTypeSymbol named:
                 if (named.ReportIfKeptOut(at, _context)) return;
+                // A dictionary annotates as `any`, erasing its type arguments from the stub.
+                if (TypeScriptEmitter.IsDictionaryName($"{named.Name}<>")) return;
                 foreach (var argument in named.TypeArguments) RefuseKeptOutIn(argument, at);
                 return;
         }

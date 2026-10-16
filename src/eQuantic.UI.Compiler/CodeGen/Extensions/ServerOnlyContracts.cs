@@ -58,8 +58,9 @@ internal static class ServerOnlyContracts
         // Only an interface member and a method that can be overridden dispatch to another body.
         if (!contract.IsVirtual && !contract.IsAbstract && !contract.IsOverride) return [];
         if (Key(contract) is not { } key || !Read.GetValue(build, Of).TryGetValue(key, out var fulfilments)) return [];
-        var through = receiver().UnwrapNullable() is INamedTypeSymbol { TypeKind: not TypeKind.Error } named ? Key(named) : null;
-        return fulfilments.Where(fulfilment => through is null || fulfilment.Receivers.Contains(through))
+        var named = receiver().UnwrapNullable() as INamedTypeSymbol;
+        var through = named is { TypeKind: not TypeKind.Error } ? ReceiverLookup(named) : null;
+        return fulfilments.Where(fulfilment => through is null || through.Any(fulfilment.Receivers.Contains))
             .Select(fulfilment => fulfilment.Method).Distinct().Order(StringComparer.Ordinal).ToList();
     }
 
@@ -148,16 +149,49 @@ internal static class ServerOnlyContracts
         return type.AllInterfaces.Any(@interface => declaring.Contains(@interface.OriginalDefinition));
     }
 
-    /// <summary>Every type a receiver may be declared as and hold a <paramref name="type"/>, by key.</summary>
+    /// <summary>Every type a receiver may be declared as and hold a <paramref name="type"/>, by key.
+    /// A closed generic (<c>Bag : IEnumerable&lt;int&gt;</c>) is held by that closed generic and by an
+    /// open one (<c>IEnumerable&lt;T&gt;</c>), never by one closed over another type
+    /// (<c>IEnumerable&lt;string&gt;</c>).</summary>
     private static IReadOnlySet<string> Receivers(INamedTypeSymbol type)
     {
         var keys = new HashSet<string>(StringComparer.Ordinal);
-        for (var at = type; at is not null; at = at.BaseType)
-            if (Key(at) is { } key) keys.Add(key);
-        foreach (var @interface in type.AllInterfaces)
-            if (Key(@interface) is { } key) keys.Add(key);
+        void Record(INamedTypeSymbol candidate)
+        {
+            if (Key(candidate) is not { } open) return;
+            keys.Add($"?:{open}");
+            keys.Add(ContainsTypeParameter(candidate) ? open : ClosedKey(candidate) ?? open);
+        }
+        for (var at = type; at is not null; at = at.BaseType) Record(at);
+        foreach (var @interface in type.AllInterfaces) Record(@interface);
         return keys;
     }
+
+    private static IReadOnlyList<string>? ReceiverLookup(INamedTypeSymbol receiver) =>
+        Key(receiver) is not { } open
+            ? null
+            : ContainsTypeParameter(receiver)
+                ? [$"?:{open}"]
+                : ClosedKey(receiver) is { } closed && closed != open
+                    ? [closed, open]
+                    : [open];
+
+    private static bool ContainsTypeParameter(ITypeSymbol type) => type switch
+    {
+        ITypeParameterSymbol => true,
+        IArrayTypeSymbol array => ContainsTypeParameter(array.ElementType),
+        INamedTypeSymbol { IsGenericType: true } named => named.TypeArguments.Any(ContainsTypeParameter),
+        _ => false,
+    };
+
+    private static string? ClosedKey(ITypeSymbol type) => type switch
+    {
+        IArrayTypeSymbol array => ClosedKey(array.ElementType) is { } element ? $"{element}[]" : null,
+        INamedTypeSymbol { IsGenericType: true } named when Key(named) is { } open =>
+            $"{open}<{string.Join(",", named.TypeArguments.Select(argument => ClosedKey(argument) ?? "?"))}>",
+        INamedTypeSymbol named => Key(named),
+        _ => null,
+    };
 
     /// <summary>What a member or a type IS in every compilation of one build: its definition's assembly
     /// and documentation id. Null for one that has no id.</summary>

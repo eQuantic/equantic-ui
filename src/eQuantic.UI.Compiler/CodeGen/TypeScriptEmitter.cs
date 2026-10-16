@@ -1276,6 +1276,7 @@ public class TypeScriptEmitter
                 if (named.TypeKind is TypeKind.Class or TypeKind.Struct && named.Name.Length > 0
                     && named.Locations.Any(location => location.IsInSource))
                     yield return named;
+                if (IsDictionaryName($"{named.Name}<>")) yield break;
                 foreach (var argument in named.TypeArguments)
                     foreach (var inner in SourceTypesIn(argument)) yield return inner;
                 break;
@@ -1291,7 +1292,8 @@ public class TypeScriptEmitter
     {
         var types = new HashSet<string>();
         if (node == null) return types;
-        var crossing = node.DescendantNodes(child => !Parser.ComponentParser.StaysOnTheServer(child, asComponent)).ToList();
+        var crossing = node.DescendantNodes(child => !Parser.ComponentParser.StaysOnTheServer(child, asComponent)
+            && !(child is InvocationExpressionSyntax invocation && invocation.IsNameOf(ModelFor(invocation)))).ToList();
         
         var creations = crossing.OfType<ObjectCreationExpressionSyntax>();
         foreach (var creation in creations)
@@ -1376,7 +1378,7 @@ public class TypeScriptEmitter
             case TupleTypeSyntax tuple:
                 foreach (var element in tuple.Elements) CollectDeclaredTypeNames(element.Type, types);
                 break;
-            case GenericNameSyntax generic:
+            case GenericNameSyntax generic when !IsDictionaryName($"{generic.Identifier.ValueText}<>"):
                 foreach (var argument in generic.TypeArgumentList.Arguments) CollectDeclaredTypeNames(argument, types);
                 break;
             case QualifiedNameSyntax qualified: CollectDeclaredTypeNames(qualified.Right, types); break;
@@ -3043,7 +3045,7 @@ public class TypeScriptEmitter
     private static string? SetOf(string tsType) => Unwrap(tsType, ["HashSet<", "ISet<", "IReadOnlySet<"]);
 
     /// <summary>Every C# name for a dictionary: each is a runtime dictionary class on this side.</summary>
-    private static bool IsDictionaryName(string tsType) =>
+    internal static bool IsDictionaryName(string tsType) =>
         Unwrap(tsType, ["Dictionary<", "IDictionary<", "IReadOnlyDictionary<", "SortedDictionary<", "SortedList<"]) is not null;
 
     private static string? Unwrap(string tsType, string[] prefixes)

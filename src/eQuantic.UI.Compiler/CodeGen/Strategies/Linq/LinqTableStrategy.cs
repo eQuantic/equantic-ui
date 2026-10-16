@@ -87,7 +87,7 @@ public class LinqTableStrategy : IExpressionIrStrategy
         // the runtime's dictionary and set, where a JavaScript Map and Set compare by reference: a join by
         // a composite key matched nothing, a union of equal anonymous objects kept every one, and a class
         // that overrides Equals was never asked it.
-        if (HeldBy(name.Identifier.Text, invocation, context) is { } equality)
+        if (HeldBy(name.Identifier.ValueText, invocation, context) is { } equality)
         {
             template = ByValue(template, equality);
             context.UsedHelpers.Add(Eq.Import);

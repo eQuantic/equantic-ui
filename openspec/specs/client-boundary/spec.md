@@ -14,10 +14,12 @@ and static class that becomes a module. It SHALL NOT check code that never cross
 component's `[ServerAction]`, whose twin is a stub written from its signature, a method, an operator or a
 conversion marked `[ServerOnly]`, whatever type declares it, an extension block's member included, and a
 class marked `[ServerOnly]`. Such a member SHALL be no member of any twin, and what it names SHALL be neither
-imported nor refused by a module. Client code that calls such a member, takes it as a method group, bare or
-qualified, or applies such an operator or conversion SHALL fail the build with EQ2010 where it does: a
-binary, a unary or a compound operator, an increment, a tuple equality, and a conversion, implicit, spelled
-as a cast, a foreach's element or a deconstruction's part.
+imported nor refused by a module. Client code that calls such a member, explicitly or through a pattern
+(`Deconstruct` in deconstruction or a positional pattern, `GetEnumerator` in `foreach` or `[.. xs]`,
+`Dispose` in `using`), takes it as a method group, bare or qualified, or applies such an operator or
+conversion SHALL fail the build with EQ2010 where it does: a binary, a unary or a compound operator, an
+increment, a tuple equality, and a conversion, implicit, spelled as a cast, a foreach's element or a
+deconstruction's part.
 
 #### Scenario: A Server Action that reads a file
 
@@ -49,6 +51,11 @@ as a cast, a foreach's element or a deconstruction's part.
 - **WHEN** a class or a record struct declares `[ServerOnly]` conversions and operators, and a page writes `Amount a = 7`, `(Amount)"abc"`, passes `3` to an `Amount` parameter, writes `a += b`, `(a, 1) == (b, 1)`, `foreach (Amount a in new[] { 1, 2 })` or `(Amount b, int m) = Pair()`
 - **THEN** each fails the build with one EQ2010 at the page, where each built and called a static no twin carries (`Amount.fromInt(7)`), as `a + b`, `-a`, `a++` and `a == b` already failed
 
+#### Scenario: A server-only pattern method that client code calls implicitly
+
+- **WHEN** a class declares a `[ServerOnly]` `Deconstruct`, `GetEnumerator` or `Dispose`, and a page writes `var (a, b) = new Pair()`, `(a, b) = new Pair()`, `foreach (var (a, b) in new[] { new Pair() })`, `foreach (var x in new Bag())`, `[.. new Bag()]`, `using (new Lease()) { }` or `using var lease = new Lease();`
+- **THEN** each fails the build with one EQ2010 at the page naming the method, where each built and called a method no twin carries
+
 #### Scenario: A server-only method taken as a bare method group
 
 - **WHEN** a class or a page declares `[ServerOnly] string Read()` and takes `Read` as a bare method group, or a class takes as one its own virtual `Read`, which a subclass overrides with a `[ServerOnly]` method
@@ -65,10 +72,11 @@ Client code whose call or method group binds to an interface member, or to a met
 overridden, SHALL fail the build with EQ2010 at that site, naming the method, when a `[ServerOnly]`
 method of a type that crosses implements or overrides that member and the call's receiver can be that
 type: the receiver's declared type, or for a bare call the type the call is declared in, is that type
-or a type it derives from or implements. A receiver whose type is not known, a type parameter, SHALL
-be taken to be any. The contracts SHALL be the whole build's, the app's and every referenced
-project's, so a project's call through its own contract, which the app fulfils on the server, is
-refused where the project writes it. A call bound to a method that is not `[ServerOnly]`, a call
+or a type it derives from or implements, with matching type arguments when the type implements or
+derives from a closed generic (`Bag : IEnumerable<int>`). A receiver whose type is not known, a type
+parameter, SHALL be taken to be any. The contracts SHALL be the whole build's, the app's and every
+referenced project's, so a project's call through its own contract, which the app fulfils on the server,
+is refused where the project writes it. A call bound to a method that is not `[ServerOnly]`, a call
 through `base`, a call whose receiver no such type can be, a contract only types that never cross
 fulfil on the server, a contract no client code calls, and server code SHALL build. Each site SHALL be
 told once, a call through `?.` where the source writes it.
@@ -95,7 +103,7 @@ told once, a call through `?.` where the source writes it.
 
 #### Scenario: A call that can reach no server-only method
 
-- **WHEN** a page shows `new Square().Area()`; `new Plain().Name()` over another override that is not `[ServerOnly]`; `new Loud().Name()`, whose override calls `base.Name()`; `new Mute().Name()` or `new Echo().Twice()`, which calls `Name()` bare, over siblings of `Derived` that do not override it; `((ISealed)new Open()).Seal()` where only a `[ServerOnly]` class and an attribute keep their `Seal` on the server; implements a contract with a `[ServerOnly]` method no client code calls; or calls through the contract from a Server Action or a `[ServerOnly]` member
+- **WHEN** a page shows `new Square().Area()`; `new Plain().Name()` over another override that is not `[ServerOnly]`; `new Loud().Name()`, whose override calls `base.Name()`; `new Mute().Name()` or `new Echo().Twice()`, which calls `Name()` bare, over siblings of `Derived` that do not override it; `((ISealed)new Open()).Seal()` where only a `[ServerOnly]` class and an attribute keep their `Seal` on the server; iterates `IEnumerable<string>` where `Bag : IEnumerable<int>` declares a `[ServerOnly]` `GetEnumerator`; implements a contract with a `[ServerOnly]` method no client code calls; or calls through the contract from a Server Action or a `[ServerOnly]` member
 - **THEN** the build succeeds
 
 ### Requirement: Client code that reaches an API only a server has is refused once, where it is written
@@ -152,12 +160,13 @@ or a class it derives from is marked `[ServerOnly]` or is an attribute, or becau
 such a type, SHALL fail the build with EQ2010 at every site where client code writes its name: a call, a
 static read, a name qualified by its namespace, `using static`, a method group, a construction, an
 operator, an extension's home, a type test, an `as`, a struct's zero, a local's annotation, a member's
-annotation in a class or a record, and a Server Action's answer or parameter. Each site SHALL be told
-once. A position the module writes as nothing SHALL be free: a component's field or parameter, which is
-annotated `any`, a cast, a list of the type, a reference type's zero and `nameof`. An instance member of
-such a type read off a value, which no twin holds, SHALL fail the build with EQ2010 at the read, naming the
-member, unless the value's expression holds a refusal already. A component SHALL
-cross whatever it is marked, where it is not declared inside a type that never crosses.
+annotation in a class or a record, a type argument in a component's or a class's base list, and a Server
+Action's answer or parameter. Each site SHALL be told once. A position the module writes as nothing SHALL
+be free: a component's field or parameter, which is annotated `any`, a cast, a list of the type, a
+reference type's zero and the `nameof` operator. An instance member of such a type read off a value,
+which no twin holds, SHALL fail the build with EQ2010 at the read, naming the member, unless the value's
+expression holds a refusal already. A component SHALL cross whatever it is marked, where it is not
+declared inside a type that never crosses.
 
 #### Scenario: The app's own server-only class
 
@@ -166,7 +175,7 @@ cross whatever it is marked, where it is not declared inside a type that never c
 
 #### Scenario: Every way of naming it
 
-- **WHEN** a page names the app's `[ServerOnly]` types through `App.Model.Vault.Key()`, `Vault.Name`, `new Ledger()`, `Ledger.Open()`, `Key()` under `using static`, `Func<string> f = Vault.Key`, `"x".Sealed()` over a `[ServerOnly]` extension class, `new Secret("x")` of a `[ServerOnly]` record, `new Savings()` over a `[ServerOnly]` base, `o is Ledger`, `o as Ledger`, `default(Amount)` of a `[ServerOnly]` struct, a field of that struct, a local `Ledger? held`, or a Server Action that answers or takes a `Secret`
+- **WHEN** a page names the app's `[ServerOnly]` types through `App.Model.Vault.Key()`, `Vault.Name`, `new Ledger()`, `Ledger.Open()`, `Key()` under `using static`, `Func<string> f = Vault.Key`, `"x".Sealed()` over a `[ServerOnly]` extension class, `new Secret("x")` of a `[ServerOnly]` record, `new Savings()` over a `[ServerOnly]` base, `class ChildPage : Shell<Vault>`, `o is Ledger`, `o as Ledger`, `default(Amount)` of a `[ServerOnly]` struct, a field of that struct, a local `Ledger? held`, `@nameof(Vault.Key())` of a method named `nameof`, or a Server Action that answers or takes a `Secret`
 - **THEN** each fails the build with one EQ2010 at the page, in the app as in a referenced project
 
 #### Scenario: An attribute class

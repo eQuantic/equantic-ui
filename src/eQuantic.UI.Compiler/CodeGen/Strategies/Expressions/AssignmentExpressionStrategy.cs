@@ -41,7 +41,7 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         var captures = assignment.Left is TupleExpressionSyntax && DeconstructionPattern.Captures(assignment.Left);
         if (DeconstructionPattern.Of(assignment.Left, info, type, context, capture: captures) is not { } lowered) return null;
         var value = context.Converter.ConvertIr(assignment.Right);
-        if (lowered.Called is { } called) value = DeconstructionPattern.Through(called, value, context);
+        if (lowered.Called is { } called) value = DeconstructionPattern.Through(called, lowered.Receiver, assignment.Left, value, context);
         var written = JsExprWriter.Write(value);
         if (assignment.Left is DeclarationExpressionSyntax)
             return $"let {lowered.Pattern} = {written}{DeconstructionPattern.StepDeclarators(lowered, context)}";

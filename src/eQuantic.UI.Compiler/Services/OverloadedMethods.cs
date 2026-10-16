@@ -206,7 +206,7 @@ internal static class OverloadedMethods
         if (type is not (RecordDeclarationSyntax or StructDeclarationSyntax)) return;
         var instance = HeldOnEachInstance(type, model)
             .Concat(type.Members.OfType<MethodDeclarationSyntax>()
-                .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && method.ExplicitInterfaceSpecifier is null)
+                .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && TakesAName(method, isComponent: false))
                 .Select(method => (Name: method.Identifier.ValueText, Shown: Signature(method), At: method.Identifier)));
         var first = new Dictionary<string, (string Name, string Shown, SyntaxToken At)>(StringComparer.Ordinal);
         foreach (var member in instance.OrderBy(member => member.At.SpanStart))
@@ -287,7 +287,7 @@ internal static class OverloadedMethods
         if (held.Count == 0) return;
         var members = HeldOnEachInstance(type, model).Where(member => member.At.Parent is not ParameterSyntax)
             .Concat(type.Members.OfType<MethodDeclarationSyntax>()
-                .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && method.ExplicitInterfaceSpecifier is null)
+                .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && TakesAName(method, isComponent: false))
                 .Select(method => (Name: method.Identifier.ValueText, Shown: Signature(method), At: method.Identifier)))
             .ToList();
         foreach (var parameter in held)
@@ -813,7 +813,8 @@ internal static class OverloadedMethods
                     break;
 
                 case ExtensionBlockDeclarationSyntax block:
-                    foreach (var extension in block.Members.OfType<MethodDeclarationSyntax>())
+                    foreach (var extension in block.Members.OfType<MethodDeclarationSyntax>()
+                                 .Where(extension => TakesAName(extension, isComponent: false)))
                         yield return (extension, true);
                     break;
             }

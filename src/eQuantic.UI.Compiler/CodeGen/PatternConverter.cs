@@ -296,7 +296,8 @@ public static class PatternConverter
         }
         var outs = deconstruct.Parameters.Where(parameter => parameter.RefKind == RefKind.Out).ToList();
         var parts = JsExprWriter.Write(
-            Strategies.DeconstructionPattern.Through(deconstruct, JsExpr.Opaque(access), context));
+            Strategies.DeconstructionPattern.Through(
+                deconstruct, PatternType(recursive, context) ?? accessType, recursive, JsExpr.Opaque(access), context));
         var held = context.MatchParts.Held(access, deconstruct);
         called = $"({held} ?? ({held} = {parts}))";
         return i => $"{held}.{outs[i].Name.ToJsIdentifier()}";

@@ -257,16 +257,66 @@ internal static class IterableTwin
     /// <summary>
     /// <c>[Symbol.iterator]() { return $eq.linq.iterate(this.getEnumerator()); }</c> for the twin of the type
     /// that declares the method its iteration goes through, and null for any other: a type that is no
-    /// sequence, or one that inherits its iteration from a base's twin.
+    /// sequence, one whose <c>GetEnumerator()</c> stays on the server, or one that inherits its iteration
+    /// from a base's twin.
     /// </summary>
     public static JsClassMember? IteratorOf(INamedTypeSymbol type, HashSet<string> usedHelpers)
     {
         if (EnumeratorOf(type) is not { } through
+            || through.IsHostOnly()
             || !SymbolEqualityComparer.Default.Equals(through.ContainingType.OriginalDefinition, type.OriginalDefinition))
             return null;
         usedHelpers.Add(Eq.Import);
         return JsClassMember.Method("", Iterator, "", "", "",
             JsStatement.Block([JsStatement.Return(JsExpr.Call(JsExpr.Identifier(Eq.LinqIterate),
                 JsExpr.Call(JsExpr.ThisMember(TwinMethodName.Of(through)))))]));
+    }
+
+    /// <summary>
+    /// Refuses a <c>foreach</c> or <c>await foreach</c> whose bound enumeration protocol reaches a
+    /// <c>[ServerOnly]</c> method or type: <c>GetEnumerator</c>/<c>GetAsyncEnumerator</c> (instance,
+    /// interface or extension), <c>MoveNext</c>/<c>MoveNextAsync</c>, <c>Current</c> or
+    /// <c>Dispose</c>/<c>DisposeAsync</c>.
+    /// </summary>
+    public static void FenceForEach(CommonForEachStatementSyntax statement, ITypeSymbol? collection,
+        ConversionContext context)
+    {
+        if (context.SemanticHelper.ForEachInfo(statement) is not { GetEnumeratorMethod: { } bound } info)
+        {
+            FenceEnumeration(collection, statement.Expression, context);
+            return;
+        }
+        if ((bound.ReducedFrom ?? bound) is { IsExtensionMethod: true } extension)
+        {
+            extension.ReportIfHostOnly(statement.Expression, context);
+            extension.ContainingType.ReportIfKeptOut(statement.Expression, context);
+        }
+        else if (bound.ExtensionBlockHome() is { } home)
+        {
+            bound.ReportIfHostOnly(statement.Expression, context);
+            home.ReportIfKeptOut(statement.Expression, context);
+        }
+        else
+        {
+            bound.ReportIfHostOnly(statement.Expression, context, collection);
+        }
+        var enumerator = bound.ReturnType;
+        info.MoveNextMethod?.ReportIfHostOnly(statement.Expression, context, enumerator);
+        ((ISymbol?)info.CurrentProperty?.GetMethod ?? info.CurrentProperty)?.ReportIfHostOnly(statement.Expression, context, enumerator);
+        info.DisposeMethod?.ReportIfHostOnly(statement.Expression, context, enumerator);
+    }
+
+    /// <summary>
+    /// Refuses an implicit iteration (such as a collection expression spread <c>[.. xs]</c>) over a sequence
+    /// whose <c>GetEnumerator()</c> is <c>[ServerOnly]</c>.
+    /// </summary>
+    public static void FenceEnumeration(ITypeSymbol? sequence, SyntaxNode at, ConversionContext context)
+    {
+        if (sequence.UnwrapNullable() is not INamedTypeSymbol named) return;
+        var enumerator = named.TypeKind == TypeKind.Interface
+            ? named.GetMembers("GetEnumerator").OfType<IMethodSymbol>().FirstOrDefault()
+            : EnumeratorOf(named) ?? named.GetMembers("GetEnumerator").OfType<IMethodSymbol>()
+                .FirstOrDefault(method => method is { IsStatic: false, Parameters.Length: 0 });
+        enumerator?.ReportIfHostOnly(at, context, named);
     }
 }

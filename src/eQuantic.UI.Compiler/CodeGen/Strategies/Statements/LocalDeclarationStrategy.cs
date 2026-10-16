@@ -34,6 +34,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
 
             if (decl.UsingKeyword.IsKind(SyntaxKind.UsingKeyword))
             {
+                UsingLowering.Fence(variable, decl.Declaration.Type, decl.AwaitKeyword.IsKind(SyntaxKind.AwaitKeyword), context);
                 // A `using var` is a const; the BLOCK it sits in wraps what follows in the
                 // try/finally that disposes it (CSharpToJsConverter.ConvertBlockIr).
                 // Since this strategy only sees the statement, we'll emit a declaration

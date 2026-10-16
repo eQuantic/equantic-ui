@@ -536,6 +536,36 @@ public sealed class ServerCodeOfAPageTests
         {
             string Describe();
         }
+
+        public sealed class Pair
+        {
+            public int A { get; init; } = 1;
+            public int B { get; init; } = 2;
+
+            [ServerOnly]
+            public void Deconstruct(out int a, out int b) => (a, b) = (A, B);
+        }
+
+        public sealed class Bag : System.Collections.Generic.IEnumerable<int>
+        {
+            public int Count => 1;
+
+            [ServerOnly]
+            public System.Collections.Generic.IEnumerator<int> GetEnumerator()
+            {
+                yield return 1;
+            }
+
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        public sealed class Lease : System.IDisposable
+        {
+            public int Id => 1;
+
+            [ServerOnly]
+            public void Dispose() { }
+        }
         """;
 
     /// <summary>The page in the app, and the contracts in the app or in a project it references, named
@@ -583,6 +613,27 @@ public sealed class ServerCodeOfAPageTests
                 "((IPriced)new Gem()).Price().ToString()", "NS.Gem.Price", inALibrary);
             data.Add("an implementation its base declares", "StatefulComponent", "",
                 "((IRound)new Disc()).Radius().ToString()", "NS.Round.Radius", inALibrary);
+            data.Add("a deconstruction through a [ServerOnly] Deconstruct", "StatelessComponent",
+                "    private static string Split(Pair p) { var (a, b) = p; return (a + b).ToString(); }",
+                "Split(new Pair())", "NS.Pair.Deconstruct", inALibrary);
+            data.Add("a nested deconstruction through a [ServerOnly] Deconstruct", "StatefulComponent",
+                "    private static string Split((string Tag, Pair P) item) { var (tag, (a, b)) = item; return tag + (a + b); }",
+                "Split((\"p\", new Pair()))", "NS.Pair.Deconstruct", inALibrary);
+            data.Add("a foreach over a [ServerOnly] GetEnumerator", "StatelessComponent",
+                "    private static string Walk(Bag bag) { var sum = 0; foreach (var x in bag) sum += x; return sum.ToString(); }",
+                "Walk(new Bag())", "NS.Bag.GetEnumerator", inALibrary);
+            data.Add("a foreach through IEnumerable<int> fulfilled by a [ServerOnly] GetEnumerator", "StatefulComponent",
+                "    private static string Walk(IEnumerable<int> xs) { var sum = 0; foreach (var x in xs) sum += x; return sum.ToString(); }",
+                "Walk(new Bag())", "NS.Bag.GetEnumerator", inALibrary);
+            data.Add("a spread over a [ServerOnly] GetEnumerator", "StatelessComponent",
+                "    private static int[] Copy(Bag bag) => [.. bag];",
+                "Copy(new Bag()).Length.ToString()", "NS.Bag.GetEnumerator", inALibrary);
+            data.Add("a using declaration over a [ServerOnly] Dispose", "StatelessComponent",
+                "    private static string Use() { using var lease = new Lease(); return lease.Id.ToString(); }",
+                "Use()", "NS.Lease.Dispose", inALibrary);
+            data.Add("a using statement through IDisposable fulfilled by a [ServerOnly] Dispose", "StatefulComponent",
+                "    private static string Use(IDisposable resource) { using (resource) return \"used\"; }",
+                "Use(new Lease())", "NS.Lease.Dispose", inALibrary);
         }
         return data;
     }
@@ -625,6 +676,9 @@ public sealed class ServerCodeOfAPageTests
                 "((ISealed)new Open()).Seal()", inALibrary);
             data.Add("a contract no client code calls", "StatelessComponent, IDescribed",
                 "    [ServerOnly]\n    public string Describe() => File.ReadAllText(\"about.txt\");", "\"plain\"", inALibrary);
+            data.Add("a foreach over another closed IEnumerable<string>", "StatelessComponent",
+                "    private static string Join(IEnumerable<string> items) { var s = \"\"; foreach (var item in items) s += item; return s; }",
+                "Join(new[] { \"ok\" }) + new Bag().Count", inALibrary);
             data.Add("a Server Action", "StatefulComponent",
                 "    [ServerAction]\n    public Task<double> Load() => Task.FromResult(((IShape)new Circle()).Area());", "\"plain\"", inALibrary);
             data.Add("a [ServerOnly] member", "StatelessComponent",

@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
@@ -33,7 +34,7 @@ internal static class DeconstructionPattern
     /// to call. A step comes after the one that binds its temporary, and steps run in the order C#
     /// deconstructs, each level before the next one to its right.
     /// </summary>
-    internal sealed record Step(string Temporary, string Pattern, IMethodSymbol? Called);
+    internal sealed record Step(string Temporary, string Pattern, IMethodSymbol? Called, ITypeSymbol? Receiver, SyntaxNode At);
 
     /// <summary>
     /// A deconstruction's destructuring: the top level's <paramref name="Pattern"/>, the
@@ -49,6 +50,7 @@ internal static class DeconstructionPattern
     internal sealed record Lowered(
         string Pattern,
         IMethodSymbol? Called,
+        ITypeSymbol? Receiver,
         IReadOnlyList<Step> Steps,
         IReadOnlyList<string> Temporaries,
         IReadOnlyList<(string Temporary, string Write)> Assignments,
@@ -83,7 +85,7 @@ internal static class DeconstructionPattern
             (pattern, tuple) = walk.Composite(parts, info, type, called is not null);
         }
         return walk.Deconstructs || capture || walk.Converts
-            ? new Lowered(pattern, called, walk.Steps, walk.Temporaries, walk.Assignments, tuple, walk.Captures,
+            ? new Lowered(pattern, called, type, walk.Steps, walk.Temporaries, walk.Assignments, tuple, walk.Captures,
                 walk.Converts, walk.Declared)
             : null;
     }
@@ -101,19 +103,25 @@ internal static class DeconstructionPattern
 
     /// <summary>The value a deconstruction reads, through the <c>Deconstruct</c> the app wrote: an
     /// instance method on the value, or an extension's static with the value first.</summary>
-    internal static JsExpr Through(IMethodSymbol called, JsExpr value, ConversionContext context)
+    internal static JsExpr Through(IMethodSymbol called, ITypeSymbol? receiver, SyntaxNode at, JsExpr value,
+        ConversionContext context)
     {
         var name = called.Name.ToCamelCase();
         if ((called.ReducedFrom ?? called) is { IsExtensionMethod: true } extension)
         {
+            extension.ReportIfHostOnly(at, context);
+            extension.ContainingType.ReportIfKeptOut(at, context);
             extension.ContainingType.RegisterIntroduced(context);
-            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(extension.ContainingType.Name), name), value);
+            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(extension.ContainingType.TwinReference()), name), value);
         }
         if (called.ExtensionBlockHome() is { } home)
         {
+            called.ReportIfHostOnly(at, context);
+            home.ReportIfKeptOut(at, context);
             home.RegisterIntroduced(context);
-            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(home.Name), name), value);
+            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(home.TwinReference()), name), value);
         }
+        called.ReportIfHostOnly(at, context, receiver);
         // An instance one by the name it holds on its twin, which one that hides a member has of its own (#563).
         return JsExpr.Call(JsExpr.Member(value, TwinMethodName.Of(called)));
     }
@@ -131,7 +139,7 @@ internal static class DeconstructionPattern
     /// <summary>What a step destructures: its temporary, through the <c>Deconstruct</c> it calls.</summary>
     internal static string StepValue(Step step, ConversionContext context) =>
         step.Called is { } called
-            ? JsExprWriter.Write(Through(called, JsExpr.Identifier(step.Temporary), context))
+            ? JsExprWriter.Write(Through(called, step.Receiver, step.At, JsExpr.Identifier(step.Temporary), context))
             : step.Temporary;
 
     /// <summary>The parts a target splits into, or null for a target that is one part.</summary>
@@ -161,10 +169,11 @@ internal static class DeconstructionPattern
         || type is INamedTypeSymbol { MetadataName: "KeyValuePair`2" } pair
             && pair.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic";
 
-    /// <summary>A <c>Deconstruct</c> the app wrote, which its twin carries as a method. A record's
-    /// own is the compiler's and has none, nor has a BCL type's.</summary>
+    /// <summary>A <c>Deconstruct</c> the app wrote, which its twin carries as a method, or a host-only
+    /// one that must be refused. A record's own is the compiler's and has none, nor has a BCL type's.</summary>
     internal static bool IsTheApps(IMethodSymbol deconstruct) =>
-        !deconstruct.IsImplicitlyDeclared && deconstruct.Locations.Any(location => location.IsInSource);
+        (!deconstruct.IsImplicitlyDeclared && deconstruct.Locations.Any(location => location.IsInSource))
+        || deconstruct.IsHostOnly();
 
     private static DeconstructionInfo? Nested(DeconstructionInfo? info, int index) =>
         info is { } bound && index < bound.Nested.Length ? bound.Nested[index] : null;
@@ -283,7 +292,7 @@ internal static class DeconstructionPattern
         private (string? Bound, string Value) Part(SyntaxNode target, DeconstructionInfo? info, ITypeSymbol? type)
         {
             if (target is DeclarationExpressionSyntax declaration) target = declaration.Designation;
-            if (Parts(target) is { } nested) return Level(nested, info, type);
+            if (Parts(target) is { } nested) return Level(nested, info, type, target);
 
             var discard = target is DiscardDesignationSyntax
                 || target is IdentifierNameSyntax { Identifier.ValueText: "_" } underscore
@@ -355,7 +364,7 @@ internal static class DeconstructionPattern
         /// destructures what its <c>Deconstruct</c> hands back, after the level that binds it.
         /// </summary>
         private (string? Bound, string Value) Level(IReadOnlyList<SyntaxNode> parts, DeconstructionInfo? info,
-            ITypeSymbol? type)
+            ITypeSymbol? type, SyntaxNode target)
         {
             var deconstruct = Positional(type) ? null : Deconstruct(info, type);
             var calls = deconstruct is not null && IsTheApps(deconstruct);
@@ -368,7 +377,7 @@ internal static class DeconstructionPattern
             var at = Steps.Count;
             Steps.Add(null!);
             var (stepPattern, stepTuple) = Composite(parts, info, type, called: calls);
-            Steps[at] = new Step(temporary, stepPattern, calls ? deconstruct : null);
+            Steps[at] = new Step(temporary, stepPattern, calls ? deconstruct : null, type, target);
             return (temporary, stepTuple);
         }
     }

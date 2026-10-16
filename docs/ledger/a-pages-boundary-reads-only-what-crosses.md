@@ -11,9 +11,14 @@
   `[ServerOnly]` method fulfils, the interface member it implements or the method it overrides, is
   refused with EQ2010 too wherever its receiver can be the type that keeps the method, read over the
   whole build; measured on the branch, `((IShape)new Circle()).Area()` built and threw a TypeError
-  ([#816](https://github.com/eQuantic/equantic-ui/issues/816)). Review then found four more ways client
-  code reached a member no twin holds, each now refused with EQ2010 where it is written: a bare method
-  group, a `[ServerOnly]` operator or conversion applied (`Amount a = 7` wrote `Amount.fromInt(7)`), an
-  extension block's `[ServerOnly]` member, which was also emitted, and an instance member of a kept-out
-  type read off a value ([#944](https://github.com/eQuantic/equantic-ui/pull/944)). Proposed and archived
-  through OpenSpec (`openspec/specs/client-boundary`).
+  ([#816](https://github.com/eQuantic/equantic-ui/issues/816)). Review then found more ways client
+  code reached a member or a type no twin holds, each now refused with EQ2010 where it is written: a
+  bare method group, a `[ServerOnly]` operator or conversion applied (`Amount a = 7` wrote
+  `Amount.fromInt(7)`), an extension block's `[ServerOnly]` member, which was also emitted, an instance
+  member of a kept-out type read off a value, a `[ServerOnly]` `Deconstruct`, `GetEnumerator` or
+  `Dispose` reached implicitly through deconstruction, `foreach`, `[.. xs]` or `using`, and a generic
+  type argument in a component or class header (`class ChildPage : Shell<Vault>`); a closed generic
+  contract (`Bag : IEnumerable<int>`) now scopes its refusal to matching type arguments, and a method
+  the app names `@nameof` is no longer skipped as the `nameof` operator
+  ([#944](https://github.com/eQuantic/equantic-ui/pull/944)). Proposed and archived through OpenSpec
+  (`openspec/specs/client-boundary`).

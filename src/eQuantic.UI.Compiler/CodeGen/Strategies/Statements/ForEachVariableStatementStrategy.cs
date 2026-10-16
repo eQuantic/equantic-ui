@@ -33,9 +33,11 @@ public class ForEachVariableStatementStrategy : IStatementStrategy
         // A class's public GetEnumerator() beside the interface's is called as the loop binds it
         // (IterableTwin.ForEachSource).
         var source = context.Converter.ConvertIr(foreachStmt.Expression);
+        var sourceType = context.SemanticHelper.GetType(foreachStmt.Expression);
+        IterableTwin.FenceForEach(foreachStmt, sourceType, context);
         var collection = JsExprWriter.Write(
             foreachStmt.AwaitKeyword.Value == null && context.SemanticHelper.ForEachInfo(foreachStmt) is { } info
-            && IterableTwin.ForEachSource(info, context.SemanticHelper.GetType(foreachStmt.Expression), source, context.UsedHelpers) is { } bound
+            && IterableTwin.ForEachSource(info, sourceType, source, context.UsedHelpers) is { } bound
                 ? bound
                 : source);
 
@@ -49,7 +51,7 @@ public class ForEachVariableStatementStrategy : IStatementStrategy
             && (lowered.Called is not null || lowered.Steps.Count > 0 || lowered.Declared.Count > 0)
             ? JsStatement.Headed($"{loopType} (const $element of {collection})", JsStatement.Block(
             [
-                JsStatement.Raw($"const {pattern} = {JsExprWriter.Write(lowered.Called is { } called ? DeconstructionPattern.Through(called, JsExpr.Identifier("$element"), context) : JsExpr.Identifier("$element"))}{DeconstructionPattern.StepDeclarators(lowered, context)};"),
+                JsStatement.Raw($"const {pattern} = {JsExprWriter.Write(lowered.Called is { } called ? DeconstructionPattern.Through(called, lowered.Receiver, foreachStmt.Variable, JsExpr.Identifier("$element"), context) : JsExpr.Identifier("$element"))}{DeconstructionPattern.StepDeclarators(lowered, context)};"),
                 body,
             ]))
             : JsStatement.Headed($"{loopType} (const {pattern} of {collection})", body);

@@ -293,8 +293,9 @@ public sealed class ServerOnlyTypeOfTheAppTests
             data.Add("a field", "    private Ledger? _ledger;", "_ledger is null ? \"none\" : \"some\"", inALibrary);
             data.Add("a parameter", "    private static string Of(Ledger? ledger) => ledger is null ? \"none\" : \"some\";", "Of(null)", inALibrary);
             data.Add("a list and its default", "    private readonly List<Ledger> _all = new();", "_all.FirstOrDefault() is null ? \"none\" : \"some\"", inALibrary);
+            data.Add("a Server Action's dictionary parameter", "    [ServerAction]\n    public Task<int> Save(Dictionary<string, Ledger> map) => Task.FromResult(map.Count);", "\"plain\"", inALibrary);
             data.Add("a cast", "    private static object Cast(object o) => (Ledger)o;", "Cast(\"o\").ToString() ?? \"\"", inALibrary);
-            data.Add("a nameof", "", "nameof(Ledger)", inALibrary);
+            data.Add("a nameof", "", "nameof(Ledger) + nameof(Ledger.Total)", inALibrary);
         }
         return data;
     }
@@ -304,10 +305,13 @@ public sealed class ServerOnlyTypeOfTheAppTests
     public void APositionTheModuleWritesAsNothing_IsFree(string what, string members, string shown, bool inALibrary)
     {
         using var solution = Of(inALibrary, "StatefulComponent", members, shown);
+        solution.Write("App", "Model/Badge.cs",
+            $"using {(inALibrary ? "Common" : "App.Model")};\n\nnamespace App.Model;\n\npublic sealed record Badge(string Label)\n{{\n    public string Kind => nameof(Ledger) + nameof(Vault.Key) + Label;\n}}\n");
         var built = solution.Build();
 
         built.Failed.Should().BeFalse($"{what} names no twin:\n{built.Errors}");
         built.Module("Home").Should().NotMatchRegex(@"(?<![\w$'])Ledger(?![\w$'])", $"{what} is written as nothing of Ledger's");
+        built.Module("Badge").Should().Contain("'Ledger'").And.NotContain("import { Ledger }");
     }
 
     /// <summary>Code that never crosses names the type freely: a Server Action's body, a
