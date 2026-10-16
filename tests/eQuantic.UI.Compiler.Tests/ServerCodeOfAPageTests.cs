@@ -119,15 +119,47 @@ public sealed class ServerCodeOfAPageTests
     [InlineData("a static class's method", "Disk", "public static class Disk\n{\n    public static int Size => 1;\n\n    [ServerOnly]\n    public static bool Has(string path) => File.Exists(path);\n}", "App.Model.Disk.Size.ToString()", "has(")]
     [InlineData("a record's method", "Note", "public sealed record Note(string Path)\n{\n    [ServerOnly]\n    public string Read() => File.ReadAllText(Path);\n}", "new App.Model.Note(\"p\").Path", "read(")]
     [InlineData("a record's operator", "Note", "public sealed record Note(string Path)\n{\n    [ServerOnly]\n    public static Note operator +(Note a, Note b) => new(File.ReadAllText(a.Path + b.Path));\n}", "new App.Model.Note(\"p\").Path", "opAdd(")]
+    [InlineData("an extension block's method", "Exts", Extensions, "\"x\".Plain()", "shout(")]
+    [InlineData("an extension block's method that reads a file", "Exts", Extensions, "\"x\".Plain()", "disk(")]
     public void AServerOnlyMemberOfAModule_IsLeftOutOfItsTwin(string what, string type, string declaration, string shown, string member)
     {
         using var solution = App(
             ($"Model/{type}.cs", $"using eQuantic.UI.Primitives;\n\nnamespace App.Model;\n\n{declaration}\n"),
-            ("Screens/Home.cs", Page("StatelessComponent", shown: shown)));
+            ("Screens/Home.cs", Page("StatelessComponent", shown: shown, usings: "using App.Model;")));
         var built = solution.Build();
 
         built.Failed.Should().BeFalse($"{what} never crosses:\n{built.Errors}");
         built.Module(type).Should().NotBeNull().And.NotContain(member, $"{what} is no member of the twin");
+    }
+
+    /// <summary>A static class whose C# 14 extension block holds a member that crosses and two that stay
+    /// on the server, one of them reading a file. The block's members were lowered apart from the
+    /// class's methods, by a path that never asked whether a method stays on the server: the literal
+    /// one shipped to the browser, and the one that reads a file was refused as client code (EQ2112)
+    /// (Copilot's review of #944).</summary>
+    private const string Extensions =
+        "public static class Exts\n{\n    extension(string s)\n    {\n        public string Plain() => s + \"?\";\n\n"
+        + "        [ServerOnly]\n        public string Shout() => s + \"!\";\n\n"
+        + "        [ServerOnly]\n        public string Disk() => File.ReadAllText(s);\n    }\n}";
+
+    /// <summary>An extension block's <c>[ServerOnly]</c> member, which no twin holds, is refused where
+    /// client code calls it or takes it as a method group, as a <c>[ServerOnly]</c> extension method is:
+    /// the call went to <c>Exts.shout('x')</c>, a static its twin no longer carries.</summary>
+    [Theory]
+    [InlineData("StatelessComponent", "", "\"x\".Shout()")]
+    [InlineData("StatefulComponent", "    private static string Of(string text)\n    {\n        var shouted = text.Shout();\n        return shouted;\n    }", "Of(\"x\")")]
+    [InlineData("StatelessComponent", "    private static readonly Func<string> Shouted = \"x\".Shout;", "Shouted()")]
+    public void AServerOnlyExtensionMember_IsRefusedWhereClientCodeReachesIt(string kind, string members, string shown)
+    {
+        using var solution = App(
+            ("Model/Exts.cs", $"using eQuantic.UI.Primitives;\n\nnamespace App.Model;\n\n{Extensions}\n"),
+            ("Screens/Home.cs", Page(kind, members, shown, "using App.Model;")));
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue("the twin holds no shout");
+        Lines(built).Should().ContainSingle($"the call is one site:\n{built.Errors}")
+            .Which.Should().StartWith(solution.FileOf("App", "Screens/Home.cs") + "(")
+            .And.Contain("error EQ2010").And.Contain("Shout");
     }
 
     /// <summary>Client code that reaches what only a server has, one site each, on both kinds of page.</summary>
