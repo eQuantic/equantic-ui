@@ -1,7 +1,9 @@
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
+using eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
@@ -47,7 +49,36 @@ public class InterpolationInACultureStrategy : IExpressionIrStrategy
             if (context.Diagnostics.Count > reported) return JsExpr.Literal("''");
         }
         context.InterpolationCultures[context.SemanticHelper.Original(interpolated)] = invariant;
-        return context.Converter.ConvertIr(interpolated);
+        // string.Create's handler formats each hole as it is evaluated; a FormattableString holds its
+        // arguments and formats them once every hole has run.
+        return provider is null ? Captured(interpolated, context) : context.Converter.ConvertIr(interpolated);
+    }
+
+    /// <summary>
+    /// A FormattableString's text, as .NET writes it: every hole evaluated first, in order, into a name of its
+    /// own, and the text written from those values. Formatting each hole where it stands, a later hole's
+    /// effect was missing from an earlier one's text: `{sb}|{sb.Append("b")}` wrote `a|ab` where .NET writes
+    /// `ab|ab` (Copilot's review of #958). The names start with `$h`, which neither C# nor a template's own
+    /// bindings (`$0`) can spell.
+    /// </summary>
+    private static JsExpr Captured(InterpolatedStringExpressionSyntax interpolated, ConversionContext context)
+    {
+        var holes = interpolated.Contents.OfType<InterpolationSyntax>().ToList();
+        if (holes.Count == 0) return context.Converter.ConvertIr(interpolated);
+        foreach (var hole in holes) context.CapturedHoles.Add(context.SemanticHelper.Original(hole.Expression));
+        var values = holes.Select(hole => context.Converter.ConvertIr(hole.Expression)).ToList();
+        var names = holes.Select((_, i) => $"$h{i}").ToList();
+        var text = new StringBuilder("`");
+        var at = 0;
+        foreach (var content in interpolated.Contents)
+        {
+            if (content is InterpolatedStringTextSyntax part)
+                text.Append(JsStringLiteral.TemplateText(InterpolatedStringStrategy.Text(part, interpolated)));
+            else if (content is InterpolationSyntax hole)
+                text.Append("${").Append(InterpolatedStringStrategy.Hole(hole, context, padded: true, captured: names[at++])).Append('}');
+        }
+        text.Append('`');
+        return JsExpr.Call(JsExpr.Group(JsExpr.Arrow(string.Join(", ", names), JsExpr.Opaque(text.ToString()))), values);
     }
 
     /// <summary>

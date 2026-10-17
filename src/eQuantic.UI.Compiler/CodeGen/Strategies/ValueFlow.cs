@@ -41,6 +41,8 @@ public static class ValueFlow
         // target is being written, not printed.
         if (FlowsIntoText(operation))
         {
+            // A hole a FormattableString holds is its VALUE: the text is written once every hole has run.
+            if (context.CapturedHoles.Contains(context.SemanticHelper.Original(node))) return translated;
             // A hole of an interpolation a call writes in the invariant culture is written in it (#839).
             return context.WritesInvariant(context.SemanticHelper.Original(node).Parent?.Parent)
                 ? StringConversion.InvariantText(node, translated, context)

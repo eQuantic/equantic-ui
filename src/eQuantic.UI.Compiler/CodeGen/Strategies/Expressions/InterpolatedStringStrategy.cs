@@ -87,14 +87,16 @@ public class InterpolatedStringStrategy : IConversionStrategy
     /// The JavaScript of a hole's text: its value converted as C# converts it, formatted where a format
     /// is written, and padded to its alignment, or, not <paramref name="padded"/>, the text the
     /// alignment pads, for a writer that appends the padding itself (<c>StringBuilder.Append($"…")</c>).
+    /// Given a <paramref name="captured"/> name, the hole's value was evaluated already and is held by
+    /// it, and only its text is written here (a <c>FormattableString</c>'s holes, InterpolationInACultureStrategy).
     /// </summary>
-    internal static string Hole(InterpolationSyntax interpolation, ConversionContext context, bool padded)
+    internal static string Hole(InterpolationSyntax interpolation, ConversionContext context, bool padded, string? captured = null)
     {
         // A PLAIN hole arrives converted the way C# converts it — null → "", bool →
         // "True", an enum as its member name — because ValueFlow settles a value on
         // its way into text; only a hole with a format or an alignment receives the
-        // raw value, for the formatter.
-        var expr = context.Converter.ConvertExpression(interpolation.Expression);
+        // raw value, for the formatter. A captured one is written as that text here.
+        var expr = captured ?? context.Converter.ConvertExpression(interpolation.Expression);
         var format = interpolation.FormatClause?.FormatStringToken.ValueText;
         var alignment = Alignment(interpolation, context);
         
@@ -127,7 +129,9 @@ public class InterpolatedStringStrategy : IConversionStrategy
         }
 
         if (format == null && alignment == null)
-            return expr;
+            return captured is null ? expr : JsExprWriter.Write(context.WritesInvariant(interpolation.Parent)
+                ? StringConversion.InvariantText(interpolation.Expression, JsExpr.Identifier(captured), context)
+                : StringConversion.ToDotNetString(interpolation.Expression, JsExpr.Identifier(captured), context));
 
         context.UsedHelpers.Add(Eq.Import);
         // The format is a string like any other: `dd 'de' MMMM` closed the quotes it
