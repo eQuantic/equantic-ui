@@ -525,10 +525,11 @@ quotient by a number to the even tick, as .NET's `Math.Round` does; a factor or 
 SHALL be an ArgumentException naming it, and a result past the range a span holds an
 OverflowException. A span divided by a span SHALL be the ratio of their ticks. A sign in front of a
 span SHALL negate it or leave it, and the least span's negation and duration, and a sum or a difference
-past the range, SHALL throw the OverflowException .NET throws. A factor or a divisor SHALL be any number
-C# converts to a double, a long, a ulong and a char included, on either side of the product, and a
-nullable one SHALL be the lifted operator, null for a null factor. `*=` and `/=` SHALL be the same
-operators, a nullable span lifted and the target read once.
+past the range, SHALL throw the OverflowException .NET throws. A factor or a divisor SHALL be any value
+C# converts to a double, a long, a ulong, a char and a type with a conversion of its own included, on
+either side of the product, and a nullable one SHALL be the lifted operator, null for a null factor:
+the operator C# bound decides, never the operand's own type. `*=` and `/=` SHALL be the same operators,
+a nullable span lifted and the target read once.
 
 #### Scenario: A factor of another type, and in place
 
@@ -550,3 +551,17 @@ operators, a nullable span lifted and the target read once.
 - **THEN** the first throws ArgumentException "TimeSpan does not accept floating point Not-a-Number
   values. (Parameter 'factor')" and the second OverflowException "TimeSpan overflowed because the
   duration is too long.", as in .NET
+
+### Requirement: A date beside an instant is converted to one
+
+An operator between a `DateTimeOffset` and a `DateTime`, on either side, SHALL convert the `DateTime`
+to a `DateTimeOffset` as C#'s implicit conversion does, at the offset its kind gives, and SHALL answer
+as the instant's operator: a difference SHALL be a span, and `==`, `!=`, `<`, `<=`, `>` and `>=`
+SHALL compare the two instants.
+
+#### Scenario: A difference and a comparison across the two types
+
+- **WHEN** browser-side code holds `a = new DateTimeOffset(2024, 1, 2, 0, 0, 0, TimeSpan.Zero)` and
+  `b = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)` and writes `a - b`, `b - a`, `a < b`,
+  `a == b`, `a > b` and `a == new DateTime(2024, 1, 2, 0, 0, 0, DateTimeKind.Utc)`
+- **THEN** each answers as in .NET, where the pair matched no operator and JavaScript's own ran

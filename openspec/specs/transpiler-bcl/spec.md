@@ -1111,7 +1111,8 @@ call that reads it from how the call names it SHALL NOT be read as a value.
 
 ### Requirement: A package's type has no name in the browser
 
-A static member of a type of an assembly the build has no source for, a package's, read qualified, read
+A static member of a type of an assembly the build has no source for, a package's, of any kind of type,
+an interface's included, and whatever its name, `Count` included, read qualified, read
 or called through `using static`, called qualified, or taken as a method group, and a construction of
 such a type, SHALL fail the build with EQ2004 naming the member or the type and the assembly it comes
 from. A value of such a type SHALL keep reading its members by name, as the data the server sends, and
