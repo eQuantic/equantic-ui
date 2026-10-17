@@ -559,11 +559,14 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
     }
 
     /// <summary>Whether an operand of <paramref name="type"/> is a number a span is scaled by: a
-    /// <c>double</c>, which the operators take, or a type C# converts to one.</summary>
+    /// <c>double</c>, which the operators take, or a type C# converts to one, a char among them, which
+    /// arrives as its code. A nullable one is the lifted operator's, which answers null for a null factor
+    /// (Copilot's review of #958).</summary>
     private static bool IsNumber(ITypeSymbol? type) =>
-        type?.SpecialType is SpecialType.System_Double or SpecialType.System_Single or SpecialType.System_Int32
-            or SpecialType.System_Int64 or SpecialType.System_Int16 or SpecialType.System_Byte or SpecialType.System_SByte
-            or SpecialType.System_UInt16 or SpecialType.System_UInt32 or SpecialType.System_UInt64;
+        type.UnwrapNullable()?.SpecialType is SpecialType.System_Double or SpecialType.System_Single
+            or SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_Int16 or SpecialType.System_Byte
+            or SpecialType.System_SByte or SpecialType.System_UInt16 or SpecialType.System_UInt32
+            or SpecialType.System_UInt64 or SpecialType.System_Char;
 
     /// <summary>A char operand's CODE UNIT: constant literals fold to the number, expressions
     /// read charCodeAt(0). The parentheses keep a compound operand intact.</summary>
