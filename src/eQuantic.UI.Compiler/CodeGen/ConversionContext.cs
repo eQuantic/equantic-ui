@@ -23,6 +23,26 @@ public class ConversionContext
     internal SyntaxNode? Converting { get; set; }
 
     /// <summary>
+    /// Converts with <paramref name="at"/> as the node a fence reports at (<see cref="Converting"/>),
+    /// where a statement converts a value of its own and no expression of it is being converted: a
+    /// <c>foreach</c>'s element and a deconstruction's part. A refused conversion there was told at
+    /// whatever expression enclosed the statement, or not at all.
+    /// </summary>
+    internal T ConvertingAt<T>(SyntaxNode at, Func<T> convert)
+    {
+        var outer = Converting;
+        Converting = at;
+        try
+        {
+            return convert();
+        }
+        finally
+        {
+            Converting = outer;
+        }
+    }
+
+    /// <summary>
     /// The host PROMISED the semantic model is complete — the project's real references and
     /// generated sources are in it (the SDK build, the design session). Under that promise, an
     /// in-tree call the model cannot bind is a build error (EQ2006), never a name-guessed
@@ -43,7 +63,17 @@ public class ConversionContext
     /// library transpiled from its own sources has the compilation, and symbols that are not
     /// authoritative.
     /// </summary>
-    internal bool HasProjectCompilation { get; set; }
+    internal bool HasProjectCompilation => ProjectCompilation is not null;
+
+    /// <summary>
+    /// The project's compilation, when the host handed one over: the app's, which references each
+    /// project the app references as a compilation of its own. A question about the whole build is
+    /// asked of it, never of <see cref="SemanticModel"/>'s, which is the file's own (its tree replaces
+    /// the project's): no other file's symbols compare equal to that one's, and a file of a referenced
+    /// project sees nothing of the app (<see cref="Extensions.ServerOnlyContracts"/>). It describes the
+    /// host and survives <see cref="Reset"/>.
+    /// </summary>
+    internal Compilation? ProjectCompilation { get; set; }
 
     /// <summary>
     /// The catalogue ids of the build, when it compiles the projects the app references beside the
@@ -52,28 +82,6 @@ public class ConversionContext
     /// that answer is right for. It describes the host and survives <see cref="Reset"/>.
     /// </summary>
     internal Services.ResourceCatalogIds? ResourceIds { get; set; }
-
-    /// <summary>
-    /// Whether <paramref name="type"/> is declared in the compilation being converted: the app's own
-    /// for a file of the app, a referenced project's for a file of that project.
-    /// <para>
-    /// "Declared in source" was this question while a build had one compilation, and stopped being it
-    /// when the projects an app references became compilations of their own (#624): a type of one is
-    /// in source, in ANOTHER compilation. A fence that says nothing of a symbol of this compilation,
-    /// because the scan writes no module for it, must still refuse the same symbol of a referenced
-    /// project, as it refused it while that project was read from its assembly. Measured: a page
-    /// calling a library's <c>[ServerOnly]</c> class was EQ2010 before, and built in silence once the
-    /// library had a source.
-    /// </para>
-    /// <para>
-    /// By the assembly's name and not by the symbol: every file is compiled in a compilation of its
-    /// own (its tree replaces the project's), and two of those hold two assembly symbols for one
-    /// project.
-    /// </para>
-    /// </summary>
-    internal bool Declares(ITypeSymbol type) =>
-        type.Locations.Any(location => location.IsInSource)
-        && (SemanticModel is null || type.ContainingAssembly?.Name == SemanticModel.Compilation.AssemblyName);
 
     /// <summary>The catalogue id a read of <paramref name="resourceClass"/> is written with, which
     /// the catalogs are keyed by.</summary>
@@ -225,6 +233,7 @@ public class ConversionContext
         ResourceUses.Clear();
         RefusedTwins.Clear();
         RefusedReads.Clear();
+        Refused.Clear();
     }
 
     /// <summary>
@@ -240,6 +249,18 @@ public class ConversionContext
     /// and cleared with them.
     /// </summary>
     internal HashSet<SyntaxNode> RefusedReads { get; } = new();
+
+    /// <summary>
+    /// The in-tree nodes the client boundary refused while this module was converted
+    /// (<see cref="Extensions.HostOnlySymbolExtensions"/>): a member read off a value whose expression
+    /// holds one of them is the same refusal, and says nothing more. Kept with the diagnostics, and
+    /// cleared with them.
+    /// </summary>
+    internal HashSet<SyntaxNode> Refused { get; } = new();
+
+    /// <summary>Whether the client boundary refused a node inside <paramref name="expression"/> already.</summary>
+    internal bool RefusedWithin(SyntaxNode expression) =>
+        Refused.Any(refused => refused.SyntaxTree == expression.SyntaxTree && expression.Span.Contains(refused.Span));
 
     /// <summary>
     /// Drops everything that belonged to the PREVIOUS emission. A converter outlives the file it is

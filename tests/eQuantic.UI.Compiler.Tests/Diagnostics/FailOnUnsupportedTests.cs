@@ -3,8 +3,6 @@ using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using eQuantic.UI.Compiler.CodeGen;
-using eQuantic.UI.Compiler.Models;
-using eQuantic.UI.Compiler.Services;
 using Xunit;
 
 namespace eQuantic.UI.Compiler.Tests.Diagnostics;
@@ -13,7 +11,7 @@ namespace eQuantic.UI.Compiler.Tests.Diagnostics;
 /// Front 4 — "fail on unsupported": constructs that cannot be transpiled now raise an error diagnostic
 /// (and fail the build) instead of being emitted verbatim. Two layers are covered: the syntactic
 /// <see cref="eQuantic.UI.Compiler.CodeGen.Strategies.Special.UnsupportedConstructStrategy"/> (EQ2001)
-/// and the symbol-level <see cref="SemanticValidator"/> client/server boundary (EQ21xx).
+/// and the client/server boundary (EQ21xx) the conversion asks where it writes a symbol.
 /// </summary>
 public class FailOnUnsupportedTests
 {
@@ -72,24 +70,30 @@ public class FailOnUnsupportedTests
     [Theory]
     [InlineData("System.Net.Http", "EQ2103", "new System.Net.Http.HttpClient().GetStringAsync(\"x\")")]
     [InlineData("System.IO", "EQ2112", "System.IO.File.ReadAllText(\"x\")")]
-    public void ForbiddenApi_InClientComponent_RaisesBoundaryError(string _, string expectedCode, string call)
+    public void ForbiddenApi_InClientCode_RaisesBoundaryError(string _, string expectedCode, string call)
     {
-        var (semanticModel, tree) = CompileClientComponentCalling(call);
-        var component = new ComponentDefinition { IsStateful = true, SyntaxTree = tree, SourcePath = "Test.cs" };
-
-        var errors = new SemanticValidator(semanticModel).Validate(component);
-
-        errors.Should().Contain(e => e.Code == expectedCode);
+        BoundaryDiagnosticsOf(call).Should().Contain(d => d.Code == expectedCode && d.Severity == ConversionSeverity.Error);
     }
 
     [Fact]
     public void TaskDelay_IsNotForbidden()
     {
         // System.Threading.Tasks is supported (async maps to Promise) — only OS threading is forbidden.
-        var (semanticModel, tree) = CompileClientComponentCalling("System.Threading.Tasks.Task.Delay(10)");
-        var component = new ComponentDefinition { IsStateful = true, SyntaxTree = tree, SourcePath = "Test.cs" };
+        BoundaryDiagnosticsOf("System.Threading.Tasks.Task.Delay(10)")
+            .Should().NotContain(d => d.Code.StartsWith("EQ21", StringComparison.Ordinal));
+    }
 
-        new SemanticValidator(semanticModel).Validate(component).Should().BeEmpty();
+    /// <summary>What converting <paramref name="call"/> as client code reports: the boundary is asked
+    /// where the conversion writes a symbol, so a statement converted is what it reads.</summary>
+    private static IReadOnlyList<ConversionDiagnostic> BoundaryDiagnosticsOf(string call)
+    {
+        var (semanticModel, tree) = CompileClientComponentCalling(call);
+        var converter = new CSharpToJsConverter { SymbolsAreAuthoritative = true };
+        converter.SetSemanticModel(semanticModel);
+        var statement = tree.GetRoot().DescendantNodes()
+            .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax>().Single().Body!.Statements.Single();
+        converter.Convert(statement);
+        return converter.Diagnostics.ToList();
     }
 
     private static (SemanticModel, SyntaxTree) CompileClientComponentCalling(string call)

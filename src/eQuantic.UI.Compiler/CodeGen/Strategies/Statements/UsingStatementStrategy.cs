@@ -27,6 +27,7 @@ public class UsingStatementStrategy : IStatementStrategy
         // that scope.
         var declared = ExpressionVariableScanner.Declarations(
             usingStmt.Declaration?.Variables.First().Initializer?.Value ?? usingStmt.Expression, context.TypeAnnotations);
+        var isAsync = usingStmt.AwaitKeyword.Value != null;
         if (usingStmt.Declaration != null)
         {
             // using (var x = new X()) { ... }
@@ -35,16 +36,19 @@ public class UsingStatementStrategy : IStatementStrategy
             init = variable.Initializer != null
                 ? context.Converter.ConvertIr(variable.Initializer.Value)
                 : JsExpr.Literal("null");
+            foreach (var declaredVariable in usingStmt.Declaration.Variables)
+                UsingLowering.Fence(declaredVariable, usingStmt.Declaration.Type, isAsync, context);
         }
         else
         {
             // using (expr) ... — the expression is captured under a temporary so it can be disposed.
             resourceVar = "_disposable_" + Guid.NewGuid().ToString("N").Substring(0, 6);
             init = context.Converter.ConvertIr(usingStmt.Expression!);
+            UsingLowering.Fence(context.SemanticHelper.GetType(usingStmt.Expression!), isAsync, usingStmt.Expression!, context);
         }
 
         var body = context.Converter.ConvertStatementIr(usingStmt.Statement);
-        var dispose = UsingLowering.Dispose(resourceVar, usingStmt.AwaitKeyword.Value != null);
+        var dispose = UsingLowering.Dispose(resourceVar, isAsync);
 
         var statements = new List<JsStatement>();
         if (declared.Length > 0) statements.Add(JsStatement.Raw(declared.TrimEnd()));

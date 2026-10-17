@@ -298,11 +298,11 @@ public class TypeScriptEmitter
         set => _converter.SymbolsAreAuthoritative = value;
     }
 
-    /// <summary>Forwarded to the converter — see <see cref="CSharpToJsConverter.HasProjectCompilation"/>.</summary>
-    internal bool HasProjectCompilation
+    /// <summary>Forwarded to the converter — see <see cref="CSharpToJsConverter.ProjectCompilation"/>.</summary>
+    internal Compilation? ProjectCompilation
     {
-        get => _converter.HasProjectCompilation;
-        set => _converter.HasProjectCompilation = value;
+        get => _converter.ProjectCompilation;
+        set => _converter.ProjectCompilation = value;
     }
 
     /// <summary>Forwarded to the converter — see <see cref="CSharpToJsConverter.ResourceIds"/>.</summary>
@@ -745,6 +745,10 @@ public class TypeScriptEmitter
                     // Each parameter under a legal JS name, the same one the invocation passes on:
                     // `Run(int @class)` wrote `run(class)` and `[class]`, a module that did not parse.
                     var paramsList = string.Join(", ", action.Parameters.Select(p => Lowering.Param(p.Name.ToJsIdentifier(), Annotate(p.Type))));
+                    // The stub annotates each parameter with its type's name, so one the build writes no
+                    // module for names a twin nothing declares, where the module writes it (#823).
+                    foreach (var parameter in action.SyntaxNode?.ParameterList.Parameters ?? default)
+                        if (parameter.Type is { } typed) _converter.RefuseKeptOutIn(BindType(typed), typed);
                     var argsList = string.Join(", ", action.Parameters.Select(p => p.Name.ToJsIdentifier()));
                     var returnType = Annotate(action.ReturnType);
 
@@ -850,7 +854,7 @@ public class TypeScriptEmitter
              foreach (var m in component.Methods) localNames.Add(m.Name);
              localNames.Add(component.Name);
 
-             var proceduralTypes = CollectComponentTypesFromNode(component.BuildMethodNode, localNames);
+             var proceduralTypes = CollectComponentTypesFromNode(component.BuildMethodNode, asComponent: true, localNames);
              foreach (var t in proceduralTypes) componentTypes.Add(t);
         }
 
@@ -862,7 +866,7 @@ public class TypeScriptEmitter
         foreach (var field in component.ComponentFields)
         {
             if (field.DefaultValueNode == null) continue;
-            foreach (var t in CollectComponentTypesFromNode(field.DefaultValueNode, new HashSet<string> { component.Name }))
+            foreach (var t in CollectComponentTypesFromNode(field.DefaultValueNode, asComponent: true, new HashSet<string> { component.Name }))
             {
                 componentTypes.Add(t);
             }
@@ -873,9 +877,9 @@ public class TypeScriptEmitter
         foreach (var inherited in InheritedDeclarations(component.ClassSyntax))
         {
             if (ModelFor(inherited) is { } inheritedModel)
-                Services.RuntimeProvidedTypeScanner.Collect(inherited, inheritedModel,
+                Services.RuntimeProvidedTypeScanner.Collect(inherited, inheritedModel, asComponent: true,
                     component.RuntimeProvidedTypes, new HashSet<string>());
-            foreach (var t in CollectComponentTypesFromNode(inherited, new HashSet<string> { component.Name }))
+            foreach (var t in CollectComponentTypesFromNode(inherited, asComponent: true, new HashSet<string> { component.Name }))
                 componentTypes.Add(t);
         }
 
@@ -912,13 +916,13 @@ public class TypeScriptEmitter
         foreach (var method in component.Methods)
         {
             if (method.SyntaxNode == null) continue;
-            foreach (var t in CollectComponentTypesFromNode(method.SyntaxNode, memberLocalNames))
+            foreach (var t in CollectComponentTypesFromNode(method.SyntaxNode, asComponent: true, memberLocalNames))
                 componentTypes.Add(t);
         }
         foreach (var prop in component.Properties)
         {
             if (prop.Node == null) continue;
-            foreach (var t in CollectComponentTypesFromNode(prop.Node, memberLocalNames))
+            foreach (var t in CollectComponentTypesFromNode(prop.Node, asComponent: true, memberLocalNames))
                 componentTypes.Add(t);
         }
 
@@ -1160,8 +1164,11 @@ public class TypeScriptEmitter
         // assigned (TS2564) and `=== null` reads as a value.
         if (csharpType.EndsWith('?')) return "null";
         if (ImplicitValueTypeDefault(csharpType) is { } byName) return byName;
-        if (BindType(typeNode) is not { } symbol) return null;
-        var bySymbol = _converter.DefaultOf(symbol);
+        if (typeNode is null || BindType(typeNode) is not { } symbol) return null;
+        // Asked AT the declaration, as a class's and a record's fields ask it (DefaultAt): a struct the
+        // build writes no twin for has no zero to write, and a component's field of one held undefined
+        // where C# holds the zero, with nothing said (#823).
+        var bySymbol = _converter.DefaultAt(symbol, typeNode);
         return bySymbol == "null" ? null : bySymbol;
     }
 
@@ -1210,7 +1217,7 @@ public class TypeScriptEmitter
 
         // A struct whose twin cannot build its zero answers `undefined`, which IS the slot left
         // alone: writing it would only emit `if (this.width === undefined) this.width = undefined`.
-        var value = _converter.DefaultOf(type);
+        var value = _converter.DefaultAt(type, node.Type);
         return value is "null" or "undefined" ? null : value;
     }
 
@@ -1269,18 +1276,26 @@ public class TypeScriptEmitter
                 if (named.TypeKind is TypeKind.Class or TypeKind.Struct && named.Name.Length > 0
                     && named.Locations.Any(location => location.IsInSource))
                     yield return named;
+                if (IsDictionaryName($"{named.Name}<>")) yield break;
                 foreach (var argument in named.TypeArguments)
                     foreach (var inner in SourceTypesIn(argument)) yield return inner;
                 break;
         }
     }
 
-    private HashSet<string> CollectComponentTypesFromNode(SyntaxNode? node, HashSet<string>? localNames = null)
+    /// <param name="node">The declaration, or the member, whose names to read.</param>
+    /// <param name="asComponent">Whether it is a component's, whose Server Action bodies stay on the server
+    /// with every <c>[ServerOnly]</c> member (<see cref="Parser.ComponentParser.StaysOnTheServer"/>): the
+    /// candidates are read from what crosses, so the import net refuses nothing that never crosses (#816).</param>
+    /// <param name="localNames">Names declared here, which are no type to import.</param>
+    private HashSet<string> CollectComponentTypesFromNode(SyntaxNode? node, bool asComponent, HashSet<string>? localNames = null)
     {
         var types = new HashSet<string>();
         if (node == null) return types;
+        var crossing = node.DescendantNodes(child => !Parser.ComponentParser.StaysOnTheServer(child, asComponent)
+            && !(child is InvocationExpressionSyntax invocation && invocation.IsNameOf(ModelFor(invocation)))).ToList();
         
-        var creations = node.DescendantNodes().OfType<ObjectCreationExpressionSyntax>();
+        var creations = crossing.OfType<ObjectCreationExpressionSyntax>();
         foreach (var creation in creations)
         {
              var typeName = creation.Type.ValueText();
@@ -1295,7 +1310,7 @@ public class TypeScriptEmitter
         // (found in review, #418), and a class's own method's the same.
         // Asked of the model: an interface, an enum or a type parameter is annotated as something
         // else (`any`, the member string) and has no module, so importing it names a file nobody writes.
-        foreach (var parameter in node.DescendantNodes().OfType<ParameterSyntax>())
+        foreach (var parameter in crossing.OfType<ParameterSyntax>())
         {
             if (parameter.Type is not { } declared || ModelFor(declared)?.GetTypeInfo(declared).Type is not { } typed)
                 continue;
@@ -1307,7 +1322,7 @@ public class TypeScriptEmitter
         // A TARGET-TYPED `new(...)` states NO name — `ObjectCreationStrategy` recovers it from the
         // model and emits `new CatalogueEntry(...)`, so the import must be recovered the same way
         // (a declared type only covers the OUTERMOST creation; nested ones live inside arguments).
-        foreach (var implicitCreation in node.DescendantNodes().OfType<ImplicitObjectCreationExpressionSyntax>())
+        foreach (var implicitCreation in crossing.OfType<ImplicitObjectCreationExpressionSyntax>())
         {
             var created = ModelFor(implicitCreation)?.GetTypeInfo(implicitCreation).Type;
             if (created is { Name.Length: > 0 }) types.Add(created.Name);
@@ -1317,7 +1332,7 @@ public class TypeScriptEmitter
         // property/field reads (`EquanticBrand.BtnPrimaryFrom`): a static token class referenced
         // only by properties must still import. Downstream filters drop enums, runtime-provided
         // types and anything the resolver doesn't know.
-        foreach (var memberAccess in node.DescendantNodes().OfType<MemberAccessExpressionSyntax>())
+        foreach (var memberAccess in crossing.OfType<MemberAccessExpressionSyntax>())
         {
             if (memberAccess.Expression is IdentifierNameSyntax identifier)
             {
@@ -1333,7 +1348,7 @@ public class TypeScriptEmitter
         // `x is Foo f` lowers to `x instanceof Foo` for component-model classes (PatternConverter) —
         // the pattern's type must import exactly like a constructed type. Non-class pattern types
         // added here are dropped by the downstream filters (enums, exceptions, resolver-unknown).
-        foreach (var pattern in node.DescendantNodes().OfType<DeclarationPatternSyntax>())
+        foreach (var pattern in crossing.OfType<DeclarationPatternSyntax>())
         {
             var typeName = pattern.Type.ValueText();
             if (typeName.Contains('.')) typeName = typeName[(typeName.LastIndexOf('.') + 1)..];
@@ -1344,9 +1359,9 @@ public class TypeScriptEmitter
         // (`static readonly MenuPanel Products = new(...)` — the creation itself is nameless), so
         // field/property/local declaration types must import like constructed ones. Tuple and
         // array declarations contribute their ELEMENT type names the same way.
-        foreach (var declaration in node.DescendantNodes().OfType<VariableDeclarationSyntax>())
+        foreach (var declaration in crossing.OfType<VariableDeclarationSyntax>())
             CollectDeclaredTypeNames(declaration.Type, types);
-        foreach (var property in node.DescendantNodes().OfType<PropertyDeclarationSyntax>())
+        foreach (var property in crossing.OfType<PropertyDeclarationSyntax>())
             CollectDeclaredTypeNames(property.Type, types);
         return types;
     }
@@ -1363,7 +1378,7 @@ public class TypeScriptEmitter
             case TupleTypeSyntax tuple:
                 foreach (var element in tuple.Elements) CollectDeclaredTypeNames(element.Type, types);
                 break;
-            case GenericNameSyntax generic:
+            case GenericNameSyntax generic when !IsDictionaryName($"{generic.Identifier.ValueText}<>"):
                 foreach (var argument in generic.TypeArgumentList.Arguments) CollectDeclaredTypeNames(argument, types);
                 break;
             case QualifiedNameSyntax qualified: CollectDeclaredTypeNames(qualified.Right, types); break;
@@ -1809,6 +1824,8 @@ public class TypeScriptEmitter
             // conversion came to disagree once already.
             foreach (var op in cls.Members.OfType<OperatorDeclarationSyntax>())
             {
+                // A [ServerOnly] operator never crosses, as a [ServerOnly] method does not (#816).
+                if (Parser.ComponentParser.StaysOnTheServer(op, inAComponent: false)) continue;
                 var opName = op.ParameterList.Parameters.Count == 1
                     ? RecordTypeEmitter.UnaryOperatorMethodName(op.OperatorToken.Text)
                     : RecordTypeEmitter.OperatorMethodName(op.OperatorToken.Text);
@@ -1823,6 +1840,7 @@ public class TypeScriptEmitter
 
             foreach (var conversion in cls.Members.OfType<ConversionOperatorDeclarationSyntax>())
             {
+                if (Parser.ComponentParser.StaysOnTheServer(conversion, inAComponent: false)) continue;
                 if (OperatorBody(conversion) is not { } convBody) continue;
                 var declared = _semanticModel?.GetDeclaredSymbol(conversion) as IMethodSymbol;
                 var convName = declared is not null
@@ -1926,9 +1944,12 @@ public class TypeScriptEmitter
     }
 
     /// <summary>A method of a class module, or of a component's twin when an interface's default
-    /// supplies it.</summary>
+    /// supplies it. One marked <c>[ServerOnly]</c> is no member of any twin, as the parser leaves it out
+    /// of a component's: it was written into a class's, a static class's and a record's, and the server
+    /// code in it was refused there (#816).</summary>
     private void EmitClassMethod(MethodDeclarationSyntax m, TypeScriptCodeBuilder.ClassBuilder c, bool asStatic)
     {
+        if (Parser.ComponentParser.StaysOnTheServer(m, inAComponent: false)) return;
         // The non-generic IEnumerable.GetEnumerator() beside the generic one holds its name, and is the
         // same sequence: written, it replaced the generic one and called itself (#612).
         if (ModelFor(m)?.GetDeclaredSymbol(m) is IMethodSymbol declared && IterableTwin.LeavesOut(declared)) return;
@@ -2563,10 +2584,64 @@ public class TypeScriptEmitter
     }
 
     /// <summary>Whether <paramref name="emitted"/> names <paramref name="name"/> as a whole
-    /// identifier. Lookarounds rather than <c>\b</c>: a twin's name can hold a <c>$</c>.</summary>
-    private static bool NamedIn(string emitted, string name) =>
-        System.Text.RegularExpressions.Regex.IsMatch(emitted,
+    /// identifier outside string literals. Lookarounds rather than <c>\b</c>: a twin's name can hold a
+    /// <c>$</c>.</summary>
+    internal static bool NamedIn(string emitted, string name) =>
+        System.Text.RegularExpressions.Regex.IsMatch(WithoutStrings(emitted),
             $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(name)}(?![\w$])");
+
+    /// <summary>Replaces the literal text of single-, double- and backtick-quoted strings with spaces,
+    /// leaving template interpolation holes (<c>${…}</c>) intact, so a string literal never counts as a
+    /// type or identifier reference.</summary>
+    internal static string WithoutStrings(string emitted)
+    {
+        var chars = emitted.ToCharArray();
+        BlankRange(chars, 0, chars.Length);
+        return new string(chars);
+
+        static void BlankRange(char[] chars, int start, int end)
+        {
+            for (var i = start; i < end; i++)
+            {
+                var c = chars[i];
+                if (c is '\'' or '"')
+                {
+                    for (i++; i < end && chars[i] != c; i++)
+                    {
+                        if (chars[i] == '\\' && i + 1 < end) { chars[i] = ' '; i++; }
+                        chars[i] = ' ';
+                    }
+                }
+                else if (c == '`')
+                {
+                    for (i++; i < end && chars[i] != '`'; i++)
+                    {
+                        if (chars[i] == '\\' && i + 1 < end) { chars[i] = ' '; i++; chars[i] = ' '; continue; }
+                        if (chars[i] == '$' && i + 1 < end && chars[i + 1] == '{')
+                        {
+                            var holeStart = i + 2;
+                            var depth = 1;
+                            for (i = holeStart; i < end && depth > 0; i++)
+                            {
+                                if (chars[i] is '\'' or '"' or '`')
+                                {
+                                    var q = chars[i];
+                                    for (i++; i < end && chars[i] != q; i++)
+                                        if (chars[i] == '\\') i++;
+                                }
+                                else if (chars[i] == '{') depth++;
+                                else if (chars[i] == '}') depth--;
+                            }
+                            i--;
+                            BlankRange(chars, holeStart, i);
+                            continue;
+                        }
+                        chars[i] = ' ';
+                    }
+                }
+            }
+        }
+    }
 
     /// <summary>Whether the per-app scan knows this name at all: one of the app's own modules, or a
     /// type the app declares <c>[RuntimeProvided]</c>, which the runtime exports instead.</summary>
@@ -2633,12 +2708,12 @@ public class TypeScriptEmitter
         var inheritedDefaults = InheritedDeclarations(cls).ToList();
         if (semanticModel != null)
         {
-            Services.RuntimeProvidedTypeScanner.Collect(cls, semanticModel, runtimeProvided,
+            Services.RuntimeProvidedTypeScanner.Collect(cls, semanticModel, asComponent: false, runtimeProvided,
                 referencedEnums, appTypes: null, hostOnly: hostOnlyInSignatures);
             // The defaults the class takes from its interfaces (#414) name types the class never does.
             foreach (var inherited in inheritedDefaults)
                 if (ModelFor(inherited) is { } inheritedModel)
-                    Services.RuntimeProvidedTypeScanner.Collect(inherited, inheritedModel, runtimeProvided,
+                    Services.RuntimeProvidedTypeScanner.Collect(inherited, inheritedModel, asComponent: false, runtimeProvided,
                         referencedEnums, appTypes: null, hostOnly: hostOnlyInSignatures);
         }
         else if (_dependencyResolver != null)
@@ -2686,8 +2761,8 @@ public class TypeScriptEmitter
         // The base class is imported whether or not the syntax scanner noticed it: `extends` is the
         // one reference that must resolve before this module's first statement runs.
         if (baseName is not null) imports.Add(new JsImport([baseName], $"./{baseName}"));
-        foreach (var t in CollectComponentTypesFromNode(cls, new HashSet<string> { name })
-                     .Concat(inheritedDefaults.SelectMany(inherited => CollectComponentTypesFromNode(inherited, new HashSet<string> { name })))
+        foreach (var t in CollectComponentTypesFromNode(cls, asComponent: false, new HashSet<string> { name })
+                     .Concat(inheritedDefaults.SelectMany(inherited => CollectComponentTypesFromNode(inherited, asComponent: false, new HashSet<string> { name })))
                      .Concat(_converter.UsedAppTypes) // conversion-introduced names (reduced extension calls)
                      .Distinct().OrderBy(x => x))
         {
@@ -3024,7 +3099,7 @@ public class TypeScriptEmitter
     private static string? SetOf(string tsType) => Unwrap(tsType, ["HashSet<", "ISet<", "IReadOnlySet<"]);
 
     /// <summary>Every C# name for a dictionary: each is a runtime dictionary class on this side.</summary>
-    private static bool IsDictionaryName(string tsType) =>
+    internal static bool IsDictionaryName(string tsType) =>
         Unwrap(tsType, ["Dictionary<", "IDictionary<", "IReadOnlyDictionary<", "SortedDictionary<", "SortedList<"]) is not null;
 
     private static string? Unwrap(string tsType, string[] prefixes)

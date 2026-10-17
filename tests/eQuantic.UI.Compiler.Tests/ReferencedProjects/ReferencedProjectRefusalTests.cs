@@ -40,7 +40,7 @@ public sealed class ReferencedProjectRefusalTests
         built.Failed.Should().BeTrue("a class that reads a file cannot run in the browser");
         built.ErrorsIn("Domain").Should().NotBeEmpty("the construct is named where it is written, in the referenced project")
             .And.OnlyContain(line => line.StartsWith(solution.FileOf("Domain", "ReceiptArchive.cs") + "("))
-            .And.Contain(line => line.Contains("error EQ2004") && line.Contains("'System.IO.File.Exists'"));
+            .And.Contain(line => line.Contains("error EQ2112") && line.Contains("'System.IO.File' (file-system access)"));
         built.ErrorsIn("App").Should().BeEmpty("the page only named a class, which is no error of its own");
     }
 
@@ -547,7 +547,7 @@ public sealed class ReferencedProjectRefusalTests
             built.Failed.Should().BeTrue();
             built.ErrorsIn("Domain").Should().ContainSingle()
                 .Which.Should().StartWith(solution.FileOf("Domain", "Order.cs") + "(")
-                .And.Contain("error EQ2004").And.Contain("'System.IO.File.ReadAllText'");
+                .And.Contain("error EQ2112").And.Contain("'System.IO.File' (file-system access)");
             built.ErrorsIn("App").Should().BeEmpty();
         }
         else

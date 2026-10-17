@@ -25,15 +25,13 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
             if (prefix.OperatorToken.Text is "++" or "--" && Step(prefix.Operand, prefix.OperatorToken.Text, node, context) is { } stepped)
                 return stepped;
             // A USER-DEFINED unary operator on an in-source type calls the twin's static method —
-            // and a host-only one stops here rather than emitting JavaScript's own operator.
+            // and a host-only one stops here rather than emitting JavaScript's own operator, which the
+            // one lowering of an operator answers (UserDefinedOperators).
             if (context.SemanticHelper.GetOperation(prefix) is Microsoft.CodeAnalysis.Operations.IUnaryOperation
-                { OperatorMethod: { } unaryMethod })
-            {
-                if (unaryMethod.ReportIfHostOnly(prefix, context)) return JsExpr.Callish("undefined");
-                if (UserDefinedOperators.Unary(unaryMethod, prefix.OperatorToken.Text,
-                        context.Converter.ConvertExpression(prefix.Operand), context) is { } unaryCall)
-                    return unaryCall;
-            }
+                { OperatorMethod: { } unaryMethod }
+                && UserDefinedOperators.Unary(unaryMethod, prefix.OperatorToken.Text,
+                    context.Converter.ConvertExpression(prefix.Operand), context) is { } unaryCall)
+                return unaryCall;
 
             // A NULLABLE number negates its value inside the lift (#372): JavaScript's `-null` is -0,
             // `~null` is -1 and `+null` is 0, where C#'s lifted operator answers null. `+` is the

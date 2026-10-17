@@ -30,10 +30,13 @@ public static class DefaultValue
     /// </summary>
     internal static string Of(ITypeSymbol? type, ConversionContext context, Func<ITypeParameterSymbol, string?>? typeParameter)
     {
-        // A nested type whose owner never crosses has no zero in the browser, and none was written:
+        // A struct the build writes no twin for has no zero in the browser, and none was written:
         // `default(Vault.Pair)`, an array's fill and a field's zero were undefined where C# has a
         // value, silently. EQ2010 where the code asks for one (found by Copilot's third review of #654).
-        if (type is INamedTypeSymbol keptOut && context.Converting is { } asked && keptOut.ReportIfKeptOut(asked, context))
+        // A reference type's zero is null, which names nothing, so a `FirstOrDefault()` over a list of
+        // the app's [ServerOnly] class is no reference to it (#823).
+        if (type is INamedTypeSymbol { IsValueType: true } keptOut && context.Converting is { } asked
+            && keptOut.ReportIfKeptOut(asked, context))
             return "undefined";
         var value = Of(type, named =>
         {

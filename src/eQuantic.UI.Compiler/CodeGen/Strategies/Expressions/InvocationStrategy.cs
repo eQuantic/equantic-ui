@@ -248,8 +248,10 @@ public class InvocationStrategy : IExpressionIrStrategy
             // shared library, so `UI.column(…)` must import UI from the runtime.
             var declaring = symbol.ContainingType;
             // `using static …FaceName;` then a bare `Usable(...)` names the same symbol a qualified
-            // call does, and this branch returns before the fence below ever runs.
-            symbol.ReportIfHostOnly(invocation, context);
+            // call does, and this branch returns before the fence below ever runs. Refused, the call
+            // is written as nothing more: `Exists(p)` under `using static System.IO.File` was told
+            // again as untranslatable (EQ2004) by the platform branch below (#816).
+            if (symbol.ReportIfHostOnly(invocation, context)) return JsExpr.Literal("undefined");
             // A .NET type's method reached bare goes where its qualified spelling goes (#556), and one
             // that spelling does not translate either has no translation: the class-static rule below
             // is for the types the transpiler EMITS (#485).
@@ -404,11 +406,24 @@ public class InvocationStrategy : IExpressionIrStrategy
             // attribute keeps the reduced form it always had.
             var declaredHere = symbol.ContainingType.Locations.Any(location => location.IsInSource);
 
+            // A HOST-ONLY home is named by the reduced call as surely as by a qualified one:
+            // `curve.Ease(t)` IS `CurveEvaluator.Ease(curve, t)`, and the receiver is its first
+            // argument, not a type the member was reached through. So the fence asks about the
+            // home's own static, with no receiver to look through: asked with the receiver, a
+            // `Curve`, a `TypeStyle` or a `Text`, it saw a type that crosses and waved the call
+            // on. This was the way of naming a host-only symbol the fence did not count, and the
+            // call stayed on the receiver as `curve.ease(t)`, built with no diagnostic and threw
+            // in the browser (#518). A method group goes where a call goes, so it is refused here
+            // too. It is asked FIRST, and on its own, so the verdict below still stands for every
+            // home it lets through: `client.GetFromJsonAsync(url)` is HTTP networking (EQ2103),
+            // where it was told as an extension with no translation (#816).
+            if (symbol.ReducedFrom.ReportIfHostOnly(at, context)) return null;
+
             // An extension declared OUTSIDE this compilation has no module to go home to:
             // emitting `MemoryExtensions.startsWith(...)` names a class the bundle never
             // contains, and the failure surfaces as a bare "is not defined" in the browser.
-            // This stays FIRST: it is the verdict `BclSurfaceAuditTests` records for the BCL's
-            // own extensions, and reordering it around the clause below silently turned
+            // This stays the first VERDICT: it is the one `BclSurfaceAuditTests` records for the
+            // BCL's own extensions, and reordering it around the clause below silently turned
             // `Enumerable.Index` and `Enumerable.Shuffle` from fenced into emitted. Measured.
             if (!declaredHere && !IsFrameworkProvided(symbol.ContainingType))
             {
@@ -423,19 +438,6 @@ public class InvocationStrategy : IExpressionIrStrategy
                         ? "A method group over it has nothing to bind in the browser: write the lambda "
                           + "that calls it, which is translated as the call is."
                         : "Use an instance member, or add a strategy for it."));
-            }
-            // A HOST-ONLY home is named by the reduced call as surely as by a qualified one:
-            // `curve.Ease(t)` IS `CurveEvaluator.Ease(curve, t)`, and the receiver is its first
-            // argument, not a type the member was reached through. So the fence asks about the
-            // home's own static, with no receiver to look through: asked with the receiver, a
-            // `Curve`, a `TypeStyle` or a `Text`, it saw a type that crosses and waved the call
-            // on. This was the way of naming a host-only symbol the fence did not count, and the
-            // call stayed on the receiver as `curve.ease(t)`, built with no diagnostic and threw
-            // in the browser (#518). A method group goes where a call goes, so it is refused here
-            // too.
-            else if (symbol.ReducedFrom.ReportIfHostOnly(at, context))
-            {
-                return null;
             }
             // A FRAMEWORK home the runtime does not EXPORT keeps the reduced form it always
             // had, and only the ATTRIBUTE can answer that. The namespace cannot: `CurveEvaluator`
@@ -456,6 +458,10 @@ public class InvocationStrategy : IExpressionIrStrategy
             {
                 return null;
             }
+            // A home of source the build writes no module for is refused where the call names it:
+            // `"x".Sealed()` over the app's own [ServerOnly] `Seal` was written as `Seal.sealed('x')`,
+            // a class nothing wrote (#823).
+            if (symbol.ContainingType.ReportIfKeptOut(at, context)) return null;
             // The declaring class never appears in the SOURCE (the call is reduced), so the
             // syntax-walking import collector can't see it — register the name we introduced,
             // in the bucket its namespace decides (runtime-provided or app-level).
@@ -468,6 +474,11 @@ public class InvocationStrategy : IExpressionIrStrategy
         // there. A STATIC extension member (receiver-type-only block) takes no receiver.
         if (symbol.ExtensionBlockHome() is { } extensionHome)
         {
+            // The member first, as a reduced extension's own static is asked above: no twin holds a
+            // [ServerOnly] one, and the call went home to `Exts.shout('x')`, a static nothing wrote
+            // (Copilot's review of #944).
+            if (symbol!.ReportIfHostOnly(at, context)) return null;
+            if (extensionHome.ReportIfKeptOut(at, context)) return null;
             extensionHome.RegisterIntroduced(context);
             return (extensionHome, !symbol!.IsStatic);
         }

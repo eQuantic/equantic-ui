@@ -25,6 +25,7 @@ public class ForEachStatementStrategy : IStatementStrategy
         // may hold one (`object`, `IEnumerable`, `IEnumerable<char>`) asks the value what it is.
         var source = context.Converter.ConvertIr(foreachStmt.Expression);
         var sourceType = context.SemanticHelper.GetType(foreachStmt.Expression);
+        IterableTwin.FenceForEach(foreachStmt, sourceType, context);
         // A class's public GetEnumerator() beside the interface's, which C#'s foreach binds and its
         // iteration does not, is called as the loop binds it (IterableTwin.ForEachSource).
         var bound = foreachStmt.AwaitKeyword.Value == null && context.SemanticHelper.ForEachInfo(foreachStmt) is { } info
@@ -73,7 +74,8 @@ public class ForEachStatementStrategy : IStatementStrategy
         if (context.SemanticHelper.GetDeclaredSymbol(foreachStmt) is not ILocalSymbol variable) return null;
 
         var element = JsExpr.Identifier("$" + item);
-        var applied = ValueFlow.Apply(conversion, info.ElementType, variable.Type, null, null, element, context);
+        var applied = context.ConvertingAt(foreachStmt.Type,
+            () => ValueFlow.Apply(conversion, info.ElementType, variable.Type, null, null, element, context));
         return JsExprWriter.Write(applied) == "$" + item ? null : applied;
     }
 

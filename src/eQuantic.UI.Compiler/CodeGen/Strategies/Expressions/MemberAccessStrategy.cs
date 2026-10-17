@@ -59,8 +59,15 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         // at hydration with SSR still answering 200.
         // Through the RECEIVER's type, so a host-only BASE fences itself without fencing the
         // inherited members of the client-visible nodes under it (SingleChildNode.Child, #162).
-        if (symbol is not null)
-            symbol.ReportIfHostOnly(node, context, context.SemanticHelper.GetType(memberAccess.Expression));
+        // Refused, the read is written as nothing more, and a read made on it is the same refusal:
+        // the read fence below told `Path.DirectorySeparatorChar` again as untranslated (EQ2004),
+        // beside the EQ2112 that names its API, as the other sites of the fence never do (#816).
+        if (symbol is not null
+            && symbol.ReportIfHostOnly(node, context, context.SemanticHelper.GetType(memberAccess.Expression)))
+        {
+            context.RefusedReads.Add(context.SemanticHelper.Original(node));
+            return JsExpr.Literal("undefined");
+        }
 
         if (symbol != null)
         {

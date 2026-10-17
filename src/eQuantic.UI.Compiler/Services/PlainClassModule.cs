@@ -164,19 +164,29 @@ internal static class PlainClassModule
     }
 
     /// <summary>
-    /// Whether a type a nested type sits in never crosses: it, or a type it derives from, is marked
-    /// <c>[ServerOnly]</c>, or it is an attribute, which has no twin (#584). A nested type has a twin
-    /// where its owner would have a module, and an exception class of the app's has one (#611): it was
-    /// kept out with the attribute while an exception had none, so a record declared in one, the reason
-    /// it carries, was refused (EQ2010) beside a class the build writes.
+    /// Whether a type a nested type sits in never crosses (<see cref="NeverCrosses"/>): a nested type has
+    /// a twin where its owner would have a module (#584), and an exception class of the app's has one
+    /// (#611): it was kept out with the attribute while an exception had none, so a record declared in
+    /// one, the reason it carries, was refused (EQ2010) beside a class the build writes.
     /// </summary>
-    internal static bool OwnerKeptOut(INamedTypeSymbol type)
+    internal static bool OwnerKeptOut(INamedTypeSymbol type) =>
+        type.ContainingType is { } owner && NeverCrosses(owner);
+
+    /// <summary>
+    /// Whether the build writes no module for a type of source by what it IS, wherever it is declared:
+    /// it, or a class it derives from, is marked <c>[ServerOnly]</c> or is an attribute, or a type it is
+    /// declared in is (#584). The rule a fence asks where client code names a type, a top-level one as
+    /// much as a nested one (#823), and the rule a module's import net reads by name
+    /// (<see cref="ComponentDependencyResolver.IsKeptOut"/>). A component that is not nested crosses
+    /// whatever it is marked, which the fence says itself.
+    /// </summary>
+    internal static bool NeverCrosses(INamedTypeSymbol type)
     {
-        for (var owner = type.ContainingType; owner is not null; owner = owner.ContainingType)
+        for (var at = type; at is not null; at = at.ContainingType)
         {
-            if (ServerOnlyAlongChain(owner)) return true;
-            for (var at = owner; at is not null; at = at.BaseType)
-                if (IsAttributeRoot(at)) return true;
+            if (ServerOnlyAlongChain(at)) return true;
+            for (var chain = at; chain is not null; chain = chain.BaseType)
+                if (IsAttributeRoot(chain)) return true;
         }
         return false;
     }

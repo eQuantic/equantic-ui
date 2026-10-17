@@ -56,12 +56,12 @@ public class CSharpToJsConverter
         set => _context.SymbolsAreAuthoritative = value;
     }
 
-    /// <summary>See <see cref="ConversionContext.HasProjectCompilation"/>. Survives <see cref="Reset"/>
+    /// <summary>See <see cref="ConversionContext.ProjectCompilation"/>. Survives <see cref="Reset"/>
     /// too: it describes the host, not the file.</summary>
-    internal bool HasProjectCompilation
+    internal Compilation? ProjectCompilation
     {
-        get => _context.HasProjectCompilation;
-        set => _context.HasProjectCompilation = value;
+        get => _context.ProjectCompilation;
+        set => _context.ProjectCompilation = value;
     }
 
     /// <summary>See <see cref="ConversionContext.ResourceIds"/>.</summary>
@@ -231,6 +231,27 @@ public class CSharpToJsConverter
         finally
         {
             _context.Converting = outer;
+        }
+    }
+
+    /// <summary>
+    /// Reports EQ2010 at <paramref name="at"/> for a type of source in <paramref name="type"/> the build
+    /// writes no module for, the type itself, an array's element or a type argument, where an emitter
+    /// writes its name with no expression being converted: a Server Action stub's parameter (#823).
+    /// </summary>
+    internal void RefuseKeptOutIn(ITypeSymbol? type, SyntaxNode at)
+    {
+        switch (type)
+        {
+            case IArrayTypeSymbol array:
+                RefuseKeptOutIn(array.ElementType, at);
+                return;
+            case INamedTypeSymbol named:
+                if (named.ReportIfKeptOut(at, _context)) return;
+                // A dictionary annotates as `any`, erasing its type arguments from the stub.
+                if (TypeScriptEmitter.IsDictionaryName($"{named.Name}<>")) return;
+                foreach (var argument in named.TypeArguments) RefuseKeptOutIn(argument, at);
+                return;
         }
     }
 

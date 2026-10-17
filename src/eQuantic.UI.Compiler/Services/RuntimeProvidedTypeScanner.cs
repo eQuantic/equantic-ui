@@ -1,4 +1,5 @@
 using eQuantic.UI.Compiler.CodeGen;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -116,6 +117,11 @@ public static class RuntimeProvidedTypeScanner
     /// </summary>
     /// <param name="root">The tree to scan.</param>
     /// <param name="model">The semantic model that binds the names in it.</param>
+    /// <param name="asComponent">Whether <paramref name="root"/> is a component's declaration. The scan
+    /// reads what crosses and nothing else (<see cref="Parser.ComponentParser.StaysOnTheServer"/>): a
+    /// <c>[ServerOnly]</c> member names nothing a module imports or refuses, nor does a component's
+    /// <c>[ServerAction]</c> body, whose twin is a stub. A host-only type a Server Action read was
+    /// refused as a type position of the page (EQ2010), though no browser ever runs that code (#816).</param>
     /// <param name="runtimeProvided">Collects the types the runtime exports, which the module imports.</param>
     /// <param name="enumTypes">Collects the enums seen, whose members lower differently.</param>
     /// <param name="appTypes">Collects the app's OWN types, which get a sibling module each.</param>
@@ -130,10 +136,13 @@ public static class RuntimeProvidedTypeScanner
     /// seven are counted in <c>HostOnlySymbolExtensions</c>.
     /// </para>
     /// </param>
-    public static void Collect(SyntaxNode root, SemanticModel model,
+    public static void Collect(SyntaxNode root, SemanticModel model, bool asComponent,
         ISet<string> runtimeProvided, ISet<string> enumTypes, ISet<string>? appTypes = null,
         IDictionary<string, SyntaxNode>? hostOnly = null)
     {
+        var crossing = root.DescendantNodes(node => !Parser.ComponentParser.StaysOnTheServer(node, asComponent)
+            && !(node is InvocationExpressionSyntax invocation && invocation.IsNameOf(model))).ToList();
+
         // A type the vocabulary declares [ServerOnly] ships no runtime export, so its NAME must not
         // reach the import list — and where it was written is what the caller needs to report it.
         static bool IsFenced(INamedTypeSymbol type) => type.IsHostOnly();
@@ -150,7 +159,7 @@ public static class RuntimeProvidedTypeScanner
         // constructs appears NOWHERE in the source, so no identifier sweep can find it. Same hole
         // the target-typed `new(...)` had, and the same symptom: "TypeStyle is not defined", with
         // no build error.
-        foreach (var with in root.DescendantNodes().OfType<WithExpressionSyntax>())
+        foreach (var with in crossing.OfType<WithExpressionSyntax>())
         {
             ITypeSymbol? rebuilt;
             try { rebuilt = model.GetTypeInfo(with).Type; }
@@ -169,7 +178,7 @@ public static class RuntimeProvidedTypeScanner
 
         // A SIMPLE name, generic ones included: `ServerTopic<Quote>` is a GenericNameSyntax, and a generic
         // vocabulary type walked past as an identifier was imported from a sibling module nothing writes.
-        foreach (var identifier in root.DescendantNodes().OfType<SimpleNameSyntax>())
+        foreach (var identifier in crossing.OfType<SimpleNameSyntax>())
         {
             ISymbol? symbol;
             try { symbol = model.GetSymbolInfo(identifier).Symbol; }

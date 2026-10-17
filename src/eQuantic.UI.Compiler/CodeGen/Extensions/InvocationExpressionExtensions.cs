@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -12,7 +13,9 @@ internal static class InvocationExpressionExtensions
     /// The MODEL says which one it is, because a method an app names <c>nameof</c> is a call like any
     /// other.
     /// </summary>
-    internal static bool IsNameOf(this InvocationExpressionSyntax invocation, SemanticModel model) =>
-        invocation.Expression is IdentifierNameSyntax { Identifier.ValueText: "nameof" }
-        && model.GetOperation(invocation) is INameOfOperation;
+    internal static bool IsNameOf(this InvocationExpressionSyntax invocation, SemanticModel? model) =>
+        invocation.Expression is IdentifierNameSyntax { Identifier.ValueText: "nameof" } identifier
+        && (model?.GetOperation(invocation) is { } operation
+            ? operation is not IInvocationOperation
+            : !identifier.Identifier.IsVerbatimIdentifier());
 }

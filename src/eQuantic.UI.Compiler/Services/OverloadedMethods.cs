@@ -56,8 +56,8 @@ internal static class OverloadedMethods
 {
     /// <param name="type">The declaration whose module is being emitted.</param>
     /// <param name="sourcePath">Where it lives, for the error.</param>
-    /// <param name="isComponent">A component's parser leaves a <c>[ServerOnly]</c> method out of the
-    /// twin, and its module embeds the static classes nested in it, each a class of its own.</param>
+    /// <param name="isComponent">A component's module embeds the static classes nested in it, each a
+    /// class of its own, and its <c>[ServerAction]</c> crosses as a stub of its name.</param>
     /// <param name="model">The model of the declaration's tree, which walks its bases; without one only
     /// the declaration itself is checked.</param>
     public static List<CompilationError> Check(TypeDeclarationSyntax type, string sourcePath, bool isComponent,
@@ -69,7 +69,7 @@ internal static class OverloadedMethods
         if (errors.Count == 0 && model is not null) CheckInherited(type, sourcePath, isComponent, model, errors);
         if (errors.Count == 0 && model is not null) CheckSequences(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckHidingImplementations(type, sourcePath, model, errors);
-        if (errors.Count == 0 && model is not null) CheckDefaults(type, sourcePath, isComponent, model, errors);
+        if (errors.Count == 0 && model is not null) CheckDefaults(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckInterfaceIndexers(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckInheritedFields(type, sourcePath, model, errors);
         if (isComponent)
@@ -206,7 +206,7 @@ internal static class OverloadedMethods
         if (type is not (RecordDeclarationSyntax or StructDeclarationSyntax)) return;
         var instance = HeldOnEachInstance(type, model)
             .Concat(type.Members.OfType<MethodDeclarationSyntax>()
-                .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && method.ExplicitInterfaceSpecifier is null)
+                .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && TakesAName(method, isComponent: false))
                 .Select(method => (Name: method.Identifier.ValueText, Shown: Signature(method), At: method.Identifier)));
         var first = new Dictionary<string, (string Name, string Shown, SyntaxToken At)>(StringComparer.Ordinal);
         foreach (var member in instance.OrderBy(member => member.At.SpanStart))
@@ -287,7 +287,7 @@ internal static class OverloadedMethods
         if (held.Count == 0) return;
         var members = HeldOnEachInstance(type, model).Where(member => member.At.Parent is not ParameterSyntax)
             .Concat(type.Members.OfType<MethodDeclarationSyntax>()
-                .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && method.ExplicitInterfaceSpecifier is null)
+                .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && TakesAName(method, isComponent: false))
                 .Select(method => (Name: method.Identifier.ValueText, Shown: Signature(method), At: method.Identifier)))
             .ToList();
         foreach (var parameter in held)
@@ -396,7 +396,7 @@ internal static class OverloadedMethods
     /// base's, and a member that implements the default's interface member because the derived class
     /// lists the interface again.
     /// </summary>
-    private static void CheckDefaults(TypeDeclarationSyntax type, string sourcePath, bool isComponent, SemanticModel model,
+    private static void CheckDefaults(TypeDeclarationSyntax type, string sourcePath, SemanticModel model,
         List<CompilationError> errors)
     {
         if (model.SyntaxTree != type.SyntaxTree || model.GetDeclaredSymbol(type) is not INamedTypeSymbol declared)
@@ -419,7 +419,7 @@ internal static class OverloadedMethods
              current is { DeclaringSyntaxReferences.Length: > 0 } && seen.Add(current);
              current = current.BaseType)
         {
-            foreach (var member in InstanceMembers(current, isComponent))
+            foreach (var member in InstanceMembers(current))
                 inherited.TryAdd(Lowered(member), new Holder($"'{current.Name}.{Shown(member)}', which it inherits", FromInterface: false, Contract: null));
             foreach (var parameter in PrimaryParameters(current))
                 inherited.TryAdd(parameter.ToCamelCase(),
@@ -434,7 +434,7 @@ internal static class OverloadedMethods
         }
 
         var taken = new Dictionary<string, string>();
-        foreach (var member in InstanceMembers(declared, isComponent))
+        foreach (var member in InstanceMembers(declared))
         {
             var name = Lowered(member);
             taken.TryAdd(name, $"'{declared.Name}.{Shown(member)}'");
@@ -528,13 +528,14 @@ internal static class OverloadedMethods
     /// (all found in review, #418). An indexer takes the names its twin's two methods have, which
     /// <see cref="Names"/> checks within one declaration (#427); along the chain it is not checked yet.
     /// </summary>
-    private static IEnumerable<ISymbol> InstanceMembers(INamedTypeSymbol type, bool isComponent) =>
+    private static IEnumerable<ISymbol> InstanceMembers(INamedTypeSymbol type) =>
         type.GetMembers().Where(member => !member.IsStatic && !member.IsImplicitlyDeclared
             && member is IFieldSymbol or IEventSymbol or IPropertySymbol { IsIndexer: false }
                 or IMethodSymbol { MethodKind: MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation }
-            // A component's server-only method never reaches its twin, so it takes no name there
-            // (asked in review, #418), as CheckInherited leaves it out too.
-            && !(isComponent && member is IMethodSymbol
+            // A server-only method never reaches a twin, so it takes no name there (asked in review,
+            // #418, for a component's, and so for every type's since #816), as CheckInherited leaves it
+            // out too.
+            && !(member is IMethodSymbol
                 && member.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnlyAttribute" or "ServerOnly")));
 
     /// <summary>
@@ -552,7 +553,7 @@ internal static class OverloadedMethods
         {
             if (model.GetDeclaredSymbol(method) is not IMethodSymbol symbol) continue;
             var name = TwinMethodName.Of(symbol);
-            if (Inherited(declared, symbol, name, isStatic, isComponent) is not { } inherited) continue;
+            if (Inherited(declared, symbol, name, isStatic) is not { } inherited) continue;
             var position = method.Identifier.GetLocation().GetLineSpan().StartLinePosition;
             var where = inherited.Locations.FirstOrDefault(location => location.IsInSource)?.GetLineSpan();
             var at = where is { } span ? $" ({Path.GetFileName(span.Path)} line {span.StartLinePosition.Line + 1})" : "";
@@ -614,10 +615,8 @@ internal static class OverloadedMethods
     /// <summary>The inherited method <paramref name="method"/> would take over, or null: one that holds
     /// the name it holds on the twin (<see cref="TwinMethodName"/>) and that it does not override. A base
     /// the source does not declare ends the walk: its twin is the runtime's. A server-only method is left
-    /// out of a COMPONENT's twin only: a plain class's twin writes it like any other, so along a plain
-    /// chain it takes its name.</summary>
-    private static IMethodSymbol? Inherited(INamedTypeSymbol declared, IMethodSymbol method, string name, bool isStatic,
-        bool isComponent)
+    /// out of every twin (#816), so along any chain it takes no name.</summary>
+    private static IMethodSymbol? Inherited(INamedTypeSymbol declared, IMethodSymbol method, string name, bool isStatic)
     {
         var seen = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
         for (var current = declared.BaseType;
@@ -629,9 +628,9 @@ internal static class OverloadedMethods
                 if (member.MethodKind != MethodKind.Ordinary || member.IsImplicitlyDeclared) continue;
                 if (member.IsStatic != isStatic || TwinMethodName.Of(member) != name) continue;
                 if (member.ExplicitInterfaceImplementations.Length > 0 || Overrides(method, member)) continue;
-                // A defining half of a partial method reaches no twin, nor does a component's server-only one.
+                // A defining half of a partial method reaches no twin, nor does a server-only one.
                 if (member.IsPartialDefinition && member.PartialImplementationPart is null) continue;
-                if (isComponent && member.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnlyAttribute" or "ServerOnly"))
+                if (member.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnlyAttribute" or "ServerOnly"))
                     continue;
                 return member;
             }
@@ -814,7 +813,8 @@ internal static class OverloadedMethods
                     break;
 
                 case ExtensionBlockDeclarationSyntax block:
-                    foreach (var extension in block.Members.OfType<MethodDeclarationSyntax>())
+                    foreach (var extension in block.Members.OfType<MethodDeclarationSyntax>()
+                                 .Where(extension => TakesAName(extension, isComponent: false)))
                         yield return (extension, true);
                     break;
             }
@@ -823,7 +823,8 @@ internal static class OverloadedMethods
 
     /// <summary>
     /// The defining half of a partial method is the same method as its implementation, and names
-    /// nothing of its own. A component's <c>[ServerOnly]</c> method never reaches the twin. An
+    /// nothing of its own. A <c>[ServerOnly]</c> method never reaches a twin, whatever type declares
+    /// it (<see cref="Parser.ComponentParser.StaysOnTheServer"/>). An
     /// abstract method does take its name, though the base's twin writes nothing for it: the
     /// subclass that implements it writes it, over any overload the base carried.
     /// <para>
@@ -837,8 +838,7 @@ internal static class OverloadedMethods
         if (method.ExplicitInterfaceSpecifier is not null) return false;
         if (method.Modifiers.Any(SyntaxKind.PartialKeyword) && method.Body is null && method.ExpressionBody is null)
             return false;
-        return !isComponent || !method.AttributeLists.SelectMany(list => list.Attributes)
-            .Any(attribute => attribute.IsNamed("ServerOnly"));
+        return !Parser.ComponentParser.StaysOnTheServer(method, isComponent);
     }
 
     /// <summary><c>Compare(CodeDocument, CodeDocument)</c>: the name and the parameter types, which is

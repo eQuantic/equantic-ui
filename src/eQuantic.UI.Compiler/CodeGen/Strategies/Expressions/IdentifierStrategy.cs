@@ -36,6 +36,12 @@ public class IdentifierStrategy : IExpressionIrStrategy
         // mapped first it read the inherited value instead (Copilot's review of #399).
         if (name == "Component" && !BoundInScope(symbol, identifier, name)) return JsExpr.ThisMember("_component");
 
+        // A type the build writes no module for, named here: `Vault.Key()` reaches `Vault` through this
+        // name, and a top-level [ServerOnly] class of the app's was written as a class nothing wrote
+        // (#823), where a nested one was refused already (#584).
+        if (symbol is INamedTypeSymbol keptOut && keptOut.ReportIfKeptOut(identifier, context))
+            return JsExpr.Identifier("undefined");
+
         // A nested type of the app's is its twin, named by its owner (#584): `Ops` inside Calc is
         // `Calc$Ops`, which a top-level `Ops` can never be.
         if (symbol is INamedTypeSymbol nested && nested.NestedTwinName() is not null)
@@ -96,7 +102,9 @@ public class IdentifierStrategy : IExpressionIrStrategy
                 {
                     // A method GROUP names the symbol without calling it — `Func<…> f = Usable` emits
                     // `FaceName.usable` just as a call would, and fails at hydration just as hard.
-                    symbol.ReportIfHostOnly(identifier, context);
+                    // Refused, it is written as nothing more: a platform member reached bare would
+                    // otherwise be told again as untranslatable (EQ2004) beside it (#816).
+                    if (symbol.ReportIfHostOnly(identifier, context)) return JsExpr.Literal("undefined");
 
                     // An enum's member reached bare (`using static`) is the member, as its qualified
                     // spelling is: it was `Level.high`, a member of a class nothing defines (#485).
@@ -121,6 +129,17 @@ public class IdentifierStrategy : IExpressionIrStrategy
                 {
                     var slot = symbol is IFieldSymbol field ? field.TwinSlot() : Named(symbol, name);
                     if (isMemberName) return JsExpr.Identifier(slot);
+
+                    // A bare member is `this.` its name, and the fence answers it as it answers
+                    // `this.name` (MemberAccessStrategy). A [ServerOnly] method's bare group was written
+                    // as `this.read.bind(this)` on a twin that leaves `read` out, and a bare group of a
+                    // virtual a subclass keeps on the server was never asked as the contract it is
+                    // (Copilot's review of #944). Through the type `this` is, as the bound tree names it:
+                    // a contract is asked of the types that can be it, and a member a host-only base
+                    // declares stays free in a type that crosses, as `pressable.Child` does.
+                    if (symbol.ReportIfHostOnly(identifier, context,
+                            (context.SemanticHelper.GetOperation(identifier) as IMemberReferenceOperation)?.Instance?.Type))
+                        return JsExpr.Literal("undefined");
 
                     var member = JsExpr.ThisMember(slot);
 
