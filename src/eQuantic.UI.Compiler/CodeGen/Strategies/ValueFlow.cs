@@ -142,18 +142,6 @@ public static class ValueFlow
         if (convertedConstant is not null && Constant(convertedConstant, to) is { } folded)
             return folded;
 
-        // An integer CONSTANT flowing into a float settles at compile time: the author's literal
-        // when the single holds it exactly — `x * 2` stays `x * 2` — and the single it rounds to
-        // otherwise. A long's literal is a BigInt here, so it always becomes the plain number.
-        if (SinglePrecision.Is(to) && convertedConstant is float single && operandConstant is not null
-            && IntegerWidth.Of(from) is not null)
-        {
-            var exact = (double)single == System.Convert.ToDouble(operandConstant, CultureInfo.InvariantCulture);
-            return exact && from is not { SpecialType: SpecialType.System_Int64 or SpecialType.System_UInt64 }
-                ? translated
-                : JsExpr.Literal(((double)single).ToString("R", CultureInfo.InvariantCulture));
-        }
-
         // A DATE becoming an INSTANT is the twin's own conversion, at the offset its kind gives, as .NET's
         // implicit operator converts it: an instant's operator over a date, `instant - date`, bound that
         // conversion and handed the operator the date as it was (#961).
@@ -167,9 +155,26 @@ public static class ValueFlow
             return from.IsNullableValue() ? NullableLift.Unary(translated, Instant, context) : Instant(translated);
         }
 
+        // An integer CONSTANT flowing into a float settles at compile time: the author's literal
+        // when the single holds it exactly — `x * 2` stays `x * 2` — and the single it rounds to
+        // otherwise. A long's literal is a BigInt here, so it always becomes the plain number.
+        if (SinglePrecision.Is(to) && convertedConstant is float single && operandConstant is not null
+            && IntegerWidth.Of(from) is not null)
+        {
+            var exact = (double)single == System.Convert.ToDouble(operandConstant, CultureInfo.InvariantCulture);
+            return exact && from is not { SpecialType: SpecialType.System_Int64 or SpecialType.System_UInt64 }
+                ? translated
+                : JsExpr.Literal(((double)single).ToString("R", CultureInfo.InvariantCulture));
+        }
+
+        // A user-defined conversion from a nullable value to a nullable value, through an operator declared
+        // over the values, is LIFTED: it converts only a value, and null to null (#948). The bound tree names
+        // the operator and the two types, which say so; the operator was handed the null itself.
         if (kind.IsUserDefined)
             return kind.MethodSymbol is { } method
-                && UserDefinedOperators.Conversion(method, JsExprWriter.Write(translated), context) is { } call
+                && UserDefinedOperators.Conversion(method, translated,
+                    from.IsNullableValue() && to.IsNullableValue()
+                        && !method.Parameters.Any(parameter => parameter.Type.IsNullableValue()), context) is { } call
                 ? call
                 : translated;
 

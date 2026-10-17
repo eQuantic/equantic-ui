@@ -40,17 +40,19 @@ public static class UserDefinedOperators
     /// call site calls (<c>fromIcons</c> for <c>implicit operator IconGlyph(Icons)</c>).</summary>
     public static string ConversionName(IMethodSymbol method) => RecordTypeEmitter.ConversionNameFor(method);
 
-    /// <summary>The conversion operator called on its operand, or null where the value passes through.</summary>
-    public static JsExpr? Conversion(IMethodSymbol method, string operand, ConversionContext context)
+    /// <summary>The conversion operator called on its operand, or null where the value passes through.
+    /// <paramref name="lifted"/>, from a nullable value to a nullable value through an operator declared
+    /// over the values, converts only a value, and null to null.</summary>
+    public static JsExpr? Conversion(IMethodSymbol method, JsExpr operand, bool lifted, ConversionContext context)
     {
         if (Refused(method, context)) return Nothing;
         if (!ConversionCrosses(method) || method.Parameters.Length != 1) return null;
         // ONE function names a conversion, and the emitter calls the same one — they used to
         // compute it apart, and a qualified declaration made them disagree in silence.
-        var name = RecordTypeEmitter.ConversionNameFor(method);
         // The C# at the call may never name the type: `Icon(Icons.Search)` mentions no IconGlyph, and
         // an operand a call returned names none either. The call is what introduces the name.
-        return JsExpr.Callish($"{method.ContainingType.IntroduceTwin(context)}.{name}({operand})");
+        var call = Caller(method, RecordTypeEmitter.ConversionNameFor(method), context);
+        return lifted ? NullableLift.Unary(operand, value => call([value]), context) : call([operand]);
     }
 
     /// <summary>The unary operator called on its operand, or null.</summary>
@@ -67,6 +69,14 @@ public static class UserDefinedOperators
         if (Refused(method, context)) return Nothing;
         if (!IsInSource(method) || RecordTypeEmitter.OperatorMethodName(token) is not { } name) return null;
         return JsExpr.Callish($"{method.ContainingType.IntroduceTwin(context)}.{name}({left}, {right})");
+    }
+
+    /// <summary>The call of the static <paramref name="name"/> on the operator's twin, introduced where it
+    /// is called, each operand written as it stands alone, which is the text the call has always had.</summary>
+    private static Func<IReadOnlyList<JsExpr>, JsExpr> Caller(IMethodSymbol method, string name, ConversionContext context)
+    {
+        var twin = method.ContainingType.IntroduceTwin(context);
+        return operands => JsExpr.Callish($"{twin}.{name}({string.Join(", ", operands.Select(JsExprWriter.Write))})");
     }
 
     /// <summary>Whether the fence refuses the operator where it is applied, telling it there.</summary>
