@@ -351,6 +351,11 @@ public class TupleAndAnonymousObjectConformanceTests
         public class Plain { public int X; }
         public class Matcher { public override bool Equals(object? o) => o is string s && s == "x"; public override int GetHashCode() => 0; }
         public class AnyMatcher { public override bool Equals(object? o) => true; public override int GetHashCode() => 0; }
+        public sealed class Typed { public bool Equals(Typed other) => true; }
+        public class Equatable : IEquatable<Equatable> { public int V; public bool Equals(Equatable? other) => other is not null && other.V == V; public override int GetHashCode() => V; }
+        public class Both : IEquatable<Both> { public int V; public bool Equals(Both? other) => other is not null && other.V == V; public override bool Equals(object? obj) => Equals(obj as Both); public override int GetHashCode() => V; }
+        public record Rec(int V) { public virtual bool Equals(Rec? other) => other is not null && other.V % 10 == V % 10; public override int GetHashCode() => V % 10; }
+        public static class Generic { public static bool Same<T>(T a, T b) where T : IEquatable<T> => a.Equals(b); }
         public interface IProbe { bool Equals(IProbe other); }
         public class Probe : IProbe { public bool Equals(IProbe other) => false; }
         """;
@@ -368,6 +373,18 @@ public class TupleAndAnonymousObjectConformanceTests
             """var log = ""; string B() { log += "b"; return "x"; } Matcher A() { log += "a"; return new Matcher(); } return object.Equals(objB: B(), objA: A()) + "|" + object.Equals(objB: new Matcher(), objA: "x") + "|" + object.Equals(new Matcher(), "x") + "|" + log;"""),
         ("an override that takes a tuple or an anonymous object, whatever the second operand is",
             """var m = new AnyMatcher(); object o = m; return object.Equals(m, (1, 2)) + "|" + object.Equals(m, new { A = 1 }) + "|" + object.Equals(o, (new[] { 1 }, 1)) + "|" + o.Equals((new[] { 1 }, 1)) + "|" + object.Equals(o, new { A = 1 }) + "|" + o.Equals(new { A = 1 });"""),
+        // A typed Equals overload is no override of Equals(object): object.Equals, Equals(object), its
+        // group and a set of objects compare by reference, and only a call bound to it asks it.
+        ("a typed Equals overload, which overrides nothing",
+            """var a = new Typed(); var b = new Typed(); object o = a; Func<object?, bool> f = a.Equals; return object.Equals(a, b) + "|" + a.Equals((object)b) + "|" + o.Equals(b) + "|" + f(b) + "|" + a.Equals(b) + "|" + new HashSet<object> { a, b }.Count + "|" + new HashSet<Typed> { a, b }.Count;"""),
+        // IEquatable<T> is what a collection of T asks, and Equals(object) still compares by reference.
+        ("IEquatable<T> without an override of Equals(object)",
+            """var a = new Equatable { V = 1 }; var b = new Equatable { V = 1 }; return object.Equals(a, b) + "|" + a.Equals((object)b) + "|" + a.Equals(b) + "|" + new HashSet<Equatable> { a, b }.Count + "|" + new List<Equatable> { a }.Contains(b) + "|" + new HashSet<object> { a, b }.Count + "|" + Generic.Same(a, b);"""),
+        ("IEquatable<T> beside an override of Equals(object)",
+            """var a = new Both { V = 1 }; var b = new Both { V = 1 }; return object.Equals(a, b) + "|" + a.Equals((object)b) + "|" + a.Equals(b) + "|" + new HashSet<Both> { a, b }.Count + "|" + new HashSet<object> { a, b }.Count + "|" + Generic.Same(a, b);"""),
+        // A record's own typed Equals is what its synthesized Equals(object) and == ask.
+        ("a record's own typed Equals",
+            """var a = new Rec(1); var b = new Rec(11); return a.Equals((object)b) + "|" + a.Equals(b) + "|" + (a == b) + "|" + object.Equals(a, b) + "|" + new HashSet<Rec> { a, b }.Count + "|" + new HashSet<object> { a, b }.Count;"""),
         // An interface's own Equals is dispatched as any interface member is, by a call and by a group.
         ("an Equals an interface declares",
             """IProbe p = new Probe(); Func<IProbe, bool> f = p.Equals; return p.Equals(p) + "|" + f(p) + "|" + new Probe().Equals(p) + "|" + object.Equals(p, p);"""),

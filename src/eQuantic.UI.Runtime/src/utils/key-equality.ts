@@ -85,6 +85,22 @@ export function sameKey(a: unknown, b: unknown): boolean {
   return true;
 }
 
+/**
+ * `IEquatable<T>.Equals`, which `EqualityComparer<T>.Default` asks for a type that implements it and generic
+ * code calls through the interface or a type parameter it constrains: the typed `Equals` of the app's own the
+ * value's twin names (`static $equatable`), which holds a name of its own there, since the twin's `equals` is
+ * `Equals(object)`'s, and otherwise what the value turns out to be (`sameKey`: a number, a string, a runtime
+ * twin's or a record's `equals`, a tuple's elements). A null equals only a null, as .NET's comparer has it.
+ * Under `equals`, a typed `Equals(C)` answered `object.Equals` where .NET asks `Equals(object)` (Copilot's
+ * second review of #947).
+ */
+export function sameEquatable(a: unknown, b: unknown): boolean {
+  if (a == null || b == null) return a == null && b == null;
+  const named = (a as { constructor?: { $equatable?: unknown } }).constructor?.$equatable;
+  const typed = typeof named === 'string' ? (a as Record<string, unknown>)[named] : undefined;
+  return typeof typed === 'function' ? Boolean((typed as (other: unknown) => unknown).call(a, b)) : sameKey(a, b);
+}
+
 /** A tuple (an array) or an anonymous type (a plain object): a value compared by its members. */
 export function isPlainValue(value: unknown): boolean {
   if (Array.isArray(value)) return true;
@@ -130,6 +146,7 @@ const shapes = new WeakMap<Equality, string>([
   [sameKey, 'o'],
   [sameItem, 'r'],
   [sameValueZero, 'i'],
+  [sameEquatable, 'q'],
 ]);
 const byShape = new Map<string, Equality>();
 let foreign = 0;

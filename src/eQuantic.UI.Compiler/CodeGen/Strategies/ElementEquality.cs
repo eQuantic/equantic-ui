@@ -53,11 +53,14 @@ internal static class ElementEquality
     /// <summary>
     /// The function <see cref="Compare"/> calls for a value of <paramref name="type"/>, named on its own
     /// where a caller hands the comparison over rather than calling it (<c>$eq.equalsInstance</c>'s).
+    /// <paramref name="equatable"/> false leaves <c>IEquatable&lt;T&gt;</c> out, for what a value's own
+    /// <c>Equals(object)</c> answers, which never asks it: <c>object.Equals(a, b)</c> and the call through
+    /// <c>object</c>.
     /// </summary>
-    internal static string Comparer(ITypeSymbol? type, Func<string, string>? hoist = null)
+    internal static string Comparer(ITypeSymbol? type, Func<string, string>? hoist = null, bool equatable = true)
     {
         if (type is null) return Eq.Equals;
-        var (equality, valueSafe) = Describe(type);
+        var (equality, valueSafe) = Describe(type, equatable);
         if (valueSafe) return Eq.Equals;
         return equality switch
         {
@@ -65,8 +68,28 @@ internal static class ElementEquality
             // never its members, which `sameKey` walks for a value that may be a tuple.
             null or "'item'" => Eq.SameItem,
             "'own'" => Eq.SameKey,
+            Eq.SameEquatable => Eq.SameEquatable,
             _ => hoist?.Invoke(equality) ?? equality,
         };
+    }
+
+    /// <summary>
+    /// The typed <c>Equals</c> of the app's own that answers <c>IEquatable&lt;T&gt;</c> for a class or a struct
+    /// that implements it over itself, which <c>EqualityComparer&lt;T&gt;.Default</c> asks, or null: .NET's own
+    /// types and a record's synthesized one answer through the twin's <c>equals</c>. Its twin holds it under a
+    /// name of its own (<see cref="TwinMethodName.TypedEquals"/>) and names it in <c>static $equatable</c>.
+    /// </summary>
+    internal static IMethodSymbol? EquatableMethod(ITypeSymbol? type)
+    {
+        if (type is not INamedTypeSymbol { TypeKind: TypeKind.Class or TypeKind.Struct } named) return null;
+        var face = named.AllInterfaces.FirstOrDefault(implemented =>
+            implemented.OriginalDefinition.ToDisplayString() == "System.IEquatable<T>"
+            && SymbolEqualityComparer.Default.Equals(implemented.TypeArguments[0], named));
+        return face?.GetMembers("Equals").OfType<IMethodSymbol>().FirstOrDefault() is { } contract
+            && named.FindImplementationForInterfaceMember(contract) is IMethodSymbol implementation
+            && TwinMethodName.TypedEquals(implementation)
+            ? implementation
+            : null;
     }
 
     /// <summary>
@@ -130,7 +153,7 @@ internal static class ElementEquality
         && tuple.AllInterfaces.Any(implemented =>
             SymbolEqualityComparer.Default.Equals(implemented.OriginalDefinition, face.OriginalDefinition));
 
-    private static (string? Equality, bool ValueSafe) Describe(ITypeSymbol? type)
+    private static (string? Equality, bool ValueSafe) Describe(ITypeSymbol? type, bool equatable = true)
     {
         var value = type.UnwrapNullable() ?? type;
         switch (value)
@@ -150,6 +173,9 @@ internal static class ElementEquality
                 return Composite(pair.TypeArguments, parts => $"{Eq.PairComparer}({string.Join(", ", parts)})");
         }
 
+        // IEquatable<T> of the app's own, which EqualityComparer<T>.Default asks before Equals(object): a typed
+        // Equals is no `equals` of the twin, so a set of the type found nothing by it (#947's second review).
+        if (equatable && EquatableMethod(value) is not null) return (Eq.SameEquatable, false);
         if (LinqKeys.ComparesByValue(value)) return ("true", true);
         return value switch
         {
@@ -175,7 +201,7 @@ internal static class ElementEquality
     private static (string? Equality, bool ValueSafe) Composite(IEnumerable<ITypeSymbol> members,
         Func<IReadOnlyList<string>, string> generated)
     {
-        var parts = members.Select(Describe).ToList();
+        var parts = members.Select(member => Describe(member)).ToList();
         if (parts.All(part => part.ValueSafe)) return ("true", true);
         return (generated(parts.Select(part => part.Equality ?? "false").ToList()), false);
     }

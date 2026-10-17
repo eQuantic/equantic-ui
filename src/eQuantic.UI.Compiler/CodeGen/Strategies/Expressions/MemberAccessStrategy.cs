@@ -233,9 +233,11 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         {
             context.UsedHelpers.Add(Eq.Import);
             var checkedReceiver = JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver);
-            var comparator = type is INamedTypeSymbol { TypeKind: TypeKind.Interface } face && ElementEquality.Of(face) == "'item'"
-                ? Eq.SameItem
-                : Eq.SameKey;
+            var comparator = ElementEquality.IsEquatableEquals(method)
+                ? Eq.SameEquatable
+                : type is INamedTypeSymbol { TypeKind: TypeKind.Interface } face && ElementEquality.Of(face) == "'item'"
+                    ? Eq.SameItem
+                    : Eq.SameKey;
             return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), checkedReceiver, JsExpr.Identifier(comparator));
         }
         if (!type.IsNullableValue() && method.ContainingType.SpecialType == SpecialType.System_Object)

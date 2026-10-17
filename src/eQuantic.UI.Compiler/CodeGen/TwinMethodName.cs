@@ -30,6 +30,12 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// and the method of the type's own holds a name of its own. C# lets the two answer differently, and a
 /// <c>foreach</c> over the class binds the public <c>GetEnumerator()</c> where LINQ binds the interface's.
 /// </para>
+/// <para>
+/// And so does an <c>Equals</c> that is no <c>Equals(object)</c> (<see cref="TypedEquals"/>): the twin's
+/// <c>equals</c> is the slot the runtime asks for <c>Equals(object)</c>, so a typed overload under that name
+/// answered <c>object.Equals(new C(), new C())</c>, which .NET answers by reference (Copilot's second review
+/// of #947). <c>IEquatable&lt;T&gt;</c>'s callers find it through the twin's <c>$equatable</c>.
+/// </para>
 /// </summary>
 internal static class TwinMethodName
 {
@@ -39,7 +45,7 @@ internal static class TwinMethodName
         var slot = Slot(method);
         if (Hidden(slot) is { } hidden) return Next(NameOf(hidden));
         var own = SimpleName(slot).ToCamelCase();
-        return ExplicitBeside(slot) is not null ? Next(own) : own;
+        return ExplicitBeside(slot) is not null || TypedEquals(slot) ? Next(own) : own;
     }
 
     /// <summary>The name a declared method holds, asked of its symbol where the model knows it, and its
@@ -63,8 +69,23 @@ internal static class TwinMethodName
     public static bool HoldsANameOfItsOwn(IMethodSymbol method)
     {
         var slot = Slot(method);
-        return Hidden(slot) is not null || ExplicitBeside(slot) is not null;
+        return Hidden(slot) is not null || ExplicitBeside(slot) is not null || TypedEquals(slot);
     }
+
+    /// <summary>
+    /// Whether <paramref name="slot"/> is an <c>Equals</c> of one parameter that is no <c>object</c>, an instance
+    /// method this compilation declares on a class, a struct or an interface: a typed overload, an
+    /// <c>IEquatable&lt;T&gt;</c> implementation and an interface's own <c>Equals</c> among them, which C# never
+    /// asks for <c>Equals(object)</c>. Each holds <c>equals$1</c>, so the interface's member and the methods
+    /// that implement it meet there.
+    /// </summary>
+    public static bool TypedEquals(IMethodSymbol slot) =>
+        slot is { MethodKind: MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation, IsStatic: false,
+            IsImplicitlyDeclared: false, Parameters.Length: 1 }
+        && SimpleName(slot) == "Equals"
+        && slot.Parameters[0].Type.SpecialType != SpecialType.System_Object
+        && slot.ContainingType is { TypeKind: TypeKind.Class or TypeKind.Struct or TypeKind.Interface, IsExtension: false }
+        && slot.Locations.Any(location => location.IsInSource);
 
     /// <summary>
     /// The explicit interface implementation that <paramref name="method"/> shares its name with in its

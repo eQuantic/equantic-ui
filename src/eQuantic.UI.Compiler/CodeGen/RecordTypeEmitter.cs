@@ -321,28 +321,46 @@ public class RecordTypeEmitter
             // compare (#591). `o instanceof Animal` alone made a Dog equal to an Animal with the same
             // members, once a record could extend one that declares no value (#428).
             // Param annotations are TS-only (the plain-JS path must stay parseable as .mjs).
-            sb.Append(tsTypeDeclarations ? $"equals(o: unknown) {{ return o instanceof {name}"
-                : $"equals(o) {{ return o instanceof {name}");
-            if (baseName != null) sb.Append(" && super.equals(o)");
-            else if (type is RecordDeclarationSyntax) sb.Append(" && o.constructor === this.constructor");
-            // A generic one's closed type too: one twin class serves every type argument, so `Box<int>`
-            // equalled `Box<double>` holding the same 1 (#651). The build marks each value C# names the
-            // type arguments of, and an unmarked one is not taken for another type.
-            if (type.TypeParameterList is { Parameters.Count: > 0 }) sb.Append($" && {Eq.SameClosure}(this, o)");
-            // Each member as EqualityComparer<T>.Default compares its type (ElementEquality): an array
-            // by reference, where `$eq.equals` walked it element by element (#554). A comparison
-            // generated from a tuple's element types is made once, a static of the twin, where it was
-            // looked up again on every call.
-            var generated = new List<string>();
-            string Hoist(string equality)
+            // A record that declares its own typed Equals has C# write its Equals(object) over it, as
+            // `Equals(obj as R)` for a class and `obj is R r && Equals(r)` for a struct: the typed one holds
+            // a name of its own (TwinMethodName.TypedEquals), and the twin's `equals` asks it, where it
+            // compared the members C#'s own would have (Copilot's second review of #947).
+            var ownTyped = type is RecordDeclarationSyntax && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol recordSymbol
+                ? ElementEquality.EquatableMethod(recordSymbol)
+                : null;
+            if (ownTyped is not null)
             {
-                generated.Add(equality);
-                return $"{name}.$equality{generated.Count - 1}";
+                var typedName = TwinMethodName.Of(ownTyped);
+                var head = tsTypeDeclarations ? "equals(o: unknown): boolean" : "equals(o)";
+                sb.Append(IsStruct(type)
+                    ? $"{head} {{ return o instanceof {name} && this.{typedName}(o); }} "
+                    : $"{head} {{ return this.{typedName}(o instanceof {name} ? o : null); }} ");
             }
-            foreach (var m in members) sb.Append($" && {ElementEquality.Compare(TypeOf(m), $"this.{m.Store}", $"o.{m.Store}", Hoist)}");
-            sb.Append("; } ");
-            for (var i = 0; i < generated.Count; i++)
-                sb.Append($"static $equality{i} = {generated[i]}; ");
+            else
+            {
+                sb.Append(tsTypeDeclarations ? $"equals(o: unknown) {{ return o instanceof {name}"
+                    : $"equals(o) {{ return o instanceof {name}");
+                if (baseName != null) sb.Append(" && super.equals(o)");
+                else if (type is RecordDeclarationSyntax) sb.Append(" && o.constructor === this.constructor");
+                // A generic one's closed type too: one twin class serves every type argument, so `Box<int>`
+                // equalled `Box<double>` holding the same 1 (#651). The build marks each value C# names the
+                // type arguments of, and an unmarked one is not taken for another type.
+                if (type.TypeParameterList is { Parameters.Count: > 0 }) sb.Append($" && {Eq.SameClosure}(this, o)");
+                // Each member as EqualityComparer<T>.Default compares its type (ElementEquality): an array
+                // by reference, where `$eq.equals` walked it element by element (#554). A comparison
+                // generated from a tuple's element types is made once, a static of the twin, where it was
+                // looked up again on every call.
+                var generated = new List<string>();
+                string Hoist(string equality)
+                {
+                    generated.Add(equality);
+                    return $"{name}.$equality{generated.Count - 1}";
+                }
+                foreach (var m in members) sb.Append($" && {ElementEquality.Compare(TypeOf(m), $"this.{m.Store}", $"o.{m.Store}", Hoist)}");
+                sb.Append("; } ");
+                for (var i = 0; i < generated.Count; i++)
+                    sb.Append($"static $equality{i} = {generated[i]}; ");
+            }
 
             // with(patch): a COPY, onto the prototype (a spread would drop the methods), then the
             // members the patch names. C# copies the fields and runs no initializer, and building it
@@ -374,6 +392,11 @@ public class RecordTypeEmitter
             // reload carries a value's twin as its data while it leaves a class's object to its
             // initializer (dev/hot-reload-state.ts).
             sb.Append("static $record = true; ");
+            // The typed Equals of the app's own that answers IEquatable<T>, which a collection of the type and
+            // generic code over IEquatable<T> ask (`$eq.collections.sameEquatable`).
+            if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol equatable
+                && ElementEquality.EquatableMethod(equatable) is { } typed)
+                sb.Append($"static $equatable = {JsStringLiteral.Quote(TwinMethodName.Of(typed))}; ");
 
             // The zero C# gives a struct: `default(S)`, an array's slot, an OrDefault, and `new S()`
             // where S declares no parameterless constructor. Every struct twin carries it, built

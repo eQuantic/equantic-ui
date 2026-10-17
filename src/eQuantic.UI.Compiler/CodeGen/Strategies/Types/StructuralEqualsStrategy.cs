@@ -105,6 +105,12 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         var other = context.Converter.ConvertIr(inv.ArgumentList.Arguments[0].Expression);
         var type = context.SemanticHelper.GetType(ma.Expression);
 
+        // IEquatable<T>.Equals, through the interface or a type parameter it constrains: the typed Equals of
+        // the app's own the value's twin names, and what the value turns out to be otherwise, a number and a
+        // string included (Copilot's second review of #947).
+        if (ElementEquality.IsEquatableEquals(context.SemanticHelper.GetSymbol(inv) as IMethodSymbol))
+            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, JsExpr.Identifier(Eq.SameEquatable));
+
         if (type.UnwrapNullable() is INamedTypeSymbol named && (named.IsTupleType || named.IsAnonymousType))
         {
             // A tuple's Equals compares each element with that element type's default comparer, an array
@@ -281,7 +287,8 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
             return ElementEquality.OwnEquals((INamedTypeSymbol)type.UnwrapNullable()!);
         // A struct's own Equals(object) override, before anything reads the other value.
         if (DeclaresObjectEquals(type)) return Eq.SameItem;
-        var comparer = ElementEquality.Comparer(type);
+        // Equals(object), which never asks IEquatable<T>: a typed overload answers only a call bound to it.
+        var comparer = ElementEquality.Comparer(type, equatable: false);
         return comparer == Eq.Equals ? null : comparer;
     }
 
@@ -301,7 +308,7 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
             return ElementEquality.OwnEquals((INamedTypeSymbol)other.UnwrapNullable()!) is { } generated
                 ? (generated, true)
                 : (null, false);
-        return other is not null && !DoesNotDecide(other) && ElementEquality.Comparer(other) == Eq.SameItem
+        return other is not null && !DoesNotDecide(other) && ElementEquality.Comparer(other, equatable: false) == Eq.SameItem
             ? (Eq.SameItem, false)
             : (Eq.SameKey, false);
     }
