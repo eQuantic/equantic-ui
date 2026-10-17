@@ -56,6 +56,20 @@ public class CodeEditorCompletionTests
 
     private static RealizeResult Frame(PhotonHost host) => host.RenderFrame(new DisplayListBuilder());
 
+    /// <summary>
+    /// What an editor's configuration comes from: a parent that builds it, and hands it the next
+    /// configuration on a rebuild, which the editor's position adopts (<see cref="UiComponent.AdoptConfig"/>)
+    /// before the editor builds again. The editor the test holds is the one the position keeps.
+    /// </summary>
+    private sealed class Parent(CodeEditor first) : StatefulComponent
+    {
+        private CodeEditor _current = first;
+
+        public void Hand(CodeEditor next) => SetState(() => _current = next);
+
+        public override VisualNode Build(ComponentContext context) => _current;
+    }
+
     /// <summary>Two frames: the second knows how big the viewport turned out to be.</summary>
     private static RealizeResult Settle(PhotonHost host)
     {
@@ -742,13 +756,14 @@ public class CodeEditorCompletionTests
     public void AnEditorMadeReadOnlyWhileItsListShows_ClosesIt()
     {
         var editor = Editor(Lines(20), new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"));
-        var host = Host(editor);
+        var parent = new Parent(editor);
+        var host = Host(parent);
         Settle(host);
         ClickAt(host, editor, 1, 0);
         Type(host, "Co");
         Shown(host).Should().NotBeEmpty();
 
-        editor.AdoptConfig(new CodeEditor(Lines(20), "csharp")
+        parent.Hand(new CodeEditor(Lines(20), "csharp")
         {
             ShowLineNumbers = false,
             Height = SizeValue.Fill,
@@ -791,15 +806,16 @@ public class CodeEditorCompletionTests
             Height = SizeValue.Fill,
             Completions = [provider],
         };
-        var host = Host(editor);
+        var parent = new Parent(editor);
+        var host = Host(parent);
         Settle(host);
         ClickAt(host, editor, 1, 0);
         Type(host, "Co");
         var handed = editor.Editor.Completion.Providers.ToList();
 
-        // What the reconciler does with a parent's next build: the retained editor adopts the fresh
-        // one's configuration, a new list around the same provider.
-        editor.AdoptConfig(new CodeEditor(Lines(20), "csharp") { Completions = [provider] });
+        // A parent's next build: the retained editor adopts the fresh one's configuration, a new
+        // list around the same provider, and builds again with it.
+        parent.Hand(new CodeEditor(Lines(20), "csharp") { Completions = [provider] });
         Settle(host);
 
         editor.Editor.Completion.IsOpen.Should().BeTrue();
@@ -822,11 +838,12 @@ public class CodeEditorCompletionTests
             Completions = [new EqualProvider("words")],
         };
         editor.Editor.Completion.Providers.Add(apps);
-        var host = Host(editor);
+        var parent = new Parent(editor);
+        var host = Host(parent);
         Settle(host);
         editor.Editor.Completion.Providers.Should().HaveCount(2, "the app's provider and the editor's");
 
-        editor.AdoptConfig(new CodeEditor(Lines(20), "csharp") { Completions = [] });
+        parent.Hand(new CodeEditor(Lines(20), "csharp") { Completions = [] });
         Settle(host);
 
         editor.Editor.Completion.Providers.Should().ContainSingle()
@@ -856,13 +873,14 @@ public class CodeEditorCompletionTests
             Height = SizeValue.Fill,
             Completions = providers,
         };
-        var host = Host(editor);
+        var parent = new Parent(editor);
+        var host = Host(parent);
         Settle(host);
         editor.Editor.Completion.Providers.Should().Equal(providers, "the first build hands the list");
 
         var gained = new ListCompletionProvider(new CodeCompletionItem("Cobalt"));
         providers.Add(gained);
-        editor.AdoptConfig(new CodeEditor(Lines(20), "csharp") { Completions = providers });
+        parent.Hand(new CodeEditor(Lines(20), "csharp") { Completions = providers });
         Settle(host);
 
         editor.Editor.Completion.Providers.Should().Equal(providers, "the list holds a provider it did not");

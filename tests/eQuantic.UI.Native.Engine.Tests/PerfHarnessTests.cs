@@ -71,6 +71,72 @@ public class PerfHarnessTests
         return page;
     }
 
+    /// <summary>
+    /// The dense scene's shape built by STATEFUL components: a stateful page whose 24 cards are
+    /// stateful too, each holding a count it shows. <see cref="DenseScene"/> has none, so the frame
+    /// budget said nothing about what retaining an instance costs per frame (#950, plan section 5),
+    /// which until the element tree was an identity string, a store write and a reconcile per stateful
+    /// component, every frame.
+    /// </summary>
+    private sealed class StatefulDashboard : Primitives.StatefulComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            var theme = context.Theme;
+            var page = new Column(gap: Space.S3) { Width = SizeValue.Fill };
+            page.Add(new LoopMotion(
+                new Box(new BoxStyle
+                {
+                    Width = SizeValue.Fixed(120),
+                    Height = SizeValue.Fixed(8),
+                    Background = theme.SurfaceHighlight,
+                    CornerRadius = new CornerRadii(4),
+                }),
+                LoopEffect.SlideX, -0.35f, 1.05f, 1200));
+            for (var r = 0; r < 6; r++)
+            {
+                var row = new Row(gap: Space.S3) { Width = SizeValue.Fill };
+                for (var c = 0; c < 4; c++)
+                    row.Add(new Flexible(new StatefulCard($"Card {r}-{c}"), 1));
+                page.Add(row);
+            }
+            return page;
+        }
+    }
+
+    private sealed class StatefulCard : Primitives.StatefulComponent
+    {
+        private int _opened;
+
+        public StatefulCard(string title) => Title = title;
+
+        public string Title { get; private set; }
+
+        public override void AdoptConfig(UiComponent next)
+        {
+            if (next is StatefulCard card) Title = card.Title;
+        }
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var theme = context.Theme;
+            var card = new Column(gap: Space.S2);
+            card.Add(new Text(Title, TypeRole.Title, theme.TextPrimary, maxLines: 1));
+            card.Add(new Text($"Opened {_opened} times", TypeRole.BodyM, theme.TextSecondary, maxLines: 2));
+            card.Add(new Button("Open", Variant.Outline, SizeVariant.Small)
+            {
+                OnPressed = () => SetState(() => _opened++),
+            });
+            return new Box(new BoxStyle
+            {
+                Width = SizeValue.Fill,
+                Background = theme.Surface,
+                CornerRadius = new CornerRadii(8),
+                Padding = EdgeInsets.All(Space.S3),
+            }, card);
+        }
+    }
+
     private const int OverlayLayers = 8;
 
     /// <summary>
@@ -117,8 +183,10 @@ public class PerfHarnessTests
     /// the reused-builder loop (the shells' real pattern, measured here). What remains is the
     /// LayoutNode tree — pooling it needs an explicit RealizeResult lifetime first (a double
     /// buffer quietly rewrote retained trees under 155 tests). The ratchet tightens as that
-    /// lands; it never loosens casually.</summary>
-    private const long AllocationCeilingBytesPerFrame = 152 * 1024;
+    /// lands; it never loosens casually. LOWERED to 100 KB on 2026-10-17 (#950): a frame the loop
+    /// asks for builds nothing now, and the scene measured 90.9 KB, from 114.8 KB on main the same
+    /// day, where every frame rebuilt its 24 buttons.</summary>
+    private const long AllocationCeilingBytesPerFrame = 100 * 1024;
 
     /// <summary>Draw commands the dense scene emits — the batching ruler (M1 spoke of a static
     /// dashboard under 30 DRAW CALLS after batching; commands are the pre-batch upper bound).
@@ -168,8 +236,17 @@ public class PerfHarnessTests
     /// from empty by doubling, the hit regions alone four arrays a frame of which three were thrown
     /// away. With both, the frame measured 71.2 KB.
     /// </para>
+    /// <para>
+    /// LOWERED to 42 KB on 2026-10-17 (#950), and by the most this ruler ever moved. The scene has no
+    /// stateful component, but its 24 buttons are components, and while Build ran inside measure
+    /// every frame the loop asked for built all 24 again: a fresh subtree each, every box with its
+    /// style, which is what most of the paragraphs above were fighting over. A frame drawn only for
+    /// motion builds nothing now (the element tree's build phase), and the scene measured 38.3 KB,
+    /// from 64.2 KB on main the same day. The margin is the one the ruler has kept since it was
+    /// pinned, about a tenth, because three runners measure it and this number was read on one.
+    /// </para>
     /// </summary>
-    private const long PooledAllocationCeilingBytesPerFrame = 72 * 1024;
+    private const long PooledAllocationCeilingBytesPerFrame = 42 * 1024;
 
     /// <summary>
     /// What an open LAYER costs a frame, with the shells' configuration (#290). <see cref="DenseScene"/>
@@ -224,6 +301,25 @@ public class PerfHarnessTests
                           $"(ceiling {PooledAllocationCeilingBytesPerFrame / 1024.0:F0} KB)");
         perFrame.Should().BeLessThan(PooledAllocationCeilingBytesPerFrame,
             "the shells run with RecycleFrames on — this is the allocation profile production sees");
+    }
+
+    /// <summary>
+    /// The stateful scene's steady frame, with the shells' configuration. Measured 2026-10-17 (#950):
+    /// 98,480 bytes on main, where every frame rebuilt the page and its 24 cards and keyed each card
+    /// by a string; 94,110 with the element tree building each once a frame; 28,742 once a frame drawn
+    /// only for motion builds nothing. The ceiling is that last number and about a tenth.
+    /// </summary>
+    private const long PooledStatefulCeilingBytesPerFrame = 32 * 1024;
+
+    [Fact]
+    public void AStatefulScene_ItsSteadyFrameStaysUnderItsCeiling()
+    {
+        var perFrame = PooledBytesPerFrame(new StatefulDashboard());
+
+        _output.WriteLine($"pooled stateful steady-state allocation: {perFrame} bytes/frame "
+                          + $"(ceiling {PooledStatefulCeilingBytesPerFrame})");
+        perFrame.Should().BeLessThan(PooledStatefulCeilingBytesPerFrame,
+            "a frame the loop asks for moves a strip and builds no component, stateful or not");
     }
 
     [Fact]

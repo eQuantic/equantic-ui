@@ -1,1 +1,6 @@
 #nullable enable
+[EQX0001]eQuantic.UI.Native.Framework.LayoutNode.Element.get -> eQuantic.UI.Primitives.Element?
+[EQX0001]static eQuantic.UI.Native.Framework.LayoutEngine.Layout(eQuantic.UI.Primitives.VisualNode! root, float viewportWidth, float viewportHeight, eQuantic.UI.Native.Framework.LayoutContext! context, string! rootPath = "r", eQuantic.UI.Native.Framework.StretchKind rootStretch = eQuantic.UI.Native.Framework.StretchKind.None, eQuantic.UI.Primitives.Element? rootElement = null) -> eQuantic.UI.Native.Framework.LayoutNode!
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Instances.get -> eQuantic.UI.Primitives.ComponentInstanceStore?
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Instances.init -> void
+*REMOVED*[EQX0001]static eQuantic.UI.Native.Framework.LayoutEngine.Layout(eQuantic.UI.Primitives.VisualNode! root, float viewportWidth, float viewportHeight, eQuantic.UI.Native.Framework.LayoutContext! context, string! rootPath = "r", eQuantic.UI.Native.Framework.StretchKind rootStretch = eQuantic.UI.Native.Framework.StretchKind.None) -> eQuantic.UI.Native.Framework.LayoutNode!

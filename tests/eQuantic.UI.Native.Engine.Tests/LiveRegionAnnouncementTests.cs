@@ -258,7 +258,13 @@ public class LiveRegionAnnouncementTests
     /// <summary>Two regions at different paths; which one is present swaps, and the count does not.</summary>
     private sealed class Swappable : StatefulComponent
     {
-        public string Which { get; set; } = "a";
+        private string _which = "a";
+
+        public string Which
+        {
+            get => _which;
+            set => SetState(() => _which = value);
+        }
 
         public override VisualNode Build(ComponentContext context)
         {
@@ -305,11 +311,18 @@ public class LiveRegionAnnouncementTests
 
     private const float LiveRegionAnnouncerQuietMs = 1000f;
 
-    /// <summary>A region whose text a test can change between frames.</summary>
+    /// <summary>A region whose text a test can change between frames, through <c>SetState</c> as an
+    /// app changes what it shows: a frame builds what a SetState marked.</summary>
     private sealed class Mutable(string text, LiveRegionUrgency urgency = LiveRegionUrgency.Polite)
         : StatefulComponent
     {
-        public string Text { get; set; } = text;
+        private string _text = text;
+
+        public string Text
+        {
+            get => _text;
+            set => SetState(() => _text = value);
+        }
 
         public override VisualNode Build(ComponentContext context) =>
             new LiveRegion(new Text(Text, TypeRole.BodyM))
@@ -319,7 +332,13 @@ public class LiveRegionAnnouncementTests
     /// <summary>A region a test can remove from the tree and put back.</summary>
     private sealed class Toggleable(string text) : StatefulComponent
     {
-        public bool Shown { get; set; } = true;
+        private bool _shown = true;
+
+        public bool Shown
+        {
+            get => _shown;
+            set => SetState(() => _shown = value);
+        }
 
         public override VisualNode Build(ComponentContext context)
         {

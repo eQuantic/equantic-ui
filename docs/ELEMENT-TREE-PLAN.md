@@ -429,6 +429,28 @@ the parity rows it closes flip.
    `ComponentInstanceStore` goes. Closes #935 by construction. Proof: the native suites and goldens
    unchanged, retention by element across rebuilds and keyed moves, the unmount-then-mount order,
    and the frame budget measured on a scene that has stateful components.
+
+   **Landed** (#950, `openspec/changes/archive/2026-10-17-one-element-per-position`), with four
+   deviations, each for a reason found while building it:
+   - Two kinds, not three. `InheritedElement` arrives with `InheritedComponent` in E5: a kind with no
+     node to hold is code no test can reach.
+   - The engine is `[ServerOnly]` until E3, because no browser code drives it yet. Run through eqc as
+     an app's code, it is refused in three places, which E3 starts from: the visitor that names a
+     node's children (`ChildSlots`), whose forty-one `Visit` overloads lower to one `visit()`
+     (EQ1007); `GetType()` in Flutter's `canUpdate` (EQ2004); and `GetType().Name` in a message.
+   - Only what a `SetState` marked builds, but every request for a frame other than a `SetState` and
+     motion still rebuilds every component: the host routes input into models a build reads without
+     a `SetState` (a code editor's controller, a spreadsheet's) and addresses them by path. E2, which
+     points the regions at elements, can narrow it.
+   - An overlay's child and an anchored panel are DEFERRED slots, built when the realizer shows their
+     layer, because the realizer decides whether it shows (`Open` with motion, the hover it reads at
+     paint). A slot not shown in a frame leaves the tree when the frame ends.
+
+   Measured with recycled frames, main against the change: the dense scene 64.2 KB to 38.3 KB a
+   frame (its 24 buttons were built on every frame), a stateful dashboard 98,480 to 28,742 bytes.
+   Building it also found that the host's end of frame wrote a request made after the build over
+   with "nothing moves", so a list's first window waited for the next input; the request survives
+   now.
 2. **E2, Photon's node state.** The five other stores become state slots, the presence exits move
    to the owner as detached, paint-only replays, the host's path fields become element references,
    the shells' accessibility ids become element ids, and the path cache goes. Proof: a node that
