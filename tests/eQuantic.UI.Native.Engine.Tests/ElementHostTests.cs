@@ -199,6 +199,120 @@ public class ElementHostTests
         counted.Builds.Should().Be(1);
     }
 
+    private sealed class Tick : StatefulComponent
+    {
+        public int Builds { get; private set; }
+
+        public void Touch() => SetState(() => { });
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            Builds++;
+            return new Text("tick", TypeRole.BodyM);
+        }
+    }
+
+    /// <summary>A screen with a loop running and two components that build nothing of it.</summary>
+    private static Column Moving(Tick first, Tick second)
+    {
+        var page = new Column();
+        page.Add(new LoopMotion(new Primitives.Box(new BoxStyle
+        {
+            Width = SizeValue.Fixed(120),
+            Height = SizeValue.Fixed(8),
+        }), LoopEffect.SlideX, -0.35f, 1.05f, 1200));
+        page.Add(first);
+        page.Add(second);
+        return page;
+    }
+
+    /// <summary>
+    /// The frames a loop asks for move a strip and change nothing a build reads, so they build
+    /// nothing: every one of them rebuilt every component of the screen while Build ran in measure.
+    /// </summary>
+    [Fact]
+    public void FramesDrawnOnlyForMotion_BuildNothing()
+    {
+        var (first, second) = (new Tick(), new Tick());
+        var host = Open(Moving(first, second));
+
+        for (var frame = 1; frame <= 30; frame++)
+        {
+            host.NeedsRender.Should().BeTrue("the loop keeps frames coming");
+            host.RenderFrame(new DisplayListBuilder(), frame * 16f);
+        }
+
+        first.Builds.Should().Be(1);
+        second.Builds.Should().Be(1);
+    }
+
+    [Fact]
+    public void ASetState_BuildsItsComponentAlone()
+    {
+        var (first, second) = (new Tick(), new Tick());
+        var host = Open(Moving(first, second));
+
+        second.Touch();
+        host.RenderFrame(new DisplayListBuilder(), 16);
+
+        first.Builds.Should().Be(1);
+        second.Builds.Should().Be(2);
+    }
+
+    /// <summary>What the host is told from outside the tree rebuilds all of it: the models input
+    /// reaches are read by builds that no SetState marked.</summary>
+    [Fact]
+    public void AFrameAfterAnInvalidation_RebuildsEveryComponent()
+    {
+        var (first, second) = (new Tick(), new Tick());
+        var host = Open(Moving(first, second));
+
+        host.Invalidate();
+        host.RenderFrame(new DisplayListBuilder(), 16);
+
+        first.Builds.Should().Be(2);
+        second.Builds.Should().Be(2);
+    }
+
+    private sealed class Windowed : StatefulComponent
+    {
+        private float _viewport;
+
+        public int Builds { get; private set; }
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            Builds++;
+            return new ScrollView(new Text($"viewport {_viewport}", TypeRole.BodyM))
+            {
+                Height = SizeValue.Fixed(120),
+                OnViewportChanged = viewport =>
+                {
+                    if (MathF.Abs(viewport - _viewport) < 0.5f) return;
+                    SetState(() => _viewport = viewport);
+                },
+            };
+        }
+    }
+
+    /// <summary>
+    /// A scroller reports its viewport from the frame that drew it, and a list that windows its rows
+    /// answers with a SetState. That request arrives after the build, and the frame's end used to
+    /// write it over with "nothing moves", so the first window waited for the next input.
+    /// </summary>
+    [Fact]
+    public void ASetStateFromAFramesOwnCallback_GetsTheNextFrame()
+    {
+        var windowed = new Windowed();
+        var host = Open(windowed);
+
+        host.NeedsRender.Should().BeTrue("the viewport arrived after the build that needs it");
+        host.RenderFrame(new DisplayListBuilder(), 16);
+
+        windowed.Builds.Should().Be(2);
+        host.NeedsRender.Should().BeFalse("the viewport it built with is the one reported");
+    }
+
     private static LayoutNode Find(LayoutNode node, Func<LayoutNode, bool> match) =>
         TryFind(node, match) ?? throw new InvalidOperationException("no laid-out node matched");
 
