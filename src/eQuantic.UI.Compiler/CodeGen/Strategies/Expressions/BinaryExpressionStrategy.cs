@@ -95,10 +95,13 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         // long/ulong are exact 64-bit via BigInt, and the operands ARE BigInts: literals carry the
         // suffix, conversions settle at the bound tree's seams (ValueFlow), and a value from the
         // server is hydrated at the typed boundary — so the native operators apply directly.
-        // Null comparisons fall through to the loose-equality logic.
+        // Null comparisons fall through to the loose-equality logic. A span scaled by a long or a ulong is the
+        // span's, below: the long is a factor C# converts to a double, and BigInt arithmetic over a span was NaN
+        // (Copilot's review of #958).
         if (left != "null" && right != "null" && op != "&&" && op != "||"
             && (context.SemanticHelper.GetType(binary.Left).IsLong()
-                || context.SemanticHelper.GetType(binary.Right).IsLong()))
+                || context.SemanticHelper.GetType(binary.Right).IsLong())
+            && !context.SemanticHelper.GetType(binary).IsNamed("System.TimeSpan"))
         {
             var jsOp = op switch { "==" => "===", "!=" => "!==", _ => op };
             // A SHIFT keeps its count an int in C# (no conversion for the bound tree to record): the
