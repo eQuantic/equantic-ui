@@ -36,7 +36,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// </summary>
 public class MethodGroupStrategy : IExpressionIrStrategy
 {
-    /// <summary>The name the receiver a delegate is made over is held by, inside the delegate.</summary>
+    /// <summary>The name the receiver a delegate is made over is held by, inside the delegate, as C# spells it in
+    /// the speculated call: <see cref="Holder"/> sets it apart from the method's own parameters.</summary>
     private const string Target = "__target";
 
     public bool CanConvert(SyntaxNode node, ConversionContext context) => Group(node, context) is not null;
@@ -91,7 +92,7 @@ public class MethodGroupStrategy : IExpressionIrStrategy
             ? JsExpr.Arrow(parameters, call)
             : JsExpr.ArrowBlock(parameters, context.Converter.ExpressionBodyBlock(invocation, call, bound, returns: true),
                 context.Layout, context.Depth);
-        return captured is null ? arrow : JsExpr.Call(JsExpr.Group(JsExpr.Arrow(Target, arrow)), captured);
+        return captured is null ? arrow : JsExpr.Call(JsExpr.Group(JsExpr.Arrow(Holder(method), arrow)), captured);
     }
 
     /// <summary>EQ2004 for a group the browser has no delegate of, naming its method, with the reason.</summary>
@@ -158,8 +159,8 @@ public class MethodGroupStrategy : IExpressionIrStrategy
         {
             if (Written(context.SemanticHelper.GetType(receiver) ?? method.ContainingType) is not { } held) return null;
             callee = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                SyntaxFactory.IdentifierName(Target), ((MemberAccessExpressionSyntax)group).Name.WithoutTrivia());
-            parameters.Insert(0, Parameter(Target, held));
+                SyntaxFactory.IdentifierName(Holder(method)), ((MemberAccessExpressionSyntax)group).Name.WithoutTrivia());
+            parameters.Insert(0, Parameter(Holder(method), held));
         }
         // The lambda over the parameters a held receiver is one more of: its call is the inner one.
         var call = SyntaxFactory.InvocationExpression(callee, arguments);
@@ -181,6 +182,18 @@ public class MethodGroupStrategy : IExpressionIrStrategy
         if (!SymbolEqualityComparer.Default.Equals(speculated.GetSymbolInfo(invocation).Symbol, method)) return null;
         context.SemanticHelper.Speculate(root, speculated);
         return invocation;
+    }
+
+    /// <summary>
+    /// The name that holds the receiver, apart from every parameter of <paramref name="method"/>: a parameter
+    /// named <see cref="Target"/> hid the receiver in the speculated call, which then bound nothing, and the
+    /// group was refused (Copilot's review of #958).
+    /// </summary>
+    private static string Holder(IMethodSymbol method)
+    {
+        var name = Target;
+        while (method.Parameters.Any(parameter => Named(parameter) == name)) name = "_" + name;
+        return name;
     }
 
     /// <summary>A parameter of the speculated lambda, typed as C# writes the type.</summary>

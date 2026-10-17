@@ -407,7 +407,9 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// </summary>
     private static JsExpr OverDelegate(IMethodSymbol invoke, JsExpr source, ConversionContext context)
     {
-        const string Target = "__target";
+        // A name no C# parameter can take, so the delegate's own parameters never hide it: `__target` was
+        // one, and `delegate int D(int __target)` called the number it was handed (Copilot's review of #958).
+        const string Target = "$target";
         var names = invoke.Parameters.Select(parameter => parameter.Name.ToJsIdentifier()).ToList();
         var parameters = string.Join(", ", invoke.Parameters.Select((parameter, i) =>
             LambdaExpressionStrategy.Typed(names[i], parameter.Type, context)));
