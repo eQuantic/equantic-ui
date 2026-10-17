@@ -28,7 +28,7 @@ namespace eQuantic.UI.Native.Framework;
 /// <para>
 /// Built once per <see cref="LayoutContext"/> and held there
 /// (<see cref="LayoutContext.MeasurePass"/>), which is what lets the context be a field: it is
-/// fixed for the pass, so only the constraints and the path travel down, and they travel as a
+/// fixed for the pass, so only the constraints and the position travel down, and they travel as a
 /// struct. It was built per <see cref="LayoutEngine.Layout"/> CALL for one commit, which is one per
 /// Overlay layer — invisible to a 74 KB per-frame budget with 0.1 KB of headroom and no overlay in
 /// any harness scene. `PerfHarnessTests` counts the passes a context builds now, rather than hoping
@@ -57,10 +57,19 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     /// a measurement asks for what it reads, and this one hands the visitor's own field back to it.
     /// </para>
     /// </summary>
-    internal LayoutNode Measure(VisualNode node, LayoutConstraints constraints, LayoutContext ctx, string path)
+    internal LayoutNode Measure(VisualNode node, LayoutConstraints constraints, LayoutContext ctx, Position at)
     {
-        var measured = node.Accept(this, new MeasureState(constraints, path));
-        measured.Path ??= path;
+        // The engine's one invariant: a node is measured against the element that holds it. A slot
+        // the layout reads that the build filled differently would measure a stale subtree, and the
+        // frame would be merely wrong, so it is refused where it happens, naming both.
+        if (at.Element is { } element && !ReferenceEquals(element.Configuration, node))
+            throw new InvalidOperationException(
+                $"{at.Path} measured a {node.GetType().Name} against the element of a "
+                + $"{element.Configuration.GetType().Name}: the layout read a slot the build did not fill with it.");
+
+        var measured = node.Accept(this, new MeasureState(constraints, at));
+        measured.Path ??= at.Path;
+        measured.Element ??= at.Element;
         return measured;
     }
 
@@ -68,49 +77,49 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
 
     // Only the nodes that can HAVE an auto size worth stretching take the flags; for the rest
     // (text, images, fixed primitives) the parent's decision changes nothing.
-    public LayoutNode Visit(Box node, MeasureState s) => MeasureBox(node, s.Constraints, _ctx, s.Path);
+    public LayoutNode Visit(Box node, MeasureState s) => MeasureBox(node, s.Constraints, _ctx, s.At);
 
     // Row and Column are ONE algorithm and two doors, the way S4 gave them two lowerings over one
     // LowerFlex: the switch bound them together as `FlexNode flex`, and a reader looking for where a
     // Row is measured should find a Row.
-    public LayoutNode Visit(Row node, MeasureState s) => MeasureFlex(node, s.Constraints, _ctx, s.Path);
+    public LayoutNode Visit(Row node, MeasureState s) => MeasureFlex(node, s.Constraints, _ctx, s.At);
 
-    public LayoutNode Visit(Column node, MeasureState s) => MeasureFlex(node, s.Constraints, _ctx, s.Path);
+    public LayoutNode Visit(Column node, MeasureState s) => MeasureFlex(node, s.Constraints, _ctx, s.At);
 
-    public LayoutNode Visit(Stack node, MeasureState s) => MeasureStack(node, s.Constraints, _ctx, s.Path);
+    public LayoutNode Visit(Stack node, MeasureState s) => MeasureStack(node, s.Constraints, _ctx, s.At);
 
-    public LayoutNode Visit(Grid node, MeasureState s) => MeasureGrid(node, s.Constraints, _ctx, s.Path);
+    public LayoutNode Visit(Grid node, MeasureState s) => MeasureGrid(node, s.Constraints, _ctx, s.At);
 
     // Spec S6: an AdaptiveNode IS its resolved variant on native — the other variants never measure,
     // never paint (the web keeps them, CSS-gated). A line and a grid lay out the arm in its place
     // (LaidOutChildren); every other parent measures the node through this door, a Stack included,
     // which reads the arm off the node it measured (PositionedOf).
     public LayoutNode Visit(AdaptiveNode node, MeasureState s) =>
-        Measure(_ctx.ArmOf(node), s.Constraints, _ctx, _ctx.ChildPath(s.Path, 0));
+        Measure(_ctx.ArmOf(node), s.Constraints, _ctx, _ctx.Child(s.At, 0));
 
     // Spec S7: Pinned renders IN FLOW on native until engine scrolling lands (correct at scroll
     // offset 0); the pinning joins the scroll compositor (fence on the node's doc).
     public LayoutNode Visit(Pinned node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
     // The system's own margins. A desktop window has no cutouts, so the host reports zero and the
     // node measures as its child plus whatever padding the caller asked for on top — the SAME tree
     // an iPhone insets, with the numbers coming from the host rather than the app.
-    public LayoutNode Visit(SafeArea node, MeasureState s) => MeasureSafeArea(node, s.Constraints, _ctx, s.Path);
+    public LayoutNode Visit(SafeArea node, MeasureState s) => MeasureSafeArea(node, s.Constraints, _ctx, s.At);
 
     // Wave 3: the anchor owns layout; the panel realizes in the realizer's overlay pass.
     public LayoutNode Visit(Anchored node, MeasureState s) =>
-        MeasureWrapper(node, node.Anchor, s.Constraints, _ctx, s.Path);
+        MeasureWrapper(node, node.Anchor, s.Constraints, _ctx, s.At);
 
-    public LayoutNode Visit(ScrollView node, MeasureState s) => MeasureScrollView(node, s.Constraints, _ctx, s.Path);
+    public LayoutNode Visit(ScrollView node, MeasureState s) => MeasureScrollView(node, s.Constraints, _ctx, s.At);
 
     // A continuous gesture is layout-transparent: the offset is a PAINT translate, exactly like the
     // sheet's. Re-laying out under a finger would fight the scroll it usually lives in.
-    public LayoutNode Visit(Draggable node, MeasureState s) => MeasureDraggable(node, s.Constraints, _ctx, s.Path);
+    public LayoutNode Visit(Draggable node, MeasureState s) => MeasureDraggable(node, s.Constraints, _ctx, s.At);
 
     // A Positioned outside a Stack has no anchor frame — degrade to a transparent wrapper.
     public LayoutNode Visit(Positioned node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
     public LayoutNode Visit(Text node, MeasureState s) => MeasureText(node, s.Constraints, _ctx);
 
@@ -156,53 +165,53 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     // BLOCK container does not stretch them (they hug), while a FLEX stretch reaches through
     // (align-items: stretch stretches any item, buttons included).
     public LayoutNode Visit(Pressable node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.Path);
+        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.At);
 
     // Transparent to layout: the surface adds a caret and a selection, never a box. What it OFFERS at
     // its caret (Options) stands at its origin, in the surface's coordinates, at the size it asks for,
     // and takes no room: a list drawn under a line must not lengthen the code it is drawn over.
     public LayoutNode Visit(CodeSurface node, MeasureState s)
     {
-        var result = MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);
+        var result = MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
         if (node.Options is not { } options) return result;
-        var offered = Measure(options, LayoutConstraints.Unbounded, _ctx, _ctx.ChildPath(s.Path, 1));
+        var offered = Measure(options, LayoutConstraints.Unbounded, _ctx, _ctx.Child(s.At, 1));
         offered.Bounds = offered.Bounds with { X = node.OptionsOrigin.X, Y = node.OptionsOrigin.Y };
         result.Adopt(offered);
         return result;
     }
 
     public LayoutNode Visit(SheetSurface node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
     // Pointer presence is layout-transparent (S5 programmable hover — the child owns visuals).
     public LayoutNode Visit(Hoverable node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
     // A simulated state changes only what is DRAWN, so it takes no space of its own.
     public LayoutNode Visit(Simulated node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
     // Reports presence; it neither takes space nor draws.
     public LayoutNode Visit(InView node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
     // The intent has to be armed while the child BUILDS — by layout time the tree already has the
     // scrim in it, and there is nothing left to decide.
-    public LayoutNode Visit(InFlow node, MeasureState s) => MeasureInFlow(node, s.Constraints, _ctx, s.Path);
+    public LayoutNode Visit(InFlow node, MeasureState s) => MeasureInFlow(node, s.Constraints, _ctx, s.At);
 
     // Spec S8: a Shortcut is layout-transparent — the binding rides the realizer's walk.
     public LayoutNode Visit(Shortcut node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
     public LayoutNode Visit(Adjustable node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.Path);
+        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.At);
 
     // The fifth wrapper that emits a host of its own, so it releases block stretch for the reason
     // the other four do (BlockStretch_DoesNotCrossAWrapperThatEmitsItsOwnHost): `LowerLiveRegion`
     // gives the host `fit-content` when the child does not ask to fill, and the box a reader
     // outlines has to be the box Photon lays out.
     public LayoutNode Visit(LiveRegion node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.Path);
+        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.At);
 
     // INLINED like the three wrappers above it, and the reason this comment once said otherwise is
     // worth keeping: "a progress bar reports across whatever it is given" sounds right and is not
@@ -213,26 +222,26 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     // Progress and 40 under Adjustable, Pressable and Link. A fixed-width Box child hides it
     // completely, which is why the first probe of this found nothing.
     public LayoutNode Visit(Progress node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.Path);
+        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.At);
 
     // A Link is layout-transparent (semantics + interaction only — the child owns visuals).
     public LayoutNode Visit(Link node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.Path);
+        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.At);
 
     public LayoutNode Visit(Flexible node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
     // Loop motion is layout-transparent: the offset is a REALIZE-time transform (spec §06 —
     // transform-only frames never re-lay-out).
     public LayoutNode Visit(LoopMotion node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
     // Enter motion is layout-transparent too (opacity layer + paint-only translate) — but the
     // progress is resolved HERE, where the stable path exists, and stamped on the node.
-    public LayoutNode Visit(Presence node, MeasureState s) => MeasurePresence(node, s.Constraints, _ctx, s.Path);
+    public LayoutNode Visit(Presence node, MeasureState s) => MeasurePresence(node, s.Constraints, _ctx, s.At);
 
     // Drag-to-dismiss follows the same pattern: transparent for layout, offset stamped by path.
-    public LayoutNode Visit(DragDismiss node, MeasureState s) => MeasureDragDismiss(node, s.Constraints, _ctx, s.Path);
+    public LayoutNode Visit(DragDismiss node, MeasureState s) => MeasureDragDismiss(node, s.Constraints, _ctx, s.At);
 
     // An Overlay is ZERO in the page flow — the realizer lays its child out against the VIEWPORT in
     // the overlay pass (path "ov<i>", stable for the reconciler).
@@ -250,7 +259,7 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     /// nothing about a calendar is web-shaped. It is written now (#248).
     /// </para>
     /// </summary>
-    public LayoutNode Visit(Navigable node, MeasureState s) => MeasureNavigable(node, s.Constraints, _ctx, s.Path);
+    public LayoutNode Visit(Navigable node, MeasureState s) => MeasureNavigable(node, s.Constraints, _ctx, s.At);
 
     /// <summary>
     /// CANNOT CROSS, which is the stronger of the two and settled rather than pending. A WebFrame is
@@ -269,7 +278,7 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     /// expands INLINE: Build produces its subtree (pure, mode-free), which is measured in place, so
     /// the component wraps it in the layout tree and draws nothing itself.
     /// </summary>
-    public LayoutNode Visit(UiComponent node, MeasureState s) => MeasureComponent(node, s.Constraints, _ctx, s.Path);
+    public LayoutNode Visit(UiComponent node, MeasureState s) => MeasureComponent(node, s.Constraints, _ctx, s.At);
 
     // ---- what every wrapper does ----------------------------------------------------------------
 
@@ -286,7 +295,7 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     /// #187 gave it announced over an empty subtree (#248).
     /// </para>
     /// </summary>
-    private LayoutNode MeasureNavigable(Navigable node, LayoutConstraints constraints, LayoutContext ctx, string path)
+    private LayoutNode MeasureNavigable(Navigable node, LayoutConstraints constraints, LayoutContext ctx, Position at)
     {
         var result = ctx.Node(node);
         var y = 0f;
@@ -297,7 +306,7 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
             // segment, so a grid whose rows are rebuilt or reordered keeps each row's identity —
             // and the path IS identity here (focus, hover, scroll offset, a drag in flight).
             var row = Measure(node.Rows[index], constraints, ctx,
-                ctx.ChildPath(path, index, node.Rows[index]));
+                ctx.Child(at, index, node.Rows[index]));
             row.Bounds = row.Bounds with { X = 0, Y = y };
             result.Adopt(row);
             y += row.Bounds.Height;
@@ -307,13 +316,13 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
         return result;
     }
 
-    private LayoutNode MeasureWrapper(VisualNode node, VisualNode child, LayoutConstraints constraints, LayoutContext ctx, string path)
+    private LayoutNode MeasureWrapper(VisualNode node, VisualNode child, LayoutConstraints constraints, LayoutContext ctx, Position at)
     {
         var result = ctx.Node(node);
         // Layout-transparent means transparent to STRETCH too: whatever the parent would stretch,
         // it stretches through the wrapper — a Pressable around a tab cell (or the component node
         // around a page) must not eat the size the parent granted.
-        var inner = Measure(child, constraints, ctx, ctx.ChildPath(path, 0));
+        var inner = Measure(child, constraints, ctx, ctx.Child(at, 0));
         result.Adopt(inner);
         result.Bounds = new Rect(0, 0, inner.Bounds.Width, inner.Bounds.Height);
         return result;

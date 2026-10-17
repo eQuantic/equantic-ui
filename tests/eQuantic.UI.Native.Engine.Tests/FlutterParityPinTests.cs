@@ -217,7 +217,10 @@ public class FlutterParityPinTests
         ["didUpdateWidget"] = () => HasMember("UiComponent", "AdoptConfig"),
         ["didChangeDependencies"] = () => Nothing("DependencyScope", "InheritedScope"),
         ["InheritedWidget"] = () => HasMember("UiComponent", "GetService"),
-        ["Element"] = () => Nothing("Element", "BuildContext", "ElementTree"),
+        // PARTIAL: the engine is there; the context is not yet the element (E5), which is what a
+        // probe for `BuildContext` would claim.
+        ["Element"] = () => Has("Element") && Has("ComponentElement") && Has("NodeElement")
+            && HasMember("BuildOwner", "Build") && Nothing("BuildContext"),
         ["RenderObject"] = () => HasMember("LayoutNode", "Parent"),
         ["parentData"] = () => !HasMember("LayoutNode", "ParentData") && HasMember("LayoutNode", "Bounds"),
         ["RenderSliver"] = () => Has("ListView") && Nothing("Sliver", "SliverList"),
@@ -268,7 +271,10 @@ public class FlutterParityPinTests
             && HasMember("StyleDiff", "Shadows") && HasMember("StyleDiff", "Transform"),
 
         // 3 — state
-        ["setState"] = () => HasMember("StatefulComponent", "StateInvalidated"),
+        // A SetState reaches the host through the owner of its tree, never through an event on the
+        // instance (#935 was one such event, subscribed again every frame).
+        ["setState"] = () => HasMember("StatefulComponent", "SetState") && HasMember("BuildOwner", "BuildRequested")
+            && !HasMember("StatefulComponent", "StateInvalidated"),
         ["ValueNotifier"] = () => Nothing("ValueNotifier", "ValueListenableBuilder"),
         ["ChangeNotifier"] = () => Nothing("ChangeNotifier", "ListenableBuilder"),
         ["InheritedNotifier"] = () => Nothing("InheritedNotifier"),

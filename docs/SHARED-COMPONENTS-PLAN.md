@@ -298,7 +298,9 @@ rejected.)
    `UiComponent.AdoptConfig(next)` hook (no reflection — the author decides config vs state; the
    default keeps existing config). `PhotonHost` owns the store and wires retained invalidations.
    Proven: a nested counter holds taps across its parent's SetState rebuilds, adopts fresh config,
-   and a key change resets identity/state.
+   and a key change resets identity/state. (Superseded on Photon by the element tree, #950: the
+   store is gone, a position holds the instance, and the identity rule above is the one its
+   elements match by. docs/ELEMENT-TREE-PLAN.md.)
    Positional reconciler slice 2 ✅ (2026-07-05, W6 — WEB mirror): the SAME identity contract
    (lowering PATH — threaded through `lowerNode` with the LayoutEngine's exact segment scheme —
    + constructor + optional key) retires state hoisting on the browser. Ownership differs from

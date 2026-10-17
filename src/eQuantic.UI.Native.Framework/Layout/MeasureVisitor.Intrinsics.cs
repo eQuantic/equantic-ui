@@ -27,14 +27,14 @@ internal sealed partial class MeasureVisitor
     /// children's floors plus the gaps; for a column, the widest of them. Computed only when a
     /// line actually overflows, so the common path never pays for it.
     /// </summary>
-    private float MinContentWidth(VisualNode node, LayoutContext ctx) => node switch
+    private float MinContentWidth(VisualNode node, Element? element, LayoutContext ctx) => node switch
     {
         Text text => LongestWordWidth(text, ctx),
         Box box => box.Style.Width.Kind == SizeKind.Fixed
             ? box.Style.Width.Value
-            : (box.Child is null ? 0 : MinContentWidth(box.Child, ctx)) + InsetsOf(box.Style).Horizontal,
-        Row row => RowMinContent(row, ctx),
-        Column column => ColumnMinContent(column, ctx),
+            : (box.Child is null ? 0 : MinContentWidth(box.Child, element?.ChildAt(0), ctx)) + InsetsOf(box.Style).Horizontal,
+        Row row => RowMinContent(row, element, ctx),
+        Column column => ColumnMinContent(column, element, ctx),
         Image image => image.Width,
         Icon icon => icon.Size,
         Vector vector => vector.Size,
@@ -51,28 +51,31 @@ internal sealed partial class MeasureVisitor
         // `LayoutTransparency` — this used to be a hand-kept list of five that disagreed with
         // CrossSizeKind's hand-kept list of three (#225).
         SingleChildNode wrapper =>
-            wrapper.IsLayoutTransparent() ? MinContentWidth(wrapper.Child, ctx) : 0,
-        // Same rule as MeasureComponent's: the visitor travels in the state so the lambda stays
-        // `static` and allocates nothing.
-        UiComponent component => component.ExpandContained(ctx.Components, (self: this, ctx),
-            static (built, state) => state.self.MinContentWidth(built, state.ctx)),
+            wrapper.IsLayoutTransparent() ? MinContentWidth(wrapper.Child, element?.ChildAt(0), ctx) : 0,
+        // What the component's element BUILT, as measure reads it: intrinsic sizing used to build
+        // a third time without reconciling, so a stateful child's floor was a fresh instance's.
+        UiComponent component => element is ComponentElement { } built && built.ChildAt(0) is { } subtree
+            ? MinContentWidth(subtree.Configuration, subtree, ctx)
+            : throw new InvalidOperationException(
+                $"The floor of {component.GetType().Name} was asked with no subtree built for it."),
         _ => 0,
     };
 
-    private float RowMinContent(Row row, LayoutContext ctx)
+    private float RowMinContent(Row row, Element? element, LayoutContext ctx)
     {
         if (row.Width.Kind == SizeKind.Fixed) return row.Width.Value;
         var total = row.Padding.Horizontal + row.Gap * MathF.Max(0, row.Children.Count - 1);
-        foreach (var child in row) total += MinContentWidth(child, ctx);
+        for (var i = 0; i < row.Children.Count; i++)
+            total += MinContentWidth(row.Children[i], element?.ChildAt(i), ctx);
         return total;
     }
 
-    private float ColumnMinContent(Column column, LayoutContext ctx)
+    private float ColumnMinContent(Column column, Element? element, LayoutContext ctx)
     {
         if (column.Width.Kind == SizeKind.Fixed) return column.Width.Value;
         var widest = 0f;
-        foreach (var child in column)
-            widest = MathF.Max(widest, MinContentWidth(child, ctx));
+        for (var i = 0; i < column.Children.Count; i++)
+            widest = MathF.Max(widest, MinContentWidth(column.Children[i], element?.ChildAt(i), ctx));
         return widest + column.Padding.Horizontal;
     }
 

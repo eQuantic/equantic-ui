@@ -7,10 +7,10 @@ namespace eQuantic.UI.Native.Framework;
 /// line and one for a wrapped run of them.</summary>
 internal sealed partial class MeasureVisitor
 {
-    private LayoutNode MeasureFlex(FlexNode flex, LayoutConstraints constraints, LayoutContext ctx, string path)
+    private LayoutNode MeasureFlex(FlexNode flex, LayoutConstraints constraints, LayoutContext ctx, Position at)
     {
         var (stretchW, stretchH) = (constraints.Width.Stretch, constraints.Height.Stretch);
-        if (flex.Wrap) return MeasureFlexWrapped(flex, constraints, ctx, path);
+        if (flex.Wrap) return MeasureFlexWrapped(flex, constraints, ctx, at);
 
         var result = ctx.Node(flex);
         var horizontal = flex is Row;
@@ -95,7 +95,7 @@ internal sealed partial class MeasureVisitor
         // size the container genuinely granted, so the main axis is determinate inside the slot
         // regardless of how the container itself is sized. A zero weight without a basis is the
         // opposite case: its main size is its content's, so that axis is decided by the content.
-        LayoutNode MeasureChild(VisualNode child, float w, float h, string childPath,
+        LayoutNode MeasureChild(VisualNode child, float w, float h, Position childAt,
             bool mainGranted = false, StretchKind stretchW = StretchKind.None,
             StretchKind stretchH = StretchKind.None, bool truncating = false, bool contentMain = false,
             bool ceiling = false)
@@ -105,7 +105,7 @@ internal sealed partial class MeasureVisitor
                     (childIndetW && !(mainGranted && horizontal)) || (contentMain && horizontal),
                     (childIndetH && !(mainGranted && !horizontal)) || (contentMain && !horizontal))
                 .Stretched(stretchW, stretchH) with { WidthIsACeiling = ceiling };
-            return Measure(child, truncating ? forChild.Truncated() : forChild, ctx, childPath);
+            return Measure(child, truncating ? forChild.Truncated() : forChild, ctx, childAt);
         }
 
         var laid = new LayoutNode?[children.Count];
@@ -122,13 +122,13 @@ internal sealed partial class MeasureVisitor
             // stretches THROUGH it. Without this the wrapper grew to the cell and the content
             // inside it stayed at its own width, which is exactly what the tab labels did.
             var (fsW, fsH) = CrossStretch(flexible);
-            var at = ctx.ChildPath(children.PathOf(path, i), 0);
+            var slotAt = ctx.Child(children.At(at, i), 0);
             // The extent IS the slot's main size (the item is pinned to it below), so the child is
             // stretched on the main axis too, on top of whatever the cross axis granted: an
             // auto-sized cell takes the extent and lays out inside it — a flex item's autos fill
             // the cell, per CSS.
             LayoutNode Laid(bool ceiling) => MeasureChild(flexible.Child, horizontal ? main : crossAvail,
-                horizontal ? crossAvail : main, at, mainGranted: true,
+                horizontal ? crossAvail : main, slotAt, mainGranted: true,
                 stretchW: horizontal ? StretchKind.Flex : fsW,
                 stretchH: horizontal ? fsH : StretchKind.Flex, truncating: truncating, ceiling: ceiling);
             var child = Laid(ceiling: false);
@@ -152,7 +152,7 @@ internal sealed partial class MeasureVisitor
                 return Slot(zero, i, main, truncating);
             var (sW, sH) = CrossStretch(children[i]);
             return MeasureChild(children[i], horizontal ? main : crossAvail,
-                horizontal ? crossAvail : main, children.PathOf(path, i),
+                horizontal ? crossAvail : main, children.At(at, i),
                 stretchW: sW, stretchH: sH, truncating: truncating);
         }
 
@@ -165,7 +165,7 @@ internal sealed partial class MeasureVisitor
                 case Flexible f:
                     // Spec B14: an AnimateChanges weight LAYS OUT at the animator's interpolated
                     // value — forward changes glide over Motion.Base, everything else snaps.
-                    flexWeights[i] = ctx.Transitions?.Resolve(children.PathOf(path, i), f.Flex, ctx.TimeMs,
+                    flexWeights[i] = ctx.Transitions?.Resolve(children.At(at, i).Path, f.Flex, ctx.TimeMs,
                         f.AnimateChanges, ctx.ReducedMotion) ?? f.Flex;
                     if (flexWeights[i] > 0) continue;
                     // A ZERO weight takes no share (#680) — Flutter's inflexible child, CSS's
@@ -185,7 +185,7 @@ internal sealed partial class MeasureVisitor
                     {
                         var (zsW, zsH) = CrossStretch(f);
                         inflexible = MeasureChild(f, horizontal ? mainAvail : crossAvail,
-                            horizontal ? crossAvail : mainAvail, children.PathOf(path, i),
+                            horizontal ? crossAvail : mainAvail, children.At(at, i),
                             stretchW: zsW, stretchH: zsH, contentMain: true);
                     }
                     laid[i] = inflexible;
@@ -193,7 +193,7 @@ internal sealed partial class MeasureVisitor
                     rigidSum += mains[i];
                     continue;
                 case Spacer { Flex: > 0 } s:
-                    flexWeights[i] = ctx.Transitions?.Resolve(children.PathOf(path, i), s.Flex, ctx.TimeMs,
+                    flexWeights[i] = ctx.Transitions?.Resolve(children.At(at, i).Path, s.Flex, ctx.TimeMs,
                         s.AnimateChanges, ctx.ReducedMotion) ?? s.Flex;
                     continue;
                 case Spacer fixedSpacer:
@@ -205,7 +205,7 @@ internal sealed partial class MeasureVisitor
             var childMaxW = horizontal ? mainAvail : crossAvail;
             var childMaxH = horizontal ? crossAvail : mainAvail;
             var (csW, csH) = CrossStretch(children[i]);
-            var child = MeasureChild(children[i], childMaxW, childMaxH, children.PathOf(path, i),
+            var child = MeasureChild(children[i], childMaxW, childMaxH, children.At(at, i),
                 stretchW: csW, stretchH: csH);
             laid[i] = child;
             mains[i] = horizontal ? child.Bounds.Width : child.Bounds.Height;
@@ -281,7 +281,7 @@ internal sealed partial class MeasureVisitor
                     }
                     else
                     {
-                        floors[i] = MathF.Min(mains[i], MinContentWidth(children[i], ctx));
+                        floors[i] = MathF.Min(mains[i], MinContentWidth(children[i], children.At(at, i).Element, ctx));
                         weights[i] = mains[i] - floors[i];
                     }
                     yielding += mains[i] - floors[i];
@@ -357,7 +357,7 @@ internal sealed partial class MeasureVisitor
             {
                 var (usW, usH) = CrossStretch(unbounded);
                 var intrinsic = MeasureChild(unbounded.Child, horizontal ? mainAvail : crossAvail,
-                    horizontal ? crossAvail : mainAvail, ctx.ChildPath(children.PathOf(path, i), 0),
+                    horizontal ? crossAvail : mainAvail, ctx.Child(children.At(at, i), 0),
                     stretchW: usW, stretchH: usH);
                 mains[i] = horizontal ? intrinsic.Bounds.Width : intrinsic.Bounds.Height;
                 rigidSum += mains[i];
@@ -468,6 +468,14 @@ internal sealed partial class MeasureVisitor
     }
 
     /// <summary>
+    /// Where a wrapped line measures an item's content: at the ITEM's path, the one this pass has
+    /// always used, so whatever is remembered by path stays with it; and with the content's own
+    /// element, which for a <see cref="Flexible"/> is its child's, the node that is measured.
+    /// </summary>
+    private static Position ItemChild(Position item, VisualNode source) =>
+        source is Flexible ? item with { Element = item.Element?.ChildAt(0) } : item;
+
+    /// <summary>
     /// Spec S3 — the wrapping flex pass (the CSS flex-wrap twin), as it stands. A child breaks onto a
     /// new line when the size it asks for would overflow the main extent: a Flexible's basis when it
     /// declares one, and the size the child measures otherwise. That is CSS's hypothetical size for
@@ -478,7 +486,7 @@ internal sealed partial class MeasureVisitor
     /// line a child follows <see cref="FlexNode.Cross"/> (or its own AlignSelf); lines stack with
     /// RunGap.
     /// </summary>
-    private LayoutNode MeasureFlexWrapped(FlexNode flex, LayoutConstraints constraints, LayoutContext ctx, string path)
+    private LayoutNode MeasureFlexWrapped(FlexNode flex, LayoutConstraints constraints, LayoutContext ctx, Position at)
     {
         var result = ctx.Node(flex);
         var horizontal = flex is Row;
@@ -508,10 +516,10 @@ internal sealed partial class MeasureVisitor
         var hypothetical = new List<float>(children.Count);
         var grow = new List<int>(children.Count);
         var shrink = new List<int>(children.Count);
-        // Where each item was measured, kept beside it for every later measure of it. Neither the
-        // count nor the node can say it again: the count skips a Spacer, and the node an
-        // AdaptiveNode measures to is its ARM's, stamped one level under the node's own path.
-        var paths = new List<string>(children.Count);
+        // Where each item stands, kept beside it for every later measure of it. Neither the count
+        // nor the node can say it again: the count skips a Spacer, and the node an AdaptiveNode
+        // measures to is its ARM's, stamped one level under the node's own path.
+        var positions = new List<Position>(children.Count);
         for (var i = 0; i < children.Count; i++)
         {
             var source = children[i];
@@ -530,11 +538,11 @@ internal sealed partial class MeasureVisitor
                 forChild = horizontal
                     ? forChild with { Width = forChild.Width.DecidedByContent(true) }
                     : forChild with { Height = forChild.Height.DecidedByContent(true) };
-            var at = children.PathOf(path, i);
-            var node = Measure(child, forChild, ctx, at);
+            var itemAt = children.At(at, i);
+            var node = Measure(child, forChild, ctx, ItemChild(itemAt, source));
 
             measured.Add(node);
-            paths.Add(at);
+            positions.Add(itemAt);
             sources.Add(source);
             hypothetical.Add(basis > 0 ? basis : horizontal ? node.Bounds.Width : node.Bounds.Height);
             grow.Add(flexible?.Flex ?? 0);
@@ -608,7 +616,7 @@ internal sealed partial class MeasureVisitor
                     else if (shrinking && shrink[i] > 0)
                     {
                         size += slack * (shrink[i] * hypothetical[i]) / scaledShrink;
-                        size = MathF.Max(size, horizontal ? MinContentWidth(sources[i], ctx) : 0);
+                        size = MathF.Max(size, horizontal ? MinContentWidth(sources[i], positions[i].Element, ctx) : 0);
                     }
 
                     if (MathF.Abs(size - hypothetical[i]) > 0.01f)
@@ -622,7 +630,7 @@ internal sealed partial class MeasureVisitor
                         // path stays with it.
                         measured[i] = Measure(child, constraints.ForChild(horizontal ? size : crossMax - padCross,
                             horizontal ? crossMax - padCross : size) with { WidthIsACeiling = MainSizeIsACeiling(SizedBy(measured[i]).Source, horizontal) },
-                            ctx, paths[i]);
+                            ctx, ItemChild(positions[i], sources[i]));
                         resolved[i] = size;
                     }
 
@@ -649,7 +657,7 @@ internal sealed partial class MeasureVisitor
                 && (horizontal ? child.Bounds.Width : child.Bounds.Height) > resolved[i] + 0.01f)
                 child = Measure(flexible.Child, constraints.ForChild(horizontal ? resolved[i] : crossMax - padCross,
                     horizontal ? crossMax - padCross : resolved[i]) with { WidthIsACeiling = true },
-                    ctx, paths[i]);
+                    ctx, ItemChild(positions[i], sources[i]));
             measured[i] = FlexItem(flexible, child, resolved[i], horizontal, ctx);
         }
 
