@@ -537,8 +537,11 @@ public class InvocationStrategy : IExpressionIrStrategy
         if (declaring.Locations.Any(location => location.IsInSource)) return;
         if (IsFrameworkProvided(declaring)) return;
 
-        context.Report(node, ConversionSeverity.Error, "EQ2004",
-            $"'{declaring.ToDisplayString()}.{symbol.Name}' has no JavaScript translation. "
+        context.Report(node, ConversionSeverity.Error, "EQ2004", declaring.IsPackages()
+            // A package's type: the build has no source for it and the runtime no twin of it (#822).
+            ? $"'{declaring.ToDisplayString()}.{symbol.Name}' has no JavaScript translation: {declaring.PackageReason()}. "
+                + TwinlessTypeExtensions.PackageRemedy
+            : $"'{declaring.ToDisplayString()}.{symbol.Name}' has no JavaScript translation. "
             + "The transpiler only knows the constructs it maps explicitly; add a strategy for it, "
             + "move the call behind a [ServerAction], or — if the class this call sits in only ever "
             + "runs on the server — mark THAT class [ServerOnly] so no module is emitted for it.");

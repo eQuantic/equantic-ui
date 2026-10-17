@@ -228,6 +228,9 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             return Undefined;
         }
 
+        // A class with no module and no twin, no strategy before this one built (#822).
+        if (createdType is INamedTypeSymbol twinless && ReportIfTwinless(twinless, creation, context)) return Undefined;
+
         // A value the browser holds as DATA (`[TwinIsData]`, `Color`) is built as its data:
         // `new Color(1, 2, 3, 4)` is `{ r: 1, g: 2, b: 3, a: 4 }`. Asked of the SYMBOL, so an app's
         // own type named `Color` is built as the app's (it was matched by name, #494).
@@ -377,6 +380,25 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             is { IsExtensionMethod: true } or { ContainingType.IsExtension: true })
             ? initializer
             : null;
+
+    /// <summary>
+    /// Reports EQ2004 and answers true where <paramref name="type"/> has no module and no twin
+    /// (<see cref="TwinlessTypeExtensions.IsTwinless"/>), and so no constructor the browser can call: a
+    /// type of the platform's that no strategy builds, and a package's, which nothing translates. Each
+    /// went out as <c>new Random()</c> or <c>new Gauge('a')</c>, a ReferenceError where the page first
+    /// rendered (#822). A list is the array of its elements, built here.
+    /// </summary>
+    private static bool ReportIfTwinless(INamedTypeSymbol type, SyntaxNode at, ConversionContext context)
+    {
+        if (!type.IsTwinless() || IsList(type)) return false;
+        context.Report(at, ConversionSeverity.Error, "EQ2004", type.IsPackages()
+            ? $"'{type.ToDisplayString()}' has no JavaScript translation: {type.PackageReason()}, so `new {type.Name}(…)` "
+                + $"would construct a class nothing defines. {TwinlessTypeExtensions.PackageRemedy}"
+            : $"'{type.ToDisplayString()}' has no JavaScript translation: the runtime has no twin of it, so "
+                + $"`new {type.Name}(…)` would construct a class nothing defines. Construct it in a [ServerAction] and "
+                + "hand the browser what it needs of it.");
+        return true;
+    }
 
     /// <summary>Whether <paramref name="type"/> is <c>List&lt;T&gt;</c>, which this side holds as the
     /// array of its elements.</summary>
@@ -900,6 +922,11 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         // Found in review of that fix.
         if (ms?.ContainingType.ReportIfHostOnlyType(creation, context) == true) return Undefined;
         if (ms?.ContainingType is { } keptOutTarget && keptOutTarget.ReportIfKeptOut(creation, context)) return Undefined;
+        // A class with no module and no twin, as the explicit form refuses it (#822), unless it is a
+        // collection, which the browser holds as the array of its elements.
+        if (ms?.ContainingType is { } twinless && !IsCollectionLikeTypeName(typeDisplay)
+            && ReportIfTwinless(twinless, creation, context))
+            return Undefined;
 
         // `Color c = new(1, 2, 3, 4)` builds the data as the explicit form does.
         if (ms?.ContainingType is { } dataTarget && dataTarget.TwinIsData())
