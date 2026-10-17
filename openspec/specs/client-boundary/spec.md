@@ -11,13 +11,16 @@ never crosses: what a page's module holds is exactly what the build checks.
 The build SHALL check against the client boundary exactly the code a module holds: every member of a
 component its twin holds, a stateless component's as much as a stateful one's, and every class, record
 and static class that becomes a module. It SHALL NOT check code that never crosses: the body of a
-component's `[ServerAction]`, whose twin is a stub written from its signature, a method, an operator or a
+component's `[ServerAction]`, whose twin is a stub written from its signature, a method, an operator or
+a
 conversion marked `[ServerOnly]`, whatever type declares it, an extension block's member included, and a
-class marked `[ServerOnly]`. Such a member SHALL be no member of any twin, and what it names SHALL be neither
+class marked `[ServerOnly]`. Such a member SHALL be no member of any twin, and what it names SHALL be
+neither
 imported nor refused by a module. Client code that calls such a member, explicitly or through a pattern
 (`Deconstruct` in deconstruction or a positional pattern, `Dispose` in `using`, and `GetEnumerator`
 with the `MoveNext`, `Current` and `Dispose` of the enumerator it answers wherever the sequence is
-read: a `foreach`, a spread `[.. xs]` and a LINQ operator over it), takes it as a method group, bare or qualified, or applies such an operator or
+read: a `foreach`, a spread `[.. xs]` and a LINQ operator over it), takes it as a method group, bare or
+qualified, or applies such an operator or
 conversion SHALL fail the build with EQ2010 where it does: a binary, a unary or a compound operator, an
 increment, a tuple equality, and a conversion, implicit, spelled as a cast, a foreach's element or a
 deconstruction's part.
@@ -84,10 +87,11 @@ overridden, SHALL fail the build with EQ2010 at that site, naming the method, wh
 method of a type that crosses implements or overrides that member and the call's receiver can be that
 type: the receiver's declared type, or for a bare call the type the call is declared in, is that type
 or a type it derives from or implements, with matching type arguments when the type implements or
-derives from a closed generic (`Bag : IEnumerable<int>`), a covariant parameter matching any type
-argument the type's converts to by reference (`StringSource : ISource<string>` behind `ISource<object>`)
-and a contravariant one any type argument that converts to the type's (`ObjectSink : ISink<object>`
-behind `ISink<string>`). A receiver whose type is not known, a type parameter, SHALL be taken to be any. The contracts SHALL be the whole build's, the app's and every
+derives from a closed generic (`Bag : IEnumerable<int>`). A covariant parameter matches a receiver's
+type argument that the type's own argument converts to by reference (`StringSource : ISource<string>`
+behind `ISource<object>`), and a contravariant one a receiver's type argument that converts to the
+type's own (`ObjectSink : ISink<object>` behind `ISink<string>`). A receiver whose type is not known, a
+type parameter, SHALL be taken to be any. The contracts SHALL be the whole build's, the app's and every
 referenced project's, so a project's call through its own contract, which the app fulfils on the server,
 is refused where the project writes it. A call bound to a method that is not `[ServerOnly]`, a call
 through `base`, a call whose receiver no such type can be, a contract only types that never cross
@@ -236,7 +240,7 @@ declared inside a type that never crosses.
 #### Scenario: A base list's type argument
 
 - **WHEN** a page is declared `Home : StatelessComponent, IMark<Ledger>` or `Home : Shell<Ledger>` over a generic base component, or shows a class declared `LedgerHolder : Holder<Ledger>`, in the app or from a referenced project
-- **THEN** the build succeeds, and neither module names `Ledger`
+- **THEN** the build succeeds, and no module names `Ledger`
 
 #### Scenario: A dictionary a Server Action takes, and a string that names the type
 
