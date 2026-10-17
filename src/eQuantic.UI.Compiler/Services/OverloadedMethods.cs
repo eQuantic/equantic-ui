@@ -642,7 +642,10 @@ internal static class OverloadedMethods
     /// A member of an interface the type answers with a method that holds a name of its own because it
     /// hides one (<see cref="TwinMethodName"/>, #563): a call through the interface reaches the member by
     /// the interface's name, which the hidden member holds on the twin, so it would reach the hidden one,
-    /// where C# reaches the method that hides it. Refused, as a name the twin cannot hold twice is.
+    /// where C# reaches the method that hides it. Refused, as a name the twin cannot hold twice is. A
+    /// typed <c>Equals</c> holds a name of its own (<see cref="TwinMethodName.TypedEquals"/>), and a call
+    /// through the interface reaches it by the contract it binds, which the twin's <c>static $equatable</c>
+    /// maps to it, never by name, so it is not refused.
     /// </summary>
     private static void CheckHidingImplementations(TypeDeclarationSyntax type, string sourcePath, SemanticModel model,
         List<CompilationError> errors)
@@ -651,7 +654,9 @@ internal static class OverloadedMethods
         foreach (var contract in declared.AllInterfaces.SelectMany(face => face.GetMembers().OfType<IMethodSymbol>()))
         {
             if (declared.FindImplementationForInterfaceMember(contract) is not IMethodSymbol { MethodKind: MethodKind.Ordinary } answer
-                || !TwinMethodName.HoldsANameOfItsOwn(answer))
+                || !TwinMethodName.HoldsANameOfItsOwn(answer)
+                || TwinMethodName.Of(answer) == TwinMethodName.Of(contract)
+                || CodeGen.Strategies.ElementEquality.ContractKey(contract) is not null)
                 continue;
             var position = type.Identifier.GetLocation().GetLineSpan().StartLinePosition;
             var answers = $"'{answer.ContainingType.Name}.{answer.Name}' answers '{contract.ContainingType.Name}.{contract.Name}' "

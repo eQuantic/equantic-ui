@@ -30,6 +30,13 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// and the method of the type's own holds a name of its own. C# lets the two answer differently, and a
 /// <c>foreach</c> over the class binds the public <c>GetEnumerator()</c> where LINQ binds the interface's.
 /// </para>
+/// <para>
+/// And so does an <c>Equals</c> that is no <c>Equals(object)</c> (<see cref="TypedEquals"/>): the twin's
+/// <c>equals</c> is the slot the runtime asks for <c>Equals(object)</c>, so a typed overload under that name
+/// answered <c>object.Equals(new C(), new C())</c>, which .NET answers by reference (Copilot's second review
+/// of #947). Every call through an interface finds it by the contract it binds, which the twin's
+/// <c>static $equatable</c> maps to the method, and each holds a name of its own (<see cref="TypedEqualsName"/>).
+/// </para>
 /// </summary>
 internal static class TwinMethodName
 {
@@ -37,10 +44,39 @@ internal static class TwinMethodName
     public static string Of(IMethodSymbol method)
     {
         var slot = Slot(method);
+        if (TypedEquals(slot)) return TypedEqualsName(slot);
         if (Hidden(slot) is { } hidden) return Next(NameOf(hidden));
         var own = SimpleName(slot).ToCamelCase();
         return ExplicitBeside(slot) is not null ? Next(own) : own;
     }
+
+    /// <summary>
+    /// The name a typed <c>Equals</c> holds: <c>equals$</c> and its place along the class chain, counted from
+    /// the top, the typed ones each base declares before the type's own, its explicit implementations first and
+    /// then its own methods, each in the order they are declared. So no two meet on one name: a method beside
+    /// an explicit <c>IEquatable&lt;C&gt;.Equals</c> held <c>equals$1</c> with it, and JavaScript kept the later
+    /// (Copilot's third review of #947), and two overloads, or a base's and its derived class's, were refused
+    /// on one name (EQ1007). An override fills the slot it overrides and takes no place. Calls through an
+    /// interface reach these methods by the contract they bind (<c>static $equatable</c>), never by the name.
+    /// </summary>
+    private static string TypedEqualsName(IMethodSymbol slot)
+    {
+        var above = 0;
+        for (var at = slot.ContainingType.BaseType; at is not null; at = at.BaseType)
+            above += NumberedTypedEquals(at).Count;
+        var own = NumberedTypedEquals(slot.ContainingType);
+        return $"equals${above + own.FindIndex(member => SymbolEqualityComparer.Default.Equals(member, slot)) + 1}";
+    }
+
+    /// <summary>The typed <c>Equals</c> a type declares that take a place of their own (<see cref="TypedEqualsName"/>):
+    /// every one that is no override, its explicit implementations first, each in the order they are declared.</summary>
+    private static List<IMethodSymbol> NumberedTypedEquals(INamedTypeSymbol type) =>
+        type.GetMembers().OfType<IMethodSymbol>()
+            .Where(member => !member.IsOverride && TypedEquals(member))
+            .OrderBy(member => member.MethodKind == MethodKind.ExplicitInterfaceImplementation ? 0 : 1)
+            .ThenBy(member => member.Locations.FirstOrDefault()?.SourceTree?.FilePath, StringComparer.Ordinal)
+            .ThenBy(member => member.Locations.FirstOrDefault()?.SourceSpan.Start ?? 0)
+            .ToList();
 
     /// <summary>The name a declared method holds, asked of its symbol where the model knows it, and its
     /// own name camelCased where none does.</summary>
@@ -63,8 +99,23 @@ internal static class TwinMethodName
     public static bool HoldsANameOfItsOwn(IMethodSymbol method)
     {
         var slot = Slot(method);
-        return Hidden(slot) is not null || ExplicitBeside(slot) is not null;
+        return Hidden(slot) is not null || ExplicitBeside(slot) is not null || TypedEquals(slot);
     }
+
+    /// <summary>
+    /// Whether <paramref name="slot"/> is an <c>Equals</c> of one parameter that is no <c>object</c>, an instance
+    /// method this compilation declares on a class, a struct or an interface: a typed overload, an
+    /// <c>IEquatable&lt;T&gt;</c> implementation and an interface's own <c>Equals</c> among them, which C# never
+    /// asks for <c>Equals(object)</c>. Each holds a name of its own (<see cref="TypedEqualsName"/>), even where it
+    /// hides another, and a call through the interface reaches it by the contract it binds.
+    /// </summary>
+    public static bool TypedEquals(IMethodSymbol slot) =>
+        slot is { MethodKind: MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation, IsStatic: false,
+            IsImplicitlyDeclared: false, Parameters.Length: 1 }
+        && SimpleName(slot) == "Equals"
+        && slot.Parameters[0].Type.SpecialType != SpecialType.System_Object
+        && slot.ContainingType is { TypeKind: TypeKind.Class or TypeKind.Struct or TypeKind.Interface, IsExtension: false }
+        && slot.Locations.Any(location => location.IsInSource);
 
     /// <summary>
     /// The explicit interface implementation that <paramref name="method"/> shares its name with in its

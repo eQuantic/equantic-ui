@@ -532,12 +532,18 @@ public class InvocationStrategy : IExpressionIrStrategy
         // not. Nothing caught it because no host-only base carried an inherited METHOD until #228
         // fenced `FlexNode`, and then every `Add` in the shared component library turned red at once.
         // A hole that only opens for the next host-only type is a hole nobody sees.
-        if (symbol.ReportIfHostOnly(node, context, ReceiverType(node, context))) return;
+        if (PlatformMemberRead.IsFromRefusedRead(node, context)) return;
+        if (symbol.ReportIfHostOnly(node, context, ReceiverType(node, context)))
+        {
+            PlatformMemberRead.RecordRefused(node, context);
+            return;
+        }
         // Declared in this compilation → it becomes a module of its own.
         if (declaring.Locations.Any(location => location.IsInSource)) return;
         // The SDK's own twins, asked of the one predicate the other fences ask (TwinlessTypeExtensions).
         if (declaring.IsFramework()) return;
 
+        PlatformMemberRead.RecordRefused(node, context);
         context.Report(node, ConversionSeverity.Error, "EQ2004", declaring.IsPackages()
             // A package's type: the build has no source for it and the runtime no twin of it (#822).
             ? $"'{declaring.ToDisplayString()}.{symbol.Name}' has no JavaScript translation: {declaring.PackageReason()}. "
