@@ -288,8 +288,9 @@ public class TupleAndAnonymousObjectConformanceTests
     }
 
     /// <summary>The types the object and enum member cases name besides <see cref="Prelude"/>'s: an enum with
-    /// an alias, a generic record, two enums over a long, one of them holding an odd value above 2^53, and a
-    /// struct whose <c>Equals(object)</c> override takes a string.</summary>
+    /// an alias, a generic record, two enums over a long, one of them holding an odd value above 2^53, a
+    /// struct whose <c>Equals(object)</c> override takes a string, two generic records, a class and a struct,
+    /// that declare their own typed <c>Equals</c>, and records derived from one that does.</summary>
     public const string ObjectAndEnumPrelude = Prelude + """
 
         public enum Shade { Black = 0, Grey = 1, Gray = Grey, White = 2 }
@@ -297,6 +298,12 @@ public class TupleAndAnonymousObjectConformanceTests
         public enum Wide : long { Low = -5000000000L, High = 1099511627776L, Odd = 9007199254740993L }
         [Flags] public enum WideFlags : long { None = 0, Top = 1L << 40 }
         public struct StringMatcher { public override bool Equals(object? o) => o is string s && s == "x"; public override int GetHashCode() => 0; }
+        public record OwnTyped<T>(int V) { public virtual bool Equals(OwnTyped<T>? other) => other is not null; public override int GetHashCode() => 0; }
+        public record struct OwnTypedStruct<T>(int V) { public bool Equals(OwnTypedStruct<T> other) => true; public override int GetHashCode() => 0; }
+        public record OwnTypedChild<T>(int V) : OwnTyped<T>(V);
+        public record Rooted(int V) { public virtual bool Equals(Rooted? other) => other is not null && other.V == V; public override int GetHashCode() => V; }
+        public record Leafy(int V, int W) : Rooted(V);
+        public record Leaf2(int V, int W, int Z) : Leafy(V, W);
         """;
 
     public static readonly string[] ObjectAndEnumMemberCases =
@@ -338,16 +345,30 @@ public class TupleAndAnonymousObjectConformanceTests
         """var log = ""; byte One() { log += "a"; return 1; } int Two() { log += "b"; return 1; } return object.Equals((byte)1, 1) + "|" + object.Equals(1, 1.0) + "|" + object.Equals('a', "a") + "|" + object.Equals(1L, 1) + "|" + object.Equals(1, 1L) + "|" + object.Equals(1.5m, 1.5) + "|" + object.Equals((byte)1, (byte)1) + "|" + object.Equals(One(), Two()) + "|" + log + "|" + object.Equals((string?)null, (int?)null) + "|" + ((object)(byte)1).Equals(1) + "|" + ((object)(byte)1).Equals((byte)1);""",
         // A struct's own Equals(object) override answers, whatever type the other value is.
         """var m = new StringMatcher(); object o = m; return object.Equals(m, "x") + "|" + m.Equals("x") + "|" + o.Equals("x") + "|" + ((object)m).Equals("x") + "|" + object.Equals(m, "y") + "|" + m.Equals((object)1);""",
+        // A generic record's own typed Equals is asked only for its own closed type, as C#'s synthesized
+        // Equals(object) asks it: `obj as R<int>` is null for an R<string>, and a record struct is unequal.
+        """return object.Equals(new OwnTyped<int>(1), new OwnTyped<string>(1)) + "|" + object.Equals(new OwnTyped<int>(1), new OwnTyped<int>(2)) + "|" + new OwnTyped<int>(1).Equals((object)new OwnTyped<string>(1)) + "|" + object.Equals(new OwnTypedStruct<int>(1), new OwnTypedStruct<string>(1)) + "|" + object.Equals(new OwnTypedStruct<int>(1), new OwnTypedStruct<int>(2)) + "|" + new OwnTypedStruct<int>(1).Equals((object)new OwnTypedStruct<string>(1));""",
+        """return object.Equals(new OwnTypedChild<int>(1), new OwnTypedChild<string>(1)) + "|" + object.Equals(new OwnTypedChild<int>(1), new OwnTypedChild<int>(2)) + "|" + new OwnTypedChild<int>(1).Equals((object)new OwnTypedChild<string>(1));""",
+        // A record derived from one that declares its own typed Equals asks that one as `base.Equals(other)`, and
+        // overrides it with `Equals((object?)other)`: a call bound to the base's, its contract, its delegate and a
+        // List of the base reach what the value is, its type and its own members included.
+        """Rooted b = new Leafy(1, 2); return b.Equals(new Rooted(1)) + "|" + new Rooted(1).Equals(new Leafy(1, 2)) + "|" + new Leafy(1, 2).Equals(new Leafy(1, 2)) + "|" + new Leafy(1, 2).Equals(new Leafy(1, 3)) + "|" + (new Leafy(1, 2) == new Leafy(1, 2)) + "|" + (b == new Rooted(1)) + "|" + (new Rooted(1) == b);""",
+        """return new List<Rooted> { new Leafy(1, 2) }.Contains(new Rooted(1)) + "|" + new List<Rooted> { new Rooted(1) }.Contains(new Leafy(1, 2)) + "|" + object.Equals(new Leafy(1, 2), new Rooted(1)) + "|" + object.Equals(new Rooted(1), new Leafy(1, 2)) + "|" + new HashSet<Leafy> { new Leafy(1, 2), new Leafy(1, 2) }.Count;""",
+        """Rooted r = new Leaf2(1, 2, 3); Leafy l = new Leaf2(1, 2, 3); return r.Equals(new Leafy(1, 2)) + "|" + l.Equals(new Leafy(1, 2)) + "|" + new Leaf2(1, 2, 3).Equals(new Leaf2(1, 2, 3)) + "|" + new Leaf2(1, 2, 3).Equals(new Leaf2(1, 2, 4)) + "|" + r.Equals(new Leaf2(1, 2, 3));""",
+        """IEquatable<Rooted> e = new Leafy(1, 2); Func<Rooted?, bool> f = e.Equals; return e.Equals(new Rooted(1)) + "|" + f(new Rooted(1)) + "|" + f(new Leafy(1, 2));""",
         // A tuple is no array and no list, whichever operand it is.
         """var a = new[] { 1, 2 }; var l = new List<int> { 1, 2 }; return object.Equals((1, 2), a) + "|" + object.Equals(a, (1, 2)) + "|" + object.Equals((1, 2), l) + "|" + object.Equals(l, (1, 2)) + "|" + (1, 2).Equals(a) + "|" + object.Equals((1, 2), (1, 2));""",
     ];
 
     public static IEnumerable<object?[]> ObjectAndEnumCases() => Each(ObjectAndEnumMemberCases);
 
-    /// <summary>The classes the cases below name: one that does not override Equals, and two that do.</summary>
+    /// <summary>The classes the cases below name: ones that override <c>Equals(object)</c> and ones that do not,
+    /// typed <c>Equals</c> overloads, <c>IEquatable&lt;T&gt;</c> over the type itself and over others, explicit
+    /// implementations, and generic code over them.</summary>
     private const string Classes = """
         using System;
         using System.Collections.Generic;
+        using System.Linq;
         public class Plain { public int X; }
         public class Matcher { public override bool Equals(object? o) => o is string s && s == "x"; public override int GetHashCode() => 0; }
         public class AnyMatcher { public override bool Equals(object? o) => true; public override int GetHashCode() => 0; }
@@ -358,6 +379,39 @@ public class TupleAndAnonymousObjectConformanceTests
         public static class Generic { public static bool Same<T>(T a, T b) where T : IEquatable<T> => a.Equals(b); }
         public interface IProbe { bool Equals(IProbe other); }
         public class Probe : IProbe { public bool Equals(IProbe other) => false; }
+        public class IntMatcher : IEquatable<int> { public bool Equals(int n) => n == 1; }
+        public struct IntStruct : IEquatable<int> { public int V; public bool Equals(int n) => n == V; }
+        public interface IIntLike : IEquatable<int> { }
+        public class IntLike : IIntLike { public bool Equals(int n) => n == 7; }
+        public class IntBase { public bool Equals(int n) => n == 3; }
+        public class IntDerived : IntBase, IEquatable<int> { }
+        public static class Via { public static bool Call<T, U>(T t, U u) where T : IEquatable<U> => t.Equals(u); }
+        public struct Pt : IEquatable<Pt> { public int X; public bool Equals(Pt o) => false; bool IEquatable<Pt>.Equals(Pt o) => o.X == X; public override int GetHashCode() => X; }
+        public class Twice : IEquatable<Twice> { public bool Equals(Twice? other) => false; bool IEquatable<Twice>.Equals(Twice? other) => true; public override int GetHashCode() => 0; }
+        public class TwoWays : IEquatable<int>, IEquatable<string> { bool IEquatable<int>.Equals(int n) => n == 1; bool IEquatable<string>.Equals(string? s) => s == "x"; }
+        public class NullLover : IEquatable<NullLover> { public static int Calls; public bool Equals(NullLover? other) { Calls++; return other is null; } }
+        public static class Gen
+        {
+            public static bool Has<T>(T a, T b) where T : IEquatable<T> => new List<T> { a }.Contains(b);
+            public static int Count<T>(T a, T b) => new HashSet<T> { a, b }.Count;
+            public static int Index<T>(List<T> xs, T x) => xs.IndexOf(x);
+            public static bool Key<T>(T a, T b) where T : notnull => new Dictionary<T, int> { [a] = 1 }.ContainsKey(b);
+            public static int Distinct<T>(T a, T b) => new[] { a, b }.Distinct().Count();
+            public static bool LinqHas<T>(T a, T b) => new[] { a }.Contains(b);
+            public static int Groups<T>(T a, T b) => new[] { a, b }.GroupBy(x => x).Count();
+            public static bool Seq<T>(T a, T b) => new[] { a }.SequenceEqual(new[] { b });
+            public static int ToSet<T>(T a, T b) => new[] { a, b }.ToHashSet().Count;
+            public static int Except<T>(T a, T b) => new[] { a }.Except(new[] { b }).Count();
+            public static bool Obj<T>(T a, T b) => a!.Equals(b);
+            public static bool StaticObj<T>(T a, T b) => object.Equals(a, b);
+            public static bool Tup<T>(T a, T b) => (a, 1).Equals((b, 1));
+            public static bool Anon<T>(T a, T b) => new { V = a }.Equals(new { V = b });
+            public static bool HasValue<T>(T a, T b) => new Dictionary<int, T> { [1] = a }.ContainsValue(b);
+            public static int ArrayIndex<T>(T a, T b) => Array.IndexOf(new[] { a }, b);
+            public static int Removed<T>(T a, T b) { var l = new List<T> { a }; l.Remove(b); return l.Count; }
+        }
+        public record Holder<T>(T Value);
+        public record struct StructHolder<T>(T Value);
         """;
 
     /// <summary>
@@ -385,21 +439,80 @@ public class TupleAndAnonymousObjectConformanceTests
         // A record's own typed Equals is what its synthesized Equals(object) and == ask.
         ("a record's own typed Equals",
             """var a = new Rec(1); var b = new Rec(11); return a.Equals((object)b) + "|" + a.Equals(b) + "|" + (a == b) + "|" + object.Equals(a, b) + "|" + new HashSet<Rec> { a, b }.Count + "|" + new HashSet<object> { a, b }.Count;"""),
+        // An IEquatable<T> over another type is reached by the contract a call or a delegate binds, and leaves
+        // the type's own collection equality to Equals(object).
+        ("IEquatable<T> over another type",
+            """IEquatable<int> c = new IntMatcher(); Func<int, bool> f = c.Equals; var a = new IntMatcher(); var b = new IntMatcher(); return c.Equals(1) + "|" + c.Equals(2) + "|" + f(1) + "|" + new IntMatcher().Equals(1) + "|" + new HashSet<IntMatcher> { a, b }.Count + "|" + object.Equals(a, b);"""),
+        // So is one a struct answers, one an interface extends, one a base class's method answers for its
+        // derived class, and generic code over it, whose type argument the value's class settles.
+        ("IEquatable<T> over another type, wherever it is answered",
+            """IEquatable<int> s = new IntStruct { V = 1 }; Func<int, bool> sf = s.Equals; IIntLike l = new IntLike(); IEquatable<int> d = new IntDerived(); IEquatable<int> a = new IntMatcher(); IEquatable<int> b = new IntMatcher(); return s.Equals(1) + "|" + sf(2) + "|" + l.Equals(7) + "|" + l.Equals(8) + "|" + d.Equals(3) + "|" + d.Equals(4) + "|" + Via.Call(new IntMatcher(), 1) + "|" + Via.Call(new IntMatcher(), 2) + "|" + Via.Call(5, 5) + "|" + Via.Call("a", "b") + "|" + new HashSet<IEquatable<int>> { a, b }.Count + "|" + new List<IEquatable<int>> { a }.Contains(b);"""),
+        // A public typed Equals beside an explicit IEquatable<T>.Equals answers apart from it, and so do two
+        // explicit ones.
+        ("a typed Equals beside an explicit implementation",
+            """var a = new Twice(); var b = new Twice(); IEquatable<Twice> e = a; IEquatable<int> i = new TwoWays(); IEquatable<string> s = new TwoWays(); return a.Equals(b) + "|" + e.Equals(b) + "|" + new HashSet<Twice> { a, b }.Count + "|" + new List<Twice> { a }.Contains(b) + "|" + object.Equals(a, b) + "|" + i.Equals(1) + "|" + i.Equals(2) + "|" + s.Equals("x") + "|" + s.Equals("y");"""),
+        ("a struct's typed Equals beside an explicit implementation",
+            """var p1 = new Pt { X = 1 }; var p2 = new Pt { X = 1 }; IEquatable<Pt> e = p1; return p1.Equals(p2) + "|" + e.Equals(p2) + "|" + new HashSet<Pt> { p1, p2 }.Count + "|" + new List<Pt> { p1 }.Contains(p2) + "|" + object.Equals(p1, p2);"""),
+        // A call or a delegate through IEquatable<T> asks the method with a null argument too, where the
+        // collection's comparer answers two nulls itself.
+        ("IEquatable<T> asked with a null",
+            """var c = new NullLover(); IEquatable<NullLover> e = c; Func<NullLover?, bool> f = e.Equals; var direct = e.Equals(null); var viaGroup = f(null); var calls = NullLover.Calls; return direct + "|" + viaGroup + "|" + calls + "|" + new List<NullLover?> { null }.Contains(null) + "|" + NullLover.Calls;"""),
+        ("IEquatable<T> asked with a null by generic code, and never by a collection",
+            """var c = new NullLover(); var generic = Generic.Same(c, null); var calls = NullLover.Calls; return generic + "|" + calls + "|" + new List<NullLover?> { c }.Contains(null) + "|" + new List<NullLover?> { null }.Contains(c) + "|" + new List<NullLover?> { null, c }.IndexOf(null) + "|" + new HashSet<NullLover?> { null, c, null }.Count + "|" + NullLover.Calls;"""),
+        // The receiver's null is refused as any call's is, after its argument runs, and so is a delegate made over it.
+        ("IEquatable<T> called on a null",
+            """var log = ""; NullLover Arg() { log += "a"; return new NullLover(); } IEquatable<NullLover> n = null!; var r = ""; try { r = n.Equals(Arg()).ToString(); } catch (NullReferenceException) { r = "NRE"; } var made = ""; try { Func<NullLover?, bool> g = n.Equals; made = "made"; } catch (NullReferenceException) { made = "refused"; } catch (ArgumentException) { made = "refused"; } return r + "|" + log + "|" + made + "|" + NullLover.Calls;"""),
+        // A generic body's collections compare by the element type's default comparer, IEquatable<T> where
+        // the value answers it, and so does a generic record's member.
+        ("a generic collection body and a generic record's member",
+            """var a = new Equatable { V = 1 }; var b = new Equatable { V = 1 }; return Gen.Has(a, b) + "|" + Gen.Count(a, b) + "|" + Gen.Index(new List<Equatable> { a }, b) + "|" + Gen.Key(a, b) + "|" + Gen.Has(1, 1) + "|" + Gen.Count("x", "x") + "|" + new Holder<Equatable>(a).Equals(new Holder<Equatable>(b)) + "|" + Gen.Count(new Plain(), new Plain());"""),
+        ("a generic body's LINQ",
+            """var a = new Equatable { V = 1 }; var b = new Equatable { V = 1 }; return Gen.Distinct(a, b) + "|" + Gen.LinqHas(a, b) + "|" + Gen.Groups(a, b) + "|" + Gen.Seq(a, b) + "|" + Gen.ToSet(a, b) + "|" + Gen.Except(a, b);"""),
+        ("a generic body's tuple, anonymous object, dictionary value, array and removal",
+            """var a = new Equatable { V = 1 }; var b = new Equatable { V = 1 }; return Gen.Tup(a, b) + "|" + Gen.Anon(a, b) + "|" + Gen.HasValue(a, b) + "|" + Gen.ArrayIndex(a, b) + "|" + Gen.Removed(a, b) + "|" + new StructHolder<Equatable>(a).Equals(new StructHolder<Equatable>(b));"""),
+        // Object equality in a generic body never asks a typed overload, and the default comparer asks only
+        // IEquatable<T> over the value's own type: IEquatable<int> is no comparer of an IntMatcher.
+        ("a generic body's object equality, and a contract over another type",
+            """var a = new Equatable { V = 1 }; var b = new Equatable { V = 1 }; var m = new IntMatcher(); var n = new IntMatcher(); return Gen.Obj(a, b) + "|" + Gen.StaticObj(a, b) + "|" + Gen.Obj(1, 1) + "|" + Gen.StaticObj("x", "x") + "|" + Gen.Count(m, n) + "|" + Gen.LinqHas(m, n) + "|" + Gen.LinqHas(m, m) + "|" + new Holder<IntMatcher>(m).Equals(new Holder<IntMatcher>(n)) + "|" + Gen.Count<object>(m, n);"""),
+        ("a generic body's nulls",
+            """Equatable? none = null; var a = new Equatable { V = 1 }; return Gen.LinqHas(none, none) + "|" + Gen.LinqHas(a, none) + "|" + Gen.LinqHas(none, a) + "|" + Gen.Count(none, a) + "|" + Gen.Count(none, none);"""),
         // An interface's own Equals is dispatched as any interface member is, by a call and by a group.
         ("an Equals an interface declares",
             """IProbe p = new Probe(); Func<IProbe, bool> f = p.Equals; return p.Equals(p) + "|" + f(p) + "|" + new Probe().Equals(p) + "|" + object.Equals(p, p);"""),
     ];
 
-    public static TheoryData<string, bool> ClassCaseNames()
+    /// <summary>Typed <c>Equals</c> overloads C# tells apart by their parameters, which held one name on the twin
+    /// and were refused there (EQ1007): two of one class, and a base's beside its derived class's.</summary>
+    private const string Overloads = """
+        using System;
+        using System.Collections.Generic;
+        public class Money : IEquatable<Money>, IEquatable<decimal> { public decimal V; public bool Equals(Money? o) => o is not null && o.V == V; public bool Equals(decimal d) => d == V; public override int GetHashCode() => V.GetHashCode(); }
+        public class Animal : IEquatable<Animal> { public int Id; public bool Equals(Animal? o) => o is not null && o.Id == Id; public override int GetHashCode() => Id; }
+        public class Dog : Animal, IEquatable<Dog> { public int Tag; public bool Equals(Dog? o) => o is not null && o.Tag == Tag && o.Id == Id; }
+        """;
+
+    private static readonly (string Name, string Statements)[] OverloadCases =
+    [
+        ("two typed overloads of one class",
+            """var m = new Money { V = 5m }; var n = new Money { V = 5m }; IEquatable<decimal> d = m; IEquatable<Money> e = m; return m.Equals(n) + "|" + m.Equals(5m) + "|" + m.Equals(6m) + "|" + d.Equals(5m) + "|" + e.Equals(n) + "|" + new HashSet<Money> { m, n }.Count + "|" + object.Equals(m, n);"""),
+        ("a typed Equals on a base and another on its derived class",
+            """Animal a1 = new Dog { Id = 1, Tag = 1 }; var d1 = new Dog { Id = 1, Tag = 1 }; var d2 = new Dog { Id = 1, Tag = 2 }; return a1.Equals(new Animal { Id = 1 }) + "|" + d1.Equals(d2) + "|" + d1.Equals((Animal)d2) + "|" + new HashSet<Dog> { d1, d2 }.Count + "|" + new HashSet<Animal> { d1, d2 }.Count + "|" + new List<Dog> { d1 }.Contains(d2) + "|" + new List<Animal> { d1 }.Contains(d2);"""),
+    ];
+
+    private static TheoryData<string, bool> NamesOf((string Name, string Statements)[] cases)
     {
         var data = new TheoryData<string, bool>();
-        foreach (var (name, _) in ClassCases)
+        foreach (var (name, _) in cases)
         {
             data.Add(name, true);
             data.Add(name, false);
         }
         return data;
     }
+
+    public static TheoryData<string, bool> ClassCaseNames() => NamesOf(ClassCases);
+
+    public static TheoryData<string, bool> OverloadCaseNames() => NamesOf(OverloadCases);
 
     [SkippableTheory]
     [MemberData(nameof(TupleEqualityCases))]
@@ -421,4 +534,9 @@ public class TupleAndAnonymousObjectConformanceTests
     [MemberData(nameof(ClassCaseNames))]
     public void ObjectMembersOfAClass_AnswerAsDotNet(string name, bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Classes, typeAnnotations, ClassCases.Single(c => c.Name == name));
+
+    [SkippableTheory]
+    [MemberData(nameof(OverloadCaseNames))]
+    public void TypedEqualsOverloads_AnswerAsDotNet(string name, bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Overloads, typeAnnotations, OverloadCases.Single(c => c.Name == name));
 }
