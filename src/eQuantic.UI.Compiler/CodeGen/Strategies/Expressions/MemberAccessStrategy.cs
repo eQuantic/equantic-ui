@@ -210,10 +210,14 @@ public class MemberAccessStrategy : IExpressionIrStrategy
                 ? JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), held)
                 : JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), held, JsExpr.Opaque(comparison));
         }
-        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum })
+        if (type.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum })
         {
+            // A Nullable enum's group is Nullable's Equals, its value's, and an empty one boxes to null,
+            // which .NET refuses to make the delegate of, as GetHashCode's group refuses it. Bound to the
+            // value, the group named an `equals` no string has, and threw where it was made.
             context.UsedHelpers.Add(Eq.Import);
-            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), receiver);
+            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup),
+                type.IsNullableValue() ? JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver) : receiver);
         }
         if (type.SpecialType == SpecialType.System_Object || type.TypeKind is TypeKind.Interface or TypeKind.TypeParameter)
         {
