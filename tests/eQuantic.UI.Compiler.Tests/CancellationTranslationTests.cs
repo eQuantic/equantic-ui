@@ -91,10 +91,11 @@ public class CancellationTranslationTests
 
         Assert.Empty(namedErrors);
         Assert.Empty(madeErrors);
-        Assert.Contains("given.register(inner.cancel.bind(inner))", named);
+        // The delegate its call is, over the receiver it was made with (#839).
+        Assert.Contains("given.register(((__target) => () => __target.cancel())($eq.delegateTarget(inner)))", named);
         // A receiver that is a call is read once, as C# reads it when the delegate is made.
         Assert.Single(System.Text.RegularExpressions.Regex.Matches(made, @"\bmake\(\)"));
-        Assert.Contains(".cancel.bind(", made);
+        Assert.Contains("__target.cancel()", made);
     }
 
     [Theory]
