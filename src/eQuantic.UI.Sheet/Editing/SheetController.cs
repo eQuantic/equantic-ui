@@ -1,18 +1,6 @@
-namespace eQuantic.UI.Primitives;
+using eQuantic.UI.Primitives;
 
-/// <summary>How far one selection movement goes.</summary>
-public enum SheetMotion : byte
-{
-    Cell = 0,
-    /// <summary>Excel's Ctrl+arrow: to the edge of the data block in that direction.</summary>
-    DataEdge = 1,
-    /// <summary>Home/End on the row; Ctrl+Home/End to the sheet's corners.</summary>
-    RowBoundary = 2,
-    SheetBoundary = 3,
-}
-
-/// <summary>Which way a movement, insert or delete goes on the grid.</summary>
-public enum SheetAxis : byte { Rows = 0, Cols = 1 }
+namespace eQuantic.UI.Sheet;
 
 /// <summary>
 /// THE SPREADSHEET, minus the pixels — the code editor's shape in two dimensions. Selection and
@@ -22,12 +10,13 @@ public enum SheetAxis : byte { Rows = 0, Cols = 1 }
 /// the strings the user typed — no formula engine, no per-cell formatting, no merges, no frozen
 /// panes. Those are LATER, and nothing here has to be unlearned for them.
 /// <para>
-/// The app owns an instance; the surface (native and web realize the same one) renders from it
-/// and routes input into it. Every mutation raises <see cref="Changed"/> with the edit.
+/// The app owns an instance, and the component that draws it renders from it. It is also the
+/// <see cref="ISheetSurfaceModel"/> a realizer drives: the host hands it keys, text, the clipboard's
+/// events and the pointer, and every decision about what they mean is made here, once, for both
+/// targets. Every mutation raises <see cref="Changed"/> with the edit.
 /// </para>
 /// </summary>
-[TwinIsTranspiled]
-public sealed class SheetController
+public sealed class SheetController : ISheetSurfaceModel
 {
     private SheetRange _selection = new(new CellRef(0, 0));
     private CellRef _active = new(0, 0);
@@ -319,13 +308,22 @@ public sealed class SheetController
     // ---- clipboard -------------------------------------------------------------------------------
 
     /// <summary>The selection as TSV — hand it to the platform clipboard and Excel pastes it.</summary>
-    public string CopyTsv() => TsvCodec.Serialize(Document, _selection);
+    public string CopyText() => TsvCodec.Serialize(Document, _selection);
+
+    /// <summary>A copy that also empties what it took, as one undo step. Answers the TSV for the
+    /// clipboard.</summary>
+    public string Cut()
+    {
+        var text = CopyText();
+        ClearSelection();
+        return text;
+    }
 
     /// <summary>
     /// Pastes a TSV grid with its top-left at the selection's top-left (growing the sheet if it
     /// must), selects the pasted rectangle, and records ONE undo step.
     /// </summary>
-    public bool PasteTsv(string text)
+    public bool Paste(string text)
     {
         var grid = TsvCodec.Parse(text);
         if (grid.Count == 0) return false;
@@ -509,6 +507,146 @@ public sealed class SheetController
         var first = new SheetRange(new CellRef(selection.TopRow, selection.LeftCol),
             new CellRef(selection.BottomRow, selection.LeftCol));
         return Fill(first, selection);
+    }
+
+    // ---- the surface: what a realizer drives ---------------------------------------------------
+
+    /// <summary>How far from the selection's bottom-right corner a press still grabs the fill
+    /// handle, in dp: the little square is drawn smaller than a fingertip.</summary>
+    public const float FillHandleGrab = 8f;
+
+    /// <summary>
+    /// The window the surface draws. The composing component hands it over on every build, before it
+    /// reads the selection; this is the only place that turns a point into a cell with it, and the
+    /// selection's corner back into a point.
+    /// </summary>
+    public SheetGrid Grid { get; set; } = SheetGrid.Default;
+
+    /// <summary>Whether the press in flight began as a plain single press, whose drag moves the
+    /// selection's far corner. A press on the fill handle is <see cref="Filling"/> instead.</summary>
+    private bool _selecting;
+
+    /// <summary>
+    /// The cell a point in the surface's own coordinates lands on: prefix sums over the document's
+    /// sizes from the window's first cell, clamped into the grid, so a drag past the edge holds the
+    /// edge.
+    /// </summary>
+    public CellRef CellAt(Point point)
+    {
+        var x = point.X - Grid.Origin.X;
+        var y = point.Y - Grid.Origin.Y;
+        var col = Grid.FirstCol;
+        var acc = 0f;
+        while (col < Document.Cols - 1 && acc + Document.ColWidth(col) <= x)
+        {
+            acc += Document.ColWidth(col);
+            col++;
+        }
+        var row = Grid.FirstRow;
+        acc = 0f;
+        while (row < Document.Rows - 1 && acc + Document.RowHeight(row) <= y)
+        {
+            acc += Document.RowHeight(row);
+            row++;
+        }
+        return Document.Clamp(new CellRef(row, col));
+    }
+
+    /// <summary>The bottom-right corner of the selection's bottom-right cell, in the surface's own
+    /// coordinates: where the fill handle sits. The inverse of <see cref="CellAt"/>.</summary>
+    private Point FillHandleCorner()
+    {
+        var x = Grid.Origin.X;
+        for (var c = Grid.FirstCol; c <= _selection.RightCol; c++) x += Document.ColWidth(c);
+        var y = Grid.Origin.Y;
+        for (var r = Grid.FirstRow; r <= _selection.BottomRow; r++) y += Document.RowHeight(r);
+        return new Point(x, y);
+    }
+
+    /// <inheritdoc />
+    public bool HandleKey(string key, KeyModifiers modifiers, ITextClipboard? clipboard) =>
+        SheetKeymap.Handle(this, key, modifiers, clipboard);
+
+    /// <summary>
+    /// Typed text, Excel's way: the first character of an entry REPLACES the active cell (a fresh
+    /// draft seeded with it), and the rest append to the draft. The document changes on commit.
+    /// </summary>
+    public bool HandleText(string text)
+    {
+        if (text.Length == 0) return false;
+        SheetKeymap.Type(this, text);
+        return true;
+    }
+
+    /// <summary>
+    /// What a pointer MEANS on a sheet, for every host. A press lands a draft first, as clicking away
+    /// does in Excel; then it grabs the fill handle when it falls within <see cref="FillHandleGrab"/> of
+    /// the selection's corner, or selects the cell under it, stretching the selection from its anchor
+    /// with Shift, and the second press of a double click begins editing that cell with its value. A
+    /// drag that began with a plain single press moves the selection's far corner with the pointer;
+    /// one that grabbed the handle previews the fill, and the release lands it as one undo step. A
+    /// press the system cancels lands nothing, and a press that finds a fill still in flight drops it.
+    /// </summary>
+    public bool HandlePointer(PointerPhase phase, Point position, KeyModifiers modifiers, int clicks)
+    {
+        switch (phase)
+        {
+            case PointerPhase.Down:
+            {
+                // A fill whose release never came is over: this press starts afresh.
+                _selecting = false;
+                if (Filling) CancelFill();
+                if (Editing) CommitEdit();
+                var corner = FillHandleCorner();
+                if (Math.Abs(position.X - corner.X) <= FillHandleGrab
+                    && Math.Abs(position.Y - corner.Y) <= FillHandleGrab)
+                {
+                    BeginFill();
+                    return true;
+                }
+                var cell = CellAt(position);
+                var shift = (modifiers & KeyModifiers.Shift) != 0;
+                if (shift) SelectTo(cell);
+                else Selection = new SheetRange(cell);
+                if (clicks >= 2) BeginEdit(Document.GetCell(cell));
+                _selecting = clicks < 2 && !shift;
+                return true;
+            }
+            case PointerPhase.Move:
+            {
+                if (Filling)
+                {
+                    var before = FillTarget;
+                    UpdateFill(CellAt(position));
+                    return FillTarget is { } after
+                        ? before is not { } previous || after != previous
+                        : before is not null;
+                }
+                if (!_selecting) return false;
+                var cell = CellAt(position);
+                if (cell == _selection.Focus) return false;
+                Selection = new SheetRange(_selection.Anchor, cell);
+                return true;
+            }
+            case PointerPhase.Up:
+            {
+                _selecting = false;
+                if (!Filling) return false;
+                CommitFill();
+                return true;
+            }
+            case PointerPhase.Cancel:
+            {
+                // Taken away, not released: the selection stays where the drag left it, and a fill
+                // pours nothing.
+                _selecting = false;
+                if (!Filling) return false;
+                CancelFill();
+                return true;
+            }
+            default:
+                return false;
+        }
     }
 
     // ---- undo/redo -------------------------------------------------------------------------------

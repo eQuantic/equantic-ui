@@ -25,12 +25,13 @@ public class VocabularyInterfaceDefaultsTests
     private static string FixturePath => Path.Combine(RepoRoot(),
         "src", "eQuantic.UI.Runtime", "src", "shared", "__fixtures__", "interface-defaults.txt");
 
-    /// <summary>The assemblies the runtime provides the types of: the vocabulary, the code engine,
+    /// <summary>The assemblies the runtime provides the types of: the vocabulary, the two engines,
     /// the component library and the charts.</summary>
     private static readonly Assembly[] Vocabulary =
     [
         typeof(eQuantic.UI.Primitives.VisualNode).Assembly,
         typeof(eQuantic.UI.Code.ICodeLanguage).Assembly,
+        typeof(eQuantic.UI.Sheet.SheetController).Assembly,
         typeof(eQuantic.UI.Components.CodeEditor).Assembly,
         typeof(eQuantic.UI.Charts.BarChart).Assembly,
     ];

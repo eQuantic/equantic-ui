@@ -640,11 +640,29 @@ export interface ScrollViewNode extends VisualNodeValue {
 export interface SheetSurfaceNode extends VisualNodeValue {
   nodeKind: 'sheetSurface';
   child: VisualNodeValue;
-  firstRow?: number;
-  firstCol?: number;
-  headerWidth?: number;
-  headerHeight?: number;
+  /** The live engine (the C# `ISheetSurfaceModel`) — a transpiled class, not a copy of its state. */
+  model: SheetSurfaceModelLike;
+  onChanged?: (() => void) | null;
   label?: string | null;
+}
+
+/**
+ * The spreadsheet's engine as a realizer sees it (the C# `ISheetSurfaceModel`): everything a host may
+ * tell it. What a key or a press MEANS is its answer, and the cells, the band and the draft are drawn
+ * by the component above the surface, so a realizer paints nothing of its own here.
+ */
+export interface SheetSurfaceModelLike {
+  handleKey(key: string, modifiers: number, clipboard: unknown): boolean;
+  handleText(text: string): boolean;
+  copyText(): string;
+  cut(): string;
+  paste(text: string): boolean;
+  handlePointer(
+    phase: PointerPhaseValue,
+    position: { x: number; y: number },
+    modifiers: number,
+    clicks: number,
+  ): boolean;
 }
 
 /** Arrow-key adjustment semantics — one Tab stop wrapping a slider-like control. */

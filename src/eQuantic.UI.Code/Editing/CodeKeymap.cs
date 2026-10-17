@@ -100,7 +100,11 @@ public static class CodeKeymap
                     return true;
                 case 'x':
                     if (clipboard is null) return false;
-                    clipboard.Write(editor.Cut());
+                    // The copy reaches the clipboard before anything is deleted: a clipboard that
+                    // refuses the text leaves the document as it was. Copying first takes what the
+                    // cut takes, the whole line included when nothing is selected.
+                    clipboard.Write(editor.CopyText());
+                    editor.Cut();
                     return true;
                 case 'v':
                     if (clipboard is null) return false;

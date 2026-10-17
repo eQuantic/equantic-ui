@@ -7,15 +7,16 @@ namespace eQuantic.UI.Web.Tests;
 
 /// <summary>
 /// <c>[TwinIsTranspiled]</c> marks exactly the vocabulary's types whose twins the runtime transpiles
-/// from their C# (#592): every class, record and struct of the folders <see cref="SharedComponentTranspilationTests"/>
-/// transpiles out of Primitives, and no other type of the assembly. The compiler reads the mark where
+/// from their C# (#592): every class, record and struct of the folder <see cref="SharedComponentTranspilationTests"/>
+/// transpiles out of Primitives, the forms' model, and no other type of the assembly. The two engines
+/// need no mark: each is a namespace of its own, which says it. The compiler reads the mark where
 /// an app reaches them as metadata, so a type missing it is built through a config object its twin
 /// does not take, and a hand-written twin carrying it is built through a constructor it does not have.
 /// </summary>
 public class TwinIsTranspiledTests
 {
     /// <summary>The Primitives folders the runtime transpiles, as SharedComponentTranspilationTests reads them.</summary>
-    private static readonly string[] TranspiledFolders = ["Sheet", "Forms"];
+    private static readonly string[] TranspiledFolders = ["Forms"];
 
     [Fact]
     public void EveryTypeTheRuntimeTranspilesOutOfPrimitives_IsMarked_AndNoOther()

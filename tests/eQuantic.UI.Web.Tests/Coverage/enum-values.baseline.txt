@@ -217,6 +217,7 @@ PointerPhase.Move = 1
 PointerPhase.Up = 2
 PointerPhase.Hover = 3
 PointerPhase.Exit = 4
+PointerPhase.Cancel = 5
 PresenceMotion.Fade = 0
 PresenceMotion.SlideUp = 1
 PressableRole.Button = 0

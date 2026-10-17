@@ -351,7 +351,7 @@ check by eye.
 | `Theme/` | 1,590 | 35 | tokens, `IAppTheme`, `PhotonTheme`, palettes, the WCAG audit |
 | `Devices/` | 1,408 | 39 | sixteen capability interfaces, and six `Photon*` declarations |
 | `Vector/` | 1,365 | 13 | SVG parsing and vector drawings |
-| `Sheet/` | 1,050 | 12 | a spreadsheet's document, controller, history, TSV codec |
+| ~~`Sheet/`~~ | 1,050 | 12 | a spreadsheet's document, controller, history, TSV codec — moved to `eQuantic.UI.Sheet` (#185) |
 | `Forms/` | 438 | 5 | form model and controller |
 | `Contracts/`, `Text/`, `Layout/`, `Styles/`, root | 566 | 19 | attributes, culture seams, `EdgeInsets`/`SizeValue`, `Color` |
 
@@ -361,7 +361,7 @@ stated contents are "abstract visual vocabulary, tokens and the contract attribu
 because `CodeSurface` and `SheetSurface` — nodes, which must be here — took a concrete
 `CodeEditorController` and `SheetController`, and because both realizers drive the same editing
 protocol through them (`CodeKeymap`, `SheetKeymap`) without being allowed to reference
-`Components`. `SheetSurface` still does; `CodeSurface` no longer does (below). *How does Flutter
+`Components`. Neither does any more (below). *How does Flutter
 solve it?* `TextEditingController` and `EditableText` live in `widgets`, not in `rendering`; the
 widget owns the protocol and `RenderEditable` only paints. Ours could take the same road — the node
 depends on an interface stating what a realizer READS (lines, caret, selection, tokens), the
@@ -382,6 +382,13 @@ an assembly of its own, `eQuantic.UI.Sheet`, as the code editor's did. It is dec
 afterwards the move is a break: both samples write `new SheetController(…)`. The realizers call the
 engine directly today, on 19 lines (17 in `PhotonHost`, 2 in `lowering.ts`), and the interface is
 what replaces those calls.
+
+**Done (#185).** `SheetSurface` depends on `ISheetSurfaceModel`, which says what a host may tell the
+engine (a key, typed text, a pointer, the clipboard's events), and the engine is `eQuantic.UI.Sheet`,
+one type per file. The window the surface draws is the engine's too (`SheetGrid`, which the component
+hands over as it builds, as the code editor hands its grid), so what a press means, the cell under it
+and the fill handle's grab, is answered once: `PhotonHost` keeps only which surface a press began in,
+and `lowering.ts` imports nothing of the engine.
 
 **Decided too (2026-10-14, #186): per-component theme slots ship in 1.0.** `IAppTheme` carries
 foundation only, and what makes a component look like itself is written in the component (its
@@ -545,9 +552,9 @@ per target. `WebRealizer` resolves `theme.Elevation(level)` six times in three p
 
 Flutter has one language, so a node exists once. Ours has two, and the SDK's stated answer to that is
 eqc: the 139 component modules embedded in `runtime.js` are TRANSPILED from the C# in `Components`
-and `Charts`, the code engine's own assembly (`eQuantic.UI.Code`, `CodeEditorController` and its
-languages, since #359), and the `Sheet/` and `Forms/` folders of `Primitives` (`SheetController`,
-`FormController`) — `MarkdownParser` among them — and byte-pinned against the live compiler. The vocabulary itself does not take that road.
+and `Charts`, the two engines' own assemblies (`eQuantic.UI.Code`, `CodeEditorController` and its
+languages, since #359, and `eQuantic.UI.Sheet`, `SheetController`, since #185), and the `Forms/`
+folder of `Primitives` (`FormController`) — `MarkdownParser` among them — and byte-pinned against the live compiler. The vocabulary itself does not take that road.
 
 | C# | Hand-written TypeScript twin | Kept in step by |
 |---|---|---|
@@ -844,7 +851,7 @@ makes the rest safe.
    `Photon*` attributes → `Native.Hosting`; `Navigator.Go(href)` → `destination`; `Nodes/` holds
    nodes. And the editor models, decided by Edgar (Flutter: controllers in `widgets`): the code
    editor's in an assembly of its own (2026-09-23), the spreadsheet's the same way before 1.0
-   (2026-10-14, #185, section 4). — S, and M for the spreadsheet
+   (decided 2026-10-14, done in #185, section 4). — S, and M for the spreadsheet
 6. ~~**Two of everything at the web seam**~~ done: `RouteData` → `RouteValues` (C# and TypeScript),
    `RenderContext`'s provider, global fallback and instance dictionary → `CapabilityScope`, and the
    link policy left on the web with the reason written where it is felt. — S

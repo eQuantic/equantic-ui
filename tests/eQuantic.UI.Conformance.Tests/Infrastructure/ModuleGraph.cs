@@ -27,13 +27,15 @@ public static class ModuleGraph
 {
     private const string Cases = "ConformanceCases";
 
-    /// <summary>The framework and the vocabulary, read once for every compilation (#481).</summary>
+    /// <summary>The framework, the vocabulary and the spreadsheet's engine, whose types a case builds
+    /// as an app does (TranspiledVocabularyConformanceTests), read once for every compilation (#481).</summary>
     private static readonly Lazy<MetadataReference[]> References = new(() =>
         ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(file => file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
             .Select(file => TestReferences.Of(file))
             .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Sheet.SheetController).Assembly.Location))
             .ToArray());
 
     /// <summary>
