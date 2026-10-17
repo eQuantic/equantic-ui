@@ -2227,6 +2227,32 @@ public sealed class PhotonHost
 
         _pan = null;
 
+        // A press an editing surface owned is told it was taken away: a code surface's drag ends, and
+        // a sheet's fill pours nothing.
+        if (_codeDragging && _lastFrame is not null)
+        {
+            var codeRegions = _lastFrame.CodeRegions;
+            for (var i = 0; i < codeRegions.Count; i++)
+            {
+                if (codeRegions[i].Path != _textPath) continue;
+                codeRegions[i].Surface.Model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1);
+                break;
+            }
+        }
+        _codeDragging = false;
+        if (_sheetPressed && _lastFrame is not null)
+        {
+            var sheetRegions = _lastFrame.SheetRegions;
+            for (var i = 0; i < sheetRegions.Count; i++)
+            {
+                if (sheetRegions[i].Path != _textPath) continue;
+                if (sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1))
+                    sheetRegions[i].Surface.OnChanged?.Invoke();
+                break;
+            }
+        }
+        _sheetPressed = false;
+
         if (_drag is { Active: true } drag)
         {
             var rest = drag.Node switch

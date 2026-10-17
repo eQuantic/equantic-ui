@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { CellRef } from './components/CellRef';
 import { SheetRange } from './components/SheetRange';
 import { SheetController } from './components/SheetController';
+import { Point } from './runtime-exports';
 
 describe('SheetController (transpiled twin)', () => {
   it('speaks A1', () => {
@@ -66,6 +67,22 @@ describe('SheetController (transpiled twin)', () => {
     sheet.undo();
     expect(sheet.document.getCell(new CellRef(0, 1))).toBe('goes');
     expect(sheet.document.getCell(new CellRef(0, 3))).toBe('stays');
+  });
+
+  it('a fill move reports a change only when the preview moves, and a cancel pours nothing', () => {
+    const sheet = new SheetController(50, 8);
+    sheet.document.setCell(new CellRef(1, 1), '7');
+    sheet.selection = new SheetRange(new CellRef(1, 1));
+
+    // B2's bottom-right corner, where the handle is drawn.
+    sheet.handlePointer('down', new Point(192, 56), 0, 1);
+    expect(sheet.handlePointer('move', new Point(144, 98), 0, 1)).toBe(true);
+    // The same cell again is the same preview: compared by value, as .NET compares it.
+    expect(sheet.handlePointer('move', new Point(154, 98), 0, 1)).toBe(false);
+    expect(sheet.handlePointer('cancel', new Point(0, 0), 0, 1)).toBe(true);
+
+    expect(sheet.filling).toBe(false);
+    expect(sheet.document.getCell(new CellRef(2, 1))).toBe('');
   });
 
   it('TSV round-trips through copy and paste', () => {

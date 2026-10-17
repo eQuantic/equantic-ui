@@ -584,7 +584,8 @@ public sealed class SheetController : ISheetSurfaceModel
     /// the selection's corner, or selects the cell under it, stretching the selection from its anchor
     /// with Shift, and the second press of a double click begins editing that cell with its value. A
     /// drag that began with a plain single press moves the selection's far corner with the pointer;
-    /// one that grabbed the handle previews the fill, and the release lands it as one undo step.
+    /// one that grabbed the handle previews the fill, and the release lands it as one undo step. A
+    /// press the system cancels lands nothing, and a press that finds a fill still in flight drops it.
     /// </summary>
     public bool HandlePointer(PointerPhase phase, Point position, KeyModifiers modifiers, int clicks)
     {
@@ -592,7 +593,9 @@ public sealed class SheetController : ISheetSurfaceModel
         {
             case PointerPhase.Down:
             {
+                // A fill whose release never came is over: this press starts afresh.
                 _selecting = false;
+                if (Filling) CancelFill();
                 if (Editing) CommitEdit();
                 var corner = FillHandleCorner();
                 if (Math.Abs(position.X - corner.X) <= FillHandleGrab
@@ -613,8 +616,11 @@ public sealed class SheetController : ISheetSurfaceModel
             {
                 if (Filling)
                 {
+                    var before = FillTarget;
                     UpdateFill(CellAt(position));
-                    return true;
+                    return FillTarget is { } after
+                        ? before is not { } previous || after != previous
+                        : before is not null;
                 }
                 if (!_selecting) return false;
                 var cell = CellAt(position);
@@ -627,6 +633,15 @@ public sealed class SheetController : ISheetSurfaceModel
                 _selecting = false;
                 if (!Filling) return false;
                 CommitFill();
+                return true;
+            }
+            case PointerPhase.Cancel:
+            {
+                // Taken away, not released: the selection stays where the drag left it, and a fill
+                // pours nothing.
+                _selecting = false;
+                if (!Filling) return false;
+                CancelFill();
                 return true;
             }
             default:

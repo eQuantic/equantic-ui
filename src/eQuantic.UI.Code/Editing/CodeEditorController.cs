@@ -564,6 +564,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 return true;
             }
             case PointerPhase.Up:
+            case PointerPhase.Cancel:
                 _dragging = false;
                 return false;
             default:

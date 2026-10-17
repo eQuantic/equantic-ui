@@ -21,9 +21,9 @@ public interface ISheetSurfaceModel
     /// <summary>
     /// A key the platform reported, by NAME ("ArrowLeft", "Enter", "F2", "c"). Answers whether the
     /// sheet CLAIMED it: false leaves the key to whatever is around the sheet, Escape outside an edit
-    /// to the host, which takes the keyboard back. No keyboard convention is handed, because Excel's
-    /// chords are one keyboard in both traditions once <see cref="KeyModifiers.Command"/> stands for ⌘
-    /// or Ctrl. <paramref name="clipboard"/> is null on a host whose clipboard arrives as events of its
+    /// to the host: Photon takes the keyboard back, and a browser leaves it where it is. No keyboard
+    /// convention is handed, because Excel's chords are one keyboard in both traditions once
+    /// <see cref="KeyModifiers.Command"/> stands for ⌘ or Ctrl. <paramref name="clipboard"/> is null on a host whose clipboard arrives as events of its
     /// own (a browser's copy, cut and paste): the copy keys are then left unclaimed, for those events.
     /// </summary>
     bool HandleKey(string key, KeyModifiers modifiers, ITextClipboard? clipboard);

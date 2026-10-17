@@ -155,6 +155,62 @@ public class SheetSurfaceModelTests
     }
 
     [Fact]
+    public void ACancelledFill_PoursNothing_AndACancelledDragKeepsWhereItStood()
+    {
+        var sheet = new SheetController(rows: 50, cols: 8);
+        sheet.Document.SetCell(new CellRef(1, 1), "7");
+        sheet.Selection = new SheetRange(new CellRef(1, 1));
+        ISheetSurfaceModel model = sheet;
+
+        model.HandlePointer(PointerPhase.Down, new Point(2 * 96f, 2 * 28f), KeyModifiers.None, 1);
+        model.HandlePointer(PointerPhase.Move, CenterOf(3, 1), KeyModifiers.None, 1);
+        model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1).Should().BeTrue();
+
+        sheet.Filling.Should().BeFalse();
+        sheet.Document.GetCell(new CellRef(2, 1)).Should().Be("", "the system took the press away");
+        sheet.History.CanUndo.Should().BeFalse();
+
+        Press(sheet, CenterOf(4, 4));
+        model.HandlePointer(PointerPhase.Move, CenterOf(6, 6), KeyModifiers.None, 1);
+        model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1).Should().BeFalse();
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(4, 4), new CellRef(6, 6)));
+        model.HandlePointer(PointerPhase.Move, CenterOf(8, 8), KeyModifiers.None, 1)
+            .Should().BeFalse("a cancelled drag follows the pointer no further");
+    }
+
+    [Fact]
+    public void APressThatFindsAFillStillInFlight_DropsIt()
+    {
+        var sheet = new SheetController(rows: 50, cols: 8);
+        sheet.Document.SetCell(new CellRef(1, 1), "7");
+        sheet.Selection = new SheetRange(new CellRef(1, 1));
+        ISheetSurfaceModel model = sheet;
+        model.HandlePointer(PointerPhase.Down, new Point(2 * 96f, 2 * 28f), KeyModifiers.None, 1);
+
+        // Its release never came: the next press selects, and its own release pours nothing.
+        Press(sheet, CenterOf(5, 5));
+        model.HandlePointer(PointerPhase.Move, CenterOf(3, 1), KeyModifiers.None, 1);
+        model.HandlePointer(PointerPhase.Up, CenterOf(3, 1), KeyModifiers.None, 1);
+
+        sheet.Filling.Should().BeFalse();
+        sheet.Document.GetCell(new CellRef(2, 1)).Should().Be("");
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(5, 5), new CellRef(3, 1)));
+    }
+
+    [Fact]
+    public void AFillMove_ReportsAChangeOnlyWhenThePreviewMoves()
+    {
+        var sheet = new SheetController(rows: 50, cols: 8);
+        sheet.Selection = new SheetRange(new CellRef(1, 1));
+        ISheetSurfaceModel model = sheet;
+        model.HandlePointer(PointerPhase.Down, new Point(2 * 96f, 2 * 28f), KeyModifiers.None, 1);
+
+        model.HandlePointer(PointerPhase.Move, CenterOf(3, 1), KeyModifiers.None, 1).Should().BeTrue();
+        model.HandlePointer(PointerPhase.Move, new Point(CenterOf(3, 1).X + 10, CenterOf(3, 1).Y), KeyModifiers.None, 1)
+            .Should().BeFalse("the same cell again is the same preview");
+    }
+
+    [Fact]
     public void APressJustOutsideTheGrab_SelectsInsteadOfFilling()
     {
         var sheet = new SheetController(rows: 50, cols: 8);

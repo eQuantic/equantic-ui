@@ -191,3 +191,4 @@ eQuantic.UI.Primitives.ISheetSurfaceModel.HandlePointer(eQuantic.UI.Primitives.P
 eQuantic.UI.Primitives.SheetSurface.SheetSurface(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.ISheetSurfaceModel! model) -> void
 eQuantic.UI.Primitives.SheetSurface.Model.get -> eQuantic.UI.Primitives.ISheetSurfaceModel!
 eQuantic.UI.Primitives.SheetSurface.Model.init -> void
+eQuantic.UI.Primitives.PointerPhase.Cancel = 5 -> eQuantic.UI.Primitives.PointerPhase

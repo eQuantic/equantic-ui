@@ -123,6 +123,25 @@ public class SheetSurfaceTests
     }
 
     [Fact]
+    public void ACancelledFill_PoursNothing_AndTheNextMoveIsAHover()
+    {
+        var (host, page) = Open();
+        page.Sheet.Document.SetCell(new CellRef(1, 1), "7");
+        page.Sheet.Selection = new SheetRange(new CellRef(1, 1));
+        var corner = (X: HeaderW + 2 * 96f, Y: HeaderH + 2 * 28f);
+
+        host.PressDown(corner.X, corner.Y);
+        host.PointerMove(CenterOf(3, 1).X, CenterOf(3, 1).Y);
+        host.PointerCancel(PointerKind.Touch);
+        host.PointerMove(CenterOf(5, 4).X, CenterOf(5, 4).Y);
+        host.PressUp(CenterOf(5, 4).X, CenterOf(5, 4).Y);
+
+        page.Sheet.Filling.Should().BeFalse();
+        page.Sheet.Document.GetCell(new CellRef(2, 1)).Should().Be("");
+        page.Sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 1)), "nothing moved it after the cancel");
+    }
+
+    [Fact]
     public void ACut_WithNoClipboard_LeavesTheValuesItCouldNotCopy()
     {
         var (host, page) = Open();

@@ -372,6 +372,7 @@ export class SheetController {
             case 'down':
                 {
                     this._selecting = false;
+                    if (this.filling) this.cancelFill();
                     if (this.editing) this.commitEdit();
                     let corner = this.fillHandleCorner();
                     if (Math.abs(Math.fround(position.x - corner.x)) <= SheetController.fillHandleGrab && Math.abs(Math.fround(position.y - corner.y)) <= SheetController.fillHandleGrab) {
@@ -388,8 +389,10 @@ export class SheetController {
             case 'move':
                 {
                     if (this.filling) {
+                        let before = this.fillTarget;
                         this.updateFill(this.cellAt(position));
-                        return true;
+                        let after: any; let previous: any; 
+                        return (after = this.fillTarget) != null ? !((previous = before) != null) || !$eq.equals(after, previous) : !(before == null);
                     }
                     if (!this._selecting) return false;
                     let cell = this.cellAt(position);
@@ -402,6 +405,13 @@ export class SheetController {
                     this._selecting = false;
                     if (!this.filling) return false;
                     this.commitFill();
+                    return true;
+                }
+            case 'cancel':
+                {
+                    this._selecting = false;
+                    if (!this.filling) return false;
+                    this.cancelFill();
                     return true;
                 }
             default:

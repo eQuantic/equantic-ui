@@ -1534,6 +1534,8 @@ function lowerSheetSurface(
     };
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
+    // The press is the surface's, as on a code surface: the browser's own reaction to it (a text
+    // sweep, a drag of what is under it) would fight the band and the fill the model draws.
     event.preventDefault();
     changed();
   }) as EventHandler;
