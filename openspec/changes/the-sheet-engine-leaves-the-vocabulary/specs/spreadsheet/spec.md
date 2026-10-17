@@ -9,7 +9,8 @@ anchor to that cell, the second press of a double click SHALL begin editing the 
 a press within 8 points of the selection's bottom-right corner SHALL begin a fill, a plain press that
 is dragged SHALL move the selection's far corner with the pointer, and the release of a fill SHALL
 land it as one step that undo takes back. A press that lands while a cell is being edited SHALL
-commit the edit first.
+commit the edit first. A press the system cancels SHALL land nothing: a fill pours nothing, and a drag
+stops where it stood.
 
 #### Scenario: A press in a scrolled window
 
@@ -26,6 +27,12 @@ commit the edit first.
 
 - **WHEN** a press on B2 is dragged to D4 and released
 - **THEN** the selection runs from B2 to D4 and the active cell is D4
+
+#### Scenario: A fill the system takes away
+
+- **WHEN** B2 holds `7`, its fill handle is dragged to B4, and the system cancels the press before it
+  lifts
+- **THEN** B3 and B4 stay empty, and undo has nothing to take back
 
 #### Scenario: A press with Shift
 

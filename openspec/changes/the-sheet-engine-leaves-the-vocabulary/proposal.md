@@ -37,6 +37,10 @@ move breaks every app that writes `new SheetController(…)`.
   ⌘C, ⌘X and ⌘V claimed and served through it, and one that hands none (the browser) gets them left
   for its own copy, cut and paste events. On Photon a cut with no clipboard no longer clears the
   selection it could not copy.
+- A press the system takes away (a call arriving, a window losing key) reaches the model as a new
+  `PointerPhase.Cancel`, Flutter's `PointerCancelEvent`: a fill pours nothing, a drag stops where it
+  stood, and Photon stops routing the moves of a press that is gone. A code surface's drag ends the
+  same way. A press that finds a fill whose release never came drops it.
 - `[TwinIsTranspiled]` leaves the moved types, since their namespace now says what the attribute
   said; the forms' models keep it.
 - A press in the browser is read where it landed. The web half focused the sheet before reading the

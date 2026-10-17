@@ -65,6 +65,11 @@ or filling (on the handle); a move answers whether anything changed; a release l
 host keeps one flag, that a press began in a sheet, and routes the press's moves and release to that
 sheet until it lifts, as it does for a code surface (`_codeDragging`).
 
+**4b. A press can be taken away.** `PointerPhase` gains `Cancel`, after its five members as the
+vocabulary's enums require: the system ends a press without lifting it, and neither model may land
+what the press was doing. Flutter's `PointerCancelEvent` is the same thing. *Alternative:* a release,
+which would pour a fill nobody let go of.
+
 **5. The TSV members take the protocol's names.** `CopyTsv`/`PasteTsv` become `CopyText`/`Paste`,
 and `Cut` copies then clears. No alias stays (CLAUDE.md, no member survives to keep an old shape).
 
