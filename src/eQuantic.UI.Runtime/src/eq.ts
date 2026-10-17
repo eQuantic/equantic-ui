@@ -149,7 +149,7 @@ import {
 } from './utils/collections';
 import { dictionary, pair } from './utils/dictionary';
 import { hashSet, hashSetOf } from './utils/hash-set';
-import { memberEquality, sameKey, tupleEquality } from './utils/key-equality';
+import { equatable, equatableCall, memberEquality, sameGeneric, sameKey, tupleEquality } from './utils/key-equality';
 import {
   arrayFind,
   arrayFindIndex,
@@ -528,6 +528,12 @@ export const $eq = {
     tupleEquality,
     memberEquality,
     sameKey,
+    /** `EqualityComparer<T>.Default` for a type that answers `IEquatable<T>` over itself, by the contract. */
+    equatable,
+    /** `EqualityComparer<T>.Default` for a type parameter: the value's `IEquatable<T>` over its own type. */
+    sameGeneric,
+    /** An interface's typed `Equals`, called or made a delegate of, by the contract it binds. */
+    equatableCall,
     /** `List<T>`'s and `Array`'s searches, sorts and copies, as .NET answers them (`utils/list.ts`). */
     indexOf: listIndexOf,
     lastIndexOf: listLastIndexOf,

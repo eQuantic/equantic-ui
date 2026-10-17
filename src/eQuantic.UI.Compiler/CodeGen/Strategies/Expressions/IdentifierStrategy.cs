@@ -144,17 +144,27 @@ public class IdentifierStrategy : IExpressionIrStrategy
                     var member = JsExpr.ThisMember(slot);
 
                     // A method REFERENCE (not being called) is a method group: bind it to the instance.
-                    if (symbol is IMethodSymbol)
+                    if (symbol is IMethodSymbol methodSymbol)
                     {
                         var isDirectInvocation = identifier.Parent is InvocationExpressionSyntax invocation &&
                                               invocation.Expression == identifier;
                         // Over a copy of a mutable value's `this`, as C# boxes the receiver when it makes
                         // the delegate (ValueCopies.Captured).
                         if (!isDirectInvocation)
+                        {
+                            if (PlatformMemberRead.ReportIfUntranslated(symbol, identifier, context))
+                                return JsExpr.Literal("undefined");
+                            if (methodSymbol is { Name: "Equals", Parameters.Length: 1, ContainingType.SpecialType: SpecialType.System_Object }
+                                && !TwinMethodName.HoldsANameOfItsOwn(methodSymbol))
+                            {
+                                context.UsedHelpers.Add(Eq.Import);
+                                return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), JsExpr.This, JsExpr.Identifier(Eq.SameItem));
+                            }
                             return JsExpr.Call(JsExpr.Member(member, "bind"),
                                 context.SemanticHelper.GetOperation(identifier) is IMethodReferenceOperation { Instance: { } self }
                                     ? ValueCopies.Captured(self.Type, JsExpr.This)
                                     : JsExpr.This);
+                        }
                     }
 
                     return member;

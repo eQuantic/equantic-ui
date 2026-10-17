@@ -124,12 +124,7 @@ public class IsPatternStrategy : IConversionStrategy
         var value = converted;
         while (value is IConversionOperation conversion) value = conversion.Operand;
         if (value is IFieldReferenceOperation { Field: { ContainingType.TypeKind: TypeKind.Enum, HasConstantValue: true } member })
-        {
-            return member.ContainingType.IsFlagsEnum()
-                ? System.Convert.ToDecimal(member.ConstantValue, System.Globalization.CultureInfo.InvariantCulture)
-                    .ToString(System.Globalization.CultureInfo.InvariantCulture)
-                : $"'{member.Name.ToCamelCase()}'";
-        }
+            return Types.EnumStrategy.MemberLiteral(member);
         // An enum's value reached otherwise (`x is (Level)1`) is the member that holds it.
         if (value.Type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType && !enumType.IsFlagsEnum()
             && value.ConstantValue is { HasValue: true } enumValue

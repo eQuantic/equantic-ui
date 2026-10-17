@@ -78,10 +78,14 @@ public class EnumStrategy : IConversionStrategy
     /// which holds every underlying type's range: a ulong member past long's crashed the compile.
     /// </para>
     /// </summary>
-    internal static string MemberLiteral(IFieldSymbol field) =>
-        field.ContainingType.IsFlagsEnum() && field.HasConstantValue
-            ? System.Convert.ToDecimal(field.ConstantValue, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture)
-            : $"'{field.Name.ToCamelCase()}'";
+    internal static string MemberLiteral(IFieldSymbol field)
+    {
+        if (!field.HasConstantValue) return $"'{field.Name.ToCamelCase()}'";
+        var value = System.Convert.ToDecimal(field.ConstantValue, CultureInfo.InvariantCulture);
+        return field.ContainingType.IsFlagsEnum()
+            ? value.ToString(CultureInfo.InvariantCulture)
+            : $"'{EnumShape.KeyOf(field.ContainingType, value) ?? field.Name.ToCamelCase()}'";
+    }
 
     public int Priority => 5;
 }

@@ -207,8 +207,7 @@ public class LinqTableStrategy : IExpressionIrStrategy
     /// <c>ToDictionary</c> by the runtime, which refuses a null key and a key twice as .NET does, into
     /// the dictionary class a constructed one is, its keys found by value where the key type's default
     /// comparer finds them so (<see cref="ElementEquality"/>). A comparer reaches here only when it asks
-    /// for that, the fence having refused any other, and is dropped (#578); an enum with aliases is
-    /// refused, whose two names for one value are two keys on this side. <paramref name="selectors"/> is
+    /// for that, the fence having refused any other, and is dropped (#578). <paramref name="selectors"/> is
     /// how many selectors the call passes. Null is a call no model binds, which keeps the table's shape.
     /// </summary>
     private static (string? Template, string? Refusal)? ToDictionary(InvocationExpressionSyntax invocation, int selectors,
@@ -216,8 +215,6 @@ public class LinqTableStrategy : IExpressionIrStrategy
     {
         if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol { TypeArguments: [_, var key, ..] })
             return null;
-        if ((key.UnwrapNullable() ?? key) is INamedTypeSymbol { TypeKind: TypeKind.Enum } keyEnum && LinqKeys.HasAliases(keyEnum))
-            return (null, $"ToDictionary keyed by {key.ToDisplayString()}, an enum with aliases");
         var holes = selectors == 2 ? "{1}, {2}" : "{1}";
         var byValue = ElementEquality.Of(key) is { } equality
             ? selectors == 2 ? $", {equality}" : $", null, {equality}"

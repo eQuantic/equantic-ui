@@ -21,7 +21,7 @@
  * whether `TrimExcess` compacts it.
  */
 import { hash } from './hash';
-import { hasEquals, hasOwnEquality, sameBy, sameKey, type Equality, type KeyEquality } from './key-equality';
+import { answersEquatable, hasEquals, hasOwnEquality, sameBy, sameKey, type Equality, type KeyEquality } from './key-equality';
 
 /** An entry: the key it is found by. A dictionary's carries its value beside it. */
 export interface Slot<K> {
@@ -96,8 +96,8 @@ export class SlotTable<K, E extends Slot<K>> {
   /** How a key is found. */
   readonly equality: KeyEquality;
   /** Each slot of a key found by identity: every key, none when keys are found by a comparison, under
-   *  `'own'` every key but one with an equality of its own, and under `'item'` every key but one whose
-   *  twin carries an `equals`. */
+   *  `'own'` every key but one with an equality of its own, under `'gen'` one whose twin answers
+   *  `IEquatable<T>` over its own type too, and under `'item'` every key but one whose twin carries an `equals`. */
   private readonly index: Map<K, number> | null;
   /** The slots of the keys found by a comparison, by their hash: the keys a comparison may find. */
   private readonly buckets = new Map<number, number[]>();
@@ -136,6 +136,8 @@ export class SlotTable<K, E extends Slot<K>> {
   private indexes(key: K): boolean {
     if (this.index === null) return false;
     if (this.equality === 'own') return !hasOwnEquality(key);
+    // A type parameter's key is asked its IEquatable<T> over its own type too, where its twin answers one.
+    if (this.equality === 'gen') return !hasOwnEquality(key) && !answersEquatable(key);
     return this.equality !== 'item' || !hasEquals(key);
   }
 
