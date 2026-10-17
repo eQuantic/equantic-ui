@@ -17,3 +17,8 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MethodGroupStrategy
 eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MethodGroupStrategy.MethodGroupStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MethodGroupStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
 eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MethodGroupStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.InterpolationInACultureStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.InterpolationInACultureStrategy.InterpolationInACultureStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.InterpolationInACultureStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.InterpolationInACultureStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.InterpolationInACultureStrategy.Priority.get -> int

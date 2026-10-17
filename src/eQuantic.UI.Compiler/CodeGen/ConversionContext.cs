@@ -234,6 +234,7 @@ public class ConversionContext
         RefusedTwins.Clear();
         RefusedReads.Clear();
         Refused.Clear();
+        InterpolationCultures.Clear();
     }
 
     /// <summary>
@@ -257,6 +258,20 @@ public class ConversionContext
     /// cleared with them.
     /// </summary>
     internal HashSet<SyntaxNode> Refused { get; } = new();
+
+    /// <summary>
+    /// The interpolations written in a culture a call names (#839), by whether it is the invariant one:
+    /// <c>FormattableString.Invariant($"…")</c>'s and <c>string.Create(provider, $"…")</c>'s, whose holes
+    /// <c>InterpolatedStringStrategy</c> and <c>ValueFlow</c> write in that culture. An interpolation made
+    /// a <c>FormattableString</c> anywhere else is refused: the browser holds the text it writes, not its
+    /// format and its arguments. Cleared with the diagnostics.
+    /// </summary>
+    internal Dictionary<SyntaxNode, bool> InterpolationCultures { get; } = new();
+
+    /// <summary>Whether the interpolation <paramref name="interpolated"/> writes its holes in the invariant
+    /// culture, as a call that names it asked.</summary>
+    internal bool WritesInvariant(SyntaxNode? interpolated) =>
+        interpolated is not null && InterpolationCultures.TryGetValue(SemanticHelper.Original(interpolated), out var invariant) && invariant;
 
     /// <summary>Whether the client boundary refused a node inside <paramref name="expression"/> already.</summary>
     internal bool RefusedWithin(SyntaxNode expression) =>
