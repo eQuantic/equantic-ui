@@ -91,6 +91,9 @@ internal static class PlatformMemberRead
     /// <c>string.Empty</c>, the member access's <c>Guid.Empty</c>) wrote a package's static reached through an
     /// alias named like the platform type as that type's member (#964). The model alone is asked. A constant and
     /// an enum's member are their values, which the strategies write, and an extension is the call fence's.
+    /// A refusal is recorded where it is told, a call's here and a read's by <see cref="ReportIfUntranslated"/>,
+    /// so a chain rooted in it is told once, at its root: <c>Status.Make().GetType()</c> told
+    /// <c>object.GetType</c> again (Copilot's third review of #964).
     /// </summary>
     internal static bool ReportIfPackageStatic(ExpressionSyntax node, ConversionContext context)
     {
@@ -102,6 +105,7 @@ internal static class PlatformMemberRead
                 } method
                 || !owner.IsPackages())
                 return false;
+            RecordRefused(call, context);
             context.Report(call, ConversionSeverity.Error, "EQ2004",
                 $"'{owner.ToDisplayString()}.{method.Name}' has no JavaScript translation: {owner.PackageReason()}. "
                 + TwinlessTypeExtensions.PackageRemedy);
