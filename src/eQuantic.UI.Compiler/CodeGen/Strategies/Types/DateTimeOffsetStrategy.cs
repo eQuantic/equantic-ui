@@ -69,14 +69,13 @@ public class DateTimeOffsetStrategy : ConversionStrategyBase
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
                 var name = ma.Name.Identifier.ValueText;
-                var args = ConvertArgs(inv.ArgumentList, context);
+                var method = context.SemanticHelper.GetSymbol(inv) as IMethodSymbol;
                 if (IsStaticAccess(ma, context))
-                    return $"{Eq.DateTimeOffset}.{name.ToCamelCase()}({args})";
-                var receiver = context.Converter.ConvertExpression(ma.Expression);
+                    return ByParameter($"{Eq.DateTimeOffset}.{name.ToCamelCase()}", inv.ArgumentList, method, context);
                 // Subtracting an instant is the span between the two, where `subtract` takes a span off it.
-                var twin = name == "Subtract" && context.SemanticHelper.GetSymbol(inv) is IMethodSymbol { Parameters: [{ Type: var operand }] }
+                var twin = name == "Subtract" && method is { Parameters: [{ Type: var operand }] }
                     && IsType(operand) ? "diff" : name.ToCamelCase();
-                return $"{receiver}.{twin}({args})";
+                return ByParameter($".{twin}", inv.ArgumentList, method, context, ma.Expression);
             }
 
             case MemberAccessExpressionSyntax member:

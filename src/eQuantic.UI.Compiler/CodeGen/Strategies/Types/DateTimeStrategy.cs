@@ -91,18 +91,15 @@ public class DateTimeStrategy : ConversionStrategyBase
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
                 var name = ma.Name.Identifier.ValueText;
-                var args = ConvertArgs(inv.ArgumentList, context);
+                var method = context.SemanticHelper.GetSymbol(inv) as IMethodSymbol;
                 if (IsStaticAccess(ma, context))
-                {
-                    return $"{Eq.DateTime}.{name.ToCamelCase()}({args})";
-                }
-                var receiver = context.Converter.ConvertExpression(ma.Expression);
+                    return ByParameter($"{Eq.DateTime}.{name.ToCamelCase()}", inv.ArgumentList, method, context);
                 // The short and long date and time strings are .NET's ToString("d"), ("D"), ("t")
                 // and ("T") in the current culture, and go where ToString goes; the twin has no
                 // method by those names, so each was a TypeError in the browser (found in review, #388).
                 if (CultureStrings.TryGetValue(name, out var specifier))
-                    return $"{Eq.Format}({receiver}, '{specifier}')";
-                return $"{receiver}.{Twin(name, context.SemanticHelper.GetSymbol(inv) as IMethodSymbol)}({args})";
+                    return $"{Eq.Format}({context.Converter.ConvertExpression(ma.Expression)}, '{specifier}')";
+                return ByParameter($".{Twin(name, method)}", inv.ArgumentList, method, context, ma.Expression);
             }
 
             case MemberAccessExpressionSyntax member:

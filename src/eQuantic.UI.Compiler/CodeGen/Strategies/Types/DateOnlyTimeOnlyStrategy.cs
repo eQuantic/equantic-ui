@@ -81,22 +81,21 @@ public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
                     return oc.ToString();
                 var kind = KindOf(context.SemanticHelper.GetType(oc))
                     ?? (oc is ObjectCreationExpressionSyntax named ? KindOfName(named.Type.ValueText()) : null);
-                return $"$eq.time.{kind}({ConvertArgs(oc.ArgumentList, context)})";
+                return ByParameter($"$eq.time.{kind}", oc.ArgumentList, context.SemanticHelper.GetSymbol(oc) as IMethodSymbol, context);
             }
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
                 var name = ma.Name.Identifier.ValueText;
-                var args = ConvertArgs(inv.ArgumentList, context);
+                var method = context.SemanticHelper.GetSymbol(inv) as IMethodSymbol;
                 if (IsStaticAccess(ma, context))
-                    return $"$eq.time.{StaticKind(ma, context)}.{name.ToCamelCase()}({args})";
-                var receiver = context.Converter.ConvertExpression(ma.Expression);
+                    return ByParameter($"$eq.time.{StaticKind(ma, context)}.{name.ToCamelCase()}", inv.ArgumentList, method, context);
                 // The short and long date and time strings are .NET's ToString("d"), ("D"), ("t") and
                 // ("T") in the current culture, and go where ToString goes: the twins have no method by
                 // those names, so each was a TypeError in the browser (#469).
                 if (CultureStrings.TryGetValue(name, out var specifier))
-                    return $"{Eq.Format}({receiver}, '{specifier}')";
-                return $"{receiver}.{name.ToCamelCase()}({args})";
+                    return $"{Eq.Format}({context.Converter.ConvertExpression(ma.Expression)}, '{specifier}')";
+                return ByParameter($".{name.ToCamelCase()}", inv.ArgumentList, method, context, ma.Expression);
             }
 
             case MemberAccessExpressionSyntax member:

@@ -78,21 +78,15 @@ public class TimeSpanStrategy : ConversionStrategyBase
         switch (node)
         {
             case BaseObjectCreationExpressionSyntax oc:
-                return $"{Eq.TimeSpan}({ConvertArgs(oc.ArgumentList, context)})";
+                return ByParameter(Eq.TimeSpan, oc.ArgumentList, context.SemanticHelper.GetSymbol(oc) as IMethodSymbol, context);
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
                 var name = ma.Name.Identifier.ValueText;
-                if (IsStaticAccess(ma, context))
-                {
-                    var callee = $"{Eq.TimeSpan}.{name.ToCamelCase()}";
-                    return context.SemanticHelper.GetSymbol(inv) is IMethodSymbol method
-                        ? ByParameter(callee, inv, method, context)
-                        : $"{callee}({ConvertArgs(inv.ArgumentList, context)})";
-                }
-                var args = ConvertArgs(inv.ArgumentList, context);
-                var receiver = context.Converter.ConvertExpression(ma.Expression);
-                return $"{receiver}.{Instance[name]}({args})";
+                var method = context.SemanticHelper.GetSymbol(inv) as IMethodSymbol;
+                return IsStaticAccess(ma, context)
+                    ? ByParameter($"{Eq.TimeSpan}.{name.ToCamelCase()}", inv.ArgumentList, method, context)
+                    : ByParameter($".{Instance[name]}", inv.ArgumentList, method, context, ma.Expression);
             }
 
             case MemberAccessExpressionSyntax member:
@@ -110,31 +104,6 @@ public class TimeSpanStrategy : ConversionStrategyBase
             default:
                 return context.Unhandled(node, "TimeSpan");
         }
-    }
-
-    /// <summary>
-    /// A static call with each argument in its PARAMETER's place, for a twin that takes them by
-    /// position: an optional parameter the call leaves out is <c>undefined</c>, up to the last one it
-    /// fills. Passed as written, <c>TimeSpan.FromHours(1, seconds: 5)</c> put the 5 in the minutes.
-    /// The arguments stay in the order they were written, which is the order C# evaluates them, and
-    /// the template writer keeps it where the places do not follow it.
-    /// </summary>
-    private static string ByParameter(string callee, InvocationExpressionSyntax invocation, IMethodSymbol method,
-        ConversionContext context)
-    {
-        var arguments = invocation.ArgumentList.Arguments;
-        var places = new string?[method.Parameters.Length];
-        for (var i = 0; i < arguments.Count; i++)
-        {
-            var named = arguments[i].NameColon?.Name.Identifier.ValueText;
-            var ordinal = named is null ? i : method.Parameters.FirstOrDefault(p => p.Name == named)?.Ordinal ?? -1;
-            if (ordinal < 0 || ordinal >= places.Length) return $"{callee}({ConvertArgs(invocation.ArgumentList, context)})";
-            places[ordinal] = "{" + i + "}";
-        }
-        var filled = places.Take(System.Array.FindLastIndex(places, place => place is not null) + 1)
-            .Select(place => place ?? "undefined");
-        var parts = arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
-        return JsExprWriter.Write(JsExpr.Template($"{callee}({string.Join(", ", filled)})", parts));
     }
 
     /// <summary>Whether the twin, or the factory for a static, carries the member <paramref name="ma"/>
