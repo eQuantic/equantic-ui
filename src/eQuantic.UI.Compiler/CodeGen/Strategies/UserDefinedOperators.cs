@@ -76,14 +76,25 @@ public static class UserDefinedOperators
     /// (<see cref="NullableLift.Operator"/>): an equality without the operator, a relation false, and any
     /// other operator null.</summary>
     public static JsExpr? Binary(IMethodSymbol method, string token, JsExpr left, JsExpr right, bool lifted,
+        ConversionContext context) =>
+        BinaryCall(method, token, lifted, context)?.Invoke(left, right);
+
+    /// <summary>
+    /// The binary operator as the call its caller writes over the operands it holds, decided ONCE: null
+    /// where no twin carries it, nothing more where the fence refuses it, told once, and otherwise the
+    /// call, lifted where <paramref name="lifted"/> says. A compound decides before it reads its place, and
+    /// writes the call over what it read: asking <see cref="Binary"/> twice asked the fence and introduced
+    /// the twin twice (#948's review).
+    /// </summary>
+    internal static Func<JsExpr, JsExpr, JsExpr>? BinaryCall(IMethodSymbol method, string token, bool lifted,
         ConversionContext context)
     {
-        if (Refused(method, context)) return Nothing;
+        if (Refused(method, context)) return (_, _) => Nothing;
         if (!IsInSource(method) || RecordTypeEmitter.OperatorMethodName(token) is not { } name) return null;
         var call = Caller(method, name, context);
         return lifted
-            ? NullableLift.Operator(token, left, right, (a, b) => call([a, b]), context)
-            : call([left, right]);
+            ? (left, right) => NullableLift.Operator(token, left, right, (a, b) => call([a, b]), context)
+            : (left, right) => call([left, right]);
     }
 
     /// <summary>The call of the static <paramref name="name"/> on the operator's twin, introduced where it

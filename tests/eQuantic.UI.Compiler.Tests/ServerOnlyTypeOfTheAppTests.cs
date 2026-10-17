@@ -281,6 +281,27 @@ public sealed class ServerOnlyTypeOfTheAppTests
             .Should().ContainSingle(built.Errors).Which.Should().Contain("error EQ2010").And.Contain("'" + (inALibrary ? "Common" : "App.Model") + ".Amount'");
     }
 
+    /// <summary>A compound through a kept-out struct's operator is told once, at the compound: the
+    /// compound asked the operator's lowering twice, once to learn whether a twin carries it and once for
+    /// the call it writes (#948's review).</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ACompoundThroughAKeptOutStructsOperator_IsToldOnce(bool inALibrary)
+    {
+        using var solution = Of(inALibrary, "StatelessComponent",
+            "    private static string Touch()\n    {\n        var total = Shop.Price();\n        total += Shop.Price();\n        return \"touched\";\n    }",
+            "Touch()");
+        WithShop(solution, inALibrary);
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue();
+        built.Errors.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Where(line => line.StartsWith(solution.FileOf("App", "Screens/Home.cs") + "("))
+            .Should().ContainSingle(built.Errors)
+            .Which.Should().Contain("error EQ2010").And.Contain("'" + (inALibrary ? "Common" : "App.Model") + ".Amount'");
+    }
+
     /// <summary>The zero of a kept-out struct has no twin to build it, so the type that crosses and
     /// writes one is refused where it does: <c>Shop.Price()</c> answered undefined where C# answers a
     /// zeroed <c>Amount</c>. The page only calls it, so the zero is the one site; a page that reads a
