@@ -98,11 +98,11 @@ public static class UserDefinedOperators
     }
 
     /// <summary>The call of the static <paramref name="name"/> on the operator's twin, introduced where it
-    /// is called, each operand written as it stands alone, which is the text the call has always had.</summary>
+    /// is called, its operands placed by the one writer of a call's arguments.</summary>
     private static Func<IReadOnlyList<JsExpr>, JsExpr> Caller(IMethodSymbol method, string name, ConversionContext context)
     {
-        var twin = method.ContainingType.IntroduceTwin(context);
-        return operands => JsExpr.Callish($"{twin}.{name}({string.Join(", ", operands.Select(JsExprWriter.Write))})");
+        var member = JsExpr.Member(JsExpr.Identifier(method.ContainingType.IntroduceTwin(context)), name);
+        return operands => JsExpr.Call(member, operands);
     }
 
     /// <summary>Whether the fence refuses the operator where it is applied, telling it there.</summary>
