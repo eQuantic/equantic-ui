@@ -89,8 +89,11 @@ public class MemberAccessStrategy : IExpressionIrStrategy
 
         // .Count is type-dependent, and one table answers it for a member access and a pattern alike. A
         // FIELD called Count is no collection's: it is read in its slot below, as every field is, where the
-        // table answered `count`, the method a case apart from it (#396).
-        if (name == "Count" && symbol is not IFieldSymbol)
+        // table answered `count`, the method a case apart from it (#396). A package type's STATIC Count is no
+        // collection's either: it goes to the read fence below, which refuses it, where the table wrote
+        // `Status.count`, a name nothing defines (Copilot's second review of #958).
+        if (name == "Count" && symbol is not IFieldSymbol
+            && !(symbol is { IsStatic: true } && symbol.ContainingType.IsPackages()))
             return CountSpelling.Read(receiver, context.SemanticHelper.GetType(memberAccess.Expression), context);
 
         // The camelCase guess below is exactly the invocation fallback's story (EQ2006): an
