@@ -18,6 +18,7 @@ public class UntranslatedNameTests
 {
     private const string Types = """
         public delegate bool SpanReader(string text, out TimeSpan value);
+        public delegate bool Reader(string text, out int value);
         """;
 
     /// <summary>The refusal, and what the module must not name.</summary>
@@ -41,6 +42,10 @@ public class UntranslatedNameTests
     [InlineData("var x = 1.5; FormattableString text = $\"{x}\"; return text.ToString();", "EQ2004", "'System.FormattableString'", "FormattableString")]
     [InlineData("var x = 1.5; FormattableString text = $\"{x}\"; return FormattableString.Invariant(text);", "EQ2004", "'System.FormattableString'", "FormattableString")]
     [InlineData("var x = 1.5; return string.Create(new System.Globalization.CultureInfo(\"pt-BR\"), $\"{x}\");", "EQ2108", "InvariantCulture", "create")]
+    // A delegate built from another whose parameters hand a value back, made over a null one and over a
+    // function: no function the browser calls has an out or a ref (Copilot's review of #958).
+    [InlineData("Reader r = null; return new Reader(r);", "EQ2004", "'Reader'", null)]
+    [InlineData("Reader r = (string s, out int v) => { v = s.Length; return true; }; return new Reader(r);", "EQ2004", "'Reader'", null)]
     // A construction of a class the browser has no twin of.
     [InlineData("return new Random();", "EQ2004", "'System.Random'", "Random")]
     [InlineData("Random r = new(); return r;", "EQ2004", "'System.Random'", "Random")]

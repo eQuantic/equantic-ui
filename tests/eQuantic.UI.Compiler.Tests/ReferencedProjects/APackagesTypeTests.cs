@@ -43,6 +43,10 @@ public class APackagesTypeTests
             public int X { get; }
         }
 
+        public delegate int Scale(int __target);
+
+        public class GaugeCollection<T> { }
+
         public enum Level { Low, High }
 
         public class Box<T> { public static string Empty => "empty"; }
@@ -88,6 +92,8 @@ public class APackagesTypeTests
     [InlineData("new Gauge { Name = \"x\" }.Name", "using Vendor;", "'Vendor.Gauge'")]
     [InlineData("new Money(1m, \"EUR\").Currency", "using Vendor;", "'Vendor.Money'")]
     [InlineData("new Spot(1).X.ToString()", "using Vendor;", "'Vendor.Spot'")]
+    // A collection of the package's, which no spelling makes the browser's array.
+    [InlineData("new GaugeCollection<int>().ToString()", "using Vendor;", "'Vendor.GaugeCollection<int>'")]
     // A static method's group.
     [InlineData("((System.Func<string>)Status.Make)()", "using Vendor;", "'Vendor.Status.Make'")]
     public void ANameOfAPackagesType_FailsTheBuild_NamingTheMemberAndTheAssembly(string expression, string usings, string member)
@@ -161,5 +167,35 @@ public class APackagesTypeTests
 
         built.Failed.Should().BeFalse(built.Errors);
         built.Module("Home").Should().Contain(written).And.NotContain("Status.").And.NotContain("Level.");
+    }
+
+    /// <summary>A group of a package delegate's Invoke whose parameter is named like the receiver the speculated
+    /// call holds: the call is bound with a receiver named apart from every parameter, so it binds the
+    /// group's own method (Copilot's review of #958). The parameter hid the receiver, the call bound
+    /// nothing, and the group was refused.</summary>
+    [Fact]
+    public void AGroupOfADelegatesInvoke_BindsWhateverItsParametersAreNamed()
+    {
+        using var solution = With(Home("Twice(x => x * 2)",
+            members: "    private static string Twice(Scale scale) { System.Func<int, int> f = scale.Invoke; return f(3).ToString(); }"));
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Module("Home").Should().NotContain("__target(__target)");
+    }
+
+    /// <summary>A target-typed construction of a package's collection is refused as the explicit one is: the
+    /// fence asks the symbol, and a type whose name holds <c>Collection&lt;</c> was let through and built as an
+    /// empty array (Copilot's review of #958).</summary>
+    [Fact]
+    public void ATargetTypedConstructionOfAPackagesCollection_FailsTheBuild()
+    {
+        using var solution = With(Home("Count(new()).ToString()",
+            members: "    private static int Count(GaugeCollection<int> items) => 1;"));
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue("a package's collection has no twin, whatever its name says");
+        built.ErrorsIn("App").Should().ContainSingle()
+            .Which.Should().Contain("error EQ2004").And.Contain("'Vendor.GaugeCollection<int>'").And.Contain("'Vendor'");
     }
 }

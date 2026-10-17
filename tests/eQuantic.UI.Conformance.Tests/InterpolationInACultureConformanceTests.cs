@@ -31,6 +31,17 @@ public class InterpolationInACultureConformanceTests
         // A hole that is itself an interpolation is written in the page's culture before it is a hole,
         // as .NET writes it.
         Values + "return FormattableString.Invariant($\"{x}|{$\"{x}\"}|{x.ToString()}\");",
+        // FormattableString holds its arguments and formats them after every hole is evaluated, where a
+        // handler formats each hole as it goes (Copilot's review of #958).
+        "var a = new System.Text.StringBuilder(\"a\"); var b = new System.Text.StringBuilder(\"a\"); var c = new System.Text.StringBuilder(\"a\"); "
+            + "var x = 1234.5; var box = new System.Text.StringBuilder(\"1\"); "
+            + "return FormattableString.Invariant($\"{a}|{a.Append(\"b\")}\") + \"/\" + FormattableString.CurrentCulture($\"{b}|{b.Append(\"b\")}\") + \"/\" "
+            + "+ string.Create(System.Globalization.CultureInfo.InvariantCulture, $\"{c}|{c.Append(\"b\")}\") + \"/\" "
+            + "+ FormattableString.Invariant($\"{x:N1}|{box,3}|{box.Append(\"2\"),-4}|\");",
+        // A hole held as an object writes its number or its date in the culture the call names (Copilot's
+        // review of #958).
+        "object x = 1.5; object d = new DateTime(2024, 1, 15, 21, 30, 5); object m = 12.5m; "
+            + "return FormattableString.Invariant($\"{x}|{d}|{m}\") + \"/\" + string.Create(System.Globalization.CultureInfo.InvariantCulture, $\"{x}|{d}|{m}\");",
     ];
 
     public static IEnumerable<object?[]> CasesInEachCulture() =>

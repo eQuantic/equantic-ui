@@ -53,6 +53,26 @@ public class TimeSpanMemberConformanceTests
         return a.Subtract(b) + "|" + TimeSpan.Compare(a, b) + "|" + TimeSpan.Compare(b, a) + "|" + TimeSpan.Compare(a, a) + "|"
             + TimeSpan.Equals(a, b) + "|" + TimeSpan.Equals(a, TimeSpan.FromHours(1.5));
         """,
+        // A span scaled by a long or a ulong, on either side, and divided by one (Copilot's review of #958).
+        """
+        var ts = TimeSpan.FromTicks(3); long lf = 2; ulong uf = 2;
+        return (ts * lf).Ticks + "|" + (lf * ts).Ticks + "|" + (ts / lf).Ticks + "|" + (ts * uf).Ticks + "|" + (uf * ts).Ticks + "|" + (ts / uf).Ticks;
+        """,
+        // A span scaled and divided in place, a nullable one lifted, and an element target read once
+        // (Copilot's review of #958).
+        """
+        var t = TimeSpan.FromTicks(10); t *= 2.5; var t2 = t; t2 /= 4;
+        TimeSpan? tn = TimeSpan.FromTicks(6); tn *= 2; TimeSpan? tnull = null; tnull /= 2;
+        var spans = new[] { TimeSpan.FromTicks(4) }; var i = 0; spans[i++] *= 3;
+        return t.Ticks + "|" + t2.Ticks + "|" + tn?.Ticks + "|" + (tnull is null) + "|" + spans[0].Ticks + "|" + i;
+        """,
+        // A span scaled by a nullable number, present and null, on either side and in a quotient, and by a
+        // char, which C# converts to its code (Copilot's review of #958).
+        """
+        double? f = null; double? g = 1.5; char c = 'a'; var two = TimeSpan.FromTicks(2);
+        return ((two * f) is null) + "|" + ((f * two) is null) + "|" + ((two / f) is null) + "|" + (two * g)?.Ticks + "|" + (g * two)?.Ticks + "|"
+            + (two / g)?.Ticks + "|" + (two * c).Ticks + "|" + (c * two).Ticks + "|" + (TimeSpan.FromTicks(970) / c).Ticks;
+        """,
     ];
 
     public static IEnumerable<object?[]> CasesInEachCulture() =>

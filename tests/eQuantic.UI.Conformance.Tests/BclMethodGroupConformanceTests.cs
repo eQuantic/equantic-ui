@@ -148,4 +148,17 @@ public class BclMethodGroupConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, usingStatic);
     }
+
+    /// <summary>A delegate built from another of a type whose parameter is named like the capture that holds
+    /// the source: the capture is a name no C# parameter can take, so the parameter never hides it
+    /// (Copilot's review of #958). It was `(__target) => (__target) => __target(__target)`, which called
+    /// the number it was handed.</summary>
+    [SkippableFact]
+    public void ADelegateBuiltFromAnother_IsCalledThroughWhateverItsParametersAreNamed()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "Shadow f = x => x * 2; var g = new Shadow(f); return g(3) + \"|\" + (g == f);",
+            "public delegate int Shadow(int __target);");
+    }
 }

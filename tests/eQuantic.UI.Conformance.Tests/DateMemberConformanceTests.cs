@@ -41,6 +41,18 @@ public class DateMemberConformanceTests
             + a.EqualsExact(a.ToOffset(TimeSpan.FromHours(-3))) + "|" + DateTimeOffset.Compare(a, b) + "|" + DateTimeOffset.Equals(a, b) + "|"
             + DateTimeOffset.UnixEpoch.ToString("o") + "|" + a.Subtract(b) + "|" + a.Subtract(TimeSpan.FromDays(1)).ToString("o");
         """,
+        // Named arguments in another order than the parameters', each in its parameter's place and evaluated
+        // as written (Copilot's review of #958).
+        """
+        var d = new DateOnly(2024, 2, 29); var t = new TimeOnly(10, 30); var early = new TimeOnly(1, 0); var late = new TimeOnly(23, 0);
+        var earlier = new DateTime(2024, 1, 1); var later = new DateTime(2024, 6, 1);
+        var o1 = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero); var o2 = o1.AddDays(1);
+        var log = ""; DateTime At(int k) { log += k; return earlier.AddDays(k); }
+        return d.ToDateTime(kind: DateTimeKind.Utc, time: t).ToString("o") + "|" + t.IsBetween(end: late, start: early) + "|"
+            + DateTime.Compare(t2: later, t1: earlier) + "|" + DateTimeOffset.Compare(second: o2, first: o1) + "|"
+            + DateTime.Compare(t2: At(2), t1: At(1)) + "|" + log + "|"
+            + new DateOnly(day: 29, month: 2, year: 2024).ToString("o") + "|" + new TimeSpan(seconds: 3, minutes: 2, hours: 1);
+        """,
     ];
 
     public static IEnumerable<object?[]> CasesInEachCulture() =>
