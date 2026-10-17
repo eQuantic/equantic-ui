@@ -16,9 +16,10 @@
   bare method group, a `[ServerOnly]` operator or conversion applied (`Amount a = 7` wrote
   `Amount.fromInt(7)`), an extension block's `[ServerOnly]` member, which was also emitted, an instance
   member of a kept-out type read off a value, a `[ServerOnly]` `Deconstruct`, `GetEnumerator` or
-  `Dispose` reached implicitly through deconstruction, `foreach`, `[.. xs]` or `using`, and a generic
-  type argument in a component or class header (`class ChildPage : Shell<Vault>`); a closed generic
-  contract (`Bag : IEnumerable<int>`) now scopes its refusal to matching type arguments, and a method
-  the app names `@nameof` is no longer skipped as the `nameof` operator
-  ([#944](https://github.com/eQuantic/equantic-ui/pull/944)). Proposed and archived through OpenSpec
+  `Dispose` reached implicitly through deconstruction, `foreach`, `[.. xs]` or `using`, the `MoveNext`,
+  `Current` or `Dispose` of the enumerator a spread reads, and a `[ServerOnly]` `GetEnumerator` a LINQ
+  operator reaches; a closed generic contract (`Bag : IEnumerable<int>`) now scopes its refusal to
+  matching type arguments, a variant one (`ISource<object>`) to what its variance admits, a string
+  literal no longer counts as a type reference, and a method the app names `@nameof` is no longer
+  skipped as the `nameof` operator ([#944](https://github.com/eQuantic/equantic-ui/pull/944)). Proposed and archived through OpenSpec
   (`openspec/specs/client-boundary`).
