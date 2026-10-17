@@ -17,7 +17,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// <c>Environment.NewLine</c>, <c>TimeZoneInfo.Local</c> or <c>typeof(T).Name</c> as names nothing
 /// defines, each built with no diagnostic and threw or read undefined in the browser (#847).
 /// <para>
-/// A member an interface declares is not asked: the value read through one may be a type of the
+/// A member a .NET interface declares is not asked: the value read through one may be a type of the
 /// app's own, whose twin carries the member by that name.
 /// </para>
 /// <para>
@@ -90,15 +90,17 @@ internal static class PlatformMemberRead
     }
 
     /// <summary>Whether <paramref name="symbol"/> is a property or a field of a .NET class or struct
-    /// that the browser does not carry by its name, or a static one of a package's type, which has no
-    /// twin and no module to carry it (#822). A value of a package's type reaches the browser only as the
-    /// data the server sends, whose members it reads by name.</summary>
+    /// that the browser does not carry by its name, or a static one of a package's type, whatever kind of
+    /// type declares it, which has no twin and no module to carry it (#822). A member a .NET interface
+    /// declares is not asked (above), and a package interface's static was let through with it, written as
+    /// `IStatus.label` (Copilot's second review of #958). A value of a package's type reaches the browser
+    /// only as the data the server sends, whose members it reads by name.</summary>
     private static bool NothingCarries(ISymbol? symbol) =>
         symbol is IPropertySymbol or IFieldSymbol
-        && symbol.ContainingType is { TypeKind: not TypeKind.Interface } declaring
+        && symbol.ContainingType is { } declaring
         && !symbol.Locations.Any(location => location.IsInSource)
         && (BoundaryShape.IsPlatform(declaring)
-            ? !CarriedByName.Contains(Root(symbol))
+            ? declaring.TypeKind != TypeKind.Interface && !CarriedByName.Contains(Root(symbol))
             : symbol.IsStatic && declaring.IsPackages());
 
     /// <summary>
