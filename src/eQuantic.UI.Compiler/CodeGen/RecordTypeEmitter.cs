@@ -326,13 +326,13 @@ public class RecordTypeEmitter
             // a name of its own (TwinMethodName.TypedEquals), and the twin's `equals` asks it, where it
             // compared the members C#'s own would have (Copilot's second review of #947).
             var recordSymbol = type is RecordDeclarationSyntax ? ModelFor(type)?.GetDeclaredSymbol(type) as INamedTypeSymbol : null;
-            var ownTyped = recordSymbol is not null ? ElementEquality.EquatableMethod(recordSymbol) : null;
+            var ownTyped = recordSymbol is not null ? ElementEquality.SelfMethod(recordSymbol) : null;
             // The base record's own typed Equals, where it declares one: C#'s synthesized Equals of a derived record
             // asks it as `base.Equals(other)`, without a virtual dispatch, and overrides it with
             // `sealed override bool Equals(Base? other) => Equals((object?)other)`, so a call bound to the base's
             // reaches what the value is. It held a name of its own, and a derived value answered by the base's
             // method alone, its own members and type unread, in a call, a contract and a List<Base> alike.
-            var baseTyped = recordSymbol is { BaseType: { IsRecord: true } recordBase } ? ElementEquality.EquatableMethod(recordBase) : null;
+            var baseTyped = recordSymbol is { BaseType: { IsRecord: true } recordBase } ? ElementEquality.SelfMethod(recordBase) : null;
             if (ownTyped is not null)
             {
                 var typedName = TwinMethodName.Of(ownTyped);
@@ -407,11 +407,11 @@ public class RecordTypeEmitter
             // reload carries a value's twin as its data while it leaves a class's object to its
             // initializer (dev/hot-reload-state.ts).
             sb.Append("static $record = true; ");
-            // The typed Equals of the app's own that answers IEquatable<T>, which a collection of the type and
-            // generic code over IEquatable<T> ask (`$eq.collections.sameEquatable`).
+            // Each interface typed Equals the type answers, to the method answering it: what a call through the
+            // interface, a collection of the type and generic code ask, by the contract.
             if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol equatable
-                && ElementEquality.EquatableMethod(equatable) is { } typed)
-                sb.Append($"static $equatable = {JsStringLiteral.Quote(TwinMethodName.Of(typed))}; ");
+                && ElementEquality.ContractMap(equatable) is { } contracts)
+                sb.Append($"static $equatable = {contracts}; ");
 
             // The zero C# gives a struct: `default(S)`, an array's slot, an OrDefault, and `new S()`
             // where S declares no parameterless constructor. Every struct twin carries it, built

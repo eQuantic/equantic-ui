@@ -55,6 +55,9 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         if (inv.Expression is not MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Equals" } ma)
             return false;
         var bound = context.SemanticHelper.GetSymbol(inv) as IMethodSymbol;
+        // An interface's typed Equals is dispatched by its contract, whatever name its implementation holds.
+        if (ElementEquality.ContractKey(bound) is not null)
+            return true;
         if (bound is not null && TwinMethodName.HoldsANameOfItsOwn(bound))
             return false;
         // The member the call binds decides, never its receiver alone: object's Equals(object), whatever the
@@ -105,11 +108,12 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         var other = context.Converter.ConvertIr(inv.ArgumentList.Arguments[0].Expression);
         var type = context.SemanticHelper.GetType(ma.Expression);
 
-        // IEquatable<T>.Equals, through the interface or a type parameter it constrains: the typed Equals of
-        // the app's own the value's twin names, and what the value turns out to be otherwise, a number and a
-        // string included (Copilot's second review of #947).
-        if (ElementEquality.IsEquatableEquals(context.SemanticHelper.GetSymbol(inv) as IMethodSymbol))
-            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, JsExpr.Identifier(Eq.SameEquatable));
+        // An interface's typed Equals, IEquatable<T>'s or one the app's interface declares, through the contract
+        // the call binds: the method the value's twin maps it to, and what the value turns out to be where it
+        // answers none, a number and a string included (Copilot's second and third reviews of #947).
+        if (ElementEquality.ContractKey(context.SemanticHelper.GetSymbol(inv) as IMethodSymbol) is { } contract)
+            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other,
+                JsExpr.Call(JsExpr.Identifier(Eq.Equatable), JsExpr.Literal(JsStringLiteral.Quote(contract))));
 
         if (type.UnwrapNullable() is INamedTypeSymbol named && (named.IsTupleType || named.IsAnonymousType))
         {

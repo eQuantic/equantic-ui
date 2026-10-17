@@ -85,20 +85,51 @@ export function sameKey(a: unknown, b: unknown): boolean {
   return true;
 }
 
+/** What a value's twin maps in `static $equatable`: each contract it answers to the method answering it. */
+function contractsOf(value: unknown): Record<string, string> | undefined {
+  if (value === null || typeof value !== 'object') return undefined;
+  const map = (value as { constructor?: { $equatable?: unknown } }).constructor?.$equatable;
+  return map !== null && typeof map === 'object' ? (map as Record<string, string>) : undefined;
+}
+
 /**
- * `IEquatable<T>.Equals`, which `EqualityComparer<T>.Default` asks for a type that implements it and generic
- * code calls through the interface or a type parameter it constrains: the typed `Equals` of the app's own the
- * value's twin names (`static $equatable`), which holds a name of its own there, since the twin's `equals` is
- * `Equals(object)`'s, and otherwise what the value turns out to be (`sameKey`: a number, a string, a runtime
- * twin's or a record's `equals`, a tuple's elements). A null equals only a null, as .NET's comparer has it.
- * Under `equals`, a typed `Equals(C)` answered `object.Equals` where .NET asks `Equals(object)` (Copilot's
- * second review of #947).
+ * The method a value's twin answers an interface's typed `Equals` with, found by the CONTRACT a call binds
+ * (`System.IEquatable<T>|int`, `App.IProbe|App.IProbe`): its class's `static $equatable` maps each
+ * such contract to the method, which holds a name of its own on the twin, since the twin's `equals` is
+ * `Equals(object)`'s. A contract over a type parameter (`|*`, generic code, whose type argument is erased)
+ * takes the class's own `IEquatable<T>` (`|@`), or the one contract of that interface it answers; a class
+ * that answers it over several other types and not over itself is answered by `Equals(object)`. Undefined
+ * for a value that answers none: a number, a string, a record's synthesized one, any value of .NET's own types.
  */
-export function sameEquatable(a: unknown, b: unknown): boolean {
-  if (a == null || b == null) return a == null && b == null;
-  const named = (a as { constructor?: { $equatable?: unknown } }).constructor?.$equatable;
-  const typed = typeof named === 'string' ? (a as Record<string, unknown>)[named] : undefined;
-  return typeof typed === 'function' ? Boolean((typed as (other: unknown) => unknown).call(a, b)) : sameKey(a, b);
+function contractMethod(value: unknown, key: string): ((other: unknown) => unknown) | undefined {
+  const named = contractsOf(value);
+  if (named === undefined) return undefined;
+  let name = named[key];
+  if (name === undefined && key.endsWith('|*')) {
+    const face = key.slice(0, -1);
+    name = named[`${face}@`];
+    if (name === undefined) {
+      const answered = Object.keys(named).filter((contract) => contract.startsWith(face));
+      if (answered.length === 1) name = named[answered[0]];
+    }
+  }
+  const method = name === undefined ? undefined : (value as Record<string, unknown>)[name];
+  return typeof method === 'function' ? (method as (other: unknown) => unknown) : undefined;
+}
+
+/** The interface's typed `Equals` of `key` on `a` with `b`, and what `a` turns out to be where it answers none. */
+function dispatch(key: string, a: unknown, b: unknown): boolean {
+  const method = contractMethod(a, key);
+  return method !== undefined ? Boolean(method.call(a, b)) : sameKey(a, b);
+}
+
+/**
+ * An interface's typed `Equals` through the contract a call binds, and `EqualityComparer<T>.Default` for a
+ * type that implements `IEquatable<T>` with a typed `Equals` of the app's own: a null equals only a null,
+ * and two values otherwise by the method the contract finds.
+ */
+export function equatable(key: string): Equality {
+  return generated(`q:${key}`, () => (a, b) => (a == null || b == null ? a == null && b == null : dispatch(key, a, b)));
 }
 
 /** A tuple (an array) or an anonymous type (a plain object): a value compared by its members. */
@@ -146,7 +177,6 @@ const shapes = new WeakMap<Equality, string>([
   [sameKey, 'o'],
   [sameItem, 'r'],
   [sameValueZero, 'i'],
-  [sameEquatable, 'q'],
 ]);
 const byShape = new Map<string, Equality>();
 let foreign = 0;

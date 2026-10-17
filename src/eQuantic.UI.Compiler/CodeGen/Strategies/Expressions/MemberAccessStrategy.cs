@@ -202,6 +202,14 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         if (method.IsStatic || context.SemanticHelper.GetType(group.Expression) is not { } type) return null;
         if (method is { Name: "ToString", Parameters.Length: 0 })
             return StringConversion.TextGroup(type, receiver, context);
+        // The group of an interface's typed Equals, by the contract it binds, refused where it is made when the
+        // receiver is null.
+        if (ElementEquality.ContractKey(method) is { } contract)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver),
+                JsExpr.Call(JsExpr.Identifier(Eq.Equatable), JsExpr.Literal(JsStringLiteral.Quote(contract))));
+        }
         if (method is not { Name: "Equals", Parameters.Length: 1 } || TwinMethodName.HoldsANameOfItsOwn(method))
             return null;
         if (type.UnwrapNullable() is INamedTypeSymbol data && (data.TwinIsData() || data.IsTupleType || data.IsAnonymousType))
@@ -225,19 +233,16 @@ public class MemberAccessStrategy : IExpressionIrStrategy
             return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup),
                 type.IsNullableValue() ? JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver) : receiver);
         }
-        // The group of object's Equals(object), or of IEquatable<T>'s, on a receiver whose type says nothing of
-        // the value: an interface's own Equals is that member's group, as its call is (Copilot's second review
-        // of #947).
+        // The group of object's Equals(object) on a receiver whose type says nothing of the value: an
+        // interface's own Equals is that member's group, as its call is (Copilot's second review of #947).
         if ((type.SpecialType == SpecialType.System_Object || type.TypeKind is TypeKind.Interface or TypeKind.TypeParameter)
-            && (method.ContainingType.SpecialType == SpecialType.System_Object || ElementEquality.IsEquatableEquals(method)))
+            && method.ContainingType.SpecialType == SpecialType.System_Object)
         {
             context.UsedHelpers.Add(Eq.Import);
             var checkedReceiver = JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver);
-            var comparator = ElementEquality.IsEquatableEquals(method)
-                ? Eq.SameEquatable
-                : type is INamedTypeSymbol { TypeKind: TypeKind.Interface } face && ElementEquality.Of(face) == "'item'"
-                    ? Eq.SameItem
-                    : Eq.SameKey;
+            var comparator = type is INamedTypeSymbol { TypeKind: TypeKind.Interface } face && ElementEquality.Of(face) == "'item'"
+                ? Eq.SameItem
+                : Eq.SameKey;
             return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), checkedReceiver, JsExpr.Identifier(comparator));
         }
         if (!type.IsNullableValue() && method.ContainingType.SpecialType == SpecialType.System_Object)

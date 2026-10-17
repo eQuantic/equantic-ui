@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { memberEquality, pairComparer, sameBy, sameEquality, sameKey, tupleEquality } from './key-equality';
+import {
+  equatable,
+  memberEquality,
+  pairComparer,
+  sameBy,
+  sameEquality,
+  sameKey,
+  tupleEquality,
+} from './key-equality';
 import { dec } from './decimal';
 import { equals } from './equals';
 import { hashesByValue } from './hash';
@@ -123,4 +131,81 @@ describe('the equality a type compares by', () => {
     expect(sameEquality(false, undefined)).toBe(true);
     expect(sameEquality(true, 'own')).toBe(false);
   });
+});
+
+// A typed Equals of the app's own holds a name of its own on its twin, whose `static $equatable` maps each
+// interface contract it answers to it: a call through the interface reaches the contract it binds, a set of
+// the type asks it with nulls kept apart, and a type parameter asks only IEquatable<T> over the value's own
+// type (Copilot's third review of #947).
+describe("an interface's typed Equals, by the contract it binds", () => {
+  class NullLover {
+    static $equatable = { 'System.IEquatable<T>|NullLover': 'equals$1', 'System.IEquatable<T>|@': 'equals$1' };
+    calls = 0;
+    equals$1(other: unknown): boolean {
+      this.calls++;
+      return other === null;
+    }
+  }
+  class IntMatcher {
+    static $equatable = { 'System.IEquatable<T>|int': 'equals$1' };
+    equals$1(n: unknown): boolean {
+      return n === 1;
+    }
+  }
+  class TwoWays {
+    static $equatable = { 'System.IEquatable<T>|int': 'equals$1', 'System.IEquatable<T>|string': 'equals$2' };
+    equals$1(n: unknown): boolean {
+      return n === 1;
+    }
+    equals$2(s: unknown): boolean {
+      return s === 'x';
+    }
+  }
+  class Id {
+    static $equatable = { 'System.IEquatable<T>|Id': 'equals$1', 'System.IEquatable<T>|@': 'equals$1' };
+    constructor(readonly v: number) {}
+    equals$1(o: unknown): boolean {
+      return o instanceof Id && o.v === this.v;
+    }
+    getHashCode(): number {
+      return this.v;
+    }
+  }
+
+  it('asks the method the twin answers the contract with', () => {
+    expect(equatable('System.IEquatable<T>|int')(new IntMatcher(), 1)).toBe(true);
+    expect(equatable('System.IEquatable<T>|int')(new IntMatcher(), 2)).toBe(false);
+    expect(equatable('System.IEquatable<T>|int')(new TwoWays(), 1)).toBe(true);
+    expect(equatable('System.IEquatable<T>|string')(new TwoWays(), 'x')).toBe(true);
+    expect(equatable('System.IEquatable<T>|string')(new TwoWays(), 'y')).toBe(false);
+    expect(equatable('System.IEquatable<T>|Id')(new Id(1), new Id(1))).toBe(true);
+  });
+
+  it('answers by what a value is where its twin answers no such contract', () => {
+    expect(equatable('System.IEquatable<T>|int')(5, 5)).toBe(true);
+    expect(equatable('System.IEquatable<T>|string')('a', 'b')).toBe(false);
+    expect(equatable('System.IEquatable<T>|Point')([1, 2], [1, 2])).toBe(true);
+  });
+
+  it("takes the class's own contract, or its only one, for a contract over a type parameter", () => {
+    expect(equatable('System.IEquatable<T>|*')(new Id(1), new Id(1))).toBe(true);
+    expect(equatable('System.IEquatable<T>|*')(new IntMatcher(), 1)).toBe(true);
+    // Over two other types and not over itself, the erased type argument cannot say which: Equals(object).
+    const both = new TwoWays();
+    expect(equatable('System.IEquatable<T>|*')(both, 1)).toBe(false);
+    expect(equatable('System.IEquatable<T>|*')(both, both)).toBe(true);
+  });
+
+  it("is EqualityComparer<T>.Default's for a type that answers it, which answers a null itself", () => {
+    const c = new NullLover();
+    const same = equatable('System.IEquatable<T>|NullLover');
+    expect(same(null, null)).toBe(true);
+    expect(same(c, null)).toBe(false);
+    expect(same(null, c)).toBe(false);
+    expect(c.calls).toBe(0);
+    expect(same(c, new NullLover())).toBe(false);
+    expect(c.calls).toBe(1);
+    expect(equatable('System.IEquatable<T>|NullLover')).toBe(same);
+  });
+
 });
