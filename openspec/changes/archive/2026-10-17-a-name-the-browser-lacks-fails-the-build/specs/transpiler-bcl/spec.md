@@ -53,9 +53,17 @@ collection the browser holds as the array of its elements is built as one.
 every hole of the interpolation in the invariant culture, and `FormattableString.CurrentCulture($"…")` and
 `string.Create` with the current culture or a null provider in the page's, as .NET writes them, a hole's
 format and alignment included. A hole that is itself text, an interpolation or a `ToString()`, SHALL be
-the text it wrote in the page's culture. Another culture SHALL fail the build with EQ2108, and an
-interpolation made a `FormattableString` or an `IFormattable` anywhere else SHALL fail the build with
-EQ2004.
+the text it wrote in the page's culture, and a hole held as an object or as dynamic SHALL write the number
+or the date it holds in the culture the call names. A `FormattableString` SHALL evaluate every hole
+before it writes any, as it holds its arguments, where `string.Create` writes each hole as it is
+evaluated. Another culture SHALL fail the build with EQ2108, and an interpolation made a
+`FormattableString` or an `IFormattable` anywhere else SHALL fail the build with EQ2004.
+
+#### Scenario: A hole whose evaluation changes an earlier one
+
+- **WHEN** browser-side code writes `FormattableString.Invariant($"{sb}|{sb.Append("b")}")` and
+  `string.Create(CultureInfo.InvariantCulture, $"{sb}|{sb.Append("b")}")` over a builder holding "a"
+- **THEN** they are `ab|ab` and `a|ab`, as in .NET
 
 #### Scenario: The invariant culture on a pt-BR page
 

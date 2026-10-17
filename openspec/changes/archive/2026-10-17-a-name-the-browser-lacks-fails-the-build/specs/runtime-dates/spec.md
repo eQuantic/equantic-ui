@@ -4,7 +4,15 @@
 
 A member of a `TimeSpan`, a `DateTime`, a `DateOnly`, a `TimeOnly` or a `DateTimeOffset` SHALL answer as
 .NET's where the runtime's twin or its factory carries it, and SHALL fail the build with EQ2004 naming
-it where neither does. Subtracting a date or an instant SHALL be the span between the two.
+it where neither does. Subtracting a date or an instant SHALL be the span between the two. A named
+argument SHALL land in its parameter's place, the arguments evaluated in the order they are written.
+
+#### Scenario: Named arguments in another order
+
+- **WHEN** browser-side code calls `DateTime.Compare(t2: later, t1: earlier)`,
+  `DateTimeOffset.Compare(second: o2, first: o1)`, `d.ToDateTime(kind: DateTimeKind.Utc, time: t)`,
+  `t.IsBetween(end: late, start: early)` and `new DateOnly(day: 29, month: 2, year: 2024)`
+- **THEN** each answers as .NET does, where the arguments were handed over in the order they were written
 
 #### Scenario: A span's parts below a millisecond
 
@@ -38,7 +46,18 @@ quotient by a number to the even tick, as .NET's `Math.Round` does; a factor or 
 SHALL be an ArgumentException naming it, and a result past the range a span holds an
 OverflowException. A span divided by a span SHALL be the ratio of their ticks. A sign in front of a
 span SHALL negate it or leave it, and the least span's negation and duration, and a sum or a difference
-past the range, SHALL throw the OverflowException .NET throws.
+past the range, SHALL throw the OverflowException .NET throws. A factor or a divisor SHALL be any number
+C# converts to a double, a long, a ulong and a char included, on either side of the product, and a
+nullable one SHALL be the lifted operator, null for a null factor. `*=` and `/=` SHALL be the same
+operators, a nullable span lifted and the target read once.
+
+#### Scenario: A factor of another type, and in place
+
+- **WHEN** browser-side code scales `TimeSpan.FromTicks(3)` by a long 2 and a ulong 2 on either side and
+  divides it by them, scales `TimeSpan.FromTicks(2)` by a null and a 1.5 `double?` and by the char 'a',
+  and runs `t *= 2.5` and `t /= 4` over 10 ticks
+- **THEN** they are 6, 6, 2, 6, 6, 2 ticks, null, 3 ticks, 194 ticks, 25 and 6 ticks, as in .NET, where
+  each was JavaScript's own operator
 
 #### Scenario: Rounding to the even tick
 

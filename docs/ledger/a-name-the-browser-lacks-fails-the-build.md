@@ -19,3 +19,8 @@
   failed before ([#822](https://github.com/eQuantic/equantic-ui/issues/822),
   [#839](https://github.com/eQuantic/equantic-ui/issues/839)). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-expressions`, `transpiler-bcl`, `runtime-dates`, `referenced-projects`).
+  Copilot's first review of #958 found nine more in the same family, each pinned on both sides and
+  fixed: a span scaled by a long, a nullable number or a char and in place, a date's named
+  arguments in another order, a FormattableString's holes formatted before the later ones ran, an
+  object hole in the invariant culture, a delegate's capture hidden by its own parameter, one with
+  an out built from another, and a package's collection built target-typed.

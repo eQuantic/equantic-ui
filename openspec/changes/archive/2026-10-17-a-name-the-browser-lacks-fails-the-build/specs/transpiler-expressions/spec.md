@@ -55,7 +55,8 @@ value back through an `out` or a `ref` parameter SHALL fail the build with EQ200
 `new D(x)`, where `D` is a delegate type, SHALL be the function `x` is where `x` is a method group or
 a lambda. Where `x` is another delegate, it SHALL be a new function over `x`'s `Invoke`, as .NET builds
 it, and never `x` itself: `x` read once where the new one is made, and a null `x` refused there with
-the ArgumentException .NET throws.
+the ArgumentException .NET throws. Where `D`'s parameters hand a value back through an out or a ref, a
+delegate built from another SHALL fail the build with EQ2004.
 
 #### Scenario: Three delegates built with new
 
