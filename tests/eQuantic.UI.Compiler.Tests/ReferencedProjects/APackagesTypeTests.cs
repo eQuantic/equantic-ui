@@ -114,6 +114,40 @@ public class APackagesTypeTests
             .Which.Should().Contain("error EQ2004").And.Contain("'Vendor.Gauge'").And.Contain("'Vendor'");
     }
 
+    /// <summary>A package of eQuantic's own that is not the SDK's, the eQuantic.Core family an app may
+    /// reference, has no twin either: the browser's names are decided by the assembly the SDK ships, not
+    /// by a namespace that starts like the SDK's. Its read, its call and its construction were written as
+    /// names, because the fences took every "eQuantic." namespace for the framework.</summary>
+    [Theory]
+    [InlineData("Clock.Zone", "'eQuantic.Core.Timing.Clock.Zone'")]
+    [InlineData("Clock.Now()", "'eQuantic.Core.Timing.Clock.Now'")]
+    [InlineData("new Clock(\"a\").Name", "'eQuantic.Core.Timing.Clock'")]
+    public void ANameOfAnEQuanticPackageTheSdkDoesNotShip_FailsTheBuild(string expression, string member)
+    {
+        const string Core =
+            """
+            namespace eQuantic.Core.Timing;
+
+            public class Clock
+            {
+                public Clock(string name) { Name = name; }
+                public string Name { get; }
+                public static string Zone => "UTC";
+                public static string Now() => "now";
+            }
+            """;
+        using var solution = new Solution()
+            .Package("eQuantic.Core", ("Clock.cs", Core))
+            .App("App", references: ["eQuantic.Core"], globalUsings: SharedLibrary.Factories,
+                files: [("Screens/Home.cs", Home(expression, "using eQuantic.Core.Timing;"))]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue("the browser has no twin of a type the SDK does not ship");
+        built.ErrorsIn("App").Should().ContainSingle()
+            .Which.Should().Contain("error EQ2004").And.Contain(member).And.Contain("'eQuantic.Core'");
+        built.Module("Home").Should().BeNull("a refused page writes no module");
+    }
+
     /// <summary>What names no class keeps building: a constant and an enum's member are their values,
     /// and a value's name is text.</summary>
     [Theory]
