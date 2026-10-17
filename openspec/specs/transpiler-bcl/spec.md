@@ -1124,6 +1124,14 @@ a constant and an enum's member SHALL be their values.
 - **THEN** the build fails with EQ2004 naming `Vendor.Status.Label` and `Vendor`, and writes no module
   naming `Status`
 
+#### Scenario: An eQuantic package the SDK does not ship
+
+- **WHEN** a page reads `Clock.Zone`, calls `Clock.Now()` or constructs `new Clock("a")`, where
+  `eQuantic.Core.Timing.Clock` is a class of the package `eQuantic.Core`
+- **THEN** the build fails with EQ2004 naming the member and `eQuantic.Core`: the SDK ships twins of its
+  own assemblies and of what the runtime provides, never of a namespace that merely starts like its
+  own
+
 #### Scenario: A construction of a package's class
 
 - **WHEN** a page writes `new Gauge("a").Name`, `new Money(1m, "EUR")` or a target-typed `new("t")` of

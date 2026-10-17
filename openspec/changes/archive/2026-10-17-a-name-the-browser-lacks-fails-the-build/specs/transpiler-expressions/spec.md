@@ -52,14 +52,24 @@ value back through an `out` or a `ref` parameter SHALL fail the build with EQ200
 
 ### Requirement: A delegate built with new is the function it is built from
 
-`new D(x)`, where `D` is a delegate type, SHALL be the function `x` is: a method group's delegate, a
-lambda, or a delegate whose `Invoke` the new one calls.
+`new D(x)`, where `D` is a delegate type, SHALL be the function `x` is where `x` is a method group or
+a lambda. Where `x` is another delegate, it SHALL be a new function over `x`'s `Invoke`, as .NET builds
+it, and never `x` itself: `x` read once where the new one is made, and a null `x` refused there with
+the ArgumentException .NET throws.
 
 #### Scenario: Three delegates built with new
 
 - **WHEN** browser-side code runs `var parse = new Func<string, DateTime>(DateTime.Parse);
   var twice = new Func<int, int>(x => x * 2); var again = new Func<int, int>(twice);` and calls each
 - **THEN** they answer as in .NET, where `new Func(…)` named a class nothing defines
+
+#### Scenario: A delegate built from another
+
+- **WHEN** browser-side code makes `var g = new Func<int, int>(f);` over a delegate `f`, compares `g == f`,
+  points `f` at another function and calls `g`, and builds one over a null delegate
+- **THEN** `g == f` is False, `g` calls the `f` it was made over, and the null one throws ArgumentException
+  "Delegate to an instance method cannot have null 'this'." where it is made, as in .NET, where `g` was
+  `f` itself
 
 ## MODIFIED Requirements
 
