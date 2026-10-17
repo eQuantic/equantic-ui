@@ -44,9 +44,12 @@ public class AssemblyLayeringTests
         // vocabulary alone: it knows the surface's protocol and nothing about any host.
         ["eQuantic.UI.Code"] = ["eQuantic.UI.Primitives"],
 
-        // Written once, against the vocabulary and nothing else — plus, for the code components,
-        // the engine they are views of.
-        ["eQuantic.UI.Components"] = ["eQuantic.UI.Primitives", "eQuantic.UI.Code"],
+        // The spreadsheet engine — what a SheetSurface's realizer drives, on the same terms.
+        ["eQuantic.UI.Sheet"] = ["eQuantic.UI.Primitives"],
+
+        // Written once, against the vocabulary and nothing else — plus, for the editing components,
+        // the two engines they are views of.
+        ["eQuantic.UI.Components"] = ["eQuantic.UI.Primitives", "eQuantic.UI.Code", "eQuantic.UI.Sheet"],
         ["eQuantic.UI.Charts"] = ["eQuantic.UI.Primitives", "eQuantic.UI.Components"],
 
         // The realizers. Each lowers VisualNode trees; a component reaches them as the tree its

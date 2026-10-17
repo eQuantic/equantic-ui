@@ -4,6 +4,7 @@ using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Engine.Reference;
 using eQuantic.UI.Native.Engine.Tests.Golden;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Sheet;
 using FluentAssertions;
 using Xunit;
 

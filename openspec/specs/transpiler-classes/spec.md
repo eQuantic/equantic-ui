@@ -122,10 +122,11 @@ parameter whose name lands on the name of another member of the class.
 
 ### Requirement: A transpiled vocabulary type is built as an app's type is
 
-A type of the vocabulary's assembly whose twin the runtime transpiles from its C# (marked
-`[TwinIsTranspiled]`) SHALL be built by an app as the app's own types are: the constructor the call
-binds, then the object initializer applied to what it built. Its zero, its indexer and its type test
-SHALL be those of a twin eqc writes.
+A type the runtime provides and transpiles from its C# SHALL be built by an app as the app's own types
+are: the constructor the call binds, then the object initializer applied to what it built. Those are
+the types of the two engines' assemblies, `eQuantic.UI.Code` and `eQuantic.UI.Sheet`, whose namespaces
+say so, and the types of the vocabulary's own assembly marked `[TwinIsTranspiled]`. Its zero, its
+indexer and its type test SHALL be those of a twin eqc writes.
 
 #### Scenario: A record struct and a record built with an initializer
 

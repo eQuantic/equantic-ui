@@ -10,8 +10,9 @@ namespace eQuantic.UI.Primitives;
 /// <para>
 /// An app reaches both kinds as metadata, in one namespace, so the namespace cannot tell them apart:
 /// every one was taken for hand-written, and <c>new CellRef(1, 2) { Col = 3 }</c> handed its
-/// initializer to a config slot the transpiled twin does not have (#592). The spreadsheet's and the
-/// forms' models carry it, every type of those folders and no other, which a test holds.
+/// initializer to a config slot the transpiled twin does not have (#592). The forms' models carry it,
+/// every type of that folder and no other, which a test holds. The spreadsheet's engine needs none: it
+/// is an assembly and a namespace of its own (<c>eQuantic.UI.Sheet</c>), and the namespace says it.
 /// </para>
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]

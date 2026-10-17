@@ -285,9 +285,9 @@ The browser calls it like a method. Only `[ServerAction]` methods are callable (
 Buttons, inputs, selection controls, cards, lists, tabs, dialogs, drawers, menus and toasts, and
 heavyweights authored once:
 
-- **Spreadsheet**: cell, range, row and column selection, in-cell editing, a fill handle with
-  directional pour, ⌘D and ⌘R, a TSV clipboard that round-trips with Excel, drag resize, and sparse
-  undo and redo.
+- **Spreadsheet**, on an engine of its own (`eQuantic.UI.Sheet`): cell, range, row and column
+  selection, in-cell editing, a fill handle with directional pour, ⌘D and ⌘R, a TSV clipboard that
+  round-trips with Excel, drag resize, and sparse undo and redo.
 - **Code editor**, on an engine of its own (`eQuantic.UI.Code`): a line-based document, incremental
   highlighting for C#, TypeScript/JavaScript, Python, JSON and XML (and any language an app
   registers), find, bracket matching and virtualization.
@@ -398,6 +398,7 @@ src/
 ├── eQuantic.UI.Primitives/     # The abstract visual vocabulary, tokens and contracts (zero deps)
 ├── eQuantic.UI.Components/     # WRITE-ONCE component library (one source, every target)
 ├── eQuantic.UI.Code/           # The code editing engine: document, selection, history, languages
+├── eQuantic.UI.Sheet/          # The spreadsheet engine: document, selection, editing, fill, undo, TSV
 ├── eQuantic.UI.Charts/         # WRITE-ONCE charts (BarChart, …)
 ├── eQuantic.UI.Web/            # Web realizer (SSR lowering) + the DOM escape hatch (HtmlElement)
 ├── eQuantic.UI.Server/         # ASP.NET Core host: SSR, Server Actions, routing, assets, and the served runtime.js

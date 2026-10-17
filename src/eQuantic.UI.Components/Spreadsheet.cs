@@ -1,4 +1,5 @@
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Sheet;
 
 namespace eQuantic.UI.Components;
 
@@ -10,7 +11,7 @@ namespace eQuantic.UI.Components;
 /// the window plus spacers, converging through the ScrollView's out-channels.
 /// <para>
 /// All interaction lives in the <see cref="SheetController"/> the app owns (click/drag select,
-/// Excel's keyboard, TSV clipboard, in-cell editing — wired by the surface). v1 fences: vertical
+/// Excel's keyboard, TSV clipboard, in-cell editing), the surface's model. v1 fences: vertical
 /// virtualization only (columns materialize — sheets in the tens of columns; wide-sheet 2D scroll
 /// joins later).
 /// </para>
@@ -119,6 +120,12 @@ public sealed class Spreadsheet : StatefulComponent
         float topOfWindow;
         (_first, _last, topOfWindow) = WindowFor(_offset, _viewport > 0 ? _viewport : HeaderHeight * 14);
 
+        // THE window, handed to the engine: the surface sits beside the row headers, inside the
+        // scroll, so its first cell is the window's first row at the surface's own corner. The only
+        // thing that turns a press into a cell, and the selection's corner into the fill handle's
+        // place, so the cells drawn below and the cells pressed cannot disagree.
+        Controller.Grid = new SheetGrid(Point.Zero, _first, 0);
+
         // ---- fixed column headers (the corner + A..Z) --------------------------------------------
         var headerRow = new Row(gap: 0) { Width = SizeValue.Fill };
         headerRow.Add(HeaderCell("", HeaderWidth, HeaderHeight, theme,
@@ -145,7 +152,6 @@ public sealed class Spreadsheet : StatefulComponent
         windowRows.Add(rowHeaders);
         windowRows.Add(new SheetSurface(grid, Controller)
         {
-            FirstRow = _first,
             OnChanged = () => SetState(() => { }),
             Label = SdkStrings.Spreadsheet,
         });

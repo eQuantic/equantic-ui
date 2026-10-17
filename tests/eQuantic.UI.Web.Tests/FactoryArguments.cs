@@ -90,9 +90,10 @@ internal static class FactoryArguments
         if (type.IsValueType) { value = Activator.CreateInstance(type); return true; }
         // The vocabulary's own base: any leaf will do, and Text is the one every screen has.
         if (type == typeof(VisualNode)) { value = new Text("x"); return true; }
-        // A code surface's model is an interface in the vocabulary and a class in the engine; the
-        // engine's controller is the one every code surface is built with.
+        // An editing surface's model is an interface in the vocabulary and a class in its engine; the
+        // engine's controller is the one every such surface is built with.
         if (type == typeof(ICodeSurfaceModel)) { value = new eQuantic.UI.Code.CodeEditorController("x"); return true; }
+        if (type == typeof(ISheetSurfaceModel)) { value = new eQuantic.UI.Sheet.SheetController(); return true; }
         if (type.IsAbstract || type.IsInterface) return false;
 
         foreach (var ctor in type.GetConstructors().OrderBy(c => c.GetParameters().Length))

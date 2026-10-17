@@ -1,14 +1,16 @@
 using System.Reflection;
+using eQuantic.UI.Compiler.Services;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 
 namespace eQuantic.UI.Web.Tests;
 
 /// <summary>
-/// Every vocabulary type an app can NAME — Primitives, and the code editing engine beside it — has a
-/// runtime export of the same name.
+/// Every vocabulary type an app can NAME — Primitives, and the two engines beside it — has a runtime
+/// export of the same name.
 /// <para>
-/// eqc routes the whole <c>eQuantic.UI.Primitives</c> namespace (and <c>eQuantic.UI.Code</c>) to
+/// eqc routes the whole <c>eQuantic.UI.Primitives</c> namespace (and <c>eQuantic.UI.Code</c> and
+/// <c>eQuantic.UI.Sheet</c>) to
 /// <c>@equantic/runtime</c> implicitly — that is what makes the shared vocabulary work without an attribute on every type.
 /// The cost is that adding a public class there silently promises an export that may not exist, and
 /// the failure lands as far from the cause as it gets: the page dies at hydration on
@@ -81,13 +83,16 @@ public class PrimitivesRuntimeExportTests
     [Fact]
     public void ThePrimitivesTypeList_IsPinnedForTheRuntimeToCheck()
     {
-        // The code editing engine left this namespace for an assembly of its own and is routed to
-        // the runtime exactly the same way (the compiler's VocabularyNamespaces), so the promise —
-        // and the question — covers both.
-        var names = new[] { typeof(VisualNode).Assembly, typeof(eQuantic.UI.Code.CodeEditorController).Assembly }
+        // The two engines left this namespace for assemblies of their own and are routed to the
+        // runtime exactly the same way (the compiler's VocabularyNamespaces), so the promise — and
+        // the question — covers all three.
+        var names = new[]
+            {
+                typeof(VisualNode).Assembly, typeof(eQuantic.UI.Code.CodeEditorController).Assembly,
+                typeof(eQuantic.UI.Sheet.SheetController).Assembly,
+            }
             .SelectMany(assembly => assembly.GetTypes())
-            .Where(t => t.Namespace?.StartsWith("eQuantic.UI.Primitives", StringComparison.Ordinal) == true
-                || t.Namespace?.StartsWith("eQuantic.UI.Code", StringComparison.Ordinal) == true)
+            .Where(t => RuntimeProvidedTypeScanner.IsVocabularyNamespace(t.Namespace ?? ""))
             .Where(NeedsExport)
             .Select(t => t.Name)
             .Distinct()

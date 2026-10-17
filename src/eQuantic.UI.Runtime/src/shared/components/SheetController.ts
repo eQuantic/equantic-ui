@@ -1,4 +1,4 @@
-import { $eq, CellRef, SheetAxisValue, SheetCellSnapshot, SheetDocument, SheetEdit, SheetHistory, SheetMotionValue, SheetRange, TsvCodec } from "../runtime-exports";
+import { $eq, CellRef, Point, PointerPhaseValue, SheetAxisValue, SheetCellSnapshot, SheetDocument, SheetEdit, SheetGrid, SheetHistory, SheetKeymap, SheetMotionValue, SheetRange, TsvCodec } from "../runtime-exports";
 
 export class SheetController {
     constructor(rows: number = 1000, cols: number = 26) {
@@ -11,6 +11,8 @@ export class SheetController {
         this.draft = '';
         this.fillSource = null;
         this.fillTarget = null;
+        this.grid = SheetGrid.default;
+        this._selecting = false;
         this.document = new SheetDocument(rows, cols);
     }
 
@@ -23,6 +25,9 @@ export class SheetController {
     draft!: string;
     fillSource!: SheetRange | null;
     fillTarget!: SheetRange | null;
+    grid!: SheetGrid;
+    _selecting!: boolean;
+    static fillHandleGrab: number = 8;
 
     get selection(): SheetRange {
         return this._selection;
@@ -202,11 +207,17 @@ export class SheetController {
         this.commit(($n42 = new SheetEdit(), $n42.kind = axis === 'rows' ? 'resizeRow' : 'resizeCol', $n42.at = index, $n42.oldSize = old, $n42.newSize = axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index), $n42.selectionBefore = this._selection, $n42.selectionAfter = this._selection, $n42));
     }
 
-    copyTsv() {
+    copyText() {
         return TsvCodec.serialize(this.document, this._selection);
     }
 
-    pasteTsv(text: string) {
+    cut() {
+        let text = this.copyText();
+        this.clearSelection();
+        return text;
+    }
+
+    paste(text: string) {
         let grid = TsvCodec.parse(text);
         if (grid.length === 0) return false;
         let origin = this._selection.topLeft;
@@ -320,6 +331,94 @@ export class SheetController {
         return this.fill(first, selection);
     }
 
+    cellAt(point: Point) {
+        let x = Math.fround(point.x - this.grid.origin.x);
+        let y = Math.fround(point.y - this.grid.origin.y);
+        let col = this.grid.firstCol;
+        let acc = 0;
+        while (col < this.document.cols - 1 && Math.fround(acc + this.document.colWidth(col)) <= x) {
+            acc = Math.fround(acc + this.document.colWidth(col));
+            col++;
+        }
+        let row = this.grid.firstRow;
+        acc = 0;
+        while (row < this.document.rows - 1 && Math.fround(acc + this.document.rowHeight(row)) <= y) {
+            acc = Math.fround(acc + this.document.rowHeight(row));
+            row++;
+        }
+        return this.document.clamp(new CellRef(row, col));
+    }
+
+    fillHandleCorner() {
+        let x = this.grid.origin.x;
+        for (let c = this.grid.firstCol; c <= this._selection.rightCol; c++) x = Math.fround(x + this.document.colWidth(c));
+        let y = this.grid.origin.y;
+        for (let r = this.grid.firstRow; r <= this._selection.bottomRow; r++) y = Math.fround(y + this.document.rowHeight(r));
+        return new Point(x, y);
+    }
+
+    handleKey(key: string, modifiers: number, clipboard: any) {
+        return SheetKeymap.handle(this, key, modifiers, clipboard);
+    }
+
+    handleText(text: string) {
+        if (text.length === 0) return false;
+        SheetKeymap.type(this, text);
+        return true;
+    }
+
+    handlePointer(phase: PointerPhaseValue, position: Point, modifiers: number, clicks: number) {
+        switch (phase) {
+            case 'down':
+                {
+                    this._selecting = false;
+                    if (this.filling) this.cancelFill();
+                    if (this.editing) this.commitEdit();
+                    let corner = this.fillHandleCorner();
+                    if (Math.abs(Math.fround(position.x - corner.x)) <= SheetController.fillHandleGrab && Math.abs(Math.fround(position.y - corner.y)) <= SheetController.fillHandleGrab) {
+                        this.beginFill();
+                        return true;
+                    }
+                    let cell = this.cellAt(position);
+                    let shift = (modifiers & 1) !== 0;
+                    if (shift) this.selectTo(cell); else this.selection = new SheetRange(cell);
+                    if (clicks >= 2) this.beginEdit(this.document.getCell(cell));
+                    this._selecting = clicks < 2 && !shift;
+                    return true;
+                }
+            case 'move':
+                {
+                    if (this.filling) {
+                        let before = this.fillTarget;
+                        this.updateFill(this.cellAt(position));
+                        let after: any; let previous: any; 
+                        return (after = this.fillTarget) != null ? !((previous = before) != null) || !$eq.equals(after, previous) : !(before == null);
+                    }
+                    if (!this._selecting) return false;
+                    let cell = this.cellAt(position);
+                    if ($eq.equals(cell, this._selection.focus)) return false;
+                    this.selection = new SheetRange(this._selection.anchor, cell);
+                    return true;
+                }
+            case 'up':
+                {
+                    this._selecting = false;
+                    if (!this.filling) return false;
+                    this.commitFill();
+                    return true;
+                }
+            case 'cancel':
+                {
+                    this._selecting = false;
+                    if (!this.filling) return false;
+                    this.cancelFill();
+                    return true;
+                }
+            default:
+                return false;
+        }
+    }
+
     undo() {
         let edit = this.history.popUndo();
         if (edit == null) return false;
@@ -379,7 +478,7 @@ export class SheetController {
     }
 
     toString(): string {
-        return 'eQuantic.UI.Primitives.SheetController';
+        return 'eQuantic.UI.Sheet.SheetController';
     }
 }
 

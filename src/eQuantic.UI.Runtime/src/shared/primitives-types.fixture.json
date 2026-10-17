@@ -133,6 +133,7 @@
   "SheetController",
   "SheetDocument",
   "SheetEdit",
+  "SheetGrid",
   "SheetHistory",
   "SheetKeymap",
   "SheetRange",

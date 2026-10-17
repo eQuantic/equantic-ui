@@ -1,40 +1,34 @@
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
-/// An EDITABLE SPREADSHEET surface: the grid its child draws, plus Excel's selection band, the
-/// active-cell ring, and the keyboard. The child is whatever renders the visible cells — the
-/// shared Spreadsheet component, in practice — and this node adds the marks and the input.
-/// Everything a key or a click MEANS lives in the <see cref="SheetController"/>, which both
-/// targets share; the realizer only does arithmetic: with per-line sizes, a (row, col) is a
-/// prefix sum over the visible window.
+/// An EDITABLE SPREADSHEET surface: the grid its child draws, plus Excel's keyboard, pointer and
+/// clipboard. The child is whatever renders the visible cells (the shared Spreadsheet component, in
+/// practice), and it draws the selection band, the active-cell ring and the draft too, so this node
+/// adds nothing to the picture. Everything a key or a press MEANS belongs to the <see cref="Model"/>,
+/// which both targets share: a realizer hands it the platform's events (<see cref="ISheetSurfaceModel"/>).
 /// <para>
-/// The controller is a live object the composing component owns, surviving the rebuild every
-/// keystroke causes. <see cref="FirstRow"/>/<see cref="FirstCol"/> say which cell the child's
-/// top-left is (the virtualized window's origin), so the surface's marks line up with the pixels.
+/// The model is a live object the composing component owns, surviving the rebuild every keystroke
+/// causes, which is exactly why the surface carries it rather than a copy of its state. Where the
+/// window's first cell is, and which cell that is, is the model's too: the component hands it over as
+/// it builds.
 /// </para>
 /// </summary>
 public sealed class SheetSurface : SingleChildNode
 {
     public override string NodeKind => "sheetSurface";
 
-    public SheetSurface(VisualNode child, SheetController controller)
+    public SheetSurface(VisualNode child, ISheetSurfaceModel model)
         : base(child)
     {
-        Controller = controller;
+        Model = model;
     }
 
-    public SheetController Controller { get; init; }
+    /// <summary>The document, the selection, and every command that changes either, as much of it
+    /// as a realizer is allowed to see.</summary>
+    public ISheetSurfaceModel Model { get; init; }
 
-    /// <summary>The window's origin: the sheet row/col the child's first cell renders.</summary>
-    public int FirstRow { get; init; }
-    public int FirstCol { get; init; }
-
-    /// <summary>Where the GRID starts inside the child (past the row/column headers).</summary>
-    public float HeaderWidth { get; init; }
-    public float HeaderHeight { get; init; }
-
-    /// <summary>Raised after any command that changed the document or the selection — the
-    /// composing component's cue to SetState.</summary>
+    /// <summary>Raised after any input that changed the document or the selection: the composing
+    /// component's cue to SetState, because the model mutates outside the tree.</summary>
     public Action? OnChanged { get; init; }
 
     /// <summary>Accessible name (role: grid).</summary>

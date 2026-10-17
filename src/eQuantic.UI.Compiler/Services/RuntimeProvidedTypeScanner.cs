@@ -33,9 +33,10 @@ public static class RuntimeProvidedTypeScanner
     /// <summary>
     /// The namespaces eqc treats as the SHARED VOCABULARY: the runtime mirrors their types one for
     /// one, their enums cross as string unions (<c>MainAlignValue</c>), and their records are built
-    /// and copied the vocabulary's way. The visual vocabulary itself, and the code editing engine
-    /// that moved out of it into an assembly of its own (docs/CODE-EDITOR-PLAN.md) — a component is
-    /// written against both, and a page reaches both as the runtime's own classes.
+    /// and copied the vocabulary's way. The visual vocabulary itself, and the two engines that moved
+    /// out of it into assemblies of their own, the code editor's (docs/CODE-EDITOR-PLAN.md) and the
+    /// spreadsheet's (#185) — a component is written against all three, and a page reaches them as the
+    /// runtime's own classes.
     /// <para>
     /// ONE list, asked by every emission path. The question used to be spelled as a string compare
     /// against <c>"eQuantic.UI.Primitives"</c> in five places, and moving a single type out of that
@@ -43,17 +44,17 @@ public static class RuntimeProvidedTypeScanner
     /// </para>
     /// </summary>
     public static readonly IReadOnlyList<string> VocabularyNamespaces =
-        ["eQuantic.UI.Primitives", "eQuantic.UI.Code"];
+        ["eQuantic.UI.Primitives", "eQuantic.UI.Code", "eQuantic.UI.Sheet"];
 
     /// <summary>
-    /// The assemblies whose types the runtime provides: the visual vocabulary, the code engine, the
+    /// The assemblies whose types the runtime provides: the visual vocabulary, the two engines, the
     /// component library and the charts. A namespace says where a type is declared, and any assembly
     /// can declare a type in one of these; what the runtime HAS is these assemblies' types, so a
     /// question about what it carries asks the assembly too (found in review, #418).
     /// <c>VocabularyInterfaceDefaultsTests</c> holds this list to the assemblies it reads.
     /// </summary>
     public static readonly IReadOnlyList<string> RuntimeAssemblies =
-        ["eQuantic.UI.Primitives", "eQuantic.UI.Code", "eQuantic.UI.Components", "eQuantic.UI.Charts"];
+        ["eQuantic.UI.Primitives", "eQuantic.UI.Code", "eQuantic.UI.Sheet", "eQuantic.UI.Components", "eQuantic.UI.Charts"];
 
     /// <summary>Whether <paramref name="ns"/> is one of the <see cref="VocabularyNamespaces"/> or
     /// nested inside one — never merely a longer name that starts the same way.</summary>
@@ -68,7 +69,7 @@ public static class RuntimeProvidedTypeScanner
 
     /// <summary>
     /// Whether <paramref name="ns"/> is one whose twins this compiler WRITES: every runtime-provided
-    /// namespace but the visual vocabulary's own. The code engine, the component library and the
+    /// namespace but the visual vocabulary's own. The two engines, the component library and the
     /// charts are transpiled whole, so each class and struct in them is a real JavaScript class built
     /// by this compiler's rules (a struct zero-constructs, a class answers <c>instanceof</c>). The
     /// visual vocabulary is not: many of its twins are written by hand, and a rule that holds for an

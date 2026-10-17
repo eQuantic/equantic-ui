@@ -41,11 +41,12 @@ export class CodeKeymap {
                         return true;
                     case 'x':
                         if (clipboard == null) return false;
-                        clipboard.write(editor.cut());
+                        clipboard.write(editor.copyText());
+                        editor.cut();
                         return true;
                     case 'v':
                         if (clipboard == null) return false;
-                        if ((($v6199) => (($v6199 != null && $v6199.length > 0) && (pasted = $v6199, true)))(clipboard.read())) editor.paste(pasted);
+                        if ((($v6521) => (($v6521 != null && $v6521.length > 0) && (pasted = $v6521, true)))(clipboard.read())) editor.paste(pasted);
                         return true;
                     case '/':
                         return editor.toggleLineComment();

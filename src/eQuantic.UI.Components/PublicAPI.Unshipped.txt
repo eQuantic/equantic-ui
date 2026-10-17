@@ -1,1 +1,7 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Controller.get -> eQuantic.UI.Primitives.SheetController!
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Spreadsheet(eQuantic.UI.Primitives.SheetController! controller) -> void
+*REMOVED*static eQuantic.UI.Components.UI.SheetSurface(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.SheetController! controller, System.Action? onChanged = null, string? label = null, int firstRow = 0, int firstCol = 0) -> eQuantic.UI.Primitives.SheetSurface!
+eQuantic.UI.Components.Spreadsheet.Spreadsheet(eQuantic.UI.Sheet.SheetController! controller) -> void
+eQuantic.UI.Components.Spreadsheet.Controller.get -> eQuantic.UI.Sheet.SheetController!
+static eQuantic.UI.Components.UI.SheetSurface(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.ISheetSurfaceModel! model, System.Action? onChanged = null, string? label = null) -> eQuantic.UI.Primitives.SheetSurface!

@@ -44,7 +44,7 @@ export class SheetHistory {
     }
 
     toString(): string {
-        return 'eQuantic.UI.Primitives.SheetHistory';
+        return 'eQuantic.UI.Sheet.SheetHistory';
     }
 }
 

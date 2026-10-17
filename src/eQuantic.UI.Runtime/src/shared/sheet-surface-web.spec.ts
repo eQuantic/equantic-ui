@@ -1,8 +1,8 @@
 /**
- * The spreadsheet's WEB half, end to end: the lowered surface's keydown drives the SAME transpiled
- * SheetKeymap the native host calls, typing edits Excel's way, and copy/paste speak TSV through
- * the browser's own clipboard events. A path nobody runs is a path that does not work — this runs
- * it with real DOM events.
+ * The spreadsheet's WEB half, end to end: the lowered surface hands its keys, presses and clipboard
+ * events to the SAME transpiled model the native host hands them to, typing edits Excel's way, and
+ * copy/paste speak TSV through the browser's own clipboard events. A path nobody runs is a path that
+ * does not work — this runs it with real DOM events.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -12,6 +12,8 @@ import { photonTheme } from './design-system.generated';
 import { SheetController } from './components/SheetController';
 import { CellRef } from './components/CellRef';
 import { SheetRange } from './components/SheetRange';
+import { SheetGrid } from './components/SheetGrid';
+import { Point } from './runtime-exports';
 import type { HtmlNode } from '../core/types';
 
 type Handler = (event: Event) => void;
@@ -21,7 +23,7 @@ function surfaceFor(sheet: SheetController): HtmlNode {
     {
       nodeKind: 'sheetSurface',
       child: { nodeKind: 'column', children: [] },
-      controller: sheet,
+      model: sheet,
       onChanged: () => {},
     } as never,
     { textPrimary: photonTheme.textPrimary } as LoweringContext,
@@ -107,7 +109,7 @@ describe('SheetSurface on the web', () => {
 
     // Plain drag: mousedown A1, document-level mousemove to B2 — the anchor stands.
     mousedown({ clientX: 48, clientY: 14 });
-    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 96 + 48, clientY: 28 + 14 }));
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 96 + 48, clientY: 28 + 14, buttons: 1 }));
     expect(sheet.selection.bottomRow).toBe(1);
     expect(sheet.selection.rightCol).toBe(1);
     document.dispatchEvent(new MouseEvent('mouseup', {}));
@@ -124,7 +126,7 @@ describe('SheetSurface on the web', () => {
     events(node)['mousedown'](grab);
     expect(sheet.filling).toBe(true);
 
-    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 2 + 14 }));
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 2 + 14, buttons: 1 }));
     expect(sheet.fillTarget).not.toBeNull();
     document.dispatchEvent(new MouseEvent('mouseup', {}));
 
@@ -132,6 +134,142 @@ describe('SheetSurface on the web', () => {
     expect(sheet.document.getCell(new CellRef(2, 0))).toBe('seed');
     sheet.undo();
     expect(sheet.document.getCell(new CellRef(1, 0))).toBe('');
+  });
+
+  it('a double click edits the cell under it, starting from its value', () => {
+    const sheet = new SheetController(50, 8);
+    sheet.document.setCell(new CellRef(1, 1), '42');
+    const node = surfaceFor(sheet);
+    // The platform's click count rides the press: the second press of a double click says 2.
+    const press = (detail: number) => {
+      const event = new MouseEvent('mousedown', { clientX: 96 + 48, clientY: 28 + 14, detail });
+      Object.defineProperty(event, 'currentTarget', { value: makeTarget() });
+      events(node)['mousedown'](event);
+      document.dispatchEvent(new MouseEvent('mouseup', { clientX: 96 + 48, clientY: 28 + 14 }));
+    };
+
+    press(1);
+    press(2);
+
+    expect(sheet.activeCell).toEqual(new CellRef(1, 1));
+    expect(sheet.editing).toBe(true);
+    expect(sheet.draft).toBe('42');
+  });
+
+  it('reads a press against the window the engine was handed', () => {
+    const sheet = new SheetController(200, 8);
+    // A scrolled window: the surface's first row draws the sheet's row 40.
+    sheet.grid = new SheetGrid(Point.zero, 40, 0);
+    const node = surfaceFor(sheet);
+
+    const event = new MouseEvent('mousedown', { clientX: 96 + 48, clientY: 28 * 2 + 14 });
+    Object.defineProperty(event, 'currentTarget', { value: makeTarget() });
+    events(node)['mousedown'](event);
+    document.dispatchEvent(new MouseEvent('mouseup', {}));
+
+    expect(sheet.activeCell).toEqual(new CellRef(42, 1));
+  });
+
+  it('reads the press where it landed, before the keyboard moves the page', () => {
+    const sheet = new SheetController(50, 8);
+    const node = surfaceFor(sheet);
+    // A surface whose focus scrolls it 127px up, as a browser's default focus() did the
+    // dashboard's sheet: a point read after focusing lands five rows below the one pressed.
+    let top = 0;
+    const focusOptions: (FocusOptions | undefined)[] = [];
+    const target = document.createElement('div');
+    target.getBoundingClientRect = () => ({ left: 0, top, x: 0, y: top, width: 768, height: 5600, right: 768, bottom: top + 5600, toJSON: () => ({}) }) as DOMRect;
+    target.focus = (options?: FocusOptions) => {
+      focusOptions.push(options);
+      if (!options?.preventScroll) top -= 127;
+    };
+
+    const event = new MouseEvent('mousedown', { clientX: 96 + 48, clientY: 28 * 2 + 14 });
+    Object.defineProperty(event, 'currentTarget', { value: target });
+    events(node)['mousedown'](event);
+    document.dispatchEvent(new MouseEvent('mouseup', {}));
+
+    expect(sheet.activeCell).toEqual(new CellRef(2, 1));
+    expect(focusOptions).toEqual([{ preventScroll: true }]);
+  });
+
+  it('leaves ⌘C to the browser, whose copy event carries the text', () => {
+    const sheet = new SheetController(50, 8);
+    const node = surfaceFor(sheet);
+
+    const copyKey = new KeyboardEvent('keydown', { key: 'c', metaKey: true, cancelable: true });
+    events(node)['keydown'](copyKey);
+
+    expect(copyKey.defaultPrevented).toBe(false);
+    expect(sheet.editing).toBe(false);
+  });
+
+  it('a fill whose window loses focus pours nothing, and what follows changes nothing', () => {
+    const sheet = new SheetController(50, 8);
+    sheet.document.setCell(new CellRef(0, 0), 'seed');
+    const node = surfaceFor(sheet);
+    const grab = new MouseEvent('mousedown', { clientX: 95, clientY: 27 });
+    Object.defineProperty(grab, 'currentTarget', { value: makeTarget() });
+    events(node)['mousedown'](grab);
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 2 + 14, buttons: 1 }));
+    expect(sheet.fillTarget).not.toBeNull();
+
+    window.dispatchEvent(new Event('blur'));
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 4 + 14, buttons: 1 }));
+    document.dispatchEvent(new MouseEvent('mouseup', {}));
+
+    expect(sheet.filling).toBe(false);
+    expect(sheet.fillTarget).toBeNull();
+    expect(sheet.document.getCell(new CellRef(1, 0))).toBe('');
+    expect(sheet.history.canUndo).toBe(false);
+  });
+
+  it('a move with no button held ends the press its release never reached', () => {
+    const sheet = new SheetController(50, 8);
+    sheet.document.setCell(new CellRef(0, 0), 'seed');
+    const node = surfaceFor(sheet);
+    const grab = new MouseEvent('mousedown', { clientX: 95, clientY: 27 });
+    Object.defineProperty(grab, 'currentTarget', { value: makeTarget() });
+    events(node)['mousedown'](grab);
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 2 + 14, buttons: 1 }));
+
+    // Released outside the window: the page hears no mouseup, only moves with nothing held.
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 3 + 14, buttons: 0 }));
+    document.dispatchEvent(new MouseEvent('mouseup', {}));
+
+    expect(sheet.filling).toBe(false);
+    expect(sheet.document.getCell(new CellRef(1, 0))).toBe('');
+    expect(sheet.document.getCell(new CellRef(2, 0))).toBe('');
+  });
+
+  it('a cut whose clipboard write fails empties nothing', () => {
+    const sheet = new SheetController(50, 8);
+    sheet.document.setCell(new CellRef(0, 0), 'kept');
+    const node = surfaceFor(sheet);
+
+    const cutEvent = new Event('cut', { cancelable: true }) as ClipboardEvent;
+    Object.defineProperty(cutEvent, 'clipboardData', {
+      value: {
+        setData: () => {
+          throw new Error('the clipboard refused the write');
+        },
+      },
+    });
+    expect(() => events(node)['cut'](cutEvent)).toThrow();
+
+    expect(sheet.document.getCell(new CellRef(0, 0))).toBe('kept');
+    expect(sheet.history.canUndo).toBe(false);
+  });
+
+  it('a cut event that carries no clipboard empties nothing', () => {
+    const sheet = new SheetController(50, 8);
+    sheet.document.setCell(new CellRef(0, 0), 'kept');
+    const node = surfaceFor(sheet);
+
+    const cutEvent = new Event('cut', { cancelable: true }) as ClipboardEvent;
+    events(node)['cut'](cutEvent);
+
+    expect(sheet.document.getCell(new CellRef(0, 0))).toBe('kept');
   });
 
   it('⌘D pours the row above through the shared keymap', () => {

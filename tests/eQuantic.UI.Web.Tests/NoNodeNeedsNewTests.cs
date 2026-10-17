@@ -1,5 +1,6 @@
 using eQuantic.UI.Code;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Sheet;
 using FluentAssertions;
 using Xunit;
 using static eQuantic.UI.Components.UI;
@@ -67,20 +68,22 @@ public class NoNodeNeedsNewTests
         changed.Should().Be(1);
     }
 
+    /// <summary>
+    /// The window the cells are placed against is the model's (<c>SheetController.Grid</c>), as a code
+    /// surface's grid is, so the factory carries the model and the two things a screen says.
+    /// </summary>
     [Fact]
-    public void SheetSurface_CarriesTheVirtualizedWindowOrigin()
+    public void SheetSurface_CarriesItsModel()
     {
         var controller = new SheetController();
-        var made = SheetSurface(Child, controller, label: "Budget", firstRow: 40, firstCol: 3);
+        var changed = 0;
+        var made = SheetSurface(Child, controller, onChanged: () => changed++, label: "Budget");
 
-        made.Controller.Should().BeSameAs(controller);
+        made.Model.Should().BeSameAs(controller, "the model is a live object the caller owns");
         made.Label.Should().Be("Budget");
-        made.FirstRow.Should().Be(40);
-        made.FirstCol.Should().Be(3);
 
-        var bare = new SheetSurface(Child, controller);
-        made.HeaderWidth.Should().Be(bare.HeaderWidth);
-        made.HeaderHeight.Should().Be(bare.HeaderHeight);
+        made.OnChanged!.Invoke();
+        changed.Should().Be(1);
     }
 
     /// <summary>
