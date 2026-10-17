@@ -95,10 +95,13 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         // long/ulong are exact 64-bit via BigInt, and the operands ARE BigInts: literals carry the
         // suffix, conversions settle at the bound tree's seams (ValueFlow), and a value from the
         // server is hydrated at the typed boundary — so the native operators apply directly.
-        // Null comparisons fall through to the loose-equality logic.
+        // Null comparisons fall through to the loose-equality logic. A span scaled by a long or a ulong is the
+        // span's, below: the long is a factor C# converts to a double, and BigInt arithmetic over a span was NaN
+        // (Copilot's review of #958).
         if (left != "null" && right != "null" && op != "&&" && op != "||"
             && (context.SemanticHelper.GetType(binary.Left).IsLong()
-                || context.SemanticHelper.GetType(binary.Right).IsLong()))
+                || context.SemanticHelper.GetType(binary.Right).IsLong())
+            && !context.SemanticHelper.GetType(binary).IsNamed("System.TimeSpan"))
         {
             var jsOp = op switch { "==" => "===", "!=" => "!==", _ => op };
             // A SHIFT keeps its count an int in C# (no conversion for the bound tree to record): the
@@ -197,6 +200,10 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
                 var lifted = LiftNullableCompat(leftText, rightText, op, lt, rt, context);
                 if (lifted != null) return lifted;
             }
+
+            // A number times a span is the span's multiply, the number still read first, as C# reads it.
+            if (op == "*" && IsNumber(lt) && rt.IsNamed("System.TimeSpan") && !rt.IsNullableValue())
+                return JsExpr.Template("{1}.multiply({0})", leftIr, rightIr);
 
             var dtResult = ConvertDateTimeOrTimeSpan(leftText, rightText, op, lt, rt);
             if (dtResult != null) return JsExpr.Opaque(dtResult);
@@ -522,12 +529,22 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             };
         }
 
+        // A span scaled by a number, on either side, or divided by one: the twin's multiply and divide,
+        // which round the ticks as .NET's operators do, where JavaScript's own answered NaN (#839). A
+        // number on the left is handed to the span's multiply (the lift's operands are plain names; the
+        // direct form keeps C#'s order through a template).
+        if (lTs && IsNumber(rt))
+            return op switch { "*" => $"{left}.multiply({right})", "/" => $"{left}.divide({right})", _ => null };
+        if (IsNumber(lt) && rTs && op == "*")
+            return $"{right}.multiply({left})";
+
         if (lTs && rTs)
         {
             return op switch
             {
                 "+" => $"{left}.add({right})",
                 "-" => $"{left}.sub({right})",
+                "/" => $"{left}.divide({right})",
                 "==" => $"{left}.equals({right})",
                 "!=" => $"!{left}.equals({right})",
                 "<" => $"({left}.compareTo({right}) < 0)",
@@ -540,6 +557,16 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
 
         return null;
     }
+
+    /// <summary>Whether an operand of <paramref name="type"/> is a number a span is scaled by: a
+    /// <c>double</c>, which the operators take, or a type C# converts to one, a char among them, which
+    /// arrives as its code. A nullable one is the lifted operator's, which answers null for a null factor
+    /// (Copilot's review of #958).</summary>
+    private static bool IsNumber(ITypeSymbol? type) =>
+        type.UnwrapNullable()?.SpecialType is SpecialType.System_Double or SpecialType.System_Single
+            or SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_Int16 or SpecialType.System_Byte
+            or SpecialType.System_SByte or SpecialType.System_UInt16 or SpecialType.System_UInt32
+            or SpecialType.System_UInt64 or SpecialType.System_Char;
 
     /// <summary>A char operand's CODE UNIT: constant literals fold to the number, expressions
     /// read charCodeAt(0). The parentheses keep a compound operand intact.</summary>

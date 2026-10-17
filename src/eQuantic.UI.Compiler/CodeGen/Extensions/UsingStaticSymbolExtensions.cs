@@ -77,11 +77,20 @@ internal static class UsingStaticSymbolExtensions
     }
 
     /// <summary>Reports EQ2004 and returns true when <paramref name="symbol"/> is a platform type's
-    /// member, which has no translation once a strategy has passed it by.</summary>
+    /// member, which has no translation once a strategy has passed it by, or a package's, which has none
+    /// at all: the build has no source for its type and the runtime no twin of it (#822).</summary>
     internal static bool ReportIfPlatformReachedBare(this ISymbol symbol, SyntaxNode node, ConversionContext context)
     {
         var declaring = symbol.ContainingType;
-        if (declaring is null || !BoundaryShape.IsPlatform(declaring)) return false;
+        if (declaring is null) return false;
+        if (declaring.IsPackages())
+        {
+            context.Report(node, ConversionSeverity.Error, "EQ2004",
+                $"'{declaring.ToDisplayString()}.{symbol.Name}', reached through `using static`, has no JavaScript "
+                + $"translation: {declaring.PackageReason()}. {TwinlessTypeExtensions.PackageRemedy}");
+            return true;
+        }
+        if (!BoundaryShape.IsPlatform(declaring)) return false;
         context.Report(node, ConversionSeverity.Error, "EQ2004",
             $"'{declaring.ToDisplayString()}.{symbol.Name}', reached through `using static`, has no "
             + "JavaScript translation: nothing emits that class. Write it qualified where its "

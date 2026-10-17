@@ -39,8 +39,9 @@ public class HashMethodGroupTests
         compiler.SetProjectCompilation(compilation);
         var result = compiler.CompileSource(source, "Keys.cs").Single(r => r.ComponentName == "Keys");
 
+        // The delegate its call is (#839): the call each spelling makes on this, which the arrow keeps.
         result.TypeScript.Should().NotContain("getHashCode.bind")
-            .And.MatchRegex(@"hasher\(\)[^{]*\{\s*return \$eq\.hash\.group\(this\);")
-            .And.MatchRegex(@"through\(\)[^{]*\{\s*return \$eq\.hash\.group\(this\);");
+            .And.MatchRegex(@"hasher\(\)[^{]*\{\s*return \(\) => \$eq\.hash\.of\(this\);")
+            .And.MatchRegex(@"through\(\)[^{]*\{\s*return \(\) => \$eq\.hash\.instance\(this\);");
     }
 }

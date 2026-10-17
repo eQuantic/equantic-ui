@@ -30,7 +30,7 @@ public class MethodGroupTests
     public void AReceiverThatIsANameOrThis_IsWrittenWhereItIs() =>
         Convert("public class Sample { public object Run() { var c = new Counter(); Func<int> read = c.Value; "
                 + "Func<string> text = this.ToString; return read() + text(); } }")
-            .Js.Should().Contain("let read = c.value.bind(c);").And.Contain("let text = this.toString.bind(this);");
+            .Js.Should().Contain("let read = c.value.bind(c);").And.Contain("let text = () => String(this);");
 
     [Fact]
     public void ABaseGroup_BindsTheBaseMethodToThis()
@@ -55,9 +55,32 @@ public class MethodGroupTests
     [Fact]
     public void AnExtensionGroupNothingEmits_FailsTheBuild_AsItsCallDoes() =>
         Convert("public class Sample { public object Run() { var list = new System.Collections.Generic.List<int>(); "
-                + "Func<bool> any = list.Any; return any(); } }")
-            .Diagnostics.Should().Contain(d => d.Code == "EQ2004" && d.Message.Contains("write the lambda that calls it"),
-                "the group of a BCL extension named a member no array has, and the lambda is what translates");
+                + "Func<System.Collections.Generic.IEnumerable<int>> shuffled = list.Shuffle; return shuffled(); } }")
+            .Diagnostics.Should().ContainSingle(d => d.Code == "EQ2004" && d.Message.Contains("'System.Linq.Enumerable.Shuffle'"),
+                "the group of a BCL extension whose call has no translation names the member its call names (#839)");
+
+    /// <summary>The group of a BCL extension whose call a strategy translates is that call, over the receiver
+    /// it was made with (#839): it was refused, though its lambda translated.</summary>
+    [Fact]
+    public void AnExtensionGroupACallTranslates_IsThatCall()
+    {
+        var (js, diagnostics) = Convert("public class Sample { public object Run() { var list = new System.Collections.Generic.List<int>(); "
+            + "Func<bool> any = list.Any; return any(); } }");
+        diagnostics.Should().BeEmpty();
+        js.Should().NotContain(".any").And.Contain("list");
+    }
+
+    /// <summary>A delegate built from another is .NET's new delegate over its Invoke: a new function, its
+    /// source read once and a null one refused where it is made. It was the source itself, so
+    /// <c>new Func&lt;int, int&gt;(f) == f</c> answered true where .NET answers false.</summary>
+    [Fact]
+    public void ADelegateBuiltFromADelegate_IsANewFunctionOverIt()
+    {
+        var (js, diagnostics) = Convert("public class Sample { public object Run() { Func<int, int> f = x => x; "
+            + "var g = new Func<int, int>(f); return g == f; } }");
+        diagnostics.Should().BeEmpty();
+        js.Should().NotContain("let g = f;").And.Contain("$eq.delegateTarget(f)");
+    }
 
     private static (string Js, IReadOnlyList<ConversionDiagnostic> Diagnostics) Convert(string source)
     {

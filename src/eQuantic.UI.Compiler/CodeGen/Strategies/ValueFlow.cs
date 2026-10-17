@@ -39,7 +39,15 @@ public static class ValueFlow
         // of an interpolation hole, which has no conversion either (the handler is generic), in a
         // string or in one that builds a handler. Only the VALUE of a compound assignment flows; its
         // target is being written, not printed.
-        if (FlowsIntoText(operation)) return StringConversion.ToDotNetString(node, translated, context);
+        if (FlowsIntoText(operation))
+        {
+            // A hole a FormattableString holds is its VALUE: the text is written once every hole has run.
+            if (context.CapturedHoles.Contains(context.SemanticHelper.Original(node))) return translated;
+            // A hole of an interpolation a call writes in the invariant culture is written in it (#839).
+            return context.WritesInvariant(context.SemanticHelper.Original(node).Parent?.Parent)
+                ? StringConversion.InvariantText(node, translated, context)
+                : StringConversion.ToDotNetString(node, translated, context);
+        }
 
         if (operation.Parent is not IConversionOperation { IsImplicit: true } conversion) return translated;
         if (!ReferenceEquals(conversion.Operand, operation)) return translated;

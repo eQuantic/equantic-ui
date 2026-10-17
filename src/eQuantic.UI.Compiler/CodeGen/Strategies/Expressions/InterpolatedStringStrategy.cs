@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
@@ -21,6 +22,21 @@ public class InterpolatedStringStrategy : IConversionStrategy
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var interpolated = (InterpolatedStringExpressionSyntax)node;
+        // A FormattableString holds its format and its arguments, which a culture handed to it later writes
+        // again; the browser holds the text the interpolation writes, in the page's culture. Only a call that
+        // names the culture where the text is made writes one (InterpolationInACultureStrategy, #839).
+        var converted = context.SemanticHelper.GetConvertedType(interpolated);
+        if ((converted.IsNamed("System.FormattableString") || converted.IsNamed("System.IFormattable"))
+            && !context.InterpolationCultures.ContainsKey(context.SemanticHelper.Original(interpolated)))
+        {
+            context.Report(interpolated, ConversionSeverity.Error, "EQ2004",
+                $"'{converted!.ToDisplayString()}' has no JavaScript translation: the browser holds the text an "
+                + "interpolation writes, in the page's culture, not its format and its arguments, so no culture handed "
+                + "to it later can write them again. Name the culture where the text is made, with "
+                + "FormattableString.Invariant($\"…\") or string.Create(culture, $\"…\"), or write the interpolation "
+                + "as a string.");
+            return "''";
+        }
         var sb = new StringBuilder();
         sb.Append('`');
         
@@ -71,14 +87,16 @@ public class InterpolatedStringStrategy : IConversionStrategy
     /// The JavaScript of a hole's text: its value converted as C# converts it, formatted where a format
     /// is written, and padded to its alignment, or, not <paramref name="padded"/>, the text the
     /// alignment pads, for a writer that appends the padding itself (<c>StringBuilder.Append($"…")</c>).
+    /// Given a <paramref name="captured"/> name, the hole's value was evaluated already and is held by
+    /// it, and only its text is written here (a <c>FormattableString</c>'s holes, InterpolationInACultureStrategy).
     /// </summary>
-    internal static string Hole(InterpolationSyntax interpolation, ConversionContext context, bool padded)
+    internal static string Hole(InterpolationSyntax interpolation, ConversionContext context, bool padded, string? captured = null)
     {
         // A PLAIN hole arrives converted the way C# converts it — null → "", bool →
         // "True", an enum as its member name — because ValueFlow settles a value on
         // its way into text; only a hole with a format or an alignment receives the
-        // raw value, for the formatter.
-        var expr = context.Converter.ConvertExpression(interpolation.Expression);
+        // raw value, for the formatter. A captured one is written as that text here.
+        var expr = captured ?? context.Converter.ConvertExpression(interpolation.Expression);
         var format = interpolation.FormatClause?.FormatStringToken.ValueText;
         var alignment = Alignment(interpolation, context);
         
@@ -111,7 +129,9 @@ public class InterpolatedStringStrategy : IConversionStrategy
         }
 
         if (format == null && alignment == null)
-            return expr;
+            return captured is null ? expr : JsExprWriter.Write(context.WritesInvariant(interpolation.Parent)
+                ? StringConversion.InvariantText(interpolation.Expression, JsExpr.Identifier(captured), context)
+                : StringConversion.ToDotNetString(interpolation.Expression, JsExpr.Identifier(captured), context));
 
         context.UsedHelpers.Add(Eq.Import);
         // The format is a string like any other: `dd 'de' MMMM` closed the quotes it
@@ -122,8 +142,16 @@ public class InterpolatedStringStrategy : IConversionStrategy
         // away from zero (#393). With none, only a float's text is its own; every
         // other number's is its digits, in the culture in force (#454).
         var kind = format == null ? FormatKind.OfText(holeType) : FormatKind.Of(holeType);
-        var alignArg = alignment != null && padded ? $", {alignment}" : kind != null ? ", undefined" : "";
-        var kindArg = kind != null ? $", undefined, '{kind}'" : "";
+        // The culture in force is the invariant one where a call named it for this interpolation (#839).
+        var invariant = context.WritesInvariant(interpolation.Parent);
+        var alignArg = alignment != null && padded ? $", {alignment}" : kind != null || invariant ? ", undefined" : "";
+        var kindArg = (kind, invariant) switch
+        {
+            (not null, true) => $", true, '{kind}'",
+            (not null, false) => $", undefined, '{kind}'",
+            (null, true) => ", true",
+            _ => "",
+        };
         return $"{Eq.Format}({expr}, {fmtArg}{alignArg}{kindArg})";
     }
 

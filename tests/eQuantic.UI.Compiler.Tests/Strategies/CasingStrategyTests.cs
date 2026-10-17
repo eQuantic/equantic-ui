@@ -46,11 +46,12 @@ public class CasingStrategyTests
         TestHelper.DiagnosticsFor(code).Should().Contain(d => d.Code == "EQ2108" && d.Message.Contains("changing case"));
 
     /// <summary>A char's casing with a culture, taken as a delegate, would hand the culture as a value
-    /// the browser cannot hold: the build fails. Without one it crosses.</summary>
+    /// the browser cannot hold: the build fails, as its call does with a culture it cannot name (#839).
+    /// Without one it crosses.</summary>
     [Fact]
     public void AChar_WithACulture_TakenAsADelegate_IsRefused() =>
         TestHelper.DiagnosticsFor("new Func<char, " + Globalization + "CultureInfo, char>(char.ToUpper)")
-            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("with a culture, taken as a delegate"));
+            .Should().Contain(d => d.Code == "EQ2108" && d.Message.Contains("changing case"));
 
     [Fact]
     public void AChar_TakenAsADelegate_IsCased() =>

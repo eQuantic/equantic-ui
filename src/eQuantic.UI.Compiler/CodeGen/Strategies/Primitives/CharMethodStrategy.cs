@@ -12,10 +12,8 @@ public class CharMethodStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        // `"a1b2".Count(char.IsDigit)`: the method handed over as a delegate, a method GROUP, spelled
-        // through its type or, under `using static System.Char`, by its name alone.
-        if (node is MemberAccessExpressionSyntax or IdentifierNameSyntax)
-            return Group((ExpressionSyntax)node, context) is not null;
+        // `"a1b2".Count(char.IsDigit)`, the method handed over as a delegate, is the delegate its call is
+        // (MethodGroupStrategy), which asks this strategy for the call (#839).
         if (node is not InvocationExpressionSyntax invocation) return false;
         // `IsDigit(c)` under `using static System.Char`: the model names the method.
         if (invocation.Expression is IdentifierNameSyntax)
@@ -41,46 +39,8 @@ public class CharMethodStrategy : IExpressionIrStrategy
         or "IsWhiteSpace" or "IsUpper" or "IsLower" or "IsNumber" or "IsPunctuation"
         or "IsSeparator" or "IsSymbol" or "IsControl" or "IsAscii";
 
-    /// <summary>The method a name or a member access names WITHOUT calling it, when it is one of the
-    /// char statics this strategy lowers; null for anything else, a call included, and the name that
-    /// is a member access's own right-hand side.</summary>
-    private static IMethodSymbol? Group(ExpressionSyntax access, ConversionContext context) =>
-        // The name first, which costs nothing: every identifier in a module is asked.
-        !Lowers(access switch
-        {
-            MemberAccessExpressionSyntax member => member.Name.Identifier.ValueText,
-            IdentifierNameSyntax name => name.Identifier.ValueText,
-            _ => "",
-        })
-        || access.Parent is InvocationExpressionSyntax call && call.Expression == access
-        || access.Parent is MemberAccessExpressionSyntax owner && owner.Name == access
-            ? null
-            : context.SemanticHelper.GetSymbol(access) is IMethodSymbol
-                {
-                    IsStatic: true, ContainingType.SpecialType: SpecialType.System_Char,
-                } method && Lowers(method.Name)
-                ? method
-                : null;
-
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
-        // A method GROUP is an arrow over the method's own parameters, its body the call as it is
-        // lowered when written out. It was EQ1001: the `char` it names was converted as a value
-        // (#524). Typed, since nothing may type it from outside (`Func<char, bool> f = char.IsDigit`).
-        if (node is MemberAccessExpressionSyntax or IdentifierNameSyntax && Group((ExpressionSyntax)node, context) is { } named)
-        {
-            // A culture handed to the delegate is a value the browser cannot hold: only the two it
-            // knows, named where the call is written, cross.
-            if (named.Parameters.Any(parameter => parameter.Type.IsNamed("System.Globalization.CultureInfo")))
-                return JsExpr.Opaque(context.Unhandled(node, $"char.{named.Name} with a culture, taken as a delegate"));
-            var parameters = named.Parameters.Select(p => p.Name.ToJsIdentifier()).ToArray();
-            var typed = named.Parameters.Select((p, i) => context.TypeAnnotations
-                ? $"{parameters[i]}: {(p.Type.SpecialType == SpecialType.System_Int32 ? "number" : "string")}"
-                : parameters[i]);
-            var body = Lowered(named, parameters.Select(JsExpr.Identifier).ToArray(), template => template, context);
-            return JsExpr.Arrow(string.Join(", ", typed), body);
-        }
-
         var invocation = (InvocationExpressionSyntax)node;
         var method = (IMethodSymbol)context.SemanticHelper.GetSymbol(invocation)!;
         // The culture is read from how the call names it (Culture, below) and never as a value, which

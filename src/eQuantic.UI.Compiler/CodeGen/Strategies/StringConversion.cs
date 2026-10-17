@@ -348,6 +348,13 @@ public static class StringConversion
     {
         var type = context.SemanticHelper.GetType(operand);
         var real = type.UnwrapNullable() ?? type;
+        // A value held as an object, or as dynamic, may be a number or a date: the formatter reads it, in the
+        // invariant culture, where its text was the page's (Copilot's review of #958).
+        if (real is { SpecialType: SpecialType.System_Object } or { TypeKind: TypeKind.Dynamic })
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Callish($"{Eq.Format}({JsExprWriter.Write(converted)}, null, undefined, true)");
+        }
         if (real is null || !WritesInTheCulture(real)) return ToText(operand, converted, context);
         context.UsedHelpers.Add(Eq.Import);
         var kind = FormatKind.OfText(real) is { } named ? $", '{named}'" : "";
