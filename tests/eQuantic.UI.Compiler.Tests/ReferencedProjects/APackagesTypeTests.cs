@@ -130,6 +130,8 @@ public class APackagesTypeTests
     [InlineData("Status.Make().ToString().Length.ToString()", "using Vendor;", "'Vendor.Status.Make'")]
     [InlineData("Status.Locale.Name", "using Vendor;", "'Vendor.Status.Locale'")]
     [InlineData("Status.Label.Length.ToString()", "using Vendor;", "'Vendor.Status.Label'")]
+    // And so is a chain from a refused construction.
+    [InlineData("new Gauge(\"a\").GetType().Name", "using Vendor;", "'Vendor.Gauge'")]
     public void ANameOfAPackagesType_FailsTheBuild_NamingTheMemberAndTheAssembly(string expression, string usings, string member)
     {
         using var solution = With(Home(expression, usings));
