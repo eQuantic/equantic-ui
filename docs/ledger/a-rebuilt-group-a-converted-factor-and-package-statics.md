@@ -16,6 +16,10 @@
   refused now. Copilot's first review of #964 found two more: a package's static reached through
   an alias named like a type a strategy claims by its spelling (`Int32.MaxValue` under `using Int32 =
   Vendor.Status` was 2147483647), refused now by the dispatcher before any strategy is asked, and a
-  null `DateTime?` made a `DateTimeOffset?`, which threw a TypeError and stays null now. Proposed and
-  archived through OpenSpec
+  null `DateTime?` made a `DateTimeOffset?`, which threw a TypeError and stays null now. Its second
+  review found that the date was one case of a class: a nullable struct with a conversion of its own,
+  a `Factor?` scaling a span, handed its null to the twin's static, which read it and threw, and a
+  null curated glyph became a glyph. Every lifted user-defined conversion, an app's, the vocabulary's
+  and the date's alike, lets a null through now, and an operator that takes the nullable itself still
+  receives it. Proposed and archived through OpenSpec
   (`openspec/specs/runtime-dates`, `transpiler-bcl`).

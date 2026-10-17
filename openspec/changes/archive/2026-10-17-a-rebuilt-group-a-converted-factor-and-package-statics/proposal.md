@@ -44,7 +44,9 @@ does, and its case stays as a pin.
 
 - eqc: `BinaryExpressionStrategy.BoundOperands` (internal), asked by `BinaryExpressionStrategy` and
   `AssignmentExpressionStrategy`; `MethodGroupStrategy.Call`; `MemberAccessStrategy`'s `Count` branch;
-  `PlatformMemberRead.NothingCarries`. No public surface moves.
+  `PlatformMemberRead.NothingCarries`. The compiler's tool surface moves once, for Copilot's second review
+  of #964: `UserDefinedOperators.Conversion` takes its operand as IR and whether the bound conversion is
+  lifted, the shape #948 gives every operator and conversion.
 - Specs: `runtime-dates`' "A span scales and divides as .NET's operators do" and `transpiler-bcl`'s "A
   package's type has no name in the browser" say the operator decides and that a package's static of
   any kind and name is refused.
