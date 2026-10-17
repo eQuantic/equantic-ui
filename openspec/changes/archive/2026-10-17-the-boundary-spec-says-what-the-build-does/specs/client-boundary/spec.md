@@ -7,11 +7,9 @@
 The build SHALL check against the client boundary exactly the code a module holds: every member of a
 component its twin holds, a stateless component's as much as a stateful one's, and every class, record
 and static class that becomes a module. It SHALL NOT check code that never crosses: the body of a
-component's `[ServerAction]`, whose twin is a stub written from its signature, a method, an operator or
-a
+component's `[ServerAction]`, whose twin is a stub written from its signature, a method, an operator or a
 conversion marked `[ServerOnly]`, whatever type declares it, an extension block's member included, and a
-class marked `[ServerOnly]`. Such a member SHALL be no member of any twin, and what it names SHALL be
-neither
+class marked `[ServerOnly]`. Such a member SHALL be no member of any twin, and what it names SHALL be neither
 imported nor refused by a module. Client code that calls such a member, explicitly or through a pattern
 (`Deconstruct` in deconstruction or a positional pattern, `Dispose` in `using`, and `GetEnumerator`
 with the `MoveNext`, `Current` and `Dispose` of the enumerator it answers wherever the sequence is
