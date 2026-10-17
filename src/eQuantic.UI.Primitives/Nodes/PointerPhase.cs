@@ -23,4 +23,11 @@ public enum PointerPhase : byte
 
     /// <summary>The pointer left the surface.</summary>
     Exit = 4,
+
+    /// <summary>
+    /// The system took the press away without lifting it (Flutter's <c>PointerCancelEvent</c>): a call
+    /// arriving, a window losing key, a touch the platform claimed. Nothing the press was doing
+    /// lands: a drag ends where it stood and a gesture that commits on release is dropped.
+    /// </summary>
+    Cancel = 5,
 }

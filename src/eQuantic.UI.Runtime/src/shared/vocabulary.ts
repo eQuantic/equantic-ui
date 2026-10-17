@@ -769,24 +769,22 @@ export class CodeSurface extends VisualNode {
   }
 }
 
-/** Mirror of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */
-/** Mirror of the C# SheetSurface — the spreadsheet's marks-and-input node. Web INTERACTION joins
- * with the editing slice; for now the child (the grid window) renders and the node is transparent. */
+/**
+ * Mirror of the C# `SheetSurface`: the grid its child draws, plus Excel's keyboard, pointer and
+ * clipboard, every one of which goes to the model (the C# `ISheetSurfaceModel`), the engine both
+ * targets share. The child draws the band, the ring and the draft, so the node adds no pixels.
+ */
 export class SheetSurface extends VisualNode {
   readonly nodeKind = 'sheetSurface';
   child: VisualChild;
-  controller: unknown;
-  firstRow = 0;
-  firstCol = 0;
-  headerWidth = 0;
-  headerHeight = 0;
+  model: unknown;
   onChanged: (() => void) | null = null;
   label: string | null = null;
 
-  constructor(child: VisualChild, controller: unknown, config?: EqConfig) {
+  constructor(child: VisualChild, model: unknown, config?: EqConfig) {
     super();
     this.child = child;
-    this.controller = controller;
+    this.model = model;
     if (config) Object.assign(this, config);
   }
 }
@@ -843,6 +841,7 @@ export class InView extends VisualNode {
   }
 }
 
+/** Mirror of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */
 export class Hoverable extends VisualNode {
   readonly nodeKind = 'hoverable';
   child: VisualChild;

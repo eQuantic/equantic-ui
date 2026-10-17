@@ -2,6 +2,7 @@ using System.Reflection;
 using eQuantic.UI.Code;
 using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Sheet;
 using FluentAssertions;
 
 namespace eQuantic.UI.Native.Engine.Tests;

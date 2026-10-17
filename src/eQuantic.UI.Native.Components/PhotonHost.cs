@@ -920,7 +920,7 @@ public sealed class PhotonHost
     private bool _codeDragging;
 
     /// <summary>The SPREADSHEET surface being edited, resolved by path every frame like the code
-    /// surface: the node is a corpse, the CONTROLLER outlives every rebuild.</summary>
+    /// surface: the node is a corpse, the MODEL outlives every rebuild.</summary>
     public SheetSurface? SheetTarget
     {
         get
@@ -943,52 +943,10 @@ public sealed class PhotonHost
 
     private readonly LayoutNodePool _nodePool = new();
 
-    /// <summary>A press that began in a sheet is dragging a range until it lifts.</summary>
-    private bool _sheetDragging;
-
-    /// <summary>A press that grabbed the fill handle is dragging a fill preview until it lifts.</summary>
-    private bool _sheetFilling;
-
-    /// <summary>The bottom-right corner of the selection's bottom-right CELL, in the sheet's own
-    /// space — where Excel's little square sits. Prefix-sum arithmetic, the inverse of CellAt.</summary>
-    private static Point FillHandleCorner(SheetRegion region, SheetRange selection)
-    {
-        var surface = region.Surface;
-        var document = surface.Controller.Document;
-        var x = surface.HeaderWidth;
-        for (var c = surface.FirstCol; c <= selection.RightCol; c++) x += document.ColWidth(c);
-        var y = surface.HeaderHeight;
-        for (var r = surface.FirstRow; r <= selection.BottomRow; r++) y += document.RowHeight(r);
-        return new Point(x, y);
-    }
-
-    private const float FillHandleGrab = 8f;
-
-    /// <summary>The cell a point in the sheet's own space lands on: prefix-sum arithmetic from the
-    /// window's origin, clamped into the grid so a drag past the edge holds the edge.</summary>
-    private static CellRef CellAt(SheetRegion region, Point local)
-    {
-        var surface = region.Surface;
-        var document = surface.Controller.Document;
-        var gridX = local.X - surface.HeaderWidth;
-        var gridY = local.Y - surface.HeaderHeight;
-
-        var col = surface.FirstCol;
-        var acc = 0f;
-        while (col < document.Cols - 1 && acc + document.ColWidth(col) <= gridX)
-        {
-            acc += document.ColWidth(col);
-            col++;
-        }
-        var row = surface.FirstRow;
-        acc = 0f;
-        while (row < document.Rows - 1 && acc + document.RowHeight(row) <= gridY)
-        {
-            acc += document.RowHeight(row);
-            row++;
-        }
-        return document.Clamp(new CellRef(row, col));
-    }
+    /// <summary>A press that began in a sheet belongs to it until it lifts: its moves and its release
+    /// go to that sheet's model, which knows whether the press is growing the selection or dragging
+    /// a fill, as a code surface's does.</summary>
+    private bool _sheetPressed;
 
     private void BeginCodeEditing(CodeRegion region)
     {
@@ -1185,8 +1143,7 @@ public sealed class PhotonHost
         // seeded with it); the rest append. The document only changes on commit.
         if (SheetTarget is { } sheetTarget)
         {
-            var sheet = sheetTarget.Controller;
-            SheetKeymap.Type(sheet, text);
+            sheetTarget.Model.HandleText(text);
             sheetTarget.OnChanged?.Invoke();
             NeedsRender = true;
             return true;
@@ -1544,44 +1501,23 @@ public sealed class PhotonHost
     }
 
     /// <summary>
-    /// Excel's keyboard over the focused sheet. Selection commands repaint without announcing;
-    /// data commands go through the controller, whose Changed event the composing component
-    /// already subscribes. Answers false for keys the sheet does not claim.
+    /// Excel's keyboard over the focused sheet, through its model: the web surface hands keys to the
+    /// same one, so the two cannot drift, and this host's clipboard goes with them so the copy keys
+    /// are served through it. Answers false for keys the sheet does not claim.
     /// </summary>
     private bool SheetKey(SheetSurface surface, string key, KeyModifiers modifiers)
     {
-        var sheet = surface.Controller;
-        var command = modifiers.HasFlag(KeyModifiers.Command);
-        var shift = modifiers.HasFlag(KeyModifiers.Shift);
-
-        // The SHARED keymap first — the web surface calls the same one, so they cannot drift.
-        if (SheetKeymap.Handle(sheet, key, command, shift))
+        if (surface.Model.HandleKey(key, modifiers, Clipboard))
         {
             surface.OnChanged?.Invoke();
             return true;
         }
 
-        // What stays platform-side: leaving the sheet, and the clipboard.
+        // What stays with the host is the focus: Escape outside an edit leaves the sheet.
         if (key == "Escape")
         {
             EndEditing();
             return true;
-        }
-        if (command && key.Length == 1)
-        {
-            switch (char.ToLowerInvariant(key[0]))
-            {
-                case 'c':
-                    if (Clipboard is { } copyBoard) copyBoard.Write(sheet.CopyTsv());
-                    return true;
-                case 'x':
-                    if (Clipboard is { } cutBoard) cutBoard.Write(sheet.CopyTsv());
-                    sheet.ClearSelection();
-                    return true;
-                case 'v':
-                    if (Clipboard?.Read() is { Length: > 0 } pasted) sheet.PasteTsv(pasted);
-                    return true;
-            }
         }
         return false;
     }
@@ -1800,33 +1736,16 @@ public sealed class PhotonHost
             if (_pressedCanvas is not null) return;   // a drag belongs to the canvas alone
         }
 
-        // A fill drag: the preview follows the pointer, one dominant axis at a time.
-        if (_sheetFilling && _lastFrame is not null)
-        {
-            var fillRegions = _lastFrame.SheetRegions;
-            for (var i = 0; i < fillRegions.Count; i++)
-            {
-                if (fillRegions[i].Path != _textPath) continue;
-                var sheet = fillRegions[i].Surface.Controller;
-                sheet.UpdateFill(CellAt(fillRegions[i], ToLocal(fillRegions, i, fillRegions[i].Bounds, new Point(x, y))));
-                fillRegions[i].Surface.OnChanged?.Invoke();
-                NeedsRender = true;
-                break;
-            }
-            return;
-        }
-
-        // A sheet drag: the anchor cell stays, the focus cell follows the pointer.
-        if (_sheetDragging && _lastFrame is not null)
+        // A press that began in a sheet: told to its model, which knows whether the press is growing
+        // the selection or dragging a fill, and follows the pointer if it is.
+        if (_sheetPressed && _lastFrame is not null)
         {
             var sheetRegions = _lastFrame.SheetRegions;
             for (var i = 0; i < sheetRegions.Count; i++)
             {
                 if (sheetRegions[i].Path != _textPath) continue;
-                var sheet = sheetRegions[i].Surface.Controller;
-                var cell = CellAt(sheetRegions[i], ToLocal(sheetRegions, i, sheetRegions[i].Bounds, new Point(x, y)));
-                if (cell == sheet.Selection.Focus) break;
-                sheet.Selection = new SheetRange(sheet.Selection.Anchor, cell);
+                if (!sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Move,
+                        ToLocal(sheetRegions, i, sheetRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1)) break;
                 sheetRegions[i].Surface.OnChanged?.Invoke();
                 NeedsRender = true;
                 break;
@@ -2268,40 +2187,20 @@ public sealed class PhotonHost
             return true;
         }
 
-        // …and a SPREADSHEET surface, the same way: click selects the cell, drag grows the range.
+        // …and a SPREADSHEET surface, the same way: the model decides what the press means (the
+        // cell, a stretch, an edit, the fill handle), and the press is the sheet's until it lifts.
         var sheetRegions = _lastFrame.SheetRegions;
         for (var i = sheetRegions.Count - 1; i >= 0; i--)
         {
             if (!Covers(sheetRegions, i, sheetRegions[i].Visible ?? sheetRegions[i].Bounds, point)) continue;
-            var sheet = sheetRegions[i].Surface.Controller;
             var changed = _textPath != sheetRegions[i].Path;
             if (changed) EndEditing();
             _textPath = sheetRegions[i].Path;
             _focused = null;
             _focusedPath = null;
-            var local = ToLocal(sheetRegions, i, sheetRegions[i].Bounds, point);
-            var cell = CellAt(sheetRegions[i], local);
-            if (sheet.Editing) sheet.CommitEdit();   // clicking away lands the draft, like Excel
-
-            // Excel's little square: a grab near the selection's bottom-right corner starts a
-            // FILL drag, not a new selection.
-            var corner = FillHandleCorner(sheetRegions[i], sheet.Selection);
-            if (Math.Abs(local.X - corner.X) <= FillHandleGrab && Math.Abs(local.Y - corner.Y) <= FillHandleGrab)
-            {
-                sheet.BeginFill();
-                _sheetFilling = true;
-                sheetRegions[i].Surface.OnChanged?.Invoke();
-                NeedsRender = true;
-                return true;
-            }
-
-            if (modifiers.HasFlag(KeyModifiers.Shift))
-                sheet.SelectTo(cell);   // the anchor stands, the selection stretches to the click
-            else
-                sheet.Selection = new SheetRange(cell);
-            if (clickCount >= 2)
-                sheet.BeginEdit(sheet.Document.GetCell(cell));
-            _sheetDragging = clickCount < 2 && !modifiers.HasFlag(KeyModifiers.Shift);
+            sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Down,
+                ToLocal(sheetRegions, i, sheetRegions[i].Bounds, point), modifiers, clickCount);
+            _sheetPressed = true;
             sheetRegions[i].Surface.OnChanged?.Invoke();
             NeedsRender = true;
             return true;
@@ -2327,6 +2226,32 @@ public sealed class PhotonHost
         if (kind == PointerKind.Touch) PointerLeave();
 
         _pan = null;
+
+        // A press an editing surface owned is told it was taken away: a code surface's drag ends, and
+        // a sheet's fill pours nothing.
+        if (_codeDragging && _lastFrame is not null)
+        {
+            var codeRegions = _lastFrame.CodeRegions;
+            for (var i = 0; i < codeRegions.Count; i++)
+            {
+                if (codeRegions[i].Path != _textPath) continue;
+                codeRegions[i].Surface.Model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1);
+                break;
+            }
+        }
+        _codeDragging = false;
+        if (_sheetPressed && _lastFrame is not null)
+        {
+            var sheetRegions = _lastFrame.SheetRegions;
+            for (var i = 0; i < sheetRegions.Count; i++)
+            {
+                if (sheetRegions[i].Path != _textPath) continue;
+                if (sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1))
+                    sheetRegions[i].Surface.OnChanged?.Invoke();
+                break;
+            }
+        }
+        _sheetPressed = false;
 
         if (_drag is { Active: true } drag)
         {
@@ -2388,21 +2313,22 @@ public sealed class PhotonHost
             }
         }
         _codeDragging = false;
-        _sheetDragging = false;
-        if (_sheetFilling && _lastFrame is not null)
+        if (_sheetPressed)
         {
-            // The fill drag lands: the source tiles across the preview as ONE undo step.
-            _sheetFilling = false;
-            var fillRegions = _lastFrame.SheetRegions;
-            for (var i = 0; i < fillRegions.Count; i++)
+            _sheetPressed = false;
+            var sheetRegions = _lastFrame?.SheetRegions ?? Array.Empty<SheetRegion>();
+            for (var i = 0; i < sheetRegions.Count; i++)
             {
-                if (fillRegions[i].Path != _textPath) continue;
-                fillRegions[i].Surface.Controller.CommitFill();
-                fillRegions[i].Surface.OnChanged?.Invoke();
+                if (sheetRegions[i].Path != _textPath) continue;
+                // A fill drag lands as the press lifts, the source tiling across the preview as ONE
+                // undo step, and the release is the sheet's. A selection drag simply ends, changing
+                // nothing, and the release goes on like any other.
+                if (!sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Up,
+                        ToLocal(sheetRegions, i, sheetRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1)) break;
+                sheetRegions[i].Surface.OnChanged?.Invoke();
                 NeedsRender = true;
-                break;
+                return true;
             }
-            return true;
         }
         if (_pressSwallowed)
         {

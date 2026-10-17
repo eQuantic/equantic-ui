@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>eQuantic.UI.Sheet</PackageId>
+    <Description>The spreadsheet engine of eQuantic.UI — the document, the selection and its editing, the fill handle, undo, Excel's keyboard and its clipboard dialect, written once in C# and driven by both realizers through the vocabulary's SheetSurface.</Description>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The vocabulary ONLY, as for the code editing engine beside it. The engine is what a
+         SheetSurface's realizer drives, so it may know the surface's protocol and the vocabulary's
+         values (a point, a modifier key, a clipboard) and nothing about any host: the same code runs
+         in a window and, transpiled, in a browser. -->
+    <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -48,6 +48,25 @@ public class CodeClipboardTests
         editor.Document.Text.Should().Be("oxne");
     }
 
+    /// <summary>A clipboard another program holds: every write is refused.</summary>
+    private sealed class RefusingClipboard : eQuantic.UI.Primitives.ITextClipboard
+    {
+        public void Write(string text) => throw new IOException("the clipboard is held by another program");
+        public string? Read() => null;
+    }
+
+    [Fact]
+    public void ACutWhoseClipboardRefusesTheText_DeletesNothing()
+    {
+        var editor = At("one\ntwo", 0, 1);
+
+        FluentActions.Invoking(() => CodeKeymap.Handle(editor, "x", eQuantic.UI.Primitives.KeyModifiers.Command,
+                eQuantic.UI.Primitives.KeyboardConvention.Standard, new RefusingClipboard()))
+            .Should().Throw<IOException>();
+
+        editor.Document.Text.Should().Be("one\ntwo", "the copy reaches the clipboard before anything is deleted");
+    }
+
     [Fact]
     public void CuttingWithNothingSelectedTakesTheLine()
     {

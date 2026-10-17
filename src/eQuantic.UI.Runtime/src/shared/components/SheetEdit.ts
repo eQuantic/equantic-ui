@@ -26,7 +26,7 @@ export class SheetEdit {
     selectionAfter!: SheetRange;
 
     toString(): string {
-        return 'eQuantic.UI.Primitives.SheetEdit';
+        return 'eQuantic.UI.Sheet.SheetEdit';
     }
 }
 

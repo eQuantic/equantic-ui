@@ -1,4 +1,5 @@
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Sheet;
 using FluentAssertions;
 using Xunit;
 
@@ -211,7 +212,7 @@ public class SheetControllerTests
         sheet.Document.SetCell(new CellRef(1, 1), "say \"hi\"");
         sheet.Selection = new SheetRange(new CellRef(0, 0), new CellRef(1, 1));
 
-        sheet.CopyTsv().Should().Be("name\tprice\n\"has\ttab\"\t\"say \"\"hi\"\"\"");
+        sheet.CopyText().Should().Be("name\tprice\n\"has\ttab\"\t\"say \"\"hi\"\"\"");
     }
 
     [Fact]
@@ -221,7 +222,7 @@ public class SheetControllerTests
         sheet.Document.SetCell(new CellRef(2, 2), "old");
         sheet.Selection = new SheetRange(new CellRef(2, 2));
 
-        sheet.PasteTsv("a\tb\nc\td").Should().BeTrue();
+        sheet.Paste("a\tb\nc\td").Should().BeTrue();
 
         sheet.Document.GetCell(new CellRef(2, 2)).Should().Be("a");
         sheet.Document.GetCell(new CellRef(3, 3)).Should().Be("d");
@@ -238,11 +239,11 @@ public class SheetControllerTests
     {
         var source = WithBlock(0, 0, 2, 3);
         source.Selection = new SheetRange(new CellRef(0, 0), new CellRef(1, 2));
-        var tsv = source.CopyTsv();
+        var tsv = source.CopyText();
 
         var target = Sheet();
         target.Selection = new SheetRange(new CellRef(10, 5));
-        target.PasteTsv(tsv);
+        target.Paste(tsv);
 
         target.Document.GetCell(new CellRef(10, 5)).Should().Be("r0c0");
         target.Document.GetCell(new CellRef(11, 7)).Should().Be("r1c2");
@@ -254,7 +255,7 @@ public class SheetControllerTests
         var sheet = Sheet(rows: 3, cols: 2);
         sheet.Selection = new SheetRange(new CellRef(2, 1));
 
-        sheet.PasteTsv("x\ty\nz\tw");
+        sheet.Paste("x\ty\nz\tw");
 
         sheet.Document.Rows.Should().Be(4);
         sheet.Document.Cols.Should().Be(3);
