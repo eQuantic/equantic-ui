@@ -242,6 +242,25 @@ describe('SheetSurface on the web', () => {
     expect(sheet.document.getCell(new CellRef(2, 0))).toBe('');
   });
 
+  it('a cut whose clipboard write fails empties nothing', () => {
+    const sheet = new SheetController(50, 8);
+    sheet.document.setCell(new CellRef(0, 0), 'kept');
+    const node = surfaceFor(sheet);
+
+    const cutEvent = new Event('cut', { cancelable: true }) as ClipboardEvent;
+    Object.defineProperty(cutEvent, 'clipboardData', {
+      value: {
+        setData: () => {
+          throw new Error('the clipboard refused the write');
+        },
+      },
+    });
+    expect(() => events(node)['cut'](cutEvent)).toThrow();
+
+    expect(sheet.document.getCell(new CellRef(0, 0))).toBe('kept');
+    expect(sheet.history.canUndo).toBe(false);
+  });
+
   it('a cut event that carries no clipboard empties nothing', () => {
     const sheet = new SheetController(50, 8);
     sheet.document.setCell(new CellRef(0, 0), 'kept');

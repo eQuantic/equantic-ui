@@ -797,7 +797,11 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   }) as unknown as EventHandler;
   input.events['cut'] = ((event: ClipboardEvent) => {
     event.preventDefault();
-    event.clipboardData?.setData('text/plain', model.cut());
+    // The copy reaches the clipboard before anything is deleted, the keymap's order: a write
+    // that fails leaves the text where it was.
+    if (!event.clipboardData) return;
+    event.clipboardData.setData('text/plain', model.copyText());
+    model.cut();
     changed();
   }) as unknown as EventHandler;
 
@@ -1562,8 +1566,12 @@ function lowerSheetSurface(
   }) as EventHandler;
 
   view.events['cut'] = ((event: ClipboardEvent) => {
-    event.clipboardData?.setData('text/plain', model.cut());
     event.preventDefault();
+    // The copy reaches the clipboard before anything is emptied, the keymap's order: a write
+    // that fails leaves every cell where it was.
+    if (!event.clipboardData) return;
+    event.clipboardData.setData('text/plain', model.copyText());
+    model.cut();
     changed();
   }) as EventHandler;
 
