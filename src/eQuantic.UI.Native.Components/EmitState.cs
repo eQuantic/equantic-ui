@@ -38,4 +38,4 @@ internal readonly record struct EmitState(
     DisplayListBuilder Builder,
     Dictionary<ScrollView, (string Path, float MaxOffset)> ScrollMeta,
     MotionScope Motion,
-    List<Overlay> Overlays);
+    List<QueuedLayer> Overlays);

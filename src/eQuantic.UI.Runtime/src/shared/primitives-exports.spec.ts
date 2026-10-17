@@ -51,8 +51,9 @@ const NO_TWIN_OWED = new Set([
   // `ComponentBoundary`, `FaceResolution` and `EffectiveTypeStyle` used to be named here. They are
   // `[ServerOnly]` now, the compiler REFUSES a client reference to them (EQ2010), and the C# side
   // drops them from the pinned list by that rule — so they are gone from here rather than excused
-  // here. A list kept by hand in two files had already drifted between them.
-  'ComponentInstanceStore',
+  // here. A list kept by hand in two files had already drifted between them. `ComponentInstanceStore`
+  // left this list in #950 with the type itself: Photon's instances are kept by the element tree,
+  // whose types are `[ServerOnly]` until the browser drives the same engine.
   // `FlexNode` left this list in #228, the same way and for the same reason: it is `[ServerOnly]`
   // now, so the compiler refuses a page that names the shape (EQ2010) and the C# side drops it by
   // that rule. It waited a release behind `SingleChildNode` because fencing a SHIPPED type refuses

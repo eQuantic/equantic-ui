@@ -8,76 +8,63 @@ namespace eQuantic.UI.Native.Framework;
 internal sealed partial class MeasureVisitor
 {
     /// <summary>
-    /// Measures an <see cref="InFlow"/> with the intent armed, so the overlay inside it builds its
-    /// panel rather than its layer. Restored after — a sibling dialog opened for real must still
-    /// take the viewport.
+    /// An <see cref="InFlow"/> measures as the wrapper it is. The intent it arms ("the overlay
+    /// inside builds its panel rather than its layer") is armed where the inside BUILDS, which is
+    /// the build phase now: each component's element knows whether an InFlow is above it.
     /// </summary>
     private LayoutNode MeasureInFlow(InFlow inFlow, LayoutConstraints constraints, LayoutContext ctx,
-        string path)
-    {
-        var previous = InFlow.Current;
-        InFlow.Current = true;
-        try
-        {
-            return MeasureWrapper(inFlow, inFlow.Child, constraints, ctx, path);
-        }
-        finally
-        {
-            InFlow.Current = previous;
-        }
-    }
+        Position at) => MeasureWrapper(inFlow, inFlow.Child, constraints, ctx, at);
 
-    private LayoutNode MeasureComponent(UiComponent component, LayoutConstraints constraints, LayoutContext ctx, string path)
+    /// <summary>
+    /// A component measures as a wrapper around what its element BUILT, and builds nothing here: the
+    /// build phase ran before the layout (docs/ELEMENT-TREE-PLAN.md, 3.2), through the boundary, so a
+    /// throw or a component that builds itself was contained there. A container that measures this
+    /// twice measures one built subtree twice. The wrapper's node is the instance that built, the
+    /// retained one for a stateful component.
+    /// </summary>
+    private LayoutNode MeasureComponent(UiComponent component, LayoutConstraints constraints, LayoutContext ctx, Position at)
     {
-        var resolved = ctx.Instances?.Reconcile(path, component) ?? component;
-        // Through the BOUNDARY, never Build: a throw here used to reach the host and cost the FRAME —
-        // the window stops presenting and the app is gone, for one component's null reference. And
-        // ExpandContained rather than BuildContained, because this recurses: measuring what a
-        // component built reaches MeasureComponent again, so a component that builds itself would
-        // otherwise take the frame down by a stack overflow instead of a throw.
-        // The visitor rides in the STATE rather than being captured. The lambda is `static` for a
-        // measured reason: #224 landed this callback as a closure and PerfHarnessTests reported
-        // 2,786 bytes a frame for it. A tuple field costs nothing — it is already a value being
-        // passed — where a capture is a heap object per component per frame.
-        return resolved.ExpandContained(ctx.Components, (self: this, resolved, constraints, ctx, path),
-            static (built, state) =>
-                state.self.MeasureWrapper(state.resolved, built, state.constraints, state.ctx, state.path));
+        if (at.Element is not ComponentElement element || element.ChildAt(0) is not { } built)
+            throw new InvalidOperationException(
+                $"{at.Path} measured the component {component.GetType().Name} with no subtree built for it: "
+                + "no build made its position, or its Build answered null.");
+        return MeasureWrapper(element.Component, built.Configuration, constraints, ctx, at);
     }
 
     /// <summary>A transparent wrapper that also resolves the ENTRANCE progress against the host's
     /// presence clock, keyed by this stable path — the emit pass applies the paint-only effect and
     /// snapshots the subtree's commands by the same path (the exit replay source).</summary>
-    private LayoutNode MeasurePresence(Presence presence, LayoutConstraints constraints, LayoutContext ctx, string path)
+    private LayoutNode MeasurePresence(Presence presence, LayoutConstraints constraints, LayoutContext ctx, Position at)
     {
-        var result = MeasureWrapper(presence, presence.Child, constraints, ctx, path);
-        result.Presence = ctx.Presences?.Progress(path, ctx.TimeMs, ctx.ReducedMotion) ?? 1f;
-        result.PresencePath = path;
+        var result = MeasureWrapper(presence, presence.Child, constraints, ctx, at);
+        result.Presence = ctx.Presences?.Progress(at.Path, ctx.TimeMs, ctx.ReducedMotion) ?? 1f;
+        result.PresencePath = at.Path;
         return result;
     }
 
     /// <summary>A transparent wrapper that resolves the current DRAG offset against the host's drag
     /// clock (active follow or glide-back), keyed by this stable path — the emit pass paints the
     /// translate and registers the drag region the host routes input by.</summary>
-    private LayoutNode MeasureDragDismiss(DragDismiss drag, LayoutConstraints constraints, LayoutContext ctx, string path)
+    private LayoutNode MeasureDragDismiss(DragDismiss drag, LayoutConstraints constraints, LayoutContext ctx, Position at)
     {
-        var result = MeasureWrapper(drag, drag.Child, constraints, ctx, path);
-        result.DragOffset = ctx.Drags?.Resolve(path, ctx.TimeMs) ?? 0f;
-        result.DragPath = path;
+        var result = MeasureWrapper(drag, drag.Child, constraints, ctx, at);
+        result.DragOffset = ctx.Drags?.Resolve(at.Path, ctx.TimeMs) ?? 0f;
+        result.DragPath = at.Path;
         return result;
     }
 
     /// <summary>The live offset for this gesture — the finger while it is down, the glide after it
     /// lifts, and the caller's RestOffset when neither is happening.</summary>
     private LayoutNode MeasureDraggable(Draggable draggable, LayoutConstraints constraints,
-        LayoutContext ctx, string path)
+        LayoutContext ctx, Position at)
     {
-        var result = MeasureWrapper(draggable, draggable.Child, constraints, ctx, path);
+        var result = MeasureWrapper(draggable, draggable.Child, constraints, ctx, at);
         // A gesture the caller paints itself never translates — its offset lives in the caller's
         // state and has already moved the subtree by the time this frame is measured.
         result.DragOffset = draggable.Follows
-            ? ctx.Drags?.Resolve(path, ctx.TimeMs, draggable.RestOffset) ?? draggable.RestOffset
+            ? ctx.Drags?.Resolve(at.Path, ctx.TimeMs, draggable.RestOffset) ?? draggable.RestOffset
             : 0f;
-        result.DragPath = path;
+        result.DragPath = at.Path;
         return result;
     }
 }

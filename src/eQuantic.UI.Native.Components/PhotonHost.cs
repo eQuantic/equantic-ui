@@ -6,12 +6,11 @@ using eQuantic.UI.Primitives;
 namespace eQuantic.UI.Native.Components;
 
 /// <summary>
-/// The v1 frame driver for a Photon surface: holds a RETAINED root node/component, rebuilds when its
-/// state invalidates, and dispatches taps to the realized hit regions. This is the minimal loop that
-/// proves Build → SetState → rebuild end-to-end; the platform shells (W5) wrap it with vsync pacing
-/// and real input, and the reconciler (W6) replaces full rebuilds with diffing. State persists on the
-/// retained root (and any component instances the tree retains) — see the
-/// <see cref="StatefulComponent"/> v1 caveat.
+/// The frame driver for a Photon surface: keeps the tree of its root in a <see cref="BuildOwner"/>
+/// across frames, draws a frame when a <c>SetState</c>, input or the system asks for one (building,
+/// then laying out and painting), and dispatches input to the realized hit regions. The platform
+/// shells wrap it with vsync pacing and real input. A stateful component's state lives on the
+/// instance its position retains (see <see cref="StatefulComponent"/>).
 /// </summary>
 public sealed class PhotonHost
 {
@@ -33,10 +32,11 @@ public sealed class PhotonHost
         _measurer = measurer;
         _typeScale = typeScale;
 
-        if (root is StatefulComponent stateful)
-            stateful.StateInvalidated += () => NeedsRender = true;
-        _instances.InstanceRetained += retained =>
-            retained.StateInvalidated += () => NeedsRender = true;
+        // ONCE, for the whole tree: a SetState marks its position in the owner, and the owner asks
+        // for the frame. Nothing subscribes per instance, so nothing can subscribe twice (#935: the
+        // instance store reported a root it already held as entering every frame, and the host
+        // added a handler each time).
+        _owner.BuildRequested += RequestFrame;
 
         // Work posted from a worker thread has to WAKE an idle window, or it runs whenever something
         // else next needs a frame — a scanner's results appearing on the next mouse move.
@@ -61,7 +61,19 @@ public sealed class PhotonHost
     /// toolbars, sidebars and status rails of a desktop app; a touch screen stays Comfortable.
     /// The shell decides, and no page ever asks.
     /// </summary>
-    public Density Density { get; set; } = Density.Comfortable;
+    public Density Density
+    {
+        get => _density;
+        set
+        {
+            if (_density == value) return;
+            _density = value;
+            // Every control reads it while it builds, so the next frame builds them all again.
+            NeedsRender = true;
+        }
+    }
+
+    private Density _density = Density.Comfortable;
     public float Width { get; private set; }
     public float Height { get; private set; }
 
@@ -78,10 +90,24 @@ public sealed class PhotonHost
     public bool NeedsRender
     {
         get => Volatile.Read(ref _needsRender);
-        private set => Volatile.Write(ref _needsRender, value);
+        private set
+        {
+            // Every request for a frame REBUILDS every component, as every frame always did, but
+            // two: a SetState, whose own position is already marked (RequestFrame), and the motion
+            // that keeps frames flowing, which changes nothing a build reads. The reason is
+            // measured: input reaches models the tree reads without a SetState (a code editor's
+            // controller, a spreadsheet's, a field's draft), and the host addresses them by path
+            // until the regions carry elements (docs/ELEMENT-TREE-PLAN.md, E2).
+            if (value) Volatile.Write(ref _rebuildAll, 1);
+            Volatile.Write(ref _needsRender, value);
+        }
     }
 
     private bool _needsRender = true;
+
+    /// <summary>Whether the next frame rebuilds every component rather than the marked ones — an
+    /// int, so the frame can take it and clear it in one step while another thread sets it.</summary>
+    private int _rebuildAll = 1;
 
     /// <summary>When the next frame is due even though nothing is dirty — the caret's next blink
     /// transition, in the same clock <see cref="RenderFrame"/> is fed. Null = nothing scheduled.</summary>
@@ -101,6 +127,10 @@ public sealed class PhotonHost
     /// is not, and nothing inside it would know to say so.
     /// </summary>
     public void Invalidate() => NeedsRender = true;
+
+    /// <summary>A position in the tree was marked by a <c>SetState</c>: the next frame builds it, and
+    /// only it (the frame's owner knows which).</summary>
+    private void RequestFrame() => Volatile.Write(ref _needsRender, true);
 
     /// <summary>The OS "Reduce Motion" accessibility setting (spec §06): loop movement renders at
     /// rest and stops requesting frames. Platform shells (W5) feed the real setting.</summary>
@@ -259,6 +289,8 @@ public sealed class PhotonHost
             _textCache.Clear();
             _iconCache.Clear();
             _imageCache.Clear();
+            // A patched Build has to run to be seen, in every component that has one.
+            Volatile.Write(ref _rebuildAll, 1);
         }
 
         // What was typed since the last frame is in the tree now, as the app took it: the frame's
@@ -288,13 +320,16 @@ public sealed class PhotonHost
         _scrolls.Smooth = SmoothScroll && !ReducedMotion;
         var gliding = _scrolls.Advance(timeMs);
         var previousFrame = _lastFrame;
-        _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, safeArea, _pressedPath,
+        // Taken and cleared as late as possible: whatever the drain, the frame ticker or an edit
+        // asked for before this point is in this frame, and anything after it is in the next.
+        var rebuildAll = Interlocked.Exchange(ref _rebuildAll, 0) == 1;
+        _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _owner, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, safeArea, _pressedPath,
             _focusVisible ? _focusedPath : null, _textPath, caretIndex, CaretVisible,
             selection.Start, selection.End, density: Density,
             scrollOffset: path => _scrolls.Get(path), markedText: _marked, composing: _composing,
             pathCache: _pathCache, hoveredPaths: _hoverPaths,
             nodePool: RecycleFrames ? _nodePool : null, inViewStore: _inView,
-            windowControlsInsets: WindowControlsInsets, sizedLike: previousFrame);
+            windowControlsInsets: WindowControlsInsets, sizedLike: previousFrame, rebuildAll: rebuildAll);
         if (_lift != 0) builder.Pop();
         if (RenderScale != 1f) builder.Pop();
         // The frame shows what the app made of the keyboard's edit. A composition in a text the app
@@ -315,17 +350,14 @@ public sealed class PhotonHost
         _announcer.Observe(_lastFrame, timeMs);
         AdoptAutofocus();
         AdoptFocusRequests();
-        // The ROOT is not in the instance store (nothing reconciles it — it IS the tree), so the
-        // surface owes it the mount its children get from the store. After the first frame realized:
-        // the same "the tree exists" moment, for the one component that has no parent to give it.
-        if (!_rootMounted && _root is StatefulComponent rootStateful)
-        {
-            _rootMounted = true;
-            rootStateful.NotifyMounted();
-        }
         // A subscribed frame ticker IS motion: frames keep flowing while anyone wants them, and the
-        // loop goes idle the moment the last subscription is disposed.
-        NeedsRender = _lastFrame.HasActiveMotion || gliding || PhotonFrameTicker.Shared.HasSubscribers;
+        // loop goes idle the moment the last subscription is disposed. Written past the setter,
+        // because motion is the one request that rebuilds nothing. A position still waiting to
+        // build keeps the request too: a SetState from a scroll callback, from a hook at the end
+        // of the frame or from a build is waiting in the owner, and a write of `false` here would
+        // leave it there until something else asked for a frame.
+        Volatile.Write(ref _needsRender,
+            _lastFrame.HasActiveMotion || gliding || PhotonFrameTicker.Shared.HasSubscribers || _owner.HasDirty);
 
         // A code surface whose caret was MOVED since the last frame is brought into view — by a key,
         // a command, a find stepping to a match. After the frame, because that is when the caret's
@@ -352,15 +384,13 @@ public sealed class PhotonHost
         return _lastFrame;
     }
 
-    /// <summary>The positional reconciler: nested stateful components retain identity (and state)
-    /// across parent rebuilds — see ComponentInstanceStore.</summary>
-    private readonly ComponentInstanceStore _instances = new();
+    /// <summary>The tree this host keeps across frames: every position, the instances it retains, and
+    /// the order its components mount and unmount in, the root's included (see BuildOwner).</summary>
+    private readonly BuildOwner _owner = new();
 
     /// <summary>Which InView nodes were on screen last frame — see InViewStore.</summary>
     private readonly InViewStore _inView = new();
 
-    /// <summary>Whether the root has been told it is in the tree — see RenderFrame.</summary>
-    private bool _rootMounted;
 
     private Pressable? _pressed;
 
@@ -2850,11 +2880,5 @@ public sealed class PhotonHost
     /// the live one did.
     /// </para>
     /// </summary>
-    public void Unmount()
-    {
-        _instances.UnmountAll();
-        if (!_rootMounted || _root is not StatefulComponent rootStateful) return;
-        _rootMounted = false;
-        rootStateful.NotifyUnmounted();
-    }
+    public void Unmount() => _owner.UnmountAll();
 }

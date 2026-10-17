@@ -96,16 +96,28 @@ public class ListViewTests
         rows.Count.Should().BeLessThan(25, "the window stays a screenful wherever it sits");
     }
 
+    /// <summary>
+    /// A nudge that moves no row across the margin repaints and builds nothing. It starts OFF the
+    /// top: from offset zero any nudge takes a row into the bottom margin, because the window's last
+    /// row is the ceiling of what shows and 400 is a whole number of rows. This test used to nudge
+    /// from zero and pass anyway, because the host wrote the list's request for a frame over with
+    /// "nothing moves" at the end of the frame that made it; the request survives now, so the
+    /// nudge has to be one that truly moves nothing.
+    /// </summary>
     [Fact]
     public void PixelsScroll_WithoutARebuild_UntilTheWindowMoves()
     {
         var host = Open(10_000);
         host.RenderFrame(new DisplayListBuilder(), 80);
         host.NeedsRender.Should().BeFalse("the list at rest schedules nothing");
+        host.ScrollBy(300, 200, Extent / 4);
+        host.RenderFrame(new DisplayListBuilder(), 96);
+        host.NeedsRender.Should().BeTrue("row 14 entered the margin, and the window moves to hold it");
+        host.RenderFrame(new DisplayListBuilder(), 112);
 
         // A nudge smaller than one row: pixels move, the window's indices do not.
         host.ScrollBy(300, 200, Extent / 4);
-        host.RenderFrame(new DisplayListBuilder(), 96);
+        host.RenderFrame(new DisplayListBuilder(), 128);
 
         host.NeedsRender.Should().BeFalse(
             "a scroll that moves no row across the margin repaints, but must not invalidate state");

@@ -192,3 +192,33 @@ eQuantic.UI.Primitives.SheetSurface.SheetSurface(eQuantic.UI.Primitives.VisualNo
 eQuantic.UI.Primitives.SheetSurface.Model.get -> eQuantic.UI.Primitives.ISheetSurfaceModel!
 eQuantic.UI.Primitives.SheetSurface.Model.init -> void
 eQuantic.UI.Primitives.PointerPhase.Cancel = 5 -> eQuantic.UI.Primitives.PointerPhase
+abstract eQuantic.UI.Primitives.Element.ChildAt(int slot) -> eQuantic.UI.Primitives.Element?
+eQuantic.UI.Primitives.BuildOwner
+eQuantic.UI.Primitives.BuildOwner.Build(eQuantic.UI.Primitives.VisualNode! root, eQuantic.UI.Primitives.ComponentContext! context, eQuantic.UI.Primitives.WindowSizeClass sizeClass, bool rebuildAll) -> eQuantic.UI.Primitives.Element!
+eQuantic.UI.Primitives.BuildOwner.BuildOwner() -> void
+eQuantic.UI.Primitives.BuildOwner.BuildRequested -> System.Action?
+eQuantic.UI.Primitives.BuildOwner.EndFrame() -> void
+eQuantic.UI.Primitives.BuildOwner.HasDirty.get -> bool
+eQuantic.UI.Primitives.BuildOwner.Root.get -> eQuantic.UI.Primitives.Element?
+eQuantic.UI.Primitives.BuildOwner.UnmountAll() -> void
+eQuantic.UI.Primitives.ComponentElement
+eQuantic.UI.Primitives.ComponentElement.Component.get -> eQuantic.UI.Primitives.UiComponent!
+eQuantic.UI.Primitives.Element
+eQuantic.UI.Primitives.Element.Configuration.get -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Primitives.Element.Depth.get -> int
+eQuantic.UI.Primitives.Element.IsActive.get -> bool
+eQuantic.UI.Primitives.Element.Parent.get -> eQuantic.UI.Primitives.Element?
+eQuantic.UI.Primitives.NodeElement
+eQuantic.UI.Primitives.NodeElement.ShowDeferred(eQuantic.UI.Primitives.VisualNode! configuration) -> eQuantic.UI.Primitives.Element!
+override eQuantic.UI.Primitives.ComponentElement.ChildAt(int slot) -> eQuantic.UI.Primitives.Element?
+override eQuantic.UI.Primitives.NodeElement.ChildAt(int slot) -> eQuantic.UI.Primitives.Element?
+static eQuantic.UI.Primitives.BuildOwner.Structural() -> eQuantic.UI.Primitives.BuildOwner!
+*REMOVED*eQuantic.UI.Primitives.ComponentInstanceStore
+*REMOVED*eQuantic.UI.Primitives.ComponentInstanceStore.ComponentInstanceStore() -> void
+*REMOVED*eQuantic.UI.Primitives.ComponentInstanceStore.EndPass() -> void
+*REMOVED*eQuantic.UI.Primitives.ComponentInstanceStore.InstanceRetained -> System.Action<eQuantic.UI.Primitives.StatefulComponent!>?
+*REMOVED*eQuantic.UI.Primitives.ComponentInstanceStore.Reconcile(string! path, eQuantic.UI.Primitives.UiComponent! fresh) -> eQuantic.UI.Primitives.UiComponent!
+*REMOVED*eQuantic.UI.Primitives.ComponentInstanceStore.UnmountAll() -> void
+*REMOVED*eQuantic.UI.Primitives.StatefulComponent.NotifyMounted() -> void
+*REMOVED*eQuantic.UI.Primitives.StatefulComponent.NotifyUnmounted() -> void
+*REMOVED*eQuantic.UI.Primitives.StatefulComponent.StateInvalidated -> System.Action?
