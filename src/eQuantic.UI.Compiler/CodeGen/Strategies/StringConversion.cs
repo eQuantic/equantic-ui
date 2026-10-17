@@ -345,6 +345,14 @@ public static class StringConversion
                 : JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver);
             return JsExpr.Callish($"{Eq.Format}({JsExprWriter.Write(checkedReceiver)}, null)");
         }
+        // A string's ToString is the string itself, and through null the call throws as any instance call
+        // does: the null-tolerant text a hole and a concatenation write answered "" (Copilot's review of #947).
+        if (type is { SpecialType: SpecialType.System_String })
+        {
+            if (IsAlwaysNonNull(receiverSyntax, context)) return receiver;
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver);
+        }
         if (type is { IsReferenceType: true, TypeKind: not TypeKind.Error } && type.SpecialType != SpecialType.System_String
             && !type.IsDate())
         {
@@ -382,7 +390,9 @@ public static class StringConversion
                 or ImplicitArrayCreationExpressionSyntax
                 or CollectionExpressionSyntax
                 or ThisExpressionSyntax
-                or BaseExpressionSyntax => true,
+                or BaseExpressionSyntax
+                or InterpolatedStringExpressionSyntax
+                or LiteralExpressionSyntax { RawKind: (int)Microsoft.CodeAnalysis.CSharp.SyntaxKind.StringLiteralExpression } => true,
             _ => false,
         };
 

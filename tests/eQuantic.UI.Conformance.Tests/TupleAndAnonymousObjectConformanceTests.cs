@@ -294,6 +294,8 @@ public class TupleAndAnonymousObjectConformanceTests
         """return new Box<(int A, int B)>((1, 2)).Equals((object)new Box<(int, int)>((1, 2)));""",
         // #912: Equals and ToString on a null record or class instance throw NullReferenceException after evaluating any argument.
         """var log = ""; Point Arg() { log += "a"; return new Point(1, 2); } Point p = null!; string r = ""; try { r += p.Equals(Arg()); } catch (NullReferenceException) { r += "NRE1"; } try { r += "|" + ((object)p).Equals(Arg()); } catch (NullReferenceException) { r += "|NRE2"; } try { r += "|" + p.ToString(); } catch (NullReferenceException) { r += "|NRE3"; } Point? np = null; try { r += "|" + np.ToString(); } catch (NullReferenceException) { r += "|NRE4"; } return r + "|" + log;""",
+        // A null string's ToString throws too, where a hole and a concatenation write nothing.
+        """string s = null!; var r = ""; try { r = s.ToString(); } catch (NullReferenceException) { r = "NRE"; } return r + "|" + $"{s}" + "|" + ("" + s) + "|" + "a".ToString() + "|" + $"{1}b".ToString();""",
         // #926: An enum's Equals, Equals method group, and GetHashCode match its underlying numeric value.
         """var s = Scale.Small; var l = Scale.Large; Func<object?, bool> eq = s.Equals; Func<int> h = l.GetHashCode; return s.Equals(Scale.Small) + "|" + s.Equals(Scale.Large) + "|" + s.Equals((object)Scale.Small) + "|" + s.Equals((object)0) + "|" + s.Equals(null) + "|" + eq(Scale.Small) + "|" + eq(Scale.Large) + "|" + (s.GetHashCode() == 0.GetHashCode()) + "|" + (l.GetHashCode() == 1.GetHashCode()) + "|" + (h() == 1.GetHashCode());""",
         // A Nullable enum's Equals group compares as its value's, and an empty one's is refused where it is made.
