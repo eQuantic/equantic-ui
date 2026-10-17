@@ -508,10 +508,13 @@ public static class Eq
     /// members, and identity for anything else.</summary>
     public const string SameKey = "$eq.collections.sameKey";
 
-    /// <summary>An interface's typed <c>Equals</c> by the contract a call binds, and
-    /// <c>EqualityComparer&lt;T&gt;.Default</c> for a type that answers <c>IEquatable&lt;T&gt;</c> with a typed
-    /// <c>Equals</c> of the app's own: the method a twin's <c>static $equatable</c> maps the contract to
+    /// <summary>An interface's typed <c>Equals</c>, called or made a delegate of, by the contract the call binds:
+    /// the method a twin's <c>static $equatable</c> maps it to, which decides a null argument itself
     /// (<c>utils/key-equality.ts</c>).</summary>
+    public const string EquatableCall = "$eq.collections.equatableCall";
+
+    /// <summary><c>EqualityComparer&lt;T&gt;.Default</c> for a type that answers <c>IEquatable&lt;T&gt;</c> with a typed
+    /// <c>Equals</c> of the app's own: a null equal only to a null, and two values by that method.</summary>
     public const string Equatable = "$eq.collections.equatable";
 
     /// <summary><c>EqualityComparer&lt;T&gt;.Default</c> for a type parameter, which .NET settles at run time: the

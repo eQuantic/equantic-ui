@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   equatable,
+  equatableCall,
   memberEquality,
   pairComparer,
   sameBy,
@@ -238,5 +239,16 @@ describe("an interface's typed Equals, by the contract it binds", () => {
     expect(d.has(m)).toBe(true);
     d.add([1, 2], 'pair');
     expect(d.has([1, 2])).toBe(true);
+  });
+
+  it('asks the method a call binds with a null argument too, as the call does', () => {
+    const c = new NullLover();
+    expect(equatableCall('System.IEquatable<T>|NullLover')(c, null)).toBe(true);
+    expect(equatableCall('System.IEquatable<T>|*')(c, null)).toBe(true);
+    expect(c.calls).toBe(2);
+    expect(equatableCall('System.IEquatable<T>|int')(new IntMatcher(), 1)).toBe(true);
+    expect(equatableCall('System.IEquatable<T>|int')(5, 5)).toBe(true);
+    expect(equatableCall('System.IEquatable<T>|NullLover')).toBe(equatableCall('System.IEquatable<T>|NullLover'));
+    expect(equatableCall('System.IEquatable<T>|NullLover')).not.toBe(equatable('System.IEquatable<T>|NullLover'));
   });
 });

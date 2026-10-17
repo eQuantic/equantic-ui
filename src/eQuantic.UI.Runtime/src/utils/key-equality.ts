@@ -135,9 +135,19 @@ function dispatch(key: string, a: unknown, b: unknown): boolean {
 }
 
 /**
- * An interface's typed `Equals` through the contract a call binds, and `EqualityComparer<T>.Default` for a
- * type that implements `IEquatable<T>` with a typed `Equals` of the app's own: a null equals only a null,
- * and two values otherwise by the method the contract finds.
+ * An interface's typed `Equals` called, or made a delegate of, through the contract the call binds:
+ * `IEquatable<int> c = new C(); c.Equals(1)` asks C's `Equals(int)`, whatever else C answers. The method
+ * decides what a null argument means and runs on it, side effects included, as the call does in .NET
+ * (Copilot's third review of #947); the receiver's null is the caller's (`$eq.equalsInstance`).
+ */
+export function equatableCall(key: string): Equality {
+  return generated(`c:${key}`, () => (a, b) => dispatch(key, a, b));
+}
+
+/**
+ * `EqualityComparer<T>.Default` for a type that implements `IEquatable<T>` with a typed `Equals` of the
+ * app's own: a null equals only a null, as .NET's comparer answers before it asks the method, and two
+ * values otherwise by that method, found by the contract.
  */
 export function equatable(key: string): Equality {
   return generated(`q:${key}`, () => (a, b) => (a == null || b == null ? a == null && b == null : dispatch(key, a, b)));

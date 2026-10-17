@@ -110,10 +110,11 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
 
         // An interface's typed Equals, IEquatable<T>'s or one the app's interface declares, through the contract
         // the call binds: the method the value's twin maps it to, and what the value turns out to be where it
-        // answers none, a number and a string included (Copilot's second and third reviews of #947).
+        // answers none, a number and a string included. The method decides a null argument itself (Copilot's
+        // second and third reviews of #947).
         if (ElementEquality.ContractKey(context.SemanticHelper.GetSymbol(inv) as IMethodSymbol) is { } contract)
             return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other,
-                JsExpr.Call(JsExpr.Identifier(Eq.Equatable), JsExpr.Literal(JsStringLiteral.Quote(contract))));
+                JsExpr.Call(JsExpr.Identifier(Eq.EquatableCall), JsExpr.Literal(JsStringLiteral.Quote(contract))));
 
         if (type.UnwrapNullable() is INamedTypeSymbol named && (named.IsTupleType || named.IsAnonymousType))
         {

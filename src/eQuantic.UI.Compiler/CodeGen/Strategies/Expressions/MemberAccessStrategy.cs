@@ -203,12 +203,12 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         if (method is { Name: "ToString", Parameters.Length: 0 })
             return StringConversion.TextGroup(type, receiver, context);
         // The group of an interface's typed Equals, by the contract it binds, refused where it is made when the
-        // receiver is null.
+        // receiver is null, and asking the implementation with whatever argument the delegate is called with.
         if (ElementEquality.ContractKey(method) is { } contract)
         {
             context.UsedHelpers.Add(Eq.Import);
             return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver),
-                JsExpr.Call(JsExpr.Identifier(Eq.Equatable), JsExpr.Literal(JsStringLiteral.Quote(contract))));
+                JsExpr.Call(JsExpr.Identifier(Eq.EquatableCall), JsExpr.Literal(JsStringLiteral.Quote(contract))));
         }
         if (method is not { Name: "Equals", Parameters.Length: 1 } || TwinMethodName.HoldsANameOfItsOwn(method))
             return null;
