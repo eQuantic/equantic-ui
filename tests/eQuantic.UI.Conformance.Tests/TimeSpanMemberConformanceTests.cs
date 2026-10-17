@@ -104,4 +104,31 @@ public class TimeSpanMemberConformanceTests
             """,
             "public record Factor(double V) { public static implicit operator double(Factor f) => f.V; }");
     }
+
+    /// <summary>
+    /// A NULLABLE factor whose struct converts to a double is the LIFTED conversion under the span's lifted
+    /// operator: a null factor makes the span null, a present one scales it, on either side of `*`, under `/`
+    /// and compounded. An operator that takes the nullable itself is not lifted and receives the null, and a
+    /// class's operator is unchanged (Copilot's second review of #964).
+    /// </summary>
+    [SkippableFact]
+    public void ASpanScaledByANullableFactor_IsTheLiftedConversion()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            """
+            Factor? none = null; Factor? some = new Factor(2); var ts = TimeSpan.FromTicks(3);
+            TimeSpan? g = TimeSpan.FromTicks(5); g *= none; TimeSpan? h = TimeSpan.FromTicks(5); h *= some;
+            TimeSpan? i = TimeSpan.FromTicks(20); i /= none; TimeSpan? j = TimeSpan.FromTicks(20); j /= some;
+            Weight? wn = null; Weight? ws = new Weight(4); Ratio r = new Ratio(2);
+            return ((ts * none) is null) + "|" + (ts * some)?.Ticks + "|" + ((none * ts) is null) + "|" + (some * ts)?.Ticks + "|"
+                + ((ts / none) is null) + "|" + (TimeSpan.FromTicks(12) / some)?.Ticks + "|" + (g is null) + "|" + h?.Ticks + "|"
+                + (i is null) + "|" + j?.Ticks + "|" + (ts * wn).Ticks + "|" + (ts * ws).Ticks + "|" + (ts * r).Ticks;
+            """,
+            """
+            public record struct Factor(double V) { public static implicit operator double(Factor f) => f.V; }
+            public record struct Weight(double V) { public static implicit operator double(Weight? w) => w?.V ?? -1; }
+            public record Ratio(double V) { public static implicit operator double(Ratio r) => r.V; }
+            """);
+    }
 }
