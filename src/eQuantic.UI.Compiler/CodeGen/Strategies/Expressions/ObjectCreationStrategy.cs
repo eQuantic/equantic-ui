@@ -970,10 +970,11 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         // Found in review of that fix.
         if (ms?.ContainingType.ReportIfHostOnlyType(creation, context) == true) return Undefined;
         if (ms?.ContainingType is { } keptOutTarget && keptOutTarget.ReportIfKeptOut(creation, context)) return Undefined;
-        // A class with no module and no twin, as the explicit form refuses it (#822), unless it is a
-        // collection, which the browser holds as the array of its elements.
-        if (ms?.ContainingType is { } twinless && !IsCollectionLikeTypeName(typeDisplay)
-            && ReportIfTwinless(twinless, creation, context))
+        // A class with no module and no twin, as the explicit form refuses it (#822), asked of the symbol as
+        // there: a list is the array of its elements (ReportIfTwinless), and a type whose NAME holds
+        // "Collection<" was let through and built as an empty array, a package's included (Copilot's review
+        // of #958).
+        if (ms?.ContainingType is { } twinless && ReportIfTwinless(twinless, creation, context))
             return Undefined;
 
         // `Color c = new(1, 2, 3, 4)` builds the data as the explicit form does.
