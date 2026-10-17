@@ -149,26 +149,28 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // into NaN and never refused a date leaving the calendar (#424). A nullable operand is lifted,
         // as C#'s operator is: a null on either side answers null. A span scaled or divided in place is the
         // same, `t *= 2.5` and `t /= 4`, which JavaScript's `op=` turned into NaN (Copilot's review of #958).
-        var rightType = context.SemanticHelper.GetType(assignment.Right);
-        // The operator C# bound decides, as for the binary operator: a value its own type converts to a
-        // double scales a span in place too (Copilot's second review of #958).
-        var (bound, liftedBound) = BinaryExpressionStrategy.BoundOperands(assignment, leftType, rightType, context);
-        if (op is "+=" or "-=" or "*=" or "/="
-            && BinaryExpressionStrategy.ConvertDateTimeOrTimeSpan("{0}", "{1}", op[..^1], bound.Left, bound.Right) is { } compat)
+        if (op is "+=" or "-=" or "*=" or "/=")
         {
-            if (leftType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }
-                || rightType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }
-                || liftedBound)
+            var rightType = context.SemanticHelper.GetType(assignment.Right);
+            // The operator C# bound decides, as for the binary operator: a value its own type converts to a
+            // double scales a span in place too (Copilot's second review of #958).
+            var (bound, liftedBound) = BinaryExpressionStrategy.BoundOperands(assignment, leftType, rightType, context);
+            if (BinaryExpressionStrategy.ConvertDateTimeOrTimeSpan("{0}", "{1}", op[..^1], bound.Left, bound.Right) is { } compat)
             {
-                context.UsedHelpers.Add(Eq.Import);
-                // The operator over the two values the lift hands it, and nothing else: an IR arrow,
-                // whose writer is the one that writes every arrow, holding no C# of its own.
-                var body = BinaryExpressionStrategy.ConvertDateTimeOrTimeSpan("$a", "$b", op[..^1], bound.Left, bound.Right);
-                var lifted = JsExpr.Arrow("$a, $b", JsExpr.Opaque(body!));
-                return Compound((current, operand) =>
-                    JsExpr.Call(JsExpr.Identifier(Eq.LiftArith), current, operand, lifted));
+                if (leftType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }
+                    || rightType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }
+                    || liftedBound)
+                {
+                    context.UsedHelpers.Add(Eq.Import);
+                    // The operator over the two values the lift hands it, and nothing else: an IR arrow,
+                    // whose writer is the one that writes every arrow, holding no C# of its own.
+                    var body = BinaryExpressionStrategy.ConvertDateTimeOrTimeSpan("$a", "$b", op[..^1], bound.Left, bound.Right);
+                    var lifted = JsExpr.Arrow("$a, $b", JsExpr.Opaque(body!));
+                    return Compound((current, operand) =>
+                        JsExpr.Call(JsExpr.Identifier(Eq.LiftArith), current, operand, lifted));
+                }
+                return Compound((current, operand) => JsExpr.Template(compat, [current, operand]));
             }
-            return Compound((current, operand) => JsExpr.Template(compat, [current, operand]));
         }
 
         if (op.Length >= 2 && op[^1] == '=' && op is not ("==" or "!=" or "<=" or ">=" or "??="))
