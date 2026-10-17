@@ -152,15 +152,15 @@ public class StringBuilderConformanceTests
 
     /// <summary>
     /// <c>Equals(object)</c>, which a builder takes from <c>object</c> and .NET answers by reference,
-    /// is refused by the build (EQ2004: <c>object.Equals</c> has no translation on a receiver of a
-    /// class type), where the overload over a builder is translated and compared above. The case ran
-    /// the refused call's text and matched .NET until the runner read the build's refusals (#907); it
-    /// pins the refusal until the build translates the call (#909).
+    /// compares the two builders by reference, where the overload over a builder compares their text (#909).
     /// </summary>
-    [Fact]
-    public void EqualsOverAnObject_IsRefusedByTheBuild() =>
-        ConformanceRunner.AssertStatementsRefusedByTheBuild(
-            "return new StringBuilder(\"12\").Equals((object)new StringBuilder(\"12\"));", "EQ2004");
+    [SkippableFact]
+    public void EqualsOverAnObject_ComparesByReferenceAsDotNet()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "var b = new StringBuilder(\"12\"); return b.Equals((object)new StringBuilder(\"12\")) + \"|\" + b.Equals((object)b);");
+    }
 
     /// <summary>Their refusals, each .NET's.</summary>
     [SkippableTheory]

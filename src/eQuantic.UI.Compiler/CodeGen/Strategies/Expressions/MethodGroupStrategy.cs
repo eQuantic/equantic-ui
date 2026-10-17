@@ -115,14 +115,16 @@ public class MethodGroupStrategy : IExpressionIrStrategy
     /// <summary>
     /// The receiver as the delegate holds it, read once where the delegate is made: a mutable value
     /// copied as C# boxes it, and a reference refused there when it is null, as .NET refuses to make a
-    /// delegate over one. A reduced extension takes its receiver as an argument, and a null one is no
-    /// error until the delegate is called.
+    /// delegate over one. So is an empty <c>Nullable&lt;T&gt;</c>: the only groups C# lets it make are of
+    /// object's virtual methods (CS1728), over its value boxed, and it boxes to null, so its <c>Equals</c>
+    /// group answered where .NET throws. A reduced extension takes its receiver as an argument, and a null
+    /// one is no error until the delegate is called.
     /// </summary>
     private static JsExpr Captured(ExpressionSyntax receiver, IMethodSymbol method, ConversionContext context)
     {
         var type = context.SemanticHelper.GetType(receiver);
         var converted = ValueCopies.Captured(type, context.Converter.ConvertIr(receiver));
-        if (method.MethodKind == MethodKind.ReducedExtension || type is not { IsReferenceType: true }
+        if (method.MethodKind == MethodKind.ReducedExtension || (type is not { IsReferenceType: true } && !type.IsNullableValue())
             || receiver is LiteralExpressionSyntax or InterpolatedStringExpressionSyntax or BaseObjectCreationExpressionSyntax)
             return converted;
         context.UsedHelpers.Add(Eq.Import);

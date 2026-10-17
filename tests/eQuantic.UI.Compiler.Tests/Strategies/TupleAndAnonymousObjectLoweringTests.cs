@@ -140,7 +140,55 @@ public class TupleAndAnonymousObjectLoweringTests
         TestHelper.DiagnosticsFor(
                 "{ var a = new { R = 1 }; Func<object, bool> e = a.Equals; Func<string> f = a.ToString; var b = a with { R = 2 }; "
                 + "(int, int)? n = (1, 2); var same = n.Equals((1, 2)); var t = (1, 2); Func<string> g = t.ToString; "
-                + "var z = new[] { 1 }.Zip(new[] { 2 }).First().ToString(); var s = string.Format(\"{0,5}\", t) + $\"{t,3}\" + a; }")
+                + "var z = new[] { 1 }.Zip(new[] { 2 }).First().ToString(); var s = string.Format(\"{0,5}\", t) + $\"{t,3}\" + a; "
+                + "var oe = object.Equals(1, 1) && Object.Equals(a, b) && System.Object.Equals(t, n); "
+                + "var l = new List<int>(); var le = l.Equals((object)l); Func<object, bool> lg = l.Equals; }")
             .Should().NotContain(diagnostic => diagnostic.Severity == eQuantic.UI.Compiler.CodeGen.ConversionSeverity.Error);
+    }
+
+    /// <summary>
+    /// The static <c>object.Equals</c> answers as its FIRST parameter's type compares, read before C# boxed
+    /// it, the second one's type asked only where the first one's says nothing; a value of a type that
+    /// refuses every other beside one of another type is unequal before either is read (Copilot's review of
+    /// #947).
+    /// </summary>
+    [Fact]
+    public void StaticObjectEquals_ComparesAsItsFirstParameter_AndReadsBothTypes()
+    {
+        TestHelper.ConvertExpression("object.Equals(1, 1)").Should().Be("$eq.equals(1, 1)");
+        TestHelper.ConvertExpression("Object.Equals(\"a\", null)").Should().Be("$eq.equals('a', null)");
+        TestHelper.ConvertExpression("System.Object.Equals((new[] { 1 }, 1), (new[] { 1 }, 1))")
+            .Should().Be("$eq.collections.tupleEquality(false, false)([...[[1], 1]], [...[[1], 1]])");
+        TestHelper.ConvertExpression("object.Equals(new { A = (byte)1 }, new { A = 1 })")
+            .Should().Be("$eq.logic.and({ a: 1 } == null, { a: 1 } == null)");
+        // A byte and an int, a char and a string: two types the browser holds alike.
+        TestHelper.ConvertExpression("object.Equals((byte)1, 1)").Should().Be("$eq.logic.and(1 == null, 1 == null)");
+        TestHelper.ConvertExpression("object.Equals('a', \"a\")").Should().Be("$eq.logic.and('a' == null, 'a' == null)");
+        // A list, by reference, whichever operand says so.
+        TestHelper.ConvertExpression("object.Equals(numbers, numbers)")
+            .Should().Be("$eq.collections.sameItem(this.numbers, this.numbers)");
+        TestHelper.ConvertStatement("{ object o = Name; var same = object.Equals(o, numbers); }")
+            .Should().Contain("$eq.collections.sameItem(o, this.numbers)");
+        // The parameters' order, the written order of evaluation.
+        TestHelper.ConvertExpression("object.Equals(objB: Name, objA: numbers)")
+            .Should().Be("(($0, $1) => $eq.collections.sameItem($1, $0))(this.name, this.numbers)");
+    }
+
+    [Fact]
+    public void GetType_IsRefusedOnceAcrossEveryForm()
+    {
+        foreach (var snippet in new[]
+        {
+            "var t = \"a\".GetType();",
+            "var n = \"a\".GetType().Name;",
+            "{ string? s = \"a\"; var n = s?.GetType().Name; }",
+            "Func<Type> f = \"a\".GetType;",
+            "var t = GetType();",
+            "Func<Type> f = GetType;",
+        })
+        {
+            var diagnostics = TestHelper.DiagnosticsFor(snippet);
+            diagnostics.Should().ContainSingle(d => d.Code == "EQ2004", $"`{snippet}` must report EQ2004 once");
+        }
     }
 }

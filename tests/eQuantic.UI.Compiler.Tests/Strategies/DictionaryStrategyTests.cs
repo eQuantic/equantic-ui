@@ -160,14 +160,16 @@ public class DictionaryStrategyTests
         js.Should().Contain(factory);
     }
 
-    /// <summary>A key of a type parameter is the value's to decide, as <c>object</c> is.</summary>
+    /// <summary>A key of a type parameter is the value's to decide, as <c>object</c> is, by its
+    /// <c>IEquatable&lt;T&gt;</c> over its own type first, which .NET's default comparer settles at run
+    /// time (<c>'gen'</c>): by <c>'own'</c>, a generic dictionary never asked it.</summary>
     [Fact]
     public void AKeyOfATypeParameter_IsFoundByItsOwnEquality()
     {
         var ts = TestHelper.ConvertClass("""
             public int Count<T>(T a, T b) { var d = new Dictionary<T, int>(); d[a] = 1; d[b] = 2; return d.Count; }
             """, "Keys");
-        ts.Should().Contain("$eq.collections.dictionary(null, 'own')");
+        ts.Should().Contain("$eq.collections.dictionary(null, 'gen')");
     }
 
     [Theory]

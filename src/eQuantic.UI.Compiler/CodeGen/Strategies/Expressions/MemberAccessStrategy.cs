@@ -191,8 +191,10 @@ public class MemberAccessStrategy : IExpressionIrStrategy
     /// (<see cref="Eq.Receiver"/>), as .NET refuses to make the delegate of a null one's method, where a
     /// tuple and a data value, values, are never null. No function is written here as text
     /// (<c>IntroducedFunctionsCoverageTests</c>). <c>GetHashCode</c> never reaches here: its group is
-    /// <c>GetHashCodeStrategy</c>'s. Null for any other member, and for a receiver of another type, a
-    /// <c>Nullable</c> of one of these among them, whose members are <c>Nullable</c>'s.
+    /// <c>GetHashCodeStrategy</c>'s. A <c>Nullable</c> one's <c>Equals</c> group is its value's, an enum's
+    /// included, refused where it is made when the <c>Nullable</c> is empty, which boxes to null, as .NET
+    /// refuses it; its <c>ToString</c> group is <c>Nullable</c>'s, which this does not write. Null for any
+    /// other member, and for a receiver of another type.
     /// </summary>
     private static JsExpr? RecordMemberGroup(IMethodSymbol method, MemberAccessExpressionSyntax group,
         JsExpr receiver, ConversionContext context)
@@ -200,14 +202,56 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         if (method.IsStatic || context.SemanticHelper.GetType(group.Expression) is not { } type) return null;
         if (method is { Name: "ToString", Parameters.Length: 0 })
             return StringConversion.TextGroup(type, receiver, context);
-        if (method is not { Name: "Equals", Parameters.Length: 1 } || type is not INamedTypeSymbol data
-            || !(data.TwinIsData() || data.IsTupleType || data.IsAnonymousType))
+        // The group of an interface's typed Equals, by the contract it binds, refused where it is made when the
+        // receiver is null, and asking the implementation with whatever argument the delegate is called with.
+        if (ElementEquality.ContractKey(method) is { } contract)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver),
+                JsExpr.Call(JsExpr.Identifier(Eq.EquatableCall), JsExpr.Literal(JsStringLiteral.Quote(contract))));
+        }
+        if (method is not { Name: "Equals", Parameters.Length: 1 } || TwinMethodName.HoldsANameOfItsOwn(method))
             return null;
-        context.UsedHelpers.Add(Eq.Import);
-        var held = data.IsAnonymousType ? JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver) : receiver;
-        return data.TwinIsData() || ElementEquality.OwnEquals(data) is not { } comparison
-            ? JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), held)
-            : JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), held, JsExpr.Opaque(comparison));
+        if (type.UnwrapNullable() is INamedTypeSymbol data && (data.TwinIsData() || data.IsTupleType || data.IsAnonymousType))
+        {
+            // A Nullable tuple's or data value's group is its value's, and an empty one is refused where the
+            // delegate is made: bound to the value, the group named an `equals` no array has, and threw there.
+            context.UsedHelpers.Add(Eq.Import);
+            var held = data.IsAnonymousType || type.IsNullableValue()
+                ? JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver)
+                : receiver;
+            return data.TwinIsData() || ElementEquality.OwnEquals(data) is not { } comparison
+                ? JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), held)
+                : JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), held, JsExpr.Opaque(comparison));
+        }
+        if (type.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum })
+        {
+            // A Nullable enum's group is Nullable's Equals, its value's, and an empty one boxes to null,
+            // which .NET refuses to make the delegate of, as GetHashCode's group refuses it. Bound to the
+            // value, the group named an `equals` no string has, and threw where it was made.
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup),
+                type.IsNullableValue() ? JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver) : receiver);
+        }
+        // The group of object's Equals(object) on a receiver whose type says nothing of the value: an
+        // interface's own Equals is that member's group, as its call is (Copilot's second review of #947).
+        if ((type.SpecialType == SpecialType.System_Object || type.TypeKind is TypeKind.Interface or TypeKind.TypeParameter)
+            && method.ContainingType.SpecialType == SpecialType.System_Object)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var checkedReceiver = JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver);
+            var comparator = type is INamedTypeSymbol { TypeKind: TypeKind.Interface } face && ElementEquality.Of(face) == "'item'"
+                ? Eq.SameItem
+                : Eq.SameKey;
+            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), checkedReceiver, JsExpr.Identifier(comparator));
+        }
+        if (!type.IsNullableValue() && method.ContainingType.SpecialType == SpecialType.System_Object)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var checkedReceiver = JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver);
+            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), checkedReceiver, JsExpr.Identifier(Eq.SameItem));
+        }
+        return null;
     }
 
     public int Priority => 0; // Low priority (fallback)

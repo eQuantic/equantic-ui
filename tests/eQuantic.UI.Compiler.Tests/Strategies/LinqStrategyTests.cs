@@ -362,12 +362,13 @@ public class LinqStrategyTests
     }
 
     [Fact]
-    public void ToDictionary_BuildsTheDictionaryClass_AndRefusesAnEnumWithAliases()
+    public void ToDictionary_BuildsTheDictionaryClass_AndAcceptsAnEnumWithAliases()
     {
         // A date and a class were refused while the result was a plain object, which held a key by
         // its text; the runtime's dictionary finds a date by value and a class instance by reference.
         foreach (var key in new[] { "o => new DateTime(2026, 1, o.Id)", "o => o", "o => o.Id",
-                     "o => new DateOnly(2026, 1, o.Id)", "o => Size.Small", "o => o.Id.ToString()" })
+                     "o => new DateOnly(2026, 1, o.Id)", "o => Size.Small", "o => o.Id.ToString()",
+                     "o => Environment.SpecialFolder.Personal" })
         {
             TestHelper.DiagnosticsFor($"var r = Orders.ToDictionary({key})")
                 .Should().NotContain(d => d.Code == "EQ1004", $"the dictionary class holds the key of `{key}`");
@@ -376,10 +377,6 @@ public class LinqStrategyTests
             .Should().Contain("$eq.linq.toDictionary(").And.Contain(", null, true)");
         TestHelper.ConvertStatement("var r = Orders.ToDictionary(o => o.Id, o => o);")
             .Should().Contain("$eq.linq.toDictionary(").And.NotContain("true)");
-
-        // An enum with aliases has two names for one value, which are two keys on this side.
-        TestHelper.DiagnosticsFor("var r = Orders.ToDictionary(o => Environment.SpecialFolder.Personal)")
-            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary keyed by System.Environment.SpecialFolder, an enum with aliases"));
     }
 
     [Fact]
