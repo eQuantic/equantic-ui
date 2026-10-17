@@ -16,7 +16,7 @@ internal static class TwinlessTypeExtensions
     /// model could not bind is no type at all, and is EQ2006's where the model is to be trusted.</summary>
     internal static bool IsTwinless(this ITypeSymbol type) =>
         type.TypeKind is not (TypeKind.Error or TypeKind.TypeParameter or TypeKind.Dynamic)
-        && !type.Locations.Any(location => location.IsInSource) && !IsFramework(type);
+        && !type.Locations.Any(location => location.IsInSource) && !type.IsFramework();
 
     /// <summary>Whether <paramref name="type"/> is a package's: twinless, and no type of the platform's,
     /// whose members the strategies translate.</summary>
@@ -32,10 +32,20 @@ internal static class TwinlessTypeExtensions
         "Use it in a [ServerAction] and hand the browser what it answers, or reference the project it is written "
         + "in, whose types the build compiles.";
 
-    /// <summary>The framework's namespaces, whose twins the runtime ships: the call fence's rule.</summary>
-    private static bool IsFramework(ITypeSymbol type)
-    {
-        var space = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
-        return space == "eQuantic" || space.StartsWith("eQuantic.", StringComparison.Ordinal);
-    }
+    /// <summary>
+    /// Whether the SDK ships <paramref name="type"/>'s twin: a type of one of its own assemblies, the
+    /// eQuantic.UI family (the vocabulary, the component and chart libraries, the engines, the icon
+    /// packs), or one the runtime says it provides (<c>[RuntimeProvided]</c>, or a namespace the runtime
+    /// carries). Asked of the ASSEMBLY, never of a namespace that starts like the SDK's: eQuantic's other
+    /// packages, the eQuantic.Core family an app may reference, ship no twin, and a namespace prefix took
+    /// them for the framework, so their statics, calls and constructions were written as names. The call
+    /// fence, the read fence, a construction and a method group all ask this one predicate.
+    /// </summary>
+    internal static bool IsFramework(this ITypeSymbol type) =>
+        type.ContainingAssembly?.Name is { } assembly
+            && (assembly == SdkAssembly || assembly.StartsWith(SdkAssembly + ".", StringComparison.Ordinal))
+        || type is INamedTypeSymbol named && named.IsRuntimeProvided();
+
+    /// <summary>The name the SDK's assemblies share, as the packages that carry them are named.</summary>
+    private const string SdkAssembly = "eQuantic.UI";
 }

@@ -425,7 +425,7 @@ public class InvocationStrategy : IExpressionIrStrategy
             // This stays the first VERDICT: it is the one `BclSurfaceAuditTests` records for the
             // BCL's own extensions, and reordering it around the clause below silently turned
             // `Enumerable.Index` and `Enumerable.Shuffle` from fenced into emitted. Measured.
-            if (!declaredHere && !IsFrameworkProvided(symbol.ContainingType))
+            if (!declaredHere && !symbol.ContainingType.IsFramework())
             {
                 // A method GROUP (`Func<bool> any = list.Any`) reports at its member access, and what
                 // its developer writes instead is the lambda that calls it: a strategy translates the
@@ -535,7 +535,8 @@ public class InvocationStrategy : IExpressionIrStrategy
         if (symbol.ReportIfHostOnly(node, context, ReceiverType(node, context))) return;
         // Declared in this compilation → it becomes a module of its own.
         if (declaring.Locations.Any(location => location.IsInSource)) return;
-        if (IsFrameworkProvided(declaring)) return;
+        // The SDK's own twins, asked of the one predicate the other fences ask (TwinlessTypeExtensions).
+        if (declaring.IsFramework()) return;
 
         context.Report(node, ConversionSeverity.Error, "EQ2004", declaring.IsPackages()
             // A package's type: the build has no source for it and the runtime no twin of it (#822).
@@ -580,17 +581,6 @@ public class InvocationStrategy : IExpressionIrStrategy
                     .Any(method => method.Identifier.ValueText == methodName);
         }
         return false;
-    }
-
-    /// <summary>
-    /// Namespaces whose twins the runtime ships — the framework itself, and its icon packs. The
-    /// host-only fence is asked separately, per SYMBOL, because a type that crosses can carry a
-    /// member that does not (<c>FaceName.IsWellFormed</c> beside <c>FaceName.Usable</c>).
-    /// </summary>
-    private static bool IsFrameworkProvided(ITypeSymbol type)
-    {
-        var ns = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
-        return ns == "eQuantic" || ns.StartsWith("eQuantic.");
     }
 
     /// <summary>
