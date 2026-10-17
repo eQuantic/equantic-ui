@@ -23,6 +23,7 @@ public class APackagesTypeTests
             public static string Field = "field";
             public static readonly string Ready = "ready";
             public const int Answer = 42;
+            public static int Count => 7;
             public static string Make() => "made";
         }
 
@@ -46,6 +47,8 @@ public class APackagesTypeTests
         public delegate int Scale(int __target);
 
         public class GaugeCollection<T> { }
+
+        public interface IStatus { public static string Label => "ready"; }
 
         public enum Level { Low, High }
 
@@ -94,6 +97,10 @@ public class APackagesTypeTests
     [InlineData("new Spot(1).X.ToString()", "using Vendor;", "'Vendor.Spot'")]
     // A collection of the package's, which no spelling makes the browser's array.
     [InlineData("new GaugeCollection<int>().ToString()", "using Vendor;", "'Vendor.GaugeCollection<int>'")]
+    // A static named Count, which no collection's table answers, and an interface's static (Copilot's second
+    // review of #958).
+    [InlineData("Status.Count.ToString()", "using Vendor;", "'Vendor.Status.Count'")]
+    [InlineData("IStatus.Label", "using Vendor;", "'Vendor.IStatus.Label'")]
     // A static method's group.
     [InlineData("((System.Func<string>)Status.Make)()", "using Vendor;", "'Vendor.Status.Make'")]
     public void ANameOfAPackagesType_FailsTheBuild_NamingTheMemberAndTheAssembly(string expression, string usings, string member)

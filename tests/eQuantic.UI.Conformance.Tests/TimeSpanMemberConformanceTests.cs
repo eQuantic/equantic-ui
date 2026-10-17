@@ -85,4 +85,23 @@ public class TimeSpanMemberConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, culture: culture);
     }
+
+    /// <summary>A span scaled and divided by a value C# converts to a double through an operator of its own
+    /// type: the operator C# bound is the span's, whatever the operand's type, in place and lifted too
+    /// (Copilot's second review of #958). The operand's own type decided, and the product was
+    /// JavaScript's.</summary>
+    [SkippableFact]
+    public void ASpanScaledByAValueItsTypeConverts_IsTheSpansOperator()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            """
+            var factor = new Factor(2); var ts = TimeSpan.FromTicks(3);
+            var a = ts * factor; var b = factor * ts; var c = TimeSpan.FromTicks(12) / factor;
+            var d = TimeSpan.FromTicks(5); d *= factor; var e = TimeSpan.FromTicks(20); e /= factor;
+            TimeSpan? n = null; TimeSpan? m = TimeSpan.FromTicks(4);
+            return a.Ticks + "|" + b.Ticks + "|" + c.Ticks + "|" + d.Ticks + "|" + e.Ticks + "|" + ((n * factor) is null) + "|" + (m * factor)?.Ticks;
+            """,
+            "public record Factor(double V) { public static implicit operator double(Factor f) => f.V; }");
+    }
 }
