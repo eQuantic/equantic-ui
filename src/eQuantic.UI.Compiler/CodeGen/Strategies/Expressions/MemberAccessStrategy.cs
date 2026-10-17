@@ -191,8 +191,10 @@ public class MemberAccessStrategy : IExpressionIrStrategy
     /// (<see cref="Eq.Receiver"/>), as .NET refuses to make the delegate of a null one's method, where a
     /// tuple and a data value, values, are never null. No function is written here as text
     /// (<c>IntroducedFunctionsCoverageTests</c>). <c>GetHashCode</c> never reaches here: its group is
-    /// <c>GetHashCodeStrategy</c>'s. Null for any other member, and for a receiver of another type, a
-    /// <c>Nullable</c> of one of these among them, whose members are <c>Nullable</c>'s.
+    /// <c>GetHashCodeStrategy</c>'s. A <c>Nullable</c> one's <c>Equals</c> group is its value's, an enum's
+    /// included, refused where it is made when the <c>Nullable</c> is empty, which boxes to null, as .NET
+    /// refuses it; its <c>ToString</c> group is <c>Nullable</c>'s, which this does not write. Null for any
+    /// other member, and for a receiver of another type.
     /// </summary>
     private static JsExpr? RecordMemberGroup(IMethodSymbol method, MemberAccessExpressionSyntax group,
         JsExpr receiver, ConversionContext context)
@@ -202,10 +204,14 @@ public class MemberAccessStrategy : IExpressionIrStrategy
             return StringConversion.TextGroup(type, receiver, context);
         if (method is not { Name: "Equals", Parameters.Length: 1 } || TwinMethodName.HoldsANameOfItsOwn(method))
             return null;
-        if (type is INamedTypeSymbol data && (data.TwinIsData() || data.IsTupleType || data.IsAnonymousType))
+        if (type.UnwrapNullable() is INamedTypeSymbol data && (data.TwinIsData() || data.IsTupleType || data.IsAnonymousType))
         {
+            // A Nullable tuple's or data value's group is its value's, and an empty one is refused where the
+            // delegate is made: bound to the value, the group named an `equals` no array has, and threw there.
             context.UsedHelpers.Add(Eq.Import);
-            var held = data.IsAnonymousType ? JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver) : receiver;
+            var held = data.IsAnonymousType || type.IsNullableValue()
+                ? JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver)
+                : receiver;
             return data.TwinIsData() || ElementEquality.OwnEquals(data) is not { } comparison
                 ? JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), held)
                 : JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), held, JsExpr.Opaque(comparison));

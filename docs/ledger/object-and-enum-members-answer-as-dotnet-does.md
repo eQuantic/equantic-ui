@@ -22,7 +22,8 @@
   `MemberwiseClone` are refused with one `EQ2004` across calls, chains and method groups; an enum's
   `Equals`, a `Nullable` enum's method group included, compares by its underlying value, and its
   `GetHashCode` hashes that value as the underlying type does, a `long` enum's by the long's two halves;
-  and an aliased member takes the first member's key and name, so `ToDictionary` accepts an enum with
+  a `Nullable` tuple's `Equals` method group, which threw where it was made, is its value's; and an
+  aliased member takes the first member's key and name, so `ToDictionary` accepts an enum with
   aliases. A list, an array, a tuple or an enum held as `object` on both sides has lost the type .NET
   reads, since the browser holds the first three as one JavaScript array and an enum as its member's key,
   so two lists or two arrays held so still compare by their elements, which a tuple held as `object`
