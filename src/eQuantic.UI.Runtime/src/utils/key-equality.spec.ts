@@ -19,7 +19,12 @@ describe('the equality a type compares by', () => {
     expect(sameBy('own')).toBe(sameKey);
     expect(sameKey(dec('1.0'), dec('1.00'))).toBe(true);
     expect(sameKey({}, {})).toBe(true);
+    expect(sameKey({ a: 1, b: 2 }, { b: 2, a: 1 })).toBe(false);
     expect(sameKey({}, [])).toBe(false);
+    expect(sameKey([1], [1])).toBe(false);
+    const list = [1];
+    expect(sameKey(list, list)).toBe(true);
+    expect(sameBy('item')(null, undefined)).toBe(true);
   });
 
   it("compares a tuple's elements each by its own type: an array by reference", () => {

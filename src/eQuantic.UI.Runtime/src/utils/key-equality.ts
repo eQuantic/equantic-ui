@@ -39,7 +39,7 @@ export type KeyEquality = boolean | 'own' | 'item' | Equality;
 export function sameItem(item: unknown, value: unknown): boolean {
   if (item === value) return true;
   if (typeof item === 'number' && typeof value === 'number') return item !== item && value !== value;
-  if (item == null || value == null) return false;
+  if (item == null || value == null) return item == null && value == null;
   const own = (item as { equals?: unknown }).equals;
   return typeof own === 'function' && (own as (other: unknown) => boolean).call(item, value);
 }
@@ -47,19 +47,29 @@ export function sameItem(item: unknown, value: unknown): boolean {
 /**
  * .NET's `EqualityComparer<object>.Default` on the values two keys turned out to be: identity (NaN
  * equal to NaN), a twin's own `equals` (a record, a struct, a decimal, a date, a class overriding
- * `Equals`), and the members of a tuple or an anonymous type, which have no twin to carry one. Two
- * of those are compared only with one of their own kind, as .NET's Equals checks the type first: an
- * anonymous type never equals a record with the same members.
+ * `Equals`), and the members of an anonymous type, which has no twin to carry one. Two anonymous
+ * objects are compared only with one of their own members in the same order, as .NET's Equals checks
+ * the type first: an anonymous type never equals a record with the same members, and a `List<T>` or
+ * `T[]` (an array here) compares by reference (#909).
  */
 export function sameKey(a: unknown, b: unknown): boolean {
   if (sameItem(a, b)) return true;
-  return isPlainValue(a) && isPlainValue(b) && Array.isArray(a) === Array.isArray(b) && equals(a, b);
+  if (!isPlainValue(a) || !isPlainValue(b)) return false;
+  const ao = a as Record<string, unknown>;
+  const bo = b as Record<string, unknown>;
+  const ak = Object.keys(ao);
+  const bk = Object.keys(bo);
+  if (ak.length !== bk.length) return false;
+  for (let i = 0; i < ak.length; i++) {
+    const k = ak[i];
+    if (k !== bk[i] || !sameKey(ao[k], bo[k])) return false;
+  }
+  return true;
 }
 
-/** A tuple (an array) or an anonymous type (a plain object): a value compared by its members. */
+/** An anonymous type (a plain object): a value compared by its members. */
 export function isPlainValue(value: unknown): boolean {
-  if (Array.isArray(value)) return true;
-  if (value === null || typeof value !== 'object') return false;
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }

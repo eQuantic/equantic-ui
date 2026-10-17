@@ -28,46 +28,196 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        if (node is not InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv)
+        if (node is not InvocationExpressionSyntax inv)
             return false;
-        if (ma.Name.Identifier.ValueText != "Equals") return false;
-        if (inv.ArgumentList.Arguments.Count != 1) return false;
+        if (inv.ArgumentList.Arguments.Count == 2)
+            return IsStaticObjectEquals(inv, context);
+        if (inv.ArgumentList.Arguments.Count != 1)
+            return false;
+        if (inv.Expression is IdentifierNameSyntax { Identifier.ValueText: "Equals" })
+        {
+            return context.SemanticHelper.GetSymbol(inv) is IMethodSymbol
+            {
+                IsStatic: false,
+                Parameters.Length: 1,
+                ContainingType.SpecialType: SpecialType.System_Object,
+            } bare && !TwinMethodName.HoldsANameOfItsOwn(bare);
+        }
+        if (inv.Expression is not MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Equals" } ma)
+            return false;
+        if (context.SemanticHelper.GetSymbol(inv) is IMethodSymbol bound && TwinMethodName.HoldsANameOfItsOwn(bound))
+            return false;
         // A bare `object` may hold a boxed value, and .NET compares boxed values by VALUE —
         // `((object)5).Equals((object)5)` is true. The helper already answers that for primitives.
         // A Nullable tuple's Equals is its value's, or, empty, whether the other value is null too, which
         // both comparisons answer for a null; its call went to an `equals` no array has.
         var receiver = context.SemanticHelper.GetType(ma.Expression);
         return receiver.IsStructuralValueType() || receiver is { IsAnonymousType: true }
-            || receiver.UnwrapNullable() is INamedTypeSymbol { IsTupleType: true }
-            || receiver?.SpecialType == SpecialType.System_Object;
+            || receiver.UnwrapNullable() is INamedTypeSymbol { IsTupleType: true } or INamedTypeSymbol { TypeKind: TypeKind.Enum }
+            || receiver?.SpecialType == SpecialType.System_Object
+            || receiver?.TypeKind is TypeKind.Interface or TypeKind.TypeParameter
+            || context.SemanticHelper.GetSymbol(inv) is IMethodSymbol
+            {
+                IsStatic: false,
+                Parameters.Length: 1,
+                ContainingType.SpecialType: SpecialType.System_Object,
+            };
     }
 
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var inv = (InvocationExpressionSyntax)node;
+        context.UsedHelpers.Add(Eq.Import);
+
+        if (inv.ArgumentList.Arguments.Count == 2)
+            return ConvertStaticObjectEquals(inv, context);
+
+        if (inv.Expression is IdentifierNameSyntax)
+        {
+            var arg = context.Converter.ConvertIr(inv.ArgumentList.Arguments[0].Expression);
+            return JsExpr.Call(JsExpr.Identifier(Eq.SameItem), JsExpr.This, arg);
+        }
+
         var ma = (MemberAccessExpressionSyntax)inv.Expression;
+        if (ma.Expression is BaseExpressionSyntax)
+        {
+            var arg = context.Converter.ConvertIr(inv.ArgumentList.Arguments[0].Expression);
+            var method = context.SemanticHelper.GetSymbol(inv) as IMethodSymbol;
+            if (method?.ContainingType.Locations.Any(location => location.IsInSource) == true)
+                return JsExpr.Call(JsExpr.Member(JsExpr.Identifier("super"), "equals"), arg);
+            return method?.ContainingType.SpecialType == SpecialType.System_ValueType
+                ? JsExpr.Call(JsExpr.Identifier(Eq.Equals), JsExpr.This, arg)
+                : JsExpr.Binary(JsExpr.This, "===", arg);
+        }
+
         var receiver = context.Converter.ConvertIr(ma.Expression);
         var other = context.Converter.ConvertIr(inv.ArgumentList.Arguments[0].Expression);
-        context.UsedHelpers.Add(Eq.Import);
         var type = context.SemanticHelper.GetType(ma.Expression);
-        if (type.UnwrapNullable() is not INamedTypeSymbol named || !(named.IsTupleType || named.IsAnonymousType))
-            return JsExpr.Call(JsExpr.Identifier(Eq.Equals), receiver, other);
 
-        // A tuple's Equals compares each element with that element type's default comparer, an array
-        // by reference, which only the static type says: a tuple is an array here (#554). An anonymous
-        // object's compares its members so too, and takes only another of the same members in the same
-        // order for one of its type.
-        var another = OfAnotherType(inv, named, context);
-        // An empty Nullable tuple equals only null, and one with a value nothing of another type: both
-        // values are still evaluated, as the call's receiver and argument are.
-        if (another && type.IsNullableValue())
-            return JsExpr.Call(JsExpr.Identifier(Eq.LogicAnd), JsExpr.Binary(receiver, "==", JsExpr.Literal("null")),
-                JsExpr.Binary(other, "==", JsExpr.Literal("null")));
-        var comparison = ElementEquality.OwnEquals(named);
-        if (named.IsAnonymousType || another)
-            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other,
-                another ? JsExpr.Literal("null") : JsExpr.Opaque(comparison!));
-        return JsExpr.Call(comparison is null ? JsExpr.Identifier(Eq.Equals) : JsExpr.Opaque(comparison), receiver, other);
+        if (type.UnwrapNullable() is INamedTypeSymbol named && (named.IsTupleType || named.IsAnonymousType))
+        {
+            // A tuple's Equals compares each element with that element type's default comparer, an array
+            // by reference, which only the static type says: a tuple is an array here (#554). An anonymous
+            // object's compares its members so too, and takes only another of the same members in the same
+            // order for one of its type.
+            var another = OfAnotherType(inv, named, context);
+            // An empty Nullable tuple equals only null, and one with a value nothing of another type: both
+            // values are still evaluated, as the call's receiver and argument are.
+            if (another && type.IsNullableValue())
+                return JsExpr.Call(JsExpr.Identifier(Eq.LogicAnd), JsExpr.Binary(receiver, "==", JsExpr.Literal("null")),
+                    JsExpr.Binary(other, "==", JsExpr.Literal("null")));
+            var comparison = ElementEquality.OwnEquals(named);
+            if (named.IsAnonymousType || another)
+                return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other,
+                    another ? JsExpr.Literal("null") : JsExpr.Opaque(comparison!));
+            return JsExpr.Call(comparison is null ? JsExpr.Identifier(Eq.Equals) : JsExpr.Opaque(comparison), receiver, other);
+        }
+
+        if (type.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+        {
+            var another = OfAnotherType(inv, enumType, context);
+            if (another && type.IsNullableValue())
+                return JsExpr.Call(JsExpr.Identifier(Eq.LogicAnd), JsExpr.Binary(receiver, "==", JsExpr.Literal("null")),
+                    JsExpr.Binary(other, "==", JsExpr.Literal("null")));
+            if (another)
+                return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, JsExpr.Literal("null"));
+            return JsExpr.Call(JsExpr.Identifier(Eq.Equals), receiver, other);
+        }
+
+        if (type.IsStructuralValueType())
+        {
+            return type!.IsReferenceType
+                ? JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other)
+                : JsExpr.Call(JsExpr.Identifier(Eq.Equals), receiver, other);
+        }
+
+        if (type?.SpecialType == SpecialType.System_Object
+            || type?.TypeKind is TypeKind.Interface or TypeKind.TypeParameter)
+        {
+            if (UnboxedType(inv, 0, context) is INamedTypeSymbol argNamed
+                && (argNamed.IsTupleType || argNamed.IsAnonymousType))
+            {
+                var comparison = ElementEquality.OwnEquals(argNamed);
+                return comparison is null
+                    ? JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other)
+                    : JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, JsExpr.Opaque(comparison));
+            }
+            if (type is INamedTypeSymbol { TypeKind: TypeKind.Interface } face
+                && ElementEquality.Of(face) == "'item'")
+                return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, JsExpr.Identifier(Eq.SameItem));
+            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, JsExpr.Identifier(Eq.SameKey));
+        }
+
+        return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, JsExpr.Identifier(Eq.SameItem));
+    }
+
+    private static bool IsStaticObjectEquals(InvocationExpressionSyntax invocation, ConversionContext context)
+    {
+        var isEqualsName = invocation.Expression switch
+        {
+            MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Equals" } => true,
+            IdentifierNameSyntax { Identifier.ValueText: "Equals" } => true,
+            _ => false,
+        };
+        if (!isEqualsName) return false;
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method)
+            return method is { IsStatic: true, ContainingType.SpecialType: SpecialType.System_Object };
+        return invocation.Expression is MemberAccessExpressionSyntax
+        {
+            Expression: PredefinedTypeSyntax { Keyword.ValueText: "object" }
+                or IdentifierNameSyntax { Identifier.ValueText: "Object" }
+                or MemberAccessExpressionSyntax
+                {
+                    Expression: IdentifierNameSyntax { Identifier.ValueText: "System" },
+                    Name.Identifier.ValueText: "Object",
+                },
+        };
+    }
+
+    private static JsExpr ConvertStaticObjectEquals(InvocationExpressionSyntax invocation, ConversionContext context)
+    {
+        var left = context.Converter.ConvertIr(invocation.ArgumentList.Arguments[0].Expression);
+        var right = context.Converter.ConvertIr(invocation.ArgumentList.Arguments[1].Expression);
+        var leftType = UnboxedType(invocation, 0, context);
+        var rightType = UnboxedType(invocation, 1, context);
+        if (leftType is INamedTypeSymbol leftNamed
+            && (leftNamed.IsTupleType || leftNamed.IsAnonymousType || leftNamed.TypeKind == TypeKind.Enum))
+            return StaticStructuredEquals(left, right, leftNamed, rightType, context);
+        if (rightType is INamedTypeSymbol rightNamed
+            && (rightNamed.IsTupleType || rightNamed.IsAnonymousType || rightNamed.TypeKind == TypeKind.Enum))
+            return StaticStructuredEquals(left, right, rightNamed, leftType, context);
+        return JsExpr.Call(JsExpr.Identifier(Eq.SameKey), left, right);
+    }
+
+    private static JsExpr StaticStructuredEquals(JsExpr left, JsExpr right, INamedTypeSymbol structured,
+        ITypeSymbol? other, ConversionContext context)
+    {
+        if (other is not null && IsIncompatibleWith(other, structured, context))
+            return JsExpr.Call(JsExpr.Identifier(Eq.LogicAnd), JsExpr.Binary(left, "==", JsExpr.Literal("null")),
+                JsExpr.Binary(right, "==", JsExpr.Literal("null")));
+        var comparison = structured.TypeKind == TypeKind.Enum ? null : ElementEquality.OwnEquals(structured);
+        return JsExpr.Call(comparison is null ? JsExpr.Identifier(Eq.Equals) : JsExpr.Opaque(comparison), left, right);
+    }
+
+    private static ITypeSymbol? UnboxedType(InvocationExpressionSyntax invocation, int index, ConversionContext context)
+    {
+        if (context.SemanticHelper.GetOperation(invocation) is not IInvocationOperation operation
+            || index >= operation.Arguments.Length)
+            return null;
+        var value = operation.Arguments[index].Value;
+        while (value is IConversionOperation conversion
+               && conversion.GetConversion() is { IsBoxing: true } or { IsReference: true } or { IsIdentity: true })
+            value = conversion.Operand;
+        return value.Type.UnwrapNullable() ?? value.Type;
+    }
+
+    private static bool IsIncompatibleWith(ITypeSymbol type, INamedTypeSymbol receiver, ConversionContext context)
+    {
+        if (context.SemanticModel is not { } model) return false;
+        if (type.SpecialType is SpecialType.System_Object or SpecialType.System_ValueType or SpecialType.System_Enum
+            || type.TypeKind is TypeKind.Interface or TypeKind.TypeParameter or TypeKind.Dynamic or TypeKind.Error)
+            return false;
+        return !model.Compilation.ClassifyCommonConversion(type, receiver).IsIdentity;
     }
 
     /// <summary>
@@ -84,23 +234,12 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
     /// </summary>
     private static bool OfAnotherType(InvocationExpressionSyntax invocation, INamedTypeSymbol receiver, ConversionContext context)
     {
-        if (context.SemanticModel is not { } model
-            || context.SemanticHelper.GetOperation(invocation) is not IInvocationOperation
+        if (context.SemanticHelper.GetOperation(invocation) is not IInvocationOperation
             {
                 TargetMethod.Parameters: [{ Type.SpecialType: SpecialType.System_Object }],
-                Arguments: [var argument],
             })
             return false;
-        var value = argument.Value;
-        while (value is IConversionOperation conversion
-               && conversion.GetConversion() is { IsBoxing: true } or { IsReference: true } or { IsIdentity: true })
-            value = conversion.Operand;
-        var type = value.Type.UnwrapNullable() ?? value.Type;
-        if (type is null
-            || type.SpecialType is SpecialType.System_Object or SpecialType.System_ValueType or SpecialType.System_Enum
-            || type.TypeKind is TypeKind.Interface or TypeKind.TypeParameter or TypeKind.Dynamic or TypeKind.Error)
-            return false;
-        return !model.Compilation.ClassifyCommonConversion(type, receiver).IsIdentity;
+        return UnboxedType(invocation, 0, context) is { } type && IsIncompatibleWith(type, receiver, context);
     }
 
     public int Priority => 12;

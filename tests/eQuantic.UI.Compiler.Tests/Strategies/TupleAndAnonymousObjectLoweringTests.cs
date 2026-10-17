@@ -140,7 +140,38 @@ public class TupleAndAnonymousObjectLoweringTests
         TestHelper.DiagnosticsFor(
                 "{ var a = new { R = 1 }; Func<object, bool> e = a.Equals; Func<string> f = a.ToString; var b = a with { R = 2 }; "
                 + "(int, int)? n = (1, 2); var same = n.Equals((1, 2)); var t = (1, 2); Func<string> g = t.ToString; "
-                + "var z = new[] { 1 }.Zip(new[] { 2 }).First().ToString(); var s = string.Format(\"{0,5}\", t) + $\"{t,3}\" + a; }")
+                + "var z = new[] { 1 }.Zip(new[] { 2 }).First().ToString(); var s = string.Format(\"{0,5}\", t) + $\"{t,3}\" + a; "
+                + "var oe = object.Equals(1, 1) && Object.Equals(a, b) && System.Object.Equals(t, n); "
+                + "var l = new List<int>(); var le = l.Equals((object)l); Func<object, bool> lg = l.Equals; }")
             .Should().NotContain(diagnostic => diagnostic.Severity == eQuantic.UI.Compiler.CodeGen.ConversionSeverity.Error);
+    }
+
+    [Fact]
+    public void StaticObjectEquals_LowersToSameKey_AndReadsStructuredArgumentTypes()
+    {
+        TestHelper.ConvertExpression("object.Equals(1, 1)").Should().Be("$eq.collections.sameKey(1, 1)");
+        TestHelper.ConvertExpression("Object.Equals(\"a\", null)").Should().Be("$eq.collections.sameKey('a', null)");
+        TestHelper.ConvertExpression("System.Object.Equals((new[] { 1 }, 1), (new[] { 1 }, 1))")
+            .Should().Be("$eq.collections.tupleEquality(false, false)([...[[1], 1]], [...[[1], 1]])");
+        TestHelper.ConvertExpression("object.Equals(new { A = (byte)1 }, new { A = 1 })")
+            .Should().Be("$eq.logic.and({ a: 1 } == null, { a: 1 } == null)");
+    }
+
+    [Fact]
+    public void GetType_IsRefusedOnceAcrossEveryForm()
+    {
+        foreach (var snippet in new[]
+        {
+            "var t = \"a\".GetType();",
+            "var n = \"a\".GetType().Name;",
+            "{ string? s = \"a\"; var n = s?.GetType().Name; }",
+            "Func<Type> f = \"a\".GetType;",
+            "var t = GetType();",
+            "Func<Type> f = GetType;",
+        })
+        {
+            var diagnostics = TestHelper.DiagnosticsFor(snippet);
+            diagnostics.Should().ContainSingle(d => d.Code == "EQ2004", $"`{snippet}` must report EQ2004 once");
+        }
     }
 }

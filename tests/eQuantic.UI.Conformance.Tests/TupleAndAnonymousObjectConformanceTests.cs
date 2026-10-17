@@ -266,11 +266,38 @@ public class TupleAndAnonymousObjectConformanceTests
         ConformanceRunner.AssertVocabularyStatementsSameAsDotNet(statements);
     }
 
+    public static readonly string[] ObjectAndEnumMemberCases =
+    [
+        // #902: static object.Equals(a, b) across null, boxed primitives, records, tuples, anonymous objects, and reference types.
+        """return object.Equals(null, null) + "|" + object.Equals(1, null) + "|" + object.Equals(null, "a") + "|" + Object.Equals(1, 1) + "|" + System.Object.Equals(1, 2) + "|" + object.Equals(double.NaN, double.NaN) + "|" + object.Equals(1.50m, 1.5m);""",
+        """var p = new Point(1, 2); var l1 = new List<int> { 1 }; var l2 = new List<int> { 1 }; return object.Equals(p, new Point(1, 2)) + "|" + object.Equals(p, new Point(1, 3)) + "|" + object.Equals((1, "a"), (1, "a")) + "|" + object.Equals(new { A = 1 }, new { A = 1 }) + "|" + object.Equals(new { A = (byte)1 }, new { A = 1 }) + "|" + object.Equals(l1, l1) + "|" + object.Equals(l1, l2);""",
+        // #909: inherited Equals(object) on a class receiver, and List<T>/T[] held as object compared by reference.
+        """var l1 = new List<int> { 1, 2 }; var l2 = new List<int> { 1, 2 }; object o1 = l1; object o2 = l2; Func<object?, bool> g = l1.Equals; var h1 = l1.GetHashCode(); l1.Add(3); return l1.Equals(l1) + "|" + l1.Equals(l2) + "|" + o1.Equals(o1) + "|" + o1.Equals(o2) + "|" + g(l1) + "|" + g(l2) + "|" + (h1 == l1.GetHashCode()) + "|" + (l1.GetHashCode() != l2.GetHashCode());""",
+        """var a1 = new[] { 1, 2 }; var a2 = new[] { 1, 2 }; object o1 = a1; object o2 = a2; var set = new HashSet<object> { a1, a2, new List<int> { 1 }, new List<int> { 1 } }; return a1.Equals(a1) + "|" + a1.Equals(a2) + "|" + o1.Equals(o1) + "|" + o1.Equals(o2) + "|" + set.Count;""",
+        // #912: Equals and ToString on a null record or class instance throw NullReferenceException after evaluating any argument.
+        """var log = ""; Point Arg() { log += "a"; return new Point(1, 2); } Point p = null!; string r = ""; try { r += p.Equals(Arg()); } catch (NullReferenceException) { r += "NRE1"; } try { r += "|" + ((object)p).Equals(Arg()); } catch (NullReferenceException) { r += "|NRE2"; } try { r += "|" + p.ToString(); } catch (NullReferenceException) { r += "|NRE3"; } Point? np = null; try { r += "|" + np.ToString(); } catch (NullReferenceException) { r += "|NRE4"; } return r + "|" + log;""",
+        // #926: An enum's Equals, Equals method group, and GetHashCode match its underlying numeric value.
+        """var s = Scale.Small; var l = Scale.Large; Func<object?, bool> eq = s.Equals; Func<int> h = l.GetHashCode; return s.Equals(Scale.Small) + "|" + s.Equals(Scale.Large) + "|" + s.Equals((object)Scale.Small) + "|" + s.Equals((object)0) + "|" + s.Equals(null) + "|" + eq(Scale.Small) + "|" + eq(Scale.Large) + "|" + (s.GetHashCode() == 0.GetHashCode()) + "|" + (l.GetHashCode() == 1.GetHashCode()) + "|" + (h() == 1.GetHashCode());""",
+        // #927: An enum member that aliases another is the same value in ==, switch, pattern matching, ToString, GetHashCode, and Dictionary/HashSet.
+        """var a = Shade.Grey; var b = Shade.Gray; var d = new Dictionary<Shade, int> { [Shade.Grey] = 7 }; var set = new HashSet<Shade> { Shade.Grey, Shade.Gray }; var matched = b switch { Shade.Grey => "hit", _ => "miss" }; var isGrey = b is Shade.Grey; return (a == b) + "|" + a.Equals(b) + "|" + (a.GetHashCode() == b.GetHashCode()) + "|" + a.ToString() + "|" + b.ToString() + "|" + $"{a},{b}" + "|" + d.ContainsKey(Shade.Gray) + "|" + d[Shade.Gray] + "|" + set.Count + "|" + matched + "|" + isGrey;""",
+    ];
+
+    public static IEnumerable<object?[]> ObjectAndEnumCases() => Each(ObjectAndEnumMemberCases);
+
     [SkippableTheory]
     [MemberData(nameof(TupleEqualityCases))]
     public void AValueTuple_ComparesAndHashesAsDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Prelude);
+    }
+
+    [SkippableTheory]
+    [MemberData(nameof(ObjectAndEnumCases))]
+    public void ObjectAndEnumMembers_AnswerAsDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements,
+            Prelude + "\npublic enum Shade { Black = 0, Grey = 1, Gray = Grey, White = 2 }");
     }
 }

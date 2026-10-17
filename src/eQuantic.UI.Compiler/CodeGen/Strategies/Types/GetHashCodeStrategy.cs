@@ -57,13 +57,28 @@ public class GetHashCodeStrategy : IExpressionIrStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax access)
             return JsExpr.Call(JsExpr.Identifier(Eq.Hash), self);
         var receiver = context.Converter.ConvertIr(access.Expression);
-        return context.SemanticHelper.GetType(access.Expression) switch
+        var receiverType = context.SemanticHelper.GetType(access.Expression);
+        if (receiverType.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType && !enumType.IsFlagsEnum())
         {
-            IArrayTypeSymbol => JsExpr.Call(JsExpr.Identifier(Eq.HashIdentity), receiver),
+            if (!receiverType.IsNullableValue())
+                return JsExpr.Call(JsExpr.Identifier(Eq.Hash), EnumValue(access.Expression, receiver, enumType, context));
+            var table = EnumShape.KeyToValue(enumType);
+            return JsExpr.Template($"({{0}} == null ? 0 : {Eq.Hash}(({table})[{{0}}] ?? {{0}}))", [receiver]);
+        }
+        return receiverType switch
+        {
+            IArrayTypeSymbol or INamedTypeSymbol { Name: "List", ContainingNamespace: { Name: "Generic", ContainingNamespace: { Name: "Collections", ContainingNamespace.Name: "System" } } }
+                => JsExpr.Call(JsExpr.Identifier(Eq.HashIdentity), receiver),
             { IsValueType: true } => JsExpr.Call(JsExpr.Identifier(Eq.Hash), receiver),
             _ => JsExpr.Call(JsExpr.Identifier(Eq.HashInstance), receiver),
         };
     }
+
+    private static JsExpr EnumValue(ExpressionSyntax exprSyntax, JsExpr receiver, INamedTypeSymbol enumType, ConversionContext context) =>
+        context.SemanticHelper.GetSymbol(exprSyntax) is IFieldSymbol { ContainingType.TypeKind: TypeKind.Enum, HasConstantValue: true } field
+            ? JsExpr.Literal(System.Convert.ToDecimal(field.ConstantValue, System.Globalization.CultureInfo.InvariantCulture)
+                .ToString(System.Globalization.CultureInfo.InvariantCulture))
+            : EnumShape.ValueOf(enumType, receiver, context);
 
     /// <summary>
     /// <c>base.GetHashCode()</c>: the base's own override, written by the app or synthesized for a
@@ -103,7 +118,16 @@ public class GetHashCodeStrategy : IExpressionIrStrategy
     {
         if (group.Expression is BaseExpressionSyntax) return JsExpr.Arrow("", Base(method, JsExpr.Identifier("this")));
         var receiver = context.Converter.ConvertIr(group.Expression);
-        return context.SemanticHelper.GetType(group.Expression) is IArrayTypeSymbol
+        var receiverType = context.SemanticHelper.GetType(group.Expression);
+        if (receiverType.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType && !enumType.IsFlagsEnum())
+        {
+            if (!receiverType.IsNullableValue())
+                return JsExpr.Call(JsExpr.Identifier(Eq.HashGroup), EnumValue(group.Expression, receiver, enumType, context));
+            var table = EnumShape.KeyToValue(enumType);
+            var nullableValue = JsExpr.Template($"({{0}} == null ? null : (({table})[{{0}}] ?? {{0}}))", [receiver]);
+            return JsExpr.Call(JsExpr.Identifier(Eq.HashGroup), nullableValue);
+        }
+        return receiverType is IArrayTypeSymbol or INamedTypeSymbol { Name: "List", ContainingNamespace: { Name: "Generic", ContainingNamespace: { Name: "Collections", ContainingNamespace.Name: "System" } } }
             ? JsExpr.Call(JsExpr.Identifier(Eq.HashGroup), receiver, JsExpr.Literal("true"))
             : JsExpr.Call(JsExpr.Identifier(Eq.HashGroup), receiver);
     }

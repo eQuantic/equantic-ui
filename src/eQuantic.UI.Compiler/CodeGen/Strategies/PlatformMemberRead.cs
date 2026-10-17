@@ -61,16 +61,10 @@ internal static class PlatformMemberRead
     /// </summary>
     internal static bool ReportIfUntranslated(ISymbol? symbol, SyntaxNode node, ConversionContext context)
     {
-        var read = context.SemanticHelper.Original(node);
-        if (ReceiverOf(read) is { } receiver && context.RefusedReads.Contains(receiver))
-        {
-            // Read from a refused read, and so refused with it, whatever it is: what is read from it
-            // next is too.
-            context.RefusedReads.Add(read);
-            return false;
-        }
+        if (IsFromRefusedRead(node, context)) return false;
         if (!NothingCarries(symbol)) return false;
 
+        var read = context.SemanticHelper.Original(node);
         context.RefusedReads.Add(read);
         context.Report(read, ConversionSeverity.Error, "EQ2004",
             $"'{symbol!.ContainingType.ToDisplayString()}.{symbol.Name}' has no JavaScript translation: no value the "
@@ -80,23 +74,44 @@ internal static class PlatformMemberRead
         return true;
     }
 
-    /// <summary>Whether <paramref name="symbol"/> is a property or a field of a .NET class or struct
-    /// that the browser does not carry by its name.</summary>
+    internal static bool IsFromRefusedRead(SyntaxNode node, ConversionContext context)
+    {
+        var read = context.SemanticHelper.Original(node);
+        if (ReceiverOf(read) is not { } receiver || !context.RefusedReads.Contains(receiver))
+            return false;
+        // Read or called from a refused read, and so refused with it, whatever it is: what is read or
+        // called from it next is too.
+        context.RefusedReads.Add(read);
+        return true;
+    }
+
+    internal static void RecordRefused(SyntaxNode node, ConversionContext context) =>
+        context.RefusedReads.Add(context.SemanticHelper.Original(node));
+
+    /// <summary>Whether <paramref name="symbol"/> is a property or a field of a .NET class or struct, or an
+    /// untranslated method group of <c>object</c> (<c>GetType</c>, <c>MemberwiseClone</c>), that the browser
+    /// does not carry by its name.</summary>
     private static bool NothingCarries(ISymbol? symbol) =>
-        symbol is IPropertySymbol or IFieldSymbol
-        && symbol.ContainingType is { TypeKind: not TypeKind.Interface } declaring
-        && BoundaryShape.IsPlatform(declaring)
-        && !symbol.Locations.Any(location => location.IsInSource)
-        && !CarriedByName.Contains(Root(symbol));
+        symbol switch
+        {
+            IPropertySymbol or IFieldSymbol =>
+                symbol.ContainingType is { TypeKind: not TypeKind.Interface } declaring
+                && BoundaryShape.IsPlatform(declaring)
+                && !symbol.Locations.Any(location => location.IsInSource)
+                && !CarriedByName.Contains(Root(symbol)),
+            IMethodSymbol { Name: "GetType" or "MemberwiseClone", ContainingType.SpecialType: SpecialType.System_Object } => true,
+            _ => false,
+        };
 
     /// <summary>
-    /// What a read is made on, its parentheses and a <c>!</c> looked through: the left of a <c>.</c>,
-    /// and for a <c>?.</c> binding the receiver of the conditional access whose tail holds it. Not the
-    /// nearest conditional access: <c>a?.B?.C</c> is <c>a?.(.B?.C)</c>, and <c>.B</c> is the inner
+    /// What a read or a call is made on, its parentheses and a <c>!</c> looked through: the left of a
+    /// <c>.</c>, and for a <c>?.</c> binding the receiver of the conditional access whose tail holds it.
+    /// Not the nearest conditional access: <c>a?.B?.C</c> is <c>a?.(.B?.C)</c>, and <c>.B</c> is the inner
     /// one's receiver, not part of its tail.
     /// </summary>
     private static SyntaxNode? ReceiverOf(SyntaxNode read) => Bare(read switch
     {
+        InvocationExpressionSyntax invocation => ReceiverOf(invocation.Expression) as ExpressionSyntax,
         MemberAccessExpressionSyntax access => access.Expression,
         MemberBindingExpressionSyntax binding => binding.Ancestors().OfType<ConditionalAccessExpressionSyntax>()
             .FirstOrDefault(conditional => conditional.WhenNotNull.Span.Contains(binding.Span))?.Expression,

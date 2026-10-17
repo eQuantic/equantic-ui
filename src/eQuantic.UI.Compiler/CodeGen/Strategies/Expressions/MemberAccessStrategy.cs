@@ -200,14 +200,37 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         if (method.IsStatic || context.SemanticHelper.GetType(group.Expression) is not { } type) return null;
         if (method is { Name: "ToString", Parameters.Length: 0 })
             return StringConversion.TextGroup(type, receiver, context);
-        if (method is not { Name: "Equals", Parameters.Length: 1 } || type is not INamedTypeSymbol data
-            || !(data.TwinIsData() || data.IsTupleType || data.IsAnonymousType))
+        if (method is not { Name: "Equals", Parameters.Length: 1 } || TwinMethodName.HoldsANameOfItsOwn(method))
             return null;
-        context.UsedHelpers.Add(Eq.Import);
-        var held = data.IsAnonymousType ? JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver) : receiver;
-        return data.TwinIsData() || ElementEquality.OwnEquals(data) is not { } comparison
-            ? JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), held)
-            : JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), held, JsExpr.Opaque(comparison));
+        if (type is INamedTypeSymbol data && (data.TwinIsData() || data.IsTupleType || data.IsAnonymousType))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var held = data.IsAnonymousType ? JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver) : receiver;
+            return data.TwinIsData() || ElementEquality.OwnEquals(data) is not { } comparison
+                ? JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), held)
+                : JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), held, JsExpr.Opaque(comparison));
+        }
+        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum })
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), receiver);
+        }
+        if (type.SpecialType == SpecialType.System_Object || type.TypeKind is TypeKind.Interface or TypeKind.TypeParameter)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var checkedReceiver = JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver);
+            var comparator = type is INamedTypeSymbol { TypeKind: TypeKind.Interface } face && ElementEquality.Of(face) == "'item'"
+                ? Eq.SameItem
+                : Eq.SameKey;
+            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), checkedReceiver, JsExpr.Identifier(comparator));
+        }
+        if (!type.IsNullableValue() && method.ContainingType.SpecialType == SpecialType.System_Object)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var checkedReceiver = JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver);
+            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), checkedReceiver, JsExpr.Identifier(Eq.SameItem));
+        }
+        return null;
     }
 
     public int Priority => 0; // Low priority (fallback)
