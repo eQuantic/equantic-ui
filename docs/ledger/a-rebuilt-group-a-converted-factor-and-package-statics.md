@@ -13,5 +13,9 @@
   opened found two more: a `DateTimeOffset` beside a `DateTime` ran JavaScript's own operators, on main
   too, and converts the date as C#'s implicit operator does now, and a package type named like a .NET
   one (`Vendor.Guid.Empty`, `Vendor.DateTime.Now`) was read through a name shortcut before the fence,
-  refused now. Proposed and archived through OpenSpec
+  refused now. Copilot's first review of #964 found two more: a package's static reached through
+  an alias named like a type a strategy claims by its spelling (`Int32.MaxValue` under `using Int32 =
+  Vendor.Status` was 2147483647), refused now by the dispatcher before any strategy is asked, and a
+  null `DateTime?` made a `DateTimeOffset?`, which threw a TypeError and stays null now. Proposed and
+  archived through OpenSpec
   (`openspec/specs/runtime-dates`, `transpiler-bcl`).

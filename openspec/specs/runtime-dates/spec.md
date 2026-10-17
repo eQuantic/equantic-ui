@@ -557,7 +557,9 @@ a nullable span lifted and the target read once.
 An operator between a `DateTimeOffset` and a `DateTime`, on either side, SHALL convert the `DateTime`
 to a `DateTimeOffset` as C#'s implicit conversion does, at the offset its kind gives, and SHALL answer
 as the instant's operator: a difference SHALL be a span, and `==`, `!=`, `<`, `<=`, `>` and `>=`
-SHALL compare the two instants.
+SHALL compare the two instants. A nullable date SHALL be converted as C#'s lifted conversion does: a
+null one SHALL stay null, the operand read once, and an instant's operator over it SHALL answer as the
+lifted operator does.
 
 #### Scenario: A difference and a comparison across the two types
 
@@ -565,3 +567,11 @@ SHALL compare the two instants.
   `b = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)` and writes `a - b`, `b - a`, `a < b`,
   `a == b`, `a > b` and `a == new DateTime(2024, 1, 2, 0, 0, 0, DateTimeKind.Utc)`
 - **THEN** each answers as in .NET, where the pair matched no operator and JavaScript's own ran
+
+#### Scenario: A nullable date as an instant
+
+- **WHEN** browser-side code assigns a null and a present `DateTime?` to a `DateTimeOffset?`, and writes
+  `-`, `==` and `<` between a `DateTimeOffset?` and a `DateTime?` with a null on either side
+- **THEN** each answers as in .NET: the null date is a null instant, a difference with a null is null,
+  and a comparison answers the lifted operator's bool, where the null was handed to the conversion and
+  threw a TypeError

@@ -1112,11 +1112,18 @@ call that reads it from how the call names it SHALL NOT be read as a value.
 ### Requirement: A package's type has no name in the browser
 
 A static member of a type of an assembly the build has no source for, a package's, of any kind of type,
-an interface's included, and whatever its name, `Count` included, read qualified, read
-or called through `using static`, called qualified, or taken as a method group, and a construction of
+an interface's included, and whatever its name, `Count` included, read qualified, through an alias named
+like any other type, read or called through `using static`, called qualified, or taken as a method group, and a construction of
 such a type, SHALL fail the build with EQ2004 naming the member or the type and the assembly it comes
 from. A value of such a type SHALL keep reading its members by name, as the data the server sends, and
 a constant and an enum's member SHALL be their values.
+
+#### Scenario: A static through an alias named like a platform type
+
+- **WHEN** a page reads `Int32.MaxValue` under `using Int32 = Vendor.Status`, `DateTimeOffset.Now` under
+  `using DateTimeOffset = Vendor.DateTime`, or `String.Empty` under `using String = Vendor.Status`
+- **THEN** the build fails with EQ2004 naming the package's member and `Vendor`, where a strategy that
+  claims the platform type by its spelling wrote its member: `Int32.MaxValue` was 2147483647
 
 #### Scenario: A static read of a package's class
 
