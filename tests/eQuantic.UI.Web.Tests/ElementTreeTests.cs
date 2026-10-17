@@ -324,18 +324,57 @@ public class ElementTreeTests
         holder.ChildAt(0).Should().BeNull();
     }
 
-    /// <summary>The store gave two siblings with one key ONE instance between them.</summary>
-    [Fact]
-    public void TwoSiblingsWithOneKey_EachHasItsOwnPosition()
+    private sealed class Logged(string label, List<string> log) : StatefulComponent
     {
-        var column = new Column();
-        column.Add(new Counter("first") { Key = "same" });
-        column.Add(new Counter("second") { Key = "same" });
+        public string Label { get; } = label;
+        public int Count { get; private set; }
 
-        var root = Frame(BuildOwner.Structural(), column);
+        public void Press() => SetState(() => Count++);
 
-        ((ComponentElement)root.ChildAt(0)!).Component
-            .Should().NotBeSameAs(((ComponentElement)root.ChildAt(1)!).Component);
+        protected override void OnMount() => log.Add($"mount:{Label}");
+        protected override void OnUnmount() => log.Add($"unmount:{Label}");
+
+        public override VisualNode Build(ComponentContext context) => new Text($"{Label}: {Count}", TypeRole.BodyM);
+    }
+
+    /// <summary>Two siblings that say the same key, built fresh by every build of their parent.</summary>
+    private sealed class TwinKeys(List<string> log) : StatefulComponent
+    {
+        public void Rebuild() => SetState(() => { });
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column();
+            column.Add(new Logged("first", log) { Key = "same" });
+            column.Add(new Logged("second", log) { Key = "same" });
+            return column;
+        }
+    }
+
+    /// <summary>
+    /// Two siblings with one key each have a position of their own, which the store did not give
+    /// them (it resolved both to one instance), and KEEP it when their parent rebuilds: the second
+    /// was made again on every rebuild, its state lost and its hooks run each time (Copilot on #960).
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TwoSiblingsWithOneKey_EachKeepsItsOwnPosition(bool rebuildAll)
+    {
+        var log = new List<string>();
+        var parent = new TwinKeys(log);
+        var owner = new BuildOwner();
+        var column = Frame(owner, parent).ChildAt(0)!;
+        var second = (Logged)((ComponentElement)column.ChildAt(1)!).Component;
+        ((ComponentElement)column.ChildAt(0)!).Component.Should().NotBeSameAs(second);
+
+        second.Press();
+        parent.Rebuild();
+        Frame(owner, parent, rebuildAll);
+
+        ((ComponentElement)column.ChildAt(1)!).Component.Should().BeSameAs(second);
+        TextIn(column, 1).Should().Be("second: 1");
+        log.Should().Equal("mount:first", "mount:second");
     }
 
     private static Counter CounterIn(Element column, int index) =>

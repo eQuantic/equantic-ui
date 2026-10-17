@@ -144,8 +144,10 @@ public sealed class NodeElement : Element
             Element? claimed = null;
             if (node.Key is { Length: > 0 } key)
             {
-                if (byKey.TryGetValue(key, out var keyed) && keyed.MatchStamp != stamp && CanUpdate(keyed.Configuration, node))
-                    claimed = keyed;
+                claimed = byKey.TryGetValue(key, out var keyed) && keyed.MatchStamp != stamp
+                                                                && CanUpdate(keyed.Configuration, node)
+                    ? keyed
+                    : NextUnclaimed(node, stamp);
             }
             else if (i < _children.Count && _children[i] is { } indexed && indexed.Configuration.Key is not { Length: > 0 }
                      && indexed.MatchStamp != stamp && CanUpdate(indexed.Configuration, node))
@@ -171,6 +173,23 @@ public sealed class NodeElement : Element
             if (_children[i] is { } kept) kept.Update(node, force);
             else _children[i] = Inflate(node);
         }
+    }
+
+    /// <summary>
+    /// The first old member <paramref name="node"/> can take that nothing claimed yet, in order: what a
+    /// key shared by two siblings falls back to, since the table holds one member per key. Siblings
+    /// that repeat a key are matched first to first and second to second, so each keeps its state
+    /// across a rebuild instead of the second being made again every time. Only reached when the
+    /// table's member was taken or is of another type, which a list without repeated keys never is.
+    /// </summary>
+    private Element? NextUnclaimed(VisualNode node, int stamp)
+    {
+        foreach (var old in _children)
+        {
+            if (old is not null && old.MatchStamp != stamp && CanUpdate(old.Configuration, node)) return old;
+        }
+
+        return null;
     }
 
     private protected override void DeactivateChildren()

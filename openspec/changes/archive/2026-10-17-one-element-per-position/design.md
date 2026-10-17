@@ -61,11 +61,12 @@ hold would be code no test can reach.
 `canUpdate` is Flutter's: the same runtime type and the same `Key`. One stateful instance a parent
 places at two positions at once shows at both: a `SetState` builds both, and it stays mounted until
 the last of them leaves. Flutter refuses a `State` at two positions; here the instance is both the
-configuration and the state, and the store rendered it twice, so the element keeps that. Which old element a new child is
-compared with follows the paths exactly, so no retention changes: a single-child slot compares its
-one occupant; the children of a `Row`, a `Column`, a `Stack`, a `Grid` and a `Navigable` (the four
-whose paths spell a key as `[key]`) are matched by key when they have one and by index when they do
-not. Duplicate keys, which the store resolved to one shared instance, give the second child an
+configuration and the state, and the store rendered it twice, so the element keeps that. Which old
+element a new child is compared with follows the paths exactly, so no retention changes: a
+single-child slot compares its one occupant; the children of a `Row`, a `Column`, a `Stack`, a
+`Grid` and a `Navigable` (the nodes whose paths spell a key as `[key]`) are matched by key when they
+have one and by index when they do not. Duplicate keys, which the store resolved to one shared
+instance, are matched in order, first to first and second to second, giving the second child an
 element of its own.
 
 The string model was wrong in three places that the objects correct: the grid's hug-column probe
