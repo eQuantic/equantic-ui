@@ -181,7 +181,8 @@ public class APackagesTypeTests
         var built = solution.Build();
 
         built.Failed.Should().BeFalse(built.Errors);
-        built.Module("Home").Should().NotContain("__target(__target)");
+        // The receiver held apart from the parameter, never the parameter called with itself.
+        built.Module("Home").Should().NotContain("=> __target(__target)").And.Contain("___target(__target)");
     }
 
     /// <summary>A target-typed construction of a package's collection is refused as the explicit one is: the
