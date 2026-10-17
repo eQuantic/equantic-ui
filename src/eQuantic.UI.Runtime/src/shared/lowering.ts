@@ -1506,17 +1506,17 @@ function lowerSheetSurface(
   }) as EventHandler;
 
   view.events['mousedown'] = ((event: MouseEvent) => {
-    // The keyboard follows the click: focus explicitly — relying on the browser's focus-on-click
-    // left the keydown handler deaf on some engines.
     const target = event.currentTarget as HTMLElement;
-    target.focus();
+    // Where the press landed is read BEFORE the keyboard moves. The keyboard follows the click,
+    // focused explicitly (relying on the browser's focus-on-click left the keydown handler deaf on
+    // some engines), and without the scroll `focus()` does by default: the surface is taller than its
+    // viewport, so the browser scrolled the scroller around it to bring its top into view, measured
+    // at 127px on the first press of the dashboard's sheet, and a point read after it landed five
+    // rows below the one pressed.
+    const at = local(target, event.clientX, event.clientY);
+    target.focus({ preventScroll: true });
     // The platform counts the clicks — its double-click interval is a system setting, never ours.
-    model.handlePointer(
-      'down',
-      local(target, event.clientX, event.clientY),
-      modifiersOf(event),
-      event.detail > 0 ? event.detail : 1,
-    );
+    model.handlePointer('down', at, modifiersOf(event), event.detail > 0 ? event.detail : 1);
     // The press is the sheet's until it lifts: its moves and its release go to the model through
     // document-level listeners, so a sweep survives leaving the grid. The model knows whether the
     // press is growing the selection or dragging a fill, and answers whether a move changed it.

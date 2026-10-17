@@ -170,6 +170,29 @@ describe('SheetSurface on the web', () => {
     expect(sheet.activeCell).toEqual(new CellRef(42, 1));
   });
 
+  it('reads the press where it landed, before the keyboard moves the page', () => {
+    const sheet = new SheetController(50, 8);
+    const node = surfaceFor(sheet);
+    // A surface whose focus scrolls it 127px up, as a browser's default focus() did the
+    // dashboard's sheet: a point read after focusing lands five rows below the one pressed.
+    let top = 0;
+    const focusOptions: (FocusOptions | undefined)[] = [];
+    const target = document.createElement('div');
+    target.getBoundingClientRect = () => ({ left: 0, top, x: 0, y: top, width: 768, height: 5600, right: 768, bottom: top + 5600, toJSON: () => ({}) }) as DOMRect;
+    target.focus = (options?: FocusOptions) => {
+      focusOptions.push(options);
+      if (!options?.preventScroll) top -= 127;
+    };
+
+    const event = new MouseEvent('mousedown', { clientX: 96 + 48, clientY: 28 * 2 + 14 });
+    Object.defineProperty(event, 'currentTarget', { value: target });
+    events(node)['mousedown'](event);
+    document.dispatchEvent(new MouseEvent('mouseup', {}));
+
+    expect(sheet.activeCell).toEqual(new CellRef(2, 1));
+    expect(focusOptions).toEqual([{ preventScroll: true }]);
+  });
+
   it('leaves ⌘C to the browser, whose copy event carries the text', () => {
     const sheet = new SheetController(50, 8);
     const node = surfaceFor(sheet);
