@@ -116,8 +116,11 @@ public sealed class ComponentElement : Element
 
     private protected override void OnDeactivated()
     {
-        if (!Owner.Live || Component is not StatefulComponent stateful) return;
-        if (ReferenceEquals(stateful.MountedAt, this)) stateful.MountedAt = null;
+        // Only the position the instance is mounted at unmounts it: one instance a parent placed at
+        // two positions is mounted at the last, and the other leaving must not end it there.
+        if (!Owner.Live || Component is not StatefulComponent stateful
+                        || !ReferenceEquals(stateful.MountedAt, this)) return;
+        stateful.MountedAt = null;
         Owner.QueueUnmount(stateful);
     }
 }

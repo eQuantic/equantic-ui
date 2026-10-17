@@ -183,10 +183,10 @@ public class PerfHarnessTests
     /// the reused-builder loop (the shells' real pattern, measured here). What remains is the
     /// LayoutNode tree — pooling it needs an explicit RealizeResult lifetime first (a double
     /// buffer quietly rewrote retained trees under 155 tests). The ratchet tightens as that
-    /// lands; it never loosens casually. LOWERED to 96 KB on 2026-10-17 (#950): a frame the loop
+    /// lands; it never loosens casually. LOWERED to 100 KB on 2026-10-17 (#950): a frame the loop
     /// asks for builds nothing now, and the scene measured 90.9 KB, from 114.8 KB on main the same
     /// day, where every frame rebuilt its 24 buttons.</summary>
-    private const long AllocationCeilingBytesPerFrame = 96 * 1024;
+    private const long AllocationCeilingBytesPerFrame = 100 * 1024;
 
     /// <summary>Draw commands the dense scene emits — the batching ruler (M1 spoke of a static
     /// dashboard under 30 DRAW CALLS after batching; commands are the pre-batch upper bound).
@@ -237,15 +237,16 @@ public class PerfHarnessTests
     /// away. With both, the frame measured 71.2 KB.
     /// </para>
     /// <para>
-    /// LOWERED to 40 KB on 2026-10-17 (#950), and by the most this ruler ever moved. The scene has no
+    /// LOWERED to 42 KB on 2026-10-17 (#950), and by the most this ruler ever moved. The scene has no
     /// stateful component, but its 24 buttons are components, and while Build ran inside measure
     /// every frame the loop asked for built all 24 again: a fresh subtree each, every box with its
     /// style, which is what most of the paragraphs above were fighting over. A frame drawn only for
     /// motion builds nothing now (the element tree's build phase), and the scene measured 38.3 KB,
-    /// from 64.2 KB on main the same day.
+    /// from 64.2 KB on main the same day. The margin is the one the ruler has kept since it was
+    /// pinned, about a tenth, because three runners measure it and this number was read on one.
     /// </para>
     /// </summary>
-    private const long PooledAllocationCeilingBytesPerFrame = 40 * 1024;
+    private const long PooledAllocationCeilingBytesPerFrame = 42 * 1024;
 
     /// <summary>
     /// What an open LAYER costs a frame, with the shells' configuration (#290). <see cref="DenseScene"/>
@@ -306,9 +307,9 @@ public class PerfHarnessTests
     /// The stateful scene's steady frame, with the shells' configuration. Measured 2026-10-17 (#950):
     /// 98,480 bytes on main, where every frame rebuilt the page and its 24 cards and keyed each card
     /// by a string; 94,110 with the element tree building each once a frame; 28,742 once a frame drawn
-    /// only for motion builds nothing. The ceiling is that last number with room for a few objects.
+    /// only for motion builds nothing. The ceiling is that last number and about a tenth.
     /// </summary>
-    private const long PooledStatefulCeilingBytesPerFrame = 30 * 1024;
+    private const long PooledStatefulCeilingBytesPerFrame = 32 * 1024;
 
     [Fact]
     public void AStatefulScene_ItsSteadyFrameStaysUnderItsCeiling()

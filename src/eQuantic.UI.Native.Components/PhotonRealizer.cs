@@ -399,7 +399,11 @@ public static class PhotonRealizer
             var queued = overlays[i];
             if (queued.Layer is { Motion: not null, Open: false }) continue;
             // Shown, so its deferred slot builds now, just before the layer is laid out against it.
-            var layerElement = queued.Holder?.ShowDeferred(queued.Layer.Child);
+            // Every node the layout measured has a position, so a layer without one is the engine
+            // gone wrong: built here it would be a tree of fresh instances every frame, silently.
+            var layerElement = (queued.Holder ?? throw new InvalidOperationException(
+                    $"A layer at {LayerPath(i)} has no position to build in."))
+                .ShowDeferred(queued.Layer.Child);
             var overlayLayout = LayoutEngine.Layout(queued.Layer.Child, viewportWidth, viewportHeight,
                 context, rootPath: LayerPath(i), rootElement: layerElement);
             overlayRoots.Add(overlayLayout);

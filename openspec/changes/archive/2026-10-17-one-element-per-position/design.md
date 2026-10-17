@@ -188,8 +188,8 @@ hydration. What eqc refuses in it today is measured (below) so E3 starts from th
 
 The middle column is the engine alone: every component builds once a frame instead of once per
 measure, and no identity string is formed. The last is what a frame drawn for motion costs once it
-builds nothing. The budgets are tightened to it (pooled 72 KB to 40 KB, unpooled 152 KB to 96 KB) and
-the stateful scene gets one of its own (30 KB).
+builds nothing. The budgets are tightened to it (pooled 72 KB to 42 KB, unpooled 152 KB to 100 KB) and
+the stateful scene gets one of its own (32 KB).
 
 What eqc refuses in the engine, measured by running eqc over its sources moved into an app's
 namespace, with the Primitives internals it reaches stood in by public calls: the forty-one

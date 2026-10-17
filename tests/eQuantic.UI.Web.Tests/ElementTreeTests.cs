@@ -338,6 +338,27 @@ public class ElementTreeTests
             .Should().NotBeSameAs(((ComponentElement)root.ChildAt(1)!).Component);
     }
 
+    /// <summary>One instance a parent placed at two positions is mounted at the last, and the other
+    /// leaving does not end it there: only the position it is mounted at unmounts it.</summary>
+    [Fact]
+    public void OneInstanceAtTwoPositions_IsNotEndedByTheOneThatLeaves()
+    {
+        var log = new List<string>();
+        var shared = new Tracked(log);
+        var owner = new BuildOwner();
+        var both = new Column();
+        both.Add(shared);
+        both.Add(shared);
+        Frame(owner, both);
+
+        var one = new Column();
+        one.Add(new Text("gone", TypeRole.BodyM));
+        one.Add(shared);
+        Frame(owner, one);
+
+        log.Should().Equal("mounted");
+    }
+
     [Fact]
     public void AStructuralTree_AsksForNoFrame()
     {

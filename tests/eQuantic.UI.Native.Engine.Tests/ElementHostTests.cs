@@ -68,10 +68,12 @@ public class ElementHostTests
     private static int Listeners(PhotonHost host)
     {
         const BindingFlags Field = BindingFlags.Instance | BindingFlags.NonPublic;
-        var owner = (BuildOwner)typeof(PhotonHost).GetField("_owner", Field)!.GetValue(host)!;
-        var requested = (Delegate?)typeof(BuildOwner).GetField(nameof(BuildOwner.BuildRequested), Field)!
-            .GetValue(owner);
-        return requested?.GetInvocationList().Length ?? 0;
+        var ownerField = typeof(PhotonHost).GetField("_owner", Field);
+        var requestedField = typeof(BuildOwner).GetField(nameof(BuildOwner.BuildRequested), Field);
+        ownerField.Should().NotBeNull("the host keeps its tree's owner in `_owner`; rename here with it");
+        requestedField.Should().NotBeNull("BuildRequested is a field-like event, whose delegate is a field");
+        var owner = (BuildOwner)ownerField!.GetValue(host)!;
+        return ((Delegate?)requestedField!.GetValue(owner))?.GetInvocationList().Length ?? 0;
     }
 
     private sealed class Menu(List<string> log) : StatefulComponent

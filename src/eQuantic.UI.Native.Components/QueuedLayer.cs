@@ -13,6 +13,6 @@ namespace eQuantic.UI.Native.Components;
 /// </para>
 /// </summary>
 /// <param name="Layer">What the pass lays out against the viewport and paints above the page.</param>
-/// <param name="Holder">The position whose deferred slot holds the layer's content, or null for a
-/// layer no build made, which the pass lays out from a build of its own.</param>
+/// <param name="Holder">The position whose deferred slot holds the layer's content. Never null for
+/// a node the layout measured; the pass refuses one that is.</param>
 internal readonly record struct QueuedLayer(Overlay Layer, NodeElement? Holder);
