@@ -3,6 +3,7 @@ using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Sheet;
 using FluentAssertions;
 using Xunit;
 

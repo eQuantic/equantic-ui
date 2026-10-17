@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, Flexible, Positioned, Pressable, Row, ScrollView, SdkStrings, SheetAxisValue, SheetController, SheetDocument, SheetSurface, SizeValue, Spacer, Stack, StatefulComponent, Text, UiComponent, VisualNode, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, Flexible, Point, Positioned, Pressable, Row, ScrollView, SdkStrings, SheetAxisValue, SheetController, SheetDocument, SheetGrid, SheetSurface, SizeValue, Spacer, Stack, StatefulComponent, Text, UiComponent, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class Spreadsheet extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Spreadsheet';
@@ -31,6 +31,7 @@ export class Spreadsheet extends StatefulComponent {
         let document = this.controller.document;
         let topOfWindow = null;
         [this._first, this._last, topOfWindow] = this.windowFor(this._offset, this._viewport > 0 ? this._viewport : Math.fround(Spreadsheet.headerHeight * 14));
+        this.controller.grid = new SheetGrid(Point.zero, this._first, 0);
         let headerRow = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill });
         headerRow.add(Spreadsheet.headerCell('', Spreadsheet.headerWidth, Spreadsheet.headerHeight, theme, false, () => this.setState((($0) => $0.selectAll.bind($0))(this.controller))));
         for (let c = 0; c < document.cols; c++) headerRow.add(this.columnHeader(c, document, theme));
@@ -42,7 +43,7 @@ export class Spreadsheet extends StatefulComponent {
             grid.add(this.gridRow(r, document, theme));
         }
         windowRows.add(rowHeaders);
-        windowRows.add(Object.assign(new SheetSurface(grid, this.controller), { firstRow: this._first, onChanged: () => this.setState(() => {}), label: SdkStrings.spreadsheet }));
+        windowRows.add(new SheetSurface(grid, this.controller, { onChanged: () => this.setState(() => {}), label: SdkStrings.spreadsheet }));
         let content = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         if (topOfWindow > 0) content.add(Spacer.fixed(topOfWindow));
         content.add(windowRows);

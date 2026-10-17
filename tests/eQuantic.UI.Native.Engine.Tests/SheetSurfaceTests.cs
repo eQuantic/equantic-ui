@@ -2,6 +2,7 @@ using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Sheet;
 using FluentAssertions;
 using Xunit;
 
@@ -21,15 +22,17 @@ public class SheetSurfaceTests
     {
         public SheetController Sheet { get; } = new(rows: 100, cols: 26);
 
-        public override VisualNode Build(ComponentContext context) =>
-            new SheetSurface(
+        public override VisualNode Build(ComponentContext context)
+        {
+            // A child that draws its own headers: the window's first cell begins past them.
+            Sheet.Grid = new SheetGrid(new Point(HeaderW, HeaderH), 0, 0);
+            return new SheetSurface(
                 new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }),
                 Sheet)
             {
-                HeaderWidth = HeaderW,
-                HeaderHeight = HeaderH,
                 OnChanged = () => SetState(() => { }),
             };
+        }
     }
 
     private sealed class FakeClipboard : ITextClipboard

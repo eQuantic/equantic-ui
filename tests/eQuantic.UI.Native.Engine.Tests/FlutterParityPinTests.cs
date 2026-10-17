@@ -71,6 +71,7 @@ public class FlutterParityPinTests
     [
         typeof(VisualNode).Assembly,                    // Primitives — the vocabulary
         typeof(eQuantic.UI.Code.CodeEditorController).Assembly, // Code — the code editing engine
+        typeof(eQuantic.UI.Sheet.SheetController).Assembly, // Sheet — the spreadsheet engine
         typeof(eQuantic.UI.Components.Button).Assembly, // the component library
         typeof(LayoutNode).Assembly,                    // Native.Framework — layout
         typeof(PhotonHost).Assembly,                    // Native.Components — realizer, semantics
@@ -297,8 +298,11 @@ public class FlutterParityPinTests
         ["RawAutocomplete"] = () => HasMember("CodeSurface", "Options") && HasMember("CodeSurface", "OptionsOrigin")
             && HasMember("CodeSurface", "HighlightedOption") && Nothing("RawAutocomplete", "Autocomplete"),
         ["Shortcuts"] = () => Has("Shortcut") && Has("KeyChord") && HasMember("Shortcut", "FocusScoped"),
-        // The controllers are shared; the protocol that drives them is a HOST method.
+        // Both editors' engines own their protocol, and each surface reaches its engine through an
+        // interface of the vocabulary; the text field's is still a HOST method.
         ["TextEditingController"] = () => Has("CodeEditorController") && Has("SheetController")
+            && HasMember("CodeSurface", "Model") && HasMember("SheetSurface", "Model")
+            && Has("ICodeSurfaceModel") && Has("ISheetSurfaceModel")
             && HasMember("PhotonHost", "TextInput"),
         // The phone keyboard's protocol: the state crosses whole, through a session the shells translate.
         ["TextInputClient"] = () => Has("TextEditingValue") && HasMember("PhotonHost", "EditingValue")

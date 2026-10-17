@@ -146,6 +146,7 @@ export { SheetCellSnapshot } from './SheetCellSnapshot';
 export { SheetController } from './SheetController';
 export { SheetDocument } from './SheetDocument';
 export { SheetEdit } from './SheetEdit';
+export { SheetGrid } from './SheetGrid';
 export { SheetHistory } from './SheetHistory';
 export { SheetKeymap } from './SheetKeymap';
 export { SheetRange } from './SheetRange';

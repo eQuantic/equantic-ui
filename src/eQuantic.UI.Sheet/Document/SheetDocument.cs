@@ -1,4 +1,4 @@
-namespace eQuantic.UI.Primitives;
+namespace eQuantic.UI.Sheet;
 
 /// <summary>
 /// The sheet's DATA: a sparse map of cell values plus per-row/per-column sizes. Values are strings
@@ -6,7 +6,6 @@ namespace eQuantic.UI.Primitives;
 /// cell styling are explicitly LATER; the fence is stated, not implied). Mutable, owned by the
 /// controller; every mutation goes through it so undo can capture the inverse.
 /// </summary>
-[TwinIsTranspiled]
 public sealed class SheetDocument
 {
     private readonly Dictionary<int, string> _cells = new();
@@ -154,7 +153,3 @@ public sealed class SheetDocument
         }
     }
 }
-
-/// <summary>One cell's address and value, captured for undo.</summary>
-[TwinIsTranspiled]
-public readonly record struct SheetCellSnapshot(CellRef Cell, string Value);

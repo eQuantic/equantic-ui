@@ -1,6 +1,7 @@
 using System.Globalization;
 using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Sheet;
 using eQuantic.UI.Charts;
 
 namespace eQuantic.Studio;

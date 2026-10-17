@@ -113,7 +113,7 @@ export class SheetDocument {
     }
 
     toString(): string {
-        return 'eQuantic.UI.Primitives.SheetDocument';
+        return 'eQuantic.UI.Sheet.SheetDocument';
     }
 }
 

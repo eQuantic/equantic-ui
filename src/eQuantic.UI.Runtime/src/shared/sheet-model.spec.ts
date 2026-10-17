@@ -74,11 +74,11 @@ describe('SheetController (transpiled twin)', () => {
     source.document.setCell(new CellRef(0, 1), 'say "hi"\twith tab');
     source.selection = new SheetRange(new CellRef(0, 0), new CellRef(0, 1));
 
-    const tsv = source.copyTsv();
+    const tsv = source.copyText();
 
     const target = new SheetController(100, 26);
     target.selection = new SheetRange(new CellRef(5, 5));
-    target.pasteTsv(tsv);
+    target.paste(tsv);
 
     expect(target.document.getCell(new CellRef(5, 5))).toBe('name');
     expect(target.document.getCell(new CellRef(5, 6))).toBe('say "hi"\twith tab');

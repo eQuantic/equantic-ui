@@ -1,8 +1,8 @@
 /**
- * The spreadsheet's WEB half, end to end: the lowered surface's keydown drives the SAME transpiled
- * SheetKeymap the native host calls, typing edits Excel's way, and copy/paste speak TSV through
- * the browser's own clipboard events. A path nobody runs is a path that does not work — this runs
- * it with real DOM events.
+ * The spreadsheet's WEB half, end to end: the lowered surface hands its keys, presses and clipboard
+ * events to the SAME transpiled model the native host hands them to, typing edits Excel's way, and
+ * copy/paste speak TSV through the browser's own clipboard events. A path nobody runs is a path that
+ * does not work — this runs it with real DOM events.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -21,7 +21,7 @@ function surfaceFor(sheet: SheetController): HtmlNode {
     {
       nodeKind: 'sheetSurface',
       child: { nodeKind: 'column', children: [] },
-      controller: sheet,
+      model: sheet,
       onChanged: () => {},
     } as never,
     { textPrimary: photonTheme.textPrimary } as LoweringContext,

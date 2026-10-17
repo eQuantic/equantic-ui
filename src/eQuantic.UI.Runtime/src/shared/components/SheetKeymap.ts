@@ -1,7 +1,25 @@
-import { SheetController, SheetMotionValue } from "../runtime-exports";
+import { $eq, SheetController, SheetMotionValue } from "../runtime-exports";
 
 export class SheetKeymap {
-    static handle(sheet: SheetController, key: string, command: boolean, shift: boolean) {
+    static handle(sheet: SheetController, key: string, modifiers: number, clipboard: any = null) {
+        let command = (modifiers & 4) !== 0;
+        let shift = (modifiers & 1) !== 0;
+        if (command && !(clipboard == null) && key.length === 1) {
+            {
+                let pasted: any;
+                switch ($eq.text.toLower(key[0], true)) {
+                    case 'c':
+                        clipboard.write(sheet.copyText());
+                        return true;
+                    case 'x':
+                        clipboard.write(sheet.cut());
+                        return true;
+                    case 'v':
+                        if ((($v2082) => (($v2082 != null && $v2082.length > 0) && (pasted = $v2082, true)))(clipboard.read())) sheet.paste(pasted);
+                        return true;
+                }
+            }
+        }
         let motion: SheetMotionValue = command ? 'dataEdge' : 'cell';
         if (sheet.editing) {
             switch (key) {
