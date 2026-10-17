@@ -104,9 +104,13 @@ frame the owner sweeps every deferred slot that was not reconciled in it, which 
 layer's components as the store did. Building them eagerly would have kept a closed select's options
 mounted and built on every rebuild.
 
-The anchored layer is synthetic (a scrim and a `Positioned` around the panel, made at emit), and it
-is no position. The panel inside it is measured with the anchored element's panel slot, handed to that
-one layout as an adoption; the layer's own wrappers have no element, as they hold nothing.
+The anchored layer is synthetic: a scrim and a `Positioned` around the panel, which the paint walk
+makes once the anchor is laid out, since the panel is placed from the anchor's bounds. So the
+anchored node's deferred slot holds the whole LAYER. The walk makes a new one every frame and its
+elements are updated in place; the panel inside is the same node frame after frame unless the
+anchored node's parent rebuilt, so it builds only when it changed. Measuring the panel against an
+element handed to the layer's layout from outside was the first design, and it needed a second way
+for a node to find its element, by reference, which a node shared by two positions answers wrongly.
 
 ### The owner orders the hooks
 
@@ -121,6 +125,17 @@ A mounted `StatefulComponent` holds its element. `SetState` keeps its dispatcher
 that element dirty instead of raising `StateInvalidated`, which goes. The host subscribes to its
 owner's request for a frame once, in its constructor, which closes #935 by construction: there is no
 per-instance subscription left to repeat.
+
+### A request made after the build survives the frame's end
+
+The host ended every frame by writing its request for the next one as "motion is running", which
+wrote `false` over a request made after the build: a `SetState` from a scroll view's
+`OnViewportChanged` or `OnScrolled` (fired while the frame paints), from an `OnMount` at the frame's
+end, or from a build itself. The store hid it, since every frame rebuilt everything anyway and the
+next input drew the change; with only the marked positions building, the marked one would have waited
+for the next input, and a second `SetState` would not ask again. So the end of the frame keeps the
+request while the owner holds a marked position. It is not hypothetical: a `ListView`'s first frame
+reports the true viewport and asks for its window, which waited for the next input on main.
 
 ### Dirty-only, with the host's input rebuilding everything
 
@@ -162,9 +177,23 @@ hydration. What eqc refuses in it today is measured (below) so E3 starts from th
 
 ## Measurements
 
-| | before (main `d702ca101`) | after |
-|---|---|---|
-| dense scene, pooled bytes/frame | 64.2 KB | (measured at the end of the change) |
-| stateful scene, pooled bytes/frame | 98,480 | (measured at the end of the change) |
+`PerfHarnessTests`, steady frames with recycled frames (the shells' configuration):
 
-What eqc refuses in the engine: (measured at the end of the change).
+| | main `d702ca101` | elements, every frame rebuilt | elements, dirty only |
+|---|---|---|---|
+| dense scene (24 cards, 24 `Button` components) | 64.2 KB | 64.2 KB | 38.3 KB |
+| stateful scene (a stateful page, 24 stateful cards) | 98,480 B | 94,110 B | 28,742 B |
+| dense scene, frames not recycled | 114.8 KB | 116.7 KB | 90.9 KB |
+| an overlay layer | 498 B | 498 B | 498 B |
+
+The middle column is the engine alone: every component builds once a frame instead of once per
+measure, and no identity string is formed. The last is what a frame drawn for motion costs once it
+builds nothing. The budgets are tightened to it (pooled 72 KB to 40 KB, unpooled 152 KB to 96 KB) and
+the stateful scene gets one of its own (30 KB).
+
+What eqc refuses in the engine, measured by running eqc over its sources moved into an app's
+namespace, with the Primitives internals it reaches stood in by public calls: the forty-one
+`ChildSlots.Visit` overloads, which lower to one `visit()` (EQ1007, a JavaScript class has one member
+per name); `GetType()` in `Element.CanUpdate`, Flutter's `canUpdate` (EQ2004); and `GetType().Name` in
+`NodeElement.ShowDeferred`'s message. Nothing else: the lists, the dictionary, the static comparison,
+the tuple swap, the patterns and the event all transpile. E3 starts from these three.
