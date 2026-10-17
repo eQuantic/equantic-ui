@@ -2,6 +2,7 @@ using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Sheet;
 using FluentAssertions;
 using Xunit;
 
@@ -21,15 +22,20 @@ public class SheetSurfaceTests
     {
         public SheetController Sheet { get; } = new(rows: 100, cols: 26);
 
-        public override VisualNode Build(ComponentContext context) =>
-            new SheetSurface(
+        /// <summary>The sheet row the window's first drawn row is: past 0, a scrolled window.</summary>
+        public int FirstRow { get; init; }
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            // A child that draws its own headers: the window's first cell begins past them.
+            Sheet.Grid = new SheetGrid(new Point(HeaderW, HeaderH), FirstRow, 0);
+            return new SheetSurface(
                 new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }),
                 Sheet)
             {
-                HeaderWidth = HeaderW,
-                HeaderHeight = HeaderH,
                 OnChanged = () => SetState(() => { }),
             };
+        }
     }
 
     private sealed class FakeClipboard : ITextClipboard
@@ -39,9 +45,9 @@ public class SheetSurfaceTests
         public string? Read() => Held;
     }
 
-    private static (PhotonHost Host, Page Page) Open()
+    private static (PhotonHost Host, Page Page) Open(int firstRow = 0)
     {
-        var page = new Page();
+        var page = new Page { FirstRow = firstRow };
         var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 600, 400);
         host.RenderFrame(new DisplayListBuilder());
         return (host, page);
@@ -64,6 +70,90 @@ public class SheetSurfaceTests
 
         page.Sheet.ActiveCell.Should().Be(new CellRef(2, 1));
         page.Sheet.Selection.IsSingleCell.Should().BeTrue();
+    }
+
+    [Fact]
+    public void AClick_InAScrolledWindow_SelectsTheCellTheWindowDrawsThere()
+    {
+        // The window starts at row 40, so its third drawn row is the sheet's row 42: the host hands
+        // the point and the engine, which was handed the window, answers the cell.
+        var (host, page) = Open(firstRow: 40);
+        var (x, y) = CenterOf(2, 1);
+
+        host.PressDown(x, y);
+        host.PressUp(x, y);
+
+        page.Sheet.ActiveCell.Should().Be(new CellRef(42, 1));
+    }
+
+    [Fact]
+    public void ADoubleClick_EditsTheCellUnderIt_StartingFromItsValue()
+    {
+        var (host, page) = Open();
+        page.Sheet.Document.SetCell(new CellRef(1, 1), "42");
+        var (x, y) = CenterOf(1, 1);
+
+        host.PressDown(x, y);
+        host.PressUp(x, y);
+        host.PressDown(x, y, clickCount: 2);
+        host.PressUp(x, y);
+
+        page.Sheet.Editing.Should().BeTrue();
+        page.Sheet.Draft.Should().Be("42");
+    }
+
+    [Fact]
+    public void TheFillHandle_PoursTheSource_AndOneUndoTakesItBack()
+    {
+        var (host, page) = Open();
+        page.Sheet.Document.SetCell(new CellRef(1, 1), "7");
+        page.Sheet.Selection = new SheetRange(new CellRef(1, 1));
+        // The handle sits on the selected cell's bottom-right corner.
+        var corner = (X: HeaderW + 2 * 96f, Y: HeaderH + 2 * 28f);
+
+        host.PressDown(corner.X, corner.Y);
+        host.PointerMove(CenterOf(3, 1).X, CenterOf(3, 1).Y);
+        host.PressUp(CenterOf(3, 1).X, CenterOf(3, 1).Y);
+
+        page.Sheet.Document.GetCell(new CellRef(2, 1)).Should().Be("7");
+        page.Sheet.Document.GetCell(new CellRef(3, 1)).Should().Be("7");
+        page.Sheet.Undo().Should().BeTrue();
+        page.Sheet.Document.GetCell(new CellRef(2, 1)).Should().Be("");
+        page.Sheet.Document.GetCell(new CellRef(3, 1)).Should().Be("");
+    }
+
+    [Fact]
+    public void ACancelledFill_PoursNothing_AndTheNextMoveIsAHover()
+    {
+        var (host, page) = Open();
+        page.Sheet.Document.SetCell(new CellRef(1, 1), "7");
+        page.Sheet.Selection = new SheetRange(new CellRef(1, 1));
+        var corner = (X: HeaderW + 2 * 96f, Y: HeaderH + 2 * 28f);
+
+        host.PressDown(corner.X, corner.Y);
+        host.PointerMove(CenterOf(3, 1).X, CenterOf(3, 1).Y);
+        host.PointerCancel(PointerKind.Touch);
+        host.PointerMove(CenterOf(5, 4).X, CenterOf(5, 4).Y);
+        host.PressUp(CenterOf(5, 4).X, CenterOf(5, 4).Y);
+
+        page.Sheet.Filling.Should().BeFalse();
+        page.Sheet.Document.GetCell(new CellRef(2, 1)).Should().Be("");
+        page.Sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 1)), "nothing moved it after the cancel");
+    }
+
+    [Fact]
+    public void ACut_WithNoClipboard_LeavesTheValuesItCouldNotCopy()
+    {
+        var (host, page) = Open();
+        host.Clipboard = null;
+        page.Sheet.Document.SetCell(new CellRef(0, 0), "7");
+        var (x, y) = CenterOf(0, 0);
+        host.PressDown(x, y);
+        host.PressUp(x, y);
+
+        host.KeyDown("x", KeyModifiers.Command);
+
+        page.Sheet.Document.GetCell(new CellRef(0, 0)).Should().Be("7");
     }
 
     [Fact]

@@ -398,25 +398,21 @@ public static class UI
         };
 
     /// <summary>
-    /// An EDITABLE SPREADSHEET surface: the grid the child draws, plus the selection band, the
-    /// active-cell ring and the keyboard. The controller is owned and kept by the composing
-    /// component, exactly as <see cref="CodeSurface"/>'s is.
+    /// An EDITABLE SPREADSHEET surface: the grid the child draws, plus Excel's keyboard, pointer and
+    /// clipboard. The model is owned and kept by the composing component, exactly as
+    /// <see cref="CodeSurface"/>'s is.
     /// <para>
-    /// <paramref name="firstRow"/> and <paramref name="firstCol"/> are the VIRTUALIZED window's
-    /// origin — which sheet cell the child's top-left one draws — so they ride here rather than on
-    /// the initializer: a scrolled sheet whose marks are placed against the wrong origin draws
-    /// them over the wrong cells, which is a correctness answer and not decoration. The header
-    /// offsets are the component's own arithmetic and stay behind <c>new</c>.
+    /// The window the cells are placed against belongs to the model (<c>SheetController.Grid</c>), as
+    /// a code surface's grid does: a scrolled sheet whose presses are read against the wrong origin
+    /// selects the wrong cells, so the one thing that turns a point into a cell lives in the engine.
     /// </para>
     /// </summary>
-    public static SheetSurface SheetSurface(VisualNode child, SheetController controller,
-        Action? onChanged = null, string? label = null, int firstRow = 0, int firstCol = 0) =>
-        new SheetSurface(child, controller)
+    public static SheetSurface SheetSurface(VisualNode child, ISheetSurfaceModel model,
+        Action? onChanged = null, string? label = null) =>
+        new SheetSurface(child, model)
         {
             OnChanged = onChanged,
             Label = label,
-            FirstRow = firstRow,
-            FirstCol = firstCol,
         };
 
     /// <summary>

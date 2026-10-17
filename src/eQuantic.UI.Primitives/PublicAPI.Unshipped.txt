@@ -4,3 +4,191 @@
 eQuantic.UI.Primitives.IUrlLauncher
 eQuantic.UI.Primitives.IUrlLauncher.OpenUrlAsync(System.Uri! url) -> System.Threading.Tasks.ValueTask<bool>
 eQuantic.UI.Primitives.IUrlLauncher.CanOpen(System.Uri! url) -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetAxis
+*REMOVED*eQuantic.UI.Primitives.SheetAxis.Cols = 1 -> eQuantic.UI.Primitives.SheetAxis
+*REMOVED*eQuantic.UI.Primitives.SheetAxis.Rows = 0 -> eQuantic.UI.Primitives.SheetAxis
+*REMOVED*eQuantic.UI.Primitives.SheetCellSnapshot
+*REMOVED*eQuantic.UI.Primitives.SheetCellSnapshot.Cell.get -> eQuantic.UI.Primitives.CellRef
+*REMOVED*eQuantic.UI.Primitives.SheetCellSnapshot.Cell.init -> void
+*REMOVED*eQuantic.UI.Primitives.SheetCellSnapshot.Deconstruct(out eQuantic.UI.Primitives.CellRef Cell, out string! Value) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetCellSnapshot.Equals(eQuantic.UI.Primitives.SheetCellSnapshot other) -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetCellSnapshot.SheetCellSnapshot() -> void
+*REMOVED*eQuantic.UI.Primitives.SheetCellSnapshot.SheetCellSnapshot(eQuantic.UI.Primitives.CellRef Cell, string! Value) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetCellSnapshot.Value.get -> string!
+*REMOVED*eQuantic.UI.Primitives.SheetCellSnapshot.Value.init -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController
+*REMOVED*eQuantic.UI.Primitives.SheetController.ActiveCell.get -> eQuantic.UI.Primitives.CellRef
+*REMOVED*eQuantic.UI.Primitives.SheetController.BeginEdit(string! seed) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.BeginFill() -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.CancelEdit() -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.CancelFill() -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.Changed.get -> System.Action<eQuantic.UI.Primitives.SheetEdit!>?
+*REMOVED*eQuantic.UI.Primitives.SheetController.Changed.set -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.ClearSelection() -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetController.CommitEdit() -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetController.CommitFill() -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetController.CopyTsv() -> string!
+*REMOVED*eQuantic.UI.Primitives.SheetController.Delete(eQuantic.UI.Primitives.SheetAxis axis, int at, int count = 1) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.Document.get -> eQuantic.UI.Primitives.SheetDocument!
+*REMOVED*eQuantic.UI.Primitives.SheetController.Draft.get -> string!
+*REMOVED*eQuantic.UI.Primitives.SheetController.Editing.get -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetController.EraseFromDraft() -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.Fill(eQuantic.UI.Primitives.SheetRange source, eQuantic.UI.Primitives.SheetRange target, eQuantic.UI.Primitives.SheetRange? selectionBefore = null) -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetController.FillDown() -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetController.FillRight() -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetController.FillSource.get -> eQuantic.UI.Primitives.SheetRange?
+*REMOVED*eQuantic.UI.Primitives.SheetController.FillTarget.get -> eQuantic.UI.Primitives.SheetRange?
+*REMOVED*eQuantic.UI.Primitives.SheetController.Filling.get -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetController.History.get -> eQuantic.UI.Primitives.SheetHistory!
+*REMOVED*eQuantic.UI.Primitives.SheetController.Insert(eQuantic.UI.Primitives.SheetAxis axis, int at, int count = 1) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.Move(int dRow, int dCol, eQuantic.UI.Primitives.SheetMotion motion = eQuantic.UI.Primitives.SheetMotion.Cell, bool extend = false) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.PasteTsv(string! text) -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetController.Redo() -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetController.Resize(eQuantic.UI.Primitives.SheetAxis axis, int index, float size) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.SelectAll() -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.SelectCols(int fromCol, int toCol) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.SelectRows(int fromRow, int toRow) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.SelectTo(eQuantic.UI.Primitives.CellRef cell) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.Selection.get -> eQuantic.UI.Primitives.SheetRange
+*REMOVED*eQuantic.UI.Primitives.SheetController.Selection.set -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.SetCell(eQuantic.UI.Primitives.CellRef cell, string! value) -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetController.SheetController(int rows = 1000, int cols = 26) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.Step(int dRow, int dCol) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.TypeIntoDraft(string! text) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetController.Undo() -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetController.UpdateFill(eQuantic.UI.Primitives.CellRef at) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetDocument
+*REMOVED*eQuantic.UI.Primitives.SheetDocument.Cells.get -> System.Collections.Generic.IReadOnlyDictionary<int, string!>!
+*REMOVED*eQuantic.UI.Primitives.SheetDocument.Clamp(eQuantic.UI.Primitives.CellRef cell) -> eQuantic.UI.Primitives.CellRef
+*REMOVED*eQuantic.UI.Primitives.SheetDocument.ColWidth(int col) -> float
+*REMOVED*eQuantic.UI.Primitives.SheetDocument.Cols.get -> int
+*REMOVED*eQuantic.UI.Primitives.SheetDocument.GetCell(eQuantic.UI.Primitives.CellRef cell) -> string!
+*REMOVED*eQuantic.UI.Primitives.SheetDocument.HasValue(eQuantic.UI.Primitives.CellRef cell) -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetDocument.RowHeight(int row) -> float
+*REMOVED*eQuantic.UI.Primitives.SheetDocument.Rows.get -> int
+*REMOVED*eQuantic.UI.Primitives.SheetDocument.SetCell(eQuantic.UI.Primitives.CellRef cell, string! value) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetDocument.SetColWidth(int col, float width) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetDocument.SetRowHeight(int row, float height) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetDocument.SheetDocument(int rows = 1000, int cols = 26) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetEdit
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.After.get -> System.Collections.Generic.List<eQuantic.UI.Primitives.SheetCellSnapshot>!
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.After.init -> void
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.At.get -> int
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.At.init -> void
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.Before.get -> System.Collections.Generic.List<eQuantic.UI.Primitives.SheetCellSnapshot>!
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.Before.init -> void
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.Count.get -> int
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.Count.init -> void
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.Kind.get -> eQuantic.UI.Primitives.SheetEditKind
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.Kind.init -> void
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.NewSize.get -> float
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.NewSize.init -> void
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.OldSize.get -> float
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.OldSize.init -> void
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.Removed.get -> System.Collections.Generic.List<eQuantic.UI.Primitives.SheetCellSnapshot>!
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.Removed.init -> void
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.SelectionAfter.get -> eQuantic.UI.Primitives.SheetRange
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.SelectionAfter.set -> void
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.SelectionBefore.get -> eQuantic.UI.Primitives.SheetRange
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.SelectionBefore.set -> void
+*REMOVED*eQuantic.UI.Primitives.SheetEdit.SheetEdit() -> void
+*REMOVED*eQuantic.UI.Primitives.SheetEditKind
+*REMOVED*eQuantic.UI.Primitives.SheetEditKind.DeleteCols = 4 -> eQuantic.UI.Primitives.SheetEditKind
+*REMOVED*eQuantic.UI.Primitives.SheetEditKind.DeleteRows = 2 -> eQuantic.UI.Primitives.SheetEditKind
+*REMOVED*eQuantic.UI.Primitives.SheetEditKind.InsertCols = 3 -> eQuantic.UI.Primitives.SheetEditKind
+*REMOVED*eQuantic.UI.Primitives.SheetEditKind.InsertRows = 1 -> eQuantic.UI.Primitives.SheetEditKind
+*REMOVED*eQuantic.UI.Primitives.SheetEditKind.ResizeCol = 6 -> eQuantic.UI.Primitives.SheetEditKind
+*REMOVED*eQuantic.UI.Primitives.SheetEditKind.ResizeRow = 5 -> eQuantic.UI.Primitives.SheetEditKind
+*REMOVED*eQuantic.UI.Primitives.SheetEditKind.SetCells = 0 -> eQuantic.UI.Primitives.SheetEditKind
+*REMOVED*eQuantic.UI.Primitives.SheetHistory
+*REMOVED*eQuantic.UI.Primitives.SheetHistory.CanRedo.get -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetHistory.CanUndo.get -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetHistory.Clear() -> void
+*REMOVED*eQuantic.UI.Primitives.SheetHistory.PopRedo() -> eQuantic.UI.Primitives.SheetEdit?
+*REMOVED*eQuantic.UI.Primitives.SheetHistory.PopUndo() -> eQuantic.UI.Primitives.SheetEdit?
+*REMOVED*eQuantic.UI.Primitives.SheetHistory.Push(eQuantic.UI.Primitives.SheetEdit! edit) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetHistory.SheetHistory() -> void
+*REMOVED*eQuantic.UI.Primitives.SheetKeymap
+*REMOVED*eQuantic.UI.Primitives.SheetMotion
+*REMOVED*eQuantic.UI.Primitives.SheetMotion.Cell = 0 -> eQuantic.UI.Primitives.SheetMotion
+*REMOVED*eQuantic.UI.Primitives.SheetMotion.DataEdge = 1 -> eQuantic.UI.Primitives.SheetMotion
+*REMOVED*eQuantic.UI.Primitives.SheetMotion.RowBoundary = 2 -> eQuantic.UI.Primitives.SheetMotion
+*REMOVED*eQuantic.UI.Primitives.SheetMotion.SheetBoundary = 3 -> eQuantic.UI.Primitives.SheetMotion
+*REMOVED*eQuantic.UI.Primitives.SheetRange
+*REMOVED*eQuantic.UI.Primitives.SheetRange.Anchor.get -> eQuantic.UI.Primitives.CellRef
+*REMOVED*eQuantic.UI.Primitives.SheetRange.Anchor.init -> void
+*REMOVED*eQuantic.UI.Primitives.SheetRange.BottomRow.get -> int
+*REMOVED*eQuantic.UI.Primitives.SheetRange.ColCount.get -> int
+*REMOVED*eQuantic.UI.Primitives.SheetRange.Contains(eQuantic.UI.Primitives.CellRef cell) -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetRange.Deconstruct(out eQuantic.UI.Primitives.CellRef Anchor, out eQuantic.UI.Primitives.CellRef Focus) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetRange.Equals(eQuantic.UI.Primitives.SheetRange other) -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetRange.Focus.get -> eQuantic.UI.Primitives.CellRef
+*REMOVED*eQuantic.UI.Primitives.SheetRange.Focus.init -> void
+*REMOVED*eQuantic.UI.Primitives.SheetRange.IsSingleCell.get -> bool
+*REMOVED*eQuantic.UI.Primitives.SheetRange.LeftCol.get -> int
+*REMOVED*eQuantic.UI.Primitives.SheetRange.RightCol.get -> int
+*REMOVED*eQuantic.UI.Primitives.SheetRange.RowCount.get -> int
+*REMOVED*eQuantic.UI.Primitives.SheetRange.SheetRange() -> void
+*REMOVED*eQuantic.UI.Primitives.SheetRange.SheetRange(eQuantic.UI.Primitives.CellRef Anchor, eQuantic.UI.Primitives.CellRef Focus) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetRange.SheetRange(eQuantic.UI.Primitives.CellRef cell) -> void
+*REMOVED*eQuantic.UI.Primitives.SheetRange.TopLeft.get -> eQuantic.UI.Primitives.CellRef
+*REMOVED*eQuantic.UI.Primitives.SheetRange.TopRow.get -> int
+*REMOVED*eQuantic.UI.Primitives.SheetSurface.Controller.get -> eQuantic.UI.Primitives.SheetController!
+*REMOVED*eQuantic.UI.Primitives.SheetSurface.Controller.init -> void
+*REMOVED*eQuantic.UI.Primitives.SheetSurface.FirstCol.get -> int
+*REMOVED*eQuantic.UI.Primitives.SheetSurface.FirstCol.init -> void
+*REMOVED*eQuantic.UI.Primitives.SheetSurface.FirstRow.get -> int
+*REMOVED*eQuantic.UI.Primitives.SheetSurface.FirstRow.init -> void
+*REMOVED*eQuantic.UI.Primitives.SheetSurface.HeaderHeight.get -> float
+*REMOVED*eQuantic.UI.Primitives.SheetSurface.HeaderHeight.init -> void
+*REMOVED*eQuantic.UI.Primitives.SheetSurface.HeaderWidth.get -> float
+*REMOVED*eQuantic.UI.Primitives.SheetSurface.HeaderWidth.init -> void
+*REMOVED*eQuantic.UI.Primitives.SheetSurface.SheetSurface(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.SheetController! controller) -> void
+*REMOVED*eQuantic.UI.Primitives.TsvCodec
+*REMOVED*override eQuantic.UI.Primitives.CellRef.GetHashCode() -> int
+*REMOVED*override eQuantic.UI.Primitives.SheetCellSnapshot.GetHashCode() -> int
+*REMOVED*override eQuantic.UI.Primitives.SheetRange.GetHashCode() -> int
+*REMOVED*static eQuantic.UI.Primitives.CellRef.FromKey(int key) -> eQuantic.UI.Primitives.CellRef
+*REMOVED*static eQuantic.UI.Primitives.CellRef.ParseA1(string! text) -> eQuantic.UI.Primitives.CellRef?
+*REMOVED*static eQuantic.UI.Primitives.CellRef.operator !=(eQuantic.UI.Primitives.CellRef left, eQuantic.UI.Primitives.CellRef right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CellRef.operator ==(eQuantic.UI.Primitives.CellRef left, eQuantic.UI.Primitives.CellRef right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.SheetCellSnapshot.operator !=(eQuantic.UI.Primitives.SheetCellSnapshot left, eQuantic.UI.Primitives.SheetCellSnapshot right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.SheetCellSnapshot.operator ==(eQuantic.UI.Primitives.SheetCellSnapshot left, eQuantic.UI.Primitives.SheetCellSnapshot right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.SheetKeymap.Handle(eQuantic.UI.Primitives.SheetController! sheet, string! key, bool command, bool shift) -> bool
+*REMOVED*static eQuantic.UI.Primitives.SheetKeymap.Type(eQuantic.UI.Primitives.SheetController! sheet, string! text) -> void
+*REMOVED*static eQuantic.UI.Primitives.SheetRange.operator !=(eQuantic.UI.Primitives.SheetRange left, eQuantic.UI.Primitives.SheetRange right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.SheetRange.operator ==(eQuantic.UI.Primitives.SheetRange left, eQuantic.UI.Primitives.SheetRange right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.TsvCodec.Parse(string! text) -> System.Collections.Generic.List<System.Collections.Generic.List<string!>!>!
+*REMOVED*static eQuantic.UI.Primitives.TsvCodec.Serialize(eQuantic.UI.Primitives.SheetDocument! document, eQuantic.UI.Primitives.SheetRange range) -> string!
+*REMOVED*~override eQuantic.UI.Primitives.CellRef.Equals(object obj) -> bool
+*REMOVED*~override eQuantic.UI.Primitives.CellRef.ToString() -> string
+*REMOVED*~override eQuantic.UI.Primitives.SheetCellSnapshot.Equals(object obj) -> bool
+*REMOVED*~override eQuantic.UI.Primitives.SheetCellSnapshot.ToString() -> string
+*REMOVED*~override eQuantic.UI.Primitives.SheetRange.Equals(object obj) -> bool
+*REMOVED*~override eQuantic.UI.Primitives.SheetRange.ToString() -> string
+*REMOVED*eQuantic.UI.Primitives.CellRef
+*REMOVED*eQuantic.UI.Primitives.CellRef.CellRef() -> void
+*REMOVED*eQuantic.UI.Primitives.CellRef.CellRef(int Row, int Col) -> void
+*REMOVED*eQuantic.UI.Primitives.CellRef.Col.get -> int
+*REMOVED*eQuantic.UI.Primitives.CellRef.Col.init -> void
+*REMOVED*eQuantic.UI.Primitives.CellRef.CompareTo(eQuantic.UI.Primitives.CellRef other) -> int
+*REMOVED*eQuantic.UI.Primitives.CellRef.Deconstruct(out int Row, out int Col) -> void
+*REMOVED*eQuantic.UI.Primitives.CellRef.Equals(eQuantic.UI.Primitives.CellRef other) -> bool
+*REMOVED*eQuantic.UI.Primitives.CellRef.Key.get -> int
+*REMOVED*eQuantic.UI.Primitives.CellRef.Row.get -> int
+*REMOVED*eQuantic.UI.Primitives.CellRef.Row.init -> void
+*REMOVED*eQuantic.UI.Primitives.CellRef.ToA1() -> string!
+*REMOVED*const eQuantic.UI.Primitives.SheetDocument.DefaultColWidth = 96 -> float
+*REMOVED*const eQuantic.UI.Primitives.SheetDocument.DefaultRowHeight = 28 -> float
+*REMOVED*const eQuantic.UI.Primitives.CellRef.MaxCols = 16384 -> int
+eQuantic.UI.Primitives.ISheetSurfaceModel
+eQuantic.UI.Primitives.ISheetSurfaceModel.HandleKey(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.ITextClipboard? clipboard) -> bool
+eQuantic.UI.Primitives.ISheetSurfaceModel.HandleText(string! text) -> bool
+eQuantic.UI.Primitives.ISheetSurfaceModel.CopyText() -> string!
+eQuantic.UI.Primitives.ISheetSurfaceModel.Cut() -> string!
+eQuantic.UI.Primitives.ISheetSurfaceModel.Paste(string! text) -> bool
+eQuantic.UI.Primitives.ISheetSurfaceModel.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks) -> bool
+eQuantic.UI.Primitives.SheetSurface.SheetSurface(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.ISheetSurfaceModel! model) -> void
+eQuantic.UI.Primitives.SheetSurface.Model.get -> eQuantic.UI.Primitives.ISheetSurfaceModel!
+eQuantic.UI.Primitives.SheetSurface.Model.init -> void
+eQuantic.UI.Primitives.PointerPhase.Cancel = 5 -> eQuantic.UI.Primitives.PointerPhase

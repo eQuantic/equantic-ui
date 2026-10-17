@@ -112,14 +112,12 @@ import type {
   TransitionSpecValue,
   ShortcutNode,
   KeyChordValue,
+  SheetSurfaceNode,
   VisualNodeValue,
 } from './nodes';
 import { declareShortcut, shortcutMark } from '../dom/shortcuts';
 import { installScrolledController } from './scrolled-pinned';
 import { declareScrollViewport } from './scroll-viewports';
-import { SheetKeymap } from './components/SheetKeymap';
-import { CellRef as CellRefCtor } from './components/CellRef';
-import { SheetRange as SheetRangeCtor } from './components/SheetRange';
 import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
 import { localizeDestination } from '../utils/culture-routes';
@@ -386,12 +384,7 @@ function lowerNodeKind(
     case 'spacer':
       return lowerSpacer(node as SpacerNode, horizontalAxis);
     case 'sheetSurface':
-      return lowerSheetSurface(
-        node as unknown as SheetSurfaceLowering,
-        context,
-        horizontalAxis,
-        path,
-      );
+      return lowerSheetSurface(node as unknown as SheetSurfaceNode, context, horizontalAxis, path);
     case 'scrollView':
       return lowerScrollView(node as ScrollViewNode, context, path);
     case 'loopMotion':
@@ -804,7 +797,11 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   }) as unknown as EventHandler;
   input.events['cut'] = ((event: ClipboardEvent) => {
     event.preventDefault();
-    event.clipboardData?.setData('text/plain', model.cut());
+    // The copy reaches the clipboard before anything is deleted, the keymap's order: a write
+    // that fails leaves the text where it was.
+    if (!event.clipboardData) return;
+    event.clipboardData.setData('text/plain', model.copyText());
+    model.cut();
     changed();
   }) as unknown as EventHandler;
 
@@ -1450,26 +1447,15 @@ function lowerLoopMotion(node: LoopMotionNode, context: LoweringContext, path: s
   return wrapper;
 }
 
-/** Spec A6 mirror: native browser scrolling — overflow auto on the axis, hidden on the cross. */
-interface SheetSurfaceLowering {
-  child: VisualNodeValue;
-  controller: import('./components/SheetController').SheetController;
-  firstRow?: number;
-  firstCol?: number;
-  headerWidth?: number;
-  headerHeight?: number;
-  onChanged?: (() => void) | null;
-  label?: string | null;
-}
-
 /**
- * The spreadsheet's web half: a focusable region whose keyboard goes through the SHARED
- * SheetKeymap (the same transpiled code the native host calls — the two cannot drift), whose
- * clicks resolve cells by the same prefix-sum arithmetic, and whose clipboard speaks TSV through
- * the browser's own copy/cut/paste events (no permissions dance — the user's ⌘C is the grant).
+ * The spreadsheet's web half: a focusable region that hands the platform's events to the sheet's
+ * MODEL (the C# `ISheetSurfaceModel`; PhotonHost hands the same model the same events, so the two
+ * cannot drift), and whose clipboard speaks through the browser's own copy/cut/paste events (no
+ * permissions dance — the user's ⌘C is the grant). What a key or a press means, and which cell a
+ * point lands on, are the model's answers: this half only says where on the surface a point is.
  */
 function lowerSheetSurface(
-  node: SheetSurfaceLowering,
+  node: SheetSurfaceNode,
   context: LoweringContext,
   horizontalAxis: boolean | null,
   path: string,
@@ -1500,141 +1486,99 @@ function lowerSheetSurface(
   view.attributes['role'] = 'grid';
   if (node.label) view.attributes['aria-label'] = node.label;
 
-  const sheet = node.controller;
+  const model = node.model;
   const changed = () => node.onChanged?.();
-
-  const cellFor = (target: HTMLElement, clientX: number, clientY: number): CellRefCtor => {
+  const local = (target: HTMLElement, clientX: number, clientY: number) => {
     const box = target.getBoundingClientRect();
-    const gridX = clientX - box.left - (node.headerWidth ?? 0);
-    const gridY = clientY - box.top - (node.headerHeight ?? 0);
-    const doc = sheet.document;
-    let col = node.firstCol ?? 0;
-    let acc = 0;
-    while (col < doc.cols - 1 && acc + doc.colWidth(col) <= gridX) {
-      acc += doc.colWidth(col);
-      col++;
-    }
-    let row = node.firstRow ?? 0;
-    acc = 0;
-    while (row < doc.rows - 1 && acc + doc.rowHeight(row) <= gridY) {
-      acc += doc.rowHeight(row);
-      row++;
-    }
-    return new CellRefCtor(
-      Math.max(0, Math.min(row, doc.rows - 1)),
-      Math.max(0, Math.min(col, doc.cols - 1)),
-    );
-  };
-  const cellAt = (event: MouseEvent): CellRefCtor =>
-    cellFor(event.currentTarget as HTMLElement, event.clientX, event.clientY);
-
-  // The bottom-right corner of the selection's bottom-right CELL — where the fill handle sits.
-  // The inverse of cellFor, in client coordinates.
-  const fillHandleCorner = (target: HTMLElement): { x: number; y: number } => {
-    const box = target.getBoundingClientRect();
-    const doc = sheet.document;
-    let x = box.left + (node.headerWidth ?? 0);
-    for (let c = node.firstCol ?? 0; c <= sheet.selection.rightCol; c++) x += doc.colWidth(c);
-    let y = box.top + (node.headerHeight ?? 0);
-    for (let r = node.firstRow ?? 0; r <= sheet.selection.bottomRow; r++) y += doc.rowHeight(r);
-    return { x, y };
+    return { x: clientX - box.left, y: clientY - box.top };
   };
 
   view.events['keydown'] = ((event: KeyboardEvent) => {
-    const command = event.metaKey || event.ctrlKey;
-    // ⌘C/⌘X/⌘V fall through to the browser's copy/cut/paste events below — intercepting the
-    // keydown would starve them of clipboardData.
-    if (command && (event.key === 'c' || event.key === 'x' || event.key === 'v')) return;
-    if (SheetKeymap.handle(sheet, event.key, command, event.shiftKey)) {
+    const modifiers = modifiersOf(event);
+    // No clipboard is handed over: the browser's own copy, cut and paste events carry the text
+    // (below), and claiming ⌘C here would cancel the very event that brings it.
+    if (model.handleKey(event.key, modifiers, null)) {
       event.preventDefault();
       changed();
       return;
     }
-    if (!command && event.key.length === 1) {
-      SheetKeymap.type(sheet, event.key);
+    // A key that names one character, with no command held, is what the user typed.
+    if ((modifiers & 4) === 0 && event.key.length === 1 && model.handleText(event.key)) {
       event.preventDefault();
       changed();
     }
   }) as EventHandler;
 
   view.events['mousedown'] = ((event: MouseEvent) => {
-    // The keyboard follows the click: focus explicitly — relying on the browser's focus-on-click
-    // left the keydown handler deaf on some engines.
     const target = event.currentTarget as HTMLElement;
-    target.focus();
-    if (sheet.editing) {
-      sheet.commitEdit(); // clicking away lands the draft, like Excel
-    }
-
-    // Excel's little square: a grab near the selection's bottom-right corner starts a FILL drag.
-    const corner = fillHandleCorner(target);
-    const onFillHandle =
-      Math.abs(event.clientX - corner.x) <= 8 && Math.abs(event.clientY - corner.y) <= 8;
-    if (onFillHandle) {
-      sheet.beginFill();
-      const move = (ev: MouseEvent) => {
-        sheet.updateFill(cellFor(target, ev.clientX, ev.clientY));
-        changed();
-      };
-      const up = () => {
-        document.removeEventListener('mousemove', move);
-        document.removeEventListener('mouseup', up);
-        sheet.commitFill();
-        changed();
-      };
-      document.addEventListener('mousemove', move);
-      document.addEventListener('mouseup', up);
-      event.preventDefault();
-      changed();
-      return;
-    }
-
-    const cell = cellAt(event);
-    if (event.shiftKey) {
-      sheet.selectTo(cell); // the anchor stands, the selection stretches to the click
-      changed();
-      return;
-    }
-    sheet.selection = new SheetRangeCtor(cell);
-
-    // Drag-select: the anchor stays where the press landed, the focus follows the pointer —
-    // document-level listeners so the sweep survives leaving the grid.
-    const move = (ev: MouseEvent) => {
-      const at = cellFor(target, ev.clientX, ev.clientY);
-      sheet.selection = new SheetRangeCtor(sheet.selection.anchor, at);
-      changed();
-    };
-    const up = () => {
+    // Where the press landed is read BEFORE the keyboard moves. The keyboard follows the click,
+    // focused explicitly (relying on the browser's focus-on-click left the keydown handler deaf on
+    // some engines), and without the scroll `focus()` does by default: the surface is taller than its
+    // viewport, so the browser scrolled the scroller around it to bring its top into view, measured
+    // at 127px on the first press of the dashboard's sheet, and a point read after it landed five
+    // rows below the one pressed.
+    const at = local(target, event.clientX, event.clientY);
+    target.focus({ preventScroll: true });
+    // The platform counts the clicks — its double-click interval is a system setting, never ours.
+    model.handlePointer('down', at, modifiersOf(event), event.detail > 0 ? event.detail : 1);
+    // The press is the sheet's until it lifts: its moves and its release go to the model through
+    // document-level listeners, so a sweep survives leaving the grid. The model knows whether the
+    // press is growing the selection or dragging a fill, and answers whether a move changed it.
+    // A press can also end where this page never hears it lift (released outside the window, or
+    // after the window lost focus): the window's blur, or a move with no button held, says so,
+    // and the model is told the press was taken away, so a fill nobody let go of pours nothing.
+    const end = () => {
       document.removeEventListener('mousemove', move);
       document.removeEventListener('mouseup', up);
+      window.removeEventListener('blur', cancel);
+    };
+    const cancel = () => {
+      end();
+      if (model.handlePointer('cancel', { x: 0, y: 0 }, 0, 1)) changed();
+    };
+    const move = (ev: MouseEvent) => {
+      if (ev.buttons === 0) {
+        cancel();
+        return;
+      }
+      if (model.handlePointer('move', local(target, ev.clientX, ev.clientY), modifiersOf(ev), 1)) {
+        changed();
+      }
+    };
+    const up = (ev: MouseEvent) => {
+      end();
+      if (model.handlePointer('up', local(target, ev.clientX, ev.clientY), modifiersOf(ev), 1)) {
+        changed();
+      }
     };
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
-    changed();
-  }) as EventHandler;
-
-  view.events['dblclick'] = ((event: MouseEvent) => {
-    const cell = cellAt(event);
-    sheet.beginEdit(sheet.document.getCell(cell));
+    window.addEventListener('blur', cancel);
+    // The press is the surface's, as on a code surface: the browser's own reaction to it (a text
+    // sweep, a drag of what is under it) would fight the band and the fill the model draws.
+    event.preventDefault();
     changed();
   }) as EventHandler;
 
   view.events['copy'] = ((event: ClipboardEvent) => {
-    event.clipboardData?.setData('text/plain', sheet.copyTsv());
+    event.clipboardData?.setData('text/plain', model.copyText());
     event.preventDefault();
   }) as EventHandler;
 
   view.events['cut'] = ((event: ClipboardEvent) => {
-    event.clipboardData?.setData('text/plain', sheet.copyTsv());
-    sheet.clearSelection();
     event.preventDefault();
+    // The copy reaches the clipboard before anything is emptied, the keymap's order: a write
+    // that fails leaves every cell where it was.
+    if (!event.clipboardData) return;
+    event.clipboardData.setData('text/plain', model.copyText());
+    model.cut();
     changed();
   }) as EventHandler;
 
   view.events['paste'] = ((event: ClipboardEvent) => {
     const text = event.clipboardData?.getData('text/plain');
     if (text) {
-      sheet.pasteTsv(text);
+      model.paste(text);
       changed();
     }
     event.preventDefault();
@@ -1643,6 +1587,7 @@ function lowerSheetSurface(
   return view;
 }
 
+/** Spec A6 mirror: native browser scrolling — overflow auto on the axis, hidden on the cross. */
 function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: string): HtmlNode {
   const children: HtmlNode[] = [];
   const child = lowerNode(node.child, context, null, path + '/0');

@@ -1,17 +1,53 @@
-namespace eQuantic.UI.Primitives;
+using eQuantic.UI.Primitives;
+
+namespace eQuantic.UI.Sheet;
 
 /// <summary>
-/// ONE keymap for both targets (the code editor's pattern): everything a key MEANS on a sheet is
-/// here, on the controller — the native host and the web surface both call it, so ⌘→ can never
-/// drift between them. Clipboard stays with the platforms (they own it); Escape-leaves-the-sheet
-/// stays with the hosts (focus is theirs).
+/// What a KEY means to a sheet: Excel's keyboard, in the one place both targets agree. A host hands
+/// the key to the controller (<see cref="SheetController.HandleKey"/>), the surface's model, and this
+/// answers for it, so ⌘→ cannot drift between a window and a browser.
+/// <para>
+/// One keyboard serves both traditions. Excel's chords are the same on a Mac and elsewhere once
+/// <see cref="KeyModifiers.Command"/> stands for ⌘ or Ctrl, which is what it already says, so no
+/// keyboard convention is read here. Typed CHARACTERS do not come through here: what a keystroke
+/// produces is the platform's business, and it arrives as text (<see cref="SheetController.HandleText"/>).
+/// Focus is the host's, so Escape outside an edit is left to it.
+/// </para>
 /// </summary>
-[TwinIsTranspiled]
 public static class SheetKeymap
 {
-    /// <summary>Handles one key. Answers false for keys the sheet does not claim.</summary>
-    public static bool Handle(SheetController sheet, string key, bool command, bool shift)
+    /// <summary>
+    /// Runs the command <paramref name="key"/> means, and answers whether the sheet CLAIMED it. The
+    /// copy, cut and paste chords are claimed only with a <paramref name="clipboard"/> to serve them,
+    /// whether or not a cell is being edited (the draft has no selection of its own, so a copy takes
+    /// the selected cells): a host whose clipboard arrives as events of its own, a browser's copy,
+    /// cut and paste, hands none, and the chords are left for those events.
+    /// </summary>
+    public static bool Handle(SheetController sheet, string key, KeyModifiers modifiers,
+        ITextClipboard? clipboard = null)
     {
+        var command = (modifiers & KeyModifiers.Command) != 0;
+        var shift = (modifiers & KeyModifiers.Shift) != 0;
+
+        if (command && clipboard is not null && key.Length == 1)
+        {
+            switch (char.ToLowerInvariant(key[0]))
+            {
+                case 'c':
+                    clipboard.Write(sheet.CopyText());
+                    return true;
+                case 'x':
+                    // The copy reaches the clipboard before anything is emptied: a clipboard that
+                    // refuses the text leaves every cell where it was.
+                    clipboard.Write(sheet.CopyText());
+                    sheet.ClearSelection();
+                    return true;
+                case 'v':
+                    if (clipboard.Read() is { Length: > 0 } pasted) sheet.Paste(pasted);
+                    return true;
+            }
+        }
+
         var motion = command ? SheetMotion.DataEdge : SheetMotion.Cell;
 
         if (sheet.Editing)
@@ -59,7 +95,7 @@ public static class SheetKeymap
     }
 
     /// <summary>Typed text, Excel's way: the first character replaces (a fresh draft), the rest
-    /// append. Both targets' text pipelines call this.</summary>
+    /// append.</summary>
     public static void Type(SheetController sheet, string text)
     {
         if (sheet.Editing) sheet.TypeIntoDraft(text);

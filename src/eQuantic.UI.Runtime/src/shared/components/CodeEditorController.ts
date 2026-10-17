@@ -339,6 +339,7 @@ export class CodeEditorController {
                     return true;
                 }
             case 'up':
+            case 'cancel':
                 this._dragging = false;
                 return false;
             default:

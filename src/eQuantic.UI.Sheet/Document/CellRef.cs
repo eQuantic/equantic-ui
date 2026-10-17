@@ -1,4 +1,4 @@
-namespace eQuantic.UI.Primitives;
+namespace eQuantic.UI.Sheet;
 
 /// <summary>
 /// A cell address: 0-based row and column. <see cref="Key"/> is the SINGLE integer the document
@@ -6,7 +6,6 @@ namespace eQuantic.UI.Primitives;
 /// (identity, not value), so the key crosses targets as an int. 16384 columns is Excel's own
 /// ceiling, which makes the packing stable and the interop honest.
 /// </summary>
-[TwinIsTranspiled]
 public readonly record struct CellRef(int Row, int Col) : IComparable<CellRef>
 {
     public const int MaxCols = 16384;
@@ -54,31 +53,4 @@ public readonly record struct CellRef(int Row, int Col) : IComparable<CellRef>
         if (row == 0) return null;
         return new CellRef(row - 1, col - 1);
     }
-}
-
-/// <summary>
-/// A rectangular selection: the ANCHOR is where it started, the FOCUS is the corner the keyboard
-/// moves — the same two-ended shape the code editor's range has, in two dimensions. A single cell
-/// is a range whose ends agree.
-/// </summary>
-[TwinIsTranspiled]
-public readonly record struct SheetRange(CellRef Anchor, CellRef Focus)
-{
-    public SheetRange(CellRef cell) : this(cell, cell) { }
-
-    public bool IsSingleCell => Anchor == Focus;
-
-    public int TopRow => Math.Min(Anchor.Row, Focus.Row);
-    public int BottomRow => Math.Max(Anchor.Row, Focus.Row);
-    public int LeftCol => Math.Min(Anchor.Col, Focus.Col);
-    public int RightCol => Math.Max(Anchor.Col, Focus.Col);
-
-    public int RowCount => BottomRow - TopRow + 1;
-    public int ColCount => RightCol - LeftCol + 1;
-
-    public bool Contains(CellRef cell) =>
-        cell.Row >= TopRow && cell.Row <= BottomRow && cell.Col >= LeftCol && cell.Col <= RightCol;
-
-    /// <summary>The top-left corner — where a paste lands, where reading starts.</summary>
-    public CellRef TopLeft => new(TopRow, LeftCol);
 }
