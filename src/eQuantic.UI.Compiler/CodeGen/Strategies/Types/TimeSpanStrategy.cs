@@ -9,13 +9,36 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// <summary>
 /// Maps <c>System.TimeSpan</c> to the runtime <c>TimeSpan</c> compat type (tick-precise, .NET "c"
 /// formatting). Construction and statics (<c>FromSeconds</c>, …) route through the <c>timeSpan</c>
-/// factory; instance members/methods become camelCase calls, but a call to <c>ToString</c>, which is
-/// the formatter's. Operators are handled by BinaryExpressionStrategy. Priority 15, gated on the
-/// semantic type.
+/// factory; an instance member is the twin's, by the name <see cref="Instance"/> gives it, and a call to
+/// <c>ToString</c> is the formatter's. Only what the twin carries is claimed: any other member is left to
+/// the fallbacks, which refuse it (EQ2004), where it was written camel-cased on a twin that had no such
+/// member (<c>ts.tryFormat(…)</c>, #839). A method group is no member access here: it is the delegate its
+/// call is (<see cref="Expressions.MethodGroupStrategy"/>). Operators are handled by
+/// BinaryExpressionStrategy. Priority 15, gated on the semantic type.
 /// </summary>
 public class TimeSpanStrategy : ConversionStrategyBase
 {
     private const string TypeName = "System.TimeSpan";
+
+    /// <summary>The instance members the twin carries, by the name it carries each under.</summary>
+    private static readonly Dictionary<string, string> Instance = new(StringComparer.Ordinal)
+    {
+        ["Days"] = "days", ["Hours"] = "hours", ["Minutes"] = "minutes", ["Seconds"] = "seconds",
+        ["Milliseconds"] = "milliseconds", ["Microseconds"] = "microseconds", ["Nanoseconds"] = "nanoseconds",
+        ["Ticks"] = "ticks", ["TotalDays"] = "totalDays", ["TotalHours"] = "totalHours", ["TotalMinutes"] = "totalMinutes",
+        ["TotalSeconds"] = "totalSeconds", ["TotalMilliseconds"] = "totalMilliseconds",
+        ["TotalMicroseconds"] = "totalMicroseconds", ["TotalNanoseconds"] = "totalNanoseconds",
+        ["Add"] = "add", ["Subtract"] = "sub", ["Negate"] = "negate", ["Duration"] = "duration",
+        ["Multiply"] = "multiply", ["Divide"] = "divide", ["CompareTo"] = "compareTo", ["Equals"] = "equals",
+        ["GetHashCode"] = "getHashCode",
+    };
+
+    /// <summary>The statics the factory carries: a property read as its member, a method called through it.</summary>
+    private static readonly HashSet<string> Static = new(StringComparer.Ordinal)
+    {
+        "Zero", "MaxValue", "MinValue", "FromDays", "FromHours", "FromMinutes", "FromSeconds", "FromMilliseconds",
+        "FromMicroseconds", "FromTicks", "Compare", "Equals",
+    };
 
     public override bool CanConvert(SyntaxNode node, ConversionContext context)
     {
@@ -38,10 +61,11 @@ public class TimeSpanStrategy : ConversionStrategyBase
                 return false;
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
-                return IsTimeSpanMember(ma, context);
+                return IsTimeSpanMember(ma, context) && Carried(ma, context);
 
-            case MemberAccessExpressionSyntax member:
-                return IsTimeSpanMember(member, context);
+            // A read: a method named without a call is a group, the delegate its call is.
+            case MemberAccessExpressionSyntax member when context.SemanticHelper.GetSymbol(member) is not IMethodSymbol:
+                return IsTimeSpanMember(member, context) && Carried(member, context);
 
             default:
                 return false;
@@ -68,7 +92,7 @@ public class TimeSpanStrategy : ConversionStrategyBase
                 }
                 var args = ConvertArgs(inv.ArgumentList, context);
                 var receiver = context.Converter.ConvertExpression(ma.Expression);
-                return $"{receiver}.{name.ToCamelCase()}({args})";
+                return $"{receiver}.{Instance[name]}({args})";
             }
 
             case MemberAccessExpressionSyntax member:
@@ -80,7 +104,7 @@ public class TimeSpanStrategy : ConversionStrategyBase
                     return name == "Zero" ? $"{Eq.TimeSpan}.zero" : $"{Eq.TimeSpan}.{name.ToCamelCase()}()";
                 }
                 var receiver = context.Converter.ConvertExpression(member.Expression);
-                return $"{receiver}.{name.ToCamelCase()}";
+                return $"{receiver}.{Instance[name]}";
             }
 
             default:
@@ -111,6 +135,14 @@ public class TimeSpanStrategy : ConversionStrategyBase
             .Select(place => place ?? "undefined");
         var parts = arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
         return JsExprWriter.Write(JsExpr.Template($"{callee}({string.Join(", ", filled)})", parts));
+    }
+
+    /// <summary>Whether the twin, or the factory for a static, carries the member <paramref name="ma"/>
+    /// names.</summary>
+    private static bool Carried(MemberAccessExpressionSyntax ma, ConversionContext context)
+    {
+        var name = ma.Name.Identifier.ValueText;
+        return IsStaticAccess(ma, context) ? Static.Contains(name) : Instance.ContainsKey(name);
     }
 
     private static bool IsTimeSpanMember(MemberAccessExpressionSyntax ma, ConversionContext context)

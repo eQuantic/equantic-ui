@@ -66,6 +66,18 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
                 return JsExpr.Callish($"{JsExprWriter.WriteIn(negatable, JsPrecedence.Call)}.neg()");
             }
 
+            // A TIMESPAN is the runtime's TimeSpan, which JavaScript's `-` and `+` coerce into NaN: its
+            // negation is the twin's, which refuses the least span as .NET does, and `+` is the span (#839).
+            if (prefix.OperatorToken.Text is "-" or "+"
+                && context.SemanticHelper.GetType(prefix.Operand) is { } spanType && spanType.IsNamed("System.TimeSpan"))
+            {
+                var span = context.Converter.ConvertIr(prefix.Operand);
+                if (prefix.OperatorToken.Text == "+") return span;
+                JsExpr Negate(JsExpr value) => JsExpr.Callish($"{JsExprWriter.WriteIn(value, JsPrecedence.Call)}.negate()");
+                // A nullable one negates its value inside the lift, as C#'s lifted operator answers null.
+                return spanType.IsNullableValue() ? NullableLift.Unary(span, Negate, context) : Negate(span);
+            }
+
             if (prefix.OperatorToken.Text == "-")
                 return Negated(context.Converter.ConvertIr(prefix.Operand), prefix, context);
             if (prefix.OperatorToken.Text == "~")

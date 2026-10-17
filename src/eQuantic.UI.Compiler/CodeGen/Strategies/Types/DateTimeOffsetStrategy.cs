@@ -10,10 +10,33 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// camelCase. Operators (+ - and comparisons) are handled by BinaryExpressionStrategy. Priority 15,
 /// gated on the receiver type (robust against members resolving to interfaces). A constructor is
 /// <see cref="DateTimeConstructionStrategy"/>'s.
+/// <para>
+/// Only what the twin and the factory carry is claimed (<see cref="Instance"/>, <see cref="Static"/>): any
+/// other member is left to the fallbacks, which refuse it (EQ2004), where it was written camel-cased on a
+/// twin that had no such member, <c>o.toFileTime()</c> and <c>dateTimeOffset.compare(…)</c> (#839).
+/// Subtracting an instant is <c>diff</c>. A method group is the delegate its call is.
+/// </para>
 /// </summary>
 public class DateTimeOffsetStrategy : ConversionStrategyBase
 {
     private const string TypeName = "System.DateTimeOffset";
+
+    /// <summary>The instance members the twin carries, by the name C# gives them.</summary>
+    private static readonly HashSet<string> Instance = new(StringComparer.Ordinal)
+    {
+        "UtcTicks", "Year", "Month", "Day", "Hour", "Minute", "Second", "Millisecond", "Microsecond", "Nanosecond",
+        "DayOfWeek", "DayOfYear", "Ticks", "Offset", "TotalOffsetMinutes", "DateTime", "LocalDateTime", "UtcDateTime",
+        "Date", "TimeOfDay", "AddTicks", "AddDays", "AddHours", "AddMinutes", "AddSeconds", "AddMilliseconds",
+        "AddMicroseconds", "AddMonths", "AddYears", "ToLocalTime", "ToOffset", "ToUniversalTime", "Add", "Subtract",
+        "CompareTo", "Equals", "EqualsExact", "GetHashCode", "ToUnixTimeSeconds", "ToUnixTimeMilliseconds",
+    };
+
+    /// <summary>The statics the factory carries.</summary>
+    private static readonly HashSet<string> Static = new(StringComparer.Ordinal)
+    {
+        "Now", "UtcNow", "MinValue", "MaxValue", "UnixEpoch", "FromUnixTimeSeconds", "FromUnixTimeMilliseconds",
+        "Compare", "Equals",
+    };
 
     public override bool CanConvert(SyntaxNode node, ConversionContext context)
     {
@@ -29,9 +52,10 @@ public class DateTimeOffsetStrategy : ConversionStrategyBase
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.ValueText: "ParseExact" or "TryParseExact" } }:
                 return false;
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
-                return IsMember(ma, context);
-            case MemberAccessExpressionSyntax member:
-                return IsMember(member, context);
+                return IsMember(ma, context) && Carried(ma, context);
+            // A read: a method named without a call is a group, the delegate its call is.
+            case MemberAccessExpressionSyntax member when context.SemanticHelper.GetSymbol(member) is not IMethodSymbol:
+                return IsMember(member, context) && Carried(member, context);
             default:
                 return false;
         }
@@ -49,7 +73,10 @@ public class DateTimeOffsetStrategy : ConversionStrategyBase
                 if (IsStaticAccess(ma, context))
                     return $"{Eq.DateTimeOffset}.{name.ToCamelCase()}({args})";
                 var receiver = context.Converter.ConvertExpression(ma.Expression);
-                return $"{receiver}.{name.ToCamelCase()}({args})";
+                // Subtracting an instant is the span between the two, where `subtract` takes a span off it.
+                var twin = name == "Subtract" && context.SemanticHelper.GetSymbol(inv) is IMethodSymbol { Parameters: [{ Type: var operand }] }
+                    && IsType(operand) ? "diff" : name.ToCamelCase();
+                return $"{receiver}.{twin}({args})";
             }
 
             case MemberAccessExpressionSyntax member:
@@ -64,6 +91,14 @@ public class DateTimeOffsetStrategy : ConversionStrategyBase
             default:
                 return context.Unhandled(node, "DateTimeOffset");
         }
+    }
+
+    /// <summary>Whether the twin, or the factory for a static, carries the member <paramref name="ma"/>
+    /// names.</summary>
+    private static bool Carried(MemberAccessExpressionSyntax ma, ConversionContext context)
+    {
+        var name = ma.Name.Identifier.ValueText;
+        return IsStaticAccess(ma, context) ? Static.Contains(name) : Instance.Contains(name);
     }
 
     private static bool IsMember(MemberAccessExpressionSyntax ma, ConversionContext context)

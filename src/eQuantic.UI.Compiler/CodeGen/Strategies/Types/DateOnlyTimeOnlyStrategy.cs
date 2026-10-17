@@ -9,11 +9,28 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// Maps <c>System.DateOnly</c> and <c>System.TimeOnly</c> to the runtime compat types:
 /// <c>new DateOnly/TimeOnly(...)</c> -> <c>$eq.time.dateOnly/timeOnly(...)</c>; statics
 /// (<c>MinValue</c>, <c>FromDateTime</c>, <c>Parse</c>, …) -> factory members; instance
-/// members/methods -> camelCase. Priority 15, gated on the receiver type (robust against members
-/// that resolve to interfaces/extensions).
+/// members/methods -> camelCase. Only what the twins and their factories carry is claimed
+/// (<see cref="Carried"/>): any other member is left to the fallbacks, which refuse it (EQ2004), where it
+/// was written on a twin that had no such member, <c>d.toDateTime(…)</c> and <c>t.isBetween(…)</c> (#839).
+/// A method that hands a value back through an out (<c>AddHours(h, out wrapped)</c>) is no twin's either.
+/// A method group is the delegate its call is (<see cref="Expressions.MethodGroupStrategy"/>). Priority 15,
+/// gated on the receiver type (robust against members that resolve to interfaces/extensions).
 /// </summary>
 public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
 {
+    /// <summary>The members each twin carries, instance and static, by the name C# gives them.</summary>
+    private static readonly Dictionary<string, (HashSet<string> Instance, HashSet<string> Static)> Members = new(StringComparer.Ordinal)
+    {
+        ["dateOnly"] = (
+            ["Year", "Month", "Day", "DayOfWeek", "DayOfYear", "DayNumber", "AddDays", "AddMonths", "AddYears", "ToDateTime",
+                "CompareTo", "Equals", "GetHashCode", "ToShortDateString", "ToLongDateString"],
+            ["MinValue", "MaxValue", "FromDayNumber", "FromDateTime"]),
+        ["timeOnly"] = (
+            ["Hour", "Minute", "Second", "Millisecond", "Microsecond", "Nanosecond", "Ticks", "AddHours", "AddMinutes", "Add",
+                "IsBetween", "ToTimeSpan", "CompareTo", "Equals", "GetHashCode", "ToShortTimeString", "ToLongTimeString"],
+            ["MinValue", "MaxValue", "FromTimeSpan", "FromDateTime"]),
+    };
+
     /// <summary>The methods that are a standard specifier by another name.</summary>
     private static readonly Dictionary<string, string> CultureStrings = new(StringComparer.Ordinal)
     {
@@ -36,12 +53,14 @@ public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
             // graded it `eq` because the call named `$eq`. Left unclaimed, it is EQ1001 at build time.
             // A value's ToString is the formatter's (ToStringStrategy), as a DateTime's is (#469): the
             // twin's toString knew six tokens and no culture.
-            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } invocation:
                 return Kind(ma, context) != null
-                    && ma.Name.Identifier.ValueText is not ("ParseExact" or "TryParseExact" or "ToString");
+                    && ma.Name.Identifier.ValueText is not ("ParseExact" or "TryParseExact" or "ToString")
+                    && Carried(ma, context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol, context);
 
-            case MemberAccessExpressionSyntax member:
-                return Kind(member, context) != null;
+            // A read: a method named without a call is a group, the delegate its call is.
+            case MemberAccessExpressionSyntax member when context.SemanticHelper.GetSymbol(member) is not IMethodSymbol:
+                return Kind(member, context) != null && Carried(member, null, context);
 
             default:
                 return false;
@@ -122,6 +141,20 @@ public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
         if (symbol != null) return symbol.IsStatic;
         return context.CanGuess(ma.Expression)
             && KindOfName(ma.Expression.ToString()) != null; // "DateOnly"/"TimeOnly"
+    }
+
+    /// <summary>
+    /// Whether the twin, or its factory for a static, carries the member <paramref name="ma"/> names: by
+    /// its name, where a call has none of its parameters an out, which no twin hands back. Parse and
+    /// TryParse are TimeParseStrategy's, which runs first. Where no model says which type it is, the name
+    /// is all there is.
+    /// </summary>
+    private static bool Carried(MemberAccessExpressionSyntax ma, IMethodSymbol? method, ConversionContext context)
+    {
+        if (method?.Parameters.Any(parameter => parameter.RefKind is RefKind.Out or RefKind.Ref) == true) return false;
+        if (Kind(ma, context) is not { } kind || !Members.TryGetValue(kind, out var members)) return false;
+        var name = ma.Name.Identifier.ValueText;
+        return IsStaticAccess(ma, context) ? members.Static.Contains(name) : members.Instance.Contains(name);
     }
 
     private static string? KindOf(ITypeSymbol? type) => type?.ToDisplayString() switch

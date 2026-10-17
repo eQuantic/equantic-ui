@@ -198,6 +198,10 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
                 if (lifted != null) return lifted;
             }
 
+            // A number times a span is the span's multiply, the number still read first, as C# reads it.
+            if (op == "*" && IsNumber(lt) && rt.IsNamed("System.TimeSpan") && !rt.IsNullableValue())
+                return JsExpr.Template("{1}.multiply({0})", leftIr, rightIr);
+
             var dtResult = ConvertDateTimeOrTimeSpan(leftText, rightText, op, lt, rt);
             if (dtResult != null) return JsExpr.Opaque(dtResult);
         }
@@ -522,12 +526,22 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             };
         }
 
+        // A span scaled by a number, on either side, or divided by one: the twin's multiply and divide,
+        // which round the ticks as .NET's operators do, where JavaScript's own answered NaN (#839). A
+        // number on the left is handed to the span's multiply (the lift's operands are plain names; the
+        // direct form keeps C#'s order through a template).
+        if (lTs && IsNumber(rt))
+            return op switch { "*" => $"{left}.multiply({right})", "/" => $"{left}.divide({right})", _ => null };
+        if (IsNumber(lt) && rTs && op == "*")
+            return $"{right}.multiply({left})";
+
         if (lTs && rTs)
         {
             return op switch
             {
                 "+" => $"{left}.add({right})",
                 "-" => $"{left}.sub({right})",
+                "/" => $"{left}.divide({right})",
                 "==" => $"{left}.equals({right})",
                 "!=" => $"!{left}.equals({right})",
                 "<" => $"({left}.compareTo({right}) < 0)",
@@ -540,6 +554,13 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
 
         return null;
     }
+
+    /// <summary>Whether an operand of <paramref name="type"/> is a number a span is scaled by: a
+    /// <c>double</c>, which the operators take, or a type C# converts to one.</summary>
+    private static bool IsNumber(ITypeSymbol? type) =>
+        type?.SpecialType is SpecialType.System_Double or SpecialType.System_Single or SpecialType.System_Int32
+            or SpecialType.System_Int64 or SpecialType.System_Int16 or SpecialType.System_Byte or SpecialType.System_SByte
+            or SpecialType.System_UInt16 or SpecialType.System_UInt32 or SpecialType.System_UInt64;
 
     /// <summary>A char operand's CODE UNIT: constant literals fold to the number, expressions
     /// read charCodeAt(0). The parentheses keep a compound operand intact.</summary>

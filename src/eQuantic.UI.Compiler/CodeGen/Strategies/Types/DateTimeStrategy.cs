@@ -6,9 +6,13 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
 /// <summary>
 /// Maps <c>System.DateTime</c> to the runtime <c>DateTime</c> compat type (tick-precise, .NET-faithful).
-/// Statics route through the <c>dateTime</c> factory; instance members/methods become camelCase calls on
-/// the value. A constructor is <see cref="DateTimeConstructionStrategy"/>'s, and operators (+ - and
-/// comparisons) are handled by BinaryExpressionStrategy.
+/// Statics route through the <c>dateTime</c> factory; an instance member is the value's, by the name
+/// <see cref="Instance"/> gives it. Only what the twin and the factory carry is claimed: any other member
+/// is left to the fallbacks, which refuse it (EQ2004), where it was written camel-cased on a twin that
+/// had no such member, <c>dateTime.compare(…)</c> and <c>d.toBinary()</c> (#839). A method group is the
+/// delegate its call is (<see cref="Expressions.MethodGroupStrategy"/>). A constructor is
+/// <see cref="DateTimeConstructionStrategy"/>'s, and operators (+ - and comparisons) are handled by
+/// BinaryExpressionStrategy.
 /// </summary>
 /// <remarks>
 /// Priority 15 so it wins over the generic ToString (10), ObjectCreation (5) and member-access (0)
@@ -17,6 +21,30 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 public class DateTimeStrategy : ConversionStrategyBase
 {
     private const string TypeName = "System.DateTime";
+
+    /// <summary>The instance members the twin carries, by the name it carries each under. Subtracting a
+    /// date is <c>diff</c>, and a span <c>subtract</c> (<see cref="Twin"/>).</summary>
+    private static readonly Dictionary<string, string> Instance = new(StringComparer.Ordinal)
+    {
+        ["Year"] = "year", ["Month"] = "month", ["Day"] = "day", ["Hour"] = "hour", ["Minute"] = "minute",
+        ["Second"] = "second", ["Millisecond"] = "millisecond", ["Microsecond"] = "microsecond",
+        ["Nanosecond"] = "nanosecond", ["DayOfWeek"] = "dayOfWeek", ["DayOfYear"] = "dayOfYear", ["Date"] = "date",
+        ["TimeOfDay"] = "timeOfDay", ["Ticks"] = "ticks", ["Kind"] = "kind", ["ToLocalTime"] = "toLocalTime",
+        ["ToUniversalTime"] = "toUniversalTime", ["AddTicks"] = "addTicks", ["AddDays"] = "addDays",
+        ["AddHours"] = "addHours", ["AddMinutes"] = "addMinutes", ["AddSeconds"] = "addSeconds",
+        ["AddMilliseconds"] = "addMilliseconds", ["AddMicroseconds"] = "addMicroseconds", ["AddMonths"] = "addMonths",
+        ["AddYears"] = "addYears", ["Add"] = "add", ["Subtract"] = "subtract", ["CompareTo"] = "compareTo",
+        ["Equals"] = "equals", ["GetHashCode"] = "getHashCode", ["ToShortDateString"] = "", ["ToLongDateString"] = "",
+        ["ToShortTimeString"] = "", ["ToLongTimeString"] = "",
+    };
+
+    /// <summary>The statics the factory carries: a property read as a call of its member, a method called
+    /// through it.</summary>
+    private static readonly HashSet<string> Static = new(StringComparer.Ordinal)
+    {
+        "Now", "UtcNow", "Today", "MinValue", "MaxValue", "UnixEpoch", "DaysInMonth", "IsLeapYear", "SpecifyKind",
+        "Compare", "Equals",
+    };
 
     /// <summary>The methods that are a standard specifier by another name.</summary>
     private static readonly Dictionary<string, string> CultureStrings = new(StringComparer.Ordinal)
@@ -44,10 +72,11 @@ public class DateTimeStrategy : ConversionStrategyBase
                 return false;
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
-                return IsDateTimeMember(ma, context);
+                return IsDateTimeMember(ma, context) && Carried(ma, context);
 
-            case MemberAccessExpressionSyntax member:
-                return IsDateTimeMember(member, context);
+            // A read: a method named without a call is a group, the delegate its call is.
+            case MemberAccessExpressionSyntax member when context.SemanticHelper.GetSymbol(member) is not IMethodSymbol:
+                return IsDateTimeMember(member, context) && Carried(member, context);
 
             default:
                 return false;
@@ -73,7 +102,7 @@ public class DateTimeStrategy : ConversionStrategyBase
                 // method by those names, so each was a TypeError in the browser (found in review, #388).
                 if (CultureStrings.TryGetValue(name, out var specifier))
                     return $"{Eq.Format}({receiver}, '{specifier}')";
-                return $"{receiver}.{name.ToCamelCase()}({args})";
+                return $"{receiver}.{Twin(name, context.SemanticHelper.GetSymbol(inv) as IMethodSymbol)}({args})";
             }
 
             case MemberAccessExpressionSyntax member:
@@ -85,13 +114,26 @@ public class DateTimeStrategy : ConversionStrategyBase
                     return $"{Eq.DateTime}.{name.ToCamelCase()}()";
                 }
                 var receiver = context.Converter.ConvertExpression(member.Expression);
-                return $"{receiver}.{name.ToCamelCase()}";
+                return $"{receiver}.{Instance[name]}";
             }
 
             default:
                 return context.Unhandled(node, "DateTime");
         }
     }
+
+    /// <summary>Whether the twin, or the factory for a static, carries the member <paramref name="ma"/>
+    /// names.</summary>
+    private static bool Carried(MemberAccessExpressionSyntax ma, ConversionContext context)
+    {
+        var name = ma.Name.Identifier.ValueText;
+        return IsStaticAccess(ma, context) ? Static.Contains(name) : Instance.ContainsKey(name);
+    }
+
+    /// <summary>The twin's name for an instance method: <c>Subtract</c> of a date is the span between
+    /// the two, <c>diff</c>, where its <c>subtract</c> takes a span off the date.</summary>
+    private static string Twin(string name, IMethodSymbol? method) =>
+        name == "Subtract" && method?.Parameters is [{ Type: var operand }] && IsType(operand) ? "diff" : Instance[name];
 
     private static bool IsDateTimeMember(MemberAccessExpressionSyntax ma, ConversionContext context)
     {
