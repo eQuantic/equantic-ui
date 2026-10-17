@@ -89,6 +89,41 @@ internal static class PlatformMemberRead
         return true;
     }
 
+    /// <summary>
+    /// Reports EQ2004 and answers true where <paramref name="node"/> reads or calls a STATIC of a package's type:
+    /// a property, a field or an ordinary method, through its type's name, an alias or <c>using static</c>. The
+    /// dispatcher asks it before any strategy (<c>CSharpToJsConverter.ConvertIr</c>), so it is the one place
+    /// deciding: a strategy that claims a node by its spelling (the numeric constants, an instant's statics,
+    /// <c>string.Empty</c>, the member access's <c>Guid.Empty</c>) wrote a package's static reached through an
+    /// alias named like the platform type as that type's member (#964). The model alone is asked. A constant and
+    /// an enum's member are their values, which the strategies write, and an extension is the call fence's.
+    /// </summary>
+    internal static bool ReportIfPackageStatic(ExpressionSyntax node, ConversionContext context)
+    {
+        if (node is InvocationExpressionSyntax call)
+        {
+            if (context.SemanticHelper.GetSymbol(call) is not IMethodSymbol
+                {
+                    IsStatic: true, MethodKind: MethodKind.Ordinary, IsExtensionMethod: false, ContainingType: { } owner,
+                } method
+                || !owner.IsPackages())
+                return false;
+            context.Report(call, ConversionSeverity.Error, "EQ2004",
+                $"'{owner.ToDisplayString()}.{method.Name}' has no JavaScript translation: {owner.PackageReason()}. "
+                + TwinlessTypeExtensions.PackageRemedy);
+            return true;
+        }
+        if (node is not (MemberAccessExpressionSyntax or IdentifierNameSyntax)) return false;
+        // The name a member access, a call or a ?. binding stands on is part of that node.
+        if (node.Parent is MemberAccessExpressionSyntax access && access.Name == node) return false;
+        if (node.Parent is InvocationExpressionSyntax invocation && invocation.Expression == node) return false;
+        if (node.Parent is MemberBindingExpressionSyntax) return false;
+        var symbol = context.SemanticHelper.GetSymbol(node);
+        return symbol is IPropertySymbol { IsStatic: true } or IFieldSymbol { IsStatic: true, HasConstantValue: false }
+            && symbol.ContainingType.IsPackages()
+            && ReportIfUntranslated(symbol, node, context);
+    }
+
     /// <summary>Whether <paramref name="symbol"/> is a property or a field of a .NET class or struct
     /// that the browser does not carry by its name, or a static one of a package's type, whatever kind of
     /// type declares it, which has no twin and no module to carry it (#822). A member a .NET interface

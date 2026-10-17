@@ -69,13 +69,6 @@ public class MemberAccessStrategy : IExpressionIrStrategy
             return JsExpr.Literal("undefined");
         }
 
-        // A package type's STATIC has no name in the browser, whatever its name says: refused before every
-        // shortcut keyed by a name (`Guid.Empty`, `DateTime.Now`, `string.Empty`, `Count`), which answers a
-        // package's member of that name as the platform's: `Status.Count` was `Status.count` (#961).
-        if (symbol is { IsStatic: true, ContainingType: { } owner } && owner.IsPackages()
-            && PlatformMemberRead.ReportIfUntranslated(symbol, node, context))
-            return JsExpr.Literal("undefined");
-
         if (symbol != null)
         {
             var containingType = symbol.ContainingType.ToDisplayString();
