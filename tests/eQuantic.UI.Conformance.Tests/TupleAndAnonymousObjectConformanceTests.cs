@@ -266,23 +266,81 @@ public class TupleAndAnonymousObjectConformanceTests
         ConformanceRunner.AssertVocabularyStatementsSameAsDotNet(statements);
     }
 
+    /// <summary>The types the object and enum member cases name besides <see cref="Prelude"/>'s: an enum with
+    /// an alias and a generic record.</summary>
+    public const string ObjectAndEnumPrelude = Prelude + """
+
+        public enum Shade { Black = 0, Grey = 1, Gray = Grey, White = 2 }
+        public record Box<T>(T Value);
+        """;
+
     public static readonly string[] ObjectAndEnumMemberCases =
     [
         // #902: static object.Equals(a, b) across null, boxed primitives, records, tuples, anonymous objects, and reference types.
         """return object.Equals(null, null) + "|" + object.Equals(1, null) + "|" + object.Equals(null, "a") + "|" + Object.Equals(1, 1) + "|" + System.Object.Equals(1, 2) + "|" + object.Equals(double.NaN, double.NaN) + "|" + object.Equals(1.50m, 1.5m);""",
         """var p = new Point(1, 2); var l1 = new List<int> { 1 }; var l2 = new List<int> { 1 }; return object.Equals(p, new Point(1, 2)) + "|" + object.Equals(p, new Point(1, 3)) + "|" + object.Equals((1, "a"), (1, "a")) + "|" + object.Equals(new { A = 1 }, new { A = 1 }) + "|" + object.Equals(new { A = (byte)1 }, new { A = 1 }) + "|" + object.Equals(l1, l1) + "|" + object.Equals(l1, l2);""",
-        // #909: inherited Equals(object) on a class receiver, and List<T>/T[] held as object compared by reference.
-        """var l1 = new List<int> { 1, 2 }; var l2 = new List<int> { 1, 2 }; object o1 = l1; object o2 = l2; Func<object?, bool> g = l1.Equals; var h1 = l1.GetHashCode(); l1.Add(3); return l1.Equals(l1) + "|" + l1.Equals(l2) + "|" + o1.Equals(o1) + "|" + o1.Equals(o2) + "|" + g(l1) + "|" + g(l2) + "|" + (h1 == l1.GetHashCode()) + "|" + (l1.GetHashCode() != l2.GetHashCode());""",
-        """var a1 = new[] { 1, 2 }; var a2 = new[] { 1, 2 }; object o1 = a1; object o2 = a2; var set = new HashSet<object> { a1, a2, new List<int> { 1 }, new List<int> { 1 } }; return a1.Equals(a1) + "|" + a1.Equals(a2) + "|" + o1.Equals(o1) + "|" + o1.Equals(o2) + "|" + set.Count;""",
+        // #909: inherited Equals(object) on a class receiver, a List<T> and a T[] compared by reference where
+        // their type is in sight. One held as object, whose type is not, is #947's documented gap.
+        """var l1 = new List<int> { 1, 2 }; var l2 = new List<int> { 1, 2 }; object o1 = l1; Func<object?, bool> g = l1.Equals; var h1 = l1.GetHashCode(); l1.Add(3); return l1.Equals(l1) + "|" + l1.Equals(l2) + "|" + o1.Equals(o1) + "|" + g(l1) + "|" + g(l2) + "|" + (h1 == l1.GetHashCode()) + "|" + (l1.GetHashCode() != l2.GetHashCode());""",
+        """var a1 = new[] { 1, 2 }; var a2 = new[] { 1, 2 }; object o1 = a1; return a1.Equals(a1) + "|" + a1.Equals(a2) + "|" + o1.Equals(o1) + "|" + new HashSet<int[]> { a1, a2 }.Count;""",
+        """var l1 = new List<int> { 1 }; var l2 = new List<int> { 1 }; object o1 = l1; return object.Equals(l1, l2) + "|" + object.Equals(l1, l1) + "|" + ((object)l1).Equals(l2) + "|" + ((object)l1).Equals(l1) + "|" + o1.Equals(l2) + "|" + object.Equals(o1, l2) + "|" + object.Equals(l2, o1) + "|" + l1.Equals((object)l2);""",
+        """var a1 = new[] { 1, 2 }; var a2 = new[] { 1, 2 }; object o1 = a1; return object.Equals(a1, a2) + "|" + object.Equals(a1, a1) + "|" + ((object)a1).Equals(a2) + "|" + o1.Equals(a2) + "|" + object.Equals(o1, a2) + "|" + object.Equals(a2, o1);""",
+        // A tuple held as object is an array the browser cannot tell from a list: it compares by its
+        // elements, as .NET compares it, in a set, a dictionary, Distinct and Equals (#947's review).
+        """var s = new HashSet<object> { (1, 2) }; return s.Contains((1, 2));""",
+        """var d = new Dictionary<object, int> { [(1, 2)] = 5 }; return d.ContainsKey((1, 2));""",
+        """return new object[] { (1, 2), (1, 2) }.Distinct().Count();""",
+        """object a = (1, 2), b = (1, 2); return a.Equals(b);""",
+        """return new Box<(int A, int B)>((1, 2)).Equals((object)new Box<(int, int)>((1, 2)));""",
         // #912: Equals and ToString on a null record or class instance throw NullReferenceException after evaluating any argument.
         """var log = ""; Point Arg() { log += "a"; return new Point(1, 2); } Point p = null!; string r = ""; try { r += p.Equals(Arg()); } catch (NullReferenceException) { r += "NRE1"; } try { r += "|" + ((object)p).Equals(Arg()); } catch (NullReferenceException) { r += "|NRE2"; } try { r += "|" + p.ToString(); } catch (NullReferenceException) { r += "|NRE3"; } Point? np = null; try { r += "|" + np.ToString(); } catch (NullReferenceException) { r += "|NRE4"; } return r + "|" + log;""",
         // #926: An enum's Equals, Equals method group, and GetHashCode match its underlying numeric value.
         """var s = Scale.Small; var l = Scale.Large; Func<object?, bool> eq = s.Equals; Func<int> h = l.GetHashCode; return s.Equals(Scale.Small) + "|" + s.Equals(Scale.Large) + "|" + s.Equals((object)Scale.Small) + "|" + s.Equals((object)0) + "|" + s.Equals(null) + "|" + eq(Scale.Small) + "|" + eq(Scale.Large) + "|" + (s.GetHashCode() == 0.GetHashCode()) + "|" + (l.GetHashCode() == 1.GetHashCode()) + "|" + (h() == 1.GetHashCode());""",
         // #927: An enum member that aliases another is the same value in ==, switch, pattern matching, ToString, GetHashCode, and Dictionary/HashSet.
         """var a = Shade.Grey; var b = Shade.Gray; var d = new Dictionary<Shade, int> { [Shade.Grey] = 7 }; var set = new HashSet<Shade> { Shade.Grey, Shade.Gray }; var matched = b switch { Shade.Grey => "hit", _ => "miss" }; var isGrey = b is Shade.Grey; return (a == b) + "|" + a.Equals(b) + "|" + (a.GetHashCode() == b.GetHashCode()) + "|" + a.ToString() + "|" + b.ToString() + "|" + $"{a},{b}" + "|" + d.ContainsKey(Shade.Gray) + "|" + d[Shade.Gray] + "|" + set.Count + "|" + matched + "|" + isGrey;""",
+        // A value of a type that refuses every other is unequal to a value of another type, which the
+        // browser holds alike, both still evaluated.
+        """var log = ""; byte One() { log += "a"; return 1; } int Two() { log += "b"; return 1; } return object.Equals((byte)1, 1) + "|" + object.Equals(1, 1.0) + "|" + object.Equals('a', "a") + "|" + object.Equals(1L, 1) + "|" + object.Equals(1, 1L) + "|" + object.Equals(1.5m, 1.5) + "|" + object.Equals((byte)1, (byte)1) + "|" + object.Equals(One(), Two()) + "|" + log + "|" + object.Equals((string?)null, (int?)null) + "|" + ((object)(byte)1).Equals(1) + "|" + ((object)(byte)1).Equals((byte)1);""",
+        // A tuple is no array and no list, whichever operand it is.
+        """var a = new[] { 1, 2 }; var l = new List<int> { 1, 2 }; return object.Equals((1, 2), a) + "|" + object.Equals(a, (1, 2)) + "|" + object.Equals((1, 2), l) + "|" + object.Equals(l, (1, 2)) + "|" + (1, 2).Equals(a) + "|" + object.Equals((1, 2), (1, 2));""",
     ];
 
     public static IEnumerable<object?[]> ObjectAndEnumCases() => Each(ObjectAndEnumMemberCases);
+
+    /// <summary>The classes the cases below name: one that does not override Equals, and two that do.</summary>
+    private const string Classes = """
+        using System;
+        using System.Collections.Generic;
+        public class Plain { public int X; }
+        public class Matcher { public override bool Equals(object? o) => o is string s && s == "x"; public override int GetHashCode() => 0; }
+        public class AnyMatcher { public override bool Equals(object? o) => true; public override int GetHashCode() => 0; }
+        """;
+
+    /// <summary>
+    /// <c>Equals</c> and the static <c>object.Equals</c> over a class, which only the module graph an app's
+    /// build writes carries: by reference where it does not override Equals, and through the FIRST operand's
+    /// override where it does, whatever the second operand is and in whichever order the call names them.
+    /// </summary>
+    private static readonly (string Name, string Statements)[] ClassCases =
+    [
+        ("a class that does not override Equals, by reference",
+            """var p1 = new Plain { X = 1 }; var p2 = new Plain { X = 1 }; object o = p1; return object.Equals(p1, p2) + "|" + object.Equals(p1, p1) + "|" + o.Equals(p2) + "|" + ((object)p1).Equals(p2) + "|" + object.Equals(o, p1);"""),
+        ("the first parameter's Equals, named arguments evaluated as written",
+            """var log = ""; string B() { log += "b"; return "x"; } Matcher A() { log += "a"; return new Matcher(); } return object.Equals(objB: B(), objA: A()) + "|" + object.Equals(objB: new Matcher(), objA: "x") + "|" + object.Equals(new Matcher(), "x") + "|" + log;"""),
+        ("an override that takes a tuple or an anonymous object, whatever the second operand is",
+            """var m = new AnyMatcher(); object o = m; return object.Equals(m, (1, 2)) + "|" + object.Equals(m, new { A = 1 }) + "|" + object.Equals(o, (new[] { 1 }, 1)) + "|" + o.Equals((new[] { 1 }, 1)) + "|" + object.Equals(o, new { A = 1 }) + "|" + o.Equals(new { A = 1 });"""),
+    ];
+
+    public static TheoryData<string, bool> ClassCaseNames()
+    {
+        var data = new TheoryData<string, bool>();
+        foreach (var (name, _) in ClassCases)
+        {
+            data.Add(name, true);
+            data.Add(name, false);
+        }
+        return data;
+    }
 
     [SkippableTheory]
     [MemberData(nameof(TupleEqualityCases))]
@@ -297,7 +355,11 @@ public class TupleAndAnonymousObjectConformanceTests
     public void ObjectAndEnumMembers_AnswerAsDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
-        ConformanceRunner.AssertStatementsSameAsDotNet(statements,
-            Prelude + "\npublic enum Shade { Black = 0, Grey = 1, Gray = Grey, White = 2 }");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, ObjectAndEnumPrelude);
     }
+
+    [SkippableTheory]
+    [MemberData(nameof(ClassCaseNames))]
+    public void ObjectMembersOfAClass_AnswerAsDotNet(string name, bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Classes, typeAnnotations, ClassCases.Single(c => c.Name == name));
 }

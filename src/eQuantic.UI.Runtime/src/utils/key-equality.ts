@@ -47,14 +47,25 @@ export function sameItem(item: unknown, value: unknown): boolean {
 /**
  * .NET's `EqualityComparer<object>.Default` on the values two keys turned out to be: identity (NaN
  * equal to NaN), a twin's own `equals` (a record, a struct, a decimal, a date, a class overriding
- * `Equals`), and the members of an anonymous type, which has no twin to carry one. Two anonymous
- * objects are compared only with one of their own members in the same order, as .NET's Equals checks
- * the type first: an anonymous type never equals a record with the same members, and a `List<T>` or
- * `T[]` (an array here) compares by reference (#909).
+ * `Equals`), and the members of a tuple or an anonymous type, which have no twin to carry one, each
+ * member compared so in turn. Two of those are compared only with one of their own kind, as .NET's
+ * Equals checks the type first: a tuple never equals an anonymous object, and an anonymous object
+ * equals only one of the same members in the same order, never a record with the same members.
+ *
+ * A tuple is an array here, and so are a `List<T>` and a `T[]`, which .NET compares by reference. Held
+ * as `object`, nothing tells them apart, so all three compare by their elements, the tuple's answer: a
+ * tuple held as `object` is found in a set, a dictionary and `Distinct` as .NET finds it. Where the
+ * compiler still sees the static type (a list, an array, a class that does not override `Equals`), it
+ * compares by reference before it gets here (#909).
  */
 export function sameKey(a: unknown, b: unknown): boolean {
   if (sameItem(a, b)) return true;
   if (!isPlainValue(a) || !isPlainValue(b)) return false;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    for (let at = 0; at < a.length; at++) if (!sameKey(a[at], b[at])) return false;
+    return true;
+  }
   const ao = a as Record<string, unknown>;
   const bo = b as Record<string, unknown>;
   const ak = Object.keys(ao);
@@ -67,9 +78,10 @@ export function sameKey(a: unknown, b: unknown): boolean {
   return true;
 }
 
-/** An anonymous type (a plain object): a value compared by its members. */
+/** A tuple (an array) or an anonymous type (a plain object): a value compared by its members. */
 export function isPlainValue(value: unknown): boolean {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  if (Array.isArray(value)) return true;
+  if (value === null || typeof value !== 'object') return false;
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }

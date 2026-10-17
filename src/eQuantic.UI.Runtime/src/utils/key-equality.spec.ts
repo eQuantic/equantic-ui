@@ -21,10 +21,24 @@ describe('the equality a type compares by', () => {
     expect(sameKey({}, {})).toBe(true);
     expect(sameKey({ a: 1, b: 2 }, { b: 2, a: 1 })).toBe(false);
     expect(sameKey({}, [])).toBe(false);
-    expect(sameKey([1], [1])).toBe(false);
-    const list = [1];
-    expect(sameKey(list, list)).toBe(true);
     expect(sameBy('item')(null, undefined)).toBe(true);
+  });
+
+  // A tuple held as object is an array, as a list and an array are: only its elements can say what
+  // it is, so it is found by them (#947's review), each element by what it turns out to be in turn.
+  it('compares a tuple held as object by its elements, each by its own equality', () => {
+    class Plain {
+      a = 1;
+    }
+    const shared = new Plain();
+    expect(sameKey([1, 'a'], [1, 'a'])).toBe(true);
+    expect(sameKey([1, 'a'], [1, 'b'])).toBe(false);
+    expect(sameKey([1, 2], [1, 2, 3])).toBe(false);
+    expect(sameKey([[1, 2], dec('1.0')], [[1, 2], dec('1.00')])).toBe(true);
+    expect(sameKey([shared], [shared])).toBe(true);
+    expect(sameKey([new Plain()], [new Plain()])).toBe(false);
+    expect(sameKey([{ a: 1, b: 2 }], [{ b: 2, a: 1 }])).toBe(false);
+    expect(sameKey([null], [undefined])).toBe(true);
   });
 
   it("compares a tuple's elements each by its own type: an array by reference", () => {

@@ -262,13 +262,11 @@ describe("Dictionary — keys found by their own equality ('own')", () => {
     expect(d.has(dateTime.of(2026, 1, 2))).toBe(true);
   });
 
-  it("compares an anonymous type by its members and a list or array by reference (#909)", () => {
+  it("compares a tuple and an anonymous type by their members, having no twin to carry an equals", () => {
     const d = dictionary<unknown, number>(null, 'own');
-    const list = [1, 'a'];
-    d.set(list, 1);
+    d.set([1, 'a'], 1);
     d.set({ x: 1 }, 2);
-    expect(d.get(list)).toBe(1);
-    expect(d.get([1, 'a'])).toBeUndefined();
+    expect(d.get([1, 'a'])).toBe(1);
     expect(d.get({ x: 1 })).toBe(2);
     expect(d.size).toBe(2);
   });

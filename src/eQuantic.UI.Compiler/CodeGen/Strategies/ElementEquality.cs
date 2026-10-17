@@ -47,20 +47,25 @@ internal static class ElementEquality
     /// <paramref name="hoist"/> names a generated comparison once, where a caller can hold it, so it is
     /// not rebuilt on every call.
     /// </summary>
-    internal static string Compare(ITypeSymbol? type, string left, string right, Func<string, string>? hoist = null)
+    internal static string Compare(ITypeSymbol? type, string left, string right, Func<string, string>? hoist = null) =>
+        $"{Comparer(type, hoist)}({left}, {right})";
+
+    /// <summary>
+    /// The function <see cref="Compare"/> calls for a value of <paramref name="type"/>, named on its own
+    /// where a caller hands the comparison over rather than calling it (<c>$eq.equalsInstance</c>'s).
+    /// </summary>
+    internal static string Comparer(ITypeSymbol? type, Func<string, string>? hoist = null)
     {
-        if (type is null) return $"{Eq.Equals}({left}, {right})";
+        if (type is null) return Eq.Equals;
         var (equality, valueSafe) = Describe(type);
-        if (valueSafe) return $"{Eq.Equals}({left}, {right})";
-        var value = type.UnwrapNullable() ?? type;
+        if (valueSafe) return Eq.Equals;
         return equality switch
         {
             // An array, and a class: its own Equals where a twin carries one, and identity otherwise,
             // never its members, which `sameKey` walks for a value that may be a tuple.
-            null => $"{Eq.SameItem}({left}, {right})",
-            "'item'" => $"{Eq.SameItem}({left}, {right})",
-            "'own'" => $"{Eq.SameKey}({left}, {right})",
-            _ => $"{hoist?.Invoke(equality) ?? equality}({left}, {right})",
+            null or "'item'" => Eq.SameItem,
+            "'own'" => Eq.SameKey,
+            _ => hoist?.Invoke(equality) ?? equality,
         };
     }
 

@@ -23,6 +23,15 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// (<see cref="Eq.EqualsInstance"/>), where a tuple, a value, is never null and an empty <c>Nullable</c>
 /// one equals only null.
 /// </para>
+/// <para>
+/// The same static types decide <c>Equals(object)</c> inherited from <c>object</c> and the static
+/// <c>object.Equals(a, b)</c>: by reference for an array, a list and a class that does not override
+/// <c>Equals</c>, through an override wherever one exists, and the first operand's comparison before the
+/// second's (<see cref="ConvertStaticObjectEquals"/>). A value held as <c>object</c> on both sides has lost
+/// the type the comparison needs, and the runtime compares it by what it turns out to be
+/// (<c>sameKey</c>): a list and an array are the same JavaScript array as a tuple there, and compare by
+/// their elements as a tuple does (#909, #947).
+/// </para>
 /// </summary>
 public class StructuralEqualsStrategy : IExpressionIrStrategy
 {
@@ -131,21 +140,31 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
                 : JsExpr.Call(JsExpr.Identifier(Eq.Equals), receiver, other);
         }
 
-        if (type?.SpecialType == SpecialType.System_Object
-            || type?.TypeKind is TypeKind.Interface or TypeKind.TypeParameter)
+        if (DoesNotDecide(type))
         {
-            if (UnboxedType(inv, 0, context) is INamedTypeSymbol argNamed
-                && (argNamed.IsTupleType || argNamed.IsAnonymousType))
+            // What the receiver holds is not in its type, but the value C# boxed into it may still be in
+            // the call: `((object)list).Equals(other)` is a list's Equals.
+            var held = Unboxed(context.SemanticHelper.GetOperation(inv) is IInvocationOperation { Instance: { } instance }
+                ? instance
+                : null);
+            var argument = UnboxedType(inv, 0, context);
+            if (!DoesNotDecide(held))
             {
-                var comparison = ElementEquality.OwnEquals(argNamed);
-                return comparison is null
-                    ? JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other)
-                    : JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, JsExpr.Opaque(comparison));
+                if (IsExact(held!) && argument is not null && IsIncompatibleWith(argument, held!, context))
+                    return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, JsExpr.Literal("null"));
+                return OfAType(held!) is { } known
+                    ? JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, Function(known))
+                    : JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other);
             }
-            if (type is INamedTypeSymbol { TypeKind: TypeKind.Interface } face
-                && ElementEquality.Of(face) == "'item'")
-                return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, JsExpr.Identifier(Eq.SameItem));
-            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, JsExpr.Identifier(Eq.SameKey));
+            var (function, afterOwn) = WithoutAType(argument);
+            if (function is null)
+                return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other);
+            if (!afterOwn)
+                return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, Function(function));
+            JsExpr a = JsExpr.Identifier("$a"), b = JsExpr.Identifier("$b");
+            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other,
+                JsExpr.Arrow(context.TypeAnnotations ? "$a: any, $b: any" : "$a, $b",
+                    JsExpr.Binary(JsExpr.Call(JsExpr.Identifier(Eq.SameItem), a, b), "||", JsExpr.Call(Function(function), a, b))));
         }
 
         return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, JsExpr.Identifier(Eq.SameItem));
@@ -174,50 +193,153 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         };
     }
 
+    /// <summary>
+    /// The static <c>object.Equals(objA, objB)</c>, as .NET answers it: the same reference or two nulls,
+    /// then <c>objA.Equals(objB)</c>, the FIRST operand's own Equals, whatever the second one is. The
+    /// comparison is the one <c>objA</c>'s type before C# boxed it compares by (<see cref="OfAType"/>), and
+    /// <c>objB</c>'s type says something only where <c>objA</c>'s says nothing (<see cref="WithoutAType"/>):
+    /// a comparison chosen from the second operand skipped the first one's override (Copilot's review of
+    /// #947). A value of a type that refuses every other (<see cref="IsExact"/>) beside a value of another
+    /// type is unequal before either is read, as .NET's Equals checks the type first, where the browser
+    /// holds a byte and an int, a char and a string, or a tuple and an array alike: both are still
+    /// evaluated, and two nulls are still equal. The operands are the PARAMETERS', so
+    /// <c>Equals(objB: x, objA: y)</c> asks <c>y</c>, and each is converted where it is written, which the
+    /// template keeps as C#'s evaluation order.
+    /// </summary>
     private static JsExpr ConvertStaticObjectEquals(InvocationExpressionSyntax invocation, ConversionContext context)
     {
-        var left = context.Converter.ConvertIr(invocation.ArgumentList.Arguments[0].Expression);
-        var right = context.Converter.ConvertIr(invocation.ArgumentList.Arguments[1].Expression);
-        var leftType = UnboxedType(invocation, 0, context);
-        var rightType = UnboxedType(invocation, 1, context);
-        if (leftType is INamedTypeSymbol leftNamed
-            && (leftNamed.IsTupleType || leftNamed.IsAnonymousType || leftNamed.TypeKind == TypeKind.Enum))
-            return StaticStructuredEquals(left, right, leftNamed, rightType, context);
-        if (rightType is INamedTypeSymbol rightNamed
-            && (rightNamed.IsTupleType || rightNamed.IsAnonymousType || rightNamed.TypeKind == TypeKind.Enum))
-            return StaticStructuredEquals(left, right, rightNamed, leftType, context);
-        return JsExpr.Call(JsExpr.Identifier(Eq.SameKey), left, right);
+        var parts = invocation.ArgumentList.Arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
+        var (atA, typeA) = Operand(invocation, 0, context);
+        var (atB, typeB) = Operand(invocation, 1, context);
+        var a = $"{{{atA}}}";
+        var b = $"{{{atB}}}";
+        if (typeA is not null && typeB is not null && IsExact(typeA) && IsIncompatibleWith(typeB, typeA, context))
+            return JsExpr.Template($"{Eq.LogicAnd}({a} == null, {b} == null)", parts);
+        if (!DoesNotDecide(typeA))
+            return JsExpr.Template($"{OfAType(typeA!) ?? Eq.Equals}({a}, {b})", parts);
+        var (function, afterOwn) = WithoutAType(typeB);
+        return JsExpr.Template(afterOwn
+            ? $"({Eq.SameItem}({a}, {b}) || {function}({a}, {b}))"
+            : $"{function ?? Eq.Equals}({a}, {b})", parts);
     }
 
-    private static JsExpr StaticStructuredEquals(JsExpr left, JsExpr right, INamedTypeSymbol structured,
-        ITypeSymbol? other, ConversionContext context)
+    /// <summary>
+    /// The operand of the static <c>object.Equals</c> that fills the parameter at <paramref name="ordinal"/>
+    /// (<c>objA</c> is 0, <c>objB</c> is 1): which of the written arguments it is, a named argument read by
+    /// its name, and its type before C# boxed it, null where nothing says.
+    /// </summary>
+    private static (int Written, ITypeSymbol? Type) Operand(InvocationExpressionSyntax invocation, int ordinal,
+        ConversionContext context)
     {
-        if (other is not null && IsIncompatibleWith(other, structured, context))
-            return JsExpr.Call(JsExpr.Identifier(Eq.LogicAnd), JsExpr.Binary(left, "==", JsExpr.Literal("null")),
-                JsExpr.Binary(right, "==", JsExpr.Literal("null")));
-        var comparison = structured.TypeKind == TypeKind.Enum ? null : ElementEquality.OwnEquals(structured);
-        return JsExpr.Call(comparison is null ? JsExpr.Identifier(Eq.Equals) : JsExpr.Opaque(comparison), left, right);
+        var arguments = invocation.ArgumentList.Arguments;
+        var parameters = (context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol)?.Parameters;
+        var written = ordinal;
+        for (var at = 0; at < arguments.Count; at++)
+        {
+            var name = arguments[at].NameColon?.Name.Identifier.ValueText;
+            var slot = name is null
+                ? at
+                : parameters?.FirstOrDefault(parameter => parameter.Name == name)?.Ordinal
+                  ?? (name == "objB" ? 1 : name == "objA" ? 0 : at);
+            if (slot == ordinal) written = at;
+        }
+        var value = context.SemanticHelper.GetOperation(invocation) is IInvocationOperation operation
+            ? operation.Arguments.FirstOrDefault(argument => argument.Parameter?.Ordinal == ordinal)?.Value
+            : null;
+        return (written, Unboxed(value));
     }
 
-    private static ITypeSymbol? UnboxedType(InvocationExpressionSyntax invocation, int index, ConversionContext context)
+    /// <summary>
+    /// Whether a type says nothing of the Equals its value answers by: <c>object</c>, <c>ValueType</c>,
+    /// <c>Enum</c>, an interface a tuple implements, a type parameter, <c>dynamic</c>, and no type at all
+    /// (a <c>null</c>). An interface no tuple implements says the value is found by reference or by its own
+    /// Equals (<see cref="ElementEquality"/>).
+    /// </summary>
+    private static bool DoesNotDecide(ITypeSymbol? type) =>
+        type is null
+        || type.SpecialType is SpecialType.System_Object or SpecialType.System_ValueType or SpecialType.System_Enum
+        || type.TypeKind is TypeKind.TypeParameter or TypeKind.Dynamic or TypeKind.Error
+        || type.TypeKind == TypeKind.Interface && ElementEquality.Of(type) == "'own'";
+
+    /// <summary>
+    /// The comparison a value of <paramref name="type"/> answers <c>Equals(object)</c> by, null for
+    /// <c>$eq.equals</c>: a tuple's and an anonymous object's own (<see cref="ElementEquality.OwnEquals"/>),
+    /// which take only one of their type, and otherwise <c>EqualityComparer&lt;T&gt;.Default</c>'s, which
+    /// asks the value's own Equals first: by reference for an array, a list and a class that does not
+    /// override Equals, and the override wherever one exists, a derived class's included (#909).
+    /// </summary>
+    private static string? OfAType(ITypeSymbol type)
     {
-        if (context.SemanticHelper.GetOperation(invocation) is not IInvocationOperation operation
-            || index >= operation.Arguments.Length)
-            return null;
-        var value = operation.Arguments[index].Value;
+        if (type.UnwrapNullable() is INamedTypeSymbol { IsTupleType: true } or INamedTypeSymbol { IsAnonymousType: true })
+            return ElementEquality.OwnEquals((INamedTypeSymbol)type.UnwrapNullable()!);
+        var comparer = ElementEquality.Comparer(type);
+        return comparer == Eq.Equals ? null : comparer;
+    }
+
+    /// <summary>
+    /// The comparison <c>x.Equals(y)</c> answers by where x's type says nothing (<see cref="DoesNotDecide"/>),
+    /// from y's type before C# boxed it: x's own Equals FIRST, which every runtime comparison asks before
+    /// anything else, and then a tuple's or an anonymous object's own comparison for a y of that type, a
+    /// generated one asked only after x's own (<c>AfterOwn</c>), so a class whose override accepts the
+    /// tuple still answers; identity for a y compared by reference (an array, a list, a class that does not
+    /// override Equals), which no value of another type equals but through its own Equals; and what x
+    /// turns out to be otherwise (<c>sameKey</c>). Null for <c>$eq.equals</c>, which asks x's own Equals
+    /// first too.
+    /// </summary>
+    private static (string? Function, bool AfterOwn) WithoutAType(ITypeSymbol? other)
+    {
+        if (other.UnwrapNullable() is INamedTypeSymbol { IsTupleType: true } or INamedTypeSymbol { IsAnonymousType: true })
+            return ElementEquality.OwnEquals((INamedTypeSymbol)other.UnwrapNullable()!) is { } generated
+                ? (generated, true)
+                : (null, false);
+        return other is not null && !DoesNotDecide(other) && ElementEquality.Comparer(other) == Eq.SameItem
+            ? (Eq.SameItem, false)
+            : (Eq.SameKey, false);
+    }
+
+    /// <summary>
+    /// Whether a value of this type is of exactly this type, and its <c>Equals(object)</c> refuses a value of
+    /// any other: a value type (a number, a char, a bool, an enum, a tuple, a date, a struct) whose Equals
+    /// is .NET's own or a record struct's, a string, and an anonymous object. A class may hold a derived
+    /// instance that overrides Equals, and a struct that overrides <c>Equals(object)</c> may accept anything.
+    /// </summary>
+    private static bool IsExact(ITypeSymbol type)
+    {
+        var value = type.UnwrapNullable() ?? type;
+        if (value.SpecialType == SpecialType.System_String || value.IsAnonymousType) return true;
+        if (!value.IsValueType || value.TypeKind == TypeKind.TypeParameter) return false;
+        return !value.GetMembers("Equals").OfType<IMethodSymbol>().Any(method =>
+            method is { IsOverride: true, IsImplicitlyDeclared: false, Parameters: [{ Type.SpecialType: SpecialType.System_Object }] }
+            && method.Locations.Any(location => location.IsInSource));
+    }
+
+    /// <summary>A comparison by its name: one of the runtime's own, or the expression that generates one.</summary>
+    private static JsExpr Function(string comparison) =>
+        comparison is Eq.SameItem or Eq.SameKey or Eq.Equals ? JsExpr.Identifier(comparison) : JsExpr.Opaque(comparison);
+
+    private static ITypeSymbol? UnboxedType(InvocationExpressionSyntax invocation, int index, ConversionContext context) =>
+        context.SemanticHelper.GetOperation(invocation) is IInvocationOperation operation && index < operation.Arguments.Length
+            ? Unboxed(operation.Arguments[index].Value)
+            : null;
+
+    /// <summary>A value's type before C# boxed it, read through the conversions that keep the value what it is
+    /// (a boxing, a reference conversion, an identity, a cast to <c>object</c>), a <c>Nullable</c>'s its
+    /// value's; null where it has none (a <c>null</c>).</summary>
+    private static ITypeSymbol? Unboxed(IOperation? value)
+    {
         while (value is IConversionOperation conversion
                && conversion.GetConversion() is { IsBoxing: true } or { IsReference: true } or { IsIdentity: true })
             value = conversion.Operand;
-        return value.Type.UnwrapNullable() ?? value.Type;
+        return value?.Type.UnwrapNullable() ?? value?.Type;
     }
 
-    private static bool IsIncompatibleWith(ITypeSymbol type, INamedTypeSymbol receiver, ConversionContext context)
+    private static bool IsIncompatibleWith(ITypeSymbol type, ITypeSymbol receiver, ConversionContext context)
     {
         if (context.SemanticModel is not { } model) return false;
         if (type.SpecialType is SpecialType.System_Object or SpecialType.System_ValueType or SpecialType.System_Enum
             || type.TypeKind is TypeKind.Interface or TypeKind.TypeParameter or TypeKind.Dynamic or TypeKind.Error)
             return false;
-        return !model.Compilation.ClassifyCommonConversion(type, receiver).IsIdentity;
+        return !model.Compilation.ClassifyCommonConversion(type, receiver.UnwrapNullable() ?? receiver).IsIdentity;
     }
 
     /// <summary>
