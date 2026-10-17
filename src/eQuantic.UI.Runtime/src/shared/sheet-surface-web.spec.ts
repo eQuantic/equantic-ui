@@ -12,6 +12,8 @@ import { photonTheme } from './design-system.generated';
 import { SheetController } from './components/SheetController';
 import { CellRef } from './components/CellRef';
 import { SheetRange } from './components/SheetRange';
+import { SheetGrid } from './components/SheetGrid';
+import { Point } from './runtime-exports';
 import type { HtmlNode } from '../core/types';
 
 type Handler = (event: Event) => void;
@@ -132,6 +134,51 @@ describe('SheetSurface on the web', () => {
     expect(sheet.document.getCell(new CellRef(2, 0))).toBe('seed');
     sheet.undo();
     expect(sheet.document.getCell(new CellRef(1, 0))).toBe('');
+  });
+
+  it('a double click edits the cell under it, starting from its value', () => {
+    const sheet = new SheetController(50, 8);
+    sheet.document.setCell(new CellRef(1, 1), '42');
+    const node = surfaceFor(sheet);
+    // The platform's click count rides the press: the second press of a double click says 2.
+    const press = (detail: number) => {
+      const event = new MouseEvent('mousedown', { clientX: 96 + 48, clientY: 28 + 14, detail });
+      Object.defineProperty(event, 'currentTarget', { value: makeTarget() });
+      events(node)['mousedown'](event);
+      document.dispatchEvent(new MouseEvent('mouseup', { clientX: 96 + 48, clientY: 28 + 14 }));
+    };
+
+    press(1);
+    press(2);
+
+    expect(sheet.activeCell).toEqual(new CellRef(1, 1));
+    expect(sheet.editing).toBe(true);
+    expect(sheet.draft).toBe('42');
+  });
+
+  it('reads a press against the window the engine was handed', () => {
+    const sheet = new SheetController(200, 8);
+    // A scrolled window: the surface's first row draws the sheet's row 40.
+    sheet.grid = new SheetGrid(Point.zero, 40, 0);
+    const node = surfaceFor(sheet);
+
+    const event = new MouseEvent('mousedown', { clientX: 96 + 48, clientY: 28 * 2 + 14 });
+    Object.defineProperty(event, 'currentTarget', { value: makeTarget() });
+    events(node)['mousedown'](event);
+    document.dispatchEvent(new MouseEvent('mouseup', {}));
+
+    expect(sheet.activeCell).toEqual(new CellRef(42, 1));
+  });
+
+  it('leaves ⌘C to the browser, whose copy event carries the text', () => {
+    const sheet = new SheetController(50, 8);
+    const node = surfaceFor(sheet);
+
+    const copyKey = new KeyboardEvent('keydown', { key: 'c', metaKey: true, cancelable: true });
+    events(node)['keydown'](copyKey);
+
+    expect(copyKey.defaultPrevented).toBe(false);
+    expect(sheet.editing).toBe(false);
   });
 
   it('⌘D pours the row above through the shared keymap', () => {
