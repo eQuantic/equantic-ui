@@ -150,16 +150,20 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // as C#'s operator is: a null on either side answers null. A span scaled or divided in place is the
         // same, `t *= 2.5` and `t /= 4`, which JavaScript's `op=` turned into NaN (Copilot's review of #958).
         var rightType = context.SemanticHelper.GetType(assignment.Right);
+        // The operator C# bound decides, as for the binary operator: a value its own type converts to a
+        // double scales a span in place too (Copilot's second review of #958).
+        var (bound, liftedBound) = BinaryExpressionStrategy.BoundOperands(assignment, leftType, rightType, context);
         if (op is "+=" or "-=" or "*=" or "/="
-            && BinaryExpressionStrategy.ConvertDateTimeOrTimeSpan("{0}", "{1}", op[..^1], leftType, rightType) is { } compat)
+            && BinaryExpressionStrategy.ConvertDateTimeOrTimeSpan("{0}", "{1}", op[..^1], bound.Left, bound.Right) is { } compat)
         {
             if (leftType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }
-                || rightType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T })
+                || rightType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }
+                || liftedBound)
             {
                 context.UsedHelpers.Add(Eq.Import);
                 // The operator over the two values the lift hands it, and nothing else: an IR arrow,
                 // whose writer is the one that writes every arrow, holding no C# of its own.
-                var body = BinaryExpressionStrategy.ConvertDateTimeOrTimeSpan("$a", "$b", op[..^1], leftType, rightType);
+                var body = BinaryExpressionStrategy.ConvertDateTimeOrTimeSpan("$a", "$b", op[..^1], bound.Left, bound.Right);
                 var lifted = JsExpr.Arrow("$a, $b", JsExpr.Opaque(body!));
                 return Compound((current, operand) =>
                     JsExpr.Call(JsExpr.Identifier(Eq.LiftArith), current, operand, lifted));
