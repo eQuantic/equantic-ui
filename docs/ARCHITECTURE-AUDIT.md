@@ -561,7 +561,7 @@ folder of `Primitives` (`FormController`) — `MarkdownParser` among them — an
 | the vocabulary's own files (one per type since #162) + `LayoutTypes`, `CornerRadii` | `vocabulary.ts` (1,787) + `nodes.ts` (877) + `value-types.ts` (397) | `vocabulary-config.spec.ts`, `DesignSystemTsGenerator`, the transpiled fixtures |
 | `WebRealizer.cs` (2,629) | `lowering.ts` (3,418) | cross-pinned style strings, `MarkerParityTests` |
 | `StyleAtomizer.cs` (421) | `style-atomizer.ts` (468) | byte-identical hashes, both suites |
-| `ComponentInstanceStore.cs` (90) | `instance-store.ts` (195) | the reconciler specs |
+| `ComponentInstanceStore.cs` (90), gone since #950: Photon keeps instances in the element tree | `instance-store.ts` (195), until E3 | the reconciler specs |
 | `ComponentBoundary.cs` (167) | `component-boundary.ts` (162) | the boundary specs |
 
 The realizer twin is legitimate: the browser lowers to live DOM with listeners and the server lowers

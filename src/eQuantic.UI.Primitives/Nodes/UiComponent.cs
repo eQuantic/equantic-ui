@@ -95,9 +95,9 @@ public sealed class ComponentContext
 /// <summary>
 /// Base of the SHARED component model (docs/SHARED-COMPONENTS-PLAN.md): a component IS a
 /// <see cref="VisualNode"/> (it composes into any tree) whose <see cref="Build"/> expands to more
-/// nodes — the same authoring shape as the web SDK (`Build(context)`), realized per target. Layout
-/// engines expand components inline during measurement; realizers draw nothing for the component
-/// itself (its built subtree carries the visuals).
+/// nodes — the same authoring shape as the web SDK (`Build(context)`), realized per target. A live
+/// tree builds a component at its position (<see cref="ComponentElement"/>) before laying out what it
+/// built; realizers draw nothing for the component itself (its built subtree carries the visuals).
 /// </summary>
 public abstract class UiComponent : VisualNode
 {
@@ -114,7 +114,8 @@ public abstract class UiComponent : VisualNode
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 
     /// <summary>Produces this component's subtree. Must be PURE over component state + context —
-    /// it may run more than once per frame (measurement) and on every invalidation.</summary>
+    /// it runs whenever its position builds (a <c>SetState</c> of its own or of an ancestor, a frame
+    /// that rebuilds everything, a server's render), and how often that is is the host's to decide.</summary>
     public abstract VisualNode Build(ComponentContext context);
 
     /// <summary>
@@ -171,10 +172,65 @@ public abstract class StatelessComponent : UiComponent
 /// </summary>
 public abstract class StatefulComponent : UiComponent
 {
-    /// <summary>Raised after every <see cref="SetState"/> — hosts subscribe to schedule a rebuild.</summary>
-    public event Action? StateInvalidated;
-
     private bool _mounted;
+
+    /// <summary>
+    /// The position this instance holds in a LIVE tree, set by the element that retains it and
+    /// cleared when the last position it holds leaves. Null for an instance no host is drawing: a
+    /// fresh one a parent's build made and the element discarded for its retained twin, one laid out
+    /// once, one a server renders.
+    /// </summary>
+    internal ComponentElement? MountedAt;
+
+    /// <summary>
+    /// The other positions this one instance holds at the same time: a parent that keeps an instance
+    /// and places it twice. Every one of them shows it, so every one builds on a <c>SetState</c>, and
+    /// the instance stays mounted until the last of them leaves. Null in the common case.
+    /// </summary>
+    private List<ComponentElement>? _alsoMountedAt;
+
+    /// <summary>Takes a position in a live tree; true when it is the instance's first, which is when
+    /// it mounts.</summary>
+    internal bool Place(ComponentElement at)
+    {
+        if (MountedAt is null)
+        {
+            MountedAt = at;
+            return true;
+        }
+
+        (_alsoMountedAt ??= new List<ComponentElement>()).Add(at);
+        return false;
+    }
+
+    /// <summary>Leaves a position; true when it was the last the instance held, which is when it
+    /// unmounts.</summary>
+    internal bool Leave(ComponentElement at)
+    {
+        if (!ReferenceEquals(MountedAt, at))
+        {
+            _alsoMountedAt?.Remove(at);
+            return false;
+        }
+
+        if (_alsoMountedAt is { Count: > 0 } others)
+        {
+            MountedAt = others[^1];
+            others.RemoveAt(others.Count - 1);
+            return false;
+        }
+
+        MountedAt = null;
+        return true;
+    }
+
+    /// <summary>Every position showing this instance builds again.</summary>
+    private void MarkPositions()
+    {
+        MountedAt?.MarkNeedsBuild();
+        if (_alsoMountedAt is not { } others) return;
+        foreach (var at in others) at.MarkNeedsBuild();
+    }
 
     protected void SetState(Action mutate)
     {
@@ -190,13 +246,14 @@ public abstract class StatefulComponent : UiComponent
             dispatcher.Post(() =>
             {
                 mutate();
-                StateInvalidated?.Invoke();
+                MarkPositions();
             });
             return;
         }
 
         mutate();
-        StateInvalidated?.Invoke();
+        // The position builds again, and only it: its owner asks the host for the frame that shows it.
+        MarkPositions();
     }
 
     /// <summary>
@@ -228,10 +285,10 @@ public abstract class StatefulComponent : UiComponent
     }
 
     /// <summary>
-    /// Called by the HOST (the instance store, or the surface for a root), never by app code. Idem-
-    /// potent: an instance already in the tree does not mount twice.
+    /// Called by the tree's OWNER when the frame that built this instance's position ends, never by
+    /// app code. Idempotent: an instance already in the tree does not mount twice.
     /// </summary>
-    public void NotifyMounted()
+    internal void NotifyMounted()
     {
         if (_mounted) return;
         _mounted = true;
@@ -241,7 +298,7 @@ public abstract class StatefulComponent : UiComponent
     /// <summary>The pair of <see cref="NotifyMounted"/> — also idempotent, and a no-op for an
     /// instance that never mounted (a fresh one the reconciler discarded in favour of a retained
     /// twin never entered the tree, so it never left it either).</summary>
-    public void NotifyUnmounted()
+    internal void NotifyUnmounted()
     {
         if (!_mounted) return;
         _mounted = false;

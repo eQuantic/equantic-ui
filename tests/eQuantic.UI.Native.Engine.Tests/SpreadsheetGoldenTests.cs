@@ -42,6 +42,13 @@ public class SpreadsheetGoldenTests
         return (host, sheet);
     }
 
+    /// <summary>
+    /// The controller is a model OUTSIDE the tree, and these tests change it directly rather than
+    /// through the host's input: so the host is told, as an app's model changing from outside is
+    /// told (<see cref="PhotonHost.Invalidate"/>), and the next frame builds the sheet again.
+    /// </summary>
+    private static void Changed(PhotonHost host) => host.Invalidate();
+
     private static void Render(PhotonHost host, string golden, float timeMs = 100)
     {
         using var backend = new ReferenceBackend();
@@ -57,6 +64,7 @@ public class SpreadsheetGoldenTests
     {
         var (host, sheet) = Open();
         sheet.Selection = new SheetRange(new CellRef(1, 0), new CellRef(3, 1));
+        Changed(host);
         host.RenderFrame(new DisplayListBuilder(), 50);
 
         // The assertion beside the image: the handle's crosshair region exists at the band's
@@ -75,6 +83,7 @@ public class SpreadsheetGoldenTests
         sheet.BeginFill();
         sheet.UpdateFill(new CellRef(4, 1));
         sheet.FillTarget.Should().Be(new SheetRange(new CellRef(2, 1), new CellRef(4, 1)));
+        Changed(host);
 
         Render(host, "sheet-fill-preview");
     }
@@ -84,6 +93,7 @@ public class SpreadsheetGoldenTests
     {
         var (host, sheet) = Open();
         sheet.SelectCols(1, 1);
+        Changed(host);
         host.RenderFrame(new DisplayListBuilder(), 50);
         sheet.Selection.BottomRow.Should().Be(sheet.Document.Rows - 1);
 
@@ -97,6 +107,7 @@ public class SpreadsheetGoldenTests
         sheet.Resize(SheetAxis.Cols, 0, 140f);
         sheet.Resize(SheetAxis.Rows, 1, 44f);
         sheet.Document.ColWidth(0).Should().Be(140f);
+        Changed(host);
 
         Render(host, "sheet-resized");
     }

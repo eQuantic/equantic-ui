@@ -57,7 +57,8 @@ public class ToStringStrategy : IConversionStrategy
         // delegate) writes it as a concatenation does, refused through null as .NET's instance call is,
         // where a hole and a concatenation of a null one write nothing.
         if (args.Count == 0
-            && StringConversion.InstanceText(receiverType, context.Converter.ConvertIr(memberAccess.Expression), context) is { } own)
+            && StringConversion.InstanceText(memberAccess.Expression, receiverType,
+                context.Converter.ConvertIr(memberAccess.Expression), context) is { } own)
             return JsExprWriter.Write(own);
 
         // A BOOL writes True or False, what a concatenation already writes it as (StringConversion):
@@ -225,7 +226,7 @@ public class ToStringStrategy : IConversionStrategy
         string caller, ConversionContext context) =>
         context.SemanticHelper.GetSymbol(expression) is IFieldSymbol { HasConstantValue: true } member
             && SymbolEqualityComparer.Default.Equals(member.ContainingType, enumType)
-            ? $"'{member.Name}'"
+            ? $"'{Types.EnumShape.NameOf(enumType, System.Convert.ToDecimal(member.ConstantValue, System.Globalization.CultureInfo.InvariantCulture)) ?? member.Name}'"
             : Types.EnumShape.Text(enumType, caller, context);
 
     /// <summary>

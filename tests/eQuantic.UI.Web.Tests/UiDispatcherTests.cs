@@ -6,7 +6,7 @@ namespace eQuantic.UI.Web.Tests;
 /// <summary>
 /// State published from a WORKER thread stops racing the thread that draws.
 /// <para>
-/// `SetState` was `mutate(); StateInvalidated?.Invoke();` — no barrier at all. On the web that is
+/// `SetState` was a mutation followed by the request for a frame, with no barrier at all. On the web that is
 /// correct and always was (one thread), but on every native target the render loop runs on the
 /// platform's main thread, so a scanner or a download finishing on a pool thread mutated a
 /// component's fields while that very tree was being built: a frame drawn from half-old state, a
@@ -30,9 +30,6 @@ public class UiDispatcherTests
     private sealed class Counter : StatefulComponent
     {
         public int Value;
-        public int Invalidations;
-
-        public Counter() => StateInvalidated += () => Invalidations++;
 
         public void Bump() => SetState(() => Value++);
 
@@ -40,6 +37,25 @@ public class UiDispatcherTests
         public void SetStateForTest(Action mutate) => SetState(mutate);
 
         public override VisualNode Build(ComponentContext context) => new Text("x", TypeRole.BodyM);
+    }
+
+    /// <summary>
+    /// A counter MOUNTED in a live tree, and the frames its owner was asked for. A <c>SetState</c>
+    /// asks for a frame through the position it holds, so an instance no tree holds has nobody to
+    /// ask: the request is what these tests watch, and it needs a tree to be made.
+    /// </summary>
+    private sealed class Mounted
+    {
+        public Mounted()
+        {
+            Owner.BuildRequested += () => Requests++;
+            Owner.Build(Counter, new ComponentContext(PhotonTheme.Instance), WindowSizeClass.Compact, rebuildAll: true);
+            Owner.EndFrame();
+        }
+
+        public Counter Counter { get; } = new();
+        public BuildOwner Owner { get; } = new();
+        public int Requests { get; private set; }
     }
 
     /// <summary>A dispatcher whose UI thread is whichever one built it — the shape every native
@@ -92,31 +108,34 @@ public class UiDispatcherTests
     public void OnTheUiThread_SetStateRunsInline_ExactlyAsItAlwaysDid()
     {
         var dispatcher = new FakeDispatcher();
-        var counter = new Counter();
+        var mounted = new Mounted();
+        var counter = mounted.Counter;
 
         WithDispatcher(dispatcher, counter.Bump);
 
         counter.Value.Should().Be(1, "the calling thread IS the UI thread — nothing to marshal");
-        counter.Invalidations.Should().Be(1);
+        mounted.Requests.Should().Be(1);
         dispatcher.PostedCount.Should().Be(0);
     }
 
     [Fact]
     public void WithNoDispatcher_SetStateRunsInline_TheWebAndSsrCase()
     {
-        var counter = new Counter();
+        var mounted = new Mounted();
+        var counter = mounted.Counter;
 
         WithDispatcher(null, () => OnAWorkerThread(counter.Bump));
 
         counter.Value.Should().Be(1, "where nothing needs marshalling, nothing is armed");
-        counter.Invalidations.Should().Be(1);
+        mounted.Requests.Should().Be(1);
     }
 
     [Fact]
     public void OffTheUiThread_TheMutationIsPostedAndRunsOnTheUiThread()
     {
         var dispatcher = new FakeDispatcher();
-        var counter = new Counter();
+        var mounted = new Mounted();
+        var counter = mounted.Counter;
 
         WithDispatcher(dispatcher, () =>
         {
@@ -125,14 +144,14 @@ public class UiDispatcherTests
             // The worker returned having touched NOTHING: this is the race that used to happen
             // while the render thread was reading the same fields.
             counter.Value.Should().Be(0);
-            counter.Invalidations.Should().Be(0);
+            mounted.Requests.Should().Be(0);
             dispatcher.PostedCount.Should().Be(1);
 
             dispatcher.Drain();
         });
 
         counter.Value.Should().Be(1, "the mutation ran where the tree is built");
-        counter.Invalidations.Should().Be(1, "and the frame it needs was asked for from there too");
+        mounted.Requests.Should().Be(1, "and the frame it needs was asked for from there too");
     }
 
     [Fact]
@@ -142,8 +161,9 @@ public class UiDispatcherTests
         // be TOLD to draw while the fields it draws from were still being written.
         var dispatcher = new FakeDispatcher();
         var order = new List<string>();
-        var counter = new Counter();
-        counter.StateInvalidated += () => order.Add("invalidated");
+        var mounted = new Mounted();
+        var counter = mounted.Counter;
+        mounted.Owner.BuildRequested += () => order.Add("invalidated");
 
         WithDispatcher(dispatcher, () =>
         {

@@ -262,7 +262,9 @@ public static class PhotonRealizer
         Pressable? pressed = null,
         Pressable? focused = null,
         VisualNode? hovered = null,
-        ComponentInstanceStore? instances = null,
+        // The tree the host keeps across frames (null builds one for this realize alone, calling no
+        // lifecycle hook — what a test or a tool laying a tree out once wants).
+        BuildOwner? owner = null,
         float timeMs = 0,
         bool reducedMotion = false,
         TransitionStore? transitions = null,
@@ -314,7 +316,11 @@ public static class PhotonRealizer
         // LayoutContext.WindowControlsInsets) — zero everywhere else.
         EdgeInsets windowControlsInsets = default,
         // The frame before this one, whose region counts size this frame's lists (FrameRegions).
-        RealizeResult? sizedLike = null)
+        RealizeResult? sizedLike = null,
+        // Whether every component builds in this frame, or only the ones a SetState marked: the
+        // HOST decides, because only it knows whether something it did since the last frame (input,
+        // an invalidation) changed what a build would read.
+        bool rebuildAll = true)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale,
             density)
@@ -325,7 +331,6 @@ public static class PhotonRealizer
             // — the tree is the same either way, which is the point of the node.
             SafeAreaInsets = safeAreaInsets,
             WindowControlsInsets = windowControlsInsets,
-            Instances = instances,
             SizeClass = WindowSizeClasses.FromWidth(viewportWidth),
             Transitions = transitions,
             Presences = presences,
@@ -343,8 +348,12 @@ public static class PhotonRealizer
         // (pages grow downward; a full-height page asks for Height = Fill). Overlay layers below
         // keep shrink-to-fit on both axes (position:fixed semantics), which is what lets a
         // dropdown panel hug its options while the page behind it still fills the viewport.
+        //
+        // The tree BUILDS first, and the layout measures what it built (docs/ELEMENT-TREE-PLAN.md, 3.2).
+        var builds = owner ?? BuildOwner.Structural();
+        var rootElement = builds.Build(root, context.Components, context.SizeClass, rebuildAll);
         var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context,
-            rootStretch: StretchKind.Block);
+            rootStretch: StretchKind.Block, rootElement: rootElement);
 
         var regions = new FrameRegions(sizedLike);
         var motion = new MotionScope(timeMs, reducedMotion)
@@ -362,7 +371,7 @@ public static class PhotonRealizer
             IconRasterizer = iconRasterizer,
             IconCache = iconCache,
         };
-        var overlays = new List<Overlay>();
+        var overlays = new List<QueuedLayer>();
         var input = new InputSink(regions);
         EmitVisitor.Shared.Emit(new EmitState(layout, input, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { ScrollOffset = scrollOffset, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore },
             theme, mode, builder, context.ScrollMeta!, motion, overlays));
@@ -387,11 +396,18 @@ public static class PhotonRealizer
             // `ov{i}`, so dropping a closed layer from the QUEUE renumbers every layer after it, and
             // closing a toast would move the dialog underneath it to a new identity — losing its
             // focus, its press state and its presence snapshots. The index stays; only the work goes.
-            if (overlays[i] is { Motion: not null, Open: false }) continue;
-            var overlayLayout = LayoutEngine.Layout(overlays[i].Child, viewportWidth, viewportHeight,
-                context, rootPath: LayerPath(i));
+            var queued = overlays[i];
+            if (queued.Layer is { Motion: not null, Open: false }) continue;
+            // Shown, so its deferred slot builds now, just before the layer is laid out against it.
+            // Every node the layout measured has a position, so a layer without one is the engine
+            // gone wrong: built here it would be a tree of fresh instances every frame, silently.
+            var layerElement = (queued.Holder ?? throw new InvalidOperationException(
+                    $"A layer at {LayerPath(i)} has no position to build in."))
+                .ShowDeferred(queued.Layer.Child);
+            var overlayLayout = LayoutEngine.Layout(queued.Layer.Child, viewportWidth, viewportHeight,
+                context, rootPath: LayerPath(i), rootElement: layerElement);
             overlayRoots.Add(overlayLayout);
-            realizedLayers.Add(overlays[i]);
+            realizedLayers.Add(queued.Layer);
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
             EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { ScrollOffset = scrollOffset, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore },
@@ -419,7 +435,9 @@ public static class PhotonRealizer
                 builder.PopLayer();
             }
         }
-        context.Instances?.EndPass();
+        // The frame's end, for the tree: what a layer did not show this frame leaves it, and what
+        // left unmounts before what arrived mounts.
+        builds.EndFrame();
         return new RealizeResult(layout, regions.Hits,
             motion.Active || transitions is { AnyActive: true } || presences is { AnyActive: true }
                 || drags is { AnyActive: true },

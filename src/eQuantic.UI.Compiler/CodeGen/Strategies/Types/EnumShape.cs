@@ -27,13 +27,18 @@ internal static class EnumShape
         internal string Number => Value.ToString(CultureInfo.InvariantCulture);
     }
 
-    /// <summary>The members, in declaration order.</summary>
-    internal static IReadOnlyList<Member> Members(INamedTypeSymbol enumType) =>
-        enumType.GetMembers().OfType<IFieldSymbol>()
+    /// <summary>The members, in declaration order, each carrying the key of the first member with its value (#927).</summary>
+    internal static IReadOnlyList<Member> Members(INamedTypeSymbol enumType)
+    {
+        var fields = enumType.GetMembers().OfType<IFieldSymbol>()
             .Where(field => field.HasConstantValue)
-            .Select(field => new Member(field.Name, field.Name.ToCamelCase(),
-                System.Convert.ToDecimal(field.ConstantValue, CultureInfo.InvariantCulture)))
+            .Select(field => (field.Name, Value: System.Convert.ToDecimal(field.ConstantValue, CultureInfo.InvariantCulture)))
             .ToList();
+        var canonicalKey = new Dictionary<decimal, string>();
+        foreach (var (name, value) in fields)
+            canonicalKey.TryAdd(value, name.ToCamelCase());
+        return fields.Select(field => new Member(field.Name, canonicalKey[field.Value], field.Value)).ToList();
+    }
 
     /// <summary>
     /// The shape's JavaScript object literal: the names, what the browser holds for each member (a
@@ -57,12 +62,20 @@ internal static class EnumShape
     /// <summary>Each member's key to its value: <c>{ 'low': 0, 'medium': 5 }</c>, what a cast to a
     /// number and the order of the values read.</summary>
     internal static string KeyToValue(INamedTypeSymbol enumType) =>
-        "{ " + string.Join(", ", Members(enumType).Select(member => $"'{member.Key}': {member.Number}")) + " }";
+        "{ " + string.Join(", ", Members(enumType).DistinctBy(member => member.Value).Select(member => $"'{member.Key}': {member.Number}")) + " }";
+
+    /// <summary>
+    /// Each member's key to its value as a BigInt, <c>{ 'odd': 9007199254740993n }</c>: a 64-bit enum's
+    /// value exactly, which a number holds only up to 2^53, so its hash reads the value its constant has
+    /// (Copilot's second review of #947).
+    /// </summary>
+    internal static string KeyToBigInt(INamedTypeSymbol enumType) =>
+        "{ " + string.Join(", ", Members(enumType).DistinctBy(member => member.Value).Select(member => $"'{member.Key}': {member.Number}n")) + " }";
 
     /// <summary>Each value to its member's key: <c>{ 0: 'low', 5: 'medium' }</c>, what a cast from a
     /// number reads. A negative value is quoted, since no literal key can carry its sign.</summary>
     internal static string ValueToKey(INamedTypeSymbol enumType) =>
-        "{ " + string.Join(", ", Members(enumType).Select(member =>
+        "{ " + string.Join(", ", Members(enumType).DistinctBy(member => member.Value).Select(member =>
             $"{(member.Value < 0 ? $"'{member.Number}'" : member.Number)}: '{member.Key}'")) + " }";
 
     /// <summary>
@@ -86,6 +99,10 @@ internal static class EnumShape
     /// <summary>The key of the first member with this value, or null where no member has it.</summary>
     internal static string? KeyOf(INamedTypeSymbol enumType, decimal value) =>
         Members(enumType).Where(member => member.Value == value).Select(member => member.Key).FirstOrDefault();
+
+    /// <summary>The declared name of the first member with this value, or null where no member has it.</summary>
+    internal static string? NameOf(INamedTypeSymbol enumType, decimal value) =>
+        Members(enumType).Where(member => member.Value == value).Select(member => member.Name).FirstOrDefault();
 
     /// <summary>
     /// The text .NET writes for an enum value, where the inline name table cannot answer it: a
