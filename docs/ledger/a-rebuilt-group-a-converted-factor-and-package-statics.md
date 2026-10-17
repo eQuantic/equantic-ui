@@ -21,5 +21,8 @@
   a `Factor?` scaling a span, handed its null to the twin's static, which read it and threw, and a
   null curated glyph became a glyph. Every lifted user-defined conversion, an app's, the vocabulary's
   and the date's alike, lets a null through now, and an operator that takes the nullable itself still
-  receives it. Proposed and archived through OpenSpec
+  receives it. Its third review found a chain from a refused package static told again where it went
+  on, `Status.Make().GetType()` reporting `object.GetType` as well: the fence records what it refuses
+  now, and so does the construction fence, whose `new Stopwatch().Elapsed` told `Stopwatch.Elapsed`
+  again, so each chain is told once, at its root. Proposed and archived through OpenSpec
   (`openspec/specs/runtime-dates`, `transpiler-bcl`).

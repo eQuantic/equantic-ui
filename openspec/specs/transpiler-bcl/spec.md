@@ -1226,8 +1226,9 @@ A static member of a type of an assembly the build has no source for, a package'
 an interface's included, and whatever its name, `Count` included, read qualified, through an alias named
 like any other type, read or called through `using static`, called qualified, or taken as a method group, and a construction of
 such a type, SHALL fail the build with EQ2004 naming the member or the type and the assembly it comes
-from. A value of such a type SHALL keep reading its members by name, as the data the server sends, and
-a constant and an enum's member SHALL be their values.
+from, and what is read or called from one SHALL be refused with it, told once at its root. A value of
+such a type SHALL keep reading its members by name, as the data the server sends, and a constant and an
+enum's member SHALL be their values.
 
 #### Scenario: A static through an alias named like a platform type
 
@@ -1257,6 +1258,13 @@ a constant and an enum's member SHALL be their values.
   `Vendor.Gauge`
 - **THEN** the build fails with EQ2004 naming the type and `Vendor`
 
+#### Scenario: A chain from a package's static or construction
+
+- **WHEN** a page writes `Status.Make().GetType().Name`, `Status.Culture().Name` or
+  `new Gauge("a").GetType().Name`, where `Status.Culture()` answers a `CultureInfo`
+- **THEN** the build fails with one EQ2004, naming `Vendor.Status.Make`, `Vendor.Status.Culture` or
+  `Vendor.Gauge` and `Vendor`, where `object.GetType` and `CultureInfo.Name` were told again
+
 #### Scenario: What names no class
 
 - **WHEN** a page reads `Status.Answer`, a constant, `Level.High`, an enum's member, or `nameof(Gauge)`
@@ -1265,8 +1273,9 @@ a constant and an enum's member SHALL be their values.
 ### Requirement: A construction of a class the browser has no twin of fails the build
 
 A construction of a .NET type that no translation builds SHALL fail the build with EQ2004 naming the
-type, a target-typed one included, where the module would have constructed a class nothing defines. A
-collection the browser holds as the array of its elements is built as one.
+type, a target-typed one included, where the module would have constructed a class nothing defines, and
+what is read or called from it SHALL be refused with it, told once at the construction. A collection the
+browser holds as the array of its elements is built as one.
 
 #### Scenario: A random source and a stopwatch
 
@@ -1274,6 +1283,12 @@ collection the browser holds as the array of its elements is built as one.
   `new Tuple<int, int>(1, 2)`
 - **THEN** the build fails with EQ2004 naming `System.Random`, `System.Diagnostics.Stopwatch`,
   `System.Lazy<int>` or `System.Tuple<int, int>`
+
+#### Scenario: A chain from a construction
+
+- **WHEN** a component writes `new Stopwatch().Elapsed` or `new Random().GetType()`
+- **THEN** the build fails with one EQ2004, naming `System.Diagnostics.Stopwatch` or `System.Random`,
+  where `Stopwatch.Elapsed` and `object.GetType` were told again
 
 ### Requirement: An interpolation is written in the culture a call names
 
