@@ -87,11 +87,22 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
 
     private JsExpr Build(SyntaxNode node, ConversionContext context)
     {
-        // A DELEGATE built with `new` is the function it is built from: a method group, a lambda, or a
-        // delegate whose Invoke it calls. `new Func<int>(…)` named a class JavaScript does not have (#839).
-        if (context.SemanticHelper.GetType(node) is { TypeKind: TypeKind.Delegate }
+        // A DELEGATE built with `new` from a method group or a lambda is the function it is built from;
+        // `new Func<int>(…)` named a class JavaScript does not have (#839). Built from another DELEGATE it
+        // is .NET's new delegate over that one's Invoke, never the delegate itself, which
+        // `new Func<int>(f) == f` found equal.
+        if (context.SemanticHelper.GetType(node) is INamedTypeSymbol { TypeKind: TypeKind.Delegate } delegateType
             && node is BaseObjectCreationExpressionSyntax { ArgumentList.Arguments: [var made], Initializer: null })
-            return context.Converter.ConvertIr(made.Expression);
+        {
+            var from = made.Expression;
+            while (from is ParenthesizedExpressionSyntax parenthesized) from = parenthesized.Expression;
+            return from is not AnonymousFunctionExpressionSyntax
+                && context.SemanticHelper.GetType(made.Expression) is { TypeKind: TypeKind.Delegate }
+                && delegateType.DelegateInvokeMethod is { } invoke
+                && invoke.Parameters.All(parameter => parameter.RefKind == RefKind.None)
+                    ? OverDelegate(invoke, context.Converter.ConvertIr(made.Expression), context)
+                    : context.Converter.ConvertIr(made.Expression);
+        }
 
         // C# 13's `System.Threading.Lock` — single-threaded JS drops the lock STATEMENT's
         // semantics already (the body just runs); the gate object itself is inert, and emitting
@@ -386,6 +397,25 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             is { IsExtensionMethod: true } or { ContainingType.IsExtension: true })
             ? initializer
             : null;
+
+    /// <summary>
+    /// A delegate built from another, as .NET builds it over that one's <paramref name="invoke"/>: a new
+    /// function over the delegate's own parameters that calls the source, held as it was where the new one
+    /// is made, and a null source refused there with the ArgumentException .NET's delegate constructor
+    /// throws (<see cref="Eq.DelegateTarget"/>), as a method group's receiver is
+    /// (<see cref="MethodGroupStrategy"/>).
+    /// </summary>
+    private static JsExpr OverDelegate(IMethodSymbol invoke, JsExpr source, ConversionContext context)
+    {
+        const string Target = "__target";
+        var names = invoke.Parameters.Select(parameter => parameter.Name.ToJsIdentifier()).ToList();
+        var parameters = string.Join(", ", invoke.Parameters.Select((parameter, i) =>
+            LambdaExpressionStrategy.Typed(names[i], parameter.Type, context)));
+        var call = JsExpr.Call(JsExpr.Identifier(Target), names.Select(JsExpr.Identifier).ToArray());
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Call(JsExpr.Group(JsExpr.Arrow(Target, JsExpr.Arrow(parameters, call))),
+            JsExpr.Call(JsExpr.Identifier(Eq.DelegateTarget), source));
+    }
 
     /// <summary>
     /// Reports EQ2004 and answers true where <paramref name="type"/> has no module and no twin
