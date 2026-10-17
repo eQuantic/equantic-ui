@@ -87,6 +87,12 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
 
     private JsExpr Build(SyntaxNode node, ConversionContext context)
     {
+        // A DELEGATE built with `new` is the function it is built from: a method group, a lambda, or a
+        // delegate whose Invoke it calls. `new Func<int>(…)` named a class JavaScript does not have (#839).
+        if (context.SemanticHelper.GetType(node) is { TypeKind: TypeKind.Delegate }
+            && node is BaseObjectCreationExpressionSyntax { ArgumentList.Arguments: [var made], Initializer: null })
+            return context.Converter.ConvertIr(made.Expression);
+
         // C# 13's `System.Threading.Lock` — single-threaded JS drops the lock STATEMENT's
         // semantics already (the body just runs); the gate object itself is inert, and emitting
         // `new Lock()` named a class no browser has.

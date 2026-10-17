@@ -285,6 +285,9 @@ public class CSharpToJsConverter
 
     private void RegisterStrategies()
     {
+        // A method group of a member no twin carries is the delegate its call is, whichever strategy
+        // would claim its node (#839): asked before all of them.
+        _strategyRegistry.Register<MethodGroupStrategy>();
         _strategyRegistry.Register<EnumStrategy>();
         _strategyRegistry.Register<EnumMethodStrategy>();
         _strategyRegistry.Register<EnumHasFlagStrategy>();
