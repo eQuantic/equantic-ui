@@ -64,6 +64,14 @@ internal static class EnumShape
     internal static string KeyToValue(INamedTypeSymbol enumType) =>
         "{ " + string.Join(", ", Members(enumType).DistinctBy(member => member.Value).Select(member => $"'{member.Key}': {member.Number}")) + " }";
 
+    /// <summary>
+    /// Each member's key to its value as a BigInt, <c>{ 'odd': 9007199254740993n }</c>: a 64-bit enum's
+    /// value exactly, which a number holds only up to 2^53, so its hash reads the value its constant has
+    /// (Copilot's second review of #947).
+    /// </summary>
+    internal static string KeyToBigInt(INamedTypeSymbol enumType) =>
+        "{ " + string.Join(", ", Members(enumType).DistinctBy(member => member.Value).Select(member => $"'{member.Key}': {member.Number}n")) + " }";
+
     /// <summary>Each value to its member's key: <c>{ 0: 'low', 5: 'medium' }</c>, what a cast from a
     /// number reads. A negative value is quoted, since no literal key can carry its sign.</summary>
     internal static string ValueToKey(INamedTypeSymbol enumType) =>
