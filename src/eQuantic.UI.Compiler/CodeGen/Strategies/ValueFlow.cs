@@ -154,6 +154,16 @@ public static class ValueFlow
                 : JsExpr.Literal(((double)single).ToString("R", CultureInfo.InvariantCulture));
         }
 
+        // A DATE becoming an INSTANT is the twin's own conversion, at the offset its kind gives, as .NET's
+        // implicit operator converts it: an instant's operator over a date, `instant - date`, bound that
+        // conversion and handed the operator the date as it was (#961).
+        if (kind.IsUserDefined && kind.MethodSymbol is { Name: "op_Implicit", Parameters: [{ Type: var date }] } toInstant
+            && toInstant.ContainingType.IsNamed("System.DateTimeOffset") && date.IsNamed("System.DateTime"))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(Eq.DateTimeOffset), "fromDateTime"), translated);
+        }
+
         if (kind.IsUserDefined)
             return kind.MethodSymbol is { } method
                 && UserDefinedOperators.Conversion(method, JsExprWriter.Write(translated), context) is { } call
