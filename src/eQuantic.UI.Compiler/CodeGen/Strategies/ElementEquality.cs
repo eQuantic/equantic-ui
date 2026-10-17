@@ -85,6 +85,16 @@ internal static class ElementEquality
         return valueSafe ? null : equality;
     }
 
+    /// <summary>
+    /// Whether <paramref name="method"/> is <c>System.IEquatable&lt;T&gt;.Equals(T)</c>, the member a call through
+    /// the interface or through a type parameter it constrains binds: generic code's equality, which
+    /// <c>EqualityComparer&lt;T&gt;.Default</c> asks too.
+    /// </summary>
+    internal static bool IsEquatableEquals(IMethodSymbol? method) =>
+        method is { Name: "Equals", IsStatic: false, Parameters.Length: 1 }
+        && method.ContainingType is { TypeKind: TypeKind.Interface, Arity: 1 } face
+        && face.OriginalDefinition.ToDisplayString() == "System.IEquatable<T>";
+
     /// <summary>An anonymous type's members, in the order C# declares them and its object literal is written.</summary>
     private static IReadOnlyList<IPropertySymbol> MembersOf(INamedTypeSymbol anonymous) =>
         anonymous.GetMembers().OfType<IPropertySymbol>().ToList();

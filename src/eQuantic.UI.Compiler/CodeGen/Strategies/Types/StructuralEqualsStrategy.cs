@@ -54,8 +54,17 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         }
         if (inv.Expression is not MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Equals" } ma)
             return false;
-        if (context.SemanticHelper.GetSymbol(inv) is IMethodSymbol bound && TwinMethodName.HoldsANameOfItsOwn(bound))
+        var bound = context.SemanticHelper.GetSymbol(inv) as IMethodSymbol;
+        if (bound is not null && TwinMethodName.HoldsANameOfItsOwn(bound))
             return false;
+        // The member the call binds decides, never its receiver alone: object's Equals(object), whatever the
+        // receiver, and IEquatable<T>'s, which generic code calls. An Equals an interface of the app's
+        // declares is dispatched as any member of it is: taken here for the receiver's type, a call that
+        // binds `IProbe.Equals(IProbe)` answered by identity and never ran the implementation (Copilot's
+        // second review of #947).
+        if (bound is { IsStatic: false, Parameters.Length: 1, ContainingType.SpecialType: SpecialType.System_Object }
+            || ElementEquality.IsEquatableEquals(bound))
+            return true;
         // A bare `object` may hold a boxed value, and .NET compares boxed values by VALUE —
         // `((object)5).Equals((object)5)` is true. The helper already answers that for primitives.
         // A Nullable tuple's Equals is its value's, or, empty, whether the other value is null too, which
@@ -63,14 +72,7 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         var receiver = context.SemanticHelper.GetType(ma.Expression);
         return receiver.IsStructuralValueType() || receiver is { IsAnonymousType: true }
             || receiver.UnwrapNullable() is INamedTypeSymbol { IsTupleType: true } or INamedTypeSymbol { TypeKind: TypeKind.Enum }
-            || receiver?.SpecialType == SpecialType.System_Object
-            || receiver?.TypeKind is TypeKind.Interface or TypeKind.TypeParameter
-            || context.SemanticHelper.GetSymbol(inv) is IMethodSymbol
-            {
-                IsStatic: false,
-                Parameters.Length: 1,
-                ContainingType.SpecialType: SpecialType.System_Object,
-            };
+            || bound is null && receiver?.SpecialType == SpecialType.System_Object;
     }
 
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)

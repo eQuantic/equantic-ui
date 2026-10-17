@@ -225,7 +225,11 @@ public class MemberAccessStrategy : IExpressionIrStrategy
             return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup),
                 type.IsNullableValue() ? JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver) : receiver);
         }
-        if (type.SpecialType == SpecialType.System_Object || type.TypeKind is TypeKind.Interface or TypeKind.TypeParameter)
+        // The group of object's Equals(object), or of IEquatable<T>'s, on a receiver whose type says nothing of
+        // the value: an interface's own Equals is that member's group, as its call is (Copilot's second review
+        // of #947).
+        if ((type.SpecialType == SpecialType.System_Object || type.TypeKind is TypeKind.Interface or TypeKind.TypeParameter)
+            && (method.ContainingType.SpecialType == SpecialType.System_Object || ElementEquality.IsEquatableEquals(method)))
         {
             context.UsedHelpers.Add(Eq.Import);
             var checkedReceiver = JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver);

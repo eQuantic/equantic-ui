@@ -351,6 +351,8 @@ public class TupleAndAnonymousObjectConformanceTests
         public class Plain { public int X; }
         public class Matcher { public override bool Equals(object? o) => o is string s && s == "x"; public override int GetHashCode() => 0; }
         public class AnyMatcher { public override bool Equals(object? o) => true; public override int GetHashCode() => 0; }
+        public interface IProbe { bool Equals(IProbe other); }
+        public class Probe : IProbe { public bool Equals(IProbe other) => false; }
         """;
 
     /// <summary>
@@ -366,6 +368,9 @@ public class TupleAndAnonymousObjectConformanceTests
             """var log = ""; string B() { log += "b"; return "x"; } Matcher A() { log += "a"; return new Matcher(); } return object.Equals(objB: B(), objA: A()) + "|" + object.Equals(objB: new Matcher(), objA: "x") + "|" + object.Equals(new Matcher(), "x") + "|" + log;"""),
         ("an override that takes a tuple or an anonymous object, whatever the second operand is",
             """var m = new AnyMatcher(); object o = m; return object.Equals(m, (1, 2)) + "|" + object.Equals(m, new { A = 1 }) + "|" + object.Equals(o, (new[] { 1 }, 1)) + "|" + o.Equals((new[] { 1 }, 1)) + "|" + object.Equals(o, new { A = 1 }) + "|" + o.Equals(new { A = 1 });"""),
+        // An interface's own Equals is dispatched as any interface member is, by a call and by a group.
+        ("an Equals an interface declares",
+            """IProbe p = new Probe(); Func<IProbe, bool> f = p.Equals; return p.Equals(p) + "|" + f(p) + "|" + new Probe().Equals(p) + "|" + object.Equals(p, p);"""),
     ];
 
     public static TheoryData<string, bool> ClassCaseNames()
