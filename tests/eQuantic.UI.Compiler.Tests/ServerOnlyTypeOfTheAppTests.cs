@@ -225,6 +225,43 @@ public sealed class ServerOnlyTypeOfTheAppTests
         return solution.FileOf("App", "Model/Shop.cs");
     }
 
+    /// <summary>A kept-out type named only as a type argument of a base list, a component's or a
+    /// class's, is written as nothing: a component's twin implements no interface and extends its base
+    /// component without the argument, and a class's twin extends its base without it. So the header is free, as every other
+    /// position the module writes as nothing is. The client-boundary spec listed the base list among the
+    /// refused sites after #944, and the build never refused it; this pins what it does.</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AKeptOutTypeArgumentOfABaseList_IsWrittenAsNothing(bool inALibrary)
+    {
+        using var component = Of(inALibrary, "StatelessComponent, IMark<Ledger>", "", "\"plain\"");
+        component.Write("App", "Screens/IMark.cs", "namespace App.Screens;\n\npublic interface IMark<T>\n{\n}\n");
+        var builtComponent = component.Build();
+
+        builtComponent.Failed.Should().BeFalse($"a component's interfaces never reach its twin:\n{builtComponent.Errors}");
+        builtComponent.Module("Home").Should().NotMatchRegex(@"(?<![\w$'])Ledger(?![\w$'])");
+
+        using var page = Of(inALibrary, "Shell<Ledger>", "", "\"plain\"");
+        page.Write("App", "Screens/Shell.cs",
+            "using eQuantic.UI.Primitives;\n\nnamespace App.Screens;\n\npublic abstract class Shell<T> : StatelessComponent\n{\n}\n");
+        var builtPage = page.Build();
+
+        builtPage.Failed.Should().BeFalse($"a component's twin extends its base component without the argument:\n{builtPage.Errors}");
+        builtPage.Module("Home").Should().Contain("extends Shell").And.NotMatchRegex(@"(?<![\w$'])Ledger(?![\w$'])");
+
+        var space = inALibrary ? "Common" : "App.Model";
+        using var holder = Of(inALibrary, "StatelessComponent", "", "new LedgerHolder().N.ToString()");
+        holder.Write("App", "Screens/Holder.cs", "namespace App.Screens;\n\npublic class Holder<T>\n{\n    public int N => 1;\n}\n");
+        holder.Write("App", "Screens/LedgerHolder.cs",
+            $"using {space};\n\nnamespace App.Screens;\n\npublic sealed class LedgerHolder : Holder<Ledger>\n{{\n}}\n");
+        var builtHolder = holder.Build();
+
+        builtHolder.Failed.Should().BeFalse($"a class's twin extends its base without the type argument:\n{builtHolder.Errors}");
+        builtHolder.Module("LedgerHolder").Should().Contain("extends Holder")
+            .And.NotMatchRegex(@"(?<![\w$'])Ledger(?![\w$'])");
+    }
+
     /// <summary>An operator of a kept-out struct, on a value a type that crosses hands out, names the
     /// struct where the page writes it. In the app it built, and the page called <c>Amount.opAdd</c> on
     /// a class nothing wrote; from a referenced project it was told twice, at the operator and at the
