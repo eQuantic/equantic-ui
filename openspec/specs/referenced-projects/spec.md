@@ -99,10 +99,10 @@ of that name.
 
 #### Scenario: A package's type of the same name
 
-- **WHEN** a page reads a member of `Status`, a class of a package, and a referenced project declares
-  a class named `Status` that nothing reaches
-- **THEN** the page's module imports no `Status` and the bundle holds no module of the referenced
-  project's
+- **WHEN** a page reads `Status.Label`, a static of a class of a package, and a referenced project
+  declares a class named `Status` that nothing reaches
+- **THEN** the build fails with EQ2004 naming the package's `Vendor.Status.Label`, never the referenced
+  project's, and the bundle holds no module of the referenced project's
 
 ### Requirement: A reached type that cannot cross is reported where it is declared
 

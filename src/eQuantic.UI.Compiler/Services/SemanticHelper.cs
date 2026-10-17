@@ -74,7 +74,7 @@ public class SemanticHelper
         node = Original(node);
         if (!Knows(node)) return null;
         if (_symbols.TryGetValue(node, out var remembered)) return remembered;
-        var symbol = _semanticModel!.GetSymbolInfo(node).Symbol;
+        var symbol = ModelOf(node).GetSymbolInfo(node).Symbol;
         _symbols[node] = symbol;
         return symbol;
     }
@@ -85,7 +85,7 @@ public class SemanticHelper
         node = Original(node);
         if (!Knows(node)) return null;
         if (_types.TryGetValue(node, out var remembered)) return remembered;
-        var type = _semanticModel!.GetTypeInfo(node).Type;
+        var type = ModelOf(node).GetTypeInfo(node).Type;
         _types[node] = type;
         return type;
     }
@@ -108,7 +108,7 @@ public class SemanticHelper
     public ITypeSymbol? GetConvertedType(SyntaxNode node)
     {
         node = Original(node);
-        return Knows(node) ? _semanticModel!.GetTypeInfo(node).ConvertedType : null;
+        return Knows(node) ? ModelOf(node).GetTypeInfo(node).ConvertedType : null;
     }
 
     /// <summary>
@@ -120,7 +120,7 @@ public class SemanticHelper
     public IOperation? GetOperation(SyntaxNode node)
     {
         node = Original(node);
-        return Knows(node) ? _semanticModel!.GetOperation(node) : null;
+        return Knows(node) ? ModelOf(node).GetOperation(node) : null;
     }
 
     /// <summary>What a <c>foreach</c> binds to — the element type, the conversion from the element
@@ -129,7 +129,7 @@ public class SemanticHelper
     {
         var node = Original(statement);
         return Knows(node) && node is CommonForEachStatementSyntax original
-            ? _semanticModel!.GetForEachStatementInfo(original)
+            ? ModelOf(original).GetForEachStatementInfo(original)
             : null;
     }
 
@@ -143,8 +143,8 @@ public class SemanticHelper
         if (!Knows(node)) return null;
         return node switch
         {
-            AssignmentExpressionSyntax assignment => _semanticModel!.GetDeconstructionInfo(assignment),
-            ForEachVariableStatementSyntax loop => _semanticModel!.GetDeconstructionInfo(loop),
+            AssignmentExpressionSyntax assignment => ModelOf(assignment).GetDeconstructionInfo(assignment),
+            ForEachVariableStatementSyntax loop => ModelOf(loop).GetDeconstructionInfo(loop),
             _ => null,
         };
     }
@@ -159,7 +159,7 @@ public class SemanticHelper
     {
         var node = Original(element);
         return Knows(node) && node is ExpressionSyntax original
-            ? _semanticModel!.GetCollectionInitializerSymbolInfo(original).Symbol as IMethodSymbol
+            ? ModelOf(original).GetCollectionInitializerSymbolInfo(original).Symbol as IMethodSymbol
             : null;
     }
 
@@ -168,7 +168,7 @@ public class SemanticHelper
     public ISymbol? GetDeclaredSymbol(SyntaxNode node)
     {
         node = Original(node);
-        return Knows(node) ? _semanticModel!.GetDeclaredSymbol(node) : null;
+        return Knows(node) ? ModelOf(node).GetDeclaredSymbol(node) : null;
     }
 
     /// <summary>The LINQ operator the model bound to a query clause — <c>where</c> answers Where,
@@ -183,11 +183,11 @@ public class SemanticHelper
         if (!Knows(clauseOrOrdering)) return null;
         return clauseOrOrdering switch
         {
-            OrderingSyntax ordering => _semanticModel!.GetSymbolInfo(ordering).Symbol as IMethodSymbol,
+            OrderingSyntax ordering => ModelOf(ordering).GetSymbolInfo(ordering).Symbol as IMethodSymbol,
             SelectOrGroupClauseSyntax selectOrGroup =>
-                _semanticModel!.GetSymbolInfo(selectOrGroup).Symbol as IMethodSymbol,
+                ModelOf(selectOrGroup).GetSymbolInfo(selectOrGroup).Symbol as IMethodSymbol,
             QueryClauseSyntax clause =>
-                _semanticModel!.GetQueryClauseInfo(clause).OperationInfo.Symbol as IMethodSymbol,
+                ModelOf(clause).GetQueryClauseInfo(clause).OperationInfo.Symbol as IMethodSymbol,
             _ => null,
         };
     }
@@ -245,6 +245,7 @@ public class SemanticHelper
         _originals.Clear();
         _typeOverrides.Clear();
         _symbolOverrides.Clear();
+        _speculated.Clear();
     }
 
     /// <summary>
@@ -254,7 +255,24 @@ public class SemanticHelper
     /// a rewritten node with no original is honestly "don't know", which every strategy handles.
     /// </summary>
     public bool Knows(SyntaxNode node) =>
-        _semanticModel is not null && ReferenceEquals(node.SyntaxTree, _semanticModel.SyntaxTree);
+        _semanticModel is not null
+        && (ReferenceEquals(node.SyntaxTree, _semanticModel.SyntaxTree) || _speculated.ContainsKey(node.SyntaxTree));
+
+    /// <summary>The model that answers for <paramref name="node"/>: the one a tree was speculated in
+    /// (<see cref="Speculate"/>), and the file's otherwise.</summary>
+    private SemanticModel ModelOf(SyntaxNode node) =>
+        _speculated.TryGetValue(node.SyntaxTree, out var speculated) ? speculated : _semanticModel!;
+
+    /// <summary>
+    /// Has <paramref name="model"/> answer for the nodes of <paramref name="root"/>'s tree, which a strategy
+    /// SPECULATED at a place in the file (<c>SemanticModelExtensions.TryGetSpeculativeSemanticModel</c>): the
+    /// call a method group stands for, bound where the group is written, so the strategies that translate
+    /// it ask the bound call (its operation, its arguments, their conversions) as they ask any other
+    /// (#839). Dropped with the synthetic correspondences.
+    /// </summary>
+    internal void Speculate(SyntaxNode root, SemanticModel model) => _speculated[root.SyntaxTree] = model;
+
+    private readonly Dictionary<SyntaxTree, SemanticModel> _speculated = new();
 
     /// <summary>
     /// The compile-time constant value of an expression (an enum member, a literal, a <c>const</c>), or
@@ -266,7 +284,7 @@ public class SemanticHelper
         value = null;
         node = Original(node);
         if (!Knows(node)) return false;
-        var constant = _semanticModel!.GetConstantValue(node);
+        var constant = ModelOf(node).GetConstantValue(node);
         if (!constant.HasValue) return false;
         value = constant.Value;
         return value != null;
@@ -277,7 +295,7 @@ public class SemanticHelper
     public bool IsNullConstant(SyntaxNode node)
     {
         node = Original(node);
-        return Knows(node) && _semanticModel!.GetConstantValue(node) is { HasValue: true, Value: null };
+        return Knows(node) && ModelOf(node).GetConstantValue(node) is { HasValue: true, Value: null };
     }
 
     // The LINQ name-gate moved to ConversionContext.IsLinqMethod: whether a NAME may decide is a

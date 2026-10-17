@@ -363,6 +363,10 @@ public static class Eq
     /// call through null (<c>NullReferenceException</c>), and handed on otherwise.</summary>
     public const string Receiver = "$eq.receiver";
 
+    /// <summary>The instance a method group of a method .NET calls directly is made over, refused where the
+    /// delegate is made when it is null (<c>ArgumentException</c>), as .NET's delegate constructor refuses it.</summary>
+    public const string DelegateTarget = "$eq.delegateTarget";
+
     /// <summary><c>GetHashCode()</c> by .NET's contract: values <see cref="Equals"/> finds equal hash
     /// equal, and a value with its own <c>getHashCode</c> answers it.</summary>
     public const string Hash = "$eq.hash.of";
