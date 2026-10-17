@@ -5,10 +5,10 @@
 `object.Equals(a, b)`, `Object.Equals(a, b)`, `System.Object.Equals(a, b)` and bare `Equals(a, b)` SHALL
 answer what .NET's `object.Equals(object, object)` answers: true when both are null or the same
 reference, false when one is null, and otherwise the first parameter's own `Equals(object)`, whatever the
-second operand is and in whichever order the call names the two, evaluating both arguments as written. A
-value whose type refuses every other (a number, a char, a bool, an enum, a tuple, a struct that does not
-override `Equals`, a string, an anonymous object) SHALL be unequal to one whose type is known to be
-another, a byte to an int and a char to a string included. An instance `Equals(object)` inherited from
+second operand is and in whichever order the call names the two, evaluating both arguments as written, and
+SHALL find a value whose type refuses every other (a number, a char, a bool, an enum, a tuple, a struct
+that does not override `Equals`, a string, an anonymous object) unequal to one whose type is known to be
+another, a byte and an int or a char and a string included. An instance `Equals(object)` inherited from
 `object` SHALL answer as .NET's: by reference for an array, a list, a `StringBuilder` and a class that
 does not override `Equals`, through the override where one exists, and on an `object` receiver by what
 the value turns out to be, a tuple held as `object` compared by its elements. Where either value's type
