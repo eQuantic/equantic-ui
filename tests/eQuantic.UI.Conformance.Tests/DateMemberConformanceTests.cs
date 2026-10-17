@@ -59,6 +59,17 @@ public class DateMemberConformanceTests
         var a = new DateTimeOffset(2024, 1, 2, 0, 0, 0, TimeSpan.Zero); var b = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         return (a - b) + "|" + (b - a) + "|" + (a < b) + "|" + (a == b) + "|" + (a > b) + "|" + (a == new DateTime(2024, 1, 2, 0, 0, 0, DateTimeKind.Utc));
         """,
+        // A nullable date becoming a nullable instant: a null one stays null, a present one is converted, alone and
+        // under an instant's operator with a null on either side (#964).
+        """
+        DateTime? none = null; DateTime? some = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        DateTimeOffset? fromNone = none; DateTimeOffset? fromSome = some;
+        DateTimeOffset? a = new DateTimeOffset(2024, 1, 2, 0, 0, 0, TimeSpan.Zero); DateTimeOffset? an = null;
+        return (fromNone is null) + "|" + fromSome?.ToString("o") + "|"
+            + ((a - none) is null) + "|" + ((none - a) is null) + "|" + (a - some) + "|" + ((an - some) is null) + "|"
+            + (a == none) + "|" + (none == an) + "|" + (a == some) + "|"
+            + (a < none) + "|" + (none < a) + "|" + (some < a) + "|" + (an < some);
+        """,
     ];
 
     public static IEnumerable<object?[]> CasesInEachCulture() =>
