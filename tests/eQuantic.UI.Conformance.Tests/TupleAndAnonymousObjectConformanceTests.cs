@@ -288,13 +288,15 @@ public class TupleAndAnonymousObjectConformanceTests
     }
 
     /// <summary>The types the object and enum member cases name besides <see cref="Prelude"/>'s: an enum with
-    /// an alias, a generic record, and two enums over a long, one of them holding an odd value above 2^53.</summary>
+    /// an alias, a generic record, two enums over a long, one of them holding an odd value above 2^53, and a
+    /// struct whose <c>Equals(object)</c> override takes a string.</summary>
     public const string ObjectAndEnumPrelude = Prelude + """
 
         public enum Shade { Black = 0, Grey = 1, Gray = Grey, White = 2 }
         public record Box<T>(T Value);
         public enum Wide : long { Low = -5000000000L, High = 1099511627776L, Odd = 9007199254740993L }
         [Flags] public enum WideFlags : long { None = 0, Top = 1L << 40 }
+        public struct StringMatcher { public override bool Equals(object? o) => o is string s && s == "x"; public override int GetHashCode() => 0; }
         """;
 
     public static readonly string[] ObjectAndEnumMemberCases =
@@ -334,6 +336,8 @@ public class TupleAndAnonymousObjectConformanceTests
         // A value of a type that refuses every other is unequal to a value of another type, which the
         // browser holds alike, both still evaluated.
         """var log = ""; byte One() { log += "a"; return 1; } int Two() { log += "b"; return 1; } return object.Equals((byte)1, 1) + "|" + object.Equals(1, 1.0) + "|" + object.Equals('a', "a") + "|" + object.Equals(1L, 1) + "|" + object.Equals(1, 1L) + "|" + object.Equals(1.5m, 1.5) + "|" + object.Equals((byte)1, (byte)1) + "|" + object.Equals(One(), Two()) + "|" + log + "|" + object.Equals((string?)null, (int?)null) + "|" + ((object)(byte)1).Equals(1) + "|" + ((object)(byte)1).Equals((byte)1);""",
+        // A struct's own Equals(object) override answers, whatever type the other value is.
+        """var m = new StringMatcher(); object o = m; return object.Equals(m, "x") + "|" + m.Equals("x") + "|" + o.Equals("x") + "|" + ((object)m).Equals("x") + "|" + object.Equals(m, "y") + "|" + m.Equals((object)1);""",
         // A tuple is no array and no list, whichever operand it is.
         """var a = new[] { 1, 2 }; var l = new List<int> { 1, 2 }; return object.Equals((1, 2), a) + "|" + object.Equals(a, (1, 2)) + "|" + object.Equals((1, 2), l) + "|" + object.Equals(l, (1, 2)) + "|" + (1, 2).Equals(a) + "|" + object.Equals((1, 2), (1, 2));""",
     ];

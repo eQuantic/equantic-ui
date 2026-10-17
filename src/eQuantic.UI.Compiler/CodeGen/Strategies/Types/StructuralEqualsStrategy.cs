@@ -135,6 +135,11 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
 
         if (type.IsStructuralValueType())
         {
+            // A struct that overrides Equals(object) is asked it first, whatever the other value is:
+            // `$eq.equals` refused a value of another JavaScript type before the override could run, so a
+            // struct whose override takes a string answered false (Copilot's second review of #947).
+            if (DeclaresObjectEquals(type!))
+                return JsExpr.Call(JsExpr.Identifier(Eq.SameItem), receiver, other);
             return type!.IsReferenceType
                 ? JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other)
                 : JsExpr.Call(JsExpr.Identifier(Eq.Equals), receiver, other);
@@ -272,6 +277,8 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
     {
         if (type.UnwrapNullable() is INamedTypeSymbol { IsTupleType: true } or INamedTypeSymbol { IsAnonymousType: true })
             return ElementEquality.OwnEquals((INamedTypeSymbol)type.UnwrapNullable()!);
+        // A struct's own Equals(object) override, before anything reads the other value.
+        if (DeclaresObjectEquals(type)) return Eq.SameItem;
         var comparer = ElementEquality.Comparer(type);
         return comparer == Eq.Equals ? null : comparer;
     }
@@ -308,7 +315,18 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         var value = type.UnwrapNullable() ?? type;
         if (value.SpecialType == SpecialType.System_String || value.IsAnonymousType) return true;
         if (!value.IsValueType || value.TypeKind == TypeKind.TypeParameter) return false;
-        return !value.GetMembers("Equals").OfType<IMethodSymbol>().Any(method =>
+        return !DeclaresObjectEquals(value);
+    }
+
+    /// <summary>
+    /// Whether a value type of the app's own (or a project it references) overrides <c>Equals(object)</c>,
+    /// which then answers for any other value, of any type: what a <c>struct</c> declares, never what C#
+    /// synthesizes for a <c>record struct</c>, and never .NET's own, whose types refuse every other.
+    /// </summary>
+    private static bool DeclaresObjectEquals(ITypeSymbol type)
+    {
+        var value = type.UnwrapNullable() ?? type;
+        return value.IsValueType && value.GetMembers("Equals").OfType<IMethodSymbol>().Any(method =>
             method is { IsOverride: true, IsImplicitlyDeclared: false, Parameters: [{ Type.SpecialType: SpecialType.System_Object }] }
             && method.Locations.Any(location => location.IsInSource));
     }
