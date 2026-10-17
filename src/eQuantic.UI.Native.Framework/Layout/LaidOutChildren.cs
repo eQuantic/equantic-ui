@@ -14,10 +14,11 @@ namespace eQuantic.UI.Native.Framework;
 /// each arm by its own rule, behind the arm's gate.
 /// </para>
 /// <para>
-/// The arm is measured at the path it always had — its node's, then the arm's slot, as the
+/// The arm is measured at the position it always had — its node's, then the arm's slot, as the
 /// AdaptiveNode's own measurement gives it — so nothing remembered by a path moves, a keyed node's
-/// key included. A struct over the container's own list: every container is laid out every frame,
-/// and this allocates nothing.
+/// key included, and the element is the arm's, which the AdaptiveNode's element holds at that slot.
+/// A struct over the container's own list: every container is laid out every frame, and this
+/// allocates nothing.
 /// </para>
 /// </summary>
 internal readonly struct LaidOutChildren
@@ -45,15 +46,15 @@ internal readonly struct LaidOutChildren
     }
 
     /// <summary>Where the child at <paramref name="index"/> is measured, below <paramref name="parent"/>.</summary>
-    public string PathOf(string parent, int index)
+    public Position At(Position parent, int index)
     {
         var node = _nodes[index];
-        var path = _ctx.ChildPath(parent, index, node);
+        var at = _ctx.Child(parent, index, node);
         while (node is AdaptiveNode adaptive)
         {
             node = _ctx.ArmOf(adaptive);
-            path = _ctx.ChildPath(path, 0);
+            at = _ctx.Child(at, 0);
         }
-        return path;
+        return at;
     }
 }

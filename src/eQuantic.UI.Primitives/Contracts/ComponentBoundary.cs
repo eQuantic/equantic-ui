@@ -137,6 +137,17 @@ public static class ComponentBoundary
     }
 
     /// <summary>
+    /// Builds a component that stands <paramref name="depth"/> components deep in an element tree:
+    /// what <see cref="ExpandContained"/> answers, with the depth read from the tree instead of
+    /// counted by a walk. The element engine builds each position on its own, outside its parent's
+    /// expansion, so there is no walk to count, and the tree knows the nesting anyway.
+    /// </summary>
+    internal static VisualNode BuildAtDepth(UiComponent component, ComponentContext context, int depth) =>
+        depth >= MaxDepth
+            ? Contain(component, Exceeded(component), context)
+            : BuildContained(component, context);
+
+    /// <summary>
     /// Expands a component AND realizes what it built — the move every realizer actually makes, and
     /// the one that has to be bounded, because <see cref="BuildContained"/> alone cannot be.
     ///

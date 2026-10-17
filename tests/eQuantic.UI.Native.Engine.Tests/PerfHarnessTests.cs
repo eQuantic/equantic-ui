@@ -71,6 +71,71 @@ public class PerfHarnessTests
         return page;
     }
 
+    /// <summary>
+    /// The dense scene's shape built by STATEFUL components: a stateful page whose 24 cards are
+    /// stateful too, each holding a count it shows. <see cref="DenseScene"/> has none, so the frame
+    /// budget said nothing about what retaining an instance costs per frame (#950, plan section 5):
+    /// an identity string, a store write and a reconcile per stateful component, every frame.
+    /// </summary>
+    private sealed class StatefulDashboard : Primitives.StatefulComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            var theme = context.Theme;
+            var page = new Column(gap: Space.S3) { Width = SizeValue.Fill };
+            page.Add(new LoopMotion(
+                new Box(new BoxStyle
+                {
+                    Width = SizeValue.Fixed(120),
+                    Height = SizeValue.Fixed(8),
+                    Background = theme.SurfaceHighlight,
+                    CornerRadius = new CornerRadii(4),
+                }),
+                LoopEffect.SlideX, -0.35f, 1.05f, 1200));
+            for (var r = 0; r < 6; r++)
+            {
+                var row = new Row(gap: Space.S3) { Width = SizeValue.Fill };
+                for (var c = 0; c < 4; c++)
+                    row.Add(new Flexible(new StatefulCard($"Card {r}-{c}"), 1));
+                page.Add(row);
+            }
+            return page;
+        }
+    }
+
+    private sealed class StatefulCard : Primitives.StatefulComponent
+    {
+        private int _opened;
+
+        public StatefulCard(string title) => Title = title;
+
+        public string Title { get; private set; }
+
+        public override void AdoptConfig(UiComponent next)
+        {
+            if (next is StatefulCard card) Title = card.Title;
+        }
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var theme = context.Theme;
+            var card = new Column(gap: Space.S2);
+            card.Add(new Text(Title, TypeRole.Title, theme.TextPrimary, maxLines: 1));
+            card.Add(new Text($"Opened {_opened} times", TypeRole.BodyM, theme.TextSecondary, maxLines: 2));
+            card.Add(new Button("Open", Variant.Outline, SizeVariant.Small)
+            {
+                OnPressed = () => SetState(() => _opened++),
+            });
+            return new Box(new BoxStyle
+            {
+                Width = SizeValue.Fill,
+                Background = theme.Surface,
+                CornerRadius = new CornerRadii(8),
+                Padding = EdgeInsets.All(Space.S3),
+            }, card);
+        }
+    }
+
     private const int OverlayLayers = 8;
 
     /// <summary>
@@ -224,6 +289,17 @@ public class PerfHarnessTests
                           $"(ceiling {PooledAllocationCeilingBytesPerFrame / 1024.0:F0} KB)");
         perFrame.Should().BeLessThan(PooledAllocationCeilingBytesPerFrame,
             "the shells run with RecycleFrames on — this is the allocation profile production sees");
+    }
+
+    /// <summary>The stateful scene's steady frame, printed: the record #950 measures before and
+    /// after the element tree replaces the instance store.</summary>
+    [Fact]
+    public void AStatefulScene_ItsSteadyFrameIsMeasured()
+    {
+        var perFrame = PooledBytesPerFrame(new StatefulDashboard());
+
+        _output.WriteLine($"pooled stateful steady-state allocation: {perFrame} bytes/frame");
+        perFrame.Should().BePositive();
     }
 
     [Fact]

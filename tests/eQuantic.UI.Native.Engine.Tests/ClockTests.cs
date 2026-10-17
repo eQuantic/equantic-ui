@@ -76,14 +76,14 @@ public class ClockTests
         using var scope = CapabilityScope.With<IClock>(clock);
 
         var section = new TickingSection();
-        section.NotifyMounted();
+        var host = Open(section);
         clock.Subscriptions.Should().Be(1, "the hook is where the subscription starts");
 
         clock.Tick();
         clock.Tick();
         section.Step.Should().Be(2);
 
-        section.NotifyUnmounted();
+        host.Unmount();
         clock.Subscriptions.Should().Be(0, "and OnUnmount still owns letting go");
     }
 
@@ -131,7 +131,7 @@ public class ClockTests
         CapabilityScope.Current = null;
         var section = new TickingSection();
 
-        var mount = () => section.NotifyMounted();
+        var mount = () => Open(section);
 
         mount.Should().NotThrow();
         section.Step.Should().Be(0);
@@ -190,9 +190,9 @@ public class ClockTests
     {
         var clock = new FakeClock();
         var page = new Ticking(clock);
-        Open(page);
+        var host = Open(page);
 
-        page.NotifyUnmounted();
+        host.Unmount();
 
         clock.Subscriptions.Should().Be(0, "OnUnmount disposed what OnMount subscribed");
         clock.Tick();

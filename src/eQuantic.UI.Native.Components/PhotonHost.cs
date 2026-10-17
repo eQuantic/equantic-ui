@@ -6,12 +6,11 @@ using eQuantic.UI.Primitives;
 namespace eQuantic.UI.Native.Components;
 
 /// <summary>
-/// The v1 frame driver for a Photon surface: holds a RETAINED root node/component, rebuilds when its
-/// state invalidates, and dispatches taps to the realized hit regions. This is the minimal loop that
-/// proves Build → SetState → rebuild end-to-end; the platform shells (W5) wrap it with vsync pacing
-/// and real input, and the reconciler (W6) replaces full rebuilds with diffing. State persists on the
-/// retained root (and any component instances the tree retains) — see the
-/// <see cref="StatefulComponent"/> v1 caveat.
+/// The frame driver for a Photon surface: keeps the tree of its root in a <see cref="BuildOwner"/>
+/// across frames, draws a frame when a <c>SetState</c>, input or the system asks for one (building,
+/// then laying out and painting), and dispatches input to the realized hit regions. The platform
+/// shells wrap it with vsync pacing and real input. A stateful component's state lives on the
+/// instance its position retains (see <see cref="StatefulComponent"/>).
 /// </summary>
 public sealed class PhotonHost
 {
@@ -33,10 +32,11 @@ public sealed class PhotonHost
         _measurer = measurer;
         _typeScale = typeScale;
 
-        if (root is StatefulComponent stateful)
-            stateful.StateInvalidated += () => NeedsRender = true;
-        _instances.InstanceRetained += retained =>
-            retained.StateInvalidated += () => NeedsRender = true;
+        // ONCE, for the whole tree: a SetState marks its position in the owner, and the owner asks
+        // for the frame. Nothing subscribes per instance, so nothing can subscribe twice (#935: the
+        // instance store reported a root it already held as entering every frame, and the host
+        // added a handler each time).
+        _owner.BuildRequested += RequestFrame;
 
         // Work posted from a worker thread has to WAKE an idle window, or it runs whenever something
         // else next needs a frame — a scanner's results appearing on the next mouse move.
@@ -101,6 +101,9 @@ public sealed class PhotonHost
     /// is not, and nothing inside it would know to say so.
     /// </summary>
     public void Invalidate() => NeedsRender = true;
+
+    /// <summary>A position in the tree was marked by a <c>SetState</c>: the next frame builds it.</summary>
+    private void RequestFrame() => NeedsRender = true;
 
     /// <summary>The OS "Reduce Motion" accessibility setting (spec §06): loop movement renders at
     /// rest and stops requesting frames. Platform shells (W5) feed the real setting.</summary>
@@ -288,7 +291,7 @@ public sealed class PhotonHost
         _scrolls.Smooth = SmoothScroll && !ReducedMotion;
         var gliding = _scrolls.Advance(timeMs);
         var previousFrame = _lastFrame;
-        _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, safeArea, _pressedPath,
+        _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _owner, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, safeArea, _pressedPath,
             _focusVisible ? _focusedPath : null, _textPath, caretIndex, CaretVisible,
             selection.Start, selection.End, density: Density,
             scrollOffset: path => _scrolls.Get(path), markedText: _marked, composing: _composing,
@@ -315,14 +318,6 @@ public sealed class PhotonHost
         _announcer.Observe(_lastFrame, timeMs);
         AdoptAutofocus();
         AdoptFocusRequests();
-        // The ROOT is not in the instance store (nothing reconciles it — it IS the tree), so the
-        // surface owes it the mount its children get from the store. After the first frame realized:
-        // the same "the tree exists" moment, for the one component that has no parent to give it.
-        if (!_rootMounted && _root is StatefulComponent rootStateful)
-        {
-            _rootMounted = true;
-            rootStateful.NotifyMounted();
-        }
         // A subscribed frame ticker IS motion: frames keep flowing while anyone wants them, and the
         // loop goes idle the moment the last subscription is disposed.
         NeedsRender = _lastFrame.HasActiveMotion || gliding || PhotonFrameTicker.Shared.HasSubscribers;
@@ -352,15 +347,13 @@ public sealed class PhotonHost
         return _lastFrame;
     }
 
-    /// <summary>The positional reconciler: nested stateful components retain identity (and state)
-    /// across parent rebuilds — see ComponentInstanceStore.</summary>
-    private readonly ComponentInstanceStore _instances = new();
+    /// <summary>The tree this host keeps across frames: every position, the instances it retains, and
+    /// the order its components mount and unmount in, the root's included (see BuildOwner).</summary>
+    private readonly BuildOwner _owner = new();
 
     /// <summary>Which InView nodes were on screen last frame — see InViewStore.</summary>
     private readonly InViewStore _inView = new();
 
-    /// <summary>Whether the root has been told it is in the tree — see RenderFrame.</summary>
-    private bool _rootMounted;
 
     private Pressable? _pressed;
 
@@ -2850,11 +2843,5 @@ public sealed class PhotonHost
     /// the live one did.
     /// </para>
     /// </summary>
-    public void Unmount()
-    {
-        _instances.UnmountAll();
-        if (!_rootMounted || _root is not StatefulComponent rootStateful) return;
-        _rootMounted = false;
-        rootStateful.NotifyUnmounted();
-    }
+    public void Unmount() => _owner.UnmountAll();
 }

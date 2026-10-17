@@ -35,13 +35,13 @@ prose, and cannot go on claiming an absence that has ended.
 |---|---|---|
 | `Widget` — immutable configuration | `VisualNode` (a COMPONENT here; "widget" is Flutter's word and stays in this column) | **SAME**, including the part people find surprising: it has **no `Parent`**, deliberately. It is rebuilt constantly, so a back-reference on it would mean nothing. |
 | `StatelessWidget` | `StatelessComponent` | **SAME** |
-| `StatefulWidget` + `State` | `StatefulComponent` with `SetState` | **SAME** in shape. One class rather than two: Flutter splits them because a `Widget` must be immutable and `State` must persist, and our reconciler keeps the retained instance instead. |
+| `StatefulWidget` + `State` | `StatefulComponent` with `SetState` | **SAME** in shape. One class rather than two: Flutter splits them because a `Widget` must be immutable and `State` must persist, and our element keeps the retained instance instead, handing each fresh one's configuration to it through `AdoptConfig`. |
 | `initState` | `OnMount` | **SAME**, with a narrower promise. It does **not** mean "the pixels exist" — Photon has no DOM to read geometry from, so a hook promising that could not be write-once. |
 | `dispose` | `OnUnmount` | **SAME** — and it ships with `OnMount` rather than after it, because without the pair every mount is a leak. |
 | `didUpdateWidget` | `AdoptConfig(UiComponent next)` | **SAME** |
 | `didChangeDependencies` | — | **GAP**, and it follows from the Element row below: with no dependency graph there is nothing to be notified about. |
 | `InheritedWidget` / `InheritedModel` | `GetService<T>()` over a `CapabilityScope` | **DIFFERENT.** Ours is AMBIENT, not positional: resolution walks a scope, not the tree. The trade is real and worth stating — no per-position override (two subtrees cannot see different values of the same thing) and no dependency-driven rebuild (changing a value does not invalidate the components that read it). What it buys is that a component never has to be handed a context to read the theme. |
-| `Element` tree, `BuildContext` | — | **GAP, and the structural one.** There is no persistent instance tree, which is why `ComponentContext` is a bag of values (`Theme`, `TypeScale`, `Route`, `Density`) rather than a position. `Theme.of(context)` works in Flutter because the context IS the element and the lookup walks UP. Ours is handed the theme because there is nothing to walk. Everything in the row above, and the two rows below it, traces here. |
+| `Element` tree, `BuildContext`, `BuildOwner` | `Element` (`ComponentElement`, `NodeElement`) and `BuildOwner` | **PARTIAL, and the structural one.** On Photon the tree exists since E1 (#950): an element per node, kept across frames, a stateful instance retained by its element, and a build phase before layout that builds only what is dirty, ancestors first, as `buildScope` does. Two halves are still missing. The CONTEXT is not the element yet: `ComponentContext` is a bag of values (`Theme`, `TypeScale`, `Route`, `Density`) rather than a position, and `Theme.of(context)` needs the inherited components of E5. And the browser and the server keep their own instance handling until E3 and E4. The rows above and below it that trace here close with those slices ([ELEMENT-TREE-PLAN.md](ELEMENT-TREE-PLAN.md)). |
 | `RenderObject` with `parent` | `LayoutNode` with `Parent` | **SAME.** Flutter makes this tree bidirectional and its configuration tree not; so do we, for the same reason. |
 | `parentData` | — | **DIFFERENT, and needs nothing.** It exists to carry what a parent assigned — an offset, a flex factor — and this engine resolves all of that into `Bounds` in the same pass. A second slot would hold a copy. |
 | `RenderSliver`, viewport virtualization | `ListView` (builds only the visible window plus overscan) | **PARTIAL.** The capability is there; the protocol is not. v1 fence, stated in the code: vertical only, fixed `ItemExtent`. There is no general sliver contract other nodes can implement. |
@@ -75,7 +75,7 @@ prose, and cannot go on claiming an absence that has ended.
 
 | Flutter | Here | Verdict |
 |---|---|---|
-| `setState` | `SetState` + `StateInvalidated` | **SAME** |
+| `setState` | `SetState`, which marks its element dirty and has its `BuildOwner` ask the host for a frame | **SAME**: Flutter's `markNeedsBuild`, and a frame builds the marked positions and nothing else |
 | `ValueNotifier` / `ValueListenableBuilder` | — | **GAP** |
 | `ChangeNotifier` / `ListenableBuilder` | — | **GAP** |
 | `InheritedNotifier` | — | **GAP** (see the Element row) |
@@ -176,10 +176,11 @@ prose, and cannot go on claiming an absence that has ended.
 
 ## What this adds up to
 
-**One gap explains several others.** There is no Element tree, so there is no position to look up from,
-so there is no `InheritedWidget`, no `didChangeDependencies`, and no dependency-driven rebuild. That was
-one decision to take, not four, and it was taken on 2026-10-14: the Element is built before 1.0, in
-the slices of [ELEMENT-TREE-PLAN.md](ELEMENT-TREE-PLAN.md), and each flips the rows it closes.
+**One gap explained several others.** There was no Element tree, so there was no position to look up
+from, so there is no `InheritedWidget`, no `didChangeDependencies`, and no dependency-driven rebuild.
+That was one decision to take, not four, and it was taken on 2026-10-14: the Element is built before
+1.0, in the slices of [ELEMENT-TREE-PLAN.md](ELEMENT-TREE-PLAN.md), and each flips the rows it closes.
+The first slice gave Photon the tree (#950); the lookup up it, which the three rows wait for, is E5's.
 
 **Two gaps have a consumer already blocked behind them**, which is the only evidence that counts here:
 `LayoutBuilder` (a child built against its own box) and an authorable constraint type to go with it.

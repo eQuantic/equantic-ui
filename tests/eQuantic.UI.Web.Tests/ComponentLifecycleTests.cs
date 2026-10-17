@@ -6,14 +6,16 @@ namespace eQuantic.UI.Web.Tests;
 /// <summary>
 /// The two moments a component owns that a constructor cannot: entering a live tree, and leaving it.
 /// <para>
-/// A constructor is the wrong place to load stored state or subscribe to a device, because the
-/// reconciler builds FRESH instances every pass and keeps the retained one — so a constructor that
-/// starts something starts it again for an instance that is then thrown away. The store is what
-/// knows which instance stayed, so the store is what delivers the hooks.
+/// A constructor is the wrong place to load stored state or subscribe to a device, because a parent's
+/// build makes FRESH instances every time and the tree keeps the retained one, so a constructor that
+/// starts something starts it again for an instance that is then thrown away. The tree's owner is what
+/// knows which instance stayed, so the owner is what delivers the hooks.
 /// </para>
 /// </summary>
 public class ComponentLifecycleTests
 {
+    private static readonly ComponentContext Context = new(PhotonTheme.Instance);
+
     private sealed class Tracked : StatefulComponent
     {
         public int Mounts;
@@ -25,72 +27,82 @@ public class ComponentLifecycleTests
         public override VisualNode Build(ComponentContext context) => new Text("x", TypeRole.BodyM);
     }
 
+    private static Column Holding(params VisualNode[] children)
+    {
+        var column = new Column();
+        foreach (var child in children) column.Add(child);
+        return column;
+    }
+
+    /// <summary>One frame of a live tree: the build, then the frame's end, where the hooks run.</summary>
+    private static void Frame(BuildOwner owner, VisualNode root)
+    {
+        owner.Build(root, Context, WindowSizeClass.Compact, rebuildAll: true);
+        owner.EndFrame();
+    }
+
     [Fact]
     public void AComponentEnteringTheTree_MountsOnce()
     {
-        var store = new ComponentInstanceStore();
+        var owner = new BuildOwner();
         var component = new Tracked();
 
-        store.Reconcile("/0", component);
-        store.EndPass();
+        Frame(owner, Holding(component));
 
         component.Mounts.Should().Be(1);
     }
 
     /// <summary>
-    /// Mounted when the PASS closes, not inside Reconcile: a hook that ran mid-build would run while
-    /// its own parent is still building, so a SetState from it mutates a tree half-way through being
+    /// Mounted when the FRAME ends, not while it builds: a hook that ran mid-build would run while its
+    /// own parent is still building, so a SetState from it mutates a tree half-way through being
     /// produced.
     /// </summary>
     [Fact]
-    public void TheMount_WaitsForThePassToClose()
+    public void TheMount_WaitsForTheFrameToEnd()
     {
-        var store = new ComponentInstanceStore();
+        var owner = new BuildOwner();
         var component = new Tracked();
 
-        store.Reconcile("/0", component);
+        owner.Build(Holding(component), Context, WindowSizeClass.Compact, rebuildAll: true);
 
         component.Mounts.Should().Be(0, "the tree it belongs to is not finished yet");
     }
 
     /// <summary>
-    /// The whole reason the hook exists: across passes the RETAINED instance is the one that stayed,
-    /// and it must not mount again. Mounting per pass would re-run every subscription on every
+    /// The whole reason the hook exists: across frames the RETAINED instance is the one that stayed,
+    /// and it must not mount again. Mounting per frame would re-run every subscription on every
     /// keystroke that re-rendered the page.
     /// </summary>
     [Fact]
     public void ARetainedInstance_DoesNotMountAgain()
     {
-        var store = new ComponentInstanceStore();
+        var owner = new BuildOwner();
         var first = new Tracked();
-        store.Reconcile("/0", first);
-        store.EndPass();
+        Frame(owner, Holding(first));
 
-        // A second pass builds a fresh instance at the same position — the store keeps the first.
+        // A second build makes a fresh instance at the same position; the position keeps the first.
         var second = new Tracked();
-        var resolved = store.Reconcile("/0", second);
-        store.EndPass();
+        Frame(owner, Holding(second));
 
-        resolved.Should().BeSameAs(first);
+        ((ComponentElement)owner.Root!.ChildAt(0)!).Component.Should().BeSameAs(first);
         first.Mounts.Should().Be(1);
         second.Mounts.Should().Be(0, "the discarded instance never entered the tree");
         second.Unmounts.Should().Be(0, "and so it never left it either");
     }
 
     /// <summary>
-    /// A position that leaves the tree unmounts. Without this every mount is a leak — which is why
+    /// A position that leaves the tree unmounts. Without this every mount is a leak, which is why
     /// the pair ships together rather than OnMount alone.
     /// </summary>
     [Fact]
     public void APositionThatLeavesTheTree_Unmounts()
     {
-        var store = new ComponentInstanceStore();
+        var owner = new BuildOwner();
         var component = new Tracked();
-        store.Reconcile("/0", component);
-        store.EndPass();
+        Frame(owner, Holding(component));
 
-        // The next pass does not build anything at /0 — the component's position is gone.
-        store.EndPass();
+        // The next build has nothing at that position: the component's place is gone.
+        Frame(owner, Holding());
 
         component.Unmounts.Should().Be(1);
     }
@@ -101,14 +113,11 @@ public class ComponentLifecycleTests
     public void TheOutgoing_UnmountsBeforeTheIncomingMounts()
     {
         var order = new List<string>();
-        var store = new ComponentInstanceStore();
-        var leaving = new Ordered("leaving", order);
-        store.Reconcile("/0", leaving);
-        store.EndPass();
+        var owner = new BuildOwner();
+        Frame(owner, Holding(new Ordered("leaving", order)));
 
-        var arriving = new Ordered("arriving", order);
-        store.Reconcile("/1", arriving);
-        store.EndPass();
+        // The leaving one's position now holds a text; the arriving one takes the next.
+        Frame(owner, Holding(new Text("in its place", TypeRole.BodyM), new Ordered("arriving", order)));
 
         order.Should().Equal("mount:leaving", "unmount:leaving", "mount:arriving");
     }
@@ -121,22 +130,37 @@ public class ComponentLifecycleTests
         public override VisualNode Build(ComponentContext context) => new Text(name, TypeRole.BodyM);
     }
 
-    /// <summary>A surface closing takes its whole tree with it — the last tree unsubscribes instead
+    /// <summary>A surface closing takes its whole tree with it: the last tree unsubscribes instead
     /// of being collected in silence.</summary>
     [Fact]
-    public void TearingTheStoreDown_UnmountsEverythingStillIn()
+    public void TearingTheTreeDown_UnmountsEverythingStillIn()
     {
-        var store = new ComponentInstanceStore();
+        var owner = new BuildOwner();
         var a = new Tracked();
         var b = new Tracked();
-        store.Reconcile("/0", a);
-        store.Reconcile("/1", b);
-        store.EndPass();
+        Frame(owner, Holding(a, b));
 
-        store.UnmountAll();
+        owner.UnmountAll();
 
         a.Unmounts.Should().Be(1);
         b.Unmounts.Should().Be(1);
+    }
+
+    /// <summary>
+    /// A tree laid out ONCE (a test, a tool) builds the same tree and calls neither hook: a hook there
+    /// would subscribe or start work for a tree nobody draws again.
+    /// </summary>
+    [Fact]
+    public void AStructuralTree_CallsNoHook()
+    {
+        var owner = BuildOwner.Structural();
+        var component = new Tracked();
+
+        Frame(owner, Holding(component));
+        owner.UnmountAll();
+
+        component.Mounts.Should().Be(0);
+        component.Unmounts.Should().Be(0);
     }
 }
 

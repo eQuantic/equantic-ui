@@ -75,10 +75,11 @@ internal sealed partial class EmitVisitor
             Emit(s with { Node = child });
     }
 
-    // An Overlay queues for the viewport pass — nothing renders in the page flow.
+    // An Overlay queues for the viewport pass — nothing renders in the page flow. Its child is
+    // built there, in the overlay's own deferred slot, and only when the layer is shown.
     private void EmitOverlay(Overlay overlay, EmitState s)
     {
-        s.Overlays.Add(overlay);
+        s.Overlays.Add(new QueuedLayer(overlay, s.Node.Element as NodeElement));
     }
 
     // Wave 3 anchored overlay: the anchor renders in flow; while Open, a SYNTHETIC overlay
@@ -148,7 +149,12 @@ internal sealed partial class EmitVisitor
         // every open menu and select, and would have read as a DIALOG once a modal layer became one
         // (#501). Nothing else on Photon reads the flag: the pointer only ever hits registered
         // regions, so the scrim's tap-outside is the scrim's, not the layer's.
-        s.Overlays.Add(new Overlay(layer) { Modal = anchored.PanelRole == AnchorPanelRole.Dialog });
+        //
+        // The layer is the anchored node's DEFERRED slot: built when it is shown, as the panel inside it
+        // always was, so a component in an open menu keeps its state from frame to frame and one in a
+        // closed menu leaves the tree.
+        s.Overlays.Add(new QueuedLayer(new Overlay(layer) { Modal = anchored.PanelRole == AnchorPanelRole.Dialog },
+            s.Node.Element as NodeElement));
     }
 
     // Loop motion: translate the subtree by the frame-clock offset (spec §06 transform-only).

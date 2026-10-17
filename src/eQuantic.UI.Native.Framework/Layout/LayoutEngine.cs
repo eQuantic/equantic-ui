@@ -130,6 +130,22 @@ public sealed class LayoutContext
     }
 
     /// <summary>
+    /// The position of the child at <paramref name="slot"/>: its path below the parent's and the
+    /// element the parent's position holds at that slot, formed together so they cannot disagree
+    /// about which child they name.
+    /// </summary>
+    internal Position Child(Position parent, int slot) =>
+        new(ChildPath(parent.Path, slot), parent.Element?.ChildAt(slot));
+
+    /// <summary>
+    /// The position of a MEMBER of a list: its path segment is its key when it has one
+    /// (<see cref="ChildPath(string, int, VisualNode)"/>), and its element is the one the build matched
+    /// to it, which the parent's position holds at the member's index.
+    /// </summary>
+    internal Position Child(Position parent, int slot, VisualNode child) =>
+        new(ChildPath(parent.Path, slot, child), parent.Element?.ChildAt(slot));
+
+    /// <summary>
     /// A key made safe to be ONE segment. Keys are frequently generated — a row id, a heading slug,
     /// a URL — and a '/' inside one would read as a path boundary, quietly turning a single child
     /// into a nested pair and pointing focus, hover and scroll state at a node that does not exist.
@@ -210,9 +226,6 @@ public sealed class LayoutContext
     public bool ReducedMotion { get; init; }
     public ITextMeasurer Measurer { get; }
     public float TypeScale { get; }
-
-    /// <summary>The host's positional reconciler — null keeps the v1 rebuild-everything behavior.</summary>
-    public ComponentInstanceStore? Instances { get; init; }
 
     /// <summary>The mode-free context handed to <see cref="UiComponent.Build"/> during expansion.</summary>
     public ComponentContext Components { get; }
@@ -349,6 +362,13 @@ public sealed class LayoutNode
     /// input by it (registered with the frame's drag regions at emit).</summary>
     public string? DragPath { get; internal set; }
 
+    /// <summary>
+    /// The position this node was laid out for, or null for a node no build made (the frame the
+    /// realizer draws around an anchored panel). The realizer reads it where a node's children are
+    /// shown in a layer of their own: an overlay's, an anchored panel's.
+    /// </summary>
+    public Element? Element { get; internal set; }
+
     /// <summary>Back to factory state for the POOL: every field a layout pass stamps, cleared —
     /// the child list is kept (emptied), which is the allocation the pool exists to save.</summary>
     internal void Reset(VisualNode source)
@@ -364,6 +384,7 @@ public sealed class LayoutNode
         Path = null;
         DragOffset = 0f;
         DragPath = null;
+        Element = null;
     }
 }
 
@@ -420,7 +441,7 @@ public static class LayoutEngine
     /// <param name="root">The tree to lay out.</param>
     /// <param name="viewportWidth">The available width in dp — the window, or the layer's box.</param>
     /// <param name="viewportHeight">The available height in dp.</param>
-    /// <param name="context">The pass's shared state: theme, text service, retention.</param>
+    /// <param name="context">The pass's shared state: theme, text service, the node state stores.</param>
     /// <param name="rootPath">The path the root is addressed by, which every child extends.</param>
     /// <param name="rootStretch">
     /// What the caller has already decided about the ROOT's own size. The base layer is the page's
@@ -430,21 +451,26 @@ public static class LayoutEngine
     /// to have told it: it used to be a one-shot field set on the context by the realizer and read
     /// on the way past, which is the last of the mutable layout state this engine carried.
     /// </param>
+    /// <param name="rootElement">
+    /// The position a build phase made for <paramref name="root"/>: the layout measures what its
+    /// elements built and builds nothing. A HOST's realizer hands it from the tree its owner keeps.
+    /// Null (a test, a tool, a layout done once) builds the tree here first, with an owner that
+    /// calls no lifecycle hook, so there is one measurement whoever asks.
+    /// </param>
     public static LayoutNode Layout(VisualNode root, float viewportWidth, float viewportHeight, LayoutContext context,
-        string rootPath = "r", StretchKind rootStretch = StretchKind.None)
+        string rootPath = "r", StretchKind rootStretch = StretchKind.None, Element? rootElement = null)
     {
-        // NOTE: the reconciler pass is ENDED BY THE CALLER (PhotonRealizer) — one frame may run
-        // several Layout calls (the page plus each Overlay subtree) sharing one retention pass.
+        rootElement ??= BuildOwner.Structural().Build(root, context.Components, context.SizeClass, rebuildAll: true);
         context.WindowWidth = viewportWidth;
         context.WindowHeight = viewportHeight;
         // ONE visitor per CONTEXT, which is what lets the context be a field on it and only the
-        // constraints and the path travel down. A frame runs several Layout calls (the page plus
+        // constraints and the position travel down. A frame runs several Layout calls (the page plus
         // each Overlay subtree) and they share this context, so they share its visitor.
         var node = context.MeasurePass.Measure(
             root,
             LayoutConstraints.Of(viewportWidth, viewportHeight).Stretched(rootStretch, StretchKind.None),
             context,
-            rootPath);
+            new Position(rootPath, rootElement));
         Absolutize(node, 0, 0);
         return node;
     }
