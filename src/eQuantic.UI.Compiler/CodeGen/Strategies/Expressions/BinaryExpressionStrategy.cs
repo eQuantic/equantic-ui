@@ -43,9 +43,13 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         // primitive (SizeValue, Index) passes through correctly and is not fenced; one whose twin is an
         // object says so with [ServerOnly]. The one lowering every user-defined operator goes through
         // asks the fence of both, and answers a refused one as nothing, never as the native operator.
-        if (context.SemanticHelper.GetSymbol(binary) is IMethodSymbol
-            { MethodKind: MethodKind.UserDefinedOperator, IsImplicitlyDeclared: false } operatorSymbol
-            && UserDefinedOperators.Binary(operatorSymbol, op, left, right, context) is { } userDefined)
+        //
+        // The bound tree says which operator applies and whether C# LIFTS it, over two nullable values
+        // (#948): the static then runs only over two values, and an absent one answers as C#'s lift does.
+        // It was handed the null itself, and threw reading a member of it.
+        var bound = context.SemanticHelper.GetOperation(binary) as IBinaryOperation;
+        if (bound is { OperatorMethod: { MethodKind: MethodKind.UserDefinedOperator, IsImplicitlyDeclared: false } operatorMethod }
+            && UserDefinedOperators.Binary(operatorMethod, op, leftIr, rightIr, bound.IsLifted, context) is { } userDefined)
             return userDefined;
 
         // `|`, `&` and `^` on two BOOLS are C#'s non-short-circuit logical operators, and JavaScript
@@ -137,7 +141,7 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             // with an OperatorMethod is a user-defined one on a nullable struct, not this lift.
             var nlt = context.SemanticHelper.GetType(binary.Left);
             var nrt = context.SemanticHelper.GetType(binary.Right);
-            var lifted = context.SemanticHelper.GetOperation(binary) is IBinaryOperation bound
+            var lifted = bound is not null
                 ? bound.IsLifted && bound.OperatorMethod is null
                 : nlt.IsNullablePrimitiveNumeric() || nrt.IsNullablePrimitiveNumeric();
             if (lifted)
@@ -215,10 +219,15 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
 
         // Records and structs compare by VALUE in C# (not reference). Route ==/!= to the
         // structural helper. (Null comparisons fall through to the loose ==/!= below — correct, since
-        // `record == null` is a plain null check.)
+        // `record == null` is a plain null check.) So does a struct's equality LIFTED over two nullable
+        // values, which the bound tree names (#948): a record struct's, which C# writes, and a vocabulary
+        // value's, whose twin carries no operator. `$eq.equals` finds two absent values equal and an absent
+        // one unequal to any value, which is C#'s lift itself; the operand types are nullable, and `===`
+        // compared two equal values built apart as two references.
         if ((op == "==" || op == "!=") && left != "null" && right != "null"
             && (context.SemanticHelper.GetType(binary.Left).IsStructuralValueType()
-                || context.SemanticHelper.GetType(binary.Right).IsStructuralValueType()))
+                || context.SemanticHelper.GetType(binary.Right).IsStructuralValueType()
+                || bound is { IsLifted: true, OperatorMethod.ContainingType: var declaring } && declaring.IsStructuralValueType()))
         {
             context.UsedHelpers.Add(Eq.Import);
             return JsExpr.Opaque(op == "==" ? $"{Eq.Equals}({left}, {right})" : $"!{Eq.Equals}({left}, {right})");
@@ -342,12 +351,8 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
                 var equals = JsExpr.Call(JsExpr.Identifier(Eq.Equals), leftIr, rightIr);
                 return op == "==" ? equals : JsExpr.Prefix("!", equals);
             case "<" or ">" or "<=" or ">=":
-                context.UsedHelpers.Add(Eq.Import);
-                var relation = JsExprWriter.Write(operand.IsDecimal()
-                    ? ConvertDecimal(JsExpr.Identifier("$a"), JsExpr.Identifier("$b"), op)!
-                    : JsExpr.Binary(JsExpr.Identifier("$a"), op, JsExpr.Identifier("$b")));
-                return JsExpr.Callish(
-                    $"{Eq.LiftCmp}({JsExprWriter.WriteIn(leftIr, JsPrecedence.Assignment)}, {JsExprWriter.WriteIn(rightIr, JsPrecedence.Assignment)}, ($a, $b) => {relation})");
+                return NullableLift.Relation(leftIr, rightIr,
+                    (a, b) => operand.IsDecimal() ? ConvertDecimal(a, b, op)! : JsExpr.Binary(a, op, b), context);
             case "+" or "-" or "*" or "/" or "%" or "&" or "|" or "^" or "<<" or ">>" or ">>>":
                 var result = bound.Type.UnwrapNullable();
                 return NullableLift.Binary(leftIr, rightIr,

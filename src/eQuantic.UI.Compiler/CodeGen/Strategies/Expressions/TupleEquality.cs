@@ -67,12 +67,19 @@ internal static class TupleEquality
 
         var type = left.UnwrapNullable() ?? left;
         // A type of the app's own with an == it wrote: that operator, which its twin carries. A
-        // record's == is written by the compiler, and is its value, below.
+        // record's == is written by the compiler, and is its value, below. An element of a nullable
+        // type compares through C#'s lift of an operator declared over values, two absent values equal
+        // and an absent one unequal to any value, without the operator (#948); one declared over the
+        // nullable values takes them as they are.
         if (type.GetMembers("op_Equality").OfType<IMethodSymbol>()
                 .FirstOrDefault(method => !method.IsImplicitlyDeclared && method.Parameters.Length == 2) is { } equality
             && UserDefinedOperators.IsInSource(equality))
         {
-            return UserDefinedOperators.Binary(equality, "==", a, b, context) is { } call ? JsExprWriter.Write(call) : null;
+            var lifted = (left.IsNullableValue() || right.IsNullableValue())
+                && !equality.Parameters.Any(parameter => parameter.Type.IsNullableValue());
+            return UserDefinedOperators.Binary(equality, "==", JsExpr.Opaque(a), JsExpr.Opaque(b), lifted, context) is { } call
+                ? JsExprWriter.Write(call)
+                : null;
         }
         // A decimal, a date, a record or a struct is an object here whose == is its value.
         if (LinqKeys.ComparesByValue(type))

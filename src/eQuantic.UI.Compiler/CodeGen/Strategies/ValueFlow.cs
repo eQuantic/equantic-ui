@@ -154,9 +154,14 @@ public static class ValueFlow
                 : JsExpr.Literal(((double)single).ToString("R", CultureInfo.InvariantCulture));
         }
 
+        // A user-defined conversion from a nullable value to a nullable value, through an operator declared
+        // over the values, is LIFTED: it converts only a value, and null to null (#948). The bound tree names
+        // the operator and the two types, which say so; the operator was handed the null itself.
         if (kind.IsUserDefined)
             return kind.MethodSymbol is { } method
-                && UserDefinedOperators.Conversion(method, JsExprWriter.Write(translated), context) is { } call
+                && UserDefinedOperators.Conversion(method, translated,
+                    from.IsNullableValue() && to.IsNullableValue()
+                        && !method.Parameters.Any(parameter => parameter.Type.IsNullableValue()), context) is { } call
                 ? call
                 : translated;
 
