@@ -87,6 +87,33 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
 
     private JsExpr Build(SyntaxNode node, ConversionContext context)
     {
+        // A DELEGATE built with `new` from a method group or a lambda is the function it is built from;
+        // `new Func<int>(…)` named a class JavaScript does not have (#839). Built from another DELEGATE it
+        // is .NET's new delegate over that one's Invoke, never the delegate itself, which
+        // `new Func<int>(f) == f` found equal.
+        if (context.SemanticHelper.GetType(node) is INamedTypeSymbol { TypeKind: TypeKind.Delegate } delegateType
+            && node is BaseObjectCreationExpressionSyntax { ArgumentList.Arguments: [var made], Initializer: null } delegateCreation)
+        {
+            var from = made.Expression;
+            while (from is ParenthesizedExpressionSyntax parenthesized) from = parenthesized.Expression;
+            if (from is AnonymousFunctionExpressionSyntax
+                || context.SemanticHelper.GetType(made.Expression) is not { TypeKind: TypeKind.Delegate }
+                || delegateType.DelegateInvokeMethod is not { } invoke)
+                return context.Converter.ConvertIr(made.Expression);
+            // One whose parameters hand a value back has no function that can call its source and hand the
+            // values on: it was the source itself, a null one accepted and the same delegate answered
+            // (Copilot's review of #958).
+            if (invoke.Parameters.Any(parameter => parameter.RefKind is RefKind.Ref or RefKind.Out))
+            {
+                context.Report(delegateCreation, ConversionSeverity.Error, "EQ2004",
+                    $"'{delegateType.ToDisplayString()}' has no JavaScript translation as a delegate built from another: "
+                    + "its parameters hand a value back through an out or a ref, and no function the browser calls can "
+                    + "call its source and hand them on. Build it from the method or the lambda itself.");
+                return Undefined;
+            }
+            return OverDelegate(invoke, context.Converter.ConvertIr(made.Expression), context);
+        }
+
         // C# 13's `System.Threading.Lock` — single-threaded JS drops the lock STATEMENT's
         // semantics already (the body just runs); the gate object itself is inert, and emitting
         // `new Lock()` named a class no browser has.
@@ -227,6 +254,9 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                 "factory (e.g. Func<T>) or the constructed value as a parameter instead.");
             return Undefined;
         }
+
+        // A class with no module and no twin, no strategy before this one built (#822).
+        if (createdType is INamedTypeSymbol twinless && ReportIfTwinless(twinless, creation, context)) return Undefined;
 
         // A value the browser holds as DATA (`[TwinIsData]`, `Color`) is built as its data:
         // `new Color(1, 2, 3, 4)` is `{ r: 1, g: 2, b: 3, a: 4 }`. Asked of the SYMBOL, so an app's
@@ -377,6 +407,46 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             is { IsExtensionMethod: true } or { ContainingType.IsExtension: true })
             ? initializer
             : null;
+
+    /// <summary>
+    /// A delegate built from another, as .NET builds it over that one's <paramref name="invoke"/>: a new
+    /// function over the delegate's own parameters that calls the source, held as it was where the new one
+    /// is made, and a null source refused there with the ArgumentException .NET's delegate constructor
+    /// throws (<see cref="Eq.DelegateTarget"/>), as a method group's receiver is
+    /// (<see cref="MethodGroupStrategy"/>).
+    /// </summary>
+    private static JsExpr OverDelegate(IMethodSymbol invoke, JsExpr source, ConversionContext context)
+    {
+        // A name no C# parameter can take, so the delegate's own parameters never hide it: `__target` was
+        // one, and `delegate int D(int __target)` called the number it was handed (Copilot's review of #958).
+        const string Target = "$target";
+        var names = invoke.Parameters.Select(parameter => parameter.Name.ToJsIdentifier()).ToList();
+        var parameters = string.Join(", ", invoke.Parameters.Select((parameter, i) =>
+            LambdaExpressionStrategy.Typed(names[i], parameter.Type, context)));
+        var call = JsExpr.Call(JsExpr.Identifier(Target), names.Select(JsExpr.Identifier).ToArray());
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Call(JsExpr.Group(JsExpr.Arrow(Target, JsExpr.Arrow(parameters, call))),
+            JsExpr.Call(JsExpr.Identifier(Eq.DelegateTarget), source));
+    }
+
+    /// <summary>
+    /// Reports EQ2004 and answers true where <paramref name="type"/> has no module and no twin
+    /// (<see cref="TwinlessTypeExtensions.IsTwinless"/>), and so no constructor the browser can call: a
+    /// type of the platform's that no strategy builds, and a package's, which nothing translates. Each
+    /// went out as <c>new Random()</c> or <c>new Gauge('a')</c>, a ReferenceError where the page first
+    /// rendered (#822). A list is the array of its elements, built here.
+    /// </summary>
+    private static bool ReportIfTwinless(INamedTypeSymbol type, SyntaxNode at, ConversionContext context)
+    {
+        if (!type.IsTwinless() || IsList(type)) return false;
+        context.Report(at, ConversionSeverity.Error, "EQ2004", type.IsPackages()
+            ? $"'{type.ToDisplayString()}' has no JavaScript translation: {type.PackageReason()}, so `new {type.Name}(…)` "
+                + $"would construct a class nothing defines. {TwinlessTypeExtensions.PackageRemedy}"
+            : $"'{type.ToDisplayString()}' has no JavaScript translation: the runtime has no twin of it, so "
+                + $"`new {type.Name}(…)` would construct a class nothing defines. Construct it in a [ServerAction] and "
+                + "hand the browser what it needs of it.");
+        return true;
+    }
 
     /// <summary>Whether <paramref name="type"/> is <c>List&lt;T&gt;</c>, which this side holds as the
     /// array of its elements.</summary>
@@ -900,6 +970,12 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         // Found in review of that fix.
         if (ms?.ContainingType.ReportIfHostOnlyType(creation, context) == true) return Undefined;
         if (ms?.ContainingType is { } keptOutTarget && keptOutTarget.ReportIfKeptOut(creation, context)) return Undefined;
+        // A class with no module and no twin, as the explicit form refuses it (#822), asked of the symbol as
+        // there: a list is the array of its elements (ReportIfTwinless), and a type whose NAME holds
+        // "Collection<" was let through and built as an empty array, a package's included (Copilot's review
+        // of #958).
+        if (ms?.ContainingType is { } twinless && ReportIfTwinless(twinless, creation, context))
+            return Undefined;
 
         // `Color c = new(1, 2, 3, 4)` builds the data as the explicit form does.
         if (ms?.ContainingType is { } dataTarget && dataTarget.TwinIsData())

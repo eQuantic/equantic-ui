@@ -14,3 +14,14 @@ const eQuantic.UI.Compiler.CodeGen.Eq.TextGroup = "$eq.text.group" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Equatable = "$eq.collections.equatable" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.EquatableCall = "$eq.collections.equatableCall" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.SameGeneric = "$eq.collections.sameGeneric" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.DelegateTarget = "$eq.delegateTarget" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MethodGroupStrategy.Priority.get -> int
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MethodGroupStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MethodGroupStrategy.MethodGroupStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MethodGroupStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MethodGroupStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.InterpolationInACultureStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.InterpolationInACultureStrategy.InterpolationInACultureStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.InterpolationInACultureStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.InterpolationInACultureStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.InterpolationInACultureStrategy.Priority.get -> int

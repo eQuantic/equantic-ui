@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 
@@ -18,6 +19,11 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// <para>
 /// A member an interface declares is not asked: the value read through one may be a type of the
 /// app's own, whose twin carries the member by that name.
+/// </para>
+/// <para>
+/// A STATIC of a package's type is the same refusal (#822): the build has no source for the type and the
+/// runtime no twin of it, so <c>Status.Label</c> named a class nothing defines, where a call of the same
+/// type was refused already.
 /// </para>
 /// </summary>
 internal static class PlatformMemberRead
@@ -66,8 +72,11 @@ internal static class PlatformMemberRead
 
         var read = context.SemanticHelper.Original(node);
         context.RefusedReads.Add(read);
-        context.Report(read, ConversionSeverity.Error, "EQ2004",
-            $"'{symbol!.ContainingType.ToDisplayString()}.{symbol.Name}' has no JavaScript translation: no value the "
+        context.Report(read, ConversionSeverity.Error, "EQ2004", symbol!.ContainingType.IsPackages()
+            ? $"'{symbol.ContainingType.ToDisplayString()}.{symbol.Name}' has no JavaScript translation: "
+                + $"{symbol.ContainingType.PackageReason()}, so the read would name a class nothing defines. "
+                + TwinlessTypeExtensions.PackageRemedy
+            : $"'{symbol.ContainingType.ToDisplayString()}.{symbol.Name}' has no JavaScript translation: no value the "
             + "browser holds carries it, so the read would name a member nothing defines. Read it in a "
             + "[ServerAction] and hand the browser its answer, or — if the class this read sits in only "
             + "ever runs on the server — mark THAT class [ServerOnly] so no module is emitted for it.");
@@ -88,17 +97,20 @@ internal static class PlatformMemberRead
     internal static void RecordRefused(SyntaxNode node, ConversionContext context) =>
         context.RefusedReads.Add(context.SemanticHelper.Original(node));
 
-    /// <summary>Whether <paramref name="symbol"/> is a property or a field of a .NET class or struct, or an
-    /// untranslated method group of <c>object</c> (<c>GetType</c>, <c>MemberwiseClone</c>), that the browser
-    /// does not carry by its name.</summary>
+    /// <summary>Whether <paramref name="symbol"/> is a property or a field of a .NET class or struct
+    /// that the browser does not carry by its name, or a static one of a package's type, which has no
+    /// twin and no module to carry it (#822), or an untranslated method group of <c>object</c>
+    /// (<c>GetType</c>, <c>MemberwiseClone</c>). A value of a package's type reaches the browser only as the
+    /// data the server sends, whose members it reads by name.</summary>
     private static bool NothingCarries(ISymbol? symbol) =>
         symbol switch
         {
             IPropertySymbol or IFieldSymbol =>
                 symbol.ContainingType is { TypeKind: not TypeKind.Interface } declaring
-                && BoundaryShape.IsPlatform(declaring)
                 && !symbol.Locations.Any(location => location.IsInSource)
-                && !CarriedByName.Contains(Root(symbol)),
+                && (BoundaryShape.IsPlatform(declaring)
+                    ? !CarriedByName.Contains(Root(symbol))
+                    : symbol.IsStatic && declaring.IsPackages()),
             IMethodSymbol { Name: "GetType" or "MemberwiseClone", ContainingType.SpecialType: SpecialType.System_Object } => true,
             _ => false,
         };

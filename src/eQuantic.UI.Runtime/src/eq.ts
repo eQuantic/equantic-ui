@@ -193,6 +193,7 @@ import {
   is as isException,
   raise,
   receiver,
+  delegateTarget,
   thrown,
   construct as constructException,
   typeInitialization,
@@ -586,6 +587,8 @@ export const $eq = {
   equalsInstance,
   /** The receiver of an instance call, refused as .NET refuses a call through null. */
   receiver,
+  /** The instance a method group is made over, refused where the delegate is made when it is null. */
+  delegateTarget,
   /**
    * `GetHashCode` by .NET's contract, values `equals` finds equal hashing equal (`hash`), an instance
    * call refused on null (`instance`), the method group (`group`), `HashCode.Combine` (`combine`),

@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=302 · fenced=109 · invalid-probe=6 · native=616
+# totals: eq=298 · fenced=119 · invalid-probe=6 · native=610
 fenced:EQ2004  Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -166,14 +166,14 @@ eq             DateTime.DaysInMonth(Int32,Int32)
 eq             DateTime.Equals(DateTime)
 eq             DateTime.Equals(DateTime,DateTime)
 native         DateTime.Equals(Object)
-eq             DateTime.FromBinary(Int64)
-eq             DateTime.FromFileTime(Int64)
-eq             DateTime.FromFileTimeUtc(Int64)
-eq             DateTime.FromOADate(Double)
+fenced:EQ2004  DateTime.FromBinary(Int64)
+fenced:EQ2004  DateTime.FromFileTime(Int64)
+fenced:EQ2004  DateTime.FromFileTimeUtc(Int64)
+fenced:EQ2004  DateTime.FromOADate(Double)
 fenced:EQ2004  DateTime.GetDateTimeFormats()
 fenced:EQ2004  DateTime.GetDateTimeFormats(Char)
 native         DateTime.Hour
-native         DateTime.IsDaylightSavingTime()
+fenced:EQ2004  DateTime.IsDaylightSavingTime()
 eq             DateTime.IsLeapYear(Int32)
 native         DateTime.Kind
 eq             DateTime.MaxValue
@@ -190,13 +190,13 @@ eq             DateTime.Subtract(DateTime)
 eq             DateTime.Subtract(TimeSpan)
 native         DateTime.Ticks
 native         DateTime.TimeOfDay
-native         DateTime.ToBinary()
-native         DateTime.ToFileTime()
-native         DateTime.ToFileTimeUtc()
+fenced:EQ2004  DateTime.ToBinary()
+fenced:EQ2004  DateTime.ToFileTime()
+fenced:EQ2004  DateTime.ToFileTimeUtc()
 native         DateTime.ToLocalTime()
 eq             DateTime.ToLongDateString()
 eq             DateTime.ToLongTimeString()
-native         DateTime.ToOADate()
+fenced:EQ2004  DateTime.ToOADate()
 eq             DateTime.ToShortDateString()
 eq             DateTime.ToShortTimeString()
 eq             DateTime.ToString()
@@ -234,7 +234,7 @@ native         DateTimeOffset.Second
 eq             DateTimeOffset.Subtract(TimeSpan)
 native         DateTimeOffset.Ticks
 native         DateTimeOffset.TimeOfDay
-native         DateTimeOffset.ToFileTime()
+fenced:EQ2004  DateTimeOffset.ToFileTime()
 native         DateTimeOffset.ToLocalTime()
 eq             DateTimeOffset.ToOffset(TimeSpan)
 eq             DateTimeOffset.ToString()

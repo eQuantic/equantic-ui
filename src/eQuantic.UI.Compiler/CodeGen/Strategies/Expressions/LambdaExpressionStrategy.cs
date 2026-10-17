@@ -116,6 +116,14 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
             : context.SemanticHelper.GetDeclaredSymbol(parameter) is IParameterSymbol symbol
                 ? symbol.Type
                 : null;
+        return Typed(name, declared, context);
+    }
+
+    /// <summary>A parameter of <paramref name="declared"/> type with its TS type, and the bare name where
+    /// nothing can be said: a lambda's, and a method group's, whose arrow is the delegate's parameters
+    /// (<see cref="MethodGroupStrategy"/>).</summary>
+    internal static string Typed(string name, ITypeSymbol? declared, ConversionContext context)
+    {
         if (declared is null || !context.TypeAnnotations) return name;
         // From the SPECIAL type, not the name: a `float` parameter's symbol is named "Single", and
         // the name-keyed mapper answers "Single" — a type nothing declares. A long is a bigint on this

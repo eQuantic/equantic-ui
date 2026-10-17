@@ -41,9 +41,10 @@ public class CancellationStrategy : IExpressionIrStrategy
         BaseObjectCreationExpressionSyntax creation => context.SemanticHelper.GetType(creation) is { } type
             && (type.IsNamed(Source) || type.IsNamed(Token) || type.IsNamed(Registration)),
         InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax method } => DeclaredByTrio(method, context),
-        // The callee of a call is the call's to translate, with its arguments.
-        MemberAccessExpressionSyntax access => access.Parent is not InvocationExpressionSyntax { Expression: var callee }
-            || callee != access
+        // The callee of a call is the call's to translate, with its arguments, and a method named without
+        // a call is a group, the delegate its call is (MethodGroupStrategy, #839).
+        MemberAccessExpressionSyntax access => (access.Parent is not InvocationExpressionSyntax { Expression: var callee }
+            || callee != access) && context.SemanticHelper.GetSymbol(access) is not IMethodSymbol
                 ? DeclaredByTrio(access, context)
                 : false,
         _ => false,
@@ -82,12 +83,7 @@ public class CancellationStrategy : IExpressionIrStrategy
                 var symbol = context.SemanticHelper.GetSymbol(access)!;
                 if (symbol is { IsStatic: true, Name: "None" }) return JsExpr.Identifier(Eq.CancellationNone);
                 if (!Supported(symbol)) return Refused(access, symbol, context);
-                var receiver = context.Converter.ConvertIr(access.Expression);
-                if (symbol is not IMethodSymbol) return JsExpr.Member(receiver, symbol.Name.ToCamelCase());
-                // A method REFERENCE is a method group, and a group keeps its receiver, read once, as
-                // C# reads it when the delegate is made: `register(inner.cancel)` lost it, and the
-                // callback threw a TypeError on `this` when the token cancelled.
-                return JsExpr.Template($"{{0}}.{symbol.Name.ToCamelCase()}.bind({{0}})", [receiver]);
+                return JsExpr.Member(context.Converter.ConvertIr(access.Expression), symbol.Name.ToCamelCase());
             }
         }
         return JsExpr.Opaque(context.Unhandled(node, "the cancellation trio"));
