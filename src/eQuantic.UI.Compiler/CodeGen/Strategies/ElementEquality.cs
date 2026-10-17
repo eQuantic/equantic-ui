@@ -10,8 +10,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// number with NaN equal to NaN, a string, a char, a bool, a long, an enum, a Guid, an array, a
 /// delegate), <c>true</c> for VALUE (<c>$eq.equals</c>: a record, a struct, a decimal, a date, and a
 /// tuple, an anonymous type or a pair whose members all compare so), <c>'own'</c> where the type does not
-/// decide (<c>object</c>, an interface a tuple implements, a type parameter), <c>'item'</c> for a class and an
-/// interface no tuple implements, whose value is found by reference or by its own <c>Equals</c> and never by its members (a
+/// decide (<c>object</c>, an interface a tuple implements), <c>'gen'</c> for a type parameter, whose value's
+/// own <c>IEquatable&lt;T&gt;</c> .NET settles at run time, <c>'item'</c> for a class and an interface no tuple
+/// implements, whose value is found by reference or by its own <c>Equals</c> and never by its members (a
 /// <c>List&lt;int&gt;</c> is an array on the web, and two lists of the same items were one key), the typed
 /// <c>Equals</c> of the app's own for a type that answers <c>IEquatable&lt;T&gt;</c> over itself
 /// (<c>$eq.collections.equatable</c>), and a comparison GENERATED from the member
@@ -70,6 +71,7 @@ internal static class ElementEquality
             // never its members, which `sameKey` walks for a value that may be a tuple.
             null or "'item'" => Eq.SameItem,
             "'own'" => Eq.SameKey,
+            "'gen'" => Eq.SameGeneric,
             _ => hoist?.Invoke(equality) ?? equality,
         };
     }
@@ -250,6 +252,9 @@ internal static class ElementEquality
             // An interface no tuple implements holds a value found by reference or its own Equals: a
             // list behind IReadOnlyList<int> compared by its elements found another list equal (#554).
             INamedTypeSymbol { TypeKind: TypeKind.Interface } face when !MayHoldATuple(face) => ("'item'", false),
+            // A type parameter's default comparer is the value's own IEquatable<T> where it has one, which
+            // .NET settles at run time: by 'own', a generic List<T>.Contains never asked it (#947's third review).
+            ITypeParameterSymbol when equatable => ("'gen'", false),
             { TypeKind: TypeKind.Interface or TypeKind.TypeParameter or TypeKind.Dynamic } => ("'own'", false),
             // A class of the app's or a library's, never a special one: `string` overrides Equals too,
             // and is a primitive on this side, which SameValueZero compares by value already. One that

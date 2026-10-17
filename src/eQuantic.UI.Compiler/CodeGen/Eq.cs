@@ -514,6 +514,10 @@ public static class Eq
     /// (<c>utils/key-equality.ts</c>).</summary>
     public const string Equatable = "$eq.collections.equatable";
 
+    /// <summary><c>EqualityComparer&lt;T&gt;.Default</c> for a type parameter, which .NET settles at run time: the
+    /// value's own <c>IEquatable&lt;T&gt;</c>, and what it turns out to be otherwise.</summary>
+    public const string SameGeneric = "$eq.collections.sameGeneric";
+
     /// <summary>A <c>KeyValuePair&lt;K, V&gt;</c>'s comparer, from each half's (#421).</summary>
     public const string PairComparer = "$eq.collections.pairComparer";
 

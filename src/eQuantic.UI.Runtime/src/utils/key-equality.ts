@@ -12,6 +12,9 @@
  *  - `'item'`: by identity or the twin's own `equals`, never by members, for a class and an interface
  *    no tuple implements: a `List<int>` is an array here, and .NET finds it by reference where its
  *    elements found another;
+ *  - `'gen'`: a type parameter's, which .NET settles at run time: the value's `IEquatable<T>` over its own
+ *    type where its twin answers one (`static $equatable`), and what the value turns out to be otherwise,
+ *    as `'own'` finds it ({@link sameGeneric});
  *  - a function: a tuple, an anonymous type or a pair with a member that compares otherwise, an array
  *    inside a tuple by reference above all, generated from the member types ({@link tupleEquality}).
  *    `$eq.equals` walks an array element by element, and `ValueTuple.Equals` compares an array member
@@ -30,7 +33,7 @@ import { valueTwinOf } from './hash';
 export type Equality = (a: unknown, b: unknown) => boolean;
 
 /** How a value of a type is found equal to another: see the module's description. */
-export type KeyEquality = boolean | 'own' | 'item' | Equality;
+export type KeyEquality = boolean | 'own' | 'item' | 'gen' | Equality;
 
 /**
  * `EqualityComparer<T>.Default` for a type compared by reference or by its own `Equals`: identity, a
@@ -85,6 +88,9 @@ export function sameKey(a: unknown, b: unknown): boolean {
   return true;
 }
 
+/** The contract `IEquatable<T>` over the value's own type, which `EqualityComparer<T>.Default` asks. */
+const SELF = 'System.IEquatable<T>|@';
+
 /** What a value's twin maps in `static $equatable`: each contract it answers to the method answering it. */
 function contractsOf(value: unknown): Record<string, string> | undefined {
   if (value === null || typeof value !== 'object') return undefined;
@@ -117,6 +123,11 @@ function contractMethod(value: unknown, key: string): ((other: unknown) => unkno
   return typeof method === 'function' ? (method as (other: unknown) => unknown) : undefined;
 }
 
+/** Whether a value's twin answers `IEquatable<T>` over its own type, which `'gen'` asks before `Equals(object)`. */
+export function answersEquatable(value: unknown): boolean {
+  return contractsOf(value)?.[SELF] !== undefined;
+}
+
 /** The interface's typed `Equals` of `key` on `a` with `b`, and what `a` turns out to be where it answers none. */
 function dispatch(key: string, a: unknown, b: unknown): boolean {
   const method = contractMethod(a, key);
@@ -130,6 +141,18 @@ function dispatch(key: string, a: unknown, b: unknown): boolean {
  */
 export function equatable(key: string): Equality {
   return generated(`q:${key}`, () => (a, b) => (a == null || b == null ? a == null && b == null : dispatch(key, a, b)));
+}
+
+/**
+ * `EqualityComparer<T>.Default` for a type parameter, which .NET settles at run time: `IEquatable<T>` over
+ * the value's own type where its twin answers it, and what it turns out to be otherwise ({@link sameKey}),
+ * a null equal only to a null. Never a contract over another type: a `C : IEquatable<int>` is compared by
+ * `Equals(object)`, as .NET's comparer for C compares it. Through `'own'`, a generic `List<T>.Contains`
+ * never asked the typed `Equals` an IEquatable class answers with (Copilot's third review of #947).
+ */
+export function sameGeneric(a: unknown, b: unknown): boolean {
+  if (a == null || b == null) return a == null && b == null;
+  return dispatch(SELF, a, b);
 }
 
 /** A tuple (an array) or an anonymous type (a plain object): a value compared by its members. */
@@ -164,6 +187,7 @@ export function sameValueZero(a: unknown, b: unknown): boolean {
 export function sameBy(equality: KeyEquality | null | undefined): Equality {
   if (typeof equality === 'function') return equality;
   if (equality === true) return equals;
+  if (equality === 'gen') return sameGeneric;
   return equality === 'own' ? sameKey : equality === 'item' ? sameItem : sameValueZero;
 }
 
@@ -177,13 +201,14 @@ const shapes = new WeakMap<Equality, string>([
   [sameKey, 'o'],
   [sameItem, 'r'],
   [sameValueZero, 'i'],
+  [sameGeneric, 'g'],
 ]);
 const byShape = new Map<string, Equality>();
 let foreign = 0;
 
 function shapeOf(equality: KeyEquality | null | undefined): string {
   if (typeof equality !== 'function') {
-    return equality === true ? 'v' : equality === 'own' ? 'o' : equality === 'item' ? 'r' : 'i';
+    return equality === true ? 'v' : equality === 'own' ? 'o' : equality === 'item' ? 'r' : equality === 'gen' ? 'g' : 'i';
   }
   let shape = shapes.get(equality);
   if (shape === undefined) {

@@ -5,6 +5,7 @@ import {
   pairComparer,
   sameBy,
   sameEquality,
+  sameGeneric,
   sameKey,
   tupleEquality,
 } from './key-equality';
@@ -208,4 +209,34 @@ describe("an interface's typed Equals, by the contract it binds", () => {
     expect(equatable('System.IEquatable<T>|NullLover')).toBe(same);
   });
 
+  it("asks a type parameter's value only IEquatable<T> over its own type", () => {
+    const c = new NullLover();
+    expect(sameBy('gen')).toBe(sameGeneric);
+    expect(sameGeneric(null, null)).toBe(true);
+    expect(sameGeneric(c, null)).toBe(false);
+    expect(c.calls).toBe(0);
+    expect(sameGeneric(new Id(1), new Id(1))).toBe(true);
+    expect(sameGeneric(new Id(1), new Id(2))).toBe(false);
+    // IEquatable<int> is no comparer of IntMatcher's: .NET compares it by Equals(object), by reference here.
+    const m = new IntMatcher();
+    expect(sameGeneric(m, new IntMatcher())).toBe(false);
+    expect(sameGeneric(m, m)).toBe(true);
+    expect(sameGeneric([1, 'a'], [1, 'a'])).toBe(true);
+    expect(sameGeneric(1, 1)).toBe(true);
+    expect(sameEquality('gen', sameGeneric)).toBe(true);
+    expect(sameEquality('gen', 'own')).toBe(false);
+  });
+
+  it("finds a type parameter's key by its IEquatable<T> over its own type, and any other by what it is", () => {
+    const d = dictionary<unknown, string>(null, 'gen');
+    d.add(new Id(1), 'one');
+    expect(d.has(new Id(1))).toBe(true);
+    expect(d.has(new Id(2))).toBe(false);
+    const m = new IntMatcher();
+    d.add(m, 'm');
+    expect(d.has(new IntMatcher())).toBe(false);
+    expect(d.has(m)).toBe(true);
+    d.add([1, 2], 'pair');
+    expect(d.has([1, 2])).toBe(true);
+  });
 });
