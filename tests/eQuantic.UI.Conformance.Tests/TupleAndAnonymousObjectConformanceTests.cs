@@ -210,6 +210,19 @@ public class TupleAndAnonymousObjectConformanceTests
     public static IEnumerable<object?[]> LinqKeyCases() => Each(LinqKeys);
     public static IEnumerable<object?[]> DataTwinCases() => Each(DataTwinThroughTheFormatter);
 
+    /// <summary>
+    /// A vocabulary value type's twin (<c>Point</c>) held as <c>object</c>, alone and inside a tuple held so:
+    /// it compares by its members, as its record struct's <c>Equals</c> does, where the runtime's class for
+    /// it carries no <c>equals</c> and is no plain data, and a class of the app's compares by reference
+    /// (#947's second review).
+    /// </summary>
+    public static readonly string[] VocabularyValuesHeldAsObject =
+    [
+        """object a = (new Point(1, 2), 1); object b = (new Point(1, 2), 1); object p = new Point(1, 2); var set = new HashSet<object> { a, p }; return a.Equals(b) + "|" + set.Contains(b) + "|" + set.Contains(new Point(1, 2)) + "|" + object.Equals(a, b) + "|" + p.Equals(new Point(1, 2)) + "|" + new object[] { p, new Point(1, 2) }.Distinct().Count() + "|" + p.Equals(new Point(2, 1));""",
+    ];
+
+    public static IEnumerable<object?[]> VocabularyValueCases() => Each(VocabularyValuesHeldAsObject);
+
     [SkippableTheory]
     [MemberData(nameof(AnonymousEqualityCases))]
     public void AnAnonymousObject_ComparesAndHashesAsDotNet(string statements)
@@ -256,6 +269,14 @@ public class TupleAndAnonymousObjectConformanceTests
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Prelude);
+    }
+
+    [SkippableTheory]
+    [MemberData(nameof(VocabularyValueCases))]
+    public void AVocabularyValueHeldAsObject_ComparesByItsMembersAsDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertVocabularyStatementsSameAsDotNet(statements);
     }
 
     [SkippableTheory]

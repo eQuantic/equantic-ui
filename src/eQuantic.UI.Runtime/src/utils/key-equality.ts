@@ -24,6 +24,7 @@
  * the set beside it compared by value answered two ways about one value.
  */
 import { equals } from './equals';
+import { valueTwinOf } from './hash';
 
 /** A comparison two values are found equal by. */
 export type Equality = (a: unknown, b: unknown) => boolean;
@@ -60,6 +61,12 @@ export function sameItem(item: unknown, value: unknown): boolean {
  */
 export function sameKey(a: unknown, b: unknown): boolean {
   if (sameItem(a, b)) return true;
+  // A vocabulary value type's hand-written twin (`Point`, registered with `hashesByValue`) carries no
+  // `equals` and is no plain data: its record struct's Equals compares it member by member, and only with a
+  // value of its own type, as `$eq.equals` and its hash already do. By reference, two tuples held as object
+  // holding two equal points were unequal (Copilot's second review of #947).
+  const twin = valueTwinIn(a);
+  if (twin !== undefined) return valueTwinIn(b) === twin && equals(a, b);
   if (!isPlainValue(a) || !isPlainValue(b)) return false;
   if (Array.isArray(a) || Array.isArray(b)) {
     if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
@@ -86,9 +93,14 @@ export function isPlainValue(value: unknown): boolean {
   return prototype === Object.prototype || prototype === null;
 }
 
+/** The vocabulary value type a value is an instance of, as `hashesByValue` registered it, or undefined. */
+function valueTwinIn(value: unknown): ReturnType<typeof valueTwinOf> {
+  return value !== null && typeof value === 'object' ? valueTwinOf(value) : undefined;
+}
+
 /** Whether a value has an equality of its own, which under `'own'` is asked rather than identity. */
 export function hasOwnEquality(value: unknown): boolean {
-  return hasEquals(value) || isPlainValue(value);
+  return hasEquals(value) || isPlainValue(value) || valueTwinIn(value) !== undefined;
 }
 
 /** Whether a value's twin carries an `equals`, which under `'item'` is asked rather than identity. */
