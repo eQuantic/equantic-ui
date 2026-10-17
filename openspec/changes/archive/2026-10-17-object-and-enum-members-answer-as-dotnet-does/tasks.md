@@ -1,7 +1,7 @@
 ## 1. Runtime Equality Helpers (`key-equality.ts`)
 
-- [x] 1.1 Update `sameItem` and `sameKey` in `src/eQuantic.UI.Runtime/src/utils/key-equality.ts` so `null` and `undefined` compare equal to each other, unmarked arrays (`List<T>`, `T[]`) held as `object` compare by reference (`===`) instead of element-by-element, and plain objects compare their keys in declaration order.
-- [x] 1.2 Add unit tests in `src/eQuantic.UI.Runtime/src/utils/key-equality.spec.ts` covering `sameKey` / `sameItem` on `null` vs `undefined`, unmarked arrays, marked tuples, records, and plain objects.
+- [x] 1.1 Update `sameItem` and `sameKey` in `src/eQuantic.UI.Runtime/src/utils/key-equality.ts` so `null` and `undefined` compare equal to each other, plain objects compare their keys in declaration order, and an array keeps comparing by its elements, each by `sameKey`, a tuple held as `object` being one.
+- [x] 1.2 Add unit tests in `src/eQuantic.UI.Runtime/src/utils/key-equality.spec.ts` covering `sameKey` / `sameItem` on `null` vs `undefined`, arrays and the elements they hold, records, and plain objects.
 
 ## 2. Compiler Strategies for `object` and `enum` Members
 
@@ -14,4 +14,4 @@
 ## 3. Conformance & Compiler Tests
 
 - [x] 3.1 Add compiler tests in `tests/eQuantic.UI.Compiler.Tests/` for `GetType` / `MemberwiseClone` `EQ2004` diagnostics (#903), `object.Equals(a, b)` lowering (#902), and `ToDictionary` over an enum with aliases (#927).
-- [x] 3.2 Add conformance tests in `tests/eQuantic.UI.Conformance.Tests/` proving runtime parity with .NET for `object.Equals(a, b)` (#902), inherited `Equals(object)` on class receivers and `List<T>` / `T[]` behind `object` (#909), `Equals` and `ToString` on `null` records and classes (#912), enum `Equals` and `GetHashCode` (#926), and aliased enum members (#927).
+- [x] 3.2 Add conformance tests in `tests/eQuantic.UI.Conformance.Tests/` proving runtime parity with .NET for `object.Equals(a, b)` (#902), inherited `Equals(object)` on class receivers and `List<T>` / `T[]` wherever their type is in sight, and a tuple held as `object` (#909), `Equals` and `ToString` on `null` records, classes and strings (#912), enum `Equals` and `GetHashCode`, a `Nullable` enum's group and a `long` enum's hash included (#926), and aliased enum members (#927).
