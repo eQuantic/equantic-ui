@@ -363,9 +363,9 @@ public sealed class LayoutNode
     public string? DragPath { get; internal set; }
 
     /// <summary>
-    /// The position this node was laid out for, or null for a node no build made (the frame the
-    /// realizer draws around an anchored panel). The realizer reads it where a node's children are
-    /// shown in a layer of their own: an overlay's, an anchored panel's.
+    /// The position this node was laid out for, or null for a node the layout makes itself (the item
+    /// a flex line wraps around a <see cref="Flexible"/>'s child). The realizer reads it where a
+    /// node's children are shown in a layer of their own: an overlay's, an anchored panel's.
     /// </summary>
     public Element? Element { get; internal set; }
 

@@ -12,8 +12,8 @@ namespace eQuantic.UI.Native.Framework;
 /// docs/ELEMENT-TREE-PLAN.md) the path goes and this is the element alone.
 /// </para>
 /// <para>
-/// The element is null only under a node no build made: the scrim and the frame the realizer
-/// draws around an anchored panel. Nothing there builds, and the panel inside is its own position.
+/// Nullable because a slot can hold nothing (a box with no child, a layer not shown), and a layout
+/// reached through its own tree never measures one; the measure refuses a component without one.
 /// </para>
 /// </summary>
 /// <param name="Path">The stable path, as the stores key it.</param>

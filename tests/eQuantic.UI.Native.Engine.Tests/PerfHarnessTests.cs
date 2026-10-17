@@ -184,8 +184,8 @@ public class PerfHarnessTests
     /// LayoutNode tree — pooling it needs an explicit RealizeResult lifetime first (a double
     /// buffer quietly rewrote retained trees under 155 tests). The ratchet tightens as that
     /// lands; it never loosens casually. LOWERED to 96 KB on 2026-10-17 (#950): a frame the loop
-    /// asks for builds nothing now, and the scene measured 90.9 KB, from 116.7 KB while every
-    /// frame rebuilt its 24 buttons.</summary>
+    /// asks for builds nothing now, and the scene measured 90.9 KB, from 114.8 KB on main the same
+    /// day, where every frame rebuilt its 24 buttons.</summary>
     private const long AllocationCeilingBytesPerFrame = 96 * 1024;
 
     /// <summary>Draw commands the dense scene emits — the batching ruler (M1 spoke of a static

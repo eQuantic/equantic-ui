@@ -141,13 +141,13 @@ public class ElementHostTests
     }
 
     /// <summary>The same two growers every build, so the test can grow the one a position holds.</summary>
-    private sealed class Sheet(Grower narrow, Grower wide) : StatelessComponent
+    private sealed class Sheet(Grower first, Grower second) : StatelessComponent
     {
         public override VisualNode Build(ComponentContext context)
         {
             var grid = new Grid([GridTrack.Auto]);
-            grid.Add(narrow);
-            grid.Add(wide);
+            grid.Add(first);
+            grid.Add(second);
             return grid;
         }
     }
@@ -155,14 +155,14 @@ public class ElementHostTests
     /// <summary>
     /// A column that hugs its content is as wide as its widest cell DRAWS. The probe that sized it
     /// used to build every candidate at one shared path, so two stateful cells of one type were
-    /// measured with a single instance's state, and the grown one was squeezed into the width of the
-    /// other.
+    /// measured with a single instance's state, the last candidate's: the grown FIRST cell was
+    /// squeezed into the width of the second.
     /// </summary>
     [Fact]
     public void AGridColumnThatHugsItsContent_IsAsWideAsItsWidestCellDraws()
     {
-        var (narrow, wide) = (new Grower(), new Grower());
-        var host = Open(new Sheet(narrow, wide), width: 1200);
+        var (wide, narrow) = (new Grower(), new Grower());
+        var host = Open(new Sheet(wide, narrow), width: 1200);
 
         wide.Grow(9);
         host.RenderFrame(new DisplayListBuilder(), 16);
@@ -187,14 +187,17 @@ public class ElementHostTests
     /// <summary>
     /// A box whose minimum width bites measures its child twice (the reflow); the child built twice
     /// with it while Build ran inside measure. It builds once now, before the layout, and the layout
-    /// measures that one subtree twice.
+    /// measures that one subtree twice. In a row, so the box hugs: at the root it would take the
+    /// window's width and its minimum would never bite.
     /// </summary>
     [Fact]
     public void ABoxThatMeasuresItsChildTwice_BuildsItOnce()
     {
         var counted = new Counted();
+        var row = new Row();
+        row.Add(new Primitives.Box(new BoxStyle { MinWidth = 300 }, counted));
 
-        Open(new Primitives.Box(new BoxStyle { MinWidth = 300 }, counted));
+        Open(row);
 
         counted.Builds.Should().Be(1);
     }
