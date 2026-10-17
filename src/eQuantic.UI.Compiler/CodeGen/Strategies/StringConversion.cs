@@ -306,24 +306,63 @@ public static class StringConversion
         if (type is INamedTypeSymbol { IsAnonymousType: true } anonymous)
             return AnonymousText(anonymous, held, Eq.RecordTextGroup, context);
         if (type is INamedTypeSymbol data && data.TwinIsData()) return RecordText(data, held, Eq.RecordTextGroup, context);
-        if (OwnText(type, JsExpr.Identifier("$v"), context) is not { } own) return null;
-        context.UsedHelpers.Add(Eq.Import);
-        return JsExpr.Call(JsExpr.Identifier(Eq.TextGroup), held,
-            JsExpr.Arrow(context.TypeAnnotations ? "$v: any" : "$v", own));
+        if (OwnText(type, JsExpr.Identifier("$v"), context) is { } own)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Call(JsExpr.Identifier(Eq.TextGroup), held,
+                JsExpr.Arrow(context.TypeAnnotations ? "$v: any" : "$v", own));
+        }
+        if (type.SpecialType == SpecialType.System_Object || type.TypeKind is TypeKind.Interface or TypeKind.TypeParameter)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Call(JsExpr.Identifier(Eq.TextGroup),
+                JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver),
+                JsExpr.Arrow(context.TypeAnnotations ? "$v: any" : "$v", JsExpr.Callish($"{Eq.Format}($v, null)")));
+        }
+        return null;
     }
 
     /// <summary>
-    /// The text an instance <c>ToString()</c> writes where its receiver's type writes it, for a receiver
-    /// of a REFERENCE type (an anonymous object, an array, a list, a delegate): as a concatenation writes
-    /// it, with the receiver refused when it is null (<see cref="Eq.Receiver"/>), as .NET's call through null
-    /// throws, where a hole and a concatenation of a null write nothing. Null for any other receiver,
-    /// whose call the caller writes as it always did.
+    /// The text an instance <c>ToString()</c> writes for a receiver of a reference type, <c>object</c>, an
+    /// interface or a type parameter: refused when it is null (<see cref="Eq.Receiver"/>), as .NET's call
+    /// through null throws <c>NullReferenceException</c>, where a hole, a concatenation and
+    /// <c>Convert.ToString</c> of a null write nothing (#912). Null for any other receiver, whose call the
+    /// caller writes as it always did.
     /// </summary>
-    internal static JsExpr? InstanceText(ITypeSymbol? type, JsExpr receiver, ConversionContext context)
+    internal static JsExpr? InstanceText(ExpressionSyntax receiverSyntax, ITypeSymbol? type, JsExpr receiver,
+        ConversionContext context)
     {
-        if (type is not { IsReferenceType: true } || !ReachesTheFormatterAsText(type)) return null;
-        context.UsedHelpers.Add(Eq.Import);
-        return OwnText(type, JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver), context);
+        if (type is { IsReferenceType: true } && ReachesTheFormatterAsText(type))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return OwnText(type, JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver), context);
+        }
+        if (type is { SpecialType: SpecialType.System_Object } or { TypeKind: TypeKind.Interface or TypeKind.TypeParameter })
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var checkedReceiver = IsAlwaysNonNull(receiverSyntax, context)
+                ? receiver
+                : JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver);
+            return JsExpr.Callish($"{Eq.Format}({JsExprWriter.Write(checkedReceiver)}, null)");
+        }
+        // A string's ToString is the string itself, and through null the call throws as any instance call
+        // does: the null-tolerant text a hole and a concatenation write answered "" (Copilot's review of #947).
+        if (type is { SpecialType: SpecialType.System_String })
+        {
+            if (IsAlwaysNonNull(receiverSyntax, context)) return receiver;
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver);
+        }
+        if (type is { IsReferenceType: true, TypeKind: not TypeKind.Error } && type.SpecialType != SpecialType.System_String
+            && !type.IsDate())
+        {
+            if (IsAlwaysNonNull(receiverSyntax, context))
+                return JsExpr.Callish($"String({JsExprWriter.Write(receiver)})");
+            context.UsedHelpers.Add(Eq.Import);
+            var checkedReceiver = JsExpr.Call(JsExpr.Identifier(Eq.Receiver), receiver);
+            return JsExpr.Callish($"String({JsExprWriter.Write(checkedReceiver)})");
+        }
+        return null;
     }
 
     /// <summary>
@@ -338,6 +377,24 @@ public static class StringConversion
             ? JsExpr.Callish($"String({JsExprWriter.Write(converted)})")
             : text;
     }
+
+    private static bool IsAlwaysNonNull(ExpressionSyntax expression, ConversionContext context) =>
+        (expression.Parent is MemberAccessExpressionSyntax access
+            && context.SemanticHelper.Original(access) is MemberBindingExpressionSyntax)
+        || expression switch
+        {
+            ParenthesizedExpressionSyntax parenthesized => IsAlwaysNonNull(parenthesized.Expression, context),
+            BaseObjectCreationExpressionSyntax
+                or AnonymousObjectCreationExpressionSyntax
+                or ArrayCreationExpressionSyntax
+                or ImplicitArrayCreationExpressionSyntax
+                or CollectionExpressionSyntax
+                or ThisExpressionSyntax
+                or BaseExpressionSyntax
+                or InterpolatedStringExpressionSyntax
+                or LiteralExpressionSyntax { RawKind: (int)Microsoft.CodeAnalysis.CSharp.SyntaxKind.StringLiteralExpression } => true,
+            _ => false,
+        };
 
     /// <summary>
     /// The value's text in the INVARIANT culture, as <c>ToString(CultureInfo.InvariantCulture)</c>

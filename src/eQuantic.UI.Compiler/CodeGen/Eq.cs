@@ -508,6 +508,10 @@ public static class Eq
     /// members, and identity for anything else.</summary>
     public const string SameKey = "$eq.collections.sameKey";
 
+    /// <summary><c>IEquatable&lt;T&gt;.Equals</c>: the typed <c>Equals</c> of the app's own a twin names in its
+    /// <c>static $equatable</c>, and what the value turns out to be otherwise (<c>utils/key-equality.ts</c>).</summary>
+    public const string SameEquatable = "$eq.collections.sameEquatable";
+
     /// <summary>A <c>KeyValuePair&lt;K, V&gt;</c>'s comparer, from each half's (#421).</summary>
     public const string PairComparer = "$eq.collections.pairComparer";
 

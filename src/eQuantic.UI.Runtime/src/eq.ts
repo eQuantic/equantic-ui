@@ -149,7 +149,7 @@ import {
 } from './utils/collections';
 import { dictionary, pair } from './utils/dictionary';
 import { hashSet, hashSetOf } from './utils/hash-set';
-import { memberEquality, sameKey, tupleEquality } from './utils/key-equality';
+import { memberEquality, sameEquatable, sameKey, tupleEquality } from './utils/key-equality';
 import {
   arrayFind,
   arrayFindIndex,
@@ -527,6 +527,8 @@ export const $eq = {
     tupleEquality,
     memberEquality,
     sameKey,
+    /** `IEquatable<T>.Equals`: the typed `Equals` a twin names, and what the value turns out to be otherwise. */
+    sameEquatable,
     /** `List<T>`'s and `Array`'s searches, sorts and copies, as .NET answers them (`utils/list.ts`). */
     indexOf: listIndexOf,
     lastIndexOf: listLastIndexOf,

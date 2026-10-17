@@ -47,12 +47,4 @@ internal static class LinqKeys
     private static bool ByIdentity(ITypeSymbol key) =>
         ElementEquality.Of(key) is null
         && (key.UnwrapNullable() ?? key).SpecialType is not (SpecialType.System_Single or SpecialType.System_Double);
-
-    /// <summary>Two members of the enum with one value, which .NET reads as one key and this side,
-    /// where an enum is its member's name, as two.</summary>
-    public static bool HasAliases(INamedTypeSymbol enumType) =>
-        enumType.GetMembers().OfType<IFieldSymbol>()
-            .Where(field => field.HasConstantValue)
-            .GroupBy(field => field.ConstantValue)
-            .Any(values => values.Count() > 1);
 }

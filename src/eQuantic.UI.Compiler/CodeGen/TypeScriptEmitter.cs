@@ -2680,6 +2680,11 @@ public class TypeScriptEmitter
                 // reads off the class an exception is constructed as, for a typed catch (#611).
                 if (!asStatic && semanticModel?.GetDeclaredSymbol(cls) is INamedTypeSymbol self && ExceptionTypes.HasTwin(self))
                     c.Field("$types", null, JsExprWriter.Write(ExceptionTypes.TypesOf(self)), cls, isStatic: true);
+                // The typed Equals that answers IEquatable<T>, which holds a name of its own on the twin: what
+                // a collection of the type and generic code over IEquatable<T> ask (`$eq.collections.sameEquatable`).
+                if (!asStatic && semanticModel?.GetDeclaredSymbol(cls) is INamedTypeSymbol equatable
+                    && Strategies.ElementEquality.EquatableMethod(equatable) is { } typed)
+                    c.Field("$equatable", null, JsStringLiteral.Quote(TwinMethodName.Of(typed)), cls, isStatic: true);
                 EmitStaticMembers(cls, c, asStatic);
                 if (!asStatic) EmitInheritedDefaults(cls, c);
                 // A class that never says what its text is writes its full name, as Object.ToString

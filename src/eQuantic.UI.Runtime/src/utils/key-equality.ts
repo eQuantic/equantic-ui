@@ -24,6 +24,7 @@
  * the set beside it compared by value answered two ways about one value.
  */
 import { equals } from './equals';
+import { valueTwinOf } from './hash';
 
 /** A comparison two values are found equal by. */
 export type Equality = (a: unknown, b: unknown) => boolean;
@@ -39,7 +40,7 @@ export type KeyEquality = boolean | 'own' | 'item' | Equality;
 export function sameItem(item: unknown, value: unknown): boolean {
   if (item === value) return true;
   if (typeof item === 'number' && typeof value === 'number') return item !== item && value !== value;
-  if (item == null || value == null) return false;
+  if (item == null || value == null) return item == null && value == null;
   const own = (item as { equals?: unknown }).equals;
   return typeof own === 'function' && (own as (other: unknown) => boolean).call(item, value);
 }
@@ -47,13 +48,57 @@ export function sameItem(item: unknown, value: unknown): boolean {
 /**
  * .NET's `EqualityComparer<object>.Default` on the values two keys turned out to be: identity (NaN
  * equal to NaN), a twin's own `equals` (a record, a struct, a decimal, a date, a class overriding
- * `Equals`), and the members of a tuple or an anonymous type, which have no twin to carry one. Two
- * of those are compared only with one of their own kind, as .NET's Equals checks the type first: an
- * anonymous type never equals a record with the same members.
+ * `Equals`), and the members of a tuple or an anonymous type, which have no twin to carry one, each
+ * member compared so in turn. Two of those are compared only with one of their own kind, as .NET's
+ * Equals checks the type first: a tuple never equals an anonymous object, and an anonymous object
+ * equals only one of the same members in the same order, never a record with the same members.
+ *
+ * A tuple is an array here, and so are a `List<T>` and a `T[]`, which .NET compares by reference. Held
+ * as `object`, nothing tells them apart, so all three compare by their elements, the tuple's answer: a
+ * tuple held as `object` is found in a set, a dictionary and `Distinct` as .NET finds it. Where the
+ * compiler still sees the static type (a list, an array, a class that does not override `Equals`), it
+ * compares by reference before it gets here (#909).
  */
 export function sameKey(a: unknown, b: unknown): boolean {
   if (sameItem(a, b)) return true;
-  return isPlainValue(a) && isPlainValue(b) && Array.isArray(a) === Array.isArray(b) && equals(a, b);
+  // A vocabulary value type's hand-written twin (`Point`, registered with `hashesByValue`) carries no
+  // `equals` and is no plain data: its record struct's Equals compares it member by member, and only with a
+  // value of its own type, as `$eq.equals` and its hash already do. By reference, two tuples held as object
+  // holding two equal points were unequal (Copilot's second review of #947).
+  const twin = valueTwinIn(a);
+  if (twin !== undefined) return valueTwinIn(b) === twin && equals(a, b);
+  if (!isPlainValue(a) || !isPlainValue(b)) return false;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    for (let at = 0; at < a.length; at++) if (!sameKey(a[at], b[at])) return false;
+    return true;
+  }
+  const ao = a as Record<string, unknown>;
+  const bo = b as Record<string, unknown>;
+  const ak = Object.keys(ao);
+  const bk = Object.keys(bo);
+  if (ak.length !== bk.length) return false;
+  for (let i = 0; i < ak.length; i++) {
+    const k = ak[i];
+    if (k !== bk[i] || !sameKey(ao[k], bo[k])) return false;
+  }
+  return true;
+}
+
+/**
+ * `IEquatable<T>.Equals`, which `EqualityComparer<T>.Default` asks for a type that implements it and generic
+ * code calls through the interface or a type parameter it constrains: the typed `Equals` of the app's own the
+ * value's twin names (`static $equatable`), which holds a name of its own there, since the twin's `equals` is
+ * `Equals(object)`'s, and otherwise what the value turns out to be (`sameKey`: a number, a string, a runtime
+ * twin's or a record's `equals`, a tuple's elements). A null equals only a null, as .NET's comparer has it.
+ * Under `equals`, a typed `Equals(C)` answered `object.Equals` where .NET asks `Equals(object)` (Copilot's
+ * second review of #947).
+ */
+export function sameEquatable(a: unknown, b: unknown): boolean {
+  if (a == null || b == null) return a == null && b == null;
+  const named = (a as { constructor?: { $equatable?: unknown } }).constructor?.$equatable;
+  const typed = typeof named === 'string' ? (a as Record<string, unknown>)[named] : undefined;
+  return typeof typed === 'function' ? Boolean((typed as (other: unknown) => unknown).call(a, b)) : sameKey(a, b);
 }
 
 /** A tuple (an array) or an anonymous type (a plain object): a value compared by its members. */
@@ -64,9 +109,14 @@ export function isPlainValue(value: unknown): boolean {
   return prototype === Object.prototype || prototype === null;
 }
 
+/** The vocabulary value type a value is an instance of, as `hashesByValue` registered it, or undefined. */
+function valueTwinIn(value: unknown): ReturnType<typeof valueTwinOf> {
+  return value !== null && typeof value === 'object' ? valueTwinOf(value) : undefined;
+}
+
 /** Whether a value has an equality of its own, which under `'own'` is asked rather than identity. */
 export function hasOwnEquality(value: unknown): boolean {
-  return hasEquals(value) || isPlainValue(value);
+  return hasEquals(value) || isPlainValue(value) || valueTwinIn(value) !== undefined;
 }
 
 /** Whether a value's twin carries an `equals`, which under `'item'` is asked rather than identity. */
@@ -96,6 +146,7 @@ const shapes = new WeakMap<Equality, string>([
   [sameKey, 'o'],
   [sameItem, 'r'],
   [sameValueZero, 'i'],
+  [sameEquatable, 'q'],
 ]);
 const byShape = new Map<string, Equality>();
 let foreign = 0;

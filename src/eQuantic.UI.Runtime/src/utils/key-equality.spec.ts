@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { memberEquality, pairComparer, sameBy, sameEquality, sameKey, tupleEquality } from './key-equality';
 import { dec } from './decimal';
 import { equals } from './equals';
+import { hashesByValue } from './hash';
+import { dictionary } from './dictionary';
 
 // How EqualityComparer<T>.Default finds two values equal, ONE vocabulary for a set, a dictionary and a
 // list's searches (#425, #531).
@@ -19,7 +21,55 @@ describe('the equality a type compares by', () => {
     expect(sameBy('own')).toBe(sameKey);
     expect(sameKey(dec('1.0'), dec('1.00'))).toBe(true);
     expect(sameKey({}, {})).toBe(true);
+    expect(sameKey({ a: 1, b: 2 }, { b: 2, a: 1 })).toBe(false);
     expect(sameKey({}, [])).toBe(false);
+    expect(sameBy('item')(null, undefined)).toBe(true);
+  });
+
+  // A tuple held as object is an array, as a list and an array are: only its elements can say what
+  // it is, so it is found by them (#947's review), each element by what it turns out to be in turn.
+  it('compares a tuple held as object by its elements, each by its own equality', () => {
+    class Plain {
+      a = 1;
+    }
+    const shared = new Plain();
+    expect(sameKey([1, 'a'], [1, 'a'])).toBe(true);
+    expect(sameKey([1, 'a'], [1, 'b'])).toBe(false);
+    expect(sameKey([1, 2], [1, 2, 3])).toBe(false);
+    expect(sameKey([[1, 2], dec('1.0')], [[1, 2], dec('1.00')])).toBe(true);
+    expect(sameKey([shared], [shared])).toBe(true);
+    expect(sameKey([new Plain()], [new Plain()])).toBe(false);
+    expect(sameKey([{ a: 1, b: 2 }], [{ b: 2, a: 1 }])).toBe(false);
+    expect(sameKey([null], [undefined])).toBe(true);
+  });
+
+  // A vocabulary value type's twin (`Point`) has no `equals` and is no plain data: it compares by its
+  // members, alone and inside a tuple held as object, as its record struct does, and only with one of
+  // its own type, where a class of the app's stays by reference (Copilot's second review of #947).
+  it('compares a registered value twin by its members, and only with one of its own type', () => {
+    class KeyEqualitySpecSpot {
+      constructor(
+        public x: number,
+        public y: number,
+      ) {}
+    }
+    class KeyEqualitySpecOther {
+      constructor(
+        public x: number,
+        public y: number,
+      ) {}
+    }
+    hashesByValue(KeyEqualitySpecSpot, KeyEqualitySpecOther);
+    expect(sameKey(new KeyEqualitySpecSpot(1, 2), new KeyEqualitySpecSpot(1, 2))).toBe(true);
+    expect(sameKey(new KeyEqualitySpecSpot(1, 2), new KeyEqualitySpecSpot(2, 1))).toBe(false);
+    expect(sameKey(new KeyEqualitySpecSpot(1, 2), new KeyEqualitySpecOther(1, 2))).toBe(false);
+    expect(sameKey([new KeyEqualitySpecSpot(1, 2), 1], [new KeyEqualitySpecSpot(1, 2), 1])).toBe(true);
+    const d = dictionary<unknown, number>(null, 'own');
+    d.set([new KeyEqualitySpecSpot(1, 2), 1], 7);
+    d.set(new KeyEqualitySpecSpot(3, 4), 8);
+    expect(d.get([new KeyEqualitySpecSpot(1, 2), 1])).toBe(7);
+    expect(d.get(new KeyEqualitySpecSpot(3, 4))).toBe(8);
+    expect(d.size).toBe(2);
   });
 
   it("compares a tuple's elements each by its own type: an array by reference", () => {
