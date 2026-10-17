@@ -15,6 +15,9 @@ public class MethodGroupInARebuiltExpressionConformanceTests
         + "var b = values?.Select(Math.Abs).Sum(); return (a is null) + \"|\" + b;")]
     [InlineData("var strings = new[] { \"a\", \"b\" }; var made = (from s in strings select new Func<string>(s.ToString)).ToList(); "
         + "return string.Join(\"|\", made.Select(f => f()));")]
+    [InlineData("var prefix = \"ab\"; string[] items = null; var a = items?.Select(prefix.StartsWith).ToList(); "
+        + "items = new[] { \"a\", \"abc\", \"x\" }; var b = items?.Select(prefix.StartsWith).ToList(); "
+        + "return (a is null) + \"|\" + string.Join(\",\", b);")]
     public void AGroupInsideARebuiltExpression_IsTheDelegateItsCallIs(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

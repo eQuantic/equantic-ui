@@ -53,6 +53,12 @@ public class DateMemberConformanceTests
             + DateTime.Compare(t2: At(2), t1: At(1)) + "|" + log + "|"
             + new DateOnly(day: 29, month: 2, year: 2024).ToString("o") + "|" + new TimeSpan(seconds: 3, minutes: 2, hours: 1);
         """,
+        // An instant beside a date: C# converts the date to an instant and binds the instant's operator, both
+        // orders (#961).
+        """
+        var a = new DateTimeOffset(2024, 1, 2, 0, 0, 0, TimeSpan.Zero); var b = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        return (a - b) + "|" + (b - a) + "|" + (a < b) + "|" + (a == b) + "|" + (a > b) + "|" + (a == new DateTime(2024, 1, 2, 0, 0, 0, DateTimeKind.Utc));
+        """,
     ];
 
     public static IEnumerable<object?[]> CasesInEachCulture() =>

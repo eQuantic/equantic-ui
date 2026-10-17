@@ -50,6 +50,10 @@ public class APackagesTypeTests
 
         public interface IStatus { public static string Label => "ready"; }
 
+        public static class Guid { public static string Empty => "e"; }
+
+        public static class DateTime { public static string Now => "n"; }
+
         public enum Level { Low, High }
 
         public class Box<T> { public static string Empty => "empty"; }
@@ -101,6 +105,9 @@ public class APackagesTypeTests
     // review of #958).
     [InlineData("Status.Count.ToString()", "using Vendor;", "'Vendor.Status.Count'")]
     [InlineData("IStatus.Label", "using Vendor;", "'Vendor.IStatus.Label'")]
+    // A static named like a member a shortcut answers by its name, Guid.Empty and DateTime.Now (#961).
+    [InlineData("Vendor.Guid.Empty", "", "'Vendor.Guid.Empty'")]
+    [InlineData("Vendor.DateTime.Now", "", "'Vendor.DateTime.Now'")]
     // A static method's group.
     [InlineData("((System.Func<string>)Status.Make)()", "using Vendor;", "'Vendor.Status.Make'")]
     public void ANameOfAPackagesType_FailsTheBuild_NamingTheMemberAndTheAssembly(string expression, string usings, string member)
