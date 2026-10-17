@@ -707,12 +707,13 @@ public sealed class ReferencedProjectRefusalTests
     }
 
     [Fact]
-    public void ANameBoundToAPackagesType_NeverImportsAReferencedProjectsModuleOfThatName()
+    public void ANameBoundToAPackagesType_IsRefusedAsThePackages_NeverAsAReferencedProjectsClassOfThatName()
     {
         // The page reads a member of Vendor.Status, a type of a PACKAGE. A referenced project happens
         // to declare a class of that name, which nothing reaches. The emitters gather import
         // candidates by name, so a layer that answered for a referenced project's name by NAME
-        // alone would import the library's Status into a page that never named it.
+        // alone would import the library's Status into a page that never named it. The package's has
+        // no module and no twin, so the read is refused, naming the package's (#822).
         const string Status = "namespace OWNER;\n\npublic static class Status\n{\n    public static string Label => \"OWNER\";\n}\n";
         using var solution = new Solution()
             .Package("Vendor", ("Status.cs", Status.Replace("OWNER", "Vendor")))
@@ -723,9 +724,10 @@ public sealed class ReferencedProjectRefusalTests
             ]);
         var built = solution.Build();
 
-        built.Module("Home").Should().Contain("Status.label", "the page names the type the code names: a package's");
-        built.SiblingImportsOf("Home").Should().BeEmpty("the library's class of that name is not what the page named");
-        built.Modules.Should().NotContain("Status", "and nothing reached the library's, so it is no module");
+        built.Failed.Should().BeTrue("the browser has no name for a package's type");
+        built.ErrorsIn("App").Should().ContainSingle().Which.Should().Contain("error EQ2004")
+            .And.Contain("'Vendor.Status.Label'").And.NotContain("Common");
+        built.Modules.Should().NotContain("Status", "nothing reached the library's, so it is no module");
     }
 
     /// <summary>A plain class of the base project's, with a field a member of a derived class can land on.</summary>
