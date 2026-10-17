@@ -58,13 +58,8 @@ public class GetHashCodeStrategy : IExpressionIrStrategy
             return JsExpr.Call(JsExpr.Identifier(Eq.Hash), self);
         var receiver = context.Converter.ConvertIr(access.Expression);
         var receiverType = context.SemanticHelper.GetType(access.Expression);
-        if (receiverType.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType && !enumType.IsFlagsEnum())
-        {
-            if (!receiverType.IsNullableValue())
-                return JsExpr.Call(JsExpr.Identifier(Eq.Hash), EnumValue(access.Expression, receiver, enumType, context));
-            var table = EnumShape.KeyToValue(enumType);
-            return JsExpr.Template($"({{0}} == null ? 0 : {Eq.Hash}(({table})[{{0}}] ?? {{0}}))", [receiver]);
-        }
+        if (receiverType.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+            return EnumHash(access.Expression, receiver, receiverType!, enumType, group: false, context);
         return receiverType switch
         {
             IArrayTypeSymbol or INamedTypeSymbol { Name: "List", ContainingNamespace: { Name: "Generic", ContainingNamespace: { Name: "Collections", ContainingNamespace.Name: "System" } } }
@@ -74,11 +69,36 @@ public class GetHashCodeStrategy : IExpressionIrStrategy
         };
     }
 
-    private static JsExpr EnumValue(ExpressionSyntax exprSyntax, JsExpr receiver, INamedTypeSymbol enumType, ConversionContext context) =>
-        context.SemanticHelper.GetSymbol(exprSyntax) is IFieldSymbol { ContainingType.TypeKind: TypeKind.Enum, HasConstantValue: true } field
-            ? JsExpr.Literal(System.Convert.ToDecimal(field.ConstantValue, System.Globalization.CultureInfo.InvariantCulture)
-                .ToString(System.Globalization.CultureInfo.InvariantCulture))
-            : EnumShape.ValueOf(enumType, receiver, context);
+    /// <summary>
+    /// An enum's hash and its method group's: its underlying value's, hashed as a value of the underlying
+    /// type hashes, which is what .NET's <c>Enum.GetHashCode</c> answers (#926). The browser holds a
+    /// non-flags enum as its member's key, and a 64-bit enum's value as a number where a <c>long</c> is a
+    /// BigInt, so the value is brought into its underlying type's own representation first:
+    /// <c>Wide.High.GetHashCode()</c> hashed a double where <c>((long)Wide.High).GetHashCode()</c> hashes
+    /// the long's two halves (Copilot's review of #947). A constant is its value, written as its type
+    /// writes it. An empty <c>Nullable</c> answers 0, and its group is refused where it is made.
+    /// </summary>
+    private static JsExpr EnumHash(ExpressionSyntax expression, JsExpr receiver, ITypeSymbol type,
+        INamedTypeSymbol enumType, bool group, ConversionContext context)
+    {
+        var wide = enumType.EnumUnderlyingType?.SpecialType is SpecialType.System_Int64 or SpecialType.System_UInt64;
+        var helper = group ? Eq.HashGroup : Eq.Hash;
+        if (!type.IsNullableValue())
+        {
+            var value = context.SemanticHelper.TryGetConstantValue(expression, out var constant) && constant is not null
+                ? JsExpr.Literal(System.Convert.ToDecimal(constant, System.Globalization.CultureInfo.InvariantCulture)
+                    .ToString(System.Globalization.CultureInfo.InvariantCulture) + (wide ? "n" : ""))
+                : wide
+                    ? JsExpr.Call(JsExpr.Identifier("BigInt"), EnumShape.ValueOf(enumType, receiver, context))
+                    : EnumShape.ValueOf(enumType, receiver, context);
+            return JsExpr.Call(JsExpr.Identifier(helper), value);
+        }
+        var number = enumType.IsFlagsEnum() ? "{0}" : $"(({EnumShape.KeyToValue(enumType)})[{{0}}] ?? {{0}})";
+        if (wide) number = $"BigInt({number})";
+        return group
+            ? JsExpr.Call(JsExpr.Identifier(helper), JsExpr.Template($"({{0}} == null ? null : {number})", [receiver]))
+            : JsExpr.Template($"({{0}} == null ? 0 : {helper}({number}))", [receiver]);
+    }
 
     /// <summary>
     /// <c>base.GetHashCode()</c>: the base's own override, written by the app or synthesized for a
@@ -119,14 +139,8 @@ public class GetHashCodeStrategy : IExpressionIrStrategy
         if (group.Expression is BaseExpressionSyntax) return JsExpr.Arrow("", Base(method, JsExpr.Identifier("this")));
         var receiver = context.Converter.ConvertIr(group.Expression);
         var receiverType = context.SemanticHelper.GetType(group.Expression);
-        if (receiverType.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType && !enumType.IsFlagsEnum())
-        {
-            if (!receiverType.IsNullableValue())
-                return JsExpr.Call(JsExpr.Identifier(Eq.HashGroup), EnumValue(group.Expression, receiver, enumType, context));
-            var table = EnumShape.KeyToValue(enumType);
-            var nullableValue = JsExpr.Template($"({{0}} == null ? null : (({table})[{{0}}] ?? {{0}}))", [receiver]);
-            return JsExpr.Call(JsExpr.Identifier(Eq.HashGroup), nullableValue);
-        }
+        if (receiverType.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+            return EnumHash(group.Expression, receiver, receiverType!, enumType, group: true, context);
         return receiverType is IArrayTypeSymbol or INamedTypeSymbol { Name: "List", ContainingNamespace: { Name: "Generic", ContainingNamespace: { Name: "Collections", ContainingNamespace.Name: "System" } } }
             ? JsExpr.Call(JsExpr.Identifier(Eq.HashGroup), receiver, JsExpr.Literal("true"))
             : JsExpr.Call(JsExpr.Identifier(Eq.HashGroup), receiver);

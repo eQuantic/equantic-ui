@@ -267,11 +267,13 @@ public class TupleAndAnonymousObjectConformanceTests
     }
 
     /// <summary>The types the object and enum member cases name besides <see cref="Prelude"/>'s: an enum with
-    /// an alias and a generic record.</summary>
+    /// an alias, a generic record, and two enums over a long.</summary>
     public const string ObjectAndEnumPrelude = Prelude + """
 
         public enum Shade { Black = 0, Grey = 1, Gray = Grey, White = 2 }
         public record Box<T>(T Value);
+        public enum Wide : long { Low = -5000000000L, High = 1099511627776L }
+        [Flags] public enum WideFlags : long { None = 0, Top = 1L << 40 }
         """;
 
     public static readonly string[] ObjectAndEnumMemberCases =
@@ -300,6 +302,8 @@ public class TupleAndAnonymousObjectConformanceTests
         """var s = Scale.Small; var l = Scale.Large; Func<object?, bool> eq = s.Equals; Func<int> h = l.GetHashCode; return s.Equals(Scale.Small) + "|" + s.Equals(Scale.Large) + "|" + s.Equals((object)Scale.Small) + "|" + s.Equals((object)0) + "|" + s.Equals(null) + "|" + eq(Scale.Small) + "|" + eq(Scale.Large) + "|" + (s.GetHashCode() == 0.GetHashCode()) + "|" + (l.GetHashCode() == 1.GetHashCode()) + "|" + (h() == 1.GetHashCode());""",
         // A Nullable enum's Equals group compares as its value's, and an empty one's is refused where it is made.
         """Scale? s = Scale.Small; Func<object?, bool> eq = s.Equals; Scale? none = null; var made = ""; try { Func<object?, bool> f = none.Equals; made = "made"; } catch (NullReferenceException) { made = "NRE"; } catch (ArgumentException) { made = "AE"; } return eq(Scale.Small) + "|" + eq(Scale.Large) + "|" + eq(null) + "|" + eq((object)0) + "|" + made;""",
+        // An enum over a long hashes as the long does, its two halves, by the call, a Nullable and a group alike.
+        """var w = Wide.High; Wide? n = Wide.Low; Wide? none = null; Func<int> h = w.GetHashCode; Func<int> hn = n.GetHashCode; var f = WideFlags.Top; return Wide.High.GetHashCode() + "|" + w.GetHashCode() + "|" + (w.GetHashCode() == 1099511627776L.GetHashCode()) + "|" + n.GetHashCode() + "|" + (n.GetHashCode() == (-5000000000L).GetHashCode()) + "|" + none.GetHashCode() + "|" + h() + "|" + hn() + "|" + f.GetHashCode() + "|" + WideFlags.Top.GetHashCode();""",
         // #927: An enum member that aliases another is the same value in ==, switch, pattern matching, ToString, GetHashCode, and Dictionary/HashSet.
         """var a = Shade.Grey; var b = Shade.Gray; var d = new Dictionary<Shade, int> { [Shade.Grey] = 7 }; var set = new HashSet<Shade> { Shade.Grey, Shade.Gray }; var matched = b switch { Shade.Grey => "hit", _ => "miss" }; var isGrey = b is Shade.Grey; return (a == b) + "|" + a.Equals(b) + "|" + (a.GetHashCode() == b.GetHashCode()) + "|" + a.ToString() + "|" + b.ToString() + "|" + $"{a},{b}" + "|" + d.ContainsKey(Shade.Gray) + "|" + d[Shade.Gray] + "|" + set.Count + "|" + matched + "|" + isGrey;""",
         // A value of a type that refuses every other is unequal to a value of another type, which the
