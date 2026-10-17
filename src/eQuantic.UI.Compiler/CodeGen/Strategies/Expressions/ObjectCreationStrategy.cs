@@ -92,16 +92,26 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         // is .NET's new delegate over that one's Invoke, never the delegate itself, which
         // `new Func<int>(f) == f` found equal.
         if (context.SemanticHelper.GetType(node) is INamedTypeSymbol { TypeKind: TypeKind.Delegate } delegateType
-            && node is BaseObjectCreationExpressionSyntax { ArgumentList.Arguments: [var made], Initializer: null })
+            && node is BaseObjectCreationExpressionSyntax { ArgumentList.Arguments: [var made], Initializer: null } delegateCreation)
         {
             var from = made.Expression;
             while (from is ParenthesizedExpressionSyntax parenthesized) from = parenthesized.Expression;
-            return from is not AnonymousFunctionExpressionSyntax
-                && context.SemanticHelper.GetType(made.Expression) is { TypeKind: TypeKind.Delegate }
-                && delegateType.DelegateInvokeMethod is { } invoke
-                && invoke.Parameters.All(parameter => parameter.RefKind == RefKind.None)
-                    ? OverDelegate(invoke, context.Converter.ConvertIr(made.Expression), context)
-                    : context.Converter.ConvertIr(made.Expression);
+            if (from is AnonymousFunctionExpressionSyntax
+                || context.SemanticHelper.GetType(made.Expression) is not { TypeKind: TypeKind.Delegate }
+                || delegateType.DelegateInvokeMethod is not { } invoke)
+                return context.Converter.ConvertIr(made.Expression);
+            // One whose parameters hand a value back has no function that can call its source and hand the
+            // values on: it was the source itself, a null one accepted and the same delegate answered
+            // (Copilot's review of #958).
+            if (invoke.Parameters.Any(parameter => parameter.RefKind is RefKind.Ref or RefKind.Out))
+            {
+                context.Report(delegateCreation, ConversionSeverity.Error, "EQ2004",
+                    $"'{delegateType.ToDisplayString()}' has no JavaScript translation as a delegate built from another: "
+                    + "its parameters hand a value back through an out or a ref, and no function the browser calls can "
+                    + "call its source and hand them on. Build it from the method or the lambda itself.");
+                return Undefined;
+            }
+            return OverDelegate(invoke, context.Converter.ConvertIr(made.Expression), context);
         }
 
         // C# 13's `System.Threading.Lock` — single-threaded JS drops the lock STATEMENT's
