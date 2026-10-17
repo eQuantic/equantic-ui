@@ -161,7 +161,10 @@ public static class ValueFlow
             && toInstant.ContainingType.IsNamed("System.DateTimeOffset") && date.IsNamed("System.DateTime"))
         {
             context.UsedHelpers.Add(Eq.Import);
-            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(Eq.DateTimeOffset), "fromDateTime"), translated);
+            JsExpr Instant(JsExpr value) => JsExpr.Call(JsExpr.Member(JsExpr.Identifier(Eq.DateTimeOffset), "fromDateTime"), value);
+            // A nullable date is the LIFTED conversion, which names the same operator: a null one stays null and
+            // only a present one is converted, the operand read once (Copilot's first review of #964).
+            return from.IsNullableValue() ? NullableLift.Unary(translated, Instant, context) : Instant(translated);
         }
 
         if (kind.IsUserDefined)
