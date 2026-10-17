@@ -325,22 +325,32 @@ public class RecordTypeEmitter
             // `Equals(obj as R)` for a class and `obj is R r && Equals(r)` for a struct: the typed one holds
             // a name of its own (TwinMethodName.TypedEquals), and the twin's `equals` asks it, where it
             // compared the members C#'s own would have (Copilot's second review of #947).
-            var ownTyped = type is RecordDeclarationSyntax && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol recordSymbol
-                ? ElementEquality.EquatableMethod(recordSymbol)
-                : null;
+            var recordSymbol = type is RecordDeclarationSyntax ? ModelFor(type)?.GetDeclaredSymbol(type) as INamedTypeSymbol : null;
+            var ownTyped = recordSymbol is not null ? ElementEquality.EquatableMethod(recordSymbol) : null;
+            // The base record's own typed Equals, where it declares one: C#'s synthesized Equals of a derived record
+            // asks it as `base.Equals(other)`, without a virtual dispatch, and overrides it with
+            // `sealed override bool Equals(Base? other) => Equals((object?)other)`, so a call bound to the base's
+            // reaches what the value is. It held a name of its own, and a derived value answered by the base's
+            // method alone, its own members and type unread, in a call, a contract and a List<Base> alike.
+            var baseTyped = recordSymbol is { BaseType: { IsRecord: true } recordBase } ? ElementEquality.EquatableMethod(recordBase) : null;
             if (ownTyped is not null)
             {
                 var typedName = TwinMethodName.Of(ownTyped);
                 var head = tsTypeDeclarations ? "equals(o: unknown): boolean" : "equals(o)";
+                // A generic one's closed type as its synthesized equality compares it: one twin class serves
+                // every type argument, and `obj as R<int>` is null for an R<string> (Copilot's third review).
+                var ours = type.TypeParameterList is { Parameters.Count: > 0 }
+                    ? $"o instanceof {name} && {Eq.SameClosure}(this, o)"
+                    : $"o instanceof {name}";
                 sb.Append(IsStruct(type)
-                    ? $"{head} {{ return o instanceof {name} && this.{typedName}(o); }} "
-                    : $"{head} {{ return this.{typedName}(o instanceof {name} ? o : null); }} ");
+                    ? $"{head} {{ return {ours} && this.{typedName}(o); }} "
+                    : $"{head} {{ return this.{typedName}({ours} ? o : null); }} ");
             }
             else
             {
                 sb.Append(tsTypeDeclarations ? $"equals(o: unknown) {{ return o instanceof {name}"
                     : $"equals(o) {{ return o instanceof {name}");
-                if (baseName != null) sb.Append(" && super.equals(o)");
+                if (baseName != null) sb.Append(baseTyped is not null ? $" && super.{TwinMethodName.Of(baseTyped)}(o)" : " && super.equals(o)");
                 else if (type is RecordDeclarationSyntax) sb.Append(" && o.constructor === this.constructor");
                 // A generic one's closed type too: one twin class serves every type argument, so `Box<int>`
                 // equalled `Box<double>` holding the same 1 (#651). The build marks each value C# names the
@@ -360,6 +370,11 @@ public class RecordTypeEmitter
                 sb.Append("; } ");
                 for (var i = 0; i < generated.Count; i++)
                     sb.Append($"static $equality{i} = {generated[i]}; ");
+            }
+            if (baseTyped is not null)
+            {
+                var slot = TwinMethodName.Of(baseTyped);
+                sb.Append(tsTypeDeclarations ? $"{slot}(o: unknown): boolean {{ return this.equals(o); }} " : $"{slot}(o) {{ return this.equals(o); }} ");
             }
 
             // with(patch): a COPY, onto the prototype (a spread would drop the methods), then the
