@@ -338,25 +338,125 @@ public class ElementTreeTests
             .Should().NotBeSameAs(((ComponentElement)root.ChildAt(1)!).Component);
     }
 
-    /// <summary>One instance a parent placed at two positions is mounted at the last, and the other
-    /// leaving does not end it there: only the position it is mounted at unmounts it.</summary>
+    private static Counter CounterIn(Element column, int index) =>
+        (Counter)((ComponentElement)column.ChildAt(index)!).Component;
+
+    private static string TextIn(Element column, int index) =>
+        ((Text)column.ChildAt(index)!.ChildAt(0)!.Configuration).Content;
+
+    /// <summary>One instance a parent placed at two positions shows at both, so a <c>SetState</c>
+    /// builds both (Copilot on #960: only the last-mounted one built).</summary>
     [Fact]
-    public void OneInstanceAtTwoPositions_IsNotEndedByTheOneThatLeaves()
+    public void OneInstanceAtTwoPositions_ASetStateBuildsBoth()
+    {
+        var shared = new Counter("shared");
+        var both = new Column();
+        both.Add(shared);
+        both.Add(shared);
+        var owner = new BuildOwner();
+        var root = Frame(owner, both);
+
+        shared.Press();
+        Frame(owner, both, rebuildAll: false);
+
+        TextIn(root, 0).Should().Be("shared: 1");
+        TextIn(root, 1).Should().Be("shared: 1");
+    }
+
+    /// <summary>It stays mounted until the LAST position it holds leaves, whichever leaves first.</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void OneInstanceAtTwoPositions_UnmountsWhenTheLastLeaves(int leavesFirst)
     {
         var log = new List<string>();
         var shared = new Tracked(log);
         var owner = new BuildOwner();
-        var both = new Column();
-        both.Add(shared);
-        both.Add(shared);
-        Frame(owner, both);
+        Frame(owner, Placed(shared, shared));
 
-        var one = new Column();
-        one.Add(new Text("gone", TypeRole.BodyM));
-        one.Add(shared);
-        Frame(owner, one);
+        Frame(owner, leavesFirst == 0 ? Placed(new Text("gone", TypeRole.BodyM), shared)
+            : Placed(shared, new Text("gone", TypeRole.BodyM)));
+        log.Should().Equal(["mounted"], "the other position still shows it");
 
-        log.Should().Equal("mounted");
+        Frame(owner, Placed(new Text("gone", TypeRole.BodyM), new Text("gone too", TypeRole.BodyM)));
+        log.Should().Equal("mounted", "unmounted");
+    }
+
+    private static Column Placed(VisualNode first, VisualNode second)
+    {
+        var column = new Column();
+        column.Add(first);
+        column.Add(second);
+        return column;
+    }
+
+    private sealed class MarksItselfWhenAsked(string label) : StatefulComponent
+    {
+        public string Label { get; private set; } = label;
+        public bool MarkOnNextBuild { get; set; }
+        public int Builds { get; private set; }
+
+        public void Touch() => SetState(() => { });
+
+        public override void AdoptConfig(UiComponent next)
+        {
+            if (next is MarksItselfWhenAsked fresh) Label = fresh.Label;
+        }
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            Builds++;
+            if (MarkOnNextBuild)
+            {
+                MarkOnNextBuild = false;
+                SetState(() => { });
+            }
+
+            return new Text(Label, TypeRole.BodyM);
+        }
+    }
+
+    private sealed class Holding(string label) : StatefulComponent
+    {
+        private string _label = label;
+
+        public MarksItselfWhenAsked? First { get; private set; }
+
+        public void Relabel(string next) => SetState(() => _label = next);
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var child = new MarksItselfWhenAsked(_label);
+            First ??= child;
+            return child;
+        }
+    }
+
+    /// <summary>
+    /// A marked child its marked parent rebuilds builds ONCE in the frame, even when it marks itself
+    /// while building: the mark waits for the next frame, and the child's own entry in the dirty
+    /// list is passed over (Copilot on #960: it built a second time in the same frame).
+    /// </summary>
+    [Fact]
+    public void AMarkedChildItsMarkedParentRebuilds_BuildsOnceAFrame()
+    {
+        var owner = new BuildOwner();
+        var parent = new Holding("first");
+        Frame(owner, parent);
+        var child = parent.First!;
+
+        child.MarkOnNextBuild = true;
+        child.Touch();
+        parent.Relabel("second");
+        Frame(owner, parent, rebuildAll: false);
+        child.Builds.Should().Be(2, "the parent's build rebuilt it once, with its new label");
+        child.Label.Should().Be("second");
+
+        Frame(owner, parent, rebuildAll: false);
+        child.Builds.Should().Be(3, "the mark it made while building is the next frame's");
+
+        Frame(owner, parent, rebuildAll: false);
+        child.Builds.Should().Be(3);
     }
 
     [Fact]

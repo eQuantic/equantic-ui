@@ -318,6 +318,89 @@ public class ElementHostTests
         host.NeedsRender.Should().BeFalse("the viewport it built with is the one reported");
     }
 
+    private sealed class Labelled(string label, List<string> log) : StatefulComponent
+    {
+        public string Label { get; private set; } = label;
+        public int Builds { get; private set; }
+
+        public void Touch() => SetState(() => { });
+
+        protected override void OnMount() => log.Add("mounted");
+        protected override void OnUnmount() => log.Add("unmounted");
+
+        public override void AdoptConfig(UiComponent next)
+        {
+            if (next is Labelled fresh) Label = fresh.Label;
+        }
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            Builds++;
+            return new Text(Label, TypeRole.BodyM);
+        }
+    }
+
+    /// <summary>A dialog whose content it relabels or closes, and the content its first build made,
+    /// which is the instance the content's position keeps.</summary>
+    private sealed class Shelf(List<string> log) : StatefulComponent
+    {
+        private string _label = "first";
+        private bool _open = true;
+
+        public Labelled? Content { get; private set; }
+
+        public void Relabel(string next) => SetState(() => _label = next);
+
+        public void Close() => SetState(() => _open = false);
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var content = new Labelled(_label, log);
+            Content ??= content;
+            return new Overlay(content) { Open = _open, Motion = Fade, Label = "Shelf" };
+        }
+    }
+
+    /// <summary>
+    /// A layer's content and the parent that configures it, both marked in one frame: the content
+    /// builds once, after its slot took the new configuration (Copilot on #960: it built with the old
+    /// one first, then again with the new).
+    /// </summary>
+    [Fact]
+    public void ALayersContentAndItsParentBothMarked_TheContentBuildsOnceWithItsNewConfiguration()
+    {
+        var shelf = new Shelf([]);
+        var host = Open(shelf);
+        var content = shelf.Content!;
+        content.Builds.Should().Be(1);
+
+        content.Touch();
+        shelf.Relabel("second");
+        host.RenderFrame(new DisplayListBuilder(), 16);
+
+        content.Builds.Should().Be(2);
+        host.LastFrame!.OverlayRoots.Select(root => TryFind(root, node => node.Source is Text { Content: "second" }))
+            .Should().Contain(node => node != null, "the layer shows the new label");
+    }
+
+    /// <summary>A layer that closes while its content is marked does not build the content: it leaves
+    /// with the layer (Copilot on #960: it built for a layer that was not shown).</summary>
+    [Fact]
+    public void ALayerThatClosesWhileItsContentIsMarked_DoesNotBuildIt()
+    {
+        var log = new List<string>();
+        var shelf = new Shelf(log);
+        var host = Open(shelf);
+        var content = shelf.Content!;
+
+        content.Touch();
+        shelf.Close();
+        host.RenderFrame(new DisplayListBuilder(), 16);
+
+        content.Builds.Should().Be(1);
+        log.Should().Equal("mounted", "unmounted");
+    }
+
     private static LayoutNode Find(LayoutNode node, Func<LayoutNode, bool> match) =>
         TryFind(node, match) ?? throw new InvalidOperationException("no laid-out node matched");
 

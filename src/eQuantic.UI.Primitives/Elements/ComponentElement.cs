@@ -27,16 +27,18 @@ public sealed class ComponentElement : Element
     /// <summary>Whether a <c>SetState</c> asked this position to build again.</summary>
     internal bool Dirty { get; private set; }
 
+    /// <summary>The owner's frame this position last built in. A position builds once a frame: one
+    /// its parent's build already rebuilt is passed over by the dirty list, and a <c>SetState</c>
+    /// from inside that build waits for the next frame.</summary>
+    internal int BuiltInFrame { get; private set; }
+
     /// <inheritdoc />
     public override Element? ChildAt(int slot) => slot == 0 ? _child : null;
 
     private protected override void FirstBuild()
     {
-        if (Owner.Live && Component is StatefulComponent stateful)
-        {
-            stateful.MountedAt = this;
+        if (Owner.Live && Component is StatefulComponent stateful && stateful.Place(this))
             Owner.QueueMount(this);
-        }
 
         Rebuild(force: false);
     }
@@ -76,6 +78,7 @@ public sealed class ComponentElement : Element
         // Cleared BEFORE the build, so a SetState from inside it marks the position again rather
         // than being lost to a flag that was about to be reset.
         Dirty = false;
+        BuiltInFrame = Owner.Frame;
         var built = BuildContained();
         _child = UpdateChild(_child, built, force);
     }
@@ -116,11 +119,8 @@ public sealed class ComponentElement : Element
 
     private protected override void OnDeactivated()
     {
-        // Only the position the instance is mounted at unmounts it: one instance a parent placed at
-        // two positions is mounted at the last, and the other leaving must not end it there.
-        if (!Owner.Live || Component is not StatefulComponent stateful
-                        || !ReferenceEquals(stateful.MountedAt, this)) return;
-        stateful.MountedAt = null;
-        Owner.QueueUnmount(stateful);
+        // One instance a parent placed at two positions stays mounted until the last of them leaves.
+        if (Owner.Live && Component is StatefulComponent stateful && stateful.Leave(this))
+            Owner.QueueUnmount(stateful);
     }
 }

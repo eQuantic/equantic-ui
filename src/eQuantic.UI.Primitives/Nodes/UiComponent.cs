@@ -176,11 +176,61 @@ public abstract class StatefulComponent : UiComponent
 
     /// <summary>
     /// The position this instance holds in a LIVE tree, set by the element that retains it and
-    /// cleared when that position leaves. Null for an instance no host is drawing: a fresh one a
-    /// parent's build made and the element discarded for its retained twin, one laid out once, one a
-    /// server renders.
+    /// cleared when the last position it holds leaves. Null for an instance no host is drawing: a
+    /// fresh one a parent's build made and the element discarded for its retained twin, one laid out
+    /// once, one a server renders.
     /// </summary>
     internal ComponentElement? MountedAt;
+
+    /// <summary>
+    /// The other positions this one instance holds at the same time: a parent that keeps an instance
+    /// and places it twice. Every one of them shows it, so every one builds on a <c>SetState</c>, and
+    /// the instance stays mounted until the last of them leaves. Null in the common case.
+    /// </summary>
+    private List<ComponentElement>? _alsoMountedAt;
+
+    /// <summary>Takes a position in a live tree; true when it is the instance's first, which is when
+    /// it mounts.</summary>
+    internal bool Place(ComponentElement at)
+    {
+        if (MountedAt is null)
+        {
+            MountedAt = at;
+            return true;
+        }
+
+        (_alsoMountedAt ??= new List<ComponentElement>()).Add(at);
+        return false;
+    }
+
+    /// <summary>Leaves a position; true when it was the last the instance held, which is when it
+    /// unmounts.</summary>
+    internal bool Leave(ComponentElement at)
+    {
+        if (!ReferenceEquals(MountedAt, at))
+        {
+            _alsoMountedAt?.Remove(at);
+            return false;
+        }
+
+        if (_alsoMountedAt is { Count: > 0 } others)
+        {
+            MountedAt = others[^1];
+            others.RemoveAt(others.Count - 1);
+            return false;
+        }
+
+        MountedAt = null;
+        return true;
+    }
+
+    /// <summary>Every position showing this instance builds again.</summary>
+    private void MarkPositions()
+    {
+        MountedAt?.MarkNeedsBuild();
+        if (_alsoMountedAt is not { } others) return;
+        foreach (var at in others) at.MarkNeedsBuild();
+    }
 
     protected void SetState(Action mutate)
     {
@@ -196,14 +246,14 @@ public abstract class StatefulComponent : UiComponent
             dispatcher.Post(() =>
             {
                 mutate();
-                MountedAt?.MarkNeedsBuild();
+                MarkPositions();
             });
             return;
         }
 
         mutate();
         // The position builds again, and only it: its owner asks the host for the frame that shows it.
-        MountedAt?.MarkNeedsBuild();
+        MarkPositions();
     }
 
     /// <summary>

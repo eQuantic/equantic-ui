@@ -22,6 +22,8 @@ public sealed class BuildOwner
 {
     private readonly List<ComponentElement> _dirty = new();
     private readonly List<ComponentElement> _dirtyNextFrame = new();
+    private readonly List<ComponentElement> _dirtyDeferred = new();
+    private readonly List<ComponentElement> _deferredScratch = new();
     private readonly List<ComponentElement> _mounting = new();
     private readonly List<StatefulComponent> _unmounting = new();
     private readonly List<NodeElement> _deferred = new();
@@ -99,10 +101,9 @@ public sealed class BuildOwner
                 Root.Update(root, rebuildAll);
             }
 
-            // A frame that rebuilt everything has nothing left to build: what the walk did not
-            // reach is in a deferred slot, which builds when it is shown or leaves when it is not.
-            if (rebuildAll) _dirty.Clear();
-            else BuildDirty();
+            // After a walk that rebuilt everything, what it reached built in this frame and is passed
+            // over; what it did not reach is under a deferred slot, which builds when it is shown.
+            BuildDirty();
         }
         finally
         {
@@ -132,6 +133,15 @@ public sealed class BuildOwner
         }
 
         RebuildingAll = false;
+
+        // What waited for a layer that was not shown left the tree with it. Anything else still
+        // waiting builds in the next frame.
+        foreach (var element in _dirtyDeferred)
+        {
+            if (element.IsActive && element.Dirty) _dirtyNextFrame.Add(element);
+        }
+
+        _dirtyDeferred.Clear();
         FlushLifecycle();
 
         // What a build marked waits for the next frame rather than running again in this one: a
@@ -155,6 +165,7 @@ public sealed class BuildOwner
         _deferred.Clear();
         _dirty.Clear();
         _dirtyNextFrame.Clear();
+        _dirtyDeferred.Clear();
         _mounting.Clear();
         FlushLifecycle();
     }
@@ -190,19 +201,77 @@ public sealed class BuildOwner
     /// <summary>
     /// Flutter's <c>buildScope</c>: the dirty positions by depth, so a parent that rebuilds hands its
     /// children their configuration before they would build with a stale one, and a child its
-    /// parent already rebuilt (no longer dirty) or took out (no longer active) is passed over.
+    /// parent already rebuilt in this frame, or took out, is passed over.
+    /// <para>
+    /// A position under a DEFERRED slot waits instead: the slot takes its configuration only when the
+    /// realizer shows the layer, so built here it would build with the old one and again with the new,
+    /// or build for a layer that is closing. <see cref="BuildDeferred"/> builds it when the slot is
+    /// shown, and the end of the frame lets it go with the slot when it is not.
+    /// </para>
     /// </summary>
     private void BuildDirty()
     {
         if (_dirty.Count == 0) return;
-        _dirty.Sort(static (a, b) => a.Depth.CompareTo(b.Depth));
+        _dirty.Sort(ByDepth);
         for (var i = 0; i < _dirty.Count; i++)
         {
             var element = _dirty[i];
-            if (element.IsActive && element.Dirty) element.Rebuild(force: false);
+            if (!WaitsToBuild(element)) continue;
+            if (DeferredHolderOf(element) is not null)
+            {
+                _dirtyDeferred.Add(element);
+                continue;
+            }
+
+            element.Rebuild(force: false);
         }
 
         _dirty.Clear();
+    }
+
+    /// <summary>
+    /// The marked positions under <paramref name="holder"/>'s deferred slot, built once the slot has
+    /// the configuration its layer shows, shallowest first. Only the ones whose NEAREST deferred slot
+    /// is this one: a layer inside the layer waits for its own.
+    /// </summary>
+    internal void BuildDeferred(NodeElement holder)
+    {
+        if (_dirtyDeferred.Count == 0) return;
+        var mine = _deferredScratch;
+        mine.Clear();
+        for (var i = _dirtyDeferred.Count - 1; i >= 0; i--)
+        {
+            var element = _dirtyDeferred[i];
+            if (element.IsActive && !ReferenceEquals(DeferredHolderOf(element), holder)) continue;
+            _dirtyDeferred.RemoveAt(i);
+            if (element.IsActive) mine.Add(element);
+        }
+
+        mine.Sort(ByDepth);
+        foreach (var element in mine)
+        {
+            if (WaitsToBuild(element)) element.Rebuild(force: false);
+        }
+
+        mine.Clear();
+    }
+
+    private static readonly Comparison<ComponentElement> ByDepth = static (a, b) => a.Depth.CompareTo(b.Depth);
+
+    /// <summary>Marked, in the tree, and not built yet in this frame.</summary>
+    private bool WaitsToBuild(ComponentElement element) =>
+        element.IsActive && element.Dirty && element.BuiltInFrame != Frame;
+
+    /// <summary>The nearest node whose deferred slot holds <paramref name="element"/>'s branch, or null
+    /// for a position the build phase reaches.</summary>
+    private static NodeElement? DeferredHolderOf(Element element)
+    {
+        for (var child = element; child.Parent is { } parent; child = parent)
+        {
+            if (parent is NodeElement node && node.HoldsDeferred(child)) return node;
+        }
+
+        return null;
     }
 
     private void FlushLifecycle()
@@ -212,10 +281,9 @@ public sealed class BuildOwner
 
         foreach (var element in _mounting)
         {
-            // An instance that arrived and left in the same frame never entered the tree, and an
-            // element replaced since it queued is not the one the instance belongs to.
-            if (element.IsActive && element.Component is StatefulComponent stateful
-                                 && ReferenceEquals(stateful.MountedAt, element))
+            // An instance that arrived and left in the same frame never entered the tree. One that
+            // left the position it arrived at but still holds another did, and is mounted there.
+            if (element.Component is StatefulComponent { MountedAt.IsActive: true } stateful)
                 stateful.NotifyMounted();
         }
 

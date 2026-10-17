@@ -58,7 +58,10 @@ hold would be code no test can reach.
 
 ### The identity rule is the store's, held as an object
 
-`canUpdate` is Flutter's: the same runtime type and the same `Key`. Which old element a new child is
+`canUpdate` is Flutter's: the same runtime type and the same `Key`. One stateful instance a parent
+places at two positions at once shows at both: a `SetState` builds both, and it stays mounted until
+the last of them leaves. Flutter refuses a `State` at two positions; here the instance is both the
+configuration and the state, and the store rendered it twice, so the element keeps that. Which old element a new child is
 compared with follows the paths exactly, so no retention changes: a single-child slot compares its
 one occupant; the children of a `Row`, a `Column`, a `Stack`, a `Grid` and a `Navigable` (the four
 whose paths spell a key as `[key]`) are matched by key when they have one and by index when they do
@@ -73,8 +76,11 @@ one layer handed the next one its state; and intrinsic sizing measured fresh ins
 ### Build is a phase, ancestors first
 
 `BuildOwner` holds the dirty list and builds it as `BuildOwner.buildScope` does: sorted by depth,
-skipping what an ancestor's build already rebuilt or what left the tree, re-sorting when something is
-marked during the phase. A component element's update rebuilds it at once, as Flutter's
+skipping what left the tree and what already built in this frame, so a position builds once a frame.
+A position marked while the phase runs (its own build marking it, or a hook) builds in the next
+frame, which keeps a component that always marks itself from holding a frame open. A position under a
+deferred slot (below) is not built from the list: it waits for the overlay pass to give the slot its
+configuration, and builds then, or leaves with the slot when the layer is not shown. A component element's update rebuilds it at once, as Flutter's
 `ComponentElement.update` does, so a parent's build reaches every child whose configuration it
 replaced; a child whose configuration is the same instance as before is left alone unless it is dirty.
 

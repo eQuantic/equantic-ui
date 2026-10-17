@@ -48,6 +48,9 @@ public sealed class NodeElement : Element
             var shown = UpdateChild(ChildAt(_deferred), configuration, Owner.RebuildingAll)!;
             _children[_deferred] = shown;
             _shownInFrame = Owner.Frame;
+            // What a SetState marked under the slot builds now, with the configuration the layer
+            // shows; the dirty list left it for this moment (BuildOwner.BuildDeferred).
+            Owner.BuildDeferred(this);
             return shown;
         }
         finally
@@ -68,6 +71,9 @@ public sealed class NodeElement : Element
         Configuration = configuration;
         UpdateChildren(force);
     }
+
+    /// <summary>Whether <paramref name="child"/> is the position in this node's deferred slot.</summary>
+    internal bool HoldsDeferred(Element child) => _deferred >= 0 && ReferenceEquals(ChildAt(_deferred), child);
 
     /// <summary>Takes the deferred slot's subtree out when the frame that ends did not show it.</summary>
     internal void SweepDeferred(int frame)
