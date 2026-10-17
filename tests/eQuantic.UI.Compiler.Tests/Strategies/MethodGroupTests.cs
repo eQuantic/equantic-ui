@@ -70,6 +70,18 @@ public class MethodGroupTests
         js.Should().NotContain(".any").And.Contain("list");
     }
 
+    /// <summary>A delegate built from another is .NET's new delegate over its Invoke: a new function, its
+    /// source read once and a null one refused where it is made. It was the source itself, so
+    /// <c>new Func&lt;int, int&gt;(f) == f</c> answered true where .NET answers false.</summary>
+    [Fact]
+    public void ADelegateBuiltFromADelegate_IsANewFunctionOverIt()
+    {
+        var (js, diagnostics) = Convert("public class Sample { public object Run() { Func<int, int> f = x => x; "
+            + "var g = new Func<int, int>(f); return g == f; } }");
+        diagnostics.Should().BeEmpty();
+        js.Should().NotContain("let g = f;").And.Contain("$eq.delegateTarget(f)");
+    }
+
     private static (string Js, IReadOnlyList<ConversionDiagnostic> Diagnostics) Convert(string source)
     {
         var tree = CSharpSyntaxTree.ParseText("using System;\nusing System.Linq;\n" + source + "\n" + Types);

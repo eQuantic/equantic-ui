@@ -111,6 +111,21 @@ public class BclMethodGroupConformanceTests
         var parse = new Func<string, DateTime>(DateTime.Parse); var twice = new Func<int, int>(x => x * 2); var again = new Func<int, int>(twice);
         return parse("2024-01-15").Day + "|" + twice(3) + "|" + again(4);
         """,
+        // A delegate built from another is a NEW delegate over its Invoke: never the same one, its source read
+        // once where it is made and kept when the variable moves on, and a null one refused there.
+        """
+        Func<int, int> f = x => x * 2;
+        var g = new Func<int, int>(f);
+        var calls = 0;
+        Func<int, int> Make() { calls++; return f; }
+        var k = new Func<int, int>(Make());
+        var r = (g == f) + "|" + k(1) + "|" + k(2) + "|" + calls;
+        f = x => x * 10;
+        r += "|" + g(3);
+        Func<int, int> n = null;
+        try { var m = new Func<int, int>(n); r += "|made"; } catch (ArgumentException e) { r += "|AE:" + e.Message; }
+        return r;
+        """,
     ];
 
     public static IEnumerable<object?[]> CasesInEachCulture() =>
