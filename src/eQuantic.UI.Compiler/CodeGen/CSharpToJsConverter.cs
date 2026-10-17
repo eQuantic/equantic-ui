@@ -285,6 +285,9 @@ public class CSharpToJsConverter
 
     private void RegisterStrategies()
     {
+        // A method group of a member no twin carries is the delegate its call is, whichever strategy
+        // would claim its node (#839): asked before all of them.
+        _strategyRegistry.Register<MethodGroupStrategy>();
         _strategyRegistry.Register<EnumStrategy>();
         _strategyRegistry.Register<EnumMethodStrategy>();
         _strategyRegistry.Register<EnumHasFlagStrategy>();
@@ -329,6 +332,7 @@ public class CSharpToJsConverter
         // Primitive Type Strategies (Low Priority than new Invocation Strategies but higher than fallback)
         _strategyRegistry.Register<StringMethodStrategy>();
         _strategyRegistry.Register<StringStaticStrategy>(); // New Phase 7
+        _strategyRegistry.Register<InterpolationInACultureStrategy>(); // FormattableString.Invariant, string.Create (#839)
         _strategyRegistry.Register<PrimitiveStaticStrategy>(); // .NET 7+ statics on the primitives themselves
         _strategyRegistry.Register<TextElementStrategy>();     // StringInfo: grapheme clusters, from the platform
         _strategyRegistry.Register<UnicodeCategoryStrategy>(); // a character's general category, from the platform

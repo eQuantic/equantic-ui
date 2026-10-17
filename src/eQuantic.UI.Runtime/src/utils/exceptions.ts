@@ -392,6 +392,17 @@ export function receiver<T>(value: T | null | undefined): T {
 }
 
 /**
+ * The instance the delegate of one of its methods is made over, the method group `value.Method`, where
+ * the method is one .NET calls directly: the delegate's constructor refuses a null one with an
+ * ArgumentException where the delegate is made. A virtual method is looked up on the instance first,
+ * and that is the NullReferenceException `receiver` throws.
+ */
+export function delegateTarget<T>(value: T | null | undefined): T {
+  if (value == null) throw exception('System.ArgumentException', "Delegate to an instance method cannot have null 'this'.");
+  return value;
+}
+
+/**
  * An exception filter, `when (…)`, as .NET runs it: a filter that throws has answered false, and the
  * exception it was asked about goes on to the next clause, where the filter's own exception would
  * otherwise have replaced it. C# allows no `await` in a filter (CS7094), so the filter is a plain

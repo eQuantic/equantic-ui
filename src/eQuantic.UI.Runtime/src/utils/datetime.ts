@@ -22,6 +22,7 @@ import { readMoment, type Moment, type Refusal } from './date-reading';
 import { hash } from './hash';
 import { Decimal } from './decimal';
 import { exception, is } from './exceptions';
+import { round } from './dotnet-math';
 import { timeSpanText } from './timespan-text';
 import { readTimeSpan } from './timespan-reading';
 
@@ -230,6 +231,14 @@ export class TimeSpan {
   get milliseconds(): number {
     return Number((this.ticks / TICKS_PER_MILLISECOND) % 1000n);
   }
+  /** The microseconds of the millisecond, a tick being a tenth of one. */
+  get microseconds(): number {
+    return Number((this.ticks / 10n) % 1000n);
+  }
+  /** The nanoseconds of the microsecond, in hundreds: a tick is the finest a span holds. */
+  get nanoseconds(): number {
+    return Number((this.ticks % 10n) * 100n);
+  }
 
   // Fractional totals.
   get totalDays(): number {
@@ -247,23 +256,67 @@ export class TimeSpan {
   get totalMilliseconds(): number {
     return Number(this.ticks) / Number(TICKS_PER_MILLISECOND);
   }
+  get totalMicroseconds(): number {
+    return Number(this.ticks) / 10;
+  }
+  get totalNanoseconds(): number {
+    return Number(this.ticks) * 100;
+  }
 
+  /**
+   * `Multiply(double)` and `*`: the ticks, as a double, times the factor, rounded to the even tick as
+   * .NET's `Math.Round` rounds them. A factor that is NaN is .NET's ArgumentException naming it.
+   */
+  multiply(factor: number): TimeSpan {
+    if (Number.isNaN(factor)) throw exception('System.ArgumentException', `${NOT_A_NUMBER} (Parameter 'factor')`);
+    return fromDoubleTicks(round(Number(this.ticks) * factor));
+  }
+
+  /**
+   * `Divide(double)` and `/` by a number: the ticks over the divisor, rounded to the even tick, a NaN
+   * divisor refused by its name; `Divide(TimeSpan)` and `/` by a span: the ratio of the two, a double.
+   */
+  divide(divisor: number): TimeSpan;
+  divide(divisor: TimeSpan): number;
+  divide(divisor: number | TimeSpan): TimeSpan | number {
+    if (divisor instanceof TimeSpan) return Number(this.ticks) / Number(divisor.ticks);
+    if (Number.isNaN(divisor)) throw exception('System.ArgumentException', `${NOT_A_NUMBER} (Parameter 'divisor')`);
+    return fromDoubleTicks(round(Number(this.ticks) / divisor));
+  }
+
+  /** `Add` and `+`: past the range a span holds, .NET's OverflowException. */
   add(other: TimeSpan): TimeSpan {
-    return new TimeSpan(this.ticks + other.ticks);
+    return summed(this.ticks + other.ticks);
   }
+  /** `Subtract` and `-`: past the range a span holds, .NET's OverflowException. */
   sub(other: TimeSpan): TimeSpan {
-    return new TimeSpan(this.ticks - other.ticks);
+    return summed(this.ticks - other.ticks);
   }
+  /** `Negate` and a `-` in front: the least span has no positive twin, and .NET refuses it. */
   negate(): TimeSpan {
+    if (this.ticks === MIN_TICKS) {
+      throw exception('System.OverflowException', 'Negating the minimum value of a twos complement number is invalid.');
+    }
     return new TimeSpan(-this.ticks);
   }
+  /** `Duration`: the length, which the least span's is past the largest one's, and .NET refuses it. */
   duration(): TimeSpan {
+    if (this.ticks === MIN_TICKS) {
+      throw exception(
+        'System.OverflowException',
+        'The duration cannot be returned for TimeSpan.MinValue because the absolute value of TimeSpan.MinValue exceeds the value of TimeSpan.MaxValue.',
+      );
+    }
     return new TimeSpan(this.ticks < 0n ? -this.ticks : this.ticks);
   }
 
-  /** `CompareTo(TimeSpan)` and `CompareTo(object)`, where a null is less than every value (#569). */
+  /**
+   * `CompareTo(TimeSpan)` and `CompareTo(object)`, where a null is less than every value (#569), and a
+   * value of another kind is .NET's ArgumentException.
+   */
   compareTo(other: TimeSpan | null): number {
     if (other == null) return 1;
+    if (!(other instanceof TimeSpan)) throw exception('System.ArgumentException', 'Object must be of type TimeSpan.');
     return this.ticks < other.ticks ? -1 : this.ticks > other.ticks ? 1 : 0;
   }
   /** `Equals(object)`: a TimeSpan of the same ticks, and nothing of another kind (a date has ticks too). */
@@ -323,6 +376,24 @@ function interval(value: bigint | number, ticksPerUnit: bigint): TimeSpan {
   return new TimeSpan(ticks === TICKS_BOUND ? MAX_TICKS : BigInt(Math.trunc(ticks)));
 }
 
+/** A sum or a difference of two spans: past the range a span holds, .NET's OverflowException. */
+function summed(ticks: bigint): TimeSpan {
+  if (ticks > MAX_TICKS || ticks < MIN_TICKS) throw exception('System.OverflowException', TOO_LONG);
+  return new TimeSpan(ticks);
+}
+
+/**
+ * A span of a count of ticks a double holds, whole, as .NET's `IntervalFromDoubleTicks` makes it for a
+ * product or a quotient: past the range a span holds, or NaN, an OverflowException, and 2^63, one past
+ * the largest, `MaxValue`, which .NET's comparison with a long reads it as.
+ */
+function fromDoubleTicks(ticks: number): TimeSpan {
+  if (Number.isNaN(ticks) || ticks > TICKS_BOUND || ticks < -TICKS_BOUND) {
+    throw exception('System.OverflowException', TOO_LONG);
+  }
+  return new TimeSpan(ticks === TICKS_BOUND ? MAX_TICKS : BigInt(ticks));
+}
+
 /** A component of .NET 9's factories: an int or a long, or one the call left out. */
 type Component = bigint | number | undefined;
 
@@ -364,6 +435,10 @@ export interface TimeSpanFactory {
   readonly zero: TimeSpan;
   minValue(): TimeSpan;
   maxValue(): TimeSpan;
+  /** `TimeSpan.Compare`: -1, 0 or 1, by the ticks. */
+  compare(t1: TimeSpan, t2: TimeSpan): number;
+  /** The static `TimeSpan.Equals`: the same ticks. */
+  equals(t1: TimeSpan, t2: TimeSpan): boolean;
 }
 
 /** Mirrors C# `new TimeSpan(...)` overloads (dispatched by arity) plus the static factories. */
@@ -401,6 +476,8 @@ timeSpan.fromSeconds = components(3, TICKS_PER_SECOND);
 timeSpan.fromMilliseconds = components(4, TICKS_PER_MILLISECOND);
 timeSpan.fromMicroseconds = (v) => interval(v, 10n);
 timeSpan.fromTicks = (v) => new TimeSpan(typeof v === 'bigint' ? v : BigInt(Math.trunc(v)));
+timeSpan.compare = (t1, t2) => t1.compareTo(t2);
+timeSpan.equals = (t1, t2) => t1.ticks === t2.ticks;
 timeSpan.parse = (text: string, invariant = false): TimeSpan => {
   if (text == null) throw exception('System.ArgumentNullException', NULL_INPUT);
   // .NET reads the invariant pattern in every culture and the culture's own beside it, whose fraction
@@ -741,6 +818,12 @@ export interface DateTimeFactory {
   fromJson(text: string): DateTime;
   daysInMonth(year: number, month: number): number;
   isLeapYear(year: number): boolean;
+  /** `DateTime.Compare`: -1, 0 or 1, by the ticks, whatever the kinds. */
+  compare(t1: DateTime, t2: DateTime): number;
+  /** The static `DateTime.Equals`: the same ticks, whatever the kinds. */
+  equals(t1: DateTime, t2: DateTime): boolean;
+  /** `DateTime.UnixEpoch`: 1970-01-01, UTC. */
+  unixEpoch(): DateTime;
 }
 
 const BAD_DATE = 'Year, Month, and Day parameters describe an un-representable DateTime.';
@@ -824,6 +907,9 @@ export const dateTime: DateTimeFactory = {
   maxValue: () => new DateTime(MAX_DATETIME_TICKS),
   daysInMonth,
   isLeapYear,
+  compare: (t1, t2) => t1.compareTo(t2),
+  equals: (t1, t2) => t1.ticks === t2.ticks,
+  unixEpoch: () => new DateTime(UNIX_EPOCH_TICKS, 'utc'),
   parse: (text, invariant) => parseDateTime(text, invariant),
   tryParse: attempt(parseDateTime),
   convert(value, invariant) {
@@ -991,6 +1077,11 @@ export class DateOnly {
   /** Days since 0001-01-01 (0001-01-01 = 0), matching .NET DateOnly.DayNumber. */
   constructor(readonly dayNumber: number) {}
 
+  /** `ToDateTime(time[, kind])`: the date at that time of day, of that kind or of none. */
+  toDateTime(time: TimeOnly, kind?: DateTimeKind): DateTime {
+    return dateTime.fromDateAndTime(this, time, kind);
+  }
+
   private civil() {
     return civilFromDays(this.dayNumber);
   }
@@ -1123,6 +1214,30 @@ export class TimeOnly {
   }
   get millisecond(): number {
     return Number((this.ticks / TICKS_PER_MILLISECOND) % 1000n);
+  }
+  /** The microseconds of the millisecond, a tick being a tenth of one. */
+  get microsecond(): number {
+    return Number((this.ticks / 10n) % 1000n);
+  }
+  /** The nanoseconds of the microsecond, in hundreds. */
+  get nanosecond(): number {
+    return Number((this.ticks % 10n) * 100n);
+  }
+
+  /** `Add(TimeSpan)`: the span's ticks on the clock, wrapped within the day. */
+  add(span: TimeSpan): TimeOnly {
+    return this.wrap(span.ticks);
+  }
+  /** `IsBetween(start, end)`: from the start, inclusive, to the end, exclusive, across midnight where the
+   * end comes first. */
+  isBetween(start: TimeOnly, end: TimeOnly): boolean {
+    return start.ticks <= end.ticks
+      ? start.ticks <= this.ticks && end.ticks > this.ticks
+      : start.ticks <= this.ticks || end.ticks > this.ticks;
+  }
+  /** `ToTimeSpan()`: the time since midnight. */
+  toTimeSpan(): TimeSpan {
+    return new TimeSpan(this.ticks);
   }
 
   /** Wraps within a 24h day, matching .NET TimeOnly.Add*. */
@@ -1293,6 +1408,14 @@ export class DateTimeOffset {
   get offset(): TimeSpan {
     return new TimeSpan(this.offsetTicks);
   }
+  /** `TotalOffsetMinutes`: the offset in whole minutes, which is all an offset may hold. */
+  get totalOffsetMinutes(): number {
+    return Number(this.offsetTicks / TICKS_PER_MINUTE);
+  }
+  /** `DayOfYear`: the clock time's. */
+  get dayOfYear(): number {
+    return this.dateTime.dayOfYear;
+  }
   get dateTime(): DateTime {
     return new DateTime(this.localTicks);
   }
@@ -1368,6 +1491,10 @@ export class DateTimeOffset {
   toOffset(offset: TimeSpan): DateTimeOffset {
     return new DateTimeOffset(this.utcTicks + offset.ticks, offset.ticks);
   }
+  /** `ToUniversalTime()`: the same instant at offset zero. */
+  toUniversalTime(): DateTimeOffset {
+    return new DateTimeOffset(this.utcTicks, 0n);
+  }
 
   diff(other: DateTimeOffset): TimeSpan {
     return new TimeSpan(this.utcTicks - other.utcTicks);
@@ -1381,6 +1508,10 @@ export class DateTimeOffset {
     return this.addTicks(-span.ticks, parameter);
   }
 
+  /** `EqualsExact(other)`: the same clock time at the same offset, where `equals` asks the instant alone. */
+  equalsExact(other: DateTimeOffset): boolean {
+    return this.localTicks === other.localTicks && this.offsetTicks === other.offsetTicks;
+  }
   compareTo(other: DateTimeOffset): number {
     return this.utcTicks < other.utcTicks ? -1 : this.utcTicks > other.utcTicks ? 1 : 0;
   }
@@ -1455,6 +1586,12 @@ export interface DateTimeOffsetFactory {
   /** `DateTimeOffset.Parse`, in the page's culture, or the invariant one where `invariant` says so. */
   parse(text: string, invariant?: boolean): DateTimeOffset;
   tryParse(text: string | null | undefined, invariant?: boolean): DateTimeOffset | undefined;
+  /** `DateTimeOffset.Compare`: -1, 0 or 1, by the instants. */
+  compare(first: DateTimeOffset, second: DateTimeOffset): number;
+  /** The static `DateTimeOffset.Equals`: the same instant. */
+  equals(first: DateTimeOffset, second: DateTimeOffset): boolean;
+  /** `DateTimeOffset.UnixEpoch`: 1970-01-01 at +00:00. */
+  unixEpoch(): DateTimeOffset;
 }
 
 /** The furthest an offset reaches from UTC, as .NET bounds it. */
@@ -1529,6 +1666,9 @@ export const dateTimeOffset: DateTimeOffsetFactory = {
     return new DateTimeOffset(utc + offset, offset);
   },
   utcNow: () => new DateTimeOffset(utcTicksNow(), 0n),
+  compare: (first, second) => first.compareTo(second),
+  equals: (first, second) => first.utcTicks === second.utcTicks,
+  unixEpoch: () => new DateTimeOffset(UNIX_EPOCH_TICKS, 0n),
   minValue: () => new DateTimeOffset(0n, 0n),
   maxValue: () => new DateTimeOffset(MAX_DATETIME_TICKS, 0n),
   parse: (text, invariant) => parseDateTimeOffset(text, invariant),

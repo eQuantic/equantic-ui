@@ -80,8 +80,9 @@ public class CollectionSurfaceTranslationTests
         var (js, errors) = Convert("var items = new List<int> { 1 }; items.ForEach(q.Enqueue); Action<int> push = t.Push;");
 
         Assert.Empty(errors);
-        Assert.Contains("q.enqueue.bind(q)", js);
-        Assert.Contains("t.push.bind(t)", js);
+        // The delegate its call is, over the receiver it was made with (#839).
+        Assert.Contains("((__target) => (item) => __target.enqueue(item))($eq.delegateTarget(q))", js);
+        Assert.Contains("((__target) => (item) => __target.push(item))($eq.delegateTarget(t))", js);
     }
 
     [Fact]

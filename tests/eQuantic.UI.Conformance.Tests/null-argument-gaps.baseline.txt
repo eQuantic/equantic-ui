@@ -57,7 +57,6 @@ Convert.ToUInt32(Object) value  value  Convert of an object is lowered to a roun
 Convert.ToUInt32(Object,IFormatProvider) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
 Convert.ToUInt64(Object) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
 Convert.ToUInt64(Object,IFormatProvider) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-Decimal..ctor(int[]) bits  type  new decimal(bits) is written with C#'s keyword, a name the runtime does not have
 Enumerable.Aggregate(IEnumerable<TSource>,Func<TSource,TSource,TSource>) func  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Aggregate(IEnumerable<TSource>,Func<TSource,TSource,TSource>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Aggregate(IEnumerable<TSource>,TAccumulate,Func<TAccumulate,TSource,TAccumulate>) func  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
@@ -204,8 +203,6 @@ Enumerable.Where(IEnumerable<TSource>,Func<TSource,Int32,Boolean>) predicate  ty
 Enumerable.Where(IEnumerable<TSource>,Func<TSource,Int32,Boolean>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Zip(IEnumerable<TFirst>,IEnumerable<TSecond>,Func<TFirst,TSecond,TResult>) first  type  Zip is the runtime's zip, which reads a null first sequence or result selector through null
 Enumerable.Zip(IEnumerable<TFirst>,IEnumerable<TSecond>,Func<TFirst,TSecond,TResult>) resultSelector  type  Zip is the runtime's zip, which reads a null first sequence or result selector through null
-Guid..ctor(Byte[]) b  type  new Guid of bytes is written as a class the runtime does not export
-Guid..ctor(Int32,Int16,Int16,Byte[]) d  type  new Guid of bytes is written as a class the runtime does not export
 List<Int32>.AddRange(IEnumerable<Int32>) collection  type  lowered to a spread, which reads a null collection through null: refusing it by name is a guard at every call, which is a design decision
 List<Int32>.Exists(Predicate<Int32>) match  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
 List<Int32>.FindAll(Predicate<Int32>) match  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision

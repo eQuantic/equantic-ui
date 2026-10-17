@@ -10,7 +10,9 @@ namespace eQuantic.UI.Compiler.Tests;
 /// A type with a <c>Count</c> of its own reads it as its twin's <c>count</c>, wherever it is declared:
 /// a library the app references holds its domain model, and its <c>Count</c> was read as
 /// <c>.length</c>, which is undefined, because the rule asked whether the type was in the app's
-/// source (#517). A .NET collection's <c>Count</c> stays the array's <c>length</c>.
+/// source (#517). A .NET collection's <c>Count</c> stays the array's <c>length</c>. The library is an
+/// assembly here, a package's, whose value reaches the browser as the data the server sends: the
+/// component holds one it was handed, since a construction of a package's type is refused (#822).
 /// </summary>
 public class ReferencedCountTests
 {
@@ -33,7 +35,7 @@ public class ReferencedCountTests
 
         public class Score : StatelessComponent
         {
-            private readonly Tally _tally = new();
+            private readonly Tally _tally = null!;
             private readonly List<int> _rows = new();
 
             public override VisualNode Build(ComponentContext context) =>

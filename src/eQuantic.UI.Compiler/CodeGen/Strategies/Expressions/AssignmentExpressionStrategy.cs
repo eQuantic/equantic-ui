@@ -147,9 +147,10 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // A COMPOUND over a date, an offset or a time span: their operators are methods of the
         // runtime's twins, which JavaScript's `op=` cannot call, so `d -= span` subtracted two objects
         // into NaN and never refused a date leaving the calendar (#424). A nullable operand is lifted,
-        // as C#'s operator is: a null on either side answers null.
+        // as C#'s operator is: a null on either side answers null. A span scaled or divided in place is the
+        // same, `t *= 2.5` and `t /= 4`, which JavaScript's `op=` turned into NaN (Copilot's review of #958).
         var rightType = context.SemanticHelper.GetType(assignment.Right);
-        if (op is "+=" or "-="
+        if (op is "+=" or "-=" or "*=" or "/="
             && BinaryExpressionStrategy.ConvertDateTimeOrTimeSpan("{0}", "{1}", op[..^1], leftType, rightType) is { } compat)
         {
             if (leftType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }
