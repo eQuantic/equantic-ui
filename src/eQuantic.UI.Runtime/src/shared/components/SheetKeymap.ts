@@ -12,10 +12,11 @@ export class SheetKeymap {
                         clipboard.write(sheet.copyText());
                         return true;
                     case 'x':
-                        clipboard.write(sheet.cut());
+                        clipboard.write(sheet.copyText());
+                        sheet.clearSelection();
                         return true;
                     case 'v':
-                        if ((($v2082) => (($v2082 != null && $v2082.length > 0) && (pasted = $v2082, true)))(clipboard.read())) sheet.paste(pasted);
+                        if ((($v2302) => (($v2302 != null && $v2302.length > 0) && (pasted = $v2302, true)))(clipboard.read())) sheet.paste(pasted);
                         return true;
                 }
             }

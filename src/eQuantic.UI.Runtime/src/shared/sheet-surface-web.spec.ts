@@ -109,7 +109,7 @@ describe('SheetSurface on the web', () => {
 
     // Plain drag: mousedown A1, document-level mousemove to B2 — the anchor stands.
     mousedown({ clientX: 48, clientY: 14 });
-    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 96 + 48, clientY: 28 + 14 }));
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 96 + 48, clientY: 28 + 14, buttons: 1 }));
     expect(sheet.selection.bottomRow).toBe(1);
     expect(sheet.selection.rightCol).toBe(1);
     document.dispatchEvent(new MouseEvent('mouseup', {}));
@@ -126,7 +126,7 @@ describe('SheetSurface on the web', () => {
     events(node)['mousedown'](grab);
     expect(sheet.filling).toBe(true);
 
-    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 2 + 14 }));
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 2 + 14, buttons: 1 }));
     expect(sheet.fillTarget).not.toBeNull();
     document.dispatchEvent(new MouseEvent('mouseup', {}));
 
@@ -202,6 +202,55 @@ describe('SheetSurface on the web', () => {
 
     expect(copyKey.defaultPrevented).toBe(false);
     expect(sheet.editing).toBe(false);
+  });
+
+  it('a fill whose window loses focus pours nothing, and what follows changes nothing', () => {
+    const sheet = new SheetController(50, 8);
+    sheet.document.setCell(new CellRef(0, 0), 'seed');
+    const node = surfaceFor(sheet);
+    const grab = new MouseEvent('mousedown', { clientX: 95, clientY: 27 });
+    Object.defineProperty(grab, 'currentTarget', { value: makeTarget() });
+    events(node)['mousedown'](grab);
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 2 + 14, buttons: 1 }));
+    expect(sheet.fillTarget).not.toBeNull();
+
+    window.dispatchEvent(new Event('blur'));
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 4 + 14, buttons: 1 }));
+    document.dispatchEvent(new MouseEvent('mouseup', {}));
+
+    expect(sheet.filling).toBe(false);
+    expect(sheet.fillTarget).toBeNull();
+    expect(sheet.document.getCell(new CellRef(1, 0))).toBe('');
+    expect(sheet.history.canUndo).toBe(false);
+  });
+
+  it('a move with no button held ends the press its release never reached', () => {
+    const sheet = new SheetController(50, 8);
+    sheet.document.setCell(new CellRef(0, 0), 'seed');
+    const node = surfaceFor(sheet);
+    const grab = new MouseEvent('mousedown', { clientX: 95, clientY: 27 });
+    Object.defineProperty(grab, 'currentTarget', { value: makeTarget() });
+    events(node)['mousedown'](grab);
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 2 + 14, buttons: 1 }));
+
+    // Released outside the window: the page hears no mouseup, only moves with nothing held.
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 3 + 14, buttons: 0 }));
+    document.dispatchEvent(new MouseEvent('mouseup', {}));
+
+    expect(sheet.filling).toBe(false);
+    expect(sheet.document.getCell(new CellRef(1, 0))).toBe('');
+    expect(sheet.document.getCell(new CellRef(2, 0))).toBe('');
+  });
+
+  it('a cut event that carries no clipboard empties nothing', () => {
+    const sheet = new SheetController(50, 8);
+    sheet.document.setCell(new CellRef(0, 0), 'kept');
+    const node = surfaceFor(sheet);
+
+    const cutEvent = new Event('cut', { cancelable: true }) as ClipboardEvent;
+    events(node)['cut'](cutEvent);
+
+    expect(sheet.document.getCell(new CellRef(0, 0))).toBe('kept');
   });
 
   it('⌘D pours the row above through the shared keymap', () => {

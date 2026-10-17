@@ -473,6 +473,17 @@ describe('code surface clipboard', () => {
     expect(press(lowered, 'c', { meta: true })).toBe(false);
     expect(press(lowered, 'v', { meta: true })).toBe(false);
   });
+
+  it('cuts only what reached the clipboard: an event that carries none deletes nothing', () => {
+    const { editor, lowered } = surfaceFor('one\ntwo');
+    editor.selection = new CodeRange(new CodePosition(0, 0), new CodePosition(0, 2));
+
+    fire(lowered, 'cut', {});
+    expect(editor.document.lines).toEqual(['one', 'two']);
+
+    expect(clip(lowered, 'cut')).toBe('on');
+    expect(editor.document.lines).toEqual(['e', 'two']);
+  });
 });
 
 /**

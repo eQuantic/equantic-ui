@@ -1520,20 +1520,36 @@ function lowerSheetSurface(
     // The press is the sheet's until it lifts: its moves and its release go to the model through
     // document-level listeners, so a sweep survives leaving the grid. The model knows whether the
     // press is growing the selection or dragging a fill, and answers whether a move changed it.
+    // A press can also end where this page never hears it lift (released outside the window, or
+    // after the window lost focus): the window's blur, or a move with no button held, says so,
+    // and the model is told the press was taken away, so a fill nobody let go of pours nothing.
+    const end = () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+      window.removeEventListener('blur', cancel);
+    };
+    const cancel = () => {
+      end();
+      if (model.handlePointer('cancel', { x: 0, y: 0 }, 0, 1)) changed();
+    };
     const move = (ev: MouseEvent) => {
+      if (ev.buttons === 0) {
+        cancel();
+        return;
+      }
       if (model.handlePointer('move', local(target, ev.clientX, ev.clientY), modifiersOf(ev), 1)) {
         changed();
       }
     };
     const up = (ev: MouseEvent) => {
-      document.removeEventListener('mousemove', move);
-      document.removeEventListener('mouseup', up);
+      end();
       if (model.handlePointer('up', local(target, ev.clientX, ev.clientY), modifiersOf(ev), 1)) {
         changed();
       }
     };
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
+    window.addEventListener('blur', cancel);
     // The press is the surface's, as on a code surface: the browser's own reaction to it (a text
     // sweep, a drag of what is under it) would fight the band and the fill the model draws.
     event.preventDefault();

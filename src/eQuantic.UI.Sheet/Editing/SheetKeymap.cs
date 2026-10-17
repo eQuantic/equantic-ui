@@ -37,7 +37,10 @@ public static class SheetKeymap
                     clipboard.Write(sheet.CopyText());
                     return true;
                 case 'x':
-                    clipboard.Write(sheet.Cut());
+                    // The copy reaches the clipboard before anything is emptied: a clipboard that
+                    // refuses the text leaves every cell where it was.
+                    clipboard.Write(sheet.CopyText());
+                    sheet.ClearSelection();
                     return true;
                 case 'v':
                     if (clipboard.Read() is { Length: > 0 } pasted) sheet.Paste(pasted);

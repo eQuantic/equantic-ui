@@ -23,6 +23,13 @@ public class SheetSurfaceModelTests
         public string? Read() => Held;
     }
 
+    /// <summary>A clipboard another program holds: every write is refused.</summary>
+    private sealed class RefusingClipboard : ITextClipboard
+    {
+        public void Write(string text) => throw new IOException("the clipboard is held by another program");
+        public string? Read() => null;
+    }
+
     private static ISheetSurfaceModel Press(SheetController sheet, Point at,
         KeyModifiers modifiers = KeyModifiers.None, int clicks = 1)
     {
@@ -262,6 +269,20 @@ public class SheetSurfaceModelTests
         sheet.Selection = new SheetRange(new CellRef(5, 5));
         model.HandleKey("v", KeyModifiers.Command, clipboard).Should().BeTrue();
         sheet.Document.GetCell(new CellRef(6, 6)).Should().Be("4");
+    }
+
+    [Fact]
+    public void ACut_WhoseClipboardRefusesTheText_EmptiesNothing()
+    {
+        var sheet = new SheetController(rows: 50, cols: 8);
+        sheet.Document.SetCell(new CellRef(0, 0), "7");
+        ISheetSurfaceModel model = sheet;
+
+        FluentActions.Invoking(() => model.HandleKey("x", KeyModifiers.Command, new RefusingClipboard()))
+            .Should().Throw<IOException>();
+
+        sheet.Document.GetCell(new CellRef(0, 0)).Should().Be("7", "the copy reaches the clipboard before anything is emptied");
+        sheet.History.CanUndo.Should().BeFalse();
     }
 
     [Fact]
