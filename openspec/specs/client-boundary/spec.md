@@ -202,7 +202,7 @@ declared inside a type that never crosses.
 
 #### Scenario: Every way of naming it
 
-- **WHEN** a page names the app's `[ServerOnly]` types through `App.Model.Vault.Key()`, `Vault.Name`, `new Ledger()`, `Ledger.Open()`, `Key()` under `using static`, `Func<string> f = Vault.Key`, `"x".Sealed()` over a `[ServerOnly]` extension class, `new Secret("x")` of a `[ServerOnly]` record, `new Savings()` over a `[ServerOnly]` base, `class ChildPage : Shell<Vault>`, `o is Ledger`, `o as Ledger`, `default(Amount)` of a `[ServerOnly]` struct, a field of that struct, a local `Ledger? held`, `@nameof(Vault.Key())` of a method named `nameof`, or a Server Action that answers or takes a `Secret`
+- **WHEN** a page names the app's `[ServerOnly]` types through `App.Model.Vault.Key()`, `Vault.Name`, `new Ledger()`, `Ledger.Open()`, `Key()` under `using static`, `Func<string> f = Vault.Key`, `"x".Sealed()` over a `[ServerOnly]` extension class, `new Secret("x")` of a `[ServerOnly]` record, `new Savings()` over a `[ServerOnly]` base, `o is Ledger`, `o as Ledger`, `default(Amount)` of a `[ServerOnly]` struct, a field of that struct, a local `Ledger? held`, `@nameof(Vault.Key())` of a method named `nameof`, or a Server Action that answers or takes a `Secret`
 - **THEN** each fails the build with one EQ2010 at the page, in the app as in a referenced project
 
 #### Scenario: An attribute class
