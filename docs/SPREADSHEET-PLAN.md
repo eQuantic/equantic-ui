@@ -205,9 +205,14 @@ slice 7 arrive without a line of editor code.
 ### 5. Values are typed, and the culture is .NET's
 
 A cell keeps what the user typed AND the value it means: a number, text, a boolean, a date or an
-error. Typed input is parsed in the app's culture through .NET's own rules, so `7,01` is a number in
-`pt-BR` and text in `en-US`, exactly as Excel reads it. Display follows the value (alignment, `###`,
-spilling text) and, from slice 6, a format.
+error. Typed input is read in the app's culture: its decimal and group separators and its group sizes
+come from .NET's `NumberFormatInfo`, never from a table of our own. The grouping rule is Excel's, not
+.NET's default parse: a group separator is accepted only where it separates whole groups of the
+culture's sizes. `NumberStyles.Number` alone reads `7,01` as 701 in `en-US` and `7.01` as 701 in
+`pt-BR` (measured; `NumberTextConformanceTests` pins the same for `1,5` in the invariant culture),
+where Excel reads both as text. So `1,000` is a thousand and `7,01` is text in `en-US`, `7,01` is a
+number and `7.01` is text in `pt-BR`, and slice 5 pins each of these against both targets. Display follows the value
+(alignment, `###`, spilling text) and, from slice 6, a format.
 
 ### 6. Commands are data
 
