@@ -25,11 +25,16 @@ public static class NodeStates
         return state as T ?? throw Mismatch<T>(node, state);
     }
 
-    /// <summary>The state of kind <typeparamref name="T"/> that <paramref name="at"/> keeps, made the
-    /// first time it is asked for. Null for no node's position: a node with none keeps nothing.</summary>
+    /// <summary>
+    /// The state of kind <typeparamref name="T"/> that <paramref name="at"/> keeps, made the first time
+    /// it is asked for. Null for no node's position, a node with none keeps nothing, and null for a
+    /// position that has left the tree: a gesture held across the frame its view left in would
+    /// otherwise make a state there that nothing releases, and a fling on it would glide, asking for
+    /// frames, for a view nobody draws.
+    /// </summary>
     public static T? For<T>(Element? at) where T : class, new()
     {
-        if (at is not NodeElement node) return null;
+        if (at is not NodeElement { IsActive: true } node) return null;
         if (node.State is not { } state)
         {
             var made = new T();

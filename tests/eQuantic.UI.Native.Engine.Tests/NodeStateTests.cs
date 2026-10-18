@@ -140,6 +140,30 @@ public class NodeStateTests
             .Should().Be(120, "a rebuild that hands the position the same type and key keeps its state");
     }
 
+    /// <summary>
+    /// A view that leaves while it glides stops there: its state is released with its position and the
+    /// clock drops it, so the host stops asking for frames. And a gesture still held on it, a fling on
+    /// release, finds no state to move and makes none.
+    /// </summary>
+    [Fact]
+    public void AViewThatLeavesWhileItGlides_StopsAskingForFrames()
+    {
+        var owner = BuildOwner.Structural();
+        var context = new ComponentContext(PhotonTheme.Instance);
+        var view = owner.Build(new Box(new BoxStyle(), List()), context, WindowSizeClass.Compact, rebuildAll: true)
+            .ChildAt(0)!;
+        var clock = new ScrollClock();
+        clock.ScrollBy(view, 300, 600).Should().BeTrue();
+        clock.Advance(0);
+        clock.Advance(16).Should().BeTrue("the wheel's target is still ahead");
+
+        owner.Build(new Text("gone", TypeRole.BodyM), context, WindowSizeClass.Compact, rebuildAll: true);
+
+        clock.Advance(32).Should().BeFalse("the view left the tree, and its glide with it");
+        clock.Fling(view, 2, 600).Should().BeFalse("a position that left keeps nothing to move");
+        clock.Advance(48).Should().BeFalse();
+    }
+
     // ---- a drag ----------------------------------------------------------------------------------
 
     [Fact]
