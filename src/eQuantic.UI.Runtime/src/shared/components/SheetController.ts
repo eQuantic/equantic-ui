@@ -391,8 +391,7 @@ export class SheetController {
                     if (this.filling) {
                         let before = this.fillTarget;
                         this.updateFill(this.cellAt(position));
-                        let after: any; let previous: any; 
-                        return (after = this.fillTarget) != null ? !((previous = before) != null) || !$eq.equals(after, previous) : !(before == null);
+                        return !$eq.equals(this.fillTarget, before);
                     }
                     if (!this._selecting) return false;
                     let cell = this.cellAt(position);
