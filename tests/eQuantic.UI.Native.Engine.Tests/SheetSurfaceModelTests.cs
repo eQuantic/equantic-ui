@@ -215,6 +215,12 @@ public class SheetSurfaceModelTests
         model.HandlePointer(PointerPhase.Move, CenterOf(3, 1), KeyModifiers.None, 1).Should().BeTrue();
         model.HandlePointer(PointerPhase.Move, new Point(CenterOf(3, 1).X + 10, CenterOf(3, 1).Y), KeyModifiers.None, 1)
             .Should().BeFalse("the same cell again is the same preview");
+        // Back into the source the preview clears, which is a change; inside it, none before and none after
+        // is none (the twin's spec makes the same moves, through C#'s lift of != over two nullable ranges).
+        model.HandlePointer(PointerPhase.Move, CenterOf(1, 1), KeyModifiers.None, 1).Should().BeTrue();
+        sheet.FillTarget.Should().BeNull();
+        model.HandlePointer(PointerPhase.Move, new Point(CenterOf(1, 1).X + 10, CenterOf(1, 1).Y), KeyModifiers.None, 1)
+            .Should().BeFalse("no preview before the move and none after it");
     }
 
     [Fact]

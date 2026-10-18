@@ -85,6 +85,21 @@ describe('SheetController (transpiled twin)', () => {
     expect(sheet.document.getCell(new CellRef(2, 1))).toBe('');
   });
 
+  it('a fill move compares an absent preview as .NET lifts !=: none and none are the same, none and one are not', () => {
+    const sheet = new SheetController(50, 8);
+    sheet.selection = new SheetRange(new CellRef(1, 1));
+
+    sheet.handlePointer('down', new Point(192, 56), 0, 1);
+    // Inside the source: no preview before the move, and none after it.
+    expect(sheet.handlePointer('move', new Point(144, 42), 0, 1)).toBe(false);
+    // Out to B4: a preview where there was none.
+    expect(sheet.handlePointer('move', new Point(144, 98), 0, 1)).toBe(true);
+    // Back into B2: the preview clears, which is a change too.
+    expect(sheet.handlePointer('move', new Point(150, 40), 0, 1)).toBe(true);
+    expect(sheet.fillTarget).toBeNull();
+    expect(sheet.handlePointer('move', new Point(160, 44), 0, 1)).toBe(false);
+  });
+
   it('TSV round-trips through copy and paste', () => {
     const source = new SheetController(100, 26);
     source.document.setCell(new CellRef(0, 0), 'name');

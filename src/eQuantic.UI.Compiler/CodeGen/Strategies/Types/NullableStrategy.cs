@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
@@ -10,15 +11,21 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// Converts <c>Nullable&lt;T&gt;</c> (<c>T?</c>) members/methods to JavaScript:
 /// <list type="bullet">
 /// <item><c>x.HasValue</c> → <c>(x != null)</c></item>
-/// <item><c>x.Value</c> → <c>x</c></item>
+/// <item><c>x.Value</c> → <c>$eq.nullable.value(x)</c>, which throws for an empty one</item>
 /// <item><c>x.GetValueOrDefault()</c> → <c>(x ?? default(T))</c> — the default is derived from the
 /// underlying type (0 / false / <c>$eq.num.dec(0)</c> / the enum's zero-member, …)</item>
 /// <item><c>x.GetValueOrDefault(fallback)</c> → <c>(x ?? fallback)</c></item>
 /// </list>
 /// Priority 25, like <see cref="DictionaryStrategy"/>, which also answers a <c>GetValueOrDefault</c>;
-/// the semantic gates (a <c>Nullable&lt;T&gt;</c> receiver here, a dictionary there) keep the two
+/// the semantic gates (a <c>Nullable&lt;T&gt;</c> member here, a dictionary there) keep the two
 /// from colliding. Lifted operators (<c>+ - * / &lt; &gt; …</c>) are handled by
 /// BinaryExpressionStrategy.
+/// <para>
+/// The member the model binds decides, and a name only where the model cannot say: a struct's own
+/// <c>Value</c>, <c>HasValue</c> or <c>GetValueOrDefault</c>, read through <c>?.</c> on a nullable one,
+/// is the struct's, though the rebuilt receiver has the nullable's type. Taken by its name,
+/// <c>a?.Value</c> answered the struct itself and <c>a?.HasValue</c> whether it was null (#966).
+/// </para>
 /// </summary>
 public class NullableStrategy : IConversionStrategy
 {
@@ -30,12 +37,14 @@ public class NullableStrategy : IConversionStrategy
             {
                 var name = member.Name.Identifier.ValueText;
                 if (name != "HasValue" && name != "Value") return false;
+                if (context.SemanticHelper.GetSymbol(member) is { } bound) return DeclaredByNullable(bound);
                 return IsNullableReceiver(member.Expression, context, allowShapeHeuristic: true);
             }
 
-            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } invocation:
             {
                 if (ma.Name.Identifier.ValueText != "GetValueOrDefault") return false;
+                if (context.SemanticHelper.GetSymbol(invocation) is { } bound) return DeclaredByNullable(bound);
                 // Precise gate only (no shape heuristic): otherwise we'd steal Dictionary.GetValueOrDefault.
                 return IsNullableReceiver(ma.Expression, context, allowShapeHeuristic: false);
             }
@@ -45,17 +54,23 @@ public class NullableStrategy : IConversionStrategy
         }
     }
 
+    /// <summary>Whether the member the model bound is one <c>Nullable&lt;T&gt;</c> declares, the only ones
+    /// this strategy answers.</summary>
+    private static bool DeclaredByNullable(ISymbol member) =>
+        member.ContainingType?.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
+
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         switch (node)
         {
             case MemberAccessExpressionSyntax member:
             {
-                var expr = context.Converter.ConvertExpression(member.Expression);
+                // Value is the unwrap every cast of a nullable to a type that is not one reads through, and an
+                // empty one throws as .NET's does (#967): read as the value itself, it answered null.
                 return member.Name.Identifier.ValueText switch
                 {
-                    "HasValue" => $"({expr} != null)",
-                    "Value" => expr,
+                    "HasValue" => $"({context.Converter.ConvertExpression(member.Expression)} != null)",
+                    "Value" => JsExprWriter.Write(ValueFlow.Unwrapped(context.Converter.ConvertIr(member.Expression), context)),
                     _ => throw new InvalidOperationException(),
                 };
             }

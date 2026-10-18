@@ -36,6 +36,17 @@ public class CastExpressionStrategy : IExpressionIrStrategy
         var targetType = context.SemanticHelper.GetType(cast);
         var operandType = UnwrapNullable(context.SemanticHelper.GetType(cast.Expression));
 
+        // A cast from a nullable value into a type that is not nullable UNWRAPS it (ValueFlow.Unwraps): an
+        // empty one throws before an enum's tables read it, as before any other conversion (#967). The one
+        // table applies it to every other cast.
+        var unwraps = context.SemanticHelper.GetOperation(cast) is IConversionOperation bound
+            && ValueFlow.Unwraps(bound.GetConversion(), bound.Operand.Type, bound.Type);
+        JsExpr Operand()
+        {
+            var converted = context.Converter.ConvertIr(cast.Expression);
+            return unwraps ? ValueFlow.Unwrapped(converted, context) : converted;
+        }
+
         // (int)enum / (long)enum / … → the underlying integral value.
         if (operandType is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumOperand
             && IsIntegral(UnwrapNullable(targetType)))
@@ -45,7 +56,7 @@ public class CastExpressionStrategy : IExpressionIrStrategy
 
             // A [Flags] enum is already numeric at runtime — the cast is the identity. A normal (string)
             // enum needs its member-name string mapped back to the underlying value.
-            return Types.EnumShape.ValueOf(enumOperand, context.Converter.ConvertIr(cast.Expression), context);
+            return Types.EnumShape.ValueOf(enumOperand, Operand(), context);
         }
 
         // (EnumType)int → a value of the enum.
@@ -64,7 +75,7 @@ public class CastExpressionStrategy : IExpressionIrStrategy
                 return JsExpr.Literal(key != null ? $"'{key}'" : number.ToString(CultureInfo.InvariantCulture));
             }
 
-            var operandIr = context.Converter.ConvertIr(cast.Expression);
+            var operandIr = Operand();
             // The enum itself is what the browser holds already. An object holding one
             // (`(Status)Enum.Parse(typeof(Status), text)`) is unboxed, as the runtime unboxes it: the
             // member it holds, a boxed number's member, and a refusal for anything else, where the

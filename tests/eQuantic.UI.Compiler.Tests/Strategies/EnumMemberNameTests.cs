@@ -30,7 +30,9 @@ public class EnumMemberNameTests
     {
         var js = TestHelper.ConvertCodeBlock("var known = cachedCount.HasValue; var count = cachedCount.Value;");
 
-        js.Should().NotContain(".hasValue").And.NotContain(".value",
+        js.Should().NotContain("cachedCount.hasValue").And.NotContain("cachedCount.value",
             "a nullable is its value or null in the browser, with no members of its own");
+        // Its Value is the unwrap, which throws for an empty one as .NET's does (#967).
+        js.Should().Contain("$eq.nullable.value(this.cachedCount)");
     }
 }
