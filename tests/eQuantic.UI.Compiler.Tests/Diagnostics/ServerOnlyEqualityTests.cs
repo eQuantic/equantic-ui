@@ -100,9 +100,38 @@ public class ServerOnlyEqualityTests
 
     [Theory]
     [MemberData(nameof(Refused))]
-    public void AComparisonThatReachesAServerOnlyEquals_IsRefusedAtTheCall(string signature, string call, string refusal)
+    public void AComparisonThatReachesAServerOnlyEquals_IsRefusedAtTheCall(string signature, string call, string refusal) =>
+        RefusedOnceAtTheCall(Source(signature, call), call, refusal);
+
+    /// <summary>
+    /// Generic code asks the type argument's <c>IEquatable&lt;T&gt;</c> before its <c>Equals(object)</c>, as .NET's
+    /// comparer settles it at run time, so a build whose one server-only equality is a typed one is refused through
+    /// that contract.
+    /// </summary>
+    [Fact]
+    public void GenericCodeThatMayReachAServerOnlyTypedEquals_IsRefusedAtTheCall()
     {
-        var source = Source(signature, call);
+        const string call = "EqualityComparer<T>.Default.Equals(a, b)";
+        RefusedOnceAtTheCall($$"""
+            using System;
+            using System.Collections.Generic;
+            using eQuantic.UI.Primitives;
+
+            public sealed class TypedKept : IEquatable<TypedKept>
+            {
+                [ServerOnly] public bool Equals(TypedKept? other) => false;
+            }
+
+            public static class Probe
+            {
+                public static bool Run<T>(T a, T b) { return {{call}}; }
+            }
+            """, call, "'System.IEquatable<T>.Equals' may reach 'TypedKept.Equals', marked [ServerOnly]");
+    }
+
+    /// <summary>One EQ2010, beginning with <paramref name="refusal"/>, told where <paramref name="call"/> is written.</summary>
+    private static void RefusedOnceAtTheCall(string source, string call, string refusal)
+    {
         var probe = ProjectProbe.Compile(source).Should().ContainSingle(result => result.ComponentName == "Probe").Which;
 
         var error = probe.Errors.Should().ContainSingle("one call, one refusal").Which;
