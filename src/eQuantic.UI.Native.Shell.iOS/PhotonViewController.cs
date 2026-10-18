@@ -121,12 +121,12 @@ public sealed class PhotonViewController : UIViewController
         };
 
         // The semantics bridge: VoiceOver reads the SAME target-neutral tree the macOS bridge
-        // does, and its gestures reach the same handlers a touch does — by path, like everything
-        // else that has to survive the next frame.
+        // does, and its gestures reach the same handlers a touch does — by the node's id, like
+        // everything else that has to survive the next frame.
         view.Semantics = new PhotonAccessibility(view,
             () => _host?.Semantics() ?? [],
-            path => _host?.ActivatePath(path) ?? false,
-            (path, direction) => _host?.AdjustPath(path, direction) ?? false);
+            id => _host?.Activate(id) ?? false,
+            (id, direction) => _host?.Adjust(id, direction) ?? false);
 
         _keyboard = new PhotonKeyboard(view, _host);
 

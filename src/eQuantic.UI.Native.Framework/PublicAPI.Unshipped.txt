@@ -1,6 +1,5 @@
 #nullable enable
 [EQX0001]eQuantic.UI.Native.Framework.LayoutNode.Element.get -> eQuantic.UI.Primitives.Element?
-[EQX0001]static eQuantic.UI.Native.Framework.LayoutEngine.Layout(eQuantic.UI.Primitives.VisualNode! root, float viewportWidth, float viewportHeight, eQuantic.UI.Native.Framework.LayoutContext! context, string! rootPath = "r", eQuantic.UI.Native.Framework.StretchKind rootStretch = eQuantic.UI.Native.Framework.StretchKind.None, eQuantic.UI.Primitives.Element? rootElement = null) -> eQuantic.UI.Native.Framework.LayoutNode!
 *REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Instances.get -> eQuantic.UI.Primitives.ComponentInstanceStore?
 *REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Instances.init -> void
 *REMOVED*[EQX0001]static eQuantic.UI.Native.Framework.LayoutEngine.Layout(eQuantic.UI.Primitives.VisualNode! root, float viewportWidth, float viewportHeight, eQuantic.UI.Native.Framework.LayoutContext! context, string! rootPath = "r", eQuantic.UI.Native.Framework.StretchKind rootStretch = eQuantic.UI.Native.Framework.StretchKind.None) -> eQuantic.UI.Native.Framework.LayoutNode!
@@ -164,3 +163,7 @@
 [EQX0001]eQuantic.UI.Native.Framework.TransitionClock.RememberShadowsDrawn(eQuantic.UI.Primitives.Element? at, int count) -> void
 [EQX0001]eQuantic.UI.Native.Framework.TransitionClock.Target(eQuantic.UI.Primitives.Element? at, eQuantic.UI.Native.Framework.TrackKey track) -> float?
 [EQX0001]eQuantic.UI.Native.Framework.TransitionClock.TargetColor(eQuantic.UI.Primitives.Element? at, eQuantic.UI.Native.Framework.TrackKey track) -> eQuantic.UI.Primitives.Color?
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutNode.Path.get -> string?
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.PathCache.get -> System.Collections.Generic.Dictionary<(string! Parent, int Index, string? Key), string!>?
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.PathCache.init -> void
+[EQX0001]static eQuantic.UI.Native.Framework.LayoutEngine.Layout(eQuantic.UI.Primitives.VisualNode! root, float viewportWidth, float viewportHeight, eQuantic.UI.Native.Framework.LayoutContext! context, eQuantic.UI.Native.Framework.StretchKind rootStretch = eQuantic.UI.Native.Framework.StretchKind.None, eQuantic.UI.Primitives.Element? rootElement = null) -> eQuantic.UI.Native.Framework.LayoutNode!

@@ -69,21 +69,21 @@ public class StudioWalkTests(ITestOutputHelper output)
     /// </summary>
     [Theory]
     [MemberData(nameof(Sections))]
-    public void NoTwoRegionsClaimTheSamePath(GallerySection section)
+    public void NoTwoRegionsClaimTheSamePosition(GallerySection section)
     {
         var frame = Open(section).RenderFrame(new DisplayListBuilder());
 
-        var seen = new Dictionary<string, string?>();
+        var seen = new Dictionary<Element, string?>();
         foreach (var region in frame.HitRegions)
         {
-            seen.ContainsKey(region.Path).Should().BeFalse(
-                $"'{region.Node.Label}' and '{seen.GetValueOrDefault(region.Path)}' both claim {region.Path}");
-            seen[region.Path] = region.Node.Label;
+            seen.ContainsKey(region.Element).Should().BeFalse(
+                $"'{region.Node.Label}' and '{seen.GetValueOrDefault(region.Element)}' both claim position {region.Element.Id}");
+            seen[region.Element] = region.Node.Label;
         }
 
-        var stops = new HashSet<string>();
+        var stops = new HashSet<int>();
         foreach (var stop in frame.FocusStops)
-            stops.Add(stop.Path).Should().BeTrue($"two focus stops claim {stop.Path}");
+            stops.Add(stop.Id).Should().BeTrue($"two focus stops claim id {stop.Id}");
     }
 
     /// <summary>
@@ -128,14 +128,14 @@ public class StudioWalkTests(ITestOutputHelper output)
         var stops = host.RenderFrame(new DisplayListBuilder()).FocusStops;
         if (stops.Count == 0) return;
 
-        var visited = new List<string>();
+        var visited = new List<int>();
         for (var i = 0; i < stops.Count; i++)
         {
             host.KeyDown("Tab");
             host.RenderFrame(new DisplayListBuilder());
-            var focused = host.FocusedPath;
+            var focused = host.FocusedId;
             focused.Should().NotBeNull($"Tab #{i + 1} of {stops.Count} left the focus nowhere");
-            visited.Add(focused!);
+            visited.Add(focused!.Value);
         }
 
         visited.Distinct().Should().HaveCount(stops.Count,
@@ -197,11 +197,11 @@ public class StudioWalkTests(ITestOutputHelper output)
         {
             host.KeyDown("Tab");
             var frame = host.RenderFrame(new DisplayListBuilder());
-            var focused = host.FocusedPath;
+            var focused = host.FocusedId;
             if (focused is null) continue;
 
-            var stop = frame.FocusStops.FirstOrDefault(s => s.Path == focused);
-            if (stop.Path is null || stop.Bounds.Height <= 0) continue;
+            var stop = frame.FocusStops.FirstOrDefault(s => s.Id == focused);
+            if (stop.Element is null || stop.Bounds.Height <= 0) continue;
             // The window's own chrome (toolbar, status rail) is outside the scrolling canvas, so
             // the assertion is simply "inside the window".
             stop.Bounds.Y.Should().BeLessThan(Height,
@@ -232,8 +232,8 @@ public class StudioWalkTests(ITestOutputHelper output)
             host.RenderFrame(new DisplayListBuilder());
 
             var after = host.RenderFrame(new DisplayListBuilder()).TextRegions
-                .FirstOrDefault(r => r.Path == field.Path);
-            after.Entry.Should().NotBeNull($"the field at {field.Path} vanished when typed into");
+                .FirstOrDefault(r => ReferenceEquals(r.Element, field.Element));
+            after.Entry.Should().NotBeNull($"the field at position {field.Element.Id} vanished when typed into");
         }
         output.WriteLine($"{section}: {fields.Count} fields typed into");
     }

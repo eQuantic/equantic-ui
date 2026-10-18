@@ -152,11 +152,11 @@ public class SystemBackTests
         var host = Open(new Column(gap: 0) { new Button("Pay", onPressed: () => { }) });
         host.KeyDown("Tab");
         host.RenderFrame(new DisplayListBuilder());
-        host.FocusedPath.Should().NotBeNull();
+        host.FocusedId.Should().NotBeNull();
 
         host.CanGoBack.Should().BeFalse();
         host.Back().Should().BeFalse();
-        host.FocusedPath.Should().NotBeNull("back took nothing, so it cleared nothing either");
+        host.FocusedId.Should().NotBeNull("back took nothing, so it cleared nothing either");
     }
 
     private static VisualNode Inbox() => new ScrollView(new Column(gap: 0)

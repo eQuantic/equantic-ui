@@ -41,7 +41,7 @@ public class AnchorPanelWidthTests
         // Overlay regions register after the page's. The scrim is deliberately viewport-wide —
         // the OPTIONS are what MatchAnchorWidth governs.
         var options = frame.HitRegions
-            .Where(r => r.Path.StartsWith("ov") && r.Node.Label != "Dismiss")
+            .Where(r => Positions.InALayer(r.Element) && r.Node.Label != "Dismiss")
             .ToArray();
         options.Should().NotBeEmpty();
         // The panel is the field's width, and its rows stand inside its hairline, one on each side, as

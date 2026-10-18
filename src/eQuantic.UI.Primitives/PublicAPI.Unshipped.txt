@@ -225,3 +225,15 @@ static eQuantic.UI.Primitives.BuildOwner.Structural() -> eQuantic.UI.Primitives.
 eQuantic.UI.Primitives.BuildOwner.Live.get -> bool
 eQuantic.UI.Primitives.NodeElement.State.get -> object?
 eQuantic.UI.Primitives.NodeElement.State.set -> void
+*REMOVED*eQuantic.UI.Primitives.SemanticNode.Deconstruct(out eQuantic.UI.Primitives.SemanticRole Role, out string! Path, out eQuantic.UI.Primitives.Rect Bounds, out string! Label, out string? Value, out bool Disabled, out eQuantic.UI.Primitives.SemanticCheck? Checked, out bool? Expanded, out bool Current, out bool? Selected, out int HeadingLevel, out eQuantic.UI.Primitives.LiveRegionUrgency? Live, out eQuantic.UI.Primitives.RangeValue? Range) -> void
+*REMOVED*eQuantic.UI.Primitives.SemanticNode.Path.get -> string!
+*REMOVED*eQuantic.UI.Primitives.SemanticNode.Path.init -> void
+*REMOVED*eQuantic.UI.Primitives.SemanticNode.SemanticNode(eQuantic.UI.Primitives.SemanticRole Role, string! Path, eQuantic.UI.Primitives.Rect Bounds, string! Label, string? Value, bool Disabled, eQuantic.UI.Primitives.SemanticCheck? Checked = null, bool? Expanded = null, bool Current = false, bool? Selected = null, int HeadingLevel = 0, eQuantic.UI.Primitives.LiveRegionUrgency? Live = null, eQuantic.UI.Primitives.RangeValue? Range = null) -> void
+eQuantic.UI.Primitives.SemanticNode.Deconstruct(out eQuantic.UI.Primitives.SemanticRole Role, out int Id, out eQuantic.UI.Primitives.Rect Bounds, out string! Label, out string? Value, out bool Disabled, out eQuantic.UI.Primitives.SemanticCheck? Checked, out bool? Expanded, out bool Current, out bool? Selected, out int HeadingLevel, out eQuantic.UI.Primitives.LiveRegionUrgency? Live, out eQuantic.UI.Primitives.RangeValue? Range) -> void
+eQuantic.UI.Primitives.SemanticNode.SemanticNode(eQuantic.UI.Primitives.SemanticRole Role, int Id, eQuantic.UI.Primitives.Rect Bounds, string! Label, string? Value, bool Disabled, eQuantic.UI.Primitives.SemanticCheck? Checked = null, bool? Expanded = null, bool Current = false, bool? Selected = null, int HeadingLevel = 0, eQuantic.UI.Primitives.LiveRegionUrgency? Live = null, eQuantic.UI.Primitives.RangeValue? Range = null) -> void
+eQuantic.UI.Primitives.SemanticNode.Id.get -> int
+eQuantic.UI.Primitives.SemanticNode.Id.init -> void
+eQuantic.UI.Primitives.ComponentElement.MarkNeedsBuild() -> void
+eQuantic.UI.Primitives.Element.Id.get -> int
+eQuantic.UI.Primitives.NodeElement.HoldsDeferred(eQuantic.UI.Primitives.Element! child) -> bool
+eQuantic.UI.Primitives.NodeElement.PartId(int part) -> int

@@ -30,6 +30,7 @@ public sealed class BuildOwner
     private ComponentContext? _context;
     private int _building;
     private int _stamp;
+    private int _ids;
 
     /// <summary>A live owner: the one a host keeps for the surface it draws.</summary>
     public BuildOwner()
@@ -178,6 +179,10 @@ public sealed class BuildOwner
     internal void ExitBuild() => _building--;
 
     internal int NextStamp() => ++_stamp;
+
+    /// <summary>The next id of this tree (<see cref="Element.Id"/>, <see cref="NodeElement.PartId"/>),
+    /// counted from one, so zero is never an id.</summary>
+    internal int NextId() => ++_ids;
 
     internal void Deactivate(Element element) => element.Deactivate();
 

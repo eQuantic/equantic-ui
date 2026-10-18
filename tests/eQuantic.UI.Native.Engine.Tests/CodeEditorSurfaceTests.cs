@@ -227,10 +227,10 @@ public class CodeEditorSurfaceTests
     {
         var (host, surface, bounds) = Open("code");
         Focus(host, surface, bounds);
-        host.FocusedPath.Should().NotBeNull();
+        host.FocusedId.Should().NotBeNull();
 
         Press(host, "Escape");
-        host.FocusedPath.Should().BeNull("an editor that traps Escape is one you cannot get out of");
+        host.FocusedId.Should().BeNull("an editor that traps Escape is one you cannot get out of");
     }
 
     [Fact]
@@ -251,7 +251,7 @@ public class CodeEditorSurfaceTests
 
         region.Surface.Engine().Document.Text.Should().Be("fixed", "reading is not writing");
         // …but the caret is there, because selecting and copying are reading.
-        host.FocusedPath.Should().NotBeNull();
+        host.FocusedId.Should().NotBeNull();
     }
 
     // ---- what is DRAWN ----------------------------------------------------------------------------
@@ -552,7 +552,7 @@ public class CodeEditorSurfaceTests
         var after = host.RenderFrame(new DisplayListBuilder());
 
         var viewport = after.ScrollRegions.First(r => r.Axis == ScrollAxis.Vertical
-            && region.Path.StartsWith(r.Path, StringComparison.Ordinal));
+            && Positions.IsUnder(region.Element, r.Element));
         host.ScrollOffsetOf(viewport.Element).Should().BeGreaterThan(0, "the viewport followed the caret");
 
         var code2 = after.CodeRegions.Single();

@@ -55,7 +55,7 @@ public class LiveRegionAnnouncementTests
         var said = Frame(host, 2000);
 
         said.Should().ContainSingle().Which.Should().BeEquivalentTo(new LiveAnnouncement(
-            said[0].Path, "Upload status", "Upload complete", LiveRegionUrgency.Polite));
+            said[0].Id, "Upload status", "Upload complete", LiveRegionUrgency.Polite));
     }
 
     /// <summary>

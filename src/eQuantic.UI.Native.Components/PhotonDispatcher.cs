@@ -61,14 +61,16 @@ public sealed class PhotonDispatcher : IUiDispatcher
     }
 
     /// <summary>Asks every live host for a frame, forgetting the ones that are gone — the sweep is
-    /// nothing next to the frame it is asking for, and this is the only place a dead entry shows.</summary>
+    /// nothing next to the frame it is asking for, and this is the only place a dead entry shows.
+    /// The frame builds what the work marks: it runs at the top of that frame, and what it changes
+    /// it says with a <c>SetState</c>, as on the web.</summary>
     private void Wake()
     {
         lock (_waking)
         {
             for (var i = _waking.Count - 1; i >= 0; i--)
             {
-                if (_waking[i].TryGetTarget(out var host)) host.Invalidate();
+                if (_waking[i].TryGetTarget(out var host)) host.Wake();
                 else _waking.RemoveAt(i);
             }
         }

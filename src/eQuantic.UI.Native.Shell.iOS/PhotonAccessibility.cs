@@ -16,25 +16,25 @@ namespace eQuantic.UI.Native.Shell.iOS;
 /// <para>
 /// Elements are rebuilt when the tree CHANGES rather than on every query: VoiceOver asks for the
 /// element list while it walks it, and a fresh batch mid-walk would move the cursor under the
-/// user's finger. Identity is the PATH, like every other cross-frame target (press, focus,
-/// scroll) — the tree is a per-frame artifact and a reference into it is stale by the time
-/// assistive tech acts on it.
+/// user's finger. Identity is the id of the node's position, as for every other cross-frame target
+/// (press, focus, scroll) — the tree is a per-frame artifact and a reference into it is stale by the
+/// time assistive tech acts on it.
 /// </para>
 /// </summary>
 internal sealed class PhotonAccessibility
 {
     private readonly UIView _view;
     private readonly Func<IReadOnlyList<SemanticNode>> _semantics;
-    private readonly Func<string, bool> _activate;
-    private readonly Func<string, int, bool> _adjust;
+    private readonly Func<int, bool> _activate;
+    private readonly Func<int, int, bool> _adjust;
 
     private IReadOnlyList<SemanticNode> _tree = [];
     private NSObject[] _elements = [];
 
     internal PhotonAccessibility(UIView view,
         Func<IReadOnlyList<SemanticNode>> semantics,
-        Func<string, bool> activate,
-        Func<string, int, bool> adjust)
+        Func<int, bool> activate,
+        Func<int, int, bool> adjust)
     {
         _view = view;
         _semantics = semantics;
@@ -96,8 +96,9 @@ internal sealed class PhotonAccessibility
                     new CGRect(node.Bounds.Left, node.Bounds.Top, node.Bounds.Width, node.Bounds.Height),
                     _view),
                 // Visible in the Accessibility Inspector: the same identity every press, focus and
-                // scroll uses, which is what makes an accessibility report debuggable.
-                AccessibilityIdentifier = node.Path,
+                // scroll uses, its position's id, which is what makes an accessibility report
+                // debuggable.
+                AccessibilityIdentifier = node.Id.ToString(System.Globalization.CultureInfo.InvariantCulture),
             };
         }
         return elements;
@@ -168,7 +169,7 @@ internal sealed class PhotonAccessibility
         });
 
     /// <summary>Two trees are the same when every node is — the record struct's own equality, which
-    /// covers role, path, bounds, label, value and state.</summary>
+    /// covers role, id, bounds, label, value and state.</summary>
     private static bool Same(IReadOnlyList<SemanticNode> a, IReadOnlyList<SemanticNode> b)
     {
         if (a.Count != b.Count) return false;
@@ -181,21 +182,22 @@ internal sealed class PhotonAccessibility
 /// <summary>
 /// One element VoiceOver can land on — and ACT on: the double-tap runs the same handler a tap does,
 /// and the swipe up/down on an Adjustable drives the same OnAdjust the desktop's arrow keys do.
-/// Both resolve by path against the CURRENT frame, so an element read a second ago still acts on
-/// the control that is there now.
+/// Both resolve by the node's id against the CURRENT frame, so an element read a second ago still
+/// acts on the control it named, while that control stands there, and never on one that took its
+/// place.
 /// </summary>
 internal sealed class PhotonAccessibilityElement : UIAccessibilityElement
 {
-    private readonly string _path;
+    private readonly int _id;
     private readonly bool? _expanded;
-    private readonly Func<string, bool> _activate;
-    private readonly Func<string, int, bool> _adjust;
+    private readonly Func<int, bool> _activate;
+    private readonly Func<int, int, bool> _adjust;
 
     internal PhotonAccessibilityElement(NSObject container, SemanticNode node,
-        Func<string, bool> activate, Func<string, int, bool> adjust)
+        Func<int, bool> activate, Func<int, int, bool> adjust)
         : base(container)
     {
-        _path = node.Path;
+        _id = node.Id;
         _expanded = node.Expanded;
         _activate = activate;
         _adjust = adjust;
@@ -224,11 +226,11 @@ internal sealed class PhotonAccessibilityElement : UIAccessibilityElement
     // virtual to override here, so they are exported by name, which is what the runtime dispatches
     // on anyway.
     [Export("accessibilityActivate")]
-    public bool Activate() => _activate(_path);
+    public bool Activate() => _activate(_id);
 
     [Export("accessibilityIncrement")]
-    public void Increment() => _adjust(_path, +1);
+    public void Increment() => _adjust(_id, +1);
 
     [Export("accessibilityDecrement")]
-    public void Decrement() => _adjust(_path, -1);
+    public void Decrement() => _adjust(_id, -1);
 }

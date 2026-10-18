@@ -28,7 +28,7 @@ public class AppKitAccessibilityTests
     public void EachPressableRoleReachesAppKitInItsOwnWords()
     {
         SemanticNode NodeOf(SemanticRole role, string name, int index) =>
-            new(role, $"p{index}", new Rect(0, index * 30, 120, 24), name, null, false);
+            new(role, index + 1, new Rect(0, index * 30, 120, 24), name, null, false);
         IReadOnlyList<SemanticNode> tree =
         [
             // In the states the walk hands them: a chosen radio's check, a picked tab's selection.

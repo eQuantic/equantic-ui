@@ -14,11 +14,11 @@ namespace eQuantic.UI.Native.Components;
 internal sealed class PressScope
 {
     public PressScope(Pressable? pressed, Pressable? focused, VisualNode? hovered = null,
-        string? pressedPath = null, string? focusedPath = null,
-        string? textPath = null, int caretIndex = 0, bool caretVisible = true,
+        Element? pressedAt = null, int focusedId = 0,
+        Element? textAt = null, int caretIndex = 0, bool caretVisible = true,
         int selectionStart = 0, int selectionEnd = 0,
         Density density = Density.Comfortable,
-        IReadOnlyList<string>? hoveredPaths = null)
+        IReadOnlyList<Element>? hoveredAt = null)
     {
         Density = density;
         SelectionStart = selectionStart;
@@ -26,10 +26,10 @@ internal sealed class PressScope
         Pressed = pressed;
         Focused = focused;
         Hovered = hovered;
-        HoveredPaths = hoveredPaths;
-        PressedPath = pressedPath;
-        FocusedPath = focusedPath;
-        TextPath = textPath;
+        HoveredAt = hoveredAt;
+        PressedAt = pressedAt;
+        FocusedId = focusedId;
+        TextAt = textAt;
         CaretIndex = caretIndex;
         CaretVisible = caretVisible;
     }
@@ -46,7 +46,7 @@ internal sealed class PressScope
     public int SelectionEnd { get; }
 
     /// <summary>The field under edit, its caret, and whether the caret is in its ON blink.</summary>
-    public string? TextPath { get; }
+    public Element? TextAt { get; }
     public int CaretIndex { get; }
     public bool CaretVisible { get; }
 
@@ -56,33 +56,46 @@ internal sealed class PressScope
     public Pressable? Pressed { get; }
     public Pressable? Focused { get; }
 
-    /// <summary>Where the held press and the focus LIVE, which is what survives a rebuild. The
-    /// node reference is kept alongside as the answer for a single frame that never rebuilt.</summary>
-    public string? PressedPath { get; }
-    public string? FocusedPath { get; }
+    /// <summary>Where the held press LIVES, its control's position, which is what survives a rebuild,
+    /// and the id the focus is held by (zero for none). The node reference is kept alongside as the
+    /// answer for a single frame that never rebuilt.</summary>
+    public Element? PressedAt { get; }
+    public int FocusedId { get; }
 
-    /// <summary>True when this node is the one being tracked: by path when there is one (the
-    /// tree may have been rebuilt since), by reference otherwise.</summary>
-    public bool IsTracked(LayoutNode node, VisualNode? tracked, string? trackedPath) =>
-        trackedPath is { Length: > 0 }
-            ? node.Path == trackedPath
-            : tracked is not null && ReferenceEquals(node.Source, tracked);
+    /// <summary>True when this node is the pressed control: by its position when the host tracks one
+    /// (the tree may have been rebuilt since), by reference otherwise.</summary>
+    public bool IsPressed(LayoutNode node) =>
+        PressedAt is not null
+            ? ReferenceEquals(node.Element, PressedAt)
+            : Pressed is not null && ReferenceEquals(node.Source, Pressed);
+
+    /// <summary>True when this node is the focused control: by its position's id when the host tracks
+    /// one, by reference otherwise.</summary>
+    public bool IsFocused(LayoutNode node) =>
+        FocusedId != 0
+            ? node.Element is { } at && at.Id == FocusedId
+            : Focused is not null && ReferenceEquals(node.Source, Focused);
 
     /// <summary>Spec S5: the node the pointer is over — its Box applies its Hover diff. Fed by
     /// the host's pointer tracking (the gesture slice); tests pass it directly.</summary>
     public VisualNode? Hovered { get; }
 
-    /// <summary>Where the hover LIVES — the rebuild-surviving identities, exactly as
-    /// <see cref="PressedPath"/> is for the press, and a CHAIN because CSS :hover matches every
-    /// ancestor under the pointer (the web twin's semantics). Null = reference-only (tests).</summary>
-    public IReadOnlyList<string>? HoveredPaths { get; }
+    /// <summary>Where the hover LIVES — the positions under the pointer, which survive a rebuild
+    /// exactly as <see cref="PressedAt"/> does for the press, and a CHAIN because CSS :hover matches
+    /// every ancestor under the pointer (the web twin's semantics). Null = reference-only (tests).</summary>
+    public IReadOnlyList<Element>? HoveredAt { get; }
 
-    /// <summary>True when this node is under the pointer: by path membership in the hover
-    /// chain when the host supplied one, by reference against the topmost otherwise.</summary>
+    /// <summary>True when this node is under the pointer: by its position's place in the hover chain
+    /// when the host supplied one, by reference against the topmost otherwise.</summary>
     public bool IsHovered(LayoutNode node, VisualNode? candidate)
     {
-        if (HoveredPaths is { Count: > 0 } chain)
-            return node.Path is { } path && chain.Contains(path);
+        if (HoveredAt is { Count: > 0 } chain)
+        {
+            if (node.Element is not { } at) return false;
+            for (var i = 0; i < chain.Count; i++)
+                if (ReferenceEquals(chain[i], at)) return true;
+            return false;
+        }
         return candidate is not null && ReferenceEquals(Hovered, candidate);
     }
     /// <summary>

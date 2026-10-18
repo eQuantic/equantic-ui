@@ -48,30 +48,36 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     }
 
     /// <summary>
-    /// Measures, then stamps the node with WHERE it is. Every node gets the path, so any gesture
-    /// that has to survive a frame can key on it rather than on an object identity the next Build
-    /// will not share.
+    /// Measures, then stamps the node with WHERE it is: the element the build phase made for it,
+    /// which is where what the node keeps between frames lives and how the host finds the node again
+    /// in the next frame, whose Build makes fresh nodes (#976).
     /// <para>
     /// It still takes the context it will not use, so that every recursive call inside the family
     /// files reads exactly as it did on the switch. The parameter is the seam's, not the funnel's:
     /// a measurement asks for what it reads, and this one hands the visitor's own field back to it.
     /// </para>
     /// </summary>
-    internal LayoutNode Measure(VisualNode node, LayoutConstraints constraints, LayoutContext ctx, Position at)
+    internal LayoutNode Measure(VisualNode node, LayoutConstraints constraints, LayoutContext ctx, Element? at)
     {
         // The engine's one invariant: a node is measured against the element that holds it. A slot
         // the layout reads that the build filled differently would measure a stale subtree, and the
         // frame would be merely wrong, so it is refused where it happens, naming both.
-        if (at.Element is { } element && !ReferenceEquals(element.Configuration, node))
+        if (at is not null && !ReferenceEquals(at.Configuration, node))
             throw new InvalidOperationException(
-                $"{at.Path} measured a {node.GetType().Name} against the element of a "
-                + $"{element.Configuration.GetType().Name}: the layout read a slot the build did not fill with it.");
+                $"A {node.GetType().Name}{Under(at)} was measured against the element of a "
+                + $"{at.Configuration.GetType().Name}: the layout read a slot the build did not fill with it.");
 
         var measured = node.Accept(this, new MeasureState(constraints, at));
-        measured.Path ??= at.Path;
-        measured.Element ??= at.Element;
+        measured.Element ??= at;
         return measured;
     }
+
+    /// <summary>
+    /// Where a position sits, for a message: the node its parent holds, which a reader finds in the
+    /// tree they wrote, where a path was a string of slot numbers.
+    /// </summary>
+    private static string Under(Element? at) =>
+        at?.Parent is { } parent ? $" under a {parent.Configuration.GetType().Name}" : "";
 
     // ---- the forty-one doors ---------------------------------------------------------------------
 
@@ -95,7 +101,7 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     // (LaidOutChildren); every other parent measures the node through this door, a Stack included,
     // which reads the arm off the node it measured (PositionedOf).
     public LayoutNode Visit(AdaptiveNode node, MeasureState s) =>
-        Measure(_ctx.ArmOf(node), s.Constraints, _ctx, _ctx.Child(s.At, 0));
+        Measure(_ctx.ArmOf(node), s.Constraints, _ctx, s.At?.ChildAt(0));
 
     // Spec S7: Pinned renders IN FLOW on native until engine scrolling lands (correct at scroll
     // offset 0); the pinning joins the scroll compositor (fence on the node's doc).
@@ -174,7 +180,7 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     {
         var result = MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
         if (node.Options is not { } options) return result;
-        var offered = Measure(options, LayoutConstraints.Unbounded, _ctx, _ctx.Child(s.At, 1));
+        var offered = Measure(options, LayoutConstraints.Unbounded, _ctx, s.At?.ChildAt(1));
         offered.Bounds = offered.Bounds with { X = node.OptionsOrigin.X, Y = node.OptionsOrigin.Y };
         result.Adopt(offered);
         return result;
@@ -244,7 +250,7 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(DragDismiss node, MeasureState s) => MeasureDragDismiss(node, s.Constraints, _ctx, s.At);
 
     // An Overlay is ZERO in the page flow — the realizer lays its child out against the VIEWPORT in
-    // the overlay pass (path "ov<i>", stable for the reconciler).
+    // the overlay pass, with the element the Overlay's position holds for its layer.
     public LayoutNode Visit(Overlay node, MeasureState s) => _ctx.Node(node);
 
     public LayoutNode Visit(Spacer node, MeasureState s) => _ctx.Node(node); // zero outside a flex container (layout-only)
@@ -295,19 +301,18 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     /// #187 gave it announced over an empty subtree (#248).
     /// </para>
     /// </summary>
-    private LayoutNode MeasureNavigable(Navigable node, LayoutConstraints constraints, LayoutContext ctx, Position at)
+    private LayoutNode MeasureNavigable(Navigable node, LayoutConstraints constraints, LayoutContext ctx, Element? at)
     {
         var result = ctx.Node(node);
         var y = 0f;
         var widest = 0f;
         for (var index = 0; index < node.Rows.Count; index++)
         {
-            // KEYED, like every other multi-child arm: a row that says Key takes the key as its
-            // segment, so a grid whose rows are rebuilt or reordered keeps each row's identity —
-            // and each row keeps its element, where its state lives, and its path, which focus and
-            // hover still find it by.
+            // KEYED, like every other multi-child arm: the build matched a row that says Key to the
+            // element its key held, so a grid whose rows are rebuilt or reordered keeps each row's
+            // element, where its state lives and by which focus and hover find it.
             var row = Measure(node.Rows[index], constraints, ctx,
-                ctx.Child(at, index, node.Rows[index]));
+                at?.ChildAt(index));
             row.Bounds = row.Bounds with { X = 0, Y = y };
             result.Adopt(row);
             y += row.Bounds.Height;
@@ -317,13 +322,13 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
         return result;
     }
 
-    private LayoutNode MeasureWrapper(VisualNode node, VisualNode child, LayoutConstraints constraints, LayoutContext ctx, Position at)
+    private LayoutNode MeasureWrapper(VisualNode node, VisualNode child, LayoutConstraints constraints, LayoutContext ctx, Element? at)
     {
         var result = ctx.Node(node);
         // Layout-transparent means transparent to STRETCH too: whatever the parent would stretch,
         // it stretches through the wrapper — a Pressable around a tab cell (or the component node
         // around a page) must not eat the size the parent granted.
-        var inner = Measure(child, constraints, ctx, ctx.Child(at, 0));
+        var inner = Measure(child, constraints, ctx, at?.ChildAt(0));
         result.Adopt(inner);
         result.Bounds = new Rect(0, 0, inner.Bounds.Width, inner.Bounds.Height);
         return result;

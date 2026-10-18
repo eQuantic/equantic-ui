@@ -15,12 +15,12 @@ namespace eQuantic.UI.Native.Components;
 /// their text already reads as a sentence.
 /// </para>
 /// </summary>
-/// <param name="Path">The region that changed — the same identity a press, a focus and a scroll use.</param>
+/// <param name="Id">The region that changed: its position's id, the one its semantic node carries.</param>
 /// <param name="Label">What the region is FOR, or empty when the content says it.</param>
 /// <param name="Text">The announcement: the region's subtree, as a reader would read it.</param>
 /// <param name="Urgency">How hard it interrupts. Not a rate limit — see the announcer's debounce.</param>
 public readonly record struct LiveAnnouncement(
-    string Path,
+    int Id,
     string Label,
     string Text,
     LiveRegionUrgency Urgency);

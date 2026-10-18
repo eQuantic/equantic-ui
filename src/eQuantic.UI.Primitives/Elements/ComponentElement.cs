@@ -102,8 +102,13 @@ public sealed class ComponentElement : Element
         }
     }
 
-    /// <summary>Asks for this position to build again: a <c>SetState</c>, through the instance.</summary>
-    internal void MarkNeedsBuild()
+    /// <summary>
+    /// Asks for this position to build again in the next frame, as a <c>SetState</c> does through the
+    /// instance. Public as Flutter's <c>Element.markNeedsBuild</c> is: a host that changed something
+    /// a component reads at build without being told (a field's value it typed into, a code editor's
+    /// model) marks the component that holds it.
+    /// </summary>
+    public void MarkNeedsBuild()
     {
         if (!IsActive || Dirty) return;
         Dirty = true;

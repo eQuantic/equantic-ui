@@ -20,8 +20,8 @@ namespace eQuantic.UI.Native.Shell.Android;
 /// is therefore a snapshot — which is also what keeps ids stable while TalkBack reads down a screen.
 /// </para>
 /// <para>
-/// Identity for ACTING is still the PATH, like every other cross-frame target: the index says which
-/// node was asked about, the path says which control that is in the frame happening now.
+/// Identity for ACTING is the node's ID, its position's, like every other cross-frame target: the index
+/// says which node was asked about, the id says which control that is in the frame happening now.
 /// </para>
 /// </summary>
 internal sealed class PhotonAccessibility : AccessibilityNodeProvider
@@ -32,8 +32,8 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
     private readonly View _view;
     private readonly AccessibilityManager? _manager;
     private readonly Func<IReadOnlyList<SemanticNode>> _semantics;
-    private readonly Func<string, bool> _activate;
-    private readonly Func<string, int, bool> _adjust;
+    private readonly Func<int, bool> _activate;
+    private readonly Func<int, int, bool> _adjust;
 
     private IReadOnlyList<SemanticNode> _tree = [];
     private int _focused = Host;
@@ -41,8 +41,8 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
 
     internal PhotonAccessibility(View view,
         Func<IReadOnlyList<SemanticNode>> semantics,
-        Func<string, bool> activate,
-        Func<string, int, bool> adjust)
+        Func<int, bool> activate,
+        Func<int, int, bool> adjust)
     {
         _view = view;
         _manager = view.Context?.GetSystemService(global::Android.Content.Context.AccessibilityService)
@@ -188,7 +188,7 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
     {
         var tree = Tree();
         if (virtualViewId < 0 || virtualViewId >= tree.Count) return false;
-        var path = tree[virtualViewId].Path;
+        var id = tree[virtualViewId].Id;
 
         switch (action)
         {
@@ -208,13 +208,13 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
             case global::Android.Views.Accessibility.Action.Click:
             case global::Android.Views.Accessibility.Action.Expand:
             case global::Android.Views.Accessibility.Action.Collapse:
-                return _activate(path);
+                return _activate(id);
 
             case global::Android.Views.Accessibility.Action.ScrollForward:
-                return _adjust(path, +1);
+                return _adjust(id, +1);
 
             case global::Android.Views.Accessibility.Action.ScrollBackward:
-                return _adjust(path, -1);
+                return _adjust(id, -1);
 
             default:
                 return false;
@@ -303,7 +303,7 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
     }
 
     /// <summary>Two trees are the same when every node is — the record struct's own equality, which
-    /// covers role, path, bounds, label, value and state.</summary>
+    /// covers role, id, bounds, label, value and state.</summary>
     private static bool Same(IReadOnlyList<SemanticNode> a, IReadOnlyList<SemanticNode> b)
     {
         if (a.Count != b.Count) return false;

@@ -16,16 +16,17 @@ internal sealed partial class EmitVisitor
         // A LINKED RUN is a navigation surface of its own: the layout knows which pixels the words
         // cover, and nothing else does on a target that draws its own glyphs. The POINTER registers
         // one region per piece, so a link that wraps is pressable on both its lines; the KEYBOARD
-        // gets one stop for the link, under the identity RichTextRuns gives it (#255).
+        // gets one stop for the link, under the id RichTextRuns gives it (#255), in the paragraph's
+        // position.
         foreach (var link in RichTextRuns.LinksOf(s.Node, text))
         {
             foreach (var rect in link.Rects)
-                s.Input.Add(new LinkRegion(rect, link.Destination, link.Path));
-            s.Input.Add(new FocusStop(link.Path, null, null, link.Bounds));
+                s.Input.Add(new LinkRegion(rect, link.Destination, link.Id));
+            s.Input.Add(new FocusStop(link.Id, PositionOf(s.Node), null, null, link.Bounds));
 
-            // Focused by PATH alone: a run is not a node, so nothing up the dispatch could have
+            // Focused by its id alone: a run is not a node, so nothing up the dispatch could have
             // recognised it and set the pending ring.
-            if (s.Press.FocusedPath == link.Path) FocusRing(s, link.Bounds, default);
+            if (s.Press.FocusedId == link.Id) FocusRing(s, link.Bounds, default);
         }
     }
 
@@ -185,9 +186,9 @@ internal sealed partial class EmitVisitor
     {
         // Clickable even when empty and even without a rasterizer: the region is where the caret
         // comes from, and an empty field is exactly the one you most need to click into.
-        if (!entry.Disabled) input.Add(new TextRegion(node.Bounds, entry, node.Path ?? ""));
+        if (!entry.Disabled) input.Add(new TextRegion(node.Bounds, entry, PositionOf(node)));
 
-        var editing = press.TextPath is { Length: > 0 } && node.Path == press.TextPath;
+        var editing = press.TextAt is not null && ReferenceEquals(node.Element, press.TextAt);
         // The composition in flight renders INSIDE the value at the caret — underlined below, caret
         // at its end — while the VALUE stays untouched until the platform commits. An obscured
         // field composes blind: echoing the composition would echo the secret.
@@ -326,7 +327,7 @@ internal sealed partial class EmitVisitor
     {
         // The options are the surface's second child, laid where they stand (MeasureVisitor).
         Rect? offered = surface.Options is not null && node.Children.Count > 1 ? node.Children[1].Bounds : null;
-        input.Add(new CodeRegion(node.Bounds, surface, node.Path ?? "", offered));
+        input.Add(new CodeRegion(node.Bounds, surface, PositionOf(node), offered));
     }
 
     /// <summary>
@@ -347,7 +348,7 @@ internal sealed partial class EmitVisitor
     private static void EmitCodeCarets(LayoutNode node, CodeSurface surface, IAppTheme theme,
         ThemeMode mode, DisplayListBuilder builder, PressScope press)
     {
-        var editing = press.TextPath is { Length: > 0 } && node.Path == press.TextPath;
+        var editing = press.TextAt is not null && ReferenceEquals(node.Element, press.TextAt);
         if (!editing || !press.CaretVisible) return;
 
         var ink = Paint.Solid((surface.CaretColor ?? theme.TextPrimary).Resolve(mode));

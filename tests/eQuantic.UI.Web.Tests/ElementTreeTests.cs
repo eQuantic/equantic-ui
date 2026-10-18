@@ -633,4 +633,73 @@ public class ElementTreeTests
         owner.UnmountAll();
         log.Should().Equal("layer", "page");
     }
+
+    // ---- what a host finds a node by (#976) ------------------------------------------------------
+
+    private static List<Element> Everything(Element root)
+    {
+        var all = new List<Element> { root };
+        for (var slot = 0; slot < 16; slot++)
+            if (root.ChildAt(slot) is { } child) all.AddRange(Everything(child));
+        return all;
+    }
+
+    [Fact]
+    public void EveryPosition_HasAnIdOfItsOwn()
+    {
+        var root = Frame(BuildOwner.Structural(), new Page(["a", "b", "c"]));
+
+        var ids = Everything(root).Select(element => element.Id).ToList();
+        ids.Should().HaveCount(8, "the page, its column, three counters and their three texts");
+        ids.Should().OnlyHaveUniqueItems().And.NotContain(0, "zero names no position");
+    }
+
+    [Fact]
+    public void APosition_KeepsItsId_WhileItHoldsItsNode()
+    {
+        var owner = BuildOwner.Structural();
+        var page = new Page(["a", "b"]) { Keyed = true };
+        var root = Frame(owner, page);
+        var b = root.ChildAt(0)!.ChildAt(1)!;
+        var id = b.Id;
+
+        page.Show("b", "a");
+        Frame(owner, page);
+
+        root.ChildAt(0)!.ChildAt(0).Should().BeSameAs(b, "the key kept the counter's position as it moved");
+        b.Id.Should().Be(id);
+    }
+
+    [Fact]
+    public void ANodeAtAnothersPlace_TakesANewId()
+    {
+        var owner = BuildOwner.Structural();
+        var first = Frame(owner, Keyed("a"));
+        var second = Frame(owner, Keyed("b"));
+        var third = Frame(owner, new Text("c", TypeRole.BodyM));
+
+        second.Should().NotBeSameAs(first);
+        new[] { first.Id, second.Id, third.Id }.Should().OnlyHaveUniqueItems(
+            "an id is never handed on, so a host holding the old one finds nothing rather than the newcomer");
+    }
+
+    [Fact]
+    public void APart_KeepsItsId_WhileItsPositionLives()
+    {
+        var owner = BuildOwner.Structural();
+        var paragraph = (NodeElement)Frame(owner, Keyed("a"));
+        var second = paragraph.PartId(1);
+        var first = paragraph.PartId(0);
+
+        paragraph.PartId(1).Should().Be(second, "asked again, a part answers what it answered");
+        new[] { paragraph.Id, first, second }.Should().OnlyHaveUniqueItems(
+            "a part and a position draw from one count");
+
+        Frame(owner, Keyed("a")).Should().BeSameAs(paragraph);
+        paragraph.PartId(0).Should().Be(first, "the position lived, so its parts did");
+
+        var next = (NodeElement)Frame(owner, Keyed("b"));
+        next.PartId(0).Should().NotBe(first, "a new position's parts are new too");
+        next.Invoking(element => element.PartId(-1)).Should().Throw<ArgumentOutOfRangeException>();
+    }
 }

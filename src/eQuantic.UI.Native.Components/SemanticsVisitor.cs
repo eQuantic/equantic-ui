@@ -44,6 +44,11 @@ internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes)
     /// rather than travelling down with each visit.</summary>
     private readonly List<SemanticNode> _nodes = nodes;
 
+    /// <summary>The id a bridge names a node by: its position's. Every node the build made has one,
+    /// and zero is never an id, so a node without a position (one the layout made itself) is named by
+    /// nothing a bridge could act on.</summary>
+    private static int IdOf(LayoutNode node) => node.Element?.Id ?? 0;
+
     // ---- the two answers ---------------------------------------------------------------------
 
     /// <summary>Keep walking: this node said nothing of its own, and its children speak for
@@ -134,6 +139,6 @@ internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes)
     {
         if (overlay is not { Modal: true, Open: true }) return;
         AnnounceGroup(new(overlay.Alert ? SemanticRole.AlertDialog : SemanticRole.Dialog,
-            root.Path ?? "", root.Bounds, overlay.Label ?? "", null, false));
+            IdOf(root), root.Bounds, overlay.Label ?? "", null, false));
     }
 }

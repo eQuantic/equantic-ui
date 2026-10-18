@@ -149,7 +149,7 @@ public class ClippedInputTests
         host.NavigationRequested = destination => followed = destination;
 
         var offScreen = frame.LinkRegions.Single(region => region.Destination == "/p19");
-        host.ActivatePath(offScreen.Path).Should().BeTrue();
+        host.Activate(offScreen.Id).Should().BeTrue();
         followed.Should().Be("/p19", "the twentieth link is below the viewport and still has a destination");
 
         // A point in the FOOTER's band, which the list scrolls under: without the clip it is the

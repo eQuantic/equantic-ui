@@ -351,6 +351,60 @@ public class PerfHarnessTests
             "a settled glide resolves its tracks every frame and should form nothing to find them");
     }
 
+    /// <summary>
+    /// A frame after INPUT, with the shells' configuration: a press on one card's button, whose
+    /// handler sets that card's state, and the frame that shows it. The steady scenes above are drawn
+    /// for motion and build nothing; this one is the frame a person causes, the one that was left
+    /// rebuilding every component while the host addressed what it routes input to by path (#976).
+    /// </summary>
+    private static long PooledBytesPerPressedFrame()
+    {
+        var host = Open(new StatefulDashboard(), recycleFrames: true);
+        var pressed = 0;
+        void PressACard()
+        {
+            var buttons = host.LastFrame!.HitRegions;
+            var centre = buttons[pressed++ % buttons.Count].Bounds.Center;
+            host.PressDown(centre.X, centre.Y);
+            host.PressUp(centre.X, centre.Y);
+        }
+
+        for (var frame = 0; frame < 10; frame++)
+        {
+            PressACard();
+            host.RenderFrame(new DisplayListBuilder(), frame * 8f);
+        }
+
+        const int measured = 60;
+        var builder = new DisplayListBuilder();
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var frame = 0; frame < measured; frame++)
+        {
+            builder.Reset();
+            PressACard();
+            host.RenderFrame(builder, 80f + frame * 8f);
+        }
+        return (GC.GetAllocatedBytesForCurrentThread() - before) / measured;
+    }
+
+    /// <summary>
+    /// Measured 2026-10-18 (#976): 94,190 bytes on main, where every frame after input rebuilt the
+    /// page and its 24 cards, and 31,246 once it builds the one card the handler's SetState marked.
+    /// The ceiling is that number and about a tenth.
+    /// </summary>
+    private const long PooledPressedCeilingBytesPerFrame = 34 * 1024;
+
+    [Fact]
+    public void AFrameAfterAPress_StaysUnderItsCeiling()
+    {
+        var perFrame = PooledBytesPerPressedFrame();
+
+        _output.WriteLine($"pooled frame after a press: {perFrame} bytes/frame "
+                          + $"(ceiling {PooledPressedCeilingBytesPerFrame})");
+        perFrame.Should().BeLessThan(PooledPressedCeilingBytesPerFrame,
+            "a press builds what its handler's SetState marked, not every component on the screen");
+    }
+
     [Fact]
     public void AnOverlayLayer_CostsAFrameLessThanItsCeiling()
     {
@@ -469,13 +523,13 @@ public class PerfHarnessTests
         var page = OverlayHeavyScene(PhotonTheme.Instance);
 
         // The shape PhotonRealizer.Realize lays out, rather than a scene that merely looks like it:
-        // the page once, then each Overlay's CHILD against the viewport on its own root path
-        // (`ov<i>`), all on the one context. Nine calls, because the scene carries eight layers.
+        // the page once, then each Overlay's CHILD against the viewport, all on the one context.
+        // Nine calls, because the scene carries eight layers.
         LayoutEngine.Layout(page, 1280, 900, context);
         var overlays = page.Children.OfType<Overlay>().ToList();
         overlays.Should().HaveCount(OverlayLayers, "the scene is built with eight layers, and this test counts on it");
         for (var i = 0; i < overlays.Count; i++)
-            LayoutEngine.Layout(overlays[i].Child, 1280, 900, context, rootPath: $"ov{i}");
+            LayoutEngine.Layout(overlays[i].Child, 1280, 900, context);
 
         context.PassesBuilt.Should().Be(1,
             "a layer is a tree to lay out, not a per-frame allocation — the pass belongs to the "
