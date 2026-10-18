@@ -165,8 +165,8 @@ internal sealed partial class MeasureVisitor
                 case Flexible f:
                     // Spec B14: an AnimateChanges weight LAYS OUT at the animator's interpolated
                     // value — forward changes glide over Motion.Base, everything else snaps.
-                    flexWeights[i] = ctx.Transitions?.Resolve(children.At(at, i).Path, f.Flex, ctx.TimeMs,
-                        f.AnimateChanges, ctx.ReducedMotion) ?? f.Flex;
+                    flexWeights[i] = ctx.Transitions?.Resolve(children.At(at, i).Element, GlideChannel.Flex,
+                        f.Flex, ctx.TimeMs, f.AnimateChanges, ctx.ReducedMotion) ?? f.Flex;
                     if (flexWeights[i] > 0) continue;
                     // A ZERO weight takes no share (#680) — Flutter's inflexible child, CSS's
                     // `flex-grow: 0` — so it is a rigid item, laid out here. Deferred with the
@@ -193,8 +193,8 @@ internal sealed partial class MeasureVisitor
                     rigidSum += mains[i];
                     continue;
                 case Spacer { Flex: > 0 } s:
-                    flexWeights[i] = ctx.Transitions?.Resolve(children.At(at, i).Path, s.Flex, ctx.TimeMs,
-                        s.AnimateChanges, ctx.ReducedMotion) ?? s.Flex;
+                    flexWeights[i] = ctx.Transitions?.Resolve(children.At(at, i).Element, GlideChannel.Flex,
+                        s.Flex, ctx.TimeMs, s.AnimateChanges, ctx.ReducedMotion) ?? s.Flex;
                     continue;
                 case Spacer fixedSpacer:
                     mains[i] = fixedSpacer.FixedLength;
@@ -469,8 +469,9 @@ internal sealed partial class MeasureVisitor
 
     /// <summary>
     /// Where a wrapped line measures an item's content: at the ITEM's path, the one this pass has
-    /// always used, so whatever is remembered by path stays with it; and with the content's own
-    /// element, which for a <see cref="Flexible"/> is its child's, the node that is measured.
+    /// always used, so what focus and hover find by path stays with it; and with the content's own
+    /// element, which for a <see cref="Flexible"/> is its child's, the node that is measured and the
+    /// one whose state it reads.
     /// </summary>
     private static Position ItemChild(Position item, VisualNode source) =>
         source is Flexible ? item with { Element = item.Element?.ChildAt(0) } : item;

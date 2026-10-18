@@ -11,64 +11,82 @@ namespace eQuantic.UI.Native.Engine.Tests;
 
 /// <summary>
 /// Spec §06 — ENTER MOTION (the C2/C3/C4 fence): a <see cref="Presence"/> subtree animates in when
-/// it first appears. The store is a pure clock per layout path (first sighting starts the entrance,
-/// departed paths prune so a re-entry replays); the realizer paints mid-flight frames inside a
+/// it first appears. The clock is pure per position (the first measure starts the entrance, and a
+/// position that leaves takes it along, so a re-entry replays); the realizer paints mid-flight frames inside a
 /// group-opacity layer with the SlideUp rise as a paint-only translate. Settled frames emit NO
 /// layer — the goldens stayed byte-identical, which is that proof at the pixel level.
 /// </summary>
 public class PresenceMotionTests
 {
-    // ---- The store: a pure presence clock -------------------------------------------------------
+    // ---- The clock: an entrance and an exit per position ----------------------------------------
 
-    [Fact]
-    public void Store_FirstSighting_StartsTheEntrance_AndSettlesAtBase()
+    /// <summary>A presence's position and the owner that keeps it, as a host keeps its tree: a build
+    /// that no longer holds the presence takes its position out, which is its departure.</summary>
+    private sealed class Tree
     {
-        var store = new PresenceStore();
+        private static readonly ComponentContext Context = new(PhotonTheme.Instance);
+        private readonly BuildOwner _owner = BuildOwner.Structural();
 
-        store.BeginFrame();
-        store.Progress("ov0", timeMs: 0, reducedMotion: false).Should().Be(0f, "the first frame starts at 0");
-        store.AnyActive.Should().BeTrue("an entrance is mid-flight");
-        store.EndFrame(0);
+        /// <summary>Builds a frame that holds the presence, and answers its position.</summary>
+        public Element Shown()
+        {
+            var page = new Column(gap: 0);
+            page.Add(new Presence(new Box(new BoxStyle { Width = 10, Height = 10 })));
+            return _owner.Build(page, Context, WindowSizeClass.Compact, rebuildAll: true).ChildAt(0)!;
+        }
 
-        store.BeginFrame();
-        store.Progress("ov0", 100, false).Should().Be(0.5f, "smoothstep midpoint at Base/2");
-        store.EndFrame(100);
-
-        store.BeginFrame();
-        store.Progress("ov0", 200, false).Should().Be(1f, "settled at Motion.Base");
-        store.AnyActive.Should().BeFalse("nothing is mid-flight once settled");
+        /// <summary>Builds a frame without it: its position leaves the tree.</summary>
+        public void Gone() => _owner.Build(new Column(gap: 0), Context, WindowSizeClass.Compact, rebuildAll: true);
     }
 
     [Fact]
-    public void Store_ReducedMotion_UsesTheShortCrossfadeClock()
+    public void Clock_FirstSighting_StartsTheEntrance_AndSettlesAtBase()
     {
-        var store = new PresenceStore();
-        store.BeginFrame();
-        store.Progress("ov0", 0, reducedMotion: true).Should().Be(0f);
-        store.EndFrame(0);
+        var clock = new PresenceClock();
+        var tree = new Tree();
 
-        store.BeginFrame();
-        store.Progress("ov0", Motion.ReducedCrossfadeMs, reducedMotion: true)
+        clock.BeginFrame(0);
+        clock.Progress(tree.Shown(), timeMs: 0, reducedMotion: false).Should().Be(0f, "the first frame starts at 0");
+        clock.AnyActive.Should().BeTrue("an entrance is mid-flight");
+
+        clock.BeginFrame(100);
+        clock.Progress(tree.Shown(), 100, false).Should().Be(0.5f, "smoothstep midpoint at Base/2");
+
+        clock.BeginFrame(200);
+        clock.Progress(tree.Shown(), 200, false).Should().Be(1f, "settled at Motion.Base");
+        clock.AnyActive.Should().BeFalse("nothing is mid-flight once settled");
+    }
+
+    [Fact]
+    public void Clock_ReducedMotion_UsesTheShortCrossfadeClock()
+    {
+        var clock = new PresenceClock();
+        var tree = new Tree();
+        clock.BeginFrame(0);
+        clock.Progress(tree.Shown(), 0, reducedMotion: true).Should().Be(0f);
+
+        clock.BeginFrame(Motion.ReducedCrossfadeMs);
+        clock.Progress(tree.Shown(), Motion.ReducedCrossfadeMs, reducedMotion: true)
             .Should().Be(1f, "the reduced clock settles at the crossfade duration (120ms)");
     }
 
     [Fact]
-    public void Store_DepartedPathPrunes_SoAReEntryReplaysTheEntrance()
+    public void Clock_ADepartedPresence_ReentersFromTheStart()
     {
-        var store = new PresenceStore();
+        var clock = new PresenceClock();
+        var tree = new Tree();
 
-        store.BeginFrame();
-        store.Progress("ov0", 0, false);
-        store.EndFrame(0);
+        clock.BeginFrame(0);
+        clock.Progress(tree.Shown(), 0, false);
 
-        // The overlay left the tree: a frame passes without the path.
-        store.BeginFrame();
-        store.EndFrame(400);
+        // The presence left the tree: its position, and the entrance it kept, went with it.
+        clock.BeginFrame(400);
+        tree.Gone();
 
         // It returns much later — the entrance must REPLAY (start at 0), not resume settled.
-        store.BeginFrame();
-        store.Progress("ov0", 5000, false).Should().Be(0f, "a re-entry starts a fresh entrance");
-        store.AnyActive.Should().BeTrue();
+        clock.BeginFrame(5000);
+        clock.Progress(tree.Shown(), 5000, false).Should().Be(0f, "a re-entry starts a fresh entrance");
+        clock.AnyActive.Should().BeTrue();
     }
 
     // ---- The realizer: layer + rise on mid-flight frames ----------------------------------------
@@ -130,44 +148,46 @@ public class PresenceMotionTests
     // ---- Exit: the departed subtree replays its snapshot ----------------------------------------
 
     [Fact]
-    public void Store_Departure_SpawnsAnExit_ThatFallsOverFast_AndEvictsWhenDone()
+    public void Clock_Departure_SpawnsAnExit_ThatFallsOverFast_AndEvictsWhenDone()
     {
-        var store = new PresenceStore();
+        var clock = new PresenceClock();
+        var tree = new Tree();
         var commands = new[] { new DrawCommand { Kind = DrawCommandKind.FillRRect } };
 
-        store.BeginFrame();
-        store.Progress("ov0", 0, false);
-        store.Snapshot("ov0", PresenceMotion.SlideUp, commands);
-        store.EndFrame(0);
+        clock.BeginFrame(0);
+        var at = tree.Shown();
+        clock.Progress(at, 0, false);
+        clock.Snapshot(at, PresenceMotion.SlideUp, commands);
 
-        // The frame WITHOUT the path spawns the exit from the last snapshot.
-        store.BeginFrame();
-        store.EndFrame(300);
-        var mid = store.ActiveExits(350, reducedMotion: false);
+        // The frame its position leaves in starts the exit, from the last snapshot.
+        clock.BeginFrame(300);
+        tree.Gone();
+        var mid = clock.ActiveExits(350, reducedMotion: false);
         mid.Should().ContainSingle();
         mid[0].Alpha.Should().Be(0.5f, "smoothstep(50/Fast) — the layer alpha falls with the exit");
         mid[0].Drop.Should().Be(8f, "SlideUp reverses: eased × SlideDistance downward");
         mid[0].Commands.Should().BeSameAs(commands);
-        store.AnyActive.Should().BeTrue("the host keeps scheduling until the exit lands");
+        clock.AnyActive.Should().BeTrue("the host keeps scheduling until the exit lands");
 
         // Past Fast the exit is done and evicted — nothing replays, nothing schedules.
-        store.BeginFrame();
-        store.ActiveExits(500, false).Should().BeEmpty();
-        store.AnyActive.Should().BeFalse();
+        clock.BeginFrame(500);
+        clock.ActiveExits(500, false).Should().BeEmpty();
+        clock.AnyActive.Should().BeFalse();
     }
 
     [Fact]
-    public void Store_ReducedMotion_ExitIsACrossfade_NoDrop()
+    public void Clock_ReducedMotion_ExitIsACrossfade_NoDrop()
     {
-        var store = new PresenceStore();
-        store.BeginFrame();
-        store.Progress("ov0", 0, true);
-        store.Snapshot("ov0", PresenceMotion.SlideUp, [new DrawCommand()]);
-        store.EndFrame(0);
+        var clock = new PresenceClock();
+        var tree = new Tree();
+        clock.BeginFrame(0);
+        var at = tree.Shown();
+        clock.Progress(at, 0, true);
+        clock.Snapshot(at, PresenceMotion.SlideUp, [new DrawCommand()]);
 
-        store.BeginFrame();
-        store.EndFrame(200);
-        var exits = store.ActiveExits(260, reducedMotion: true);
+        clock.BeginFrame(200);
+        tree.Gone();
+        var exits = clock.ActiveExits(260, reducedMotion: true);
         exits.Should().ContainSingle();
         exits[0].Alpha.Should().Be(0.5f, "smoothstep(60/ReducedCrossfadeMs)");
         exits[0].Drop.Should().Be(0f, "reduced motion drops the movement — fade only");

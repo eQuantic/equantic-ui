@@ -262,7 +262,7 @@ public readonly record struct Curve(float X1, float Y1, float X2, float Y2)
 
 /// <summary>Spring parameters meant for gesture releases (sheet snap, swipe settle). Shipped as a TYPE
 /// only: nothing consumes it yet, and releases glide to their target over <see cref="Motion.BaseMs"/>
-/// with smoothstep (Native.Framework, DragStore). docs/design/status.json tracks the behaviour as a
+/// with smoothstep (Native.Framework, DragClock). docs/design/status.json tracks the behaviour as a
 /// request, and HandoffStatusTests fails the day something outside this file starts reading it.</summary>
 public readonly record struct SpringSpec(float Stiffness, float Damping, float Mass)
 {
@@ -304,7 +304,7 @@ public static class Motion
 /// <summary>
 /// A motion ROLE — a duration and the curve that belongs with it, so a call site names what is
 /// happening instead of picking a number. The settle after a gesture is NOT here: releases glide to
-/// their target over <see cref="Motion.BaseMs"/> (DragStore), and the velocity-taking spring is still a
+/// their target over <see cref="Motion.BaseMs"/> (DragClock), and the velocity-taking spring is still a
 /// request.
 /// </summary>
 public readonly record struct MotionSpec(int DurationMs, Curve Curve);

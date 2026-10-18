@@ -237,10 +237,10 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
     // Enter motion is layout-transparent too (opacity layer + paint-only translate) — but the
-    // progress is resolved HERE, where the stable path exists, and stamped on the node.
+    // progress is resolved HERE, against the presence's position, and stamped on the node.
     public LayoutNode Visit(Presence node, MeasureState s) => MeasurePresence(node, s.Constraints, _ctx, s.At);
 
-    // Drag-to-dismiss follows the same pattern: transparent for layout, offset stamped by path.
+    // Drag-to-dismiss follows the same pattern: transparent for layout, offset stamped on the node.
     public LayoutNode Visit(DragDismiss node, MeasureState s) => MeasureDragDismiss(node, s.Constraints, _ctx, s.At);
 
     // An Overlay is ZERO in the page flow — the realizer lays its child out against the VIEWPORT in
@@ -304,7 +304,8 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
         {
             // KEYED, like every other multi-child arm: a row that says Key takes the key as its
             // segment, so a grid whose rows are rebuilt or reordered keeps each row's identity —
-            // and the path IS identity here (focus, hover, scroll offset, a drag in flight).
+            // and each row keeps its element, where its state lives, and its path, which focus and
+            // hover still find it by.
             var row = Measure(node.Rows[index], constraints, ctx,
                 ctx.Child(at, index, node.Rows[index]));
             row.Bounds = row.Bounds with { X = 0, Y = y };

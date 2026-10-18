@@ -348,7 +348,7 @@ public class TransformedSurfaceTests
             host.KeyDown("Tab");
             host.RenderFrame(new DisplayListBuilder());
         }
-        return host.ScrollOffsetOf(host.LastFrame!.ScrollRegions.Single(r => r.MaxOffset > 0).Path);
+        return host.ScrollOffsetOf(host.LastFrame!.ScrollRegions.Single(r => r.MaxOffset > 0).Element);
     }
 
     [Fact]
@@ -394,7 +394,7 @@ public class TransformedSurfaceTests
         host.RenderFrame(new DisplayListBuilder());
         var viewport = host.LastFrame!.ScrollRegions.First(r => r.Axis == ScrollAxis.Vertical
             && region.Path.StartsWith(r.Path, StringComparison.Ordinal) && r.MaxOffset > 0);
-        return host.ScrollOffsetOf(viewport.Path);
+        return host.ScrollOffsetOf(viewport.Element);
     }
 
     [Fact]
@@ -426,7 +426,7 @@ public class TransformedSurfaceTests
         var region = host.LastFrame!.CodeRegions.Single();
         var viewport = host.LastFrame!.ScrollRegions.First(r => r.Axis == ScrollAxis.Vertical
             && region.Path.StartsWith(r.Path, StringComparison.Ordinal) && r.MaxOffset > 0);
-        return host.ScrollOffsetOf(viewport.Path);
+        return host.ScrollOffsetOf(viewport.Element);
     }
 
     /// <summary>...and turned (Copilot's second round on #690): the caret crossed as the box around

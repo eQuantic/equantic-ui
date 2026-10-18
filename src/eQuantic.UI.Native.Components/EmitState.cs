@@ -36,6 +36,5 @@ internal readonly record struct EmitState(
     IAppTheme Theme,
     ThemeMode Mode,
     DisplayListBuilder Builder,
-    Dictionary<ScrollView, (string Path, float MaxOffset)> ScrollMeta,
     MotionScope Motion,
     List<QueuedLayer> Overlays);
