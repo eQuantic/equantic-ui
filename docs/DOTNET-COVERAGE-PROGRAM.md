@@ -123,7 +123,11 @@ Design notes:
   (all tick-precise compat; DateTimeOffset = wall-clock + offset, compared by the instant),
   Nullable ✅ (HasValue/Value, GetValueOrDefault()/(fallback) with a type-aware default, lifted
   arithmetic/relational with null-propagation via `$eq.nullable.*`, a struct's own operators and
-  conversions and a record struct's equality included (#948); no-arg GetValueOrDefault on
+  conversions and a record struct's equality included (#948); Value and every unwrap a cast, a
+  struct's conversion or a foreach applies throw InvalidOperationException for an empty one through
+  `$eq.nullable.value` (#967); Equals, Nullable.Equals and EqualityComparer<T>.Default.Equals answer
+  as the lift (#968); a struct's own Value, HasValue or Count read through `?.` is the struct's
+  (#966); no-arg GetValueOrDefault on
   DateTime?/Guid?/struct? returns null rather than the type default — use the fallback form there),
   Tuple ✅ (arrays; element access by position `Item1` and by declared name `(int X, int Y).X` → index),
   record/struct/tuple value semantics ✅ (records & structs are plain objects, tuples are arrays;
