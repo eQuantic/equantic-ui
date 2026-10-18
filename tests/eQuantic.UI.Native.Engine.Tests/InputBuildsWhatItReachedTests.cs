@@ -94,24 +94,35 @@ public class InputBuildsWhatItReachedTests
         Drawn(frame.Root).Should().Contain("card 1: 1");
     }
 
-    /// <summary>A form whose field writes its value back with no SetState of its own: the host is
-    /// what makes the form build, as a browser shows a key in an input whatever its handler does.</summary>
-    private sealed class Form(List<string> builds) : StatefulComponent
+    /// <summary>
+    /// A form whose field hands each key to a handler that sets the form's state, or to one that keeps
+    /// the value without saying so. Through the public <see cref="TextInput"/> when
+    /// <paramref name="wrapped"/>: a stateful component of its own, which holds the field and not
+    /// the value, so the nearest stateful component above a field is not where its value lives.
+    /// </summary>
+    private sealed class Form(List<string> builds, bool tells, bool wrapped) : StatefulComponent
     {
         private string _name = "";
+
+        private void Keep(string value)
+        {
+            if (tells) SetState(() => _name = value);
+            else _name = value;
+        }
 
         public override VisualNode Build(ComponentContext context)
         {
             builds.Add("form");
-            return new TextEntry(_name, value => _name = value) { Label = "Name" };
+            return wrapped ? new TextInput(_name, Keep, "Name") : new TextEntry(_name, Keep) { Label = "Name" };
         }
     }
 
-    [Fact]
-    public void AKeyTypedIntoAField_BuildsTheComponentThatHoldsIt()
+    /// <summary>Types a and then b into the form's field, a frame after each, and answers what built
+    /// in those two frames and what the field shows after them.</summary>
+    private static (List<string> Builds, string Shown) TypeTwoKeys(bool tells, bool wrapped)
     {
         var builds = new List<string>();
-        var host = Open(new Board(builds, new Form(builds)));
+        var host = Open(new Board(builds, new Form(builds, tells, wrapped)));
         var field = host.LastFrame!.TextRegions.Single().Bounds.Center;
         host.PressDown(field.X, field.Y);
         host.PressUp(field.X, field.Y);
@@ -121,12 +132,32 @@ public class InputBuildsWhatItReachedTests
         host.TextInput("a");
         Frame(host);
         host.TextInput("b");
-        var frame = Frame(host);
+        return (builds, Frame(host).TextRegions.Single().Entry.Value);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AKeyTypedIntoAField_WhoseHandlerSetsState_BuildsWhatItMarked(bool wrapped)
+    {
+        var (builds, shown) = TypeTwoKeys(tells: true, wrapped);
 
         builds.Should().Equal(["form", "form"],
-            "the field's value lives in the form, which builds after each key, and nothing else does");
-        frame.TextRegions.Single().Entry.Value.Should().Be("ab",
-            "each key starts from what the form made of the one before");
+            "the handler marked the form after each key, and nothing above or beside it builds");
+        shown.Should().Be("ab");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AKeyTypedIntoAField_WhoseHandlerSetsNoState_StillShows(bool wrapped)
+    {
+        var (builds, shown) = TypeTwoKeys(tells: false, wrapped);
+
+        shown.Should().Be("ab", "each key starts from the one before, as it does in a browser's input");
+        builds.Should().Equal(["board", "form", "card 0", "card 1", "card 2", "board", "form", "card 0", "card 1", "card 2"],
+            "a handler that says nothing leaves the host unable to see where the value lives, so the "
+            + "frame after each key rebuilds every component, as every frame after input did before");
     }
 
     [Fact]

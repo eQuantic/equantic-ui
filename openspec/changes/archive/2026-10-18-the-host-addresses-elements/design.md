@@ -86,15 +86,25 @@ longer holds" and the reveal's never-cleared dictionary were each approximating.
 
 Input changes what the host paints (a press's fill, the focus ring, a caret, a hover style, an offset)
 and reaches the tree through the handlers it runs, which call `SetState` for what they change, as on
-the web. So input asks for a frame that builds only the marked positions. The exception is input the
-host routes INTO a model a component reads at build without being told: a field's value, a code
-surface's or a spreadsheet's model. For those the host marks the nearest stateful component above the
-surface, which is where the value or the model lives: its build makes every node between it and the
-surface again, so a property a stateful parent derived from the model is rebuilt too, which marking
-the nearest component alone would miss. Flutter's `EditableText` does the same from inside the tree:
-its state listens to its controller and sets its own state.
+the web. So input asks for a frame that builds only the marked positions.
 
-`ComponentElement.MarkNeedsBuild` becomes public for it, as Flutter's `Element.markNeedsBuild` is.
+What the host routes into a field, a code surface or a spreadsheet it hands to the app: a field's
+`OnChanged` with the new value, and a surface's `OnChanged` once its model took the input, which the
+surface's contract makes its component's cue to `SetState`. The host does not guess where the value
+lives. The first version of this change marked the stateful component nearest above the surface,
+and review found the case that guess gets wrong: `TextInput` keeps state of its own (its focus) and
+holds the field but not the value, so a form keeping the value without a `SetState` had the wrapper
+rebuild with the old text, and every key typed was lost. A Photon field draws the value the app hands
+it, so when a handler calls no `SetState` the host cannot know which component would show the key,
+and that frame rebuilds every component, as every frame after input did before.
+
+The owner counts every `SetState`, including one on a position already waiting to build
+(`BuildOwner.Marks`), and the host reads the count around the handler. The request for a frame
+cannot say it: a position asks for its frame once, so a key typed while the editor waited to build
+for its own viewport looked like a handler that said nothing. The structural answer is the browser's
+and Flutter's, a field that keeps what was typed and takes the app's value only when it changes, and
+it changes what a handler that rejects a key sees on Photon, so it is its own change (#996).
+
 An invalidation the host is told of, a resize, a density change and a hot reload still rebuild every
 component, because each changes what every build reads.
 
@@ -121,10 +131,10 @@ and the host its cache of path strings.
 
 ## Risks / Trade-offs
 
-- [An app that changes what a build reads in an input handler without `SetState`] → its frame no
+- [An app that changes what a build reads in a press handler without `SetState`] → its frame no
   longer shows the change until something rebuilds it, which is the web's behaviour and E1's rule for
-  frames drawn for motion; a field's value, a code editor and a spreadsheet are covered by the host
-  itself. The tests that relied on input rebuilding everything say so where they change.
+  frames drawn for motion. A field's or a surface's handler that calls no `SetState` still gets a
+  frame that rebuilds everything, so a key always shows.
 - [Work posted to the thread that draws, which changes what a build reads without `SetState`] →
   it no longer shows by itself, since the wake builds nothing; the web behaves the same, and the
   samples' awaited results all set state.

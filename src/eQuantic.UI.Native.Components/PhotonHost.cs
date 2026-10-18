@@ -103,9 +103,10 @@ public sealed class PhotonHost
     /// Asks for a frame that builds EVERY component, for what changes what every build reads: an
     /// invalidation the host is told of, a resize, a density change, a hot reload. Every other
     /// request builds what is marked, as on the web (#976): a <c>SetState</c> marks its own position
-    /// (<see cref="RequestFrame"/>), input the host routes into a field or a surface marks the
-    /// component that holds it (<see cref="MarkHolder"/>), and the press, the focus, the hover, a
-    /// caret and an offset are the host's own to paint, so a frame for them builds nothing.
+    /// (<see cref="RequestFrame"/>), input the host routes into a field or a surface is handed to
+    /// the app, which says what it changed (<see cref="RebuildUnlessTold"/>), and the press, the
+    /// focus, the hover, a caret and an offset are the host's own to paint, so a frame for them
+    /// builds nothing.
     /// </summary>
     private void RebuildAll()
     {
@@ -114,33 +115,29 @@ public sealed class PhotonHost
     }
 
     /// <summary>
-    /// Input the host routed INTO a model the tree reads at build (a field's value, a code surface's
-    /// or a spreadsheet's model) reaches the tree with no <c>SetState</c> of the host's own, so the
-    /// host marks the stateful component nearest above the surface at <paramref name="at"/>, which
-    /// is where the value or the model lives. Its build makes every node between it and the surface
-    /// again, so a property a stateful parent derived from the model is rebuilt too, which marking
-    /// the nearest component alone would miss. Flutter's <c>EditableText</c> does the same from
-    /// inside the tree: its state listens to its controller and sets its own state.
+    /// After the host handed input it routed into a field or a surface to the app's handler, which
+    /// ran while the owner's count of <c>SetState</c>s stood at <paramref name="marks"/>. The app says
+    /// with <c>SetState</c> what it changed, as on the web, and the next frame builds what it marked
+    /// (#976). A handler that called none leaves the host unable to see where the value lives,
+    /// because nothing in the tree says so: a form can keep a field's value without a
+    /// <c>SetState</c>, and the stateful component nearest above a field is not where its value lives
+    /// when it is a field component of its own, as <c>TextInput</c> is. So that frame rebuilds every
+    /// component, as every frame after input did before, and the key still shows.
     /// </summary>
-    private static void MarkHolder(Element? at)
+    private void RebuildUnlessTold(int marks)
     {
-        for (var above = at?.Parent; above is not null; above = above.Parent)
-            if (above is ComponentElement { Component: StatefulComponent } holder)
-            {
-                holder.MarkNeedsBuild();
-                return;
-            }
+        if (_owner.Marks == marks) RebuildAll();
+        NeedsRender = true;
     }
 
-    /// <summary>The surface at <paramref name="at"/> took input into its model: the component that
-    /// holds it builds in the next frame (<see cref="MarkHolder"/>), and the surface's own component
-    /// hears it (<paramref name="onChanged"/>). The frame is asked for here too, because a surface
-    /// with no stateful component above it marks nothing and the host still paints its caret.</summary>
-    private void SurfaceChanged(Element? at, Action? onChanged)
+    /// <summary>The surface took input into its model, and its component hears it through
+    /// <paramref name="onChanged"/>, the cue its contract gives it to <c>SetState</c>
+    /// (<see cref="RebuildUnlessTold"/>).</summary>
+    private void SurfaceChanged(Action? onChanged)
     {
-        MarkHolder(at);
+        var marks = _owner.Marks;
         onChanged?.Invoke();
-        NeedsRender = true;
+        RebuildUnlessTold(marks);
     }
 
     /// <summary>When the next frame is due even though nothing is dirty — the caret's next blink
@@ -1062,11 +1059,7 @@ public sealed class PhotonHost
         _textAt = region.Element;
         _focused = null;
         ForgetFocus();
-        if (changed)
-        {
-            region.Surface.Model.FocusChanged(true);
-            MarkHolder(region.Element);
-        }
+        if (changed) region.Surface.Model.FocusChanged(true);
         NeedsRender = true;
     }
 
@@ -1232,7 +1225,7 @@ public sealed class PhotonHost
         if (CodeTarget is { } code)
         {
             code.Model.FocusChanged(false);
-            SurfaceChanged(_textAt, code.OnChanged);
+            SurfaceChanged(code.OnChanged);
         }
         _textAt = null;
         _marked = "";
@@ -1255,7 +1248,7 @@ public sealed class PhotonHost
         if (SheetTarget is { } sheetTarget)
         {
             sheetTarget.Model.HandleText(text);
-            SurfaceChanged(_textAt, sheetTarget.OnChanged);
+            SurfaceChanged(sheetTarget.OnChanged);
             return true;
         }
         // A code surface types through its model, which is where auto-closing pairs, the
@@ -1264,7 +1257,7 @@ public sealed class PhotonHost
         {
             if (!surface.Model.HandleText(text)) return false;
             RestartBlink();
-            SurfaceChanged(_textAt, surface.OnChanged);
+            SurfaceChanged(surface.OnChanged);
             return true;
         }
         if (TextTarget is not { } entry || entry.Disabled) return false;
@@ -1313,7 +1306,7 @@ public sealed class PhotonHost
             // A composition the model refuses (a read-only editor) is not one the host may claim:
             // the platform asks the HOST whether anything is marked. A cancellation still clears it.
             if (!code.Model.SetComposition(text) && text.Length > 0) return false;
-            SurfaceChanged(_textAt, code.OnChanged);
+            SurfaceChanged(code.OnChanged);
         }
         if (TextTarget is { } entry && !entry.Disabled)
         {
@@ -1597,8 +1590,9 @@ public sealed class PhotonHost
         // read-only field, and pretending the character landed would be a lie the next frame undoes.
         if (entry.OnChanged is null) return;
         _edited = value;
-        MarkHolder(_textAt);
+        var marks = _owner.Marks;
         entry.OnChanged(value);
+        RebuildUnlessTold(marks);
     }
 
     /// <summary>Clears keyboard focus (pointer interaction, escape).</summary>
@@ -1619,7 +1613,7 @@ public sealed class PhotonHost
     {
         if (surface.Model.HandleKey(key, modifiers, Clipboard))
         {
-            SurfaceChanged(_textAt, surface.OnChanged);
+            SurfaceChanged(surface.OnChanged);
             return true;
         }
 
@@ -1858,7 +1852,7 @@ public sealed class PhotonHost
                 if (!ReferenceEquals(sheetRegions[i].Element, _textAt)) continue;
                 if (!sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Move,
                         ToLocal(sheetRegions, i, sheetRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1)) break;
-                SurfaceChanged(sheetRegions[i].Element, sheetRegions[i].Surface.OnChanged);
+                SurfaceChanged(sheetRegions[i].Surface.OnChanged);
                 break;
             }
             return;
@@ -1874,7 +1868,7 @@ public sealed class PhotonHost
                 if (!ReferenceEquals(surfaces[i].Element, _textAt)) continue;
                 if (!surfaces[i].Surface.Model.HandlePointer(PointerPhase.Move,
                         ToLocal(surfaces, i, surfaces[i].Bounds, new Point(x, y)), KeyModifiers.None, 1)) break;
-                SurfaceChanged(surfaces[i].Element, surfaces[i].Surface.OnChanged);
+                SurfaceChanged(surfaces[i].Surface.OnChanged);
                 break;
             }
             return;
@@ -2285,7 +2279,7 @@ public sealed class PhotonHost
                 modifiers, clickCount);
             _codeDragging = true;
             RestartBlink();
-            SurfaceChanged(surfaces[i].Element, surfaces[i].Surface.OnChanged);
+            SurfaceChanged(surfaces[i].Surface.OnChanged);
             return true;
         }
 
@@ -2303,7 +2297,7 @@ public sealed class PhotonHost
             sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Down,
                 ToLocal(sheetRegions, i, sheetRegions[i].Bounds, point), modifiers, clickCount);
             _sheetPressed = true;
-            SurfaceChanged(sheetRegions[i].Element, sheetRegions[i].Surface.OnChanged);
+            SurfaceChanged(sheetRegions[i].Surface.OnChanged);
             return true;
         }
 
@@ -2337,7 +2331,7 @@ public sealed class PhotonHost
             {
                 if (!ReferenceEquals(codeRegions[i].Element, _textAt)) continue;
                 if (codeRegions[i].Surface.Model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1))
-                    MarkHolder(codeRegions[i].Element);
+                    SurfaceChanged(codeRegions[i].Surface.OnChanged);
                 break;
             }
         }
@@ -2349,7 +2343,7 @@ public sealed class PhotonHost
             {
                 if (!ReferenceEquals(sheetRegions[i].Element, _textAt)) continue;
                 if (sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1))
-                    SurfaceChanged(sheetRegions[i].Element, sheetRegions[i].Surface.OnChanged);
+                    SurfaceChanged(sheetRegions[i].Surface.OnChanged);
                 break;
             }
         }
@@ -2411,7 +2405,7 @@ public sealed class PhotonHost
                 if (!ReferenceEquals(codeRegions[i].Element, _textAt)) continue;
                 if (codeRegions[i].Surface.Model.HandlePointer(PointerPhase.Up,
                         ToLocal(codeRegions, i, codeRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1))
-                    MarkHolder(codeRegions[i].Element);
+                    SurfaceChanged(codeRegions[i].Surface.OnChanged);
                 break;
             }
         }
@@ -2428,7 +2422,7 @@ public sealed class PhotonHost
                 // nothing, and the release goes on like any other.
                 if (!sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Up,
                         ToLocal(sheetRegions, i, sheetRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1)) break;
-                SurfaceChanged(sheetRegions[i].Element, sheetRegions[i].Surface.OnChanged);
+                SurfaceChanged(sheetRegions[i].Surface.OnChanged);
                 return true;
             }
         }
@@ -2827,7 +2821,7 @@ public sealed class PhotonHost
             if (surface.Model.HandleKey(key, modifiers, KeyboardConvention, Clipboard))
             {
                 RestartBlink();
-                SurfaceChanged(_textAt, surface.OnChanged);
+                SurfaceChanged(surface.OnChanged);
                 return true;
             }
             // Escape LEAVES the editor rather than being swallowed: an editor that traps Escape is

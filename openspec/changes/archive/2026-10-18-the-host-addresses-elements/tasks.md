@@ -8,7 +8,7 @@
 ## 2. The engine
 
 - [x] 2.1 `Element.Id`, assigned at mount from the owner's count; `NodeElement.PartId`, from the same
-  count and kept on the position; `ComponentElement.MarkNeedsBuild` public
+  count and kept on the position; `BuildOwner.Marks`, every `SetState` counted
 - [x] 2.2 Engine tests: ids are unique in a tree, kept across a rebuild, new for a node at another's
   place; a part keeps its id while its position lives
 
@@ -35,8 +35,8 @@
 ## 5. A frame after input builds what it reached
 
 - [x] 5.1 Input asks for a frame that builds only what is marked; input routed into a field, a code
-  surface or a spreadsheet marks the nearest stateful component above it; invalidation, resize,
-  density and hot reload rebuild everything
+  surface or a spreadsheet is handed to its handler, and one that calls no `SetState` gets a frame
+  that rebuilds everything; invalidation, resize, density and hot reload rebuild everything
 - [x] 5.2 Host tests, each failing on main: a press builds the pressed card alone; a key typed into a
   code editor builds the editor alone; focus, a press and a hover do not pass to a node that takes
   their control's place; and one that passes on both: a keyed row keeps its focus when a row is

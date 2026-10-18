@@ -230,6 +230,20 @@ public class ElementTreeTests
         owner.HasDirty.Should().BeTrue();
     }
 
+    [Fact]
+    public void EverySetState_IsCounted_EvenOnAPositionAlreadyWaiting()
+    {
+        var owner = new BuildOwner();
+        var root = Frame(owner, new Page(["a"]));
+        var before = owner.Marks;
+
+        CounterAt(root, 0).Press();
+        CounterAt(root, 0).Press();
+
+        owner.Marks.Should().Be(before + 2,
+            "a host reads the count around a handler to know whether it called SetState at all");
+    }
+
     private sealed class SettingWhileBuilding : StatefulComponent
     {
         private bool _settled;

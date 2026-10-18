@@ -63,6 +63,17 @@ public sealed class BuildOwner
     /// <summary>Whether a position is waiting to build.</summary>
     public bool HasDirty => _dirty.Count > 0 || _dirtyNextFrame.Count > 0;
 
+    /// <summary>
+    /// How many times a <c>SetState</c> has asked a position of this tree to build, counted whether
+    /// or not the position was already waiting to. <see cref="BuildRequested"/> is raised once for a
+    /// position however often it is asked before its frame, so it cannot say whether a given handler
+    /// asked: a host that hands input to an app's handler reads this before and after it, and a
+    /// handler that asked for nothing is one that changed what it shows without saying so (#976).
+    /// </summary>
+    public int Marks { get; private set; }
+
+    internal void CountMark() => Marks++;
+
     /// <summary>Whether this owner's tree is drawn again: a host's is, and calls the lifecycle hooks; a
     /// structural one (<see cref="Structural"/>) is laid out once and calls none, nor anything else
     /// that would set state or start work for a tree nobody draws again.</summary>

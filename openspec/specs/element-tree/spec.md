@@ -83,9 +83,10 @@ A `SetState` SHALL mark its own position for a build and ask the host for a fram
 SHALL build the marked positions, ancestors before descendants, and nothing else. A frame the host
 draws only because something moves (a glide, a transition, a presence, a loop, a frame ticker's
 subscriber) SHALL build nothing. A frame after input SHALL build what the input reached: the
-positions the handlers it ran marked, and the nearest stateful component that holds a field, a code
-surface or a spreadsheet the host routed the input into. A frame the host draws for work posted to
-its thread SHALL build what the work marked. A frame after an invalidation the host was told of, a
+positions the handlers it ran marked. Input the host routes into a field, a code surface or a
+spreadsheet SHALL be handed to the app's handler, and a frame after such a handler that called no
+`SetState` SHALL rebuild every component, because the host cannot see where the value lives. A frame
+the host draws for work posted to its thread SHALL build what the work marked. A frame after an invalidation the host was told of, a
 resize, a density change or a hot reload SHALL rebuild every component.
 
 #### Scenario: A loop runs
@@ -110,12 +111,17 @@ resize, a density change or a hot reload SHALL rebuild every component.
   editor
 - **THEN** the next frame builds the editor's component and no component beside it
 
+#### Scenario: A key typed into a field whose handler sets state
+
+- **WHEN** a stateful form holds a field, directly or through a field component with state of its own,
+  and the field's handler calls the form's `SetState` with each key
+- **THEN** each next frame builds the form and what it builds, and no component above or beside it
+
 #### Scenario: A key typed into a field whose handler sets no state
 
-- **WHEN** a stateful component holds a field whose handler stores the value without `SetState`, and
-  keys are typed into the field
-- **THEN** each next frame builds that component, the field shows every key typed, and no other
-  component builds
+- **WHEN** a stateful form keeps its field's value without `SetState`, directly or through a field
+  component with state of its own, and keys are typed into the field
+- **THEN** each next frame rebuilds every component, and the field shows every key typed
 
 #### Scenario: Work posted to the thread that draws
 

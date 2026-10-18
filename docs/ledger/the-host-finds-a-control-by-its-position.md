@@ -7,10 +7,10 @@
   forgotten, as a browser's is. Every position takes an integer id when it mounts (`Element.Id`), a
   linked run takes one its paragraph's position keeps (`NodeElement.PartId`), and the macOS, iOS and
   Android bridges name a node by it (`SemanticNode.Id`, `PhotonHost.Activate`, `Adjust`, `FocusedId`).
-  The path is gone from the layout, the realizer and the host. A frame after input builds what the
-  input reached, the components its handlers marked and the stateful component holding a field, a code
-  surface or a spreadsheet the host typed into, where it rebuilt every component: a press on one card
-  of a dashboard went from 94,190 to 31,246 bytes a frame. Work posted to the thread that draws no
-  longer rebuilds every component either
+  The path is gone from the layout, the realizer and the host. A frame after input builds what its
+  handlers marked with `SetState`, where it rebuilt every component: a press on one card of a dashboard
+  went from 94,190 to 31,246 bytes a frame. A field's or a surface's handler that calls no `SetState`
+  still gets a frame that rebuilds everything, so a key always shows. Work posted to the thread that
+  draws no longer rebuilds every component either
   ([#976](https://github.com/eQuantic/equantic-ui/issues/976)). Proposed and archived through OpenSpec
   (`openspec/specs/element-tree`).

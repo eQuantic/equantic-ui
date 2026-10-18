@@ -31,9 +31,9 @@ frame against 28,534 for the same screen at rest.
   `PhotonHost.Adjust(int, int)` and `PhotonHost.FocusedId`.
 - The path goes: from the laid-out node, the measure walk, the layout context's path cache, the
   realizer's layer names and the host.
-- A frame after input builds what the input reached: the components a handler's `SetState` marked,
-  and the nearest stateful component holding a field, a code surface or a spreadsheet the host typed
-  into. Work posted to the thread that draws builds what it marks, where it woke the host with an
+- A frame after input builds what the input reached: the components a handler's `SetState` marked.
+  A field's or a surface's handler that calls no `SetState` gets a frame that rebuilds every
+  component, as before, since the host cannot see where the value lives. Work posted to the thread that draws builds what it marks, where it woke the host with an
   invalidation. An invalidation, a resize, a density change and a hot reload still rebuild every
   component.
 - What a developer sees: nothing they write changes, and a frame shows what a `SetState` said, after
@@ -60,8 +60,8 @@ frame against 28,534 for the same screen at rest.
 
 ## Impact
 
-- `eQuantic.UI.Primitives`: `Element.Id` and `NodeElement.PartId`; `ComponentElement.MarkNeedsBuild`
-  becomes public, as Flutter's `Element.markNeedsBuild` is; `SemanticNode.Id` replaces `Path`.
+- `eQuantic.UI.Primitives`: `Element.Id` and `NodeElement.PartId`; `BuildOwner.Marks` counts every
+  `SetState`; `SemanticNode.Id` replaces `Path`.
 - `eQuantic.UI.Native.Framework`: the measure walk carries the element alone; `LayoutNode.Path`,
   `Position`, the path cache and the probe path go.
 - `eQuantic.UI.Native.Components`: the regions, the focus stops, the live region marks, the press

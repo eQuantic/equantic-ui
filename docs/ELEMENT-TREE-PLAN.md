@@ -482,11 +482,12 @@ the parity rows it closes flip.
    parents and stops at a layer, as a path's prefix did; and the shells name a node by
    `SemanticNode.Id`, an integer each position takes from its owner when it mounts (`Element.Id`),
    with a linked run named by an id its paragraph's position keeps (`NodeElement.PartId`). The path
-   is gone from the layout, the realizer and the host. A frame after input builds what the input
-   reached: what its handlers marked, and the nearest stateful component above a field, a code
-   surface or a spreadsheet the host typed into (`ComponentElement.MarkNeedsBuild`, public). An
-   invalidation, a resize, a density change and a hot reload still rebuild every component. Two
-   defects it found:
+   is gone from the layout, the realizer and the host. A frame after input builds what its handlers
+   marked with `SetState`. A field's or a surface's handler that calls none gets a frame that
+   rebuilds every component, because a Photon field draws the app's value and the host cannot see
+   where it lives (`BuildOwner.Marks` counts every `SetState`, and #996 would have the field keep
+   what was typed, as a browser's input does). An invalidation, a resize, a density change and a hot
+   reload still rebuild every component. Two defects it found:
    - A press, the focus and the hover passed to whatever node took their control's place, because a
      path is a place: a page replaced under the focus handed it to the new page's button, and a key
      changed on a slot that holds one child left a press on the newcomer, so a release ran a handler
