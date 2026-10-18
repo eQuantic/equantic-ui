@@ -366,9 +366,11 @@ public class NullableStructConformanceTests
     /// <summary>
     /// Classes of the app's, which only an app's build writes as twins: <c>EqualityComparer&lt;T&gt;.Default.Equals</c>
     /// asks a value's own equality as .NET's comparers do, with no identity check, an <c>Equals(object)</c> override
-    /// its class declares or inherits from the app's base, and an <c>IEquatable&lt;T&gt;</c> the class answers, through
-    /// the class itself, <c>object</c>, an interface and generic code alike, and a class with neither compares by
-    /// reference. Each case counts the calls it makes.
+    /// its class declares or inherits from the app's base, an override of a subclass behind a base that has none,
+    /// and an <c>IEquatable&lt;T&gt;</c> the class answers, through the class itself, <c>object</c>, an interface and
+    /// generic code alike, and a class with neither compares by reference. A record's synthesized <c>Equals</c>
+    /// checks the reference before it reads a member, as C# writes it, wherever the comparer reaches it. Each case
+    /// counts the calls it makes.
     /// </summary>
     private const string Classes = """
         using System;
@@ -422,6 +424,53 @@ public class NullableStructConformanceTests
             public override int GetHashCode() => X;
         }
 
+        public class Shape { }
+
+        public class Square : Shape
+        {
+            public static int Calls;
+            public Square(int side) { Side = side; }
+            public int Side { get; }
+            public override bool Equals(object o) { Calls++; return o is Square s && s.Side == Side; }
+            public override int GetHashCode() => Side;
+        }
+
+        public class Refusing : Shape
+        {
+            public static int Calls;
+            // Refuses even itself, behind a base that does not override Equals.
+            public override bool Equals(object o) { Calls++; return false; }
+            public override int GetHashCode() => 0;
+        }
+
+        public abstract class Figure { }
+
+        public class Circle : Figure
+        {
+            public static int Calls;
+            public override bool Equals(object o) { Calls++; return o is Circle; }
+            public override int GetHashCode() => 1;
+        }
+
+        public sealed class Sealed
+        {
+            public Sealed(int n) { N = n; }
+            public int N { get; }
+        }
+
+        public record BaseRecord(int X);
+
+        public record ExtendedRecord(int X) : BaseRecord(X)
+        {
+            public static int Calls;
+            public virtual bool Equals(ExtendedRecord other) { Calls++; return other is not null && other.X == X; }
+            public override int GetHashCode() => X;
+        }
+
+        // A synthesized Equals over a member compared by the app's typed Equals, which it asks only past its reference
+        // check.
+        public record Wrapped(TypedClass T) : IShape;
+
         public static class Generic
         {
             public static bool Same<T>(T a, T b) => EqualityComparer<T>.Default.Equals(a, b);
@@ -450,6 +499,17 @@ public class NullableStructConformanceTests
         ("generic code, IEquatable<T>", "TypedClass.Calls = 0; TypedClass.TypedCalls = 0; var t = new TypedClass(1); var r = Generic.Same(t, t); return r + \"|\" + TypedClass.Calls + \"|\" + TypedClass.TypedCalls;"),
         ("generic code, no override", "var p = new PlainClass(1); return Generic.Same(p, p) + \"|\" + Generic.Same(p, new PlainClass(1));"),
         ("generic code, an int and two nulls", "return Generic.Same(1, 1) + \"|\" + Generic.Same(1, 2) + \"|\" + Generic.Same<Counter>(null, null);"),
+        ("a base with no override, a subclass's override on the value itself", "Square.Calls = 0; Shape s = new Square(1); var r = EqualityComparer<Shape>.Default.Equals(s, s); return r + \"|\" + Square.Calls;"),
+        ("a base with no override, a subclass that refuses itself", "Refusing.Calls = 0; Shape x = new Refusing(); var r = EqualityComparer<Shape>.Default.Equals(x, x); return r + \"|\" + Refusing.Calls;"),
+        ("a base with no override, by reference", "var a = new Shape(); return EqualityComparer<Shape>.Default.Equals(a, a) + \"|\" + EqualityComparer<Shape>.Default.Equals(a, new Shape());"),
+        ("an abstract base, a subclass's override", "Circle.Calls = 0; Figure f = new Circle(); var r = EqualityComparer<Figure>.Default.Equals(f, f); return r + \"|\" + Circle.Calls;"),
+        ("a sealed class with no override, by reference", "var a = new Sealed(1); return EqualityComparer<Sealed>.Default.Equals(a, a) + \"|\" + EqualityComparer<Sealed>.Default.Equals(a, new Sealed(1));"),
+        ("a base record, a derived record's own typed Equals", "ExtendedRecord.Calls = 0; BaseRecord e = new ExtendedRecord(1); var r = EqualityComparer<BaseRecord>.Default.Equals(e, e); return r + \"|\" + ExtendedRecord.Calls;"),
+        ("a record's synthesized Equals checks the reference", "TypedClass.Calls = 0; TypedClass.TypedCalls = 0; var w = new Wrapped(new TypedClass(1)); var r = EqualityComparer<Wrapped>.Default.Equals(w, w); return r + \"|\" + TypedClass.Calls + \"|\" + TypedClass.TypedCalls;"),
+        ("object, a record's synthesized Equals", "TypedClass.Calls = 0; TypedClass.TypedCalls = 0; object w = new Wrapped(new TypedClass(1)); var r = EqualityComparer<object>.Default.Equals(w, w); return r + \"|\" + TypedClass.Calls + \"|\" + TypedClass.TypedCalls;"),
+        ("an interface, a record's synthesized Equals", "TypedClass.Calls = 0; TypedClass.TypedCalls = 0; IShape w = new Wrapped(new TypedClass(1)); var r = EqualityComparer<IShape>.Default.Equals(w, w); return r + \"|\" + TypedClass.Calls + \"|\" + TypedClass.TypedCalls;"),
+        ("generic code, a record's synthesized Equals", "TypedClass.Calls = 0; TypedClass.TypedCalls = 0; var w = new Wrapped(new TypedClass(1)); var r = Generic.Same(w, w); return r + \"|\" + TypedClass.Calls + \"|\" + TypedClass.TypedCalls;"),
+        ("generic code, two records holding one typed member", "TypedClass.Calls = 0; TypedClass.TypedCalls = 0; var t = new TypedClass(1); var r = Generic.Same(new Wrapped(t), new Wrapped(t)); return r + \"|\" + TypedClass.Calls + \"|\" + TypedClass.TypedCalls;"),
     ];
 
     [SkippableTheory]
