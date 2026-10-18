@@ -1,0 +1,274 @@
+# The spreadsheet — Excel's and Sheets' grid, written once
+
+## Why a plan, and why now
+
+`Spreadsheet` shipped in August as a v1 with its fences stated: the strings the user typed, no
+formulas, no formatting, no merges, no frozen panes, vertical virtualization only. #949 (2026-10-17)
+then gave its engine an assembly of its own, `eQuantic.UI.Sheet`, driven from both hosts through one
+protocol (`ISheetSurfaceModel`), the road the code editor took. The foundation is sound: a sparse
+document, Excel's keyboard in one shared keymap, undo by inverse edits, a fill handle, resize grips.
+
+The bar is now stated by Edgar (2026-10-18): **a grid that stands beside Microsoft Excel and Google
+Sheets** — every gesture, every visual indicator, every effect, every way to drag, select and resize
+rows and columns, so that using it is complete and pleasant and never frustrates. This document is
+that bar, what is broken against it today (measured before anything was changed), the shape that
+reaches it, and the slices in order.
+
+Four decisions taken with Edgar (2026-10-18) shape everything else:
+
+- **The vocabulary gains a two-dimensional viewport with pinned bands**, realized on both targets,
+  and the spreadsheet is rebuilt on it (§2). Headers, frozen panes and both scroll axes become one
+  layout instead of code that keeps two scrollers in step.
+- **The cell editor and the formula bar are built on the code editor's engine**, `eQuantic.UI.Code`
+  (§4): its text door, caret, selection, undo, completion list and signature help, rather than a
+  second text editor.
+- **The formula engine is an opt-in package**, `eQuantic.UI.Sheet.Formulas` (§7). The base engine
+  defines where a calculator plugs in and stays a grid of typed values without it.
+- **Interaction comes first**: slices 0 to 4 (viewport, editor, selection, commands and structure,
+  clipboard and moving cells) before typed values, formatting and formulas.
+
+## What it has to beat — the parity bar
+
+The union of what Excel (desktop, Windows and Mac) and Google Sheets offer in the grid itself. "Now"
+is what the component does on 2026-10-18; "further" is where the design is meant to be better than
+both, not merely equal.
+
+### The grid and its viewport
+
+| capability | Excel | Sheets | now | slice | further |
+|---|---|---|---|---|---|
+| Rows and columns virtualized on both axes | ✓ | ✓ | rows only | 0 | |
+| Headers that stay put while the cells scroll, aligned at any width | ✓ | ✓ | ✗ D3 | 0 | aligned by construction: one viewport, pinned bands |
+| Horizontal scroll, Shift+wheel, trackpad on both axes | ✓ | ✓ | ✗ D4 | 0 | |
+| The active cell kept in view by every move | ✓ | ✓ | ✗ D2 | 0 | |
+| Autoscroll while a drag (select, fill, move) nears an edge | ✓ | ✓ | ✗ | 0 | speed follows the distance past the edge |
+| Row header that widens with the row number's digits | ✓ | ✓ | fixed 44 | 0 | |
+| Frozen rows and columns, divider draggable | ✓ | ✓ | ✗ | 8 | the same pinned bands the headers use |
+| Zoom (⌘ wheel, pinch) | ✓ | ✓ | ✗ | 8 | |
+
+### Selection and navigation
+
+| capability | Excel | Sheets | now | slice | further |
+|---|---|---|---|---|---|
+| Click, drag, Shift+click, Shift+arrows, ⌘/Ctrl+Shift+arrows | ✓ | ✓ | ✓ | — | |
+| Header click, header drag, Shift+click on headers | ✓ | ✓ | click only | 2 | |
+| ⌘/Ctrl+click: several ranges at once | ✓ | ✓ | ✗ | 2 | |
+| Shift+Space row, Ctrl+Space column; ⌘A current region, then the sheet | ✓ | ✓ | ⌘A sheet only | 2 | |
+| PageUp/PageDown, Alt+PageUp/PageDown, Ctrl+Backspace (show the active cell) | ✓ | ✓ | ✗ | 2 | |
+| Ctrl+End goes to the last USED cell | ✓ | ✓ | ✗ D10 | 2 | |
+| Enter after a Tab run returns to the column the run began in | ✓ | ✓ | ✗ | 2 | |
+| Go To (F5, Ctrl+G) and the name box | ✓ | ✓ | ✗ | 1 | |
+| A range drawn as one outlined rectangle; header emphasis; dimmed when unfocused | ✓ | ✓ | per-cell fill | 2 | |
+| The cell cursor glides between cells | ✓ (365) | — | ✗ | 2 | the theme's motion tokens, off under reduced motion |
+| Status bar: Sum, Average, Count of the selection | ✓ | ✓ | ✗ | 2 | |
+
+### Editing a cell
+
+| capability | Excel | Sheets | now | slice | further |
+|---|---|---|---|---|---|
+| Type to replace, F2 and double-click to edit in place, Escape cancels | ✓ | ✓ | ✓ | — | |
+| Dead keys, IME, emoji, AltGr | ✓ | ✓ | ✗ D5 | 1 | the code surface's input door, not a second one |
+| Caret anywhere, selection inside the cell, word moves, Home/End | ✓ | ✓ | ✗ D15 | 1 | |
+| Enter mode and Edit mode (arrows commit, or move the caret; F2 toggles) | ✓ | ✓ | Enter mode only | 1 | |
+| Line break in a cell (Alt+Enter / ⌥↩) | ✓ | ✓ | ✗ | 1 | |
+| Ctrl+Enter fills the selection; Ctrl+; date, Ctrl+Shift+; time | ✓ | ✓ | ✗ | 1 | |
+| The editor grows over its neighbours as the text grows | ✓ | ✓ | ✗ | 1 | |
+| Formula bar, live with the cell editor | ✓ | ✓ | ✗ | 1 | one document behind both, so they cannot disagree |
+| AutoComplete from the column's own values | ✓ | ✓ | ✗ | 5 | |
+
+### Clipboard, fill and moving cells
+
+| capability | Excel | Sheets | now | slice | further |
+|---|---|---|---|---|---|
+| Copy and paste as tab-separated values | ✓ | ✓ | ✓ | — | |
+| HTML tables in and out (Word, Docs, web pages) | ✓ | ✓ | ✗ | 4 | |
+| Marching ants on the copied range, Escape clears them | ✓ | ✓ | ✗ | 4 | |
+| Cut marks the cells and the paste MOVES them | ✓ | ✓ | ✗ D9 | 4 | |
+| One value pasted over a selection fills all of it; a block repeats over a multiple | ✓ | ✓ | ✗ | 4 | |
+| Paste values only, paste transposed | ✓ | ✓ | ✗ | 4 | |
+| Drag a selection's border to move it, ⌥/Ctrl to copy, Shift to insert | ✓ | ✓ | ✗ | 4 | |
+| Fill handle: copy | ✓ | ✓ | ✓ | — | |
+| Fill handle: series (1, 2 → 3; Mon → Tue; Jan → Feb; dates; "Item 1" → "Item 2") | ✓ | ✓ | ✗ | 5 | |
+| Double-click the fill handle fills down to the neighbour column's data | ✓ | ✓ | ✗ | 5 | |
+| Fill handle dragged back into the selection clears what it leaves | ✓ | — | ✗ | 5 | |
+| ⌘D / ⌘R | ✓ | ✓ | ✓ | — | |
+
+### Rows and columns
+
+| capability | Excel | Sheets | now | slice | further |
+|---|---|---|---|---|---|
+| Resize by the separator | ✓ | ✓ | ✓ | — | |
+| A guide line across the grid and the size in a tooltip while resizing | ✓ | ✓ | ✗ | 3 | |
+| Resize every selected column at once | ✓ | ✓ | ✗ | 3 | |
+| Double-click the separator fits the content | ✓ | ✓ | ✗ | 3 | |
+| Insert and delete rows and columns: keys, menu, N at once | ✓ | ✓ | engine only D11 | 3 | |
+| Hide and unhide, with the hidden spot marked | ✓ | ✓ | ✗ | 3 | |
+| Reorder by dragging a selected header | — | ✓ | ✗ | 3 | |
+| Context menus on cells, headers and the corner (right-click, Shift+F10, long press) | ✓ | ✓ | ✗ D11 | 3 | one command registry behind keys, menus and toolbars |
+
+### Values, formatting, formulas, data
+
+| capability | Excel | Sheets | now | slice | further |
+|---|---|---|---|---|---|
+| Typed values: number, text, boolean, date and time, error | ✓ | ✓ | text only D8 | 5 | parsed in the app's culture, through .NET's own |
+| Alignment by type, long text spilling into empty neighbours, `###` for a narrow number | ✓ | ✓ | ✗ D7 | 5 | |
+| Number formats (general, number, currency, percent, date, custom codes) | ✓ | ✓ | ✗ | 6 | |
+| Cell styles: bold, italic, underline, colours, alignment, wrap, borders; ⌘B ⌘I ⌘U | ✓ | ✓ | ✗ | 6 | typed tokens, never a CSS string |
+| Rows that grow with wrapped text; format painter | ✓ | ✓ | ✗ | 6 | |
+| Formulas: references, ranges, `$` anchors, operators, a function catalogue | ✓ | ✓ | ✗ | 7 | an opt-in package; functions an app adds in C# |
+| Incremental recalculation, circular references, `#REF!` and its siblings | ✓ | ✓ | ✗ | 7 | |
+| References that follow inserts, deletes, fills and copies | ✓ | ✓ | ✗ | 7 | |
+| Formula editing: coloured references on the grid, point mode, F4, function completion and argument hints | ✓ | ✓ | ✗ | 7 | the code editor's completion and signature help |
+| Merged cells, hidden gridlines | ✓ | ✓ | ✗ | 8 | |
+| Sort, filter from the header, find and replace | ✓ | ✓ | ✗ | 9 | |
+| Data validation (lists, checkboxes), conditional formatting, notes, links | ✓ | ✓ | ✗ | 9 | |
+| Several sheets, cross-sheet references, named ranges | ✓ | ✓ | ✗ | 10 | |
+| CSV and XLSX in and out | ✓ | ✓ | TSV only | 10 | XLSX in an opt-in package |
+
+### Every target
+
+| capability | Excel | Sheets | now | slice | further |
+|---|---|---|---|---|---|
+| Touch: tap selects, a drag scrolls, a long press selects, handles stretch the range, double tap edits | ✓ | ✓ | ✗ D6 | 0–3 | |
+| Screen readers: grid, rows, cells, the active cell and its value announced | ✓ | ✓ | ✗ D17 | 2 | |
+| The keyboard can leave the grid (WCAG 2.1.2) | ✓ | ✓ | ✗ #732 | 1 | |
+| One grid on the web and in a native window | — | — | ✓ | all | write-once: the same engine and the same tests on both |
+
+## What is broken today — measured (2026-10-18)
+
+Measured in Chromium on the dashboard's `/sheet` screen (`origin/main` at f6f1e375a), unless the line
+says it was read in the code. Photon was not driven for this list; each slice measures its own lines
+there before it changes them.
+
+| # | what | evidence |
+|---|---|---|
+| D1 | Inside the dashboard's scrolling page, `Height = Fill` lays the sheet out at its full content height: the sheet's own scroll never engages, its column headers scroll away with the page, and every row is built. | The sheet's scroller measured 5600 px for 200 rows of 28; after a page scroll of 1200 px the "A" header sat at y = −1043; all 200 rows were in the DOM. |
+| D2 | Nothing keeps the active cell in view. | Forty ↓ from A1 left the active cell at y = 1303 in a 900 px window; nothing scrolled. `Spreadsheet` never writes its `ScrollView`'s offset. |
+| D3 | In a window narrower than the grid, the column headers shrink and drift from their columns. | At 900 px, header B starts at x = 375 and column B at 401; each header advances about 70 px instead of 96, so H's header sits at 793 and H's cells at 977. #613 fixed the row-number strip only. |
+| D4 | There is no horizontal scroll: the scroller hides the x overflow and the frame clips. | At 900 px, columns G and H (x 881–1073) were past the window, reachable by no pointer. The default `SheetController()` is 26 columns, 2496 px wide. |
+| D5 | Text arrives only through `keydown` on the web: a dead key, an IME composition, an emoji picker or AltGr never reach the cell. | Read in `lowerSheetSurface`. The code surface had the same door, measured broken in September, and slice 1 of `CODE-EDITOR-PLAN.md` replaced it with the textarea, `beforeinput` and composition door; the sheet never moved to it. |
+| D6 | The pointer is the mouse only on the web: no pointer or touch events, so on a touchscreen a drag scrolls the page and a range or a fill can never start. | Read in `lowerSheetSurface` (`mousedown`, document `mousemove`/`mouseup`). |
+| D7 | Long text is cut with an ellipsis inside its cell instead of spilling into the empty neighbours. | Sixty characters typed in D1 showed "A long sent…" with E1 empty. |
+| D8 | Every value is text: numbers sit on the left, and the sample's `7,01` is a string. | `1234567` typed in C1 rendered left-aligned (`text-align: start`). |
+| D9 | Cut empties the cells at once; Excel and Sheets mark them and move them when the paste lands. | Read in `SheetKeymap` and `SheetController.Cut`. |
+| D10 | Ctrl+End goes to the grid's last cell (row 1000, column Z of an empty default sheet), not to the last cell that holds something. | Read in `SheetController.Move` (`SheetMotion.SheetBoundary`). |
+| D11 | Right-click opens the browser's own menu, and inserting or deleting rows and columns has no key, menu or gesture although the engine does both. | Read: no `contextmenu` handler; `Insert`/`Delete` have no caller outside tests. |
+| D12 | The keyboard cannot leave a sheet: Tab is always taken (#732). | #732. |
+| D13 | Redo has no Ctrl+Y, Windows' own chord. | Read in `SheetKeymap`: only ⌘⇧Z. |
+| D14 | A header takes no modifiers, so Shift+click and a drag across headers cannot stretch a band. | Read: the header is a `Pressable` whose callback carries none. |
+| D15 | The caret is always at the draft's end, and every arrow commits. | Read in `SheetController` (`Draft += text`, `EraseFromDraft`) and `SheetKeymap`. |
+| D16 | The fill only tiles, the fill handle does nothing on a double-click, and a separator does nothing on a double-click. | Read in `SheetController.Fill` and `Spreadsheet`. |
+| D17 | The cells are mute to a screen reader: the surface consumes its subtree, so the active cell and its value are never announced. | The v1 semantics, recorded in the spreadsheet's history. |
+
+## The shape, decided
+
+### 1. The engine decides, the hosts report
+
+Unchanged from #949, and the rule every slice keeps: `eQuantic.UI.Sheet` owns what a key, a press,
+a drag and a paste MEAN; a realizer reports the platform's events through `ISheetSurfaceModel` and
+decides nothing. Every new gesture widens that protocol (the pointer's kind, so a touch drag can
+scroll where a mouse drag selects; a context request; a composition), and both hosts implement the
+widening in the same pull request.
+
+### 2. One viewport, two axes, pinned bands
+
+*How does Flutter solve it?* With `TableView` (`two_dimensional_scrollables`), built on
+`TwoDimensionalScrollView`: one scroll position per axis, cells built lazily for the visible
+rectangle only, and a number of leading rows and columns PINNED. The column headers are the pinned
+first row, the row numbers the pinned first column, and frozen panes are simply more pinned rows and
+columns. Headers and cells then share one layout and one scroll owner, so D3 cannot happen, D4 is
+the second axis, and freezing panes later costs a count.
+
+The vocabulary gains that viewport (a two-dimensional lazy viewport with pinned bands, its offsets
+out on both axes and a way IN to reveal a rectangle), realized on both targets. `Spreadsheet`
+is rebuilt on it, and `DataTable` can be later. Revealing a rectangle is what fixes D2, and what
+autoscroll during a drag drives.
+
+### 3. Overlays live in the grid's own coordinates
+
+The marks that are not a cell — the range's outline, the copied range's marching ants, the fill
+preview, the resize guide, the moving ghost, frozen-pane dividers, coloured formula references —
+are drawn in one layer over the cells, in the content's coordinates, from rectangles the engine
+computes. They are never painted by restyling cells (today's selection is a per-cell background),
+which is what lets a range be one outlined rectangle and lets the cell cursor glide.
+
+### 4. The cell editor is a text editor, not a string
+
+The draft becomes a real text document with a caret, a selection, word moves, line breaks and
+undo, edited through the platform's own text door (D5, D15). The code editor already has all of
+it: the engine (`eQuantic.UI.Code`), the web door that composition and dead keys need, the
+completion list, and signature help on its plan. The cell editor and the formula bar are two views
+of ONE such document, so they stay in step as Excel's do. The formula package brings a formula
+language for that document, which is how the coloured references and the function completion of
+slice 7 arrive without a line of editor code.
+
+### 5. Values are typed, and the culture is .NET's
+
+A cell keeps what the user typed AND the value it means: a number, text, a boolean, a date or an
+error. Typed input is parsed in the app's culture through .NET's own rules, so `7,01` is a number in
+`pt-BR` and text in `en-US`, exactly as Excel reads it. Display follows the value (alignment, `###`,
+spilling text) and, from slice 6, a format.
+
+### 6. Commands are data
+
+Every action is a named command: what a key chord runs, what a menu item runs, what a toolbar
+button runs. The keymap is a table of chords to commands, per keyboard tradition (Excel on
+Windows, Excel on a Mac), that an app may extend or rebind in C#. Context menus are built from the
+same registry, so a menu can never offer what the keyboard cannot do, or the reverse.
+
+### 7. Formulas plug in
+
+The base engine knows that a cell may hold an input that something else computes, and nothing
+about how. `eQuantic.UI.Sheet.Formulas`, referenced by an app that wants to calculate (the one
+`PackageReference` the product principle allows: opting in), plugs a calculator into that seam:
+the parser, references and ranges with their `$` anchors, the dependency graph and its incremental
+recalculation, errors and cycles, references that follow inserts, deletes, fills and copies, the
+function catalogue as a registry an app adds to in C#, and the formula language the cell editor
+reads. Without it, `=1+1` is the text a user typed, shown as typed.
+
+### 8. The net
+
+The code editor's net, applied to a grid: the engine's tests in xUnit, its transpiled pins, the
+protocol tests that drive the same press, key and clipboard event through the Photon host and the
+browser and compare the answers, goldens for every mark, and a budget that fails: a keystroke and a
+scroll step at 100 000 rows by 100 columns, measured in a bench and never in the browser pane,
+whose animation frames are throttled.
+
+## Slices
+
+Each slice lands on both targets, keyboard, pointer, touch and screen reader together for what it
+adds: accessibility and touch are not a slice at the end.
+
+| slice | issue | what | fixes |
+|---|---|---|---|
+| 0 | [#982](https://github.com/eQuantic/equantic-ui/issues/982) | The two-dimensional viewport with pinned bands (vocabulary, both realizers); `Spreadsheet` rebuilt on it; reveal and autoscroll; the overlay layer; a bounded height that holds inside a scrolling page | D1–D4, D6 (scroll by touch) |
+| 1 | [#983](https://github.com/eQuantic/equantic-ui/issues/983) | The text door and the cell editor: the code surface's input door, caret and selection in the cell, Enter and Edit modes, line breaks, the editor growing over its neighbours, the formula bar and the name box, Go To, Ctrl+Enter, the date and time chords, Tab released by Escape | D5, D12, D15 |
+| 2 | [#984](https://github.com/eQuantic/equantic-ui/issues/984) | Selection and navigation complete: several ranges, header drags and Shift+clicks, row and column chords, the page chords, Ctrl+End, the Tab-Enter column; the range as one outlined rectangle, header emphasis, unfocused dimming, the gliding cursor; the status bar; grid semantics and announcements | D10, D13, D14, D17 |
+| 3 | [#985](https://github.com/eQuantic/equantic-ui/issues/985) | Commands and structure: the command registry and the keymap as data; context menus; insert and delete; hide and unhide; resize several at once, the guide line and its tooltip, fit to content; reorder by header drag; long press on touch | D11, D16 (fit) |
+| 4 | [#986](https://github.com/eQuantic/equantic-ui/issues/986) | Clipboard and moving cells: HTML in and out, marching ants, cut that moves on paste, a paste that fills the selection, paste values and transposed, dragging a selection's border to move, copy or insert | D9 |
+| 5 | [#987](https://github.com/eQuantic/equantic-ui/issues/987) | Typed values: the value model, parsing in the app's culture, alignment, spilling text, `###`; fill series, the double-clicked fill handle, the fill dragged back; AutoComplete | D7, D8, D16 (fill) |
+| 6 | [#988](https://github.com/eQuantic/equantic-ui/issues/988) | Formatting: number formats, cell styles and their chords, wrapping rows, the format painter, an optional toolbar | |
+| 7 | [#989](https://github.com/eQuantic/equantic-ui/issues/989) | Formulas, in `eQuantic.UI.Sheet.Formulas`: the base engine's calculator seam; the parser, references and ranges, the catalogue, incremental recalculation, errors and cycles, references that follow structure; the formula editing experience | |
+| 8 | [#990](https://github.com/eQuantic/equantic-ui/issues/990) | Frozen panes, merged cells, hidden gridlines, zoom | |
+| 9 | [#991](https://github.com/eQuantic/equantic-ui/issues/991) | Data tools: sort, filter, find and replace, validation, conditional formatting, notes and links | |
+| 10 | [#992](https://github.com/eQuantic/equantic-ui/issues/992) | The workbook: several sheets, cross-sheet references, named ranges; CSV and XLSX | |
+
+Slices 0 and 1 come first because every other slice draws on them: an overlay, a reveal, a gesture
+that scrolls, and a text door that types every character a user can type.
+
+The track is [#981](https://github.com/eQuantic/equantic-ui/issues/981) on the board, each slice a
+story under it. Two issues filed before the plan hang there too:
+[#732](https://github.com/eQuantic/equantic-ui/issues/732) (D12, closed by slice 1) and
+[#969](https://github.com/eQuantic/equantic-ui/issues/969) (a fill comparison the engine can write
+as C# reads it once lifted `!=` compares values).
+
+## Where the slices stand
+
+None delivered yet (2026-10-18). Slice 0 is next.
+
+## Fenced, on purpose
+
+Real-time collaboration, pivot tables, charts drawn inside the grid (the chart components already
+exist and can be fed from a range), macros, external data connections, printing and page layout.
+Each is a product of its own; none is needed for the grid to stand beside Excel's and Sheets' in
+everything a user touches.
