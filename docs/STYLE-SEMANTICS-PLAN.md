@@ -308,8 +308,11 @@ trees rebuild, paths don't; the node's programmatic `Offset` is the untouched de
 clamped to the measured extent. STICKY PINNING is real on native: `PinSticky` clamps a Sticky's
 viewport-relative Y once scrolling would push it past its own Offset (v1: vertical; the
 end-of-container release is the remaining compositor-polish fence). The S7 native fence closes.
+(Superseded by #975: each scroll view's offset lives on its position, so the next view drawn at its
+place starts at its own, and the host's part is `ScrollClock`.)
 
-**Native transition animator (B14) ✅ (2026-07-30):** `TransitionStore` — a pure-function-of-time
+**Native transition animator (B14) ✅ (2026-07-30):** `TransitionStore` (`TransitionClock` since
+#975, its tracks on each node's position, keyed by what they glide) — a pure-function-of-time
 value animator (mount-at-target, retarget-from-current, Reduce Motion snaps, smoothstep stand-in
 for the standard curve — motion fence). `LayoutContext.Transitions/TimeMs/ReducedMotion`; a
 `Flexible`/`Spacer` with `AnimateChanges` LAYS OUT at the interpolated weight; `HasActiveMotion`

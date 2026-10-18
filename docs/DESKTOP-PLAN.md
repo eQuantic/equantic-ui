@@ -22,7 +22,8 @@ Each was verified by reading the code, not the docs. File references are the pro
 **What already exists and shrinks the work** — found in the same sweep, and the reason estimates
 below are smaller than a cold reading suggests:
 
-- **A deterministic time channel already runs through layout.** `TransitionStore` (pure in
+- **A deterministic time channel already runs through layout.** `TransitionStore` (`TransitionClock`
+  since #975, its tracks on each node's position; pure in
   `(path, target, timeMs)`, CSS-parity rules: first sighting mounts at target, mid-flight retarget,
   Reduce Motion snaps) resolves against `ctx.TimeMs` — wired today at two call sites (flex
   weights). `LoopEffect` resolves from the same clock. W2 is therefore *exposure and vocabulary*,

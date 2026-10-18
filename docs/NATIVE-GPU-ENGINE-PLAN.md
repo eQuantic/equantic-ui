@@ -555,7 +555,8 @@ Bun and the JS bundling chain, the TypeScript runtime.
   (real hover on Photon). **Enter/exit motion** — `PresenceStore` presence clocks per layout path +
   display-list command SNAPSHOTS replayed for exits (departed subtrees animate out as pixels only).
   **Drag-to-dismiss** — `DragStore` (input-driven follow, released glide as f(t)), `DragRegion`s,
-  the press/move/up state machine with slop-cancel. **Navigation seam** — `LinkRegion`s +
+  the press/move/up state machine with slop-cancel. (The four stores became state on each node's
+  position and the host's clocks in #975.) **Navigation seam** — `LinkRegion`s +
   `PhotonHost.NavigationRequested` (the platform shell's future router hook). Suites at sync time:
   Native 266+, goldens 62 (incl. mid-drag sheet states). The long poles are UNCHANGED and are the
   point of the next phase: W4 text (HarfBuzz/FreeType/atlas), W5 platform shells (macOS first as
