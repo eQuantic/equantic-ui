@@ -6,10 +6,13 @@
 SHALL build and SHALL answer as .NET's: two empty values equal, an empty value unequal to any value, and two
 values by their type's own equality, its `Equals(object)` for `Equals` and its `IEquatable<T>` before that
 for the other two, never its `==`. The default comparer's `Equals` SHALL answer so over any type, a number,
-a string and a record included. A struct's own equality that is the app's code SHALL be asked every time two
-present values are compared, a value compared with itself included, as .NET asks it with no identity check,
-and `Equals` on a value that is not nullable SHALL ask it with a null argument too. Both values SHALL be
-evaluated once, in the order the call writes them. The comparer's `Default` read on its own SHALL still fail
+a string and a record included. A value's own equality that is the app's code, a struct's or a class's
+`Equals(object)`, declared or inherited from the app's base, and an `IEquatable<T>` its type answers, SHALL be
+asked every time two present values are compared, a value compared with itself included, as .NET asks it with
+no identity check, whether the call names the value's type, `object`, an interface or a type parameter of
+generic code, and `Equals` on a struct value that is not nullable SHALL ask it with a null argument too. A class
+with neither SHALL compare by reference. Both values SHALL be evaluated once, in the order the call writes
+them. The comparer's `Default` read on its own SHALL still fail
 the build with EQ2004, since no value the browser holds carries it, and only `EqualityComparer<T>`'s own
 `Default` SHALL be taken for the default comparer: a call made on a static property of the app's named
 `Default` SHALL still fail the build with EQ2004.
@@ -59,6 +62,22 @@ the build with EQ2004, since no value the browser holds carries it, and only `Eq
   `EqualityComparer<Counted>.Default.Equals(v, v)` for `Counted v = new Counted(1)`
 - **THEN** each counts one call, as in .NET, where the browser answered the same value at its identity check
   and the null without asking; beside an empty nullable value the count stays 0
+
+#### Scenario: A class's own Equals asked by the default comparer
+
+- **WHEN** `class Counter` overrides `Equals(object)` to count its calls, and `EqualityComparer<Counter>.Default.Equals(c, c)`
+  runs for one `Counter c`, and so does the same call through `object`, an interface, a class that inherits the
+  override and generic code, `EqualityComparer<T>.Default.Equals(a, b)` with `T` a `Counter`, built as an app's
+  build builds it
+- **THEN** each answers True and counts one call, as in .NET, and an override that refuses itself answers False,
+  where the browser answered the same value at its identity check and counted none
+
+#### Scenario: A class with no override
+
+- **WHEN** a class declares neither `Equals(object)` nor `IEquatable<T>`, and
+  `EqualityComparer<PlainClass>.Default.Equals(p, p)` and `EqualityComparer<PlainClass>.Default.Equals(p, new PlainClass(1))`
+  run
+- **THEN** they answer True and False, by reference, as in .NET
 
 #### Scenario: An app's own Default property
 

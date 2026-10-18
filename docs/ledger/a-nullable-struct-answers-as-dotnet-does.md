@@ -10,10 +10,10 @@
   `Equals` over a nullable struct, `Nullable.Equals` and `EqualityComparer<T>.Default.Equals` failed the
   build with EQ2004 ([#968](https://github.com/eQuantic/equantic-ui/issues/968)) and lower now to the
   comparison the type's default comparer is, two empty values equal and an empty one unequal to any; a
-  struct whose own `Equals` is the app's code is asked it every time, a value compared with itself
-  included, through `$eq.equalsOwn`, where an identity check had answered first (`v.Equals(v)` and
-  `v.Equals(null)` over a value that is not nullable since #947), and only `EqualityComparer<T>`'s own
-  `Default` is taken for the comparer.
+  struct's or a class's own `Equals` that is the app's code is asked every time, a value compared with
+  itself included, through `$eq.equalsOwn`, and `$eq.equalsOwnGeneric` in generic code, where an identity
+  check had answered first (`v.Equals(v)` and `v.Equals(null)` over a struct value since #947), and only
+  `EqualityComparer<T>`'s own `Default` is taken for the comparer.
   The spreadsheet's fill move compares its preview as C# reads it, `FillTarget != before`, with no answer
   changed ([#969](https://github.com/eQuantic/equantic-ui/issues/969)). Ninety-five cases, and fifteen
   through an app's module graph, executed on both sides, pin it; 73 of the first and 14 of the second
