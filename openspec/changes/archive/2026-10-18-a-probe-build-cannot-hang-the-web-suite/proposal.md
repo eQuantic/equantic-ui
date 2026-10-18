@@ -18,17 +18,21 @@ none, hence a hang on some runs only.
 
 ## What Changes
 
-- One owner, `tests/Shared/ChildProcess.cs`, starts a test's `dotnet`. `Run` takes the program and the
-  deadline, drains both streams from the start, and holds the exit and the end of both streams to one
-  deadline: a run that is late fails as a `TimeoutException` naming the command, killed with its
-  tree when it is still running, and saying a process it started holds its output when it has exited.
-  `Dotnet` starts `dotnet` without `MSBUILDENSURESTDOUTFORTASKPROCESSES` and with
+- One owner, `tests/Shared/ChildProcess.cs`, starts every process a test starts. `Run` takes the
+  program and the deadline, drains both streams from the start, and holds the exit and the end of
+  both streams to one deadline: a run that is late fails as a `TimeoutException` naming the command,
+  killed with its tree when it is still running, and saying a process it started holds its output
+  when it has exited. `Dotnet` starts `dotnet` without `MSBUILDENSURESTDOUTFORTASKPROCESSES` and with
   `MSBUILDDISABLENODEREUSE=1`, `DOTNET_CLI_USE_MSBUILD_SERVER=0` and `UseSharedCompilation=false`, a
-  caller's own setting winning, so a probe's build leaves nothing running behind it.
-- `SdkProbe.Run` keeps its shape and goes through it, and so do the four other places that started
-  `dotnet` with a copy of their own: two in the Web tests, and two in the native engine's, which links
-  the owner. The ten `-nr:false` switches the Web cases passed go.
-- A guard fails on a `dotnet` started anywhere else under `tests/`, naming every file.
+  caller's own setting winning, so a probe's build leaves nothing running behind it. `Started` hands
+  back a running process for code under test that owns its run.
+- `SdkProbe.Run` keeps its shape and goes through it, and so do the thirteen other files that started
+  a process of their own: four more that started `dotnet`, six that started git, the Bun version
+  check, the conformance runner and hot reload's stand-in rebuild. The owner is linked into the Web,
+  native engine, Server and Conformance tests. The ten `-nr:false` switches the Web cases passed go.
+- A guard fails on a process started anywhere else under `tests/`, naming every file.
+- CI's two `dotnet test` lines pass `--blame-hang-timeout 15m --blame-hang-dump-type none`, so a test
+  that hangs stops the run and is named.
 - Nothing a developer using the SDK writes or meets changes.
 
 ## Capabilities
@@ -44,5 +48,6 @@ change sets `skip_specs`.)
 
 ## Impact
 
-- **Tests**: the Web and native engine suites, and their projects link the owner.
+- **Tests**: the Web, native engine, Server and Conformance suites, and their projects link the owner.
+- **CI**: the test step's two `dotnet test` lines.
 - **Public surface**: none. The developer surface does not move.

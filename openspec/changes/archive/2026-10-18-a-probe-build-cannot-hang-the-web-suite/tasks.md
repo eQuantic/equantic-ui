@@ -14,6 +14,11 @@
 
 - [x] 3.1 Route the four other copies through the owner, link it into the native engine's tests, and drop the `-nr:false` switches of the Web cases. Verify: the affected cases of both suites pass
 - [x] 3.2 Add the guard. Verify: on the tree before the routing it names the four copies, and it passes after
+- [x] 3.3 Route every other process a test starts through the owner (git, Bun, the conformance runner, hot reload's stand-in), and widen the guard to any `Process.Start` and any `Process` or `ProcessStartInfo` created. Verify: on the tree before the routing it names the nine files, and the Conformance, Web, native engine and Server suites pass whole
+
+## 3b. CI
+
+- [x] 3b.1 Pass `--blame-hang-timeout 15m --blame-hang-dump-type none` on CI's two `dotnet test` lines. Verify: no test reads those lines, and the workflow parses
 
 ## 4. Proved against the real thing
 
