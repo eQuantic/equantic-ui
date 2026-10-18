@@ -216,6 +216,15 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
     /// </summary>
     private static ITypeSymbol? DefaultComparerOf(InvocationExpressionSyntax invocation, ConversionContext context)
     {
+        // Every call of two arguments reaches this gate: only one written as Equals is bound to ask, and the
+        // bound call decides what it is.
+        var written = invocation.Expression switch
+        {
+            MemberAccessExpressionSyntax access => access.Name.Identifier.ValueText,
+            SimpleNameSyntax name => name.Identifier.ValueText,
+            _ => null,
+        };
+        if (written != "Equals") return null;
         if (context.SemanticHelper.GetOperation(invocation) is not IInvocationOperation
             {
                 TargetMethod: { Name: "Equals", Parameters.Length: 2 } method,
