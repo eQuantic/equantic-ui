@@ -362,4 +362,99 @@ public class NullableStructConformanceTests
     [InlineData(false)]
     public void ANullableStruct_AnswersAsDotNetInAnAppsBuild(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(App, typeAnnotations, Cases);
+
+    /// <summary>
+    /// Classes of the app's, which only an app's build writes as twins: <c>EqualityComparer&lt;T&gt;.Default.Equals</c>
+    /// asks a value's own equality as .NET's comparers do, with no identity check, an <c>Equals(object)</c> override
+    /// its class declares or inherits from the app's base, and an <c>IEquatable&lt;T&gt;</c> the class answers, through
+    /// the class itself, <c>object</c>, an interface and generic code alike, and a class with neither compares by
+    /// reference. Each case counts the calls it makes.
+    /// </summary>
+    private const string Classes = """
+        using System;
+        using System.Collections.Generic;
+
+        public interface IShape { }
+
+        public class Counter : IShape
+        {
+            public static int Calls;
+            public Counter(int n) { N = n; }
+            public int N { get; }
+            public override bool Equals(object o) { Calls++; return o is Counter c && c.N == N; }
+            public override int GetHashCode() => N;
+        }
+
+        public class Derived : Counter
+        {
+            public Derived(int n) : base(n) { }
+        }
+
+        public class Contrary
+        {
+            public static int Calls;
+            // Refuses even itself: an identity check answers what .NET never answers.
+            public override bool Equals(object o) { Calls++; return false; }
+            public override int GetHashCode() => 0;
+        }
+
+        public class TypedClass : IEquatable<TypedClass>
+        {
+            public static int Calls;
+            public static int TypedCalls;
+            public TypedClass(int n) { N = n; }
+            public int N { get; }
+            public bool Equals(TypedClass other) { TypedCalls++; return other is not null && other.N == N; }
+            public override bool Equals(object o) { Calls++; return o is TypedClass t && Equals(t); }
+            public override int GetHashCode() => N;
+        }
+
+        public class PlainClass
+        {
+            public PlainClass(int n) { N = n; }
+            public int N { get; }
+        }
+
+        public record Recorded(int X)
+        {
+            public static int Calls;
+            public virtual bool Equals(Recorded other) { Calls++; return other is not null && other.X == X; }
+            public override int GetHashCode() => X;
+        }
+
+        public static class Generic
+        {
+            public static bool Same<T>(T a, T b) => EqualityComparer<T>.Default.Equals(a, b);
+        }
+        """;
+
+    private static readonly (string Name, string Statements)[] ClassCases =
+    [
+        ("an override, the value itself", "Counter.Calls = 0; var c = new Counter(1); var r = EqualityComparer<Counter>.Default.Equals(c, c); return r + \"|\" + Counter.Calls;"),
+        ("an override, an equal value", "Counter.Calls = 0; var r = EqualityComparer<Counter>.Default.Equals(new Counter(1), new Counter(1)); return r + \"|\" + Counter.Calls;"),
+        ("an override, an unequal value", "Counter.Calls = 0; var r = EqualityComparer<Counter>.Default.Equals(new Counter(1), new Counter(2)); return r + \"|\" + Counter.Calls;"),
+        ("an override beside a null", "Counter.Calls = 0; var c = new Counter(1); var r = EqualityComparer<Counter>.Default.Equals(c, null) || EqualityComparer<Counter>.Default.Equals(null, c); return r + \"|\" + Counter.Calls;"),
+        ("an override, two nulls", "Counter.Calls = 0; var r = EqualityComparer<Counter>.Default.Equals(null, null); return r + \"|\" + Counter.Calls;"),
+        ("an override that refuses itself", "Contrary.Calls = 0; var c = new Contrary(); var r = EqualityComparer<Contrary>.Default.Equals(c, c); return r + \"|\" + Contrary.Calls;"),
+        ("an override inherited from the app's base", "Counter.Calls = 0; var d = new Derived(1); var r = EqualityComparer<Derived>.Default.Equals(d, d); return r + \"|\" + Counter.Calls;"),
+        ("IEquatable<T>, the value itself", "TypedClass.Calls = 0; TypedClass.TypedCalls = 0; var t = new TypedClass(1); var r = EqualityComparer<TypedClass>.Default.Equals(t, t); return r + \"|\" + TypedClass.Calls + \"|\" + TypedClass.TypedCalls;"),
+        ("IEquatable<T>, an unequal value", "TypedClass.Calls = 0; TypedClass.TypedCalls = 0; var r = EqualityComparer<TypedClass>.Default.Equals(new TypedClass(1), new TypedClass(2)); return r + \"|\" + TypedClass.Calls + \"|\" + TypedClass.TypedCalls;"),
+        ("no override: by reference", "var p = new PlainClass(1); return EqualityComparer<PlainClass>.Default.Equals(p, p) + \"|\" + EqualityComparer<PlainClass>.Default.Equals(p, new PlainClass(1));"),
+        ("a record's own typed Equals", "Recorded.Calls = 0; var x = new Recorded(1); var r = EqualityComparer<Recorded>.Default.Equals(x, x); return r + \"|\" + Recorded.Calls;"),
+        ("object, an override", "Counter.Calls = 0; object c = new Counter(1); var r = EqualityComparer<object>.Default.Equals(c, c); return r + \"|\" + Counter.Calls;"),
+        ("object, two tuples", "object a = (1, 2), b = (1, 2); return EqualityComparer<object>.Default.Equals(a, b);"),
+        ("an interface, an override", "Counter.Calls = 0; IShape c = new Counter(1); var r = EqualityComparer<IShape>.Default.Equals(c, c); return r + \"|\" + Counter.Calls;"),
+        ("an interface over two lists", "IReadOnlyList<int> a = new List<int> { 1 }, b = new List<int> { 1 }; return EqualityComparer<IReadOnlyList<int>>.Default.Equals(a, b) + \"|\" + EqualityComparer<IReadOnlyList<int>>.Default.Equals(a, a);"),
+        ("generic code, an override", "Counter.Calls = 0; var c = new Counter(1); var r = Generic.Same(c, c); return r + \"|\" + Counter.Calls;"),
+        ("generic code, an override that refuses itself", "Contrary.Calls = 0; var c = new Contrary(); var r = Generic.Same(c, c); return r + \"|\" + Contrary.Calls;"),
+        ("generic code, IEquatable<T>", "TypedClass.Calls = 0; TypedClass.TypedCalls = 0; var t = new TypedClass(1); var r = Generic.Same(t, t); return r + \"|\" + TypedClass.Calls + \"|\" + TypedClass.TypedCalls;"),
+        ("generic code, no override", "var p = new PlainClass(1); return Generic.Same(p, p) + \"|\" + Generic.Same(p, new PlainClass(1));"),
+        ("generic code, an int and two nulls", "return Generic.Same(1, 1) + \"|\" + Generic.Same(1, 2) + \"|\" + Generic.Same<Counter>(null, null);"),
+    ];
+
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AClassesOwnEquals_IsAskedByTheDefaultComparer(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Classes, typeAnnotations, ClassCases);
 }
