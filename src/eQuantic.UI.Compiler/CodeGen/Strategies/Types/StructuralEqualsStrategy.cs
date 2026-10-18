@@ -280,14 +280,16 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
     /// <item>a type answering an <c>IEquatable&lt;T&gt;</c> of the app's: the comparison <see cref="ElementEquality"/>
     /// writes for it, which asks the typed method with no identity check;</item>
     /// <item>a struct or a class whose <c>Equals(object)</c> is the app's, declared or inherited from the app's
-    /// base, and a type that cannot say what a value holds, <c>object</c> or an interface:
-    /// <see cref="Eq.EqualsOwn"/>, the value's own <c>equals</c> where it carries one;</item>
+    /// base, and a type that cannot say whose equality its value answers, <c>object</c>, an interface or a class a
+    /// subclass may extend, a record's base among them: <see cref="Eq.EqualsOwn"/>, the value's own <c>equals</c>
+    /// where it carries one, past the reference check C# synthesizes for a record's;</item>
     /// <item>any other type, whose equality C# or .NET writes and no one can tell from an identity check: its
-    /// comparison, unchanged, a class with no override by reference.</item>
+    /// comparison, unchanged, a sealed class with no override by reference and a sealed record by its
+    /// synthesized equality, which checks the reference first.</item>
     /// </list>
     /// <c>Otherwise</c> is the comparison <see cref="Eq.EqualsOwn"/> compares a value with no <c>equals</c> of its own
     /// by, where that is not <see cref="Eq.SameKey"/>, its default: by reference behind an interface no tuple
-    /// implements, as the type's own comparison compares it.
+    /// implements and a class with no override, as the type's own comparison compares it.
     /// </summary>
     private static (string Function, string? Otherwise) DefaultComparison(ITypeSymbol compared)
     {
@@ -316,11 +318,15 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         return false;
     }
 
-    /// <summary>Whether a type cannot say what its value holds: <c>object</c>, <c>ValueType</c>, <c>Enum</c> and an
-    /// interface, behind which a value whose equality the app wrote may stand.</summary>
+    /// <summary>Whether a type cannot say whose equality its value answers: <c>object</c>, <c>ValueType</c>,
+    /// <c>Enum</c> and an interface, behind which a value whose equality the app wrote may stand, and a class a
+    /// subclass may extend, whose value may be the subclass's, its override asked by .NET's virtual call: a base
+    /// with none found a subclass's value compared with itself at the identity check, and so did a base record a
+    /// record's own typed <c>Equals</c> extends.</summary>
     private static bool CannotSay(ITypeSymbol value) =>
         value.SpecialType is SpecialType.System_Object or SpecialType.System_ValueType or SpecialType.System_Enum
-        || value.TypeKind == TypeKind.Interface;
+        || value.TypeKind == TypeKind.Interface
+        || value is INamedTypeSymbol { TypeKind: TypeKind.Class, IsSealed: false, SpecialType: SpecialType.None };
 
     private static bool IsStaticObjectEquals(InvocationExpressionSyntax invocation, ConversionContext context)
     {

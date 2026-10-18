@@ -340,4 +340,83 @@ describe('a value whose own equality the app wrote is asked every time', () => {
     expect(equalsOwnGeneric(null, null)).toBe(true);
     expect(equalsOwnGeneric(a, null)).toBe(false);
   });
+
+  // Shaped as RecordTypeEmitter writes them: a record class says `$record`, a struct carries `$zero` too, and a
+  // record whose typed Equals the app wrote maps it under `|@` in an `$equatable` of its own.
+  class Wrapped {
+    static calls = 0;
+    static $record = true;
+    constructor(readonly n: number) {}
+    equals(o: unknown): boolean {
+      Wrapped.calls++;
+      return o instanceof Wrapped && o.constructor === this.constructor && o.n === this.n;
+    }
+  }
+
+  class WrappedValue {
+    static calls = 0;
+    static $record = true;
+    static $zero(): WrappedValue {
+      return Object.create(WrappedValue.prototype) as WrappedValue;
+    }
+    constructor(readonly n: number) {}
+    equals(o: unknown): boolean {
+      WrappedValue.calls++;
+      return o instanceof WrappedValue && o.n === this.n;
+    }
+  }
+
+  class TypedRecord {
+    static calls = 0;
+    static $record = true;
+    static $equatable = { 'System.IEquatable<T>|TypedRecord': 'equals$1', 'System.IEquatable<T>|@': 'equals$1' };
+    constructor(readonly n: number) {}
+    equals$1(other: TypedRecord | null): boolean {
+      TypedRecord.calls++;
+      return other !== null && other.n === this.n;
+    }
+    equals(o: unknown): boolean {
+      return this.equals$1(o instanceof TypedRecord ? o : null);
+    }
+  }
+
+  // A record C# synthesizes over a base whose typed Equals the app wrote: the base's map is no map of its own.
+  class SynthesizedOverTyped extends TypedRecord {
+    static synthesizedCalls = 0;
+    equals(o: unknown): boolean {
+      SynthesizedOverTyped.synthesizedCalls++;
+      return o instanceof SynthesizedOverTyped && super.equals$1(o);
+    }
+  }
+
+  it("a record class's synthesized equality answers the value itself at its reference check, unread", () => {
+    Wrapped.calls = 0;
+    const w = new Wrapped(1);
+    expect(equalsOwn(w, w)).toBe(true);
+    expect(equalsOwnGeneric(w, w)).toBe(true);
+    expect(Wrapped.calls).toBe(0);
+    expect(equalsOwn(w, new Wrapped(1))).toBe(true);
+    expect(equalsOwnGeneric(w, new Wrapped(2))).toBe(false);
+    expect(Wrapped.calls).toBe(2);
+    TypedRecord.calls = 0;
+    SynthesizedOverTyped.synthesizedCalls = 0;
+    const s = new SynthesizedOverTyped(1);
+    expect(equalsOwn(s, s)).toBe(true);
+    expect(equalsOwnGeneric(s, s)).toBe(true);
+    expect(SynthesizedOverTyped.synthesizedCalls).toBe(0);
+    expect(TypedRecord.calls).toBe(0);
+  });
+
+  it("a struct's equality and a record's typed Equals of the app's check no reference: asked every time", () => {
+    WrappedValue.calls = 0;
+    const v = new WrappedValue(1);
+    expect(equalsOwn(v, v)).toBe(true);
+    expect(equalsOwnGeneric(v, v)).toBe(true);
+    expect(WrappedValue.calls).toBe(2);
+    TypedRecord.calls = 0;
+    const t = new TypedRecord(1);
+    expect(equalsOwn(t, t)).toBe(true);
+    expect(equalsOwnGeneric(t, t)).toBe(true);
+    expect(TypedRecord.calls).toBe(2);
+  });
 });

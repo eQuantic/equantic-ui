@@ -165,17 +165,39 @@ export function sameGeneric(a: unknown, b: unknown): boolean {
   return dispatch(SELF, a, b);
 }
 
+/** The statics a twin the build writes carries, which say what kind of value it is (`RecordTypeEmitter`). */
+type TwinStatics = { $record?: unknown; $zero?: unknown; $equatable?: unknown };
+
+/**
+ * Whether a value's own `Equals` checks the reference before it reads anything, as C# synthesizes a record
+ * CLASS's: `(object)this == other || …`, so a record compared with itself is equal and no member is compared.
+ * Its twin says it is a record (`$record`) and carries no zero (`$zero`, which every struct's twin carries), and
+ * its class answers no `IEquatable<T>` over itself with a method of the app's own (`|@` in an `$equatable` of its
+ * own, not one a base's twin holds), which replaces the synthesized one and checks nothing it did not write. A
+ * struct's `Equals`, a class's override and the app's typed `Equals` check no reference.
+ */
+function checksItsReference(value: unknown): boolean {
+  if (value === null || typeof value !== 'object') return false;
+  const type = (value as { constructor?: TwinStatics }).constructor;
+  if (type === undefined || type.$record !== true || typeof type.$zero === 'function') return false;
+  const own = Object.prototype.hasOwnProperty.call(type, '$equatable') ? type.$equatable : undefined;
+  return own === null || typeof own !== 'object' || (own as Record<string, unknown>)[SELF] === undefined;
+}
+
 /**
  * `Equals` as .NET asks a value whose equality the app may have written, through `Nullable<T>.Equals(object)` and
  * the default comparers, `ObjectEqualityComparer` and `NullableEqualityComparer`, which call it with no identity
  * check: a null is equal only to a null and is never asked, and otherwise the value's own `equals` is asked every
  * time, a value compared with itself included, its side effects and a refusal of itself with it. `sameItem` and
  * `equals` answer the same value at their identity check, so an override was never asked there (Copilot's first
- * and second reviews of #977). A value whose twin carries no `equals` is compared as `otherwise` compares it: by
- * what it turns out to be (`sameKey`), or by reference (`sameItem`) where its type says so.
+ * and second reviews of #977). A record's synthesized `Equals` checks the reference itself, so a record compared
+ * with itself is equal unread ({@link checksItsReference}): asked, its twin compared a member by a typed `Equals`
+ * of the app's that C# never reaches. A value whose twin carries no `equals` is compared as `otherwise` compares
+ * it: by what it turns out to be (`sameKey`), or by reference (`sameItem`) where its type says so.
  */
 export function equalsOwn(value: unknown, other: unknown, otherwise: Equality = sameKey): boolean {
   if (value == null || other == null) return value == null && other == null;
+  if (value === other && checksItsReference(value)) return true;
   const own = (value as { equals?: unknown }).equals;
   return typeof own === 'function' ? Boolean((own as (o: unknown) => unknown).call(value, other)) : otherwise(value, other);
 }
@@ -183,11 +205,13 @@ export function equalsOwn(value: unknown, other: unknown, otherwise: Equality = 
 /**
  * `EqualityComparer<T>.Default.Equals` in generic code, which .NET settles at run time: the value's own
  * `IEquatable<T>` over its type where its twin answers it, and its `Equals(object)` otherwise, each asked every
- * time, a value compared with itself included ({@link equalsOwn}). {@link sameGeneric}, which a collection's
- * search takes, answers the same value at its identity check.
+ * time, a value compared with itself included ({@link equalsOwn}), past the reference check a record's
+ * synthesized `Equals` makes ({@link checksItsReference}). {@link sameGeneric}, which a collection's search
+ * takes, answers the same value at its identity check.
  */
 export function equalsOwnGeneric(a: unknown, b: unknown): boolean {
   if (a == null || b == null) return a == null && b == null;
+  if (a === b && checksItsReference(a)) return true;
   const typed = contractMethod(a, SELF);
   return typed !== undefined ? Boolean(typed.call(a, b)) : equalsOwn(a, b);
 }
