@@ -135,12 +135,13 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             : ReadModifyWrite.Assign(
                 leftIr!, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false, context);
 
-        // COMPOUND assignment through a USER-DEFINED operator: `m += other` is `m = Money.opAdd(m, other)`.
+        // COMPOUND assignment through a USER-DEFINED operator: `m += other` is `m = Money.opAdd(m, other)`,
+        // lifted where the bound tree lifts it, a nullable target or value answering null (#948). The call is
+        // decided once and written over what the place reads.
         if (context.SemanticHelper.GetOperation(assignment) is Microsoft.CodeAnalysis.Operations.ICompoundAssignmentOperation
-            { OperatorMethod: { } compoundMethod }
-            && UserDefinedOperators.Binary(compoundMethod, op[..^1], left, right, context) is not null)
-            return Compound((current, operand) => UserDefinedOperators.Binary(compoundMethod, op[..^1],
-                JsExprWriter.Write(current), JsExprWriter.Write(operand), context)!);
+            { OperatorMethod: { } compoundMethod } compound
+            && UserDefinedOperators.BinaryCall(compoundMethod, op[..^1], compound.IsLifted, context) is { } compoundCall)
+            return Compound(compoundCall);
 
         var leftType = context.SemanticHelper.GetType(assignment.Left);
 

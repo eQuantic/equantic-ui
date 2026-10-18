@@ -21,6 +21,12 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// operator a caller falls back to on null: a framework operator the runtime ships no twin for would
 /// otherwise concatenate two objects.
 /// </para>
+/// <para>
+/// And here is where the call is LIFTED where C# lifts it, an operator or a conversion applied over
+/// nullable values, which the caller reads from the bound tree (#948): the static runs only over values,
+/// and an absent one answers as C#'s lifted operator does (<see cref="NullableLift"/>). The static was
+/// handed the null itself, and threw reading a member of it.
+/// </para>
 /// </summary>
 public static class UserDefinedOperators
 {
@@ -40,33 +46,63 @@ public static class UserDefinedOperators
     /// call site calls (<c>fromIcons</c> for <c>implicit operator IconGlyph(Icons)</c>).</summary>
     public static string ConversionName(IMethodSymbol method) => RecordTypeEmitter.ConversionNameFor(method);
 
-    /// <summary>The conversion operator called on its operand, or null where the value passes through.</summary>
-    public static JsExpr? Conversion(IMethodSymbol method, string operand, ConversionContext context)
+    /// <summary>The conversion operator called on its operand, or null where the value passes through.
+    /// <paramref name="lifted"/>, from a nullable value to a nullable value through an operator declared
+    /// over the values, converts only a value, and null to null.</summary>
+    public static JsExpr? Conversion(IMethodSymbol method, JsExpr operand, bool lifted, ConversionContext context)
     {
         if (Refused(method, context)) return Nothing;
         if (!ConversionCrosses(method) || method.Parameters.Length != 1) return null;
         // ONE function names a conversion, and the emitter calls the same one — they used to
         // compute it apart, and a qualified declaration made them disagree in silence.
-        var name = RecordTypeEmitter.ConversionNameFor(method);
         // The C# at the call may never name the type: `Icon(Icons.Search)` mentions no IconGlyph, and
         // an operand a call returned names none either. The call is what introduces the name.
-        return JsExpr.Callish($"{method.ContainingType.IntroduceTwin(context)}.{name}({operand})");
+        var call = Caller(method, RecordTypeEmitter.ConversionNameFor(method), context);
+        return lifted ? NullableLift.Unary(operand, value => call([value]), context) : call([operand]);
     }
 
-    /// <summary>The unary operator called on its operand, or null.</summary>
-    public static JsExpr? Unary(IMethodSymbol method, string token, string operand, ConversionContext context)
+    /// <summary>The unary operator called on its operand, or null. <paramref name="lifted"/>, over a
+    /// nullable value, it runs only over a value, and null answers null.</summary>
+    public static JsExpr? Unary(IMethodSymbol method, string token, JsExpr operand, bool lifted, ConversionContext context)
     {
         if (Refused(method, context)) return Nothing;
         if (!IsInSource(method) || RecordTypeEmitter.UnaryOperatorMethodName(token) is not { } name) return null;
-        return JsExpr.Callish($"{method.ContainingType.IntroduceTwin(context)}.{name}({operand})");
+        var call = Caller(method, name, context);
+        return lifted ? NullableLift.Unary(operand, value => call([value]), context) : call([operand]);
     }
 
-    /// <summary>The binary operator called on its operands, or null.</summary>
-    public static JsExpr? Binary(IMethodSymbol method, string token, string left, string right, ConversionContext context)
+    /// <summary>The binary operator called on its operands, or null. <paramref name="lifted"/>, over
+    /// nullable values, it runs only over two values, and an absent one answers as C#'s lift does
+    /// (<see cref="NullableLift.Operator"/>): an equality without the operator, a relation false, and any
+    /// other operator null.</summary>
+    public static JsExpr? Binary(IMethodSymbol method, string token, JsExpr left, JsExpr right, bool lifted,
+        ConversionContext context) =>
+        BinaryCall(method, token, lifted, context)?.Invoke(left, right);
+
+    /// <summary>
+    /// The binary operator as the call its caller writes over the operands it holds, decided ONCE: null
+    /// where no twin carries it, nothing more where the fence refuses it, told once, and otherwise the
+    /// call, lifted where <paramref name="lifted"/> says. A compound decides before it reads its place, and
+    /// writes the call over what it read: asking <see cref="Binary"/> twice asked the fence and introduced
+    /// the twin twice (#948's review).
+    /// </summary>
+    internal static Func<JsExpr, JsExpr, JsExpr>? BinaryCall(IMethodSymbol method, string token, bool lifted,
+        ConversionContext context)
     {
-        if (Refused(method, context)) return Nothing;
+        if (Refused(method, context)) return (_, _) => Nothing;
         if (!IsInSource(method) || RecordTypeEmitter.OperatorMethodName(token) is not { } name) return null;
-        return JsExpr.Callish($"{method.ContainingType.IntroduceTwin(context)}.{name}({left}, {right})");
+        var call = Caller(method, name, context);
+        return lifted
+            ? (left, right) => NullableLift.Operator(token, left, right, (a, b) => call([a, b]), context)
+            : (left, right) => call([left, right]);
+    }
+
+    /// <summary>The call of the static <paramref name="name"/> on the operator's twin, introduced where it
+    /// is called, its operands placed by the one writer of a call's arguments.</summary>
+    private static Func<IReadOnlyList<JsExpr>, JsExpr> Caller(IMethodSymbol method, string name, ConversionContext context)
+    {
+        var member = JsExpr.Member(JsExpr.Identifier(method.ContainingType.IntroduceTwin(context)), name);
+        return operands => JsExpr.Call(member, operands);
     }
 
     /// <summary>Whether the fence refuses the operator where it is applied, telling it there.</summary>
