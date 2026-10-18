@@ -13,5 +13,7 @@
   The spreadsheet's fill move compares its preview as C# reads it, `FillTarget != before`, with no answer
   changed ([#969](https://github.com/eQuantic/equantic-ui/issues/969)). Ninety-five cases, and fifteen
   through an app's module graph, executed on both sides, pin it; 73 of the first and 14 of the second
-  failed before. Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`,
-  `openspec/specs/transpiler-bcl`).
+  failed before. The `ToString` group of a nullable value, which wrote JavaScript's text when it was
+  reported, was measured answering as .NET's already, and six more cases pin it
+  ([#955](https://github.com/eQuantic/equantic-ui/issues/955)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-expressions`, `openspec/specs/transpiler-bcl`).
