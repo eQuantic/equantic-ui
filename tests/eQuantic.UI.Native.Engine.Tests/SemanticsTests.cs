@@ -120,38 +120,38 @@ public class SemanticsTests
         var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
         var frame = host.RenderFrame(new DisplayListBuilder());
 
-        var stopPaths = frame.FocusStops.Select(s => s.Path).ToHashSet();
+        var stopIds = frame.FocusStops.Select(s => s.Id).ToHashSet();
         var semantics = host.Semantics();
 
         // Focusable roles, minus the disabled (Tab skips them; a reader announces them).
         var focusable = semantics
             .Where(s => s.Role is SemanticRole.Button or SemanticRole.TextField && !s.Disabled)
-            .Select(s => s.Path).ToHashSet();
+            .Select(s => s.Id).ToHashSet();
 
-        focusable.Should().BeSubsetOf(stopPaths, "every announced control must be keyboard-reachable");
-        stopPaths.Should().BeSubsetOf(
-            semantics.Select(s => s.Path).ToHashSet(),
+        focusable.Should().BeSubsetOf(stopIds, "every announced control must be keyboard-reachable");
+        stopIds.Should().BeSubsetOf(
+            semantics.Select(s => s.Id).ToHashSet(),
             "every keyboard stop must be announced");
     }
 
     [Fact]
-    public void ActivatePath_RunsTheSameHandlerATapDoes()
+    public void Activate_RunsTheSameHandlerATapDoes()
     {
         var (host, page) = Open();
         var export = host.Semantics().Single(s => s.Label == "Export");
 
-        host.ActivatePath(export.Path).Should().BeTrue();
+        host.Activate(export.Id).Should().BeTrue();
 
         page.Exports.Should().Be(1);
     }
 
     [Fact]
-    public void ActivatePath_RefusesADisabledControl()
+    public void Activate_RefusesADisabledControl()
     {
         var (host, _) = Open();
         var delete = host.Semantics().Single(s => s.Label == "Delete");
 
-        host.ActivatePath(delete.Path).Should().BeFalse();
+        host.Activate(delete.Id).Should().BeFalse();
     }
 
     [Fact]
@@ -190,21 +190,21 @@ public class SemanticsTests
     }
 
     [Fact]
-    public void AdjustPath_DrivesTheAdjustable_BothWays()
+    public void Adjust_DrivesTheAdjustable_BothWays()
     {
         var page = new AxPage();
         var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
         host.RenderFrame(new DisplayListBuilder());
         var slider = host.Semantics().Single(s => s.Role == SemanticRole.Slider);
 
-        host.AdjustPath(slider.Path, +1).Should().BeTrue("VoiceOver's swipe up increments");
+        host.Adjust(slider.Id, +1).Should().BeTrue("VoiceOver's swipe up increments");
         host.RenderFrame(new DisplayListBuilder(), 16);
-        host.AdjustPath(slider.Path, -1).Should().BeTrue();
+        host.Adjust(slider.Id, -1).Should().BeTrue();
         host.RenderFrame(new DisplayListBuilder(), 32);
-        host.AdjustPath(slider.Path, -1).Should().BeTrue();
+        host.Adjust(slider.Id, -1).Should().BeTrue();
 
         page.Volume.Should().Be(4, "+1 then −1 then −1");
-        host.AdjustPath("nowhere", 1).Should().BeFalse("a stale path answers false, never throws");
+        host.Adjust(0, 1).Should().BeFalse("an id nothing carries answers false, never throws");
     }
 
     private sealed class VolumePage : Primitives.StatefulComponent

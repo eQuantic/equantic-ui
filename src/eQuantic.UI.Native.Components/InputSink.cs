@@ -111,7 +111,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
         var placed = region with { Bounds = Place(region.Bounds), Drawn = Place(region.Drawn) };
         if (!suppressFocusStops && !region.Node.Disabled && region.Node.OnPressed is not null
             && region.Node.CanRequestFocus)
-            AddStop(new FocusStop(region.Path, region.Node, null, placed.Bounds), region.Bounds);
+            AddStop(new FocusStop(region.Element.Id, region.Element, region.Node, null, placed.Bounds), region.Bounds);
         if (!Visible(placed.Bounds)) return;
         Note(regions.Hits, regions.Hits.Count, region.Bounds, region.Drawn);
         regions.Hits.Add(Clipped(placed));
@@ -162,7 +162,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     /// dropped when it scrolls out of sight.
     /// <para>
     /// Following a link is not a pointer act. The keyboard and a reader's activate both find it by
-    /// PATH (<c>PhotonHost.ActivatePath</c>), and a focus stop deliberately survives being scrolled
+    /// ID (<c>PhotonHost.Activate</c>), and a focus stop deliberately survives being scrolled
     /// away — so a region dropped off-screen made activate return TRUE and navigate nowhere:
     /// 20 stops, 5 regions, and the reader's activate on the twentieth silently did nothing.
     /// </para>
@@ -184,7 +184,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     {
         var placed = region with { Bounds = Place(region.Bounds) };
         if (!suppressFocusStops && !region.Entry.Disabled)
-            AddStop(new FocusStop(region.Path, null, region.Entry, placed.Bounds), region.Bounds);
+            AddStop(new FocusStop(region.Element.Id, region.Element, null, region.Entry, placed.Bounds), region.Bounds);
         if (!Visible(placed.Bounds)) return;
         Note(regions.Texts, regions.Texts.Count, region.Bounds, region.Bounds);
         regions.Texts.Add(Clipped(placed));
@@ -198,7 +198,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
             Offered = region.Offered is { } offered ? Place(offered) : null,
         };
         if (!suppressFocusStops)
-            AddStop(new FocusStop(region.Path, null, null, placed.Bounds, null, region.Surface), region.Bounds);
+            AddStop(new FocusStop(region.Element.Id, region.Element, null, null, placed.Bounds, null, region.Surface), region.Bounds);
         if (!Visible(placed.Bounds)) return;
         Note(regions.Codes, regions.Codes.Count, region.Bounds, region.Bounds, region.Offered);
         regions.Codes.Add(Clipped(placed));
@@ -233,7 +233,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
         // through a branch meant for editing surfaces and put a calendar into text mode.
         var placed = region with { Bounds = Place(region.Bounds) };
         if (!suppressFocusStops)
-            AddStop(new FocusStop(region.Path, null, null, placed.Bounds, Sheet: region.Surface), region.Bounds);
+            AddStop(new FocusStop(region.Element.Id, region.Element, null, null, placed.Bounds, Sheet: region.Surface), region.Bounds);
         if (!Visible(placed.Bounds)) return;
         Note(regions.Sheets, regions.Sheets.Count, region.Bounds, region.Bounds);
         regions.Sheets.Add(Clipped(placed));

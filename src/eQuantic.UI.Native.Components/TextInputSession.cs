@@ -14,7 +14,9 @@ namespace eQuantic.UI.Native.Components;
 public sealed class TextInputSession
 {
     private readonly PhotonHost _host;
-    private string? _path;
+
+    /// <summary>The id of what the keyboard was opened on, as of the last <see cref="Poll"/>.</summary>
+    private int? _focus;
 
     public TextInputSession(PhotonHost host) => _host = host;
 
@@ -47,14 +49,14 @@ public sealed class TextInputSession
             : editing is not null ? TextInputTarget.Text
             : TakesKeys() ? TextInputTarget.Keys
             : TextInputTarget.None;
-        var path = target == TextInputTarget.None ? null : _host.FocusedPath;
+        var focus = target == TextInputTarget.None ? null : _host.FocusedId;
         var obscure = target == TextInputTarget.Text && _host.TextTarget?.Obscure == true;
         var value = editing ?? TextEditingValue.Collapsed("", 0);
 
         var was = Target;
-        var samePlace = target == was && path == _path && obscure == Obscure;
+        var samePlace = target == was && focus == _focus && obscure == Obscure;
         Target = target;
-        _path = path;
+        _focus = focus;
         Obscure = obscure;
 
         if (target == TextInputTarget.None)
@@ -100,7 +102,7 @@ public sealed class TextInputSession
     {
         if (!OnItsField) return false;
         _host.KeyDown("Enter");
-        if (_host.FocusedPath == _path) _host.EndEditing();
+        if (_host.FocusedId == _focus) _host.EndEditing();
         return true;
     }
 
@@ -112,14 +114,14 @@ public sealed class TextInputSession
     private bool TakesKeys()
     {
         if (_host.CodeTarget is not null || _host.SheetTarget is not null) return true;
-        if (_host.FocusedPath is not { } path || _host.LastFrame is not { } frame) return false;
+        if (_host.FocusedId is not { } focus || _host.LastFrame is not { } frame) return false;
         var stops = frame.FocusStops;
         for (var i = 0; i < stops.Count; i++)
-            if (stops[i].Path == path && stops[i] is { Code: not null } or { Sheet: not null }) return true;
+            if (stops[i].Id == focus && stops[i] is { Code: not null } or { Sheet: not null }) return true;
         return false;
     }
 
     /// <summary>Whether the keyboard is editing a field and the caret is still in it: what the keyboard
     /// sends is for the field it was opened on, as of the last <see cref="Poll"/>.</summary>
-    private bool OnItsField => Target == TextInputTarget.Text && _path is not null && _host.FocusedPath == _path;
+    private bool OnItsField => Target == TextInputTarget.Text && _focus is not null && _host.FocusedId == _focus;
 }

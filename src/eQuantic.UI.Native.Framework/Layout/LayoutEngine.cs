@@ -21,16 +21,6 @@ public enum StretchKind
 public sealed class LayoutContext
 {
     /// <summary>
-    /// Cross-frame cache of child path strings. A path is IDENTITY — "0/1/2" this frame must be
-    /// the very same string next frame — and the tree's shape barely changes between frames, so
-    /// the host lends a dictionary that survives them and steady-state path allocation drops to
-    /// zero. Null (tests, one-shot layouts) simply concatenates. A keyed segment (see
-    /// <see cref="ChildPath(string, int, VisualNode)"/>) caches under its key, an indexed one under
-    /// null.
-    /// </summary>
-    public Dictionary<(string Parent, int Index, string? Key), string>? PathCache { get; init; }
-
-    /// <summary>
     /// The WINDOW this pass is laying out into, in dp. Set by <see cref="LayoutEngine.Layout"/>
     /// from the viewport it is handed, because a window-relative cap
     /// (<see cref="SizeKind.WindowMinus"/>) cannot be resolved from the available space: an
@@ -101,62 +91,6 @@ public sealed class LayoutContext
         node.Bounds = bounds;
         return node;
     }
-
-    internal string ChildPath(string parent, int index)
-    {
-        if (PathCache is not { } cache) return parent + "/" + index;
-        if (!cache.TryGetValue((parent, index, null), out var cached))
-            cache[(parent, index, null)] = cached = parent + "/" + index;
-        return cached;
-    }
-
-    /// <summary>
-    /// The path of a child AMONG SIBLINGS. A child that says <see cref="VisualNode.Key"/> takes the
-    /// key as its segment, spelled <c>[key]</c> so it can never collide with a position; every other
-    /// child takes its position. This is the web's keyed reconciliation arriving on Photon, where
-    /// the path is how focus, hover and a press find a node again (#976). A virtualized list that
-    /// materializes rows 2..20 one frame and 3..21 the next shifts every
-    /// positional path by one: the ring that sat on row 17 pointed at row 18, and when the index ran
-    /// past the window it pointed at nothing and Tab restarted from the first control. A keyed row
-    /// keeps its path whatever its neighbours do.
-    /// </summary>
-    internal string ChildPath(string parent, int index, VisualNode child)
-    {
-        if (child.Key is not { Length: > 0 } key) return ChildPath(parent, index);
-        if (PathCache is not { } cache) return parent + "/[" + Escape(key) + "]";
-        if (!cache.TryGetValue((parent, 0, key), out var cached))
-            cache[(parent, 0, key)] = cached = parent + "/[" + Escape(key) + "]";
-        return cached;
-    }
-
-    /// <summary>
-    /// The position of the child at <paramref name="slot"/>: its path below the parent's and the
-    /// element the parent's position holds at that slot, formed together so they cannot disagree
-    /// about which child they name.
-    /// </summary>
-    internal Position Child(Position parent, int slot) =>
-        new(ChildPath(parent.Path, slot), parent.Element?.ChildAt(slot));
-
-    /// <summary>
-    /// The position of a MEMBER of a list: its path segment is its key when it has one
-    /// (<see cref="ChildPath(string, int, VisualNode)"/>), and its element is the one the build matched
-    /// to it, which the parent's position holds at the member's index.
-    /// </summary>
-    internal Position Child(Position parent, int slot, VisualNode child) =>
-        new(ChildPath(parent.Path, slot, child), parent.Element?.ChildAt(slot));
-
-    /// <summary>
-    /// A key made safe to be ONE segment. Keys are frequently generated — a row id, a heading slug,
-    /// a URL — and a '/' inside one would read as a path boundary, quietly turning a single child
-    /// into a nested pair and pointing focus, hover and scroll state at a node that does not exist.
-    /// The escape doubles '~' and spells '/' as "~s", which is injective: two different keys can
-    /// never collapse onto one segment, so the identity the path carries stays the key's own. A key
-    /// with neither character — every key anyone has written so far — allocates nothing.
-    /// </summary>
-    private static string Escape(string key) =>
-        key.IndexOf('~') < 0 && key.IndexOf('/') < 0
-            ? key
-            : key.Replace("~", "~~").Replace("/", "~s");
 
     public LayoutContext(IAppTheme theme, ITextMeasurer measurer, float typeScale = 1f,
         Density density = Density.Comfortable)
@@ -336,15 +270,6 @@ public sealed class LayoutNode
     /// context, or the entrance finished).</summary>
     public float Presence { get; internal set; } = 1f;
 
-    /// <summary>
-    /// Where this node sits in the tree, as a string: the press, focus, hover and the hit regions
-    /// still find a node by it across frames (#976). A gesture outlives the frame it began in — the
-    /// press repaints, the next Build makes fresh nodes, and a target remembered by REFERENCE to the
-    /// node is gone by the time the finger lifts. What a node keeps between frames lives on its
-    /// <see cref="Element"/> instead.
-    /// </summary>
-    public string? Path { get; internal set; }
-
     /// <summary>The drag offset (dp along its axis) of a <see cref="DragDismiss"/> or a
     /// <see cref="Draggable"/>, resolved at measure time against the host's drag clock — the emit
     /// pass paints the translate.</summary>
@@ -359,8 +284,11 @@ public sealed class LayoutNode
     /// <summary>
     /// The position this node was laid out for, or null for a node the layout makes itself (the item
     /// a flex line wraps around a <see cref="Flexible"/>'s child). What the node keeps between frames
-    /// lives there (<see cref="NodeStates"/>), and the realizer reads it where a node's children are
-    /// shown in a layer of their own: an overlay's, an anchored panel's.
+    /// lives there (<see cref="NodeStates"/>), and it is how the host finds the node again (#976): a
+    /// gesture outlives the frame it began in, the next Build makes fresh nodes, and a target
+    /// remembered by REFERENCE to the node is gone by the time the finger lifts, while its position
+    /// is the same object for as long as it holds the node. The realizer reads it too where a node's
+    /// children are shown in a layer of their own: an overlay's, an anchored panel's.
     /// </summary>
     public Element? Element { get; internal set; }
 
@@ -375,7 +303,6 @@ public sealed class LayoutNode
         Text = null;
         TextRuns = null;
         Presence = 1f;
-        Path = null;
         DragOffset = 0f;
         ScrollRange = 0f;
         Element = null;
@@ -436,7 +363,6 @@ public static class LayoutEngine
     /// <param name="viewportWidth">The available width in dp — the window, or the layer's box.</param>
     /// <param name="viewportHeight">The available height in dp.</param>
     /// <param name="context">The pass's shared state: theme, text service, the host's motion clocks.</param>
-    /// <param name="rootPath">The path the root is addressed by, which every child extends.</param>
     /// <param name="rootStretch">
     /// What the caller has already decided about the ROOT's own size. The base layer is the page's
     /// body — an auto-sized root stretches to the window in WIDTH the way a CSS block does — while
@@ -452,7 +378,7 @@ public static class LayoutEngine
     /// calls no lifecycle hook, so there is one measurement whoever asks.
     /// </param>
     public static LayoutNode Layout(VisualNode root, float viewportWidth, float viewportHeight, LayoutContext context,
-        string rootPath = "r", StretchKind rootStretch = StretchKind.None, Element? rootElement = null)
+        StretchKind rootStretch = StretchKind.None, Element? rootElement = null)
     {
         rootElement ??= BuildOwner.Structural().Build(root, context.Components, context.SizeClass, rebuildAll: true);
         context.WindowWidth = viewportWidth;
@@ -464,7 +390,7 @@ public static class LayoutEngine
             root,
             LayoutConstraints.Of(viewportWidth, viewportHeight).Stretched(rootStretch, StretchKind.None),
             context,
-            new Position(rootPath, rootElement));
+            rootElement);
         Absolutize(node, 0, 0);
         return node;
     }

@@ -49,6 +49,6 @@ internal sealed partial class SemanticsVisitor
     /// nothing to say says nothing.</summary>
     private bool Graphic(string? label, LayoutNode laidOut) =>
         label is { Length: > 0 }
-            ? Announce(new(SemanticRole.Image, laidOut.Path ?? "", laidOut.Bounds, label, null, false))
+            ? Announce(new(SemanticRole.Image, IdOf(laidOut), laidOut.Bounds, label, null, false))
             : Decorative;
 }

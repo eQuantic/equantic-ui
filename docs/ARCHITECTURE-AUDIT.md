@@ -460,8 +460,9 @@ strings cheap, and a `LayoutNodePool` to make the tree cheap. Paths are built or
 `PhotonRealizer`. Flutter has none of this: the `Element` IS the position, state hangs off it, and a
 `GlobalKey` is the exception rather than the addressing scheme. The Element tree exists here — spread
 across six stores and keyed by string. (Since #950 and #975 the instances and the other stores' state
-live on Photon's elements, and what is left of the stores is the host's clocks; the path fields and
-the regions follow in #976.)
+live on Photon's elements, and what is left of the stores is the host's clocks; since #976 the host's
+fields and the regions hold elements, the shells name a node by its element's id, and Photon forms no
+path at all.)
 
 **Context is ambient.** With no position to look up from, everything Flutter finds by walking up the
 `BuildContext` is a static here: thirteen `AsyncLocal` channels (seven in `Primitives` —

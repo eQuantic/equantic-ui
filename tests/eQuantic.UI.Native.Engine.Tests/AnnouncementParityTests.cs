@@ -164,7 +164,7 @@ public class AnnouncementParityTests
         host.RenderFrame(new DisplayListBuilder());
         if (open)
         {
-            host.ActivatePath(host.Semantics().Single(stop => stop.Expanded is not null).Path).Should().BeTrue();
+            host.Activate(host.Semantics().Single(stop => stop.Expanded is not null).Id).Should().BeTrue();
             host.RenderFrame(new DisplayListBuilder(), 16);
         }
 

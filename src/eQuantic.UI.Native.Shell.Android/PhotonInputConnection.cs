@@ -36,7 +36,8 @@ internal sealed class PhotonInputConnection : BaseInputConnection
     private readonly TextInputSession _session;
     private readonly InputMethodManager _keyboard;
     private readonly bool _document;
-    private readonly string? _path;
+    /// <summary>The id of what the keyboard was opened on: this connection serves it and no other.</summary>
+    private readonly int? _focus;
     private readonly SpannableStringBuilder _mirror = new();
     private readonly bool _trace = PhotonInputTrace.On;
     private int _batch;
@@ -52,10 +53,10 @@ internal sealed class PhotonInputConnection : BaseInputConnection
         _session = session;
         _keyboard = keyboard;
         _document = session.Target == TextInputTarget.Text;
-        _path = host.FocusedPath;
+        _focus = host.FocusedId;
         if (_document) Show(session.Value);
         _reportOwed = false;
-        if (_trace) PhotonInputTrace.Write($"connection {session.Target} {_path} {Shown(Current())}");
+        if (_trace) PhotonInputTrace.Write($"connection {session.Target} {_focus} {Shown(Current())}");
     }
 
     /// <summary>What every edit of the base class applies to: the mirror. Empty for a surface that
@@ -317,5 +318,5 @@ internal sealed class PhotonInputConnection : BaseInputConnection
         GetComposingSpanStart(_mirror), GetComposingSpanEnd(_mirror));
 
     /// <summary>Whether this connection still serves the edit it was made for.</summary>
-    private bool Serving => ReferenceEquals(_view.Connection, this) && _host.FocusedPath == _path;
+    private bool Serving => ReferenceEquals(_view.Connection, this) && _host.FocusedId == _focus;
 }

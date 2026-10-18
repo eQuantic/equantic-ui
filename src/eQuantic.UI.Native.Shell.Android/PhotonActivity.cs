@@ -335,12 +335,12 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         cultureController?.Attach(_host.Invalidate);
 
         // The semantics bridge: TalkBack reads the SAME target-neutral tree the Apple shells read,
-        // and its gestures reach the same handlers a finger does — by path, like everything else
-        // that has to survive the next frame.
+        // and its gestures reach the same handlers a finger does — by the node's id, like everything
+        // else that has to survive the next frame.
         _view!.Semantics = new PhotonAccessibility(_view,
             () => _host?.Semantics() ?? [],
-            path => _host?.ActivatePath(path) ?? false,
-            (path, direction) => _host?.AdjustPath(path, direction) ?? false);
+            id => _host?.Activate(id) ?? false,
+            (id, direction) => _host?.Adjust(id, direction) ?? false);
 
         // The keyboard follows the host's edit: the session says when it begins, moves and ends,
         // and the view hands the keyboard a connection to it.

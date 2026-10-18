@@ -1,3 +1,4 @@
+using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Native.Components;
@@ -15,9 +16,8 @@ namespace eQuantic.UI.Native.Components;
 /// </para>
 ///
 /// <para>
-/// WHAT IT COSTS WHEN NOTHING IS LIVE, which is almost every frame of almost every app: one
-/// <c>Count == 0</c> test, and when the previous frame had none either, not even a dictionary
-/// lookup. That matters because <c>SteadyMotion_WithRecycledFrames_AllocatesFarLess</c> charges a
+/// WHAT IT COSTS WHEN NOTHING IS LIVE, which is almost every frame of almost every app: a loop over
+/// no marks. That matters because <c>SteadyMotion_WithRecycledFrames_AllocatesFarLess</c> charges a
 /// frame by the byte, and an accessibility feature that taxed every animation would be paid for by
 /// users who never turn a reader on.
 /// </para>
@@ -37,6 +37,14 @@ namespace eQuantic.UI.Native.Components;
 /// window opens is its CURRENT text rather than the one that was pending: a reader saying "41%"
 /// when the bar reads 58% is worse than saying nothing.
 /// </para>
+///
+/// <para>
+/// WHAT A REGION SAID, and when it last spoke, live on the region's position
+/// (<see cref="LiveRegionState"/>), so they leave the tree with it: a toast that goes and comes back
+/// with the same words is a new region, and the user was not there for the first one. They were
+/// kept by path, and a region that left had to be forgotten by hand every frame, or a list whose rows
+/// are toasts grew a row per path for the life of the app.
+/// </para>
 /// </summary>
 internal sealed class LiveRegionAnnouncer
 {
@@ -48,10 +56,6 @@ internal sealed class LiveRegionAnnouncer
     /// </summary>
     public const float QuietMs = 1000f;
 
-    /// <summary>What each region said, by path. Strings ONLY — a mark's node belongs to a frame
-    /// that is recycled the moment the next one lands, so keeping one would be keeping a corpse.</summary>
-    private readonly Dictionary<string, string> _said = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, float> _spokeAtMs = new(StringComparer.Ordinal);
     private readonly List<LiveAnnouncement> _pending = [];
     private readonly List<SemanticNode> _scratch = [];
     private bool _seenAFrame;
@@ -64,21 +68,11 @@ internal sealed class LiveRegionAnnouncer
     public void Observe(RealizeResult frame, float timeMs)
     {
         var marks = frame.LiveRegions;
-        if (marks.Count == 0)
-        {
-            // A region that went away has nothing to announce and nothing to remember. Clearing is
-            // what makes it announce AGAIN when it comes back — a toast that reappears with the
-            // same words is a new event, and the user was not there for the first one.
-            if (_said.Count > 0) Forget(marks);
-            _seenAFrame = true;
-            return;
-        }
-
         for (var i = 0; i < marks.Count; i++)
         {
             var mark = marks[i];
+            if (NodeStates.For<LiveRegionState>(mark.Element) is not { } region) continue;
             var text = TextOf(mark);
-            var known = _said.TryGetValue(mark.Path, out var before);
             // A REGION THAT APPEARS **IS** THE EVENT — on any frame but the first. That is the case
             // `LiveRegion` was added for: a Banner that appears announced nothing (B18) and a Toast
             // lowered to a non-modal Overlay announced nothing (C4), and treating arrival as "no
@@ -88,21 +82,22 @@ internal sealed class LiveRegionAnnouncer
             // THE FIRST FRAME IS THE EXCEPTION, and only it. A page that reads its own status line
             // aloud on load is the single loudest way to get a reader switched off, and on that
             // frame every region is new by definition — so the first frame SEEDS.
-            if (!known && !_seenAFrame)
+            if (!region.Known && !_seenAFrame)
             {
-                _said[mark.Path] = text;
+                region.Known = true;
+                region.Said = text;
                 continue;
             }
-            if (known && string.Equals(before, text, StringComparison.Ordinal)) continue;
-            _said[mark.Path] = text;
+            if (region.Known && string.Equals(region.Said, text, StringComparison.Ordinal)) continue;
+            region.Known = true;
+            region.Said = text;
             if (text.Length == 0) continue;               // emptied, not said
-            if (_spokeAtMs.TryGetValue(mark.Path, out var last) && timeMs - last < QuietMs) continue;
-            _spokeAtMs[mark.Path] = timeMs;
+            if (region.SpokeAtMs is { } last && timeMs - last < QuietMs) continue;
+            region.SpokeAtMs = timeMs;
             if (_pending.Count == MaxPending) _pending.RemoveAt(0);
-            _pending.Add(new LiveAnnouncement(mark.Path, mark.Label, text, mark.Urgency));
+            _pending.Add(new LiveAnnouncement(mark.Element.Id, mark.Label, text, mark.Urgency));
         }
 
-        Forget(marks);
         _seenAFrame = true;
     }
 
@@ -140,31 +135,5 @@ internal sealed class LiveRegionAnnouncer
         // A region holding a bar and its caption says both, in reading order, the way a reader
         // would voice them one after another.
         return string.Join(" ", _scratch.Where(n => n.Label.Length > 0).Select(n => n.Label));
-    }
-
-    /// <summary>
-    /// Drops what this frame no longer holds. Without it a long-lived app accumulates a row per
-    /// path that ever carried a live region — a list whose rows are toasts is unbounded, and a
-    /// leak that only shows up after an hour is the kind nobody attributes to the right feature.
-    /// <para>
-    /// It used to open with <c>if (_said.Count == marks.Count) return;</c>, which is CORRECT only
-    /// while every mark in a frame has a distinct path: the loop above writes each current path
-    /// into <c>_said</c>, so equal counts mean nothing stale — unless two marks share one. Paths
-    /// are positional and were measured distinct, so nothing reachable broke. It is gone anyway,
-    /// because it bought a skipped scan over a handful of keys and cost a correctness argument that
-    /// rested on an invariant stated nowhere; if that invariant ever failed, what it would produce
-    /// is a stale entry that announces nothing, silently.
-    /// </para>
-    /// </summary>
-    private void Forget(IReadOnlyList<LiveRegionMark> marks)
-    {
-        foreach (var path in _said.Keys.ToArray())
-        {
-            var held = false;
-            for (var i = 0; i < marks.Count && !held; i++) held = marks[i].Path == path;
-            if (held) continue;
-            _said.Remove(path);
-            _spokeAtMs.Remove(path);
-        }
     }
 }

@@ -42,7 +42,7 @@ public class SurfacesPastTheirViewTests
         host.PressDown(field.Bounds.X + 10, 104);
         host.PressUp(field.Bounds.X + 10, 104);
 
-        host.FocusedPath.Should().BeNull("the press was on the box below the view, where the field is not drawn");
+        host.FocusedId.Should().BeNull("the press was on the box below the view, where the field is not drawn");
     }
 
     [Fact]
@@ -56,7 +56,7 @@ public class SurfacesPastTheirViewTests
         host.PressDown(sheet.Bounds.X + 10, 150);
         host.PressUp(sheet.Bounds.X + 10, 150);
 
-        host.FocusedPath.Should().BeNull("the press was on the box below the view, where the sheet is not drawn");
+        host.FocusedId.Should().BeNull("the press was on the box below the view, where the sheet is not drawn");
     }
 
     [Fact]
@@ -68,6 +68,6 @@ public class SurfacesPastTheirViewTests
         host.PressDown(field.Bounds.X + 10, 95);
         host.PressUp(field.Bounds.X + 10, 95);
 
-        host.FocusedPath.Should().Be(field.Path, "the field is drawn there, inside the view");
+        host.FocusedId.Should().Be(field.Element.Id, "the field is drawn there, inside the view");
     }
 }

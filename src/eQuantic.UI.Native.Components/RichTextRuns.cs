@@ -18,16 +18,16 @@ namespace eQuantic.UI.Native.Components;
 /// <para>
 /// A linked run has no NODE, which is what made #255 a design question rather than a missing line:
 /// a link inside a sentence is a rectangle the layout computed and a string. It gets an identity
-/// here — the paragraph's own path with the link's index after a <c>#</c>, a spelling
-/// <see cref="Framework.LayoutEngine"/> never produces, so it can collide with neither a position
-/// (<c>r/1</c>) nor a key (<c>r/[home]</c>). That path is what a focus stop, a semantic node and
+/// here — the id its paragraph's position keeps for the link at that index
+/// (<see cref="NodeElement.PartId"/>), from the same count as every position's, so it collides with
+/// no node's and stays while the paragraph does. That id is what a focus stop, a semantic node and
 /// the bridge's activate all name, so the three arrive at the same link.
 /// </para>
 /// </summary>
 internal static class RichTextRuns
 {
     /// <summary>One link inside a paragraph: what the keyboard stops on and the reader announces.</summary>
-    /// <param name="Path">The paragraph's path, then <c>#</c> and the link's index within it.</param>
+    /// <param name="Id">The id the paragraph's position keeps for the link at its index.</param>
     /// <param name="Destination">Where following it goes — the only thing the host ever asks.</param>
     /// <param name="Bounds">
     /// The pieces on the link's FIRST line, unioned. A wrapped link has no single rectangle, and the
@@ -41,7 +41,7 @@ internal static class RichTextRuns
     /// on both its lines, and a single box over the two would claim the words beside it.
     /// </param>
     internal readonly record struct Link(
-        string Path, string Destination, Rect Bounds, string Text, IReadOnlyList<Rect> Rects);
+        int Id, string Destination, Rect Bounds, string Text, IReadOnlyList<Rect> Rects);
 
     /// <summary>
     /// How far a rich piece slides for its LINE's alignment. Asked by the draw, by the pressable
@@ -83,7 +83,6 @@ internal static class RichTextRuns
         // per-frame emit path (the semantics walk asks for it too, but only when a platform reader
         // does). The list is born on the first link instead of on the first FRAGMENT.
         List<Link>? links = null;
-        var path = node.Path ?? "";
         for (var i = 0; i < fragments.Count;)
         {
             if (fragments[i].Destination is not { Length: > 0 } destination) { i++; continue; }
@@ -107,11 +106,18 @@ internal static class RichTextRuns
             }
 
             links ??= [];
-            links.Add(new Link($"{path}#{links.Count}", destination, bounds, words, rects));
+            links.Add(new Link(PartIdOf(node, links.Count), destination, bounds, words, rects));
             i = last + 1;
         }
         return links ?? (IReadOnlyList<Link>)[];
     }
+
+    /// <summary>The id the paragraph's position keeps for its <paramref name="index"/>th link. A
+    /// paragraph the build made always has one, so one without it is the engine gone wrong.</summary>
+    private static int PartIdOf(LayoutNode node, int index) =>
+        node.Element is NodeElement at
+            ? at.PartId(index)
+            : throw new InvalidOperationException("A paragraph with links was drawn with no position to name them by.");
 
     private static Rect Union(Rect a, Rect b)
     {
