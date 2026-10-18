@@ -15,18 +15,21 @@ internal sealed partial class EmitVisitor
     {
         // Scroll compositor v1: the host routes wheel/drag to the topmost region (paint order).
         // Where the content actually is: layout clamps the offset to what the content can scroll.
+        // The view's position keeps its offset, so a region with none would scroll nothing.
         var offset = 0f;
-        if (s.ScrollMeta.TryGetValue(scrollView, out var meta))
+        if (s.Node.Element is { } at)
         {
-            s.Input.Add(new ScrollRegion(s.Node.Bounds, meta.Path, meta.MaxOffset, scrollView.Axis, scrollView.Offset));
+            var range = s.Node.ScrollRange;
+            s.Input.Add(new ScrollRegion(s.Node.Bounds, s.Node.Path ?? "", at, range, scrollView.Axis,
+                scrollView.Offset));
             // The out channel: a component that windows its content needs both numbers, and
             // neither is knowable before layout. Reported from the realized frame, which is the
             // first moment either is true.
             scrollView.OnViewportChanged?.Invoke(
                 scrollView.Axis == ScrollAxis.Horizontal ? s.Node.Bounds.Width : s.Node.Bounds.Height);
-            var requested = s.Press.ScrollOffsetOf(meta.Path) ?? scrollView.Offset;
+            var requested = ScrollClock.OffsetOf(at) ?? scrollView.Offset;
             scrollView.OnScrolled?.Invoke(requested);
-            offset = Math.Clamp(requested, 0, meta.MaxOffset);
+            offset = Math.Clamp(requested, 0, range);
         }
         // The surface a pinned header in here pins to: scrolled past the threshold on the axis a
         // header pins along, it draws its ScrolledStyle (#506). The nearest scroll view decides.
@@ -184,8 +187,8 @@ internal sealed partial class EmitVisitor
         // rise as a paint-only translate. Reduce Motion drops the movement (the store already
         // shortened the clock to the crossfade) — fade only, exactly the web media query.
         // Settled subtrees paint plainly (no layer cost at rest). Either way, the commands are
-        // SNAPSHOTTED by path — the frame that finds this path gone replays them as the exit
-        // (a mid-enter departure carries its inner layer, so the cross-fade composes).
+        // SNAPSHOTTED onto the presence's position — the frame its position leaves in replays them
+        // as the exit (a mid-enter departure carries its inner layer, so the cross-fade composes).
         var start = s.Builder.CommandCount;
         var entering = s.Node.Presence < 1f;
         var rise = entering && presence.Enter == PresenceMotion.SlideUp && !s.Motion.Reduced
@@ -203,8 +206,8 @@ internal sealed partial class EmitVisitor
             Emit(s with { Node = child, Input = input });
         if (entering) s.Builder.PopLayer();
         if (rise != 0) s.Builder.Pop();
-        if (s.Motion.Presences != null && s.Node.PresencePath is { } presencePath)
-            s.Motion.Presences.Snapshot(presencePath, presence.Enter, s.Builder.CommandsFrom(start));
+        if (s.Motion.Presences is { } presences && s.Node.Element is { } at)
+            presences.Snapshot(at, presence.Enter, s.Builder.CommandsFrom(start));
     }
 
     /// <summary>Centers a panel on the anchor's X WITHOUT measuring it: a symmetric fixed-width

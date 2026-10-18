@@ -4,3 +4,163 @@
 *REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Instances.get -> eQuantic.UI.Primitives.ComponentInstanceStore?
 *REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Instances.init -> void
 *REMOVED*[EQX0001]static eQuantic.UI.Native.Framework.LayoutEngine.Layout(eQuantic.UI.Primitives.VisualNode! root, float viewportWidth, float viewportHeight, eQuantic.UI.Native.Framework.LayoutContext! context, string! rootPath = "r", eQuantic.UI.Native.Framework.StretchKind rootStretch = eQuantic.UI.Native.Framework.StretchKind.None) -> eQuantic.UI.Native.Framework.LayoutNode!
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutNode.DragPath.get -> string?
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutNode.PresencePath.get -> string?
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.ActiveExits(float timeMs, bool reducedMotion) -> System.Collections.Generic.List<eQuantic.UI.Native.Framework.PresenceStore.ExitFrame>!
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.AnyActive.get -> bool
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.BeginFrame() -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.EndFrame(float timeMs) -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.ExitFrame
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Alpha.get -> float
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Alpha.init -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Commands.get -> eQuantic.UI.Native.Engine.DrawCommand[]!
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Commands.init -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Deconstruct(out eQuantic.UI.Native.Engine.DrawCommand[]! Commands, out float Alpha, out float Drop) -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Drop.get -> float
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Drop.init -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Equals(eQuantic.UI.Native.Framework.PresenceStore.ExitFrame other) -> bool
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.ExitFrame() -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.ExitFrame(eQuantic.UI.Native.Engine.DrawCommand[]! Commands, float Alpha, float Drop) -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.PresenceStore() -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.Progress(string! path, float timeMs, bool reducedMotion) -> float
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.PresenceStore.Snapshot(string! path, eQuantic.UI.Primitives.PresenceMotion kind, eQuantic.UI.Native.Engine.DrawCommand[]! commands) -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.ScrollStore
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.ScrollStore.Advance(float timeMs) -> bool
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.ScrollStore.Fling(string! path, float velocity, float maxOffset) -> bool
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.ScrollStore.Get(string! path) -> float?
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.ScrollStore.ScrollBy(string! path, float delta, float maxOffset, float fallback = 0) -> bool
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.ScrollStore.ScrollStore() -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.ScrollStore.ScrollTo(string! path, float offset, float maxOffset) -> bool
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.ScrollStore.Smooth.get -> bool
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.ScrollStore.Smooth.set -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.TransitionStore
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.TransitionStore.AnyActive.get -> bool
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.TransitionStore.BeginFrame() -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.TransitionStore.Positions(string! path) -> int?
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.TransitionStore.RememberPositions(string! path, int count) -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.TransitionStore.Resolve(string! path, float target, float timeMs, bool animate, bool reducedMotion) -> float
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.TransitionStore.Resolve(string! path, float target, float timeMs, eQuantic.UI.Primitives.TransitionSpec? spec, bool reducedMotion) -> float
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.TransitionStore.ResolveColor(string! path, eQuantic.UI.Primitives.Color target, float timeMs, eQuantic.UI.Primitives.TransitionSpec? spec, bool reducedMotion) -> eQuantic.UI.Primitives.Color
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.TransitionStore.Target(string! path) -> float?
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.TransitionStore.TargetColor(string! path) -> eQuantic.UI.Primitives.Color?
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.TransitionStore.TransitionStore() -> void
+*REMOVED*[EQX0001]override eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.GetHashCode() -> int
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.DragStore
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.DragStore.AnyActive.get -> bool
+*REMOVED*[EQX0001]static eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.operator !=(eQuantic.UI.Native.Framework.PresenceStore.ExitFrame left, eQuantic.UI.Native.Framework.PresenceStore.ExitFrame right) -> bool
+*REMOVED*[EQX0001]static eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.operator ==(eQuantic.UI.Native.Framework.PresenceStore.ExitFrame left, eQuantic.UI.Native.Framework.PresenceStore.ExitFrame right) -> bool
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.DragStore.BeginFrame() -> void
+*REMOVED*[EQX0001]static eQuantic.UI.Native.Framework.TransitionStore.Only(eQuantic.UI.Primitives.TransitionSpec? spec, eQuantic.UI.Primitives.StyleChannels channel) -> eQuantic.UI.Primitives.TransitionSpec?
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.DragStore.Drag(string! path, float offset) -> void
+*REMOVED*~[EQX0001]override eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Equals(object obj) -> bool
+*REMOVED*~[EQX0001]override eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.ToString() -> string
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.DragStore.DragStore() -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.DragStore.Drop(string! path) -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.DragStore.Release(string! path, float timeMs, float restOffset = 0) -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.DragStore.Resolve(string! path, float timeMs, float restOffset = 0) -> float
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.InViewStore
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.InViewStore.Changed(string! path, bool visible) -> bool
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.InViewStore.Clear() -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.InViewStore.InViewStore() -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Drags.get -> eQuantic.UI.Native.Framework.DragStore?
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Presences.get -> eQuantic.UI.Native.Framework.PresenceStore?
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.ScrollMeta.get -> System.Collections.Generic.Dictionary<eQuantic.UI.Primitives.ScrollView!, (string! Path, float MaxOffset)>?
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.ScrollMeta.init -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.ScrollOffsets.get -> eQuantic.UI.Native.Framework.ScrollStore?
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.ScrollOffsets.init -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Transitions.get -> eQuantic.UI.Native.Framework.TransitionStore?
+[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Transitions.get -> eQuantic.UI.Native.Framework.TransitionClock?
+[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Presences.get -> eQuantic.UI.Native.Framework.PresenceClock?
+[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Drags.get -> eQuantic.UI.Native.Framework.DragClock?
+[EQX0001]eQuantic.UI.Native.Framework.LayoutNode.ScrollRange.get -> float
+[EQX0001]eQuantic.UI.Native.Framework.DragClock
+[EQX0001]eQuantic.UI.Native.Framework.DragClock.DragClock() -> void
+[EQX0001]eQuantic.UI.Native.Framework.DragClock.AnyActive.get -> bool
+[EQX0001]eQuantic.UI.Native.Framework.DragClock.BeginFrame() -> void
+[EQX0001]eQuantic.UI.Native.Framework.DragClock.Drag(eQuantic.UI.Primitives.Element! at, float offset) -> void
+[EQX0001]eQuantic.UI.Native.Framework.DragClock.Release(eQuantic.UI.Primitives.Element! at, float timeMs, float restOffset = 0) -> void
+[EQX0001]eQuantic.UI.Native.Framework.DragClock.Drop(eQuantic.UI.Primitives.Element! at) -> void
+[EQX0001]eQuantic.UI.Native.Framework.DragClock.Resolve(eQuantic.UI.Primitives.Element? at, float timeMs, float restOffset = 0) -> float
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Width = 0 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Height = 1 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Flex = 2 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Opacity = 3 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.TranslateX = 4 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.TranslateY = 5 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Rotation = 6 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.ScaleX = 7 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.ScaleY = 8 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.ElevationOffsetY = 9 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.ElevationBlur = 10 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.ElevationSpread = 11 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.ElevationColor = 12 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.ShadowOffsetY = 13 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.ShadowBlur = 14 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.ShadowSpread = 15 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.ShadowColor = 16 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Background = 17 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Border = 18 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.NodeStates
+[EQX0001]static eQuantic.UI.Native.Framework.NodeStates.Find<T>(eQuantic.UI.Primitives.Element? at) -> T?
+[EQX0001]static eQuantic.UI.Native.Framework.NodeStates.For<T>(eQuantic.UI.Primitives.Element? at) -> T?
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock.PresenceClock() -> void
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock.AnyActive.get -> bool
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock.BeginFrame(float timeMs) -> void
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock.Progress(eQuantic.UI.Primitives.Element? at, float timeMs, bool reducedMotion) -> float
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock.Snapshot(eQuantic.UI.Primitives.Element? at, eQuantic.UI.Primitives.PresenceMotion kind, eQuantic.UI.Native.Engine.DrawCommand[]! commands) -> void
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock.ExitFrame
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock.ExitFrame.Deconstruct(out eQuantic.UI.Native.Engine.DrawCommand[]! Commands, out float Alpha, out float Drop) -> void
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock.ExitFrame.Equals(eQuantic.UI.Native.Framework.PresenceClock.ExitFrame other) -> bool
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock.ExitFrame.ExitFrame() -> void
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock.ExitFrame.ExitFrame(eQuantic.UI.Native.Engine.DrawCommand[]! Commands, float Alpha, float Drop) -> void
+[EQX0001]override eQuantic.UI.Native.Framework.PresenceClock.ExitFrame.GetHashCode() -> int
+[EQX0001]static eQuantic.UI.Native.Framework.PresenceClock.ExitFrame.operator !=(eQuantic.UI.Native.Framework.PresenceClock.ExitFrame left, eQuantic.UI.Native.Framework.PresenceClock.ExitFrame right) -> bool
+[EQX0001]static eQuantic.UI.Native.Framework.PresenceClock.ExitFrame.operator ==(eQuantic.UI.Native.Framework.PresenceClock.ExitFrame left, eQuantic.UI.Native.Framework.PresenceClock.ExitFrame right) -> bool
+~[EQX0001]override eQuantic.UI.Native.Framework.PresenceClock.ExitFrame.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Framework.PresenceClock.ExitFrame.ToString() -> string
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock.ExitFrame.Commands.get -> eQuantic.UI.Native.Engine.DrawCommand[]!
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock.ExitFrame.Commands.init -> void
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock.ExitFrame.Alpha.get -> float
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock.ExitFrame.Alpha.init -> void
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock.ExitFrame.Drop.get -> float
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock.ExitFrame.Drop.init -> void
+[EQX0001]eQuantic.UI.Native.Framework.PresenceClock.ActiveExits(float timeMs, bool reducedMotion) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Framework.PresenceClock.ExitFrame>!
+[EQX0001]eQuantic.UI.Native.Framework.ScrollClock.Advance(float timeMs) -> bool
+[EQX0001]eQuantic.UI.Native.Framework.ScrollClock
+[EQX0001]eQuantic.UI.Native.Framework.ScrollClock.ScrollClock() -> void
+[EQX0001]eQuantic.UI.Native.Framework.ScrollClock.Smooth.get -> bool
+[EQX0001]eQuantic.UI.Native.Framework.ScrollClock.Smooth.set -> void
+[EQX0001]static eQuantic.UI.Native.Framework.ScrollClock.OffsetOf(eQuantic.UI.Primitives.Element? at) -> float?
+[EQX0001]eQuantic.UI.Native.Framework.ScrollClock.ScrollTo(eQuantic.UI.Primitives.Element! at, float offset, float maxOffset) -> bool
+[EQX0001]eQuantic.UI.Native.Framework.ScrollClock.Fling(eQuantic.UI.Primitives.Element! at, float velocity, float maxOffset) -> bool
+[EQX0001]eQuantic.UI.Native.Framework.ScrollClock.ScrollBy(eQuantic.UI.Primitives.Element! at, float delta, float maxOffset, float fallback = 0) -> bool
+[EQX0001]eQuantic.UI.Native.Framework.TrackKey
+[EQX0001]eQuantic.UI.Native.Framework.TrackKey.Deconstruct(out eQuantic.UI.Native.Framework.GlideChannel Channel, out int Index) -> void
+[EQX0001]eQuantic.UI.Native.Framework.TrackKey.Equals(eQuantic.UI.Native.Framework.TrackKey other) -> bool
+[EQX0001]eQuantic.UI.Native.Framework.TrackKey.TrackKey() -> void
+[EQX0001]eQuantic.UI.Native.Framework.TrackKey.TrackKey(eQuantic.UI.Native.Framework.GlideChannel Channel, int Index = 0) -> void
+[EQX0001]override eQuantic.UI.Native.Framework.TrackKey.GetHashCode() -> int
+[EQX0001]static eQuantic.UI.Native.Framework.TrackKey.operator !=(eQuantic.UI.Native.Framework.TrackKey left, eQuantic.UI.Native.Framework.TrackKey right) -> bool
+[EQX0001]static eQuantic.UI.Native.Framework.TrackKey.operator ==(eQuantic.UI.Native.Framework.TrackKey left, eQuantic.UI.Native.Framework.TrackKey right) -> bool
+~[EQX0001]override eQuantic.UI.Native.Framework.TrackKey.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Framework.TrackKey.ToString() -> string
+[EQX0001]eQuantic.UI.Native.Framework.TrackKey.Channel.get -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.TrackKey.Channel.init -> void
+[EQX0001]eQuantic.UI.Native.Framework.TrackKey.Index.get -> int
+[EQX0001]eQuantic.UI.Native.Framework.TrackKey.Index.init -> void
+[EQX0001]static eQuantic.UI.Native.Framework.TrackKey.implicit operator eQuantic.UI.Native.Framework.TrackKey(eQuantic.UI.Native.Framework.GlideChannel channel) -> eQuantic.UI.Native.Framework.TrackKey
+[EQX0001]eQuantic.UI.Native.Framework.TransitionClock
+[EQX0001]eQuantic.UI.Native.Framework.TransitionClock.TransitionClock() -> void
+[EQX0001]eQuantic.UI.Native.Framework.TransitionClock.AnyActive.get -> bool
+[EQX0001]eQuantic.UI.Native.Framework.TransitionClock.BeginFrame() -> void
+[EQX0001]eQuantic.UI.Native.Framework.TransitionClock.Resolve(eQuantic.UI.Primitives.Element? at, eQuantic.UI.Native.Framework.TrackKey track, float target, float timeMs, bool animate, bool reducedMotion) -> float
+[EQX0001]eQuantic.UI.Native.Framework.TransitionClock.Resolve(eQuantic.UI.Primitives.Element? at, eQuantic.UI.Native.Framework.TrackKey track, float target, float timeMs, eQuantic.UI.Primitives.TransitionSpec? spec, bool reducedMotion) -> float
+[EQX0001]static eQuantic.UI.Native.Framework.TransitionClock.Only(eQuantic.UI.Primitives.TransitionSpec? spec, eQuantic.UI.Primitives.StyleChannels channel) -> eQuantic.UI.Primitives.TransitionSpec?
+[EQX0001]eQuantic.UI.Native.Framework.TransitionClock.ResolveColor(eQuantic.UI.Primitives.Element? at, eQuantic.UI.Native.Framework.TrackKey track, eQuantic.UI.Primitives.Color target, float timeMs, eQuantic.UI.Primitives.TransitionSpec? spec, bool reducedMotion) -> eQuantic.UI.Primitives.Color
+[EQX0001]eQuantic.UI.Native.Framework.TransitionClock.ShadowsDrawn(eQuantic.UI.Primitives.Element? at) -> int?
+[EQX0001]eQuantic.UI.Native.Framework.TransitionClock.RememberShadowsDrawn(eQuantic.UI.Primitives.Element? at, int count) -> void
+[EQX0001]eQuantic.UI.Native.Framework.TransitionClock.Target(eQuantic.UI.Primitives.Element? at, eQuantic.UI.Native.Framework.TrackKey track) -> float?
+[EQX0001]eQuantic.UI.Native.Framework.TransitionClock.TargetColor(eQuantic.UI.Primitives.Element? at, eQuantic.UI.Native.Framework.TrackKey track) -> eQuantic.UI.Primitives.Color?

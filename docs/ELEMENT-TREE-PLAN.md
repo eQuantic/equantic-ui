@@ -455,6 +455,26 @@ the parity rows it closes flip.
    to the owner as detached, paint-only replays, the host's path fields become element references,
    the shells' accessibility ids become element ids, and the path cache goes. Proof: a node that
    takes another's position starts with its own state, and the presence tests pass unchanged.
+
+   **First half landed** (#975, `openspec/changes/archive/2026-10-18-node-state-lives-on-its-element`):
+   what a node keeps between frames lives on its element (`NodeElement.State`, released when the
+   position leaves), what was left of each store is the host's clock for it (`ScrollClock`,
+   `DragClock`, `TransitionClock`, `PresenceClock`), and the scroll and drag regions carry the
+   element. Two deviations, each for a reason found while building it:
+   - The exits are held by the host's presence clock, not the owner: they are Photon draw commands,
+     and the owner is written for every target. A presence's state hands its last paint to the clock
+     when its element leaves, and the realizer ends the frame on the owner before it draws the
+     exits, so a layer that closes fades from the frame it closed in.
+   - `InViewStore` goes with nothing left of it: an `InView` reports in a tree that is drawn again,
+     a frame realized with a live owner, as the lifecycle hooks run.
+
+   The scroll region keeps its path beside the element until the second half (#976), for the
+   containment questions the host still asks by path. Measured with recycled frames, main against
+   the change: a new scene, the dense scene's cards gliding everything inside a scroll view, 73,669
+   to 39,133 bytes a frame, because its tracks were found by strings formed every frame; the dense
+   scene 38.3 to 38.1 KB, the stateful dashboard 28,742 to 28,534 bytes, a layer 498 to 482.
+   Unpooled, the dense scene is 88.7 KB a frame, so the layout node pool still saves about 50 KB a
+   frame and keeps its place.
 3. **E3, the browser.** The runtime's stores, module maps and path attributes move onto the
    transpiled engine; hydration builds the element tree; the shell an app declares in `Program.cs`
    stays mounted across client navigations, and the dashboard sample moves its frame into it. Proof:

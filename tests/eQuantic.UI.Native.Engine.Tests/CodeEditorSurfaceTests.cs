@@ -553,7 +553,7 @@ public class CodeEditorSurfaceTests
 
         var viewport = after.ScrollRegions.First(r => r.Axis == ScrollAxis.Vertical
             && region.Path.StartsWith(r.Path, StringComparison.Ordinal));
-        host.ScrollOffsetOf(viewport.Path).Should().BeGreaterThan(0, "the viewport followed the caret");
+        host.ScrollOffsetOf(viewport.Element).Should().BeGreaterThan(0, "the viewport followed the caret");
 
         var code2 = after.CodeRegions.Single();
         var caretY = code2.Bounds.Y + code2.Surface.Model.Carets[0].Y;

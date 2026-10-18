@@ -32,6 +32,20 @@ public sealed class NodeElement : Element
     public override Element? ChildAt(int slot) => (uint)slot < (uint)_children.Count ? _children[slot] : null;
 
     /// <summary>
+    /// What the realizer drawing this position keeps for its node between frames: a scroll view's
+    /// offset, a drag, a transition's tracks. The engine never reads it. When the position leaves the
+    /// tree it is cleared, and disposed when it is an <see cref="IDisposable"/>, after the states below
+    /// it: Flutter disposes a <c>State</c> when its element unmounts, in the same order, and a presence
+    /// that leaves hands its last paint to whatever fades it out that way.
+    /// <para>
+    /// One object, typed by each target for itself, because the engine is written once for all of
+    /// them (docs/ELEMENT-TREE-PLAN.md, 3.1). On a node's position only: a component's position keeps
+    /// its state already, the instance.
+    /// </para>
+    /// </summary>
+    public object? State { get; set; }
+
+    /// <summary>
     /// Builds the deferred slot with what the realizer is about to show in it, and answers its
     /// position: the realizer lays the layer out against it. Called once per frame the layer is
     /// shown; a frame that does not call it takes the slot's subtree out when it ends.
@@ -190,6 +204,13 @@ public sealed class NodeElement : Element
         }
 
         return null;
+    }
+
+    private protected override void OnDeactivated()
+    {
+        var state = State;
+        State = null;
+        (state as IDisposable)?.Dispose();
     }
 
     private protected override void DeactivateChildren()

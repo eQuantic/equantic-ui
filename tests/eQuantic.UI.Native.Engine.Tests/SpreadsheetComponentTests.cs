@@ -264,7 +264,7 @@ public class SpreadsheetComponentTests
         visited.Should().OnlyHaveUniqueItems("the ring restarted, or a row was visited twice");
         visited[^1].Should().Contain("/[", "the walk ended on a keyed row well past the first window");
         host.ScrollOffsetOf(host.RenderFrame(new DisplayListBuilder()).ScrollRegions
-            .Single(r => r.MaxOffset > 0).Path).Should().BeGreaterThan(0, "the sheet scrolled to follow the ring");
+            .Single(r => r.MaxOffset > 0).Element).Should().BeGreaterThan(0, "the sheet scrolled to follow the ring");
     }
 
     [Fact]

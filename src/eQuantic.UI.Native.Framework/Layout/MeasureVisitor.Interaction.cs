@@ -32,24 +32,22 @@ internal sealed partial class MeasureVisitor
     }
 
     /// <summary>A transparent wrapper that also resolves the ENTRANCE progress against the host's
-    /// presence clock, keyed by this stable path — the emit pass applies the paint-only effect and
-    /// snapshots the subtree's commands by the same path (the exit replay source).</summary>
+    /// presence clock, on the presence's own position — the emit pass applies the paint-only effect
+    /// and snapshots the subtree's commands onto the same position (the exit replay source).</summary>
     private LayoutNode MeasurePresence(Presence presence, LayoutConstraints constraints, LayoutContext ctx, Position at)
     {
         var result = MeasureWrapper(presence, presence.Child, constraints, ctx, at);
-        result.Presence = ctx.Presences?.Progress(at.Path, ctx.TimeMs, ctx.ReducedMotion) ?? 1f;
-        result.PresencePath = at.Path;
+        result.Presence = ctx.Presences?.Progress(at.Element, ctx.TimeMs, ctx.ReducedMotion) ?? 1f;
         return result;
     }
 
     /// <summary>A transparent wrapper that resolves the current DRAG offset against the host's drag
-    /// clock (active follow or glide-back), keyed by this stable path — the emit pass paints the
+    /// clock (active follow or glide-back), on the gesture's own position — the emit pass paints the
     /// translate and registers the drag region the host routes input by.</summary>
     private LayoutNode MeasureDragDismiss(DragDismiss drag, LayoutConstraints constraints, LayoutContext ctx, Position at)
     {
         var result = MeasureWrapper(drag, drag.Child, constraints, ctx, at);
-        result.DragOffset = ctx.Drags?.Resolve(at.Path, ctx.TimeMs) ?? 0f;
-        result.DragPath = at.Path;
+        result.DragOffset = ctx.Drags?.Resolve(at.Element, ctx.TimeMs) ?? 0f;
         return result;
     }
 
@@ -62,9 +60,8 @@ internal sealed partial class MeasureVisitor
         // A gesture the caller paints itself never translates — its offset lives in the caller's
         // state and has already moved the subtree by the time this frame is measured.
         result.DragOffset = draggable.Follows
-            ? ctx.Drags?.Resolve(at.Path, ctx.TimeMs, draggable.RestOffset) ?? draggable.RestOffset
+            ? ctx.Drags?.Resolve(at.Element, ctx.TimeMs, draggable.RestOffset) ?? draggable.RestOffset
             : 0f;
-        result.DragPath = at.Path;
         return result;
     }
 }

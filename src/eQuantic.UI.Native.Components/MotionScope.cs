@@ -40,9 +40,10 @@ internal sealed class MotionScope
     public bool Active { get; set; }
 
     /// <summary>The host's presence clock — the emit pass snapshots each live presence subtree's
-    /// commands into it (the exit replay source). Null = no exit machinery (layout-only tests).</summary>
-    public PresenceStore? Presences { get; init; }
-    /// <summary>Spec S6 at PAINT time: the same store layout uses for flex weights, so a box's
+    /// commands onto its position (the exit replay source). Null = no exit machinery (layout-only
+    /// tests).</summary>
+    public PresenceClock? Presences { get; init; }
+    /// <summary>Spec S6 at PAINT time: the same clock layout uses for flex weights, so a box's
     /// colours, opacity, transform and shadow glide under its own <c>Transition</c>.</summary>
-    public TransitionStore? Transitions { get; init; }
+    public TransitionClock? Transitions { get; init; }
 }

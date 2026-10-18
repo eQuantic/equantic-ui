@@ -37,7 +37,7 @@ internal sealed partial class EmitVisitor
         // stops, so native paints From→To until the 3-stop paint lands.
 
         // §05: the analytic shadow draws under the fill (one per node, theme-resolved).
-        if (TransitionStore.Only(style.Transition, StyleChannels.Shadow) is { } shadowSpec
+        if (TransitionClock.Only(style.Transition, StyleChannels.Shadow) is { } shadowSpec
             && s.Motion.Transitions is { } st)
         {
             // The elevation's shadow glides as its resolved components, so a card that lifts
@@ -48,11 +48,11 @@ internal sealed partial class EmitVisitor
             // gives the right target every time, and the alpha fades with the geometry the
             // way `box-shadow: none` interpolates in CSS.
             var target = s.Theme.Elevation(style.Elevation);
-            var sp = (s.Node.Path ?? "") + ":elev";
-            var offsetY = st.Resolve(sp + ".y", target.OffsetY, s.Motion.TimeMs, shadowSpec, s.Motion.Reduced);
-            var blur = st.Resolve(sp + ".b", target.Blur, s.Motion.TimeMs, shadowSpec, s.Motion.Reduced);
-            var spread = st.Resolve(sp + ".s", target.Spread, s.Motion.TimeMs, shadowSpec, s.Motion.Reduced);
-            var shadowColor = st.ResolveColor(sp + ".c", target.Color.Resolve(s.Mode),
+            var at = s.Node.Element;
+            var offsetY = st.Resolve(at, GlideChannel.ElevationOffsetY, target.OffsetY, s.Motion.TimeMs, shadowSpec, s.Motion.Reduced);
+            var blur = st.Resolve(at, GlideChannel.ElevationBlur, target.Blur, s.Motion.TimeMs, shadowSpec, s.Motion.Reduced);
+            var spread = st.Resolve(at, GlideChannel.ElevationSpread, target.Spread, s.Motion.TimeMs, shadowSpec, s.Motion.Reduced);
+            var shadowColor = st.ResolveColor(at, GlideChannel.ElevationColor, target.Color.Resolve(s.Mode),
                 s.Motion.TimeMs, shadowSpec, s.Motion.Reduced);
             if (blur > 0 || offsetY != 0 || spread != 0)
             {
@@ -62,7 +62,7 @@ internal sealed partial class EmitVisitor
         }
         else if (style.Elevation > 0)
         {
-            // The plain path, byte-for-byte what it was: no transition, no tracks, no strings.
+            // The plain path, byte-for-byte what it was: no transition, no tracks.
             var spec = s.Theme.Elevation(style.Elevation);
             if (!spec.IsNone)
             {
@@ -75,10 +75,10 @@ internal sealed partial class EmitVisitor
         // full spec — composes with the neutral elevation above. Lists draw in order. A shadow
         // with no geometry draws nothing, and the web leaves it out of its list the same way.
         // Under a Transition over the shadow channel the list GLIDES, position by position (#508).
-        if (TransitionStore.Only(style.Transition, StyleChannels.Shadow) is { } customSpec
-            && s.Motion.Transitions is { } customStore)
+        if (TransitionClock.Only(style.Transition, StyleChannels.Shadow) is { } customSpec
+            && s.Motion.Transitions is { } customClock)
         {
-            GlideCustomShadows(s, style, customSpec, customStore);
+            GlideCustomShadows(s, style, customSpec, customClock);
         }
         else
         {
@@ -114,13 +114,13 @@ internal sealed partial class EmitVisitor
 
         // Colours glide as resolved sRGB (what CSS does), wrapped back into a token that
         // resolves the same in both modes — the interpolation already picked the mode.
-        if (TransitionStore.Only(style.Transition, StyleChannels.Colors) is { } colorSpec
-            && s.Motion.Transitions is { } colorStore)
+        if (TransitionClock.Only(style.Transition, StyleChannels.Colors) is { } colorSpec
+            && s.Motion.Transitions is { } colorClock)
         {
-            var cp = s.Node.Path ?? "";
+            var at = s.Node.Element;
             if (fill is { } solidFill)
-                fill = new ColorToken(colorStore.ResolveColor(cp + ":bg", solidFill.Resolve(s.Mode), s.Motion.TimeMs, colorSpec, s.Motion.Reduced));
-            borderColor = new ColorToken(colorStore.ResolveColor(cp + ":bd", borderColor.Resolve(s.Mode), s.Motion.TimeMs, colorSpec, s.Motion.Reduced));
+                fill = new ColorToken(colorClock.ResolveColor(at, GlideChannel.Background, solidFill.Resolve(s.Mode), s.Motion.TimeMs, colorSpec, s.Motion.Reduced));
+            borderColor = new ColorToken(colorClock.ResolveColor(at, GlideChannel.Border, borderColor.Resolve(s.Mode), s.Motion.TimeMs, colorSpec, s.Motion.Reduced));
         }
 
         EmitChrome(s.Node.Bounds, fill, style.CornerRadius,
@@ -320,49 +320,52 @@ internal sealed partial class EmitVisitor
     /// seeded at nothing so it glides in, and one it lost glides out to a transparent shadow of its
     /// last colour before it stops being drawn: the padding CSS gives the shorter of two lists.
     /// </summary>
-    private static void GlideCustomShadows(in EmitState s, in BoxStyle style, TransitionSpec spec, TransitionStore store)
+    private static void GlideCustomShadows(in EmitState s, in BoxStyle style, TransitionSpec spec, TransitionClock clock)
     {
         // The positions are the shadows that DRAW: the web's list leaves a shadow with no geometry
         // out, so CSS pairs the ones around it, and so does this (#508).
         var count = Drawn(style);
-        var key = (s.Node.Path ?? "") + ":sh";
-        var known = store.Positions(key);
+        var at = s.Node.Element;
+        var known = clock.ShadowsDrawn(at);
         var positions = Math.Max(known ?? count, count);
         var time = s.Motion.TimeMs;
         var reduced = s.Motion.Reduced;
         var leaving = false;
         for (var i = 0; i < positions; i++)
         {
-            var p = key + i.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var offsetTrack = new TrackKey(GlideChannel.ShadowOffsetY, i);
+            var blurTrack = new TrackKey(GlideChannel.ShadowBlur, i);
+            var spreadTrack = new TrackKey(GlideChannel.ShadowSpread, i);
+            var colorTrack = new TrackKey(GlideChannel.ShadowColor, i);
             ShadowSpec? target = i < count ? DrawnAt(style, i) : null;
             Color color;
             if (target is { } shown)
             {
                 color = shown.Color.Resolve(s.Mode);
                 // New in a list drawn before: start from nothing, then glide to the target.
-                if (known is not null && store.Target(p + ".y") is null)
+                if (known is not null && clock.Target(at, offsetTrack) is null)
                 {
-                    store.Resolve(p + ".y", 0, time, spec, reduced);
-                    store.Resolve(p + ".b", 0, time, spec, reduced);
-                    store.Resolve(p + ".s", 0, time, spec, reduced);
-                    store.ResolveColor(p + ".c", color with { A = 0 }, time, spec, reduced);
+                    clock.Resolve(at, offsetTrack, 0, time, spec, reduced);
+                    clock.Resolve(at, blurTrack, 0, time, spec, reduced);
+                    clock.Resolve(at, spreadTrack, 0, time, spec, reduced);
+                    clock.ResolveColor(at, colorTrack, color with { A = 0 }, time, spec, reduced);
                 }
             }
             else
             {
                 // Gone from the list: fade the colour it had, rather than toward black.
-                color = (store.TargetColor(p + ".c") ?? default) with { A = 0 };
+                color = (clock.TargetColor(at, colorTrack) ?? default) with { A = 0 };
             }
-            var offsetY = store.Resolve(p + ".y", target?.OffsetY ?? 0, time, spec, reduced);
-            var blur = store.Resolve(p + ".b", target?.Blur ?? 0, time, spec, reduced);
-            var spread = store.Resolve(p + ".s", target?.Spread ?? 0, time, spec, reduced);
-            var shadowColor = store.ResolveColor(p + ".c", color, time, spec, reduced);
+            var offsetY = clock.Resolve(at, offsetTrack, target?.OffsetY ?? 0, time, spec, reduced);
+            var blur = clock.Resolve(at, blurTrack, target?.Blur ?? 0, time, spec, reduced);
+            var spread = clock.Resolve(at, spreadTrack, target?.Spread ?? 0, time, spec, reduced);
+            var shadowColor = clock.ResolveColor(at, colorTrack, color, time, spec, reduced);
             var visible = (blur > 0 || offsetY != 0 || spread != 0) && shadowColor.A > 0;
             if (target is null && visible) leaving = true;
             if (visible)
                 s.Builder.ShadowRRect(new RRect(s.Node.Bounds, style.CornerRadius), offsetY, blur, spread, shadowColor);
         }
-        store.RememberPositions(key, leaving ? positions : count);
+        clock.RememberShadowsDrawn(at, leaving ? positions : count);
     }
 
     /// <summary>How many custom shadows a box draws: those with geometry, the single one first.</summary>
@@ -441,16 +444,16 @@ internal sealed partial class EmitVisitor
 
     /// <summary>The five components of a transform, each its own track — so a rotate-and-scale
     /// hover glides both together under one spec, and removing the transform glides back to identity.</summary>
-    private static Transform2D GlideTransform(TransitionStore? store, string path, Transform2D target,
+    private static Transform2D GlideTransform(TransitionClock? clock, Element? at, Transform2D target,
         float timeMs, TransitionSpec? spec, bool reduced)
     {
-        if (store is null) return target;
+        if (clock is null) return target;
         return new Transform2D(
-            store.Resolve(path + ":tx", target.TranslateX, timeMs, spec, reduced),
-            store.Resolve(path + ":ty", target.TranslateY, timeMs, spec, reduced),
-            store.Resolve(path + ":rot", target.RotationDegrees, timeMs, spec, reduced),
-            store.Resolve(path + ":sx", target.ScaleX, timeMs, spec, reduced),
-            store.Resolve(path + ":sy", target.ScaleY, timeMs, spec, reduced));
+            clock.Resolve(at, GlideChannel.TranslateX, target.TranslateX, timeMs, spec, reduced),
+            clock.Resolve(at, GlideChannel.TranslateY, target.TranslateY, timeMs, spec, reduced),
+            clock.Resolve(at, GlideChannel.Rotation, target.RotationDegrees, timeMs, spec, reduced),
+            clock.Resolve(at, GlideChannel.ScaleX, target.ScaleX, timeMs, spec, reduced),
+            clock.Resolve(at, GlideChannel.ScaleY, target.ScaleY, timeMs, spec, reduced));
     }
 
     /// <summary>
@@ -468,7 +471,7 @@ internal sealed partial class EmitVisitor
         var transform = style.Transform ?? IdentityTransform;
         if (style.Transition is { } glide && s.Motion.Transitions is { } store
             && (glide.Channels & StyleChannels.Transform) != 0)
-            transform = GlideTransform(store, node.Path ?? "", transform, s.Motion.TimeMs, glide, s.Motion.Reduced);
+            transform = GlideTransform(store, node.Element, transform, s.Motion.TimeMs, glide, s.Motion.Reduced);
         return transform.IsIdentity ? null : CenterAnchored(transform, node.Bounds.Center);
     }
 

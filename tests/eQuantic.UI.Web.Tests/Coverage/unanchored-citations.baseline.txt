@@ -58,7 +58,6 @@ docs/HANDOFF-FIDELITY-AUDIT.md PhotonViewController.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md PullToRefresh.cs 10
 docs/HANDOFF-FIDELITY-AUDIT.md RadioGroup.cs 3
 docs/HANDOFF-FIDELITY-AUDIT.md SafeAreaTests.cs 1
-docs/HANDOFF-FIDELITY-AUDIT.md ScrollStore.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md SearchField.cs 2
 docs/HANDOFF-FIDELITY-AUDIT.md SegmentedControl.cs 11
 docs/HANDOFF-FIDELITY-AUDIT.md Spinner.cs 1

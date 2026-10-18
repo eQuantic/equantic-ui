@@ -66,7 +66,7 @@ internal sealed partial class EmitVisitor
             : 0f;
         // A threshold of 0 means ANY sliver, which is not the same as "zero of it".
         var onScreen = inView.Threshold <= 0 ? shown > 0 : shown >= inView.Threshold;
-        if (s.Press.InView?.Changed(s.Node.Path ?? "", onScreen) == true)
+        if (s.Press.ReportsInView && InViewState.Changed(s.Node.Element, onScreen))
             inView.OnChanged(onScreen);
         foreach (var child in s.Node)
             Emit(s with { Node = child });
@@ -145,13 +145,13 @@ internal sealed partial class EmitVisitor
             Emit(s with { Node = child, Input = s.Input.WithoutFocusStops() });
     }
 
-    private void EmitDrag(EmitState s, string dragPath)
+    private void EmitDrag(EmitState s, Element at)
     {
         // Gestures v2: the surface registers for the host's drag routing, and the current offset
         // (active follow or glide-back) paints as a translate — layout untouched, exactly like
         // loop motion. Hit regions inside register at their laid-out bounds; mid-drag taps are
         // cancelled by the slop rule, so the transient misalignment is unreachable.
-        s.Input.Add(new DragRegion(s.Node.Bounds, dragPath, s.Node.Source));
+        s.Input.Add(new DragRegion(s.Node.Bounds, at, s.Node.Source));
         // The axis is the node's: a swipe-to-reveal travels sideways, a sheet down.
         var dragOffset = s.Node.DragOffset;
         var horizontal = s.Node.Source is Draggable { Axis: DragAxis.Horizontal };

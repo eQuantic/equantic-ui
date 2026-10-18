@@ -55,9 +55,10 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         // components GLIDE to their new values under the box's own spec (colours and shadow glide
         // in the Box door). The guard reads the INTERPOLATED values, not the declared ones: a box
         // whose opacity just went 0.4 → 1 still needs its layer while it is still fading in.
-        // A box that declares NO Transition pays nothing here — not even the track-key strings: the
-        // allocation harness pins steady frames under a ceiling, and the first version of this
-        // built keys for every box in every frame. Only a Transition opens the gliding path.
+        // A box that declares NO Transition pays nothing here: the allocation harness pins steady
+        // frames under a ceiling, and the first version of this built a track key, a string then,
+        // for every box in every frame. Only a Transition opens the gliding path, and its tracks
+        // live on the box's position.
         // The values come from the box's EFFECTIVE style, so a hover that fades or moves the box does
         // it here, with the same answer the chrome reads (#504).
         // A pinned header is styled like a box while its surface is scrolled (#506): it fades and
@@ -73,11 +74,10 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         var transformNow = style.Transform ?? IdentityTransform;
         if (styled is not null && style.Transition is { } glide && s.Motion.Transitions is { } store)
         {
-            var glidePath = node.Path ?? "";
             if ((glide.Channels & StyleChannels.Opacity) != 0)
-                opacityNow = store.Resolve(glidePath + ":opacity", opacityNow, s.Motion.TimeMs, glide, s.Motion.Reduced);
+                opacityNow = store.Resolve(node.Element, GlideChannel.Opacity, opacityNow, s.Motion.TimeMs, glide, s.Motion.Reduced);
             if ((glide.Channels & StyleChannels.Transform) != 0)
-                transformNow = GlideTransform(store, glidePath, transformNow, s.Motion.TimeMs, glide, s.Motion.Reduced);
+                transformNow = GlideTransform(store, node.Element, transformNow, s.Motion.TimeMs, glide, s.Motion.Reduced);
         }
         if (styled is not null && (opacityNow < 1f || !transformNow.IsIdentity))
         {
@@ -259,8 +259,8 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     public Nothing Visit(Link node, EmitState s) { EmitLink(node, s); return Nothing.Value; }
     public Nothing Visit(Presence node, EmitState s) { EmitPresence(node, s); return Nothing.Value; }
 
-    /// <summary>A drag surface only registers once layout has given it a path; without one there is
-    /// nothing for the host to route to, and the node is just its children.</summary>
+    /// <summary>A drag surface only registers with a position, which keeps its drag; without one
+    /// there is nothing for the host to route to, and the node is just its children.</summary>
     public Nothing Visit(Draggable node, EmitState s) => DragThenChildren(s);
 
     /// <inheritdoc cref="Visit(Draggable, EmitState)"/>
@@ -268,7 +268,7 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
 
     private Nothing DragThenChildren(EmitState s)
     {
-        if (s.Node.DragPath is { } dragPath) EmitDrag(s, dragPath); else Descend(s);
+        if (s.Node.Element is { } at) EmitDrag(s, at); else Descend(s);
         return Nothing.Value;
     }
 
