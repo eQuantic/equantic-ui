@@ -5,9 +5,9 @@ namespace eQuantic.UI.Primitives;
 /// engine learns a node's shape.
 /// <para>
 /// A visitor rather than a switch, so a node kind added to <see cref="IVisualNodeVisitor{TState,TResult}"/>
-/// cannot be forgotten here: the build fails until it has a door. The slots are the ones the layout's
-/// child paths already use (a wrapper's child at 0, a code surface's options at 1, a list's members
-/// by index), which is what lets the layout read the position of a child from the slot it measures.
+/// cannot be forgotten here: the build fails until it has a door. The slots are the ones the layout
+/// measures (a wrapper's child at 0, a code surface's options at 1, a list's members by index), which
+/// is what lets the layout read the position of a child from the slot it measures.
 /// </para>
 /// <para>
 /// The state is the frame's window size class, because an <see cref="AdaptiveNode"/> holds ONE child

@@ -162,7 +162,7 @@ internal sealed partial class EmitVisitor
         if (canvas.OnPointerDown is not null || canvas.OnPointerMove is not null
             || canvas.OnPointerUp is not null || canvas.OnPointerLeave is not null)
         {
-            s.Input.Add(new CanvasRegion(s.Node.Bounds, canvas, s.Node.Path ?? ""));
+            s.Input.Add(new CanvasRegion(s.Node.Bounds, canvas, PositionOf(s.Node)));
         }
     }
 

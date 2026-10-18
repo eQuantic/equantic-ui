@@ -264,16 +264,16 @@ public sealed class PhotonWindow
             host.CaretRect() is { } rect ? (rect.X, rect.Y, rect.Width, rect.Height) : null;
 
         PhotonAccessibility.Source = host.Semantics;
-        PhotonAccessibility.OnActivate = path =>
+        PhotonAccessibility.OnActivate = id =>
         {
-            var handled = host.ActivatePath(path);
+            var handled = host.Activate(id);
             // Same rule as a key press: the pressed state paints NOW, not at the next tick.
             if (handled) Present();
             return handled;
         };
-        PhotonAccessibility.OnAdjust = (path, direction) =>
+        PhotonAccessibility.OnAdjust = (id, direction) =>
         {
-            var handled = host.AdjustPath(path, direction);
+            var handled = host.Adjust(id, direction);
             if (handled) Present();
             return handled;
         };

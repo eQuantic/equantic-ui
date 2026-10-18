@@ -103,15 +103,15 @@ public class GroupRoleSemanticsTests
         var bar = semantics.Single(node => node.Role == SemanticRole.TabBar);
         var tabs = semantics.Where(node => node.Role == SemanticRole.Tab).ToList();
 
-        frame.FocusStops.Select(stop => stop.Path).Should().Equal([bar.Path],
+        frame.FocusStops.Select(stop => stop.Id).Should().Equal([bar.Id],
             "the strip is ONE Tab stop, the ARIA tablist pattern, and the tabs are not stops of their own");
-        tabs.Should().OnlyContain(tab => tab.Path.StartsWith(bar.Path + "/", StringComparison.Ordinal),
+        tabs.Should().OnlyContain(tab => Positions.IsUnder(Positions.Of(frame, tab.Id)!, Positions.Of(frame, bar.Id)!),
             "what the bar holds is announced after it and under it, which is what walking into a container means");
 
-        host.ActivatePath(tabs[2].Path).Should().BeTrue("a reader's double tap on a tab is a tap");
+        host.Activate(tabs[2].Id).Should().BeTrue("a reader's double tap on a tab is a tap");
         picked.Should().Equal([2]);
 
-        host.AdjustPath(bar.Path, +1).Should().BeTrue("and the arrows still step the pick from the bar");
+        host.Adjust(bar.Id, +1).Should().BeTrue("and the arrows still step the pick from the bar");
         picked.Should().Equal([2, 2], "one step on from the picked tab, Activity, is Settings");
     }
 

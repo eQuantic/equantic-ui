@@ -4,11 +4,11 @@ namespace eQuantic.UI.Primitives;
 /// The position of a vocabulary node: it builds nothing, and holds its children by slot
 /// (<see cref="ChildSlots"/>).
 /// <para>
-/// Which old child a new one is compared with is what the layout's paths always said, so no
-/// component's retention moves: a fixed slot compares its one occupant, and the members of a list
-/// (a <see cref="Row"/>, a <see cref="Column"/>, a <see cref="Stack"/>, a <see cref="Grid"/>, a
-/// <see cref="Navigable"/>'s rows) are matched by key when they have one, wherever it moved, and by
-/// index when they do not.
+/// Which old child a new one is compared with is what the layout's paths said while they named the
+/// nodes, so no component's retention moved when positions took over: a fixed slot compares its one
+/// occupant, and the members of a list (a <see cref="Row"/>, a <see cref="Column"/>, a
+/// <see cref="Stack"/>, a <see cref="Grid"/>, a <see cref="Navigable"/>'s rows) are matched by key
+/// when they have one, wherever it moved, and by index when they do not.
 /// </para>
 /// </summary>
 [ServerOnly]
@@ -44,6 +44,23 @@ public sealed class NodeElement : Element
     /// </para>
     /// </summary>
     public object? State { get; set; }
+
+    /// <summary>
+    /// The id of a part the realizer draws inside this node as a target of its own, which a reader or
+    /// the keyboard lands on without a node of its own: the <paramref name="part"/>th linked run of a
+    /// paragraph. Taken from the same count as the positions' ids the first time it is asked for, and
+    /// kept on this position, so a run keeps its id while its paragraph lives, as a
+    /// <c>RenderParagraph</c> keeps the semantics nodes it made for its spans.
+    /// </summary>
+    public int PartId(int part)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(part);
+        var ids = _partIds ??= new List<int>();
+        while (ids.Count <= part) ids.Add(Owner.NextId());
+        return ids[part];
+    }
+
+    private List<int>? _partIds;
 
     /// <summary>
     /// Builds the deferred slot with what the realizer is about to show in it, and answers its
@@ -86,8 +103,13 @@ public sealed class NodeElement : Element
         UpdateChildren(force);
     }
 
-    /// <summary>Whether <paramref name="child"/> is the position in this node's deferred slot.</summary>
-    internal bool HoldsDeferred(Element child) => _deferred >= 0 && ReferenceEquals(ChildAt(_deferred), child);
+    /// <summary>
+    /// Whether <paramref name="child"/> is the position in this node's deferred slot: a layer the
+    /// realizer shows over the page and lays out on its own (an overlay's child, an anchored panel's
+    /// layer). A host that asks whether one position lies inside another's box stops here, since a
+    /// layer is drawn inside none of the boxes above it.
+    /// </summary>
+    public bool HoldsDeferred(Element child) => _deferred >= 0 && ReferenceEquals(ChildAt(_deferred), child);
 
     /// <summary>Takes the deferred slot's subtree out when the frame that ends did not show it.</summary>
     internal void SweepDeferred(int frame)

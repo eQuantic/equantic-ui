@@ -235,13 +235,16 @@ public class RichTextRunTests
         var link = host.Semantics().Should().ContainSingle(node => node.Role == SemanticRole.Link)
             .Which;
         link.Label.Should().Be("guide", "the link's own words name it, not the sentence around it");
-        link.Path.Should().EndWith("#0");
+        var paragraph = frame.FocusStops.Single(stop => stop.Id == link.Id).Element;
+        link.Id.Should().Be(((NodeElement)paragraph).PartId(0),
+            "a run has no node of its own, so its paragraph's position names it");
+        link.Id.Should().NotBe(paragraph.Id, "and never by the paragraph's own id");
 
-        frame.LinkRegions.Should().ContainSingle().Which.Path.Should().Be(link.Path);
-        frame.FocusStops.Should().ContainSingle(stop => stop.Path == link.Path);
+        frame.LinkRegions.Should().ContainSingle().Which.Id.Should().Be(link.Id);
+        frame.FocusStops.Should().ContainSingle(stop => stop.Id == link.Id);
         frame.LinkRegions.Should().ContainSingle().Which.Destination.Should().Be("/docs/start");
 
-        host.ActivatePath(link.Path).Should().BeTrue();
+        host.Activate(link.Id).Should().BeTrue();
         followed.Should().Be("/docs/start");
     }
 
@@ -271,8 +274,8 @@ public class RichTextRunTests
         link.Label.Should().Be("alpha beta", "the pieces are one link, however many lines it took");
 
         frame.LinkRegions.Should().HaveCountGreaterThan(1, "the words cover two lines of pixels")
-            .And.OnlyContain(region => region.Path == link.Path);
-        frame.FocusStops.Should().ContainSingle(stop => stop.Path == link.Path);
+            .And.OnlyContain(region => region.Id == link.Id);
+        frame.FocusStops.Should().ContainSingle(stop => stop.Id == link.Id);
     }
 
     /// <summary>
@@ -303,10 +306,10 @@ public class RichTextRunTests
 
         var links = host.Semantics().Where(node => node.Role == SemanticRole.Link).ToList();
         links.Select(link => link.Label).Should().Equal("terms", "privacy");
-        links.Select(link => link.Path).Should().OnlyHaveUniqueItems();
+        links.Select(link => link.Id).Should().OnlyHaveUniqueItems();
         frame.LinkRegions.Select(region => region.Destination).Distinct()
             .Should().Equal("/terms", "/privacy");
-        frame.FocusStops.Select(stop => stop.Path).Should().Contain(links.Select(link => link.Path));
+        frame.FocusStops.Select(stop => stop.Id).Should().Contain(links.Select(link => link.Id));
     }
 
     /// <summary>

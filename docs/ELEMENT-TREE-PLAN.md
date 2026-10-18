@@ -441,7 +441,7 @@ the parity rows it closes flip.
    - Only what a `SetState` marked builds, but every request for a frame other than a `SetState` and
      motion still rebuilds every component: the host routes input into models a build reads without
      a `SetState` (a code editor's controller, a spreadsheet's) and addresses them by path. E2, which
-     points the regions at elements, can narrow it.
+     points the regions at elements, can narrow it, and did (#976).
    - An overlay's child and an anchored panel are DEFERRED slots, built when the realizer shows their
      layer, because the realizer decides whether it shows (`Open` with motion, the hover it reads at
      paint). A slot not shown in a frame leaves the tree when the frame ends.
@@ -475,6 +475,34 @@ the parity rows it closes flip.
    scene 38.3 to 38.1 KB, the stateful dashboard 28,742 to 28,534 bytes, a layer 498 to 482.
    Unpooled, the dense scene is 88.7 KB a frame, so the layout node pool still saves about 50 KB a
    frame and keeps its place.
+
+   **Second half landed** (#976, `openspec/changes/archive/2026-10-18-the-host-addresses-elements`):
+   the host finds a control by its position. The regions and the focus stops carry the element; the
+   press, the focus, the field being edited and the hover chain hold it; containment walks the
+   parents and stops at a layer, as a path's prefix did; and the shells name a node by
+   `SemanticNode.Id`, an integer each position takes from its owner when it mounts (`Element.Id`),
+   with a linked run named by an id its paragraph's position keeps (`NodeElement.PartId`). The path
+   is gone from the layout, the realizer and the host. A frame after input builds what its handlers
+   marked with `SetState`. A field's or a surface's handler that calls none gets a frame that
+   rebuilds every component, because a Photon field draws the app's value and the host cannot see
+   where it lives (`BuildOwner.Marks` counts every `SetState`, and #996 would have the field keep
+   what was typed, as a browser's input does). An invalidation, a resize, a density change and a hot
+   reload still rebuild every component. Two defects it found:
+   - A press, the focus and the hover passed to whatever node took their control's place, because a
+     path is a place: a page replaced under the focus handed it to the new page's button, and a key
+     changed on a slot that holds one child left a press on the newcomer, so a release ran a handler
+     nobody pressed. A focus whose position leaves is now forgotten, as a browser's is.
+   - The dispatcher woke a host with `Invalidate`, so every result a worker posted rebuilt every
+     component. It asks for a frame now, and the work marks what it changes.
+
+   Measured with recycled frames, main against the change: a frame after a press on one card of the
+   stateful dashboard 94,190 to 31,246 bytes; the dashboard at rest 28,534 to 28,718, its 24 focus
+   stops carrying an id beside the element where they carried a path; unpooled, the dense scene 88.7
+   to 86.8 KB. Two non-goals stay open. Matching a list's unkeyed children from both ends, as Flutter
+   does, belongs to E3: a write-once component has to keep its state the same way on both targets,
+   and the browser matches by index until E3 drives it with the same engine. And Android's virtual
+   view id stays the node's index in the frame's semantic list, which leads to its id, until the
+   provider makes it stable.
 3. **E3, the browser.** The runtime's stores, module maps and path attributes move onto the
    transpiled engine; hydration builds the element tree; the shell an app declares in `Program.cs`
    stays mounted across client navigations, and the dashboard sample moves its frame into it. Proof:

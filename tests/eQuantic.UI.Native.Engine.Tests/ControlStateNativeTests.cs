@@ -149,7 +149,7 @@ public class ControlStateNativeTests
     private static readonly ColorToken PressedFill = new(Color.FromRgb(0xAA, 0x00, 0x00));
 
     /// <summary>A control that goes disabled while it is held, the press and the focus both. The host
-    /// tracks them by path, so the rebuilt, disabled control is still the tracked one, and it must
+    /// tracks them by position, so the rebuilt, disabled control is still the tracked one, and it must
     /// arm neither its pressed fill nor the ring (found by Copilot on #617).</summary>
     private sealed class Guarded : StatefulComponent
     {

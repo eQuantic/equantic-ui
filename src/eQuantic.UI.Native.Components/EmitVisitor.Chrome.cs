@@ -110,7 +110,7 @@ internal sealed partial class EmitVisitor
         var borderWidth = style.BorderWidth;
         // Spec S5: hover-reactive boxes register for the host's pointer tracking.
         if (box?.Style.Hover is { IsEmpty: false })
-            s.Input.Add(new HoverRegion(s.Node.Bounds, box, s.Node.Path ?? ""));
+            s.Input.Add(new HoverRegion(s.Node.Bounds, box, PositionOf(s.Node)));
 
         // Colours glide as resolved sRGB (what CSS does), wrapped back into a token that
         // resolves the same in both modes — the interpolation already picked the mode.
@@ -401,7 +401,7 @@ internal sealed partial class EmitVisitor
     /// The style a box paints with this frame: its own, with each active state's diff laid over it
     /// in the handoff's order — its own hover, then its control's focus, then its control's press,
     /// so a press beats a focus and a focus beats a hover, member by member, as the web's selectors
-    /// do by specificity (#508). A state is active when the host tracks it (the hover chain by path,
+    /// do by specificity (#508). A state is active when the host tracks it (the hover chain by position,
     /// the control's scope for focus and press) or a <see cref="Simulated"/> node pictures it. One
     /// answer for both halves of the box, the wrapper that fades and moves it and the chrome that
     /// fills, borders and shadows it, so the two cannot disagree about what state the box is in.
@@ -462,7 +462,7 @@ internal sealed partial class EmitVisitor
     /// box, or a box drawn where it was laid out. Asking twice in a frame answers the same: a glide
     /// resolves to the same value at the same time. The box's states are read as ITS OWN emission
     /// reads them, through its node: read through the pressable's, a hover lift never reached the
-    /// pressable's target, since no hover region carries a pressable's path.
+    /// pressable's target, since no hover region carries a pressable's position.
     /// </summary>
     private static Matrix2D? DrawnUnder(LayoutNode node, in EmitState s)
     {
