@@ -129,7 +129,7 @@ public class ReadmeCapturesTests
             var written = Path.Combine(scratch, "README.md");
             SdkProbe.Dotnet(null, null, "msbuild",
                 Path.Combine("src", "eQuantic.UI.Primitives", "eQuantic.UI.Primitives.csproj"),
-                "-nologo", "-nr:false", "-v:m", "-t:WritePackageReadme",
+                "-nologo", "-v:m", "-t:WritePackageReadme",
                 "-p:Version=9.9.9-probe", $"-p:EqPackageReadme={written}");
 
             var expected = File.ReadAllText(Path.Combine(root, "README.md")).Replace(

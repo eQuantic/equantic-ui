@@ -3,7 +3,7 @@ using System.Diagnostics;
 namespace eQuantic.UI.Tests;
 
 /// <summary>
-/// The one way a test starts a program and reads what it wrote (#971): its arguments go to it as a
+/// How a test starts a program and reads what it wrote (#971): its arguments go to it as a
 /// list, never through a shell, both of its streams drain from the start, so a child that fills the
 /// pipe nobody is reading never stops on it, and ONE deadline holds the whole run, the exit and the
 /// end of both streams alike.
@@ -17,8 +17,9 @@ namespace eQuantic.UI.Tests;
 /// of it is late, and never holds the test host.
 /// </para>
 /// <para>
-/// Linked into each test project that starts a program. <c>dotnet</c> goes through
-/// <see cref="Dotnet"/>, which starts it so that nothing it starts outlives it.
+/// Linked into each test project that starts <c>dotnet</c>, and every <c>dotnet</c> a test starts goes
+/// through <see cref="Dotnet"/>, which starts it so that nothing it starts outlives it:
+/// <c>ChildProcessTests</c> fails on one started anywhere else.
 /// </para>
 /// </summary>
 internal static class ChildProcess

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using eQuantic.UI.Build;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
@@ -114,23 +113,17 @@ public class EntitlementsManifestTests
         var tool = Path.Combine(AppContext.BaseDirectory, "eqicon.dll");
         File.Exists(tool).Should().BeTrue($"eqicon must be beside the tests, at {tool}");
 
-        var start = new ProcessStartInfo("dotnet")
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        foreach (var argument in new[]
-                 {
-                     tool, "entitlements", "--assembly", appAssembly, "--plist", plist,
-                     "--also", also, "--hardened", hardened,
-                 })
-            start.ArgumentList.Add(argument);
-
-        using var process = Process.Start(start)!;
-        var output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
-        process.WaitForExit();
-        return (output, process.ExitCode);
+        var (exit, output, error) = ChildProcess.Dotnet(
+            [tool, "entitlements", "--assembly", appAssembly, "--plist", plist, "--also", also, "--hardened", hardened],
+            EqiconDeadline);
+        return (output + error, exit);
     }
+
+    /// <summary>
+    /// Long enough that a loaded runner never trips it, where the verb takes a fraction of a second,
+    /// and short enough that a hung eqicon fails its row rather than holding the test host (#971).
+    /// </summary>
+    private static readonly TimeSpan EqiconDeadline = TimeSpan.FromMinutes(2);
 
     private static void WithPlist(Action<string> body)
     {

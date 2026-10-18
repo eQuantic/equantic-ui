@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text.Json;
 using System.Xml.Linq;
 using FluentAssertions;
@@ -26,35 +25,8 @@ public class EqcOutputIsBuildOutputTests
 
     private static XDocument ShippedSdk() => XDocument.Load(Path.Combine(SdkDir(), "Sdk.targets"));
 
-    private static readonly TimeSpan Deadline = TimeSpan.FromMinutes(3);
-
     /// <summary>Runs <c>dotnet</c> from the repository root, whose global.json picks the SDK, and fails with the child's output.</summary>
-    private static string Dotnet(params string[] args)
-    {
-        var info = new ProcessStartInfo("dotnet")
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            WorkingDirectory = RepoRoot(),
-        };
-        foreach (var arg in args) info.ArgumentList.Add(arg);
-        using var process = Process.Start(info)!;
-        var output = process.StandardOutput.ReadToEndAsync();
-        var error = process.StandardError.ReadToEndAsync();
-        using var deadline = new CancellationTokenSource(Deadline);
-        try
-        {
-            process.WaitForExitAsync(deadline.Token).GetAwaiter().GetResult();
-        }
-        catch (OperationCanceledException)
-        {
-            try { process.Kill(entireProcessTree: true); }
-            catch (InvalidOperationException) { /* it exited between the deadline and the kill */ }
-            throw new TimeoutException($"dotnet {string.Join(' ', args)} did not finish within {Deadline}.");
-        }
-        process.ExitCode.Should().Be(0, output.Result + error.Result);
-        return output.Result;
-    }
+    private static string Dotnet(params string[] args) => SdkProbe.Dotnet(null, null, args);
 
     private static void InATemporaryFolder(Action<string> body)
     {
