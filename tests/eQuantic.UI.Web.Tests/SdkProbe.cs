@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml.Linq;
@@ -45,9 +44,11 @@ internal static class SdkProbe
     /// <summary>
     /// Runs <c>dotnet</c> in <paramref name="workingDirectory"/>, the repository's root when it is null,
     /// with <paramref name="environment"/> over its own, and fails with the child's output, which it
-    /// returns. Its arguments go to it as a list, never through a shell. MSBuild's own command line drops
-    /// every double quote of a project's path, so a probe under a folder with one is run from inside it,
-    /// by its name, and the folder carries a copy of the repository's global.json.
+    /// returns. It starts as <see cref="ChildProcess.Dotnet"/> starts it: its arguments as a list, never
+    /// through a shell, a build that leaves nothing running behind it, and one deadline over the exit
+    /// and both streams. MSBuild's own command line drops every double quote of a project's path, so a
+    /// probe under a folder with one is run from inside it, by its name, and the folder carries a copy of
+    /// the repository's global.json.
     /// </summary>
     public static string Dotnet(string? workingDirectory, IReadOnlyDictionary<string, string>? environment, params string[] args)
     {
@@ -60,32 +61,8 @@ internal static class SdkProbe
     /// dotnet with <paramref name="args"/>, answering its exit code and what it wrote to each stream,
     /// so a case can hold a command to FAILING: a build a rule stops is the proof the rule runs.
     /// </summary>
-    public static (int ExitCode, string Output, string Error) Run(string? workingDirectory, IReadOnlyDictionary<string, string>? environment, params string[] args)
-    {
-        var info = new ProcessStartInfo("dotnet")
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            WorkingDirectory = workingDirectory ?? RepoRoot(),
-        };
-        foreach (var arg in args) info.ArgumentList.Add(arg);
-        foreach (var (name, value) in environment ?? new Dictionary<string, string>()) info.Environment[name] = value;
-        using var process = Process.Start(info)!;
-        var output = process.StandardOutput.ReadToEndAsync();
-        var error = process.StandardError.ReadToEndAsync();
-        using var deadline = new CancellationTokenSource(Deadline);
-        try
-        {
-            process.WaitForExitAsync(deadline.Token).GetAwaiter().GetResult();
-        }
-        catch (OperationCanceledException)
-        {
-            try { process.Kill(entireProcessTree: true); }
-            catch (InvalidOperationException) { /* it exited between the deadline and the kill */ }
-            throw new TimeoutException($"dotnet {string.Join(' ', args)} did not finish within {Deadline}.");
-        }
-        return (process.ExitCode, output.Result, error.Result);
-    }
+    public static (int ExitCode, string Output, string Error) Run(string? workingDirectory, IReadOnlyDictionary<string, string>? environment, params string[] args) =>
+        ChildProcess.Dotnet(args, Deadline, workingDirectory ?? RepoRoot(), environment);
 
     /// <summary>
     /// Writes the recorder into <paramref name="directory"/> under each of <paramref name="programs"/>,

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Xml.Linq;
 using FluentAssertions;
 using Xunit;
@@ -74,19 +73,8 @@ public class StaleGeneratedFilesArePrunedTests
         new XElement("Target", new XAttribute("Name", "Build"), new XAttribute("DependsOnTargets", "BeforeCompile;CoreCompile")),
         ShippedTargets())).ToString();
 
-    private static void Build(string directory)
-    {
-        var start = new ProcessStartInfo("dotnet", ["msbuild", "probe.proj", "-t:Build", "-nologo", "-v:m"])
-        {
-            WorkingDirectory = directory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        using var process = Process.Start(start)!;
-        var output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
-        process.WaitForExit();
-        process.ExitCode.Should().Be(0, output);
-    }
+    private static void Build(string directory) =>
+        SdkProbe.Dotnet(directory, null, "msbuild", "probe.proj", "-t:Build", "-nologo", "-v:m");
 
     private static void InATemporaryProject(Action<string> body)
     {

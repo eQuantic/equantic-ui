@@ -161,8 +161,8 @@ public class CodeDifferTests
     [InlineData("1b255b81", "src/eQuantic.UI.Compiler/CodeGen/Ir/JsExprWriter.cs")]
     public void TheCountsAreGitsOwn_OnRealFiles(string commit, string path)
     {
-        var before = Git($"show {commit}^:{path}");
-        var after = Git($"show {commit}:{path}");
+        var before = Git(["show", $"{commit}^:{path}"]);
+        var after = Git(["show", $"{commit}:{path}"]);
         Skip.If(before is null || after is null, "git or the commit is not available here.");
 
         var directory = Directory.CreateTempSubdirectory("eq-diff-");
@@ -172,7 +172,7 @@ public class CodeDifferTests
             var b = Path.Combine(directory.FullName, "b");
             File.WriteAllText(a, before);
             File.WriteAllText(b, after);
-            var numstat = Git($"diff --no-index --minimal --numstat -- \"{a}\" \"{b}\"", allowDifferences: true)!;
+            var numstat = Git(["diff", "--no-index", "--minimal", "--numstat", "--", a, b], allowDifferences: true)!;
             var fields = numstat.Split('\t');
             var (gitAdded, gitRemoved) = (int.Parse(fields[0]), int.Parse(fields[1]));
 
@@ -258,20 +258,14 @@ public class CodeDifferTests
 
     /// <summary>git's output, or null where git or the object is not there. A diff between two
     /// different files exits 1, which is an answer, not a failure.</summary>
-    private static string? Git(string arguments, bool allowDifferences = false)
+    private static string? Git(string[] arguments, bool allowDifferences = false)
     {
         try
         {
-            var start = new ProcessStartInfo("git", arguments)
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                WorkingDirectory = AppContext.BaseDirectory,
-            };
-            using var process = Process.Start(start)!;
-            var output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
-            return process.ExitCode == 0 || (allowDifferences && process.ExitCode == 1) ? output : null;
+            // A minute for a show or a diff of one file, which answers in milliseconds: a git that hangs
+            // fails the case rather than holding the test host (#971).
+            var (exitCode, output, _) = ChildProcess.Run("git", arguments, TimeSpan.FromMinutes(1), AppContext.BaseDirectory);
+            return exitCode == 0 || (allowDifferences && exitCode == 1) ? output : null;
         }
         catch (System.ComponentModel.Win32Exception)
         {

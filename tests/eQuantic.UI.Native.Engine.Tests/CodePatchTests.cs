@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using eQuantic.UI.Code;
 using FluentAssertions;
 using Xunit;
@@ -118,8 +117,8 @@ public class CodePatchTests
     [InlineData("1b255b81", "src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/PrimitiveStaticStrategy.cs")]
     public void GitsOwnPatch_RebuildsTheModifiedFile(string commit, string path)
     {
-        var before = Git($"show {commit}^:{path}");
-        var after = Git($"show {commit}:{path}");
+        var before = Git(["show", $"{commit}^:{path}"]);
+        var after = Git(["show", $"{commit}:{path}"]);
         Skip.If(before is null || after is null, "git or the commit is not available here.");
         var directory = Directory.CreateTempSubdirectory("eq-patch-");
         try
@@ -128,7 +127,7 @@ public class CodePatchTests
             var b = Path.Combine(directory.FullName, "b");
             File.WriteAllText(a, before);
             File.WriteAllText(b, after);
-            var patch = Git($"diff --no-index -U3 -- \"{a}\" \"{b}\"", allowDifferences: true)!;
+            var patch = Git(["diff", "--no-index", "-U3", "--", a, b], allowDifferences: true)!;
 
             var file = CodePatch.Parse(patch).Should().ContainSingle().Subject;
 
@@ -154,20 +153,14 @@ public class CodePatchTests
         }
     }
 
-    private static string? Git(string arguments, bool allowDifferences = false)
+    private static string? Git(string[] arguments, bool allowDifferences = false)
     {
         try
         {
-            var start = new ProcessStartInfo("git", arguments)
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                WorkingDirectory = AppContext.BaseDirectory,
-            };
-            using var process = Process.Start(start)!;
-            var output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
-            return process.ExitCode == 0 || (allowDifferences && process.ExitCode == 1) ? output : null;
+            // A minute for a show or a diff of one file, which answers in milliseconds: a git that hangs
+            // fails the case rather than holding the test host (#971).
+            var (exitCode, output, _) = ChildProcess.Run("git", arguments, TimeSpan.FromMinutes(1), AppContext.BaseDirectory);
+            return exitCode == 0 || (allowDifferences && exitCode == 1) ? output : null;
         }
         catch (System.ComponentModel.Win32Exception)
         {

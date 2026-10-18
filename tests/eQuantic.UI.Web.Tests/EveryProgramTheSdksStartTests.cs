@@ -122,7 +122,7 @@ public class EveryProgramTheSdksStartTests
                 Target(shipped, "_EQuanticCompilerArguments"),
                 Target(shipped, "CompileEQuanticUI"))).Save(probe);
 
-            var output = Dotnet(directory, environment, "msbuild", "probe.proj", "-nologo", "-nr:false", "-v:m",
+            var output = Dotnet(directory, environment, "msbuild", "probe.proj", "-nologo", "-v:m",
                 "-t:EQuanticAnnounceDevSource;EQuanticWebAppIcon;CompileEQuanticUI");
 
             Calls(record).Should().Equal([
@@ -174,7 +174,7 @@ public class EveryProgramTheSdksStartTests
                     Target(shipped, "_EQuanticCompilerArguments"),
                     Target(shipped, "CompileEQuanticUI"))).Save(Path.Combine(directory, "probe.proj"));
 
-                Dotnet(directory, environment, "msbuild", "probe.proj", "-nologo", "-nr:false", "-v:m", "-t:CompileEQuanticUI");
+                Dotnet(directory, environment, "msbuild", "probe.proj", "-nologo", "-v:m", "-t:CompileEQuanticUI");
 
                 var file = Path.GetFullPath(Path.Combine(directory,
                     obj.Replace("$(MSBuildProjectDirectory)/", "").Replace('\\', '/'), "equantic.eqc.rsp"));
@@ -216,7 +216,7 @@ public class EveryProgramTheSdksStartTests
                 StandIn("ResolveBunPath"),
                 Target(shipped, "InstallBunPackages"))).Save(Path.Combine(directory, "probe.proj"));
 
-            Dotnet(directory, environment, "msbuild", "probe.proj", "-nologo", "-nr:false", "-v:m", "-t:InstallBunPackages");
+            Dotnet(directory, environment, "msbuild", "probe.proj", "-nologo", "-v:m", "-t:InstallBunPackages");
 
             File.ReadAllLines(record).Should().Equal(["dayjs@1.11.13", "marked@15.0.6"],
                 "every package is added, the ones after the first included");
@@ -269,7 +269,7 @@ public class EveryProgramTheSdksStartTests
                     new XElement("Import", new XAttribute("Project", "../Sdk/Sdk.targets")))).Save(probe);
 
                 Dotnet(null, new Dictionary<string, string> { ["EQ_RECORD"] = record },
-                    "msbuild", probe, "-nologo", "-nr:false", "-v:m", "-t:InstallBunPackages");
+                    "msbuild", probe, "-nologo", "-v:m", "-t:InstallBunPackages");
 
                 File.ReadAllLines(record).Should().Equal([directory + "/obj/eQuantic/npm"],
                     $"bun runs in the project's own obj, the task loaded by {factory}");
@@ -323,7 +323,7 @@ public class EveryProgramTheSdksStartTests
                 Target(shipped, "EQuanticMacAppBundle"),
                 Target(shipped, "EQuanticMacAppPackage"))).Save(probe);
 
-            var output = Dotnet(directory, environment, "msbuild", "probe.proj", "-nologo", "-nr:false", "-v:n",
+            var output = Dotnet(directory, environment, "msbuild", "probe.proj", "-nologo", "-v:n",
                 "-t:EQuanticMacAppBundle;EQuanticMacAppPackage");
 
             var tool = directory + "/tools $x/eqicon.dll";
@@ -395,11 +395,11 @@ public class EveryProgramTheSdksStartTests
                 Target(shipped, "EQuanticCapabilityManifest"),
                 Target(shipped, "EQuanticAppIcon"))).Save(probe);
 
-            Dotnet(directory, environment, "msbuild", "probe.proj", "-nologo", "-nr:false", "-v:m", "-p:_EqPlatform=ios",
+            Dotnet(directory, environment, "msbuild", "probe.proj", "-nologo", "-v:m", "-p:_EqPlatform=ios",
                 "-t:EQuanticCapabilityManifest;EQuanticAppIcon");
-            Dotnet(directory, environment, "msbuild", "probe.proj", "-nologo", "-nr:false", "-v:m", "-p:_EqPlatform=android",
+            Dotnet(directory, environment, "msbuild", "probe.proj", "-nologo", "-v:m", "-p:_EqPlatform=android",
                 "-t:EQuanticAndroidIcon");
-            Dotnet(directory, environment, "msbuild", "probe.proj", "-nologo", "-nr:false", "-v:m", "-p:TargetFramework=",
+            Dotnet(directory, environment, "msbuild", "probe.proj", "-nologo", "-v:m", "-p:TargetFramework=",
                 "-t:EQuanticAppIcon");
 
             var tool = directory + "/tools $x/eqicon.dll";
