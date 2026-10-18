@@ -19,6 +19,9 @@ namespace eQuantic.UI.Conformance.Tests;
 /// answer as the lifted <c>==</c> does (#968): two absent values equal, an absent one unequal to any value,
 /// and two values by the struct's own equality, which is its <c>Equals</c>, never its <c>==</c>. The build
 /// refused all three.</item>
+/// <item>The <c>ToString</c> method group of a nullable value writes what its call writes, of the value as it is
+/// when the delegate is made, and an empty one is refused there, as .NET refuses a delegate over the null it
+/// boxes to (#955): the browser wrote JavaScript's text, <c>small</c>, <c>true</c> and <c>1,2</c>.</item>
 /// </list>
 /// </summary>
 public class NullableStructConformanceTests
@@ -191,6 +194,21 @@ public class NullableStructConformanceTests
     [InlineData("var xs = new List<Spot?> { new Spot(1, 2), null, new Spot(1, 2) }; Spot? target = new Spot(1, 2); return xs.Count(x => x.Equals(target));")] // 2
     [InlineData("var xs = new List<Spot?> { new Spot(1, 2), null, new Spot(3, 4) }; return xs.Count(x => Nullable.Equals(x, null));")] // 1
     public void ANullableStructsEquals_AnswersAsTheLiftedEqualityDoes(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Values);
+    }
+
+    [SkippableTheory]
+    // ---- the ToString group of a nullable value writes what its call writes (#955) ----
+    [InlineData("Level? s = Level.High; Func<string> f = s.ToString; s = Level.Low; return f();")] // "High": the value made over
+    [InlineData("bool? b = true; Func<string> g = b.ToString; return g();")]                         // "True"
+    [InlineData("(int, int)? t = (1, 2); Func<string> h = t.ToString; return h();")]                 // "(1, 2)"
+    [InlineData("double? d = 1.5; Func<string> f = d.ToString; return f();")]                         // "1.5"
+    [InlineData("Spot? p = new Spot(1, 2); Func<string> f = p.ToString; return f();")]               // "Spot { Row = 1, Col = 2 }"
+    // ---- an empty one is refused where the delegate is made ----
+    [InlineData("Level? s = null; try { Func<string> f = s.ToString; return \"made \" + f(); } catch (NullReferenceException) { return \"nre\"; } catch (ArgumentException) { return \"arg\"; }")] // "nre"
+    public void ANullablesToStringGroup_WritesWhatItsCallWrites(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Values);
