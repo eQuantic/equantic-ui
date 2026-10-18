@@ -362,6 +362,12 @@ public static class Eq
     /// comparison passed third, or found unequal where that is null, the other value being of another type.</summary>
     public const string EqualsInstance = "$eq.equalsInstance";
 
+    /// <summary><c>Equals</c> on a struct whose own <c>Equals(object)</c> is the app's code, as
+    /// <c>Nullable&lt;T&gt;.Equals(object)</c> and the default comparers call it: a null equal only to a null and
+    /// never asked, and otherwise the value's own <c>equals</c>, asked every time, a value compared with itself
+    /// included, where <see cref="Equals"/> and <see cref="SameItem"/> answer it at their identity check.</summary>
+    public const string EqualsOwn = "$eq.equalsOwn";
+
     /// <summary>The receiver of an instance call that has no helper of its own, refused as .NET refuses a
     /// call through null (<c>NullReferenceException</c>), and handed on otherwise.</summary>
     public const string Receiver = "$eq.receiver";

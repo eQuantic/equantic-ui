@@ -180,7 +180,7 @@ import {
 import { boolConvert, boolParse, boolTryParse } from './utils/boolean-text';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary, unwrap } from './utils/nullable';
-import { equals, equalsGroup, equalsInstance } from './utils/equals';
+import { equals, equalsGroup, equalsInstance, equalsOwn } from './utils/equals';
 import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
 import { guidOf, guidParse, guidTryParse } from './utils/guid';
 import { CancellationToken, CancellationTokenRegistration, CancellationTokenSource } from './utils/cancellation';
@@ -586,6 +586,9 @@ export const $eq = {
   equalsGroup,
   /** An instance `Equals` whose receiver may be null, an anonymous object's: refused through null. */
   equalsInstance,
+  /** `Equals` on a struct whose own `Equals(object)` is the app's: a null equal only to a null, and otherwise
+   * the value's own `equals`, asked every time, itself included. */
+  equalsOwn,
   /** The receiver of an instance call, refused as .NET refuses a call through null. */
   receiver,
   /** The instance a method group is made over, refused where the delegate is made when it is null. */

@@ -83,6 +83,19 @@ export function equalsInstance(
 }
 
 /**
+ * `Equals` on a struct of the app's whose own `Equals(object)` is the app's code, as .NET's
+ * `Nullable<T>.Equals(object)` and its default comparers call it: a null equal only to a null and never asked,
+ * and otherwise the value's own `equals`, asked every time, a value compared with itself included. `equals`
+ * and `sameItem` answer the same value at their identity check, so an override with a side effect never ran
+ * there (Copilot's first review of #977). A value whose twin carries no `equals` is compared as `equals` does.
+ */
+export function equalsOwn(value: unknown, other: unknown): boolean {
+  if (value == null || other == null) return value == null && other == null;
+  const own = (value as { equals?: unknown }).equals;
+  return typeof own === 'function' ? Boolean((own as (o: unknown) => unknown).call(value, other)) : equals(value, other);
+}
+
+/**
  * The method group `value.Equals` of a value the browser holds as data, `Func<object, bool> same =
  * color.Equals`: a delegate over the value as it is when the delegate is made, comparing as
  * {@link equals} does, or as `same` does where the compiler hands the comparison the value's type

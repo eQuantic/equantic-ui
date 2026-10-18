@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { equals, equalsGroup, equalsInstance } from './equals';
+import { equals, equalsGroup, equalsInstance, equalsOwn } from './equals';
 import { is } from './exceptions';
 import { dec } from './decimal';
 import { dateTime } from './datetime';
@@ -107,5 +107,39 @@ describe('equalsInstance', () => {
     expect(equalsInstance({ a: [1] }, { a: [1] }, (a, b) => a === b)).toBe(false);
     expect(equalsInstance({ a: 1 }, { a: 1 }, null)).toBe(false);
     expect(equalsInstance([1, 2], [1, 2], null)).toBe(false);
+  });
+});
+
+describe('equalsOwn', () => {
+  class Counted {
+    static calls = 0;
+    constructor(readonly n: number) {}
+    equals(o: unknown): boolean {
+      Counted.calls++;
+      return o instanceof Counted && o.n === this.n;
+    }
+  }
+
+  it('asks the value its own equals every time, the value compared with itself included', () => {
+    Counted.calls = 0;
+    const a = new Counted(1);
+    expect(equalsOwn(a, a)).toBe(true);
+    expect(equalsOwn(a, new Counted(1))).toBe(true);
+    expect(equalsOwn(a, new Counted(2))).toBe(false);
+    expect(Counted.calls).toBe(3);
+  });
+
+  it('answers a null without asking: equal only to another null', () => {
+    Counted.calls = 0;
+    const a = new Counted(1);
+    expect(equalsOwn(a, null)).toBe(false);
+    expect(equalsOwn(undefined, a)).toBe(false);
+    expect(equalsOwn(null, undefined)).toBe(true);
+    expect(Counted.calls).toBe(0);
+  });
+
+  it('compares a value with no equals of its own as equals does', () => {
+    expect(equalsOwn({ r: 1 }, { r: 1 })).toBe(true);
+    expect(equalsOwn({ r: 1 }, { r: 2 })).toBe(false);
   });
 });
