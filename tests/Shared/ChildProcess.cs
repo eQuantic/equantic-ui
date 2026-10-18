@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 
 namespace eQuantic.UI.Tests;
 
@@ -17,9 +18,10 @@ namespace eQuantic.UI.Tests;
 /// of it is late, and never holds the test host.
 /// </para>
 /// <para>
-/// Linked into each test project that starts <c>dotnet</c>, and every <c>dotnet</c> a test starts goes
-/// through <see cref="Dotnet"/>, which starts it so that nothing it starts outlives it:
-/// <c>ChildProcessTests</c> fails on one started anywhere else.
+/// Linked into each test project that starts a program, and every process a test starts goes through
+/// it: <see cref="Run"/> for one whose end the test waits for, <see cref="Dotnet"/> for <c>dotnet</c>,
+/// which also starts it so that nothing it starts outlives it, and <see cref="Started"/> for one the
+/// code under test owns. <c>ChildProcessTests</c> fails on one started anywhere else.
 /// </para>
 /// </summary>
 internal static class ChildProcess
@@ -54,7 +56,7 @@ internal static class ChildProcess
     /// any of those variables wins.
     /// </summary>
     public static (int ExitCode, string Output, string Error) Dotnet(
-        IEnumerable<string> arguments,
+        IReadOnlyList<string> arguments,
         TimeSpan deadline,
         string? workingDirectory = null,
         IReadOnlyDictionary<string, string>? environment = null) =>
@@ -65,44 +67,78 @@ internal static class ChildProcess
     /// Runs <paramref name="program"/> with <paramref name="arguments"/> in
     /// <paramref name="workingDirectory"/>, this process's own when it is null, with
     /// <paramref name="environment"/> over this process's own, in order, a null value removing the
-    /// variable it names, and answers its exit code and what it wrote to each stream. A program still
-    /// running at <paramref name="deadline"/> is killed with every process it started; one that exited
-    /// while a process it left behind still holds its output is left to it. Either way the run fails
-    /// as a <see cref="TimeoutException"/> naming the command.
+    /// variable it names, and answers its exit code and what it wrote to each stream, read as
+    /// <paramref name="encoding"/> when one is given. A program still running at
+    /// <paramref name="deadline"/> is killed with every process it started; one that exited while a
+    /// process it left behind still holds its output is left to it. Either way the run fails as a
+    /// <see cref="TimeoutException"/> naming the command.
+    /// <para>
+    /// The conformance suite runs a program through here thousands of times, so the run costs what
+    /// starting a process costs and the deadline nothing more: blocking waits on one clock read as a
+    /// timestamp, and the command written out only for the failure that names it.
+    /// </para>
     /// </summary>
     public static (int ExitCode, string Output, string Error) Run(
         string program,
-        IEnumerable<string> arguments,
+        IReadOnlyList<string> arguments,
         TimeSpan deadline,
         string? workingDirectory = null,
-        IEnumerable<KeyValuePair<string, string?>>? environment = null)
+        IEnumerable<KeyValuePair<string, string?>>? environment = null,
+        Encoding? encoding = null)
+    {
+        var started = Stopwatch.GetTimestamp();
+        using var process = Started(program, arguments, workingDirectory, environment, encoding);
+        var output = process.StandardOutput.ReadToEndAsync();
+        var error = process.StandardError.ReadToEndAsync();
+
+        if (!process.WaitForExit(deadline))
+        {
+            try { process.Kill(entireProcessTree: true); }
+            catch (InvalidOperationException) { /* it exited between the deadline and the kill */ }
+            throw new TimeoutException($"{Command(process.StartInfo)} did not finish within {deadline}, and was killed with every process it started.");
+        }
+        if (!output.Wait(Left()) || !error.Wait(Left()))
+            throw new TimeoutException(
+                $"{Command(process.StartInfo)} exited with code {process.ExitCode}, and its output had not ended within {deadline}: "
+                + "a process it started still holds its stdout or stderr.");
+        return (process.ExitCode, output.Result, error.Result);
+
+        TimeSpan Left() => deadline - Stopwatch.GetElapsedTime(started) is var left && left > TimeSpan.Zero ? left : TimeSpan.Zero;
+    }
+
+    /// <summary>
+    /// <paramref name="program"/> started as <see cref="Run"/> starts one, both streams redirected,
+    /// and handed back running, for the code under test that owns its run: a test that waits for a
+    /// program's end and reads what it wrote goes through <see cref="Run"/>, which holds both to the
+    /// deadline. Whoever takes it waits for it, reads it, and stops it.
+    /// </summary>
+    public static Process Started(
+        string program,
+        IReadOnlyList<string> arguments,
+        string? workingDirectory = null,
+        IEnumerable<KeyValuePair<string, string?>>? environment = null,
+        Encoding? encoding = null)
     {
         var info = new ProcessStartInfo(program)
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            StandardOutputEncoding = encoding,
+            StandardErrorEncoding = encoding,
+            CreateNoWindow = true,
             WorkingDirectory = workingDirectory ?? string.Empty,
         };
-        foreach (var argument in arguments) info.ArgumentList.Add(argument);
-        foreach (var (name, value) in environment ?? [])
-        {
-            if (value is null) info.Environment.Remove(name);
-            else info.Environment[name] = value;
-        }
-        var command = string.Join(' ', [program, .. info.ArgumentList]);
-
-        using var process = Process.Start(info)!;
-        var output = process.StandardOutput.ReadToEndAsync();
-        var error = process.StandardError.ReadToEndAsync();
-        if (Task.WhenAll(process.WaitForExitAsync(), output, error).Wait(deadline))
-            return (process.ExitCode, output.Result, error.Result);
-
-        if (process.HasExited)
-            throw new TimeoutException(
-                $"{command} exited with code {process.ExitCode}, and its output had not ended within {deadline}: "
-                + "a process it started still holds its stdout or stderr.");
-        try { process.Kill(entireProcessTree: true); }
-        catch (InvalidOperationException) { /* it exited between the deadline and the kill */ }
-        throw new TimeoutException($"{command} did not finish within {deadline}, and was killed with every process it started.");
+        // By index, and the environment only when there is one: enumerating either through its
+        // interface would allocate on every run of the conformance suite's hot path.
+        for (var i = 0; i < arguments.Count; i++) info.ArgumentList.Add(arguments[i]);
+        if (environment is not null)
+            foreach (var (name, value) in environment)
+            {
+                if (value is null) info.Environment.Remove(name);
+                else info.Environment[name] = value;
+            }
+        return Process.Start(info)!;
     }
+
+    private static string Command(ProcessStartInfo info) => string.Join(' ', [info.FileName, .. info.ArgumentList]);
 }
