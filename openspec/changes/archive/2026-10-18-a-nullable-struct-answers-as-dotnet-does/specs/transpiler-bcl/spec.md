@@ -9,9 +9,11 @@ for the other two, never its `==`. The default comparer's `Equals` SHALL answer 
 a string and a record included. A value's own equality that is the app's code, a struct's or a class's
 `Equals(object)`, declared or inherited from the app's base, and an `IEquatable<T>` its type answers, SHALL be
 asked every time two present values are compared, a value compared with itself included, as .NET asks it with
-no identity check, whether the call names the value's type, `object`, an interface or a type parameter of
-generic code, and `Equals` on a struct value that is not nullable SHALL ask it with a null argument too. A class
-with neither SHALL compare by reference. Both values SHALL be evaluated once, in the order the call writes
+no identity check, whether the call names the value's type, a base class the value's class extends, `object`,
+an interface or a type parameter of generic code, and `Equals` on a struct value that is not nullable SHALL ask
+it with a null argument too. A record's synthesized `Equals` SHALL answer a record compared with itself at the
+reference check C# writes into it, before it compares a member, wherever the comparer reaches it. A class with
+neither SHALL compare by reference. Both values SHALL be evaluated once, in the order the call writes
 them. The comparer's `Default` read on its own SHALL still fail
 the build with EQ2004, since no value the browser holds carries it, and only `EqualityComparer<T>`'s own
 `Default` SHALL be taken for the default comparer: a call made on a static property of the app's named
@@ -78,6 +80,24 @@ the build with EQ2004, since no value the browser holds carries it, and only `Eq
   `EqualityComparer<PlainClass>.Default.Equals(p, p)` and `EqualityComparer<PlainClass>.Default.Equals(p, new PlainClass(1))`
   run
 - **THEN** they answer True and False, by reference, as in .NET
+
+#### Scenario: A subclass's override behind its base
+
+- **WHEN** `class Square : Shape` overrides `Equals(object)` to count its calls, where `Shape` overrides nothing,
+  and `EqualityComparer<Shape>.Default.Equals(s, s)` runs for one `Shape s = new Square(1)`, and so do the same
+  call behind an abstract base and `EqualityComparer<BaseRecord>.Default.Equals(e, e)` over a derived record whose
+  own typed `Equals` counts its calls
+- **THEN** each answers True and counts one call, as in .NET's virtual call, and a subclass that refuses itself
+  answers False, where the browser answered the same value at its identity check and counted none
+
+#### Scenario: A record's synthesized Equals checks the reference
+
+- **WHEN** `record Wrapped(TypedClass T)` holds a member whose typed `Equals` counts its calls, and
+  `EqualityComparer<Wrapped>.Default.Equals(w, w)` runs for one `Wrapped w`, and so does the same call through
+  `object`, an interface the record implements and generic code
+- **THEN** each answers True and counts no call, as C#'s synthesized `Equals` answers at its reference check,
+  where through `object`, the interface and generic code the browser compared the record's member; two records
+  holding one member count one call
 
 #### Scenario: An app's own Default property
 
