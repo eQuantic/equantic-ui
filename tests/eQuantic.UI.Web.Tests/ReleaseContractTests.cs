@@ -64,7 +64,7 @@ public class ReleaseContractTests
 
             var (exitCode, output, error) = SdkProbe.Run(null, null, "msbuild",
                 Path.Combine("src", project, $"{project}.csproj"),
-                "-nologo", "-nr:false", "-v:m", "-t:EqStableVersionRemovesNoContractMember",
+                "-nologo", "-v:m", "-t:EqStableVersionRemovesNoContractMember",
                 $"-p:Version={version}", $"-p:_EqUnshippedFile={unshipped}");
 
             if (builds)

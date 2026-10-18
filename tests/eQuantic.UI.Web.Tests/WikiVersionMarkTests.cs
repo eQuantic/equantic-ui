@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text.RegularExpressions;
 using FluentAssertions;
 
@@ -29,18 +28,14 @@ public class WikiVersionMarkTests
         return here?.FullName;
     }
 
-    private static string Git(string root, string arguments)
-    {
-        using var process = Process.Start(new ProcessStartInfo("git", arguments)
-        {
-            WorkingDirectory = root,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        })!;
-        var output = process.StandardOutput.ReadToEnd();
-        process.WaitForExit();
-        return output.Trim();
-    }
+    /// <summary>
+    /// git in <paramref name="root"/>, each argument passed as one. Ten minutes: a pickaxe search over
+    /// every ref takes three seconds on a laptop, and this case as a whole takes 34 to 39 minutes on CI's
+    /// runners, so one search there can be far slower. A git that hangs still fails the case rather than
+    /// holding the test host (#971).
+    /// </summary>
+    private static string Git(string root, params string[] arguments) =>
+        ChildProcess.Run("git", arguments, TimeSpan.FromMinutes(10), root).Output.Trim();
 
     /// <summary>
     /// The release a symbol went out in: the FIRST commit whose diff contains it, then the earliest
@@ -66,14 +61,14 @@ public class WikiVersionMarkTests
     {
         // `text @ path` narrows the search — a member name is rarely unique across a framework that
         // has both a Core and a Primitives component model, and `OnMount` matched the older one.
-        var path = "";
+        string[] path = [];
         if (search.Split(" @ ") is [var text, var scope])
         {
             search = text;
-            path = $" -- {scope}";
+            path = ["--", scope];
         }
 
-        var commits = Git(root, $"log --all --reverse --format=%H -S\"{search}\"{path}")
+        var commits = Git(root, ["log", "--all", "--reverse", "--format=%H", $"-S{search}", .. path])
             .Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
         // The first commit a RELEASE contains, not simply the first commit. Every change reaches
@@ -84,7 +79,7 @@ public class WikiVersionMarkTests
         // ones most likely to be wrong, were the ones silently skipped.
         foreach (var commit in commits)
         {
-            var tags = Git(root, $"tag --contains {commit}")
+            var tags = Git(root, "tag", "--contains", commit)
                 .Split('\n', StringSplitOptions.RemoveEmptyEntries)
                 .Where(tag => tag.StartsWith("v0.", StringComparison.Ordinal))
                 .Select(tag => (Tag: tag, Order: PreviewOrder(tag)))
@@ -120,7 +115,7 @@ public class WikiVersionMarkTests
         // Without tags every symbol reads as unreleased and the check passes having compared
         // nothing — the exact shape of green tick this guard exists to replace. A shallow CI
         // checkout has none by default.
-        Git(root!, "tag --list v0.2.0-preview.*").Should().NotBeEmpty(
+        Git(root!, "tag", "--list", "v0.2.0-preview.*").Should().NotBeEmpty(
             "the guard compares against tags; fetch them before running it");
 
         var wrong = new List<string>();

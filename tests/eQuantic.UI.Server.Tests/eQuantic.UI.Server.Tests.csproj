@@ -22,6 +22,12 @@
     <Using Include="Xunit" />
     <Using Include="FluentAssertions" />
     <Using Include="Moq" />
+    <Using Include="eQuantic.UI.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- How a test starts a program: one deadline over the exit and both streams (#971). -->
+    <Compile Include="..\Shared\ChildProcess.cs" Link="Shared\ChildProcess.cs" />
   </ItemGroup>
 
   <ItemGroup>

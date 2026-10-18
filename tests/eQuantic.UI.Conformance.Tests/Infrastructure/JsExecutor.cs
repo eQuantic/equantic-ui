@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
@@ -196,39 +195,15 @@ public static class JsExecutor
         }
     }
 
-    /// <summary>Runs a process to its end and answers what it wrote. One that outlives
-    /// <paramref name="timeoutMs"/> is killed with every process it started, rather than left
-    /// running past the test that started it. What it wrote is read as UTF-8, which is what Bun and
-    /// Node write: left to the default, Windows decodes a redirected stream with its OEM code page,
-    /// and the one conformance case printing a character past ASCII (`¤`) read two characters there
-    /// and failed on Windows alone.</summary>
-    internal static (int exitCode, string stdout, string stderr) RunProcess(string fileName, string[] args, int timeoutMs)
-    {
-        var psi = new ProcessStartInfo(fileName)
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            StandardOutputEncoding = System.Text.Encoding.UTF8,
-            StandardErrorEncoding = System.Text.Encoding.UTF8,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-        foreach (var a in args) psi.ArgumentList.Add(a);
-
-        using var process = Process.Start(psi)
-            ?? throw new InvalidOperationException($"Failed to start process: {fileName}");
-
-        var stdoutTask = process.StandardOutput.ReadToEndAsync();
-        var stderrTask = process.StandardError.ReadToEndAsync();
-
-        if (!process.WaitForExit(timeoutMs))
-        {
-            try { process.Kill(entireProcessTree: true); } catch { /* best effort */ }
-            throw new TimeoutException($"{fileName} timed out after {timeoutMs}ms.");
-        }
-
-        return (process.ExitCode, stdoutTask.GetAwaiter().GetResult(), stderrTask.GetAwaiter().GetResult());
-    }
+    /// <summary>Runs a process to its end and answers what it wrote, through
+    /// <see cref="ChildProcess.Run"/>: one that outlives <paramref name="timeoutMs"/> is killed with
+    /// every process it started, rather than left running past the test that started it, and one whose
+    /// output a process it left behind still holds fails at the same deadline rather than holding the
+    /// test host (#971). What it wrote is read as UTF-8, which is what Bun and Node write: left to the
+    /// default, Windows decodes a redirected stream with its OEM code page, and the one conformance case
+    /// printing a character past ASCII (`¤`) read two characters there and failed on Windows alone.</summary>
+    internal static (int exitCode, string stdout, string stderr) RunProcess(string fileName, string[] args, int timeoutMs) =>
+        ChildProcess.Run(fileName, args, TimeSpan.FromMilliseconds(timeoutMs), encoding: System.Text.Encoding.UTF8);
 
     private static InvalidOperationException Failure(string engine, int code, string program, string stdout, string stderr) =>
         new($"{engine} exited with code {code}.\nProgram:\n{program}\nstderr:\n{stderr}\nstdout:\n{stdout}");

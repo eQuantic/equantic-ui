@@ -130,13 +130,9 @@ public class BunToolchainTests
 
             if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(binary!, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
-            using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(binary!, "--version")
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            })!;
-            var reported = process.StandardOutput.ReadToEnd().Trim();
-            process.WaitForExit();
+            // A minute for a program that answers in milliseconds: a Bun that hangs fails this case
+            // rather than holding the test host (#971).
+            var reported = ChildProcess.Run(binary!, ["--version"], TimeSpan.FromMinutes(1)).Output.Trim();
 
             reported.Should().Be(manifest.Version,
                 "the manifest is the answer to \"which Bun is embedded\", and an answer nobody "

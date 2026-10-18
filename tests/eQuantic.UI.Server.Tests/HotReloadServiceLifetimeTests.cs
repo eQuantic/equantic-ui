@@ -12,9 +12,11 @@ namespace eQuantic.UI.Server.Tests;
 /// </summary>
 public class HotReloadServiceLifetimeTests
 {
-    private static ProcessStartInfo Sleeping() => OperatingSystem.IsWindows()
-        ? new ProcessStartInfo("ping", "-n 60 127.0.0.1") { RedirectStandardOutput = true, RedirectStandardError = true }
-        : new ProcessStartInfo("sleep", "60") { RedirectStandardOutput = true, RedirectStandardError = true };
+    /// <summary>The stand-in rebuild, started running and handed to the service, which owns its run as
+    /// it owns a real rebuild's.</summary>
+    private static Process Sleeping() => OperatingSystem.IsWindows()
+        ? ChildProcess.Started("ping", ["-n", "60", "127.0.0.1"])
+        : ChildProcess.Started("sleep", ["60"]);
 
     private static bool Running(int pid)
     {
@@ -42,7 +44,7 @@ public class HotReloadServiceLifetimeTests
         var pid = 0;
         using var service = new HotReloadService(Path.GetTempPath(), () =>
         {
-            var process = Process.Start(Sleeping())!;
+            var process = Sleeping();
             pid = process.Id;
             return process;
         }, TimeSpan.FromSeconds(1));
@@ -66,7 +68,7 @@ public class HotReloadServiceLifetimeTests
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var service = new HotReloadService(Path.GetTempPath(), () =>
         {
-            var process = Process.Start(Sleeping())!;
+            var process = Sleeping();
             pid = process.Id;
             started.SetResult();
             return process;
@@ -102,7 +104,7 @@ public class HotReloadServiceLifetimeTests
         {
             entered.SetResult();
             release.Wait(TimeSpan.FromSeconds(30));
-            var process = Process.Start(Sleeping())!;
+            var process = Sleeping();
             pid = process.Id;
             return process;
         }, TimeSpan.FromMinutes(1));
