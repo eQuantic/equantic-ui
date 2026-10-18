@@ -18,7 +18,9 @@ namespace eQuantic.UI.Conformance.Tests;
 /// <item>Equals over a nullable struct, <c>Nullable.Equals</c> and <c>EqualityComparer&lt;T&gt;.Default.Equals</c>
 /// answer as the lifted <c>==</c> does (#968): two absent values equal, an absent one unequal to any value,
 /// and two values by the struct's own equality, which is its <c>Equals</c>, never its <c>==</c>. The build
-/// refused all three.</item>
+/// refused all three. A struct whose own <c>Equals</c> is the app's code is asked it every time, a value compared
+/// with itself included, as .NET's <c>Nullable&lt;T&gt;.Equals</c> and default comparers ask it with no identity
+/// check; the browser answered such a value at its identity check, and the override never ran.</item>
 /// <item>The <c>ToString</c> method group of a nullable value writes what its call writes, of the value as it is
 /// when the delegate is made, and an empty one is refused there, as .NET refuses a delegate over the null it
 /// boxes to (#955): the browser wrote JavaScript's text, <c>small</c>, <c>true</c> and <c>1,2</c>.</item>
@@ -63,6 +65,35 @@ public class NullableStructConformanceTests
         }
 
         public enum Level { Low, High }
+
+        public readonly struct Counted
+        {
+            public static int Calls;
+            public Counted(int n) { N = n; }
+            public int N { get; }
+            // Counts each time it is asked: .NET asks it every time, a value compared with itself included.
+            public override bool Equals(object o) { Calls++; return o is Counted c && c.N == N; }
+            public override int GetHashCode() => N;
+        }
+
+        public readonly struct Typed : IEquatable<Typed>
+        {
+            public static int Calls;
+            public static int TypedCalls;
+            public Typed(int n) { N = n; }
+            public int N { get; }
+            public bool Equals(Typed other) { TypedCalls++; return other.N == N; }
+            public override bool Equals(object o) { Calls++; return o is Typed t && Equals(t); }
+            public override int GetHashCode() => N;
+        }
+        """;
+
+    /// <summary>A static property of the app's own named like the comparer's, whose getter throws.</summary>
+    private const string Comparers = """
+        public static class Custom
+        {
+            public static EqualityComparer<int> Default => throw new InvalidOperationException("no comparer");
+        }
         """;
 
     [SkippableTheory]
@@ -213,6 +244,52 @@ public class NullableStructConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Values);
     }
+
+    [SkippableTheory]
+    // ---- a nullable struct's Equals asks its own Equals(object) every time, itself included, and never a null ----
+    [InlineData("Counted.Calls = 0; Counted? a = new Counted(1); var r = a.Equals(a); return r + \"|\" + Counted.Calls;")]                     // "True|1"
+    [InlineData("Counted.Calls = 0; Counted? a = new Counted(1), b = new Counted(1); var r = a.Equals(b); return r + \"|\" + Counted.Calls;")]  // "True|1"
+    [InlineData("Counted.Calls = 0; Counted? a = new Counted(1), b = new Counted(2); var r = a.Equals(b); return r + \"|\" + Counted.Calls;")]  // "False|1"
+    [InlineData("Counted.Calls = 0; Counted? a = new Counted(1), b = null; var r = a.Equals(b); return r + \"|\" + Counted.Calls;")]           // "False|0"
+    [InlineData("Counted.Calls = 0; Counted? a = null, b = new Counted(1); var r = a.Equals(b); return r + \"|\" + Counted.Calls;")]           // "False|0"
+    [InlineData("Counted.Calls = 0; Counted? a = null, b = null; var r = a.Equals(b); return r + \"|\" + Counted.Calls;")]                     // "True|0"
+    // ---- Nullable.Equals and EqualityComparer<T?>.Default ----
+    [InlineData("Counted.Calls = 0; Counted? a = new Counted(1); var r = Nullable.Equals(a, a); return r + \"|\" + Counted.Calls;")]            // "True|1"
+    [InlineData("Counted.Calls = 0; Counted? a = new Counted(1), b = new Counted(2); var r = Nullable.Equals(a, b); return r + \"|\" + Counted.Calls;")] // "False|1"
+    [InlineData("Counted.Calls = 0; Counted? a = new Counted(1), b = null; var r = Nullable.Equals(a, b) || Nullable.Equals(b, a); return r + \"|\" + Counted.Calls;")] // "False|0"
+    [InlineData("Counted.Calls = 0; Counted? a = null, b = null; var r = Nullable.Equals(a, b); return r + \"|\" + Counted.Calls;")]             // "True|0"
+    [InlineData("Counted.Calls = 0; Counted? a = new Counted(1); var r = EqualityComparer<Counted?>.Default.Equals(a, a); return r + \"|\" + Counted.Calls;")] // "True|1"
+    [InlineData("Counted.Calls = 0; Counted? a = new Counted(1), b = new Counted(1); var r = EqualityComparer<Counted?>.Default.Equals(a, b); return r + \"|\" + Counted.Calls;")] // "True|1"
+    [InlineData("Counted.Calls = 0; Counted? a = new Counted(1), b = null; var r = EqualityComparer<Counted?>.Default.Equals(a, b) || EqualityComparer<Counted?>.Default.Equals(b, a); return r + \"|\" + Counted.Calls;")] // "False|0"
+    // ---- a value that is not nullable, whose own Equals takes a null too ----
+    [InlineData("Counted.Calls = 0; var v = new Counted(1); var r = v.Equals(v); return r + \"|\" + Counted.Calls;")]                          // "True|1"
+    [InlineData("Counted.Calls = 0; var v = new Counted(1); var r = v.Equals(null); return r + \"|\" + Counted.Calls;")]                       // "False|1"
+    [InlineData("Counted.Calls = 0; var v = new Counted(1); var r = EqualityComparer<Counted>.Default.Equals(v, v); return r + \"|\" + Counted.Calls;")] // "True|1"
+    // ---- IEquatable<T> beside Equals(object): the comparers ask the typed one, Nullable<T>.Equals the override ----
+    [InlineData("Typed.Calls = 0; Typed.TypedCalls = 0; Typed? a = new Typed(1); var r = a.Equals(a); return r + \"|\" + Typed.Calls + \"|\" + Typed.TypedCalls;")] // "True|1|1"
+    [InlineData("Typed.Calls = 0; Typed.TypedCalls = 0; Typed? a = new Typed(1); var r = Nullable.Equals(a, a); return r + \"|\" + Typed.Calls + \"|\" + Typed.TypedCalls;")] // "True|0|1"
+    [InlineData("Typed.Calls = 0; Typed.TypedCalls = 0; Typed? a = new Typed(1); var r = EqualityComparer<Typed?>.Default.Equals(a, a); return r + \"|\" + Typed.Calls + \"|\" + Typed.TypedCalls;")] // "True|0|1"
+    [InlineData("Typed.Calls = 0; Typed.TypedCalls = 0; var v = new Typed(1); var r = v.Equals(v); return r + \"|\" + Typed.Calls + \"|\" + Typed.TypedCalls;")] // "True|0|1"
+    [InlineData("Typed.Calls = 0; Typed.TypedCalls = 0; var v = new Typed(1); var r = v.Equals((object)v); return r + \"|\" + Typed.Calls + \"|\" + Typed.TypedCalls;")] // "True|1|1"
+    [InlineData("Typed.Calls = 0; Typed.TypedCalls = 0; var v = new Typed(1); var r = EqualityComparer<Typed>.Default.Equals(v, v); return r + \"|\" + Typed.Calls + \"|\" + Typed.TypedCalls;")] // "True|0|1"
+    // ---- a struct with no Equals of its own answers as before ----
+    [InlineData("Reach? a = new Reach(1, 5); return a.Equals(a) + \"|\" + Nullable.Equals(a, a) + \"|\" + EqualityComparer<Reach?>.Default.Equals(a, a);")] // "True|True|True"
+    public void AStructsOwnEquals_IsAskedEveryTime(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Values);
+    }
+
+    /// <summary>
+    /// Only <c>EqualityComparer&lt;T&gt;</c>'s own <c>Default</c> is the default comparer: a static property of the
+    /// app's own with the same name is a value its getter answers, a throw here, and a call made on it is no
+    /// lowering's, so the build still refuses it, as it did before #968, where the property was dropped unread.
+    /// </summary>
+    [Fact]
+    public void AnAppsOwnDefaultProperty_IsNotTheDefaultComparer() =>
+        ConformanceRunner.AssertStatementsRefusedByTheBuild(
+            "try { return Custom.Default.Equals(1, 1); } catch (InvalidOperationException e) { return e.Message; }",
+            "EQ2004", Comparers);
 
     [SkippableTheory]
     // ---- a vocabulary record struct the browser holds as data ----
