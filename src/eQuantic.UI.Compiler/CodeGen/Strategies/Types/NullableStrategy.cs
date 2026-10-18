@@ -16,9 +16,15 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// <item><c>x.GetValueOrDefault(fallback)</c> → <c>(x ?? fallback)</c></item>
 /// </list>
 /// Priority 25, like <see cref="DictionaryStrategy"/>, which also answers a <c>GetValueOrDefault</c>;
-/// the semantic gates (a <c>Nullable&lt;T&gt;</c> receiver here, a dictionary there) keep the two
+/// the semantic gates (a <c>Nullable&lt;T&gt;</c> member here, a dictionary there) keep the two
 /// from colliding. Lifted operators (<c>+ - * / &lt; &gt; …</c>) are handled by
 /// BinaryExpressionStrategy.
+/// <para>
+/// The member the model binds decides, and a name only where the model cannot say: a struct's own
+/// <c>Value</c>, <c>HasValue</c> or <c>GetValueOrDefault</c>, read through <c>?.</c> on a nullable one,
+/// is the struct's, though the rebuilt receiver has the nullable's type. Taken by its name,
+/// <c>a?.Value</c> answered the struct itself and <c>a?.HasValue</c> whether it was null (#966).
+/// </para>
 /// </summary>
 public class NullableStrategy : IConversionStrategy
 {
@@ -30,12 +36,14 @@ public class NullableStrategy : IConversionStrategy
             {
                 var name = member.Name.Identifier.ValueText;
                 if (name != "HasValue" && name != "Value") return false;
+                if (context.SemanticHelper.GetSymbol(member) is { } bound) return DeclaredByNullable(bound);
                 return IsNullableReceiver(member.Expression, context, allowShapeHeuristic: true);
             }
 
-            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } invocation:
             {
                 if (ma.Name.Identifier.ValueText != "GetValueOrDefault") return false;
+                if (context.SemanticHelper.GetSymbol(invocation) is { } bound) return DeclaredByNullable(bound);
                 // Precise gate only (no shape heuristic): otherwise we'd steal Dictionary.GetValueOrDefault.
                 return IsNullableReceiver(ma.Expression, context, allowShapeHeuristic: false);
             }
@@ -44,6 +52,11 @@ public class NullableStrategy : IConversionStrategy
                 return false;
         }
     }
+
+    /// <summary>Whether the member the model bound is one <c>Nullable&lt;T&gt;</c> declares, the only ones
+    /// this strategy answers.</summary>
+    private static bool DeclaredByNullable(ISymbol member) =>
+        member.ContainingType?.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
