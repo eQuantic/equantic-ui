@@ -434,11 +434,14 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// (<see cref="TwinlessTypeExtensions.IsTwinless"/>), and so no constructor the browser can call: a
     /// type of the platform's that no strategy builds, and a package's, which nothing translates. Each
     /// went out as <c>new Random()</c> or <c>new Gauge('a')</c>, a ReferenceError where the page first
-    /// rendered (#822). A list is the array of its elements, built here.
+    /// rendered (#822). A list is the array of its elements, built here. The refusal is recorded where it is
+    /// told, so what is read or called from the construction is the same refusal, told once at its root:
+    /// <c>new Stopwatch().Elapsed</c> told <c>Stopwatch.Elapsed</c> again (Copilot's third review of #964).
     /// </summary>
     private static bool ReportIfTwinless(INamedTypeSymbol type, SyntaxNode at, ConversionContext context)
     {
         if (!type.IsTwinless() || IsList(type)) return false;
+        PlatformMemberRead.RecordRefused(at, context);
         context.Report(at, ConversionSeverity.Error, "EQ2004", type.IsPackages()
             ? $"'{type.ToDisplayString()}' has no JavaScript translation: {type.PackageReason()}, so `new {type.Name}(…)` "
                 + $"would construct a class nothing defines. {TwinlessTypeExtensions.PackageRemedy}"

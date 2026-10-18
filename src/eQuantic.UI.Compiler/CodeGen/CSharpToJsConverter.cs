@@ -538,6 +538,12 @@ public class CSharpToJsConverter
         if (expression is BaseObjectCreationExpressionSyntax creation)
             creation.ReportUntranslatableComparer(_context);
 
+        // A package type's STATIC has no name in the browser WHICHEVER strategy would claim it, and some claim
+        // a node by its spelling: through an alias named like a platform type, `Int32.MaxValue` under
+        // `using Int32 = Vendor.Status` was 2147483647. So the fence stands here too, asked of the model before
+        // any strategy is (#964).
+        if (PlatformMemberRead.ReportIfPackageStatic(expression, _context)) return JsExpr.Identifier("undefined");
+
         var strategy = _strategyRegistry.FindStrategy(expression, _context);
         if (strategy != null)
         {

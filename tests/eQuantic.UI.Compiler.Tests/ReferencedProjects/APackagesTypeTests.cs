@@ -23,7 +23,12 @@ public class APackagesTypeTests
             public static string Field = "field";
             public static readonly string Ready = "ready";
             public const int Answer = 42;
+            public static int Count => 7;
+            public static int MaxValue => 7;
+            public static string Empty => "s";
             public static string Make() => "made";
+            public static System.Globalization.CultureInfo Culture() => System.Globalization.CultureInfo.InvariantCulture;
+            public static System.Globalization.CultureInfo Locale => System.Globalization.CultureInfo.InvariantCulture;
         }
 
         public class Gauge
@@ -46,6 +51,12 @@ public class APackagesTypeTests
         public delegate int Scale(int __target);
 
         public class GaugeCollection<T> { }
+
+        public interface IStatus { public static string Label => "ready"; }
+
+        public static class Guid { public static string Empty => "e"; }
+
+        public static class DateTime { public static string Now => "n"; }
 
         public enum Level { Low, High }
 
@@ -94,8 +105,33 @@ public class APackagesTypeTests
     [InlineData("new Spot(1).X.ToString()", "using Vendor;", "'Vendor.Spot'")]
     // A collection of the package's, which no spelling makes the browser's array.
     [InlineData("new GaugeCollection<int>().ToString()", "using Vendor;", "'Vendor.GaugeCollection<int>'")]
+    // A static named Count, which no collection's table answers, and an interface's static (Copilot's second
+    // review of #958).
+    [InlineData("Status.Count.ToString()", "using Vendor;", "'Vendor.Status.Count'")]
+    [InlineData("IStatus.Label", "using Vendor;", "'Vendor.IStatus.Label'")]
+    // A static named like a member a shortcut answers by its name, Guid.Empty and DateTime.Now (#961).
+    [InlineData("Vendor.Guid.Empty", "", "'Vendor.Guid.Empty'")]
+    [InlineData("Vendor.DateTime.Now", "", "'Vendor.DateTime.Now'")]
+    // Through an alias named like a type a strategy claims by its spelling: the numeric constants, an instant's
+    // statics, string.Empty, and the member access's Guid.Empty and DateTime.Now (#964).
+    [InlineData("Int32.MaxValue.ToString()", "using Int32 = Vendor.Status;", "'Vendor.Status.MaxValue'")]
+    [InlineData("DateTimeOffset.Now", "using DateTimeOffset = Vendor.DateTime;", "'Vendor.DateTime.Now'")]
+    [InlineData("String.Empty", "using String = Vendor.Status;", "'Vendor.Status.Empty'")]
+    [InlineData("Guid.Empty", "using Guid = Vendor.Guid;", "'Vendor.Guid.Empty'")]
+    [InlineData("DateTime.Now", "using DateTime = Vendor.DateTime;", "'Vendor.DateTime.Now'")]
     // A static method's group.
     [InlineData("((System.Func<string>)Status.Make)()", "using Vendor;", "'Vendor.Status.Make'")]
+    // A chain rooted in a refused static is told once, at its root, as a chain from GetType is (Copilot's third
+    // review of #964): through GetType, through a member of the platform no value carries, and through members
+    // that translate, a call's chain and a read's.
+    [InlineData("Status.Make().GetType().Name", "using Vendor;", "'Vendor.Status.Make'")]
+    [InlineData("Make().GetType().Name", "using static Vendor.Status;", "'Vendor.Status.Make'")]
+    [InlineData("Status.Culture().Name", "using Vendor;", "'Vendor.Status.Culture'")]
+    [InlineData("Status.Make().ToString().Length.ToString()", "using Vendor;", "'Vendor.Status.Make'")]
+    [InlineData("Status.Locale.Name", "using Vendor;", "'Vendor.Status.Locale'")]
+    [InlineData("Status.Label.Length.ToString()", "using Vendor;", "'Vendor.Status.Label'")]
+    // And so is a chain from a refused construction.
+    [InlineData("new Gauge(\"a\").GetType().Name", "using Vendor;", "'Vendor.Gauge'")]
     public void ANameOfAPackagesType_FailsTheBuild_NamingTheMemberAndTheAssembly(string expression, string usings, string member)
     {
         using var solution = With(Home(expression, usings));

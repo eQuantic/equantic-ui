@@ -142,6 +142,19 @@ public static class ValueFlow
         if (convertedConstant is not null && Constant(convertedConstant, to) is { } folded)
             return folded;
 
+        // A DATE becoming an INSTANT is the twin's own conversion, at the offset its kind gives, as .NET's
+        // implicit operator converts it: an instant's operator over a date, `instant - date`, bound that
+        // conversion and handed the operator the date as it was (#961).
+        if (kind.IsUserDefined && kind.MethodSymbol is { Name: "op_Implicit", Parameters: [{ Type: var date }] } toInstant
+            && toInstant.ContainingType.IsNamed("System.DateTimeOffset") && date.IsNamed("System.DateTime"))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            JsExpr Instant(JsExpr value) => JsExpr.Call(JsExpr.Member(JsExpr.Identifier(Eq.DateTimeOffset), "fromDateTime"), value);
+            // A nullable date is the LIFTED conversion, which names the same operator: a null one stays null and
+            // only a present one is converted, the operand read once (Copilot's first review of #964).
+            return from.IsNullableValue() ? NullableLift.Unary(translated, Instant, context) : Instant(translated);
+        }
+
         // An integer CONSTANT flowing into a float settles at compile time: the author's literal
         // when the single holds it exactly — `x * 2` stays `x * 2` — and the single it rounds to
         // otherwise. A long's literal is a BigInt here, so it always becomes the plain number.

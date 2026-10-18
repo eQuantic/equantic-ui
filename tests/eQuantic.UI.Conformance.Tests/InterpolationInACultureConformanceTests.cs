@@ -42,6 +42,13 @@ public class InterpolationInACultureConformanceTests
         // review of #958).
         "object x = 1.5; object d = new DateTime(2024, 1, 15, 21, 30, 5); object m = 12.5m; "
             + "return FormattableString.Invariant($\"{x}|{d}|{m}\") + \"/\" + string.Create(System.Globalization.CultureInfo.InvariantCulture, $\"{x}|{d}|{m}\");",
+        // A hole held as an interface or a type parameter writes the number or the date it holds in the culture
+        // the call names (Copilot's second review of #958).
+        "IFormattable x = 1.5; IFormattable d = new DateTime(2024, 1, 15, 21, 30, 5); "
+            + "string Invariant<T>(T value) => FormattableString.Invariant($\"{value}\"); "
+            + "string Created<T>(T value) => string.Create(System.Globalization.CultureInfo.InvariantCulture, $\"{value}\"); "
+            + "return FormattableString.Invariant($\"{x}|{d}\") + \"/\" + string.Create(System.Globalization.CultureInfo.InvariantCulture, $\"{x}|{d}\") + \"/\" "
+            + "+ Invariant(2.5) + \"|\" + Invariant(new DateTime(2024, 1, 15)) + \"/\" + Created(2.5) + \"|\" + Created(new DateTime(2024, 1, 15));",
     ];
 
     public static IEnumerable<object?[]> CasesInEachCulture() =>

@@ -147,7 +147,11 @@ public class MethodGroupStrategy : IExpressionIrStrategy
     private static InvocationExpressionSyntax? Call(ExpressionSyntax group, IMethodSymbol method, ExpressionSyntax? receiver,
         ConversionContext context)
     {
-        if (context.SemanticModel is not { } model || !ReferenceEquals(group.SyntaxTree, model.SyntaxTree)) return null;
+        // A group a strategy rebuilt, inside a ?. chain or a query, stands for the node it was written as, where
+        // the model knows its scope: the call is bound there. Asked of the rebuilt node, no model knew it, and
+        // the group was refused (Copilot's second review of #958).
+        var written = context.SemanticHelper.Original(group) as ExpressionSyntax ?? group;
+        if (context.SemanticModel is not { } model || !ReferenceEquals(written.SyntaxTree, model.SyntaxTree)) return null;
         var parameters = new List<ParameterSyntax>();
         foreach (var parameter in method.Parameters)
         {
@@ -156,12 +160,12 @@ public class MethodGroupStrategy : IExpressionIrStrategy
         }
         var arguments = SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(
             method.Parameters.Select(parameter => SyntaxFactory.Argument(SyntaxFactory.IdentifierName(Identifier(Named(parameter)))))));
-        ExpressionSyntax callee = group.WithoutTrivia();
+        ExpressionSyntax callee = written.WithoutTrivia();
         if (receiver is not null)
         {
             if (Written(context.SemanticHelper.GetType(receiver) ?? method.ContainingType) is not { } held) return null;
             callee = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                SyntaxFactory.IdentifierName(Holder(method)), ((MemberAccessExpressionSyntax)group).Name.WithoutTrivia());
+                SyntaxFactory.IdentifierName(Holder(method)), ((MemberAccessExpressionSyntax)written).Name.WithoutTrivia());
             parameters.Insert(0, Parameter(Holder(method), held));
         }
         // The lambda over the parameters a held receiver is one more of: its call is the inner one.
@@ -174,11 +178,11 @@ public class MethodGroupStrategy : IExpressionIrStrategy
         // A statement inside a body, where the group's scope is; an initializer outside one.
         SyntaxNode root = SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(
             SyntaxKind.SimpleAssignmentExpression, SyntaxFactory.IdentifierName("_"), lambda));
-        if (!model.TryGetSpeculativeSemanticModel(group.SpanStart, (StatementSyntax)root, out var speculated))
+        if (!model.TryGetSpeculativeSemanticModel(written.SpanStart, (StatementSyntax)root, out var speculated))
         {
             root = SyntaxFactory.EqualsValueClause(SyntaxFactory.CastExpression(
                 SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)), SyntaxFactory.ParenthesizedExpression(lambda)));
-            if (!model.TryGetSpeculativeSemanticModel(group.SpanStart, (EqualsValueClauseSyntax)root, out speculated)) return null;
+            if (!model.TryGetSpeculativeSemanticModel(written.SpanStart, (EqualsValueClauseSyntax)root, out speculated)) return null;
         }
         var invocation = root.DescendantNodes().OfType<InvocationExpressionSyntax>().Last();
         if (!SymbolEqualityComparer.Default.Equals(speculated.GetSymbolInfo(invocation).Symbol, method)) return null;

@@ -199,17 +199,18 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             // runtime class, and null has no methods.
             // The per-type templates below are reused verbatim, built over `$a`/`$b` and wrapped —
             // one lift for every compat type instead of a null branch in each of the five.
-            if (lt.IsNullableValue() || rt.IsNullableValue())
+            var (operands, liftedOperands) = BoundOperands(binary, lt, rt, context);
+            if (lt.IsNullableValue() || rt.IsNullableValue() || liftedOperands)
             {
-                var lifted = LiftNullableCompat(leftText, rightText, op, lt, rt, context);
+                var lifted = LiftNullableCompat(leftText, rightText, op, operands.Left, operands.Right, context);
                 if (lifted != null) return lifted;
             }
 
             // A number times a span is the span's multiply, the number still read first, as C# reads it.
-            if (op == "*" && IsNumber(lt) && rt.IsNamed("System.TimeSpan") && !rt.IsNullableValue())
+            if (op == "*" && IsNumber(operands.Left) && operands.Right.IsNamed("System.TimeSpan") && !operands.Right.IsNullableValue())
                 return JsExpr.Template("{1}.multiply({0})", leftIr, rightIr);
 
-            var dtResult = ConvertDateTimeOrTimeSpan(leftText, rightText, op, lt, rt);
+            var dtResult = ConvertDateTimeOrTimeSpan(leftText, rightText, op, operands.Left, operands.Right);
             if (dtResult != null) return JsExpr.Opaque(dtResult);
         }
 
@@ -562,6 +563,29 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
 
         return null;
     }
+
+    /// <summary>
+    /// The types the operator C# BOUND takes, where it is a date's, an instant's, a time's or a span's own,
+    /// and whether it is lifted: the operands arrive converted to them (ValueFlow), so the operator decides,
+    /// whatever the operands' own types. A <c>Factor</c> with an implicit conversion to double scaled a span
+    /// by JavaScript's own `*`, decided from <c>Factor</c> (Copilot's second review of #958). Any other
+    /// operator, or none, leaves the operands' own types.
+    /// </summary>
+    internal static ((ITypeSymbol? Left, ITypeSymbol? Right) Types, bool Lifted) BoundOperands(SyntaxNode operation,
+        ITypeSymbol? left, ITypeSymbol? right, ConversionContext context) =>
+        context.SemanticHelper.GetOperation(operation) switch
+        {
+            IBinaryOperation { OperatorMethod: { Parameters: [{ Type: var l }, { Type: var r }] } method } bound
+                when IsCompat(method.ContainingType) => ((l, r), bound.IsLifted),
+            ICompoundAssignmentOperation { OperatorMethod: { Parameters: [{ Type: var l }, { Type: var r }] } method } bound
+                when IsCompat(method.ContainingType) => ((l, r), bound.IsLifted),
+            _ => ((left, right), false),
+        };
+
+    /// <summary>The types whose operators are their twins' methods.</summary>
+    private static bool IsCompat(ITypeSymbol type) =>
+        type.IsNamed("System.TimeSpan") || type.IsNamed("System.DateTime") || type.IsNamed("System.DateTimeOffset")
+        || type.IsNamed("System.DateOnly") || type.IsNamed("System.TimeOnly");
 
     /// <summary>Whether an operand of <paramref name="type"/> is a number a span is scaled by: a
     /// <c>double</c>, which the operators take, or a type C# converts to one, a char among them, which

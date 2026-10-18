@@ -65,6 +65,20 @@ public class UntranslatedNameTests
         if (absent is not null) js.Should().NotContain(absent, "a refused name is never written");
     }
 
+    /// <summary>What is read or called from a refused construction is the same refusal, told once at its
+    /// root, as a chain from GetType is (Copilot's third review of #964): <c>Stopwatch.Elapsed</c> and
+    /// <c>object.GetType</c> were told again.</summary>
+    [Theory]
+    [InlineData("return new System.Diagnostics.Stopwatch().Elapsed;", "'System.Diagnostics.Stopwatch'")]
+    [InlineData("return new Random().GetType();", "'System.Random'")]
+    public void AChainFromARefusedConstruction_IsToldOnceAtItsRoot(string body, string named)
+    {
+        var (_, diagnostics) = Convert(body);
+
+        diagnostics.Where(d => d.Severity == ConversionSeverity.Error).Should().ContainSingle()
+            .Which.Message.Should().Contain(named);
+    }
+
     /// <summary>A group refused is refused once, where it is written.</summary>
     [Fact]
     public void ARefusedGroup_IsReportedOnce_WhereItIsWritten()

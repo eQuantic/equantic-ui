@@ -128,6 +128,19 @@ public class VocabularyValueConformanceTests
             "public sealed record Color(string Name, int Hue, int Light);");
     }
 
+    /// <summary>
+    /// A vocabulary conversion between two structs is LIFTED over their nullables, as an app's own is: a null
+    /// curated glyph is a null glyph, and only a present one is converted, through the twin's static
+    /// (Copilot's second review of #964).
+    /// </summary>
+    [SkippableFact]
+    public void ANullableCuratedGlyph_IsTheLiftedConversion()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertVocabularyStatementsSameAsDotNet(
+            "Icons? none = null; Icons? some = Icons.Search; IconGlyph? a = none; IconGlyph? b = some; return (a is null) + \"|\" + b?.Name;");
+    }
+
     [SkippableTheory]
     [MemberData(nameof(EveryMemberOfEveryDataTwin))]
     public void EveryMemberOfEveryValueTheBrowserHoldsAsData_AnswersAsInDotNet(string member, string statements)
