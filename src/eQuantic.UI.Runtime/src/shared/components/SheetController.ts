@@ -271,9 +271,9 @@ export class SheetController {
         this.fillTarget = null;
         if (source == null || target == null) return false;
         let selectionBefore = this._selection;
-        this._selection = new SheetRange(new CellRef(Math.min(source.topRow, target.topRow), Math.min(source.leftCol, target.leftCol)), new CellRef(Math.max(source.bottomRow, target.bottomRow), Math.max(source.rightCol, target.rightCol)));
-        this._active = source.topLeft;
-        return this.fill(source, target, selectionBefore);
+        this._selection = new SheetRange(new CellRef(Math.min($eq.nullable.value(source).topRow, $eq.nullable.value(target).topRow), Math.min($eq.nullable.value(source).leftCol, $eq.nullable.value(target).leftCol)), new CellRef(Math.max($eq.nullable.value(source).bottomRow, $eq.nullable.value(target).bottomRow), Math.max($eq.nullable.value(source).rightCol, $eq.nullable.value(target).rightCol)));
+        this._active = $eq.nullable.value(source).topLeft;
+        return this.fill($eq.nullable.value(source), $eq.nullable.value(target), selectionBefore);
     }
 
     cancelFill() {

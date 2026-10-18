@@ -314,6 +314,9 @@ public static class Eq
     /// <summary>A lifted Nullable&lt;T&gt; unary operator (<c>++</c>, <c>--</c>, <c>-</c>, <c>~</c>):
     /// <c>null</c> if the operand is null.</summary>
     public const string LiftUnary = "$eq.nullable.unary";
+    /// <summary><c>Nullable&lt;T&gt;.Value</c>, and every unwrap C# applies through it: the value, or the
+    /// <c>InvalidOperationException</c> .NET throws for an empty one.</summary>
+    public const string NullableValue = "$eq.nullable.value";
 
     /// <summary>C#'s non-short-circuit <c>bool | bool</c> and <c>bool &amp; bool</c>: BOTH operands
     /// evaluated, in order, and a bool answered. JavaScript's <c>|</c>/<c>&amp;</c> answer a number,

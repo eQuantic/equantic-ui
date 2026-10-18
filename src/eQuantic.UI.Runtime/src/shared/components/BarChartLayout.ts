@@ -11,7 +11,7 @@ export class BarChartLayout {
     }
 
     static ticks(series: ChartSeries[], visible: boolean[], categoryCount: number, layout: string, axis: ValueAxis) {
-        if ((axis.min != null) && (axis.max != null)) return ValueScale.fixed(axis.min, axis.max, axis.ticks);
+        if ((axis.min != null) && (axis.max != null)) return ValueScale.fixed($eq.nullable.value(axis.min), $eq.nullable.value(axis.max), axis.ticks);
         let low = 0;
         let high = 0;
         for (let c = 0; c < categoryCount; c++) {
@@ -32,8 +32,8 @@ export class BarChartLayout {
                 if (negative < low) low = negative;
             }
         }
-        if ((axis.min != null)) low = axis.min;
-        if ((axis.max != null)) high = axis.max;
+        if ((axis.min != null)) low = $eq.nullable.value(axis.min);
+        if ((axis.max != null)) high = $eq.nullable.value(axis.max);
         return ValueScale.nice(low, high, axis.ticks);
     }
 

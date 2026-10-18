@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
@@ -10,7 +11,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// Converts <c>Nullable&lt;T&gt;</c> (<c>T?</c>) members/methods to JavaScript:
 /// <list type="bullet">
 /// <item><c>x.HasValue</c> → <c>(x != null)</c></item>
-/// <item><c>x.Value</c> → <c>x</c></item>
+/// <item><c>x.Value</c> → <c>$eq.nullable.value(x)</c>, which throws for an empty one</item>
 /// <item><c>x.GetValueOrDefault()</c> → <c>(x ?? default(T))</c> — the default is derived from the
 /// underlying type (0 / false / <c>$eq.num.dec(0)</c> / the enum's zero-member, …)</item>
 /// <item><c>x.GetValueOrDefault(fallback)</c> → <c>(x ?? fallback)</c></item>
@@ -64,11 +65,12 @@ public class NullableStrategy : IConversionStrategy
         {
             case MemberAccessExpressionSyntax member:
             {
-                var expr = context.Converter.ConvertExpression(member.Expression);
+                // Value is the unwrap every cast of a nullable to a type that is not one reads through, and an
+                // empty one throws as .NET's does (#967): read as the value itself, it answered null.
                 return member.Name.Identifier.ValueText switch
                 {
-                    "HasValue" => $"({expr} != null)",
-                    "Value" => expr,
+                    "HasValue" => $"({context.Converter.ConvertExpression(member.Expression)} != null)",
+                    "Value" => JsExprWriter.Write(ValueFlow.Unwrapped(context.Converter.ConvertIr(member.Expression), context)),
                     _ => throw new InvalidOperationException(),
                 };
             }

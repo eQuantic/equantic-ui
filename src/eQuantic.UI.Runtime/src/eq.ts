@@ -179,7 +179,7 @@ import {
 } from './utils/list';
 import { boolConvert, boolParse, boolTryParse } from './utils/boolean-text';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
-import { liftArith, liftCmp, liftUnary } from './utils/nullable';
+import { liftArith, liftCmp, liftUnary, unwrap } from './utils/nullable';
 import { equals, equalsGroup, equalsInstance } from './utils/equals';
 import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
 import { guidOf, guidParse, guidTryParse } from './utils/guid';
@@ -570,8 +570,9 @@ export const $eq = {
   /** `Convert.ToBase64String`, `ToBase64CharArray`, `ToHexString` and `ToHexStringLower`, as .NET
    * encodes the bytes (#716). */
   convert: { toBase64String, toBase64CharArray, toHexString, toHexStringLower },
-  /** Nullable<T> lifted operators (null-propagating arithmetic, false-on-null relational). */
-  nullable: { arith: liftArith, cmp: liftCmp, unary: liftUnary },
+  /** Nullable<T> lifted operators (null-propagating arithmetic, false-on-null relational), and
+   * `Value`, the unwrap that throws for an empty one. */
+  nullable: { arith: liftArith, cmp: liftCmp, unary: liftUnary, value: unwrap },
   /** `bool | bool` and `bool & bool`: both operands evaluated, a bool answered — see `or`. */
   logic: { or, and },
   /**

@@ -68,7 +68,7 @@ export class Calendar extends StatefulComponent {
             this._cursor = chosen;
         } else { let cursor: any; if ((cursor = this._cursor) != null && !this.inRange(cursor)) {
             this._cursor = this.clampToRange(cursor);
-            this._month = Calendar.firstOfMonth(this._cursor);
+            this._month = Calendar.firstOfMonth($eq.nullable.value(this._cursor));
         } }
     }
 
@@ -114,7 +114,7 @@ export class Calendar extends StatefulComponent {
         let to = (() => { const $s = move; if ($s === 'previousItem') return from.addDays(-1); if ($s === 'nextItem') return from.addDays(1); if ($s === 'previousRow') return from.addDays(-7); if ($s === 'nextRow') return from.addDays(7); if ($s === 'previousPage') return from.addMonths(-1); if ($s === 'nextPage') return from.addMonths(1); if ($s === 'previousSection') return from.addYears(-1); if ($s === 'nextSection') return from.addYears(1); if ($s === 'rowStart') return from.addDays(-Calendar.dayInWeek(from)); if ($s === 'rowEnd') return from.addDays(6 - Calendar.dayInWeek(from)); return from; })();
         this.setState(() => {
             this._cursor = this.clampToRange(to);
-            this._month = Calendar.firstOfMonth(this._cursor);
+            this._month = Calendar.firstOfMonth($eq.nullable.value(this._cursor));
         });
     }
 
@@ -134,7 +134,7 @@ export class Calendar extends StatefulComponent {
             let cursor: any; 
             if ((cursor = this._cursor) != null) {
                 this._cursor = this.clampToRange(cursor.addMonths(months));
-                this._month = Calendar.firstOfMonth(this._cursor);
+                this._month = Calendar.firstOfMonth($eq.nullable.value(this._cursor));
             }
         });
     }
