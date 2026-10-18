@@ -42,7 +42,7 @@
   offset; a draggable replaced mid-glide rests; a box that replaces another mounts at its width; a
   presence replaced at its place exits while the new one enters. And one that passes on both: a scroll
   view that keeps its place keeps its offset
-- [ ] 4.6 Check: the native suite, every golden unchanged, and the presence tests that drive a host
+- [x] 4.6 Check: the native suite, every golden unchanged, and the presence tests that drive a host
   unchanged; `PhotonDesktop`'s gallery pictures through the macOS shell's windowless frame, pixel for
   pixel against main
 
@@ -62,4 +62,4 @@
 - [x] 6.4 `./scripts/public-api.sh update`, the diff read: the stores and the moved members as
   `*REMOVED*` lines, the clocks and the slot as additions
 - [x] 6.5 One ledger entry under `docs/ledger/`, citing #975
-- [ ] 6.6 Check: `./scripts/check-openspec.sh`, `DocsIndexTests`, the wiki guards
+- [x] 6.6 Check: `./scripts/check-openspec.sh`, `DocsIndexTests`, the wiki guards
