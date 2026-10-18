@@ -1,9 +1,9 @@
 # element-tree Specification
 
 ## Purpose
-How a live tree keeps a component's instance by its position, when its components build, and in what
-order they mount and unmount, so a component's state belongs to where it stands rather than to a
-string a frame happens to spell the same way.
+How a live tree keeps what belongs to a position (a component's instance, a node's state) by the
+position itself, when its components build, and in what order they mount and unmount, so state belongs
+to where it stands rather than to a string a frame happens to spell the same way.
 
 ## Requirements
 
