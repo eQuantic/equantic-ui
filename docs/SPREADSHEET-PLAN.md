@@ -37,6 +37,10 @@ Four more came out of reviewing this plan with him the same day:
   over the same controller, placed by the app: the grid is only the grid (§4).
 - **Slice 0 lands in two parts**: 0a, the viewport in the vocabulary on both realizers; 0b, the
   spreadsheet rebuilt on it.
+- **The spreadsheet's components get an assembly of their own**, as the charts have one: the grid,
+  the formula bar, the name box, the status bar and the toolbar leave `eQuantic.UI.Components` for a
+  family assembly above it, which the SDK adds as it adds the others, and which the formula package
+  builds on. The engine stays in `eQuantic.UI.Sheet`, below the components (§4).
 
 ## What it has to beat — the parity bar
 
@@ -233,6 +237,14 @@ The formula bar and the name box are components of their own, built over the she
 placed by the app, as are the status bar and the toolbar of later slices: the grid is only the grid,
 and an app that wants Excel's layout composes it, in the Flutter way.
 
+They live together in an assembly of their own, above `eQuantic.UI.Components`, as
+`eQuantic.UI.Charts` does for the charts: the code editor gave its ENGINE an assembly and kept its
+components in `Components`, and the spreadsheet goes one step further because its family is larger
+and an opt-in package builds on it. The engine stays where #949 put it, so a headless consumer (a
+server filling a sheet, an import) reaches the document and its commands without a component. The
+generic two-dimensional `TableView` of slice 0a is not the spreadsheet's: it stays in
+`eQuantic.UI.Components`, where a data table can use it too.
+
 ### 5. Values are typed, and the culture is .NET's
 
 A cell keeps what the user typed AND the value it means: a number, text, a boolean, a date or an
@@ -282,7 +294,7 @@ adds: accessibility and touch are not a slice at the end.
 | slice | issue | what | fixes |
 |---|---|---|---|
 | 0a | [#982](https://github.com/eQuantic/equantic-ui/issues/982) | The two-dimensional viewport with pinned bands in the vocabulary, on both realizers: lazy on both axes, offsets out, a rectangle revealed in, the unbounded-axis rule; the cell key a `long` | D1 (the rule), D18 |
-| 0b | [#995](https://github.com/eQuantic/equantic-ui/issues/995) | `Spreadsheet` rebuilt on it: pinned headers, reveal and autoscroll, the overlay layer, the widening row numbers, its theme slot, touch scrolling on the web | D1–D4, D6 (scroll by touch) |
+| 0b | [#995](https://github.com/eQuantic/equantic-ui/issues/995) | `Spreadsheet` rebuilt on it, in the family's own assembly: pinned headers, reveal and autoscroll, the overlay layer, the widening row numbers, its theme slot, touch scrolling on the web | D1–D4, D6 (scroll by touch) |
 | 1 | [#983](https://github.com/eQuantic/equantic-ui/issues/983) | The text door and the cell editor: the code surface's input door, caret and selection in the cell, Enter and Edit modes, line breaks, the editor growing over its neighbours, the formula bar and the name box as components of their own, Go To, Ctrl+Enter, the date and time chords, Backspace that clears and edits, Tab released by Escape | D5, D12, D15 |
 | 2 | [#984](https://github.com/eQuantic/equantic-ui/issues/984) | Selection and navigation complete: several ranges, header drags and Shift+clicks, row and column chords, the page chords, Ctrl+End, the Tab-Enter column; the range as one outlined rectangle, header emphasis, unfocused dimming, the gliding cursor; the status bar component; grid semantics and announcements | D10, D13, D14, D17 |
 | 3 | [#985](https://github.com/eQuantic/equantic-ui/issues/985) | Commands and structure: the command registry and the keymap as data; context menus; insert and delete; hide and unhide; resize several at once, the guide line and its tooltip, fit to content; reorder by header drag; long press on touch | D11, D16 (fit) |

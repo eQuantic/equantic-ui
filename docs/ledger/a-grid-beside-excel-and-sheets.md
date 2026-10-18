@@ -6,6 +6,7 @@
   horizontal scroll, text arrives only through `keydown`, and a cell key packed into an `int` cannot
   address a row past 131 071. Decided with Edgar: a two-dimensional viewport with pinned bands in the
   vocabulary, Excel's 1 048 576 by 16 384 grid, the cell editor on the code editor's engine, the
-  formula bar and the status bar as components of their own, formulas in an opt-in package, and
-  interaction before values, formatting and formulas. Twelve slices, each a story under
+  formula bar and the status bar as components of their own, in a family assembly beside the charts',
+  formulas in an opt-in package, and interaction before values, formatting and formulas. Twelve
+  slices, each a story under
   [#981](https://github.com/eQuantic/equantic-ui/issues/981), which supersedes #304.
