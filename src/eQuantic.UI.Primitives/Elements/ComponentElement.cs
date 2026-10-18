@@ -102,10 +102,14 @@ public sealed class ComponentElement : Element
         }
     }
 
-    /// <summary>Asks for this position to build again: a <c>SetState</c>, through the instance.</summary>
+    /// <summary>Asks for this position to build again: a <c>SetState</c>, through the instance. The
+    /// owner counts the request even when the position is already waiting to build
+    /// (<see cref="BuildOwner.Marks"/>).</summary>
     internal void MarkNeedsBuild()
     {
-        if (!IsActive || Dirty) return;
+        if (!IsActive) return;
+        Owner.CountMark();
+        if (Dirty) return;
         Dirty = true;
         Owner.Schedule(this);
     }

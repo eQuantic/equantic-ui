@@ -83,13 +83,13 @@ public class CodeEditorComponentTests
     {
         var host = Host(new CodeEditor("searchable text", "csharp") { ShowLineNumbers = false });
         var settled = Settle(host);
-        var before = settled.CodeRegions.Single().Path;
+        var before = settled.CodeRegions.Single().Element;
         ClickInto(host, settled);
 
         var after = OpenFind(host);
 
         after.TextRegions.Should().ContainSingle("the bar is open");
-        after.CodeRegions.Single().Path.Should().Be(before);
+        after.CodeRegions.Single().Element.Should().BeSameAs(before);
     }
 
     [Fact]
@@ -181,7 +181,7 @@ public class CodeEditorComponentTests
         heard.Should().Equal([match], "a selection the find bar moved is a selection that moved");
         var region = frame.CodeRegions.Single();
         var viewport = frame.ScrollRegions.First(r => r.Axis == ScrollAxis.Vertical
-            && region.Path.StartsWith(r.Path, StringComparison.Ordinal));
+            && Positions.IsUnder(region.Element, r.Element));
         var caretY = region.Bounds.Y + region.Surface.Model.Carets[0].Y;
         caretY.Should().BeInRange(viewport.Bounds.Y, viewport.Bounds.Y + viewport.Bounds.Height,
             "the match is brought into view");
@@ -523,7 +523,7 @@ public class CodeEditorComponentTests
     /// <summary>
     /// A cap set on a bounded editor, or taken away, leaves the code where it was in the tree: the box
     /// that caps it is always there. It was there only while it capped, so the surface moved, the
-    /// scroll went back to the top and, on Photon, the keyboard pointed at a path nothing had.
+    /// scroll went back to the top and, on Photon, the keyboard pointed at a place nothing held.
     /// </summary>
     [Fact]
     public void ACapSetOrTakenAway_LeavesTheCodeWhereItWas()
@@ -531,15 +531,15 @@ public class CodeEditorComponentTests
         var text = string.Join("\n", Enumerable.Range(0, 200).Select(i => $"var line{i} = {i};"));
         var pane = new CappedPane(text);
         var host = Host(pane, 500, 600);
-        var before = Settle(host).CodeRegions.Single().Path;
+        var before = Settle(host).CodeRegions.Single().Element;
 
         pane.Cap(300);
-        var capped = Settle(host).CodeRegions.Single().Path;
+        var capped = Settle(host).CodeRegions.Single().Element;
         pane.Cap(0);
-        var after = Settle(host).CodeRegions.Single().Path;
+        var after = Settle(host).CodeRegions.Single().Element;
 
-        capped.Should().Be(before);
-        after.Should().Be(before);
+        capped.Should().BeSameAs(before);
+        after.Should().BeSameAs(before);
     }
 
     private sealed class CappedPane(string text) : Primitives.StatefulComponent

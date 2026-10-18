@@ -19,7 +19,7 @@ internal sealed partial class EmitVisitor
             ? s.Input.Under(moved)
             : s.Input;
         input.Add(new HitRegion(ExpandHitRect(s.Node.Bounds, s.Press.Density), s.Node.Bounds, pressable,
-            s.Node.Path ?? ""));
+            PositionOf(s.Node)));
 
         // A PRESSABLE IS THE STOP FOR ITS SUBTREE, exactly as a link, an Adjustable and a Navigable
         // are, and for the reason all four share: `Visit(Pressable)` announces and CONSUMES, so
@@ -76,7 +76,7 @@ internal sealed partial class EmitVisitor
     // the host fires OnChanged on the transitions (PhotonHost.PointerMove).
     private void EmitHoverable(Hoverable hoverable, EmitState s)
     {
-        s.Input.Add(new HoverRegion(s.Node.Bounds, hoverable, s.Node.Path ?? ""));
+        s.Input.Add(new HoverRegion(s.Node.Bounds, hoverable, PositionOf(s.Node)));
     }
 
     // ONE Tab stop for the whole control; the press targets inside it stay pointer-only —
@@ -84,7 +84,8 @@ internal sealed partial class EmitVisitor
     // and neither of them answers to the arrows.
     private void EmitAdjustable(Adjustable adjustable, EmitState s)
     {
-        s.Input.Add(new FocusStop(s.Node.Path ?? "", null, null, s.Node.Bounds, adjustable));
+        var at = PositionOf(s.Node);
+        s.Input.Add(new FocusStop(at.Id, at, null, null, s.Node.Bounds, adjustable));
         foreach (var child in s.Node)
             Emit(s with { Node = child, Input = s.Input.WithoutFocusStops() });
     }
@@ -97,35 +98,36 @@ internal sealed partial class EmitVisitor
     /// </summary>
     private void EmitNavigable(Navigable navigable, EmitState s)
     {
-        s.Input.Add(new FocusStop(s.Node.Path ?? "", null, null, s.Node.Bounds, Grid: navigable));
+        var at = PositionOf(s.Node);
+        s.Input.Add(new FocusStop(at.Id, at, null, null, s.Node.Bounds, Grid: navigable));
         foreach (var child in s.Node)
             Emit(s with { Node = child, Input = s.Input.WithoutFocusStops() });
     }
 
     // Spec S8: being on screen IS the subscription — the binding lives for exactly as long
     // as this frame, so an unmounted dialog's Esc stops firing with no bookkeeping. A focus-scoped
-    // one answers for its own subtree, which its path names.
+    // one answers for its own subtree, which its position heads.
     private void EmitShortcut(Shortcut shortcut, EmitState s)
     {
         // Not enabled, the chord binds nothing this frame, and the key goes on to whatever else
         // would take it.
         if (!shortcut.Enabled) return;
         s.Input.Add(new ShortcutBinding(shortcut.Chord, shortcut.OnPressed,
-            shortcut.FocusScoped ? s.Node.Path ?? "" : null));
+            shortcut.FocusScoped ? PositionOf(s.Node) : null));
     }
 
     private void EmitLink(Link link, EmitState s)
     {
         // Navigation surface: pure semantics — the child paints; a tap that no pressable claims
         // resolves to this region through the host's navigation seam.
-        var path = s.Node.Path ?? "";
-        s.Input.Add(new LinkRegion(s.Node.Bounds, link.Destination, path));
+        var at = PositionOf(s.Node);
+        s.Input.Add(new LinkRegion(s.Node.Bounds, link.Destination, at.Id));
 
         // "Tab reaches every interactive control" (handoff, Foundations · Keyboard conventions), and
         // a link is one — the web gets the stop and the activate from <a href> for nothing, and
         // Photon announced a link it could then reach by neither (#255). The stop is the TAB half
         // only; following it is the REGION's, which is what survives a composite's suppression.
-        s.Input.Add(new FocusStop(path, null, null, s.Node.Bounds));
+        s.Input.Add(new FocusStop(at.Id, at, null, null, s.Node.Bounds));
 
         // The ring the Box arm draws for a focused control, drawn here because a link is words and
         // has no box of its own. Radius zero: the ring follows the text's own rectangle.

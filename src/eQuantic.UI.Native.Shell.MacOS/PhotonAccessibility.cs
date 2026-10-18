@@ -13,8 +13,9 @@ namespace eQuantic.UI.Native.Shell.MacOS;
 /// action that runs the same handler a tap does. VoiceOver navigates the window through these.
 /// <para>
 /// Elements are rebuilt on every query — the tree is a per-frame artifact, and assistive tech asks
-/// rarely and at its own moments — and identified by PATH like every other cross-frame target. The
-/// previous batch is released when a new one is built; AppKit copies what it sends over the wire.
+/// rarely and at its own moments — and identified by the id of the node's position, like every
+/// other cross-frame target. The previous batch is released when a new one is built; AppKit copies
+/// what it sends over the wire.
 /// </para>
 /// <para>
 /// Statics, like the content view's own callbacks: one window per process on this head.
@@ -25,15 +26,17 @@ internal static class PhotonAccessibility
     /// <summary>The frame's semantics, provided by the window once the host exists.</summary>
     internal static Func<IReadOnlyList<SemanticNode>>? Source { get; set; }
 
-    /// <summary>Runs the control at a path — the AX press action. Answers whether anything ran.</summary>
-    internal static Func<string, bool>? OnActivate { get; set; }
+    /// <summary>Runs the control a semantic node names by its id — the AX press action. Answers
+    /// whether anything ran.</summary>
+    internal static Func<int, bool>? OnActivate { get; set; }
 
     /// <summary>VoiceOver's adjust gesture on a slider-role element: +1 up, −1 down.</summary>
-    internal static Func<string, int, bool>? OnAdjust { get; set; }
+    internal static Func<int, int, bool>? OnAdjust { get; set; }
 
     private delegate bool PerformPress(IntPtr self, IntPtr selector);
 
-    private static readonly Dictionary<IntPtr, string> Paths = new();
+    /// <summary>The id of the semantic node each native element stands for.</summary>
+    private static readonly Dictionary<IntPtr, int> Ids = new();
     private static PerformPress? _performPress;   // kept alive for the runtime's sake
     private static PerformPress? _performIncrement;
     private static PerformPress? _performDecrement;
@@ -65,13 +68,13 @@ internal static class PhotonAccessibility
     }
 
     private static bool OnPerformPress(IntPtr self, IntPtr selector) =>
-        Paths.TryGetValue(self, out var path) && OnActivate?.Invoke(path) == true;
+        Ids.TryGetValue(self, out var id) && OnActivate?.Invoke(id) == true;
 
     private static bool OnPerformIncrement(IntPtr self, IntPtr selector) =>
-        Paths.TryGetValue(self, out var path) && OnAdjust?.Invoke(path, 1) == true;
+        Ids.TryGetValue(self, out var id) && OnAdjust?.Invoke(id, 1) == true;
 
     private static bool OnPerformDecrement(IntPtr self, IntPtr selector) =>
-        Paths.TryGetValue(self, out var path) && OnAdjust?.Invoke(path, -1) == true;
+        Ids.TryGetValue(self, out var id) && OnAdjust?.Invoke(id, -1) == true;
 
     /// <summary>Builds the view's accessibility children from the CURRENT frame's semantics.</summary>
     internal static IntPtr BuildChildren(IntPtr view)
@@ -83,7 +86,7 @@ internal static class PhotonAccessibility
         var viewHeight = SendRect(view, Sel("bounds")).Height;
 
         if (_children != IntPtr.Zero) SendVoid(_children, Sel("release"));
-        Paths.Clear();
+        Ids.Clear();
         _children = Send(Send(AppKit.Class("NSMutableArray"), Sel("alloc")), Sel("init"));
         // Once per build rather than per value: AppKit.Class loads the framework before it looks, and
         // a screen asks for a number up to four times a node, on every query VoiceOver makes.
@@ -152,17 +155,18 @@ internal static class PhotonAccessibility
             }
             SendVoid(element, Sel("setAccessibilityEnabled:"), !node.Disabled);
             SendVoid(element, Sel("setAccessibilityParent:"), view);
-            // The path, visible in Accessibility Inspector — the same identity every press,
-            // focus and scroll uses, which is what makes an AX report debuggable.
-            SendVoid(element, Sel("setAccessibilityIdentifier:"), NSString(node.Path));
+            // The id, visible in Accessibility Inspector — the same identity every press, focus and
+            // scroll uses, its position's, which is what makes an AX report debuggable.
+            SendVoid(element, Sel("setAccessibilityIdentifier:"),
+                NSString(node.Id.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             SendVoid(element, Sel("setAccessibilityFrameInParentSpace:"), new CGRect(
                 node.Bounds.Left,
                 viewHeight - node.Bounds.Top - node.Bounds.Height,
                 node.Bounds.Width,
                 node.Bounds.Height));
             SendVoid(_children, Sel("addObject:"), element);
-            Paths[element] = node.Path;
-            // The array holds the element now; the pointer stays valid for the Paths map.
+            Ids[element] = node.Id;
+            // The array holds the element now; the pointer stays valid for the Ids map.
             SendVoid(element, Sel("release"));
         }
         return _children;

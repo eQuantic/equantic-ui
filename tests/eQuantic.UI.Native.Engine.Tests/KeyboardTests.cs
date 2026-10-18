@@ -916,14 +916,14 @@ public class DropdownKeyboardTests
         var host = new PhotonHost(column, PhotonTheme.Instance, ThemeMode.Light, 300, 500);
         var closed = host.RenderFrame(new DisplayListBuilder()).FocusStops.Count;
         for (var i = 0; i < tabs; i++) Press(host, "Tab");
-        var trigger = host.FocusedPath;
+        var trigger = host.FocusedId;
 
         Press(host, "Enter");
 
         var frame = host.RenderFrame(new DisplayListBuilder());
         frame.FocusStops.Count.Should().BeGreaterThan(closed, "the panel is open");
-        frame.FocusStops.Should().Contain(stop => stop.Path == host.FocusedPath, "the focus is on a node of the frame");
-        if (staysOnTrigger) host.FocusedPath.Should().Be(trigger);
+        frame.FocusStops.Should().Contain(stop => stop.Id == host.FocusedId, "the focus is on a node of the frame");
+        if (staysOnTrigger) host.FocusedId.Should().Be(trigger);
     }
 
     private static (PhotonHost Host, List<int> Chosen) OpenSelect(int selected = 0)

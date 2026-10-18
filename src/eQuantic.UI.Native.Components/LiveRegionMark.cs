@@ -25,7 +25,7 @@ namespace eQuantic.UI.Native.Components;
 /// </para>
 /// </summary>
 internal readonly record struct LiveRegionMark(
-    string Path,
+    Element Element,
     string Label,
     LiveRegionUrgency Urgency,
     LayoutNode Node);

@@ -393,7 +393,7 @@ public class TransformedSurfaceTests
         }
         host.RenderFrame(new DisplayListBuilder());
         var viewport = host.LastFrame!.ScrollRegions.First(r => r.Axis == ScrollAxis.Vertical
-            && region.Path.StartsWith(r.Path, StringComparison.Ordinal) && r.MaxOffset > 0);
+            && Positions.IsUnder(region.Element, r.Element) && r.MaxOffset > 0);
         return host.ScrollOffsetOf(viewport.Element);
     }
 
@@ -425,7 +425,7 @@ public class TransformedSurfaceTests
         host.RenderFrame(new DisplayListBuilder());
         var region = host.LastFrame!.CodeRegions.Single();
         var viewport = host.LastFrame!.ScrollRegions.First(r => r.Axis == ScrollAxis.Vertical
-            && region.Path.StartsWith(r.Path, StringComparison.Ordinal) && r.MaxOffset > 0);
+            && Positions.IsUnder(region.Element, r.Element) && r.MaxOffset > 0);
         return host.ScrollOffsetOf(viewport.Element);
     }
 

@@ -16,7 +16,7 @@ internal sealed partial class SemanticsVisitor
     public bool Visit(Text node, LayoutNode laidOut)
     {
         var announced = node.PlainContent.Length > 0
-            ? Announce(new(SemanticRole.StaticText, laidOut.Path ?? "", laidOut.Bounds,
+            ? Announce(new(SemanticRole.StaticText, IdOf(laidOut), laidOut.Bounds,
                 node.PlainContent, null, false, HeadingLevel: node.HeadingLevel))
             : PureLayout;
 
@@ -25,7 +25,7 @@ internal sealed partial class SemanticsVisitor
         // the input route gives it, so the bridge's activate arrives at the same link the keyboard
         // stops on — a stop nothing names is the empty offer #256 spent two rounds removing.
         foreach (var link in RichTextRuns.LinksOf(laidOut, node))
-            _nodes.Add(new SemanticNode(SemanticRole.Link, link.Path, link.Bounds, link.Text, null, false));
+            _nodes.Add(new SemanticNode(SemanticRole.Link, link.Id, link.Bounds, link.Text, null, false));
 
         return announced;
     }
@@ -35,13 +35,13 @@ internal sealed partial class SemanticsVisitor
     /// vanishes under text). The VALUE is what the field holds.
     /// </summary>
     public bool Visit(TextEntry node, LayoutNode laidOut) =>
-        Announce(new(SemanticRole.TextField, laidOut.Path ?? "", laidOut.Bounds,
+        Announce(new(SemanticRole.TextField, IdOf(laidOut), laidOut.Bounds,
             node.Label ?? node.Placeholder ?? "", node.Value, node.Disabled));
 
     /// <summary>A multiline editable code surface — a text area to a screen reader.</summary>
     public bool Visit(CodeSurface node, LayoutNode laidOut)
     {
-        Announce(new(SemanticRole.CodeField, laidOut.Path ?? "", laidOut.Bounds,
+        Announce(new(SemanticRole.CodeField, IdOf(laidOut), laidOut.Bounds,
             node.Label ?? "", null, false));
         // What the surface OFFERS at its caret is no part of the code's text: after the field it
         // belongs to, its rows announce as options, the one the keyboard is on selected.
@@ -54,6 +54,6 @@ internal sealed partial class SemanticsVisitor
     /// grid role) joins with the component slice.
     /// </summary>
     public bool Visit(SheetSurface node, LayoutNode laidOut) =>
-        Announce(new(SemanticRole.CodeField, laidOut.Path ?? "", laidOut.Bounds,
+        Announce(new(SemanticRole.CodeField, IdOf(laidOut), laidOut.Bounds,
             node.Label ?? "", null, false));
 }

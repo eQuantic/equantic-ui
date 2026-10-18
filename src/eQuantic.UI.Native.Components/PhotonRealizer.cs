@@ -9,28 +9,29 @@ namespace eQuantic.UI.Native.Components;
 /// <param name="Drawn">Where the pressable is drawn: its own box, without the slop that grows its
 /// target. A press inside it is this pressable's before it is a neighbour's slop (#630).</param>
 /// <param name="Node">The pressable this region belongs to.</param>
-/// <param name="Path">Where the pressable sits in the tree. A press outlives the frame it began in
-/// — the pressed state repaints, and the next Build makes fresh nodes — so the target is remembered
-/// by PATH. Remembering the object meant every press that spanned a frame quietly did nothing, and
-/// a real click always spans one.</param>
-public readonly record struct HitRegion(Rect Bounds, Rect Drawn, Pressable Node, string Path = "");
+/// <param name="Element">The pressable's position. A press outlives the frame it began in — the
+/// pressed state repaints, and the next Build makes fresh nodes — so the target is remembered by its
+/// position, which a rebuild keeps while the same control stands there. Remembering the node meant
+/// every press that spanned a frame quietly did nothing, and remembering its path meant a press could
+/// land on whatever control took the place.</param>
+public readonly record struct HitRegion(Rect Bounds, Rect Drawn, Pressable Node, Element Element);
 
 /// <summary>Spec S5/gestures: a hover-reactive region — a Box carrying a Hover diff. The host's
 /// pointer tracking resolves the TOPMOST region under the pointer (paint order = registration
-/// order, so last-contains wins).</summary>
-public readonly record struct HoverRegion(Rect Bounds, VisualNode Node, string Path);
+/// order, so last-contains wins). <paramref name="Element"/> is the node's position, which the hover
+/// chain holds across rebuilds.</summary>
+public readonly record struct HoverRegion(Rect Bounds, VisualNode Node, Element Element);
 
 /// <summary>Scroll compositor v1: a scrollable viewport — the host routes wheel/drag input to the
 /// TOPMOST region under the pointer and moves the offset its <paramref name="Element"/> keeps
 /// (clamped to MaxOffset).</summary>
 /// <param name="Bounds">The viewport, where the pointer scrolls it.</param>
-/// <param name="Path">Where the view sits, as a string: the host still asks by path which view holds a
-/// focus stop or a caret it brings into view (#976).</param>
-/// <param name="Element">The view's position, which keeps its offset: what the host scrolls.</param>
+/// <param name="Element">The view's position, which keeps its offset: what the host scrolls, and what
+/// the host walks up from a focus stop or a caret to find the views that hold it.</param>
 /// <param name="MaxOffset">How far the content scrolls in this frame.</param>
 /// <param name="Axis">The axis it scrolls along.</param>
 /// <param name="Fallback">The node's own <c>Offset</c>, where it stands until the host scrolls it.</param>
-public readonly record struct ScrollRegion(Rect Bounds, string Path, Element Element, float MaxOffset, ScrollAxis Axis,
+public readonly record struct ScrollRegion(Rect Bounds, Element Element, float MaxOffset, ScrollAxis Axis,
     float Fallback);
 
 /// <summary>
@@ -38,7 +39,7 @@ public readonly record struct ScrollRegion(Rect Bounds, string Path, Element Ele
 /// The engine knows only that a point landed in the box — what was drawn there, and therefore what
 /// was hit, is the app's arithmetic.
 /// </summary>
-public readonly record struct CanvasRegion(Rect Bounds, Canvas Node, string Path);
+public readonly record struct CanvasRegion(Rect Bounds, Canvas Node, Element Element);
 
 /// <summary>
 /// A surface the host routes a drag to: a press that travels past the slop drags the TOPMOST region
@@ -59,35 +60,35 @@ public readonly record struct DragRegion(Rect Bounds, Element Element, VisualNod
 /// destination was the only thing the host ever asked the node for.
 /// </para>
 /// <para>
-/// The <paramref name="Path"/> is what the KEYBOARD and a screen reader name it by, and it is the
-/// node's own where there is a node. A linked run has none, so <see cref="RichTextRuns"/> gives it
-/// one — the paragraph's path with the link's index after a <c>#</c> — and the region, the focus
-/// stop and the semantic node all carry that same string (#255). A link that wraps registers one
-/// region per line under ONE path: the pointer needs both rectangles, the keyboard needs one stop.
+/// The <paramref name="Id"/> is what the KEYBOARD and a screen reader name it by: its node's
+/// position's where there is a node. A linked run has none, so <see cref="RichTextRuns"/> names it by
+/// the id its paragraph's position keeps for it (<see cref="NodeElement.PartId"/>), and the region,
+/// the focus stop and the semantic node all carry that same id (#255). A link that wraps registers
+/// one region per line under ONE id: the pointer needs both rectangles, the keyboard needs one stop.
 /// </para>
 /// </summary>
-public readonly record struct LinkRegion(Rect Bounds, string Destination, string Path);
+public readonly record struct LinkRegion(Rect Bounds, string Destination, int Id);
 
 /// <summary>Spec S8: a keyboard binding that is live because its subtree is on screen — the host
 /// dispatches a key press to the LAST registered match (the dialog on top wins the chord). A
-/// <see cref="Scope"/> is the path of the subtree a focus-scoped binding answers for: it is live
+/// <see cref="Scope"/> is the position of the subtree a focus-scoped binding answers for: it is live
 /// only while the focus is inside it.</summary>
-public readonly record struct ShortcutBinding(KeyChord Chord, Action OnPressed, string? Scope = null);
+public readonly record struct ShortcutBinding(KeyChord Chord, Action OnPressed, Element? Scope = null);
 
 /// <summary>An editable field. A text entry is not a pressable — a click puts a CARET in it and the
 /// keys that follow belong to it — so it registers its own kind of region, and the host keeps the
-/// caret against the <paramref name="Path"/> for the same reason the press does: the tree is rebuilt
-/// on every keystroke. <paramref name="Visible"/> is the part of <paramref name="Bounds"/> the clips
+/// caret against its <paramref name="Element"/> for the same reason the press does: the tree is
+/// rebuilt on every keystroke. <paramref name="Visible"/> is the part of <paramref name="Bounds"/> the clips
 /// around the field leave on screen, which is all a press can land on, as a code surface's. Null where
 /// nothing clips it.</summary>
-public readonly record struct TextRegion(Rect Bounds, TextEntry Entry, string Path, Rect? Visible = null);
+public readonly record struct TextRegion(Rect Bounds, TextEntry Entry, Element Element, Rect? Visible = null);
 
 /// <summary>An editable SPREADSHEET surface: a click takes the selection (a cell resolved by
 /// prefix-sum arithmetic over the window), a drag extends it, and the keys that follow speak
 /// Excel through the shared controller. <paramref name="Visible"/> is the part of
 /// <paramref name="Bounds"/> on screen, which is all a press can land on. Null where nothing clips
 /// it.</summary>
-public readonly record struct SheetRegion(Rect Bounds, SheetSurface Surface, string Path, Rect? Visible = null);
+public readonly record struct SheetRegion(Rect Bounds, SheetSurface Surface, Element Element, Rect? Visible = null);
 
 /// <summary>A surface that changes what the mouse pointer looks like (BoxStyle.Cursor — the CSS
 /// cursor mirror). The host answers CursorAt from these, topmost first.</summary>
@@ -95,13 +96,13 @@ public readonly record struct CursorRegion(Rect Bounds, PointerCursor Cursor);
 
 /// <summary>An editable CODE surface. Like a text region it takes the caret on a click and the keys
 /// that follow, but what those keys mean lives in its controller, so the region only has to carry
-/// the path and the geometry that turns a point into a (line, column). <paramref name="Offered"/> is
+/// its position and the geometry that turns a point into a (line, column). <paramref name="Offered"/> is
 /// where what the surface offers at its caret landed (<see cref="CodeSurface.Options"/>), on screen: a
 /// press there that no row of it took is the list's, and never moves the caret under it.
 /// <paramref name="Visible"/> is the part of <paramref name="Bounds"/> the clips around the surface
 /// leave on screen, which is all a press can land on: a long file's surface runs far past the viewport
 /// that shows it. Null where nothing clips it.</summary>
-public readonly record struct CodeRegion(Rect Bounds, CodeSurface Surface, string Path, Rect? Offered = null,
+public readonly record struct CodeRegion(Rect Bounds, CodeSurface Surface, Element Element, Rect? Offered = null,
     Rect? Visible = null);
 
 /// <summary>
@@ -121,8 +122,13 @@ public readonly record struct CodeRegion(Rect Bounds, CodeSurface Surface, strin
 /// <see cref="LinkRegion"/> rather than here. A stop is suppressed inside a composite and a region
 /// is not, and a link inside a grid still has to be followable by the reader that announces it.
 /// </para>
+/// <para>
+/// <see cref="Id"/> is what the focus is held by, and <see cref="Element"/> the position the stop sits
+/// in, which the host walks up from to find what holds it: the same position's id for a control, and
+/// for a linked run the id its paragraph keeps for it, inside the paragraph's position.
+/// </para>
 /// </summary>
-public readonly record struct FocusStop(string Path, Pressable? Pressable, TextEntry? Entry, Rect Bounds,
+public readonly record struct FocusStop(int Id, Element Element, Pressable? Pressable, TextEntry? Entry, Rect Bounds,
     Adjustable? Adjustable = null, CodeSurface? Code = null, Navigable? Grid = null,
     SheetSurface? Sheet = null);
 
@@ -230,36 +236,6 @@ public sealed class RealizeResult
 /// </summary>
 public static class PhotonRealizer
 {
-    /// <summary>
-    /// The root path of each overlay layer. A path is IDENTITY and the same string every frame
-    /// (<see cref="LayoutContext.PathCache"/>), and this one was interpolated every frame instead:
-    /// a new string per layer, and a buffer rented from the shared <c>ArrayPool</c> to build it
-    /// (#290). The table grows the first time a screen opens more layers than it holds, keeping
-    /// the strings it already had, so each layer's path is built once. Hosts realize on threads of
-    /// their own, so a grown table replaces the old one whole.
-    /// </summary>
-    private static string[] _layerPaths = GrowLayerPaths([], 16);
-
-    private static string[] GrowLayerPaths(string[] held, int count)
-    {
-        var paths = new string[count];
-        Array.Copy(held, paths, held.Length);
-        for (var i = held.Length; i < count; i++)
-            paths[i] = "ov" + i.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        return paths;
-    }
-
-    private static string LayerPath(int index)
-    {
-        var paths = Volatile.Read(ref _layerPaths);
-        if (index < paths.Length) return paths[index];
-        var grown = GrowLayerPaths(paths, Math.Max(index + 1, paths.Length * 2));
-        // A realizer that lost the race reads the winner's table, which holds the same strings.
-        Interlocked.CompareExchange(ref _layerPaths, grown, paths);
-        paths = Volatile.Read(ref _layerPaths);
-        return index < paths.Length ? paths[index] : grown[index];
-    }
-
     public static RealizeResult Realize(
         VisualNode root,
         float viewportWidth,
@@ -293,14 +269,15 @@ public static class PhotonRealizer
         EdgeInsets safeAreaInsets = default,
         // A press lasts a moment and focus lasts until the user says otherwise — both outlive the
         // frame that started them, and `Build` hands back NEW nodes every time. The node is the
-        // thing to draw; the PATH is the thing that survives. (Tests still pass nodes alone: with
-        // one frame and no rebuild, identity by reference is the same answer.)
-        string? pressedPath = null,
-        string? focusedPath = null,
+        // thing to draw; its POSITION is the thing that survives, and the focus its id, since a
+        // linked run is focused without a node of its own. (Tests still pass nodes alone: with one
+        // frame and no rebuild, identity by reference is the same answer.)
+        Element? pressedAt = null,
+        int focusedId = 0,
         // The field being edited and where its caret sits. Both live in the HOST, not in the tree:
         // the app owns the text and hands back a new node for every character, so a caret stored in
         // the node would be reborn at the end of the string on every keystroke.
-        string? textPath = null,
+        Element? textAt = null,
         int caretIndex = 0,
         bool caretVisible = true,
         // The selected range inside that field. Zero-length = a caret and nothing more.
@@ -312,14 +289,12 @@ public static class PhotonRealizer
         string markedText = "",
         // A phone keyboard's composition: a range OF the value, drawn underlined the same way.
         (int Start, int End, string Text)? composing = null,
-        // The host's cross-frame path-string cache (see LayoutContext.PathCache).
-        Dictionary<(string Parent, int Index, string? Key), string>? pathCache = null,
         // The owning host's node recycler (see LayoutNodePool) — null allocates fresh.
         LayoutNodePool? nodePool = null,
-        // Where the hover LIVES across rebuilds — the press's path rule, applied to the pointer.
-        // A CHAIN, not a single node: CSS :hover matches every ancestor under the pointer, and the
-        // native realizer answers the same question the web twin answers.
-        IReadOnlyList<string>? hoveredPaths = null,
+        // Where the hover LIVES across rebuilds — the press's rule, applied to the pointer. A CHAIN,
+        // not a single node: CSS :hover matches every ancestor under the pointer, and the native
+        // realizer answers the same question the web twin answers.
+        IReadOnlyList<Element>? hoveredAt = null,
         // Where the system's window controls sit under a unified desktop chrome (see
         // LayoutContext.WindowControlsInsets) — zero everywhere else.
         EdgeInsets windowControlsInsets = default,
@@ -333,7 +308,6 @@ public static class PhotonRealizer
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale,
             density)
         {
-            PathCache = pathCache,
             Pool = nodePool,
             // The HOST's cutouts. Zero on a desktop window, and the shell's real numbers on a phone
             // — the tree is the same either way, which is the point of the node.
@@ -382,7 +356,7 @@ public static class PhotonRealizer
         // An InView reports in a tree that is drawn again, as a lifecycle hook runs: a callback that
         // sets state for a tree laid out once would set it for nobody.
         var reportsInView = builds.Live;
-        EmitVisitor.Shared.Emit(new EmitState(layout, input, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView },
+        EmitVisitor.Shared.Emit(new EmitState(layout, input, new PressScope(pressed, focused, hovered, pressedAt, focusedId, textAt, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredAt) { MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView },
             theme, mode, builder, motion, overlays));
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
@@ -401,25 +375,25 @@ public static class PhotonRealizer
             // mean anything — without one the layer is shown and hidden by being built or not, and
             // the web ignores the flag for the same reason.
             //
-            // Not queuing it in EmitOverlay would have been shorter and wrong: the layer's paths are
-            // `ov{i}`, so dropping a closed layer from the QUEUE renumbers every layer after it, and
-            // closing a toast would move the dialog underneath it to a new identity — losing its
-            // focus, its press state and its presence snapshots. The index stays; only the work goes.
+            // A layer is found again by its Overlay's position, which holds it in a slot of its own,
+            // so skipping a closed one moves nothing after it: the dialog under a closing toast
+            // keeps its focus, its press state and its presence snapshots. When layers were named
+            // `ov{i}` by their place in this queue, the index had to stay for that (#976).
             var queued = overlays[i];
             if (queued.Layer is { Motion: not null, Open: false }) continue;
             // Shown, so its deferred slot builds now, just before the layer is laid out against it.
             // Every node the layout measured has a position, so a layer without one is the engine
             // gone wrong: built here it would be a tree of fresh instances every frame, silently.
             var layerElement = (queued.Holder ?? throw new InvalidOperationException(
-                    $"A layer at {LayerPath(i)} has no position to build in."))
+                    $"Overlay layer {i} of this frame has no position to build in."))
                 .ShowDeferred(queued.Layer.Child);
             var overlayLayout = LayoutEngine.Layout(queued.Layer.Child, viewportWidth, viewportHeight,
-                context, rootPath: LayerPath(i), rootElement: layerElement);
+                context, rootElement: layerElement);
             overlayRoots.Add(overlayLayout);
             realizedLayers.Add(queued.Layer);
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
-            EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView },
+            EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedAt, focusedId, textAt, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredAt) { MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView },
                 theme, mode, builder, motion, overlays));
         }
 

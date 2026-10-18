@@ -20,8 +20,7 @@ internal sealed partial class EmitVisitor
         if (s.Node.Element is { } at)
         {
             var range = s.Node.ScrollRange;
-            s.Input.Add(new ScrollRegion(s.Node.Bounds, s.Node.Path ?? "", at, range, scrollView.Axis,
-                scrollView.Offset));
+            s.Input.Add(new ScrollRegion(s.Node.Bounds, at, range, scrollView.Axis, scrollView.Offset));
             // The out channel: a component that windows its content needs both numbers, and
             // neither is knowable before layout. Reported from the realized frame, which is the
             // first moment either is true.
@@ -73,7 +72,7 @@ internal sealed partial class EmitVisitor
         // The child paints EVERYTHING — cells, selection, active ring, the editing draft —
         // write-once in the shared component, so web and native cannot drift. This node only
         // registers the input region.
-        s.Input.Add(new SheetRegion(s.Node.Bounds, sheetSurface, s.Node.Path ?? ""));
+        s.Input.Add(new SheetRegion(s.Node.Bounds, sheetSurface, PositionOf(s.Node)));
         foreach (var child in s.Node)
             Emit(s with { Node = child });
     }
@@ -99,9 +98,9 @@ internal sealed partial class EmitVisitor
         var hoverOpen = false;
         if (anchored.OpenOnHover)
         {
-            s.Input.Add(new HoverRegion(s.Node.Bounds, anchored, s.Node.Path ?? ""));
+            s.Input.Add(new HoverRegion(s.Node.Bounds, anchored, PositionOf(s.Node)));
             // By chain like every other hover read: hovering the TRIGGER inside is
-            // hovering the anchored (CSS ancestor semantics), and the path survives the
+            // hovering the anchored (CSS ancestor semantics), and the position survives the
             // rebuild its own opening causes.
             hoverOpen = s.Press.IsHovered(s.Node, anchored);
         }
