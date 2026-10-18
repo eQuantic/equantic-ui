@@ -546,4 +546,91 @@ public class ElementTreeTests
         outside.Should().Equal(false);
         InFlow.Current.Should().BeFalse("the intent is put back after the build");
     }
+
+    // ---- what a target keeps for a node (#975) ---------------------------------------------------
+
+    /// <summary>What a realizer keeps for a node: it says when it is let go.</summary>
+    private sealed class Kept(List<string> log, string name) : IDisposable
+    {
+        public void Dispose() => log.Add(name);
+    }
+
+    private static Box Keyed(string key) => new(new BoxStyle()) { Key = key };
+
+    [Fact]
+    public void ANodesState_StaysWhileItsPositionDoes()
+    {
+        var log = new List<string>();
+        var owner = BuildOwner.Structural();
+        var position = (NodeElement)Frame(owner, Keyed("a"));
+        var kept = new Kept(log, "a");
+        position.State = kept;
+
+        Frame(owner, Keyed("a")).Should().BeSameAs(position, "the same type and key keep the position");
+
+        position.State.Should().BeSameAs(kept);
+        log.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ANodesState_IsReleasedOnce_WhenAnotherKeyOrTypeTakesItsPlace()
+    {
+        var log = new List<string>();
+        var owner = BuildOwner.Structural();
+        var first = (NodeElement)Frame(owner, Keyed("a"));
+        first.State = new Kept(log, "a");
+
+        var second = (NodeElement)Frame(owner, Keyed("b"));
+        second.State = new Kept(log, "b");
+        Frame(owner, new Text("c", TypeRole.BodyM));
+        Frame(owner, new Text("c", TypeRole.BodyM));
+
+        log.Should().Equal("a", "b");
+        first.State.Should().BeNull("a position that left keeps nothing");
+        second.State.Should().BeNull();
+    }
+
+    [Fact]
+    public void ASubtreesStates_AreReleasedChildrenFirst()
+    {
+        var log = new List<string>();
+        var owner = BuildOwner.Structural();
+        var column = new Column();
+        column.Add(new Box(new BoxStyle(), new Box(new BoxStyle())));
+        var root = (NodeElement)Frame(owner, column);
+        var box = (NodeElement)root.ChildAt(0)!;
+        root.State = new Kept(log, "column");
+        box.State = new Kept(log, "box");
+        ((NodeElement)box.ChildAt(0)!).State = new Kept(log, "inner");
+
+        Frame(owner, new Column());
+        log.Should().Equal("inner", "box");
+
+        Frame(owner, new Text("gone", TypeRole.BodyM));
+        log.Should().Equal("inner", "box", "column");
+    }
+
+    [Fact]
+    public void ANodesState_IsReleased_WhenItsLayerIsNotShown_OrTheTreeComesDown()
+    {
+        var log = new List<string>();
+        var owner = new BuildOwner();
+        var overlay = new Overlay(new Box(new BoxStyle()));
+        var column = new Column();
+        column.Add(overlay);
+        column.Add(new Box(new BoxStyle()));
+
+        var root = owner.Build(column, Context, WindowSizeClass.Compact, rebuildAll: true);
+        var holder = (NodeElement)root.ChildAt(0)!;
+        ((NodeElement)holder.ShowDeferred(overlay.Child)).State = new Kept(log, "layer");
+        ((NodeElement)root.ChildAt(1)!).State = new Kept(log, "page");
+        owner.EndFrame();
+
+        owner.Build(column, Context, WindowSizeClass.Compact, rebuildAll: false);
+        owner.EndFrame();
+        log.Should().Equal(new[] { "layer" }, "a frame that does not show the layer takes what it held out");
+
+        owner.UnmountAll();
+        log.Should().Equal("layer", "page");
+    }
 }
