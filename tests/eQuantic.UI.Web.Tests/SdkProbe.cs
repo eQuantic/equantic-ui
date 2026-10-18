@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml.Linq;
@@ -60,32 +59,9 @@ internal static class SdkProbe
     /// dotnet with <paramref name="args"/>, answering its exit code and what it wrote to each stream,
     /// so a case can hold a command to FAILING: a build a rule stops is the proof the rule runs.
     /// </summary>
-    public static (int ExitCode, string Output, string Error) Run(string? workingDirectory, IReadOnlyDictionary<string, string>? environment, params string[] args)
-    {
-        var info = new ProcessStartInfo("dotnet")
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            WorkingDirectory = workingDirectory ?? RepoRoot(),
-        };
-        foreach (var arg in args) info.ArgumentList.Add(arg);
-        foreach (var (name, value) in environment ?? new Dictionary<string, string>()) info.Environment[name] = value;
-        using var process = Process.Start(info)!;
-        var output = process.StandardOutput.ReadToEndAsync();
-        var error = process.StandardError.ReadToEndAsync();
-        using var deadline = new CancellationTokenSource(Deadline);
-        try
-        {
-            process.WaitForExitAsync(deadline.Token).GetAwaiter().GetResult();
-        }
-        catch (OperationCanceledException)
-        {
-            try { process.Kill(entireProcessTree: true); }
-            catch (InvalidOperationException) { /* it exited between the deadline and the kill */ }
-            throw new TimeoutException($"dotnet {string.Join(' ', args)} did not finish within {Deadline}.");
-        }
-        return (process.ExitCode, output.Result, error.Result);
-    }
+    public static (int ExitCode, string Output, string Error) Run(string? workingDirectory, IReadOnlyDictionary<string, string>? environment, params string[] args) =>
+        ChildProcess.Run("dotnet", args, Deadline, workingDirectory ?? RepoRoot(),
+            environment?.Select(setting => KeyValuePair.Create(setting.Key, (string?)setting.Value)));
 
     /// <summary>
     /// Writes the recorder into <paramref name="directory"/> under each of <paramref name="programs"/>,
