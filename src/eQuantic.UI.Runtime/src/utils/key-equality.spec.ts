@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  equalsOwn,
+  equalsOwnGeneric,
   equatable,
   equatableCall,
   memberEquality,
@@ -7,6 +9,7 @@ import {
   sameBy,
   sameEquality,
   sameGeneric,
+  sameItem,
   sameKey,
   tupleEquality,
 } from './key-equality';
@@ -250,5 +253,91 @@ describe("an interface's typed Equals, by the contract it binds", () => {
     expect(equatableCall('System.IEquatable<T>|int')(5, 5)).toBe(true);
     expect(equatableCall('System.IEquatable<T>|NullLover')).toBe(equatableCall('System.IEquatable<T>|NullLover'));
     expect(equatableCall('System.IEquatable<T>|NullLover')).not.toBe(equatable('System.IEquatable<T>|NullLover'));
+  });
+});
+
+describe('a value whose own equality the app wrote is asked every time', () => {
+  class Counted {
+    static calls = 0;
+    constructor(readonly n: number) {}
+    equals(o: unknown): boolean {
+      Counted.calls++;
+      return o instanceof Counted && o.n === this.n;
+    }
+  }
+
+  class Contrary {
+    static calls = 0;
+    equals(): boolean {
+      Contrary.calls++;
+      return false;
+    }
+  }
+
+  class TypedClass {
+    static calls = 0;
+    static typedCalls = 0;
+    static $equatable = { 'System.IEquatable<T>|TypedClass': 'equals$1', 'System.IEquatable<T>|@': 'equals$1' };
+    constructor(readonly n: number) {}
+    equals$1(other: TypedClass | null): boolean {
+      TypedClass.typedCalls++;
+      return other !== null && other.n === this.n;
+    }
+    equals(o: unknown): boolean {
+      TypedClass.calls++;
+      return o instanceof TypedClass && this.equals$1(o);
+    }
+  }
+
+  class Plain {
+    constructor(readonly n: number) {}
+  }
+
+  it('equalsOwn asks the value its own equals, the value itself included, and a refusal of itself stands', () => {
+    Counted.calls = 0;
+    const a = new Counted(1);
+    expect(equalsOwn(a, a)).toBe(true);
+    expect(equalsOwn(a, new Counted(1))).toBe(true);
+    expect(equalsOwn(a, new Counted(2))).toBe(false);
+    expect(Counted.calls).toBe(3);
+    Contrary.calls = 0;
+    const c = new Contrary();
+    expect(equalsOwn(c, c)).toBe(false);
+    expect(Contrary.calls).toBe(1);
+  });
+
+  it('equalsOwn answers a null without asking: equal only to another null', () => {
+    Counted.calls = 0;
+    const a = new Counted(1);
+    expect(equalsOwn(a, null)).toBe(false);
+    expect(equalsOwn(undefined, a)).toBe(false);
+    expect(equalsOwn(null, undefined)).toBe(true);
+    expect(Counted.calls).toBe(0);
+  });
+
+  it('equalsOwn compares a value with no equals of its own as its type says: what it is, or its reference', () => {
+    expect(equalsOwn({ r: 1 }, { r: 1 })).toBe(true);
+    expect(equalsOwn([1, 2], [1, 2])).toBe(true);
+    const p = new Plain(1);
+    expect(equalsOwn(p, p)).toBe(true);
+    expect(equalsOwn(p, new Plain(1))).toBe(false);
+    expect(equalsOwn([1], [1], sameItem)).toBe(false);
+  });
+
+  it('equalsOwnGeneric asks the typed IEquatable<T> a twin answers, and its own equals otherwise, every time', () => {
+    TypedClass.calls = 0;
+    TypedClass.typedCalls = 0;
+    const t = new TypedClass(1);
+    expect(equalsOwnGeneric(t, t)).toBe(true);
+    expect(TypedClass.typedCalls).toBe(1);
+    expect(TypedClass.calls).toBe(0);
+    Counted.calls = 0;
+    const a = new Counted(1);
+    expect(equalsOwnGeneric(a, a)).toBe(true);
+    expect(Counted.calls).toBe(1);
+    expect(equalsOwnGeneric(1, 1)).toBe(true);
+    expect(equalsOwnGeneric(Number.NaN, Number.NaN)).toBe(true);
+    expect(equalsOwnGeneric(null, null)).toBe(true);
+    expect(equalsOwnGeneric(a, null)).toBe(false);
   });
 });

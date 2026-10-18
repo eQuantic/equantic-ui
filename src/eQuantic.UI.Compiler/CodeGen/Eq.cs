@@ -362,11 +362,18 @@ public static class Eq
     /// comparison passed third, or found unequal where that is null, the other value being of another type.</summary>
     public const string EqualsInstance = "$eq.equalsInstance";
 
-    /// <summary><c>Equals</c> on a struct whose own <c>Equals(object)</c> is the app's code, as
+    /// <summary><c>Equals</c> on a value whose own <c>Equals(object)</c> the app may have written, as
     /// <c>Nullable&lt;T&gt;.Equals(object)</c> and the default comparers call it: a null equal only to a null and
     /// never asked, and otherwise the value's own <c>equals</c>, asked every time, a value compared with itself
-    /// included, where <see cref="Equals"/> and <see cref="SameItem"/> answer it at their identity check.</summary>
+    /// included, where <see cref="Equals"/> and <see cref="SameItem"/> answer it at their identity check. A value
+    /// with no <c>equals</c> of its own is compared by the comparison passed third, <see cref="SameKey"/> where
+    /// none is.</summary>
     public const string EqualsOwn = "$eq.equalsOwn";
+
+    /// <summary><c>EqualityComparer&lt;T&gt;.Default.Equals</c> in generic code, which .NET settles at run time: the
+    /// value's own <c>IEquatable&lt;T&gt;</c> where its twin answers it, and <see cref="EqualsOwn"/> otherwise, each
+    /// asked every time.</summary>
+    public const string EqualsOwnGeneric = "$eq.equalsOwnGeneric";
 
     /// <summary>The receiver of an instance call that has no helper of its own, refused as .NET refuses a
     /// call through null (<c>NullReferenceException</c>), and handed on otherwise.</summary>

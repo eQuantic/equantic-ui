@@ -264,16 +264,63 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         var parts = invocation.ArgumentList.Arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
         var (atX, _) = Operand(invocation, 0, context);
         var (atY, _) = Operand(invocation, 1, context);
-        // A struct with no IEquatable<T> of the app's is compared by .NET's ObjectEqualityComparer, which asks its
-        // Equals(object) every time: where that is the app's code, the comparison asks it too, a value compared
-        // with itself included (Copilot's first review of #977). An IEquatable<T> of the app's is asked by the
-        // comparison ElementEquality writes for it, which has no identity check either.
-        var value = compared.UnwrapNullable() ?? compared;
-        var comparer = ElementEquality.SelfContract(value) is null && DeclaresObjectEquals(value)
-            ? Eq.EqualsOwn
-            : ElementEquality.Comparer(compared);
-        return JsExpr.Template($"{comparer}({{{atX}}}, {{{atY}}})", parts);
+        var (function, otherwise) = DefaultComparison(compared);
+        var third = otherwise is null ? "" : $", {otherwise}";
+        return JsExpr.Template($"{function}({{{atX}}}, {{{atY}}}{third})", parts);
     }
+
+    /// <summary>
+    /// The function a call on the default comparer of <paramref name="compared"/> is: .NET's
+    /// <c>GenericEqualityComparer</c>, <c>ObjectEqualityComparer</c> and <c>NullableEqualityComparer</c> ask the
+    /// value's own equality with no identity check, so a value compared with itself asks it too, its side effects
+    /// with it and a refusal of itself (Copilot's first and second reviews of #977).
+    /// <list type="bullet">
+    /// <item>generic code, where .NET settles the type at run time: <see cref="Eq.EqualsOwnGeneric"/>, the value's
+    /// <c>IEquatable&lt;T&gt;</c> where its twin answers it, and its own <c>equals</c> otherwise;</item>
+    /// <item>a type answering an <c>IEquatable&lt;T&gt;</c> of the app's: the comparison <see cref="ElementEquality"/>
+    /// writes for it, which asks the typed method with no identity check;</item>
+    /// <item>a struct or a class whose <c>Equals(object)</c> is the app's, declared or inherited from the app's
+    /// base, and a type that cannot say what a value holds, <c>object</c> or an interface:
+    /// <see cref="Eq.EqualsOwn"/>, the value's own <c>equals</c> where it carries one;</item>
+    /// <item>any other type, whose equality C# or .NET writes and no one can tell from an identity check: its
+    /// comparison, unchanged, a class with no override by reference.</item>
+    /// </list>
+    /// <c>Otherwise</c> is the comparison <see cref="Eq.EqualsOwn"/> compares a value with no <c>equals</c> of its own
+    /// by, where that is not <see cref="Eq.SameKey"/>, its default: by reference behind an interface no tuple
+    /// implements, as the type's own comparison compares it.
+    /// </summary>
+    private static (string Function, string? Otherwise) DefaultComparison(ITypeSymbol compared)
+    {
+        var value = compared.UnwrapNullable() ?? compared;
+        if (value is ITypeParameterSymbol) return (Eq.EqualsOwnGeneric, null);
+        var comparison = ElementEquality.Comparer(compared);
+        if (ElementEquality.SelfContract(value) is not null) return (comparison, null);
+        if (OwnsObjectEquals(value)) return (Eq.EqualsOwn, null);
+        if (CannotSay(value)) return (Eq.EqualsOwn, comparison == Eq.SameKey ? null : comparison);
+        return (comparison, null);
+    }
+
+    /// <summary>Whether a struct's or a class's <c>Equals(object)</c> is the app's code: an override the struct
+    /// declares, or the most derived override along the class's chain, declared or inherited, written in the
+    /// app's source.</summary>
+    private static bool OwnsObjectEquals(ITypeSymbol value)
+    {
+        if (value.IsValueType) return DeclaresObjectEquals(value);
+        if (value is not INamedTypeSymbol { TypeKind: TypeKind.Class }) return false;
+        for (var at = (INamedTypeSymbol?)value; at is not null && at.SpecialType != SpecialType.System_Object; at = at.BaseType)
+        {
+            if (at.GetMembers("Equals").OfType<IMethodSymbol>().FirstOrDefault(method =>
+                    method is { IsOverride: true, Parameters: [{ Type.SpecialType: SpecialType.System_Object }] }) is { } own)
+                return !own.IsImplicitlyDeclared && own.Locations.Any(location => location.IsInSource);
+        }
+        return false;
+    }
+
+    /// <summary>Whether a type cannot say what its value holds: <c>object</c>, <c>ValueType</c>, <c>Enum</c> and an
+    /// interface, behind which a value whose equality the app wrote may stand.</summary>
+    private static bool CannotSay(ITypeSymbol value) =>
+        value.SpecialType is SpecialType.System_Object or SpecialType.System_ValueType or SpecialType.System_Enum
+        || value.TypeKind == TypeKind.Interface;
 
     private static bool IsStaticObjectEquals(InvocationExpressionSyntax invocation, ConversionContext context)
     {

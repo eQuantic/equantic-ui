@@ -165,6 +165,33 @@ export function sameGeneric(a: unknown, b: unknown): boolean {
   return dispatch(SELF, a, b);
 }
 
+/**
+ * `Equals` as .NET asks a value whose equality the app may have written, through `Nullable<T>.Equals(object)` and
+ * the default comparers, `ObjectEqualityComparer` and `NullableEqualityComparer`, which call it with no identity
+ * check: a null is equal only to a null and is never asked, and otherwise the value's own `equals` is asked every
+ * time, a value compared with itself included, its side effects and a refusal of itself with it. `sameItem` and
+ * `equals` answer the same value at their identity check, so an override was never asked there (Copilot's first
+ * and second reviews of #977). A value whose twin carries no `equals` is compared as `otherwise` compares it: by
+ * what it turns out to be (`sameKey`), or by reference (`sameItem`) where its type says so.
+ */
+export function equalsOwn(value: unknown, other: unknown, otherwise: Equality = sameKey): boolean {
+  if (value == null || other == null) return value == null && other == null;
+  const own = (value as { equals?: unknown }).equals;
+  return typeof own === 'function' ? Boolean((own as (o: unknown) => unknown).call(value, other)) : otherwise(value, other);
+}
+
+/**
+ * `EqualityComparer<T>.Default.Equals` in generic code, which .NET settles at run time: the value's own
+ * `IEquatable<T>` over its type where its twin answers it, and its `Equals(object)` otherwise, each asked every
+ * time, a value compared with itself included ({@link equalsOwn}). {@link sameGeneric}, which a collection's
+ * search takes, answers the same value at its identity check.
+ */
+export function equalsOwnGeneric(a: unknown, b: unknown): boolean {
+  if (a == null || b == null) return a == null && b == null;
+  const typed = contractMethod(a, SELF);
+  return typed !== undefined ? Boolean(typed.call(a, b)) : equalsOwn(a, b);
+}
+
 /** A tuple (an array) or an anonymous type (a plain object): a value compared by its members. */
 export function isPlainValue(value: unknown): boolean {
   if (Array.isArray(value)) return true;

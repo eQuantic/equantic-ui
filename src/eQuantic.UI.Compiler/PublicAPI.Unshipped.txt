@@ -33,3 +33,4 @@ static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.Conversion(M
 static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.Unary(Microsoft.CodeAnalysis.IMethodSymbol! method, string! token, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! operand, bool lifted, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr?
 const eQuantic.UI.Compiler.CodeGen.Eq.NullableValue = "$eq.nullable.value" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.EqualsOwn = "$eq.equalsOwn" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.EqualsOwnGeneric = "$eq.equalsOwnGeneric" -> string!
