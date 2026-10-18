@@ -51,6 +51,8 @@ None.
   unwrapped to a value throws.
 - `transpiler-bcl`: a nullable value's `Equals`, `Nullable.Equals` and the default comparer's `Equals`
   answer as the lifted equality does.
+- `client-boundary`: a comparison that reaches a server-only `Equals` is refused where it is written, as a
+  call bound to it is.
 
 ## Impact
 
