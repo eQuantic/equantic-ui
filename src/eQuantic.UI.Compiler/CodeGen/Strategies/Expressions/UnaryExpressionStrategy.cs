@@ -26,11 +26,12 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
                 return stepped;
             // A USER-DEFINED unary operator on an in-source type calls the twin's static method —
             // and a host-only one stops here rather than emitting JavaScript's own operator, which the
-            // one lowering of an operator answers (UserDefinedOperators).
+            // one lowering of an operator answers (UserDefinedOperators). Over a nullable value the
+            // bound tree lifts it, and null answers null (#948).
             if (context.SemanticHelper.GetOperation(prefix) is Microsoft.CodeAnalysis.Operations.IUnaryOperation
-                { OperatorMethod: { } unaryMethod }
+                { OperatorMethod: { } unaryMethod } unary
                 && UserDefinedOperators.Unary(unaryMethod, prefix.OperatorToken.Text,
-                    context.Converter.ConvertExpression(prefix.Operand), context) is { } unaryCall)
+                    context.Converter.ConvertIr(prefix.Operand), unary.IsLifted, context) is { } unaryCall)
                 return unaryCall;
 
             // A NULLABLE number negates its value inside the lift (#372): JavaScript's `-null` is -0,
@@ -147,11 +148,10 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
             if (UserDefinedOperators.IsInSource(method))
             {
                 // C# 14's instance `void operator ++()` steps the value in place, which no twin carries yet.
-                if (!method.IsStatic || UserDefinedOperators.Unary(method, op, "", context) is null)
+                if (!method.IsStatic || UserDefinedOperators.Unary(method, op, JsExpr.Opaque(""), lifted: false, context) is null)
                     return JsExpr.Callish(context.Unhandled(node, "user-defined step"));
                 method.ContainingType.RegisterIntroduced(context);
-                JsExpr Operator(JsExpr current) => UserDefinedOperators.Unary(method, op, JsExprWriter.Write(current), context)!;
-                return Stepped(current => increment.IsLifted ? NullableLift.Unary(current, Operator, context) : Operator(current));
+                return Stepped(current => UserDefinedOperators.Unary(method, op, current, increment.IsLifted, context)!);
             }
         }
         if (NullableLift.IsNullableNumber(type, out var value))

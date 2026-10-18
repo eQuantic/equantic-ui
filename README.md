@@ -331,7 +331,7 @@ when it is genuinely impossible. Nothing miscompiles silently.
 |----------|-----------|
 | **Language, up to C# 15** | C# 13 `params` collections and `\e`; C# 14 null-conditional assignment, `field`-backed properties, extension members and `nameof(List<>)`; C# 15 labeled `break`/`continue`, `union` declarations and `closed` hierarchies |
 | **Numbers, exactly** | fixed-width integers wrap as their type does (`byte`, `short`, `uint`), `checked` throws, `float` rounds to single precision where it is produced, `decimal` is exact base 10, `long`/`ulong` are BigInt, and an integer or decimal division by zero throws, as .NET's does (a double's is an infinity or NaN) |
-| **Nullable** | `Nullable<T>` with lifted operators: arithmetic, compound assignment and increments keep null and their type's rule (a `float?` rounds, a `byte?` wraps) |
+| **Nullable** | `Nullable<T>` with lifted operators: arithmetic, compound assignment and increments keep null and their type's rule (a `float?` rounds, a `byte?` wraps), and a struct's own operators and conversions and a record struct's equality are lifted as C# lifts them |
 | **Pattern matching** | type, property, positional, relational, list and slice patterns, and `and`/`or`/`not` |
 | **Types** | `record`/`struct`/value tuples with structural equality and `with`; records emit as JavaScript classes with their methods, inheritance and generics; user-defined operators and conversions on your own types |
 | **Text** | .NET's own number and date text, standard and custom format specifiers, alignment, `string.Format` with a format provider, `StringBuilder`, and `StringComparison`-aware comparisons (ordinal and ignore-case) |
