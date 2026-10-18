@@ -125,6 +125,12 @@ and the host its cache of path strings.
   longer shows the change until something rebuilds it, which is the web's behaviour and E1's rule for
   frames drawn for motion; a field's value, a code editor and a spreadsheet are covered by the host
   itself. The tests that relied on input rebuilding everything say so where they change.
+- [Work posted to the thread that draws, which changes what a build reads without `SetState`] →
+  it no longer shows by itself, since the wake builds nothing; the web behaves the same, and the
+  samples' awaited results all set state.
+- [A field in a row of a virtualized list] → when the row scrolls out of the list's window its
+  position leaves, and editing ends with it, where a keyed row's path came back and editing resumed;
+  a browser and Flutter's `ListView.builder` drop the focus the same way.
 - [A focus target that is not a node] → a linked run is the one there is, and it is named by its
   paragraph's position and its index there, as its path named it.
 - [Ids grow for the life of a tree] → an int counts two billion mounts; a list that mounts a

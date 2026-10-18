@@ -30,11 +30,16 @@ internal static class Positions
         return null;
     }
 
-    /// <summary>Whether <paramref name="at"/> lies below <paramref name="above"/> in the tree.</summary>
+    /// <summary>Whether <paramref name="at"/> lies below <paramref name="above"/> in the tree and
+    /// inside its box: never across a layer, as the host asks it.</summary>
     public static bool IsUnder(Element at, Element above)
     {
-        for (var parent = at.Parent; parent is not null; parent = parent.Parent)
+        var child = at;
+        for (var parent = at.Parent; parent is not null; child = parent, parent = parent.Parent)
+        {
+            if (parent is NodeElement node && node.HoldsDeferred(child)) return false;
             if (ReferenceEquals(parent, above)) return true;
+        }
         return false;
     }
 

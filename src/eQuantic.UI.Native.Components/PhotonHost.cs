@@ -134,7 +134,8 @@ public sealed class PhotonHost
 
     /// <summary>The surface at <paramref name="at"/> took input into its model: the component that
     /// holds it builds in the next frame (<see cref="MarkHolder"/>), and the surface's own component
-    /// hears it (<paramref name="onChanged"/>).</summary>
+    /// hears it (<paramref name="onChanged"/>). The frame is asked for here too, because a surface
+    /// with no stateful component above it marks nothing and the host still paints its caret.</summary>
     private void SurfaceChanged(Element? at, Action? onChanged)
     {
         MarkHolder(at);
@@ -2335,8 +2336,8 @@ public sealed class PhotonHost
             for (var i = 0; i < codeRegions.Count; i++)
             {
                 if (!ReferenceEquals(codeRegions[i].Element, _textAt)) continue;
-                codeRegions[i].Surface.Model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1);
-                MarkHolder(codeRegions[i].Element);
+                if (codeRegions[i].Surface.Model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1))
+                    MarkHolder(codeRegions[i].Element);
                 break;
             }
         }
@@ -2408,9 +2409,9 @@ public sealed class PhotonHost
             for (var i = 0; i < codeRegions.Count; i++)
             {
                 if (!ReferenceEquals(codeRegions[i].Element, _textAt)) continue;
-                codeRegions[i].Surface.Model.HandlePointer(PointerPhase.Up,
-                    ToLocal(codeRegions, i, codeRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1);
-                MarkHolder(codeRegions[i].Element);
+                if (codeRegions[i].Surface.Model.HandlePointer(PointerPhase.Up,
+                        ToLocal(codeRegions, i, codeRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1))
+                    MarkHolder(codeRegions[i].Element);
                 break;
             }
         }

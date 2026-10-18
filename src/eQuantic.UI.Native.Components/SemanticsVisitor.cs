@@ -45,9 +45,11 @@ internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes)
     private readonly List<SemanticNode> _nodes = nodes;
 
     /// <summary>The id a bridge names a node by: its position's. Every node the build made has one,
-    /// and zero is never an id, so a node without a position (one the layout made itself) is named by
-    /// nothing a bridge could act on.</summary>
-    private static int IdOf(LayoutNode node) => node.Element?.Id ?? 0;
+    /// and a node a reader can land on that has none is the engine gone wrong, refused here as the
+    /// paint walk refuses it, rather than named 0 beside another such node.</summary>
+    private static int IdOf(LayoutNode node) => node.Element?.Id
+        ?? throw new InvalidOperationException(
+            $"A {node.Source.GetType().Name} was read out with no position to name it by.");
 
     // ---- the two answers ---------------------------------------------------------------------
 
