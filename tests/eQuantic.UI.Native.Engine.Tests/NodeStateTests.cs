@@ -284,4 +284,69 @@ public class NodeStateTests
             .Should().Contain(c => c.Kind == DrawCommandKind.FillRRect && c.Paint.Color == FirstColor,
                 "the frame that closes the layer starts the exit, at full opacity");
     }
+
+    /// <summary>Whether the first box drawn in <paramref name="under"/>'s colour is drawn before the
+    /// first in <paramref name="over"/>'s: under it, where the two overlap.</summary>
+    private static bool DrawnUnder(DisplayListBuilder builder, Color under, Color over)
+    {
+        var commands = builder.Build().Commands.ToArray();
+        var first = Array.FindIndex(commands, c => c.Kind == DrawCommandKind.FillRRect && c.Paint.Color == under);
+        var second = Array.FindIndex(commands, c => c.Kind == DrawCommandKind.FillRRect && c.Paint.Color == over);
+        first.Should().BeGreaterThanOrEqualTo(0, "the frame draws the first presence's exit");
+        second.Should().BeGreaterThanOrEqualTo(0, "the frame draws the second presence's exit");
+        return first < second;
+    }
+
+    /// <summary>
+    /// Presences that leave in one frame fade in the order they were painted, so the one that was on
+    /// top fades on top. A list's surplus members leave last first, so the order their positions leave
+    /// in drew the top one underneath.
+    /// </summary>
+    [Fact]
+    public void PresencesThatLeaveTogether_FadeInTheOrderTheyWerePainted()
+    {
+        var keyed = new Keyed(key =>
+        {
+            var stack = new Stack();
+            if (key != "a") return stack;
+            stack.Add(Shown(FirstColor));
+            stack.Add(Shown(SecondColor));
+            return stack;
+        });
+        var host = Open(keyed);
+        host.RenderFrame(new DisplayListBuilder(), 1000);
+
+        keyed.Rekey("gone");
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, 1000);
+
+        DrawnUnder(builder, FirstColor, SecondColor)
+            .Should().BeTrue("the second presence was painted over the first, and fades over it");
+    }
+
+    /// <summary>
+    /// The same for layers that close in one frame: the owner sweeps the layers it did not show last
+    /// first, and the one opened later stays on top while both fade.
+    /// </summary>
+    [Fact]
+    public void LayersThatCloseTogether_FadeInTheOrderTheyWerePainted()
+    {
+        var motion = TransitionSpec.Of(StyleChannels.Opacity, Motion.State);
+        var keyed = new Keyed(key =>
+        {
+            var page = new Stack();
+            page.Add(new Overlay(Shown(FirstColor)) { Motion = motion, Open = key == "a" });
+            page.Add(new Overlay(Shown(SecondColor)) { Motion = motion, Open = key == "a" });
+            return page;
+        });
+        var host = Open(keyed);
+        host.RenderFrame(new DisplayListBuilder(), 1000);
+
+        keyed.Rekey("closed");
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, 1000);
+
+        DrawnUnder(builder, FirstColor, SecondColor)
+            .Should().BeTrue("the second layer was painted over the first, and its presence fades over the first's");
+    }
 }

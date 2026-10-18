@@ -163,7 +163,8 @@ is drawn again, which a host's is and a tree laid out once is not.
 When a `Presence`'s position leaves the tree, its last paint SHALL be replayed as an exit, paint only,
 from the frame it left in until the exit ends, and nothing in it SHALL take input. A `Presence` that
 takes the place of one that left SHALL enter while the old one's exit fades. A layer that closes in a
-frame SHALL show its presences' exit in that same frame.
+frame SHALL show its presences' exit in that same frame. Presences that leave in one frame SHALL fade
+in the order they were painted, whatever order their positions leave the tree in.
 
 #### Scenario: A page with a presence replaces another
 
@@ -177,3 +178,9 @@ frame SHALL show its presences' exit in that same frame.
 - **WHEN** an overlay with motion that holds a `Presence` closes
 - **THEN** the frame that closes it draws the presence's last paint at full opacity, and the frames
   after it fade it out
+
+#### Scenario: Two presences leave together
+
+- **WHEN** a stack holds two overlapping presences, the second painted over the first, and a rebuild
+  takes both out, or two layers that each hold a presence close in the same frame
+- **THEN** the frame they leave in draws the first one's exit under the second one's

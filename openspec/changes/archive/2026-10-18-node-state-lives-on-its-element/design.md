@@ -110,6 +110,11 @@ slot: a presence's state is disposed when its element leaves, and hands its last
 was made by, stamped with the frame's time. The clock replays the exits as the store did, paint only
 and above everything.
 
+Exits that start in one frame are drawn in the order their presences were painted, which each
+snapshot records. The order their positions leave in is not that order: a list's surplus members
+leave last first, and the owner sweeps the layers a frame did not show last first, so drawn in the
+order they arrived, the presence that was on top would fade underneath (found by review).
+
 The store noticed a departure at the end of a frame, after the overlay pass, so a layer that closed in
 a frame showed its exit in that frame. An element leaves either during the build (its parent stopped
 building it) or at the frame's end (a layer not shown, which the owner sweeps). So the realizer now

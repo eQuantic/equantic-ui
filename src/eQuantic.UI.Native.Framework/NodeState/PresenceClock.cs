@@ -25,10 +25,18 @@ public sealed class PresenceClock
         public required DrawCommand[] Commands;
         public required PresenceMotion Kind;
         public required float StartMs;
+        // The frame the exit started in, and when its paint was painted: the exits of one frame are
+        // drawn in the order their presences were.
+        public required int Frame;
+        public required long PaintedAt;
     }
 
+    /// <summary>The exits in flight, in the order they are drawn: by the frame each started in, and
+    /// within a frame by when each was painted.</summary>
     private readonly List<Exit> _exits = new();
     private float _frameTimeMs;
+    private int _frame;
+    private long _painted;
 
     /// <summary>True when any entrance or exit was mid-flight during the current frame — the host
     /// keeps scheduling frames while set. Reset by <see cref="BeginFrame"/>.</summary>
@@ -40,6 +48,7 @@ public sealed class PresenceClock
     {
         AnyActive = false;
         _frameTimeMs = timeMs;
+        _frame++;
     }
 
     /// <summary>
@@ -59,18 +68,32 @@ public sealed class PresenceClock
         return Smoothstep(t);
     }
 
-    /// <summary>The paint walk records each live presence's commands: the frame its position leaves
-    /// in replays the LAST of them as the exit.</summary>
+    /// <summary>The paint walk records each live presence's commands, in the order it paints them:
+    /// the frame its position leaves in replays the LAST of them as the exit.</summary>
     public void Snapshot(Element? at, PresenceMotion kind, DrawCommand[] commands)
     {
         if (NodeStates.Find<PresenceState>(at) is not { } presence) return;
         presence.Kind = kind;
         presence.LastPaint = commands;
+        presence.PaintedAt = ++_painted;
     }
 
-    /// <summary>A presence's position left the tree: its last paint exits from this frame.</summary>
-    internal void Depart(PresenceMotion kind, DrawCommand[] commands) =>
-        _exits.Add(new Exit { Commands = commands, Kind = kind, StartMs = _frameTimeMs });
+    /// <summary>
+    /// A presence's position left the tree: its last paint exits from this frame. The exits that
+    /// start in one frame are drawn in the order their presences were painted, whatever order their
+    /// positions left in: a list's surplus members leave last first, and the layers a frame did not
+    /// show are swept last first, so arriving in that order would draw the one that was on top
+    /// underneath while both fade.
+    /// </summary>
+    internal void Depart(PresenceMotion kind, DrawCommand[] commands, long paintedAt)
+    {
+        var at = _exits.Count;
+        while (at > 0 && _exits[at - 1].Frame == _frame && _exits[at - 1].PaintedAt > paintedAt) at--;
+        _exits.Insert(at, new Exit
+        {
+            Commands = commands, Kind = kind, StartMs = _frameTimeMs, Frame = _frame, PaintedAt = paintedAt,
+        });
+    }
 
     /// <summary>One departed subtree's replay for this frame: the cached commands at the falling
     /// layer alpha, dropped by the SlideUp reverse rise (0 for Fade or Reduce Motion).</summary>

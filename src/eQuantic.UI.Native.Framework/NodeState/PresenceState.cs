@@ -22,10 +22,14 @@ internal sealed class PresenceState : IDisposable
     /// <summary>The subtree's draw commands, as the last frame that drew it drew them.</summary>
     public DrawCommand[]? LastPaint;
 
+    /// <summary>When <see cref="LastPaint"/> was painted, counted across every presence of the clock:
+    /// the order two exits that start together are drawn in.</summary>
+    public long PaintedAt;
+
     /// <summary>The position left the tree: its last paint leaves as an exit.</summary>
     public void Dispose()
     {
-        if (Clock is { } clock && LastPaint is { } paint) clock.Depart(Kind, paint);
+        if (Clock is { } clock && LastPaint is { } paint) clock.Depart(Kind, paint, PaintedAt);
         Clock = null;
         LastPaint = null;
     }
