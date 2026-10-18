@@ -29,12 +29,13 @@ public class WikiVersionMarkTests
     }
 
     /// <summary>
-    /// git in <paramref name="root"/>, each argument passed as one. Two minutes, where a pickaxe search
-    /// over every ref was measured at three seconds: a git that hangs fails the case rather than holding
-    /// the test host (#971).
+    /// git in <paramref name="root"/>, each argument passed as one. Ten minutes: a pickaxe search over
+    /// every ref takes three seconds on a laptop, and this case as a whole takes 34 to 39 minutes on CI's
+    /// runners, so one search there can be far slower. A git that hangs still fails the case rather than
+    /// holding the test host (#971).
     /// </summary>
     private static string Git(string root, params string[] arguments) =>
-        ChildProcess.Run("git", arguments, TimeSpan.FromMinutes(2), root).Output.Trim();
+        ChildProcess.Run("git", arguments, TimeSpan.FromMinutes(10), root).Output.Trim();
 
     /// <summary>
     /// The release a symbol went out in: the FIRST commit whose diff contains it, then the earliest

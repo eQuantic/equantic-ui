@@ -18,7 +18,7 @@
 
 ## 3b. CI
 
-- [x] 3b.1 Pass `--blame-hang-timeout 15m --blame-hang-dump-type none` on CI's two `dotnet test` lines. Verify: no test reads those lines, and the workflow parses
+- [x] 3b.1 Pass `--blame-hang-timeout 60m --blame-hang-dump-type none` on CI's two `dotnet test` lines, above the slowest case's 34 to 39 minutes on CI. Verify: no test reads those lines, and the workflow parses
 
 ## 4. Proved against the real thing
 

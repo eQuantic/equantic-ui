@@ -31,8 +31,10 @@ none, hence a hang on some runs only.
   check, the conformance runner and hot reload's stand-in rebuild. The owner is linked into the Web,
   native engine, Server and Conformance tests. The ten `-nr:false` switches the Web cases passed go.
 - A guard fails on a process started anywhere else under `tests/`, naming every file.
-- CI's two `dotnet test` lines pass `--blame-hang-timeout 15m --blame-hang-dump-type none`, so a test
-  that hangs stops the run and is named.
+- CI's two `dotnet test` lines pass `--blame-hang-timeout 60m --blame-hang-dump-type none`, so a test
+  that hangs stops the run and is named, within an hour where the job's default timeout is six. Sixty,
+  because the slowest case, `EveryVersionMark_NamesTheReleaseItActuallyShippedIn`, takes 34 to 39 minutes
+  on CI's runners, and a timeout of fifteen stopped it as a hang.
 - Nothing a developer using the SDK writes or meets changes.
 
 ## Capabilities

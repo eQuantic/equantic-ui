@@ -372,7 +372,7 @@ jobs:
           while IFS= read -r test_project; do
             echo "::group::$test_project"
             ran=$((ran + 1))
-            dotnet test "$test_project" --configuration Release --verbosity normal --blame-hang-timeout 15m --blame-hang-dump-type none || {
+            dotnet test "$test_project" --configuration Release --verbosity normal --blame-hang-timeout 60m --blame-hang-dump-type none || {
               status=1
               failed="$failed$test_project"$'\n'
             }
@@ -499,7 +499,7 @@ jobs:
           while IFS= read -r test_project; do
             echo "::group::$test_project"
             ran=$((ran + 1))
-            dotnet test "$test_project" --configuration Release --verbosity normal --blame-hang-timeout 15m --blame-hang-dump-type none || {
+            dotnet test "$test_project" --configuration Release --verbosity normal --blame-hang-timeout 60m --blame-hang-dump-type none || {
               status=1
               failed="$failed$test_project"$'\n'
             }
