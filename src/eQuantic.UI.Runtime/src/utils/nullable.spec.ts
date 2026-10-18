@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { liftArith, liftCmp, liftUnary } from './nullable';
+import { is } from './exceptions';
+import { liftArith, liftCmp, liftUnary, unwrap } from './nullable';
 
 describe('Nullable lifted operators', () => {
   it('liftArith returns null when either operand is null/undefined', () => {
@@ -49,5 +50,28 @@ describe('Nullable lifted operators', () => {
     expect(liftUnary(5, (a) => a + 1)).toBe(6);
     expect(liftUnary(0, (a) => ~a)).toBe(-1);
     expect(liftUnary(5n, (a) => a - 1n)).toBe(4n);
+  });
+
+  it('unwrap answers a present value as it is, 0, false, an empty string and a BigInt included', () => {
+    expect(unwrap(5)).toBe(5);
+    expect(unwrap(0)).toBe(0);
+    expect(unwrap(false)).toBe(false);
+    expect(unwrap('')).toBe('');
+    expect(unwrap(0n)).toBe(0n);
+    const value = { row: 1 };
+    expect(unwrap(value)).toBe(value);
+  });
+
+  it('unwrap throws for an empty value the InvalidOperationException .NET throws', () => {
+    for (const empty of [null, undefined]) {
+      let thrown: unknown;
+      try {
+        unwrap<number>(empty);
+      } catch (error) {
+        thrown = error;
+      }
+      expect(is(thrown, 'System.InvalidOperationException')).toBe(true);
+      expect((thrown as Error).message).toBe('Nullable object must have a value.');
+    }
   });
 });

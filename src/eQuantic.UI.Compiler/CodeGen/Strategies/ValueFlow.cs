@@ -184,11 +184,14 @@ public static class ValueFlow
         // A NULLABLE conversion converts the underlying value and lets null pass: `(int?)aDouble?`
         // is null for a null, the numeric narrowing otherwise. The bound tree names only the
         // lifted conversion; the unwrapped types say what happens under it. A non-nullable SOURCE
-        // cannot be null, so its value converts directly.
+        // cannot be null, so its value converts directly. A nullable source into a type that is NOT
+        // nullable is the UNWRAP (Unwraps), which converts only a value and throws for an empty one.
         if (kind.IsNullable)
         {
             var fromUnwrapped = from.UnwrapNullable();
             var toUnwrapped = to.UnwrapNullable();
+            if (Unwraps(kind, from, to))
+                return Numeric(fromUnwrapped, to, Unwrapped(translated, context), null, isChecked, context);
             if (!ReferenceEquals(fromUnwrapped, from))
             {
                 var name = JsExpr.Identifier("$v");
@@ -213,6 +216,27 @@ public static class ValueFlow
         // Identity, reference, boxing, null/default literals, method groups, lambdas,
         // interpolated strings, tuples: the value is already what JavaScript needs.
         return translated;
+    }
+
+    /// <summary>
+    /// Whether a conversion UNWRAPS a nullable value: C#'s explicit nullable conversion from a <c>T?</c> into
+    /// a type that is not nullable, <c>T</c> itself or another, which reads <c>Nullable&lt;T&gt;.Value</c>
+    /// first. The bound tree applies it at a cast (<c>(int)n</c>), around the value a struct's own
+    /// conversion operator takes (<c>(Cents)n</c> over <c>explicit operator Cents(int)</c>, the inner
+    /// conversion of the user-defined one), and to a <c>foreach</c> element.
+    /// </summary>
+    internal static bool Unwraps(Conversion kind, ITypeSymbol? from, ITypeSymbol? to) =>
+        kind.IsNullable && from.IsNullableValue() && to is not null && !to.IsNullableValue();
+
+    /// <summary>
+    /// The value of a nullable one, as <c>Nullable&lt;T&gt;.Value</c> reads it: an empty one throws the
+    /// <c>InvalidOperationException</c> .NET throws, before anything converts it (#967). The unwrap let the
+    /// null pass, as the lift does, and a struct's operator built a value holding it.
+    /// </summary>
+    internal static JsExpr Unwrapped(JsExpr nullable, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Call(JsExpr.Identifier(Eq.NullableValue), nullable);
     }
 
     /// <summary>A numeric conversion between the primitives JavaScript represents differently:

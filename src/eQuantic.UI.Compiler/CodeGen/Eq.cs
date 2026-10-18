@@ -314,6 +314,9 @@ public static class Eq
     /// <summary>A lifted Nullable&lt;T&gt; unary operator (<c>++</c>, <c>--</c>, <c>-</c>, <c>~</c>):
     /// <c>null</c> if the operand is null.</summary>
     public const string LiftUnary = "$eq.nullable.unary";
+    /// <summary><c>Nullable&lt;T&gt;.Value</c>, and every unwrap C# applies through it: the value, or the
+    /// <c>InvalidOperationException</c> .NET throws for an empty one.</summary>
+    public const string NullableValue = "$eq.nullable.value";
 
     /// <summary>C#'s non-short-circuit <c>bool | bool</c> and <c>bool &amp; bool</c>: BOTH operands
     /// evaluated, in order, and a bool answered. JavaScript's <c>|</c>/<c>&amp;</c> answer a number,
@@ -358,6 +361,19 @@ public static class Eq
     /// refused as .NET refuses a call through null, after the argument is evaluated, then compared by the
     /// comparison passed third, or found unequal where that is null, the other value being of another type.</summary>
     public const string EqualsInstance = "$eq.equalsInstance";
+
+    /// <summary><c>Equals</c> on a value whose own <c>Equals(object)</c> the app may have written, as
+    /// <c>Nullable&lt;T&gt;.Equals(object)</c> and the default comparers call it: a null equal only to a null and
+    /// never asked, and otherwise the value's own <c>equals</c>, asked every time, a value compared with itself
+    /// included, where <see cref="Equals"/> and <see cref="SameItem"/> answer it at their identity check. A value
+    /// with no <c>equals</c> of its own is compared by the comparison passed third, <see cref="SameKey"/> where
+    /// none is.</summary>
+    public const string EqualsOwn = "$eq.equalsOwn";
+
+    /// <summary><c>EqualityComparer&lt;T&gt;.Default.Equals</c> in generic code, which .NET settles at run time: the
+    /// value's own <c>IEquatable&lt;T&gt;</c> where its twin answers it, and <see cref="EqualsOwn"/> otherwise, each
+    /// asked every time.</summary>
+    public const string EqualsOwnGeneric = "$eq.equalsOwnGeneric";
 
     /// <summary>The receiver of an instance call that has no helper of its own, refused as .NET refuses a
     /// call through null (<c>NullReferenceException</c>), and handed on otherwise.</summary>

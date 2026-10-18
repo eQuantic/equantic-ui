@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
@@ -32,6 +33,13 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// (<c>sameKey</c>): a list and an array are the same JavaScript array as a tuple there, and compare by
 /// their elements as a tuple does (#909, #947).
 /// </para>
+/// <para>
+/// A nullable struct compares as the lifted <c>==</c> does, two empty values equal and an empty one equal
+/// to no value, where the bound call says so (#968): its <c>Equals</c>, which is its value's
+/// <c>Equals(object)</c>, <c>Nullable.Equals&lt;T&gt;</c>, and <c>EqualityComparer&lt;T&gt;.Default.Equals</c>,
+/// which over any type asks the comparison <see cref="ElementEquality"/> writes for its default comparer.
+/// Every one of those comparisons finds a null equal only to a null. The build refused all three.
+/// </para>
 /// </summary>
 public class StructuralEqualsStrategy : IExpressionIrStrategy
 {
@@ -40,7 +48,7 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         if (node is not InvocationExpressionSyntax inv)
             return false;
         if (inv.ArgumentList.Arguments.Count == 2)
-            return IsStaticObjectEquals(inv, context);
+            return IsStaticObjectEquals(inv, context) || DefaultComparerOf(inv, context) is not null;
         if (inv.ArgumentList.Arguments.Count != 1)
             return false;
         if (inv.Expression is IdentifierNameSyntax { Identifier.ValueText: "Equals" })
@@ -73,7 +81,9 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         // A Nullable tuple's Equals is its value's, or, empty, whether the other value is null too, which
         // both comparisons answer for a null; its call went to an `equals` no array has.
         var receiver = context.SemanticHelper.GetType(ma.Expression);
+        // A nullable struct's Equals is Nullable<T>'s, which asks its value's Equals(object) (#968).
         return receiver.IsStructuralValueType() || receiver is { IsAnonymousType: true }
+            || IsNullablesEquals(bound) && receiver.UnwrapNullable().IsStructuralValueType()
             || receiver.UnwrapNullable() is INamedTypeSymbol { IsTupleType: true } or INamedTypeSymbol { TypeKind: TypeKind.Enum }
             || bound is null && receiver?.SpecialType == SpecialType.System_Object;
     }
@@ -84,7 +94,9 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         context.UsedHelpers.Add(Eq.Import);
 
         if (inv.ArgumentList.Arguments.Count == 2)
-            return ConvertStaticObjectEquals(inv, context);
+            return DefaultComparerOf(inv, context) is { } compared
+                ? ConvertDefaultEquality(inv, compared, context)
+                : ConvertStaticObjectEquals(inv, context);
 
         if (inv.Expression is IdentifierNameSyntax)
         {
@@ -146,13 +158,22 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
             return JsExpr.Call(JsExpr.Identifier(Eq.Equals), receiver, other);
         }
 
-        if (type.IsStructuralValueType())
+        // A nullable struct's is its value's, which both comparisons answer for an empty one: equal only to
+        // null, as Nullable<T>.Equals(object) answers before it asks the value (#968).
+        if (type.UnwrapNullable().IsStructuralValueType())
         {
-            // A struct that overrides Equals(object) is asked it first, whatever the other value is:
-            // `$eq.equals` refused a value of another JavaScript type before the override could run, so a
-            // struct whose override takes a string answered false (Copilot's second review of #947).
-            if (DeclaresObjectEquals(type!))
-                return JsExpr.Call(JsExpr.Identifier(Eq.SameItem), receiver, other);
+            // The equality it reaches, a [ServerOnly] one included, which no twin holds (Copilot's third review of #977).
+            if (RefusesWhatItReaches(type!, equatable: false, inv, context)) return JsExpr.Literal("undefined");
+            // A struct whose Equals(object) is the app's code is asked it, whatever the other value is, and
+            // every time: `$eq.equals` refused a value of another JavaScript type before the override could run,
+            // so a struct whose override takes a string answered false (Copilot's second review of #947), and
+            // `sameItem` answered a value compared with itself, or with null, without asking it (Copilot's first
+            // review of #977). A value is never null, so its own `equals` is called as C# calls it, a null
+            // argument included; a nullable one answers a null first, as Nullable<T>.Equals(object) does.
+            if (AsksItsOwnEquals(type))
+                return type.IsNullableValue()
+                    ? JsExpr.Call(JsExpr.Identifier(Eq.EqualsOwn), receiver, other)
+                    : JsExpr.Call(JsExpr.Member(receiver, "equals"), other);
             return type!.IsReferenceType
                 ? JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other)
                 : JsExpr.Call(JsExpr.Identifier(Eq.Equals), receiver, other);
@@ -186,6 +207,178 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         }
 
         return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, JsExpr.Identifier(Eq.SameItem));
+    }
+
+    /// <summary>Whether the call binds <c>Nullable&lt;T&gt;.Equals(object)</c>: its value's <c>Equals(object)</c>
+    /// for a value, and whether the other value is null too for an empty one.</summary>
+    private static bool IsNullablesEquals(IMethodSymbol? method) =>
+        method is { Name: "Equals", IsStatic: false, Parameters: [{ Type.SpecialType: SpecialType.System_Object }] }
+        && method.ContainingType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
+
+    /// <summary>
+    /// The type whose DEFAULT comparer a two-argument call asks, read from the bound call, or null for any other
+    /// call: <c>Nullable.Equals&lt;T&gt;(T?, T?)</c>, which is <c>EqualityComparer&lt;T&gt;.Default</c> over two
+    /// values and finds two empty ones equal, and <c>EqualityComparer&lt;T&gt;.Default.Equals(x, y)</c> itself, a
+    /// call made on the <c>Default</c> property, never on another comparer (#968). The property is never
+    /// read: no value the browser holds carries it.
+    /// </summary>
+    private static ITypeSymbol? DefaultComparerOf(InvocationExpressionSyntax invocation, ConversionContext context)
+    {
+        // Every call of two arguments reaches this gate: only one written as Equals is bound to ask, and the
+        // bound call decides what it is.
+        var written = invocation.Expression switch
+        {
+            MemberAccessExpressionSyntax access => access.Name.Identifier.ValueText,
+            SimpleNameSyntax name => name.Identifier.ValueText,
+            _ => null,
+        };
+        if (written != "Equals") return null;
+        if (context.SemanticHelper.GetOperation(invocation) is not IInvocationOperation
+            {
+                TargetMethod: { Name: "Equals", Parameters.Length: 2 } method,
+            } call)
+            return null;
+        if (method is { IsStatic: true, ContainingType: { Name: "Nullable", Arity: 0 } nullable, TypeArguments: [var value] }
+            && nullable.ContainingNamespace?.ToDisplayString() == "System")
+            return value;
+        // EqualityComparer<T>'s OWN Default: a static property of the app's named alike, answering one, is a value its
+        // getter answers, a throw or a null among them, and was dropped unread (Copilot's first review of #977).
+        return method is { IsStatic: false, ContainingType: { Name: "EqualityComparer", Arity: 1 } comparer }
+            && IsEqualityComparer(comparer)
+            && call.Instance is IPropertyReferenceOperation { Property: { Name: "Default", IsStatic: true, ContainingType: var home } }
+            && IsEqualityComparer(home)
+                ? comparer.TypeArguments[0]
+                : null;
+
+        static bool IsEqualityComparer(INamedTypeSymbol type) =>
+            type.OriginalDefinition is { Name: "EqualityComparer", Arity: 1 } definition
+            && definition.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic";
+    }
+
+    /// <summary>
+    /// A call that asks the default comparer of <paramref name="compared"/>: the comparison
+    /// <see cref="ElementEquality"/> writes for it, which finds a null equal only to a null, over the two
+    /// values as the PARAMETERS take them, each converted where it is written, which the template keeps as
+    /// C#'s order of evaluation (#968).
+    /// </summary>
+    private static JsExpr ConvertDefaultEquality(InvocationExpressionSyntax invocation, ITypeSymbol compared,
+        ConversionContext context)
+    {
+        if (RefusesWhatItReaches(compared, equatable: true, invocation, context)) return JsExpr.Literal("undefined");
+        var parts = invocation.ArgumentList.Arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
+        var (atX, _) = Operand(invocation, 0, context);
+        var (atY, _) = Operand(invocation, 1, context);
+        var (function, otherwise) = DefaultComparison(compared);
+        var third = otherwise is null ? "" : $", {otherwise}";
+        return JsExpr.Template($"{function}({{{atX}}}, {{{atY}}}{third})", parts);
+    }
+
+    /// <summary>
+    /// The function a call on the default comparer of <paramref name="compared"/> is: .NET's
+    /// <c>GenericEqualityComparer</c>, <c>ObjectEqualityComparer</c> and <c>NullableEqualityComparer</c> ask the
+    /// value's own equality with no identity check, so a value compared with itself asks it too, its side effects
+    /// with it and a refusal of itself (Copilot's first and second reviews of #977).
+    /// <list type="bullet">
+    /// <item>generic code, where .NET settles the type at run time: <see cref="Eq.EqualsOwnGeneric"/>, the value's
+    /// <c>IEquatable&lt;T&gt;</c> where its twin answers it, and its own <c>equals</c> otherwise;</item>
+    /// <item>a type answering an <c>IEquatable&lt;T&gt;</c> of the app's: the comparison <see cref="ElementEquality"/>
+    /// writes for it, which asks the typed method with no identity check;</item>
+    /// <item>a struct or a class whose <c>Equals(object)</c> is the app's, declared or inherited from the app's
+    /// base, and a type that cannot say whose equality its value answers, <c>object</c>, an interface or a class a
+    /// subclass may extend, a record's base among them: <see cref="Eq.EqualsOwn"/>, the value's own <c>equals</c>
+    /// where it carries one, past the reference check C# synthesizes for a record's;</item>
+    /// <item>any other type, whose equality C# or .NET writes and no one can tell from an identity check: its
+    /// comparison, unchanged, a sealed class with no override by reference and a sealed record by its
+    /// synthesized equality, which checks the reference first.</item>
+    /// </list>
+    /// <c>Otherwise</c> is the comparison <see cref="Eq.EqualsOwn"/> compares a value with no <c>equals</c> of its own
+    /// by, where that is not <see cref="Eq.SameKey"/>, its default: by reference behind an interface no tuple
+    /// implements and a class with no override, as the type's own comparison compares it.
+    /// </summary>
+    private static (string Function, string? Otherwise) DefaultComparison(ITypeSymbol compared)
+    {
+        var value = compared.UnwrapNullable() ?? compared;
+        if (value is ITypeParameterSymbol) return (Eq.EqualsOwnGeneric, null);
+        var comparison = ElementEquality.Comparer(compared);
+        if (ElementEquality.SelfContract(value) is not null) return (comparison, null);
+        if (OwnsObjectEquals(value)) return (Eq.EqualsOwn, null);
+        if (CannotSay(value)) return (Eq.EqualsOwn, comparison == Eq.SameKey ? null : comparison);
+        return (comparison, null);
+    }
+
+    /// <summary>Whether a struct's or a class's <c>Equals(object)</c> is the app's code: an override the struct
+    /// declares, or the most derived override along the class's chain, declared or inherited, written in the
+    /// app's source.</summary>
+    private static bool OwnsObjectEquals(ITypeSymbol value)
+    {
+        if (value.IsValueType) return DeclaresObjectEquals(value);
+        if (value is not INamedTypeSymbol { TypeKind: TypeKind.Class }) return false;
+        for (var at = (INamedTypeSymbol?)value; at is not null && at.SpecialType != SpecialType.System_Object; at = at.BaseType)
+        {
+            if (at.GetMembers("Equals").OfType<IMethodSymbol>().FirstOrDefault(method =>
+                    method is { IsOverride: true, Parameters: [{ Type.SpecialType: SpecialType.System_Object }] }) is { } own)
+                return !own.IsImplicitlyDeclared && own.Locations.Any(location => location.IsInSource);
+        }
+        return false;
+    }
+
+    /// <summary>Whether a type cannot say whose equality its value answers: <c>object</c>, <c>ValueType</c>,
+    /// <c>Enum</c> and an interface, behind which a value whose equality the app wrote may stand, and a class a
+    /// subclass may extend, whose value may be the subclass's, its override asked by .NET's virtual call: a base
+    /// with none found a subclass's value compared with itself at the identity check, and so did a base record a
+    /// record's own typed <c>Equals</c> extends.</summary>
+    private static bool CannotSay(ITypeSymbol value) =>
+        value.SpecialType is SpecialType.System_Object or SpecialType.System_ValueType or SpecialType.System_Enum
+        || value.TypeKind == TypeKind.Interface
+        || value is INamedTypeSymbol { TypeKind: TypeKind.Class, IsSealed: false, SpecialType: SpecialType.None };
+
+    /// <summary>
+    /// Refuses, where the call is written, a comparison that reaches an equality no twin holds, as a call bound to the
+    /// member is refused (<see cref="HostOnlySymbolExtensions.ReportIfHostOnly"/>, EQ2010), and answers whether it did.
+    /// A <c>[ServerOnly]</c> <c>Equals</c> is left out of its type's twin, so the comparison fell back to identity, or
+    /// to the members a struct's twin compares, and answered what the server's method never would:
+    /// <c>EqualityComparer&lt;C&gt;.Default.Equals(c, c)</c> answered true over an override that answers false, where
+    /// <c>c.Equals(c)</c> was refused (Copilot's third review of #977). Each member the comparison may reach is asked in
+    /// turn, and the first refusal is the one told.
+    /// </summary>
+    private static bool RefusesWhatItReaches(ITypeSymbol compared, bool equatable, SyntaxNode at, ConversionContext context)
+    {
+        var value = compared.UnwrapNullable() ?? compared;
+        return EqualitiesReached(value, equatable, context).Any(member => member.ReportIfHostOnly(at, context, value));
+    }
+
+    /// <summary>
+    /// The members a comparison of <paramref name="value"/>'s values reaches, each as a call bound to it would: the
+    /// typed <c>Equals</c> of the app's answering the type's <c>IEquatable&lt;T&gt;</c>, where the default comparer asks
+    /// it (<paramref name="equatable"/>) or a record's synthesized <c>Equals(object)</c> does, and otherwise the
+    /// <c>Equals(object)</c> a call on the type binds: the override it declares or inherits, or <c>object</c>'s, through
+    /// which the fence finds an override a value behind the type may carry. A type parameter's comparer asks the type
+    /// argument's <c>IEquatable&lt;T&gt;</c> too, as .NET settles it at run time. An array reaches none: it is
+    /// compared by reference, and nothing derives from it.
+    /// </summary>
+    private static IEnumerable<IMethodSymbol> EqualitiesReached(ITypeSymbol value, bool equatable, ConversionContext context)
+    {
+        if (value is IArrayTypeSymbol) yield break;
+        if (value is INamedTypeSymbol named && (equatable || named.IsRecord) && ElementEquality.SelfMethod(named) is { } typed)
+        {
+            yield return typed;
+            yield break;
+        }
+        var compilation = context.SemanticModel?.Compilation ?? context.ProjectCompilation;
+        IMethodSymbol? objectEquals = null;
+        for (var at = value as INamedTypeSymbol; at is not null && objectEquals is null; at = at.BaseType)
+            objectEquals = at.GetMembers("Equals").OfType<IMethodSymbol>().FirstOrDefault(method =>
+                IsObjectEquals(method) && (method.IsOverride || method.ContainingType.SpecialType == SpecialType.System_Object));
+        objectEquals ??= compilation?.GetSpecialType(SpecialType.System_Object).GetMembers("Equals").OfType<IMethodSymbol>()
+            .FirstOrDefault(IsObjectEquals);
+        if (objectEquals is not null) yield return objectEquals;
+        if (equatable && value is ITypeParameterSymbol
+            && compilation?.GetTypeByMetadataName("System.IEquatable`1")?.Construct(value).GetMembers("Equals")
+                .OfType<IMethodSymbol>().FirstOrDefault() is { } contract)
+            yield return contract;
+
+        static bool IsObjectEquals(IMethodSymbol method) =>
+            method is { IsStatic: false, Parameters: [{ Type.SpecialType: SpecialType.System_Object }] };
     }
 
     private static bool IsStaticObjectEquals(InvocationExpressionSyntax invocation, ConversionContext context)
@@ -331,6 +524,17 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         if (!value.IsValueType || value.TypeKind == TypeKind.TypeParameter) return false;
         return !DeclaresObjectEquals(value);
     }
+
+    /// <summary>
+    /// Whether a STRUCT's <c>Equals(object)</c> runs the app's code, which .NET asks every time a value is compared,
+    /// itself included: an override the struct declares, or a record struct's synthesized one, which calls the
+    /// typed <c>Equals</c> the app wrote. A struct whose equality C# or .NET writes compares by its members, which
+    /// no one can tell apart from an identity check, and a record class keeps the one its synthesized
+    /// <c>Equals</c> begins with.
+    /// </summary>
+    private static bool AsksItsOwnEquals(ITypeSymbol? type) =>
+        type.UnwrapNullable() is INamedTypeSymbol { IsValueType: true } value
+        && (DeclaresObjectEquals(value) || value.IsRecord && ElementEquality.SelfMethod(value) is not null);
 
     /// <summary>
     /// Whether a value type of the app's own (or a project it references) overrides <c>Equals(object)</c>,

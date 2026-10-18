@@ -618,9 +618,7 @@ public sealed class SheetController : ISheetSurfaceModel
                 {
                     var before = FillTarget;
                     UpdateFill(CellAt(position));
-                    return FillTarget is { } after
-                        ? before is not { } previous || after != previous
-                        : before is not null;
+                    return FillTarget != before;
                 }
                 if (!_selecting) return false;
                 var cell = CellAt(position);
