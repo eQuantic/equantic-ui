@@ -32,6 +32,13 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// (<c>sameKey</c>): a list and an array are the same JavaScript array as a tuple there, and compare by
 /// their elements as a tuple does (#909, #947).
 /// </para>
+/// <para>
+/// A nullable struct compares as the lifted <c>==</c> does, two empty values equal and an empty one equal
+/// to no value, where the bound call says so (#968): its <c>Equals</c>, which is its value's
+/// <c>Equals(object)</c>, <c>Nullable.Equals&lt;T&gt;</c>, and <c>EqualityComparer&lt;T&gt;.Default.Equals</c>,
+/// which over any type asks the comparison <see cref="ElementEquality"/> writes for its default comparer.
+/// Every one of those comparisons finds a null equal only to a null. The build refused all three.
+/// </para>
 /// </summary>
 public class StructuralEqualsStrategy : IExpressionIrStrategy
 {
@@ -40,7 +47,7 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         if (node is not InvocationExpressionSyntax inv)
             return false;
         if (inv.ArgumentList.Arguments.Count == 2)
-            return IsStaticObjectEquals(inv, context);
+            return IsStaticObjectEquals(inv, context) || DefaultComparerOf(inv, context) is not null;
         if (inv.ArgumentList.Arguments.Count != 1)
             return false;
         if (inv.Expression is IdentifierNameSyntax { Identifier.ValueText: "Equals" })
@@ -73,7 +80,9 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         // A Nullable tuple's Equals is its value's, or, empty, whether the other value is null too, which
         // both comparisons answer for a null; its call went to an `equals` no array has.
         var receiver = context.SemanticHelper.GetType(ma.Expression);
+        // A nullable struct's Equals is Nullable<T>'s, which asks its value's Equals(object) (#968).
         return receiver.IsStructuralValueType() || receiver is { IsAnonymousType: true }
+            || IsNullablesEquals(bound) && receiver.UnwrapNullable().IsStructuralValueType()
             || receiver.UnwrapNullable() is INamedTypeSymbol { IsTupleType: true } or INamedTypeSymbol { TypeKind: TypeKind.Enum }
             || bound is null && receiver?.SpecialType == SpecialType.System_Object;
     }
@@ -84,7 +93,9 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         context.UsedHelpers.Add(Eq.Import);
 
         if (inv.ArgumentList.Arguments.Count == 2)
-            return ConvertStaticObjectEquals(inv, context);
+            return DefaultComparerOf(inv, context) is { } compared
+                ? ConvertDefaultEquality(inv, compared, context)
+                : ConvertStaticObjectEquals(inv, context);
 
         if (inv.Expression is IdentifierNameSyntax)
         {
@@ -146,7 +157,9 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
             return JsExpr.Call(JsExpr.Identifier(Eq.Equals), receiver, other);
         }
 
-        if (type.IsStructuralValueType())
+        // A nullable struct's is its value's, which both comparisons answer for an empty one: equal only to
+        // null, as Nullable<T>.Equals(object) answers before it asks the value (#968).
+        if (type.UnwrapNullable().IsStructuralValueType())
         {
             // A struct that overrides Equals(object) is asked it first, whatever the other value is:
             // `$eq.equals` refused a value of another JavaScript type before the override could run, so a
@@ -186,6 +199,51 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         }
 
         return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, JsExpr.Identifier(Eq.SameItem));
+    }
+
+    /// <summary>Whether the call binds <c>Nullable&lt;T&gt;.Equals(object)</c>: its value's <c>Equals(object)</c>
+    /// for a value, and whether the other value is null too for an empty one.</summary>
+    private static bool IsNullablesEquals(IMethodSymbol? method) =>
+        method is { Name: "Equals", IsStatic: false, Parameters: [{ Type.SpecialType: SpecialType.System_Object }] }
+        && method.ContainingType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
+
+    /// <summary>
+    /// The type whose DEFAULT comparer a two-argument call asks, read from the bound call, or null for any other
+    /// call: <c>Nullable.Equals&lt;T&gt;(T?, T?)</c>, which is <c>EqualityComparer&lt;T&gt;.Default</c> over two
+    /// values and finds two empty ones equal, and <c>EqualityComparer&lt;T&gt;.Default.Equals(x, y)</c> itself, a
+    /// call made on the <c>Default</c> property, never on another comparer (#968). The property is never
+    /// read: no value the browser holds carries it.
+    /// </summary>
+    private static ITypeSymbol? DefaultComparerOf(InvocationExpressionSyntax invocation, ConversionContext context)
+    {
+        if (context.SemanticHelper.GetOperation(invocation) is not IInvocationOperation
+            {
+                TargetMethod: { Name: "Equals", Parameters.Length: 2 } method,
+            } call)
+            return null;
+        if (method is { IsStatic: true, ContainingType: { Name: "Nullable", Arity: 0 } nullable, TypeArguments: [var value] }
+            && nullable.ContainingNamespace?.ToDisplayString() == "System")
+            return value;
+        return method is { IsStatic: false, ContainingType: { Name: "EqualityComparer", Arity: 1 } comparer }
+            && comparer.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic"
+            && call.Instance is IPropertyReferenceOperation { Property: { Name: "Default", IsStatic: true } }
+                ? comparer.TypeArguments[0]
+                : null;
+    }
+
+    /// <summary>
+    /// A call that asks the default comparer of <paramref name="compared"/>: the comparison
+    /// <see cref="ElementEquality"/> writes for it, which finds a null equal only to a null, over the two
+    /// values as the PARAMETERS take them, each converted where it is written, which the template keeps as
+    /// C#'s order of evaluation (#968).
+    /// </summary>
+    private static JsExpr ConvertDefaultEquality(InvocationExpressionSyntax invocation, ITypeSymbol compared,
+        ConversionContext context)
+    {
+        var parts = invocation.ArgumentList.Arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
+        var (atX, _) = Operand(invocation, 0, context);
+        var (atY, _) = Operand(invocation, 1, context);
+        return JsExpr.Template($"{ElementEquality.Comparer(compared)}({{{atX}}}, {{{atY}}})", parts);
     }
 
     private static bool IsStaticObjectEquals(InvocationExpressionSyntax invocation, ConversionContext context)
