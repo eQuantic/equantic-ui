@@ -73,6 +73,12 @@ within a subtree SHALL be the focused control's position lying under the subtree
   before the pointer lifts
 - **THEN** lifting the pointer runs neither button's handler
 
+#### Scenario: The same node at a new position
+
+- **WHEN** an app hands one button node to two page types, a pointer is down on it, and one page
+  replaces the other before the pointer lifts
+- **THEN** lifting the pointer runs nothing, because the button's new position was never pressed
+
 #### Scenario: A hover at another's place
 
 - **WHEN** the pointer rests on a box with a hover style, and a rebuild puts a box with another key at

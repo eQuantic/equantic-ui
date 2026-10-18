@@ -69,7 +69,11 @@ node (the pressed control, the field, code surface or spreadsheet being edited, 
 canvas under the pointer), and an id for the focus, because a linked run is a focus target with no
 element of its own: a stop carries both, the id it is focused by and the element it sits in. A control
 from another frame is found in this one by its element, which is the same object while its position
-holds it.
+holds it, and by its element alone: an app can keep one node and hand it to two pages, so the same
+node at a new position is not the control that was pressed. The first version also took the press's
+node as an answer, and review found the release reaching the replacement. A press the system
+cancels lets its position go too, or the paint walk, which asks by position, kept it drawn pressed;
+main kept the path the same way.
 
 Containment walks the parents: focus within a shortcut's subtree, the scroll views that hold a stop or
 a caret, and a press swallowed by an inert control unless the control lies under the pressable that

@@ -120,6 +120,65 @@ public class TheHostFindsAControlByItsPositionTests
         log.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// One button instance, kept by the app and returned by two page types: a page replaced by the
+    /// other mounts it at a new position, with the very same node. Matching the press by its node
+    /// as well as by its position let the release reach the replacement (Copilot's second round).
+    /// </summary>
+    private sealed class SharedButtonPages(Pressable shared) : StatefulComponent
+    {
+        private bool _turned;
+
+        public void Turn() => SetState(() => _turned = true);
+
+        public override VisualNode Build(ComponentContext context) =>
+            _turned ? new SecondHolder(shared) : new FirstHolder(shared);
+    }
+
+    private sealed class FirstHolder(Pressable shared) : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => shared;
+    }
+
+    private sealed class SecondHolder(Pressable shared) : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => shared;
+    }
+
+    [Fact]
+    public void APress_DoesNotPassToTheSameNodeAtANewPosition()
+    {
+        var log = new List<string>();
+        var pages = new SharedButtonPages(Button("shared", log));
+        var host = Open(pages);
+        var centre = host.LastFrame!.HitRegions.Single().Bounds.Center;
+
+        host.PressDown(centre.X, centre.Y);
+        pages.Turn();
+        host.RenderFrame(new DisplayListBuilder());
+        host.PressUp(centre.X, centre.Y);
+
+        log.Should().BeEmpty("the position the press began on left with its page, and the same node at "
+            + "the new page's position was never pressed");
+    }
+
+    private static readonly ColorToken PressedFill = new(Color.FromRgb(0xAA, 0x00, 0x00));
+
+    [Fact]
+    public void ACancelledPress_LeavesNoPressedFill()
+    {
+        var host = Open(new Pressable(new Box(new BoxStyle { Width = 60, Height = 30, Background = BaseFill }),
+            () => { }) { PressedBackground = PressedFill });
+        var paintsPressed = (DrawCommand[] commands) => commands.Any(command =>
+            command.Kind == DrawCommandKind.FillRRect && command.Paint.Color == PressedFill.Resolve(ThemeMode.Light));
+
+        host.PressDown(30, 15);
+        paintsPressed(Paint(host)).Should().BeTrue("pressed");
+
+        host.PointerCancel(PointerKind.Touch);
+        paintsPressed(Paint(host)).Should().BeFalse("the system took the finger, and nothing is pressed any more");
+    }
+
     private static Box HoverBox(string key) => new(new BoxStyle
     {
         Width = 60,

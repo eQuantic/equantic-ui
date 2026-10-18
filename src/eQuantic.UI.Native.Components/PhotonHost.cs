@@ -2363,6 +2363,9 @@ public sealed class PhotonHost
 
         _drag = null;
         _pressed = null;
+        // The press's position goes with it, or the paint walk, which asks by position, kept the
+        // control drawn pressed after the system took the finger.
+        _pressedAt = null;
         NeedsRender = true;
     }
 
@@ -2515,12 +2518,15 @@ public sealed class PhotonHost
         return false;
     }
 
-    /// <summary>Whether a region is the one the press began on: the same object while the frame
-    /// survives, and otherwise the same POSITION, which holds the control for as long as it stands
-    /// there.</summary>
+    /// <summary>Whether a region is the one the press began on: the same POSITION, which holds the
+    /// control for as long as it stands there, as the paint walk decides it
+    /// (<see cref="PressScope.IsPressed"/>). The node alone answers only for a press the host tracks
+    /// no position for: an app can keep one node and hand it to two pages, so a page replaced by the
+    /// other shows the same node at a position nobody pressed.</summary>
     private static bool IsTheSamePressable(HitRegion region, Pressable pressed, Element? pressedAt) =>
-        ReferenceEquals(region.Node, pressed)
-        || (pressedAt is not null && ReferenceEquals(region.Element, pressedAt));
+        pressedAt is not null
+            ? ReferenceEquals(region.Element, pressedAt)
+            : ReferenceEquals(region.Node, pressed);
 
     /// <summary>A tap that no pressable claimed: the TOPMOST link region under the point navigates
     /// through the host's seam (a Pressable INSIDE a link wins — checked before this).</summary>
