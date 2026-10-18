@@ -26,4 +26,45 @@ public class ChildProcessTests
         (run.Exception?.InnerException).Should().BeOfType<TimeoutException>()
             .Which.Message.Should().Contain("/bin/sh -c sleep 30 & echo done", "the failure names the command");
     }
+
+    /// <summary>
+    /// The build the suite hung in, under the conditions that made it hang, on every run rather than on
+    /// about every other one. <c>dotnet test</c> hands the test host
+    /// <c>MSBUILDENSURESTDOUTFORTASKPROCESSES</c>, given here as well so the case does not depend on
+    /// what started this host, and with it MSBuild starts each worker node on the probe's own stdout and
+    /// stderr. Every project builds out of process, so the build starts a node, and under a handshake
+    /// salt no other build's node carries, so the node is its own rather than an idle one an earlier
+    /// build left. That node outlived the build, reusable, and the probe's read waited for it. Under the
+    /// probe's environment it ends with the build, and the probe returns: were anything still holding
+    /// the pipes, the probe would fail at its deadline instead, saying so.
+    /// </summary>
+    [Fact]
+    public void AProbeBuild_LeavesNoWorkerNodeHoldingItsOutput_EvenOneStartedOnIt()
+    {
+        var scratch = Directory.CreateTempSubdirectory("eq-probe-").FullName;
+        try
+        {
+            File.WriteAllText(Path.Combine(scratch, "Probe.csproj"), """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net10.0</TargetFramework>
+                  </PropertyGroup>
+                </Project>
+                """);
+            File.WriteAllText(Path.Combine(scratch, "Probe.cs"), "public static class Probe { public static int One() => 1; }\n");
+
+            var (exitCode, output, error) = SdkProbe.Run(scratch, new Dictionary<string, string>
+            {
+                ["MSBUILDENSURESTDOUTFORTASKPROCESSES"] = "1",
+                ["MSBUILDNOINPROCNODE"] = "1",
+                ["MSBUILDNODEHANDSHAKESALT"] = Path.GetFileName(scratch),
+            }, "build", "-nologo", "-v:m");
+
+            exitCode.Should().Be(0, output + error);
+        }
+        finally
+        {
+            Directory.Delete(scratch, recursive: true);
+        }
+    }
 }
