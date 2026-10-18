@@ -148,13 +148,11 @@ public class FlexBasisWrapLayoutTests
         };
         var row = new Row(gap: 0) { Wrap = true, Width = 300 };
         row.Add(new Flexible(scroller, flex: 1, basis: basis));
-        var ranges = new Dictionary<ScrollView, (string Path, float MaxOffset)>();
-
         var item = LayoutEngine.Layout(row, 300, 800,
-            new LayoutContext(PhotonTheme.Instance, new ApproximateTextMeasurer()) { ScrollMeta = ranges }).Children[0];
+            new LayoutContext(PhotonTheme.Instance, new ApproximateTextMeasurer())).Children[0];
 
         item.Children[0].Bounds.Width.Should().BeApproximately(300, 0.01f, "the scroller is capped at its item");
-        ranges[scroller].MaxOffset.Should().BeApproximately(500, 0.01f, "800 of content in a 300 viewport");
+        item.Children[0].ScrollRange.Should().BeApproximately(500, 0.01f, "800 of content in a 300 viewport");
     }
 
     /// <summary>

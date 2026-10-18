@@ -62,7 +62,10 @@ public sealed class BuildOwner
     /// <summary>Whether a position is waiting to build.</summary>
     public bool HasDirty => _dirty.Count > 0 || _dirtyNextFrame.Count > 0;
 
-    internal bool Live { get; }
+    /// <summary>Whether this owner's tree is drawn again: a host's is, and calls the lifecycle hooks; a
+    /// structural one (<see cref="Structural"/>) is laid out once and calls none, nor anything else
+    /// that would set state or start work for a tree nobody draws again.</summary>
+    public bool Live { get; }
 
     /// <summary>The window size class this frame resolves an adaptive node's arm against.</summary>
     internal WindowSizeClass SizeClass { get; private set; }

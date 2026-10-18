@@ -141,7 +141,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Components/PhotonHost.cs`
 - **Handoff**: Tap during deceleration stops dead, second tap interacts.
-- **Code**: PressDown arms a pan candidate on the topmost scroll region but never stops an in-flight glide — ScrollStore keeps advancing its _targets, and nothing clears them on press (the only clear is inside ScrollTo, which the pointer path reaches only once the pan ARMS at 12dp of travel). Release with no active pan falls straight through to region.Node.OnPressed?.Invoke(). So the first tap on a decelerating list neither stops it nor is swallowed: the content keeps gliding AND the row under the finger activates.
+- **Code**: PressDown arms a pan candidate on the topmost scroll region but never stops an in-flight glide — ScrollClock keeps advancing the views it glides, and nothing clears their targets on press (the only clear is inside ScrollTo, which the pointer path reaches only once the pan ARMS at 12dp of travel). Release with no active pan falls straight through to region.Node.OnPressed?.Invoke(). So the first tap on a decelerating list neither stops it nor is swallowed: the content keeps gliding AND the row under the finger activates.
 - **Evidence**:
 
   ```
@@ -149,7 +149,7 @@ the pill's 40 down.
           if (_drag is null)
           {
               var scrollRegions = _lastFrame.ScrollRegions;
-              … _pan = (region.Path, region.Axis, region.MaxOffset, along,
+              … _pan = (region.Element, region.Axis, region.MaxOffset, along,
                       _scrolls.Get(region.Path) ?? region.Fallback, along, _lastTimeMs, 0, false);
   ```
 
@@ -1224,7 +1224,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Components/PhotonHost.cs`
 - **Handoff**: Focused region: ↑/↓ line · PgUp/PgDn viewport · Home/End extremes. Space stays with the focused control, not the scroll.
-- **Code**: No key ever moves a scroll region in the Photon host. The only writers into ScrollStore are the wheel entry point ScrollBy(x, y, delta) (PhotonHost.cs:1645), the pointer pan (1374), the fling on release (1836) and focus-driven ScrollIntoView (399). The "Home"/"End"/"ArrowUp"/"ArrowDown" cases at PhotonHost.cs:1168-1173 belong to the text-entry caret, not to a focused scroll region, and PageUp/PageDown appear nowhere outside the code editor's keymap. On web the div is not focusable either (no tabindex), so keyboard scrolling depends entirely on browser defaults.
+- **Code**: No key ever moves a scroll region in the Photon host. The only writers into ScrollClock are the wheel entry point ScrollBy(x, y, delta) (PhotonHost.cs:1645), the pointer pan (1374), the fling on release (1836) and focus-driven ScrollIntoView (399). The "Home"/"End"/"ArrowUp"/"ArrowDown" cases at PhotonHost.cs:1168-1173 belong to the text-entry caret, not to a focused scroll region, and PageUp/PageDown appear nowhere outside the code editor's keymap. On web the div is not focusable either (no tabindex), so keyboard scrolling depends entirely on browser defaults.
 - **Evidence**:
 
   ```
@@ -2308,7 +2308,7 @@ the pill's 40 down.
 
   ```
   lowering.ts:3565-3582  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:2772  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:2773  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · metric · **CONFIRMED**
@@ -2334,7 +2334,7 @@ the pill's 40 down.
 
   ```
   lowering.ts:3565-3582  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:2772  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:2773  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · missing-feature · **unverified**
@@ -2851,14 +2851,14 @@ the pill's 40 down.
 
 ### A6 ScrollView · documented-deviation · **unverified**
 
-- **Component**: `src/eQuantic.UI.Native.Framework/Layout/ScrollStore.cs`
+- **Component**: `src/eQuantic.UI.Native.Framework/NodeState/ScrollClock.cs`
 - **Handoff**: Platform-native curves. iOS: exponential decay (normal rate 0.998) + rubber-band overscroll. Android: fling friction + stretch overscroll (scale transform — inside the fence; no glow arc).
-- **Code**: One platform-agnostic curve, no overscroll of either kind: the glide is a fixed 0.022-per-ms chase of a target with a flat FlingReach of 90, clamped hard to [0, maxOffset] (ScrollStore.cs:49, 63-66) so there is nothing to rubber-band or stretch. The ScrollView node names the fence and the reason — the platform physics wait for the native interaction system. Worth reviewing because the same fence still claims "today the scroll position is the programmatic Offset", which the ScrollStore compositor has since overtaken.
+- **Code**: One platform-agnostic curve, no overscroll of either kind: the glide is a fixed 0.022-per-ms chase of a target with a flat FlingReach of 90, clamped hard to [0, maxOffset] (ScrollClock.cs:50 ScrollTo, ScrollClock.cs:65 Fling) so there is nothing to rubber-band or stretch. The ScrollView node names the fence and the reason — the platform physics wait for the native interaction system. Worth reviewing because the same fence still claims "today the scroll position is the programmatic Offset", which the ScrollStore compositor has since overtaken.
 - **Evidence**:
 
   ```
-  ScrollStore.cs:17  private const float SmoothingPerMs = 0.022f;
-  ScrollStore.cs:37  private const float FlingReach = 90;
+  ScrollClock.cs:20  private const float SmoothingPerMs = 0.022f;
+  ScrollClock.cs:29  private const float FlingReach = 90;
   src/eQuantic.UI.Primitives/Nodes/ScrollView.cs  /// The child lays out UNBOUNDED on the scroll axis and is clipped to the viewport. v1 fences: the
   /// platform physics (decay/fling/rubber-band), gesture capture and the fading scrollbar pill join
   /// with the native interaction system; today the scroll position is the programmatic
@@ -2886,7 +2886,7 @@ the pill's 40 down.
 
   ```
   PhotonHost.cs:326  _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, …
-  PhotonHost.cs:1890  if (_scrolls.ScrollTo(pan.Path, pan.FromOffset - travelled, pan.MaxOffset))
+  PhotonHost.cs:1890  if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
                       NeedsRender = true;
   ```
 

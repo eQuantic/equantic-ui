@@ -114,8 +114,8 @@ public sealed class LayoutContext
     /// The path of a child AMONG SIBLINGS. A child that says <see cref="VisualNode.Key"/> takes the
     /// key as its segment, spelled <c>[key]</c> so it can never collide with a position; every other
     /// child takes its position. This is the web's keyed reconciliation arriving on Photon, where
-    /// the path IS identity — focus, hover, scroll offsets, a drag in flight are all remembered by
-    /// it. A virtualized list that materializes rows 2..20 one frame and 3..21 the next shifts every
+    /// the path is how focus, hover and a press find a node again (#976). A virtualized list that
+    /// materializes rows 2..20 one frame and 3..21 the next shifts every
     /// positional path by one: the ring that sat on row 17 pointed at row 18, and when the index ran
     /// past the window it pointed at nothing and Tab restarted from the first control. A keyed row
     /// keeps its path whatever its neighbours do.
@@ -203,21 +203,15 @@ public sealed class LayoutContext
     public EdgeInsets WindowControlsInsets { get; init; }
 
     /// <summary>Spec B14: the host's value-transition animator (null = values snap).</summary>
-    public TransitionStore? Transitions { get; init; }
+    public TransitionClock? Transitions { get; init; }
 
     /// <summary>Spec §06: the host's enter-motion clock behind <see cref="Presence"/> (null = subtrees
     /// appear settled — SSR-like single-shot renders and layout-only tests need no entrance).</summary>
-    public PresenceStore? Presences { get; init; }
+    public PresenceClock? Presences { get; init; }
 
-    /// <summary>Scroll compositor v1: the host's scroll offsets (null = programmatic Offset only).</summary>
-    public ScrollStore? ScrollOffsets { get; init; }
-
-    /// <summary>Gestures v2: the host's drag offsets behind <see cref="DragDismiss"/> (null = at rest).</summary>
-    public DragStore? Drags { get; init; }
-
-    /// <summary>Per-frame bridge from a laid-out ScrollView to its path/max — the realizer reads it
-    /// while emitting to register scroll regions for the host's input routing.</summary>
-    public Dictionary<ScrollView, (string Path, float MaxOffset)>? ScrollMeta { get; init; }
+    /// <summary>Gestures v2: the host's drag clock behind <see cref="DragDismiss"/> and
+    /// <see cref="Draggable"/> (null = at rest).</summary>
+    public DragClock? Drags { get; init; }
 
     /// <summary>The frame clock the transitions resolve against (same clock as loop motion).</summary>
     public float TimeMs { get; init; }
@@ -338,34 +332,35 @@ public sealed class LayoutNode
     public IReadOnlyList<TextFragment>? TextRuns { get; internal set; }
 
     /// <summary>Entrance progress (0..1) stamped at MEASURE time when <see cref="Source"/> is a
-    /// <see cref="Presence"/> — the emit pass reads it (paths exist only during layout). 1 = settled
-    /// (no presence clock in the context, or the entrance finished).</summary>
+    /// <see cref="Presence"/>, which the emit pass reads. 1 = settled (no presence clock in the
+    /// context, or the entrance finished).</summary>
     public float Presence { get; internal set; } = 1f;
 
-    /// <summary>The stable layout path of a <see cref="Presence"/> node, stamped at measure time —
-    /// the emit pass keys its exit snapshot by it (paths exist only during layout).</summary>
-    public string? PresencePath { get; internal set; }
-
     /// <summary>
-    /// Where this node sits in the tree, in the same stable form the scroll and drag stores key on.
-    /// A gesture outlives the frame it began in — the press repaints, the next Build makes fresh
-    /// nodes, and a target remembered by REFERENCE is gone by the time the finger lifts. The path
-    /// is what stays the same.
+    /// Where this node sits in the tree, as a string: the press, focus, hover and the hit regions
+    /// still find a node by it across frames (#976). A gesture outlives the frame it began in — the
+    /// press repaints, the next Build makes fresh nodes, and a target remembered by REFERENCE to the
+    /// node is gone by the time the finger lifts. What a node keeps between frames lives on its
+    /// <see cref="Element"/> instead.
     /// </summary>
     public string? Path { get; internal set; }
 
-    /// <summary>The drag offset (dp downward) of a <see cref="DragDismiss"/> node, resolved at
-    /// measure time against the host's drag clock — the emit pass paints the translate.</summary>
+    /// <summary>The drag offset (dp along its axis) of a <see cref="DragDismiss"/> or a
+    /// <see cref="Draggable"/>, resolved at measure time against the host's drag clock — the emit
+    /// pass paints the translate.</summary>
     public float DragOffset { get; internal set; }
 
-    /// <summary>The stable layout path of a <see cref="DragDismiss"/> node — the host routes drag
-    /// input by it (registered with the frame's drag regions at emit).</summary>
-    public string? DragPath { get; internal set; }
+    /// <summary>How far a <see cref="ScrollView"/>'s content scrolls, from the measure that made this
+    /// node: zero when it fits. The paint walk registers the view's region with it, so the region
+    /// carries the range of the measure the tree KEEPS, which is this node's: a scroller measured
+    /// again (a wrapping line that resolved, a Flexible's ceiling) is a second node.</summary>
+    public float ScrollRange { get; internal set; }
 
     /// <summary>
     /// The position this node was laid out for, or null for a node the layout makes itself (the item
-    /// a flex line wraps around a <see cref="Flexible"/>'s child). The realizer reads it where a
-    /// node's children are shown in a layer of their own: an overlay's, an anchored panel's.
+    /// a flex line wraps around a <see cref="Flexible"/>'s child). What the node keeps between frames
+    /// lives there (<see cref="NodeStates"/>), and the realizer reads it where a node's children are
+    /// shown in a layer of their own: an overlay's, an anchored panel's.
     /// </summary>
     public Element? Element { get; internal set; }
 
@@ -380,10 +375,9 @@ public sealed class LayoutNode
         Text = null;
         TextRuns = null;
         Presence = 1f;
-        PresencePath = null;
         Path = null;
         DragOffset = 0f;
-        DragPath = null;
+        ScrollRange = 0f;
         Element = null;
     }
 }
@@ -441,7 +435,7 @@ public static class LayoutEngine
     /// <param name="root">The tree to lay out.</param>
     /// <param name="viewportWidth">The available width in dp — the window, or the layer's box.</param>
     /// <param name="viewportHeight">The available height in dp.</param>
-    /// <param name="context">The pass's shared state: theme, text service, the node state stores.</param>
+    /// <param name="context">The pass's shared state: theme, text service, the host's motion clocks.</param>
     /// <param name="rootPath">The path the root is addressed by, which every child extends.</param>
     /// <param name="rootStretch">
     /// What the caller has already decided about the ROOT's own size. The base layer is the page's

@@ -1,12 +1,15 @@
+using eQuantic.UI.Primitives;
+
 namespace eQuantic.UI.Native.Framework;
 
 /// <summary>
-/// The host-owned SCROLL STATE (scroll compositor v1): current offsets per ScrollView, keyed by the
-/// node's stable layout PATH (trees rebuild every frame; paths don't). Layout resolves the effective
-/// offset from here — the node's programmatic <c>Offset</c> is only the untouched default — and the
-/// host mutates it from pointer/wheel input, clamped to the frame's measured max.
+/// The host's scroll MOTION (scroll compositor v1): whether a wheel glides, the scroll views gliding
+/// toward where a wheel or a fling sent them, and their advance before each frame. Where a view IS
+/// lives on its position (<see cref="NodeStates"/>), so the next scroll view drawn at its place
+/// starts at its own offset; the host moves a view through this clock, by the view's element, and the
+/// layout reads the offset off the element with no clock at all.
 /// </summary>
-public sealed class ScrollStore
+public sealed class ScrollClock
 {
     /// <summary>
     /// How much of the remaining distance is covered each millisecond, as a fraction. Exponential
@@ -19,8 +22,13 @@ public sealed class ScrollStore
     /// <summary>Below this the glide is over — a fraction of a pixel is not a frame's worth.</summary>
     private const float RestingDp = 0.5f;
 
-    private readonly Dictionary<string, float> _offsets = new();
-    private readonly Dictionary<string, float> _targets = new();
+    /// <summary>
+    /// How far a fling carries per dp/ms of release velocity. The glide's own decay does the
+    /// slowing down, so this only says how much runway the flick buys.
+    /// </summary>
+    private const float FlingReach = 90;
+
+    private readonly List<ScrollState> _gliding = new();
     private float _lastTimeMs = float.NaN;
 
     /// <summary>
@@ -30,26 +38,22 @@ public sealed class ScrollStore
     /// </summary>
     public bool Smooth { get; set; } = true;
 
-    /// <summary>
-    /// How far a fling carries per dp/ms of release velocity. The glide's own decay does the
-    /// slowing down, so this only says how much runway the flick buys.
-    /// </summary>
-    private const float FlingReach = 90;
-
-    /// <summary>The stored offset, or null when the host never scrolled this view.</summary>
-    public float? Get(string path) => _offsets.TryGetValue(path, out var offset) ? offset : null;
+    /// <summary>The offset the host scrolled the view at <paramref name="at"/> to, or null when it
+    /// never did, or there is no view there.</summary>
+    public static float? OffsetOf(Element? at) => NodeStates.Find<ScrollState>(at)?.Offset;
 
     /// <summary>
     /// Puts an offset exactly where the caller says, now. This is what a FINGER does: the content
     /// is under it and follows it, with nothing to smooth — smoothing a direct manipulation is how
     /// a surface stops feeling attached to the hand.
     /// </summary>
-    public bool ScrollTo(string path, float offset, float maxOffset)
+    public bool ScrollTo(Element at, float offset, float maxOffset)
     {
+        if (NodeStates.For<ScrollState>(at) is not { } view) return false;
         var next = Math.Clamp(offset, 0, MathF.Max(0, maxOffset));
-        if (Get(path) is { } current && current == next) return false;
-        _offsets[path] = next;
-        _targets.Remove(path);
+        if (view.Offset is { } current && current == next) return false;
+        view.Offset = next;
+        view.Target = null;
         return true;
     }
 
@@ -58,53 +62,72 @@ public sealed class ScrollStore
     /// already an exponential decay, so a fling is nothing more than a target far enough away —
     /// the slowing down comes free and matches every other movement in the app.
     /// </summary>
-    public bool Fling(string path, float velocity, float maxOffset)
+    public bool Fling(Element at, float velocity, float maxOffset)
     {
         if (!Smooth || MathF.Abs(velocity) < 0.05f) return false;
-        var current = Get(path) ?? 0;
+        if (NodeStates.For<ScrollState>(at) is not { } view) return false;
+        var current = view.Offset ?? 0;
         var target = Math.Clamp(current + velocity * FlingReach, 0, MathF.Max(0, maxOffset));
         if (target == current) return false;
-        _targets[path] = target;
+        Glide(view, target);
         return true;
     }
 
     /// <summary>Adjusts an offset by <paramref name="delta"/> (positive scrolls toward the content
     /// end), clamped to [0, <paramref name="maxOffset"/>]. Returns true when the value changed.</summary>
-    public bool ScrollBy(string path, float delta, float maxOffset, float fallback = 0)
+    public bool ScrollBy(Element at, float delta, float maxOffset, float fallback = 0)
     {
-        var current = Get(path) ?? fallback;
-        var from = Smooth && _targets.TryGetValue(path, out var pending) ? pending : current;
+        if (NodeStates.For<ScrollState>(at) is not { } view) return false;
+        var current = view.Offset ?? fallback;
+        var from = Smooth && view.Target is { } pending ? pending : current;
         var next = Math.Clamp(from + delta, 0, MathF.Max(0, maxOffset));
 
         if (!Smooth)
         {
             if (next == current) return false;
-            _offsets[path] = next;
+            view.Offset = next;
             return true;
         }
 
         if (next == from && MathF.Abs(next - current) < RestingDp) return false;
-        _targets[path] = next;
+        Glide(view, next);
         return true;
+    }
+
+    private void Glide(ScrollState view, float target)
+    {
+        view.Target = target;
+        if (view.Listed) return;
+        view.Listed = true;
+        _gliding.Add(view);
     }
 
     /// <summary>
     /// Moves every gliding offset toward its target for the time that passed. Returns true while
     /// anything is still moving, which is what keeps the frames coming — and stops them the moment
-    /// it arrives, so a still page costs nothing.
+    /// it arrives, so a still page costs nothing. A view whose position left the tree stops where it
+    /// was, and so does one a finger took since (<see cref="ScrollTo"/> drops its target).
     /// </summary>
     public bool Advance(float timeMs)
     {
         var elapsed = float.IsNaN(_lastTimeMs) ? 0 : MathF.Max(0, timeMs - _lastTimeMs);
         _lastTimeMs = timeMs;
-        if (_targets.Count == 0) return false;
+        for (var i = _gliding.Count - 1; i >= 0; i--)
+        {
+            var view = _gliding[i];
+            if (view.Target is not null && !view.Released) continue;
+            view.Listed = false;
+            _gliding.RemoveAt(i);
+        }
+
+        if (_gliding.Count == 0) return false;
 
         // Smoothing switched off with a glide in flight — because the app said so, or because
         // Reduce Motion arrived. What was asked for still has to HAPPEN; it just happens now.
         if (!Smooth)
         {
-            foreach (var (path, target) in _targets) _offsets[path] = target;
-            _targets.Clear();
+            foreach (var view in _gliding) Land(view);
+            _gliding.Clear();
             return true;
         }
 
@@ -113,24 +136,30 @@ public sealed class ScrollStore
         // 1 - (1-k)^dt: the same fraction per millisecond however long the frame took, so the glide
         // looks the same at 120 Hz and at 30.
         var step = 1 - MathF.Pow(1 - SmoothingPerMs, elapsed);
-        var moving = false;
-
-        foreach (var path in _targets.Keys.ToArray())
+        for (var i = _gliding.Count - 1; i >= 0; i--)
         {
-            var target = _targets[path];
-            var current = Get(path) ?? 0;
+            var view = _gliding[i];
+            var target = view.Target!.Value;
+            var current = view.Offset ?? 0;
             var distance = target - current;
             if (MathF.Abs(distance) < RestingDp)
             {
-                _offsets[path] = target;
-                _targets.Remove(path);
-                moving = true;      // one last frame lands exactly on the target
+                // One last frame lands exactly on the target.
+                Land(view);
+                _gliding.RemoveAt(i);
                 continue;
             }
-            _offsets[path] = current + distance * step;
-            moving = true;
+
+            view.Offset = current + distance * step;
         }
 
-        return moving;
+        return true;
+    }
+
+    private static void Land(ScrollState view)
+    {
+        view.Offset = view.Target;
+        view.Target = null;
+        view.Listed = false;
     }
 }

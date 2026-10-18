@@ -21,8 +21,17 @@ public readonly record struct HitRegion(Rect Bounds, Rect Drawn, Pressable Node,
 public readonly record struct HoverRegion(Rect Bounds, VisualNode Node, string Path);
 
 /// <summary>Scroll compositor v1: a scrollable viewport — the host routes wheel/drag input to the
-/// TOPMOST region under the pointer and adjusts its stored offset (clamped to MaxOffset).</summary>
-public readonly record struct ScrollRegion(Rect Bounds, string Path, float MaxOffset, ScrollAxis Axis, float Fallback);
+/// TOPMOST region under the pointer and moves the offset its <paramref name="Element"/> keeps
+/// (clamped to MaxOffset).</summary>
+/// <param name="Bounds">The viewport, where the pointer scrolls it.</param>
+/// <param name="Path">Where the view sits, as a string: the host still asks by path which view holds a
+/// focus stop or a caret it brings into view (#976).</param>
+/// <param name="Element">The view's position, which keeps its offset: what the host scrolls.</param>
+/// <param name="MaxOffset">How far the content scrolls in this frame.</param>
+/// <param name="Axis">The axis it scrolls along.</param>
+/// <param name="Fallback">The node's own <c>Offset</c>, where it stands until the host scrolls it.</param>
+public readonly record struct ScrollRegion(Rect Bounds, string Path, Element Element, float MaxOffset, ScrollAxis Axis,
+    float Fallback);
 
 /// <summary>
 /// W3: a <see cref="Canvas"/> the host routes pointer events to, in the canvas's OWN coordinates.
@@ -31,14 +40,15 @@ public readonly record struct ScrollRegion(Rect Bounds, string Path, float MaxOf
 /// </summary>
 public readonly record struct CanvasRegion(Rect Bounds, Canvas Node, string Path);
 
-/// <summary>Gestures v2: a drag-to-dismiss surface — the host tracks a press that travels past the
-/// slop as a vertical drag on the TOPMOST region under the start point (paint-order last-wins).</summary>
 /// <summary>
-/// A surface the host routes a drag to. <see cref="Node"/> is the gesture node itself — a
+/// A surface the host routes a drag to: a press that travels past the slop drags the TOPMOST region
+/// under where it started (paint-order last-wins). <see cref="Node"/> is the gesture node itself — a
 /// <see cref="DragDismiss"/> or a <see cref="Draggable"/> — because the RULES (axis, limits, what a
 /// release means) belong to it, and duplicating them here would be a second place to get them wrong.
+/// <see cref="Element"/> is its position, which keeps the drag: the host moves it by that, so a drag
+/// in flight never passes to a node drawn at its place next.
 /// </summary>
-public readonly record struct DragRegion(Rect Bounds, string Path, VisualNode Node);
+public readonly record struct DragRegion(Rect Bounds, Element Element, VisualNode Node);
 
 /// <summary>
 /// A navigation surface: a tap no pressable claims resolves to the TOPMOST link region under the
@@ -267,10 +277,12 @@ public static class PhotonRealizer
         BuildOwner? owner = null,
         float timeMs = 0,
         bool reducedMotion = false,
-        TransitionStore? transitions = null,
-        ScrollStore? scrollOffsets = null,
-        PresenceStore? presences = null,
-        DragStore? drags = null,
+        // The host's motion clocks (null = values snap, presences are settled, drags rest). What a
+        // node keeps between frames lives on its position in the owner's tree, so a frame realized
+        // without an owner starts every node fresh.
+        TransitionClock? transitions = null,
+        PresenceClock? presences = null,
+        DragClock? drags = null,
         Framework.ITextRasterizer? textRasterizer = null,
         TextRasterCache? textCache = null,
         float renderScale = 1f,
@@ -294,7 +306,6 @@ public static class PhotonRealizer
         // The selected range inside that field. Zero-length = a caret and nothing more.
         int selectionStart = 0,
         int selectionEnd = 0,
-        Func<string, float?>? scrollOffset = null,
         Density density = Density.Comfortable,
         // The IME composition in flight for the focused field — rendered inline at the caret,
         // underlined, without the value changing (the value only changes on commit).
@@ -305,9 +316,6 @@ public static class PhotonRealizer
         Dictionary<(string Parent, int Index, string? Key), string>? pathCache = null,
         // The owning host's node recycler (see LayoutNodePool) — null allocates fresh.
         LayoutNodePool? nodePool = null,
-        // Which InView nodes were on screen LAST frame — the node is rebuilt every pass and cannot
-        // remember, and the contract is that the callback fires on the transitions.
-        InViewStore? inViewStore = null,
         // Where the hover LIVES across rebuilds — the press's path rule, applied to the pointer.
         // A CHAIN, not a single node: CSS :hover matches every ancestor under the pointer, and the
         // native realizer answers the same question the web twin answers.
@@ -336,12 +344,10 @@ public static class PhotonRealizer
             Presences = presences,
             TimeMs = timeMs,
             ReducedMotion = reducedMotion,
-            ScrollOffsets = scrollOffsets,
             Drags = drags,
-            ScrollMeta = new Dictionary<ScrollView, (string, float)>(),
         };
         transitions?.BeginFrame();
-        presences?.BeginFrame();
+        presences?.BeginFrame(timeMs);
         drags?.BeginFrame();
         // The BASE layer is the page's body: an auto-sized root stretches to the real containing
         // block — the window — the way a CSS block does, and ONLY in width: block height hugs
@@ -373,8 +379,11 @@ public static class PhotonRealizer
         };
         var overlays = new List<QueuedLayer>();
         var input = new InputSink(regions);
-        EmitVisitor.Shared.Emit(new EmitState(layout, input, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { ScrollOffset = scrollOffset, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore },
-            theme, mode, builder, context.ScrollMeta!, motion, overlays));
+        // An InView reports in a tree that is drawn again, as a lifecycle hook runs: a callback that
+        // sets state for a tree laid out once would set it for nobody.
+        var reportsInView = builds.Live;
+        EmitVisitor.Shared.Emit(new EmitState(layout, input, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView },
+            theme, mode, builder, motion, overlays));
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
         // the page (painter's order); its hit regions register after the page's, so the topmost-
@@ -410,15 +419,19 @@ public static class PhotonRealizer
             realizedLayers.Add(queued.Layer);
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
-            EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { ScrollOffset = scrollOffset, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore },
-                theme, mode, builder, context.ScrollMeta!, motion, overlays));
+            EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView },
+                theme, mode, builder, motion, overlays));
         }
 
-        // Presence pruning runs AFTER the overlay pass — overlay paths ("ov<i>/…") register there,
-        // and a pruned-too-early path would replay its entrance every frame. Each departure spawns
-        // an EXIT from its last snapshot; mid-flight exits replay here, ABOVE everything (departed
-        // layers were topmost), as pixels only — no hit regions, input passes through immediately.
-        presences?.EndFrame(timeMs);
+        // The frame's end, for the tree: what a layer did not show this frame leaves it, and what
+        // left unmounts before what arrived mounts. BEFORE the exits: a presence leaves either during
+        // the build (its parent stopped building it) or here (its layer was not shown), and either
+        // way its last paint becomes an exit stamped with this frame's time, so a layer that closed
+        // in this frame fades from this frame, not from the next.
+        builds.EndFrame();
+
+        // Mid-flight exits replay here, ABOVE everything (departed layers were topmost), as pixels
+        // only — no hit regions, input passes through immediately.
         if (presences != null)
         {
             foreach (var exit in presences.ActiveExits(timeMs, reducedMotion))
@@ -435,9 +448,6 @@ public static class PhotonRealizer
                 builder.PopLayer();
             }
         }
-        // The frame's end, for the tree: what a layer did not show this frame leaves it, and what
-        // left unmounts before what arrived mounts.
-        builds.EndFrame();
         return new RealizeResult(layout, regions.Hits,
             motion.Active || transitions is { AnyActive: true } || presences is { AnyActive: true }
                 || drags is { AnyActive: true },

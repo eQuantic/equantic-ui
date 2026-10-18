@@ -493,7 +493,9 @@ rejected.)
    reconciler's in-place patching never restarts it (replays only on real re-insertion). NATIVE:
    `PresenceStore` — a pure presence clock per stable layout path (first sighting starts the
    entrance; departed paths PRUNE at end-of-frame so a re-entry replays; progress stamps onto the
-   LayoutNode at measure time where paths exist) — and the realizer paints mid-flight frames inside
+   LayoutNode at measure time where paths exist; superseded by #975: the entrance and the last paint
+   live on the presence's position, the clock is `PresenceClock`, and a position that leaves hands
+   its paint over as the exit) — and the realizer paints mid-flight frames inside
    a `PushLayer(alpha)` GROUP-opacity layer (CSS-opacity semantics) with the SlideUp rise as a
    paint-only translate; settled frames emit no layer (zero rest cost — the six overlay goldens
    passed BYTE-IDENTICAL under the new two-frame settle harness). Components: Dialog fades as one
@@ -534,7 +536,8 @@ rejected.)
    back over Motion.Base. Taps inside keep working: the drag only ACTIVATES past
    Touch.PressCancelSlop, which also cancels the in-flight pressable press (the spec §08 cancel
    rule, now real). NATIVE: `DragStore` (active follow = raw, input-driven; released = smoothstep
-   glide as f(t)), drag regions by stable path (topmost-last routing like scroll), the host's
+   glide as f(t); `DragClock` since #975, the drag kept on the gesture's position), drag regions by
+   stable path (by element since #975; topmost-last routing like scroll), the host's
    press/move/up state machine. WEB: ONE document-level pointer delegate (lazy-installed by the
    lowering, idempotent) — `data-eq-drag-dismiss` marks the surface (threshold as the value, one
    source of truth), follow/glide via inline transform/transition, past-threshold dispatches the
@@ -629,8 +632,9 @@ rejected.)
    behind the row so it stays reachable without the gesture), **PullToRefresh** (reveals rather than
    stretches; holds while the work is in flight), the **Switch** thumb (limits signed by state, so a
    drag that ends where it began changes nothing) and the **Slider** track (relative scrubbing,
-   quantized to the same values a press lands on). Clamping moved out of `DragStore` — the store
-   remembers, the caller decides what is legal — and arming happens on the gesture's OWN axis, or a
+   quantized to the same values a press lands on). Clamping moved out of `DragStore` (`DragClock`
+   since #975) — the store remembers, the caller decides what is legal — and arming happens on the
+   gesture's OWN axis, or a
    list containing a swipeable row could not be scrolled. Both targets: the native host routes the
    pointer, and one document-level web controller reads the rules off the DOM. Cancellation is a
    first-class outcome on both (`PhotonHost.PointerCancel` ↔ `pointercancel`): nothing was decided,

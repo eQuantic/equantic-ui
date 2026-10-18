@@ -323,12 +323,12 @@ public sealed class PhotonHost
         // Taken and cleared as late as possible: whatever the drain, the frame ticker or an edit
         // asked for before this point is in this frame, and anything after it is in the next.
         var rebuildAll = Interlocked.Exchange(ref _rebuildAll, 0) == 1;
-        _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _owner, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, safeArea, _pressedPath,
+        _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _owner, timeMs, ReducedMotion, _transitions, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, safeArea, _pressedPath,
             _focusVisible ? _focusedPath : null, _textPath, caretIndex, CaretVisible,
             selection.Start, selection.End, density: Density,
-            scrollOffset: path => _scrolls.Get(path), markedText: _marked, composing: _composing,
+            markedText: _marked, composing: _composing,
             pathCache: _pathCache, hoveredPaths: _hoverPaths,
-            nodePool: RecycleFrames ? _nodePool : null, inViewStore: _inView,
+            nodePool: RecycleFrames ? _nodePool : null,
             windowControlsInsets: WindowControlsInsets, sizedLike: previousFrame, rebuildAll: rebuildAll);
         if (_lift != 0) builder.Pop();
         if (RenderScale != 1f) builder.Pop();
@@ -388,9 +388,6 @@ public sealed class PhotonHost
     /// the order its components mount and unmount in, the root's included (see BuildOwner).</summary>
     private readonly BuildOwner _owner = new();
 
-    /// <summary>Which InView nodes were on screen last frame — see InViewStore.</summary>
-    private readonly InViewStore _inView = new();
-
 
     private Pressable? _pressed;
 
@@ -406,15 +403,17 @@ public sealed class PhotonHost
     /// :hover matches every ancestor, and the native pointer answers the same question.</summary>
     private readonly List<string> _hoverPaths = new();
     private readonly List<VisualNode> _hoverNodes = new();
-    private readonly TransitionStore _transitions = new();
-    private readonly ScrollStore _scrolls = new();
+    private readonly TransitionClock _transitions = new();
+    private readonly ScrollClock _scrolls = new();
 
     /// <summary>
     /// A finger on a scrollable surface. Armed on press and only ACTIVE once it has travelled past
     /// the slop along the view's own axis — so a tap inside a list is still a tap, and a sideways
-    /// swipe never scrolls a vertical list.
+    /// swipe never scrolls a vertical list. It holds the view's position, which keeps the offset: a
+    /// view that leaves under the finger takes the gesture with it, rather than handing it to the
+    /// next view drawn at its place.
     /// </summary>
-    private (string Path, ScrollAxis Axis, float MaxOffset, float Start, float FromOffset,
+    private (Element Element, ScrollAxis Axis, float MaxOffset, float Start, float FromOffset,
         float LastAt, float LastTimeMs, float Velocity, bool Active)? _pan;
 
     /// <summary>
@@ -423,14 +422,15 @@ public sealed class PhotonHost
     /// Motion turns it off whatever the app said: it is movement, and that setting means it.
     /// </summary>
     public bool SmoothScroll { get; set; } = true;
-    private readonly PresenceStore _presences = new();
-    private readonly DragStore _drags = new();
+    private readonly PresenceClock _presences = new();
+    private readonly DragClock _drags = new();
 
     /// <summary>The in-flight drag candidate: armed on press inside a drag region, ACTIVATED once
     /// the pointer travels past the slop (which cancels the pressable press), resolved on release.</summary>
     // The armed gesture surface. `Node` is a DragDismiss or a Draggable — the rules live on it, so
-    // the host only tracks where the finger started and whether the slop has been passed.
-    private (string Path, VisualNode Node, float StartX, float StartY, float Extent, bool Active)? _drag;
+    // the host only tracks where the finger started and whether the slop has been passed. `Element`
+    // is its position, which keeps the drag.
+    private (Element Element, VisualNode Node, float StartX, float StartY, float Extent, bool Active)? _drag;
 
     /// <summary>The clock of the last rendered frame — glide-backs anchor to it on release.</summary>
     private float _lastTimeMs;
@@ -567,8 +567,8 @@ public sealed class PhotonHost
         // focused element into view the same way. A wheel still glides; only focus jumps. (Found by
         // the first gallery section tall enough to put a control below the fold: the glide's first
         // frame had not moved, and the walk read the ring off-screen.)
-        var current = _scrolls.Get(regions[best].Path) ?? regions[best].Fallback;
-        _scrolls.ScrollTo(regions[best].Path, current + delta, regions[best].MaxOffset);
+        var current = ScrollClock.OffsetOf(regions[best].Element) ?? regions[best].Fallback;
+        _scrolls.ScrollTo(regions[best].Element, current + delta, regions[best].MaxOffset);
         NeedsRender = true;
         return true;
     }
@@ -701,8 +701,8 @@ public sealed class PhotonHost
             else if (end > viewEnd - margin) delta = end - viewEnd + margin;
             if (delta == 0) continue;
 
-            var current = _scrolls.Get(region.Path) ?? region.Fallback;
-            _scrolls.ScrollTo(region.Path, current + delta, region.MaxOffset);
+            var current = ScrollClock.OffsetOf(region.Element) ?? region.Fallback;
+            _scrolls.ScrollTo(region.Element, current + delta, region.MaxOffset);
             scrolled = true;
         }
         return scrolled;
@@ -1848,7 +1848,7 @@ public sealed class PhotonHost
                     // The PAINT offset is always dp; only what the caller HEARS is normalised.
                     if (draggable.Follows)
                     {
-                        _drags.Drag(drag.Path, draggable.Normalized
+                        _drags.Drag(drag.Element, draggable.Normalized
                             ? reported * drag.Extent
                             : reported);
                     }
@@ -1856,7 +1856,7 @@ public sealed class PhotonHost
                 }
                 else
                 {
-                    _drags.Drag(drag.Path, Math.Max(0, travel));
+                    _drags.Drag(drag.Element, Math.Max(0, travel));
                 }
                 NeedsRender = true;
                 return;
@@ -1887,7 +1887,7 @@ public sealed class PhotonHost
                 pan.LastTimeMs = _lastTimeMs;
 
                 // The content moves OPPOSITE the finger: dragging up reveals what is below.
-                if (_scrolls.ScrollTo(pan.Path, pan.FromOffset - travelled, pan.MaxOffset))
+                if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
                     NeedsRender = true;
                 _pan = pan;
                 return;
@@ -1977,7 +1977,7 @@ public sealed class PhotonHost
         {
             var region = regions[i];
             if (!Covers(regions, i, region.Bounds, new Point(x, y))) continue;
-            if (!_scrolls.ScrollBy(region.Path, delta, region.MaxOffset, region.Fallback)) return false;
+            if (!_scrolls.ScrollBy(region.Element, delta, region.MaxOffset, region.Fallback)) return false;
             NeedsRender = true;
             return true;
         }
@@ -2047,9 +2047,10 @@ public sealed class PhotonHost
         return CursorShape.Default;
     }
 
-    /// <summary>Where a scroll surface currently sits — the test seam for gesture regressions
-    /// (a latched pan shows up here as an offset nobody asked for).</summary>
-    public float ScrollOffsetOf(string path) => _scrolls.Get(path) ?? 0f;
+    /// <summary>Where the scroll view at <paramref name="at"/> currently sits, read off its position
+    /// (a <see cref="ScrollRegion.Element"/>) — the test seam for gesture regressions (a latched pan
+    /// shows up here as an offset nobody asked for).</summary>
+    public float ScrollOffsetOf(Element at) => ScrollClock.OffsetOf(at) ?? 0f;
 
     /// <summary>The pointer left the window (or the input is touch) — hover clears.</summary>
     public void PointerLeave()
@@ -2104,7 +2105,7 @@ public sealed class PhotonHost
             // The surface's own extent along the axis — what a NORMALIZED gesture divides by.
             var horizontalSurface = dragRegions[i].Node is Draggable { Axis: DragAxis.Horizontal };
             var extent = horizontalSurface ? dragRegions[i].Bounds.Width : dragRegions[i].Bounds.Height;
-            _drag = (dragRegions[i].Path, dragRegions[i].Node, x, y, extent, false);
+            _drag = (dragRegions[i].Element, dragRegions[i].Node, x, y, extent, false);
             break;
         }
 
@@ -2119,8 +2120,8 @@ public sealed class PhotonHost
                 var region = scrollRegions[i];
                 if (!Covers(scrollRegions, i, region.Bounds, point) || region.MaxOffset <= 0) continue;
                 var along = region.Axis == ScrollAxis.Horizontal ? x : y;
-                _pan = (region.Path, region.Axis, region.MaxOffset, along,
-                    _scrolls.Get(region.Path) ?? region.Fallback, along, _lastTimeMs, 0, false);
+                _pan = (region.Element, region.Axis, region.MaxOffset, along,
+                    ScrollClock.OffsetOf(region.Element) ?? region.Fallback, along, _lastTimeMs, 0, false);
                 break;
             }
         }
@@ -2292,7 +2293,7 @@ public sealed class PhotonHost
                 Draggable d => d.RestOffset,
                 _ => 0f,
             };
-            _drags.Release(drag.Path, _lastTimeMs, rest);
+            _drags.Release(drag.Element, _lastTimeMs, rest);
         }
 
         _drag = null;
@@ -2391,7 +2392,7 @@ public sealed class PhotonHost
                 var raw = horizontal ? x - drag.StartX : y - drag.StartY;
                 var travel = Math.Clamp(Report(draggable, raw, drag.Extent),
                     draggable.Min, draggable.Max);
-                _drags.Release(drag.Path, _lastTimeMs,
+                _drags.Release(drag.Element, _lastTimeMs,
                     draggable.Normalized ? draggable.RestOffset * drag.Extent : draggable.RestOffset);
                 draggable.OnReleased?.Invoke(travel);
                 NeedsRender = true;
@@ -2402,12 +2403,12 @@ public sealed class PhotonHost
             var dy = y - drag.StartY;
             if (dy >= DragDismiss.ThresholdDp)
             {
-                _drags.Drop(drag.Path);
+                _drags.Drop(drag.Element);
                 dismiss.OnDismiss?.Invoke();
             }
             else
             {
-                _drags.Release(drag.Path, _lastTimeMs);
+                _drags.Release(drag.Element, _lastTimeMs);
             }
             NeedsRender = true;
             return true;
@@ -2419,7 +2420,7 @@ public sealed class PhotonHost
         if (_pan is { Active: true } flick)
         {
             _pan = null;
-            if (_scrolls.Fling(flick.Path, -flick.Velocity, flick.MaxOffset)) NeedsRender = true;
+            if (_scrolls.Fling(flick.Element, -flick.Velocity, flick.MaxOffset)) NeedsRender = true;
             return true;
         }
         _pan = null;

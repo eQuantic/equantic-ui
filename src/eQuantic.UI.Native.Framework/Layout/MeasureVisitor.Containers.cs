@@ -193,13 +193,14 @@ internal sealed partial class MeasureVisitor
         result.Bounds = new Rect(0, 0, width, height);
 
         var maxOffset = MathF.Max(0, horizontal ? child.Bounds.Width - width : child.Bounds.Height - height);
-        // Scroll compositor v1: the host's stored offset wins; the node's programmatic Offset is the
-        // default until the user scrolls. The realizer registers the region via ScrollMeta, with the
-        // range of the measure the tree KEEPS, which is the last one: a scroller measured again (a
-        // wrapping line that resolved, a Flexible's ceiling) kept the range of its first measure, so
-        // a viewport capped to 300 around 800 of content stopped scrolling at 400 instead of 500.
-        var offset = Math.Clamp(ctx.ScrollOffsets?.Get(at.Path) ?? scroll.Offset, 0, maxOffset);
-        if (ctx.ScrollMeta is { } meta) meta[scroll] = (at.Path, maxOffset);
+        // Scroll compositor v1: where the host scrolled the view wins, read off its position; the
+        // node's programmatic Offset is the default until the user scrolls. The paint walk registers
+        // the region with the range this node carries, the range of the measure the tree KEEPS: a
+        // scroller measured again (a wrapping line that resolved, a Flexible's ceiling) once kept the
+        // range of its first measure, so a viewport capped to 300 around 800 of content stopped
+        // scrolling at 400 instead of 500.
+        var offset = Math.Clamp(ScrollClock.OffsetOf(at.Element) ?? scroll.Offset, 0, maxOffset);
+        result.ScrollRange = maxOffset;
         child.Bounds = child.Bounds with
         {
             X = horizontal ? -offset : 0,
@@ -263,12 +264,12 @@ internal sealed partial class MeasureVisitor
         // depends on it (the child's wrap, the siblings' share of the row) follows the glide too,
         // which is what `transition: width` does in a browser. Hug/Fill have no number to glide.
         if (ctx.Transitions is { } glide
-            && TransitionStore.Only(style.Transition, StyleChannels.Size) is { } sizeSpec)
+            && TransitionClock.Only(style.Transition, StyleChannels.Size) is { } sizeSpec)
         {
             if (style.Width.Kind == SizeKind.Fixed)
-                style = style with { Width = glide.Resolve(at.Path + ":w", style.Width.Value, ctx.TimeMs, sizeSpec, ctx.ReducedMotion) };
+                style = style with { Width = glide.Resolve(at.Element, GlideChannel.Width, style.Width.Value, ctx.TimeMs, sizeSpec, ctx.ReducedMotion) };
             if (style.Height.Kind == SizeKind.Fixed)
-                style = style with { Height = glide.Resolve(at.Path + ":h", style.Height.Value, ctx.TimeMs, sizeSpec, ctx.ReducedMotion) };
+                style = style with { Height = glide.Resolve(at.Element, GlideChannel.Height, style.Height.Value, ctx.TimeMs, sizeSpec, ctx.ReducedMotion) };
         }
 
         // Between the box's edge and its child: the padding, and the border where it is drawn (#629).

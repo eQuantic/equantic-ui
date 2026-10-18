@@ -34,17 +34,12 @@ internal sealed class PressScope
         CaretVisible = caretVisible;
     }
 
-    /// <summary>Where a scrollable path currently sits — the host's own store, read-only.</summary>
-    public Func<string, float?>? ScrollOffset { get; init; }
-
     /// <summary>The IME composition in flight for the focused field ("" when none).</summary>
     public string MarkedText { get; init; } = "";
 
     /// <summary>A phone keyboard's composition in the focused field, as a range of the text it was
     /// composed in, or null (see <see cref="TextEditingValue"/>). Drawn only over that text.</summary>
     public (int Start, int End, string Text)? Composing { get; init; }
-
-    public float? ScrollOffsetOf(string path) => ScrollOffset?.Invoke(path);
 
     /// <summary>The selected range in the field under edit (equal = no selection).</summary>
     public int SelectionStart { get; }
@@ -97,11 +92,12 @@ internal sealed class PressScope
     /// </summary>
     public SimulatedState Simulated { get; set; }
 
-    /// <summary>The surface an <see cref="Primitives.InView"/> is measured against, and what it
-    /// last answered — the node is rebuilt every frame and cannot remember for itself.</summary>
+    /// <summary>The surface an <see cref="Primitives.InView"/> is measured against.</summary>
     public Rect Surface { get; set; }
 
-    public InViewStore? InView { get; init; }
+    /// <summary>Whether an <see cref="Primitives.InView"/> reports in this frame: only in a tree that
+    /// is drawn again, a frame realized with a live owner (see <see cref="InViewState"/>).</summary>
+    public bool ReportsInView { get; init; }
 
     public ColorToken? PendingFill { get; set; }
     public bool PendingFocusRing { get; set; }

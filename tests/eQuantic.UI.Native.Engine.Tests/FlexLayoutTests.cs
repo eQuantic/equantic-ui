@@ -145,10 +145,10 @@ public class FlexLayoutTests
         pinned.Children[0].Bounds.Width.Should().BeApproximately(300, 0.01f, "the scroller itself is capped, not only its wrapper");
 
         var sideways = new ScrollView(FixedBox(800, 20), ScrollAxis.Horizontal) { Width = 400, Height = 20 };
-        var ranges = new Dictionary<ScrollView, (string Path, float MaxOffset)>();
         LayoutEngine.Layout(InAShareOf300(sideways), 600, 300,
-            new LayoutContext(PhotonTheme.Instance, ApproximateTextMeasurer.Instance) { ScrollMeta = ranges });
-        ranges[sideways].MaxOffset.Should().BeApproximately(500, 0.01f, "800 of content in a 300 viewport");
+                new LayoutContext(PhotonTheme.Instance, ApproximateTextMeasurer.Instance))
+            .Children[0].Children[0].ScrollRange
+            .Should().BeApproximately(500, 0.01f, "800 of content in a 300 viewport");
     }
 
     /// <summary>
@@ -168,11 +168,10 @@ public class FlexLayoutTests
             var row = new Row(gap: 0) { Width = 600 };
             row.Add(new Flexible(new AdaptiveNode(compact, medium: null, expanded: arm()), flex: 1));
             row.Add(new Flexible(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 }), flex: 1));
-            var ranges = new Dictionary<ScrollView, (string Path, float MaxOffset)>();
             var item = LayoutEngine.Layout(row, 600, 300,
-                new LayoutContext(PhotonTheme.Instance, ApproximateTextMeasurer.Instance) { ScrollMeta = ranges }).Children[0];
+                new LayoutContext(PhotonTheme.Instance, ApproximateTextMeasurer.Instance)).Children[0];
             item.Bounds.Width.Should().BeApproximately(300, 0.01f, "the item takes its share");
-            return (item.Children[0].Bounds.Width, compact is ScrollView scroller ? ranges[scroller].MaxOffset : 0);
+            return (item.Children[0].Bounds.Width, compact is ScrollView ? item.Children[0].ScrollRange : 0);
         }
 
         static ScrollView Scroller(float width) =>

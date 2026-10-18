@@ -222,3 +222,6 @@ static eQuantic.UI.Primitives.BuildOwner.Structural() -> eQuantic.UI.Primitives.
 *REMOVED*eQuantic.UI.Primitives.StatefulComponent.NotifyMounted() -> void
 *REMOVED*eQuantic.UI.Primitives.StatefulComponent.NotifyUnmounted() -> void
 *REMOVED*eQuantic.UI.Primitives.StatefulComponent.StateInvalidated -> System.Action?
+eQuantic.UI.Primitives.BuildOwner.Live.get -> bool
+eQuantic.UI.Primitives.NodeElement.State.get -> object?
+eQuantic.UI.Primitives.NodeElement.State.set -> void

@@ -33,7 +33,7 @@ public class PerfHarnessTests
 
     /// <summary>A dashboard-shaped scene: 24 cards of text + buttons over a moving strip — dense
     /// enough that a structural regression moves the numbers, small enough to stay fast.</summary>
-    private static VisualNode DenseScene(IAppTheme theme)
+    private static VisualNode DenseScene(IAppTheme theme, bool gliding = false)
     {
         var page = new Column(gap: Space.S3) { Width = SizeValue.Fill };
 
@@ -64,6 +64,8 @@ public class PerfHarnessTests
                     Background = theme.Surface,
                     CornerRadius = new CornerRadii(8),
                     Padding = EdgeInsets.All(Space.S3),
+                    Elevation = gliding ? 1 : 0,
+                    Transition = gliding ? TransitionSpec.All() : null,
                 }, card), 1));
             }
             page.Add(row);
@@ -136,6 +138,14 @@ public class PerfHarnessTests
             }, card);
         }
     }
+
+    /// <summary>
+    /// The dense scene in a scroll view, every card gliding its colours, its shadow, its opacity and
+    /// its transform: a screen whose nodes keep state between frames, which <see cref="DenseScene"/>
+    /// has none of. Every track resolves on every frame, settled or not (#975).
+    /// </summary>
+    private static VisualNode GlidingScene(IAppTheme theme) =>
+        new ScrollView(DenseScene(theme, gliding: true)) { Height = SizeValue.Fill };
 
     private const int OverlayLayers = 8;
 
@@ -320,6 +330,25 @@ public class PerfHarnessTests
                           + $"(ceiling {PooledStatefulCeilingBytesPerFrame})");
         perFrame.Should().BeLessThan(PooledStatefulCeilingBytesPerFrame,
             "a frame the loop asks for moves a strip and builds no component, stateful or not");
+    }
+
+    /// <summary>
+    /// The gliding scene's steady frame, with the shells' configuration. Measured 2026-10-18 (#975):
+    /// 73,669 bytes on main, where every track of every card was found by a string formed that frame
+    /// (the node's path and a channel, about twenty-five a card), and 39,133 once the tracks live on
+    /// each card's position under a key that is a value. The ceiling is that number and about a tenth.
+    /// </summary>
+    private const long PooledGlidingCeilingBytesPerFrame = 43 * 1024;
+
+    [Fact]
+    public void AGlidingScene_ItsSteadyFrameStaysUnderItsCeiling()
+    {
+        var perFrame = PooledBytesPerFrame(GlidingScene(PhotonTheme.Instance));
+
+        _output.WriteLine($"pooled gliding steady-state allocation: {perFrame} bytes/frame "
+                          + $"(ceiling {PooledGlidingCeilingBytesPerFrame})");
+        perFrame.Should().BeLessThan(PooledGlidingCeilingBytesPerFrame,
+            "a settled glide resolves its tracks every frame and should form nothing to find them");
     }
 
     [Fact]

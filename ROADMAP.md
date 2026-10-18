@@ -415,7 +415,8 @@ desktop shell surface (menus, tray, file dialogs, notifications, deep links); ad
 (`--sign -`) that breaks TCC grants every build; one window per process.
 
 The sweep also found what SHRINKS the work: a deterministic time channel already runs through
-layout (`TransitionStore`, pure in `(path, target, timeMs)`, wired at two call sites), the 120 Hz
+layout (`TransitionStore`, `TransitionClock` since #975, pure in `(path, target, timeMs)`, wired at
+two call sites), the 120 Hz
 driver exists (as a run-loop timer — the ticker work upgrades it to a display link), two-stop
 radial gradients exist, and the shader toolchain self-resolves — and **W1's first shape is
 DONE**: `FillAnnularSector` shipped in 0.2.0-preview.45 as an exact SDF with Reference↔Metal↔Vulkan

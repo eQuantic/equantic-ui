@@ -18,41 +18,48 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// </summary>
 public class DragDismissTests
 {
-    // ---- The store ------------------------------------------------------------------------------
+    // ---- The clock ------------------------------------------------------------------------------
+
+    /// <summary>A gesture's position, kept by an owner as a host keeps it: where its drag lives.</summary>
+    private static Element Surface() =>
+        BuildOwner.Structural().Build(new DragDismiss(new Box(new BoxStyle()), () => { }),
+            new ComponentContext(PhotonTheme.Instance), WindowSizeClass.Compact, rebuildAll: true);
 
     [Fact]
-    public void Store_FollowsRaw_GlidesBackOnRelease_AndDropsOnDismiss()
+    public void Clock_FollowsRaw_GlidesBackOnRelease_AndDropsOnDismiss()
     {
-        var store = new DragStore();
+        var clock = new DragClock();
+        var s = Surface();
 
-        store.BeginFrame();
-        store.Drag("s", 40);
-        store.Resolve("s", 0).Should().Be(40f, "an active drag follows raw");
-        store.AnyActive.Should().BeFalse("input marks the frame dirty — a held finger burns no frames");
+        clock.BeginFrame();
+        clock.Drag(s, 40);
+        clock.Resolve(s, 0).Should().Be(40f, "an active drag follows raw");
+        clock.AnyActive.Should().BeFalse("input marks the frame dirty — a held finger burns no frames");
 
-        store.Release("s", 1000);
-        store.BeginFrame();
-        store.Resolve("s", 1100).Should().Be(20f, "smoothstep midpoint of the Base glide-back");
-        store.AnyActive.Should().BeTrue("the glide keeps frames scheduled");
+        clock.Release(s, 1000);
+        clock.BeginFrame();
+        clock.Resolve(s, 1100).Should().Be(20f, "smoothstep midpoint of the Base glide-back");
+        clock.AnyActive.Should().BeTrue("the glide keeps frames scheduled");
 
-        store.BeginFrame();
-        store.Resolve("s", 1300).Should().Be(0f, "landed");
-        store.AnyActive.Should().BeFalse();
+        clock.BeginFrame();
+        clock.Resolve(s, 1300).Should().Be(0f, "landed");
+        clock.AnyActive.Should().BeFalse();
 
-        store.Drag("s", 30);
-        store.Drop("s");
-        store.Resolve("s", 0).Should().Be(0f, "a dismissal clears the offset outright");
+        clock.Drag(s, 30);
+        clock.Drop(s);
+        clock.Resolve(s, 0).Should().Be(0f, "a dismissal clears the offset outright");
     }
 
     [Fact]
-    public void Store_RemembersSignedTravel_AndTheHostClamps()
+    public void Clock_RemembersSignedTravel_AndTheHostClamps()
     {
-        // The store used to clamp at zero, which made a sideways swipe-to-reveal impossible to
+        // The clock used to clamp at zero, which made a sideways swipe-to-reveal impossible to
         // express. Clamping is the GESTURE's rule — a sheet never drags up past rest, a swipeable
         // row travels negative — so it lives with the node's limits, at the host.
-        var store = new DragStore();
-        store.Drag("s", -25);
-        store.Resolve("s", 0).Should().Be(-25f, "the store remembers; the caller decides what is legal");
+        var clock = new DragClock();
+        var s = Surface();
+        clock.Drag(s, -25);
+        clock.Resolve(s, 0).Should().Be(-25f, "the clock remembers; the caller decides what is legal");
     }
 
     // ---- The host state machine -----------------------------------------------------------------
@@ -96,7 +103,16 @@ public class DragDismissTests
     {
         var (_, _, frame) = SettledSheet();
         frame.DragRegions.Should().ContainSingle("the dismissible sheet is the one drag surface");
-        frame.DragRegions[0].Path.Should().StartWith("ov", "the sheet lives in the overlay pass");
+        InALayer(frame.DragRegions[0].Element).Should().BeTrue("the sheet lives in the overlay pass");
+    }
+
+    /// <summary>Whether a position is held under an <see cref="Overlay"/>, which the overlay pass
+    /// draws.</summary>
+    private static bool InALayer(Element at)
+    {
+        for (var above = at.Parent; above is not null; above = above.Parent)
+            if (above.Configuration is Overlay) return true;
+        return false;
     }
 
     [Fact]
