@@ -58,9 +58,9 @@ public class ClosedOverlayTests
 
         closed.Commands.Should().Be(bare.Commands, "a dismissed layer draws exactly nothing");
         closed.Frame.OverlayRoots.Should().BeEmpty();
-        closed.Frame.HitRegions.Should().NotContain(region => region.Path.StartsWith("ov"));
-        closed.Frame.FocusStops.Should().NotContain(stop => stop.Path.StartsWith("ov"));
-        closed.Host.Semantics().Should().NotContain(node => node.Path.StartsWith("ov"));
+        closed.Frame.HitRegions.Should().NotContain(region => Positions.InALayer(region.Element));
+        closed.Frame.FocusStops.Should().NotContain(stop => Positions.InALayer(stop.Element));
+        closed.Host.Semantics().Should().NotContain(node => Positions.InALayer(closed.Frame, node.Id));
         closed.Host.Semantics().Should().BeEquivalentTo(bare.Host.Semantics());
     }
 
@@ -74,41 +74,54 @@ public class ClosedOverlayTests
 
         open.Commands.Should().BeGreaterThan(bare.Commands);
         open.Frame.OverlayRoots.Should().ContainSingle();
-        open.Frame.HitRegions.Should().Contain(region => region.Path.StartsWith("ov"));
-        open.Frame.FocusStops.Should().Contain(stop => stop.Path.StartsWith("ov"));
-        open.Host.Semantics().Should().Contain(node => node.Path.StartsWith("ov"));
+        open.Frame.HitRegions.Should().Contain(region => Positions.InALayer(region.Element));
+        open.Frame.FocusStops.Should().Contain(stop => Positions.InALayer(stop.Element));
+        open.Host.Semantics().Should().Contain(node => Positions.InALayer(open.Frame, node.Id));
+    }
+
+    /// <summary>A page that holds a drawer and a dialog, and closes the drawer.</summary>
+    private sealed class TwoLayers : Primitives.StatefulComponent
+    {
+        private bool _drawerOpen = true;
+
+        public void CloseTheDrawer() => SetState(() => _drawerOpen = false);
+
+        public override VisualNode Build(ComponentContext context) => Page(
+            new Overlay(Dialog("Drawer")) { Open = _drawerOpen, Motion = Fade, Label = "Drawer" },
+            new Overlay(Dialog("Dialog")) { Open = true, Motion = Fade, Label = "Dialog" });
     }
 
     /// <summary>
-    /// The reason the gate lives in the realize pass and not in <c>EmitOverlay</c>: a layer's paths
-    /// are <c>ov{i}</c> by its index in the QUEUE, so declining to queue a closed one renumbers every
-    /// layer after it. Closing the toast above a dialog would have moved the dialog to a new identity
-    /// — and identity is what carries its focus, its pressed state and its presence snapshots across
-    /// the rebuild. The index stays; only the work goes.
+    /// The reason the gate lives in the realize pass and not in <c>EmitOverlay</c>: a layer was named
+    /// <c>ov{i}</c> by its index in the QUEUE, so declining to queue a closed one would have renumbered
+    /// every layer after it, and closing the toast above a dialog would have moved the dialog to a new
+    /// identity — and identity is what carries its focus, its pressed state and its presence across
+    /// the rebuild. A layer is its overlay's position now, which the queue cannot renumber; the test
+    /// stays as the pin that closing one layer leaves the other its identity.
     /// </summary>
     [Fact]
     public void ClosingTheLayerAboveAnotherDoesNotRenameIt()
     {
-        var both = Render(Page(
-            new Overlay(Dialog("Drawer")) { Open = true, Motion = Fade, Label = "Drawer" },
-            new Overlay(Dialog("Dialog")) { Open = true, Motion = Fade, Label = "Dialog" }));
+        var page = new TwoLayers();
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
+        var both = host.RenderFrame(new DisplayListBuilder());
+        both.OverlayRoots.Should().HaveCount(2);
+        var dialogLayer = both.OverlayRoots[1].Element;
 
-        both.Frame.OverlayRoots.Select(root => root.Path).Should().Equal(["ov0", "ov1"]);
+        page.CloseTheDrawer();
+        var drawerGone = host.RenderFrame(new DisplayListBuilder());
 
-        var drawerGone = Render(Page(
-            new Overlay(Dialog("Drawer")) { Open = false, Motion = Fade, Label = "Drawer" },
-            new Overlay(Dialog("Dialog")) { Open = true, Motion = Fade, Label = "Dialog" }));
-
-        drawerGone.Frame.OverlayRoots.Select(root => root.Path).Should().Equal(["ov1"],
-            "the surviving layer keeps the identity it had while the other was open");
+        drawerGone.OverlayRoots.Should().ContainSingle()
+            .Which.Element.Should().BeSameAs(dialogLayer,
+                "the surviving layer keeps the identity it had while the other was open");
 
         // THE PAIRING, at the place it is observable: the semantics walk reads OverlayLayers[i]
         // beside OverlayRoots[i], so a list that shrinks out of step announces the closed layer's
         // name over the open layer's contents — or, when the closed one is first, announces nothing
         // at all, because the gate that reads Modal and Open finds the wrong node.
-        drawerGone.Host.Semantics().Should()
+        host.Semantics().Should()
             .ContainSingle(node => node.Role == SemanticRole.Dialog)
-            .Which.Should().Match<SemanticNode>(dialog => dialog.Label == "Dialog" && dialog.Path == "ov1");
+            .Which.Should().Match<SemanticNode>(dialog => dialog.Label == "Dialog" && dialog.Id == dialogLayer!.Id);
     }
 
     /// <summary>
@@ -126,6 +139,6 @@ public class ClosedOverlayTests
 
         closed.Commands.Should().Be(open.Commands);
         closed.Frame.OverlayRoots.Should().ContainSingle();
-        closed.Host.Semantics().Should().Contain(node => node.Path.StartsWith("ov"));
+        closed.Host.Semantics().Should().Contain(node => Positions.InALayer(closed.Frame, node.Id));
     }
 }

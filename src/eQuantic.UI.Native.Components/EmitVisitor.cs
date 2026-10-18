@@ -42,6 +42,15 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     private EmitVisitor() { }
 
     /// <summary>
+    /// The position a node drawn here was laid out for, which its regions and its stop are addressed
+    /// by. Every node a build made has one, so a node without it is the engine gone wrong, refused
+    /// where it happens rather than registered under nothing.
+    /// </summary>
+    private static Element PositionOf(LayoutNode node) =>
+        node.Element ?? throw new InvalidOperationException(
+            $"A {node.Source.GetType().Name} was drawn with no position to address it by.");
+
+    /// <summary>
     /// The entry, and the group-opacity/transform wrapper that has to sit OUTSIDE the dispatch
     /// because it wraps the whole box — chrome and children alike.
     /// </summary>
@@ -113,10 +122,10 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         var press = s.Press;
         // A DISABLED control shows no press and no focus, the handoff's "disabled mutes everything":
         // the web gives it no eq-pressable, so neither the fill swap, the ring, nor a state family
-        // reaches it. The host tracks a press and a focus BY PATH, so a control that rebuilt as
+        // reaches it. The host tracks a press and a focus BY POSITION, so a control that rebuilt as
         // disabled while held is still tracked here, and the CURRENT node is what decides (#508).
         var disabledControl = node.Source is Pressable { Disabled: true };
-        var pressTracked = !disabledControl && press.IsTracked(node, press.Pressed, press.PressedPath);
+        var pressTracked = !disabledControl && press.IsPressed(node);
         if (pressTracked && node.Source is Pressable { PressedBackground: { } pressedFill })
             press.PendingFill = pressedFill;
         // A SIMULATED press takes the fill from the Pressable being pictured — the host is tracking
@@ -125,8 +134,8 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
             && node.Source is Pressable { Disabled: false, PressedBackground: { } simulatedFill })
             press.PendingFill = simulatedFill;
         var focusTracked = !disabledControl
-            && (press.Focused is not null || press.FocusedPath is not null)
-            && press.IsTracked(node, press.Focused, press.FocusedPath);
+            && (press.Focused is not null || press.FocusedId != 0)
+            && press.IsFocused(node);
         if (focusTracked)
             press.PendingFocusRing = true;
         else if ((press.Simulated & SimulatedState.Focused) != 0 && node.Source is Pressable { Disabled: false })
@@ -247,7 +256,7 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     // asks whether it changed.
     public Nothing Visit(LiveRegion node, EmitState s)
     {
-        s.Input.Add(new LiveRegionMark(s.Node.Path ?? "", node.Label ?? "", node.Urgency, s.Node));
+        s.Input.Add(new LiveRegionMark(PositionOf(s.Node), node.Label ?? "", node.Urgency, s.Node));
         Descend(s);
         return Nothing.Value;
     }

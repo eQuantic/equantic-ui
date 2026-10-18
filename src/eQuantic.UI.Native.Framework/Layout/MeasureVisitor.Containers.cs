@@ -12,7 +12,7 @@ internal sealed partial class MeasureVisitor
     /// host reports them; on a desktop window they are zero, which is the correct answer there.
     /// </summary>
     private LayoutNode MeasureSafeArea(SafeArea safeArea, LayoutConstraints constraints,
-        LayoutContext ctx, Position at)
+        LayoutContext ctx, Element? at)
     {
         var (maxW, maxH) = (constraints.MaxWidth, constraints.MaxHeight);
         var host = ctx.SafeAreaInsets;
@@ -31,7 +31,7 @@ internal sealed partial class MeasureVisitor
         // Transparent to stretch, like every wrapper: the system's margins shrink the box, they
         // do not change who decides the size.
         var child = Measure(safeArea.Child, constraints.WithMax(
-            MathF.Max(0, maxW - start - end), MathF.Max(0, maxH - top - bottom)), ctx, ctx.Child(at, 0));
+            MathF.Max(0, maxW - start - end), MathF.Max(0, maxH - top - bottom)), ctx, at?.ChildAt(0));
         child.Bounds = child.Bounds with { X = start, Y = top };
 
         var node = ctx.Node(safeArea,
@@ -44,7 +44,7 @@ internal sealed partial class MeasureVisitor
     /// non-positioned children align by <see cref="Stack.Align"/>; Positioned children anchor to the
     /// resolved frame with signed offsets (unset axes fall back to the alignment). Paint order is
     /// child order — the LayoutNode children keep it.</summary>
-    private LayoutNode MeasureStack(Stack stack, LayoutConstraints constraints, LayoutContext ctx, Position at)
+    private LayoutNode MeasureStack(Stack stack, LayoutConstraints constraints, LayoutContext ctx, Element? at)
     {
         var (maxW, maxH) = (constraints.MaxWidth, constraints.MaxHeight);
         var result = ctx.Node(stack);
@@ -78,7 +78,7 @@ internal sealed partial class MeasureVisitor
             var (roomW, roomH) = child is Positioned anchored
                 ? PositionedRoom(anchored, childMaxW, childMaxH, knownW, knownH)
                 : (childMaxW, childMaxH);
-            var childAt = ctx.Child(at, stackIndex, child);
+            var childAt = at?.ChildAt(stackIndex);
             var measured = Measure(
                 child,
                 constraints.ForChild(roomW, roomH).DecidedByContent(stackIndetW, stackIndetH),
@@ -173,7 +173,7 @@ internal sealed partial class MeasureVisitor
     /// natural extent) and is offset by the programmatic scroll position; the viewport itself resolves
     /// explicit &gt; Fill &gt; hug-the-child (capped by the available space). Clipping happens at the
     /// realizer via the engine clip primitive.</summary>
-    private LayoutNode MeasureScrollView(ScrollView scroll, LayoutConstraints constraints, LayoutContext ctx, Position at)
+    private LayoutNode MeasureScrollView(ScrollView scroll, LayoutConstraints constraints, LayoutContext ctx, Element? at)
     {
         var (maxW, maxH) = (constraints.MaxWidth, constraints.MaxHeight);
         var result = ctx.Node(scroll);
@@ -181,7 +181,7 @@ internal sealed partial class MeasureVisitor
 
         var child = Measure(scroll.Child, constraints.ForChild(
             horizontal ? float.PositiveInfinity : maxW,
-            horizontal ? maxH : float.PositiveInfinity), ctx, ctx.Child(at, 0));
+            horizontal ? maxH : float.PositiveInfinity), ctx, at?.ChildAt(0));
         result.Adopt(child);
 
         var width = ResolveSelf(scroll.Width, maxW, MathF.Min(child.Bounds.Width, maxW));
@@ -199,7 +199,7 @@ internal sealed partial class MeasureVisitor
         // scroller measured again (a wrapping line that resolved, a Flexible's ceiling) once kept the
         // range of its first measure, so a viewport capped to 300 around 800 of content stopped
         // scrolling at 400 instead of 500.
-        var offset = Math.Clamp(ScrollClock.OffsetOf(at.Element) ?? scroll.Offset, 0, maxOffset);
+        var offset = Math.Clamp(ScrollClock.OffsetOf(at) ?? scroll.Offset, 0, maxOffset);
         result.ScrollRange = maxOffset;
         child.Bounds = child.Bounds with
         {
@@ -252,7 +252,7 @@ internal sealed partial class MeasureVisitor
             padding.Bottom + ((sides & BorderSides.Bottom) != 0 ? border : 0));
     }
 
-    private LayoutNode MeasureBox(Box box, LayoutConstraints constraints, LayoutContext ctx, Position at)
+    private LayoutNode MeasureBox(Box box, LayoutConstraints constraints, LayoutContext ctx, Element? at)
     {
         var (maxW, maxH) = (constraints.MaxWidth, constraints.MaxHeight);
         var (stretchW, stretchH) = (constraints.Width.Stretch, constraints.Height.Stretch);
@@ -267,9 +267,9 @@ internal sealed partial class MeasureVisitor
             && TransitionClock.Only(style.Transition, StyleChannels.Size) is { } sizeSpec)
         {
             if (style.Width.Kind == SizeKind.Fixed)
-                style = style with { Width = glide.Resolve(at.Element, GlideChannel.Width, style.Width.Value, ctx.TimeMs, sizeSpec, ctx.ReducedMotion) };
+                style = style with { Width = glide.Resolve(at, GlideChannel.Width, style.Width.Value, ctx.TimeMs, sizeSpec, ctx.ReducedMotion) };
             if (style.Height.Kind == SizeKind.Fixed)
-                style = style with { Height = glide.Resolve(at.Element, GlideChannel.Height, style.Height.Value, ctx.TimeMs, sizeSpec, ctx.ReducedMotion) };
+                style = style with { Height = glide.Resolve(at, GlideChannel.Height, style.Height.Value, ctx.TimeMs, sizeSpec, ctx.ReducedMotion) };
         }
 
         // Between the box's edge and its child: the padding, and the border where it is drawn (#629).
@@ -345,7 +345,7 @@ internal sealed partial class MeasureVisitor
                 constraints.ForChild(MathF.Max(0, childMaxW), MathF.Max(0, childMaxH))
                     .DecidedByContent(boxIndetW, boxIndetH)
                     .Stretched(boxStretchW, boxStretchH),
-                ctx, ctx.Child(at, 0));
+                ctx, at?.ChildAt(0));
             child.Bounds = child.Bounds with { X = insets.Start, Y = insets.Top };
             result.Adopt(child);
         }
@@ -381,7 +381,7 @@ internal sealed partial class MeasureVisitor
                         MathF.Max(0, height - insets.Vertical))
                     .DecidedByContent(false, clampedIndetH)
                     .Stretched(StretchKind.Block, StretchKind.None),
-                ctx, ctx.Child(at, 0));
+                ctx, at?.ChildAt(0));
             child.Bounds = child.Bounds with { X = insets.Start, Y = insets.Top };
             result.Adopt(child);
         }
@@ -489,7 +489,7 @@ internal sealed partial class MeasureVisitor
     /// remaining width by weight (collapsing to 0 in unbounded space). Children flow left→right,
     /// wrapping to a new row; a span clamps to the row's remainder. Rows size to their tallest cell.
     /// </summary>
-    private LayoutNode MeasureGrid(Grid grid, LayoutConstraints constraints, LayoutContext ctx, Position at)
+    private LayoutNode MeasureGrid(Grid grid, LayoutConstraints constraints, LayoutContext ctx, Element? at)
     {
         var (maxW, maxH) = (constraints.MaxWidth, constraints.MaxHeight);
         var result = ctx.Node(grid);
@@ -534,13 +534,13 @@ internal sealed partial class MeasureVisitor
             for (var i = 0; i < placements.Length; i++)
             {
                 var pl = placements[i];
-                // Probed at the path the probe always had, and with the child's OWN element: the
-                // instance a stateful child draws with is the one it is measured with. The probe used
-                // to BUILD at that one shared path, so every stateful candidate of a type shared a
-                // single instance there and was measured with that instance's state.
+                // Probed with the child's OWN element: the instance a stateful child draws with is
+                // the one it is measured with. The probe used to BUILD at one shared path, so every
+                // stateful candidate of a type shared a single instance there and was measured with
+                // that instance's state.
                 if (pl.Column == c && pl.Span == 1)
                     widest = MathF.Max(widest, Measure(pl.Node, constraints.ForChild(float.PositiveInfinity, maxH), ctx,
-                        new Position(at.Path + "/probe", children.At(at, i).Element)).Bounds.Width);
+                        children.At(at, i)).Bounds.Width);
             }
             widths[c] = widest;
             used += widest;

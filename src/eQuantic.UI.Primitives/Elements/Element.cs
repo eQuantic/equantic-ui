@@ -41,6 +41,14 @@ public abstract class Element
     /// <summary>Whether this position is in its tree: mounted, and not yet taken out of it.</summary>
     public bool IsActive { get; private set; }
 
+    /// <summary>
+    /// The id this position carries from the moment it mounts for as long as it lives, unique in its
+    /// tree and never given to another: what a host and a platform's accessibility bridge name a node
+    /// by. A node that takes another's place mounts a new position, and so has a new id. Flutter's
+    /// <c>SemanticsNode.id</c> is the same kind of number.
+    /// </summary>
+    public int Id { get; private set; }
+
     /// <summary>The position at <paramref name="slot"/>, or null when that slot holds nothing.</summary>
     public abstract Element? ChildAt(int slot);
 
@@ -76,6 +84,7 @@ public abstract class Element
     {
         Owner = owner;
         Parent = parent;
+        Id = owner.NextId();
         Depth = parent is null ? 0 : parent.Depth + 1;
         ComponentDepth = parent is null ? 0 : parent.ComponentDepth + (parent is ComponentElement ? 1 : 0);
         UnderInFlow = parent is not null && (parent.UnderInFlow || parent.Configuration is InFlow);

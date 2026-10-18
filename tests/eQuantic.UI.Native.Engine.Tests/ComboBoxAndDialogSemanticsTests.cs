@@ -35,7 +35,7 @@ public class ComboBoxAndDialogSemanticsTests
     private static void Open(PhotonHost host)
     {
         var trigger = host.Semantics().Single(node => node.Expanded is not null);
-        host.ActivatePath(trigger.Path).Should().BeTrue();
+        host.Activate(trigger.Id).Should().BeTrue();
         host.RenderFrame(new DisplayListBuilder(), 16);
     }
 

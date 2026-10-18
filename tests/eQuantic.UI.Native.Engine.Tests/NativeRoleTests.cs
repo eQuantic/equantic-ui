@@ -181,7 +181,7 @@ public class NativeRoleTests
     /// Three answers were wrong when this was written. A calendar day had no row on any target, so it
     /// was static text that nothing could activate. An <see cref="Adjustable"/>'s two swipe actions
     /// sat INSIDE the Android click gate, whose predicate said false for the only role that reaches
-    /// them. And a text field was advertised as activatable while <c>ActivatePath</c> searched hit
+    /// them. And a text field was advertised as activatable while <c>Activate</c> searched hit
     /// regions alone, where a field never appears — and then, once that was fixed, over a
     /// <see cref="SheetSurface"/>, whose stop carries neither an entry nor a code surface, because
     /// the repair had enumerated the kinds it knew instead of naming the two answered elsewhere.
@@ -226,11 +226,11 @@ public class NativeRoleTests
 
         var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 900);
         var frame = host.RenderFrame(new DisplayListBuilder());
-        var reachable = frame.HitRegions.Select(region => region.Path)
-            .Concat(frame.FocusStops.Select(stop => stop.Path))
+        var reachable = frame.HitRegions.Select(region => region.Element.Id)
+            .Concat(frame.FocusStops.Select(stop => stop.Id))
             .ToHashSet();
 
-        var reached = host.Semantics().Where(node => reachable.Contains(node.Path)).ToList();
+        var reached = host.Semantics().Where(node => reachable.Contains(node.Id)).ToList();
 
         reached.Select(node => node.Role).Should().Contain(
             [SemanticRole.Button, SemanticRole.TextField, SemanticRole.Slider,
@@ -249,23 +249,25 @@ public class NativeRoleTests
 
             // A user reaches it, so a screen reader has to be offered something as well. For a
             // CONTAINER the keyboard reaches (#500), a tab bar or a radio group that is the one Tab
-            // stop of its control, the offer is what it HOLDS: reachable stops under its path, each
+            // stop of its control, the offer is what it HOLDS: reachable stops under its position, each
             // held to its own row by this same loop. A leaf consumed its subtree and holds nothing,
             // so a control mapped to a row that offers nothing still fails here, which is the
             // defect this test was written for.
             if (!native.Activatable && !native.Adjustable)
             {
-                reached.Where(inside => inside.Path.StartsWith(node.Path + "/", StringComparison.Ordinal))
+                reached.Where(inside => Positions.Of(frame, inside.Id) is { } held
+                                        && Positions.Of(frame, node.Id) is { } holder
+                                        && Positions.IsUnder(held, holder))
                     .Should().Contain(inside => NativeRole.Of(inside.Role).Activatable,
                         $"a user reaches {what}, which offers nothing itself, so what it holds has to");
                 continue;
             }
 
             if (native.Activatable)
-                host.ActivatePath(node.Path).Should().BeTrue(
+                host.Activate(node.Id).Should().BeTrue(
                     $"the table tells every bridge {what} can be activated");
             if (native.Adjustable)
-                host.AdjustPath(node.Path, +1).Should().BeTrue(
+                host.Adjust(node.Id, +1).Should().BeTrue(
                     $"the table tells every bridge {what} takes the adjust gesture");
         }
     }
@@ -275,7 +277,7 @@ public class NativeRoleTests
     /// the keyboard is now THEIRS. The three routes have to agree, because landing somewhere is one
     /// behaviour — a pointer, the Tab walk and a screen reader's activate all reach the same state.
     /// <para>
-    /// They did not. The pointer route set <c>_textPath</c> (<c>BeginCodeEditing</c>), which is what
+    /// They did not. The pointer route set the field being edited (<c>BeginCodeEditing</c>), which is what
     /// <see cref="PhotonHost.CodeTarget"/> and <see cref="PhotonHost.SheetTarget"/> resolve from, and
     /// the Tab walk set a focus RING instead — so Tab onto a code editor looked like arrival and
     /// every keystroke went nowhere. A reader's activate inherited that gap the moment it shared the
@@ -295,14 +297,14 @@ public class NativeRoleTests
         var frame = host.RenderFrame(new DisplayListBuilder());
 
         // The CODE surface: activate, then type — the controller is where the text has to land.
-        host.ActivatePath(frame.CodeRegions[0].Path).Should().BeTrue();
+        host.Activate(frame.CodeRegions[0].Element.Id).Should().BeTrue();
         host.CodeTarget.Should().NotBeNull("activating a CodeField makes it the editing target");
         host.TextInput("Z").Should().BeTrue();
         code.Document.Text.Should().Contain("Z", "the keystroke reached the surface, not just its ring");
 
         // The SPREADSHEET: the same claim, through the other kind of stop — the one that carries
         // neither an entry nor a code surface, and was skipped entirely until this round.
-        host.ActivatePath(frame.SheetRegions[0].Path).Should().BeTrue();
+        host.Activate(frame.SheetRegions[0].Element.Id).Should().BeTrue();
         host.SheetTarget.Should().NotBeNull("activating a SheetSurface makes it the editing target");
         host.TextInput("7").Should().BeTrue();
         sheet.Draft.Should().Contain("7");
@@ -330,17 +332,17 @@ public class NativeRoleTests
 
         var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
         var frame = host.RenderFrame(new DisplayListBuilder());
-        var codePath = frame.CodeRegions[0].Path;
+        var codeId = frame.CodeRegions[0].Element.Id;
 
         host.FocusNext().Should().BeTrue();
-        host.FocusedPath.Should().Be(codePath, "Tab arrives at the surface");
+        host.FocusedId.Should().Be(codeId, "Tab arrives at the surface");
         host.CodeTarget.Should().BeNull("arriving is not entering — the keys still belong to the page");
 
         host.KeyDown("Tab").Should().BeTrue();
-        host.FocusedPath.Should().NotBe(codePath,
+        host.FocusedId.Should().NotBe(codeId,
             "and the next Tab TRAVELS ON rather than being eaten as an indent");
 
-        host.ActivatePath(codePath).Should().BeTrue();
+        host.Activate(codeId).Should().BeTrue();
         host.CodeTarget.Should().NotBeNull("activating enters it, which is what the table advertises");
         host.TextInput("Z").Should().BeTrue();
         code.Document.Text.Should().Contain("Z");
@@ -375,8 +377,8 @@ public class NativeRoleTests
     /// <summary>
     /// WHAT THAT PIN SAID WAS MISSING, closed (#255). A <see cref="Link"/> was announced — a role, a
     /// name, a place in reading order — and then reachable by neither Tab nor a screen reader's
-    /// activate: it sat in no <c>FocusStops</c> entry, and <c>ActivatePath</c> found no region at its
-    /// path. The web gets both from <c>&lt;a href&gt;</c> for nothing, so this was a write-once
+    /// activate: it sat in no <c>FocusStops</c> entry, and <c>Activate</c> found no region by its
+    /// name. The web gets both from <c>&lt;a href&gt;</c> for nothing, so this was a write-once
     /// promise only one realizer kept.
     /// <para>
     /// The rule is the handoff's, not this test's: "Tab reaches every interactive control"
@@ -384,7 +386,7 @@ public class NativeRoleTests
     /// </para>
     /// <para>
     /// Mutation: drop the <c>FocusStop</c> from <c>EmitLink</c> and both halves fail — the stop
-    /// assertion by name, and the activate because <c>ActivatePath</c> resolves links through it.
+    /// assertion by name, and the activate because <c>Activate</c> resolves links through it.
     /// </para>
     /// </summary>
     [Fact]
@@ -403,18 +405,18 @@ public class NativeRoleTests
         NativeRole.Of(SemanticRole.Link).Activatable.Should().BeTrue(
             "every platform announces a link as something you follow");
 
-        frame.FocusStops.Should().ContainSingle(stop => stop.Path == link.Path,
+        frame.FocusStops.Should().ContainSingle(stop => stop.Id == link.Id,
             "Tab reaches every interactive control");
-        frame.LinkRegions.Should().ContainSingle(region => region.Path == link.Path)
+        frame.LinkRegions.Should().ContainSingle(region => region.Id == link.Id)
             .Which.Destination.Should().Be("/home",
                 "following it is the REGION's half — a stop is suppressed inside a composite");
-        host.ActivatePath(link.Path).Should().BeTrue();
+        host.Activate(link.Id).Should().BeTrue();
         followed.Should().Be("/home");
     }
 
     /// <summary>
     /// The keyboard's own half, which costs nothing extra once the stop exists: Tab LANDS and Enter
-    /// FOLLOWS, because <c>ActivateFocused</c> ends in <c>ActivatePath</c> — the same seam the
+    /// FOLLOWS, because <c>ActivateFocused</c> ends in <c>Activate</c> — the same seam the
     /// reader's double tap takes. Space too, which the handoff names beside Enter.
     /// </summary>
     [Theory]
@@ -462,13 +464,14 @@ public class NativeRoleTests
         var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 200);
         var frame = host.RenderFrame(new DisplayListBuilder());
 
+        var outer = frame.Root.Element!.ChildAt(0)!;
         var announced = host.Semantics().Where(node => node.Role == SemanticRole.Link).ToList();
         announced.Should().ContainSingle("the outer link consumes what it wraps").Which
-            .Path.Should().Be("r/0");
+            .Id.Should().Be(outer.Id);
 
-        frame.FocusStops.Where(stop => stop.Path.StartsWith("r/0", StringComparison.Ordinal))
+        frame.FocusStops.Where(stop => ReferenceEquals(stop.Element, outer) || Positions.IsUnder(stop.Element, outer))
             .Should().ContainSingle("a stop the reader never names is an offer nothing performs")
-            .Which.Path.Should().Be("r/0");
+            .Which.Id.Should().Be(outer.Id);
     }
 
     /// <summary>
@@ -503,10 +506,10 @@ public class NativeRoleTests
 
         var link = host.Semantics().Should().ContainSingle(node => node.Role == SemanticRole.Link)
             .Which;
-        frame.FocusStops.Should().NotContain(stop => stop.Path == link.Path,
+        frame.FocusStops.Should().NotContain(stop => stop.Id == link.Id,
             "the grid is ONE Tab stop, and the arrows move inside it");
 
-        host.ActivatePath(link.Path).Should().BeTrue(
+        host.Activate(link.Id).Should().BeTrue(
             "a reader that announces a link must be able to follow it, stop or no stop");
         followed.Should().Be("/inner");
     }
@@ -535,7 +538,7 @@ public class NativeRoleTests
 
         string? byKeyboard = null;
         host.NavigationRequested = destination => byKeyboard = destination;
-        host.ActivatePath(region.Path).Should().BeTrue();
+        host.Activate(region.Id).Should().BeTrue();
         byKeyboard.Should().Be("", "the two routes read the same region");
     }
 
@@ -579,12 +582,13 @@ public class NativeRoleTests
         var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 200);
         var frame = host.RenderFrame(new DisplayListBuilder());
 
-        frame.FocusStops.Where(stop => stop.Path.StartsWith("r/0", StringComparison.Ordinal))
+        var control = frame.Root.Element!.ChildAt(0)!;
+        frame.FocusStops.Where(stop => ReferenceEquals(stop.Element, control) || Positions.IsUnder(stop.Element, control))
             .Should().ContainSingle($"a {outer} replaces the stops inside it rather than adding to "
                                     + $"them, and the {inner} it holds is one of those")
-            .Which.Path.Should().Be("r/0");
+            .Which.Id.Should().Be(control.Id);
 
-        host.Semantics().Select(node => node.Path).Should().Contain("r/0",
+        host.Semantics().Select(node => node.Id).Should().Contain(control.Id,
             "and the one stop it keeps is the one a reader names — a stop nothing announces is an "
             + "offer nothing performs");
     }

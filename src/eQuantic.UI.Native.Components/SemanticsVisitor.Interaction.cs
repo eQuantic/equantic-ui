@@ -36,7 +36,7 @@ internal sealed partial class SemanticsVisitor
         if (AnchorsAListbox(laidOut))
         {
             var shown = TextWithin(laidOut);
-            return Announce(new(SemanticRole.ComboBox, laidOut.Path ?? "", laidOut.Bounds,
+            return Announce(new(SemanticRole.ComboBox, IdOf(laidOut), laidOut.Bounds,
                 node.Label ?? shown, node.Label is null || shown.Length == 0 ? null : shown,
                 node.Disabled, Expanded: node.Expanded));
         }
@@ -77,7 +77,7 @@ internal sealed partial class SemanticsVisitor
         bool? selected = node.Role is PressableRole.Tab or PressableRole.Option or PressableRole.GridCell
             ? node.Selected == true
             : null;
-        return Announce(new(role, laidOut.Path ?? "", laidOut.Bounds,
+        return Announce(new(role, IdOf(laidOut), laidOut.Bounds,
             node.Label ?? TextWithin(laidOut), null, node.Disabled, check,
             node.Expanded,
             node.Role == PressableRole.Destination && node.Selected == true,
@@ -113,7 +113,7 @@ internal sealed partial class SemanticsVisitor
     /// <summary>One stop, named by the author or derived from the words inside it — the same rule
     /// the Pressable arm follows, and the reason both consume their subtree.</summary>
     public bool Visit(Link node, LayoutNode laidOut) =>
-        Announce(new(SemanticRole.Link, laidOut.Path ?? "", laidOut.Bounds,
+        Announce(new(SemanticRole.Link, IdOf(laidOut), laidOut.Bounds,
             node.Label ?? TextWithin(laidOut), null, false, Current: node.Current));
 
     /// <summary>
@@ -149,14 +149,14 @@ internal sealed partial class SemanticsVisitor
 #pragma warning disable CS8524
     public bool Visit(Adjustable node, LayoutNode laidOut) => node.Role switch
     {
-        AdjustableRole.Slider => Announce(new(SemanticRole.Slider, laidOut.Path ?? "", laidOut.Bounds,
+        AdjustableRole.Slider => Announce(new(SemanticRole.Slider, IdOf(laidOut), laidOut.Bounds,
             node.Label, node.Spoken, false,
             // The NUMBERS travel beside the words, so a bridge can offer its platform's own range — a
             // `RangeInfo` on Android, `AXMinValue`/`AXMaxValue` on macOS (#243).
             Range: node.Value)),
-        AdjustableRole.Tablist => AnnounceGroup(new(SemanticRole.TabBar, laidOut.Path ?? "",
+        AdjustableRole.Tablist => AnnounceGroup(new(SemanticRole.TabBar, IdOf(laidOut),
             laidOut.Bounds, node.Label, null, false)),
-        AdjustableRole.Radiogroup => AnnounceGroup(new(SemanticRole.RadioGroup, laidOut.Path ?? "",
+        AdjustableRole.Radiogroup => AnnounceGroup(new(SemanticRole.RadioGroup, IdOf(laidOut),
             laidOut.Bounds, node.Label, null, false)),
     };
 #pragma warning restore CS8524
@@ -172,7 +172,7 @@ internal sealed partial class SemanticsVisitor
     /// </para>
     /// </summary>
     public bool Visit(Progress node, LayoutNode laidOut) =>
-        Announce(new(SemanticRole.ProgressIndicator, laidOut.Path ?? "", laidOut.Bounds,
+        Announce(new(SemanticRole.ProgressIndicator, IdOf(laidOut), laidOut.Bounds,
             // `node.Spoken`, not `node.Value?.Spoken`: an indeterminate bar has no value and may
             // still have WORDS, which is the half #243 calls the real loss. "Estimating time
             // remaining" is most useful exactly where there is no number to fall back on.
@@ -184,7 +184,7 @@ internal sealed partial class SemanticsVisitor
     /// every row inside, which is why this declined while the web honoured it.
     /// </summary>
     public bool Visit(Navigable node, LayoutNode laidOut) =>
-        AnnounceGroup(new(SemanticRole.Group, laidOut.Path ?? "", laidOut.Bounds,
+        AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds,
             node.Label, null, false));
 
     /// <summary>
@@ -211,7 +211,7 @@ internal sealed partial class SemanticsVisitor
     /// </para>
     /// </summary>
     public bool Visit(LiveRegion node, LayoutNode laidOut) =>
-        AnnounceGroup(new(SemanticRole.Group, laidOut.Path ?? "", laidOut.Bounds,
+        AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds,
             node.Label, null, false, Live: node.Urgency));
 
     /// <inheritdoc cref="Wraps"/>

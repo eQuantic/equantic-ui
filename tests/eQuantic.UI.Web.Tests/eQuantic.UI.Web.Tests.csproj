@@ -56,5 +56,8 @@
     <!-- One metadata reference per assembly for the whole test process, shared by every compilation
          a test creates: a new one per compilation held tens of gigabytes (#481). -->
     <Compile Include="..\Shared\TestReferences.cs" Link="Shared\TestReferences.cs" />
+    <!-- How a test starts a program: one deadline over the exit and both streams, and for dotnet a
+         build that leaves nothing holding its output (#971). -->
+    <Compile Include="..\Shared\ChildProcess.cs" Link="Shared\ChildProcess.cs" />
   </ItemGroup>
 </Project>

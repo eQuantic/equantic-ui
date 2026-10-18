@@ -7,10 +7,11 @@ namespace eQuantic.UI.Native.Components;
 /// <summary>
 /// The seam .NET Hot Reload pulls when `dotnet watch` lands an edit in a RUNNING Photon app.
 /// <para>
-/// Everything else was already in place, which is why this file is small: the tree is re-expanded
-/// from the retained root on every frame (LayoutEngine calls <c>Build</c> during measure), and
-/// component state lives in a path-keyed store rather than in the objects an edit replaces — so a
-/// patched method body simply takes effect on the next frame, state intact. What was missing was
+/// Everything else was already in place, which is why this file is small: the frame an edit asks
+/// for builds every component again from the retained root (<see cref="PhotonHost.Invalidate"/>),
+/// and a stateful component's state lives on the instance its position keeps rather than in the
+/// nodes a build replaces — so a patched method body simply takes effect on the next frame, state
+/// intact. What was missing was
 /// the next frame ITSELF: an idle window presents nothing, an idle phone ticks its vsync and skips,
 /// and a metadata update arrives with no input event attached. The edit applied, and nothing moved
 /// until the mouse did — which reads as "hot reload doesn't work" while it is working perfectly.

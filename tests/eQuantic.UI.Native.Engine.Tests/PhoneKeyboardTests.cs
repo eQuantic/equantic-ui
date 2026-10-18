@@ -488,7 +488,7 @@ public class PhoneKeyboardTests
 
         host.ViewInsets = new EdgeInsets(0, 0, 0, 300);
         frame = host.RenderFrame(new DisplayListBuilder(), 32);
-        frame.CodeRegions.Should().NotContain(region => region.Path == code.Path,
+        frame.CodeRegions.Should().NotContain(region => ReferenceEquals(region.Element, code.Element),
             "the surface is under the keyboard in this frame");
 
         session.Poll().Should().Be(TextInputChange.None);
@@ -527,7 +527,7 @@ public class PhoneKeyboardTests
             "the view lays out in what the keyboard leaves");
 
         frame = host.RenderFrame(new DisplayListBuilder(), 48);
-        var field = frame.TextRegions.Single(region => region.Path == low.Path);
+        var field = frame.TextRegions.Single(region => ReferenceEquals(region.Element, low.Element));
         field.Bounds.Bottom.Should().BeLessThanOrEqualTo(300, "the field is scrolled above the keyboard");
         field.Bounds.Top.Should().BeGreaterThanOrEqualTo(0);
     }
@@ -550,7 +550,7 @@ public class PhoneKeyboardTests
         host.RenderFrame(new DisplayListBuilder(), 32);
         frame = host.RenderFrame(new DisplayListBuilder(), 48);
 
-        var field = frame.TextRegions.Single(region => region.Path == low.Path);
+        var field = frame.TextRegions.Single(region => ReferenceEquals(region.Element, low.Element));
         field.Bounds.Bottom.Should().BeLessThanOrEqualTo(300);
         field.Bounds.Top.Should().BeGreaterThanOrEqualTo(0);
     }
@@ -573,7 +573,7 @@ public class PhoneKeyboardTests
 
         host.ViewInsets = new EdgeInsets(0, 0, 0, 300);
         frame = host.RenderFrame(new DisplayListBuilder(), 32);
-        frame.TextRegions.Should().NotContain(region => region.Path == low.Path,
+        frame.TextRegions.Should().NotContain(region => ReferenceEquals(region.Element, low.Element),
             "the field is under the keyboard in this frame");
 
         session.Poll().Should().Be(TextInputChange.None);
@@ -670,7 +670,7 @@ public class PhoneKeyboardTests
         frame = host.RenderFrame(new DisplayListBuilder(), 32);
 
         host.HasTextFocus.Should().BeTrue();
-        var field = frame.FocusStops.Single(stop => stop.Path == host.FocusedPath).Bounds;
+        var field = frame.FocusStops.Single(stop => stop.Id == host.FocusedId).Bounds;
         field.Bottom.Should().BeGreaterThan(300, "the field is below the window");
         host.Semantics().Single(node => node.Role == SemanticRole.TextField).Bounds.Y
             .Should().BeApproximately(field.Y, 0.5f, "the screen is drawn where it was laid out");
@@ -700,7 +700,7 @@ public class PhoneKeyboardTests
         host.RenderFrame(new DisplayListBuilder(), 64);
         frame = host.RenderFrame(new DisplayListBuilder(), 80);
 
-        frame.FocusStops.Single(stop => stop.Path == low.Path).Bounds.Top
+        frame.FocusStops.Single(stop => stop.Id == low.Element.Id).Bounds.Top
             .Should().BeGreaterThan(300, "the field is under the keyboard, where it was scrolled");
         host.Semantics().Where(node => node.Role == SemanticRole.TextField).Min(node => node.Bounds.Y)
             .Should().BeApproximately(frame.TextRegions.Min(region => region.Bounds.Y), 0.5f,
@@ -723,7 +723,7 @@ public class PhoneKeyboardTests
         frame = host.RenderFrame(new DisplayListBuilder(), 48);
         host.RenderFrame(new DisplayListBuilder(), 64);
 
-        var field = frame.TextRegions.Single(region => region.Path == low.Path).Bounds;
+        var field = frame.TextRegions.Single(region => ReferenceEquals(region.Element, low.Element)).Bounds;
         host.CaretRect()!.Value.Y.Should().BeApproximately(field.Y, 0.5f);
     }
 

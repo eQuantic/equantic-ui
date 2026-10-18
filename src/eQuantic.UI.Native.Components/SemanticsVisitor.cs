@@ -44,6 +44,13 @@ internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes)
     /// rather than travelling down with each visit.</summary>
     private readonly List<SemanticNode> _nodes = nodes;
 
+    /// <summary>The id a bridge names a node by: its position's. Every node the build made has one,
+    /// and a node a reader can land on that has none is the engine gone wrong, refused here as the
+    /// paint walk refuses it, rather than named 0 beside another such node.</summary>
+    private static int IdOf(LayoutNode node) => node.Element?.Id
+        ?? throw new InvalidOperationException(
+            $"A {node.Source.GetType().Name} was read out with no position to name it by.");
+
     // ---- the two answers ---------------------------------------------------------------------
 
     /// <summary>Keep walking: this node said nothing of its own, and its children speak for
@@ -134,6 +141,6 @@ internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes)
     {
         if (overlay is not { Modal: true, Open: true }) return;
         AnnounceGroup(new(overlay.Alert ? SemanticRole.AlertDialog : SemanticRole.Dialog,
-            root.Path ?? "", root.Bounds, overlay.Label ?? "", null, false));
+            IdOf(root), root.Bounds, overlay.Label ?? "", null, false));
     }
 }

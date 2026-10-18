@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using FluentAssertions;
@@ -100,52 +99,14 @@ public class NativeSdkEvaluationTests
                 "-getItem:PartialAppManifest", "-getItem:TrimmerRootAssembly",
             };
 
-            var info = new ProcessStartInfo("dotnet")
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                // The REPOSITORY root, not the throwaway project's folder: `dotnet` picks its SDK
-                // from the global.json it finds by walking up from the working directory, and this
-                // repository pins one. Run from a temp folder and the child evaluates with whatever
-                // SDK the machine happens to default to, which makes the answers below depend on
-                // the machine rather than on the tree.
-                WorkingDirectory = RepoRoot(),
-            };
-            foreach (var arg in args)
-                info.ArgumentList.Add(arg);
-
-            var process = Process.Start(info)
-                ?? throw new InvalidOperationException(
-                    "`dotnet` did not start. This suite runs on .NET, so the SDK is installed — " +
-                    "it is not on this process's PATH.");
-
-            // Both pipes drain from the start, and the wait is what enforces the deadline. Reading
-            // one stream to the end before touching the other deadlocks the moment the child fills
-            // the pipe nobody is reading — and a deadline checked only after both reads returned is
-            // not a deadline at all: it can never fire on the hang it exists for.
-            var outText = process.StandardOutput.ReadToEndAsync();
-            var errText = process.StandardError.ReadToEndAsync();
-
-            using var deadline = new CancellationTokenSource(EvaluationTimeout);
-            try
-            {
-                process.WaitForExitAsync(deadline.Token).GetAwaiter().GetResult();
-            }
-            catch (OperationCanceledException)
-            {
-                try { process.Kill(entireProcessTree: true); }
-                catch (InvalidOperationException) { /* it exited between the timeout and the kill */ }
-
-                throw new TimeoutException(
-                    $"evaluating a {targetFramework} consumer did not finish within " +
-                    $"{EvaluationTimeout}; the process tree was killed.");
-            }
-
-            var stdout = outText.GetAwaiter().GetResult();
-            var stderr = errText.GetAwaiter().GetResult();
+            // The REPOSITORY root, not the throwaway project's folder: `dotnet` picks its SDK from the
+            // global.json it finds by walking up from the working directory, and this repository pins
+            // one. Run from a temp folder and the child evaluates with whatever SDK the machine happens
+            // to default to, which makes the answers below depend on the machine rather than on the tree.
+            var (exitCode, stdout, stderr) = ChildProcess.Dotnet(args, EvaluationTimeout, RepoRoot());
 
             var output = stdout + stderr;
-            process.ExitCode.Should().Be(0,
+            exitCode.Should().Be(0,
                 $"evaluating a {targetFramework} consumer of the native SDK must succeed.\n{output}");
 
             using var document = JsonDocument.Parse(stdout);

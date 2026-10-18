@@ -14,10 +14,6 @@ namespace eQuantic.UI.Native.Framework;
 /// </para>
 /// </summary>
 /// <param name="Constraints">The box the parent offers, and who is stretching.</param>
-/// <param name="At">Where this node is: the path a gesture uses to survive a frame, and the element
-/// the build phase made for it.</param>
-internal readonly record struct MeasureState(LayoutConstraints Constraints, Position At)
-{
-    /// <summary>The path alone, for the stores that still key on it.</summary>
-    public string Path => At.Path;
-}
+/// <param name="At">The position the build phase made for this node, where what it keeps between
+/// frames lives and by which the host finds it again; null for a slot that holds nothing.</param>
+internal readonly record struct MeasureState(LayoutConstraints Constraints, Element? At);

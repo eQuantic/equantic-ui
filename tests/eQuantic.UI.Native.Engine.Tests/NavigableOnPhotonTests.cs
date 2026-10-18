@@ -1,5 +1,6 @@
 using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
+using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 using Xunit;
@@ -50,8 +51,9 @@ public class NavigableOnPhotonTests
         // than named: the day names come from the CULTURE (the component's own doc says so), and a
         // test that asserted "Sun" passed here and failed on a CI runner whose locale answered
         // "日" — which is the component being right and the assertion being parochial.
-        var grid = frame.FocusStops.Single(stop => stop.Grid != null).Path;
-        semantics.Where(node => node.Role == SemanticRole.StaticText && node.Path.StartsWith(grid + "/"))
+        var grid = frame.FocusStops.Single(stop => stop.Grid != null).Element;
+        semantics.Where(node => node.Role == SemanticRole.StaticText
+                                && Positions.Of(frame, node.Id) is { } day && Positions.IsUnder(day, grid))
             .Should().HaveCountGreaterThanOrEqualTo(7, "seven day names, in whatever language");
 
         frame.HitRegions.Should().HaveCountGreaterThan(27, "a day is something you tap");
@@ -71,7 +73,7 @@ public class NavigableOnPhotonTests
         var (_, frame, _) = Open();
 
         var grid = frame.FocusStops.Should().ContainSingle(stop => stop.Grid != null).Which;
-        frame.FocusStops.Where(stop => stop.Path.StartsWith(grid.Path + "/")).Should().BeEmpty(
+        frame.FocusStops.Where(stop => Positions.IsUnder(stop.Element, grid.Element)).Should().BeEmpty(
             "a month must not be 31 Tab presses");
         frame.FocusStops.Should().HaveCount(3,
             "the two month buttons and the grid — nothing else in a calendar takes the keyboard");
@@ -80,14 +82,14 @@ public class NavigableOnPhotonTests
     /// <summary>
     /// ACTIVATING the grid focuses it and leaves its keyboard working — which is the whole of what
     /// activating a composite can mean, and what the macOS and iOS bridges do to every element they
-    /// expose. Found in review: <c>ActivatePath</c> asked by ELIMINATION which stops take the
+    /// expose. Found in review: <c>Activate</c> asked by ELIMINATION which stops take the
     /// keyboard ("not a text field, so a surface"), and the composite stop this PR adds carries
     /// neither, so activating a calendar put its own path in <c>_textPath</c>, left
     /// <c>CodeTarget</c>, <c>SheetTarget</c> and <c>TextTarget</c> all null, and killed the arrows.
     /// Measured before the fix:
     /// <code>
     /// ActivatePath(grid) => True
-    ///   FocusedPath=r/0/1  HasTextFocus=True  CodeTarget=null  SheetTarget=null
+    ///   FocusedId=r/0/1  HasTextFocus=True  CodeTarget=null  SheetTarget=null
     ///   PageDown after activate => False
     /// </code>
     /// The question is asked by what the stop IS now, so a kind nobody has invented yet arrives and
@@ -97,10 +99,10 @@ public class NavigableOnPhotonTests
     public void ActivatingTheGridLeavesItsKeyboardWorking()
     {
         var (host, frame, _) = Open();
-        var grid = frame.FocusStops.Single(stop => stop.Grid != null).Path;
+        var grid = frame.FocusStops.Single(stop => stop.Grid != null).Id;
 
-        host.ActivatePath(grid).Should().BeTrue();
-        host.FocusedPath.Should().Be(grid);
+        host.Activate(grid).Should().BeTrue();
+        host.FocusedId.Should().Be(grid);
         host.HasTextFocus.Should().BeFalse("a grid is not an editing surface and never takes the caret");
 
         var month = host.Semantics()[0].Label;
@@ -111,11 +113,10 @@ public class NavigableOnPhotonTests
 
     /// <summary>
     /// A row that says <see cref="VisualNode.Key"/> keeps its identity, which is the rule every other
-    /// multi-child arm follows and this one missed on its first pass: the path IS identity on Photon
-    /// — focus, hover, a scroll offset, a drag in flight are all remembered by it — so a grid whose
-    /// rows are rebuilt or reordered under a positional path hands the ring to the row that took the
-    /// index. Found in review, and the fix is the keyed <c>ChildPath</c> overload the flex, stack and
-    /// grid passes already use.
+    /// multi-child arm follows and this one missed on its first pass: focus, hover, a scroll offset
+    /// and a drag in flight follow a node's position on Photon, so a grid whose rows are rebuilt or
+    /// reordered by place hands the ring to the row that took the index. Found in review, when the
+    /// identity was a path; the build matches the rows by key now, as it matches every list.
     /// </summary>
     [Fact]
     public void AKeyedRowKeepsItsIdentity()
@@ -127,14 +128,36 @@ public class NavigableOnPhotonTests
             return row;
         }
 
-        var reordered = new Navigable(_ => { }, [Row("b", "second"), Row("a", "first")]) { Label = "Weeks" };
-        var host = new PhotonHost(reordered, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
-        var frame = host.RenderFrame(new DisplayListBuilder());
+        var weeks = new Reorder(
+            new Navigable(_ => { }, [Row("b", "second"), Row("a", "first")]) { Label = "Weeks" },
+            new Navigable(_ => { }, [Row("a", "first"), Row("b", "second")]) { Label = "Weeks" });
+        var host = new PhotonHost(weeks, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
+        var before = RowsOf(host.RenderFrame(new DisplayListBuilder()).Root);
+        weeks.Next();
+        var after = RowsOf(host.RenderFrame(new DisplayListBuilder()).Root);
 
-        var rows = frame.Root.Children.Select(child => child.Path).ToList();
-        rows.Should().Equal(["r/[b]", "r/[a]"],
-            "a keyed row takes the key as its segment, so its identity survives the reorder that "
-            + "would have renamed a positional one");
+        after.Select(row => row.Configuration.Key).Should().Equal("a", "b");
+        after[0].Should().BeSameAs(before[1], "the row keyed a kept its position through the reorder");
+        after[1].Should().BeSameAs(before[0], "and so did the row keyed b");
+    }
+
+    /// <summary>A root that shows one grid and then the other.</summary>
+    private sealed class Reorder(VisualNode before, VisualNode after) : StatefulComponent
+    {
+        private bool _reordered;
+
+        public void Next() => SetState(() => _reordered = true);
+
+        public override VisualNode Build(ComponentContext context) => _reordered ? after : before;
+    }
+
+    /// <summary>The positions of the grid's rows, in the order the frame laid them out.</summary>
+    private static List<Element> RowsOf(LayoutNode node)
+    {
+        if (node.Source is Navigable) return node.Children.Select(row => row.Element!).ToList();
+        foreach (var child in node)
+            if (RowsOf(child) is { Count: > 0 } rows) return rows;
+        return [];
     }
 
     /// <summary>
@@ -148,7 +171,7 @@ public class NavigableOnPhotonTests
         var (host, frame, _) = Open();
         var grid = frame.FocusStops.Single(stop => stop.Grid is not null);
 
-        while (host.FocusedPath != grid.Path)
+        while (host.FocusedId != grid.Id)
             host.FocusNext().Should().BeTrue("the grid is reachable by Tab");
 
         // The month's own title, whatever the culture spells it — read rather than named, for the
@@ -168,6 +191,6 @@ public class NavigableOnPhotonTests
         host.Semantics()[0].Label.Should().NotBe(month, "a page DOES");
 
         host.KeyDown("Tab").Should().BeTrue("and the grid never swallowed Tab");
-        host.FocusedPath.Should().NotBe(grid.Path);
+        host.FocusedId.Should().NotBe(grid.Id);
     }
 }

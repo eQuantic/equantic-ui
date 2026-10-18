@@ -69,7 +69,7 @@ public sealed class PhotonHost
             if (_density == value) return;
             _density = value;
             // Every control reads it while it builds, so the next frame builds them all again.
-            NeedsRender = true;
+            RebuildAll();
         }
     }
 
@@ -90,17 +90,7 @@ public sealed class PhotonHost
     public bool NeedsRender
     {
         get => Volatile.Read(ref _needsRender);
-        private set
-        {
-            // Every request for a frame REBUILDS every component, as every frame always did, but
-            // two: a SetState, whose own position is already marked (RequestFrame), and the motion
-            // that keeps frames flowing, which changes nothing a build reads. The reason is
-            // measured: input reaches models the tree reads without a SetState (a code editor's
-            // controller, a spreadsheet's, a field's draft), and the host addresses them by path
-            // until the regions carry elements (docs/ELEMENT-TREE-PLAN.md, E2).
-            if (value) Volatile.Write(ref _rebuildAll, 1);
-            Volatile.Write(ref _needsRender, value);
-        }
+        private set => Volatile.Write(ref _needsRender, value);
     }
 
     private bool _needsRender = true;
@@ -108,6 +98,47 @@ public sealed class PhotonHost
     /// <summary>Whether the next frame rebuilds every component rather than the marked ones — an
     /// int, so the frame can take it and clear it in one step while another thread sets it.</summary>
     private int _rebuildAll = 1;
+
+    /// <summary>
+    /// Asks for a frame that builds EVERY component, for what changes what every build reads: an
+    /// invalidation the host is told of, a resize, a density change, a hot reload. Every other
+    /// request builds what is marked, as on the web (#976): a <c>SetState</c> marks its own position
+    /// (<see cref="RequestFrame"/>), input the host routes into a field or a surface is handed to
+    /// the app, which says what it changed (<see cref="RebuildUnlessTold"/>), and the press, the
+    /// focus, the hover, a caret and an offset are the host's own to paint, so a frame for them
+    /// builds nothing.
+    /// </summary>
+    private void RebuildAll()
+    {
+        Volatile.Write(ref _rebuildAll, 1);
+        NeedsRender = true;
+    }
+
+    /// <summary>
+    /// After the host handed input it routed into a field or a surface to the app's handler, which
+    /// ran while the owner's count of <c>SetState</c>s stood at <paramref name="marks"/>. The app says
+    /// with <c>SetState</c> what it changed, as on the web, and the next frame builds what it marked
+    /// (#976). A handler that called none leaves the host unable to see where the value lives,
+    /// because nothing in the tree says so: a form can keep a field's value without a
+    /// <c>SetState</c>, and the stateful component nearest above a field is not where its value lives
+    /// when it is a field component of its own, as <c>TextInput</c> is. So that frame rebuilds every
+    /// component, as every frame after input did before, and the key still shows.
+    /// </summary>
+    private void RebuildUnlessTold(int marks)
+    {
+        if (_owner.Marks == marks) RebuildAll();
+        NeedsRender = true;
+    }
+
+    /// <summary>The surface took input into its model, and its component hears it through
+    /// <paramref name="onChanged"/>, the cue its contract gives it to <c>SetState</c>
+    /// (<see cref="RebuildUnlessTold"/>).</summary>
+    private void SurfaceChanged(Action? onChanged)
+    {
+        var marks = _owner.Marks;
+        onChanged?.Invoke();
+        RebuildUnlessTold(marks);
+    }
 
     /// <summary>When the next frame is due even though nothing is dirty — the caret's next blink
     /// transition, in the same clock <see cref="RenderFrame"/> is fed. Null = nothing scheduled.</summary>
@@ -126,11 +157,16 @@ public sealed class PhotonHost
     /// dark, reduce-motion came on, a font finished loading. The tree is the same; what it paints
     /// is not, and nothing inside it would know to say so.
     /// </summary>
-    public void Invalidate() => NeedsRender = true;
+    public void Invalidate() => RebuildAll();
 
     /// <summary>A position in the tree was marked by a <c>SetState</c>: the next frame builds it, and
     /// only it (the frame's owner knows which).</summary>
-    private void RequestFrame() => Volatile.Write(ref _needsRender, true);
+    private void RequestFrame() => NeedsRender = true;
+
+    /// <summary>Work was posted for the thread that draws (<see cref="PhotonDispatcher"/>): it runs
+    /// at the top of the next frame, which builds what the work marks and nothing of its own. Safe
+    /// from any thread, like <see cref="Invalidate"/>.</summary>
+    internal void Wake() => NeedsRender = true;
 
     /// <summary>The OS "Reduce Motion" accessibility setting (spec §06): loop movement renders at
     /// rest and stops requesting frames. Platform shells (W5) feed the real setting.</summary>
@@ -146,7 +182,7 @@ public sealed class PhotonHost
         if (width == Width && height == Height) return;
         Width = width;
         Height = height;
-        NeedsRender = true;
+        RebuildAll();
     }
 
     /// <summary>W4: the platform text service (null = deterministic placeholder bars).</summary>
@@ -309,7 +345,7 @@ public sealed class PhotonHost
         var height = MathF.Max(0, Height - _viewInsets.Bottom);
         var shorter = height < _laidHeight;
         _laidHeight = height;
-        if (_textPath is null || height > _roomBeforeEdit) _roomBeforeEdit = height;
+        if (_textAt is null || height > _roomBeforeEdit) _roomBeforeEdit = height;
         var safeArea = _viewInsets.Bottom > 0
             ? SafeAreaInsets with { Bottom = MathF.Max(0, SafeAreaInsets.Bottom - _viewInsets.Bottom) }
             : SafeAreaInsets;
@@ -323,11 +359,11 @@ public sealed class PhotonHost
         // Taken and cleared as late as possible: whatever the drain, the frame ticker or an edit
         // asked for before this point is in this frame, and anything after it is in the next.
         var rebuildAll = Interlocked.Exchange(ref _rebuildAll, 0) == 1;
-        _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _owner, timeMs, ReducedMotion, _transitions, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, safeArea, _pressedPath,
-            _focusVisible ? _focusedPath : null, _textPath, caretIndex, CaretVisible,
+        _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _owner, timeMs, ReducedMotion, _transitions, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, safeArea, _pressedAt,
+            _focusVisible ? _focusedId : 0, _textAt, caretIndex, CaretVisible,
             selection.Start, selection.End, density: Density,
             markedText: _marked, composing: _composing,
-            pathCache: _pathCache, hoveredPaths: _hoverPaths,
+            hoveredAt: _hoverAt,
             nodePool: RecycleFrames ? _nodePool : null,
             windowControlsInsets: WindowControlsInsets, sizedLike: previousFrame, rebuildAll: rebuildAll);
         if (_lift != 0) builder.Pop();
@@ -343,6 +379,15 @@ public sealed class PhotonHost
             _nodePool.RecycleTree(previousFrame.Root);
             foreach (var overlay in previousFrame.OverlayRoots) _nodePool.RecycleTree(overlay);
         }
+        // A control whose position left the tree took the focus with it, as an element removed from a
+        // page does in a browser: the button that stands at its place next is not the one that was
+        // focused, and a field that left is not being edited (#976).
+        if (_focusedAt is { IsActive: false })
+        {
+            _focused = null;
+            ForgetFocus();
+        }
+        if (_textAt is { IsActive: false }) EndEditing();
         // WHAT CHANGED, once per frame. Here rather than in the semantics walk because that walk is
         // asked by a bridge whenever assistive tech is curious — never, once, or three times in a
         // frame — and an announcement posted from it would fire a number of times nobody chose.
@@ -351,13 +396,13 @@ public sealed class PhotonHost
         AdoptAutofocus();
         AdoptFocusRequests();
         // A subscribed frame ticker IS motion: frames keep flowing while anyone wants them, and the
-        // loop goes idle the moment the last subscription is disposed. Written past the setter,
-        // because motion is the one request that rebuilds nothing. A position still waiting to
-        // build keeps the request too: a SetState from a scroll callback, from a hook at the end
-        // of the frame or from a build is waiting in the owner, and a write of `false` here would
-        // leave it there until something else asked for a frame.
-        Volatile.Write(ref _needsRender,
-            _lastFrame.HasActiveMotion || gliding || PhotonFrameTicker.Shared.HasSubscribers || _owner.HasDirty);
+        // loop goes idle the moment the last subscription is disposed. Motion builds nothing, as no
+        // request does unless something marked a position. A position still waiting to build keeps
+        // the request too: a SetState from a scroll callback, from a hook at the end of the frame or
+        // from a build is waiting in the owner, and a write of `false` here would leave it there
+        // until something else asked for a frame.
+        NeedsRender = _lastFrame.HasActiveMotion || gliding || PhotonFrameTicker.Shared.HasSubscribers
+            || _owner.HasDirty;
 
         // A code surface whose caret was MOVED since the last frame is brought into view — by a key,
         // a command, a find stepping to a match. After the frame, because that is when the caret's
@@ -378,7 +423,7 @@ public sealed class PhotonHost
         // due at the next blink transition, and the shells' idle ticks ask IsFrameDue alongside
         // NeedsRender. While a drag draws a selection the caret does not blink at all (it is forced
         // solid), and the pointer is what drives frames — nothing to schedule.
-        _nextFrameDueMs = _textPath is not null && !NeedsRender && !_dragSelecting && !_codeDragging
+        _nextFrameDueMs = _textAt is not null && !NeedsRender && !_dragSelecting && !_codeDragging
             ? _caretPhaseMs + (MathF.Floor((_lastTimeMs - _caretPhaseMs) / CaretBlinkMs) + 1) * CaretBlinkMs
             : null;
         return _lastFrame;
@@ -394,14 +439,15 @@ public sealed class PhotonHost
     /// <summary>An inert control consumed the press — the release must not fall through to links.</summary>
     private bool _pressSwallowed;
 
-    /// <summary>Where the pressed node was, so the release finds it in whatever frame is current by
-    /// then. The object itself does not survive a Build; the path does.</summary>
-    private string? _pressedPath;
+    /// <summary>The pressed control's position, so the release finds it in whatever frame is current
+    /// by then. The node itself does not survive a Build; its position does, for as long as the same
+    /// control stands there, and a control that took its place is not the one pressed.</summary>
+    private Element? _pressedAt;
     private VisualNode? _hovered;
-    /// <summary>The hover CHAIN — every region under the pointer, topmost first, tracked by path
+    /// <summary>The hover CHAIN — every region under the pointer, topmost first, tracked by position
     /// (the press's rebuild-surviving rule) with the node kept for the Hoverable callbacks. CSS
     /// :hover matches every ancestor, and the native pointer answers the same question.</summary>
-    private readonly List<string> _hoverPaths = new();
+    private readonly List<Element> _hoverAt = new();
     private readonly List<VisualNode> _hoverNodes = new();
     private readonly TransitionClock _transitions = new();
     private readonly ScrollClock _scrolls = new();
@@ -435,7 +481,12 @@ public sealed class PhotonHost
     /// <summary>The clock of the last rendered frame — glide-backs anchor to it on release.</summary>
     private float _lastTimeMs;
     private Pressable? _focused;
-    private string? _focusedPath;
+
+    /// <summary>The id the keyboard focus is held by, zero for none: a control's position's, or a
+    /// linked run's. With it, the position the focused stop sits in, which the focus-within and the
+    /// reveal questions walk up from.</summary>
+    private int _focusedId;
+    private Element? _focusedAt;
 
     /// <summary>
     /// Whether the focus should be SEEN. Focus and the ring around it are not the same thing: a
@@ -464,16 +515,15 @@ public sealed class PhotonHost
         var stops = _lastFrame?.FocusStops;
         if (stops is null || stops.Count == 0) return false;
 
-        // Where the focus is NOW, found by path: the tree has been rebuilt on every keystroke since
+        // Where the focus is NOW, found by its id: the tree has been rebuilt on every keystroke since
         // it was set, so the node it once pointed at is long gone. Reference identity here meant Tab
         // silently restarting from the first control every time the app called SetState.
-        var here = _textPath ?? _focusedPath;
         var current = -1;
-        if (here is { Length: > 0 })
+        if (FocusedId is { } here)
         {
             for (var i = 0; i < stops.Count; i++)
             {
-                if (stops[i].Path != here) continue;
+                if (stops[i].Id != here) continue;
                 current = i;
                 break;
             }
@@ -501,8 +551,8 @@ public sealed class PhotonHost
         {
             // Landing on a field starts editing it — Tab into a field and type is the whole point.
             _focused = null;
-            _focusedPath = null;
-            BeginEditing(stop.Entry, stop.Path);
+            ForgetFocus();
+            BeginEditing(stop.Entry, stop.Element);
             return true;
         }
 
@@ -512,13 +562,13 @@ public sealed class PhotonHost
             // A slider under focus: the ring shows, Enter does nothing, and the ARROWS are the
             // whole point — dispatched from KeyDown against the current frame's stop.
             _focused = null;
-            _focusedPath = stop.Path;
+            FocusOn(stop);
             _focusVisible = true;
             NeedsRender = true;
             return true;
         }
         _focused = stop.Pressable;
-        _focusedPath = stop.Path;
+        FocusOn(stop);
         _focusVisible = true;   // arrived without a pointer: this is exactly who the ring is for
         NeedsRender = true;
         return true;
@@ -527,9 +577,9 @@ public sealed class PhotonHost
     /// <summary>
     /// Scrolls whatever contains this stop until the stop is inside it.
     /// <para>
-    /// The container is found by PATH: a scroll region whose path is a prefix of the stop's is an
-    /// ancestor of it, and the longest such prefix is the innermost one. The tree already says who
-    /// contains whom — asking it is cheaper and truer than keeping a second map that can disagree.
+    /// The container is found by POSITION: a scroll region whose element lies above the stop's holds
+    /// it, and the deepest such one is the innermost. The tree already says who contains whom — asking
+    /// it is cheaper and truer than keeping a second map that can disagree.
     /// </para>
     /// </summary>
     private bool ScrollIntoView(FocusStop stop)
@@ -541,8 +591,8 @@ public sealed class PhotonHost
         for (var i = 0; i < regions.Count; i++)
         {
             if (regions[i].MaxOffset <= 0) continue;
-            if (!IsAncestorPath(regions[i].Path, stop.Path)) continue;
-            if (best < 0 || regions[i].Path.Length > regions[best].Path.Length) best = i;
+            if (!IsUnder(stop.Element, regions[i].Element)) continue;
+            if (best < 0 || regions[i].Element.Depth > regions[best].Element.Depth) best = i;
         }
         if (best < 0) return false;
 
@@ -575,16 +625,13 @@ public sealed class PhotonHost
 
     private const float ScrollIntoViewMargin = 24f;
 
-    /// <summary>The <see cref="ICodeSurfaceModel.RevealVersion"/> each code surface was last brought
-    /// into view at, by path.</summary>
-    private readonly Dictionary<string, int> _revealedCode = new();
-
     /// <summary>
     /// Brings each code surface's primary caret into view when its model says it moved — the Photon
     /// half of what the browser does with <c>scrollIntoView</c>, and the reason arrowing past the edge
     /// of a code viewport no longer leaves you typing somewhere you cannot see. A surface seen for the
     /// first time is left where the layout put it: nothing moved it yet. Answers whether anything
-    /// scrolled.
+    /// scrolled. The version a surface was last brought into view at is kept on its position
+    /// (<see cref="CodeRevealState"/>), so a surface drawn at another's place starts unseen.
     /// </summary>
     private bool RevealCodeCarets()
     {
@@ -595,15 +642,18 @@ public sealed class PhotonHost
         {
             var region = regions[i];
             var version = region.Surface.Model.RevealVersion;
-            var known = _revealedCode.TryGetValue(region.Path, out var seen);
-            _revealedCode[region.Path] = version;
+            if (NodeStates.For<CodeRevealState>(region.Element) is not { } revealed) continue;
+            var known = revealed.Known;
+            var seen = revealed.Version;
+            revealed.Known = true;
+            revealed.Version = version;
             if (!known || seen == version) continue;
 
             var carets = region.Surface.Model.Carets;
             if (carets.Count == 0) continue;
             var caret = carets[0];
             var (laid, toScreen) = Laid(regions, i, region.Bounds, caret);
-            scrolled |= RevealRect(region.Path, laid, toScreen);
+            scrolled |= RevealRect(region.Element, laid, toScreen);
         }
         return scrolled;
     }
@@ -616,19 +666,19 @@ public sealed class PhotonHost
     /// </summary>
     private bool RevealEditing()
     {
-        if (_lastFrame is null || _textPath is not { } path) return false;
+        if (_lastFrame is null || _textAt is not { } editing) return false;
         var surfaces = _lastFrame.CodeRegions;
         for (var i = 0; i < surfaces.Count; i++)
         {
-            if (surfaces[i].Path != path) continue;
+            if (!ReferenceEquals(surfaces[i].Element, editing)) continue;
             var carets = surfaces[i].Surface.Model.Carets;
             if (carets.Count == 0) break;
             var (laid, toScreen) = Laid(surfaces, i, surfaces[i].Bounds, carets[0]);
-            return RevealRect(path, laid, toScreen);
+            return RevealRect(editing, laid, toScreen);
         }
         var stops = _lastFrame.FocusStops;
         for (var i = 0; i < stops.Count; i++)
-            if (stops[i].Path == path) return ScrollIntoView(stops[i]);
+            if (stops[i].Id == editing.Id) return ScrollIntoView(stops[i]);
         return false;
     }
 
@@ -644,12 +694,12 @@ public sealed class PhotonHost
     {
         var lift = 0f;
         var squeezed = _viewInsets.Bottom > 0 || laidHeight < _roomBeforeEdit;
-        if (squeezed && _textPath is { } path && _lastFrame is { } frame && !InVerticalScroll(frame, path))
+        if (squeezed && _textAt is { } editing && _lastFrame is { } frame && !InVerticalScroll(frame, editing))
         {
             var stops = frame.FocusStops;
             for (var i = 0; i < stops.Count; i++)
             {
-                if (stops[i].Path != path) continue;
+                if (stops[i].Id != editing.Id) continue;
                 var field = stops[i].Bounds;
                 if (field.Bottom > laidHeight)
                     lift = Math.Clamp(field.Bottom + ScrollIntoViewMargin - laidHeight, 0,
@@ -663,31 +713,31 @@ public sealed class PhotonHost
     }
 
     /// <summary>Whether a scroll view that moves up and down, with somewhere to move, holds
-    /// <paramref name="path"/>: what it holds is brought into view by scrolling it.</summary>
-    private static bool InVerticalScroll(RealizeResult frame, string path)
+    /// <paramref name="at"/>: what it holds is brought into view by scrolling it.</summary>
+    private static bool InVerticalScroll(RealizeResult frame, Element at)
     {
         var regions = frame.ScrollRegions;
         for (var i = 0; i < regions.Count; i++)
             if (regions[i].Axis != ScrollAxis.Horizontal && regions[i].MaxOffset > 0
-                && IsAncestorPath(regions[i].Path, path))
+                && IsUnder(at, regions[i].Element))
                 return true;
         return false;
     }
 
     /// <summary>
-    /// Scrolls every scroll region that contains <paramref name="path"/>, each on its own axis, the
+    /// Scrolls every scroll region that holds <paramref name="at"/>, each on its own axis, the
     /// least that brings <paramref name="rect"/> inside it — a code viewport scrolls down AND across
     /// for the same caret, which is why this is not <see cref="ScrollIntoView"/>'s innermost-only
     /// rule. A small margin keeps the caret off the very edge, so the line after it is seen coming.
     /// </summary>
-    private bool RevealRect(string path, Rect rect, Matrix2D? toScreen)
+    private bool RevealRect(Element at, Rect rect, Matrix2D? toScreen)
     {
         var regions = _lastFrame!.ScrollRegions;
         var scrolled = false;
         for (var i = 0; i < regions.Count; i++)
         {
             var region = regions[i];
-            if (region.MaxOffset <= 0 || !IsAncestorPath(region.Path, path)) continue;
+            if (region.MaxOffset <= 0 || !IsUnder(at, region.Element)) continue;
 
             var (own, viewport) = InScrollSpace(regions, i, rect, toScreen);
             var horizontal = region.Axis == ScrollAxis.Horizontal;
@@ -735,7 +785,7 @@ public sealed class PhotonHost
         var stops = _lastFrame!.FocusStops;
         for (var i = 0; i < stops.Count; i++)
         {
-            if (stops[i].Path != stop.Path) continue;
+            if (stops[i].Id != stop.Id) continue;
             if (TransformedAt(stops, i) is { } turned && turned.Inverse.Invert() is { } forward)
                 return (turned.Local, forward);
             break;
@@ -746,27 +796,54 @@ public sealed class PhotonHost
     /// <summary>Whether the keyboard focus (a field or code being edited, or the control wearing the
     /// ring) is inside the subtree at <paramref name="scope"/>: a focus-scoped shortcut's question.
     /// Web twin: <c>focusWithin</c> in the lowering, over the focused element.</summary>
-    private bool FocusIsWithin(string scope) =>
-        FocusedPath is { } focused && (focused == scope || IsAncestorPath(scope, focused));
+    private bool FocusIsWithin(Element scope) =>
+        (_textAt ?? _focusedAt) is { } focused && (ReferenceEquals(focused, scope) || IsUnder(focused, scope));
 
-    /// <summary>Whether <paramref name="ancestor"/> names a node this path sits under. Compared on
-    /// SEGMENT boundaries: "r/1" must not be read as an ancestor of "r/10".</summary>
-    private static bool IsAncestorPath(string ancestor, string path) =>
-        path.Length > ancestor.Length
-        && path.StartsWith(ancestor, StringComparison.Ordinal)
-        && path[ancestor.Length] == '/';
+    /// <summary>
+    /// Whether <paramref name="at"/> lies below <paramref name="above"/> in the tree, inside its box:
+    /// walked up the parents, and never across a LAYER, an overlay's child or an anchored panel, which
+    /// the realizer lays out on its own over the page and so inside none of the boxes above it. A
+    /// path's prefix answered the same question before #976, a layer's path starting a tree of its own.
+    /// </summary>
+    private static bool IsUnder(Element at, Element above)
+    {
+        var child = at;
+        for (var parent = at.Parent; parent is not null; child = parent, parent = parent.Parent)
+        {
+            if (parent is NodeElement node && node.HoldsDeferred(child)) return false;
+            if (ReferenceEquals(parent, above)) return true;
+        }
+        return false;
+    }
 
     private bool IsFocused(HitRegion region) =>
-        _focusedPath is { Length: > 0 }
-            ? region.Path == _focusedPath
+        _focusedId != 0
+            ? region.Element.Id == _focusedId
             : _focused is not null && ReferenceEquals(region.Node, _focused);
 
+    /// <summary>Puts the focus on a stop's id and its position.</summary>
+    private void FocusOn(FocusStop stop)
+    {
+        _focusedId = stop.Id;
+        _focusedAt = stop.Element;
+    }
+
+    /// <summary>Takes the focus off whatever id held it.</summary>
+    private void ForgetFocus()
+    {
+        _focusedId = 0;
+        _focusedAt = null;
+    }
+
     /// <summary>Gives focus to a specific region — what a pointer press does, so that releasing over
-    /// a control and then pressing Enter goes on working on the control the user just touched.</summary>
-    public void Focus(Pressable node, string? path = null, bool visible = true)
+    /// a control and then pressing Enter goes on working on the control the user just touched.
+    /// <paramref name="at"/> is the control's position (a <see cref="HitRegion.Element"/>), which the
+    /// focus follows across rebuilds; without one it holds the node, for a frame that never rebuilds.</summary>
+    public void Focus(Pressable node, Element? at = null, bool visible = true)
     {
         _focused = node;
-        _focusedPath = path;
+        _focusedId = at?.Id ?? 0;
+        _focusedAt = at;
         _focusVisible = visible;
         NeedsRender = true;
     }
@@ -780,11 +857,8 @@ public sealed class PhotonHost
     // web. What lives HERE is the part the app does not have — which field is being edited and where
     // the caret sits — because both must survive the rebuild that each keystroke causes.
 
-    private string? _textPath;
-
-    /// <summary>Path strings survive frames here — a path is identity, and the tree's shape barely
-    /// changes, so steady state re-uses the same strings instead of re-concatenating them.</summary>
-    private readonly Dictionary<(string Parent, int Index, string? Key), string> _pathCache = new();
+    /// <summary>The position of the field, code surface or spreadsheet being edited, or null.</summary>
+    private Element? _textAt;
     private int _caret;
 
     /// <summary>
@@ -904,8 +978,8 @@ public sealed class PhotonHost
     private static string Shown(TextEntry entry, string value) =>
         entry.Obscure ? new string('•', value.Length) : value;
 
-    /// <summary>The field being edited in the CURRENT frame, or null. Resolved by path every time
-    /// rather than remembered: the node handed out last frame is already stale.
+    /// <summary>The field being edited in the CURRENT frame, or null. Resolved by its position every
+    /// time rather than remembered: the node handed out last frame is already stale.
     /// <para>
     /// A field scrolled out of view is still the one being edited. Its region is clipped away, so
     /// nobody can tap what they cannot see, but its focus stop is registered wherever it is and
@@ -918,19 +992,19 @@ public sealed class PhotonHost
     {
         get
         {
-            if (_textPath is null || _lastFrame is null) return null;
+            if (_textAt is null || _lastFrame is null) return null;
             var fields = _lastFrame.TextRegions;
             for (var i = 0; i < fields.Count; i++)
-                if (fields[i].Path == _textPath) return fields[i].Entry;
+                if (ReferenceEquals(fields[i].Element, _textAt)) return fields[i].Entry;
             var stops = _lastFrame.FocusStops;
             for (var i = 0; i < stops.Count; i++)
-                if (stops[i].Path == _textPath && stops[i].Entry is { } entry) return entry;
+                if (ReferenceEquals(stops[i].Element, _textAt) && stops[i].Entry is { } entry) return entry;
             return null;
         }
     }
 
     /// <summary>
-    /// The CODE surface being edited in the current frame, or null. Resolved by path every frame for
+    /// The CODE surface being edited in the current frame, or null. Resolved by position every frame for
     /// the same reason the text field is: the node handed out last frame is already a corpse, but
     /// the CONTROLLER it points at is the component's own and outlives every rebuild.
     /// </summary>
@@ -938,10 +1012,10 @@ public sealed class PhotonHost
     {
         get
         {
-            if (_textPath is null || _lastFrame is null) return null;
+            if (_textAt is null || _lastFrame is null) return null;
             var regions = _lastFrame.CodeRegions;
             for (var i = 0; i < regions.Count; i++)
-                if (regions[i].Path == _textPath) return regions[i].Surface;
+                if (ReferenceEquals(regions[i].Element, _textAt)) return regions[i].Surface;
             return null;
         }
     }
@@ -949,16 +1023,16 @@ public sealed class PhotonHost
     /// <summary>A press that began in a code surface is drawing a selection until it lifts.</summary>
     private bool _codeDragging;
 
-    /// <summary>The SPREADSHEET surface being edited, resolved by path every frame like the code
+    /// <summary>The SPREADSHEET surface being edited, resolved by position every frame like the code
     /// surface: the node is a corpse, the MODEL outlives every rebuild.</summary>
     public SheetSurface? SheetTarget
     {
         get
         {
-            if (_textPath is null || _lastFrame is null) return null;
+            if (_textAt is null || _lastFrame is null) return null;
             var regions = _lastFrame.SheetRegions;
             for (var i = 0; i < regions.Count; i++)
-                if (regions[i].Path == _textPath) return regions[i].Surface;
+                if (ReferenceEquals(regions[i].Element, _textAt)) return regions[i].Surface;
             return null;
         }
     }
@@ -980,11 +1054,11 @@ public sealed class PhotonHost
 
     private void BeginCodeEditing(CodeRegion region)
     {
-        var changed = _textPath != region.Path;
+        var changed = !ReferenceEquals(_textAt, region.Element);
         if (changed) EndEditing();
-        _textPath = region.Path;
+        _textAt = region.Element;
         _focused = null;
-        _focusedPath = null;
+        ForgetFocus();
         if (changed) region.Surface.Model.FocusChanged(true);
         NeedsRender = true;
     }
@@ -1024,7 +1098,7 @@ public sealed class PhotonHost
     /// does not blink at all: the end following your pointer is the one thing you are watching.
     /// </para>
     /// </summary>
-    public bool CaretVisible => _textPath is null || _dragSelecting || _codeDragging
+    public bool CaretVisible => _textAt is null || _dragSelecting || _codeDragging
         || (int)((_lastTimeMs - _caretPhaseMs) / CaretBlinkMs) % 2 == 0;
 
     /// <summary>The normative phase — shared with the web mirror (CSS animates twice this).</summary>
@@ -1059,8 +1133,8 @@ public sealed class PhotonHost
         {
             var field = fields[i];
             if (!field.Entry.Autofocus || field.Entry.Disabled) continue;
-            _fieldsNow.Add(field.Path);
-            if (newField is null && !_fieldsShown.Contains(field.Path)) newField = field;
+            _fieldsNow.Add(field.Element);
+            if (newField is null && !_fieldsShown.Contains(field.Element)) newField = field;
         }
         _surfacesNow.Clear();
         CodeRegion? newSurface = null;
@@ -1069,8 +1143,8 @@ public sealed class PhotonHost
         {
             var surface = surfaces[i];
             if (!surface.Surface.Autofocus) continue;
-            _surfacesNow.Add(surface.Path);
-            if (newSurface is null && !_surfacesShown.Contains(surface.Path)) newSurface = surface;
+            _surfacesNow.Add(surface.Element);
+            if (newSurface is null && !_surfacesShown.Contains(surface.Element)) newSurface = surface;
         }
         (_fieldsShown, _fieldsNow) = (_fieldsNow, _fieldsShown);
         (_surfacesShown, _surfacesNow) = (_surfacesNow, _surfacesShown);
@@ -1079,14 +1153,14 @@ public sealed class PhotonHost
         else if (newSurface is { } code) BeginCodeEditing(code);
     }
 
-    /// <summary>The paths of the fields asking for the keyboard in the last frame, and the set the
-    /// next frame fills: two sets swapped, so a steady frame allocates nothing. The surfaces keep
-    /// their own pair, because a path is a place and not a control: a code surface that takes the
-    /// place of a field is a new mount, and one history of paths took it for the field.</summary>
-    private HashSet<string> _fieldsShown = [];
-    private HashSet<string> _fieldsNow = [];
-    private HashSet<string> _surfacesShown = [];
-    private HashSet<string> _surfacesNow = [];
+    /// <summary>The positions of the fields asking for the keyboard in the last frame, and the set the
+    /// next frame fills: two sets swapped, so a steady frame allocates nothing. A field that takes
+    /// another's place has a position of its own, so it is a new mount and asks again. The surfaces
+    /// keep their own pair, as they did when a path stood for both before #976.</summary>
+    private HashSet<Element> _fieldsShown = [];
+    private HashSet<Element> _fieldsNow = [];
+    private HashSet<Element> _surfacesShown = [];
+    private HashSet<Element> _surfacesNow = [];
 
     /// <summary>
     /// Gives a code surface the keyboard when its model ASKS (<see cref="ICodeSurfaceModel.FocusVersion"/>):
@@ -1115,24 +1189,24 @@ public sealed class PhotonHost
         System.Runtime.CompilerServices.StrongBox<int>> _focusRequests = new();
 
     private void BeginEditing(TextRegion field, float? localX = null) =>
-        BeginEditing(field.Entry, field.Path, localX is { } x ? IndexAt(field.Entry, x) : null);
+        BeginEditing(field.Entry, field.Element, localX is { } x ? IndexAt(field.Entry, x) : null);
 
-    private void BeginEditing(TextEntry entry, string path, int? caret = null)
+    private void BeginEditing(TextEntry entry, Element at, int? caret = null)
     {
-        var field = new TextRegion(default, entry, path);
+        var field = new TextRegion(default, entry, at);
         if (field.Entry.Disabled) return;
-        var changed = _textPath != field.Path;
+        var changed = !ReferenceEquals(_textAt, field.Element);
         // Tell the field being LEFT that it lost focus before telling the next one it gained it.
         // Skipping this left every field the user had passed through still wearing its focus ring —
         // a form where four boxes all look like the active one.
         if (changed) EndEditing();
-        _textPath = field.Path;
+        _textAt = field.Element;
         if (changed) _edited = null;
         // Where the pointer fell, or the end of the text when it arrived by Tab.
         Caret = caret ?? field.Entry.Value.Length;
         _anchor = caret is null ? null : _caret;
         _focused = null;
-        _focusedPath = null;
+        ForgetFocus();
         if (changed) field.Entry.OnFocusChanged?.Invoke(true);
         NeedsRender = true;
     }
@@ -1144,16 +1218,16 @@ public sealed class PhotonHost
     /// </summary>
     public void EndEditing()
     {
-        if (_textPath is null) return;
+        if (_textAt is null) return;
         TextTarget?.OnFocusChanged?.Invoke(false);
         // A code surface hears it too: the typing run ends, and a composition the platform just
         // dropped must not stay underlined in the document.
         if (CodeTarget is { } code)
         {
             code.Model.FocusChanged(false);
-            code.OnChanged?.Invoke();
+            SurfaceChanged(code.OnChanged);
         }
-        _textPath = null;
+        _textAt = null;
         _marked = "";
         _edited = null;
         Caret = 0;
@@ -1174,8 +1248,7 @@ public sealed class PhotonHost
         if (SheetTarget is { } sheetTarget)
         {
             sheetTarget.Model.HandleText(text);
-            sheetTarget.OnChanged?.Invoke();
-            NeedsRender = true;
+            SurfaceChanged(sheetTarget.OnChanged);
             return true;
         }
         // A code surface types through its model, which is where auto-closing pairs, the
@@ -1184,8 +1257,7 @@ public sealed class PhotonHost
         {
             if (!surface.Model.HandleText(text)) return false;
             RestartBlink();
-            surface.OnChanged?.Invoke();
-            NeedsRender = true;
+            SurfaceChanged(surface.OnChanged);
             return true;
         }
         if (TextTarget is not { } entry || entry.Disabled) return false;
@@ -1207,14 +1279,14 @@ public sealed class PhotonHost
 
     /// <summary>Whether a field or code surface holds the caret — the shell's cue to hand key
     /// events to the platform's input context instead of interpreting them itself.</summary>
-    public bool HasTextFocus => _textPath is not null;
+    public bool HasTextFocus => _textAt is not null;
 
     /// <summary>The last realized frame — the shells' read-only window onto regions and semantics
     /// (probes, bridges). Null before the first render.</summary>
     public RealizeResult? LastFrame => _lastFrame;
 
     /// <summary>The composition in flight for the focused field ("" when none).</summary>
-    public string MarkedText => _textPath is null ? "" : _marked;
+    public string MarkedText => _textAt is null ? "" : _marked;
 
     public bool HasMarkedText => MarkedText.Length > 0;
 
@@ -1225,7 +1297,7 @@ public sealed class PhotonHost
     /// </summary>
     public bool SetMarkedText(string text)
     {
-        if (_textPath is null) return false;
+        if (_textAt is null) return false;
         // A code surface composes IN its document: the model shows the marked text where it will
         // land, underlined, and a cancellation takes it back out. The host still tracks it, because
         // the platform's input client asks the host whether anything is marked.
@@ -1234,7 +1306,7 @@ public sealed class PhotonHost
             // A composition the model refuses (a read-only editor) is not one the host may claim:
             // the platform asks the HOST whether anything is marked. A cancellation still clears it.
             if (!code.Model.SetComposition(text) && text.Length > 0) return false;
-            code.OnChanged?.Invoke();
+            SurfaceChanged(code.OnChanged);
         }
         if (TextTarget is { } entry && !entry.Disabled)
         {
@@ -1361,12 +1433,12 @@ public sealed class PhotonHost
     /// <summary>The caret where the frame laid it, before <see cref="_lift"/>.</summary>
     private Rect? CaretInFrame()
     {
-        if (_lastFrame is null || _textPath is null) return null;
+        if (_lastFrame is null || _textAt is null) return null;
 
         var fields = _lastFrame.TextRegions;
         for (var i = 0; i < fields.Count; i++)
         {
-            if (fields[i].Path != _textPath) continue;
+            if (!ReferenceEquals(fields[i].Element, _textAt)) continue;
             var bounds = fields[i].Bounds;
             var entry = fields[i].Entry;
             var style = _theme.Type(entry.Role).AtWindow(this.Width);
@@ -1390,7 +1462,7 @@ public sealed class PhotonHost
         var surfaces = _lastFrame.CodeRegions;
         for (var i = 0; i < surfaces.Count; i++)
         {
-            if (surfaces[i].Path != _textPath) continue;
+            if (!ReferenceEquals(surfaces[i].Element, _textAt)) continue;
             var carets = surfaces[i].Surface.Model.Carets;
             if (carets.Count == 0) return null;
             return ToScreen(surfaces, i, surfaces[i].Bounds, carets[0]);
@@ -1518,15 +1590,17 @@ public sealed class PhotonHost
         // read-only field, and pretending the character landed would be a lie the next frame undoes.
         if (entry.OnChanged is null) return;
         _edited = value;
+        var marks = _owner.Marks;
         entry.OnChanged(value);
+        RebuildUnlessTold(marks);
     }
 
     /// <summary>Clears keyboard focus (pointer interaction, escape).</summary>
     public void ClearFocus()
     {
-        if (_focused is null && _focusedPath is null) return;
+        if (_focused is null && _focusedId == 0) return;
         _focused = null;
-        _focusedPath = null;
+        ForgetFocus();
         NeedsRender = true;
     }
 
@@ -1539,7 +1613,7 @@ public sealed class PhotonHost
     {
         if (surface.Model.HandleKey(key, modifiers, Clipboard))
         {
-            surface.OnChanged?.Invoke();
+            SurfaceChanged(surface.OnChanged);
             return true;
         }
 
@@ -1574,7 +1648,7 @@ public sealed class PhotonHost
         // pointer says "in here". Without it the ring was as far as a keyboard could get — this
         // method's own doc says it runs the focused control "the way Enter and Space do everywhere
         // else", and for the two surfaces that own the keyboard it ran nothing.
-        return _focusedPath is { Length: > 0 } focused && ActivatePath(focused);
+        return _focusedId != 0 && Activate(_focusedId);
     }
 
     /// <summary>
@@ -1613,9 +1687,10 @@ public sealed class PhotonHost
     public IReadOnlyList<LiveAnnouncement> TakeAnnouncements() => _announcer.Take();
 
     /// <summary>
-    /// Runs the control at <paramref name="path"/>, the way a screen reader's activate action does.
-    /// Resolved out of THIS frame's regions — same reason as every press: the handler on a node from
-    /// an old rebuild closes over dead state. Answers false when the path holds nothing to do.
+    /// Runs the control named <paramref name="id"/> (a <see cref="SemanticNode.Id"/>), the way a
+    /// screen reader's activate action does. Resolved out of THIS frame's regions — same reason as
+    /// every press: the handler on a node from an old rebuild closes over dead state. Answers false
+    /// when the id names nothing to do.
     /// <para>
     /// A pressable RUNS; anything else that takes focus is LANDED ON, which is what activating it
     /// means: double-tapping a field on TalkBack opens the keyboard in it, exactly as Tab does. Only
@@ -1623,14 +1698,14 @@ public sealed class PhotonHost
     /// code field — the table says those roles are activatable — and the tap did nothing at all.
     /// </para>
     /// </summary>
-    public bool ActivatePath(string path)
+    public bool Activate(int id)
     {
         var regions = _lastFrame?.HitRegions;
         if (regions is null) return false;
         for (var i = 0; i < regions.Count; i++)
         {
             var region = regions[i];
-            if (region.Path != path || region.Node.Disabled) continue;
+            if (region.Element.Id != id || region.Node.Disabled) continue;
             region.Node.OnPressed?.Invoke();
             NeedsRender = true;
             return true;
@@ -1653,7 +1728,7 @@ public sealed class PhotonHost
         {
             for (var i = 0; i < links.Count; i++)
             {
-                if (links[i].Path != path) continue;
+                if (links[i].Id != id) continue;
                 if (_navigationRequested is null) return false;
                 _navigationRequested(links[i].Destination);
                 return true;
@@ -1667,18 +1742,18 @@ public sealed class PhotonHost
             // Everything else that takes focus is LANDED ON, and the condition names the two that
             // are answered ELSEWHERE rather than the kinds it happens to know: a pressable was
             // already answered above by the region carrying its handler, and an Adjustable is
-            // stepped by AdjustPath, where activating does nothing on any platform. Listing the
+            // stepped by Adjust, where activating does nothing on any platform. Listing the
             // kinds instead (an entry, a code surface) silently dropped the SheetSurface, which
             // announces as a CodeField and carries a stop of its own — the same shape of mistake as
             // the catch-all this file's NativeRole was written to end.
-            if (stops[i].Path != path) continue;
+            if (stops[i].Id != id) continue;
             if (stops[i].Pressable is not null || stops[i].Adjustable is not null) continue;
             Land(stops[i]);
             // ARRIVING and ENTERING are the same thing for a text field and two different things
             // for a surface that owns the keyboard, which is the one place `Land` is not the whole
             // answer. Tab ARRIVES: the ring shows and the next Tab travels on. Activating ENTERS,
             // which is what a pointer press does (BeginCodeEditing) and what a reader's double tap
-            // means — CodeTarget and SheetTarget both resolve from _textPath, so entering IS
+            // means — CodeTarget and SheetTarget both resolve from _textAt, so entering IS
             // setting it.
             //
             // Telling them apart was not a preference. Making the Tab walk enter put the caret in a
@@ -1687,14 +1762,14 @@ public sealed class PhotonHost
             //
             // Asked POSITIVELY, by what the stop IS. The first version asked by elimination — "not
             // a text field, so a surface" — and the Navigable stop that arrived one PR later
-            // carried neither, so activating a calendar put its own path in _textPath, left every
+            // carried neither, so activating a calendar put itself in the field being edited, left every
             // target null and killed the arrows the composite exists for. A stop that is none of
             // these ARRIVES and nothing more, which is the right default for whatever comes next.
             if (stops[i] is { Code: not null } or { Sheet: not null })
             {
-                _textPath = stops[i].Path;
+                _textAt = stops[i].Element;
                 _focused = null;
-                _focusedPath = null;
+                ForgetFocus();
                 NeedsRender = true;
             }
             return true;
@@ -1704,15 +1779,16 @@ public sealed class PhotonHost
 
     /// <summary>
     /// Assistive tech adjusts a slider-role element (VoiceOver's swipe up/down): +1 increments,
-    /// −1 decrements — the same OnAdjust the keyboard's arrows drive, resolved by path.
+    /// −1 decrements — the same OnAdjust the keyboard's arrows drive, resolved by the element's
+    /// <see cref="SemanticNode.Id"/>.
     /// </summary>
-    public bool AdjustPath(string path, int direction)
+    public bool Adjust(int id, int direction)
     {
         var stops = _lastFrame?.FocusStops;
         if (stops is null) return false;
         for (var i = 0; i < stops.Count; i++)
         {
-            if (stops[i].Path != path || stops[i].Adjustable is not { } adjustable) continue;
+            if (stops[i].Id != id || stops[i].Adjustable is not { } adjustable) continue;
             adjustable.OnAdjust(direction);
             NeedsRender = true;
             return true;
@@ -1731,7 +1807,7 @@ public sealed class PhotonHost
     public void SetHovered(VisualNode? node)
     {
         _hovered = node;
-        _hoverPaths.Clear(); // the test seam tracks by reference — one frame, one tree
+        _hoverAt.Clear(); // the test seam tracks by reference — one frame, one tree
         _hoverNodes.Clear();
     }
 
@@ -1773,11 +1849,10 @@ public sealed class PhotonHost
             var sheetRegions = _lastFrame.SheetRegions;
             for (var i = 0; i < sheetRegions.Count; i++)
             {
-                if (sheetRegions[i].Path != _textPath) continue;
+                if (!ReferenceEquals(sheetRegions[i].Element, _textAt)) continue;
                 if (!sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Move,
                         ToLocal(sheetRegions, i, sheetRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1)) break;
-                sheetRegions[i].Surface.OnChanged?.Invoke();
-                NeedsRender = true;
+                SurfaceChanged(sheetRegions[i].Surface.OnChanged);
                 break;
             }
             return;
@@ -1790,11 +1865,10 @@ public sealed class PhotonHost
             var surfaces = _lastFrame.CodeRegions;
             for (var i = 0; i < surfaces.Count; i++)
             {
-                if (surfaces[i].Path != _textPath) continue;
+                if (!ReferenceEquals(surfaces[i].Element, _textAt)) continue;
                 if (!surfaces[i].Surface.Model.HandlePointer(PointerPhase.Move,
                         ToLocal(surfaces, i, surfaces[i].Bounds, new Point(x, y)), KeyModifiers.None, 1)) break;
-                surfaces[i].Surface.OnChanged?.Invoke();
-                NeedsRender = true;
+                SurfaceChanged(surfaces[i].Surface.OnChanged);
                 break;
             }
             return;
@@ -1808,7 +1882,7 @@ public sealed class PhotonHost
             var fields = _lastFrame.TextRegions;
             for (var i = 0; i < fields.Count; i++)
             {
-                if (fields[i].Path != _textPath) continue;
+                if (!ReferenceEquals(fields[i].Element, _textAt)) continue;
                 var index = IndexAt(editing, ToLocal(fields, i, fields[i].Bounds, new Point(x, y)).X);
                 if (index == Caret) break;
                 Caret = index;
@@ -1835,7 +1909,7 @@ public sealed class PhotonHost
             {
                 _drag = drag with { Active = true };
                 _pressed = null;
-                _pressedPath = null;
+                _pressedAt = null;
                 drag = _drag.Value;
             }
             if (drag.Active)
@@ -1873,7 +1947,7 @@ public sealed class PhotonHost
             if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
             {
                 _pressed = null;
-                _pressedPath = null;
+                _pressedAt = null;
                 pan.Active = true;
             }
 
@@ -1903,28 +1977,28 @@ public sealed class PhotonHost
 
         // The CHAIN of regions under the pointer, topmost first — CSS :hover matches every
         // ancestor, so a button inside a hover-opened panel hovers BOTH (the web twin's answer).
-        // Identity is the PATH: instances are per-frame, and reference equality only answers
-        // within the frame that made them (the press learned this first).
+        // Identity is the POSITION: instances are per-frame, and reference equality only answers
+        // within the frame that made them (the press learned this first), while a box drawn at
+        // another's place is not the box the pointer was over.
         var regions = _lastFrame?.HoverRegions;
-        var chainPaths = new List<string>();
+        var chainAt = new List<Element>();
         var chainNodes = new List<VisualNode>();
         if (regions is not null)
         {
             for (var i = regions.Count - 1; i >= 0; i--)
             {
                 if (!Covers(regions, i, regions[i].Bounds, new Point(x, y))) continue;
-                chainPaths.Add(regions[i].Path);
+                chainAt.Add(regions[i].Element);
                 chainNodes.Add(regions[i].Node);
             }
         }
 
-        var sameChain = chainPaths.Count == _hoverPaths.Count;
+        var sameChain = chainAt.Count == _hoverAt.Count;
         if (sameChain)
         {
-            for (var i = 0; i < chainPaths.Count; i++)
+            for (var i = 0; i < chainAt.Count; i++)
             {
-                if (chainPaths[i].Length > 0 ? chainPaths[i] == _hoverPaths[i]
-                        : ReferenceEquals(chainNodes[i], _hoverNodes[i])) continue;
+                if (ReferenceEquals(chainAt[i], _hoverAt[i])) continue;
                 sameChain = false;
                 break;
             }
@@ -1934,15 +2008,15 @@ public sealed class PhotonHost
         {
             // S5 programmable hover: Hoverable callbacks fire on MEMBERSHIP transitions — leave
             // BEFORE enter, the order every pointer model guarantees.
-            foreach (var node in _hoverNodes)
-                if (node is Hoverable left && !chainPaths.Contains(PathOfHover(left)))
+            for (var i = 0; i < _hoverNodes.Count; i++)
+                if (_hoverNodes[i] is Hoverable left && !chainAt.Contains(_hoverAt[i]))
                     left.OnChanged(false);
-            var previousPaths = _hoverPaths.ToList();
-            _hoverPaths.Clear(); _hoverPaths.AddRange(chainPaths);
+            var previous = _hoverAt.ToList();
+            _hoverAt.Clear(); _hoverAt.AddRange(chainAt);
             _hoverNodes.Clear(); _hoverNodes.AddRange(chainNodes);
             _hovered = chainNodes.Count > 0 ? chainNodes[0] : null;
             for (var i = 0; i < chainNodes.Count; i++)
-                if (chainNodes[i] is Hoverable entered && !previousPaths.Contains(chainPaths[i]))
+                if (chainNodes[i] is Hoverable entered && !previous.Contains(chainAt[i]))
                     entered.OnChanged(true);
             NeedsRender = true;
         }
@@ -1953,14 +2027,6 @@ public sealed class PhotonHost
             _hoverNodes.Clear(); _hoverNodes.AddRange(chainNodes);
             _hovered = chainNodes[0];
         }
-    }
-
-    /// <summary>The chain path recorded for a hover node this frame ("" when unpathed).</summary>
-    private string PathOfHover(VisualNode node)
-    {
-        for (var i = 0; i < _hoverNodes.Count; i++)
-            if (ReferenceEquals(_hoverNodes[i], node)) return _hoverPaths[i];
-        return "";
     }
 
     /// <summary>
@@ -2068,7 +2134,7 @@ public sealed class PhotonHost
         if (_hovered is Hoverable topmost && !_hoverNodes.Contains(topmost))
             topmost.OnChanged(false); // the SetHovered seam tracks by reference alone
         _hovered = null;
-        _hoverPaths.Clear();
+        _hoverAt.Clear();
         _hoverNodes.Clear();
         NeedsRender = true;
     }
@@ -2128,7 +2194,7 @@ public sealed class PhotonHost
 
         var regions = _lastFrame.HitRegions;
         _pressSwallowed = false;
-        string? swallowedBy = null;
+        Element? swallowedBy = null;
         // From the region the point lands on (HitAt), down: a slop above it that lost the point to a
         // box drawn beside it takes no part, inert or not.
         for (var i = HitAt(regions, point); i >= 0; i--)
@@ -2140,18 +2206,18 @@ public sealed class PhotonHost
                 // INERT — disabled, or enabled with nothing to run (a Button used as a Menu's
                 // trigger visual has no handler of its own). Inert swallows against what is BEHIND
                 // it, but not against the pressable that WRAPS it: the Menu's own press was being
-                // eaten by its topmost inert trigger. An ancestor (its path is a prefix of the
-                // inert one's) is the owner of the gesture; a stranger underneath stays protected.
-                swallowedBy ??= region.Path;
+                // eaten by its topmost inert trigger. An ancestor (the inert one lies under its
+                // position) is the owner of the gesture; a stranger underneath stays protected.
+                swallowedBy ??= region.Element;
                 continue;
             }
-            if (swallowedBy is not null && !IsAncestorPath(region.Path, swallowedBy))
+            if (swallowedBy is not null && !IsUnder(swallowedBy, region.Element))
             {
                 _pressSwallowed = true;
                 return true;
             }
             _pressed = region.Node;
-            _pressedPath = region.Path;
+            _pressedAt = region.Element;
             // Pressing a control takes focus off whatever had it — including a field being edited,
             // whose caret must not go on blinking somewhere the user is no longer looking. Unless
             // it may not take the keyboard (Pressable.CanRequestFocus): a row of the list a code
@@ -2161,7 +2227,7 @@ public sealed class PhotonHost
                 EndEditing();
                 // Focused, but not RINGED: pressing Enter after clicking a button goes on working,
                 // and the click leaves no ring behind it.
-                Focus(region.Node, region.Path, visible: false);
+                Focus(region.Node, region.Element, visible: false);
             }
             NeedsRender = true;
             return true;
@@ -2213,8 +2279,7 @@ public sealed class PhotonHost
                 modifiers, clickCount);
             _codeDragging = true;
             RestartBlink();
-            surfaces[i].Surface.OnChanged?.Invoke();
-            NeedsRender = true;
+            SurfaceChanged(surfaces[i].Surface.OnChanged);
             return true;
         }
 
@@ -2224,16 +2289,15 @@ public sealed class PhotonHost
         for (var i = sheetRegions.Count - 1; i >= 0; i--)
         {
             if (!Covers(sheetRegions, i, sheetRegions[i].Visible ?? sheetRegions[i].Bounds, point)) continue;
-            var changed = _textPath != sheetRegions[i].Path;
+            var changed = !ReferenceEquals(_textAt, sheetRegions[i].Element);
             if (changed) EndEditing();
-            _textPath = sheetRegions[i].Path;
+            _textAt = sheetRegions[i].Element;
             _focused = null;
-            _focusedPath = null;
+            ForgetFocus();
             sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Down,
                 ToLocal(sheetRegions, i, sheetRegions[i].Bounds, point), modifiers, clickCount);
             _sheetPressed = true;
-            sheetRegions[i].Surface.OnChanged?.Invoke();
-            NeedsRender = true;
+            SurfaceChanged(sheetRegions[i].Surface.OnChanged);
             return true;
         }
 
@@ -2265,8 +2329,9 @@ public sealed class PhotonHost
             var codeRegions = _lastFrame.CodeRegions;
             for (var i = 0; i < codeRegions.Count; i++)
             {
-                if (codeRegions[i].Path != _textPath) continue;
-                codeRegions[i].Surface.Model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1);
+                if (!ReferenceEquals(codeRegions[i].Element, _textAt)) continue;
+                if (codeRegions[i].Surface.Model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1))
+                    SurfaceChanged(codeRegions[i].Surface.OnChanged);
                 break;
             }
         }
@@ -2276,9 +2341,9 @@ public sealed class PhotonHost
             var sheetRegions = _lastFrame.SheetRegions;
             for (var i = 0; i < sheetRegions.Count; i++)
             {
-                if (sheetRegions[i].Path != _textPath) continue;
+                if (!ReferenceEquals(sheetRegions[i].Element, _textAt)) continue;
                 if (sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1))
-                    sheetRegions[i].Surface.OnChanged?.Invoke();
+                    SurfaceChanged(sheetRegions[i].Surface.OnChanged);
                 break;
             }
         }
@@ -2298,6 +2363,9 @@ public sealed class PhotonHost
 
         _drag = null;
         _pressed = null;
+        // The press's position goes with it, or the paint walk, which asks by position, kept the
+        // control drawn pressed after the system took the finger.
+        _pressedAt = null;
         NeedsRender = true;
     }
 
@@ -2337,9 +2405,10 @@ public sealed class PhotonHost
             var codeRegions = _lastFrame.CodeRegions;
             for (var i = 0; i < codeRegions.Count; i++)
             {
-                if (codeRegions[i].Path != _textPath) continue;
-                codeRegions[i].Surface.Model.HandlePointer(PointerPhase.Up,
-                    ToLocal(codeRegions, i, codeRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1);
+                if (!ReferenceEquals(codeRegions[i].Element, _textAt)) continue;
+                if (codeRegions[i].Surface.Model.HandlePointer(PointerPhase.Up,
+                        ToLocal(codeRegions, i, codeRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1))
+                    SurfaceChanged(codeRegions[i].Surface.OnChanged);
                 break;
             }
         }
@@ -2350,14 +2419,13 @@ public sealed class PhotonHost
             var sheetRegions = _lastFrame?.SheetRegions ?? Array.Empty<SheetRegion>();
             for (var i = 0; i < sheetRegions.Count; i++)
             {
-                if (sheetRegions[i].Path != _textPath) continue;
+                if (!ReferenceEquals(sheetRegions[i].Element, _textAt)) continue;
                 // A fill drag lands as the press lifts, the source tiling across the preview as ONE
                 // undo step, and the release is the sheet's. A selection drag simply ends, changing
                 // nothing, and the release goes on like any other.
                 if (!sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Up,
                         ToLocal(sheetRegions, i, sheetRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1)) break;
-                sheetRegions[i].Surface.OnChanged?.Invoke();
-                NeedsRender = true;
+                SurfaceChanged(sheetRegions[i].Surface.OnChanged);
                 return true;
             }
         }
@@ -2372,7 +2440,7 @@ public sealed class PhotonHost
             _drag = null;
             _pan = null;
             _pressed = null;
-            _pressedPath = null;
+            _pressedAt = null;
             return true;
         }
 
@@ -2426,10 +2494,10 @@ public sealed class PhotonHost
         _pan = null;
 
         var pressed = _pressed;
-        var pressedPath = _pressedPath;
+        var pressedAt = _pressedAt;
         if (pressed is null) return ResolveLink(x, y);
         _pressed = null;
-        _pressedPath = null;
+        _pressedAt = null;
         NeedsRender = true;
 
         var point = new Point(x, y);
@@ -2438,10 +2506,11 @@ public sealed class PhotonHost
         for (var i = regions.Count - 1; i >= 0; i--)
         {
             var region = regions[i];
-            // The SAME pressable, found by where it sits. Matching on object identity looked right
+            // The SAME pressable, found by its position. Matching on object identity looked right
             // and failed for every press that outlived its frame — which is every real one, because
-            // showing the pressed state repaints and the next Build hands back new nodes.
-            if (!IsTheSamePressable(region, pressed, pressedPath)) continue;
+            // showing the pressed state repaints and the next Build hands back new nodes; matching
+            // on its path ran whatever control had taken the place.
+            if (!IsTheSamePressable(region, pressed, pressedAt)) continue;
             if (!Covers(regions, i, region.Bounds, point)) return false; // canceled by releasing outside
             region.Node.OnPressed?.Invoke();
             return true;
@@ -2449,11 +2518,15 @@ public sealed class PhotonHost
         return false;
     }
 
-    /// <summary>Whether a region is the one the press began on: the same object while the frame
-    /// survives, and otherwise the same PLACE in the tree.</summary>
-    private static bool IsTheSamePressable(HitRegion region, Pressable pressed, string? pressedPath) =>
-        ReferenceEquals(region.Node, pressed)
-        || (!string.IsNullOrEmpty(pressedPath) && region.Path == pressedPath);
+    /// <summary>Whether a region is the one the press began on: the same POSITION, which holds the
+    /// control for as long as it stands there, as the paint walk decides it
+    /// (<see cref="PressScope.IsPressed"/>). The node alone answers only for a press the host tracks
+    /// no position for: an app can keep one node and hand it to two pages, so a page replaced by the
+    /// other shows the same node at a position nobody pressed.</summary>
+    private static bool IsTheSamePressable(HitRegion region, Pressable pressed, Element? pressedAt) =>
+        pressedAt is not null
+            ? ReferenceEquals(region.Element, pressedAt)
+            : ReferenceEquals(region.Node, pressed);
 
     /// <summary>A tap that no pressable claimed: the TOPMOST link region under the point navigates
     /// through the host's seam (a Pressable INSIDE a link wins — checked before this).</summary>
@@ -2498,15 +2571,15 @@ public sealed class PhotonHost
     /// <summary>The point in the CANVAS's coordinates — the translation that makes the arithmetic
     /// the app's, through the transform that draws the canvas when one does (#658). Outside the box
     /// the numbers go negative or past the size, which is correct: a drag that left still has a
-    /// position. The canvas is found in the current frame by its path, as a code surface is, since the
-    /// region a drag began on is a frame old.</summary>
+    /// position. The canvas is found in the current frame by its position, as a code surface is, since
+    /// the region a drag began on is a frame old.</summary>
     private CanvasPointer Local(CanvasRegion region, Point point, bool pressedNow, KeyModifiers modifiers)
     {
         var local = new Point(point.X - region.Bounds.X, point.Y - region.Bounds.Y);
         var canvases = _lastFrame?.CanvasRegions ?? [];
         for (var i = 0; i < canvases.Count; i++)
         {
-            if (canvases[i].Path != region.Path) continue;
+            if (!ReferenceEquals(canvases[i].Element, region.Element)) continue;
             local = ToLocal(canvases, i, canvases[i].Bounds, point);
             break;
         }
@@ -2701,10 +2774,11 @@ public sealed class PhotonHost
         && bottom <= box.Bottom + 0.01f;
 
     /// <summary>
-    /// WHERE the keyboard focus is, as the stable path the frame's <see cref="FocusStop"/>s carry
-    /// — null when nothing holds it. Read-only and public because the host is not the only thing
-    /// that needs the answer: a platform accessibility bridge has to report the focused element,
-    /// and any harness driving this window has to know where Tab left off.
+    /// WHERE the keyboard focus is, as the id the frame's <see cref="FocusStop"/>s carry, which a
+    /// position keeps for as long as it lives — null when nothing holds it. Read-only and public
+    /// because the host is not the only thing that needs the answer: a platform accessibility bridge
+    /// has to report the focused element, and any harness driving this window has to know where Tab
+    /// left off.
     /// <para>
     /// A field being EDITED holds the focus as much as a button wearing the ring does — the caret
     /// is simply that field's own indicator, which is why the ring state is tracked separately.
@@ -2712,7 +2786,7 @@ public sealed class PhotonHost
     /// outside world that a form being typed into had focus nowhere.
     /// </para>
     /// </summary>
-    public string? FocusedPath => _textPath ?? _focusedPath;
+    public int? FocusedId => _textAt?.Id ?? (_focusedId != 0 ? _focusedId : null);
 
     /// <summary>
     /// Spec S8 — a key press from the shell (desktop windows have a real keyboard): fires the LAST
@@ -2753,8 +2827,7 @@ public sealed class PhotonHost
             if (surface.Model.HandleKey(key, modifiers, KeyboardConvention, Clipboard))
             {
                 RestartBlink();
-                surface.OnChanged?.Invoke();
-                NeedsRender = true;
+                SurfaceChanged(surface.OnChanged);
                 return true;
             }
             // Escape LEAVES the editor rather than being swallowed: an editor that traps Escape is
@@ -2768,14 +2841,14 @@ public sealed class PhotonHost
         if (TextTarget is { } editing && EditKey(editing, key, modifiers)) return true;
 
         // An Adjustable under focus answers the arrows — the reason it exists. Resolved out of
-        // THIS frame's stops by path: the node from the frame it was focused in is long gone.
-        if (modifiers == KeyModifiers.None && _focusedPath is { Length: > 0 } focusedPath
+        // THIS frame's stops by id: the node from the frame it was focused in is long gone.
+        if (modifiers == KeyModifiers.None && _focusedId != 0
             && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
             && _lastFrame?.FocusStops is { } stops)
         {
             for (var i = 0; i < stops.Count; i++)
             {
-                if (stops[i].Path != focusedPath || stops[i].Adjustable is not { } adjustable) continue;
+                if (stops[i].Id != _focusedId || stops[i].Adjustable is not { } adjustable) continue;
                 adjustable.OnAdjust(key is "ArrowRight" or "ArrowUp" ? 1 : -1);
                 NeedsRender = true;
                 return true;
@@ -2784,20 +2857,20 @@ public sealed class PhotonHost
 
         // A two-dimensional COMPOSITE under focus answers the moves its keyboard declares: arrows
         // walk a cell, PgUp/PgDn a page, +Shift a section, Home/End the row's bounds. Resolved out of
-        // THIS frame's stops by path, like the Adjustable above, and read from NavigableKeys — the
+        // THIS frame's stops by id, like the Adjustable above, and read from NavigableKeys — the
         // very table the web realizer reads, which is why that table moved to where both can.
         //
         // Nothing dispatched here at all before the rows laid out (#248): Navigable.OnMove was wired
         // on one target, so a calendar on Photon was a grid you could not walk. A key the grid does
         // not claim answers null and travels on, so Tab and Escape still belong to the page.
         if (modifiers is KeyModifiers.None or KeyModifiers.Shift
-            && _focusedPath is { Length: > 0 } gridPath
+            && _focusedId != 0
             && NavigableKeys.Move(key, modifiers.HasFlag(KeyModifiers.Shift)) is { } move
             && _lastFrame?.FocusStops is { } gridStops)
         {
             for (var i = 0; i < gridStops.Count; i++)
             {
-                if (gridStops[i].Path != gridPath || gridStops[i].Grid is not { } grid) continue;
+                if (gridStops[i].Id != _focusedId || gridStops[i].Grid is not { } grid) continue;
                 grid.OnMove(move);
                 NeedsRender = true;
                 return true;
@@ -2813,7 +2886,7 @@ public sealed class PhotonHost
                 return ActivateFocused();
 
             case "Escape" when modifiers == KeyModifiers.None:
-                if (Focused is null && _focusedPath is null) return false;
+                if (Focused is null && _focusedId == 0) return false;
                 ClearFocus();
                 return true;
 

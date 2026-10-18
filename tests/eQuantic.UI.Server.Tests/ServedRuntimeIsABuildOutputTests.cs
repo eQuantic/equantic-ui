@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using FluentAssertions;
 
 namespace eQuantic.UI.Server.Tests;
@@ -36,22 +35,15 @@ public class ServedRuntimeIsABuildOutputTests
     {
         var root = Repository.Root();
 
-        Git(root, $"ls-files -- {Bundle}").Should().BeEmpty(
+        Git(root, "ls-files", "--", Bundle).Should().BeEmpty(
             "the bundle is rebuilt on every Server build, and a committed copy is exactly what lagged the runtime's source (#273)");
-        Git(root, $"check-ignore -- {Bundle}").Trim().Should().Be(Bundle,
+        Git(root, "check-ignore", "--", Bundle).Trim().Should().Be(Bundle,
             ".gitignore keeps the build's output out of a `git add .`");
     }
 
-    private static string Git(string root, string arguments)
-    {
-        using var git = Process.Start(new ProcessStartInfo("git", arguments)
-        {
-            WorkingDirectory = root,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        })!;
-        var output = git.StandardOutput.ReadToEnd();
-        git.WaitForExit();
-        return output;
-    }
+    /// <summary>git in <paramref name="root"/>, each argument passed as one. A minute for a question
+    /// git answers in milliseconds: a git that hangs fails the case rather than holding the test host
+    /// (#971).</summary>
+    private static string Git(string root, params string[] arguments) =>
+        ChildProcess.Run("git", arguments, TimeSpan.FromMinutes(1), root).Output;
 }

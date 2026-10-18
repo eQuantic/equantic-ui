@@ -151,8 +151,9 @@ public enum SemanticCheck : byte
 
 /// <summary>
 /// One element a screen reader can land on, in READING ORDER (tree order — the same order Tab
-/// walks). Identified by PATH, like every press, focus and scroll target: the tree is rebuilt every
-/// frame, so a reference is stale by the time assistive tech acts on it, and the path is what stays.
+/// walks). Identified by an ID, its position's (<see cref="Element.Id"/>), like every press, focus
+/// and scroll target: the tree is rebuilt every frame, so a reference to the node is stale by the time
+/// assistive tech acts on it, and the position is what stays while the same node stands there.
 /// <para>
 /// HOST ONLY, for now, and the fence is the thing that will come off. A node like this is what a
 /// WALK produces for a platform bridge to read; no page constructs one, because on the web the
@@ -165,7 +166,11 @@ public enum SemanticCheck : byte
 /// </para>
 /// </summary>
 /// <param name="Role">What KIND of thing this is, which decides how a bridge announces it.</param>
-/// <param name="Path">Where it sits in the tree — the identity a focus or an action names.</param>
+/// <param name="Id">
+/// What a bridge names it by when it focuses or acts on it: its position's id, kept for as long as
+/// the position lives and never given to another, or for a linked run inside a paragraph the id the
+/// paragraph's position keeps for it. A node that takes another's place has a new one.
+/// </param>
 /// <param name="Bounds">Where it landed, for the bridge's own hit map.</param>
 /// <param name="Label">What assistive tech announces, already resolved to the app's culture.</param>
 /// <param name="Value">Its current value, for roles that carry one.</param>
@@ -233,7 +238,7 @@ public enum SemanticCheck : byte
 [ServerOnly]
 public readonly record struct SemanticNode(
     SemanticRole Role,
-    string Path,
+    int Id,
     Rect Bounds,
     string Label,
     string? Value,

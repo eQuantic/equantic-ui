@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using FluentAssertions;
 
 namespace eQuantic.UI.Web.Tests;
@@ -121,13 +120,11 @@ internal static class WikiClone
     {
         try
         {
-            var start = new ProcessStartInfo("git") { RedirectStandardOutput = true, RedirectStandardError = true };
-            foreach (var argument in (string[])["-C", Location!, "rev-parse", .. arguments])
-                start.ArgumentList.Add(argument);
-            using var process = Process.Start(start)!;
-            var output = process.StandardOutput.ReadToEnd().Trim();
-            process.WaitForExit();
-            return process.ExitCode == 0 && output.Length > 0 ? output : "?";
+            // A minute for a rev-parse that answers in milliseconds: a git that hangs fails the guard
+            // that asked rather than holding the test host (#971).
+            var (exitCode, output, _) = ChildProcess.Run("git", ["-C", Location!, "rev-parse", .. arguments], TimeSpan.FromMinutes(1));
+            output = output.Trim();
+            return exitCode == 0 && output.Length > 0 ? output : "?";
         }
         catch (System.ComponentModel.Win32Exception)
         {
