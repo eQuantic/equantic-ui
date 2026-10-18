@@ -17,7 +17,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// <c>Environment.NewLine</c>, <c>TimeZoneInfo.Local</c> or <c>typeof(T).Name</c> as names nothing
 /// defines, each built with no diagnostic and threw or read undefined in the browser (#847).
 /// <para>
-/// A member an interface declares is not asked: the value read through one may be a type of the
+/// A member a .NET interface declares is not asked: the value read through one may be a type of the
 /// app's own, whose twin carries the member by that name.
 /// </para>
 /// <para>
@@ -83,6 +83,45 @@ internal static class PlatformMemberRead
         return true;
     }
 
+    /// <summary>
+    /// Reports EQ2004 and answers true where <paramref name="node"/> reads or calls a STATIC of a package's type:
+    /// a property, a field or an ordinary method, through its type's name, an alias or <c>using static</c>. The
+    /// dispatcher asks it before any strategy (<c>CSharpToJsConverter.ConvertIr</c>), so it is the one place
+    /// deciding: a strategy that claims a node by its spelling (the numeric constants, an instant's statics,
+    /// <c>string.Empty</c>, the member access's <c>Guid.Empty</c>) wrote a package's static reached through an
+    /// alias named like the platform type as that type's member (#964). The model alone is asked. A constant and
+    /// an enum's member are their values, which the strategies write, and an extension is the call fence's.
+    /// A refusal is recorded where it is told, a call's here and a read's by <see cref="ReportIfUntranslated"/>,
+    /// so a chain rooted in it is told once, at its root: <c>Status.Make().GetType()</c> told
+    /// <c>object.GetType</c> again (Copilot's third review of #964).
+    /// </summary>
+    internal static bool ReportIfPackageStatic(ExpressionSyntax node, ConversionContext context)
+    {
+        if (node is InvocationExpressionSyntax call)
+        {
+            if (context.SemanticHelper.GetSymbol(call) is not IMethodSymbol
+                {
+                    IsStatic: true, MethodKind: MethodKind.Ordinary, IsExtensionMethod: false, ContainingType: { } owner,
+                } method
+                || !owner.IsPackages())
+                return false;
+            RecordRefused(call, context);
+            context.Report(call, ConversionSeverity.Error, "EQ2004",
+                $"'{owner.ToDisplayString()}.{method.Name}' has no JavaScript translation: {owner.PackageReason()}. "
+                + TwinlessTypeExtensions.PackageRemedy);
+            return true;
+        }
+        if (node is not (MemberAccessExpressionSyntax or IdentifierNameSyntax)) return false;
+        // The name a member access, a call or a ?. binding stands on is part of that node.
+        if (node.Parent is MemberAccessExpressionSyntax access && access.Name == node) return false;
+        if (node.Parent is InvocationExpressionSyntax invocation && invocation.Expression == node) return false;
+        if (node.Parent is MemberBindingExpressionSyntax) return false;
+        var symbol = context.SemanticHelper.GetSymbol(node);
+        return symbol is IPropertySymbol { IsStatic: true } or IFieldSymbol { IsStatic: true, HasConstantValue: false }
+            && symbol.ContainingType.IsPackages()
+            && ReportIfUntranslated(symbol, node, context);
+    }
+
     internal static bool IsFromRefusedRead(SyntaxNode node, ConversionContext context)
     {
         var read = context.SemanticHelper.Original(node);
@@ -98,18 +137,20 @@ internal static class PlatformMemberRead
         context.RefusedReads.Add(context.SemanticHelper.Original(node));
 
     /// <summary>Whether <paramref name="symbol"/> is a property or a field of a .NET class or struct
-    /// that the browser does not carry by its name, or a static one of a package's type, which has no
-    /// twin and no module to carry it (#822), or an untranslated method group of <c>object</c>
-    /// (<c>GetType</c>, <c>MemberwiseClone</c>). A value of a package's type reaches the browser only as the
-    /// data the server sends, whose members it reads by name.</summary>
+    /// that the browser does not carry by its name, or a static one of a package's type, whatever kind of
+    /// type declares it, which has no twin and no module to carry it (#822), or an untranslated method group
+    /// of <c>object</c> (<c>GetType</c>, <c>MemberwiseClone</c>). A member a .NET interface declares is not
+    /// asked (above), and a package interface's static was let through with it, written as `IStatus.label`
+    /// (Copilot's second review of #958). A value of a package's type reaches the browser only as the data
+    /// the server sends, whose members it reads by name.</summary>
     private static bool NothingCarries(ISymbol? symbol) =>
         symbol switch
         {
             IPropertySymbol or IFieldSymbol =>
-                symbol.ContainingType is { TypeKind: not TypeKind.Interface } declaring
+                symbol.ContainingType is { } declaring
                 && !symbol.Locations.Any(location => location.IsInSource)
                 && (BoundaryShape.IsPlatform(declaring)
-                    ? !CarriedByName.Contains(Root(symbol))
+                    ? declaring.TypeKind != TypeKind.Interface && !CarriedByName.Contains(Root(symbol))
                     : symbol.IsStatic && declaring.IsPackages()),
             IMethodSymbol { Name: "GetType" or "MemberwiseClone", ContainingType.SpecialType: SpecialType.System_Object } => true,
             _ => false,

@@ -53,6 +53,23 @@ public class DateMemberConformanceTests
             + DateTime.Compare(t2: At(2), t1: At(1)) + "|" + log + "|"
             + new DateOnly(day: 29, month: 2, year: 2024).ToString("o") + "|" + new TimeSpan(seconds: 3, minutes: 2, hours: 1);
         """,
+        // An instant beside a date: C# converts the date to an instant and binds the instant's operator, both
+        // orders (#961).
+        """
+        var a = new DateTimeOffset(2024, 1, 2, 0, 0, 0, TimeSpan.Zero); var b = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        return (a - b) + "|" + (b - a) + "|" + (a < b) + "|" + (a == b) + "|" + (a > b) + "|" + (a == new DateTime(2024, 1, 2, 0, 0, 0, DateTimeKind.Utc));
+        """,
+        // A nullable date becoming a nullable instant: a null one stays null, a present one is converted, alone and
+        // under an instant's operator with a null on either side (#964).
+        """
+        DateTime? none = null; DateTime? some = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        DateTimeOffset? fromNone = none; DateTimeOffset? fromSome = some;
+        DateTimeOffset? a = new DateTimeOffset(2024, 1, 2, 0, 0, 0, TimeSpan.Zero); DateTimeOffset? an = null;
+        return (fromNone is null) + "|" + fromSome?.ToString("o") + "|"
+            + ((a - none) is null) + "|" + ((none - a) is null) + "|" + (a - some) + "|" + ((an - some) is null) + "|"
+            + (a == none) + "|" + (none == an) + "|" + (a == some) + "|"
+            + (a < none) + "|" + (none < a) + "|" + (some < a) + "|" + (an < some);
+        """,
     ];
 
     public static IEnumerable<object?[]> CasesInEachCulture() =>

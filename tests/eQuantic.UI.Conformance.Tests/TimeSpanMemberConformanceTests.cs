@@ -85,4 +85,50 @@ public class TimeSpanMemberConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, culture: culture);
     }
+
+    /// <summary>A span scaled and divided by a value C# converts to a double through an operator of its own
+    /// type: the operator C# bound is the span's, whatever the operand's type, in place and lifted too
+    /// (Copilot's second review of #958). The operand's own type decided, and the product was
+    /// JavaScript's.</summary>
+    [SkippableFact]
+    public void ASpanScaledByAValueItsTypeConverts_IsTheSpansOperator()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            """
+            var factor = new Factor(2); var ts = TimeSpan.FromTicks(3);
+            var a = ts * factor; var b = factor * ts; var c = TimeSpan.FromTicks(12) / factor;
+            var d = TimeSpan.FromTicks(5); d *= factor; var e = TimeSpan.FromTicks(20); e /= factor;
+            TimeSpan? n = null; TimeSpan? m = TimeSpan.FromTicks(4);
+            return a.Ticks + "|" + b.Ticks + "|" + c.Ticks + "|" + d.Ticks + "|" + e.Ticks + "|" + ((n * factor) is null) + "|" + (m * factor)?.Ticks;
+            """,
+            "public record Factor(double V) { public static implicit operator double(Factor f) => f.V; }");
+    }
+
+    /// <summary>
+    /// A NULLABLE factor whose struct converts to a double is the LIFTED conversion under the span's lifted
+    /// operator: a null factor makes the span null, a present one scales it, on either side of `*`, under `/`
+    /// and compounded. An operator that takes the nullable itself is not lifted and receives the null, and a
+    /// class's operator is unchanged (Copilot's second review of #964).
+    /// </summary>
+    [SkippableFact]
+    public void ASpanScaledByANullableFactor_IsTheLiftedConversion()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            """
+            Factor? none = null; Factor? some = new Factor(2); var ts = TimeSpan.FromTicks(3);
+            TimeSpan? g = TimeSpan.FromTicks(5); g *= none; TimeSpan? h = TimeSpan.FromTicks(5); h *= some;
+            TimeSpan? i = TimeSpan.FromTicks(20); i /= none; TimeSpan? j = TimeSpan.FromTicks(20); j /= some;
+            Weight? wn = null; Weight? ws = new Weight(4); Ratio r = new Ratio(2);
+            return ((ts * none) is null) + "|" + (ts * some)?.Ticks + "|" + ((none * ts) is null) + "|" + (some * ts)?.Ticks + "|"
+                + ((ts / none) is null) + "|" + (TimeSpan.FromTicks(12) / some)?.Ticks + "|" + (g is null) + "|" + h?.Ticks + "|"
+                + (i is null) + "|" + j?.Ticks + "|" + (ts * wn).Ticks + "|" + (ts * ws).Ticks + "|" + (ts * r).Ticks;
+            """,
+            """
+            public record struct Factor(double V) { public static implicit operator double(Factor f) => f.V; }
+            public record struct Weight(double V) { public static implicit operator double(Weight? w) => w?.V ?? -1; }
+            public record Ratio(double V) { public static implicit operator double(Ratio r) => r.V; }
+            """);
+    }
 }
