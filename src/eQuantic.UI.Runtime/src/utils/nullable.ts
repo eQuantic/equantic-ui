@@ -1,5 +1,7 @@
+import { exception } from './exceptions';
+
 /**
- * Lifted-operator helpers for .NET `Nullable<T>` (`T?`).
+ * Lifted-operator helpers for .NET `Nullable<T>` (`T?`), and its unwrap.
  *
  * A lifted binary operator in C# evaluates BOTH operands, then:
  *  - arithmetic (`+ - * / %`)  → `null` if either operand is null;
@@ -36,4 +38,18 @@ export function liftCmp<L, R>(
   pred: (a: L, b: R) => boolean,
 ): boolean {
   return l == null || r == null ? false : pred(l, r);
+}
+
+/** What .NET's InvalidOperationException says of the value of an empty `Nullable<T>`. */
+const NO_VALUE = 'Nullable object must have a value.';
+
+/**
+ * `Nullable<T>.Value`, and every unwrap C# applies through it: a cast of a `T?` to `T` or to another
+ * type, the value a struct's own conversion operator takes, a `foreach` element of a type that is not
+ * nullable. An empty one throws the InvalidOperationException .NET throws, before anything converts
+ * it; JavaScript carried the null on, and a struct's operator built a value holding it (#967).
+ */
+export function unwrap<T>(v: T | null | undefined): T {
+  if (v == null) throw exception('System.InvalidOperationException', NO_VALUE);
+  return v;
 }

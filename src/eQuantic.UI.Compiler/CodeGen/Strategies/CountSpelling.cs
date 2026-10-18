@@ -16,11 +16,18 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// counted a set by <c>length</c> while the member read beside it said <c>size</c>, so
 /// <c>{ Roles.Count: > 0 }</c> was false in the browser alone (#516).
 /// </para>
+/// <para>
+/// A <c>Count</c> read on a NULLABLE value is its value's: <c>Nullable&lt;T&gt;</c> declares none, so the
+/// member the model binds behind <c>?.</c> or in a property pattern over one is the value type's own.
+/// Answered for the nullable's type, a platform one, an app's record struct counted a <c>length</c> it
+/// does not have (#966), as a nullable tuple's element was read by name before #847.
+/// </para>
 /// </summary>
 internal static class CountSpelling
 {
     public static JsExpr Read(JsExpr receiver, ITypeSymbol? type, ConversionContext context)
     {
+        type = type.UnwrapNullable();
         if (type.IsDictionary()) return JsExpr.Member(receiver, "size");
         if (BoundaryShape.CollectionClass(type) is { } kind) return JsExpr.Member(receiver, kind == "set" ? "size" : "count");
 
