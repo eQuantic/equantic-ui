@@ -1,1 +1,33 @@
 #nullable enable
+eQuantic.UI.Code.CodeEdit.Carry(eQuantic.UI.Code.CodeRange range) -> eQuantic.UI.Code.CodeRange
+eQuantic.UI.Code.CodeEditorController.Diagnostics.get -> eQuantic.UI.Code.CodeDiagnostics!
+eQuantic.UI.Code.CodeEditorController.Hover.get -> eQuantic.UI.Code.CodeHoverSession!
+eQuantic.UI.Code.CodeEditorController.CharacterAt(eQuantic.UI.Primitives.Point point) -> eQuantic.UI.Code.CodePosition?
+eQuantic.UI.Code.CodeLineCells.ColumnUnder(float cell) -> int
+eQuantic.UI.Code.CodeDiagnostics
+eQuantic.UI.Code.CodeDiagnostics.Providers.get -> System.Collections.Generic.IList<eQuantic.UI.Code.ICodeDiagnosticProvider!>!
+eQuantic.UI.Code.CodeDiagnostics.Delay.get -> System.TimeSpan
+eQuantic.UI.Code.CodeDiagnostics.Delay.set -> void
+eQuantic.UI.Code.CodeDiagnostics.Items.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiagnostic!>!
+eQuantic.UI.Code.CodeDiagnostics.IsChecking.get -> bool
+eQuantic.UI.Code.CodeDiagnostics.Changed -> System.Action?
+eQuantic.UI.Code.CodeDiagnostics.Failed -> System.Action<System.Exception!>?
+eQuantic.UI.Code.CodeDiagnostics.Report(System.Collections.Generic.IEnumerable<eQuantic.UI.Code.CodeDiagnostic!>! problems) -> void
+eQuantic.UI.Code.CodeDiagnostics.Check() -> void
+eQuantic.UI.Code.CodeDiagnostics.At(eQuantic.UI.Code.CodePosition position) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiagnostic!>!
+eQuantic.UI.Code.CodeDiagnostics.Next(bool backward = false) -> eQuantic.UI.Code.CodeDiagnostic?
+eQuantic.UI.Code.CodeHoverSession.Dismiss() -> bool
+eQuantic.UI.Code.CodeHoverSession
+eQuantic.UI.Code.CodeHoverSession.Providers.get -> System.Collections.Generic.IList<eQuantic.UI.Code.ICodeHoverProvider!>!
+eQuantic.UI.Code.CodeHoverSession.Delay.get -> System.TimeSpan
+eQuantic.UI.Code.CodeHoverSession.Delay.set -> void
+eQuantic.UI.Code.CodeHoverSession.IsOpen.get -> bool
+eQuantic.UI.Code.CodeHoverSession.ByKeyboard.get -> bool
+eQuantic.UI.Code.CodeHoverSession.Range.get -> eQuantic.UI.Code.CodeRange
+eQuantic.UI.Code.CodeHoverSession.Problems.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiagnostic!>!
+eQuantic.UI.Code.CodeHoverSession.Answers.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeHover!>!
+eQuantic.UI.Code.CodeHoverSession.Changed -> System.Action?
+eQuantic.UI.Code.CodeHoverSession.Failed -> System.Action<System.Exception!>?
+eQuantic.UI.Code.CodeHoverSession.ShowAt(eQuantic.UI.Code.CodePosition position) -> bool
+eQuantic.UI.Code.ICodeDiagnosticProvider
+eQuantic.UI.Code.ICodeDiagnosticProvider.DiagnoseAsync(eQuantic.UI.Code.CodeDocument! document, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiagnostic!>!>!

@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeCompletionAnswer, CodeCompletionContext, CodeCompletionList, CodeCompletionMatch, CodeCompletionOffer, CodeCompletionTriggerValue, CodeDocument, CodeEditorController, CodeFuzzyMatch, CodePosition, CodeRange, UiDispatcher } from "../runtime-exports";
+import { $eq, CancellationToken, CancellationTokenSource, CodeCompletionAnswer, CodeCompletionContext, CodeCompletionList, CodeCompletionMatch, CodeCompletionOffer, CodeCompletionTriggerValue, CodeDocument, CodeEditorController, CodeFuzzyMatch, CodePosition, CodeRange, UiThread } from "../runtime-exports";
 
 export class CodeCompletion {
     constructor(editor: CodeEditorController) {
@@ -115,8 +115,8 @@ export class CodeCompletion {
         this._request = cancellation;
         let document = this._editor.document;
         let position = this._editor.caret;
-        let $n15: any; 
-        let context = ($n15 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n15.character = character, $n15);
+        let $n16: any; 
+        let context = ($n16 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n16.character = character, $n16);
         this._askedWord = this.word();
         let asked = [];
         let errors: Error[] = [];
@@ -144,7 +144,7 @@ export class CodeCompletion {
             }
             answers.push(new CodeCompletionAnswer(providers[i], document.line(position.line).length, list));
         }
-        CodeCompletion.onUiThread(() => {
+        UiThread.run(() => {
             for (const error of errors) this.failed?.(error);
             this.deliver(generation, answers);
         });
@@ -355,11 +355,11 @@ export class CodeCompletion {
             if ($eq.exceptions.is($e, 'System.OperationCanceledException') && $eq.exceptions.filter(() => cancellation.isCancellationRequested)) {
                 return;
             } else {
-                CodeCompletion.onUiThread(() => this.failed?.(error));
+                UiThread.run(() => this.failed?.(error));
                 return;
             }
         }
-        CodeCompletion.onUiThread(() => {
+        UiThread.run(() => {
             if (!this._active || (resolved === offer.item)) return;
             offer.item = resolved;
             let at = $eq.collections.indexOf(this._shown, offer, 'item');
@@ -399,11 +399,6 @@ export class CodeCompletion {
             if (token.start <= caret.column - 1 && caret.column - 1 < token.end) return (token.kind === 'comment' || token.kind === 'string');
         }
         return false;
-    }
-
-    static onUiThread(work: () => void) {
-        let dispatcher: any; 
-        if (((UiDispatcher.current != null && UiDispatcher.current.isOnUiThread === false) && (dispatcher = UiDispatcher.current, true))) dispatcher.post(work); else work();
     }
 
     toString(): string {

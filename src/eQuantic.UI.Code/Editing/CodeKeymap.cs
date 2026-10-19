@@ -71,6 +71,31 @@ public static class CodeKeymap
         // for the list where the caret is. Before the chords, which would take a space as a letter.
         if (key == " " && (command || control) && !shift && !alt) return completion.Invoke();
 
+        // ---- the card and the problems ------------------------------------------------------------
+        // ⌘K ⌘I (Ctrl+K Ctrl+I) shows the card for the caret, as VS Code has it: ⌘K waits for one key,
+        // and anything but a modifier ends the wait, claimed as the second half or handled as itself.
+        // Slice 2 makes the keymap data with chords of its own (#601) and takes this one over.
+        if (editor.PendingChord is not null && !IsModifierKey(key))
+        {
+            editor.PendingChord = null;
+            if (command && key is "i" or "I")
+            {
+                editor.Hover.ShowAt(editor.Caret);
+                return true;
+            }
+        }
+        if (command && !shift && !alt && key is "k" or "K")
+        {
+            editor.PendingChord = "K";
+            return true;
+        }
+        // F8 and Shift+F8 walk the problems and show the card of the one they reach, claimed only while
+        // there is one to go to.
+        if (key == "F8" && !command && !control && !alt) return editor.Diagnostics.Next(backward: shift) is not null;
+        // Escape closes a card first, only it, so the trap on Tab stays armed and a dialog around the
+        // editor stays open; a list showing has already taken the key above.
+        if (key == "Escape" && editor.Hover.Dismiss()) return true;
+
         // Escape with no list showing releases the trap, unclaimed, so the host can go on meaning
         // what Escape means around the editor.
         if (key == "Escape")

@@ -199,7 +199,7 @@ public sealed class CodeCompletion
             answers.Add(new CodeCompletionAnswer(providers[i], document.Line(position.Line).Length, list));
         }
 
-        OnUiThread(() =>
+        UiThread.Run(() =>
         {
             foreach (var error in errors) Failed?.Invoke(error);
             Deliver(generation, answers);
@@ -537,11 +537,11 @@ public sealed class CodeCompletion
         }
         catch (Exception error)
         {
-            OnUiThread(() => Failed?.Invoke(error));
+            UiThread.Run(() => Failed?.Invoke(error));
             return;
         }
 
-        OnUiThread(() =>
+        UiThread.Run(() =>
         {
             // The list it was resolved for may be gone, and the provider may have had nothing to add.
             if (!_active || ReferenceEquals(resolved, offer.Item)) return;
@@ -604,17 +604,5 @@ public sealed class CodeCompletion
                 return token.Kind is CodeTokenKind.Comment or CodeTokenKind.String;
         }
         return false;
-    }
-
-    /// <summary>
-    /// Runs <paramref name="work"/> where the editor lives. An answer that a provider completed on
-    /// another thread is POSTED to the UI thread, as <c>SetState</c> posts a mutation, because the list
-    /// it changes is the one the render thread is reading; where there is one thread (the browser) or
-    /// the answer came back on the UI thread, it runs at once.
-    /// </summary>
-    private static void OnUiThread(Action work)
-    {
-        if (UiDispatcher.Current is { IsOnUiThread: false } dispatcher) dispatcher.Post(work);
-        else work();
     }
 }
