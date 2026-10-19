@@ -49,12 +49,18 @@ public class MessageLanguageTests
         return email;
     }
 
-    [Fact]
-    public void AMessageNamesItsCultureOnTheDocument()
+    [Theory]
+    [InlineData("pt-BR", "pt-BR")]
+    [InlineData("sr-Latn-RS", "sr-Latn-RS")]
+    // .NET still makes the legacy Chinese cultures, whose names are no language tag: the document
+    // takes the IETF tag (Copilot's review of #1000).
+    [InlineData("zh-CHS", "zh-Hans")]
+    [InlineData("zh-CHT", "zh-Hant")]
+    public void AMessageNamesItsCultureOnTheDocument(string name, string tag)
     {
-        var message = EmailRenderer.Render(new Text("Olá", TypeRole.BodyM), Theme, culture: Portuguese);
+        var message = EmailRenderer.Render(new Text("Olá", TypeRole.BodyM), Theme, culture: CultureInfo.GetCultureInfo(name));
 
-        message.Html.Should().Contain("<html lang=\"pt-BR\" ");
+        message.Html.Should().Contain($"<html lang=\"{tag}\" ");
     }
 
     [Fact]
