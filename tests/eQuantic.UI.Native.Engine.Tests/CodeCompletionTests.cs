@@ -76,6 +76,9 @@ public class CodeCompletionTests : IDisposable
 
         public void Answer(int request, params string[] labels) =>
             _pending[request].SetResult(new CodeCompletionList(labels.Select(label => new CodeCompletionItem(label)).ToList()));
+
+        public void AnswerItems(int request, params CodeCompletionItem[] items) =>
+            _pending[request].SetResult(new CodeCompletionList(items));
     }
 
     /// <summary>A UI thread that is never the caller's: everything is posted, and runs when drained.</summary>
@@ -551,6 +554,86 @@ public class CodeCompletionTests : IDisposable
         dispatcher.Drain();
         editor.Completion.IsOpen.Should().BeTrue();
         Labels(editor).Should().Equal("Column");
+    }
+
+    // ---- answers one by one (#620) ----------------------------------------------------------------
+
+    /// <summary>
+    /// A provider that never answers, a language server that hangs, holds back no other: each answer shows
+    /// as it arrives. The list waited for every provider, so the language's words and the document's were
+    /// held back for every word typed after it.
+    /// </summary>
+    [Fact]
+    public void AProviderThatNeverAnswers_HoldsBackNoOther()
+    {
+        var never = new LateProvider();
+        var editor = Editor("", never, Offering("Column", "Count"));
+
+        Type(editor, "Co");
+
+        Labels(editor).Should().Equal("Column", "Count");
+        editor.Completion.IsLoading.Should().BeTrue("a provider asked has not answered");
+    }
+
+    /// <summary>
+    /// A later answer is listed in the order of the providers, whatever the order the answers landed in, and
+    /// the entry selected stays selected: the first provider's copy of an entry both offer is the one listed,
+    /// as it would be had they answered together.
+    /// </summary>
+    [Fact]
+    public void ALaterAnswer_IsListedInTheProvidersOrder_AndTheSelectedEntryStaysSelected()
+    {
+        var first = new LateProvider();
+        var second = new Provider();
+        second.Items.Add(new CodeCompletionItem("Column") { Detail = "the second's" });
+        var editor = Editor("", first, second);
+        Type(editor, "Co");
+        SelectedLabel(editor).Should().Be("Column");
+
+        first.AnswerItems(0, new CodeCompletionItem("Color"), new CodeCompletionItem("Column") { Detail = "the first's" },
+            new CodeCompletionItem("Count"));
+
+        Labels(editor).Should().Equal("Color", "Column", "Count");
+        SelectedLabel(editor).Should().Be("Column", "the entry selected stays selected when an answer lands");
+        editor.Completion.Items[editor.Completion.Selected].Item.Detail.Should().Be("the first's",
+            "the first provider's copy is listed, whichever answered first");
+        editor.Completion.IsLoading.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Asking a provider again, because it called its answer incomplete, cancels its own request and no
+    /// other: the answer a slow provider still owes lands. Every request was one, and asking one provider
+    /// again dropped the others' answers for good.
+    /// </summary>
+    [Fact]
+    public void AnIncompleteAnswerAskedAgain_LeavesASlowProvidersRequestOut()
+    {
+        var slow = new LateProvider();
+        var incomplete = new Provider { Incomplete = true };
+        incomplete.Items.Add(new CodeCompletionItem("Column"));
+        var editor = Editor("", slow, incomplete);
+
+        Type(editor, "Co");
+
+        incomplete.Asked.Should().HaveCount(2, "the word changed, and its answer was incomplete");
+        slow.Count.Should().Be(1, "the slow provider was asked once");
+        slow.Cancellations[0].IsCancellationRequested.Should().BeFalse("its request is still wanted");
+        slow.Answer(0, "Count");
+        Labels(editor).Should().Equal("Column", "Count");
+    }
+
+    [Fact]
+    public void TheListClosesForWantOfOffers_OnlyOnceEveryProviderHasAnswered()
+    {
+        var late = new LateProvider();
+        var editor = Editor("", late, Offering());
+        Type(editor, "Co");
+        editor.Completion.IsLoading.Should().BeTrue("the late provider may still offer something");
+
+        late.AnswerItems(0);
+
+        editor.Completion.IsLoading.Should().BeFalse();
+        editor.Completion.Dismiss().Should().BeFalse("nothing was offered, and the list closed");
     }
 
     // ---- what providers can say ---------------------------------------------------------------------
