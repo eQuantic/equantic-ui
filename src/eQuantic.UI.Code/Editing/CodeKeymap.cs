@@ -51,8 +51,8 @@ public static class CodeKeymap
 
         // ---- a chord half typed ------------------------------------------------------------------
         // Any key but a modifier ends the wait for a chord's second half (⌘K ⌘I, below), and ends it
-        // here, for the reason the trap above re-arms here: the list's keys and ⌃Space return early,
-        // and ending the wait after them left ⌘K, ⌃Space, Escape, ⌘I showing the card.
+        // here, for the reason the trap above re-arms here: the list's keys, ⌃Space and the panel's
+        // keys return early, and ending the wait after them left ⌘K, ⌃Space, Escape, ⌘I showing the card.
         var chord = editor.PendingChord;
         if (!IsModifierKey(key)) editor.PendingChord = null;
 

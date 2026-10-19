@@ -8,6 +8,8 @@ export class CodeKeymap {
         let alt = (modifiers & 2) !== 0;
         let apple = convention === 'apple';
         if (key !== 'Tab' && key !== 'Escape' && !CodeKeymap.isModifierKey(key)) editor.tabMovesFocus = false;
+        let chord = editor.pendingChord;
+        if (!CodeKeymap.isModifierKey(key)) editor.pendingChord = null;
         let completion = editor.completion;
         if (completion.isOpen && !command && !control && !alt) {
             if (key === 'ArrowDown' && !shift && completion.move(1)) return true;
@@ -20,13 +22,10 @@ export class CodeKeymap {
         }
         if (key === ' ' && (command || control) && !shift && !alt) return completion.invoke();
         if (key === ' ' && (command || control) && shift && !alt) return editor.signatureHelp.invoke();
-        if (!command && !control && !alt && !shift && (key === 'ArrowUp' || key === 'ArrowDown') && editor.signatureHelp.move(key === 'ArrowUp' ? -1 : 1)) return true;
-        if (!(editor.pendingChord == null) && !CodeKeymap.isModifierKey(key)) {
-            editor.pendingChord = null;
-            if (command && (key === 'i' || key === 'I')) {
-                editor.hover.showAt(editor.caret);
-                return true;
-            }
+        if (!command && !control && !shift && (key === 'ArrowUp' || key === 'ArrowDown') && !editor.hover.isOpen && editor.signatureHelp.move(key === 'ArrowUp' ? -1 : 1)) return true;
+        if (!(chord == null) && command && (key === 'i' || key === 'I')) {
+            editor.hover.showAt(editor.caret);
+            return true;
         }
         if (command && !shift && !alt && (key === 'k' || key === 'K') && ($eq.collections.count(editor.hover.providers) > 0 || $eq.collections.count(editor.diagnostics.items) > 0)) {
             editor.pendingChord = 'K';
@@ -62,7 +61,7 @@ export class CodeKeymap {
                         return true;
                     case 'v':
                         if (clipboard == null) return false;
-                        if ((($v8771) => (($v8771 != null && $v8771.length > 0) && (pasted = $v8771, true)))(clipboard.read())) editor.paste(pasted);
+                        if ((($v9409) => (($v9409 != null && $v9409.length > 0) && (pasted = $v9409, true)))(clipboard.read())) editor.paste(pasted);
                         return true;
                     case '/':
                         return editor.toggleLineComment();
