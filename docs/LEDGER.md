@@ -2844,6 +2844,480 @@ record of a release, the wiki's Upgrading page is the distillate.
   fold left 188. The entry left the chronology for a file under `docs/ledger/`, which put the
   chronology back to the record byte for byte, as the rule asks of an event
   ([#894](https://github.com/eQuantic/equantic-ui/issues/894)).
+- **2026-10-14 · 0.2.0-preview.63 released** from `85b0ab52`: a link that opens the app on a phone,
+  with what an iPhone app declares reaching its Info.plist (#879), a library's code that reads the
+  projects it references, a constant included (#889), a class named as .NET names one of its types
+  imported as the module it is (#891), every member of a queue, a stack, a linked list and a sorted
+  set answered as .NET's or refused by the build (#876), the README that shows the samples (#883),
+  the wiki's guards in five languages (#886), and the ledger written as files and folded at a
+  release for the first time (#893, #895), with the release's own issue (#896). All 50 packages
+  restored cold from nuget.org six minutes after the publish, and the package's page there draws
+  the README's ten pictures
+  *([v0.2.0-preview.63](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.63))*.
+- **2026-10-14 · A conformance case fails where the build refuses its code**: the conformance
+  harness ran what the converter wrote for a case without reading what the build refuses, so a
+  construct a build stops at ran its fallback as if it had compiled. #761 took a query's `let` for an
+  answer of 3 where .NET answers 6, and the build refuses the query (EQ2008), so nothing of it ever
+  reaches a browser. Every entry of the harness now reads the build's refusals where the build reads
+  them: the converter's errors over the text the case would run, a warning refusing nothing, and the
+  build's own verdict on the prelude's declarations, asked of `ComponentCompiler` with the scan eqc
+  hands it, which brings every check a build runs beside the converter (EQ1007 and EQ2010 among them)
+  with nothing encoded twice. A refused
+  case fails before either side runs, naming each refusal by its id and text, and a case written for
+  a fence declares it (`AssertStatementsRefusedByTheBuild`) and runs nothing. The module harness reads
+  every module before it keeps the ones that wrote text, where a module refused before its emitter
+  ran was dropped with its refusal. The whole suite with the rule refused four cases that had been
+  passing: a dictionary keyed by `^1`, the gap of #394, now pinned as its EQ1004, and three refusals a
+  build should not make, each pinned until it is fixed: `Task.FromException` (EQ2004,
+  [#910](https://github.com/eQuantic/equantic-ui/issues/910)), `Equals(object)` on a builder (EQ2004,
+  [#909](https://github.com/eQuantic/equantic-ui/issues/909)) and a number parsed with
+  `(IFormatProvider?)null` (EQ2108, [#908](https://github.com/eQuantic/equantic-ui/issues/908)). The
+  three queries of #761, a `let`, a second `from` and an `into`, are cases that expect EQ2008 now,
+  pinned from the runner's side
+  ([#907](https://github.com/eQuantic/equantic-ui/issues/907),
+  [#761](https://github.com/eQuantic/equantic-ui/issues/761)). Proposed and archived through
+  OpenSpec (`openspec/specs/working-agreement`).
+- **2026-10-14 · A page's boundary reads only what crosses**: the client boundary (EQ2102–EQ2107,
+  EQ2112) was a validator that walked every invocation of a stateful page's file, so a Server Action
+  or a `[ServerOnly]` member that read a file was refused while a stateless page was never read, and a
+  construction, a read or a method group built and threw in the browser. It is asked now where the
+  conversion writes a symbol, matched by namespace, once a site; a `[ServerOnly]` method reaches no
+  twin whatever type declares it ([#816](https://github.com/eQuantic/equantic-ui/issues/816)). A type
+  the build writes no module for, the app's own top-level `[ServerOnly]` class or an attribute among
+  them, is refused with EQ2010 where client code names it, as a nested one was; measured on main, a
+  page that called `Vault.Key()` built and threw `Vault is not defined`
+  ([#823](https://github.com/eQuantic/equantic-ui/issues/823)). A call through a contract a
+  `[ServerOnly]` method fulfils, the interface member it implements or the method it overrides, is
+  refused with EQ2010 too wherever its receiver can be the type that keeps the method, read over the
+  whole build; measured on the branch, `((IShape)new Circle()).Area()` built and threw a TypeError
+  ([#816](https://github.com/eQuantic/equantic-ui/issues/816)). Review then found more ways client
+  code reached a member or a type no twin holds, each now refused with EQ2010 where it is written: a
+  bare method group, a `[ServerOnly]` operator or conversion applied (`Amount a = 7` wrote
+  `Amount.fromInt(7)`), an extension block's `[ServerOnly]` member, which was also emitted, an instance
+  member of a kept-out type read off a value, a `[ServerOnly]` `Deconstruct`, `GetEnumerator` or
+  `Dispose` reached implicitly through deconstruction, `foreach`, `[.. xs]` or `using`, the `MoveNext`,
+  `Current` or `Dispose` of the enumerator a spread reads, and a `[ServerOnly]` `GetEnumerator` a LINQ
+  operator reaches; a closed generic contract (`Bag : IEnumerable<int>`) now scopes its refusal to
+  matching type arguments, a variant one (`ISource<object>`) to what its variance admits, a string
+  literal no longer counts as a type reference, and a method the app names `@nameof` is no longer
+  skipped as the `nameof` operator ([#944](https://github.com/eQuantic/equantic-ui/pull/944)). Proposed and archived through OpenSpec
+  (`openspec/specs/client-boundary`).
+- **2026-10-14 · A phone opens a link**: `IUrlLauncher` (`OpenUrlAsync`, `CanOpen`) is a contract of
+  its own, registered by every Photon shell, and `IWorkspace` keeps the doors for a file. On the
+  Android emulator `tel`, `sms`, `mailto`, `geo` and `https` open the dialer, Messages, Gmail, Google
+  Maps and Chrome; on the iOS simulator `https`, `sms` and a map open Safari, Messages and Maps. The
+  build writes what a phone asks about from `builder.Workspace.Opens…`: `LSApplicationQueriesSchemes`
+  on iOS and a `queries` overlay on Android, without which every `CanOpen` on the emulator answered
+  false, `https` included. A scheme built at run time is `EQ3007` on a phone
+  ([#778](https://github.com/eQuantic/equantic-ui/issues/778)). Proposed and archived through
+  OpenSpec (`openspec/specs/opening-links`).
+- **2026-10-14 · A .NET read nothing in the browser carries fails the build**: a property or a field
+  of a .NET type that no strategy translated went out as its camel-cased name with no diagnostic, so
+  `CultureInfo.CurrentCulture.Name` threw a ReferenceError and `Environment.NewLine`,
+  `typeof(T).Name` or a list's `Capacity` read undefined, while a call of the same kind of member was
+  already EQ2004. A read now fails the build with EQ2004 naming the member, once per chain and through
+  `?.` too, unless the browser carries it by its name: a string's or an array's length, an
+  exception's twin, a dictionary's pair, an interface's member. Every read of the kind the suites
+  make was logged first, which found a char's casing converting its culture as a value. The BCL
+  audit's 16 reads that were `native` and named nothing are fenced, and a decimal's `Scale`, which
+  the runtime's `Decimal` keeps, is held against .NET instead; a property pattern is still not asked
+  (#920) ([#847](https://github.com/eQuantic/equantic-ui/issues/847)). Proposed and archived
+  through OpenSpec (`openspec/specs/transpiler-bcl`).
+- **2026-10-14 · A sorted collection answers through live views, and a sorted set gives a view of a range**:
+  a `SortedDictionary`'s and a `SortedList`'s `Keys` and `Values` were arrays copied when read, their
+  walks refused a change in CoreLib's words and went on where .NET's red-black tree counts a change, a
+  change asked of a view changed a copy, `TryAdd` on a sorted dictionary was a ReferenceError, and
+  `SortedSet.GetViewBetween` failed the build with EQ2004. The three dictionaries now share one live view
+  that refuses a change in each collection's words, and a view of a sorted set shares its set's elements
+  and takes .NET's paths through the set operations, the count its `ExceptWith` reads included. The
+  review of the diff found that a lookup went to the dictionary under its name alone, an extension of the
+  app's own included, and that a `Remove(key, out _)` which found nothing counted as a change. Copilot
+  found that two sorted sets of one enum had two comparers, and that an extension of the app's own
+  declared in System.Collections.Generic still went to the dictionary. Each is fixed; 113 conformance
+  cases executed on both sides
+  ([#864](https://github.com/eQuantic/equantic-ui/issues/864),
+  [#865](https://github.com/eQuantic/equantic-ui/issues/865)). Proposed and archived through OpenSpec
+  (`openspec/specs/runtime-dictionaries`, `runtime-collections`, `transpiler-bcl`).
+- **2026-10-14 · A sorted dictionary's keys find a key**: `SortedDictionary<TKey, TValue>.KeyCollection`
+  declares its own `Contains`, and only a `Dictionary`'s keys' was mapped, so `d.Keys.Contains(k)` on a
+  sorted dictionary failed the build with EQ2004 although the runtime's live view answers it. #919 added
+  the case and #914 made a refused build fail its case; each pull request's CI ran without the other, so
+  `main` failed that case once both merged. The call now lowers to the view's `contains`; two cases
+  executed on both sides, both refused by the build before
+  ([#928](https://github.com/eQuantic/equantic-ui/issues/928)). Proposed and archived through OpenSpec
+  (`openspec/specs/runtime-dictionaries`).
+- **2026-10-14 · A ToString method group and a composite key answer as .NET does**: a LINQ operator that
+  holds its keys or its elements held them in a JavaScript `Map` or `Set`, which find a key by
+  reference, and `Distinct` found a record or a struct by the text `JSON.stringify` writes of it. A join
+  by an anonymous object or a tuple key matched nothing, `Union`, `Intersect`, `Except` and the `By`
+  forms kept every anonymous object and tuple, a record, a decimal and a date were compared by
+  reference, a class that overrides `Equals` was never asked it, two records holding different arrays of
+  the same items were one by their JSON, and `GroupBy` made each NaN a group of its own
+  ([#922](https://github.com/eQuantic/equantic-ui/issues/922)). Every operator now reads the decision
+  `ElementEquality` makes for a dictionary, a set, `Contains` and `IndexOf`: a join and the set
+  operators hold their keys in the runtime's dictionary and set by the key type's equality, `Distinct`
+  too, and `GroupBy`, `ToLookup` and a lookup's indexer compare a key by the comparison it writes, with
+  `===` kept where that answers the same. A null key matches nothing in a join, as .NET's join lookup
+  skips it, where a `Map` paired two null keys, a string's on main already. The `ToString` method group
+  of an array, a list, a dictionary, a set, a delegate and an enum wrote JavaScript's text where the
+  call writes the type's or the member's name
+  ([#913](https://github.com/eQuantic/equantic-ui/issues/913)), and now writes what the call writes,
+  through `$eq.text.group`. Both were found by the second round of review on #906, which merged before
+  they did. 19 of the 21 conformance cases fail at dfce1158, the two that pass being a null array's
+  group and a dictionary keyed by a tuple that already answered as .NET, and the first version of this
+  fix, which held by value only what `LinqKeys.ComparesByValue` names, fails 7 of them. Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-sequences`,
+  `openspec/specs/transpiler-expressions`).
+- **2026-10-14 · A tuple and an anonymous object answer Equals and ToString as .NET does**: a value the
+  browser holds without a class of its own answered its object members as JavaScript does. An
+  anonymous object's `Equals` threw `equals is not a function`, as a call and as a method group
+  ([#743](https://github.com/eQuantic/equantic-ui/issues/743)), and its text was `[object Object]`; a
+  value tuple's text was `Array.prototype.toString`'s `1,2` where .NET writes `(1, 2)`, through
+  `ToString`, a hole, a concatenation, `Join`, `Format`, a builder, `Convert`, `Zip`'s pairs and a
+  record's member ([#762](https://github.com/eQuantic/equantic-ui/issues/762)), and its `Equals` method
+  group and a `Nullable` tuple's `Equals` threw. eqc now writes both texts from the static type, each
+  element and member as its type writes it in the culture in force, through `StringConversion`, which
+  `ValueFlow` already called for a value on its way into text; a hole with a format or an alignment and
+  `string.Format` hand the formatter that text, as neither type is `IFormattable`. An anonymous
+  object's `Equals` is the comparison generated from its members' types, which takes only another
+  anonymous object of the same members in the same order, and `StructuralEqualsStrategy` crossed to the
+  IR. 63 of the 69 conformance cases fail at 85b0ab52, in the invariant culture, pt-BR and sv-SE; the six
+  that pass are the `==`, `GetHashCode` and tuple `Equals` rows that already answered as .NET, and a fix
+  sending an anonymous object's `Equals` to `$eq.equals` fails three of the others. A tuple boxed into a
+  concatenation is read where it stands, without the copy a boxing takes, which taken around its text
+  spread the string into its characters, `(,1,,, ,2,)`, while this was measured. A value held as
+  `object` still prints as the browser holds it. A `Color` and a `Curve`, held as data too, write their
+  record text in an aligned hole, a hole with a format and `string.Format`, where they wrote
+  `[object Object]`, and `Distinct` over anonymous objects keeps the first of each, where a `Set` kept
+  every one. The first review of the pull request found five more, each measured and fixed: a tuple or
+  an anonymous object of other element or member types (a byte and an int) equalled in the browser,
+  which holds both alike, and `Equals(object)` now reads the other value's type before C# boxed it; an
+  anonymous object's `Equals` and `ToString` through null, and the delegates of their method groups,
+  answered where .NET throws, and now refuse the receiver as a string's instance methods already did; and
+  an array, a list, a dictionary, a set and a delegate printed `1,2` or a function's source where .NET
+  writes the type's name, `System.Int32[]`, on their own and inside a tuple or an anonymous object. A
+  value held only as `object`, or handed to an `Equals` method group's delegate, still compares by what
+  the browser holds ([#768](https://github.com/eQuantic/equantic-ui/issues/768)). The served runtime
+  grows about 170 gzipped bytes.
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-records`).
+- **2026-10-14 · A decimal computes in the browser what it computes on the server**: the runtime's
+  `Decimal` added, subtracted and multiplied on an unbounded mantissa and divided to 28 places
+  whatever the dividend, so `decimal.MaxValue + decimal.MaxValue`, and a `Sum` or an `Average` of
+  them, printed a number no decimal holds, a product kept every place past 28, and `4.00m / 2m`
+  printed `2`. Each operation now follows .NET 10's `DecCalc`: past 96 bits or 28 places a result
+  rounds half to even to the places that fit, or throws .NET's `OverflowException`; a quotient keeps
+  the places that fit, and its scale, a remainder's and a zero product's are .NET's. Half a million
+  random operations on every width and scale `DecCalc` takes a path for answered 44% differently
+  before; 1.5 million answer alike now, and 24 of the 32 new conformance cases fail without the
+  change ([#764](https://github.com/eQuantic/equantic-ui/issues/764)). Proposed and archived through
+  OpenSpec (`openspec/specs/runtime-decimal`).
+- **2026-10-14 · The Element and the theme slots come before 1.0**: Edgar took the three decisions
+  1.0 waited on. The Element is built before the release, the spreadsheet's engine leaves Primitives
+  as the code editor's did, and per-component theme slots ship in it
+  ([#169](https://github.com/eQuantic/equantic-ui/issues/169),
+  [#185](https://github.com/eQuantic/equantic-ui/issues/185),
+  [#186](https://github.com/eQuantic/equantic-ui/issues/186)). `docs/ELEMENT-TREE-PLAN.md` designs the
+  first and the last together, since a slot resolved per component needs a theme found per position,
+  on an inventory re-measured that day: four spellings of identity, six path-keyed stores of twelve
+  dictionaries and a set, twelve `AsyncLocal` channels, and a frame that builds the whole tree on any
+  `SetState`. Its six slices are two features under the 1.0 epic
+  ([#937](https://github.com/eQuantic/equantic-ui/issues/937),
+  [#938](https://github.com/eQuantic/equantic-ui/issues/938)). The measurement found two defects that
+  became their own bugs: a stateful root gains a handler on every Photon frame (101 after 100,
+  [#935](https://github.com/eQuantic/equantic-ui/issues/935)), and a theme's code palette never
+  reaches the browser ([#936](https://github.com/eQuantic/equantic-ui/issues/936)). The audit records
+  the spreadsheet's road and the slots' shape and order.
+- **2026-10-14 · The roadmap says what the tree is**: `ROADMAP.md`'s current state still described
+  the project before its hardening, an advanced alpha with a Tailwind integration the tree excised in
+  August. It is rewritten from what the tree measured on 2026-10-14: a preview whose next milestone is
+  the 1.0 epic, what exists, what does not yet and the issue that holds it, and no count that moves
+  with a release. The pillars, the phases, the definition of production-ready (each line now says
+  whether it is met) and the visual editor's source-map correction follow it, and the wiki's Roadmap
+  page gained the 1.0 section in its five languages, its Spanish, French and German copies linking
+  the English pages where no translation exists. Nine READMEs under `src/` that no package packs
+  showed registration calls that do not exist (`AddLucideIcons()`, `AddEquanticUI()`), the dissolved
+  `eQuantic.UI.Core`, a runtime size and a picture on a local disk; they are gone, and the Material
+  one says how a seed color selects its theme
+  ([#325](https://github.com/eQuantic/equantic-ui/issues/325)).
+- **2026-10-14 · What 1.0 promises, and to which assembly**: every shipping assembly says its surface
+  class in its own metadata, `contract`, `tool` or `experimental`. Of the 39, 25 are the contract, the
+  compiler and the code writers are tools, and the 12 of the native track carry .NET's
+  `[Experimental("EQX0001")]`, which the native SDK suppresses for the app that chose it and which
+  stops any other project that uses one. The analyzer declares their API with the `[EQX0001]` prefix.
+  The preview's rule now follows the version in `Directory.Build.props`: the day it loses its
+  prerelease label, the build of a contract project refuses a `*REMOVED*` line, an `[Obsolete]` has
+  to carry an `EQO` id, a URL and the major it leaves in, and a contract line of the developer surface
+  cannot leave. Each guard was run with what it holds taken away, and failed
+  ([#899](https://github.com/eQuantic/equantic-ui/issues/899),
+  [#324](https://github.com/eQuantic/equantic-ui/issues/324),
+  [#323](https://github.com/eQuantic/equantic-ui/issues/323)). Proposed and archived through OpenSpec
+  (`openspec/specs/release-contract`).
+- **2026-10-14 · What eqc writes names what C# declares**: a name spelled with C#'s `@` went out as it
+  was spelled, so `public static class @Shelf` was `export class @Shelf` in a module named `@Shelf`, a
+  record printed `@Point { X = 1 }`, a `new Store.@Failure()` imported nothing and a member typed
+  `@Point` was annotated `@Point`; a field moved aside for a member a case apart only in its own type,
+  so a derived class's `Amount` was hidden by the base's `amount` and answered the field; a lambda over
+  a `long` or a `decimal` was annotated `number`, which the runtime's `tsc` refuses; and a public
+  component nested in a class the generated file cannot reach, or in one eqc writes no module for, got a
+  factory that did not compile. Every name eqc reads from syntax is now its value, guarded by a test
+  that refuses `Identifier.Text` and, asked of the model, `ToString()` on a type's syntax; a field moves
+  aside for a member any class derived from it in its project declares, and one in another project is
+  refused with EQ1007; a lambda's parameter is annotated `bigint` and `Decimal`; and a factory is
+  written only for a component that crosses. Sixteen verbatim-name cases and three inherited-member
+  cases executed on both sides, three referenced-project tests, the generator's eleven unreachable
+  owners beside the top-level components that keep theirs, and the shared library's `tsc` pin them, and
+  each bug failed them before ([#704](https://github.com/eQuantic/equantic-ui/issues/704),
+  [#740](https://github.com/eQuantic/equantic-ui/issues/740),
+  [#758](https://github.com/eQuantic/equantic-ui/issues/758),
+  [#703](https://github.com/eQuantic/equantic-ui/issues/703)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-names`, `transpiler-classes`, `transpiler-expressions`,
+  `component-factories`).
+- **2026-10-17 · A struct's operator over nullable values is lifted as C# lifts it**: two nullable record
+  structs compared with `==` or `!=` were JavaScript's `===` and `!==`, so two equal values built apart
+  were unequal in the browser, which the spreadsheet's engine met comparing two `SheetRange?` and
+  sidestepped; a `Color?` was compared the same way; and a struct's own operator over a nullable value
+  was handed the null, so `a == b`, `a == null`, `a < b`, `a + b`, `-a` and `m += x` threw reading a
+  member of it, and a conversion between two nullable types built a value holding null. The bound
+  operator decides now: a lifted equality whose operator no twin carries takes `$eq.equals`, which is
+  C#'s lift itself, and every call of a struct's own operator and conversion is lifted where the bound
+  tree lifts it, an equality answering an absent value without the operator, a relation false and any
+  other operator null, a tuple's nullable element included. An operator declared over the nullable
+  values themselves is still called as written. Sixty-seven cases, and nine through an app's module
+  graph with the spreadsheet's range among them, executed on both sides, pin it; 28 of the first and 3
+  of the second failed before ([#948](https://github.com/eQuantic/equantic-ui/issues/948)). Proposed
+  and archived through OpenSpec (`openspec/specs/transpiler-expressions`).
+- **2026-10-17 · A name the browser lacks fails the build, or answers as .NET does**: a method group
+  of a .NET member went out as a name, so `Func<string, string> f = ts.ToString` was an unbound
+  `ts.toString`, `items.Select(DateTime.Parse)` called the twin's parse with no text and handed
+  `Select`'s index to its culture flag, `Select(Convert.ToDateTime)` named a `Convert` nothing defines
+  and `Math.Round` as a delegate rounded a half up; the date, time and span strategies camel-cased
+  every member of their types, so `ts.TryFormat(…)`, `ts.Multiply(…)`, `DateTime.Compare(…)` and 37
+  other members named what no twin had, and `ts * 2` and `-ts` were NaN;
+  `FormattableString.Invariant($"…")` and `string.Create(provider, $"…")` were refused as calls
+  nothing translates; and a package's static, `Status.Label`, and a construction, `new Gauge("a")`,
+  `new Random()` or `new Func<int>(…)`, named a class nothing defines. A method group of a member no
+  twin carries is now the delegate its call is, bound where the group is written by a speculative
+  model and translated as that call is, its receiver read once and a null one refused as .NET refuses
+  it, and a group whose call has no translation fails the build with the call's own refusal; the date,
+  time and span strategies claim only what their twins carry, and the twins gained the arithmetic
+  members they lacked; an interpolation is written in the culture a call names; and a package's static
+  or construction, and a construction of a .NET type no strategy builds, fail the build with EQ2004
+  naming it. Thirty cases executed on both sides, 28 of them in the invariant culture, pt-BR and
+  sv-SE, 37 refusal and build tests and the BCL audit's 10 moved verdicts pin them, and each case
+  failed before ([#822](https://github.com/eQuantic/equantic-ui/issues/822),
+  [#839](https://github.com/eQuantic/equantic-ui/issues/839)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-expressions`, `transpiler-bcl`, `runtime-dates`, `referenced-projects`).
+  Copilot's first review of #958 found nine more in the same family, each pinned on both sides and
+  fixed: a span scaled by a long, a nullable number or a char and in place, a date's named
+  arguments in another order, a FormattableString's holes formatted before the later ones ran, an
+  object hole in the invariant culture, a delegate's capture hidden by its own parameter, one with
+  an out built from another, and a package's collection built target-typed.
+- **2026-10-17 · Four names #958 left answer as .NET does or fail the build**: found by Copilot's
+  second review of #958. A span scaled or divided by a value its own type converts to a double, a
+  `Factor` with an implicit conversion, was JavaScript's `*`, NaN, because the dispatch asked the
+  operand's type; the operator C# bound decides now, in a binary and in place. A method group inside a
+  `?.` chain or a query was refused with EQ2004, its call bound at the rebuilt node no model knows: a
+  regression for `values?.Select(Math.Abs)`, which main at d702ca101 built and ran and #958 refused,
+  while the query form named a `Func` nothing defines on main as well; the call is bound where the
+  group was written now. A package type's static `Count` and a package interface's static were written
+  as names, `Status.count` and `IStatus.label`; both are refused with EQ2004 now. Each path's case
+  failed over #958's tree and passes at the fix, and a fifth finding, an interface-typed hole in
+  `FormattableString.Invariant`, did not reproduce and stays as a pin
+  ([#961](https://github.com/eQuantic/equantic-ui/issues/961)). The review before the pull request
+  opened found two more: a `DateTimeOffset` beside a `DateTime` ran JavaScript's own operators, on main
+  too, and converts the date as C#'s implicit operator does now, and a package type named like a .NET
+  one (`Vendor.Guid.Empty`, `Vendor.DateTime.Now`) was read through a name shortcut before the fence,
+  refused now. Copilot's first review of #964 found two more: a package's static reached through
+  an alias named like a type a strategy claims by its spelling (`Int32.MaxValue` under `using Int32 =
+  Vendor.Status` was 2147483647), refused now by the dispatcher before any strategy is asked, and a
+  null `DateTime?` made a `DateTimeOffset?`, which threw a TypeError and stays null now. Its second
+  review found that the date was one case of a class: a nullable struct with a conversion of its own,
+  a `Factor?` scaling a span, handed its null to the twin's static, which read it and threw, and a
+  null curated glyph became a glyph. Every lifted user-defined conversion, an app's, the vocabulary's
+  and the date's alike, lets a null through now, and an operator that takes the nullable itself still
+  receives it. Its third review found a chain from a refused package static told again where it went
+  on, `Status.Make().GetType()` reporting `object.GetType` as well: the fence records what it refuses
+  now, and so does the construction fence, whose `new Stopwatch().Elapsed` told `Stopwatch.Elapsed`
+  again, so each chain is told once, at its root. Proposed and archived through OpenSpec
+  (`openspec/specs/runtime-dates`, `transpiler-bcl`).
+- **2026-10-17 · Object and enum members answer as .NET does**: `object.Equals(a, b)` went out as
+  `object.equals(a, b)` (`ReferenceError: object is not defined`,
+  [#902](https://github.com/eQuantic/equantic-ui/issues/902)); `GetType()` and `MemberwiseClone` built
+  with no diagnostic and threw in the browser (`getType is not a function`,
+  [#903](https://github.com/eQuantic/equantic-ui/issues/903)); `Equals(object)` inherited from `object`
+  was refused on a class receiver, and a `List<T>` held as `object` compared by its items where .NET
+  compares it by reference ([#909](https://github.com/eQuantic/equantic-ui/issues/909)); `Equals` and
+  `ToString` on a null record, class instance or string answered `false`, `""` or `"null"` instead of
+  throwing `NullReferenceException` ([#912](https://github.com/eQuantic/equantic-ui/issues/912)); an
+  enum's `Equals` threw (`equals is not a function`) and its `GetHashCode` hashed its camelCase name
+  instead of its underlying number ([#926](https://github.com/eQuantic/equantic-ui/issues/926)); and an
+  enum member that aliases another (`Gray = Grey`) crossed as a key of its own, unequal to its target in
+  `==`, `switch`, pattern matching, `ToString` and dictionary keys
+  ([#927](https://github.com/eQuantic/equantic-ui/issues/927)). The static `object.Equals(a, b)` now
+  answers as its first parameter's own `Equals`, chosen from that operand's type before C# boxed it and
+  bound by parameter, so `Equals(objB: x, objA: y)` asks `y`, with the second operand's type read only
+  where the first one's says nothing, and a value of a type that refuses every other is unequal to one
+  known to be another (a byte and an int, a char and a string, a tuple and an array), both still
+  evaluated; an inherited `Equals(object)` compares an array, a list and a class that does not override
+  it by reference wherever either value's type is in sight, and through an override where one exists;
+  instance `Equals` and `ToString` refuse a null receiver after evaluating any argument; `GetType` and
+  `MemberwiseClone` are refused with one `EQ2004` across calls, chains and method groups; an enum's
+  `Equals`, a `Nullable` enum's method group included, compares by its underlying value, and its
+  `GetHashCode` hashes that value as the underlying type does, a `long` enum's by the long's two halves;
+  a `Nullable` tuple's `Equals` method group, which threw where it was made, is its value's; and an
+  aliased member takes the first member's key and name, so `ToDictionary` accepts an enum with
+  aliases. A list, an array, a tuple or an enum held as `object` on both sides has lost the type .NET
+  reads, since the browser holds the first three as one JavaScript array and an enum as its member's key,
+  so two lists or two arrays held so still compare by their elements, which a tuple held as `object`
+  needs: the first version of this change compared every array by reference and broke a tuple in a
+  `HashSet<object>`, a `Dictionary<object, …>`, `Distinct`, `Equals` and a generic record's `Equals`,
+  five cases that now pin it. Copilot's first review found seven of the defects fixed here (a `Nullable`
+  enum's group, a null string's `ToString`, a long enum's hash, the operands' order, the first operand's
+  override, two primitive types the browser holds alike, a tuple beside an array); the other two are that
+  gap. Proposed and archived through OpenSpec (`openspec/specs/transpiler-bcl`).
+- **2026-10-17 · Photon keeps an element per position, and a frame builds what changed**: E1 of the
+  element tree (docs/ELEMENT-TREE-PLAN.md). `Element`, `ComponentElement`, `NodeElement` and
+  `BuildOwner` are written in `eQuantic.UI.Primitives`, host-only until the browser drives them, and a
+  Photon host keeps its tree in one across frames: a stateful instance is held by its position, matched
+  as the paths always matched it, and `ComponentInstanceStore` is gone. A frame builds before it lays
+  out, so a box that measures its child twice and intrinsic sizing read one subtree, with the child's
+  own state, and a grid's hug column stopped probing every candidate at one shared path. A `SetState`
+  marks its element, the owner asks the host for a frame, and only marked positions build; input and
+  invalidations still rebuild everything. The host listens to its owner once, which closes the
+  handler that a stateful root gained on every frame ([#935](https://github.com/eQuantic/equantic-ui/issues/935)),
+  and a request for a frame made after the build is no longer written over at the frame's end. The
+  dense scene's steady frame went from 64.2 KB to 38.3 KB and a stateful one's from 98,480 to 28,742
+  bytes; the budgets are tightened to match. Run through eqc, the engine is refused in three places,
+  recorded for E3 ([#950](https://github.com/eQuantic/equantic-ui/issues/950)). Proposed and archived
+  through OpenSpec (`openspec/specs/element-tree`).
+- **2026-10-17 · The client boundary's spec says what the build does**: after #944 merged, its spec
+  refused a kept-out type named only in a base list, which the build never did and should not, since
+  no twin writes the argument: `Home : StatelessComponent, IMark<Ledger>`, `Home : Shell<Ledger>` and
+  `LedgerHolder : Holder<Ledger>` build, in the app and from a library, and no module names `Ledger`.
+  The spec now lists the base list, a dictionary's key or value type and a string literal among the
+  positions written as nothing, and says what #944's last commit refuses: the enumerator's protocol in
+  a spread and a LINQ operator, and a call through a variant receiver. A test pins the three headers,
+  the ledger entry of #944 no longer claims the refusal, and the wiki's EQ2010 row says all of it in
+  its five languages ([#945](https://github.com/eQuantic/equantic-ui/issues/945)). Proposed and
+  archived through OpenSpec (`openspec/specs/client-boundary`).
+- **2026-10-17 · The spreadsheet's engine leaves the vocabulary**: `SheetController`, its document,
+  its editing, its keymap and its model lived in `eQuantic.UI.Primitives`, because `SheetSurface`
+  took the controller and both realizers drove it directly, each turning a press into a cell with its
+  own copy of the same prefix sums. They are an assembly of their own now, `eQuantic.UI.Sheet`, one
+  type per file, which both SDKs add to an app as they add `eQuantic.UI.Code`, and `SheetSurface`
+  takes an `ISheetSurfaceModel` that says what a host may tell the engine: a key, typed text, a
+  pointer and the clipboard's events. The window the surface draws went with them (`SheetGrid`,
+  handed over by the component as it builds), so what a press means is answered once: `PhotonHost`
+  keeps only which surface a press began in, and the web half imports nothing of the engine. The
+  breaks, for an app: `using eQuantic.UI.Sheet;` where it names the engine's types, `CopyTsv` and
+  `PasteTsv` are `CopyText` and `Paste`, and a hand-built surface's `FirstRow`/`FirstCol` are
+  `SheetController.Grid`. One behaviour moved with the protocol: on Photon a cut with no clipboard
+  no longer clears the cells it could not copy, a cut writes the clipboard before it empties anything
+  (on the code surface too, where a refused write had already deleted the text), and a press the
+  system takes away reaches the engine as a new `PointerPhase.Cancel`, as does a browser press whose
+  release the page never heard, so a fill nobody let go of pours nothing. And driving the dashboard's sheet to prove the move
+  found an older defect: the web half focused the sheet before reading where it was pressed, the
+  focus scrolled the scroller 127px, and the first press selected the cell five rows below. The point
+  is read first now, and the focus takes no scroll. The spreadsheet's goldens and suites pass
+  unchanged on both targets ([#185](https://github.com/eQuantic/equantic-ui/issues/185)). Proposed and
+  archived through OpenSpec (`openspec/specs/spreadsheet`).
+- **2026-10-18 · The spreadsheet is planned to stand beside Excel and Google Sheets**: Edgar set the
+  bar for the shared `Spreadsheet`, and `docs/SPREADSHEET-PLAN.md` lays it out after driving the
+  component in Chromium found seventeen defects and reviewing the plan an eighteenth: inside a
+  scrolling page the sheet lays out at its full height and its headers scroll away, nothing keeps the
+  active cell in view, the column headers drift from their columns in a narrow window, there is no
+  horizontal scroll, text arrives only through `keydown`, and a cell key packed into an `int` cannot
+  address a row past 131 071. Decided with Edgar: a two-dimensional viewport with pinned bands in the
+  vocabulary, Excel's 1 048 576 by 16 384 grid, the cell editor on the code editor's engine, the
+  formula bar and the status bar as components of their own, in a family assembly beside the charts',
+  formulas in an opt-in package, and interaction before values, formatting and formulas. Twelve
+  slices, each a story under
+  [#981](https://github.com/eQuantic/equantic-ui/issues/981), which supersedes #304.
+- **2026-10-18 · What a Photon node keeps lives on its element**: the first half of E2 of the
+  element tree (docs/ELEMENT-TREE-PLAN.md). A scroll view's offset, a drag, an `InView`'s last report,
+  a `Presence`'s entrance and a transition's tracks moved from five stores keyed by layout path onto
+  the node's element (`NodeElement.State`), and leave the tree with it, so a node drawn at the place of
+  another starts with its own: a page that replaces another no longer opens its list scrolled where the
+  old page's was, a box mounts at its width instead of gliding from the old one's, and a `Presence`
+  replaced at its place fades out while the new one enters, as on the web. A presence hands its last
+  paint to the host's clock when its element leaves, and the realizer ends the frame before it draws
+  the exits, so a layer that closes fades from the frame it closed in. What was left of each store is
+  the host's clock for it (`ScrollClock`, `DragClock`, `TransitionClock`, `PresenceClock`), and
+  `InViewStore` is gone: an `InView` reports in a tree that is drawn again. A transition's tracks are
+  found by a value now, not by strings formed every frame, and a new scene of gliding cards went from
+  73,669 to 39,133 bytes a frame ([#975](https://github.com/eQuantic/equantic-ui/issues/975)).
+  Proposed and archived through OpenSpec (`openspec/specs/element-tree`).
+- **2026-10-18 · A nullable struct answers as .NET does**: a member a struct declares, read through `?.`
+  on a nullable value of it, was translated by its name, so `a?.Value` answered the struct itself,
+  `a?.HasValue` whether it was null and `c?.Count` a `length` no struct has
+  ([#966](https://github.com/eQuantic/equantic-ui/issues/966)); `NullableStrategy` now answers only the
+  members `Nullable<T>` declares, by the symbol the model binds, and a count is read on the value's type.
+  An empty nullable unwrapped to a value carried its null on, so `(Cents)n` over a struct's own
+  `explicit operator Cents(int)` built a `Cents` holding null, and a cast, a `foreach` element and `Value`
+  answered null ([#967](https://github.com/eQuantic/equantic-ui/issues/967)); every unwrap the bound tree
+  applies now goes through `$eq.nullable.value`, which throws .NET's `InvalidOperationException`.
+  `Equals` over a nullable struct, `Nullable.Equals` and `EqualityComparer<T>.Default.Equals` failed the
+  build with EQ2004 ([#968](https://github.com/eQuantic/equantic-ui/issues/968)) and lower now to the
+  comparison the type's default comparer is, two empty values equal and an empty one unequal to any; a
+  struct's or a class's own `Equals` that is the app's code is asked every time, a value compared with
+  itself included, behind a base that overrides nothing too, through `$eq.equalsOwn`, and
+  `$eq.equalsOwnGeneric` in generic code, where an identity check had answered first (`v.Equals(v)` and
+  `v.Equals(null)` over a struct value since #947), a record's synthesized `Equals` keeps the reference
+  check C# writes into it, and only `EqualityComparer<T>`'s own `Default` is taken for the comparer. A
+  comparison that reaches an `Equals` marked `[ServerOnly]`, which no twin holds, fails the build with
+  EQ2010 at the call, as a call bound to it does, where it fell back to identity or to the members a
+  struct's twin compares.
+  The spreadsheet's fill move compares its preview as C# reads it, `FillTarget != before`, with no answer
+  changed ([#969](https://github.com/eQuantic/equantic-ui/issues/969)). Ninety-five cases, and fifteen
+  through an app's module graph, executed on both sides, pin it; 73 of the first and 14 of the second
+  failed before. The `ToString` group of a nullable value, which wrote JavaScript's text when it was
+  reported, was measured answering as .NET's already, and six more cases pin it
+  ([#955](https://github.com/eQuantic/equantic-ui/issues/955)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-expressions`, `openspec/specs/transpiler-bcl`,
+  `openspec/specs/client-boundary`).
+- **2026-10-18 · A probe's build cannot hang the Web suite**: the suite hung, every thread waiting,
+  until someone killed it, on about every other run, twice caught in the case that builds a scratch
+  project through `SdkProbe.Run`. `dotnet test` sets `MSBUILDENSURESTDOUTFORTASKPROCESSES=1` for its
+  own build and the test host hands it to every child, so MSBuild started each worker node of a probe's
+  build on the probe's own stdout and stderr. The node is reusable and outlived the build, and the
+  probe read both streams to their end with no deadline: measured, a probe's build exited after 2.4
+  seconds and its streams were still open 30 seconds later, held by the node it left. One owner,
+  `tests/Shared/ChildProcess.cs`, now starts every process a test starts and holds the exit and the
+  end of both streams to one deadline, so a late run fails as a `TimeoutException` naming the
+  command, and it starts `dotnet` without that variable and with node reuse and the build servers
+  off. A guard fails on a process started anywhere else under `tests/`, where fourteen files had
+  started their own: five `dotnet`, and git, Bun, Node and a stand-in rebuild in the rest. Two
+  cases pin it, a shell that leaves a thirty-second sleep holding its stdout and a build that starts
+  a worker node of its own on the probe's pipes: on the helper as it was, the first waited out the
+  sleep and the second held the test host until the blame collector's timeout. The Web suite then ran whole five times in a
+  row, 1,175 tests each, and every run passed, in 96 to 111 seconds. And CI's test step stops a test
+  that hangs after fifteen minutes and names it, where a hang held the runner until the job's own
+  timeout ([#971](https://github.com/eQuantic/equantic-ui/issues/971)).
+- **2026-10-18 · The Photon host finds a control by its position**: the second half of E2 of the
+  element tree (docs/ELEMENT-TREE-PLAN.md). The press, the keyboard focus, the field being edited and
+  the hover chain follow the element of the control they belong to, where they followed its layout
+  path, and a path is a place, not a control: a page that replaced another under the focus handed it
+  to the new page's button, and a key that changed on a slot holding one child left a press on the
+  newcomer, so a release ran a handler nobody pressed. A focus whose position leaves the tree is
+  forgotten, as a browser's is. Every position takes an integer id when it mounts (`Element.Id`), a
+  linked run takes one its paragraph's position keeps (`NodeElement.PartId`), and the macOS, iOS and
+  Android bridges name a node by it (`SemanticNode.Id`, `PhotonHost.Activate`, `Adjust`, `FocusedId`).
+  The path is gone from the layout, the realizer and the host. A frame after input builds what its
+  handlers marked with `SetState`, where it rebuilt every component: a press on one card of a dashboard
+  went from 94,190 to 31,246 bytes a frame. A field's or a surface's handler that calls no `SetState`
+  still gets a frame that rebuilds everything, so a key always shows. Work posted to the thread that
+  draws no longer rebuilds every component either
+  ([#976](https://github.com/eQuantic/equantic-ui/issues/976)). Proposed and archived through OpenSpec
+  (`openspec/specs/element-tree`).
+- **2026-10-19 · A message names its culture**: `EmailRenderer.Render` takes the message's culture as
+  a `CultureInfo`, names it on `<html lang>` by its IETF tag (`zh-Hans` for the legacy `zh-CHS`) and
+  renders the tree under it, so the numbers, dates and looked-up texts its components write are in the
+  language the attribute names, where every message said `en`. The markup stays invariant in every
+  culture, a message given no culture or the invariant one says English, and the caller's cultures are
+  back after the render, a failed one included. eQuantic.Auth, which sends its e-mails in English and
+  Portuguese, rewrote the attribute after rendering until now
+  ([#942](https://github.com/eQuantic/equantic-ui/issues/942)). Proposed and archived through OpenSpec
+  (`openspec/specs/email-realizer`, a new spec).
 
 ## Retired documents
 
