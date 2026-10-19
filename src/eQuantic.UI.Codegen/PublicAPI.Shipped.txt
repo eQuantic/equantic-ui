@@ -1,4 +1,7 @@
 #nullable enable
+eQuantic.UI.Codegen.AndroidManifestWriter
+eQuantic.UI.Codegen.AndroidManifestWriter.AndroidManifestWriter() -> void
+eQuantic.UI.Codegen.AndroidManifestWriter.QueriesForLinks(params string![]! schemes) -> eQuantic.UI.Codegen.AndroidManifestWriter!
 eQuantic.UI.Codegen.CodeWriter
 eQuantic.UI.Codegen.CodeWriter.Append(string! text) -> eQuantic.UI.Codegen.CodeWriter!
 eQuantic.UI.Codegen.CodeWriter.AppendLine() -> eQuantic.UI.Codegen.CodeWriter!
@@ -34,5 +37,6 @@ eQuantic.UI.Codegen.PropertyListWriter.PropertyListWriter() -> void
 eQuantic.UI.Codegen.PropertyListWriter.String(string! key, string! value) -> eQuantic.UI.Codegen.PropertyListWriter!
 eQuantic.UI.Codegen.PropertyListWriter.StringArray(string! key, params string![]! values) -> eQuantic.UI.Codegen.PropertyListWriter!
 override eQuantic.UI.Codegen.CodeWriter.ToString() -> string!
+static eQuantic.UI.Codegen.AndroidManifestWriter.Document(System.Action<eQuantic.UI.Codegen.AndroidManifestWriter!>! body) -> string!
 static eQuantic.UI.Codegen.JsonWriter.Document(System.Action<eQuantic.UI.Codegen.JsonWriter!>! body) -> string!
 static eQuantic.UI.Codegen.PropertyListWriter.Document(System.Action<eQuantic.UI.Codegen.PropertyListWriter!>! body) -> string!

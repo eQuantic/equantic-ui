@@ -1,3 +1,1 @@
 #nullable enable
-*REMOVED*static eQuantic.UI.Email.EmailRenderer.Render(eQuantic.UI.Primitives.VisualNode! tree, eQuantic.UI.Primitives.IAppTheme! theme, string? preheader = null) -> eQuantic.UI.Email.EmailMessage!
-static eQuantic.UI.Email.EmailRenderer.Render(eQuantic.UI.Primitives.VisualNode! tree, eQuantic.UI.Primitives.IAppTheme! theme, string? preheader = null, System.Globalization.CultureInfo? culture = null) -> eQuantic.UI.Email.EmailMessage!

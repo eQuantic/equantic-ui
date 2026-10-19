@@ -1,4 +1,5 @@
 #nullable enable
+abstract eQuantic.UI.Primitives.Element.ChildAt(int slot) -> eQuantic.UI.Primitives.Element?
 abstract eQuantic.UI.Primitives.FlexNode.Cross.get -> eQuantic.UI.Primitives.CrossAlign
 abstract eQuantic.UI.Primitives.FlexNode.Cross.init -> void
 abstract eQuantic.UI.Primitives.UiComponent.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
@@ -6,7 +7,6 @@ abstract eQuantic.UI.Primitives.VisualNode.Accept<TState, TResult>(eQuantic.UI.P
 abstract eQuantic.UI.Primitives.VisualNode.NodeKind.get -> string!
 const eQuantic.UI.Primitives.Anchored.DefaultGap = 4 -> float
 const eQuantic.UI.Primitives.Anchored.MotionLiftDp = 8 -> float
-const eQuantic.UI.Primitives.CellRef.MaxCols = 16384 -> int
 const eQuantic.UI.Primitives.CodeSurface.CaretBlinkMs = 500 -> int
 const eQuantic.UI.Primitives.DataPalette.SeriesCeiling = 8 -> int
 const eQuantic.UI.Primitives.DragDismiss.ThresholdDp = 96 -> float
@@ -26,8 +26,6 @@ const eQuantic.UI.Primitives.Radius.Md = 10 -> float
 const eQuantic.UI.Primitives.Radius.Sm = 6 -> float
 const eQuantic.UI.Primitives.Radius.Xl = 20 -> float
 const eQuantic.UI.Primitives.Radius.Xs = 4 -> float
-const eQuantic.UI.Primitives.SheetDocument.DefaultColWidth = 96 -> float
-const eQuantic.UI.Primitives.SheetDocument.DefaultRowHeight = 28 -> float
 const eQuantic.UI.Primitives.Sizing.ButtonMinWidth = 64 -> float
 const eQuantic.UI.Primitives.Sizing.SwitchInset = 3 -> float
 const eQuantic.UI.Primitives.Space.Gutter = 16 -> float
@@ -225,6 +223,16 @@ eQuantic.UI.Primitives.BoxStyle.Transition.get -> eQuantic.UI.Primitives.Transit
 eQuantic.UI.Primitives.BoxStyle.Transition.init -> void
 eQuantic.UI.Primitives.BoxStyle.Width.get -> eQuantic.UI.Primitives.SizeValue
 eQuantic.UI.Primitives.BoxStyle.Width.init -> void
+eQuantic.UI.Primitives.BuildOwner
+eQuantic.UI.Primitives.BuildOwner.Build(eQuantic.UI.Primitives.VisualNode! root, eQuantic.UI.Primitives.ComponentContext! context, eQuantic.UI.Primitives.WindowSizeClass sizeClass, bool rebuildAll) -> eQuantic.UI.Primitives.Element!
+eQuantic.UI.Primitives.BuildOwner.BuildOwner() -> void
+eQuantic.UI.Primitives.BuildOwner.BuildRequested -> System.Action?
+eQuantic.UI.Primitives.BuildOwner.EndFrame() -> void
+eQuantic.UI.Primitives.BuildOwner.HasDirty.get -> bool
+eQuantic.UI.Primitives.BuildOwner.Live.get -> bool
+eQuantic.UI.Primitives.BuildOwner.Marks.get -> int
+eQuantic.UI.Primitives.BuildOwner.Root.get -> eQuantic.UI.Primitives.Element?
+eQuantic.UI.Primitives.BuildOwner.UnmountAll() -> void
 eQuantic.UI.Primitives.CalendarNames
 eQuantic.UI.Primitives.CameraPreview
 eQuantic.UI.Primitives.CameraPreview.CameraPreview(eQuantic.UI.Primitives.ICameraSession? session, float width, float height) -> void
@@ -268,18 +276,6 @@ eQuantic.UI.Primitives.CanvasPointer.X.init -> void
 eQuantic.UI.Primitives.CanvasPointer.Y.get -> float
 eQuantic.UI.Primitives.CanvasPointer.Y.init -> void
 eQuantic.UI.Primitives.CapabilityScope
-eQuantic.UI.Primitives.CellRef
-eQuantic.UI.Primitives.CellRef.CellRef() -> void
-eQuantic.UI.Primitives.CellRef.CellRef(int Row, int Col) -> void
-eQuantic.UI.Primitives.CellRef.Col.get -> int
-eQuantic.UI.Primitives.CellRef.Col.init -> void
-eQuantic.UI.Primitives.CellRef.CompareTo(eQuantic.UI.Primitives.CellRef other) -> int
-eQuantic.UI.Primitives.CellRef.Deconstruct(out int Row, out int Col) -> void
-eQuantic.UI.Primitives.CellRef.Equals(eQuantic.UI.Primitives.CellRef other) -> bool
-eQuantic.UI.Primitives.CellRef.Key.get -> int
-eQuantic.UI.Primitives.CellRef.Row.get -> int
-eQuantic.UI.Primitives.CellRef.Row.init -> void
-eQuantic.UI.Primitives.CellRef.ToA1() -> string!
 eQuantic.UI.Primitives.CodeSurface
 eQuantic.UI.Primitives.CodeSurface.Autofocus.get -> bool
 eQuantic.UI.Primitives.CodeSurface.Autofocus.init -> void
@@ -355,12 +351,8 @@ eQuantic.UI.Primitives.ComponentContext.MonoAdvance(eQuantic.UI.Primitives.TypeS
 eQuantic.UI.Primitives.ComponentContext.Route.get -> eQuantic.UI.Primitives.RouteValues!
 eQuantic.UI.Primitives.ComponentContext.Theme.get -> eQuantic.UI.Primitives.IAppTheme!
 eQuantic.UI.Primitives.ComponentContext.TypeScale.get -> float
-eQuantic.UI.Primitives.ComponentInstanceStore
-eQuantic.UI.Primitives.ComponentInstanceStore.ComponentInstanceStore() -> void
-eQuantic.UI.Primitives.ComponentInstanceStore.EndPass() -> void
-eQuantic.UI.Primitives.ComponentInstanceStore.InstanceRetained -> System.Action<eQuantic.UI.Primitives.StatefulComponent!>?
-eQuantic.UI.Primitives.ComponentInstanceStore.Reconcile(string! path, eQuantic.UI.Primitives.UiComponent! fresh) -> eQuantic.UI.Primitives.UiComponent!
-eQuantic.UI.Primitives.ComponentInstanceStore.UnmountAll() -> void
+eQuantic.UI.Primitives.ComponentElement
+eQuantic.UI.Primitives.ComponentElement.Component.get -> eQuantic.UI.Primitives.UiComponent!
 eQuantic.UI.Primitives.ConsentState
 eQuantic.UI.Primitives.ConsentState.Denied = 2 -> eQuantic.UI.Primitives.ConsentState
 eQuantic.UI.Primitives.ConsentState.Granted = 1 -> eQuantic.UI.Primitives.ConsentState
@@ -497,6 +489,12 @@ eQuantic.UI.Primitives.EdgeInsets.Top.get -> float
 eQuantic.UI.Primitives.EdgeInsets.Top.init -> void
 eQuantic.UI.Primitives.EdgeInsets.Vertical.get -> float
 eQuantic.UI.Primitives.EffectiveTypeStyle
+eQuantic.UI.Primitives.Element
+eQuantic.UI.Primitives.Element.Configuration.get -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Primitives.Element.Depth.get -> int
+eQuantic.UI.Primitives.Element.Id.get -> int
+eQuantic.UI.Primitives.Element.IsActive.get -> bool
+eQuantic.UI.Primitives.Element.Parent.get -> eQuantic.UI.Primitives.Element?
 eQuantic.UI.Primitives.FaceName
 eQuantic.UI.Primitives.FaceResolution
 eQuantic.UI.Primitives.FieldError
@@ -810,6 +808,13 @@ eQuantic.UI.Primitives.IServerEvents.OnConnectionChanged(System.Action<eQuantic.
 eQuantic.UI.Primitives.IServerEvents.Subscribe<T>(eQuantic.UI.Primitives.ServerTopic<T>! topic, System.Action<T>! onEvent, System.Action<eQuantic.UI.Primitives.ServerTopicRefusal>? onRefused = null) -> System.IDisposable!
 eQuantic.UI.Primitives.IServerPrefetch
 eQuantic.UI.Primitives.IServerPrefetch.PrefetchAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+eQuantic.UI.Primitives.ISheetSurfaceModel
+eQuantic.UI.Primitives.ISheetSurfaceModel.CopyText() -> string!
+eQuantic.UI.Primitives.ISheetSurfaceModel.Cut() -> string!
+eQuantic.UI.Primitives.ISheetSurfaceModel.HandleKey(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.ITextClipboard? clipboard) -> bool
+eQuantic.UI.Primitives.ISheetSurfaceModel.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks) -> bool
+eQuantic.UI.Primitives.ISheetSurfaceModel.HandleText(string! text) -> bool
+eQuantic.UI.Primitives.ISheetSurfaceModel.Paste(string! text) -> bool
 eQuantic.UI.Primitives.ITextClipboard
 eQuantic.UI.Primitives.ITextClipboard.Read() -> string?
 eQuantic.UI.Primitives.ITextClipboard.Write(string! text) -> void
@@ -819,6 +824,9 @@ eQuantic.UI.Primitives.IThemeController.Mode.get -> eQuantic.UI.Primitives.Theme
 eQuantic.UI.Primitives.IUiDispatcher
 eQuantic.UI.Primitives.IUiDispatcher.IsOnUiThread.get -> bool
 eQuantic.UI.Primitives.IUiDispatcher.Post(System.Action! work) -> void
+eQuantic.UI.Primitives.IUrlLauncher
+eQuantic.UI.Primitives.IUrlLauncher.CanOpen(System.Uri! url) -> bool
+eQuantic.UI.Primitives.IUrlLauncher.OpenUrlAsync(System.Uri! url) -> System.Threading.Tasks.ValueTask<bool>
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.AdaptiveNode! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Adjustable! node, TState state) -> TResult
@@ -863,9 +871,7 @@ eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Pri
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Vector! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.WebFrame! node, TState state) -> TResult
 eQuantic.UI.Primitives.IWorkspace
-eQuantic.UI.Primitives.IWorkspace.CanOpen(System.Uri! url) -> bool
 eQuantic.UI.Primitives.IWorkspace.OpenFile(string! path) -> bool
-eQuantic.UI.Primitives.IWorkspace.OpenUrl(System.Uri! url) -> bool
 eQuantic.UI.Primitives.IWorkspace.Reveal(string! path) -> bool
 eQuantic.UI.Primitives.Icon
 eQuantic.UI.Primitives.Icon.Color.get -> eQuantic.UI.Primitives.ColorToken?
@@ -1133,6 +1139,12 @@ eQuantic.UI.Primitives.NetworkState.NetworkState() -> void
 eQuantic.UI.Primitives.NetworkState.NetworkState(bool Online, eQuantic.UI.Primitives.NetworkKind Kind) -> void
 eQuantic.UI.Primitives.NetworkState.Online.get -> bool
 eQuantic.UI.Primitives.NetworkState.Online.init -> void
+eQuantic.UI.Primitives.NodeElement
+eQuantic.UI.Primitives.NodeElement.HoldsDeferred(eQuantic.UI.Primitives.Element! child) -> bool
+eQuantic.UI.Primitives.NodeElement.PartId(int part) -> int
+eQuantic.UI.Primitives.NodeElement.ShowDeferred(eQuantic.UI.Primitives.VisualNode! configuration) -> eQuantic.UI.Primitives.Element!
+eQuantic.UI.Primitives.NodeElement.State.get -> object?
+eQuantic.UI.Primitives.NodeElement.State.set -> void
 eQuantic.UI.Primitives.Nothing
 eQuantic.UI.Primitives.Nothing.Nothing() -> void
 eQuantic.UI.Primitives.OpenUrlPolicy
@@ -1220,6 +1232,7 @@ eQuantic.UI.Primitives.PointerCursor.Pointer = 1 -> eQuantic.UI.Primitives.Point
 eQuantic.UI.Primitives.PointerCursor.RowResize = 6 -> eQuantic.UI.Primitives.PointerCursor
 eQuantic.UI.Primitives.PointerCursor.Text = 2 -> eQuantic.UI.Primitives.PointerCursor
 eQuantic.UI.Primitives.PointerPhase
+eQuantic.UI.Primitives.PointerPhase.Cancel = 5 -> eQuantic.UI.Primitives.PointerPhase
 eQuantic.UI.Primitives.PointerPhase.Down = 0 -> eQuantic.UI.Primitives.PointerPhase
 eQuantic.UI.Primitives.PointerPhase.Exit = 4 -> eQuantic.UI.Primitives.PointerPhase
 eQuantic.UI.Primitives.PointerPhase.Hover = 3 -> eQuantic.UI.Primitives.PointerPhase
@@ -1419,7 +1432,7 @@ eQuantic.UI.Primitives.SemanticNode.Checked.get -> eQuantic.UI.Primitives.Semant
 eQuantic.UI.Primitives.SemanticNode.Checked.init -> void
 eQuantic.UI.Primitives.SemanticNode.Current.get -> bool
 eQuantic.UI.Primitives.SemanticNode.Current.init -> void
-eQuantic.UI.Primitives.SemanticNode.Deconstruct(out eQuantic.UI.Primitives.SemanticRole Role, out string! Path, out eQuantic.UI.Primitives.Rect Bounds, out string! Label, out string? Value, out bool Disabled, out eQuantic.UI.Primitives.SemanticCheck? Checked, out bool? Expanded, out bool Current, out bool? Selected, out int HeadingLevel, out eQuantic.UI.Primitives.LiveRegionUrgency? Live, out eQuantic.UI.Primitives.RangeValue? Range) -> void
+eQuantic.UI.Primitives.SemanticNode.Deconstruct(out eQuantic.UI.Primitives.SemanticRole Role, out int Id, out eQuantic.UI.Primitives.Rect Bounds, out string! Label, out string? Value, out bool Disabled, out eQuantic.UI.Primitives.SemanticCheck? Checked, out bool? Expanded, out bool Current, out bool? Selected, out int HeadingLevel, out eQuantic.UI.Primitives.LiveRegionUrgency? Live, out eQuantic.UI.Primitives.RangeValue? Range) -> void
 eQuantic.UI.Primitives.SemanticNode.Disabled.get -> bool
 eQuantic.UI.Primitives.SemanticNode.Disabled.init -> void
 eQuantic.UI.Primitives.SemanticNode.Equals(eQuantic.UI.Primitives.SemanticNode other) -> bool
@@ -1427,12 +1440,12 @@ eQuantic.UI.Primitives.SemanticNode.Expanded.get -> bool?
 eQuantic.UI.Primitives.SemanticNode.Expanded.init -> void
 eQuantic.UI.Primitives.SemanticNode.HeadingLevel.get -> int
 eQuantic.UI.Primitives.SemanticNode.HeadingLevel.init -> void
+eQuantic.UI.Primitives.SemanticNode.Id.get -> int
+eQuantic.UI.Primitives.SemanticNode.Id.init -> void
 eQuantic.UI.Primitives.SemanticNode.Label.get -> string!
 eQuantic.UI.Primitives.SemanticNode.Label.init -> void
 eQuantic.UI.Primitives.SemanticNode.Live.get -> eQuantic.UI.Primitives.LiveRegionUrgency?
 eQuantic.UI.Primitives.SemanticNode.Live.init -> void
-eQuantic.UI.Primitives.SemanticNode.Path.get -> string!
-eQuantic.UI.Primitives.SemanticNode.Path.init -> void
 eQuantic.UI.Primitives.SemanticNode.Range.get -> eQuantic.UI.Primitives.RangeValue?
 eQuantic.UI.Primitives.SemanticNode.Range.init -> void
 eQuantic.UI.Primitives.SemanticNode.Role.get -> eQuantic.UI.Primitives.SemanticRole
@@ -1440,7 +1453,7 @@ eQuantic.UI.Primitives.SemanticNode.Role.init -> void
 eQuantic.UI.Primitives.SemanticNode.Selected.get -> bool?
 eQuantic.UI.Primitives.SemanticNode.Selected.init -> void
 eQuantic.UI.Primitives.SemanticNode.SemanticNode() -> void
-eQuantic.UI.Primitives.SemanticNode.SemanticNode(eQuantic.UI.Primitives.SemanticRole Role, string! Path, eQuantic.UI.Primitives.Rect Bounds, string! Label, string? Value, bool Disabled, eQuantic.UI.Primitives.SemanticCheck? Checked = null, bool? Expanded = null, bool Current = false, bool? Selected = null, int HeadingLevel = 0, eQuantic.UI.Primitives.LiveRegionUrgency? Live = null, eQuantic.UI.Primitives.RangeValue? Range = null) -> void
+eQuantic.UI.Primitives.SemanticNode.SemanticNode(eQuantic.UI.Primitives.SemanticRole Role, int Id, eQuantic.UI.Primitives.Rect Bounds, string! Label, string? Value, bool Disabled, eQuantic.UI.Primitives.SemanticCheck? Checked = null, bool? Expanded = null, bool Current = false, bool? Selected = null, int HeadingLevel = 0, eQuantic.UI.Primitives.LiveRegionUrgency? Live = null, eQuantic.UI.Primitives.RangeValue? Range = null) -> void
 eQuantic.UI.Primitives.SemanticNode.Value.get -> string?
 eQuantic.UI.Primitives.SemanticNode.Value.init -> void
 eQuantic.UI.Primitives.SemanticRole
@@ -1527,151 +1540,14 @@ eQuantic.UI.Primitives.ShapeScale.Large = 4 -> eQuantic.UI.Primitives.ShapeScale
 eQuantic.UI.Primitives.ShapeScale.Medium = 3 -> eQuantic.UI.Primitives.ShapeScale
 eQuantic.UI.Primitives.ShapeScale.None = 0 -> eQuantic.UI.Primitives.ShapeScale
 eQuantic.UI.Primitives.ShapeScale.Small = 2 -> eQuantic.UI.Primitives.ShapeScale
-eQuantic.UI.Primitives.SheetAxis
-eQuantic.UI.Primitives.SheetAxis.Cols = 1 -> eQuantic.UI.Primitives.SheetAxis
-eQuantic.UI.Primitives.SheetAxis.Rows = 0 -> eQuantic.UI.Primitives.SheetAxis
-eQuantic.UI.Primitives.SheetCellSnapshot
-eQuantic.UI.Primitives.SheetCellSnapshot.Cell.get -> eQuantic.UI.Primitives.CellRef
-eQuantic.UI.Primitives.SheetCellSnapshot.Cell.init -> void
-eQuantic.UI.Primitives.SheetCellSnapshot.Deconstruct(out eQuantic.UI.Primitives.CellRef Cell, out string! Value) -> void
-eQuantic.UI.Primitives.SheetCellSnapshot.Equals(eQuantic.UI.Primitives.SheetCellSnapshot other) -> bool
-eQuantic.UI.Primitives.SheetCellSnapshot.SheetCellSnapshot() -> void
-eQuantic.UI.Primitives.SheetCellSnapshot.SheetCellSnapshot(eQuantic.UI.Primitives.CellRef Cell, string! Value) -> void
-eQuantic.UI.Primitives.SheetCellSnapshot.Value.get -> string!
-eQuantic.UI.Primitives.SheetCellSnapshot.Value.init -> void
-eQuantic.UI.Primitives.SheetController
-eQuantic.UI.Primitives.SheetController.ActiveCell.get -> eQuantic.UI.Primitives.CellRef
-eQuantic.UI.Primitives.SheetController.BeginEdit(string! seed) -> void
-eQuantic.UI.Primitives.SheetController.BeginFill() -> void
-eQuantic.UI.Primitives.SheetController.CancelEdit() -> void
-eQuantic.UI.Primitives.SheetController.CancelFill() -> void
-eQuantic.UI.Primitives.SheetController.Changed.get -> System.Action<eQuantic.UI.Primitives.SheetEdit!>?
-eQuantic.UI.Primitives.SheetController.Changed.set -> void
-eQuantic.UI.Primitives.SheetController.ClearSelection() -> bool
-eQuantic.UI.Primitives.SheetController.CommitEdit() -> bool
-eQuantic.UI.Primitives.SheetController.CommitFill() -> bool
-eQuantic.UI.Primitives.SheetController.CopyTsv() -> string!
-eQuantic.UI.Primitives.SheetController.Delete(eQuantic.UI.Primitives.SheetAxis axis, int at, int count = 1) -> void
-eQuantic.UI.Primitives.SheetController.Document.get -> eQuantic.UI.Primitives.SheetDocument!
-eQuantic.UI.Primitives.SheetController.Draft.get -> string!
-eQuantic.UI.Primitives.SheetController.Editing.get -> bool
-eQuantic.UI.Primitives.SheetController.EraseFromDraft() -> void
-eQuantic.UI.Primitives.SheetController.Fill(eQuantic.UI.Primitives.SheetRange source, eQuantic.UI.Primitives.SheetRange target, eQuantic.UI.Primitives.SheetRange? selectionBefore = null) -> bool
-eQuantic.UI.Primitives.SheetController.FillDown() -> bool
-eQuantic.UI.Primitives.SheetController.FillRight() -> bool
-eQuantic.UI.Primitives.SheetController.FillSource.get -> eQuantic.UI.Primitives.SheetRange?
-eQuantic.UI.Primitives.SheetController.FillTarget.get -> eQuantic.UI.Primitives.SheetRange?
-eQuantic.UI.Primitives.SheetController.Filling.get -> bool
-eQuantic.UI.Primitives.SheetController.History.get -> eQuantic.UI.Primitives.SheetHistory!
-eQuantic.UI.Primitives.SheetController.Insert(eQuantic.UI.Primitives.SheetAxis axis, int at, int count = 1) -> void
-eQuantic.UI.Primitives.SheetController.Move(int dRow, int dCol, eQuantic.UI.Primitives.SheetMotion motion = eQuantic.UI.Primitives.SheetMotion.Cell, bool extend = false) -> void
-eQuantic.UI.Primitives.SheetController.PasteTsv(string! text) -> bool
-eQuantic.UI.Primitives.SheetController.Redo() -> bool
-eQuantic.UI.Primitives.SheetController.Resize(eQuantic.UI.Primitives.SheetAxis axis, int index, float size) -> void
-eQuantic.UI.Primitives.SheetController.SelectAll() -> void
-eQuantic.UI.Primitives.SheetController.SelectCols(int fromCol, int toCol) -> void
-eQuantic.UI.Primitives.SheetController.SelectRows(int fromRow, int toRow) -> void
-eQuantic.UI.Primitives.SheetController.SelectTo(eQuantic.UI.Primitives.CellRef cell) -> void
-eQuantic.UI.Primitives.SheetController.Selection.get -> eQuantic.UI.Primitives.SheetRange
-eQuantic.UI.Primitives.SheetController.Selection.set -> void
-eQuantic.UI.Primitives.SheetController.SetCell(eQuantic.UI.Primitives.CellRef cell, string! value) -> bool
-eQuantic.UI.Primitives.SheetController.SheetController(int rows = 1000, int cols = 26) -> void
-eQuantic.UI.Primitives.SheetController.Step(int dRow, int dCol) -> void
-eQuantic.UI.Primitives.SheetController.TypeIntoDraft(string! text) -> void
-eQuantic.UI.Primitives.SheetController.Undo() -> bool
-eQuantic.UI.Primitives.SheetController.UpdateFill(eQuantic.UI.Primitives.CellRef at) -> void
-eQuantic.UI.Primitives.SheetDocument
-eQuantic.UI.Primitives.SheetDocument.Cells.get -> System.Collections.Generic.IReadOnlyDictionary<int, string!>!
-eQuantic.UI.Primitives.SheetDocument.Clamp(eQuantic.UI.Primitives.CellRef cell) -> eQuantic.UI.Primitives.CellRef
-eQuantic.UI.Primitives.SheetDocument.ColWidth(int col) -> float
-eQuantic.UI.Primitives.SheetDocument.Cols.get -> int
-eQuantic.UI.Primitives.SheetDocument.GetCell(eQuantic.UI.Primitives.CellRef cell) -> string!
-eQuantic.UI.Primitives.SheetDocument.HasValue(eQuantic.UI.Primitives.CellRef cell) -> bool
-eQuantic.UI.Primitives.SheetDocument.RowHeight(int row) -> float
-eQuantic.UI.Primitives.SheetDocument.Rows.get -> int
-eQuantic.UI.Primitives.SheetDocument.SetCell(eQuantic.UI.Primitives.CellRef cell, string! value) -> void
-eQuantic.UI.Primitives.SheetDocument.SetColWidth(int col, float width) -> void
-eQuantic.UI.Primitives.SheetDocument.SetRowHeight(int row, float height) -> void
-eQuantic.UI.Primitives.SheetDocument.SheetDocument(int rows = 1000, int cols = 26) -> void
-eQuantic.UI.Primitives.SheetEdit
-eQuantic.UI.Primitives.SheetEdit.After.get -> System.Collections.Generic.List<eQuantic.UI.Primitives.SheetCellSnapshot>!
-eQuantic.UI.Primitives.SheetEdit.After.init -> void
-eQuantic.UI.Primitives.SheetEdit.At.get -> int
-eQuantic.UI.Primitives.SheetEdit.At.init -> void
-eQuantic.UI.Primitives.SheetEdit.Before.get -> System.Collections.Generic.List<eQuantic.UI.Primitives.SheetCellSnapshot>!
-eQuantic.UI.Primitives.SheetEdit.Before.init -> void
-eQuantic.UI.Primitives.SheetEdit.Count.get -> int
-eQuantic.UI.Primitives.SheetEdit.Count.init -> void
-eQuantic.UI.Primitives.SheetEdit.Kind.get -> eQuantic.UI.Primitives.SheetEditKind
-eQuantic.UI.Primitives.SheetEdit.Kind.init -> void
-eQuantic.UI.Primitives.SheetEdit.NewSize.get -> float
-eQuantic.UI.Primitives.SheetEdit.NewSize.init -> void
-eQuantic.UI.Primitives.SheetEdit.OldSize.get -> float
-eQuantic.UI.Primitives.SheetEdit.OldSize.init -> void
-eQuantic.UI.Primitives.SheetEdit.Removed.get -> System.Collections.Generic.List<eQuantic.UI.Primitives.SheetCellSnapshot>!
-eQuantic.UI.Primitives.SheetEdit.Removed.init -> void
-eQuantic.UI.Primitives.SheetEdit.SelectionAfter.get -> eQuantic.UI.Primitives.SheetRange
-eQuantic.UI.Primitives.SheetEdit.SelectionAfter.set -> void
-eQuantic.UI.Primitives.SheetEdit.SelectionBefore.get -> eQuantic.UI.Primitives.SheetRange
-eQuantic.UI.Primitives.SheetEdit.SelectionBefore.set -> void
-eQuantic.UI.Primitives.SheetEdit.SheetEdit() -> void
-eQuantic.UI.Primitives.SheetEditKind
-eQuantic.UI.Primitives.SheetEditKind.DeleteCols = 4 -> eQuantic.UI.Primitives.SheetEditKind
-eQuantic.UI.Primitives.SheetEditKind.DeleteRows = 2 -> eQuantic.UI.Primitives.SheetEditKind
-eQuantic.UI.Primitives.SheetEditKind.InsertCols = 3 -> eQuantic.UI.Primitives.SheetEditKind
-eQuantic.UI.Primitives.SheetEditKind.InsertRows = 1 -> eQuantic.UI.Primitives.SheetEditKind
-eQuantic.UI.Primitives.SheetEditKind.ResizeCol = 6 -> eQuantic.UI.Primitives.SheetEditKind
-eQuantic.UI.Primitives.SheetEditKind.ResizeRow = 5 -> eQuantic.UI.Primitives.SheetEditKind
-eQuantic.UI.Primitives.SheetEditKind.SetCells = 0 -> eQuantic.UI.Primitives.SheetEditKind
-eQuantic.UI.Primitives.SheetHistory
-eQuantic.UI.Primitives.SheetHistory.CanRedo.get -> bool
-eQuantic.UI.Primitives.SheetHistory.CanUndo.get -> bool
-eQuantic.UI.Primitives.SheetHistory.Clear() -> void
-eQuantic.UI.Primitives.SheetHistory.PopRedo() -> eQuantic.UI.Primitives.SheetEdit?
-eQuantic.UI.Primitives.SheetHistory.PopUndo() -> eQuantic.UI.Primitives.SheetEdit?
-eQuantic.UI.Primitives.SheetHistory.Push(eQuantic.UI.Primitives.SheetEdit! edit) -> void
-eQuantic.UI.Primitives.SheetHistory.SheetHistory() -> void
-eQuantic.UI.Primitives.SheetKeymap
-eQuantic.UI.Primitives.SheetMotion
-eQuantic.UI.Primitives.SheetMotion.Cell = 0 -> eQuantic.UI.Primitives.SheetMotion
-eQuantic.UI.Primitives.SheetMotion.DataEdge = 1 -> eQuantic.UI.Primitives.SheetMotion
-eQuantic.UI.Primitives.SheetMotion.RowBoundary = 2 -> eQuantic.UI.Primitives.SheetMotion
-eQuantic.UI.Primitives.SheetMotion.SheetBoundary = 3 -> eQuantic.UI.Primitives.SheetMotion
-eQuantic.UI.Primitives.SheetRange
-eQuantic.UI.Primitives.SheetRange.Anchor.get -> eQuantic.UI.Primitives.CellRef
-eQuantic.UI.Primitives.SheetRange.Anchor.init -> void
-eQuantic.UI.Primitives.SheetRange.BottomRow.get -> int
-eQuantic.UI.Primitives.SheetRange.ColCount.get -> int
-eQuantic.UI.Primitives.SheetRange.Contains(eQuantic.UI.Primitives.CellRef cell) -> bool
-eQuantic.UI.Primitives.SheetRange.Deconstruct(out eQuantic.UI.Primitives.CellRef Anchor, out eQuantic.UI.Primitives.CellRef Focus) -> void
-eQuantic.UI.Primitives.SheetRange.Equals(eQuantic.UI.Primitives.SheetRange other) -> bool
-eQuantic.UI.Primitives.SheetRange.Focus.get -> eQuantic.UI.Primitives.CellRef
-eQuantic.UI.Primitives.SheetRange.Focus.init -> void
-eQuantic.UI.Primitives.SheetRange.IsSingleCell.get -> bool
-eQuantic.UI.Primitives.SheetRange.LeftCol.get -> int
-eQuantic.UI.Primitives.SheetRange.RightCol.get -> int
-eQuantic.UI.Primitives.SheetRange.RowCount.get -> int
-eQuantic.UI.Primitives.SheetRange.SheetRange() -> void
-eQuantic.UI.Primitives.SheetRange.SheetRange(eQuantic.UI.Primitives.CellRef Anchor, eQuantic.UI.Primitives.CellRef Focus) -> void
-eQuantic.UI.Primitives.SheetRange.SheetRange(eQuantic.UI.Primitives.CellRef cell) -> void
-eQuantic.UI.Primitives.SheetRange.TopLeft.get -> eQuantic.UI.Primitives.CellRef
-eQuantic.UI.Primitives.SheetRange.TopRow.get -> int
 eQuantic.UI.Primitives.SheetSurface
-eQuantic.UI.Primitives.SheetSurface.Controller.get -> eQuantic.UI.Primitives.SheetController!
-eQuantic.UI.Primitives.SheetSurface.Controller.init -> void
-eQuantic.UI.Primitives.SheetSurface.FirstCol.get -> int
-eQuantic.UI.Primitives.SheetSurface.FirstCol.init -> void
-eQuantic.UI.Primitives.SheetSurface.FirstRow.get -> int
-eQuantic.UI.Primitives.SheetSurface.FirstRow.init -> void
-eQuantic.UI.Primitives.SheetSurface.HeaderHeight.get -> float
-eQuantic.UI.Primitives.SheetSurface.HeaderHeight.init -> void
-eQuantic.UI.Primitives.SheetSurface.HeaderWidth.get -> float
-eQuantic.UI.Primitives.SheetSurface.HeaderWidth.init -> void
 eQuantic.UI.Primitives.SheetSurface.Label.get -> string?
 eQuantic.UI.Primitives.SheetSurface.Label.init -> void
+eQuantic.UI.Primitives.SheetSurface.Model.get -> eQuantic.UI.Primitives.ISheetSurfaceModel!
+eQuantic.UI.Primitives.SheetSurface.Model.init -> void
 eQuantic.UI.Primitives.SheetSurface.OnChanged.get -> System.Action?
 eQuantic.UI.Primitives.SheetSurface.OnChanged.init -> void
-eQuantic.UI.Primitives.SheetSurface.SheetSurface(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.SheetController! controller) -> void
+eQuantic.UI.Primitives.SheetSurface.SheetSurface(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.ISheetSurfaceModel! model) -> void
 eQuantic.UI.Primitives.Shortcut
 eQuantic.UI.Primitives.Shortcut.Chord.get -> eQuantic.UI.Primitives.KeyChord
 eQuantic.UI.Primitives.Shortcut.Chord.init -> void
@@ -1759,10 +1635,7 @@ eQuantic.UI.Primitives.Stack.Stack(eQuantic.UI.Primitives.Alignment align = eQua
 eQuantic.UI.Primitives.Stack.Width.get -> eQuantic.UI.Primitives.SizeValue
 eQuantic.UI.Primitives.Stack.Width.init -> void
 eQuantic.UI.Primitives.StatefulComponent
-eQuantic.UI.Primitives.StatefulComponent.NotifyMounted() -> void
-eQuantic.UI.Primitives.StatefulComponent.NotifyUnmounted() -> void
 eQuantic.UI.Primitives.StatefulComponent.SetState(System.Action! mutate) -> void
-eQuantic.UI.Primitives.StatefulComponent.StateInvalidated -> System.Action?
 eQuantic.UI.Primitives.StatefulComponent.StatefulComponent() -> void
 eQuantic.UI.Primitives.StatelessComponent
 eQuantic.UI.Primitives.StatelessComponent.StatelessComponent() -> void
@@ -1928,7 +1801,6 @@ eQuantic.UI.Primitives.TransitionSpec.Easing.init -> void
 eQuantic.UI.Primitives.TransitionSpec.Equals(eQuantic.UI.Primitives.TransitionSpec other) -> bool
 eQuantic.UI.Primitives.TransitionSpec.TransitionSpec() -> void
 eQuantic.UI.Primitives.TransitionSpec.TransitionSpec(eQuantic.UI.Primitives.StyleChannels Channels, float DurationMs = 200, float DelayMs = 0) -> void
-eQuantic.UI.Primitives.TsvCodec
 eQuantic.UI.Primitives.TwinIsDataAttribute
 eQuantic.UI.Primitives.TwinIsDataAttribute.Reason.get -> string!
 eQuantic.UI.Primitives.TwinIsDataAttribute.TwinIsDataAttribute(string! reason) -> void
@@ -2173,13 +2045,13 @@ override eQuantic.UI.Primitives.Anchored.NodeKind.get -> string!
 override eQuantic.UI.Primitives.Box.NodeKind.get -> string!
 override eQuantic.UI.Primitives.BoxStyle.GetHashCode() -> int
 override eQuantic.UI.Primitives.CanvasPointer.GetHashCode() -> int
-override eQuantic.UI.Primitives.CellRef.GetHashCode() -> int
 override eQuantic.UI.Primitives.CodeSurface.NodeKind.get -> string!
 override eQuantic.UI.Primitives.Color.GetHashCode() -> int
 override eQuantic.UI.Primitives.ColorToken.GetHashCode() -> int
 override eQuantic.UI.Primitives.Column.Cross.get -> eQuantic.UI.Primitives.CrossAlign
 override eQuantic.UI.Primitives.Column.Cross.init -> void
 override eQuantic.UI.Primitives.Column.NodeKind.get -> string!
+override eQuantic.UI.Primitives.ComponentElement.ChildAt(int slot) -> eQuantic.UI.Primitives.Element?
 override eQuantic.UI.Primitives.CornerRadii.GetHashCode() -> int
 override eQuantic.UI.Primitives.Curve.GetHashCode() -> int
 override eQuantic.UI.Primitives.DataPalette.Equals(object? obj) -> bool
@@ -2223,6 +2095,7 @@ override eQuantic.UI.Primitives.MotionSpec.GetHashCode() -> int
 override eQuantic.UI.Primitives.MotionVector.GetHashCode() -> int
 override eQuantic.UI.Primitives.Navigable.NodeKind.get -> string!
 override eQuantic.UI.Primitives.NetworkState.GetHashCode() -> int
+override eQuantic.UI.Primitives.NodeElement.ChildAt(int slot) -> eQuantic.UI.Primitives.Element?
 override eQuantic.UI.Primitives.Overlay.NodeKind.get -> string!
 override eQuantic.UI.Primitives.Pinned.NodeKind.get -> string!
 override eQuantic.UI.Primitives.Point.GetHashCode() -> int
@@ -2244,8 +2117,6 @@ override eQuantic.UI.Primitives.ServerTopic<T>.GetHashCode() -> int
 override eQuantic.UI.Primitives.ServerTopic<T>.ToString() -> string!
 override eQuantic.UI.Primitives.ServerTopicRefusal.GetHashCode() -> int
 override eQuantic.UI.Primitives.ShadowSpec.GetHashCode() -> int
-override eQuantic.UI.Primitives.SheetCellSnapshot.GetHashCode() -> int
-override eQuantic.UI.Primitives.SheetRange.GetHashCode() -> int
 override eQuantic.UI.Primitives.SheetSurface.NodeKind.get -> string!
 override eQuantic.UI.Primitives.Shortcut.NodeKind.get -> string!
 override eQuantic.UI.Primitives.Simulated.NodeKind.get -> string!
@@ -2331,6 +2202,7 @@ override sealed eQuantic.UI.Primitives.WebFrame.Accept<TState, TResult>(eQuantic
 override sealed eQuantic.UI.Primitives.WebFrame.NodeKind.get -> string!
 static eQuantic.UI.Primitives.BoxStyle.operator !=(eQuantic.UI.Primitives.BoxStyle left, eQuantic.UI.Primitives.BoxStyle right) -> bool
 static eQuantic.UI.Primitives.BoxStyle.operator ==(eQuantic.UI.Primitives.BoxStyle left, eQuantic.UI.Primitives.BoxStyle right) -> bool
+static eQuantic.UI.Primitives.BuildOwner.Structural() -> eQuantic.UI.Primitives.BuildOwner!
 static eQuantic.UI.Primitives.CalendarNames.DayNamesLong.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static eQuantic.UI.Primitives.CalendarNames.DayNamesShort.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static eQuantic.UI.Primitives.CalendarNames.FirstDayOfWeek.get -> int
@@ -2344,10 +2216,6 @@ static eQuantic.UI.Primitives.CapabilityScope.Current.set -> void
 static eQuantic.UI.Primitives.CapabilityScope.Require<T>(string! component) -> T!
 static eQuantic.UI.Primitives.CapabilityScope.Resolve<T>() -> T?
 static eQuantic.UI.Primitives.CapabilityScope.With<T>(T! capability) -> System.IDisposable!
-static eQuantic.UI.Primitives.CellRef.FromKey(int key) -> eQuantic.UI.Primitives.CellRef
-static eQuantic.UI.Primitives.CellRef.ParseA1(string! text) -> eQuantic.UI.Primitives.CellRef?
-static eQuantic.UI.Primitives.CellRef.operator !=(eQuantic.UI.Primitives.CellRef left, eQuantic.UI.Primitives.CellRef right) -> bool
-static eQuantic.UI.Primitives.CellRef.operator ==(eQuantic.UI.Primitives.CellRef left, eQuantic.UI.Primitives.CellRef right) -> bool
 static eQuantic.UI.Primitives.Color.FromRgb(byte r, byte g, byte b) -> eQuantic.UI.Primitives.Color
 static eQuantic.UI.Primitives.Color.FromRgba(byte r, byte g, byte b, byte a) -> eQuantic.UI.Primitives.Color
 static eQuantic.UI.Primitives.Color.operator !=(eQuantic.UI.Primitives.Color left, eQuantic.UI.Primitives.Color right) -> bool
@@ -2478,12 +2346,6 @@ static eQuantic.UI.Primitives.ServerTopicRefusal.operator !=(eQuantic.UI.Primiti
 static eQuantic.UI.Primitives.ServerTopicRefusal.operator ==(eQuantic.UI.Primitives.ServerTopicRefusal left, eQuantic.UI.Primitives.ServerTopicRefusal right) -> bool
 static eQuantic.UI.Primitives.ShadowSpec.operator !=(eQuantic.UI.Primitives.ShadowSpec left, eQuantic.UI.Primitives.ShadowSpec right) -> bool
 static eQuantic.UI.Primitives.ShadowSpec.operator ==(eQuantic.UI.Primitives.ShadowSpec left, eQuantic.UI.Primitives.ShadowSpec right) -> bool
-static eQuantic.UI.Primitives.SheetCellSnapshot.operator !=(eQuantic.UI.Primitives.SheetCellSnapshot left, eQuantic.UI.Primitives.SheetCellSnapshot right) -> bool
-static eQuantic.UI.Primitives.SheetCellSnapshot.operator ==(eQuantic.UI.Primitives.SheetCellSnapshot left, eQuantic.UI.Primitives.SheetCellSnapshot right) -> bool
-static eQuantic.UI.Primitives.SheetKeymap.Handle(eQuantic.UI.Primitives.SheetController! sheet, string! key, bool command, bool shift) -> bool
-static eQuantic.UI.Primitives.SheetKeymap.Type(eQuantic.UI.Primitives.SheetController! sheet, string! text) -> void
-static eQuantic.UI.Primitives.SheetRange.operator !=(eQuantic.UI.Primitives.SheetRange left, eQuantic.UI.Primitives.SheetRange right) -> bool
-static eQuantic.UI.Primitives.SheetRange.operator ==(eQuantic.UI.Primitives.SheetRange left, eQuantic.UI.Primitives.SheetRange right) -> bool
 static eQuantic.UI.Primitives.Size.operator !=(eQuantic.UI.Primitives.Size left, eQuantic.UI.Primitives.Size right) -> bool
 static eQuantic.UI.Primitives.Size.operator ==(eQuantic.UI.Primitives.Size left, eQuantic.UI.Primitives.Size right) -> bool
 static eQuantic.UI.Primitives.SizeValue.Fixed(float dp) -> eQuantic.UI.Primitives.SizeValue
@@ -2528,8 +2390,6 @@ static eQuantic.UI.Primitives.TransitionSpec.Colors(float durationMs = 100) -> e
 static eQuantic.UI.Primitives.TransitionSpec.Of(eQuantic.UI.Primitives.StyleChannels channels, eQuantic.UI.Primitives.MotionSpec motion) -> eQuantic.UI.Primitives.TransitionSpec
 static eQuantic.UI.Primitives.TransitionSpec.operator !=(eQuantic.UI.Primitives.TransitionSpec left, eQuantic.UI.Primitives.TransitionSpec right) -> bool
 static eQuantic.UI.Primitives.TransitionSpec.operator ==(eQuantic.UI.Primitives.TransitionSpec left, eQuantic.UI.Primitives.TransitionSpec right) -> bool
-static eQuantic.UI.Primitives.TsvCodec.Parse(string! text) -> System.Collections.Generic.List<System.Collections.Generic.List<string!>!>!
-static eQuantic.UI.Primitives.TsvCodec.Serialize(eQuantic.UI.Primitives.SheetDocument! document, eQuantic.UI.Primitives.SheetRange range) -> string!
 static eQuantic.UI.Primitives.TypeStyle.OfSize(float size, eQuantic.UI.Primitives.FontWeight weight, float tracking = 0, float maxScale = 1.3) -> eQuantic.UI.Primitives.TypeStyle
 static eQuantic.UI.Primitives.TypeStyle.operator !=(eQuantic.UI.Primitives.TypeStyle left, eQuantic.UI.Primitives.TypeStyle right) -> bool
 static eQuantic.UI.Primitives.TypeStyle.operator ==(eQuantic.UI.Primitives.TypeStyle left, eQuantic.UI.Primitives.TypeStyle right) -> bool
@@ -2600,8 +2460,6 @@ virtual eQuantic.UI.Primitives.UiComponent.AdoptConfig(eQuantic.UI.Primitives.Ui
 ~override eQuantic.UI.Primitives.BoxStyle.ToString() -> string
 ~override eQuantic.UI.Primitives.CanvasPointer.Equals(object obj) -> bool
 ~override eQuantic.UI.Primitives.CanvasPointer.ToString() -> string
-~override eQuantic.UI.Primitives.CellRef.Equals(object obj) -> bool
-~override eQuantic.UI.Primitives.CellRef.ToString() -> string
 ~override eQuantic.UI.Primitives.Color.Equals(object obj) -> bool
 ~override eQuantic.UI.Primitives.Color.ToString() -> string
 ~override eQuantic.UI.Primitives.ColorToken.Equals(object obj) -> bool
@@ -2658,10 +2516,6 @@ virtual eQuantic.UI.Primitives.UiComponent.AdoptConfig(eQuantic.UI.Primitives.Ui
 ~override eQuantic.UI.Primitives.ServerTopicRefusal.ToString() -> string
 ~override eQuantic.UI.Primitives.ShadowSpec.Equals(object obj) -> bool
 ~override eQuantic.UI.Primitives.ShadowSpec.ToString() -> string
-~override eQuantic.UI.Primitives.SheetCellSnapshot.Equals(object obj) -> bool
-~override eQuantic.UI.Primitives.SheetCellSnapshot.ToString() -> string
-~override eQuantic.UI.Primitives.SheetRange.Equals(object obj) -> bool
-~override eQuantic.UI.Primitives.SheetRange.ToString() -> string
 ~override eQuantic.UI.Primitives.Size.Equals(object obj) -> bool
 ~override eQuantic.UI.Primitives.Size.ToString() -> string
 ~override eQuantic.UI.Primitives.SizeValue.Equals(object obj) -> bool
