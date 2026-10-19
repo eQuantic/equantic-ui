@@ -99,7 +99,7 @@ public sealed class LedgerSignatures : ICodeSignatureProvider
             [
                 new CodeSignature($"{callee}(string reference, DateTime issuedAt)")
                 {
-                    Documentation = $"Opens a {callee.ToLowerInvariant()} in the ledger.",
+                    Documentation = $"Opens a new {callee.ToLowerInvariant()} in the ledger.",
                     Parameters =
                     [
                         new CodeSignatureParameter("string reference") { Documentation = "What the document is issued under." },

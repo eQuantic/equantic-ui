@@ -243,6 +243,49 @@ public class CodeEditorSignatureTests : IDisposable
         first.Editor.SignatureHelp.IsOpen.Should().BeTrue("the provider of the parent's next build reached the editor it keeps");
     }
 
+    /// <summary>A call whose label is far longer than anything else the panel says.</summary>
+    private sealed class LongLabel : ICodeSignatureProvider
+    {
+        public static readonly CodeSignature Signature = new("Invoice(string reference, DateTime issuedAt)")
+        {
+            Parameters = [new CodeSignatureParameter("string reference"), new CodeSignatureParameter("DateTime issuedAt")],
+        };
+
+        public Task<CodeSignatureHelp?> SignatureHelpAsync(CodeDocument document, CodePosition position,
+            CodeSignatureContext context, CancellationToken cancellation) =>
+            Task.FromResult<CodeSignatureHelp?>(new CodeSignatureHelp([Signature]));
+    }
+
+    /// <summary>
+    /// The panel gives its widest line a whole pixel more than the line measures, as the card does: in the
+    /// browser a label exactly as wide as its fractional measure ended "issuedA…" (found reviewing #298).
+    /// </summary>
+    [Fact]
+    public void ThePanel_GivesItsWidestLineAWholePixel()
+    {
+        var editor = Editor(Lines(), new LongLabel());
+        Controller(editor);
+        var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 600, 400, ApproximateTextMeasurer.Instance)
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+            Density = Density.Compact,
+            SmoothScroll = false,
+        };
+        Settle(host);
+        ClickAtEndOf(host, editor, 10);
+
+        var frame = Type(host, " Column(");
+
+        var label = Texts(frame).Single(text => text.Content == LongLabel.Signature.Label);
+        // The innermost row holding the label: the panel's first line, as wide as the panel's text.
+        var row = Descendants(frame.Root).Last(node => node.Source is Row
+            && Descendants(node).Any(inner => ReferenceEquals(inner.Source, label)));
+        var measured = ApproximateTextMeasurer.Instance
+            .Measure(label.Content, label.StyleOverride!.Value, 1f, float.PositiveInfinity, 0).Width;
+        measured.Should().NotBe(MathF.Ceiling(measured), "the measure is fractional, or a whole pixel proves nothing");
+        row.Bounds.Width.Should().BeGreaterThanOrEqualTo(MathF.Ceiling(measured));
+    }
+
     // ---- pixels -----------------------------------------------------------------------------------
 
     /// <summary>

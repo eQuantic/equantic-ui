@@ -20,7 +20,7 @@ export class CodeSignatureCard {
         if (((signature.documentation != null && signature.documentation.length > 0) && (documentation = signature.documentation, true))) wanted = Math.max(wanted, CodeHoverCard.widest(context, documentation, prose));
         let most = Math.fround(Math.fround(80 * metrics.columnWidth) + chrome);
         if (viewWidth > 0) most = Math.min(most, viewWidth);
-        let width = Math.min(most, Math.fround(wanted + chrome));
+        let width = Math.min(most, Math.fround(Math.ceil(wanted) + chrome));
         let room = Math.max(1, Math.fround(width - chrome));
         let column = new Column(4, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         let height = Math.fround(2 * Math.fround(1 + 4));
