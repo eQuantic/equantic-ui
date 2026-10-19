@@ -324,4 +324,187 @@ public class CodeCompletionTwinTests
         open.Should().BeGreaterThan(steps / 3, "a list shows for most of the steps, or there is little to compare");
         count.Should().Be(0, $"the completion behaves the same on both sides:{differences}");
     }
+
+    // ---- a provider that answers late (#620) -------------------------------------------------------
+
+    /// <summary>The pseudo-key of a step that has the late provider answer its oldest request.</summary>
+    private const string AnswerKey = "$answer";
+
+    /// <summary>
+    /// A provider that answers when a step says so, its oldest request first, with the same entries every
+    /// time: written once here and once in the program the twin runs. It comes FIRST in the providers, so
+    /// its entries list before the document's words whenever its answer lands.
+    /// </summary>
+    private sealed class Late(IReadOnlyList<string> words) : ICodeCompletionProvider
+    {
+        private readonly List<TaskCompletionSource<CodeCompletionList>> _pending = [];
+
+        public Task<CodeCompletionList> CompleteAsync(CodeDocument document, CodePosition position,
+            CodeCompletionContext context, CancellationToken cancellation)
+        {
+            var answer = new TaskCompletionSource<CodeCompletionList>();
+            _pending.Add(answer);
+            return answer.Task;
+        }
+
+        /// <summary>Answers the oldest request still owed, when there is one.</summary>
+        public void AnswerOldest()
+        {
+            if (_pending.Count == 0) return;
+            var answer = _pending[0];
+            _pending.RemoveAt(0);
+            answer.SetResult(new CodeCompletionList([.. words.Select(word => new CodeCompletionItem(word))]));
+        }
+    }
+
+    /// <summary>What the list shows after a step, as one line, whether a provider is still out included.</summary>
+    private static string LateState(CodeEditorController editor) =>
+        $"{(editor.Completion.IsLoading ? "loading" : "idle")}|{State(editor)}";
+
+    /// <summary>The late provider's entries: the document's words, each with a suffix of its own, so none
+    /// is one of the word provider's and a word typed matches both.</summary>
+    private static List<string> LateWords(string text) =>
+    [
+        .. text.Split(text.Where(c => !CodeDocument.IsWordChar(c)).Distinct().ToArray(), StringSplitOptions.RemoveEmptyEntries)
+            .Where(word => word.Length >= 3 && !char.IsDigit(word[0]))
+            .Distinct()
+            .OrderBy(word => word, StringComparer.Ordinal)
+            .Select(word => word + "Late"),
+    ];
+
+    private static List<string> RunLateOnDotNet(string text, IReadOnlyList<string> words, CodePosition caret,
+        IReadOnlyList<Step> steps)
+    {
+        var editor = new CodeEditorController(text, CodeLanguages.CSharp);
+        var late = new Late(words);
+        editor.Completion.Providers.Add(late);
+        editor.Completion.Providers.Add(new CodeWordCompletionProvider());
+        editor.Selection = new CodeRange(caret, caret);
+        var states = new List<string>();
+        foreach (var step in steps)
+        {
+            if (step.Key == AnswerKey) late.AnswerOldest();
+            else if (step.Text is { } typed) editor.HandleText(typed);
+            else editor.HandleKey(step.Key!, (KeyModifiers)step.Modifiers, KeyboardConvention.Standard, null);
+            states.Add(LateState(editor));
+        }
+        return states;
+    }
+
+    /// <summary>The sessions of <see cref="Sessions"/>, with the late provider answering at seeded steps.</summary>
+    private static List<(CodePosition Caret, List<Step> Steps)> LateSessions(string text, int count, int seed)
+    {
+        var random = new Random(seed);
+        var sessions = new List<(CodePosition, List<Step>)>();
+        foreach (var (caret, steps) in Sessions(text, count, seed))
+        {
+            var answered = new List<Step>();
+            foreach (var step in steps)
+            {
+                answered.Add(step);
+                if (random.Next(4) == 0) answered.Add(new Step(null, AnswerKey, 0));
+            }
+            sessions.Add((caret, answered));
+        }
+        return sessions;
+    }
+
+    private static string LateProgram(string runtime, string text, IReadOnlyList<string> words,
+        IReadOnlyList<(CodePosition Caret, List<Step> Steps)> sessions)
+    {
+        var encoded = JsonSerializer.Serialize(sessions.Select(session => new
+        {
+            line = session.Caret.Line,
+            column = session.Caret.Column,
+            steps = session.Steps.Select(step => new object?[] { step.Text, step.Key, step.Modifiers }),
+        }));
+        return $$"""
+            import { CodeEditorController, CodeLanguages, CodeWordCompletionProvider, CodeCompletionList,
+              CodeCompletionItem, CodeRange, CodePosition } from '{{runtime}}';
+            const text = {{JsonSerializer.Serialize(text)}};
+            const words = {{JsonSerializer.Serialize(words)}};
+            const sessions = {{encoded}};
+            // The program's copy of Late, line for line.
+            class Late {
+              constructor() { this.pending = []; this.triggerCharacters = []; }
+              completeAsync() { return new Promise((resolve) => this.pending.push(resolve)); }
+              resolveAsync(item) { return Promise.resolve(item); }
+              answerOldest() {
+                const resolve = this.pending.shift();
+                if (resolve !== undefined) resolve(new CodeCompletionList(words.map((word) => new CodeCompletionItem(word)), false));
+              }
+            }
+            const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+            const state = (editor) => {
+              const completion = editor.completion;
+              const first = completion.items.slice(0, 6).map((match) => match.item.label).join(',');
+              const line = editor.document.line(editor.caret.line);
+              return `${completion.isLoading ? 'loading' : 'idle'}|${completion.isOpen ? 'open' : 'shut'}|${completion.selected}|${first}|${editor.caret.line}:${editor.caret.column}|${line}`;
+            };
+            for (const session of sessions) {
+              const editor = new CodeEditorController(text, CodeLanguages.cSharp);
+              const late = new Late();
+              editor.completion.providers.push(late);
+              editor.completion.providers.push(new CodeWordCompletionProvider());
+              const caret = new CodePosition(session.line, session.column);
+              editor.selection = new CodeRange(caret, caret);
+              const states = [];
+              for (const [typed, key, modifiers] of session.steps) {
+                if (key === '{{AnswerKey}}') late.answerOldest();
+                else if (typed != null) editor.handleText(typed);
+                else editor.handleKey(key, modifiers, 'standard', null);
+                await settle();
+                states.push(state(editor));
+              }
+              console.log('=' + JSON.stringify(states));
+            }
+            """;
+    }
+
+    /// <summary>
+    /// The answers one by one (#620) behave the same on both sides: a provider that answers late beside one
+    /// that answers at once, its answer landing at seeded steps, after the word it was asked for has been
+    /// left as often as while it shows. Read after every step: whether a provider is still out, the list,
+    /// what is selected, the caret and the line.
+    /// </summary>
+    [SkippableFact]
+    public void Sessions_WithAProviderThatAnswersLate_ShowTheSameListAfterEveryStep()
+    {
+        Skip.IfNot(JsExecutor.EngineName == "bun", "The twin runs in the embedded Bun, and the engine here is not Bun.");
+        var runtime = ConformanceRunner.RuntimeJsUrl() ?? throw new InvalidOperationException("No served runtime.js.");
+        var text = File.ReadAllText(Path.Combine(RepoRoot.Find()!, "src", "eQuantic.UI.Code", "Intelligence", "CodeCompletion.cs"))
+            .Replace("\r\n", "\n");
+        var words = LateWords(text);
+        var sessions = LateSessions(text, 60, 2026_10_19);
+
+        var web = JsExecutor.Run(LateProgram(runtime, text, words, sessions), timeoutMs: 300_000).Split('\n');
+
+        var differences = new StringBuilder();
+        var count = 0;
+        var steps = 0;
+        var loading = 0;
+        var landed = 0;
+        for (var i = 0; i < sessions.Count; i++)
+        {
+            var dotnet = RunLateOnDotNet(text, words, sessions[i].Caret, sessions[i].Steps);
+            steps += dotnet.Count;
+            loading += dotnet.Count(state => state.StartsWith("loading|open|", StringComparison.Ordinal));
+            landed += dotnet.Count(state => state.Contains("Late,", StringComparison.Ordinal) || state.Contains("Late|", StringComparison.Ordinal));
+            var twin = i < web.Length && web[i].StartsWith('=')
+                ? JsonSerializer.Deserialize<List<string>>(web[i].TrimEnd('\r')[1..])!
+                : [];
+            var at = Enumerable.Range(0, dotnet.Count).FirstOrDefault(step => step >= twin.Count || dotnet[step] != twin[step], -1);
+            if (at < 0) continue;
+            if (count++ < 3)
+            {
+                var keys = string.Join(" ", sessions[i].Steps.Take(at + 1).Select(step => step.Text is { } t ? JsonSerializer.Serialize(t) : $"[{step.Key}+{step.Modifiers}]"));
+                differences.Append($"\n  session {i}, step {at} after {keys}:\n    .NET    {dotnet[at]}\n    the web {(at < twin.Count ? twin[at] : "(none)")}");
+            }
+        }
+
+        steps.Should().BeGreaterThan(300, "the sessions are what is compared");
+        loading.Should().BeGreaterThan(20, "a list shows the document's words while the late provider is still out");
+        landed.Should().BeGreaterThan(20, "the late provider's entries land in a list often enough to compare");
+        count.Should().Be(0, $"the answers one by one behave the same on both sides:{differences}");
+    }
 }
