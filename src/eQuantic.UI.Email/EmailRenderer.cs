@@ -45,13 +45,13 @@ public static class EmailRenderer
     /// </para>
     ///
     /// <para>
-    /// <paramref name="culture"/> is the message's language (#942). The tree is rendered under it, as
-    /// a page is rendered under its request's culture, so what its components write in Build (a
-    /// number, a date, a text looked up by culture) is in it, and <c>&lt;html lang&gt;</c> names it,
-    /// which screen readers and the clients that hyphenate or translate read. The markup does not
-    /// change with it: every length and color is written invariant. Not given, the tree is rendered
-    /// under the ambient culture and the message says English, as it always has, and so does the
-    /// invariant culture, the one .NET associates with English. The ambient culture is the caller's
+    /// <paramref name="culture"/> is the message's language (#942). The tree is rendered under it, as a
+    /// page is rendered under its request's culture, so what its components write in Build (a number, a
+    /// date, a text looked up by culture) is in it, and <c>&lt;html lang&gt;</c> names it by its IETF
+    /// language tag, which screen readers and the clients that hyphenate or translate read. The markup
+    /// does not change with it: every length and color is written invariant. Not given, the tree is
+    /// rendered under the ambient culture and the message says English, as it always has, and so does
+    /// the invariant culture, the one .NET associates with English. The ambient culture is the caller's
     /// again when the render returns or throws.
     /// </para>
     /// </summary>
@@ -65,7 +65,11 @@ public static class EmailRenderer
         CultureInfo.CurrentUICulture = culture;
         try
         {
-            return Compose(tree, theme, preheader, culture.Name.Length > 0 ? culture.Name : English);
+            // The IETF tag, not the name: .NET still makes the legacy Chinese cultures, whose names
+            // (zh-CHS, zh-CHT) are no language tag a client reads, and their tags are zh-Hans and
+            // zh-Hant. The invariant culture has neither, and says English.
+            var tag = culture.IetfLanguageTag;
+            return Compose(tree, theme, preheader, tag.Length > 0 ? tag : English);
         }
         finally
         {
