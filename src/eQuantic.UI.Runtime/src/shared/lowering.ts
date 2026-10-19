@@ -897,13 +897,15 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     press(event, event.detail > 0 ? event.detail : 1);
   }) as unknown as EventHandler;
   surface.events['pointermove'] = ((event: PointerEvent) => {
-    // Only a HELD pointer moves the selection; a bare one passing over the code is a hover, which the
-    // model waits on to explain what it rests on (C# twin: PhotonHost.PointerMove). A finger has no
-    // hover: it moves only while it presses.
-    if ((event.buttons & 1) === 0) {
+    // Only the primary button HELD moves the selection, and only a pointer with NO button held passing
+    // over the code is a hover, which the model waits on to explain what it rests on (C# twin:
+    // PhotonHost.PointerMove): one dragged with another button rests on nothing. A finger has no hover:
+    // it moves only while it presses.
+    if (event.buttons === 0) {
       if (event.pointerType !== 'touch' && model.handlePointer('hover', local(event), modifiersOf(event), 0)) changed();
       return;
     }
+    if ((event.buttons & 1) === 0) return;
     if (model.handlePointer('move', local(event), modifiersOf(event), 1)) changed();
   }) as unknown as EventHandler;
   surface.events['pointerleave'] = ((event: PointerEvent) => {

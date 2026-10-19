@@ -294,6 +294,9 @@ export function delay(delay: Delay, token?: CancellationToken): Promise<void> {
     return error;
   };
   if (token?.isCancellationRequested) return Promise.reject(canceled());
+  // No wait at all is a task already done, as .NET's Task.CompletedTask: a token cancelled after the call
+  // cannot change it.
+  if (milliseconds === 0) return Promise.resolve();
   return new Promise<void>((resolve, reject) => {
     let timer: ReturnType<typeof setTimeout> | null = null;
     const registration = token?.canBeCanceled

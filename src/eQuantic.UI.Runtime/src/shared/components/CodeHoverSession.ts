@@ -62,6 +62,7 @@ export class CodeHoverSession {
     }
 
     showAt(position: CodePosition) {
+        if (this._editor.completion.isOpen) return false;
         let at = this._editor.document.clamp(position);
         let explained = this.explained(at);
         if (explained == null && $eq.collections.count(this.providers) === 0) return false;
@@ -90,6 +91,7 @@ export class CodeHoverSession {
             this.pointerLeft();
             return;
         }
+        if (this._editor.completion.isOpen) return;
         if (this._open && !this._byKeyboard && CodeHoverSession.holds(this._range, position)) return;
         let pending: any; 
         if ((pending = this._pending) != null && CodeHoverSession.holds(pending, position)) return;
@@ -117,23 +119,32 @@ export class CodeHoverSession {
     }
 
     async rest(explained: CodeRange, position: CodePosition, wait: boolean, keyboard: boolean, ask: boolean) {
+        if (this._editor.completion.isOpen) return;
         let generation = ++this._generation;
         this._request?.cancel();
         let request = $eq.cancellation.source();
         this._request = request;
+        this._pending = explained;
         if (wait && (this.delay.compareTo($eq.time.timeSpan.zero) > 0)) {
+            let waited = true;
             try {
                 await $eq.task.delay(this.delay, request.token);
             } catch ($e: any) {
                 if ($eq.exceptions.is($e, 'System.OperationCanceledException')) {
-                    return;
+                    waited = false;
                 } else {
                     throw $e;
                 }
             }
-            if (generation !== this._generation) return;
+            UiThread.run(() => {
+                if (waited && generation === this._generation) this.show(explained, position, keyboard, ask, generation, request.token);
+            });
+            return;
         }
-        this._pending = null;
+        this.show(explained, position, keyboard, ask, generation, request.token);
+    }
+
+    show(explained: CodeRange, position: CodePosition, keyboard: boolean, ask: boolean, generation: number, cancellation: CancellationToken) {
         let document = this._editor.document;
         let providers = ask ? this.providers.slice() : [];
         this._range = explained;
@@ -145,7 +156,7 @@ export class CodeHoverSession {
         let showed = this._open;
         this._open = this._problems.length > 0;
         if (this._open || showed) this.changed?.();
-        for (let slot = 0; slot < providers.length; slot++) this.askOne(slot, providers[slot], document, position, generation, request.token);
+        for (let slot = 0; slot < providers.length; slot++) this.askOne(slot, providers[slot], document, position, generation, cancellation);
     }
 
     async askOne(slot: number, provider: any, document: CodeDocument, position: CodePosition, generation: number, cancellation: CancellationToken) {

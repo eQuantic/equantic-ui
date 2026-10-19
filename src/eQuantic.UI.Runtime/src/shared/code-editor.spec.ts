@@ -1697,6 +1697,22 @@ describe('the problems and the card', () => {
     expect(notesIn(lower())).toHaveLength(0);
   });
 
+  it('asks nothing while a pointer moves over the code with another button held', async () => {
+    vi.useFakeTimers();
+    const provider = await explainer();
+    const { editor, lower } = await editorWith((component) => {
+      component.hoverProviders = [provider];
+    });
+    const at = editor.caretRect(new CodePosition(10, 6));
+
+    // The right button held: a drag of its own, which rests on nothing (found by Copilot reviewing #1008).
+    pointer(surfaceIn(lower()), 'pointermove', at.x + editor.grid.cell.width / 2, at.y + at.height / 2, { buttons: 2 });
+    await vi.advanceTimersByTimeAsync(300);
+
+    expect(editor.hover.isOpen).toBe(false);
+    expect(editor.selection.isEmpty, 'and it selects nothing either').toBe(true);
+  });
+
   it('keeps the card while the pointer is on it, and a press there moves no caret', async () => {
     vi.useFakeTimers();
     const provider = await explainer();

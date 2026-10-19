@@ -23,7 +23,8 @@ public sealed class CodeHoverSession
     private readonly CodeEditorController _editor;
     private int _generation;
     private CancellationTokenSource? _request;
-    // What a wait under way is for: the pointer resting anywhere in it goes on waiting.
+    // What a request under way is for, from the wait until the card closes or another replaces it: the
+    // pointer resting anywhere in it asks nothing again, a provider still answering included.
     private CodeRange? _pending;
     private bool _open;
     private bool _byKeyboard;
@@ -92,6 +93,8 @@ public sealed class CodeHoverSession
     /// </summary>
     public bool ShowAt(CodePosition position)
     {
+        // One thing at a time over the caret: while the list shows, the card waits for it to go.
+        if (_editor.Completion.IsOpen) return false;
         var at = _editor.Document.Clamp(position);
         var explained = Explained(at);
         if (explained is null && Providers.Count == 0) return false;
@@ -132,6 +135,9 @@ public sealed class CodeHoverSession
             PointerLeft();
             return;
         }
+        // While the completion list shows, the pointer resting on the code asks nothing: a card it showed
+        // would wait behind the list and appear when the list went, unasked.
+        if (_editor.Completion.IsOpen) return;
         if (_open && !_byKeyboard && Holds(_range, position)) return;
         if (_pending is { } pending && Holds(pending, position)) return;
         if (Explained(position) is not { } explained)
@@ -173,24 +179,40 @@ public sealed class CodeHoverSession
     /// </summary>
     private async Task Rest(CodeRange explained, CodePosition position, bool wait, bool keyboard, bool ask)
     {
+        if (_editor.Completion.IsOpen) return;
         var generation = ++_generation;
         _request?.Cancel();
         var request = new CancellationTokenSource();
         _request = request;
+        _pending = explained;
         if (wait && Delay > TimeSpan.Zero)
         {
+            var waited = true;
             try
             {
                 await Task.Delay(Delay, request.Token);
             }
             catch (OperationCanceledException)
             {
-                return;
+                waited = false;
             }
-            if (generation != _generation) return;
+            // Back where the editor lives: a timer ends the wait on a thread of its own, and the generation
+            // is read on the UI thread, so a card closed while the wait ended is never opened again (a
+            // Photon host has no synchronization context to bring an await back to it).
+            UiThread.Run(() =>
+            {
+                if (waited && generation == _generation) Show(explained, position, keyboard, ask, generation, request.Token);
+            });
+            return;
         }
+        Show(explained, position, keyboard, ask, generation, request.Token);
+    }
 
-        _pending = null;
+    /// <summary>Shows the problems at <paramref name="position"/> at once and asks the providers, on the UI
+    /// thread, for the request numbered <paramref name="generation"/>.</summary>
+    private void Show(CodeRange explained, CodePosition position, bool keyboard, bool ask, int generation,
+        CancellationToken cancellation)
+    {
         var document = _editor.Document;
         var providers = ask ? Providers.ToList() : new List<ICodeHoverProvider>();
         _range = explained;
@@ -205,7 +227,7 @@ public sealed class CodeHoverSession
         _open = _problems.Count > 0;
         if (_open || showed) Changed?.Invoke();
         for (var slot = 0; slot < providers.Count; slot++)
-            _ = AskOne(slot, providers[slot], document, position, generation, request.Token);
+            _ = AskOne(slot, providers[slot], document, position, generation, cancellation);
     }
 
     private async Task AskOne(int slot, ICodeHoverProvider provider, CodeDocument document,

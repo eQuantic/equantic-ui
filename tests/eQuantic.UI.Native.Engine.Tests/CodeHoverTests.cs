@@ -59,6 +59,32 @@ public class CodeHoverTests : IDisposable
         }
     }
 
+    /// <summary>A UI thread that is never the caller's, as a Photon host's is to a provider or a timer:
+    /// everything is posted, and runs when drained.</summary>
+    private sealed class QueueDispatcher : IUiDispatcher
+    {
+        private readonly Queue<Action> _queue = new();
+        public bool IsOnUiThread => false;
+
+        public void Post(Action work)
+        {
+            lock (_queue) _queue.Enqueue(work);
+        }
+
+        public void Drain()
+        {
+            while (true)
+            {
+                Action? work;
+                lock (_queue)
+                {
+                    if (!_queue.TryDequeue(out work)) return;
+                }
+                work();
+            }
+        }
+    }
+
     private static Point Over(int line, int column) => new(8 * column + 4, 18 * line + 9);
 
     /// <summary>An editor whose card shows the moment the pointer rests, so a test reads it on the next
@@ -410,6 +436,76 @@ public class CodeHoverTests : IDisposable
         editor.HandlePointer(PointerPhase.Up, Over(0, 7), KeyModifiers.None, 1);
         Press(editor, "i", KeyModifiers.Command);
 
+        editor.Hover.IsOpen.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// While the list shows, the pointer resting on the code asks nothing, so no card waits behind the list
+    /// to come out when it goes (found by Copilot reviewing #1008).
+    /// </summary>
+    [Fact]
+    public void WhileTheListShows_APointerAtRestAsksNothing_AndNoCardFollowsTheList()
+    {
+        var editor = Editor("alpha beta");
+        var provider = new Provider();
+        editor.Hover.Providers.Add(provider);
+        editor.Completion.Providers.Add(new ListCompletionProvider(new CodeCompletionItem("alphabet")));
+        editor.Selection = new CodeRange(new CodePosition(0, 5));
+        Press(editor, " ", KeyModifiers.Control).Should().BeTrue();
+        editor.Completion.IsOpen.Should().BeTrue();
+
+        Rest(editor, 0, 7);
+
+        provider.Asked.Should().BeEmpty("the pointer resting while the list shows asks nothing");
+        Press(editor, "Escape").Should().BeTrue();
+        editor.Completion.IsOpen.Should().BeFalse();
+        editor.Hover.IsOpen.Should().BeFalse("no card comes out from behind the list");
+    }
+
+    /// <summary>
+    /// The word asked about stays the card's while its provider answers: moving inside it asks nothing
+    /// again. It was forgotten when the asking began, so every move restarted the wait and a slow provider's
+    /// card never came (found by Copilot reviewing #1008).
+    /// </summary>
+    [Fact]
+    public void MovingInsideAWordWhileItsProviderAnswers_AsksNothingAgain()
+    {
+        var editor = Editor("alpha beta");
+        var late = new LateProvider();
+        editor.Hover.Providers.Add(late);
+        Rest(editor, 0, 7);
+        late.Count.Should().Be(1);
+
+        Rest(editor, 0, 8);
+        Rest(editor, 0, 6);
+
+        late.Count.Should().Be(1, "the word is the one asked about, and its answer is on its way");
+        late.Answer(0);
+        editor.Hover.IsOpen.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// The wait for the pointer to rest ends on a timer's thread, and the card is asked for from the UI
+    /// thread once it runs what the wait posted, after reading there that nothing dismissed it since: off
+    /// it, a pointer leaving while the wait ended was overwritten (found by Copilot reviewing #1008).
+    /// </summary>
+    [Fact]
+    public async Task TheWaitForThePointerToRest_EndsOnTheUiThread()
+    {
+        var queue = new QueueDispatcher();
+        UiDispatcher.Current = queue;
+        var editor = new CodeEditorController("alpha beta");
+        editor.Hover.Delay = TimeSpan.FromMilliseconds(20);
+        var provider = new Provider();
+        editor.Hover.Providers.Add(provider);
+
+        Rest(editor, 0, 1);
+        await Task.Delay(200);
+
+        provider.Asked.Should().BeEmpty("nothing is asked off the UI thread");
+        editor.HandlePointer(PointerPhase.Exit, Point.Zero, KeyModifiers.None, 0);
+        queue.Drain();
+        provider.Asked.Should().BeEmpty("the pointer left before the UI thread ran the wait's end");
         editor.Hover.IsOpen.Should().BeFalse();
     }
 

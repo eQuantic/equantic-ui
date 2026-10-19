@@ -86,45 +86,51 @@ export class CodeDiagnostics {
         }
         let request = $eq.cancellation.source();
         this._request = request;
-        let document = this._editor.document;
         if (wait && (this.delay.compareTo($eq.time.timeSpan.zero) > 0)) {
             this._waiting++;
+            let waited = true;
             try {
                 await $eq.task.delay(this.delay, request.token);
             } catch ($e: any) {
                 if ($eq.exceptions.is($e, 'System.OperationCanceledException')) {
-                    return;
+                    waited = false;
                 } else {
                     throw $e;
                 }
-            } finally {
-                this._waiting--;
             }
-            if (generation !== this._generation) return;
-            document = this._editor.document;
+            UiThread.run(() => {
+                this._waiting--;
+                if (waited && generation === this._generation) this.askEvery(generation, request.token);
+            });
+            return;
         }
-        for (const provider of this.providers.slice()) this.askOne(provider, document, generation, request.token);
+        this.askEvery(generation, request.token);
+    }
+
+    askEvery(generation: number, cancellation: CancellationToken) {
+        let document = this._editor.document;
+        for (const provider of this.providers.slice()) this.askOne(provider, document, generation, cancellation);
     }
 
     async askOne(provider: any, document: CodeDocument, generation: number, cancellation: CancellationToken) {
         this._waiting++;
-        let answer = null;
+        let answer: any = null;
+        let failure: Error | null = null;
         try {
             answer = await provider.diagnoseAsync(document, cancellation);
         } catch ($e: any) {
             let error = $e;
-            if ($eq.exceptions.is($e, 'System.OperationCanceledException') && $eq.exceptions.filter(() => cancellation.isCancellationRequested)) {
-                this._waiting--;
-                return;
-            } else {
-                this._waiting--;
-                UiThread.run(() => this.failed?.(error));
-                return;
+            if ($eq.exceptions.is($e, 'System.OperationCanceledException') && $eq.exceptions.filter(() => cancellation.isCancellationRequested)) {} else {
+                failure = error;
             }
         }
-        this._waiting--;
         UiThread.run(() => {
-            if (generation !== this._generation) return;
+            this._waiting--;
+            if (!(failure == null)) {
+                this.failed?.(failure);
+                return;
+            }
+            if (answer == null || generation !== this._generation) return;
             let problems = this.placed(answer);
             let at = -1;
             for (let i = 0; i < this._answered.length; i++) if ((this._answered[i][0] === provider)) at = i;

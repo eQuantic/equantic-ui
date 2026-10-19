@@ -152,36 +152,53 @@ public sealed class CodeDiagnostics
         }
         var request = new CancellationTokenSource();
         _request = request;
-        var document = _editor.Document;
         if (wait && Delay > TimeSpan.Zero)
         {
             _waiting++;
+            var waited = true;
             try
             {
                 await Task.Delay(Delay, request.Token);
             }
             catch (OperationCanceledException)
             {
-                return;
+                waited = false;
             }
-            finally
+            // Back where the editor lives: a timer ends the wait on a thread of its own, and the count,
+            // the generation and the document are the UI thread's (a Photon host has no
+            // synchronization context to bring an await back to it).
+            UiThread.Run(() =>
             {
                 _waiting--;
-            }
-            if (generation != _generation) return;
-            document = _editor.Document;
+                if (waited && generation == _generation) AskEvery(generation, request.Token);
+            });
+            return;
         }
-
-        // Every provider is asked before any is waited for, so they work at the same time, and each
-        // answer is applied as it comes: their union is in document order whatever order they land in.
-        foreach (var provider in Providers.ToList()) _ = AskOne(provider, document, generation, request.Token);
+        AskEvery(generation, request.Token);
     }
 
+    /// <summary>
+    /// Asks every provider about the document as it stands. Every provider is asked before any is waited
+    /// for, so they work at the same time, and each answer is applied as it comes: their union is in
+    /// document order whatever order they land in.
+    /// </summary>
+    private void AskEvery(int generation, CancellationToken cancellation)
+    {
+        var document = _editor.Document;
+        foreach (var provider in Providers.ToList()) _ = AskOne(provider, document, generation, cancellation);
+    }
+
+    /// <summary>
+    /// Asks one provider, counted as waited for from the UI thread that asks until the UI thread applies
+    /// what came back: a provider finishes on a thread of its own, and two finishing together counted the
+    /// same request down twice from one value.
+    /// </summary>
     private async Task AskOne(ICodeDiagnosticProvider provider, CodeDocument document, int generation,
         CancellationToken cancellation)
     {
         _waiting++;
-        IReadOnlyList<CodeDiagnostic> answer;
+        IReadOnlyList<CodeDiagnostic>? answer = null;
+        Exception? failure = null;
         try
         {
             answer = await provider.DiagnoseAsync(document, cancellation);
@@ -189,19 +206,20 @@ public sealed class CodeDiagnostics
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
             // Cancelled because the answer was no longer wanted: a newer edit asks again.
-            _waiting--;
-            return;
         }
         catch (Exception error)
         {
-            _waiting--;
-            UiThread.Run(() => Failed?.Invoke(error));
-            return;
+            failure = error;
         }
-        _waiting--;
         UiThread.Run(() =>
         {
-            if (generation != _generation) return;
+            _waiting--;
+            if (failure is not null)
+            {
+                Failed?.Invoke(failure);
+                return;
+            }
+            if (answer is null || generation != _generation) return;
             var problems = Placed(answer);
             var at = -1;
             for (var i = 0; i < _answered.Count; i++)

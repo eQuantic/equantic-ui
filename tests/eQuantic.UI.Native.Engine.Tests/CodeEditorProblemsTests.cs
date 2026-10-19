@@ -590,6 +590,29 @@ public class CodeEditorProblemsTests : IDisposable
         editor.Editor.Hover.IsOpen.Should().BeTrue("lifted, it rests, and the card shows");
     }
 
+    /// <summary>A press the platform cancelled, with no release after it, is over too: the pointer moving
+    /// next rests on the code (found by Copilot reviewing #1008).</summary>
+    [Fact]
+    public void APressCancelled_LeavesThePointerToRestOnTheCode()
+    {
+        var editor = new CodeEditor(Lines(), "csharp") { Height = 300, HoverProviders = [new Explainer()] };
+        Controller(editor);
+        var column = new Column { Width = SizeValue.Fill };
+        column.Add(new Button("Run", onPressed: () => { }));
+        column.Add(editor);
+        var host = Host(column);
+        var frame = Settle(host);
+        var run = frame.HitRegions.Single(region => region.Node.Role == PressableRole.Button).Bounds;
+        var word = OnScreen(frame, editor, new CodePosition(10, 6));
+
+        host.PressDown(run.X + 2, run.Y + 2);
+        host.PointerCancel();
+        host.PointerMove(word.X + 3, word.Y + word.Height / 2);
+        Settle(host);
+
+        editor.Editor.Hover.IsOpen.Should().BeTrue("the press was taken away, and the pointer rests on the code");
+    }
+
     [Fact]
     public void F8_GoesToTheNextProblem_AndShowsItInALiveRegion()
     {

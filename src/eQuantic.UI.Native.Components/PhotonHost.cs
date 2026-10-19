@@ -2329,6 +2329,8 @@ public sealed class PhotonHost
     /// </summary>
     public void PointerCancel(PointerKind kind = PointerKind.Mouse)
     {
+        // The press is over, released or not: the pointer moving next rests on the code again.
+        _held = false;
         // The input sequence died with the finger still down — the finger is gone, so nothing
         // rests over anything. A mouse keeps its position through a cancel, and its hover with it.
         if (kind == PointerKind.Touch) PointerLeave();

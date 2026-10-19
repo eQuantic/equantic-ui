@@ -54,6 +54,32 @@ public class CodeDiagnosticsTests : IDisposable
         public void Answer(int request, params CodeDiagnostic[] problems) => _pending[request].SetResult(problems);
     }
 
+    /// <summary>A UI thread that is never the caller's, as a Photon host's is to a provider or a timer:
+    /// everything is posted, and runs when drained.</summary>
+    private sealed class QueueDispatcher : IUiDispatcher
+    {
+        private readonly Queue<Action> _queue = new();
+        public bool IsOnUiThread => false;
+
+        public void Post(Action work)
+        {
+            lock (_queue) _queue.Enqueue(work);
+        }
+
+        public void Drain()
+        {
+            while (true)
+            {
+                Action? work;
+                lock (_queue)
+                {
+                    if (!_queue.TryDequeue(out work)) return;
+                }
+                work();
+            }
+        }
+    }
+
     private static CodeDiagnostic Error(int line, int from, int to, string message = "bad") =>
         new(new CodeRange(new CodePosition(line, from), new CodePosition(line, to)), message);
 
@@ -383,6 +409,59 @@ public class CodeDiagnosticsTests : IDisposable
         editor.Diagnostics.Check();
 
         editor.Diagnostics.Items.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// What an answer changes, the count of requests out included, changes on the UI thread: a provider
+    /// finishes on a thread of its own, and a Photon host has no synchronization context to bring an await
+    /// back. Two finishing together counted one value down twice, and left the editor checking for good
+    /// (found by Copilot reviewing #1008).
+    /// </summary>
+    [Fact]
+    public async Task AnAnswerFromAnotherThread_IsCountedAndAppliedOnTheUiThread()
+    {
+        var queue = new QueueDispatcher();
+        UiDispatcher.Current = queue;
+        var editor = Editor("abc");
+        var late = new LateProvider();
+        editor.Diagnostics.Providers.Add(late);
+        editor.Diagnostics.Check();
+        editor.Diagnostics.IsChecking.Should().BeTrue();
+
+        await Task.Run(() => late.Answer(0, Warning(0, 0, 3)));
+
+        editor.Diagnostics.IsChecking.Should().BeTrue("the count moves when the UI thread applies the answer");
+        editor.Diagnostics.Items.Should().BeEmpty();
+        queue.Drain();
+        editor.Diagnostics.IsChecking.Should().BeFalse();
+        editor.Diagnostics.Items.Should().ContainSingle();
+    }
+
+    /// <summary>The wait for typing to pause ends on a timer's thread, and the providers are asked from the
+    /// UI thread once it runs what the wait posted, about the document as it stands there.</summary>
+    [Fact]
+    public async Task TheWaitBeforeAsking_EndsOnTheUiThread()
+    {
+        var queue = new QueueDispatcher();
+        UiDispatcher.Current = queue;
+        var editor = new CodeEditorController("abc");
+        editor.Diagnostics.Delay = TimeSpan.FromMilliseconds(20);
+        var provider = new Provider();
+        editor.Diagnostics.Providers.Add(provider);
+        editor.Diagnostics.Check();
+        queue.Drain();
+        provider.Asked.Clear();
+        editor.Selection = new CodeRange(new CodePosition(0, 3));
+        Type(editor, "d");
+
+        await Task.Delay(200);
+
+        provider.Asked.Should().BeEmpty("nothing is asked off the UI thread");
+        editor.Diagnostics.IsChecking.Should().BeTrue();
+        queue.Drain();
+        provider.Asked.Should().Equal("abcd");
+        queue.Drain();
+        editor.Diagnostics.IsChecking.Should().BeFalse();
     }
 
     // ---- the walk -------------------------------------------------------------------------------
