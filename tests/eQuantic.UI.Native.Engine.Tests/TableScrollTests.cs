@@ -107,6 +107,19 @@ public class TableScrollTests
     }
 
     [Fact]
+    public void AShiftedWheelAtTheLastColumn_LeavesItsMovementOnTheAxisItCameOn()
+    {
+        var scroll = Arranged();
+        scroll.Wheel(Columns.Total, 0, stepped: false, KeyModifiers.None);
+
+        // Nothing is taken, and the caller is told so on its own axes: the page under the grid gets it.
+        var left = scroll.Wheel(0, 100, stepped: false, KeyModifiers.Shift);
+
+        left.Should().Be(new TableOffset(0, 100));
+        scroll.Offset.Across.Should().Be(Columns.Total - scroll.Viewport.Width);
+    }
+
+    [Fact]
     public void ATrackpad_MovesBothAxesByItsMovement()
     {
         var scroll = Arranged();

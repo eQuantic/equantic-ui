@@ -103,7 +103,8 @@ public sealed class TableScroll : ITableScrollModel
     {
         // Shift turns a wheel that only moves vertically into a horizontal one; a platform that already
         // turned it (macOS) hands a horizontal movement, which is left as it is.
-        if ((modifiers & KeyModifiers.Shift) != 0 && across == 0)
+        var turned = (modifiers & KeyModifiers.Shift) != 0 && across == 0 && down != 0;
+        if (turned)
         {
             across = down;
             down = 0;
@@ -125,7 +126,10 @@ public sealed class TableScroll : ITableScrollModel
             _across = toAcross;
             _down = toDown;
         }
-        return new TableOffset(across - (toAcross - fromAcross), down - (toDown - fromDown));
+        var leftAcross = across - (toAcross - fromAcross);
+        var leftDown = down - (toDown - fromDown);
+        // What is left is answered on the axes the caller handed it on, so it can tell what was taken.
+        return turned ? new TableOffset(0, leftAcross) : new TableOffset(leftAcross, leftDown);
     }
 
     public bool Pointer(PointerPhase phase, Point position, PointerKind kind, double time)

@@ -339,5 +339,46 @@ public class TableViewportTests
         var top = Region(host).Bounds.Y;
         pieces.Should().Contain(p => p.Cell.Row == 0 && p.Cell.Rows == 1 && p.Bounds.Y == top);
         pieces.Should().Contain(p => p.Cell.Row == 1 && p.Cell.Rows == 5 && p.Bounds.Y == top + 28 - 84);
+        // Keyed by the mark and the piece, so each keeps its element while the cells before it change.
+        pieces.Select(p => p.Cell.Key).Should().BeEquivalentTo("mark:0/0", "mark:0/1");
+    }
+
+    // ---- a parent that builds again ---------------------------------------------------------------
+
+    /// <summary>A screen whose grid shrinks: its builder refuses a row the grid no longer has.</summary>
+    private sealed class Shrinking(Tally tally) : StatefulComponent
+    {
+        private int _rows = 1000;
+
+        public void Shrink() => SetState(() => _rows = 5);
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var rows = _rows;
+            return new TableView(new UniformTableSpans(rows, 28), new UniformTableSpans(10, 96), (row, column) =>
+            {
+                if (row >= rows) throw new InvalidOperationException($"row {row} asked of a grid of {rows}");
+                tally.Built++;
+                return new Text($"{row}:{column}", TypeRole.BodyM);
+            })
+            {
+                PinnedRows = 1,
+            };
+        }
+    }
+
+    [Fact]
+    public void AGridThatShrinks_IsAskedOnlyForTheRowsItHas()
+    {
+        var tally = new Tally();
+        var screen = new Shrinking(tally);
+        var host = Host(screen, 900, 600, tally);
+        Cells(host).Max(c => c.Cell.Row).Should().BeGreaterThan(5);
+
+        // The rows still in view are inside the window built before, which reached row 23.
+        screen.Shrink();
+        Settle(host);
+
+        Cells(host).Select(c => c.Cell.Row).Should().OnlyContain(row => row < 5);
     }
 }

@@ -84,7 +84,17 @@ public sealed class TableView : StatefulComponent
 
     public override void AdoptConfig(UiComponent next)
     {
-        if (next is TableView fresh) _config = fresh;
+        if (next is not TableView fresh) return;
+        // Other extents, bands or margin make the window built for the old ones mean nothing: it is
+        // chosen again, or a grid that shrank would be asked for rows it no longer has.
+        if (fresh.Rows != _config.Rows || fresh.Columns != _config.Columns
+            || fresh.PinnedRows != _config.PinnedRows || fresh.PinnedColumns != _config.PinnedColumns
+            || fresh.Overscan != _config.Overscan)
+        {
+            _lastRow = -1;
+            _lastColumn = -1;
+        }
+        _config = fresh;
     }
 
     public override VisualNode Build(ComponentContext context)
@@ -122,8 +132,8 @@ public sealed class TableView : StatefulComponent
         }
 
         if (config.Marks is { } marks)
-            foreach (var mark in marks)
-                AddMark(viewport, mark, pinnedRows, pinnedColumns);
+            for (var index = 0; index < marks.Count; index++)
+                AddMark(viewport, marks[index], index, pinnedRows, pinnedColumns);
         return viewport;
     }
 
@@ -133,11 +143,15 @@ public sealed class TableView : StatefulComponent
     }
 
     /// <summary>A mark, one piece per band it reaches: the viewport draws a cell in the band of its first
-    /// row and column, so a range that crosses a band's edge is cut there.</summary>
-    private static void AddMark(TableViewport viewport, TableViewCell mark, int pinnedRows, int pinnedColumns)
+    /// row and column, so a range that crosses a band's edge is cut there. Each piece is keyed by the
+    /// mark's place in <see cref="Marks"/> and its own, so it keeps its element while the window, and
+    /// with it the number of cells before it, changes.</summary>
+    private static void AddMark(TableViewport viewport, TableViewCell mark, int index, int pinnedRows,
+        int pinnedColumns)
     {
         var lastRow = mark.Row + Math.Max(1, mark.Rows);
         var lastColumn = mark.Column + Math.Max(1, mark.Columns);
+        var piece = 0;
         foreach (var (rowFrom, rowTo) in Cut(mark.Row, lastRow, pinnedRows))
         {
             foreach (var (columnFrom, columnTo) in Cut(mark.Column, lastColumn, pinnedColumns))
@@ -146,7 +160,9 @@ public sealed class TableView : StatefulComponent
                 {
                     Rows = rowTo - rowFrom,
                     Columns = columnTo - columnFrom,
+                    Key = "mark:" + index + "/" + piece,
                 });
+                piece++;
             }
         }
     }

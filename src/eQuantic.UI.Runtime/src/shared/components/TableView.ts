@@ -80,13 +80,18 @@ export class TableView extends StatefulComponent {
             for (let column = this._firstColumn; column <= this._lastColumn; column++) this.place(viewport, row, column);
         }
         let marks: any; 
-        if ((marks = config.marks) != null) for (const mark of marks) TableView.addMark(viewport, mark, pinnedRows, pinnedColumns);
+        if ((marks = config.marks) != null) for (let index = 0; index < $eq.collections.count(marks); index++) TableView.addMark(viewport, $eq.collections.item(marks, index), index, pinnedRows, pinnedColumns);
         return viewport;
     }
 
     adoptConfig(next: UiComponent) {
         let fresh: any; 
-        if ((next instanceof TableView && (fresh = next, true))) this._config = fresh;
+        if (!((next instanceof TableView && (fresh = next, true)))) return;
+        if (fresh.rows !== this._config.rows || fresh.columns !== this._config.columns || fresh.pinnedRows !== this._config.pinnedRows || fresh.pinnedColumns !== this._config.pinnedColumns || fresh.overscan !== this._config.overscan) {
+            this._lastRow = -1;
+            this._lastColumn = -1;
+        }
+        this._config = fresh;
     }
 
     place(viewport: TableViewport, row: number, column: number) {
@@ -94,12 +99,14 @@ export class TableView extends StatefulComponent {
         if ((child = this._config.cellBuilder(row, column)) != null) viewport.add(new TableViewCell(row, column, child));
     }
 
-    static addMark(viewport: TableViewport, mark: TableViewCell, pinnedRows: number, pinnedColumns: number) {
+    static addMark(viewport: TableViewport, mark: TableViewCell, index: number, pinnedRows: number, pinnedColumns: number) {
         let lastRow = mark.row + Math.max(1, mark.rows);
         let lastColumn = mark.column + Math.max(1, mark.columns);
+        let piece = 0;
         for (const [rowFrom, rowTo] of TableView.cut(mark.row, lastRow, pinnedRows)) {
             for (const [columnFrom, columnTo] of TableView.cut(mark.column, lastColumn, pinnedColumns)) {
-                viewport.add(new TableViewCell(rowFrom, columnFrom, mark.child, true, { rows: rowTo - rowFrom, columns: columnTo - columnFrom }));
+                viewport.add(new TableViewCell(rowFrom, columnFrom, mark.child, true, { rows: rowTo - rowFrom, columns: columnTo - columnFrom, key: 'mark:' + $eq.text.format(index, null, undefined, undefined, 'int32') + '/' + $eq.text.format(piece, null, undefined, undefined, 'int32') }));
+                piece++;
             }
         }
     }

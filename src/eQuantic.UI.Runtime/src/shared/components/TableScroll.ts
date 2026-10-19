@@ -94,7 +94,8 @@ export class TableScroll {
     }
 
     wheel(across: number, down: number, stepped: boolean, modifiers: number) {
-        if ((modifiers & 1) !== 0 && across === 0) {
+        let turned = (modifiers & 1) !== 0 && across === 0 && down !== 0;
+        if (turned) {
             across = down;
             down = 0;
         }
@@ -112,7 +113,9 @@ export class TableScroll {
             this._across = toAcross;
             this._down = toDown;
         }
-        return new TableOffset(across - (toAcross - fromAcross), down - (toDown - fromDown));
+        let leftAcross = across - (toAcross - fromAcross);
+        let leftDown = down - (toDown - fromDown);
+        return turned ? new TableOffset(0, leftAcross) : new TableOffset(leftAcross, leftDown);
     }
 
     pointer(phase: PointerPhaseValue, position: Point, kind: PointerKindValue, time: number) {

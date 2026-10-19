@@ -65,6 +65,14 @@ describe('TableScroll (transpiled twin)', () => {
     expect(offsetOf(scroll)).toEqual([48, 84]);
   });
 
+  it('leaves a shifted wheel it could not take on the axis it came on', () => {
+    const scroll = arranged();
+    scroll.wheel(16_384 * 96, 0, false, 0);
+    const left = scroll.wheel(0, 100, false, SHIFT);
+    expect([left.across, left.down]).toEqual([0, 100]);
+    expect(scroll.offset.across).toBe(16_384 * 96 - scroll.viewport.width);
+  });
+
   it('leaves what it could not take at the end of the grid', () => {
     const scroll = arranged();
     const end = EXCEL_ROWS * 28 - scroll.viewport.height;

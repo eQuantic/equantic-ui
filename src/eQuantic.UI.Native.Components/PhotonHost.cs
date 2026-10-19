@@ -1878,8 +1878,8 @@ public sealed class PhotonHost
             }
             if (table.Active)
             {
-                table.Viewport.Scroll.Pointer(PointerPhase.Move,
-                    new Point(x - table.Bounds.X, y - table.Bounds.Y), kind, _lastTimeMs);
+                table.Viewport.Scroll.Pointer(PointerPhase.Move, TableLocal(table.Viewport, table.Bounds, new Point(x, y)),
+                    kind, _lastTimeMs);
                 NeedsRender = true;
                 return;
             }
@@ -2131,6 +2131,20 @@ public sealed class PhotonHost
         foreach (var table in _lastFrame.TableRegions)
             if (table.Viewport.Scroll.Advance(timeMs)) moving = true;
         return moving;
+    }
+
+    /// <summary>A point on screen in the own space of the table viewport a press began on, found in the
+    /// last frame by the scroll it carries (a rebuild draws a new node over the same scroll), through
+    /// the transform that drew it as the press itself was (<see cref="ToLocal"/>); the box the press
+    /// began in when the last frame no longer draws it.</summary>
+    private Point TableLocal(TableViewport viewport, Rect pressedIn, Point point)
+    {
+        var tables = _lastFrame?.TableRegions;
+        if (tables is not null)
+            for (var i = tables.Count - 1; i >= 0; i--)
+                if (ReferenceEquals(tables[i].Viewport.Scroll, viewport.Scroll))
+                    return ToLocal(tables, i, tables[i].Bounds, point);
+        return new Point(point.X - pressedIn.X, point.Y - pressedIn.Y);
     }
 
     /// <summary>Whether a point in a table viewport's own space lands on one of its scrollbars.</summary>
@@ -2515,7 +2529,7 @@ public sealed class PhotonHost
         if (_tablePress is { } table)
         {
             _tablePress = null;
-            var local = new Point(x - table.Bounds.X, y - table.Bounds.Y);
+            var local = TableLocal(table.Viewport, table.Bounds, new Point(x, y));
             if (table.Active)
             {
                 table.Viewport.Scroll.Pointer(PointerPhase.Up, local, kind, _lastTimeMs);
