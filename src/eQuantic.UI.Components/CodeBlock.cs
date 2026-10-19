@@ -788,12 +788,14 @@ public sealed class CodeBlock : StatelessComponent
                     CornerRadius = new CornerRadii(2),
                 }), top: top, start: left),
 
-                // A line UNDER the range — a diagnostic. (Wavy needs a shader; a 2dp rule reads the
-                // same at this size and costs nothing.)
-                CodeDecorationKind.Squiggle => new Positioned(new Box(new BoxStyle
-                {
-                    Width = width, Height = 2, Background = color,
-                }), top: top + metrics.LineHeight - 2, start: left),
+                // A WAVE under the range: a problem, in its severity's colour, as Flutter's spell check
+                // underlines a word with TextDecorationStyle.wavy. A stroked path both realizers draw.
+                CodeDecorationKind.Squiggle => new Positioned(Wave(width, color),
+                    top: top + metrics.LineHeight - WaveHeight, start: left),
+
+                // Three dots under the range's first characters: a hint.
+                CodeDecorationKind.Dots => new Positioned(new Drawing(HintDots, HintDots.Width, HintDots.Height, color),
+                    top: top + metrics.LineHeight - HintDots.Height, start: left),
 
                 // A line THROUGH it — deleted in a diff, unreachable code.
                 CodeDecorationKind.Strike => new Positioned(new Box(new BoxStyle
@@ -823,8 +825,36 @@ public sealed class CodeBlock : StatelessComponent
         CodeDecorationKind.Strike => theme.TextMuted,
         CodeDecorationKind.Underline => InkFor(Inverse, theme),
         CodeDecorationKind.Line => theme.Colors(Variant.Primary).Subtle,
+        CodeDecorationKind.Dots => theme.TextMuted,
         _ => theme.Colors(Variant.Warning).Subtle,
     };
+
+    /// <summary>How tall a problem's wave is, and how long one of its periods.</summary>
+    private const float WaveHeight = 4;
+    private const int WavePeriod = 4;
+
+    /// <summary>
+    /// The wave a problem is underlined with, <paramref name="width"/> wide: a stroked zigzag of one
+    /// period every <see cref="WavePeriod"/> dp, in <paramref name="color"/>. The path is written in whole
+    /// numbers alone: it is text both realizers parse, and a decimal comma would split a number in two.
+    /// </summary>
+    private static VisualNode Wave(float width, ColorToken color)
+    {
+        var path = new System.Text.StringBuilder("M0 2");
+        for (var x = 0; x < width; x += WavePeriod)
+            path.Append(" L").Append(x + WavePeriod / 2).Append(" 0 L").Append(x + WavePeriod).Append(" 2");
+        var wave = new VectorDrawing(0, -1, width, WaveHeight,
+            [new VectorShape(path.ToString(), VectorPaint.None, VectorPaint.Inherit, 1)]);
+        return new Drawing(wave, width, WaveHeight, color);
+    }
+
+    /// <summary>A hint's three dots, 8 by 2 dp.</summary>
+    private static readonly VectorDrawing HintDots = new(0, 0, 8, 2,
+    [
+        new VectorShape("M0.2 1a0.8 0.8 0 1 0 1.6 0a0.8 0.8 0 1 0 -1.6 0" +
+            "M3.2 1a0.8 0.8 0 1 0 1.6 0a0.8 0.8 0 1 0 -1.6 0" +
+            "M6.2 1a0.8 0.8 0 1 0 1.6 0a0.8 0.8 0 1 0 -1.6 0", VectorPaint.Inherit),
+    ]);
 
     /// <summary>
     /// The columns from <paramref name="from"/> up to <paramref name="to"/>, drawn on the cells the

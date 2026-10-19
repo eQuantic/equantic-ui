@@ -56,6 +56,7 @@ export { CodeGutterMarker } from './CodeGutterMarker';
 export { CodeHighlighter } from './CodeHighlighter';
 export { CodeHistory } from './CodeHistory';
 export { CodeHover } from './CodeHover';
+export { CodeHoverCard } from './CodeHoverCard';
 export { CodeHoverSession } from './CodeHoverSession';
 export { CodeInnerChange } from './CodeInnerChange';
 export { CodeKeymap } from './CodeKeymap';

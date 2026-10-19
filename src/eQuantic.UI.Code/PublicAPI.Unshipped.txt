@@ -31,3 +31,4 @@ eQuantic.UI.Code.CodeHoverSession.Failed -> System.Action<System.Exception!>?
 eQuantic.UI.Code.CodeHoverSession.ShowAt(eQuantic.UI.Code.CodePosition position) -> bool
 eQuantic.UI.Code.ICodeDiagnosticProvider
 eQuantic.UI.Code.ICodeDiagnosticProvider.DiagnoseAsync(eQuantic.UI.Code.CodeDocument! document, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiagnostic!>!>!
+eQuantic.UI.Code.CodeDecorationKind.Dots = 6 -> eQuantic.UI.Code.CodeDecorationKind

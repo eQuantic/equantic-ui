@@ -512,7 +512,7 @@ describe('code surface clipboard', () => {
  */
 function pointer(
   lowered: HtmlNode,
-  type: 'pointerdown' | 'pointermove' | 'pointerup' | 'mousedown',
+  type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointerleave' | 'mousedown',
   x: number,
   y: number,
   options: { detail?: number; shift?: boolean; buttons?: number; pointerType?: string } = {},
@@ -1552,5 +1552,209 @@ describe('a press under the code', () => {
     const lowered = lowerVisualNode(component.build(context as never) as never, context as never);
 
     expect(nodesWhere(lowered, (node) => effectiveStyle(node).includes('min-height: 400px'))).toHaveLength(1);
+  });
+});
+
+/**
+ * The problems and the card that explains the code (#299, #1005) on the web, through the transpiled
+ * CodeEditor and its engine; the C# twins are CodeEditorProblemsTests, on Photon. A problem is a wave
+ * under its range and a mark in the gutter; the pointer resting on a word reaches the model through
+ * the surface's pointermove, and the card comes back as a note over the code, which takes the pointer.
+ */
+describe('the problems and the card', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** The editor holding twenty lines, `var nameL = L;` on line L, as a person's browser builds it. */
+  async function editorWith(setup: (component: Record<string, unknown>) => void) {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const context = {
+      theme,
+      textPrimary: theme.textPrimary,
+      density: 'comfortable',
+      typeScale: 1,
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    const code = Array.from({ length: 20 }, (_, line) => `var name${line} = ${line};`).join('\n');
+    const component = new CodeEditor(code, 'csharp');
+    setup(component as unknown as Record<string, unknown>);
+    const lower = () => lowerVisualNode(component.build(context as never) as never, context as never);
+    // The first build measures the grid every later one places the code on.
+    lower();
+    return { editor: component.editor, lower };
+  }
+
+  const problem = async (line: number, from: number, to: number, message: string, severity = 'error') => {
+    const { CodeDiagnostic } = await import('./components/CodeDiagnostic');
+    const found = new CodeDiagnostic(
+      new CodeRange(new CodePosition(line, from), new CodePosition(line, to)),
+      message,
+      severity,
+    );
+    found.code = 'CS0103';
+    found.source = 'csharp';
+    return found;
+  };
+
+  /** Explains every word it is asked about, at once. */
+  const explainer = async () => {
+    const { CodeHover } = await import('./components/CodeHover');
+    return {
+      hoverAsync: (document: CodeDocument, position: CodePosition) => {
+        const word = document.wordAt(position);
+        const answer = new CodeHover(word, `About ${document.textIn(word)}.`);
+        answer.signature = `int ${document.textIn(word)}`;
+        return Promise.resolve(answer);
+      },
+    };
+  };
+
+  const surfaceIn = (lowered: HtmlNode) =>
+    nodesWhere(lowered, (node) => node.attributes['data-eq-code'] !== undefined)[0];
+  const notesIn = (lowered: HtmlNode) =>
+    nodesWhere(lowered, (node) => (node.attributes['class'] ?? '').split(' ').includes('eq-code-note'));
+  const waves = (lowered: HtmlNode) =>
+    nodesWhere(
+      lowered,
+      (node) => node.tag === 'svg' && node.children.some((path) => (path.attributes['d'] ?? '').startsWith('M0 2 L2 0 L4 2')),
+    );
+  const textOf = (node: HtmlNode): string =>
+    (node.textContent ?? '') + node.children.map((child) => textOf(child)).join('');
+
+  /** The pointer passing over the middle of the character at `line`, `column`, with nothing pressed. */
+  function hover(lowered: HtmlNode, editor: CodeEditorController, line: number, column: number) {
+    const at = editor.caretRect(new CodePosition(line, column));
+    pointer(surfaceIn(lowered), 'pointermove', at.x + editor.grid.cell.width / 2, at.y + at.height / 2, { buttons: 0 });
+  }
+
+  it('draws each problem as a wave under its range, in the colour of its severity', async () => {
+    const error = await problem(3, 4, 9, 'Unused.');
+    const warning = await problem(5, 4, 9, 'Could be a constant.', 'warning');
+    const { lower } = await editorWith((component) => {
+      component.diagnostics = [error, warning];
+    });
+
+    const drawn = waves(lower());
+
+    expect(drawn, 'one wave a problem').toHaveLength(2);
+    const colour = (wave: HtmlNode) => /(?:^|; )color: ([^;]+)/.exec(effectiveStyle(wave))?.[1];
+    expect(colour(drawn[0])).toBeDefined();
+    expect(colour(drawn[0]), "an error's wave is not a warning's").not.toBe(colour(drawn[1]));
+  });
+
+  it("marks each line in the gutter with its worst problem, and a hint's line with none", async () => {
+    const found = [
+      await problem(1, 0, 3, 'An error first.'),
+      await problem(1, 4, 9, 'A warning after it.', 'warning'),
+      await problem(4, 4, 9, 'Only a warning here.', 'warning'),
+      await problem(6, 4, 9, 'Could be a constant.', 'hint'),
+    ];
+    const { lower } = await editorWith((component) => {
+      component.diagnostics = found;
+    });
+
+    // A marker is a 7dp dot; the declarations come sorted, so each is looked for on its own.
+    const marks = nodesWhere(lower(), (node) => {
+      const style = effectiveStyle(node);
+      return /(^|; )width: 7px(;|$)/.test(style) && /(^|; )height: 7px(;|$)/.test(style);
+    });
+
+    expect(marks, 'lines 1 and 4: the hint marks nothing').toHaveLength(2);
+    const colour = (mark: HtmlNode) => /background-color: ([^;]+)/.exec(effectiveStyle(mark))?.[1];
+    // Line 4 holds a warning alone, so its colour is the warning's.
+    expect(colour(marks[0]), "line 1's error outweighs its warning").not.toBe(colour(marks[1]));
+  });
+
+  it('shows the card over the code when the pointer rests on a word, and closes it when the pointer leaves', async () => {
+    vi.useFakeTimers();
+    const provider = await explainer();
+    const { editor, lower } = await editorWith((component) => {
+      component.hoverProviders = [provider];
+    });
+
+    hover(lower(), editor, 10, 6);
+    expect(editor.hover.isOpen, 'a pointer passing over the code asks nothing yet').toBe(false);
+    await vi.advanceTimersByTimeAsync(300);
+
+    expect(editor.hover.isOpen, 'resting, it shows the card').toBe(true);
+    const shown = lower();
+    const notes = notesIn(shown);
+    expect(notes, 'the card is a note over the code').toHaveLength(1);
+    expect(textOf(notes[0])).toContain('int name10');
+    expect(textOf(notes[0])).toContain('About name10.');
+    expect(nodesWhere(notes[0], (node) => node.attributes['aria-live'] !== undefined),
+      'a pointer resting asks nobody to speak').toHaveLength(0);
+
+    pointer(surfaceIn(shown), 'pointerleave', 0, 0, { buttons: 0 });
+
+    expect(editor.hover.isOpen).toBe(false);
+    expect(notesIn(lower())).toHaveLength(0);
+  });
+
+  it('keeps the card while the pointer is on it, and a press there moves no caret', async () => {
+    vi.useFakeTimers();
+    const provider = await explainer();
+    const { editor, lower } = await editorWith((component) => {
+      component.hoverProviders = [provider];
+    });
+    hover(lower(), editor, 10, 6);
+    await vi.advanceTimersByTimeAsync(300);
+    const note = notesIn(lower())[0];
+
+    let stopped = 0;
+    let prevented = false;
+    const event = (type: string) => ({
+      type,
+      buttons: 0,
+      stopPropagation: () => {
+        stopped++;
+      },
+      preventDefault: () => {
+        prevented = true;
+      },
+    });
+    for (const type of ['pointermove', 'pointerdown', 'mousedown'])
+      (note.events[type] as unknown as (e: unknown) => void)(event(type));
+
+    expect(stopped, 'the surface under the card hears none of them').toBe(3);
+    expect(prevented, 'and the input keeps the keyboard').toBe(true);
+    expect(editor.caret).toEqual({ line: 0, column: 0 });
+    expect(editor.hover.isOpen).toBe(true);
+  });
+
+  it('goes to the next problem on F8, and says it in a polite live region', async () => {
+    const found = await problem(8, 4, 9, "The name 'name8' is unused.");
+    const { editor, lower } = await editorWith((component) => {
+      component.diagnostics = [found];
+    });
+    const input = nodesWhere(lower(), (node) => node.tag === 'textarea')[0];
+    let prevented = false;
+    (input.events['keydown'] as unknown as (event: unknown) => void)({
+      key: 'F8',
+      shiftKey: false,
+      altKey: false,
+      metaKey: false,
+      ctrlKey: false,
+      isComposing: false,
+      keyCode: 0,
+      target: { value: '' },
+      preventDefault: () => {
+        prevented = true;
+      },
+    });
+
+    expect(prevented, 'F8 is claimed while there is a problem to go to').toBe(true);
+    expect(editor.caret).toEqual({ line: 8, column: 4 });
+    const notes = notesIn(lower());
+    expect(notes).toHaveLength(1);
+    const region = nodesWhere(notes[0], (node) => node.attributes['aria-live'] === 'polite');
+    expect(region, 'a card a key brought up is read out').toHaveLength(1);
+    expect(textOf(region[0])).toContain("The name 'name8' is unused.  csharp CS0103");
   });
 });

@@ -1,1 +1,7 @@
 #nullable enable
+eQuantic.UI.Components.CodeEditor.Diagnostics.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiagnostic!>!
+eQuantic.UI.Components.CodeEditor.Diagnostics.set -> void
+eQuantic.UI.Components.CodeEditor.DiagnosticProviders.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.ICodeDiagnosticProvider!>!
+eQuantic.UI.Components.CodeEditor.DiagnosticProviders.set -> void
+eQuantic.UI.Components.CodeEditor.HoverProviders.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.ICodeHoverProvider!>!
+eQuantic.UI.Components.CodeEditor.HoverProviders.set -> void
