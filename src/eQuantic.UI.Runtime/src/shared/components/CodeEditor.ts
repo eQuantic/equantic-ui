@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeDiagnostic, CodeEditorController, CodeGrid, CodeGutterMarker, CodeHoverCard, CodeKeywordCompletionProvider, CodeLanguages, CodeRange, CodeSurface, CodeWordCompletionProvider, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeDiagnostic, CodeEditorController, CodeGrid, CodeGutterMarker, CodeHoverCard, CodeKeywordCompletionProvider, CodeLanguages, CodeRange, CodeSignatureCard, CodeSurface, CodeWordCompletionProvider, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
 
 export class CodeEditor extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeEditor';
@@ -18,6 +18,7 @@ export class CodeEditor extends StatefulComponent {
     _reported: any = null;
     _diagnosers: any[] = [];
     _explainers: any[] = [];
+    _signers: any[] = [];
     _toldDocument: any = null;
     _toldSelection: CodeRange = CodeRange.$zero();
     _matches: CodeRange[] = [];
@@ -47,6 +48,7 @@ export class CodeEditor extends StatefulComponent {
     declare diagnostics: CodeDiagnostic[];
     declare diagnosticProviders: any[];
     declare hoverProviders: any[];
+    declare signatureProviders: any[];
 
     get editor() {
         return this._editor ?? (this._editor = this.create());
@@ -73,6 +75,7 @@ export class CodeEditor extends StatefulComponent {
         if (this.diagnostics === undefined) this.diagnostics = [];
         if (this.diagnosticProviders === undefined) this.diagnosticProviders = [];
         if (this.hoverProviders === undefined) this.hoverProviders = [];
+        if (this.signatureProviders === undefined) this.signatureProviders = [];
         this.initialCode = code;
         this.languageName = language;
         if (props && typeof props === 'object') Object.assign(this, props);
@@ -99,6 +102,11 @@ export class CodeEditor extends StatefulComponent {
         let offered: VisualNode | null = null;
         let offeredAt = Point.zero;
         let highlighted = -1;
+        let listAbove: boolean | null = null;
+        let codeHeight = Math.fround(Math.fround(2 * metrics.contentTop) + Math.fround(Math.fround(editor.document.lineCount) * metrics.lineHeight));
+        let surfaceHeight = bounded ? Math.max(codeHeight, this._viewport) : codeHeight;
+        let viewTop = windowed ? this._offset : 0;
+        let viewBottom = windowed && this._viewport > 0 ? Math.min(Math.fround(this._offset + this._viewport), surfaceHeight) : surfaceHeight;
         if (completion.isOpen && completion.selected >= 0) {
             let items = completion.items;
             if (!(items === this._measured)) {
@@ -110,10 +118,6 @@ export class CodeEditor extends StatefulComponent {
             if (this._viewportWidth > 0) width = Math.min(width, this._viewportWidth);
             let documentation = $eq.collections.item(items, completion.selected).item.documentation;
             let documentationLines = (documentation != null && documentation.length > 0) ? CodeCompletionView.documentationLinesOf(context, metrics, documentation, width) : 0;
-            let codeHeight = Math.fround(Math.fround(2 * metrics.contentTop) + Math.fround(Math.fround(editor.document.lineCount) * metrics.lineHeight));
-            let surfaceHeight = bounded ? Math.max(codeHeight, this._viewport) : codeHeight;
-            let viewTop = windowed ? this._offset : 0;
-            let viewBottom = windowed && this._viewport > 0 ? Math.min(Math.fround(this._offset + this._viewport), surfaceHeight) : surfaceHeight;
             let [x, y, rows, above, documentationShown] = CodeCompletionView.place(metrics, editor.caretRect(completion.start), viewTop, viewBottom, this._scrollX, this._viewportWidth, Math.min(12, $eq.collections.count(items)), width, documentationLines, CodeCompletionView.documentationLineOf(context, metrics));
             let selected = completion.selected;
             if (selected < this._listTop) this._listTop = selected;
@@ -123,6 +127,7 @@ export class CodeEditor extends StatefulComponent {
             offered = CodeCompletionView.build(context, completion, metrics, this._listTop, rows, width, above, documentation, documentationShown, (index: number) => this.pick(editor, index));
             offeredAt = new Point(x, y);
             highlighted = selected - this._listTop;
+            listAbove = above;
         } else {
             this._listTop = 0;
             this._listColumns = 0;
@@ -132,8 +137,14 @@ export class CodeEditor extends StatefulComponent {
         let hover = editor.hover;
         if (hover.isOpen && offered == null) {
             let [card, cardWidth, cardHeight] = CodeHoverCard.build(context, hover, metrics, this._viewportWidth);
-            let [x, y] = CodeHoverCard.place(editor.caretRect(hover.range.start), windowed ? this._offset : 0, this._scrollX, this._viewportWidth, cardWidth, cardHeight);
+            let [x, y] = CodeHoverCard.place(editor.caretRect(hover.range.start), viewTop, this._scrollX, this._viewportWidth, cardWidth, cardHeight);
             notes.push(new Positioned(card, y, null, null, x));
+        }
+        let signatures = editor.signatureHelp;
+        if (signatures.isOpen && !(signatures.signature == null) && !hover.isOpen) {
+            let [panel, panelWidth, panelHeight] = CodeSignatureCard.build(context, signatures, metrics, this._viewportWidth);
+            let at: any; 
+            if ((at = CodeSignatureCard.place(editor.caretRect(editor.caret), viewTop, viewBottom, this._scrollX, this._viewportWidth, panelWidth, panelHeight, listAbove)) != null) notes.push(new Positioned(panel, at.y, null, null, at.x));
         }
         let surface: VisualNode = new CodeSurface(block, editor, { autofocus: this.autofocus, label: this.caption ?? SdkStrings.codeEditor, caretColor: CodeBlock.inkFor(this.inverse, context.theme), onChanged: () => this.setState(() => this.notify(editor)), options: offered, optionsOrigin: offeredAt, highlightedOption: highlighted, notes: notes });
         let viewport: VisualNode = new ScrollView(surface, 'horizontal', { width: SizeValue.fill, onViewportChanged: (width: number) => {
@@ -141,7 +152,7 @@ export class CodeEditor extends StatefulComponent {
             this.setState(() => this._viewportWidth = width);
         }, onScrolled: (offset: number) => {
             if (Math.abs(Math.fround(offset - this._scrollX)) < 1) return;
-            if (editor.completion.isOpen || editor.hover.isOpen) this.setState(() => this._scrollX = offset); else this._scrollX = offset;
+            if (editor.completion.isOpen || editor.hover.isOpen || editor.signatureHelp.isOpen) this.setState(() => this._scrollX = offset); else this._scrollX = offset;
         } });
         if (this.showLineNumbers) {
             let withGutter = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'start' });
@@ -181,6 +192,7 @@ export class CodeEditor extends StatefulComponent {
         editor.completion.changed = $eq.delegates.combine(editor.completion.changed, () => this.setState(() => {}));
         editor.diagnostics.changed = $eq.delegates.combine(editor.diagnostics.changed, () => this.setState(() => {}));
         editor.hover.changed = $eq.delegates.combine(editor.hover.changed, () => this.setState(() => {}));
+        editor.signatureHelp.changed = $eq.delegates.combine(editor.signatureHelp.changed, () => this.setState(() => {}));
         return editor;
     }
 
@@ -205,6 +217,14 @@ export class CodeEditor extends StatefulComponent {
             }
             this._explainers = [...this.hoverProviders];
             for (const provider of this._explainers) $eq.collections.add(editor.hover.providers, provider);
+        }
+        if (!CodeEditor.sameProviders(this.signatureProviders, this._signers)) {
+            for (const provider of this._signers) {
+                let at = CodeEditor.indexOfInstance(editor.signatureHelp.providers, provider);
+                if (at >= 0) editor.signatureHelp.providers.splice(at, 1);
+            }
+            this._signers = [...this.signatureProviders];
+            for (const provider of this._signers) $eq.collections.add(editor.signatureHelp.providers, provider);
         }
     }
 
@@ -335,6 +355,7 @@ export class CodeEditor extends StatefulComponent {
         this.diagnostics = fresh.diagnostics;
         this.diagnosticProviders = fresh.diagnosticProviders;
         this.hoverProviders = fresh.hoverProviders;
+        this.signatureProviders = fresh.signatureProviders;
     }
 
     matchesOf(editor: CodeEditorController, needle: any) {

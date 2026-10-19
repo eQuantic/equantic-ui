@@ -137,6 +137,13 @@ public sealed class CodeEditor : StatefulComponent
     /// </summary>
     public IReadOnlyList<ICodeHoverProvider> HoverProviders { get; set; } = [];
 
+    /// <summary>
+    /// What explains the call being written (<see cref="ICodeSignatureProvider"/>): its signatures and the
+    /// argument the caret is on, in the panel over the caret's line. Put in and taken out as
+    /// <see cref="DiagnosticProviders"/> are, and known by reference as they are.
+    /// </summary>
+    public IReadOnlyList<ICodeSignatureProvider> SignatureProviders { get; set; } = [];
+
     /// <summary>The live editor: the document, the selection, and every command. An IDE reaches for
     /// this to run its own — a formatter, a refactor, a language server's edit — and they undo like
     /// anything the person typed, because they go through the same primitive.</summary>
@@ -156,6 +163,7 @@ public sealed class CodeEditor : StatefulComponent
         // So do the problems (an answer, a report) and the card (the pointer resting, an answer).
         editor.Diagnostics.Changed += () => SetState(() => { });
         editor.Hover.Changed += () => SetState(() => { });
+        editor.SignatureHelp.Changed += () => SetState(() => { });
         return editor;
     }
 
@@ -170,6 +178,7 @@ public sealed class CodeEditor : StatefulComponent
     private IReadOnlyList<CodeDiagnostic>? _reported;
     private List<ICodeDiagnosticProvider> _diagnosers = [];
     private List<ICodeHoverProvider> _explainers = [];
+    private List<ICodeSignatureProvider> _signers = [];
 
     /// <summary>
     /// Reports <see cref="Diagnostics"/> when they are other problems than the last ones, and hands the
@@ -203,6 +212,16 @@ public sealed class CodeEditor : StatefulComponent
             }
             _explainers = [.. HoverProviders];
             foreach (var provider in _explainers) editor.Hover.Providers.Add(provider);
+        }
+        if (!SameProviders(SignatureProviders, _signers))
+        {
+            foreach (var provider in _signers)
+            {
+                var at = IndexOfInstance(editor.SignatureHelp.Providers, provider);
+                if (at >= 0) editor.SignatureHelp.Providers.RemoveAt(at);
+            }
+            _signers = [.. SignatureProviders];
+            foreach (var provider in _signers) editor.SignatureHelp.Providers.Add(provider);
         }
     }
 
@@ -430,6 +449,7 @@ public sealed class CodeEditor : StatefulComponent
         Diagnostics = fresh.Diagnostics;
         DiagnosticProviders = fresh.DiagnosticProviders;
         HoverProviders = fresh.HoverProviders;
+        SignatureProviders = fresh.SignatureProviders;
     }
 
     /// <summary>What find is looking for: the bar's text while the bar is open, else what the app
@@ -564,6 +584,14 @@ public sealed class CodeEditor : StatefulComponent
         VisualNode? offered = null;
         var offeredAt = Point.Zero;
         var highlighted = -1;
+        // Which side of its line the list stands on, while one shows: the panel of a call takes the other.
+        bool? listAbove = null;
+        // The room over the code, in the surface's coordinates: the viewport, inside the surface, since the
+        // scrollers around the surface clip whatever leaves it.
+        var codeHeight = 2 * metrics.ContentTop + editor.Document.LineCount * metrics.LineHeight;
+        var surfaceHeight = bounded ? MathF.Max(codeHeight, _viewport) : codeHeight;
+        var viewTop = windowed ? _offset : 0;
+        var viewBottom = windowed && _viewport > 0 ? MathF.Min(_offset + _viewport, surfaceHeight) : surfaceHeight;
         if (completion.IsOpen && completion.Selected >= 0)
         {
             var items = completion.Items;
@@ -585,12 +613,6 @@ public sealed class CodeEditor : StatefulComponent
                 ? CodeCompletionView.DocumentationLinesOf(context, metrics, documentation, width)
                 : 0;
 
-            // The room the list has, in the surface's coordinates: the viewport, inside the surface,
-            // since the scrollers around the surface clip whatever leaves it.
-            var codeHeight = 2 * metrics.ContentTop + editor.Document.LineCount * metrics.LineHeight;
-            var surfaceHeight = bounded ? MathF.Max(codeHeight, _viewport) : codeHeight;
-            var viewTop = windowed ? _offset : 0;
-            var viewBottom = windowed && _viewport > 0 ? MathF.Min(_offset + _viewport, surfaceHeight) : surfaceHeight;
             var (x, y, rows, above, documentationShown) = CodeCompletionView.Place(metrics,
                 editor.CaretRect(completion.Start), viewTop, viewBottom, _scrollX, _viewportWidth,
                 Math.Min(CodeCompletionView.PageRows, items.Count), width, documentationLines,
@@ -607,6 +629,7 @@ public sealed class CodeEditor : StatefulComponent
                 documentation, documentationShown, index => Pick(editor, index));
             offeredAt = new Point(x, y);
             highlighted = selected - _listTop;
+            listAbove = above;
         }
         else
         {
@@ -623,9 +646,21 @@ public sealed class CodeEditor : StatefulComponent
         if (hover.IsOpen && offered is null)
         {
             var (card, cardWidth, cardHeight) = CodeHoverCard.Build(context, hover, metrics, _viewportWidth);
-            var (x, y) = CodeHoverCard.Place(editor.CaretRect(hover.Range.Start), windowed ? _offset : 0,
+            var (x, y) = CodeHoverCard.Place(editor.CaretRect(hover.Range.Start), viewTop,
                 _scrollX, _viewportWidth, cardWidth, cardHeight);
             notes.Add(new Positioned(card, top: y, start: x));
+        }
+
+        // The panel of the call being written, while one shows and no card does (the card is what the person
+        // asked for last): over the caret's line, under it when the view has no room above, and on the other
+        // side of a list showing, or nowhere when that side has no room.
+        var signatures = editor.SignatureHelp;
+        if (signatures.IsOpen && signatures.Signature is not null && !hover.IsOpen)
+        {
+            var (panel, panelWidth, panelHeight) = CodeSignatureCard.Build(context, signatures, metrics, _viewportWidth);
+            if (CodeSignatureCard.Place(editor.CaretRect(editor.Caret), viewTop, viewBottom, _scrollX, _viewportWidth,
+                    panelWidth, panelHeight, listAbove) is { } at)
+                notes.Add(new Positioned(panel, top: at.Y, start: at.X));
         }
 
         VisualNode surface = new CodeSurface(block, editor)
@@ -666,7 +701,8 @@ public sealed class CodeEditor : StatefulComponent
             OnScrolled = offset =>
             {
                 if (MathF.Abs(offset - _scrollX) < 1) return;
-                if (editor.Completion.IsOpen || editor.Hover.IsOpen) SetState(() => _scrollX = offset);
+                if (editor.Completion.IsOpen || editor.Hover.IsOpen || editor.SignatureHelp.IsOpen)
+                    SetState(() => _scrollX = offset);
                 else _scrollX = offset;
             },
         };

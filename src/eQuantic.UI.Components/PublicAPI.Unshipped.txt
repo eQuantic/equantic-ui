@@ -5,3 +5,5 @@ eQuantic.UI.Components.CodeEditor.DiagnosticProviders.get -> System.Collections.
 eQuantic.UI.Components.CodeEditor.DiagnosticProviders.set -> void
 eQuantic.UI.Components.CodeEditor.HoverProviders.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.ICodeHoverProvider!>!
 eQuantic.UI.Components.CodeEditor.HoverProviders.set -> void
+eQuantic.UI.Components.CodeEditor.SignatureProviders.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.ICodeSignatureProvider!>!
+eQuantic.UI.Components.CodeEditor.SignatureProviders.set -> void
