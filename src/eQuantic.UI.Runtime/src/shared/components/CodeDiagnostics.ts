@@ -136,11 +136,20 @@ export class CodeDiagnostics {
     }
 
     gather() {
-        let answered = this._answered.filter((entry) => this.providers.some((provider) => (provider === entry[0]))).flatMap((entry) => entry[1]);
-        let items = [...[...this._reported, ...$eq.linq.seq(answered, 'second')]].sort(($a, $b) => { { const $k: ($element: typeof $a) => any = ((problem) => problem.range.start.line); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.start.column); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } { const $k: ($element: typeof $a) => any = ((problem) => (($0) => (({ 'hint': 0, 'information': 1, 'warning': 2, 'error': 3 })[$0] ?? $0))(problem.severity)); const $x = $k($a), $y = $k($b); if ($x < $y) return 1; if ($x > $y) return -1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.end.line); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.end.column); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } return 0; }).slice();
-        if (items.length === 0 && this._items.length === 0) return;
+        for (let i = this._answered.length - 1; i >= 0; i--) {
+            let provider = this._answered[i][0];
+            if (!this.providers.some((held) => (held === provider))) this._answered.splice(i, 1);
+        }
+        let items = [...[...this._reported, ...this._answered.flatMap((entry) => entry[1])]].sort(($a, $b) => { { const $k: ($element: typeof $a) => any = ((problem) => problem.range.start.line); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.start.column); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } { const $k: ($element: typeof $a) => any = ((problem) => (($0) => (({ 'hint': 0, 'information': 1, 'warning': 2, 'error': 3 })[$0] ?? $0))(problem.severity)); const $x = $k($a), $y = $k($b); if ($x < $y) return 1; if ($x > $y) return -1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.end.line); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.end.column); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } return 0; }).slice();
+        if (CodeDiagnostics.same(items, this._items)) return;
         this._items = items;
         this.changed?.();
+    }
+
+    static same(one: CodeDiagnostic[], other: CodeDiagnostic[]) {
+        if (one.length !== other.length) return false;
+        for (let i = 0; i < one.length; i++) if (!$eq.equalsInstance(one[i], other[i])) return false;
+        return true;
     }
 
     toString(): string {

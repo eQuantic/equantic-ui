@@ -58,7 +58,8 @@ public sealed class CodeDiagnostics
     /// not paused long enough yet.</summary>
     public bool IsChecking => _waiting > 0;
 
-    /// <summary>Raised whenever <see cref="Items"/> changes: a report, an answer, an edit carrying them.</summary>
+    /// <summary>Raised whenever <see cref="Items"/> changes: a report, an answer, an edit carrying them.
+    /// Problems equal to those held already raise nothing.</summary>
     public event Action? Changed;
 
     /// <summary>Raised when a provider throws, with what it threw. The other providers' answers still
@@ -223,20 +224,35 @@ public sealed class CodeDiagnostics
     /// order, the worst first among those that start together.</summary>
     private void Gather()
     {
-        var answered = _answered
-            .Where(entry => Providers.Any(provider => ReferenceEquals(provider, entry.Provider)))
-            .SelectMany(entry => entry.Problems);
-        var items = _reported.Concat(answered)
+        // The answer of a provider taken out goes with it: put back, it shows nothing until it answers
+        // again, and one made anew for every build of a component leaves no answer behind per build.
+        for (var i = _answered.Count - 1; i >= 0; i--)
+        {
+            var provider = _answered[i].Provider;
+            if (!Providers.Any(held => ReferenceEquals(held, provider))) _answered.RemoveAt(i);
+        }
+        var items = _reported.Concat(_answered.SelectMany(entry => entry.Problems))
             .OrderBy(problem => problem.Range.Start.Line)
             .ThenBy(problem => problem.Range.Start.Column)
             .ThenByDescending(problem => (int)problem.Severity)
             .ThenBy(problem => problem.Range.End.Line)
             .ThenBy(problem => problem.Range.End.Column)
             .ToList();
-        // An editor with no problem before or after says nothing: every keystroke carries the problems,
-        // and one that has none would ask its component for a second build per key.
-        if (items.Count == 0 && _items.Count == 0) return;
+        // The same problems as before say nothing: an answer that found what the last one did, a report
+        // of what was reported, a keystroke that moved none of them. A component builds again on this
+        // event, so one raised for nothing costs a build per key, and a provider handed anew on every
+        // build would be asked again by the build its own answer caused, without end.
+        if (Same(items, _items)) return;
         _items = items;
         Changed?.Invoke();
+    }
+
+    /// <summary>Whether two lists hold equal problems in the same order.</summary>
+    private static bool Same(List<CodeDiagnostic> one, List<CodeDiagnostic> other)
+    {
+        if (one.Count != other.Count) return false;
+        for (var i = 0; i < one.Count; i++)
+            if (!one[i].Equals(other[i])) return false;
+        return true;
     }
 }

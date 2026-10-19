@@ -39,6 +39,12 @@ public sealed class CodeHoverSession
         // included) or text that changes closes it, and drops whatever was being waited for.
         editor.SelectionChanged += _ => Dismiss();
         editor.Changed += _ => Dismiss();
+        // One thing at a time over the caret: the list showing closes the card, which does not come
+        // back when the list goes.
+        editor.Completion.Changed += () =>
+        {
+            if (editor.Completion.IsOpen) Dismiss();
+        };
     }
 
     /// <summary>

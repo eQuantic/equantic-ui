@@ -282,6 +282,56 @@ public class CodeDiagnosticsTests : IDisposable
         editor.Diagnostics.Items.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// …and put back, it shows nothing until it answers again: its last answer went with it, and came
+    /// back with it before, carried through every edit made while it was out.
+    /// </summary>
+    [Fact]
+    public void AProviderPutBack_ShowsNothingUntilItAnswersAgain()
+    {
+        var editor = Editor("abc");
+        var provider = new Provider();
+        provider.Problems.Add(Warning(0, 0, 3));
+        editor.Diagnostics.Providers.Add(provider);
+        editor.Diagnostics.Check();
+        editor.Diagnostics.Providers.Remove(provider);
+        editor.Diagnostics.Report([]);
+
+        editor.Diagnostics.Providers.Add(provider);
+        editor.Diagnostics.Report([]);
+
+        editor.Diagnostics.Items.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// The same problems again change nothing, and say nothing: a component builds again on
+    /// <see cref="CodeDiagnostics.Changed"/>, so an answer that found what the last one did would cost a
+    /// build, and a provider handed anew on every build would be asked again by the build its own
+    /// answer caused, without end.
+    /// </summary>
+    [Fact]
+    public void TheSameProblemsAgain_RaiseNothing()
+    {
+        var editor = Editor("abc\ndef");
+        var provider = new Provider();
+        provider.Problems.Add(Warning(1, 0, 3));
+        editor.Diagnostics.Providers.Add(provider);
+        editor.Diagnostics.Report([Error(0, 0, 3)]);
+        editor.Diagnostics.Check();
+        var raised = 0;
+        editor.Diagnostics.Changed += () => raised++;
+
+        editor.Diagnostics.Check();
+        editor.Diagnostics.Report([Error(0, 0, 3)]);
+        editor.Selection = new CodeRange(new CodePosition(1, 3));
+        Type(editor, "!");
+
+        raised.Should().Be(0, "an answer, a report and a keystroke after every problem changed none of them");
+        editor.Selection = new CodeRange(new CodePosition(0, 0));
+        Type(editor, "x");
+        raised.Should().Be(1, "a keystroke before them moved them, and that is a change");
+    }
+
     // ---- the walk -------------------------------------------------------------------------------
 
     [Fact]

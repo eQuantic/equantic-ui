@@ -341,6 +341,30 @@ public class CodeHoverTests : IDisposable
         editor.Hover.IsOpen.Should().BeTrue();
     }
 
+    /// <summary>
+    /// The list and the card are both drawn over the caret, and one of them at a time is: the list
+    /// opening closes the card, so Escape closing the list does not bring back a card nobody asked for
+    /// since.
+    /// </summary>
+    [Fact]
+    public void TheListOpening_ClosesTheCard_WhichStaysClosedAfterIt()
+    {
+        var editor = Editor("alpha beta");
+        editor.Hover.Providers.Add(new Provider());
+        editor.Completion.Providers.Add(new ListCompletionProvider(new CodeCompletionItem("alphabet")));
+        editor.Selection = new CodeRange(new CodePosition(0, 5));
+        Press(editor, "k", KeyModifiers.Command);
+        Press(editor, "i", KeyModifiers.Command);
+        editor.Hover.IsOpen.Should().BeTrue();
+
+        Press(editor, " ", KeyModifiers.Control).Should().BeTrue();
+
+        editor.Completion.IsOpen.Should().BeTrue("⌃Space opens the list");
+        editor.Hover.IsOpen.Should().BeFalse("which closes the card");
+        Press(editor, "Escape").Should().BeTrue("Escape closes the list");
+        editor.Hover.IsOpen.Should().BeFalse("and the card stays closed");
+    }
+
     [Fact]
     public void Typing_ClosesTheCard()
     {
