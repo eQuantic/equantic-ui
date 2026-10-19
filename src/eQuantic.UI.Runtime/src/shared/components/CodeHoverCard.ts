@@ -22,7 +22,7 @@ export class CodeHoverCard {
         }
         let most = Math.fround(Math.fround(CodeHoverCard.maxColumns * metrics.columnWidth) + chrome);
         if (viewWidth > 0) most = Math.min(most, viewWidth);
-        let width = Math.min(most, Math.fround(wanted + chrome));
+        let width = Math.min(most, Math.fround(Math.ceil(wanted) + chrome));
         let room = Math.max(1, Math.fround(width - chrome));
         let column = new Column(4, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         let height = Math.fround(2 * Math.fround(CodeHoverCard.border + 4));

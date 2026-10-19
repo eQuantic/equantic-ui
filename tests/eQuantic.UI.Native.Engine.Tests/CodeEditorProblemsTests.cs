@@ -650,6 +650,51 @@ public class CodeEditorProblemsTests : IDisposable
         inside.Should().Be(1, "the card's own control takes its press");
     }
 
+    /// <summary>Explains every word with a signature far longer than its text, so the signature is the card's
+    /// widest line.</summary>
+    private sealed class LongSignature : ICodeHoverProvider
+    {
+        public const string Signature = "void Invoice(string reference, DateTime issuedAt)";
+
+        public Task<CodeHover?> HoverAsync(CodeDocument document, CodePosition position, CancellationToken cancellation)
+        {
+            var word = document.WordAt(position);
+            return Task.FromResult<CodeHover?>(word.IsEmpty ? null : new CodeHover(word, "Short.") { Signature = Signature });
+        }
+    }
+
+    /// <summary>
+    /// The card gives its widest line a whole pixel more than the line measures: a card exactly as wide as a
+    /// fractional measure lost the rounding of the browser's layout, which cut the line with an ellipsis. In
+    /// the browser a 304.66px signature sat in a 304.63px box and ended "issuedA…" (found reviewing #1008).
+    /// </summary>
+    [Fact]
+    public void TheCard_GivesItsWidestLineAWholePixel()
+    {
+        var editor = new CodeEditor(Lines(), "csharp") { Height = SizeValue.Fill, HoverProviders = [new LongSignature()] };
+        Controller(editor);
+        var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 600, 400, ApproximateTextMeasurer.Instance)
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+            Density = Density.Compact,
+            SmoothScroll = false,
+        };
+        Settle(host);
+
+        var frame = RestOn(host, editor, 10, 6);
+
+        editor.Editor.Hover.IsOpen.Should().BeTrue();
+        var signature = Descendants(frame.Root).Select(node => node.Source).OfType<Text>()
+            .Single(text => text.Content == LongSignature.Signature);
+        // The innermost column holding the signature: the card's, as wide as the card's text.
+        var column = Descendants(frame.Root).Last(node => node.Source is Column
+            && Descendants(node).Any(inner => ReferenceEquals(inner.Source, signature)));
+        var measured = ApproximateTextMeasurer.Instance
+            .Measure(signature.Content, signature.StyleOverride!.Value, 1f, float.PositiveInfinity, 0).Width;
+        measured.Should().NotBe(MathF.Ceiling(measured), "the measure is fractional, or a whole pixel proves nothing");
+        column.Bounds.Width.Should().BeGreaterThanOrEqualTo(MathF.Ceiling(measured));
+    }
+
     /// <summary>
     /// A control the note draws is the note's to the pointer too: moving onto it from the card is staying
     /// over the card, and the code hears nothing, so a card the pointer opened stays. The code heard that

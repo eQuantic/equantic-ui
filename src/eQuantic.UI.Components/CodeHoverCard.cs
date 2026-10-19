@@ -58,7 +58,9 @@ internal static class CodeHoverCard
         }
         var most = MaxColumns * metrics.ColumnWidth + chrome;
         if (viewWidth > 0) most = MathF.Min(most, viewWidth);
-        var width = MathF.Min(most, wanted + chrome);
+        // A whole pixel for the widest line: a box exactly as wide as a fractional measure loses the
+        // rounding of a browser's layout, and the line it was measured for ends cut by an ellipsis.
+        var width = MathF.Min(most, MathF.Ceiling(wanted) + chrome);
         var room = MathF.Max(1, width - chrome);
 
         var column = new Column(gap: Space.S1) { Width = SizeValue.Fill };
