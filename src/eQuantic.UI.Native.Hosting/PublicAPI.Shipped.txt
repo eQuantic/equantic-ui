@@ -1,4 +1,6 @@
 #nullable enable
+[EQX0001]abstract eQuantic.UI.Native.Hosting.UrlLauncher.Claimed(System.Uri! url) -> bool
+[EQX0001]abstract eQuantic.UI.Native.Hosting.UrlLauncher.Hand(System.Uri! url) -> System.Threading.Tasks.ValueTask<bool>
 [EQX0001]const eQuantic.UI.Native.Hosting.PhotonEntitlements.AllowJit = "com.apple.security.cs.allow-jit" -> string!
 [EQX0001]const eQuantic.UI.Native.Hosting.PhotonEntitlements.AllowUnsignedExecutableMemory = "com.apple.security.cs.allow-unsigned-executable-memory" -> string!
 [EQX0001]const eQuantic.UI.Native.Hosting.PhotonEntitlements.AppSandbox = "com.apple.security.app-sandbox" -> string!
@@ -116,6 +118,9 @@
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder.RequireNetworkClient() -> eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder!
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder.RequireUnsignedExecutableMemory() -> eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder!
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder.RequireUserSelectedFiles() -> eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder!
+[EQX0001]eQuantic.UI.Native.Hosting.PhotonOpenedSchemeAttribute
+[EQX0001]eQuantic.UI.Native.Hosting.PhotonOpenedSchemeAttribute.PhotonOpenedSchemeAttribute(string! scheme) -> void
+[EQX0001]eQuantic.UI.Native.Hosting.PhotonOpenedSchemeAttribute.Scheme.get -> string!
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonOptions
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonOptions.Chrome.get -> eQuantic.UI.Primitives.WindowChrome
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonOptions.Chrome.set -> void
@@ -161,6 +166,10 @@
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder.OpensMessages() -> eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder!
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder.OpensPhone() -> eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder!
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder.PhotonWorkspaceBuilder() -> void
+[EQX0001]eQuantic.UI.Native.Hosting.UrlLauncher
+[EQX0001]eQuantic.UI.Native.Hosting.UrlLauncher.CanOpen(System.Uri! url) -> bool
+[EQX0001]eQuantic.UI.Native.Hosting.UrlLauncher.OpenUrlAsync(System.Uri! url) -> System.Threading.Tasks.ValueTask<bool>
+[EQX0001]eQuantic.UI.Native.Hosting.UrlLauncher.UrlLauncher(eQuantic.UI.Primitives.OpenUrlPolicy! policy, Microsoft.Extensions.Logging.ILogger! logger) -> void
 [EQX0001]static eQuantic.UI.Native.Hosting.PhotonApplication.Create(string![]? args = null) -> eQuantic.UI.Native.Hosting.PhotonApplication!
 [EQX0001]static eQuantic.UI.Native.Hosting.PhotonApplication.CreateBuilder(string![]? args = null) -> eQuantic.UI.Native.Hosting.PhotonApplicationBuilder!
 [EQX0001]static eQuantic.UI.Native.Hosting.PhotonApplication.Program.get -> System.Func<string![]!, eQuantic.UI.Native.Hosting.PhotonApplication!>?

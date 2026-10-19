@@ -1,7 +1,1 @@
 #nullable enable
-*REMOVED*[EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsWorkspace.CanOpen(System.Uri! url) -> bool
-*REMOVED*[EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsWorkspace.OpenUrl(System.Uri! url) -> bool
-*REMOVED*[EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsWorkspace.WindowsWorkspace(eQuantic.UI.Primitives.OpenUrlPolicy! policy, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Native.Shell.Windows.WindowsWorkspace!>! logger) -> void
-[EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsUrlLauncher
-[EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsUrlLauncher.WindowsUrlLauncher(eQuantic.UI.Primitives.OpenUrlPolicy! policy, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Native.Shell.Windows.WindowsUrlLauncher!>! logger) -> void
-[EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsWorkspace.WindowsWorkspace() -> void

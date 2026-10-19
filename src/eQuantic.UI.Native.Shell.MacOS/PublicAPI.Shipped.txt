@@ -12,11 +12,11 @@
 [EQX0001]eQuantic.UI.Native.Shell.MacOS.MacOSPhotonRunner
 [EQX0001]eQuantic.UI.Native.Shell.MacOS.MacOSPhotonRunner.MacOSPhotonRunner() -> void
 [EQX0001]eQuantic.UI.Native.Shell.MacOS.MacOSPhotonRunner.Run(eQuantic.UI.Native.Hosting.PhotonApplication! app) -> void
+[EQX0001]eQuantic.UI.Native.Shell.MacOS.MacUrlLauncher
+[EQX0001]eQuantic.UI.Native.Shell.MacOS.MacUrlLauncher.MacUrlLauncher(eQuantic.UI.Primitives.OpenUrlPolicy! policy, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Native.Shell.MacOS.MacUrlLauncher!>! logger) -> void
 [EQX0001]eQuantic.UI.Native.Shell.MacOS.MacWorkspace
-[EQX0001]eQuantic.UI.Native.Shell.MacOS.MacWorkspace.CanOpen(System.Uri! url) -> bool
-[EQX0001]eQuantic.UI.Native.Shell.MacOS.MacWorkspace.MacWorkspace(eQuantic.UI.Primitives.OpenUrlPolicy! policy, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Native.Shell.MacOS.MacWorkspace!>! logger) -> void
+[EQX0001]eQuantic.UI.Native.Shell.MacOS.MacWorkspace.MacWorkspace() -> void
 [EQX0001]eQuantic.UI.Native.Shell.MacOS.MacWorkspace.OpenFile(string! path) -> bool
-[EQX0001]eQuantic.UI.Native.Shell.MacOS.MacWorkspace.OpenUrl(System.Uri! url) -> bool
 [EQX0001]eQuantic.UI.Native.Shell.MacOS.MacWorkspace.Reveal(string! path) -> bool
 [EQX0001]eQuantic.UI.Native.Shell.MacOS.PhotonWindow
 [EQX0001]eQuantic.UI.Native.Shell.MacOS.PhotonWindow.FramesPresented.get -> int

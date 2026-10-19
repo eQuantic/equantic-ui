@@ -39,6 +39,7 @@ const eQuantic.UI.Compiler.CodeGen.Eq.DecFromDouble = "$eq.num.decFromDouble" ->
 const eQuantic.UI.Compiler.CodeGen.Eq.DecFromSingle = "$eq.num.decFromSingle" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.DecParse = "$eq.num.decParse" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.DecTryParse = "$eq.num.decTryParse" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.DelegateTarget = "$eq.delegateTarget" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Dictionary = "$eq.collections.dictionary" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Double = "$eq.num.double" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.EnumIsDefined = "$eq.enums.isDefined" -> string!
@@ -52,6 +53,11 @@ const eQuantic.UI.Compiler.CodeGen.Eq.EnumValues = "$eq.enums.values" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.EnumZero = "$eq.enums.zero" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Equals = "$eq.equals" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.EqualsGroup = "$eq.equalsGroup" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.EqualsInstance = "$eq.equalsInstance" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.EqualsOwn = "$eq.equalsOwn" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.EqualsOwnGeneric = "$eq.equalsOwnGeneric" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Equatable = "$eq.collections.equatable" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.EquatableCall = "$eq.collections.equatableCall" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ExceptionBase = "$eq.exceptions.Exception" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ExceptionConstruct = "$eq.exceptions.construct" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ExceptionCreate = "$eq.exceptions.create" -> string!
@@ -127,6 +133,7 @@ const eQuantic.UI.Compiler.CodeGen.Eq.MapSet = "$eq.mapSet" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.MemberEquality = "$eq.collections.memberEquality" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.NewObject = "$eq.newObject" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.NextTextElementLength = "$eq.text.nextTextElementLength" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.NullableValue = "$eq.nullable.value" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Origin = "$eq.origin" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Pair = "$eq.collections.pair" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.PairComparer = "$eq.collections.pairComparer" -> string!
@@ -134,6 +141,7 @@ const eQuantic.UI.Compiler.CodeGen.Eq.Raise = "$eq.exceptions.raise" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.RealConvert = "$eq.num.realConvert" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.RealParse = "$eq.num.realParse" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.RealTryParse = "$eq.num.realTryParse" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Receiver = "$eq.receiver" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.RecordText = "$eq.text.record" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.RecordTextGroup = "$eq.text.recordGroup" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.RemoveDelegate = "$eq.delegates.remove" -> string!
@@ -143,6 +151,7 @@ const eQuantic.UI.Compiler.CodeGen.Eq.RoundSingle = "$eq.math.roundSingle" -> st
 const eQuantic.UI.Compiler.CodeGen.Eq.RoundSingleWithMode = "$eq.math.roundSingleWithMode" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.RoundWithMode = "$eq.math.roundWithMode" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.SameClosure = "$eq.sameClosure" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.SameGeneric = "$eq.collections.sameGeneric" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.SameItem = "$eq.collections.sameItem" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.SameKey = "$eq.collections.sameKey" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.SetAdd = "$eq.collections.setAdd" -> string!
@@ -178,6 +187,7 @@ const eQuantic.UI.Compiler.CodeGen.Eq.StringStartsWith = "$eq.text.startsWith" -
 const eQuantic.UI.Compiler.CodeGen.Eq.Substring = "$eq.text.substring" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TextChars = "$eq.text.chars" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TextElementStarts = "$eq.text.textElementStarts" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TextGroup = "$eq.text.group" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Thrown = "$eq.exceptions.thrown" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TimeSpan = "$eq.time.timeSpan" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ToBase = "$eq.num.toBase" -> string!
@@ -191,6 +201,8 @@ const eQuantic.UI.Compiler.CodeGen.Eq.Trim = "$eq.text.trim" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TrimEnd = "$eq.text.trimEnd" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TrimStart = "$eq.text.trimStart" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TupleEquality = "$eq.collections.tupleEquality" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TupleText = "$eq.text.tuple" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TupleTextGroup = "$eq.text.tupleGroup" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TypeInitialization = "$eq.exceptions.typeInitialization" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.UnicodeCategory = "$eq.text.unicodeCategory" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.With = "$eq.withPatch" -> string!
@@ -928,6 +940,11 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MemberAccessStrategy.CanConv
 eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MemberAccessStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MemberAccessStrategy.MemberAccessStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MemberAccessStrategy.Priority.get -> int
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MethodGroupStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MethodGroupStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MethodGroupStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MethodGroupStrategy.MethodGroupStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.MethodGroupStrategy.Priority.get -> int
 eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.NullCoalescingAssignmentStrategy
 eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.NullCoalescingAssignmentStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
 eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.NullCoalescingAssignmentStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
@@ -1185,6 +1202,11 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.ConvertStrategy.CanConvert(Mi
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.ConvertStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.ConvertStrategy.ConvertStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.ConvertStrategy.Priority.get -> int
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.InterpolationInACultureStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.InterpolationInACultureStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.InterpolationInACultureStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.InterpolationInACultureStrategy.InterpolationInACultureStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.InterpolationInACultureStrategy.Priority.get -> int
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.ListMethodStrategy
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.ListMethodStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.ListMethodStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
@@ -1444,7 +1466,7 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Types.StringBuilderStrategy
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.StringBuilderStrategy.StringBuilderStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.StructuralEqualsStrategy
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.StructuralEqualsStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
-eQuantic.UI.Compiler.CodeGen.Strategies.Types.StructuralEqualsStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.StructuralEqualsStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.StructuralEqualsStrategy.Priority.get -> int
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.StructuralEqualsStrategy.StructuralEqualsStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.TimeParseStrategy
@@ -1845,9 +1867,6 @@ eQuantic.UI.Compiler.Services.SemanticModelProvider.HasProjectCompilation.get ->
 eQuantic.UI.Compiler.Services.SemanticModelProvider.JoinOptions.get -> Microsoft.CodeAnalysis.CSharp.CSharpParseOptions!
 eQuantic.UI.Compiler.Services.SemanticModelProvider.SemanticModelProvider() -> void
 eQuantic.UI.Compiler.Services.SemanticModelProvider.SetProjectCompilation(Microsoft.CodeAnalysis.Compilation! projectCompilation) -> void
-eQuantic.UI.Compiler.Services.SemanticValidator
-eQuantic.UI.Compiler.Services.SemanticValidator.SemanticValidator(Microsoft.CodeAnalysis.SemanticModel! semanticModel) -> void
-eQuantic.UI.Compiler.Services.SemanticValidator.Validate(eQuantic.UI.Compiler.Models.ComponentDefinition! component) -> System.Collections.Generic.List<eQuantic.UI.Compiler.CompilationError!>!
 eQuantic.UI.Compiler.Services.ShadowedRuntimeMembers
 eQuantic.UI.Compiler.Services.SourceMapComposer
 eQuantic.UI.Compiler.Services.SourceMapGenerator
@@ -2374,12 +2393,12 @@ static eQuantic.UI.Compiler.CodeGen.Strategies.SinglePrecision.Is(Microsoft.Code
 static eQuantic.UI.Compiler.CodeGen.Strategies.SinglePrecision.Round(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! value) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Strategies.Statements.UsingLowering.Dispose(string! resource, bool isAsync) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 static eQuantic.UI.Compiler.CodeGen.Strategies.StringConversion.ToDotNetString(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax! operand, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! converted, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
-static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.Binary(Microsoft.CodeAnalysis.IMethodSymbol! method, string! token, string! left, string! right, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr?
-static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.Conversion(Microsoft.CodeAnalysis.IMethodSymbol! method, string! operand, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr?
+static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.Binary(Microsoft.CodeAnalysis.IMethodSymbol! method, string! token, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! left, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! right, bool lifted, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr?
+static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.Conversion(Microsoft.CodeAnalysis.IMethodSymbol! method, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! operand, bool lifted, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr?
 static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.ConversionCrosses(Microsoft.CodeAnalysis.IMethodSymbol! method) -> bool
 static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.ConversionName(Microsoft.CodeAnalysis.IMethodSymbol! method) -> string!
 static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.IsInSource(Microsoft.CodeAnalysis.IMethodSymbol! method) -> bool
-static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.Unary(Microsoft.CodeAnalysis.IMethodSymbol! method, string! token, string! operand, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr?
+static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.Unary(Microsoft.CodeAnalysis.IMethodSymbol! method, string! token, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! operand, bool lifted, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr?
 static eQuantic.UI.Compiler.CodeGen.Strategies.ValueFlow.Apply(Microsoft.CodeAnalysis.CSharp.Conversion kind, Microsoft.CodeAnalysis.ITypeSymbol? from, Microsoft.CodeAnalysis.ITypeSymbol? to, object? convertedConstant, object? operandConstant, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! translated, eQuantic.UI.Compiler.CodeGen.ConversionContext! context, bool isChecked = false) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Strategies.ValueFlow.Settle(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax! node, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! translated, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.StringExtensions.ToCamelCase(this string! name) -> string!
@@ -2437,7 +2456,7 @@ static eQuantic.UI.Compiler.Services.ResxFiles.FoldFallbackChains(System.Collect
 static eQuantic.UI.Compiler.Services.ResxFiles.NeutralPathFor(string! designerPath) -> string?
 static eQuantic.UI.Compiler.Services.ResxFiles.Read(string! path) -> System.Collections.Generic.Dictionary<string!, string!>?
 static eQuantic.UI.Compiler.Services.ResxFiles.VariantsFor(string! designerPath) -> System.Collections.Generic.IEnumerable<(string! Culture, string! Path)>!
-static eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.Collect(Microsoft.CodeAnalysis.SyntaxNode! root, Microsoft.CodeAnalysis.SemanticModel! model, System.Collections.Generic.ISet<string!>! runtimeProvided, System.Collections.Generic.ISet<string!>! enumTypes, System.Collections.Generic.ISet<string!>? appTypes = null, System.Collections.Generic.IDictionary<string!, Microsoft.CodeAnalysis.SyntaxNode!>? hostOnly = null) -> void
+static eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.Collect(Microsoft.CodeAnalysis.SyntaxNode! root, Microsoft.CodeAnalysis.SemanticModel! model, bool asComponent, System.Collections.Generic.ISet<string!>! runtimeProvided, System.Collections.Generic.ISet<string!>! enumTypes, System.Collections.Generic.ISet<string!>? appTypes = null, System.Collections.Generic.IDictionary<string!, Microsoft.CodeAnalysis.SyntaxNode!>? hostOnly = null) -> void
 static eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(string! ns) -> bool
 static eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(string! ns) -> bool
 static eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.IsVocabularyNamespace(string! ns) -> bool
