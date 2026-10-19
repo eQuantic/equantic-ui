@@ -66,6 +66,16 @@ public class CodeDiagnosticsTests : IDisposable
             lock (_queue) _queue.Enqueue(work);
         }
 
+        /// <summary>How much work waits, which a test reads before draining: an answer's continuation
+        /// can run on a thread of the pool after the answer was given, and post its work then.</summary>
+        public int Count
+        {
+            get
+            {
+                lock (_queue) return _queue.Count;
+            }
+        }
+
         public void Drain()
         {
             while (true)
@@ -429,6 +439,8 @@ public class CodeDiagnosticsTests : IDisposable
         editor.Diagnostics.IsChecking.Should().BeTrue();
 
         await Task.Run(() => late.Answer(0, Warning(0, 0, 3)));
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (queue.Count == 0 && DateTime.UtcNow < deadline) await Task.Delay(5);
 
         editor.Diagnostics.IsChecking.Should().BeTrue("the count moves when the UI thread applies the answer");
         editor.Diagnostics.Items.Should().BeEmpty();

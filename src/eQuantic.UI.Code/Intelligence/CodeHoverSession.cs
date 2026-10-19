@@ -28,6 +28,9 @@ public sealed class CodeHoverSession
     private CodeRange? _pending;
     private bool _open;
     private bool _byKeyboard;
+    // Whether the keyboard made the newest request, the one waited for or answered: the pointer leaving
+    // cancels a request it made itself, and never one the keyboard made.
+    private bool _requestByKeyboard;
     private CodeRange _range;
     private List<CodeDiagnostic> _problems = [];
     // One slot per provider asked, in the order of Providers, filled as each answers.
@@ -96,7 +99,7 @@ public sealed class CodeHoverSession
         // One thing at a time over the caret: while the list shows, the card waits for it to go.
         if (_editor.Completion.IsOpen) return false;
         var at = _editor.Document.Clamp(position);
-        var explained = Explained(at);
+        var explained = Explained(at, character: false);
         if (explained is null && Providers.Count == 0) return false;
         _ = Rest(explained ?? new CodeRange(at), at, wait: false, keyboard: true, ask: true);
         return true;
@@ -110,6 +113,7 @@ public sealed class CodeHoverSession
         _request?.Cancel();
         _request = null;
         _pending = null;
+        _requestByKeyboard = false;
         if (!_open) return false;
         _open = false;
         _byKeyboard = false;
@@ -138,9 +142,9 @@ public sealed class CodeHoverSession
         // While the completion list shows, the pointer resting on the code asks nothing: a card it showed
         // would wait behind the list and appear when the list went, unasked.
         if (_editor.Completion.IsOpen) return;
-        if (_open && !_byKeyboard && Holds(_range, position)) return;
-        if (_pending is { } pending && Holds(pending, position)) return;
-        if (Explained(position) is not { } explained)
+        if (_open && !_byKeyboard && Covers(_range, position)) return;
+        if (_pending is { } pending && Covers(pending, position)) return;
+        if (Explained(position, character: true) is not { } explained)
         {
             PointerLeft();
             return;
@@ -150,12 +154,19 @@ public sealed class CodeHoverSession
         _ = Rest(explained, position, wait: true, keyboard: false, ask: true);
     }
 
-    /// <summary>The pointer left the surface, or rests on nothing a card explains: a wait ends, and a
-    /// card the pointer asked for closes. One the keyboard asked for stays.</summary>
+    /// <summary>
+    /// The pointer left the surface, or rests on nothing a card explains: a request it made itself ends,
+    /// and a card it asked for closes. What the keyboard asked for stays, its card and a request of its
+    /// still on its way, and so does a card the keyboard showed while the pointer's own request ends.
+    /// </summary>
     internal void PointerLeft()
     {
+        if (_requestByKeyboard) return;
         if (_open && _byKeyboard)
         {
+            _generation++;
+            _request?.Cancel();
+            _request = null;
             _pending = null;
             return;
         }
@@ -166,7 +177,7 @@ public sealed class CodeHoverSession
     /// asked: what F8 shows after it put the caret on a problem.</summary>
     internal void ShowProblems(CodePosition position)
     {
-        var explained = Explained(position) ?? new CodeRange(position);
+        var explained = Explained(position, character: false) ?? new CodeRange(position);
         _ = Rest(explained, position, wait: false, keyboard: true, ask: false);
     }
 
@@ -185,6 +196,7 @@ public sealed class CodeHoverSession
         var request = new CancellationTokenSource();
         _request = request;
         _pending = explained;
+        _requestByKeyboard = keyboard;
         if (wait && Delay > TimeSpan.Zero)
         {
             var waited = true;
@@ -216,7 +228,9 @@ public sealed class CodeHoverSession
         var document = _editor.Document;
         var providers = ask ? Providers.ToList() : new List<ICodeHoverProvider>();
         _range = explained;
-        _problems = _editor.Diagnostics.At(position).ToList();
+        // The pointer is on a character, the caret between two: a problem ending where the pointer rests
+        // is not under it, and is beside the caret.
+        _problems = keyboard ? _editor.Diagnostics.At(position).ToList() : ProblemsUnder(position);
         _answers = [];
         _shown = [];
         foreach (var _ in providers) _answers.Add(null);
@@ -267,23 +281,38 @@ public sealed class CodeHoverSession
 
     /// <summary>
     /// What a card asked about <paramref name="position"/> explains: the word or the run of symbols on
-    /// the character there, with the range of every problem that holds it, or null when the character is
-    /// white space and no problem holds it.
+    /// the character there, with the range of every problem at it, or null when the character is white
+    /// space and no problem is at it. A problem is at the CHARACTER under the pointer when its range
+    /// covers it (<paramref name="character"/>), and at the caret when its range holds the caret, its
+    /// ends included.
     /// </summary>
-    private CodeRange? Explained(CodePosition position)
+    private CodeRange? Explained(CodePosition position, bool character)
     {
         var document = _editor.Document;
         var line = document.Line(position.Line);
         CodeRange? explained = position.Column < line.Length && !char.IsWhiteSpace(line[position.Column])
             ? document.WordAt(position)
             : null;
-        foreach (var problem in _editor.Diagnostics.At(position))
+        foreach (var problem in character ? ProblemsUnder(position) : _editor.Diagnostics.At(position))
             explained = explained is { } before ? Union(before, problem.Range) : problem.Range;
         return explained;
     }
 
-    private static bool Holds(CodeRange range, CodePosition position) =>
-        range.Start <= position && position <= range.End;
+    /// <summary>The problems on the character at <paramref name="position"/>, the worst first: those whose
+    /// range covers it.</summary>
+    private List<CodeDiagnostic> ProblemsUnder(CodePosition position)
+    {
+        var under = new List<CodeDiagnostic>();
+        foreach (var problem in _editor.Diagnostics.At(position))
+            if (Covers(problem.Range, position)) under.Add(problem);
+        return under;
+    }
+
+    /// <summary>Whether the character at <paramref name="position"/> is in <paramref name="range"/>: a
+    /// range ends before the character at its end, as <c>WordAt</c> answers one, and a range of no width
+    /// covers the character where it stands.</summary>
+    private static bool Covers(CodeRange range, CodePosition position) =>
+        range.IsEmpty ? position == range.Start : range.Start <= position && position < range.End;
 
     private static CodeRange Union(CodeRange a, CodeRange b) =>
         new(a.Start <= b.Start ? a.Start : b.Start, a.End >= b.End ? a.End : b.End);

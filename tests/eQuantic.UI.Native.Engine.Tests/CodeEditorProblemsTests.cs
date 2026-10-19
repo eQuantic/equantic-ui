@@ -613,6 +613,43 @@ public class CodeEditorProblemsTests : IDisposable
         editor.Editor.Hover.IsOpen.Should().BeTrue("the press was taken away, and the pointer rests on the code");
     }
 
+    /// <summary>
+    /// A note covers what was painted before it, as the browser hit-tests in paint order: a press on a card
+    /// over a control drawn in the code is the card's, and the pointer there is the card's, while a control
+    /// inside the note keeps its own presses. The controls were asked first, and a press on the card
+    /// pressed the control hidden under it (found by Copilot reviewing #1008).
+    /// </summary>
+    [Fact]
+    public void ANoteOverAControlInTheCode_TakesItsPress_AndAControlInTheNoteKeepsItsOwn()
+    {
+        var under = 0;
+        var inside = 0;
+        var code = new Column { Width = SizeValue.Fill };
+        code.Add(new Pressable(new Box(new BoxStyle { Width = 120, Height = 40 }), () => under++));
+        code.Add(new Box(new BoxStyle { Width = 120, Height = 200 }));
+        var card = new Column();
+        card.Add(new Box(new BoxStyle { Width = 200, Height = 60, Background = PhotonTheme.Instance.Surface }));
+        card.Add(new Pressable(new Box(new BoxStyle { Width = 60, Height = 20 }), () => inside++));
+        var surface = new CodeSurface(code, new CodeEditorController("code"))
+        {
+            Notes = [new Positioned(card, top: 0, start: 0)],
+        };
+        var host = Host(surface);
+        var frame = Settle(host);
+        var hidden = frame.HitRegions[0].Bounds;
+        var own = frame.HitRegions[1].Bounds;
+
+        host.CursorAt(hidden.X + hidden.Width / 2, hidden.Y + hidden.Height / 2).Should().Be(CursorShape.Default,
+            "the card is what the pointer is over");
+        host.PressDown(hidden.X + hidden.Width / 2, hidden.Y + hidden.Height / 2);
+        host.PressUp(hidden.X + hidden.Width / 2, hidden.Y + hidden.Height / 2);
+        host.PressDown(own.X + own.Width / 2, own.Y + own.Height / 2);
+        host.PressUp(own.X + own.Width / 2, own.Y + own.Height / 2);
+
+        under.Should().Be(0, "the control under the card is hidden by it");
+        inside.Should().Be(1, "the card's own control takes its press");
+    }
+
     [Fact]
     public void F8_GoesToTheNextProblem_AndShowsItInALiveRegion()
     {

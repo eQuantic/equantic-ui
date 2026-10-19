@@ -902,7 +902,11 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     // PhotonHost.PointerMove): one dragged with another button rests on nothing. A finger has no hover:
     // it moves only while it presses.
     if (event.buttons === 0) {
-      if (event.pointerType !== 'touch' && model.handlePointer('hover', local(event), modifiersOf(event), 0)) changed();
+      if (event.pointerType === 'touch') return;
+      // Over a pressable drawn inside the surface, the pointer is the pressable's, as a press there is:
+      // the code under it hears that the pointer left it (C# twin: PhotonHost.HoverCode).
+      const phase = onPressable(event) ? 'exit' : 'hover';
+      if (model.handlePointer(phase, local(event), modifiersOf(event), 0)) changed();
       return;
     }
     if ((event.buttons & 1) === 0) return;

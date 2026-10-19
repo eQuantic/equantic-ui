@@ -640,6 +640,44 @@ describe('code surface pointer (the SAME model the native host drives)', () => {
     expect(changed()).toBe(0);
   });
 
+  it('leaves the pointer over a pressable drawn inside it to the pressable, and the code hears it left', () => {
+    const editor = new CodeEditorController('one two', CodeLanguages.for('csharp'));
+    editor.grid = new CodeGrid(new Point(12, 12), new Size(COLUMN, LINE));
+    const phases: string[] = [];
+    const model = new Proxy(editor, {
+      get(target, property, receiver) {
+        if (property === 'handlePointer')
+          return (phase: string, ...rest: unknown[]) => {
+            phases.push(phase);
+            return (target.handlePointer as (...args: unknown[]) => boolean).call(target, phase, ...rest);
+          };
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    const lowered = lowerVisualNode(new CodeSurface(new Text('', 'labelSmall'), model) as never, {
+      textPrimary: photonTheme.textPrimary,
+      componentContext: { theme: photonTheme, typeScale: 1 },
+    });
+    const button = { tag: 'button' };
+    const event = {
+      clientX: 20,
+      clientY: 14,
+      currentTarget: { getBoundingClientRect: () => ({ left: 0, top: 0 }), contains: (element: unknown) => element === button },
+      target: { closest: () => button },
+      pointerType: 'mouse',
+      buttons: 0,
+      shiftKey: false,
+      altKey: false,
+      metaKey: false,
+      ctrlKey: false,
+    };
+
+    (lowered.events['pointermove'] as unknown as (e: unknown) => void)(event);
+
+    // Found by Copilot reviewing #1008: a move over the button was a hover of the code hidden under it.
+    expect(phases).toEqual(['exit']);
+  });
+
   it('two presses take the word, three the line — counted by the mousedown', () => {
     const { editor, lowered } = surfaceFor('one two three\nfour');
     pressAt(lowered, cell(0, 5), { clicks: 2 });

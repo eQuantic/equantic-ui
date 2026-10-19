@@ -2102,7 +2102,11 @@ public sealed class PhotonHost
         // A disabled control says so: the pointer is the only warning before the click that does
         // nothing.
         if (HitAt(hits, point) is var hit and >= 0)
+        {
+            // A note painted over the control is what the pointer is over.
+            if (CoveredByNote(hit, point, out _)) return CursorShape.Default;
             return hits[hit].Node.Disabled ? CursorShape.NotAllowed : CursorShape.Pointer;
+        }
         for (var i = fields.Count - 1; i >= 0; i--)
             if (Covers(fields, i, fields[i].Visible ?? fields[i].Bounds, point))
                 return fields[i].Entry.Disabled ? CursorShape.NotAllowed : CursorShape.Text;
@@ -2207,6 +2211,13 @@ public sealed class PhotonHost
         var regions = _lastFrame.HitRegions;
         _pressSwallowed = false;
         Element? swallowedBy = null;
+        // A note a code surface painted over the control under the point covers it: the press is the
+        // note's, which moves no caret, as a press on a card over a button is the card's on the web.
+        if (CoveredByNote(HitAt(regions, point), point, out _))
+        {
+            _pressSwallowed = true;
+            return true;
+        }
         // From the region the point lands on (HitAt), down: a slop above it that lost the point to a
         // box drawn beside it takes no part, inert or not.
         for (var i = HitAt(regions, point); i >= 0; i--)
@@ -2688,6 +2699,25 @@ public sealed class PhotonHost
     }
 
     /// <summary>
+    /// Whether the hit region at <paramref name="hit"/> (an index into the frame's hit regions, or -1) is
+    /// covered at <paramref name="point"/> by a note a code surface painted after it
+    /// (<see cref="CodeNoteLayer"/>), and which surface's, <paramref name="code"/>: the pointer and a press
+    /// there are the note's. A control inside the note, or one painted after it, is not covered.
+    /// </summary>
+    private bool CoveredByNote(int hit, Point point, out int code)
+    {
+        code = -1;
+        if (hit < 0 || _lastFrame is not { } frame) return false;
+        foreach (var layer in frame.NoteLayers)
+        {
+            if (hit >= layer.FirstHit || !OnNote(frame.CodeRegions, layer.Code, point)) continue;
+            code = layer.Code;
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
     /// The pointer passing over the code with nothing pressed (web twin: lowerCodeSurface's
     /// pointermove): the surface it is over hears where it rests, for its hover to explain what is
     /// there, and a surface it left hears that it left. What is drawn over the code takes the pointer
@@ -2698,7 +2728,16 @@ public sealed class PhotonHost
     {
         if (_lastFrame is null) return;
         var fields = _lastFrame.TextRegions;
-        var over = HitAt(_lastFrame.HitRegions, point) >= 0;
+        var hit = HitAt(_lastFrame.HitRegions, point);
+        if (CoveredByNote(hit, point, out var noted))
+        {
+            // On a note painted over a control: still over that note's surface, whose model hears nothing.
+            var element = _lastFrame.CodeRegions[noted].Element;
+            LeaveCode(except: element);
+            _hoveredCode = element;
+            return;
+        }
+        var over = hit >= 0;
         for (var i = fields.Count - 1; i >= 0 && !over; i--)
             over = Covers(fields, i, fields[i].Visible ?? fields[i].Bounds, point);
         var surfaces = _lastFrame.CodeRegions;

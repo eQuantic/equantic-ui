@@ -30,6 +30,15 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     /// or null where none is.</summary>
     public Matrix2D? Transform { get; } = transform;
 
+    /// <summary>How many hit regions the frame holds so far: where the next one will stand.</summary>
+    public int HitCount => regions.Hits.Count;
+
+    /// <summary>How many code regions the frame holds so far: where the next one will stand.</summary>
+    public int CodeCount => regions.Codes.Count;
+
+    /// <summary>Records the notes a code surface drew over its code (<see cref="CodeNoteLayer"/>).</summary>
+    public void Add(CodeNoteLayer layer) => regions.Notes.Add(layer);
+
     /// <summary>The same sink, narrowed to a nested clip. Clips INTERSECT: a scroll view inside a
     /// scroll view shows only what both agree on, and so does its input.</summary>
     public InputSink Under(Rect rect)

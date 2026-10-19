@@ -8,6 +8,7 @@ export class CodeHoverSession {
         this._pending = null;
         this._open = false;
         this._byKeyboard = false;
+        this._requestByKeyboard = false;
         this._range = CodeRange.$zero();
         this._problems = [];
         this._answers = [];
@@ -28,6 +29,7 @@ export class CodeHoverSession {
     _pending!: CodeRange | null;
     _open!: boolean;
     _byKeyboard!: boolean;
+    _requestByKeyboard!: boolean;
     _range!: CodeRange;
     _problems!: CodeDiagnostic[];
     _answers!: (CodeHover | null)[];
@@ -64,7 +66,7 @@ export class CodeHoverSession {
     showAt(position: CodePosition) {
         if (this._editor.completion.isOpen) return false;
         let at = this._editor.document.clamp(position);
-        let explained = this.explained(at);
+        let explained = this.explained(at, false);
         if (explained == null && $eq.collections.count(this.providers) === 0) return false;
         this.rest(explained ?? new CodeRange(at), at, false, true, true);
         return true;
@@ -75,6 +77,7 @@ export class CodeHoverSession {
         this._request?.cancel();
         this._request = null;
         this._pending = null;
+        this._requestByKeyboard = false;
         if (!this._open) return false;
         this._open = false;
         this._byKeyboard = false;
@@ -92,11 +95,11 @@ export class CodeHoverSession {
             return;
         }
         if (this._editor.completion.isOpen) return;
-        if (this._open && !this._byKeyboard && CodeHoverSession.holds(this._range, position)) return;
+        if (this._open && !this._byKeyboard && CodeHoverSession.covers(this._range, position)) return;
         let pending: any; 
-        if ((pending = this._pending) != null && CodeHoverSession.holds(pending, position)) return;
+        if ((pending = this._pending) != null && CodeHoverSession.covers(pending, position)) return;
         let explained: any; 
-        if (!((explained = this.explained(position)) != null)) {
+        if (!((explained = this.explained(position, true)) != null)) {
             this.pointerLeft();
             return;
         }
@@ -106,7 +109,11 @@ export class CodeHoverSession {
     }
 
     pointerLeft() {
+        if (this._requestByKeyboard) return;
         if (this._open && this._byKeyboard) {
+            this._generation++;
+            this._request?.cancel();
+            this._request = null;
             this._pending = null;
             return;
         }
@@ -114,7 +121,7 @@ export class CodeHoverSession {
     }
 
     showProblems(position: CodePosition) {
-        let explained = this.explained(position) ?? new CodeRange(position);
+        let explained = this.explained(position, false) ?? new CodeRange(position);
         this.rest(explained, position, false, true, false);
     }
 
@@ -125,6 +132,7 @@ export class CodeHoverSession {
         let request = $eq.cancellation.source();
         this._request = request;
         this._pending = explained;
+        this._requestByKeyboard = keyboard;
         if (wait && (this.delay.compareTo($eq.time.timeSpan.zero) > 0)) {
             let waited = true;
             try {
@@ -148,7 +156,7 @@ export class CodeHoverSession {
         let document = this._editor.document;
         let providers = ask ? this.providers.slice() : [];
         this._range = explained;
-        this._problems = this._editor.diagnostics.at(position).slice();
+        this._problems = keyboard ? this._editor.diagnostics.at(position).slice() : this.problemsUnder(position);
         this._answers = [];
         this._shown = [];
         for (const _ of providers) this._answers.push(null);
@@ -185,19 +193,25 @@ export class CodeHoverSession {
         });
     }
 
-    explained(position: CodePosition) {
+    explained(position: CodePosition, character: boolean) {
         let document = this._editor.document;
         let line = document.line(position.line);
         let explained = position.column < line.length && !$eq.text.isWhiteSpace(line[position.column]) ? document.wordAt(position) : null;
-        for (const problem of this._editor.diagnostics.at(position)) {
+        for (const problem of character ? this.problemsUnder(position) : this._editor.diagnostics.at(position)) {
             let before: any; 
             explained = (before = explained) != null ? CodeHoverSession.union(before, problem.range) : problem.range;
         }
         return explained;
     }
 
-    static holds(range: CodeRange, position: CodePosition) {
-        return CodePosition.opLessOrEqual(range.start, position) && CodePosition.opLessOrEqual(position, range.end);
+    problemsUnder(position: CodePosition) {
+        let under: CodeDiagnostic[] = [];
+        for (const problem of this._editor.diagnostics.at(position)) if (CodeHoverSession.covers(problem.range, position)) under.push(problem);
+        return under;
+    }
+
+    static covers(range: CodeRange, position: CodePosition) {
+        return range.isEmpty ? $eq.equals(position, range.start) : CodePosition.opLessOrEqual(range.start, position) && CodePosition.opLessThan(position, range.end);
     }
 
     static union(a: CodeRange, b: CodeRange) {

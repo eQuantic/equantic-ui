@@ -440,6 +440,26 @@ public class CodeHoverTests : IDisposable
     }
 
     /// <summary>
+    /// A key something else takes ends the chord as well: ⌃Space and the list's own keys returned before
+    /// the chord was read, so ⌘K, ⌃Space, Escape, ⌘I still showed the card.
+    /// </summary>
+    [Fact]
+    public void AKeyTheListTakes_EndsTheChordHalfTyped()
+    {
+        var editor = Editor("alpha beta");
+        editor.Hover.Providers.Add(new Provider());
+        editor.Completion.Providers.Add(new ListCompletionProvider(new CodeCompletionItem("alphabet")));
+        editor.Selection = new CodeRange(new CodePosition(0, 5));
+        Press(editor, "k", KeyModifiers.Command).Should().BeTrue();
+
+        Press(editor, " ", KeyModifiers.Control).Should().BeTrue("⌃Space opens the list");
+        Press(editor, "Escape").Should().BeTrue("and Escape closes it");
+        Press(editor, "i", KeyModifiers.Command);
+
+        editor.Hover.IsOpen.Should().BeFalse("the chord ended at ⌃Space");
+    }
+
+    /// <summary>
     /// While the list shows, the pointer resting on the code asks nothing, so no card waits behind the list
     /// to come out when it goes (found by Copilot reviewing #1008).
     /// </summary>
@@ -507,6 +527,103 @@ public class CodeHoverTests : IDisposable
         queue.Drain();
         provider.Asked.Should().BeEmpty("the pointer left before the UI thread ran the wait's end");
         editor.Hover.IsOpen.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// The pointer leaving cancels the request it made itself, and leaves a card the keyboard showed: over
+    /// an F8 card, a pointer resting on another word and leaving before its wait ended replaced the card
+    /// once the wait ended (found by Copilot reviewing #1008).
+    /// </summary>
+    [Fact]
+    public async Task APointerLeavingBeforeItsWaitEnds_DropsItsRequest_AndTheKeyboardsCardStays()
+    {
+        var editor = new CodeEditorController("alpha beta");
+        editor.Hover.Delay = TimeSpan.FromMilliseconds(60);
+        editor.Diagnostics.Report([Error(0, 0, 5, "bad")]);
+        var provider = new Provider();
+        editor.Hover.Providers.Add(provider);
+        editor.Selection = new CodeRange(new CodePosition(0, 7));
+        Press(editor, "F8").Should().BeTrue();
+        editor.Hover.ByKeyboard.Should().BeTrue();
+
+        Rest(editor, 0, 7);
+        editor.HandlePointer(PointerPhase.Exit, Point.Zero, KeyModifiers.None, 0);
+        await Task.Delay(250);
+
+        provider.Asked.Should().BeEmpty("the pointer's request went with the pointer");
+        editor.Hover.IsOpen.Should().BeTrue();
+        editor.Hover.ByKeyboard.Should().BeTrue("the card F8 showed stays");
+        editor.Hover.Problems.Should().ContainSingle().Which.Message.Should().Be("bad");
+    }
+
+    /// <summary>…and a request the keyboard made is the keyboard's: the pointer leaving while its provider
+    /// answers cancels nothing (found by Copilot reviewing #1008).</summary>
+    [Fact]
+    public void APointerLeaving_LeavesAKeyboardRequestOnItsWay()
+    {
+        var editor = Editor("alpha beta");
+        var late = new LateProvider();
+        editor.Hover.Providers.Add(late);
+        editor.Selection = new CodeRange(new CodePosition(0, 1));
+        Press(editor, "k", KeyModifiers.Command);
+        Press(editor, "i", KeyModifiers.Command);
+        late.Count.Should().Be(1);
+
+        editor.HandlePointer(PointerPhase.Exit, Point.Zero, KeyModifiers.None, 0);
+        late.Answer(0);
+
+        editor.Hover.IsOpen.Should().BeTrue("the keyboard's request was not the pointer's to cancel");
+    }
+
+    /// <summary>
+    /// A word ends before the character after it, as <c>WordAt</c> answers it: the pointer moving onto the
+    /// space after <c>alpha</c> is off the word, and its card closes (found by Copilot reviewing #1008).
+    /// </summary>
+    [Fact]
+    public void ThePointerMovingOntoTheSpaceAfterAWord_ClosesItsCard()
+    {
+        var editor = Editor("alpha beta");
+        editor.Hover.Providers.Add(new Provider());
+        Rest(editor, 0, 1);
+        editor.Hover.IsOpen.Should().BeTrue();
+
+        Rest(editor, 0, 5);
+
+        editor.Hover.IsOpen.Should().BeFalse();
+    }
+
+    /// <summary>…and a request still on its way for the word is dropped there.</summary>
+    [Fact]
+    public void ThePointerMovingOntoTheSpaceAfterAWord_DropsItsRequest()
+    {
+        var editor = Editor("alpha beta");
+        var late = new LateProvider();
+        editor.Hover.Providers.Add(late);
+        Rest(editor, 0, 1);
+
+        Rest(editor, 0, 5);
+        late.Answer(0);
+
+        editor.Hover.IsOpen.Should().BeFalse("the answer is for a word the pointer left");
+    }
+
+    /// <summary>A problem ends before the character at its end, as a word does: the pointer on the space
+    /// after it rests on nothing, while the caret there, between the two, is at the problem.</summary>
+    [Fact]
+    public void AProblemEndingWhereThePointerRests_IsNotUnderIt_AndIsAtTheCaretThere()
+    {
+        var editor = Editor("name = 1");
+        editor.Diagnostics.Report([Error(0, 0, 4, "bad")]);
+
+        Rest(editor, 0, 4);
+        editor.Hover.IsOpen.Should().BeFalse("the pointer is on the space after the problem");
+
+        editor.Selection = new CodeRange(new CodePosition(0, 4));
+        Press(editor, "k", KeyModifiers.Command).Should().BeTrue();
+        Press(editor, "i", KeyModifiers.Command).Should().BeTrue();
+
+        editor.Hover.IsOpen.Should().BeTrue();
+        editor.Hover.Problems.Should().ContainSingle().Which.Message.Should().Be("bad");
     }
 
     [Fact]

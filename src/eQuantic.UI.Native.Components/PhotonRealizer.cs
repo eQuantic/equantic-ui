@@ -180,6 +180,10 @@ public sealed class RealizeResult
     /// each one's own space (#513). Empty in a frame that transforms nothing interactive.</summary>
     internal IReadOnlyList<TransformedRegion> TransformedRegions { get; init; } = Array.Empty<TransformedRegion>();
 
+    /// <summary>The notes code surfaces drew over their code, with the hit regions inside and under them.
+    /// Empty in a frame that draws none.</summary>
+    internal IReadOnlyList<CodeNoteLayer> NoteLayers { get; init; } = Array.Empty<CodeNoteLayer>();
+
     /// <summary>Editable code surfaces, in paint order (topmost last).</summary>
     public IReadOnlyList<CodeRegion> CodeRegions { get; }
 
@@ -436,6 +440,7 @@ public static class PhotonRealizer
             // unchanged, which is also what every existing caller wants.
             LiveRegions = regions.LivesOrEmpty,
             TransformedRegions = regions.TransformedOrEmpty,
+            NoteLayers = regions.NotesOrEmpty,
         };
     }
 
