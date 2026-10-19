@@ -97,6 +97,9 @@ public class MessageLanguageTests
             .Html.Replace($"lang=\"{name}\"", "lang=\"\"");
 
         var english = Markup("en-US");
+        // The comparison means something only while the markup holds a fraction a comma-decimal
+        // culture would write differently (the type ramp's letter spacing, today).
+        english.Should().MatchRegex(@"\d\.\d+px", "a fractional length is what a culture would change");
         foreach (var name in new[] { "pt-BR", "sv-SE", "de-DE", "ar-SA", "fa-IR" })
             Markup(name).Should().Be(english, $"{name} changes no markup");
     }
