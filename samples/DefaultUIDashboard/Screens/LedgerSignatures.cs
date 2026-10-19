@@ -40,22 +40,19 @@ public sealed class LedgerSignatures : ICodeSignatureProvider
         }
         var typed = line.Substring(from, caret - from).Trim();
         var colon = typed.IndexOf(':');
-        var active = argument;
-        if (colon > 0)
-        {
-            var name = typed.Substring(0, colon).Trim();
-            var parameters = signatures[0].Parameters;
-            for (var p = 0; p < parameters.Count; p++)
-                if (parameters[p].Label.EndsWith(" " + name, StringComparison.Ordinal)) active = p;
-        }
+        var name = colon > 0 ? typed.Substring(0, colon).Trim() : null;
 
-        // The first signature with room for the argument the caret is on, as overload resolution would
-        // start.
+        // The first signature that names the argument, or with room for it, as overload resolution would
+        // start, and the parameter the caret is on in it.
         var chosen = 0;
+        var active = argument;
         for (var s = 0; s < signatures.Count; s++)
         {
-            if (signatures[s].Parameters.Count <= active) continue;
+            var parameters = signatures[s].Parameters;
+            var at = name is null ? (argument < parameters.Count ? argument : -1) : Named(parameters, name);
+            if (at < 0) continue;
             chosen = s;
+            active = at;
             break;
         }
         return Task.FromResult<CodeSignatureHelp?>(new CodeSignatureHelp(signatures)
@@ -63,6 +60,14 @@ public sealed class LedgerSignatures : ICodeSignatureProvider
             ActiveSignature = chosen,
             ActiveParameter = active,
         });
+    }
+
+    /// <summary>Which of <paramref name="parameters"/> is called <paramref name="name"/>, or -1.</summary>
+    private static int Named(IReadOnlyList<CodeSignatureParameter> parameters, string name)
+    {
+        for (var p = 0; p < parameters.Count; p++)
+            if (parameters[p].Label.EndsWith(" " + name, StringComparison.Ordinal)) return p;
+        return -1;
     }
 
     /// <summary>Where the innermost parenthesis still open before <paramref name="caret"/> stands, or -1.</summary>
