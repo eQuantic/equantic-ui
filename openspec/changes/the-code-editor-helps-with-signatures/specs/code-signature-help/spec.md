@@ -69,13 +69,19 @@ holds as many signatures SHALL keep the signature chosen.
 
 ### Requirement: A parameter is found in its signature's label
 
-A parameter's label SHALL be found in its signature's label in order, each after the one before it, and
-the found span SHALL be the one marked when the parameter is active. A label not found SHALL mark nothing.
+A parameter's label SHALL be found in its signature's label in order, each after the one before it and
+after the label's first opening parenthesis, and only as a whole word; the found span SHALL be the one
+marked when the parameter is active. A label not found SHALL mark nothing.
 
 #### Scenario: Two parameters that begin alike
 
 - **WHEN** a signature `f(int x, int xy)` has the parameters `int x` and `int xy`, and the second is active
 - **THEN** the marked span is `int xy`, at columns 9 to 15
+
+#### Scenario: A parameter named like its function
+
+- **WHEN** a signature `x(int x)` has the parameter `x`
+- **THEN** the marked span is the parameter's `x`, at column 6, not the function's name
 
 ### Requirement: The panel stands over the caret
 
