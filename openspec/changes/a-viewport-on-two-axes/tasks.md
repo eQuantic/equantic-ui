@@ -98,7 +98,7 @@
 - [x] 6.2 The unbounded axis on the web: an empty box on a filled axis takes the nearest scrolling
       ancestor's visible extent, or the window's, kept by a `ResizeObserver`, with its development
       log; verify a Vitest spec, and the correction at hydration
-- [ ] 6.3 The C# server lowering writes the same boxes at offset zero and hydration adopts them;
+- [x] 6.3 The C# server lowering writes the same boxes at offset zero and hydration adopts them;
       verify an SSR fixture and the hydration contract tests
 - [ ] 6.4 Run the Server suite and record the served runtime's gzip size against its budget; verify the
       budget test passes, or move its line and say why in the pull request

@@ -12,7 +12,9 @@ import { commitTableViewports } from './table-viewports';
 import { TableScroll } from './components/TableScroll';
 import { UniformTableSpans } from './components/UniformTableSpans';
 import { TableRange, TableScrollRequest } from './value-types';
-import { TableViewCell, TableViewport, Text } from './vocabulary';
+import { Box, BoxStyle, TableViewCell, TableViewport, Text } from './vocabulary';
+import { TableView } from './components/TableView';
+import fixture from './component-parity.fixture.json';
 import type { HtmlNode } from '../core/types';
 
 const context = { textPrimary: photonTheme.textPrimary } as LoweringContext;
@@ -192,5 +194,64 @@ describe('TableViewport on the web', () => {
 
     expect(view.style.height).toBe('844px');
     expect(scroll.viewport.height).toBeGreaterThan(0);
+  });
+
+  it("adopts the server's boxes at hydration, then scrolls them", async () => {
+    // The markup the C# server writes for the parity case `table-view`, which the parity spec pins
+    // against this side's lowering, hydrated by the same component.
+    interface Written {
+      tag: string;
+      text?: string;
+      attrs: Record<string, string>;
+      children: Written[];
+    }
+    const write = (node: Written): Node => {
+      if (node.tag === '#text') return document.createTextNode(node.text ?? '');
+      const element = document.createElement(node.tag);
+      for (const [name, value] of Object.entries(node.attrs)) element.setAttribute(name, value);
+      for (const child of node.children) element.appendChild(write(child));
+      return element;
+    };
+    const container = document.createElement('div');
+    container.appendChild(write((fixture as unknown as Record<string, Written[]>)['table-view'][0]));
+    document.body.appendChild(container);
+    const view = container.firstElementChild as HTMLElement;
+    Object.defineProperty(view, 'clientWidth', { value: 300, configurable: true });
+    Object.defineProperty(view, 'clientHeight', { value: 120, configurable: true });
+    const server = [...view.querySelectorAll('span')].find((span) => span.textContent === '2:2')!;
+    expect(view.hasAttribute('data-eq-table')).toBe(false);
+
+    const scrolled: number[] = [];
+    const table = new TableView(
+      new UniformTableSpans(6, 28),
+      new UniformTableSpans(4, 96),
+      (row: number, column: number) => new Text(`${row}:${column}`, 'caption', photonTheme.textPrimary),
+      {
+        pinnedRows: 1,
+        pinnedColumns: 1,
+        label: 'grid',
+        onScrolled: (offset: { down: number }) => scrolled.push(offset.down),
+        marks: [
+          new TableViewCell(0, 0, new Box(new BoxStyle({ borderWidth: 2, borderColor: photonTheme.focusRing })), true, {
+            rows: 2,
+            columns: 2,
+          }),
+        ],
+      },
+    );
+    table.hydrate(container);
+    await Promise.resolve();
+
+    // Adopted, not drawn again: the server's cell is the one in the document, and the after-pass
+    // found the element by the marker hydration gave it.
+    expect(view.isConnected).toBe(true);
+    expect(view.getAttribute('data-eq-table')).not.toBeNull();
+    expect(server.isConnected).toBe(true);
+    expect(scrolled).toEqual([0]);
+
+    wheel(view, { deltaY: 40 });
+    expect(scrolled[scrolled.length - 1]).toBe(40);
+    expect(layer(view, 0).style.transform).toBe('translate(0px, -40px)');
+    expect(server.isConnected).toBe(true);
   });
 });

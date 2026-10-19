@@ -45,6 +45,7 @@ import {
   Spacer,
   Stack,
   StyleDiff,
+  TableViewCell,
   Text,
   TextRun,
   TransitionSpec,
@@ -78,6 +79,8 @@ import { Table } from './components/Table';
 import { DataTable } from './components/DataTable';
 import { DataColumn } from './components/DataColumn';
 import { DataRow } from './components/DataRow';
+import { TableView } from './components/TableView';
+import { UniformTableSpans } from './components/UniformTableSpans';
 import { Popover } from './components/Popover';
 import { Drawer } from './components/Drawer';
 import { Avatar } from './components/Avatar';
@@ -329,6 +332,24 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         ],
       ),
     ),
+    'table-view': still(
+      new TableView(
+        new UniformTableSpans(6, 28),
+        new UniformTableSpans(4, 96),
+        (row: number, column: number) => new Text(`${row}:${column}`, 'caption', photonTheme.textPrimary),
+        {
+          pinnedRows: 1,
+          pinnedColumns: 1,
+          label: 'grid',
+          marks: [
+            new TableViewCell(0, 0, new Box(new BoxStyle({ borderWidth: 2, borderColor: photonTheme.focusRing })), true, {
+              rows: 2,
+              columns: 2,
+            }),
+          ],
+        },
+      ),
+    ),
     'popover-closed': still(
       new Popover(
         new Button('Info'),
@@ -553,8 +574,9 @@ function canonical(node: HtmlNode): unknown {
   for (const key of Object.keys(node.attributes ?? {}).sort()) {
     // The channel KEY itself goes with the channel — a path the client stamps to find the element
     // again after it mounts, which the server has no reason to write. An InView's observer key is
-    // the same kind (the C# LowerInView says so): only the client can watch anything.
-    if (key === 'data-eq-scroll' || key === 'data-eq-inview') continue;
+    // the same kind (the C# LowerInView says so): only the client can watch anything. A table
+    // viewport's is a third: the client's after-pass finds the element by it to drive its scroll.
+    if (key === 'data-eq-scroll' || key === 'data-eq-inview' || key === 'data-eq-table') continue;
     const value = node.attributes[key];
     if (value !== undefined && value !== null) attrs[key] = normalize(key, value);
   }
