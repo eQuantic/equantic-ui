@@ -9,7 +9,8 @@ tolerates around the lowered tree, and the plain-text part walked from the same 
 ### Requirement: A message names its culture
 
 `EmailRenderer.Render` SHALL take the message's culture as an optional `CultureInfo`. The document
-SHALL name it on `<html lang>` by its name, escaped as an attribute, and SHALL name `en` when no culture
+SHALL name it on `<html lang>` by its IETF language tag, escaped as an attribute, so a legacy
+.NET name such as `zh-CHS` is written `zh-Hans`, and SHALL name `en` when no culture
 is given or the invariant culture is. The tree SHALL be rendered under the given culture, its formatting
 and its lookup culture alike, so what a component writes in Build is in that culture, while every
 length and color in the markup SHALL be written invariant. The caller's ambient cultures SHALL be in
@@ -19,6 +20,11 @@ force again when the render returns or throws.
 
 - **WHEN** an app renders a message with `culture: CultureInfo.GetCultureInfo("pt-BR")`
 - **THEN** its HTML opens with `<html lang="pt-BR"`
+
+#### Scenario: A legacy Chinese culture
+
+- **WHEN** an app renders a message with `CultureInfo.GetCultureInfo("zh-CHS")` or `"zh-CHT"`
+- **THEN** its HTML opens with `<html lang="zh-Hans"` or `<html lang="zh-Hant"`, the tags those names stand for
 
 #### Scenario: No culture, or the invariant one
 
