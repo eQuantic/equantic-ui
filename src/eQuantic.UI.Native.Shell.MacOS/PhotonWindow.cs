@@ -462,23 +462,10 @@ public sealed class PhotonWindow
                 break;
             case EventTypeScrollWheel:
             {
-                // Both axes: a trackpad swipes sideways as readily as it scrolls, and macOS has already
-                // turned Shift with a wheel into a horizontal movement. A trackpad's precise deltas
-                // apply as they come; a wheel's lines glide.
-                var precise = SendBool(e, Sel("hasPreciseScrollingDeltas"));
-                host.ScrollBy(x, y, WheelTravel(e, "scrollingDeltaX", precise), WheelTravel(e, "scrollingDeltaY", precise),
-                    stepped: !precise);
+                var (across, down, stepped) = MacWheel.Read(e);
+                host.ScrollBy(x, y, across, down, stepped);
                 break;
             }
         }
     }
-
-    /// <summary>
-    /// How far this wheel event asked the content to move, in dp. A trackpad (and a Magic Mouse)
-    /// reports PRECISE deltas already in points; a wheel reports LINES, and one line is
-    /// <see cref="Touch.WheelLine"/>. Passing the line count straight through moved a page three
-    /// pixels per notch, which is a hundred turns of the wheel to reach the bottom of anything.
-    /// </summary>
-    private static float WheelTravel(IntPtr e, string axis, bool precise) => Touch.WheelTravel(
-        (float)-SendDouble(e, Sel(axis)), precise);
 }
