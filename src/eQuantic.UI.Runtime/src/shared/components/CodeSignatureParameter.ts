@@ -1,0 +1,3 @@
+import { $eq } from "../runtime-exports";
+
+export class CodeSignatureParameter { declare label: string; declare documentation: string | null; constructor(label: any = null) {this.label = label;this.documentation = null;} equals(o: unknown) { return o instanceof CodeSignatureParameter && o.constructor === this.constructor && $eq.equals(this.label, o.label) && $eq.equals(this.documentation, o.documentation); } with(patch: any): CodeSignatureParameter { return $eq.withPatch(this, patch); } static $record = true; getHashCode(): number { return $eq.hash.combine(this.label, this.documentation); } toString() { return $eq.text.record(this, 'CodeSignatureParameter', ['Label', 'Documentation']); } }

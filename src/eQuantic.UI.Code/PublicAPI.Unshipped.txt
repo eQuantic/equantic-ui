@@ -32,3 +32,93 @@ eQuantic.UI.Code.CodeHoverSession.ShowAt(eQuantic.UI.Code.CodePosition position)
 eQuantic.UI.Code.ICodeDiagnosticProvider
 eQuantic.UI.Code.ICodeDiagnosticProvider.DiagnoseAsync(eQuantic.UI.Code.CodeDocument! document, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiagnostic!>!>!
 eQuantic.UI.Code.CodeDecorationKind.Dots = 6 -> eQuantic.UI.Code.CodeDecorationKind
+eQuantic.UI.Code.CodeEditorController.SignatureHelp.get -> eQuantic.UI.Code.CodeSignatureHelpSession!
+eQuantic.UI.Code.CodeSignature.Documentation.get -> string?
+eQuantic.UI.Code.CodeSignature.Documentation.init -> void
+eQuantic.UI.Code.CodeSignature.Parameters.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeSignatureParameter!>!
+eQuantic.UI.Code.CodeSignature.Parameters.init -> void
+eQuantic.UI.Code.CodeSignature.ActiveParameter.get -> int?
+eQuantic.UI.Code.CodeSignature.ActiveParameter.init -> void
+eQuantic.UI.Code.CodeSignature.ParameterStart(int index) -> int
+eQuantic.UI.Code.CodeSignature
+eQuantic.UI.Code.CodeSignature.<Clone>$() -> eQuantic.UI.Code.CodeSignature!
+eQuantic.UI.Code.CodeSignature.CodeSignature(string! Label) -> void
+eQuantic.UI.Code.CodeSignature.Deconstruct(out string! Label) -> void
+eQuantic.UI.Code.CodeSignature.Equals(eQuantic.UI.Code.CodeSignature? other) -> bool
+override eQuantic.UI.Code.CodeSignature.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeSignature.GetHashCode() -> int
+override eQuantic.UI.Code.CodeSignature.ToString() -> string!
+static eQuantic.UI.Code.CodeSignature.operator !=(eQuantic.UI.Code.CodeSignature? left, eQuantic.UI.Code.CodeSignature? right) -> bool
+static eQuantic.UI.Code.CodeSignature.operator ==(eQuantic.UI.Code.CodeSignature? left, eQuantic.UI.Code.CodeSignature? right) -> bool
+eQuantic.UI.Code.CodeSignature.Label.get -> string!
+eQuantic.UI.Code.CodeSignature.Label.init -> void
+eQuantic.UI.Code.CodeSignatureContext.IsRetrigger.get -> bool
+eQuantic.UI.Code.CodeSignatureContext.IsRetrigger.init -> void
+eQuantic.UI.Code.CodeSignatureContext.Active.get -> eQuantic.UI.Code.CodeSignatureHelp?
+eQuantic.UI.Code.CodeSignatureContext.Active.init -> void
+eQuantic.UI.Code.CodeSignatureContext
+eQuantic.UI.Code.CodeSignatureContext.<Clone>$() -> eQuantic.UI.Code.CodeSignatureContext!
+eQuantic.UI.Code.CodeSignatureContext.CodeSignatureContext(eQuantic.UI.Code.CodeSignatureTrigger Trigger) -> void
+eQuantic.UI.Code.CodeSignatureContext.Deconstruct(out eQuantic.UI.Code.CodeSignatureTrigger Trigger) -> void
+eQuantic.UI.Code.CodeSignatureContext.Equals(eQuantic.UI.Code.CodeSignatureContext? other) -> bool
+override eQuantic.UI.Code.CodeSignatureContext.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeSignatureContext.GetHashCode() -> int
+override eQuantic.UI.Code.CodeSignatureContext.ToString() -> string!
+static eQuantic.UI.Code.CodeSignatureContext.operator !=(eQuantic.UI.Code.CodeSignatureContext? left, eQuantic.UI.Code.CodeSignatureContext? right) -> bool
+static eQuantic.UI.Code.CodeSignatureContext.operator ==(eQuantic.UI.Code.CodeSignatureContext? left, eQuantic.UI.Code.CodeSignatureContext? right) -> bool
+eQuantic.UI.Code.CodeSignatureContext.Trigger.get -> eQuantic.UI.Code.CodeSignatureTrigger
+eQuantic.UI.Code.CodeSignatureContext.Trigger.init -> void
+eQuantic.UI.Code.CodeSignatureContext.Character.get -> char?
+eQuantic.UI.Code.CodeSignatureContext.Character.init -> void
+eQuantic.UI.Code.CodeSignatureHelp.ActiveSignature.get -> int
+eQuantic.UI.Code.CodeSignatureHelp.ActiveSignature.init -> void
+eQuantic.UI.Code.CodeSignatureHelp.ActiveParameter.get -> int
+eQuantic.UI.Code.CodeSignatureHelp.ActiveParameter.init -> void
+eQuantic.UI.Code.CodeSignatureHelp
+eQuantic.UI.Code.CodeSignatureHelp.<Clone>$() -> eQuantic.UI.Code.CodeSignatureHelp!
+eQuantic.UI.Code.CodeSignatureHelp.CodeSignatureHelp(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeSignature!>! Signatures) -> void
+eQuantic.UI.Code.CodeSignatureHelp.Deconstruct(out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeSignature!>! Signatures) -> void
+eQuantic.UI.Code.CodeSignatureHelp.Equals(eQuantic.UI.Code.CodeSignatureHelp? other) -> bool
+override eQuantic.UI.Code.CodeSignatureHelp.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeSignatureHelp.GetHashCode() -> int
+override eQuantic.UI.Code.CodeSignatureHelp.ToString() -> string!
+static eQuantic.UI.Code.CodeSignatureHelp.operator !=(eQuantic.UI.Code.CodeSignatureHelp? left, eQuantic.UI.Code.CodeSignatureHelp? right) -> bool
+static eQuantic.UI.Code.CodeSignatureHelp.operator ==(eQuantic.UI.Code.CodeSignatureHelp? left, eQuantic.UI.Code.CodeSignatureHelp? right) -> bool
+eQuantic.UI.Code.CodeSignatureHelp.Signatures.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeSignature!>!
+eQuantic.UI.Code.CodeSignatureHelp.Signatures.init -> void
+eQuantic.UI.Code.CodeSignatureHelpSession.Move(int delta) -> bool
+eQuantic.UI.Code.CodeSignatureHelpSession
+eQuantic.UI.Code.CodeSignatureHelpSession.Providers.get -> System.Collections.Generic.IList<eQuantic.UI.Code.ICodeSignatureProvider!>!
+eQuantic.UI.Code.CodeSignatureHelpSession.Delay.get -> System.TimeSpan
+eQuantic.UI.Code.CodeSignatureHelpSession.Delay.set -> void
+eQuantic.UI.Code.CodeSignatureHelpSession.IsOpen.get -> bool
+eQuantic.UI.Code.CodeSignatureHelpSession.Help.get -> eQuantic.UI.Code.CodeSignatureHelp?
+eQuantic.UI.Code.CodeSignatureHelpSession.ActiveSignature.get -> int
+eQuantic.UI.Code.CodeSignatureHelpSession.Signature.get -> eQuantic.UI.Code.CodeSignature?
+eQuantic.UI.Code.CodeSignatureHelpSession.ActiveParameter.get -> int
+eQuantic.UI.Code.CodeSignatureHelpSession.Changed -> System.Action?
+eQuantic.UI.Code.CodeSignatureHelpSession.Failed -> System.Action<System.Exception!>?
+eQuantic.UI.Code.CodeSignatureHelpSession.Invoke() -> bool
+eQuantic.UI.Code.CodeSignatureHelpSession.Dismiss() -> bool
+eQuantic.UI.Code.CodeSignatureParameter.Documentation.get -> string?
+eQuantic.UI.Code.CodeSignatureParameter.Documentation.init -> void
+eQuantic.UI.Code.CodeSignatureParameter
+eQuantic.UI.Code.CodeSignatureParameter.<Clone>$() -> eQuantic.UI.Code.CodeSignatureParameter!
+eQuantic.UI.Code.CodeSignatureParameter.CodeSignatureParameter(string! Label) -> void
+eQuantic.UI.Code.CodeSignatureParameter.Deconstruct(out string! Label) -> void
+eQuantic.UI.Code.CodeSignatureParameter.Equals(eQuantic.UI.Code.CodeSignatureParameter? other) -> bool
+override eQuantic.UI.Code.CodeSignatureParameter.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeSignatureParameter.GetHashCode() -> int
+override eQuantic.UI.Code.CodeSignatureParameter.ToString() -> string!
+static eQuantic.UI.Code.CodeSignatureParameter.operator !=(eQuantic.UI.Code.CodeSignatureParameter? left, eQuantic.UI.Code.CodeSignatureParameter? right) -> bool
+static eQuantic.UI.Code.CodeSignatureParameter.operator ==(eQuantic.UI.Code.CodeSignatureParameter? left, eQuantic.UI.Code.CodeSignatureParameter? right) -> bool
+eQuantic.UI.Code.CodeSignatureParameter.Label.get -> string!
+eQuantic.UI.Code.CodeSignatureParameter.Label.init -> void
+eQuantic.UI.Code.CodeSignatureTrigger.Character = 1 -> eQuantic.UI.Code.CodeSignatureTrigger
+eQuantic.UI.Code.CodeSignatureTrigger.ContentChange = 2 -> eQuantic.UI.Code.CodeSignatureTrigger
+eQuantic.UI.Code.CodeSignatureTrigger
+eQuantic.UI.Code.CodeSignatureTrigger.Invoked = 0 -> eQuantic.UI.Code.CodeSignatureTrigger
+eQuantic.UI.Code.ICodeSignatureProvider.TriggerCharacters.get -> System.Collections.Generic.IReadOnlyList<char>!
+eQuantic.UI.Code.ICodeSignatureProvider.RetriggerCharacters.get -> System.Collections.Generic.IReadOnlyList<char>!
+eQuantic.UI.Code.ICodeSignatureProvider.SignatureHelpAsync(eQuantic.UI.Code.CodeDocument! document, eQuantic.UI.Code.CodePosition position, eQuantic.UI.Code.CodeSignatureContext! context, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<eQuantic.UI.Code.CodeSignatureHelp?>!
+eQuantic.UI.Code.ICodeSignatureProvider

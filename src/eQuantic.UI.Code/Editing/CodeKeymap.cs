@@ -77,6 +77,13 @@ public static class CodeKeymap
         // ⌃Space, which a browser reports as the command key and a Mac's own shell as Control: asks
         // for the list where the caret is. Before the chords, which would take a space as a letter.
         if (key == " " && (command || control) && !shift && !alt) return completion.Invoke();
+        // ⇧⌘Space (Ctrl+Shift+Space): the panel of the call at the caret, as VS Code has it.
+        if (key == " " && (command || control) && shift && !alt) return editor.SignatureHelp.Invoke();
+        // ↑ and ↓ walk the overloads while the panel shows more than one, and move the caret otherwise; a
+        // list showing has already taken them above.
+        if (!command && !control && !alt && !shift && key is "ArrowUp" or "ArrowDown"
+            && editor.SignatureHelp.Move(key == "ArrowUp" ? -1 : 1))
+            return true;
 
         // ---- the card and the problems ------------------------------------------------------------
         // ⌘K ⌘I (Ctrl+K Ctrl+I) shows the card for the caret, as VS Code has it: ⌘K waits for one key,
@@ -101,6 +108,8 @@ public static class CodeKeymap
         // Escape closes a card first, only it, so the trap on Tab stays armed and a dialog around the
         // editor stays open; a list showing has already taken the key above.
         if (key == "Escape" && editor.Hover.Dismiss()) return true;
+        // …and then the panel, before the trap on Tab.
+        if (key == "Escape" && editor.SignatureHelp.Dismiss()) return true;
 
         // Escape with no list showing releases the trap, unclaimed, so the host can go on meaning
         // what Escape means around the editor.
