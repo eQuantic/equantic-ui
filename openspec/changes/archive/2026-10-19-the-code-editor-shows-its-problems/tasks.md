@@ -46,7 +46,7 @@
 
 ## 5. Documentation
 
-- [ ] 5.1 docs/CODE-EDITOR-PLAN.md: where slice 4 stands
-- [ ] 5.2 The wiki's CodeEditor page in every language it is written in
+- [x] 5.1 docs/CODE-EDITOR-PLAN.md: where slice 4 stands
+- [x] 5.2 The wiki's CodeEditor page in every language it is written in
 - [x] 5.3 One ledger entry, a file under docs/ledger/, citing #299 and #1005
-- [ ] 5.4 Archive this change before the merge
+- [x] 5.4 Archive this change before the merge
