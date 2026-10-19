@@ -60,12 +60,12 @@
 [EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsSecretStore.WindowsSecretStore() -> void
 [EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsSecretStore.WindowsSecretStore(string! directory) -> void
 [EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsTheme
+[EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsUrlLauncher
+[EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsUrlLauncher.WindowsUrlLauncher(eQuantic.UI.Primitives.OpenUrlPolicy! policy, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Native.Shell.Windows.WindowsUrlLauncher!>! logger) -> void
 [EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsWorkspace
-[EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsWorkspace.CanOpen(System.Uri! url) -> bool
 [EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsWorkspace.OpenFile(string! path) -> bool
-[EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsWorkspace.OpenUrl(System.Uri! url) -> bool
 [EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsWorkspace.Reveal(string! path) -> bool
-[EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsWorkspace.WindowsWorkspace(eQuantic.UI.Primitives.OpenUrlPolicy! policy, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Native.Shell.Windows.WindowsWorkspace!>! logger) -> void
+[EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsWorkspace.WindowsWorkspace() -> void
 [EQX0001]static eQuantic.UI.Native.Shell.Windows.WindowsDeepLinks.DeclaredSchemes(eQuantic.UI.Native.Hosting.PhotonApplication! app) -> System.Collections.Generic.IReadOnlyList<string!>!
 [EQX0001]static eQuantic.UI.Native.Shell.Windows.WindowsDeepLinks.ForwardToRunningInstance(string! className, System.Uri! url) -> bool
 [EQX0001]static eQuantic.UI.Native.Shell.Windows.WindowsDeepLinks.Install(eQuantic.UI.Native.Hosting.PhotonApplication? app = null) -> eQuantic.UI.Primitives.DeepLinkRelay!

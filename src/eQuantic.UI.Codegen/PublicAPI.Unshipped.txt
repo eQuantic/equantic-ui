@@ -1,5 +1,1 @@
 #nullable enable
-static eQuantic.UI.Codegen.AndroidManifestWriter.Document(System.Action<eQuantic.UI.Codegen.AndroidManifestWriter!>! body) -> string!
-eQuantic.UI.Codegen.AndroidManifestWriter.QueriesForLinks(params string![]! schemes) -> eQuantic.UI.Codegen.AndroidManifestWriter!
-eQuantic.UI.Codegen.AndroidManifestWriter
-eQuantic.UI.Codegen.AndroidManifestWriter.AndroidManifestWriter() -> void
