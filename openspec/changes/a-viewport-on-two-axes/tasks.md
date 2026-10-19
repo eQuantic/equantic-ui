@@ -2,12 +2,13 @@
 
 ## 1. The cell key at Excel's extent
 
-- [ ] 1.1 `CellRef.Key` and `CellRef.FromKey` move to `long`, and `SheetDocument`'s cell dictionary keys
+- [x] 1.1 `CellRef.Key` and `CellRef.FromKey` move to `long`, and `SheetDocument`'s cell dictionary keys
       by `long`; verify the engine builds with no warning and `SheetControllerTests` stays green
-- [ ] 1.2 Pin the last cell of Excel's grid in .NET (write, read back, `ToA1` is `XFD1048576`, key
-      17 179 869 183) and in `sheet-model.spec.ts` against the transpiled engine; verify both fail on the
-      `int` key and pass on the `long` one
-- [ ] 1.3 Regenerate the engine's transpiled pins (`EQ_UPDATE_TRANSPILED=1`) and verify the diff moves
+- [x] 1.2 Pin the last cell of Excel's grid in .NET (write, read back, `ToA1` is `XFD1048576`, key
+      17 179 869 183, two rows 262 144 apart kept apart) and in `sheet-model.spec.ts` against the
+      transpiled engine, where a `long` is a BigInt; verify the .NET test fails on the `int` key (it read
+      −1) and both pass on the `long` one (the browser never overflowed, which was the disagreement)
+- [x] 1.3 Regenerate the engine's transpiled pins (`EQ_UPDATE_TRANSPILED=1`) and verify the diff moves
       only the key's arithmetic
 
 ## 2. The vocabulary
