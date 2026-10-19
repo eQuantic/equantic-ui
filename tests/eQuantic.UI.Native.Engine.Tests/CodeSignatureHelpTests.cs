@@ -41,6 +41,13 @@ public class CodeSignatureHelpTests : IDisposable
             _pending[request].SetResult(new CodeSignatureHelp([new CodeSignature(label)]));
     }
 
+    /// <summary>A hover provider that explains every word, for a card over the panel.</summary>
+    private sealed class Explainer : ICodeHoverProvider
+    {
+        public Task<CodeHover?> HoverAsync(CodeDocument document, CodePosition position, CancellationToken cancellation) =>
+            Task.FromResult<CodeHover?>(new CodeHover(document.WordAt(position), "explained"));
+    }
+
     /// <summary>A provider that throws on every request.</summary>
     private sealed class Throwing : ICodeSignatureProvider
     {
@@ -246,6 +253,44 @@ public class CodeSignatureHelpTests : IDisposable
         Press(editor, "ArrowUp").Should().BeTrue();
 
         editor.Caret.Line.Should().Be(0, "the arrow moved the caret");
+    }
+
+    /// <summary>⌥↑ and ⌥↓ walk the overloads beside a list, which keeps ↑ and ↓, as VS Code has it.</summary>
+    [Fact]
+    public void AltArrows_WalkTheOverloads_BesideAList()
+    {
+        var editor = Editor("x.", Overloaded());
+        editor.Completion.Providers.Add(new ListCompletionProvider(new CodeCompletionItem("name"), new CodeCompletionItem("named")));
+        Type(editor, "Add(");
+        Type(editor, "na");
+        editor.Completion.IsOpen.Should().BeTrue("a word typed opens the list");
+        var selected = editor.Completion.Selected;
+
+        Press(editor, "ArrowDown", KeyModifiers.Alt).Should().BeTrue();
+
+        editor.SignatureHelp.ActiveSignature.Should().Be(1, "⌥↓ walked to the next overload");
+        editor.Completion.IsOpen.Should().BeTrue();
+        editor.Completion.Selected.Should().Be(selected, "and the list kept its selection");
+    }
+
+    /// <summary>A card hides the panel, and the arrows are then the caret's: they walked the overloads of a
+    /// panel nobody could see.</summary>
+    [Fact]
+    public void UnderACard_TheArrowsMoveTheCaret()
+    {
+        var editor = Editor("var a = 1;\nx.", Overloaded());
+        editor.Hover.Providers.Add(new Explainer());
+        Type(editor, "Add(");
+        Press(editor, "k", KeyModifiers.Command).Should().BeTrue();
+        Press(editor, "i", KeyModifiers.Command).Should().BeTrue();
+        editor.Hover.IsOpen.Should().BeTrue("the card hides the panel");
+        var events = 0;
+        editor.SignatureHelp.Changed += () => events++;
+
+        Press(editor, "ArrowUp").Should().BeTrue();
+
+        editor.Caret.Line.Should().Be(0, "the arrow moved the caret");
+        events.Should().Be(1, "the panel closed when the caret left the call, and no overload was walked first");
     }
 
     [Fact]

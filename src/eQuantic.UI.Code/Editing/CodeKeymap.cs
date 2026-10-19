@@ -80,8 +80,10 @@ public static class CodeKeymap
         // ⇧⌘Space (Ctrl+Shift+Space): the panel of the call at the caret, as VS Code has it.
         if (key == " " && (command || control) && shift && !alt) return editor.SignatureHelp.Invoke();
         // ↑ and ↓ walk the overloads while the panel shows more than one, and move the caret otherwise; a
-        // list showing has already taken them above.
-        if (!command && !control && !alt && !shift && key is "ArrowUp" or "ArrowDown"
+        // list showing has already taken them above, and a card showing hides the panel, whose keys they
+        // then are not. ⌥↑ and ⌥↓ (Alt+↑, Alt+↓) walk them too, which the list leaves alone, as VS Code
+        // has it: beside a list, they are the overloads' only keys.
+        if (!command && !control && !shift && key is "ArrowUp" or "ArrowDown" && !editor.Hover.IsOpen
             && editor.SignatureHelp.Move(key == "ArrowUp" ? -1 : 1))
             return true;
 
