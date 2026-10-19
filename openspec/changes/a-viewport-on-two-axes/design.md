@@ -40,7 +40,7 @@ spreadsheet):
 
 ## Decisions
 
-### 1. A node that places, a component that builds
+### 1. A node that places, a component that builds, a cell that is a node
 
 `TableViewport` (vocabulary) places the cells it is handed by row and column, pins the leading
 bands, clips, scrolls and draws the marks and the scrollbars. `TableView` (`eQuantic.UI.Components`)
@@ -57,8 +57,14 @@ mechanism for one consumer.
 
 The window has hysteresis: the component builds again only when the visible rows or columns leave the
 ones already built, then builds the visible ones plus the overscan. `ListView` rebuilds whenever its
-computed window changes, which a scroll of one row always does. Cells are keyed by row and column, so a
-cell that stays in the window keeps its element across a rebuild.
+computed window changes, which a scroll of one row always does.
+
+A cell is a node, `TableViewCell`, as it is a widget in Flutter: it wraps what the builder returned
+and says which row and column it stands at, and how many it covers. Its key is its position, so a cell
+that stays in the window keeps its element across a rebuild: the element tree matches a list by key,
+and Flutter's two-dimensional child manager keys its children by their vicinity for the same reason. A
+mark is a cell drawn above the others (`Mark`), covering a range, and never pressed: a press reaches
+the cell beneath it.
 
 ### 2. The viewport owns its offset, on both targets
 
@@ -72,16 +78,23 @@ the browser gave natively and the design keeps: a trackpad's momentum, which mac
 movement; an overscroll that passes to the page, by not cancelling the wheel event the viewport could
 not take.
 
-### 3. One scroll model, written once
+### 3. One scroll model, written once, carried by the node
 
-A `TableScroll` class in the vocabulary holds the offset and decides every movement: clamping, the
+The viewport carries an `ITableScrollModel`, as a `SheetSurface` carries its controller and a
+`CodeSurface` its editor: the vocabulary declares the door, a realizer only feeds it the platform's
+events and reads back where it stands. The implementation is `TableScroll`, in
+`eQuantic.UI.Components`, which eqc transpiles into the runtime with the rest of the components, and
+which `TableView` creates once and keeps across rebuilds. It decides every movement: clamping, the
 wheel (pixels, lines and pages, Shift turning a vertical wheel horizontal where the platform did not),
-a pan with its velocity over the last moments, a fling decaying on a clock the host supplies, the glide
-of a wheel step, the scrollbars' geometry (thumb, track, a drag's mapping, a press's page), the
-remainder it could not take for the scroller around it, and the honoured request version. eqc
-transpiles it; Photon keeps one on the viewport's element (`NodeStates`), the web one per mounted
-viewport. Each host only feeds it events and time. Rejected: a TypeScript twin beside a C# one (the two
-drift), and reusing Photon's `ScrollClock` (not written once; it stays for `ScrollView`).
+a pan with its velocity over the last moments, a fling decaying on the clock the host advances, the
+glide of a wheel step, the scrollbars' geometry (thumb, track, a drag's mapping, a press's page), the
+remainder it could not take for the scroller around it, and the request version it last honoured.
+
+So the offset lives in the model the component owns, and neither target keeps a store of its own for
+it. Rejected: the offset as element state on Photon and per-mount state on the web, with a model each
+realizer would import (two owners of one number, and `[TwinIsTranspiled]` is held to the forms'
+models by a test); a TypeScript twin beside a C# one (the two drift); Photon's `ScrollClock` (not
+written once; it stays for `ScrollView`).
 
 The glide and the fling reuse `ScrollClock`'s constants and its reduced-motion rule, so a wheel feels
 the same in a `ScrollView` and a table on Photon.
@@ -111,8 +124,8 @@ vertically only, the corner on neither. Emit draws the body, the pinned columns,
 corner, each under its own clip and input narrowing, then the marks per band, then the scrollbars in
 their strips. A `TableRegion` carries the element and its model to the host, which routes the wheel
 (two axes now), the pan and fling, the scrollbar presses and the reveal of a new request version after
-the frame, as it reveals a code caret. The offset reaches measure from the element's state, as a
-`ScrollView`'s does.
+the frame, as it reveals a code caret. Measure reads the offset from the model the node carries, so a
+scroll step on Photon lays the same tree out again without building it.
 
 The scrollbars take a strip of their own on each overflowing axis, as Excel's and Sheets' do, so no
 cell hides under a thumb and the window the component builds for excludes them.
@@ -160,9 +173,8 @@ change here; 0b sets it.
 - [Before hydration, a viewport on an unbounded axis is empty on the web, because the server cannot
   measure] → it was laid out wrong there before (D1); the client corrects it in the frame hydration
   runs, and a test pins that it does.
-- [The Element tree's E2b (#976, another session) is changing how the Photon host addresses elements]
-  → the Photon part starts from main after E2b merges, or rebases onto it; the region and the state
-  follow whatever E2b leaves.
+- [The Element tree's E2b (#976) changed how the Photon host addresses elements] → it merged (#994)
+  before this slice's implementation began, so the Photon part starts from it.
 - [The served runtime grows by the model, the lowering and the component] → measured against its budget
   on every push; a growth beyond it is stated in the pull request with the budget's line moved.
 - [A new mechanism (a model a host drives) where `ScrollView` has another] → stated as a non-goal to

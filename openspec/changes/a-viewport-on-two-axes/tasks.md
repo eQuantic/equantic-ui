@@ -13,37 +13,45 @@
 
 ## 2. The vocabulary
 
-- [ ] 2.1 Add `ITableSpans` with its uniform and sparse forms (sorted overrides, prefix sums) and
-      `TableOffset` (two doubles); verify by xUnit tests of offset, index-at and total over 1 048 576
-      rows with overrides at both ends
-- [ ] 2.2 Add `TableViewCell`, `TableMark` and `TableScrollRequest` (offset or range, with a version), and
-      the `TableViewport` node (spans, cells, `PinnedRows`, `PinnedColumns`, `Marks`, `Request`,
-      `OnScrolled`, `OnViewportChanged`, `Width`, `Height`, `Label`), sealed, with its `Visit`, its
-      `ChildSlots` case and an opaque `LayoutTransparency` entry; verify the solution builds once every
-      visitor has its case
-- [ ] 2.3 Add the `TableViewport` factory to `UI`, and the `PublicAPI.Unshipped.txt` lines; verify
+- [x] 2.1 Add `ITableSpans` to the vocabulary, its uniform and sparse forms to the components
+      (`UniformTableSpans`, `SparseTableSpans`: sorted overrides, prefix sums, transpiled like the rest),
+      and `TableOffset` (two doubles); verify by xUnit tests of offset, index-at and total over
+      1 048 576 rows with overrides at both ends
+- [x] 2.2 Add `TableRange`, `TableScrollRequest` (an offset or a range to reveal, with a version) and the
+      `ITableScrollModel` door; the `TableViewCell` node (row, column, `Rows`, `Columns`, `Mark`, keyed
+      by its position) and the `TableViewport` node (spans, the scroll model, cells, `PinnedRows`,
+      `PinnedColumns`, `Request`, `OnScrolled`, `OnViewportChanged`, `Width`, `Height`, `Label`),
+      sealed, each with its `Visit`, its `ChildSlots` case and its `LayoutTransparency` entry; verify
+      the solution builds once every visitor has its case
+- [x] 2.3 Add the `TableViewport` factory to `UI`, and the `PublicAPI.Unshipped.txt` lines; verify
       `UiFactoryConformanceTests` and the public API analyzers pass
-- [ ] 2.4 Move the reflection guards that count or list nodes (`ClosedHierarchyTests`,
+- [x] 2.4 Move the reflection guards that count or list nodes (`ClosedHierarchyTests`,
       `LayoutTransparencyTests`, `FlutterParityPinTests`, `MainSizeKindCoverageTests`,
       `FactoryArguments`, `LabelledNodesReachSemanticsTests`, `NeutralVocabularyTests`); verify each
       fails before its entry and passes after
-- [ ] 2.5 The runtime's twins: `nodes.ts`, `vocabulary.ts`, the generated node kinds
+- [x] 2.5 The runtime's twins: `nodes.ts`, `vocabulary.ts`, the generated node kinds
       (`EQ_UPDATE_NODE_KINDS_TS=1`), the exports fixture (`EQ_UPDATE_PRIMITIVES_FIXTURE=1`), `index.ts`
       and `runtime-exports.ts`; verify `tsc` through `-t:TestRuntime` and the generator tests pass
-- [ ] 2.6 `docs/FLUTTER-PARITY.md`: the `RenderSliver` row says what the two-dimensional viewport
+- [x] 2.6 `docs/FLUTTER-PARITY.md`: the `RenderSliver` row says what the two-dimensional viewport
       covers, a `TableView` row is added with its probe; verify `FlutterParityPinTests` passes
+
+- [x] 2.7 Unify `PointerKind`: the Photon host's own copy (mouse, touch) moves into the vocabulary,
+      which adds the stylus; verify the solution builds and the hover tests stay green
+- [x] 2.8 eqc: an array literal of a vocabulary enum's values is typed by the enum's union (it was a
+      `string[]` to TypeScript, and the scroll model's loop over its axes failed the runtime's
+      typecheck); verify `EmittedTypeSurfaceTests` fails without the fix and passes with it
 
 ## 3. The scroll model, written once
 
-- [ ] 3.1 `TableScroll`: offset, clamping, the remainder an axis could not take, the wheel (pixels,
+- [x] 3.1 `TableScroll` in `eQuantic.UI.Components`, implementing `ITableScrollModel`: offset, clamping, the remainder an axis could not take, the wheel (pixels,
       lines, pages, Shift), the glide of a wheel step, the honoured request version, and the reveal of a
       range around the pinned bands; verify by xUnit tests for every scenario of the `table-viewport`
       spec that the model decides alone
-- [ ] 3.2 The pan and the fling on a supplied clock, with `ScrollClock`'s constants and the
+- [x] 3.2 The pan and the fling on a supplied clock, with `ScrollClock`'s constants and the
       reduced-motion rule, and the scrollbars' geometry (thumb size and floor, a drag's mapping, a
       track press's page); verify by xUnit tests, including the thumb dragged to the end reaching the
       last row of 1 048 576
-- [ ] 3.3 Transpile it and run the same scripts in Vitest against the transpiled module; verify the
+- [x] 3.3 Transpile it and run the same scripts in Vitest against the transpiled module; verify the
       offsets agree with .NET's to the last digit, and the transpiled pin is recorded
 
 ## 4. Photon's wheel on two axes
@@ -66,8 +74,8 @@
 - [ ] 5.2 Emit: the four bands under their clips and input narrowing, the marks per band, the
       scrollbars in their strips, a `TableRegion`; verify goldens for the bands, a mark across the
       pinned row and both scrollbars, light and dark
-- [ ] 5.3 The host: `TableScroll` on the element's state; the wheel, the pan and fling, the scrollbar
-      drag and the track press routed to it; the request's version revealed after the frame; the
+- [ ] 5.3 The host: the wheel, the pan and fling, the scrollbar drag and the track press routed to the
+      model the node carries, its clock advanced while it moves; the request's version revealed after the frame; the
       reports once per change; verify `PhotonHost` tests for every scenario of the `table-viewport`
       spec on Photon
 - [ ] 5.4 Semantics: the viewport is a labelled group over the cells it holds; verify

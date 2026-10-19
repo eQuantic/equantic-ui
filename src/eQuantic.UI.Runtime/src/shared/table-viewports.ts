@@ -1,0 +1,339 @@
+/**
+ * The after-pass half of a table viewport on the web (the C# twin is Photon's host and emit): lowering
+ * DECLARES each viewport, keyed by the path stamped on its element as `data-eq-table`, with the
+ * offset its cells were placed at; the commit, once the pass is written, finds the element and drives
+ * the scroll model the node carries.
+ *
+ * The model owns the offset (the browser scrolls nothing: an element is at most 16 777 214 px tall,
+ * which a million rows pass). So this half reads the window's size, hands the model the wheel, the
+ * pointer and the clock, and paints what it answers: each band's layer moved by the distance scrolled
+ * since its cells were placed (a scroll step inside the built cells rewrites no cell), the scrollbars
+ * where the model puts them, and the bands short of them. It tells the owner where the grid stands and
+ * how large the window is, each once per change, and gives a viewport asked to fill an axis with no
+ * bound the visible extent of the scroller around it.
+ */
+
+import { logger } from '../utils/logger';
+import { modifiersOf } from './css-values';
+import type { TableScrollModelLike, TableViewportNode } from './nodes';
+
+/** What the latest pass said about one viewport. */
+export interface TableViewportDeclaration {
+  node: TableViewportNode;
+  /** The offset the pass placed the cells at: the layers move by the distance from it. */
+  base: { across: number; down: number };
+  pinnedAcross: number;
+  pinnedDown: number;
+}
+
+/** A wheel's line, in points: the C# `Touch.WheelLine`. */
+const WHEEL_LINE = 16;
+
+const declared = new Map<string, TableViewportDeclaration>();
+
+/** Marker properties live on the ELEMENT: the reconciler reuses it, so what was attached survives. */
+interface TableElement extends HTMLElement {
+  __eqTable?: TableViewportDeclaration;
+  __eqTableObserver?: ResizeObserver;
+  __eqTableListening?: boolean;
+  __eqTableFrame?: number;
+  __eqTableReported?: { across: number; down: number; width: number; height: number };
+  __eqTableLogged?: number;
+}
+
+export function declareTableViewport(path: string, declaration: TableViewportDeclaration): void {
+  declared.set(path, declaration);
+}
+
+const watched = new Set<TableElement>();
+
+function stopWatching(view: TableElement): void {
+  view.__eqTableObserver?.disconnect();
+  view.__eqTableObserver = undefined;
+  if (view.__eqTableFrame !== undefined) cancelAnimationFrame(view.__eqTableFrame);
+  view.__eqTableFrame = undefined;
+  watched.delete(view);
+}
+
+/** Lets go of every viewport that left the document: an unmount runs no pass that would notice. */
+export function releaseDetachedTableViewports(): void {
+  for (const view of [...watched]) if (!view.isConnected) stopWatching(view);
+}
+
+let scheduled = false;
+
+/** Commits after the pass's DOM is written, once for however many passes end before it runs (the
+ * scroll viewports' move, for the same reasons). */
+export function scheduleTableViewportCommit(): void {
+  if (scheduled || declared.size === 0) return;
+  scheduled = true;
+  const commit = () => {
+    scheduled = false;
+    commitTableViewports();
+  };
+  if (typeof queueMicrotask === 'function') queueMicrotask(commit);
+  else void Promise.resolve().then(commit);
+}
+
+export function commitTableViewports(): void {
+  if (declared.size === 0) return;
+  if (typeof document === 'undefined') {
+    declared.clear();
+    return;
+  }
+  for (const view of document.querySelectorAll<TableElement>('[data-eq-table]')) {
+    const declaration = declared.get(view.getAttribute('data-eq-table') ?? '');
+    if (!declaration) continue;
+    view.__eqTable = declaration;
+    listen(view);
+    arrange(view);
+    const { node } = declaration;
+    if (node.scroll.apply(node.request ?? null, node.rows, node.columns, pinnedRowsOf(node), pinnedColumnsOf(node))) {
+      arrange(view);
+    }
+    paint(view);
+    report(view);
+    if (typeof ResizeObserver === 'function' && !view.__eqTableObserver) {
+      const observer = new ResizeObserver(() => {
+        arrange(view);
+        paint(view);
+        report(view);
+      });
+      observer.observe(view);
+      view.__eqTableObserver = observer;
+      watched.add(view);
+    }
+  }
+  for (const view of [...watched]) if (!view.isConnected) stopWatching(view);
+  declared.clear();
+}
+
+function pinnedRowsOf(node: TableViewportNode): number {
+  return Math.min(Math.max(node.pinnedRows ?? 0, 0), node.rows.count);
+}
+
+function pinnedColumnsOf(node: TableViewportNode): number {
+  return Math.min(Math.max(node.pinnedColumns ?? 0, 0), node.columns.count);
+}
+
+/**
+ * The window the model is told, after the unbounded axes took their extent. A viewport's box comes out
+ * empty on an axis whose parent has no definite size, because its cells are positioned and say
+ * nothing about it; there it takes the visible extent of the nearest scroller around it, or the
+ * window's, as Photon's layout does, and the development log says so once.
+ */
+function arrange(view: TableElement): void {
+  const declaration = view.__eqTable;
+  if (!declaration) return;
+  const { node } = declaration;
+  const width = fit(view, node, 'width');
+  const height = fit(view, node, 'height');
+  const reduceMotion =
+    typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  node.scroll.arrange(
+    { width, height },
+    node.columns.total,
+    node.rows.total,
+    declaration.pinnedAcross,
+    declaration.pinnedDown,
+    reduceMotion,
+  );
+}
+
+/** The extent of one axis, taking the visible extent of a scroller when the axis has none. */
+function fit(view: TableElement, node: TableViewportNode, axis: 'width' | 'height'): number {
+  const declared = axis === 'width' ? node.width : node.height;
+  if (declared && (declared as { kind?: string }).kind === 'fixed') {
+    return axis === 'width' ? view.clientWidth : view.clientHeight;
+  }
+  view.style.removeProperty(axis);
+  const own = axis === 'width' ? view.clientWidth : view.clientHeight;
+  if (own > 0) return own;
+  const scroller = scrollerAround(view, axis);
+  const visible = scroller
+    ? axis === 'width'
+      ? scroller.clientWidth
+      : scroller.clientHeight
+    : axis === 'width'
+      ? window.innerWidth
+      : window.innerHeight;
+  view.style.setProperty(axis, `${visible}px`);
+  const bit = axis === 'width' ? 1 : 2;
+  if (((view.__eqTableLogged ?? 0) & bit) === 0) {
+    view.__eqTableLogged = (view.__eqTableLogged ?? 0) | bit;
+    const label = node.label ? ` (${node.label})` : '';
+    logger.info(
+      `A table viewport${label} was asked to fill its ${axis}, which had no bound; it takes the ` +
+        `${visible} points the ${scroller ? 'scroller around it' : 'window'} shows, and scrolls its grid inside them.`,
+    );
+  }
+  return visible;
+}
+
+/** The nearest ancestor that scrolls on an axis, or none. */
+function scrollerAround(view: HTMLElement, axis: 'width' | 'height'): HTMLElement | null {
+  for (let at = view.parentElement; at; at = at.parentElement) {
+    const style = getComputedStyle(at);
+    const overflow = axis === 'width' ? style.overflowX : style.overflowY;
+    if (overflow === 'auto' || overflow === 'scroll') return at;
+  }
+  return null;
+}
+
+/** The bands' layers moved to the model's offset, the bands short of the scrollbars, the scrollbars
+ * where the model puts them. */
+function paint(view: TableElement): void {
+  const declaration = view.__eqTable;
+  if (!declaration) return;
+  const { node, base } = declaration;
+  const scroll = node.scroll;
+  const across = scroll.offset.across - base.across;
+  const down = scroll.offset.down - base.down;
+  const viewport = scroll.viewport;
+  const right = Math.max(0, view.clientWidth - viewport.width);
+  const bottom = Math.max(0, view.clientHeight - viewport.height);
+  const bands = view.children;
+  for (let i = 0; i < 8 && i < bands.length; i++) {
+    const band = bands[i] as HTMLElement;
+    const which = i % 4;
+    const movesAcross = which === 0 || which === 2;
+    const movesDown = which === 0 || which === 1;
+    if (movesAcross) band.style.right = `${right}px`;
+    if (movesDown) band.style.bottom = `${bottom}px`;
+    const layer = band.firstElementChild as HTMLElement | null;
+    if (!layer) continue;
+    const x = movesAcross ? -across : 0;
+    const y = movesDown ? -down : 0;
+    layer.style.transform = x === 0 && y === 0 ? '' : `translate(${x}px, ${y}px)`;
+  }
+  placeScrollbar(bands[8] as HTMLElement | undefined, scroll, 'vertical');
+  placeScrollbar(bands[9] as HTMLElement | undefined, scroll, 'horizontal');
+}
+
+function placeScrollbar(track: HTMLElement | undefined, scroll: TableScrollModelLike, axis: string): void {
+  if (!track) return;
+  const strip = scroll.trackOf(axis);
+  const knob = scroll.thumbOf(axis);
+  if (!strip || !knob) {
+    track.style.display = 'none';
+    return;
+  }
+  track.style.display = 'block';
+  track.style.left = `${strip.x}px`;
+  track.style.top = `${strip.y}px`;
+  track.style.width = `${strip.width}px`;
+  track.style.height = `${strip.height}px`;
+  const thumb = track.firstElementChild as HTMLElement | null;
+  if (!thumb) return;
+  // The thumb sits inside the strip, a little in from its edges, as Photon draws it.
+  const inset = 2;
+  thumb.style.left = `${knob.x - strip.x + inset}px`;
+  thumb.style.top = `${knob.y - strip.y + inset}px`;
+  thumb.style.width = `${Math.max(0, knob.width - 2 * inset)}px`;
+  thumb.style.height = `${Math.max(0, knob.height - 2 * inset)}px`;
+}
+
+/** Tells the owner where the grid stands and how large the window is, each once per change. */
+function report(view: TableElement): void {
+  const declaration = view.__eqTable;
+  if (!declaration) return;
+  const { node } = declaration;
+  const offset = node.scroll.offset;
+  const viewport = node.scroll.viewport;
+  const last = view.__eqTableReported;
+  view.__eqTableReported = {
+    across: offset.across,
+    down: offset.down,
+    width: viewport.width,
+    height: viewport.height,
+  };
+  if (!last || last.width !== viewport.width || last.height !== viewport.height) {
+    node.onViewportChanged?.(viewport);
+  }
+  if (!last || last.across !== offset.across || last.down !== offset.down) {
+    node.onScrolled?.(offset);
+  }
+}
+
+/** Keeps a glide or a fling moving, a frame at a time, while the model says it is. */
+function animate(view: TableElement): void {
+  if (view.__eqTableFrame !== undefined || typeof requestAnimationFrame !== 'function') return;
+  const step = () => {
+    view.__eqTableFrame = undefined;
+    const declaration = view.__eqTable;
+    if (!declaration || !view.isConnected) return;
+    const moving = declaration.node.scroll.advance(performance.now());
+    paint(view);
+    report(view);
+    if (moving) view.__eqTableFrame = requestAnimationFrame(step);
+  };
+  view.__eqTableFrame = requestAnimationFrame(step);
+}
+
+/** The wheel and the pointer, attached once: each reads the latest declaration off the element. */
+function listen(view: TableElement): void {
+  if (view.__eqTableListening) return;
+  view.__eqTableListening = true;
+
+  view.addEventListener(
+    'wheel',
+    (event: WheelEvent) => {
+      const declaration = view.__eqTable;
+      if (!declaration) return;
+      const scroll = declaration.node.scroll;
+      const unit =
+        event.deltaMode === 1 ? WHEEL_LINE : event.deltaMode === 2 ? scroll.viewport.height : 1;
+      const across = event.deltaX * unit;
+      const down = event.deltaY * unit;
+      // A wheel's notch arrives in lines, or as a large whole number of pixels; a trackpad's movement
+      // arrives as the small, often fractional, pixels it moved. Only the notch glides.
+      const stepped =
+        event.deltaMode !== 0 ||
+        (Number.isInteger(event.deltaY) && Math.abs(event.deltaY) >= 50 && event.deltaX === 0);
+      const left = scroll.wheel(across, down, stepped, modifiersOf(event));
+      // What the viewport could not take passes to the page: the event is cancelled only when the
+      // model took something of it.
+      if (left.across !== across || left.down !== down) event.preventDefault();
+      paint(view);
+      report(view);
+      animate(view);
+    },
+    { passive: false },
+  );
+
+  const local = (event: PointerEvent) => {
+    const box = view.getBoundingClientRect();
+    return { x: event.clientX - box.left, y: event.clientY - box.top };
+  };
+  const kindOf = (event: PointerEvent) =>
+    event.pointerType === 'touch' ? 'touch' : event.pointerType === 'pen' ? 'stylus' : 'mouse';
+  let captured: number | null = null;
+
+  view.addEventListener('pointerdown', (event: PointerEvent) => {
+    const declaration = view.__eqTable;
+    if (!declaration) return;
+    if (!declaration.node.scroll.pointer('down', local(event), kindOf(event), performance.now())) return;
+    captured = event.pointerId;
+    view.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+    paint(view);
+    report(view);
+  });
+  const follow = (phase: 'move' | 'up' | 'cancel') => (event: PointerEvent) => {
+    if (captured !== event.pointerId) return;
+    const declaration = view.__eqTable;
+    if (!declaration) return;
+    declaration.node.scroll.pointer(phase, local(event), kindOf(event), performance.now());
+    if (phase !== 'move') {
+      captured = null;
+      view.releasePointerCapture?.(event.pointerId);
+    }
+    paint(view);
+    report(view);
+    if (phase === 'up') animate(view);
+  };
+  view.addEventListener('pointermove', follow('move'));
+  view.addEventListener('pointerup', follow('up'));
+  view.addEventListener('pointercancel', follow('cancel'));
+}
+

@@ -188,6 +188,15 @@ internal sealed partial class SemanticsVisitor
             node.Label, null, false));
 
     /// <summary>
+    /// A table viewport is a GROUP named by its label, over the cells it holds in view: a reader walks
+    /// them as it walks a list's rows. What a cell IS (a grid cell, its row and column) is the
+    /// component's to say, as a spreadsheet does.
+    /// </summary>
+    public bool Visit(TableViewport node, LayoutNode laidOut) =>
+        AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds,
+            node.Label ?? "", null, false));
+
+    /// <summary>
     /// A live region is a GROUP THE PLATFORM WATCHES. The urgency rides on the node rather than the
     /// role because that is how every platform models it — Android sets
     /// <c>accessibilityLiveRegion</c> on a container, UIKit posts an announcement — and because the

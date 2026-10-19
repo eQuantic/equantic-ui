@@ -143,7 +143,8 @@ public sealed class RealizeResult
         IReadOnlyList<LayoutNode>? overlayRoots = null, IReadOnlyList<Overlay>? overlayLayers = null,
         IReadOnlyList<SheetRegion>? sheetRegions = null,
         IReadOnlyList<CursorRegion>? cursorRegions = null,
-        IReadOnlyList<CanvasRegion>? canvasRegions = null)
+        IReadOnlyList<CanvasRegion>? canvasRegions = null,
+        IReadOnlyList<TableRegion>? tableRegions = null)
     {
         Root = root;
         OverlayRoots = overlayRoots ?? Array.Empty<LayoutNode>();
@@ -151,6 +152,7 @@ public sealed class RealizeResult
         SheetRegions = sheetRegions ?? Array.Empty<SheetRegion>();
         CursorRegions = cursorRegions ?? Array.Empty<CursorRegion>();
         CanvasRegions = canvasRegions ?? Array.Empty<CanvasRegion>();
+        TableRegions = tableRegions ?? Array.Empty<TableRegion>();
         HitRegions = hitRegions;
         HasActiveMotion = hasActiveMotion;
         HoverRegions = hoverRegions ?? Array.Empty<HoverRegion>();
@@ -183,6 +185,10 @@ public sealed class RealizeResult
 
     /// <summary>Editable spreadsheet surfaces, in paint order (topmost last).</summary>
     public IReadOnlyList<SheetRegion> SheetRegions { get; }
+
+    /// <summary>Table viewports the wheel, a pan and a scrollbar press reach, in paint order (topmost
+    /// last).</summary>
+    public IReadOnlyList<TableRegion> TableRegions { get; }
 
     /// <summary>Pointer-shape surfaces (BoxStyle.Cursor), in paint order (topmost last).</summary>
     public IReadOnlyList<CursorRegion> CursorRegions { get; }
@@ -427,7 +433,7 @@ public static class PhotonRealizer
                 || drags is { AnyActive: true },
             regions.Hovers, regions.Scrolls, regions.Drags, regions.Links, regions.Shortcuts,
             regions.Texts, regions.Stops, regions.Codes, overlayRoots,
-            realizedLayers, regions.Sheets, regions.Cursors, regions.Canvases)
+            realizedLayers, regions.Sheets, regions.Cursors, regions.Canvases, regions.Tables)
         {
             // Set here rather than through the constructor: the mark is INTERNAL (it holds a node
             // of this frame), and a public constructor cannot take one. The public shape is

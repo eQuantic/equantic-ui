@@ -32,6 +32,35 @@ public class EmittedTypeSurfaceTests
     }
 
     [Fact]
+    public void AnArrayOfAVocabularyEnum_IsTypedByItsUnion_AndArrivesImported()
+    {
+        // Untyped, the literal was a string[] to TypeScript, and an element handed on to a parameter
+        // of the enum's type failed the runtime's typecheck: the table's scroll model met it first.
+        var ts = TestHelper.ConvertClass("""
+            public int Count(Func<eQuantic.UI.Primitives.ScrollAxis, bool> keep)
+            {
+                var count = 0;
+                foreach (var axis in new[] { eQuantic.UI.Primitives.ScrollAxis.Vertical, eQuantic.UI.Primitives.ScrollAxis.Horizontal })
+                    if (keep(axis)) count++;
+                return count;
+            }
+            """);
+
+        ts.Should().Contain("(['vertical', 'horizontal'] as ScrollAxisValue[])");
+        ts.Should().MatchRegex(@"import (type )?\{[^}]*ScrollAxisValue[^}]*\} from ""@equantic/runtime""");
+    }
+
+    [Fact]
+    public void AnArrayOfAFlagsEnum_StaysANumberArray()
+    {
+        var ts = TestHelper.ConvertClass("""
+            public int Count() => new[] { eQuantic.UI.Primitives.KeyModifiers.Shift, eQuantic.UI.Primitives.KeyModifiers.Alt }.Length;
+            """);
+
+        ts.Should().NotContain("as KeyModifiersValue[]");
+    }
+
+    [Fact]
     public void ADecimalIsTheRuntimeClass_AndArrivesImported()
     {
         var ts = TestHelper.ConvertClass("""

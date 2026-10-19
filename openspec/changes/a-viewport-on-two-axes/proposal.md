@@ -79,8 +79,11 @@ rebuilds the spreadsheet on it.
 - **Components**: `TableView`, its factory in `UI`, its transpiled pin.
 - **Engine** (`eQuantic.UI.Sheet`): `CellRef.Key` and `FromKey` move to `long`; the document's
   dictionaries key by `long`; the transpiled pins move.
-- **eqc**: none expected. A gap it shows on the new code is fixed in general and pinned, not worked
-  around.
+- **eqc**: an array literal of a vocabulary enum's values is typed by the enum's union. It was a
+  `string[]` to TypeScript, so the scroll model's loop over its two axes failed the runtime's
+  typecheck: fixed in general and pinned (`EmittedTypeSurfaceTests`), as a gap the new code shows is.
+- **`PointerKind`** moves from `eQuantic.UI.Native.Components` into the vocabulary and gains
+  `Stylus` (**BREAKING** for a caller of the experimental native surface: the namespace changes).
 - **Developer surface** (`developer-surface.baseline.txt`): none. No setting, section or template
   parameter moves.
 - **Docs**: the wiki's components page and a `TableView` page in five languages, the

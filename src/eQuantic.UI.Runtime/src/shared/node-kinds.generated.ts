@@ -14,4 +14,4 @@ export type NodeKind =
   | 'image' | 'inFlow' | 'inView' | 'link' | 'liveRegion' | 'loopMotion' | 'navigable' | 'overlay'
   | 'pinned' | 'positioned' | 'presence' | 'pressable' | 'progress' | 'row' | 'safeArea'
   | 'scrollView' | 'sheetSurface' | 'shortcut' | 'simulated' | 'spacer' | 'spinner' | 'stack'
-  | 'text' | 'textEntry' | 'vector' | 'webFrame' | 'component';
+  | 'tableViewCell' | 'tableViewport' | 'text' | 'textEntry' | 'vector' | 'webFrame' | 'component';

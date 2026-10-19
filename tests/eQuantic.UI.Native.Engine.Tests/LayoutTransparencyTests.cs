@@ -76,6 +76,7 @@ public class LayoutTransparencyTests
         new SheetSurface(c, new SheetController()),
         new Shortcut(c, new KeyChord("a"), () => { }),
         new Simulated(new SimulatedState(), c),
+        new TableViewCell(0, 0, c),
     ];
 
     private static IEnumerable<SingleChildNode> Transparent(VisualNode c) =>
@@ -103,12 +104,12 @@ public class LayoutTransparencyTests
     /// quietly: a fourth exception has to be argued for here.
     /// </summary>
     [Fact]
-    public void ExactlyThreeWrappers_CarryGeometryOfTheirOwn()
+    public void ExactlyFourWrappers_CarryGeometryOfTheirOwn()
     {
         Wrappers(new Text("x")).Where(w => !w.IsLayoutTransparent()).Select(w => w.GetType().Name)
-            .Should().BeEquivalentTo(["ScrollView", "Overlay", "Positioned"],
-                "a scroller has its own viewport, an Overlay takes no space in the flow, and a "
-                + "Positioned is a contract with a Stack");
+            .Should().BeEquivalentTo(["ScrollView", "Overlay", "Positioned", "TableViewCell"],
+                "a scroller has its own viewport, an Overlay takes no space in the flow, a "
+                + "Positioned is a contract with a Stack, and a table cell one with its viewport");
     }
 
     /// <summary>

@@ -108,6 +108,10 @@ internal sealed class ChildSlots : IVisualNodeVisitor<WindowSizeClass, NodeSlots
 
     public NodeSlots Visit(Stack node, WindowSizeClass state) => NodeSlots.Listed(node.Children);
 
+    public NodeSlots Visit(TableViewCell node, WindowSizeClass state) => NodeSlots.One(node.Child);
+
+    public NodeSlots Visit(TableViewport node, WindowSizeClass state) => NodeSlots.Listed(node.Cells);
+
     public NodeSlots Visit(Text node, WindowSizeClass state) => NodeSlots.None;
 
     public NodeSlots Visit(TextEntry node, WindowSizeClass state) => NodeSlots.None;

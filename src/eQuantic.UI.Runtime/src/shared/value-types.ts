@@ -643,10 +643,67 @@ export const FaceName = {
   isWellFormed: isWellFormedFace,
 };
 
+/**
+ * Mirror of the C# `TableOffset`: how far a table viewport has scrolled its grid, across and down. In
+ * DOUBLES, unlike `Point`: the bottom of Excel's grid is 29 million points down, past what a float
+ * holds exactly, so nothing here rounds to a single.
+ */
+export class TableOffset {
+  readonly across: number;
+  readonly down: number;
+
+  constructor(across = 0, down = 0) {
+    this.across = across;
+    this.down = down;
+  }
+
+  static readonly zero = new TableOffset(0, 0);
+}
+
+/** Mirror of the C# `TableRange`: a rectangle of cells, from a row and a column, over rows and
+ * columns. */
+export class TableRange {
+  readonly row: number;
+  readonly column: number;
+  readonly rows: number;
+  readonly columns: number;
+
+  constructor(row = 0, column = 0, rows = 1, columns = 1) {
+    this.row = row;
+    this.column = column;
+    this.rows = rows;
+    this.columns = columns;
+  }
+
+  get lastRow(): number {
+    return this.row + this.rows - 1;
+  }
+
+  get lastColumn(): number {
+    return this.column + this.columns - 1;
+  }
+}
+
+/** Mirror of the C# `TableScrollRequest`: an offset to go to or a range to reveal, honoured once per
+ * version. */
+export class TableScrollRequest {
+  readonly version: number;
+  readonly offset: TableOffset | null = null;
+  readonly reveal: TableRange | null = null;
+
+  constructor(version = 0, config?: { offset?: TableOffset | null; reveal?: TableRange | null }) {
+    this.version = version;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** The twins of the vocabulary's records and structs: each hashes by its members, as `equals`
  * compares it (`ValueTwinHashTests` holds this list to the C#). */
 hashesByValue(
   ColorToken,
+  TableOffset,
+  TableRange,
+  TableScrollRequest,
   SizeValue,
   WebContent,
   EdgeInsets,

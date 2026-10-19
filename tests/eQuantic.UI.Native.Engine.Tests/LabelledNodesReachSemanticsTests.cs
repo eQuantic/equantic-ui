@@ -69,6 +69,12 @@ public class LabelledNodesReachSemanticsTests
         ["SheetSurface"] = label => new SheetSurface(new Text("sheet", TypeRole.BodyM),
             new SheetController(rows: 2, cols: 2)) { Label = label },
         ["TextEntry"] = label => new TextEntry("value") { Label = label },
+        ["TableViewport"] = label => new TableViewport(new eQuantic.UI.Components.UniformTableSpans(2, 20),
+            new eQuantic.UI.Components.UniformTableSpans(2, 60), new eQuantic.UI.Components.TableScroll())
+        {
+            Label = label,
+            Cells = { new TableViewCell(0, 0, new Text("cell", TypeRole.BodyM)) },
+        },
         ["Pressable"] = label => new Pressable(new Text("press", TypeRole.BodyM), () => { }) { Label = label },
         ["Link"] = label => new Link("https://example.test", new Text("link", TypeRole.BodyM)) { Label = label },
     };
@@ -80,7 +86,7 @@ public class LabelledNodesReachSemanticsTests
     /// only to shrink; it reached zero, so what is worth writing down is no longer who is silent but
     /// what a container has to do.
     /// </summary>
-    private static readonly string[] LabelledContainers = ["LiveRegion", "Navigable", "Overlay"];
+    private static readonly string[] LabelledContainers = ["LiveRegion", "Navigable", "Overlay", "TableViewport"];
 
     /// <summary>
     /// The roles a reader walks INTO. <see cref="SemanticRole.Group"/> was the only one until #500

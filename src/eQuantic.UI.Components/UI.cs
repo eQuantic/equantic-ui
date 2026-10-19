@@ -252,6 +252,42 @@ public static class UI
         SizeValue width = default, SizeValue height = default) =>
         new ScrollView(child, axis) { Width = width, Height = height };
 
+    /// <summary>
+    /// A window onto a grid of rows and columns, its leading rows and columns pinned, scrolling both
+    /// axes with the <paramref name="scroll"/> it is handed. It places the cells it is given and builds
+    /// none: <c>TableView</c> is the table that hands it the cells in view.
+    /// </summary>
+    public static TableViewport TableViewport(ITableSpans rows, ITableSpans columns, ITableScrollModel scroll,
+        int pinnedRows = 0, int pinnedColumns = 0, SizeValue width = default, SizeValue height = default,
+        TableScrollRequest? request = null, Action<TableOffset>? onScrolled = null,
+        Action<Size>? onViewportChanged = null, string? label = null, VisualNode[]? children = null)
+    {
+        var node = new TableViewport(rows, columns, scroll)
+        {
+            PinnedRows = pinnedRows,
+            PinnedColumns = pinnedColumns,
+            Width = width,
+            Height = height,
+            Request = request,
+            OnScrolled = onScrolled,
+            OnViewportChanged = onViewportChanged,
+            Label = label,
+        };
+        if (children != null)
+            foreach (var child in children)
+                node.Add(child as TableViewCell
+                    ?? throw new ArgumentException("A table viewport places TableViewCells, and nothing else.",
+                        nameof(children)));
+        return node;
+    }
+
+    /// <summary>A cell of a table viewport, over the rows and columns it covers from
+    /// (<paramref name="row"/>, <paramref name="column"/>); a <paramref name="mark"/> is drawn above the
+    /// cells and takes no press.</summary>
+    public static TableViewCell TableViewCell(int row, int column, VisualNode child, bool mark = false,
+        int rows = 1, int columns = 1) =>
+        new TableViewCell(row, column, child, mark) { Rows = rows, Columns = columns };
+
     /// <summary>Keeps the child clear of system-owned display regions (notch, home indicator).</summary>
     public static SafeArea SafeArea(VisualNode child, SafeEdges edges = SafeEdges.All) =>
         new SafeArea(child, edges);

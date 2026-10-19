@@ -239,6 +239,16 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
         regions.Sheets.Add(Clipped(placed));
     }
 
+    /// <summary>A table viewport's window: the wheel, a finger's pan and a scrollbar press go to the
+    /// scroll it carries. It takes no focus; what has focus inside it is its cells'.</summary>
+    public void Add(TableRegion region)
+    {
+        var placed = region with { Bounds = Place(region.Bounds) };
+        if (!Visible(placed.Bounds)) return;
+        Note(regions.Tables, regions.Tables.Count, region.Bounds, region.Bounds);
+        regions.Tables.Add(Clip is { } clip ? placed with { Visible = Intersect(clip, placed.Bounds) } : placed);
+    }
+
     /// <summary>Whether any of the region survives the clip. A region entirely outside it is drawn
     /// nowhere, so it is touched nowhere.</summary>
     private bool Visible(Rect bounds) =>

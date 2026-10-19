@@ -27,7 +27,18 @@ import { CanvasPointer } from './canvas-pointer';
 export { CanvasPointer };
 import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
-import { artworkAspect, CornerRadii, EdgeInsets, Point, SizeValue, StyleChannels, WebContent } from './value-types';
+import {
+  artworkAspect,
+  CornerRadii,
+  EdgeInsets,
+  Point,
+  Size,
+  SizeValue,
+  StyleChannels,
+  TableOffset,
+  TableScrollRequest,
+  WebContent,
+} from './value-types';
 import { Curve, Motion } from './design-system.generated';
 import type { MotionSpec } from './primitive-values';
 import { hashesByValue } from '../utils/hash';
@@ -786,6 +797,66 @@ export class SheetSurface extends VisualNode {
     this.child = child;
     this.model = model;
     if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `TableViewCell`: what its child draws, over the rows and columns it covers. Its key
+ * is its position (`row:column`), so a cell that stays in view keeps its element while the window
+ * moves; a mark carries none, because two of them can start at one cell.
+ */
+export class TableViewCell extends VisualNode {
+  readonly nodeKind = 'tableViewCell';
+  child: VisualChild;
+  readonly row: number;
+  readonly column: number;
+  readonly mark: boolean;
+  rows = 1;
+  columns = 1;
+
+  constructor(row: number, column: number, child: VisualChild, mark = false, config?: EqConfig) {
+    super();
+    this.row = row;
+    this.column = column;
+    this.child = child;
+    this.mark = mark;
+    if (!mark) this.key = row + ':' + column;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `TableViewport`: a window onto a grid larger than any screen, its leading rows and
+ * columns pinned, the cells it is handed placed by the extents of its rows and columns and moved by the
+ * scroll model it carries (the C# `ITableScrollModel`, a transpiled class the component above owns).
+ */
+export class TableViewport extends VisualNode {
+  readonly nodeKind = 'tableViewport';
+  readonly rows: unknown;
+  readonly columns: unknown;
+  readonly scroll: unknown;
+  pinnedRows = 0;
+  pinnedColumns = 0;
+  width?: SizeValue;
+  height?: SizeValue;
+  request: TableScrollRequest | null = null;
+  onScrolled: ((offset: TableOffset) => void) | null = null;
+  onViewportChanged: ((viewport: Size) => void) | null = null;
+  label: string | null = null;
+  readonly cells: TableViewCell[] = [];
+
+  constructor(rows: unknown, columns: unknown, scroll: unknown, config?: EqConfig) {
+    super();
+    this.rows = rows;
+    this.columns = columns;
+    this.scroll = scroll;
+    if (config) Object.assign(this, config);
+    if (config?.width !== undefined) this.width = SizeValue.from(config.width as SizeValue | number);
+    if (config?.height !== undefined) this.height = SizeValue.from(config.height as SizeValue | number);
+  }
+
+  add(cell: TableViewCell): void {
+    this.cells.push(cell);
   }
 }
 

@@ -240,6 +240,11 @@ internal sealed partial class MeasureVisitor
         Grid grid => (horizontal ? grid.Width : grid.Height).Kind,
         Stack stack => (horizontal ? stack.Width : stack.Height).Kind,
         ScrollView scroll => (horizontal ? scroll.Width : scroll.Height).Kind,
+        // A window onto a grid takes the room it is given unless it says how large it is: its hug IS
+        // a fill, because the grid behind it is no size a window should take.
+        TableViewport table => (horizontal ? table.Width : table.Height).Kind is SizeKind.Fixed or SizeKind.WindowMinus
+            ? (horizontal ? table.Width : table.Height).Kind
+            : SizeKind.Fill,
         Canvas canvas => (horizontal ? canvas.Width : canvas.Height).Kind,
         WebFrame frame => (horizontal ? frame.Width : frame.Height).Kind,
         Image or Icon or Vector or Spinner or CameraPreview => SizeKind.Fixed,

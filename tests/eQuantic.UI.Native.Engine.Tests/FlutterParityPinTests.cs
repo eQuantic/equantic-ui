@@ -224,6 +224,10 @@ public class FlutterParityPinTests
         ["RenderObject"] = () => HasMember("LayoutNode", "Parent"),
         ["parentData"] = () => !HasMember("LayoutNode", "ParentData") && HasMember("LayoutNode", "Bounds"),
         ["RenderSliver"] = () => Has("ListView") && Nothing("Sliver", "SliverList"),
+        // Two axes, one viewport: the pinned bands are its own, and the scroll it carries is written
+        // once for both targets.
+        ["TableViewport"] = () => HasMember("TableViewport", "PinnedRows") && HasMember("TableViewport", "PinnedColumns")
+            && Has("ITableScrollModel") && Has("TableScroll") && Nothing("Sliver", "TwoDimensionalScrollView"),
         // The shapes, ONE of three named: SingleChildNode holds the twenty-two wrappers whose child
         // is required, and FlexNode covers the flex containers only — nothing sits between VisualNode
         // and the four many-child nodes, or between it and the eleven leaves.
@@ -237,7 +241,7 @@ public class FlutterParityPinTests
         // Box's is optional). WrapperNode and ProxyNode stay in the negative set they were in while this row
         // was a GAP — a SECOND wrapper base would change the shape surface just as much as a first.
         ["SingleChildRenderObjectWidget"] = () => EveryOneChildNodeIsA("SingleChildNode")
-            && Descendants("SingleChildNode") == 22 && Has("FlexNode")
+            && Descendants("SingleChildNode") == 23 && Has("FlexNode")
             && Nothing("MultiChildNode", "LeafNode", "WrapperNode", "ProxyNode"),
 
         // 2 — layout

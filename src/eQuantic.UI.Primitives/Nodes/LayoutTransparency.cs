@@ -52,11 +52,16 @@ public static class LayoutTransparency
     /// one with a row. Read anywhere else it means nothing, and taking its child's size would make
     /// a corner button size the stack.
     /// </description></item>
+    /// <item><description>
+    /// <see cref="TableViewCell"/> — the same kind of contract, with a <see cref="TableViewport"/>,
+    /// which sizes the cell from the extents of the rows and columns it covers, whatever its child
+    /// would take.
+    /// </description></item>
     /// </list>
     /// </summary>
     public static bool IsLayoutTransparent(this SingleChildNode wrapper) => wrapper switch
     {
-        ScrollView or Overlay or Positioned => false,
+        ScrollView or Overlay or Positioned or TableViewCell => false,
         _ => true,
     };
 }
