@@ -1,11 +1,12 @@
-import { $eq } from "../runtime-exports";
+import { $eq, TableSpans } from "../runtime-exports";
 
-export class SparseTableSpans {
+export class SparseTableSpans extends TableSpans {
     constructor(count: number, extent: number, extents: any) {
+        super();
         this._indices = null!;
         this._extents = null!;
         this._added = null!;
-        this.count = 0;
+        this.$count = 0;
         this.extent = 0;
         this.count = Math.max(0, count);
         this.extent = Math.max(0, extent);
@@ -24,8 +25,16 @@ export class SparseTableSpans {
     _indices!: number[];
     _extents!: number[];
     _added!: number[];
-    count!: number;
+    $count!: number;
     extent!: number;
+
+    get count(): number {
+        return this.$count;
+    }
+
+    set count(value: number) {
+        this.$count = value;
+    }
 
     get total(): number {
         return this.offsetOf(this.count);
@@ -62,8 +71,8 @@ export class SparseTableSpans {
         return low;
     }
 
-    toString(): string {
-        return 'eQuantic.UI.Components.SparseTableSpans';
+    toJSON() {
+        return $eq.json(this);
     }
 }
 

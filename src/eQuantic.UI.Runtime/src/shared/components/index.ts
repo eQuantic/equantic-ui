@@ -159,6 +159,7 @@ export { SwipeableRow } from './SwipeableRow';
 export { Switch } from './Switch';
 export { Table } from './Table';
 export { TableScroll } from './TableScroll';
+export { TableView } from './TableView';
 export { Tabs } from './Tabs';
 export { TextInput } from './TextInput';
 export { TimePicker } from './TimePicker';

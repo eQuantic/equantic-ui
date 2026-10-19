@@ -74,7 +74,7 @@ public class CodeEditorPerfTests
         // Warm: the first steps measure the lines they bring into view.
         for (var i = 0; i < 5; i++)
         {
-            host.ScrollBy(x, y, 60).Should().BeTrue();
+            host.ScrollBy(x, y, 0, 60).Should().BeTrue();
             host.RenderFrame(new DisplayListBuilder());
         }
 
@@ -82,7 +82,7 @@ public class CodeEditorPerfTests
         var clock = Stopwatch.StartNew();
         for (var i = 0; i < steps; i++)
         {
-            host.ScrollBy(x, y, 60).Should().BeTrue("the step has to scroll, or nothing is rebuilt");
+            host.ScrollBy(x, y, 0, 60).Should().BeTrue("the step has to scroll, or nothing is rebuilt");
             host.RenderFrame(new DisplayListBuilder());
             host.RenderFrame(new DisplayListBuilder());
         }

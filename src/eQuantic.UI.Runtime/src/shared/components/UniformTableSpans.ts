@@ -1,13 +1,24 @@
-export class UniformTableSpans {
+import { $eq, TableSpans } from "../runtime-exports";
+
+export class UniformTableSpans extends TableSpans {
     constructor(count: number, extent: number) {
-        this.count = 0;
+        super();
+        this.$count = 0;
         this.extent = 0;
         this.count = Math.max(0, count);
         this.extent = Math.max(0, extent);
     }
 
-    count!: number;
+    $count!: number;
     extent!: number;
+
+    get count(): number {
+        return this.$count;
+    }
+
+    set count(value: number) {
+        this.$count = value;
+    }
 
     get total(): number {
         return this.count * this.extent;
@@ -26,8 +37,8 @@ export class UniformTableSpans {
         return Math.min(Math.max((Math.trunc(Math.floor(offset / this.extent)) | 0), 0), this.count - 1);
     }
 
-    toString(): string {
-        return 'eQuantic.UI.Components.UniformTableSpans';
+    toJSON() {
+        return $eq.json(this);
     }
 }
 

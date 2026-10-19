@@ -789,7 +789,7 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         switch (e.ActionMasked)
         {
             case MotionEventActions.Down:
-                _host.PressDown(x, y);
+                _host.PressDown(x, y, kind: PointerKind.Touch);
                 return true;
             // OnTouchEvent is fingers by definition (a mouse hover arrives as generic motion,
             // never here) — labelled Touch so drags and pans run and hover never does (spec S5).

@@ -68,7 +68,7 @@ internal sealed partial class MeasureVisitor
     }
 
     /// <summary>A cell laid out over the rows and columns it covers, held inside the grid.</summary>
-    private LayoutNode MeasureTableCell(TableViewCell cell, ITableSpans rows, ITableSpans columns, Element? at)
+    private LayoutNode MeasureTableCell(TableViewCell cell, TableSpans rows, TableSpans columns, Element? at)
     {
         var firstRow = Math.Clamp(cell.Row, 0, rows.Count);
         var firstColumn = Math.Clamp(cell.Column, 0, columns.Count);
@@ -84,9 +84,9 @@ internal sealed partial class MeasureVisitor
     /// How far the viewport reaches on one axis. A fixed size is its own and a window-relative one is
     /// the window's less its inset; any other takes the room the axis has, as Flutter's viewport takes
     /// its constraints, because a window onto a grid is never as large as the grid. An axis with no
-    /// room to give, a scroller's or a parent's that sizes from its content, gives the visible extent
-    /// of the nearest scroller around, or the window's: there a table would otherwise be as tall as its
-    /// grid, and its own scroll would never engage.
+    /// room to give at all, a scroller's, gives the visible extent of the nearest scroller around, or
+    /// the window's: there a table would otherwise be as tall as its grid, and its own scroll would
+    /// never engage.
     /// </summary>
     private float TableExtent(TableViewport viewport, SizeValue size, AxisConstraint axis, float window, bool across)
     {
@@ -97,11 +97,12 @@ internal sealed partial class MeasureVisitor
             case SizeKind.WindowMinus:
                 return WindowSize(size, window);
         }
-        if (!axis.IsUnbounded && !axis.Indeterminate) return axis.Max;
+        // Room to give, even from a parent that sizes from its content: the viewport takes it, as the
+        // web's 100% does.
+        if (!axis.IsUnbounded) return axis.Max;
 
         var fromScroller = axis.Visible > 0;
         var visible = fromScroller ? axis.Visible : window;
-        if (!axis.IsUnbounded) visible = MathF.Min(visible, axis.Max);
         LogUnbounded(viewport, across, visible, fromScroller);
         return visible;
     }

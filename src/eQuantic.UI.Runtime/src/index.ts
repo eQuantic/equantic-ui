@@ -140,6 +140,7 @@ export {
   SheetSurface,
   TableViewport,
   TableViewCell,
+  TableSpans,
   Adjustable,
   Progress,
   LiveRegion,

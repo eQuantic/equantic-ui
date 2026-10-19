@@ -185,7 +185,7 @@ public sealed class PhotonViewController : UIViewController
         if (touches.AnyObject is not UITouch touch) return;
         _tracking = touch;
         var point = touch.LocationInView(View);
-        _host.PressDown((float)point.X, (float)point.Y);
+        _host.PressDown((float)point.X, (float)point.Y, kind: PointerKind.Touch);
     }
 
     public override void TouchesMoved(NSSet touches, UIEvent? evt)

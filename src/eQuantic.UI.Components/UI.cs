@@ -255,9 +255,9 @@ public static class UI
     /// <summary>
     /// A window onto a grid of rows and columns, its leading rows and columns pinned, scrolling both
     /// axes with the <paramref name="scroll"/> it is handed. It places the cells it is given and builds
-    /// none: <c>TableView</c> is the table that hands it the cells in view.
+    /// none: <see cref="UI.TableView"/> is the table that hands it the cells in view.
     /// </summary>
-    public static TableViewport TableViewport(ITableSpans rows, ITableSpans columns, ITableScrollModel scroll,
+    public static TableViewport TableViewport(TableSpans rows, TableSpans columns, ITableScrollModel scroll,
         int pinnedRows = 0, int pinnedColumns = 0, SizeValue width = default, SizeValue height = default,
         TableScrollRequest? request = null, Action<TableOffset>? onScrolled = null,
         Action<Size>? onViewportChanged = null, string? label = null, VisualNode[]? children = null)
@@ -701,4 +701,27 @@ public static class UI
     /// <summary>Loading placeholder (spec B16).</summary>
     public static Skeleton Skeleton(SkeletonShape shape, float width, float height = 0) =>
         new Skeleton(shape, width, height);
+
+    /// <summary>
+    /// A table that builds only the cells in view: the extents of its <paramref name="rows"/> and
+    /// <paramref name="columns"/>, and the cell at a row and a column, its leading rows and columns
+    /// pinned, scrolling both axes in a <see cref="TableViewport"/>.
+    /// </summary>
+    public static TableView TableView(TableSpans rows, TableSpans columns, Func<int, int, VisualNode?> cellBuilder,
+        int pinnedRows = 0, int pinnedColumns = 0, int overscan = 3, SizeValue width = default,
+        SizeValue height = default, IReadOnlyList<TableViewCell>? marks = null, TableScrollRequest? request = null,
+        Action<TableOffset>? onScrolled = null, Action<Size>? onViewportChanged = null, string? label = null) =>
+        new TableView(rows, columns, cellBuilder)
+        {
+            PinnedRows = pinnedRows,
+            PinnedColumns = pinnedColumns,
+            Overscan = overscan,
+            Width = width,
+            Height = height,
+            Marks = marks,
+            Request = request,
+            OnScrolled = onScrolled,
+            OnViewportChanged = onViewportChanged,
+            Label = label,
+        };
 }

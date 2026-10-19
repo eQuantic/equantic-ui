@@ -30,6 +30,7 @@ export {
   SheetSurface,
   TableViewport,
   TableViewCell,
+  TableSpans,
   Hoverable,
   Flexible,
   Spacer,

@@ -13,7 +13,7 @@
 
 ## 2. The vocabulary
 
-- [x] 2.1 Add `ITableSpans` to the vocabulary, its uniform and sparse forms to the components
+- [x] 2.1 Add `TableSpans` to the vocabulary, its uniform and sparse forms to the components
       (`UniformTableSpans`, `SparseTableSpans`: sorted overrides, prefix sums, transpiled like the rest),
       and `TableOffset` (two doubles); verify by xUnit tests of offset, index-at and total over
       1 048 576 rows with overrides at both ends
@@ -41,6 +41,13 @@
       `string[]` to TypeScript, and the scroll model's loop over its axes failed the runtime's
       typecheck); verify `EmittedTypeSurfaceTests` fails without the fix and passes with it
 
+- [x] 2.9 The axis is an abstract CLASS (`TableSpans`), not an interface: in a component's constructor
+      an interface is a dependency the container provides, and `TableView(rows, columns, …)` resolved
+      both axes from it; verify the transpiled `TableView` takes its axes as arguments
+- [x] 2.10 eqc: a class extending a hand-written vocabulary twin imports it through the runtime (it was
+      imported from `./TableSpans`, a module nobody writes); verify `EmittedTypeSurfaceTests` fails
+      without the fix and passes with it
+
 ## 3. The scroll model, written once
 
 - [x] 3.1 `TableScroll` in `eQuantic.UI.Components`, implementing `ITableScrollModel`: offset, clamping, the remainder an axis could not take, the wheel (pixels,
@@ -56,9 +63,9 @@
 
 ## 4. Photon's wheel on two axes
 
-- [ ] 4.1 macOS reads `scrollingDeltaX` beside `scrollingDeltaY`; Windows handles `WM_MOUSEHWHEEL`
+- [x] 4.1 macOS reads `scrollingDeltaX` beside `scrollingDeltaY`; Windows handles `WM_MOUSEHWHEEL`
       and turns a Shift+wheel horizontal; verify each shell builds and its input tests pass
-- [ ] 4.2 The host's wheel carries both deltas to the topmost region that can move on each axis and
+- [x] 4.2 The host's wheel carries both deltas to the topmost region that can move on each axis and
       hands the remainder to the region around it; a horizontal `ScrollView` takes the horizontal
       delta, or the vertical one when there is none; verify `PhotonHost` tests for each scenario of the
       `scrolling` spec, and that `CodeEditorComponentTests` stays green
@@ -67,28 +74,28 @@
 
 ## 5. The viewport on Photon
 
-- [ ] 5.1 Measure: cells tight to their extents at their positions relative to the window, the four
+- [x] 5.1 Measure: cells tight to their extents at their positions relative to the window, the four
       bands, the unbounded axis taking the visible extent a `ScrollView` now carries down in the
       constraints (or the window's), with its development log; verify layout tests for the pinned
       alignment at three widths and offsets past 2²⁴ px
-- [ ] 5.2 Emit: the four bands under their clips and input narrowing, the marks per band, the
+- [x] 5.2 Emit: the four bands under their clips and input narrowing, the marks per band, the
       scrollbars in their strips, a `TableRegion`; verify goldens for the bands, a mark across the
       pinned row and both scrollbars, light and dark
-- [ ] 5.3 The host: the wheel, the pan and fling, the scrollbar drag and the track press routed to the
+- [x] 5.3 The host: the wheel, the pan and fling, the scrollbar drag and the track press routed to the
       model the node carries, its clock advanced while it moves; the request's version revealed after the frame; the
       reports once per change; verify `PhotonHost` tests for every scenario of the `table-viewport`
       spec on Photon
-- [ ] 5.4 Semantics: the viewport is a labelled group over the cells it holds; verify
+- [x] 5.4 Semantics: the viewport is a labelled group over the cells it holds; verify
       `LabelledNodesReachSemanticsTests`
 
 ## 6. The viewport on the web
 
-- [ ] 6.1 The TypeScript lowering: the clipping box, the four band layers moved by transform from a
+- [x] 6.1 The TypeScript lowering: the clipping box, the four band layers moved by transform from a
       base reset when the cells change, the scrollbars, the non-passive wheel taking only what the
       model took, the pointer events (a touch pans, a mouse press is the cell's), the request's version,
       the reports; verify Vitest specs driving it with real events for each scenario of the spec the
       browser decides
-- [ ] 6.2 The unbounded axis on the web: an empty box on a filled axis takes the nearest scrolling
+- [x] 6.2 The unbounded axis on the web: an empty box on a filled axis takes the nearest scrolling
       ancestor's visible extent, or the window's, kept by a `ResizeObserver`, with its development
       log; verify a Vitest spec, and the correction at hydration
 - [ ] 6.3 The C# server lowering writes the same boxes at offset zero and hydration adopts them;
@@ -98,7 +105,7 @@
 
 ## 7. The `TableView` component
 
-- [ ] 7.1 `TableView(rows, columns, cellBuilder)` with `PinnedRows`, `PinnedColumns`, `Overscan`,
+- [x] 7.1 `TableView(rows, columns, cellBuilder)` with `PinnedRows`, `PinnedColumns`, `Overscan`,
       `Marks`, `Request`, the reports, `Width`, `Height` and `Label`; the window with hysteresis; cells
       keyed by row and column; verify component tests on Photon for the cells built and the scroll
       inside the overscan that builds nothing

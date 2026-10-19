@@ -7,7 +7,7 @@ namespace eQuantic.UI.Components;
 /// where someone widened column B. The overrides are kept sorted with the running sum of how much each
 /// adds to the default, so an offset costs a binary search over the overrides however long the axis.
 /// </summary>
-public sealed class SparseTableSpans : ITableSpans
+public sealed class SparseTableSpans : TableSpans
 {
     private readonly int[] _indices;
     private readonly double[] _extents;
@@ -34,26 +34,26 @@ public sealed class SparseTableSpans : ITableSpans
         }
     }
 
-    public int Count { get; }
+    public override int Count { get; }
 
     /// <summary>How far every one without an override reaches.</summary>
     public double Extent { get; }
 
-    public double Total => OffsetOf(Count);
+    public override double Total => OffsetOf(Count);
 
-    public double ExtentOf(int index)
+    public override double ExtentOf(int index)
     {
         var k = Before(index);
         return k < _indices.Length && _indices[k] == index ? _extents[k] : Extent;
     }
 
-    public double OffsetOf(int index)
+    public override double OffsetOf(int index)
     {
         var clamped = Math.Clamp(index, 0, Count);
         return clamped * Extent + _added[Before(clamped)];
     }
 
-    public int IndexAt(double offset)
+    public override int IndexAt(double offset)
     {
         if (Count == 0) return 0;
         var low = 0;

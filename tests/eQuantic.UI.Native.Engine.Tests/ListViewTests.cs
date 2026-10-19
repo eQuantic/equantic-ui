@@ -85,7 +85,7 @@ public class ListViewTests
         var host = Open(10_000);
 
         // Wheel to the middle of the list; the frame reports the offset, the next builds there.
-        host.ScrollBy(300, 200, 5_000 * Extent).Should().BeTrue();
+        host.ScrollBy(300, 200, 0, 5_000 * Extent).Should().BeTrue();
         host.RenderFrame(new DisplayListBuilder(), 48);
         host.RenderFrame(new DisplayListBuilder(), 64);
 
@@ -110,13 +110,13 @@ public class ListViewTests
         var host = Open(10_000);
         host.RenderFrame(new DisplayListBuilder(), 80);
         host.NeedsRender.Should().BeFalse("the list at rest schedules nothing");
-        host.ScrollBy(300, 200, Extent / 4);
+        host.ScrollBy(300, 200, 0, Extent / 4);
         host.RenderFrame(new DisplayListBuilder(), 96);
         host.NeedsRender.Should().BeTrue("row 14 entered the margin, and the window moves to hold it");
         host.RenderFrame(new DisplayListBuilder(), 112);
 
         // A nudge smaller than one row: pixels move, the window's indices do not.
-        host.ScrollBy(300, 200, Extent / 4);
+        host.ScrollBy(300, 200, 0, Extent / 4);
         host.RenderFrame(new DisplayListBuilder(), 128);
 
         host.NeedsRender.Should().BeFalse(

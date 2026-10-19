@@ -1,19 +1,12 @@
 #nullable enable
 eQuantic.UI.Primitives.ITableScrollModel
 eQuantic.UI.Primitives.ITableScrollModel.Advance(double time) -> bool
-eQuantic.UI.Primitives.ITableScrollModel.Apply(eQuantic.UI.Primitives.TableScrollRequest? request, eQuantic.UI.Primitives.ITableSpans! rows, eQuantic.UI.Primitives.ITableSpans! columns, int pinnedRows, int pinnedColumns) -> bool
 eQuantic.UI.Primitives.ITableScrollModel.Arrange(eQuantic.UI.Primitives.Size window, double gridAcross, double gridDown, double pinnedAcross, double pinnedDown, bool reduceMotion) -> eQuantic.UI.Primitives.Size
 eQuantic.UI.Primitives.ITableScrollModel.Offset.get -> eQuantic.UI.Primitives.TableOffset
 eQuantic.UI.Primitives.ITableScrollModel.Pointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.PointerKind kind, double time) -> bool
 eQuantic.UI.Primitives.ITableScrollModel.ThumbOf(eQuantic.UI.Primitives.ScrollAxis axis) -> eQuantic.UI.Primitives.Rect?
 eQuantic.UI.Primitives.ITableScrollModel.TrackOf(eQuantic.UI.Primitives.ScrollAxis axis) -> eQuantic.UI.Primitives.Rect?
 eQuantic.UI.Primitives.ITableScrollModel.Wheel(double across, double down, bool stepped, eQuantic.UI.Primitives.KeyModifiers modifiers) -> eQuantic.UI.Primitives.TableOffset
-eQuantic.UI.Primitives.ITableSpans
-eQuantic.UI.Primitives.ITableSpans.Count.get -> int
-eQuantic.UI.Primitives.ITableSpans.ExtentOf(int index) -> double
-eQuantic.UI.Primitives.ITableSpans.IndexAt(double offset) -> int
-eQuantic.UI.Primitives.ITableSpans.OffsetOf(int index) -> double
-eQuantic.UI.Primitives.ITableSpans.Total.get -> double
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.TableViewCell! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.TableViewport! node, TState state) -> TResult
 eQuantic.UI.Primitives.PointerKind
@@ -67,7 +60,6 @@ eQuantic.UI.Primitives.TableViewCell.TableViewCell(int row, int column, eQuantic
 eQuantic.UI.Primitives.TableViewport
 eQuantic.UI.Primitives.TableViewport.Add(eQuantic.UI.Primitives.TableViewCell! cell) -> void
 eQuantic.UI.Primitives.TableViewport.Cells.get -> System.Collections.Generic.List<eQuantic.UI.Primitives.TableViewCell!>!
-eQuantic.UI.Primitives.TableViewport.Columns.get -> eQuantic.UI.Primitives.ITableSpans!
 eQuantic.UI.Primitives.TableViewport.Height.get -> eQuantic.UI.Primitives.SizeValue
 eQuantic.UI.Primitives.TableViewport.Height.init -> void
 eQuantic.UI.Primitives.TableViewport.Label.get -> string?
@@ -82,9 +74,7 @@ eQuantic.UI.Primitives.TableViewport.PinnedRows.get -> int
 eQuantic.UI.Primitives.TableViewport.PinnedRows.init -> void
 eQuantic.UI.Primitives.TableViewport.Request.get -> eQuantic.UI.Primitives.TableScrollRequest?
 eQuantic.UI.Primitives.TableViewport.Request.init -> void
-eQuantic.UI.Primitives.TableViewport.Rows.get -> eQuantic.UI.Primitives.ITableSpans!
 eQuantic.UI.Primitives.TableViewport.Scroll.get -> eQuantic.UI.Primitives.ITableScrollModel!
-eQuantic.UI.Primitives.TableViewport.TableViewport(eQuantic.UI.Primitives.ITableSpans! rows, eQuantic.UI.Primitives.ITableSpans! columns, eQuantic.UI.Primitives.ITableScrollModel! scroll) -> void
 eQuantic.UI.Primitives.TableViewport.Width.get -> eQuantic.UI.Primitives.SizeValue
 eQuantic.UI.Primitives.TableViewport.Width.init -> void
 override eQuantic.UI.Primitives.TableOffset.GetHashCode() -> int
@@ -108,3 +98,14 @@ static eQuantic.UI.Primitives.TableScrollRequest.operator ==(eQuantic.UI.Primiti
 ~override eQuantic.UI.Primitives.TableRange.Equals(object obj) -> bool
 ~override eQuantic.UI.Primitives.TableRange.ToString() -> string
 eQuantic.UI.Primitives.ITableScrollModel.Viewport.get -> eQuantic.UI.Primitives.Size
+abstract eQuantic.UI.Primitives.TableSpans.Count.get -> int
+abstract eQuantic.UI.Primitives.TableSpans.ExtentOf(int index) -> double
+abstract eQuantic.UI.Primitives.TableSpans.IndexAt(double offset) -> int
+abstract eQuantic.UI.Primitives.TableSpans.OffsetOf(int index) -> double
+abstract eQuantic.UI.Primitives.TableSpans.Total.get -> double
+eQuantic.UI.Primitives.ITableScrollModel.Apply(eQuantic.UI.Primitives.TableScrollRequest? request, eQuantic.UI.Primitives.TableSpans! rows, eQuantic.UI.Primitives.TableSpans! columns, int pinnedRows, int pinnedColumns) -> bool
+eQuantic.UI.Primitives.TableSpans
+eQuantic.UI.Primitives.TableSpans.TableSpans() -> void
+eQuantic.UI.Primitives.TableViewport.Columns.get -> eQuantic.UI.Primitives.TableSpans!
+eQuantic.UI.Primitives.TableViewport.Rows.get -> eQuantic.UI.Primitives.TableSpans!
+eQuantic.UI.Primitives.TableViewport.TableViewport(eQuantic.UI.Primitives.TableSpans! rows, eQuantic.UI.Primitives.TableSpans! columns, eQuantic.UI.Primitives.ITableScrollModel! scroll) -> void

@@ -637,7 +637,7 @@ export interface ScrollViewNode extends VisualNodeValue {
   onViewportChanged?: ((height: number) => void) | null;
 }
 
-/** One axis of a table (the C# `ITableSpans`): how many, how far each reaches, where each starts. */
+/** One axis of a table (the C# `TableSpans`): how many, how far each reaches, where each starts. */
 export interface TableSpansLike {
   readonly count: number;
   readonly total: number;

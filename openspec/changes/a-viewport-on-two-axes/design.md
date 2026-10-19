@@ -110,11 +110,19 @@ at offsets relative to that base, so no CSS length approaches the browser's layo
 
 ### 5. Extents are an axis, not a callback per index
 
-`ITableSpans` answers for a whole axis: the count, the extent of one, the offset of one, the index at
+`TableSpans` answers for a whole axis: the count, the extent of one, the offset of one, the index at
 an offset, the total. Flutter asks a builder for one `TableSpan` per index; an offset into a million
-rows needs prefix sums a per-index callback cannot give. The vocabulary ships two forms: uniform, and
-sparse (a default with sorted overrides, offsets in O(log n)). The sheet engine implements the contract
-over its document in 0b. The node carries the live object, as `SheetSurface` carries its model.
+rows needs prefix sums a per-index callback cannot give. The components ship two forms: uniform, and
+sparse (a default with sorted overrides, offsets in O(log n)), transpiled like the rest; the
+spreadsheet adapts its document in 0b. The node carries the live object, as `SheetSurface` carries its
+model.
+
+It is an abstract CLASS, not an interface. In a component's constructor an interface from outside
+`System` is a dependency the container provides (`CapabilityRule`), so `TableView(rows, columns, …)`
+over an interface resolved both axes from the container and shifted the builder into the first slot.
+The rule is right for `IClock` and `IPhotoLibrary`, which live in the same namespace as the
+vocabulary's data contracts, so no namespace can tell them apart; a class is data in any constructor,
+as `Stream` is in .NET.
 
 ### 6. Photon: four bands, one region
 
@@ -139,11 +147,16 @@ non-passive `wheel` (cancelled only when the model took the movement) and pointe
 a mouse press is left to whatever the cell holds. The C# server lowering writes the same boxes at offset
 zero; hydration adopts them.
 
-### 8. The unbounded axis
+### 8. The unbounded axis, and why a viewport always fills
+
+A viewport takes the room it is given unless it says how large it is (`Fixed`, or the window less an
+inset): its hug IS a fill, on both targets, because the CSS a hug would need cannot shrink a box to
+positioned cells, and Flutter's viewport takes its constraints the same way. Room given by a parent that
+sizes from its content is still room, and is taken without a word.
 
 Photon: a `ScrollView` measuring its child unbounded on its axis now says how much of it shows, a
-visible extent carried down in the constraints; a viewport on an unbounded axis takes it, or the
-window's extent with no scroller around. The web: a viewport asked to fill an axis whose box came out
+visible extent carried down in the constraints; a viewport on an axis with no room at all takes it, or
+the window's extent with no scroller around. The web: a viewport asked to fill an axis whose box came out
 empty (its cells are positioned, so an indefinite parent leaves it at zero) measures the nearest
 scrolling ancestor, or the window, and takes that extent, kept current by a `ResizeObserver`. Both
 write one development log line naming the viewport and the scroller.

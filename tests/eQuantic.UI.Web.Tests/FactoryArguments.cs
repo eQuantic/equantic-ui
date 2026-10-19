@@ -96,7 +96,7 @@ internal static class FactoryArguments
         if (type == typeof(ISheetSurfaceModel)) { value = new eQuantic.UI.Sheet.SheetController(); return true; }
         // A table viewport's axes and its scroll are interfaces in the vocabulary and classes in the
         // components: a uniform axis and a fresh scroll are what every TableView builds one with.
-        if (type == typeof(ITableSpans)) { value = new eQuantic.UI.Components.UniformTableSpans(10, 20); return true; }
+        if (type == typeof(TableSpans)) { value = new eQuantic.UI.Components.UniformTableSpans(10, 20); return true; }
         if (type == typeof(ITableScrollModel)) { value = new eQuantic.UI.Components.TableScroll(); return true; }
         if (type.IsAbstract || type.IsInterface) return false;
 

@@ -16,8 +16,8 @@ public class TableScrollTests
     private const int ExcelRows = 1_048_576;
     private const int ExcelColumns = 16_384;
 
-    private static readonly ITableSpans Rows = new UniformTableSpans(ExcelRows, 28);
-    private static readonly ITableSpans Columns = new UniformTableSpans(ExcelColumns, 96);
+    private static readonly TableSpans Rows = new UniformTableSpans(ExcelRows, 28);
+    private static readonly TableSpans Columns = new UniformTableSpans(ExcelColumns, 96);
 
     /// <summary>A scroll arranged in a 900 × 600 window over Excel's grid, one row and one column
     /// pinned, as a header strip and a row-number column would be.</summary>

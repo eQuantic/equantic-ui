@@ -62,6 +62,6 @@ public interface ITableScrollModel
     /// The <paramref name="request"/> the tree carries, with the axes it is read against. Honoured once
     /// per version: answers whether it moved the offset.
     /// </summary>
-    bool Apply(TableScrollRequest? request, ITableSpans rows, ITableSpans columns, int pinnedRows,
+    bool Apply(TableScrollRequest? request, TableSpans rows, TableSpans columns, int pinnedRows,
         int pinnedColumns);
 }

@@ -307,33 +307,89 @@ function listen(view: TableElement): void {
   };
   const kindOf = (event: PointerEvent) =>
     event.pointerType === 'touch' ? 'touch' : event.pointerType === 'pen' ? 'stylus' : 'mouse';
-  let captured: number | null = null;
+
+  // The press in flight. On a scrollbar it is the scroll's from the start; a finger on the cells is a
+  // CANDIDATE, as on Photon: the press goes on to the cell under it, and the scroll takes it only
+  // once it travels past the slop, so a tap on a cell is still a tap.
+  let press: { id: number; start: { x: number; y: number }; kind: string; time: number; active: boolean } | null =
+    null;
+
+  const onScrollbar = (scroll: TableScrollModelLike, at: { x: number; y: number }) =>
+    [scroll.trackOf('vertical'), scroll.trackOf('horizontal')].some(
+      (track) => track !== null && at.x >= track.x && at.x < track.x + track.width && at.y >= track.y && at.y < track.y + track.height,
+    );
 
   view.addEventListener('pointerdown', (event: PointerEvent) => {
     const declaration = view.__eqTable;
     if (!declaration) return;
-    if (!declaration.node.scroll.pointer('down', local(event), kindOf(event), performance.now())) return;
-    captured = event.pointerId;
-    view.setPointerCapture?.(event.pointerId);
+    const scroll = declaration.node.scroll;
+    const at = local(event);
+    const kind = kindOf(event);
+    if (onScrollbar(scroll, at)) {
+      if (!scroll.pointer('down', at, kind, performance.now())) return;
+      press = { id: event.pointerId, start: at, kind, time: performance.now(), active: true };
+      view.setPointerCapture?.(event.pointerId);
+      event.preventDefault();
+      paint(view);
+      report(view);
+      return;
+    }
+    if (kind !== 'mouse') press = { id: event.pointerId, start: at, kind, time: performance.now(), active: false };
+  });
+
+  view.addEventListener('pointermove', (event: PointerEvent) => {
+    if (!press || press.id !== event.pointerId) return;
+    const declaration = view.__eqTable;
+    if (!declaration) return;
+    const scroll = declaration.node.scroll;
+    const at = local(event);
+    if (!press.active) {
+      if (Math.max(Math.abs(at.x - press.start.x), Math.abs(at.y - press.start.y)) <= PRESS_SLOP) return;
+      if (!scroll.pointer('down', press.start, press.kind, press.time)) {
+        press = null;
+        return;
+      }
+      press.active = true;
+      view.setPointerCapture?.(event.pointerId);
+      swallowNextClick();
+    }
+    scroll.pointer('move', at, press.kind, performance.now());
     event.preventDefault();
     paint(view);
     report(view);
   });
-  const follow = (phase: 'move' | 'up' | 'cancel') => (event: PointerEvent) => {
-    if (captured !== event.pointerId) return;
+
+  const end = (phase: 'up' | 'cancel') => (event: PointerEvent) => {
+    if (!press || press.id !== event.pointerId) return;
+    const ended = press;
+    press = null;
+    if (!ended.active) return;
     const declaration = view.__eqTable;
     if (!declaration) return;
-    declaration.node.scroll.pointer(phase, local(event), kindOf(event), performance.now());
-    if (phase !== 'move') {
-      captured = null;
-      view.releasePointerCapture?.(event.pointerId);
-    }
+    declaration.node.scroll.pointer(phase, local(event), ended.kind, performance.now());
+    view.releasePointerCapture?.(event.pointerId);
     paint(view);
     report(view);
     if (phase === 'up') animate(view);
   };
-  view.addEventListener('pointermove', follow('move'));
-  view.addEventListener('pointerup', follow('up'));
-  view.addEventListener('pointercancel', follow('cancel'));
+  view.addEventListener('pointerup', end('up'));
+  view.addEventListener('pointercancel', end('cancel'));
+}
+
+/** How far a finger travels before it is a pan rather than a press: the C# `Touch.PressCancelSlop`. */
+const PRESS_SLOP = 12;
+
+/** The click a browser sends where a pan ended was no click: it is stopped once, before anything
+ * under the finger hears it. */
+function swallowNextClick(): void {
+  const stop = (event: Event) => {
+    event.stopPropagation();
+    event.preventDefault();
+  };
+  // Held before the timer: by the time it fires the page may be gone (deferred-cleanup.spec.ts).
+  const target = window;
+  target.addEventListener('click', stop, { capture: true, once: true });
+  // A pan whose lift sends no click must not eat the next real one.
+  setTimeout(() => target.removeEventListener('click', stop, { capture: true }), 400);
 }
 

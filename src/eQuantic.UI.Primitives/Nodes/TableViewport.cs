@@ -23,7 +23,7 @@ public sealed class TableViewport : VisualNode
 {
     public sealed override string NodeKind => "tableViewport";
 
-    public TableViewport(ITableSpans rows, ITableSpans columns, ITableScrollModel scroll)
+    public TableViewport(TableSpans rows, TableSpans columns, ITableScrollModel scroll)
     {
         Rows = rows;
         Columns = columns;
@@ -31,10 +31,10 @@ public sealed class TableViewport : VisualNode
     }
 
     /// <summary>The extents of the grid's rows.</summary>
-    public ITableSpans Rows { get; }
+    public TableSpans Rows { get; }
 
     /// <summary>The extents of the grid's columns.</summary>
-    public ITableSpans Columns { get; }
+    public TableSpans Columns { get; }
 
     /// <summary>The scroll, which a component owns and keeps across the rebuilds of this node.</summary>
     public ITableScrollModel Scroll { get; }

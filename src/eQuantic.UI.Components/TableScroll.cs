@@ -209,7 +209,7 @@ public sealed class TableScroll : ITableScrollModel
             : new Rect(track.X, track.Y + (float)travel, track.Width, (float)length);
     }
 
-    public bool Apply(TableScrollRequest? request, ITableSpans rows, ITableSpans columns, int pinnedRows,
+    public bool Apply(TableScrollRequest? request, TableSpans rows, TableSpans columns, int pinnedRows,
         int pinnedColumns)
     {
         if (request is null || request.Version == _honoured) return false;
@@ -242,7 +242,7 @@ public sealed class TableScroll : ITableScrollModel
     /// window the pinned band leaves uncovered. A run inside the pinned band is always in view on this
     /// axis; one larger than the uncovered part has its leading edge brought in.
     /// </summary>
-    private static double Reveal(double offset, ITableSpans spans, int first, int count, int pinned,
+    private static double Reveal(double offset, TableSpans spans, int first, int count, int pinned,
         double pinnedExtent, double window)
     {
         if (spans.Count == 0 || first < pinned) return offset;
@@ -313,17 +313,20 @@ public sealed class TableScroll : ITableScrollModel
             return true;
         }
         if (!_panning) return false;
-        var elapsed = Math.Max(1, time - _panTime);
+        var elapsed = time - _panTime;
         var beforeAcross = _across;
         var beforeDown = _down;
         _across = Math.Clamp(_across - (at.X - _panAt.X), 0, MaxAcross);
         _down = Math.Clamp(_down - (at.Y - _panAt.Y), 0, MaxDown);
         // The grid's speed, leaning on the latest step: what the finger was doing as it let go is what
-        // a fling continues.
-        _velocityAcross = 0.8 * ((_across - beforeAcross) / elapsed) + 0.2 * _velocityAcross;
-        _velocityDown = 0.8 * ((_down - beforeDown) / elapsed) + 0.2 * _velocityDown;
+        // a fling continues. Two moves a host reports at one moment carry no speed between them.
+        if (elapsed > 0)
+        {
+            _velocityAcross = 0.8 * ((_across - beforeAcross) / elapsed) + 0.2 * _velocityAcross;
+            _velocityDown = 0.8 * ((_down - beforeDown) / elapsed) + 0.2 * _velocityDown;
+            _panTime = time;
+        }
         _panAt = at;
-        _panTime = time;
         return true;
     }
 

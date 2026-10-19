@@ -58,7 +58,7 @@ public class RecentComponentGoldenTests
     public void ListView_WindowAfterAScroll()
     {
         var host = Host(new ListPage());
-        host.ScrollBy(200, 120, 10 * 36f);
+        host.ScrollBy(200, 120, 0, 10 * 36f);
         host.RenderFrame(new DisplayListBuilder(), 32);
         host.RenderFrame(new DisplayListBuilder(), 48);
 

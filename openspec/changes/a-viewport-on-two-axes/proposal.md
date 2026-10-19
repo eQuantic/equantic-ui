@@ -64,7 +64,7 @@ rebuilds the spreadsheet on it.
 ## Impact
 
 - **Vocabulary** (`eQuantic.UI.Primitives`): `TableViewport` and its value types (cells, marks, the
-  scroll request), the `ITableSpans` extents contract with its uniform and sparse forms, and the
+  scroll request), the `TableSpans` extents contract with its uniform and sparse forms, and the
   write-once two-dimensional scroll model (offset, clamping, wheel, pan, fling, scrollbar geometry)
   that both hosts drive. The visitor gains a `Visit`; `ChildSlots` and `LayoutTransparency` gain
   their cases. The public surface grows; nothing goes.
@@ -79,9 +79,11 @@ rebuilds the spreadsheet on it.
 - **Components**: `TableView`, its factory in `UI`, its transpiled pin.
 - **Engine** (`eQuantic.UI.Sheet`): `CellRef.Key` and `FromKey` move to `long`; the document's
   dictionaries key by `long`; the transpiled pins move.
-- **eqc**: an array literal of a vocabulary enum's values is typed by the enum's union. It was a
-  `string[]` to TypeScript, so the scroll model's loop over its two axes failed the runtime's
-  typecheck: fixed in general and pinned (`EmittedTypeSurfaceTests`), as a gap the new code shows is.
+- **eqc**, two gaps the new code showed, each fixed in general and pinned (`EmittedTypeSurfaceTests`):
+  an array literal of a vocabulary enum's values is typed by the enum's union (it was a `string[]` to
+  TypeScript, and the scroll model's loop over its axes failed the runtime's typecheck); and a class
+  extending a HAND-WRITTEN vocabulary twin imports it through the runtime (it was imported from a
+  sibling module nobody writes).
 - **`PointerKind`** moves from `eQuantic.UI.Native.Components` into the vocabulary and gains
   `Stylus` (**BREAKING** for a caller of the experimental native surface: the namespace changes).
 - **Developer surface** (`developer-surface.baseline.txt`): none. No setting, section or template

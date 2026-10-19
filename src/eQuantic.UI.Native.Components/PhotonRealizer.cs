@@ -309,7 +309,9 @@ public static class PhotonRealizer
         // Whether every component builds in this frame, or only the ones a SetState marked: the
         // HOST decides, because only it knows whether something it did since the last frame (input,
         // an invalidation) changed what a build would read.
-        bool rebuildAll = true)
+        bool rebuildAll = true,
+        // Where layout says what it decided that the developer did not write (LayoutContext.Log).
+        Action<string>? log = null)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale,
             density)
@@ -325,6 +327,7 @@ public static class PhotonRealizer
             TimeMs = timeMs,
             ReducedMotion = reducedMotion,
             Drags = drags,
+            Log = log,
         };
         transitions?.BeginFrame();
         presences?.BeginFrame(timeMs);

@@ -580,7 +580,7 @@ public class CodeEditorComponentTests
         var frame = Settle(host);
         var viewport = frame.ScrollRegions.First(r => r.Axis == ScrollAxis.Vertical);
         // Over the gutter, which the vertical viewport holds and the sideways one does not.
-        host.ScrollBy(viewport.Bounds.X + 4, viewport.Bounds.Y + 20, 4000).Should().BeTrue();
+        host.ScrollBy(viewport.Bounds.X + 4, viewport.Bounds.Y + 20, 0, 4000).Should().BeTrue();
         Settle(host);
 
         pane.Resize(SizeValue.Hug);

@@ -61,6 +61,24 @@ public class EmittedTypeSurfaceTests
     }
 
     [Fact]
+    public void AClassOverAHandWrittenVocabularyBase_ImportsItFromTheRuntime()
+    {
+        // The base is a twin the runtime writes by hand: imported from beside (`./TableSpans`), it named
+        // a module nobody writes, and the runtime failed to build.
+        var ts = TestHelper.ConvertClass("""
+            public override int Count => 3;
+            public override double Total => 30;
+            public override double ExtentOf(int index) => 10;
+            public override double OffsetOf(int index) => index * 10;
+            public override int IndexAt(double offset) => (int)(offset / 10);
+            """, baseList: "eQuantic.UI.Primitives.TableSpans");
+
+        ts.Should().Contain("extends TableSpans");
+        ts.Should().MatchRegex(@"import \{[^}]*\bTableSpans\b[^}]*\} from ""@equantic/runtime""");
+        ts.Should().NotContain("\"./TableSpans\"");
+    }
+
+    [Fact]
     public void ADecimalIsTheRuntimeClass_AndArrivesImported()
     {
         var ts = TestHelper.ConvertClass("""

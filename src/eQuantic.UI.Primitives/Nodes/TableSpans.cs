@@ -10,23 +10,31 @@ namespace eQuantic.UI.Primitives;
 /// Distances are <see langword="double"/>: a million rows of 28 points is past what a
 /// <see langword="float"/> holds exactly.
 /// </para>
+/// <para>
+/// A CLASS, not an interface, and on purpose: an interface in a component's constructor is a
+/// dependency the container provides (<c>CapabilityRule</c>), and an axis is data a table is handed,
+/// as <see cref="System.IO.Stream"/> is a class for the same reason in .NET. The components ship a
+/// uniform axis and a sparse one; the spreadsheet's engine adapts its document.
+/// </para>
 /// </summary>
-public interface ITableSpans
+public abstract class TableSpans
 {
+    protected TableSpans() { }
+
     /// <summary>How many rows, or columns.</summary>
-    int Count { get; }
+    public abstract int Count { get; }
 
     /// <summary>How far the whole axis reaches: the offset of the end of the last one.</summary>
-    double Total { get; }
+    public abstract double Total { get; }
 
     /// <summary>How far the one at <paramref name="index"/> reaches along the axis.</summary>
-    double ExtentOf(int index);
+    public abstract double ExtentOf(int index);
 
     /// <summary>Where the one at <paramref name="index"/> starts, from the start of the axis. The offset
     /// of <see cref="Count"/> is <see cref="Total"/>.</summary>
-    double OffsetOf(int index);
+    public abstract double OffsetOf(int index);
 
     /// <summary>The one an <paramref name="offset"/> along the axis falls in, held between the first and
     /// the last.</summary>
-    int IndexAt(double offset);
+    public abstract int IndexAt(double offset);
 }

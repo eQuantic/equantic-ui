@@ -1,4 +1,4 @@
-import { Point, PointerKindValue, PointerPhaseValue, Rect, ScrollAxisValue, Size, TableOffset, TableScrollRequest } from "../runtime-exports";
+import { Point, PointerKindValue, PointerPhaseValue, Rect, ScrollAxisValue, Size, TableOffset, TableScrollRequest, TableSpans } from "../runtime-exports";
 
 export class TableScroll {
     constructor() {
@@ -182,7 +182,7 @@ export class TableScroll {
         return horizontal ? new Rect(Math.fround(track.x + Math.fround(travel)), track.y, Math.fround(length), track.height) : new Rect(track.x, Math.fround(track.y + Math.fround(travel)), track.width, Math.fround(length));
     }
 
-    apply(request: TableScrollRequest | null, rows: any, columns: any, pinnedRows: number, pinnedColumns: number) {
+    apply(request: TableScrollRequest | null, rows: TableSpans, columns: TableSpans, pinnedRows: number, pinnedColumns: number) {
         if (request == null || request.version === this._honoured) return false;
         this._honoured = request.version;
         let across = this._across;
@@ -205,7 +205,7 @@ export class TableScroll {
         return true;
     }
 
-    static reveal(offset: number, spans: any, first: number, count: number, pinned: number, pinnedExtent: number, window: number) {
+    static reveal(offset: number, spans: TableSpans, first: number, count: number, pinned: number, pinnedExtent: number, window: number) {
         if (spans.count === 0 || first < pinned) return offset;
         let start = spans.offsetOf(Math.min(Math.max(first, 0), spans.count));
         let end = spans.offsetOf(Math.min(Math.max(first + Math.max(1, count), 0), spans.count));
@@ -264,15 +264,17 @@ export class TableScroll {
             return true;
         }
         if (!this._panning) return false;
-        let elapsed = Math.max(1, time - this._panTime);
+        let elapsed = time - this._panTime;
         let beforeAcross = this._across;
         let beforeDown = this._down;
         this._across = Math.min(Math.max(this._across - Math.fround(at.x - this._panAt.x), 0), this.maxAcross);
         this._down = Math.min(Math.max(this._down - Math.fround(at.y - this._panAt.y), 0), this.maxDown);
-        this._velocityAcross = 0.8 * ((this._across - beforeAcross) / elapsed) + 0.2 * this._velocityAcross;
-        this._velocityDown = 0.8 * ((this._down - beforeDown) / elapsed) + 0.2 * this._velocityDown;
+        if (elapsed > 0) {
+            this._velocityAcross = 0.8 * ((this._across - beforeAcross) / elapsed) + 0.2 * this._velocityAcross;
+            this._velocityDown = 0.8 * ((this._down - beforeDown) / elapsed) + 0.2 * this._velocityDown;
+            this._panTime = time;
+        }
         this._panAt = at;
-        this._panTime = time;
         return true;
     }
 

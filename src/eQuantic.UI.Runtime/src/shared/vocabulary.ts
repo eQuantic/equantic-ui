@@ -801,6 +801,19 @@ export class SheetSurface extends VisualNode {
 }
 
 /**
+ * Mirror of the C# `TableSpans`: one axis of a table, a class the transpiled axes extend
+ * (`UniformTableSpans`, `SparseTableSpans`, the spreadsheet's), a class rather than an interface because
+ * a component takes it as data and never from the container.
+ */
+export abstract class TableSpans {
+  abstract readonly count: number;
+  abstract readonly total: number;
+  abstract extentOf(index: number): number;
+  abstract offsetOf(index: number): number;
+  abstract indexAt(offset: number): number;
+}
+
+/**
  * Mirror of the C# `TableViewCell`: what its child draws, over the rows and columns it covers. Its key
  * is its position (`row:column`), so a cell that stays in view keeps its element while the window
  * moves; a mark carries none, because two of them can start at one cell.
