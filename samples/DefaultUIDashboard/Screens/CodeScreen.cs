@@ -9,8 +9,9 @@ namespace DefaultUIDashboard.Screens;
 /// The write-once <see cref="CodeEditor"/>, live in the browser, over a file long enough to scroll
 /// in both directions. The SAME component, controller and keymap run natively on Photon (the
 /// Studio's gallery), so what this screen shows is what an IDE built on the SDK gets: the problems a
-/// provider finds as the text changes (<see cref="LedgerLint"/>), and the card that explains a name
-/// (<see cref="LedgerHover"/>).
+/// provider finds as the text changes (<see cref="LedgerLint"/>), the card that explains a name
+/// (<see cref="LedgerHover"/>), and the panel that explains a call being written
+/// (<see cref="LedgerSignatures"/>).
 /// </summary>
 [Page("/code", Title = "Code editor — eQuantic Console")]
 public sealed class CodeScreen : StatefulComponent
@@ -24,6 +25,7 @@ public sealed class CodeScreen : StatefulComponent
     /// build, and asked again at once.</summary>
     private readonly LedgerLint _lint = new();
     private readonly LedgerHover _hover = new();
+    private readonly LedgerSignatures _signatures = new();
 
     private static readonly string Source = BuildSource();
 
@@ -89,7 +91,7 @@ public sealed class CodeScreen : StatefulComponent
         {
             Width = SizeValue.Fill,
             Padding = new EdgeInsets(Space.S4, Space.S4, 0, Space.S4),
-        }, new Text(_status.Length == 0 ? "Rest the pointer on a name, or click into the code and press F8." : _status,
+        }, new Text(_status.Length == 0 ? "Rest the pointer on a name, type a call such as Add(, or click into the code and press F8." : _status,
             TypeRole.BodyM, theme.TextSecondary, maxLines: 1)));
         page.Add(new Box(new BoxStyle
         {
@@ -103,6 +105,7 @@ public sealed class CodeScreen : StatefulComponent
                 _status = $"Ln {range.Focus.Line + 1}, Col {range.Focus.Column + 1}"),
             DiagnosticProviders = [_lint],
             HoverProviders = [_hover],
+            SignatureProviders = [_signatures],
         }));
 
         return new Box(new BoxStyle
