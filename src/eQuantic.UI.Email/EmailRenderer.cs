@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using eQuantic.UI.Primitives;
 
@@ -21,6 +22,9 @@ public static class EmailRenderer
     /// <summary>The conventional width every client tolerates.</summary>
     private const int BodyWidth = 600;
 
+    /// <summary>The language a message names when it is given no culture, or the invariant one.</summary>
+    private const string English = "en";
+
     /// <summary>
     /// The message for a tree — or for a COMPONENT, which is a tree with one expansion left in it.
     ///
@@ -39,21 +43,53 @@ public static class EmailRenderer
     /// then called <c>Build</c>, which is the same count reached by a second road: the root
     /// expansion counts itself here too, and <c>ComponentCycleTests</c> is what says so.
     /// </para>
+    ///
+    /// <para>
+    /// <paramref name="culture"/> is the message's language (#942). The tree is rendered under it, as
+    /// a page is rendered under its request's culture, so what its components write in Build (a
+    /// number, a date, a text looked up by culture) is in it, and <c>&lt;html lang&gt;</c> names it,
+    /// which screen readers and the clients that hyphenate or translate read. The markup does not
+    /// change with it: every length and color is written invariant. Not given, the tree is rendered
+    /// under the ambient culture and the message says English, as it always has, and so does the
+    /// invariant culture, the one .NET associates with English. The ambient culture is the caller's
+    /// again when the render returns or throws.
+    /// </para>
     /// </summary>
-    public static EmailMessage Render(VisualNode tree, IAppTheme theme, string? preheader = null)
+    public static EmailMessage Render(VisualNode tree, IAppTheme theme, string? preheader = null,
+        CultureInfo? culture = null)
     {
-        var body = EmailRealizer.Lower(tree, theme);
-        return new EmailMessage(Shell(body, theme, preheader), PlainText(tree, theme));
+        if (culture is null) return Compose(tree, theme, preheader, English);
+
+        var (formatting, lookup) = (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
+        CultureInfo.CurrentCulture = culture;
+        CultureInfo.CurrentUICulture = culture;
+        try
+        {
+            return Compose(tree, theme, preheader, culture.Name.Length > 0 ? culture.Name : English);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = formatting;
+            CultureInfo.CurrentUICulture = lookup;
+        }
     }
 
-    private static string Shell(string body, IAppTheme theme, string? preheader)
+    /// <summary>Both parts, from the one tree, under whatever culture the caller put in force.</summary>
+    private static EmailMessage Compose(VisualNode tree, IAppTheme theme, string? preheader, string language)
+    {
+        var body = EmailRealizer.Lower(tree, theme);
+        return new EmailMessage(Shell(body, theme, preheader, language), PlainText(tree, theme));
+    }
+
+    private static string Shell(string body, IAppTheme theme, string? preheader, string language)
     {
         var page = EmailRealizer.Hex(theme.Background.Resolve(ThemeMode.Light));
         var surface = EmailRealizer.Hex(theme.Surface.Resolve(ThemeMode.Light));
 
         var html = new StringBuilder();
         html.Append("<!DOCTYPE html>");
-        html.Append("<html lang=\"en\" xmlns=\"http://www.w3.org/1999/xhtml\">");
+        html.Append("<html lang=\"").Append(EmailRealizer.EscapeAttribute(language))
+            .Append("\" xmlns=\"http://www.w3.org/1999/xhtml\">");
         html.Append("<head>");
         html.Append("<meta charset=\"utf-8\">");
         html.Append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
