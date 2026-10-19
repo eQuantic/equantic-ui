@@ -130,6 +130,6 @@
 
 - [ ] 9.1 `docs/SPREADSHEET-PLAN.md`: slice 0a delivered, D18 closed; a ledger entry under
       `docs/ledger/` citing #982
-- [ ] 9.2 Every affected suite green on this machine (Compiler, Web, Server, Native.Engine, Conformance,
+- [x] 9.2 Every affected suite green on this machine (Compiler, Web, Server, Native.Engine, Conformance,
       the runtime's Vitest), `dotnet build` of the three samples, `./scripts/check-openspec.sh`
 - [ ] 9.3 Archive the change with `openspec archive a-viewport-on-two-axes --yes` before the merge
