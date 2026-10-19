@@ -55,6 +55,8 @@ export const bases = {
   // The cancellation pair's own (utils/cancellation): a token that throws when cancelled, a source
   // used after it was disposed, and the callbacks of one cancellation that threw.
   'System.OperationCanceledException': 'System.SystemException',
+  // `Task.Delay` ended by its token (utils/cancellation's `delay`), what awaiting a cancelled task throws.
+  'System.Threading.Tasks.TaskCanceledException': 'System.OperationCanceledException',
   'System.ObjectDisposedException': 'System.InvalidOperationException',
   'System.AggregateException': 'System.Exception',
   // A type initializer that threw: what every access to the type throws from then on (typeInitialization).

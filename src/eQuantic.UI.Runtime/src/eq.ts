@@ -192,7 +192,7 @@ import { liftArith, liftCmp, liftUnary, unwrap } from './utils/nullable';
 import { equals, equalsGroup, equalsInstance } from './utils/equals';
 import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
 import { guidOf, guidParse, guidTryParse } from './utils/guid';
-import { CancellationToken, CancellationTokenRegistration, CancellationTokenSource } from './utils/cancellation';
+import { CancellationToken, CancellationTokenRegistration, CancellationTokenSource, delay as taskDelay } from './utils/cancellation';
 import {
   bases as exceptionBases,
   create as createException,
@@ -633,6 +633,8 @@ export const $eq = {
     token: CancellationToken.of,
     linked: CancellationTokenSource.createLinkedTokenSource,
   },
+  /** `Task.Delay(delay, cancellationToken)`, which ends as cancelled when its token is (utils/cancellation). */
+  task: { delay: taskDelay },
   /**
    * .NET exceptions: one built from its type and the types it derives from (`new T(…)`), one of a
    * type the runtime knows, the test a typed `catch` and a type pattern write, a `throw`

@@ -59,7 +59,8 @@ hover at the cursor, and a marker keeps its range through edits until its owner 
 - **`Task.Delay` is fixed where it lives.** eqc wrote it as a `setTimeout` of its first argument and
   dropped the token. It writes `$eq.task.delay(delay, token)` now, which reads a `TimeSpan` or
   milliseconds as the cancellation twin already reads a delay, refuses what .NET refuses, and rejects
-  with a `TaskCanceledException` when the token is cancelled, at once when it already is.
+  with a `TaskCanceledException` when the token is cancelled, at once when it already is. Reading
+  the token off the exception stays refused (EQ2004), as it is today: no case here needs it.
 - **The hover asks after the pointer rests, for the word it rests on.** A `Hover` restarts the wait
   only when it lands outside the word the wait or the card is for. When the wait ends, the problems
   at that position are known at once and the providers are asked; the card shows as soon as anything

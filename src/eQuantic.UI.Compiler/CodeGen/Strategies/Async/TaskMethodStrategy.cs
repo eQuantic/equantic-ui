@@ -104,8 +104,15 @@ public class TaskMethodStrategy : IConversionStrategy
 
         if (name == "Delay")
         {
-            var ms = context.Converter.ConvertExpression(args[0].Expression);
-            return $"new Promise(($resolve) => setTimeout($resolve, {ms}))";
+            // The runtime's delay, which reads a TimeSpan as its milliseconds, refuses what .NET refuses
+            // with its words, and ends as cancelled when its token is. A setTimeout of the first argument
+            // read a TimeSpan as no delay at all and dropped the token (#299). Each argument lands in its
+            // parameter's place, a named one included.
+            context.UsedHelpers.Add(Eq.Import);
+            if (BoundArguments.Of(context.SemanticHelper.GetOperation(invocation),
+                    argument => context.Converter.ConvertIr(argument)) is { } bound)
+                return Ir.JsExprWriter.Write(bound.Call(Eq.TaskDelay));
+            return $"{Eq.TaskDelay}({string.Join(", ", args.Select(argument => context.Converter.ConvertExpression(argument.Expression)))})";
         }
         
         if (name == "Run")
