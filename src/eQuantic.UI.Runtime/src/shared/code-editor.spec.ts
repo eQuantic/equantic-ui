@@ -15,7 +15,7 @@ import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
 import { effectiveStyle } from './style-atomizer';
-import { CodeSurface, Text, type VisualNode } from './vocabulary';
+import { CodeSurface, Positioned, Text, type VisualNode } from './vocabulary';
 import { Point, Size, SizeValue } from './value-types';
 import { CodeEditorController } from './components/CodeEditorController';
 import { CodeGrid } from './components/CodeGrid';
@@ -1810,5 +1810,46 @@ describe('the problems and the card', () => {
     const region = nodesWhere(notes[0], (node) => node.attributes['aria-live'] === 'polite');
     expect(region, 'a card a key brought up is read out').toHaveLength(1);
     expect(textOf(region[0])).toContain("The name 'name8' is unused.  csharp CS0103");
+  });
+
+  /** The white-space the browser applies to the first node `target` accepts: its own, or the nearest
+   * ancestor's that declares one. */
+  const appliedWhiteSpace = (root: HtmlNode, target: (node: HtmlNode) => boolean): string | undefined => {
+    const walk = (node: HtmlNode, chain: HtmlNode[]): HtmlNode[] | null => {
+      const here = [...chain, node];
+      if (target(node)) return here;
+      for (const child of node.children) {
+        const found = walk(child, here);
+        if (found) return found;
+      }
+      return null;
+    };
+    for (const node of (walk(root, []) ?? []).reverse()) {
+      const declared = /(?:^|; )white-space: ([^;]+)/.exec(effectiveStyle(node))?.[1];
+      if (declared !== undefined) return declared;
+    }
+    return undefined;
+  };
+
+  // A card's message and the list's documentation inherited the surface's `pre`, which keeps the code's
+  // token runs on their line, so a text of many lines never wrapped: on a phone the message ran past the
+  // card's edge (found by Copilot reviewing #1008).
+  it("wraps a note's prose and the list's, and keeps the code on its line", () => {
+    const prose = 'Prefer DateTimeOffset: a DateTime carries no offset, and a ledger is read in every time zone.';
+    const editor = new CodeEditorController('let x = 1;', CodeLanguages.for('csharp'));
+    editor.grid = new CodeGrid(new Point(12, 12), new Size(COLUMN, LINE));
+    const surface = new CodeSurface(new Text('let x = 1;', 'labelSmall'), editor, {
+      notes: [new Positioned(new Text(prose, 'labelSmall', null, 4), 0, null, null, 0)],
+      options: new Text(`${prose} The list's.`, 'labelSmall', null, 4),
+    });
+    const lowered = lowerVisualNode(surface as never, {
+      textPrimary: photonTheme.textPrimary,
+      componentContext: { theme: photonTheme, typeScale: 1 },
+    } as never);
+    const holding = (text: string) => (node: HtmlNode) => node.textContent === text;
+
+    expect(appliedWhiteSpace(lowered, holding(prose)), "the card's message").toBe('normal');
+    expect(appliedWhiteSpace(lowered, holding(`${prose} The list's.`)), "the list's documentation").toBe('normal');
+    expect(appliedWhiteSpace(lowered, holding('let x = 1;')), 'the code').toBe('pre');
   });
 });

@@ -32,6 +32,9 @@ public sealed class CodeHoverSession
     // cancels a request it made itself, and never one the keyboard made.
     private bool _requestByKeyboard;
     private CodeRange _range;
+    // Where the card that shows, or whose providers are asked, was asked for: its problems are the ones
+    // there, read again whenever the problems change. Null with no such card.
+    private CodePosition? _cardAt;
     private List<CodeDiagnostic> _problems = [];
     // One slot per provider asked, in the order of Providers, filled as each answers.
     private List<CodeHover?> _answers = [];
@@ -48,11 +51,41 @@ public sealed class CodeHoverSession
         // One thing at a time over the caret: the list showing closes the card, which does not come
         // back when the list goes.
         editor.Completion.Changed += CompletionChanged;
+        // A card holds the problems where it was asked as they are now: one reported after the card
+        // showed (a provider answering after the pause) joins it, and one taken away leaves it.
+        editor.Diagnostics.Changed += DiagnosticsChanged;
     }
 
     private void CompletionChanged()
     {
         if (_editor.Completion.IsOpen) Dismiss();
+    }
+
+    /// <summary>
+    /// The problems changed while a card shows or its providers are asked: the card holds the problems
+    /// where it was asked as they are now, and explains their ranges, without asking its providers again,
+    /// so a problem that arrives before any answer opens it. A card left with nothing to show closes, as
+    /// if dismissed, so an answer still owed does not bring it back unasked. A wait that has not ended
+    /// asks nothing here: it reads the problems when it ends.
+    /// </summary>
+    private void DiagnosticsChanged()
+    {
+        if (_cardAt is not { } position) return;
+        var problems = _byKeyboard ? _editor.Diagnostics.At(position).ToList() : ProblemsUnder(position);
+        if (CodeDiagnostics.Same(problems, _problems)) return;
+        if (problems.Count == 0 && _shown.Count == 0)
+        {
+            Dismiss();
+            return;
+        }
+        _problems = problems;
+        var document = _editor.Document;
+        var range = Explained(position, character: !_byKeyboard) ?? new CodeRange(position);
+        foreach (var answer in _shown)
+            range = Union(range, new CodeRange(document.Clamp(answer.Range.Start), document.Clamp(answer.Range.End)));
+        _range = range;
+        _open = true;
+        Changed?.Invoke();
     }
 
     /// <summary>
@@ -114,6 +147,7 @@ public sealed class CodeHoverSession
         _request = null;
         _pending = null;
         _requestByKeyboard = false;
+        _cardAt = null;
         if (!_open) return false;
         _open = false;
         _byKeyboard = false;
@@ -228,6 +262,7 @@ public sealed class CodeHoverSession
         var document = _editor.Document;
         var providers = ask ? Providers.ToList() : new List<ICodeHoverProvider>();
         _range = explained;
+        _cardAt = position;
         // The pointer is on a character, the caret between two: a problem ending where the pointer rests
         // is not under it, and is beside the caret.
         _problems = keyboard ? _editor.Diagnostics.At(position).ToList() : ProblemsUnder(position);

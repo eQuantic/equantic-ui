@@ -111,7 +111,8 @@ public class SurfaceSsrTests
         var listId = System.Text.RegularExpressions.Regex.Match(html, "id=\"(eq-options-[^\"]+)\"").Groups[1].Value;
         listId.Should().NotBeEmpty("the list carries the id the input names");
         html.Should().Contain("role=\"listbox\"");
-        html.Should().Contain("position:absolute;left:28px;top:48px;");
+        html.Should().Contain("position:absolute;left:28px;top:48px;white-space:normal;",
+            "the list's prose wraps under the surface's pre, which keeps the code on its line");
         html.Should().Contain($"id=\"{listId}-0\"").And.Contain($"id=\"{listId}-1\"");
         html.Should().Contain("aria-autocomplete=\"list\"");
         html.Should().NotContain("aria-expanded", "ARIA allows it on a combobox, not on the textbox a textarea is");
@@ -140,7 +141,9 @@ public class SurfaceSsrTests
 
         var note = html.IndexOf("eq-code-note", StringComparison.Ordinal);
         note.Should().BeGreaterThan(html.IndexOf("<textarea", StringComparison.Ordinal), "the note is drawn over the input");
-        html.Should().Contain("position:absolute;left:28px;top:30px;");
+        // The caret stands at the same place, so the wrapper is told apart by what follows its top: its
+        // prose wraps under the surface's pre (found by Copilot reviewing #1008).
+        html.Should().Contain("position:absolute;left:28px;top:30px;white-space:normal;");
         html[note..].Should().Contain("About one.");
     }
 

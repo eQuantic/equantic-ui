@@ -607,6 +607,102 @@ public class CodeHoverTests : IDisposable
         editor.Hover.IsOpen.Should().BeFalse("the answer is for a word the pointer left");
     }
 
+    // ---- the problems changing under a card ---------------------------------------------------------
+
+    /// <summary>
+    /// A problem reported after the card showed joins it: the pointer's wait (300 ms) ends before the
+    /// problems' pause (500 ms), so the first card held only the providers' answers, and moving inside the
+    /// word asks nothing again (found by Copilot reviewing #1008).
+    /// </summary>
+    [Fact]
+    public void AProblemReportedAfterTheCardShowed_JoinsIt_AndNoProviderIsAskedAgain()
+    {
+        var editor = Editor("alpha beta");
+        var provider = new Provider();
+        editor.Hover.Providers.Add(provider);
+        Rest(editor, 0, 1);
+        editor.Hover.Answers.Should().ContainSingle();
+        editor.Hover.Problems.Should().BeEmpty("the problems have not come yet");
+
+        editor.Diagnostics.Report([Error(0, 0, 5, "late")]);
+
+        editor.Hover.IsOpen.Should().BeTrue();
+        editor.Hover.Problems.Should().ContainSingle().Which.Message.Should().Be("late");
+        editor.Hover.Answers.Should().ContainSingle("the answer stays");
+        provider.Asked.Should().ContainSingle("the providers are not asked again");
+    }
+
+    /// <summary>A problem replaced under a card is the one the card shows.</summary>
+    [Fact]
+    public void AProblemReplacedUnderACard_IsTheOneItShows()
+    {
+        var editor = Editor("alpha beta");
+        editor.Diagnostics.Report([Error(0, 0, 5, "first")]);
+        Press(editor, "F8").Should().BeTrue();
+
+        editor.Diagnostics.Report([Error(0, 0, 5, "second")]);
+
+        editor.Hover.Problems.Should().ContainSingle().Which.Message.Should().Be("second");
+    }
+
+    /// <summary>The problem a card showed alone, taken away, closes the card, and whatever draws it hears
+    /// so.</summary>
+    [Fact]
+    public void TheProblemACardShowedAlone_TakenAway_ClosesIt()
+    {
+        var editor = Editor("alpha beta");
+        editor.Diagnostics.Report([Error(0, 0, 5, "gone")]);
+        Press(editor, "F8").Should().BeTrue();
+        editor.Hover.IsOpen.Should().BeTrue();
+        var raised = 0;
+        editor.Hover.Changed += () => raised++;
+
+        editor.Diagnostics.Report([]);
+
+        editor.Hover.IsOpen.Should().BeFalse();
+        raised.Should().Be(1);
+    }
+
+    /// <summary>A problem that arrives while the providers are still answering opens the card at once, and
+    /// the answer still lands in it.</summary>
+    [Fact]
+    public void AProblemBeforeAnyAnswer_OpensTheCard_AndTheAnswerStillLands()
+    {
+        var editor = Editor("alpha beta");
+        var late = new LateProvider();
+        editor.Hover.Providers.Add(late);
+        Rest(editor, 0, 1);
+        editor.Hover.IsOpen.Should().BeFalse("nothing is there to show yet");
+
+        editor.Diagnostics.Report([Error(0, 0, 5, "early")]);
+        editor.Hover.IsOpen.Should().BeTrue("a problem is there to show");
+        late.Answer(0);
+
+        editor.Hover.Problems.Should().ContainSingle().Which.Message.Should().Be("early");
+        editor.Hover.Answers.Should().ContainSingle("the answer landed in the same card");
+        late.Count.Should().Be(1, "the provider was not asked again");
+    }
+
+    /// <summary>The problems changing during the pointer's wait change nothing until it ends, when the card
+    /// reads them as they are.</summary>
+    [Fact]
+    public async Task TheProblemsChangingDuringTheWait_AreReadWhenItEnds()
+    {
+        var editor = new CodeEditorController("alpha beta");
+        editor.Hover.Delay = TimeSpan.FromMilliseconds(60);
+        editor.Diagnostics.Delay = TimeSpan.Zero;
+        var raised = 0;
+        editor.Hover.Changed += () => raised++;
+        Rest(editor, 0, 1);
+
+        editor.Diagnostics.Report([Error(0, 0, 5, "during")]);
+        raised.Should().Be(0, "the wait has not ended");
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (!editor.Hover.IsOpen && DateTime.UtcNow < deadline) await Task.Delay(10);
+
+        editor.Hover.Problems.Should().ContainSingle().Which.Message.Should().Be("during");
+    }
+
     /// <summary>A problem ends before the character at its end, as a word does: the pointer on the space
     /// after it rests on nothing, while the caret there, between the two, is at the problem.</summary>
     [Fact]

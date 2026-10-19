@@ -27,7 +27,10 @@ providers answered for that position, in the order of `Providers`. A problem is 
 range covers the character under it, a range ending before the character at its end as a word's does,
 and at the caret when its range holds the caret, its ends included. The card SHALL show as soon as
 anything is there to show and grow as later answers arrive; with nothing to show, no card SHALL show.
-An answer that arrives after the pointer moved to another word or left SHALL be dropped.
+An answer that arrives after the pointer moved to another word or left SHALL be dropped. When the
+problems change while a card shows or its providers are asked, the card SHALL hold the problems at its
+position as they are now, without asking its providers again, and SHALL close when nothing is left to
+show; a pointer's wait that has not ended SHALL read them when it ends.
 
 #### Scenario: A problem and a provider's answer
 
@@ -38,6 +41,16 @@ An answer that arrives after the pointer moved to another word or left SHALL be 
 
 - **WHEN** a provider is asked about one word and the pointer rests on another before it answers
 - **THEN** its answer is not shown
+
+#### Scenario: A problem reported after the card showed
+
+- **WHEN** a card shows a provider's answer for a word, and a problem is then reported under it
+- **THEN** the card shows the problem and the answer, and no provider was asked again
+
+#### Scenario: The problem a card showed alone, taken away
+
+- **WHEN** F8 shows a card holding one problem, and the problem is then taken away
+- **THEN** the card closes
 
 #### Scenario: A problem ending where the pointer rests
 
@@ -124,6 +137,11 @@ stands above: it is measured in the heights its faces lay out at.
 - **WHEN** a card shows for a word on the eleventh line of a view twenty lines tall
 - **THEN** the card's bottom is the top of that line, and its left edge is the word's
 
+#### Scenario: A message longer than the view is wide
+
+- **WHEN** a card holds a message longer than a narrow view is wide
+- **THEN** the message wraps inside the card on both targets
+
 #### Scenario: F8 past the right edge
 
 - **WHEN** F8 goes to a problem past the view's right edge, and the code slides to the caret
@@ -133,13 +151,20 @@ stands above: it is measured in the heights its faces lay out at.
 
 A press or a pointer over the card SHALL be the card's, also where a control drawn inside the code
 lies under it, and SHALL move no caret, while a control drawn inside the card SHALL keep its own press.
-A pointer over a control drawn inside the code is over no character of the code.
+A pointer over a control drawn inside the code is over no character of the code, and a pointer on a
+control the card draws is still over the card.
 
 #### Scenario: A press on the card over a button in the code
 
 - **WHEN** a card stands over a button drawn inside the code and is pressed where the button lies under
   it
 - **THEN** the button is not pressed, and the card stays
+
+#### Scenario: The pointer on the card's own control
+
+- **WHEN** a card the pointer showed is open and the pointer moves from the card onto a control the card
+  draws
+- **THEN** the card stays
 
 #### Scenario: The pointer reaching a button in the code
 

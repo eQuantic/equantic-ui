@@ -650,6 +650,40 @@ public class CodeEditorProblemsTests : IDisposable
         inside.Should().Be(1, "the card's own control takes its press");
     }
 
+    /// <summary>
+    /// A control the note draws is the note's to the pointer too: moving onto it from the card is staying
+    /// over the card, and the code hears nothing, so a card the pointer opened stays. The code heard that
+    /// the pointer left, and the card closed under the pointer reaching for its own button (found by
+    /// Copilot reviewing #1008).
+    /// </summary>
+    [Fact]
+    public void ThePointerOnAControlTheNoteDraws_IsStillOverTheNote()
+    {
+        var controller = new CodeEditorController("alpha beta");
+        controller.Hover.Delay = TimeSpan.Zero;
+        controller.Hover.Providers.Add(new Explainer());
+        var card = new Column();
+        card.Add(new Box(new BoxStyle { Width = 200, Height = 60, Background = PhotonTheme.Instance.Surface }));
+        card.Add(new Pressable(new Box(new BoxStyle { Width = 60, Height = 20 }), () => { }));
+        var surface = new CodeSurface(new Box(new BoxStyle { Width = 300, Height = 300 }), controller)
+        {
+            Notes = [new Positioned(card, top: 100, start: 0)],
+        };
+        var host = Host(surface);
+        var frame = Settle(host);
+        var own = frame.HitRegions.Single().Bounds;
+        host.PointerMove(12, 9);
+        Settle(host);
+        controller.Hover.IsOpen.Should().BeTrue("the pointer rests on a word of the code, and its card shows");
+
+        host.PointerMove(100, 130);
+        controller.Hover.IsOpen.Should().BeTrue("on the note, the code hears nothing");
+        host.PointerMove(own.X + own.Width / 2, own.Y + own.Height / 2);
+        Settle(host);
+
+        controller.Hover.IsOpen.Should().BeTrue("on the note's own control, the pointer is still over the note");
+    }
+
     [Fact]
     public void F8_GoesToTheNextProblem_AndShowsItInALiveRegion()
     {

@@ -2717,6 +2717,16 @@ public sealed class PhotonHost
         return false;
     }
 
+    /// <summary>Which surface's notes drew the hit region at <paramref name="hit"/> (a control inside a card),
+    /// as an index into the frame's code regions, or -1: the pointer there is over the note.</summary>
+    private int NoteDrawing(int hit)
+    {
+        if (hit < 0 || _lastFrame is not { } frame) return -1;
+        foreach (var layer in frame.NoteLayers)
+            if (layer.FirstHit <= hit && hit < layer.AfterHit) return layer.Code;
+        return -1;
+    }
+
     /// <summary>
     /// The pointer passing over the code with nothing pressed (web twin: lowerCodeSurface's
     /// pointermove): the surface it is over hears where it rests, for its hover to explain what is
@@ -2729,9 +2739,11 @@ public sealed class PhotonHost
         if (_lastFrame is null) return;
         var fields = _lastFrame.TextRegions;
         var hit = HitAt(_lastFrame.HitRegions, point);
-        if (CoveredByNote(hit, point, out var noted))
+        // On a note painted over a control, or on a control the note draws itself: still over that note's
+        // surface, whose model hears nothing.
+        var noted = CoveredByNote(hit, point, out var covering) ? covering : NoteDrawing(hit);
+        if (noted >= 0)
         {
-            // On a note painted over a control: still over that note's surface, whose model hears nothing.
             var element = _lastFrame.CodeRegions[noted].Element;
             LeaveCode(except: element);
             _hoveredCode = element;

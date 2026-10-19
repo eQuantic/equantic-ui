@@ -237,7 +237,7 @@ internal sealed partial class WebLoweringVisitor
                 RawAttributes = new Dictionary<string, string>
                 {
                     ["style"] = $"position:absolute;left:{TokenCss.Px(surface.OptionsOrigin.X)};"
-                        + $"top:{TokenCss.Px(surface.OptionsOrigin.Y)};",
+                        + $"top:{TokenCss.Px(surface.OptionsOrigin.Y)};white-space:normal;",
                 },
             };
             list.Children.Add(offered);
@@ -257,7 +257,8 @@ internal sealed partial class WebLoweringVisitor
         });
         // What the surface EXPLAINS (TS twin: lowerCodeSurface): each note over the code and the caret,
         // at its start and top in the surface's coordinates. A card shows as a pointer rests or a key
-        // asks, so a page rarely carries one from the server; written when it does, as the list is.
+        // asks, so a page rarely carries one from the server; written when it does, as the list is. Its
+        // prose wraps, as the list's does: the surface's `pre` is for the code's token runs.
         foreach (var note in surface.Notes)
         {
             if (Lower(note.Child, null) is not { } explained) continue;
@@ -266,7 +267,8 @@ internal sealed partial class WebLoweringVisitor
                 ClassName = "eq-code-note",
                 RawAttributes = new Dictionary<string, string>
                 {
-                    ["style"] = $"position:absolute;left:{TokenCss.Px(note.Start ?? 0)};top:{TokenCss.Px(note.Top ?? 0)};",
+                    ["style"] = $"position:absolute;left:{TokenCss.Px(note.Start ?? 0)};top:{TokenCss.Px(note.Top ?? 0)};"
+                        + "white-space:normal;",
                 },
             };
             wrapper.Children.Add(explained);

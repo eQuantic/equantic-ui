@@ -656,14 +656,21 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   // What the surface EXPLAINS (C# twin: LowerCodeSurface): each note over the code and the caret, at
   // its start and top in the surface's coordinates. A note takes the pointer: a press on it is its own,
   // never the code's under it and never the keyboard's leaving the input, and a pointer moving over it
-  // reaches no model, so the card being read stays open.
+  // reaches no model, so the card being read stays open. Its prose wraps: the surface's `pre` keeps the
+  // spaces of the code's token runs, and a card's message is not one (the list's documentation below
+  // neither), so a text of many lines inherited a line it could not leave.
   (node.notes ?? []).forEach((note, at) => {
     const positioned = note as PositionedNode;
     const explained = lowerNode(positioned.child, context, null, `${path}/note/${at}`);
     if (!explained) return;
     const wrapper = element(
       'div',
-      { position: 'absolute', left: px(positioned.start ?? 0), top: px(positioned.top ?? 0) },
+      {
+        position: 'absolute',
+        left: px(positioned.start ?? 0),
+        top: px(positioned.top ?? 0),
+        'white-space': 'normal',
+      },
       [explained],
     );
     prependClass(wrapper, 'eq-code-note');
@@ -687,7 +694,11 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     if (offered) {
       const listId = `eq-options-${hashDeclaration(path)}`;
       const origin = node.optionsOrigin ?? { x: 0, y: 0 };
-      const list = element('div', { position: 'absolute', left: px(origin.x), top: px(origin.y) }, [offered]);
+      const list = element(
+        'div',
+        { position: 'absolute', left: px(origin.x), top: px(origin.y), 'white-space': 'normal' },
+        [offered],
+      );
       list.attributes['role'] = 'listbox';
       list.attributes['id'] = listId;
       numberItemRows(list, listId, { next: 0 });

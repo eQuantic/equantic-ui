@@ -273,7 +273,7 @@ public sealed class CodeDiagnostics
     }
 
     /// <summary>Whether two lists hold equal problems in the same order.</summary>
-    private static bool Same(List<CodeDiagnostic> one, List<CodeDiagnostic> other)
+    internal static bool Same(List<CodeDiagnostic> one, List<CodeDiagnostic> other)
     {
         if (one.Count != other.Count) return false;
         for (var i = 0; i < one.Count; i++)
