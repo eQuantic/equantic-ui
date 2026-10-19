@@ -583,8 +583,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             case PointerPhase.Down:
             {
                 // A press closes a card, as it does in every editor, even one that leaves the caret
-                // where it was.
+                // where it was, and ends a chord half typed.
                 Hover.Dismiss();
+                PendingChord = null;
                 // A folded run's row opens on a press, which the component drawing it answers: the
                 // caret stays. It landed in the run's first line, at the column pressed, and revealing
                 // it slid a diff's side sideways as the run opened.

@@ -80,7 +80,10 @@ export class CodeDiagnostics {
         let generation = ++this._generation;
         this._request?.cancel();
         this._request = null;
-        if ($eq.collections.count(this.providers) === 0) return;
+        if ($eq.collections.count(this.providers) === 0) {
+            this.gather();
+            return;
+        }
         let request = $eq.cancellation.source();
         this._request = request;
         let document = this._editor.document;

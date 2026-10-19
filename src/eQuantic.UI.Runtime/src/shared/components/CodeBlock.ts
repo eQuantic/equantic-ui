@@ -412,10 +412,11 @@ export class CodeBlock extends StatelessComponent {
             }
             let from = line === start.line ? start.column : 0;
             let to = line === end.line ? end.column : document.line(line).length;
-            if (to <= from) continue;
+            let point = $eq.equals(start, end) && (decoration.kind === 'squiggle' || decoration.kind === 'dots');
+            if (to <= from && !point) continue;
             let cells = cellsOf(line);
             let left = Math.fround(metrics.contentLeft + Math.fround(Math.fround(cells.cellOf(from)) * metrics.columnWidth));
-            let width = Math.fround(Math.fround(cells.cellOf(to) - cells.cellOf(from)) * metrics.columnWidth);
+            let width = point ? Math.fround(metrics.columnWidth * Math.fround(Math.max(1, cells.cellOf(Math.min(from + 1, document.line(line).length)) - cells.cellOf(from)))) : Math.fround(Math.fround(cells.cellOf(to) - cells.cellOf(from)) * metrics.columnWidth);
             _seq.push((() => { const $s = decoration.kind; if ($s === 'outline') return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, borderWidth: 1, borderColor: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); if ($s === 'squiggle') return new Positioned(CodeBlock.wave(width, color), Math.fround(Math.fround(top + metrics.lineHeight) - CodeBlock.waveHeight), null, null, left); if ($s === 'dots') return new Positioned(new Drawing(CodeBlock.hintDots, CodeBlock.hintDots.width, CodeBlock.hintDots.height, color), Math.fround(Math.fround(top + metrics.lineHeight) - CodeBlock.hintDots.height), null, null, left); if ($s === 'strike') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), Math.fround(top + Math.fround(metrics.lineHeight / 2)), null, null, left); if ($s === 'underline') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), Math.fround(Math.fround(top + metrics.lineHeight) - 2), null, null, left); return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, background: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); })());
         }
         return _seq;

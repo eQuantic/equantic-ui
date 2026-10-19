@@ -11,6 +11,7 @@ export class CodeHoverSession {
         this._range = CodeRange.$zero();
         this._problems = [];
         this._answers = [];
+        this._shown = [];
         this.providers = [];
         this.delay = $eq.time.timeSpan.fromMilliseconds(300n);
         this.changed = null;
@@ -18,9 +19,7 @@ export class CodeHoverSession {
         this._editor = editor;
         editor.selectionChanged = $eq.delegates.combine(editor.selectionChanged, (_) => this.dismiss());
         editor.changed = $eq.delegates.combine(editor.changed, (_) => this.dismiss());
-        editor.completion.changed = $eq.delegates.combine(editor.completion.changed, () => {
-            if (editor.completion.isOpen) this.dismiss();
-        });
+        editor.completion.changed = $eq.delegates.combine(editor.completion.changed, this.completionChanged.bind(this));
     }
 
     _editor!: CodeEditorController;
@@ -32,6 +31,7 @@ export class CodeHoverSession {
     _range!: CodeRange;
     _problems!: CodeDiagnostic[];
     _answers!: (CodeHover | null)[];
+    _shown!: CodeHover[];
     providers!: any[];
     delay!: TimeSpan;
     changed!: (() => void) | null;
@@ -54,9 +54,11 @@ export class CodeHoverSession {
     }
 
     get answers(): CodeHover[] {
-        let answers: CodeHover[] = [];
-        for (const answer of this._answers) if (!(answer == null)) answers.push(answer);
-        return answers;
+        return this._shown;
+    }
+
+    completionChanged() {
+        if (this._editor.completion.isOpen) this.dismiss();
     }
 
     showAt(position: CodePosition) {
@@ -77,6 +79,7 @@ export class CodeHoverSession {
         this._byKeyboard = false;
         this._problems = [];
         this._answers = [];
+        this._shown = [];
         this.changed?.();
         return true;
     }
@@ -136,10 +139,12 @@ export class CodeHoverSession {
         this._range = explained;
         this._problems = this._editor.diagnostics.at(position).slice();
         this._answers = [];
+        this._shown = [];
         for (const _ of providers) this._answers.push(null);
         this._byKeyboard = keyboard;
+        let showed = this._open;
         this._open = this._problems.length > 0;
-        if (this._open) this.changed?.();
+        if (this._open || showed) this.changed?.();
         for (let slot = 0; slot < providers.length; slot++) this.askOne(slot, providers[slot], document, position, generation, request.token);
     }
 
@@ -159,6 +164,9 @@ export class CodeHoverSession {
         UiThread.run(() => {
             if (generation !== this._generation || answer == null) return;
             this._answers[slot] = answer;
+            let shown: CodeHover[] = [];
+            for (const held of this._answers) if (!(held == null)) shown.push(held);
+            this._shown = shown;
             let range = new CodeRange(document.clamp(answer.range.start), document.clamp(answer.range.end));
             this._range = CodeHoverSession.union(this._range, range);
             this._open = true;

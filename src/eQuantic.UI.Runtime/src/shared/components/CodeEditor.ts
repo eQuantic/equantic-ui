@@ -196,7 +196,7 @@ export class CodeEditor extends StatefulComponent {
             }
             this._diagnosers = [...this.diagnosticProviders];
             for (const provider of this._diagnosers) $eq.collections.add(editor.diagnostics.providers, provider);
-            if (this._diagnosers.length > 0) editor.diagnostics.check();
+            editor.diagnostics.check();
         }
         if (!CodeEditor.sameProviders(this.hoverProviders, this._explainers)) {
             for (const provider of this._explainers) {
@@ -290,13 +290,8 @@ export class CodeEditor extends StatefulComponent {
         let marks: CodeDecoration[] = $eq.collections.listCopy(this.decorations);
         for (const problem of problems) {
             if (problem.range.end.line < first || problem.range.start.line > last) continue;
-            let range = problem.range;
-            if (range.isEmpty) {
-                let length = editor.document.line(range.start.line).length;
-                range = range.start.column < length ? new CodeRange(range.start, $eq.withPatch(range.start, { column: range.start.column + 1 })) : new CodeRange($eq.withPatch(range.start, { column: Math.max(0, length - 1) }), range.start);
-            }
             let $n3: any; 
-            marks.push(($n3 = new CodeDecoration(range, problem.severity === 'hint' ? 'dots' : 'squiggle'), $n3.color = CodeHoverCard.severityColor(theme, problem.severity), $n3));
+            marks.push(($n3 = new CodeDecoration(problem.range, problem.severity === 'hint' ? 'dots' : 'squiggle'), $n3.color = CodeHoverCard.severityColor(theme, problem.severity), $n3));
         }
         let composition: any; 
         if ((composition = editor.composition) != null) marks.push(new CodeDecoration(composition, 'underline'));

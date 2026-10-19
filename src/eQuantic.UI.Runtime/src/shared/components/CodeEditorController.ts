@@ -348,6 +348,7 @@ export class CodeEditorController {
             case 'down':
                 {
                     this.hover.dismiss();
+                    this.pendingChord = null;
                     if (this.onPlaceholder(position)) return false;
                     let at = this.positionAt(position);
                     if (clicks >= 3) this.selectLine(at.line); else if (clicks === 2) this.selectWord(at); else if ((modifiers & 1) !== 0) this.selection = new CodeRange(this._selection.anchor, at); else this.selection = new CodeRange(at);

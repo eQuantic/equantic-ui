@@ -191,7 +191,8 @@ public sealed class CodeEditor : StatefulComponent
             }
             _diagnosers = [.. DiagnosticProviders];
             foreach (var provider in _diagnosers) editor.Diagnostics.Providers.Add(provider);
-            if (_diagnosers.Count > 0) editor.Diagnostics.Check();
+            // Asked at once, and what the providers taken out had found goes with them.
+            editor.Diagnostics.Check();
         }
         if (!SameProviders(HoverProviders, _explainers))
         {
@@ -347,20 +348,11 @@ public sealed class CodeEditor : StatefulComponent
 
         var marks = new List<CodeDecoration>(Decorations);
         // Each problem in view under its range, as a wave in its severity's colour, or three dots for a
-        // hint. One whose range is empty is drawn under the character there, or the one before it at
-        // the end of a line, since a mark of no width says nothing.
+        // hint; the block draws one of no width under the cell where it stands.
         foreach (var problem in problems)
         {
             if (problem.Range.End.Line < first || problem.Range.Start.Line > last) continue;
-            var range = problem.Range;
-            if (range.IsEmpty)
-            {
-                var length = editor.Document.Line(range.Start.Line).Length;
-                range = range.Start.Column < length
-                    ? new CodeRange(range.Start, range.Start with { Column = range.Start.Column + 1 })
-                    : new CodeRange(range.Start with { Column = Math.Max(0, length - 1) }, range.Start);
-            }
-            marks.Add(new CodeDecoration(range,
+            marks.Add(new CodeDecoration(problem.Range,
                 problem.Severity == CodeDiagnosticSeverity.Hint ? CodeDecorationKind.Dots : CodeDecorationKind.Squiggle)
             {
                 Color = CodeHoverCard.SeverityColor(theme, problem.Severity),

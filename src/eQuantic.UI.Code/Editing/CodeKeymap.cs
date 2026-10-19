@@ -84,7 +84,10 @@ public static class CodeKeymap
                 return true;
             }
         }
-        if (command && !shift && !alt && key is "k" or "K")
+        // Armed only while a card could show: with no provider to ask and no problem to explain, the key
+        // is the host's (a browser's Ctrl+K).
+        if (command && !shift && !alt && key is "k" or "K"
+            && (editor.Hover.Providers.Count > 0 || editor.Diagnostics.Items.Count > 0))
         {
             editor.PendingChord = "K";
             return true;

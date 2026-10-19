@@ -31,6 +31,8 @@ public sealed class CodeHoverSession
     private List<CodeDiagnostic> _problems = [];
     // One slot per provider asked, in the order of Providers, filled as each answers.
     private List<CodeHover?> _answers = [];
+    // What the card shows of them, in the same order: built when an answer lands, read every frame.
+    private List<CodeHover> _shown = [];
 
     internal CodeHoverSession(CodeEditorController editor)
     {
@@ -41,10 +43,12 @@ public sealed class CodeHoverSession
         editor.Changed += _ => Dismiss();
         // One thing at a time over the caret: the list showing closes the card, which does not come
         // back when the list goes.
-        editor.Completion.Changed += () =>
-        {
-            if (editor.Completion.IsOpen) Dismiss();
-        };
+        editor.Completion.Changed += CompletionChanged;
+    }
+
+    private void CompletionChanged()
+    {
+        if (_editor.Completion.IsOpen) Dismiss();
     }
 
     /// <summary>
@@ -72,16 +76,7 @@ public sealed class CodeHoverSession
     public IReadOnlyList<CodeDiagnostic> Problems => _problems;
 
     /// <summary>What the providers answered, in the order of <see cref="Providers"/>, as they arrive.</summary>
-    public IReadOnlyList<CodeHover> Answers
-    {
-        get
-        {
-            var answers = new List<CodeHover>();
-            foreach (var answer in _answers)
-                if (answer is not null) answers.Add(answer);
-            return answers;
-        }
-    }
+    public IReadOnlyList<CodeHover> Answers => _shown;
 
     /// <summary>Raised whenever the card shows, closes or grows.</summary>
     public event Action? Changed;
@@ -117,6 +112,7 @@ public sealed class CodeHoverSession
         _byKeyboard = false;
         _problems = [];
         _answers = [];
+        _shown = [];
         Changed?.Invoke();
         return true;
     }
@@ -200,10 +196,14 @@ public sealed class CodeHoverSession
         _range = explained;
         _problems = _editor.Diagnostics.At(position).ToList();
         _answers = [];
+        _shown = [];
         foreach (var _ in providers) _answers.Add(null);
         _byKeyboard = keyboard;
+        // A card asked for again over one that shows says so either way: it shows what is here now,
+        // or nothing until an answer comes.
+        var showed = _open;
         _open = _problems.Count > 0;
-        if (_open) Changed?.Invoke();
+        if (_open || showed) Changed?.Invoke();
         for (var slot = 0; slot < providers.Count; slot++)
             _ = AskOne(slot, providers[slot], document, position, generation, request.Token);
     }
@@ -230,6 +230,10 @@ public sealed class CodeHoverSession
         {
             if (generation != _generation || answer is null) return;
             _answers[slot] = answer;
+            var shown = new List<CodeHover>();
+            foreach (var held in _answers)
+                if (held is not null) shown.Add(held);
+            _shown = shown;
             // What the provider says it explains is part of what the card explains: the pointer
             // resting anywhere in it keeps the card.
             var range = new CodeRange(document.Clamp(answer.Range.Start), document.Clamp(answer.Range.End));

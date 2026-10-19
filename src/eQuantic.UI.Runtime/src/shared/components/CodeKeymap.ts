@@ -26,7 +26,7 @@ export class CodeKeymap {
                 return true;
             }
         }
-        if (command && !shift && !alt && (key === 'k' || key === 'K')) {
+        if (command && !shift && !alt && (key === 'k' || key === 'K') && ($eq.collections.count(editor.hover.providers) > 0 || $eq.collections.count(editor.diagnostics.items) > 0)) {
             editor.pendingChord = 'K';
             return true;
         }
@@ -59,7 +59,7 @@ export class CodeKeymap {
                         return true;
                     case 'v':
                         if (clipboard == null) return false;
-                        if ((($v7860) => (($v7860 != null && $v7860.length > 0) && (pasted = $v7860, true)))(clipboard.read())) editor.paste(pasted);
+                        if ((($v8101) => (($v8101 != null && $v8101.length > 0) && (pasted = $v8101, true)))(clipboard.read())) editor.paste(pasted);
                         return true;
                     case '/':
                         return editor.toggleLineComment();

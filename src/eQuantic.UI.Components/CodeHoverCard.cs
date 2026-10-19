@@ -196,8 +196,34 @@ internal static class CodeHoverCard
         var lines = 0;
         foreach (var paragraph in text.Split('\n'))
         {
-            lines += Math.Max(1, (int)MathF.Ceiling(context.MeasureText(paragraph, style) / MathF.Max(1, room)));
+            lines += WrappedLines(context, paragraph, style, MathF.Max(1, room));
             if (lines >= MaxLinesEach) return MaxLinesEach;
+        }
+        return lines;
+    }
+
+    /// <summary>
+    /// How many lines <paramref name="paragraph"/> wraps to <paramref name="room"/> wide, broken between
+    /// words as both targets break it: a word that does not fit on the line starts the next, and a word
+    /// wider than the room takes as many lines as it is wide. Dividing the paragraph's width by the room
+    /// counted the lines a wrap leaves half empty as full, and cut the last of them.
+    /// </summary>
+    private static int WrappedLines(ComponentContext context, string paragraph, TypeStyle style, float room)
+    {
+        var lines = 1;
+        var line = "";
+        foreach (var word in paragraph.Split(' '))
+        {
+            var longer = line.Length == 0 ? word : line + " " + word;
+            if (context.MeasureText(longer, style) <= room)
+            {
+                line = longer;
+                continue;
+            }
+            if (line.Length > 0) lines++;
+            line = word;
+            var wide = context.MeasureText(word, style);
+            if (wide > room) lines += (int)MathF.Ceiling(wide / room) - 1;
         }
         return lines;
     }

@@ -54,9 +54,12 @@ itself, and SHALL close when the pointer rests outside both or leaves the surfac
 
 ### Requirement: The keyboard shows and closes the card
 
-⌘K followed by ⌘I (Ctrl+K, Ctrl+I) SHALL show the card for the caret at once. Escape SHALL close a
-card and be claimed when one shows, after a completion list showing, which it closes first. A card
-the keyboard asked for SHALL close when the caret moves or the text changes.
+⌘K followed by ⌘I (Ctrl+K, Ctrl+I) SHALL show the card for the caret at once; ⌘K SHALL be claimed only
+while a card could show (a hover provider, or a problem), and a press SHALL end a chord half typed.
+Escape SHALL close a card and be claimed when one shows, after a completion list showing, which it
+closes first. A card the keyboard asked for SHALL close when the caret moves or the text changes. A
+card asked for over one that shows SHALL replace it, and SHALL announce that it closed while nothing is
+there to show yet.
 
 #### Scenario: Showing the card at the caret
 

@@ -99,8 +99,25 @@ export class CodeHoverCard {
     static linesOf(context: BuildContext, text: string, style: TypeStyle, room: number) {
         let lines = 0;
         for (const paragraph of $eq.text.split(text, '\n')) {
-            lines += Math.max(1, (Math.trunc(Math.ceil(Math.fround(context.measureText(paragraph, style) / Math.max(1, room)))) | 0));
+            lines += CodeHoverCard.wrappedLines(context, paragraph, style, Math.max(1, room));
             if (lines >= CodeHoverCard.maxLinesEach) return CodeHoverCard.maxLinesEach;
+        }
+        return lines;
+    }
+
+    static wrappedLines(context: BuildContext, paragraph: string, style: TypeStyle, room: number) {
+        let lines = 1;
+        let line = '';
+        for (const word of $eq.text.split(paragraph, ' ')) {
+            let longer = line.length === 0 ? word : line + ' ' + word;
+            if (context.measureText(longer, style) <= room) {
+                line = longer;
+                continue;
+            }
+            if (line.length > 0) lines++;
+            line = word;
+            let wide = context.measureText(word, style);
+            if (wide > room) lines += (Math.trunc(Math.ceil(Math.fround(wide / room))) | 0) - 1;
         }
         return lines;
     }

@@ -277,6 +277,39 @@ public class CodeEditorProblemsTests : IDisposable
     }
 
     [Fact]
+    public void AnEmptyRangeOnAnEmptyLine_IsDrawnOneCellWide()
+    {
+        var editor = Editor("var a = 1;\n\nvar b = 2;");
+        editor.Diagnostics = [new CodeDiagnostic(new CodeRange(new CodePosition(1, 0)), "Expected a statement.")];
+        var host = Host(editor);
+
+        var frame = Settle(host);
+
+        var (bounds, _) = Drawings(frame).Should().ContainSingle("a problem of no width is still drawn").Subject;
+        bounds.X.Should().BeApproximately(OnScreen(frame, editor, new CodePosition(1, 0)).X, 0.5f);
+        bounds.Width.Should().BeApproximately(editor.Editor.Grid.Cell.Width, 0.5f);
+    }
+
+    /// <summary>Providers taken away take what they found with them, at once (found reviewing #299).</summary>
+    [Fact]
+    public void ProvidersTakenAway_TakeTheirProblems()
+    {
+        var checker = new Checker(Problem(5, 4, 9, "Found by the checker."));
+        var first = Editor(Lines());
+        Controller(first);
+        first.DiagnosticProviders = [checker];
+        var parent = new Parent(first);
+        var host = Host(parent);
+        Drawings(Settle(host)).Should().ContainSingle();
+
+        parent.Hand(Editor(Lines()));
+        var frame = Settle(host);
+
+        first.Editor.Diagnostics.Items.Should().BeEmpty();
+        Drawings(frame).Should().BeEmpty();
+    }
+
+    [Fact]
     public void TypingBeforeAProblem_CarriesItsWaveWithTheText()
     {
         var editor = Editor(Lines());
@@ -418,6 +451,41 @@ public class CodeEditorProblemsTests : IDisposable
         Texts(frame).Should().Contain(["int name10", "About name10."], "it shows the signature and the text");
         host.Semantics().Should().NotContain(node => node.Live != null,
             "a card the pointer asked for is no live region: a pointer resting asks nobody to speak");
+    }
+
+    /// <summary>
+    /// An answer long enough to wrap is measured as it wraps, between words: counted as its width over
+    /// the card's, the lines a wrap leaves half empty were counted full, and its last line was cut
+    /// (found reviewing #1005).
+    /// </summary>
+    [Fact]
+    public void ALongAnswer_WrapsBetweenWords_AndTheCardStillEndsAtItsLine()
+    {
+        var editor = Editor(Lines(), explains: false);
+        editor.HoverProviders = [new Wordy()];
+        Controller(editor);
+        var host = Host(editor);
+        Settle(host);
+
+        var frame = RestOn(host, editor, 12, 6);
+
+        var answer = Descendants(frame.Root).Select(node => node.Source).OfType<Text>()
+            .Single(text => text.Content == Wordy.Text);
+        answer.MaxLines.Should().Be(3, "one long word a line: none of the text is cut");
+        var note = frame.CodeRegions.Single().Notes!.Single();
+        note.Bottom.Should().BeApproximately(OnScreen(frame, editor, new CodePosition(12, 4)).Y, 0.5f,
+            "and the card is as tall as its wrapped text");
+    }
+
+    /// <summary>Explains every word with three long words, each wider than half the card: one a line,
+    /// where their width over the card's counts two.</summary>
+    private sealed class Wordy : ICodeHoverProvider
+    {
+        public const string Text = "LedgerAccountingInvoicePaymentRefundTransfer "
+            + "DepositWithdrawalReferenceIssuedAtTotalAmounts ToStringReferenceTotalAmountsLedgerAccounts";
+
+        public Task<CodeHover?> HoverAsync(CodeDocument document, CodePosition position, CancellationToken cancellation) =>
+            Task.FromResult<CodeHover?>(new CodeHover(document.WordAt(position), Text));
     }
 
     [Fact]

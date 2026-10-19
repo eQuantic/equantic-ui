@@ -769,13 +769,19 @@ public sealed class CodeBlock : StatelessComponent
 
             var from = line == start.Line ? start.Column : 0;
             var to = line == end.Line ? end.Column : document.Line(line).Length;
-            if (to <= from) continue;
+            // A problem of no width is drawn under the cell where it stands, the character there or
+            // the cell after a line's end, an empty line's included: a mark of no width says nothing.
+            var point = start == end
+                && decoration.Kind is CodeDecorationKind.Squiggle or CodeDecorationKind.Dots;
+            if (to <= from && !point) continue;
 
             // Through the line's CELLS, the way the engine places its caret: a match after a tab
             // or across a wide character is drawn where the characters are.
             var cells = cellsOf(line);
             var left = metrics.ContentLeft + cells.CellOf(from) * metrics.ColumnWidth;
-            var width = (cells.CellOf(to) - cells.CellOf(from)) * metrics.ColumnWidth;
+            var width = point
+                ? metrics.ColumnWidth * Math.Max(1, cells.CellOf(Math.Min(from + 1, document.Line(line).Length)) - cells.CellOf(from))
+                : (cells.CellOf(to) - cells.CellOf(from)) * metrics.ColumnWidth;
 
             yield return decoration.Kind switch
             {

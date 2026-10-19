@@ -77,7 +77,9 @@ public sealed class CodeDiagnostics
     }
 
     /// <summary>Asks every provider about the document as it stands, now: when a file opens, when a
-    /// provider is added, or when something only the app knows about makes the answers stale.</summary>
+    /// provider is added or taken out, or when something only the app knows about makes the answers
+    /// stale. What a provider taken out had found goes when the others answer, so a provider swapped
+    /// for one that finds the same shows no gap, and at once when no provider is left.</summary>
     public void Check() => _ = Ask(wait: false);
 
     /// <summary>The problems at <paramref name="position"/>: those whose range holds it, its ends
@@ -142,7 +144,12 @@ public sealed class CodeDiagnostics
         var generation = ++_generation;
         _request?.Cancel();
         _request = null;
-        if (Providers.Count == 0) return;
+        if (Providers.Count == 0)
+        {
+            // Nobody left to answer: what the providers taken out had found goes now.
+            Gather();
+            return;
+        }
         var request = new CancellationTokenSource();
         _request = request;
         var document = _editor.Document;

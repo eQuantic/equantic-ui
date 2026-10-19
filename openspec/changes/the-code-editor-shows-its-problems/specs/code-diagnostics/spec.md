@@ -52,6 +52,11 @@ again. A provider is known by reference, so one handed anew is asked at once.
 - **WHEN** a provider that answered a warning is taken out and put back, and nothing asks it again
 - **THEN** the diagnostics hold no warning
 
+#### Scenario: Every provider taken away
+
+- **WHEN** a parent builds again with no problem providers, after one found an error
+- **THEN** the error is gone at once, with no edit
+
 ### Requirement: A problem travels with the edits after it
 
 Every edit SHALL carry each problem's range through it: a position before the edit SHALL stay; one
@@ -114,8 +119,8 @@ and the other providers' answers SHALL still show.
 
 The editor SHALL draw an error, a warning and an information as a wavy line under their range, in the
 destructive, the warning and the info colour, and a hint as three dots under its first characters in
-the muted ink. A problem whose range is empty SHALL be drawn under the character at its position, or
-the one before it at the end of a line. The gutter SHALL mark each line with a problem as an error or
+the muted ink. A problem whose range is empty SHALL be drawn one cell wide where it stands: under the
+character there, or the cell after the line's end, an empty line's included. The gutter SHALL mark each line with a problem as an error or
 a warning, the worst problem of the line deciding, behind a marker the app put on that line itself.
 
 #### Scenario: An error and a warning on two lines

@@ -332,6 +332,59 @@ public class CodeDiagnosticsTests : IDisposable
         raised.Should().Be(1, "a keystroke before them moved them, and that is a change");
     }
 
+    /// <summary>
+    /// A provider that reads the text finds the typo, and fixing it takes the problem away once the
+    /// provider answers again: what #299 accepts, on the engine every target runs.
+    /// </summary>
+    [Fact]
+    public void FixingWhatAProviderFound_TakesItAway()
+    {
+        var editor = Editor("var totl = 1;");
+        editor.Diagnostics.Providers.Add(new Speller("totl"));
+        editor.Diagnostics.Check();
+        editor.Diagnostics.Items.Should().ContainSingle().Which.Range.Should().Be(At(0, 4, 8));
+
+        editor.Selection = new CodeRange(new CodePosition(0, 7));
+        Type(editor, "a");
+
+        editor.Document.Line(0).Should().Be("var total = 1;");
+        editor.Diagnostics.Items.Should().BeEmpty("the provider found no typo in the fixed text");
+    }
+
+    /// <summary>Flags every place <paramref name="typo"/> is written, as a spell checker flags a word.</summary>
+    private sealed class Speller(string typo) : ICodeDiagnosticProvider
+    {
+        public Task<IReadOnlyList<CodeDiagnostic>> DiagnoseAsync(CodeDocument document, CancellationToken cancellation)
+        {
+            var found = new List<CodeDiagnostic>();
+            for (var line = 0; line < document.LineCount; line++)
+            {
+                var text = document.Line(line);
+                for (var at = text.IndexOf(typo, StringComparison.Ordinal); at >= 0;
+                     at = text.IndexOf(typo, at + typo.Length, StringComparison.Ordinal))
+                    found.Add(new CodeDiagnostic(At(line, at, at + typo.Length), $"'{typo}' is misspelt."));
+            }
+            return Task.FromResult<IReadOnlyList<CodeDiagnostic>>(found);
+        }
+    }
+
+    /// <summary>A provider taken out and the problems checked: what it found goes at once, with no edit
+    /// or report to gather them again (found reviewing #299).</summary>
+    [Fact]
+    public void AProviderTakenOutAndChecked_TakesItsProblemsAtOnce()
+    {
+        var editor = Editor("abc");
+        var provider = new Provider();
+        provider.Problems.Add(Warning(0, 0, 3));
+        editor.Diagnostics.Providers.Add(provider);
+        editor.Diagnostics.Check();
+
+        editor.Diagnostics.Providers.Remove(provider);
+        editor.Diagnostics.Check();
+
+        editor.Diagnostics.Items.Should().BeEmpty();
+    }
+
     // ---- the walk -------------------------------------------------------------------------------
 
     [Fact]

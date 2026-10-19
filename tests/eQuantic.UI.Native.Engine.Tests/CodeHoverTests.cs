@@ -365,6 +365,54 @@ public class CodeHoverTests : IDisposable
         editor.Hover.IsOpen.Should().BeFalse("and the card stays closed");
     }
 
+    /// <summary>
+    /// A card asked for again over one that shows, where nothing is there yet, closes, and says so: it
+    /// said nothing, so a card the keyboard replaced stayed drawn, and stayed for good when no provider
+    /// answered (found reviewing #1005).
+    /// </summary>
+    [Fact]
+    public void AskingAgainOverACard_SaysItClosed_WhileNothingIsThereYet()
+    {
+        var editor = Editor("alpha beta");
+        var late = new LateProvider();
+        editor.Hover.Providers.Add(late);
+        editor.Hover.ShowAt(new CodePosition(0, 1));
+        late.Answer(0);
+        editor.Hover.IsOpen.Should().BeTrue();
+        var raised = 0;
+        editor.Hover.Changed += () => raised++;
+
+        editor.Hover.ShowAt(new CodePosition(0, 7));
+
+        editor.Hover.IsOpen.Should().BeFalse("nothing has answered for the second word yet");
+        raised.Should().Be(1, "the card that showed is gone, and whatever draws it has to hear so");
+    }
+
+    /// <summary>With no provider to ask and no problem to explain, ⌘K is the host's: a browser's Ctrl+K
+    /// went to a chord that could show nothing.</summary>
+    [Fact]
+    public void CommandK_WithNothingACardCouldShow_IsLeftToTheHost()
+    {
+        var editor = Editor("alpha beta");
+
+        Press(editor, "k", KeyModifiers.Command).Should().BeFalse();
+    }
+
+    /// <summary>A press between the two halves of ⌘K ⌘I ends the chord, so a later ⌘I is only ⌘I.</summary>
+    [Fact]
+    public void APressBetweenTheChordsHalves_EndsIt()
+    {
+        var editor = Editor("alpha beta");
+        editor.Hover.Providers.Add(new Provider());
+        Press(editor, "k", KeyModifiers.Command).Should().BeTrue();
+
+        editor.HandlePointer(PointerPhase.Down, Over(0, 7), KeyModifiers.None, 1);
+        editor.HandlePointer(PointerPhase.Up, Over(0, 7), KeyModifiers.None, 1);
+        Press(editor, "i", KeyModifiers.Command);
+
+        editor.Hover.IsOpen.Should().BeFalse();
+    }
+
     [Fact]
     public void Typing_ClosesTheCard()
     {
