@@ -2,6 +2,8 @@ using eQuantic.UI.Code;
 using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
+using eQuantic.UI.Native.Engine.Reference;
+using eQuantic.UI.Native.Engine.Tests.Golden;
 using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
@@ -691,5 +693,42 @@ public class CodeEditorProblemsTests : IDisposable
         host.PressUp(corner.X, corner.Y);
         Settle(host);
         editor.Editor.Caret.Should().NotBe(caret, "a press there lands on the code and moves its caret");
+    }
+
+    // ---- pixels ---------------------------------------------------------------------------------
+
+    /// <summary>
+    /// The problems and the card, light and dark, on the reference backend: an error's wave and a
+    /// warning's in their colours, a hint's dots, the gutter's marks, and the card F8 brought up over
+    /// the error, with its mark, its message, its source and its rule. The state the picture is of is
+    /// asserted beside it, so a golden cannot bless a card that shows the wrong thing.
+    /// </summary>
+    [Theory]
+    [InlineData(ThemeMode.Light, "code-problems-light")]
+    [InlineData(ThemeMode.Dark, "code-problems-dark")]
+    public void TheProblemsAndTheCard_RenderThePhotonPixels(ThemeMode mode, string golden)
+    {
+        var editor = new CodeEditor(Lines(8), "csharp") { Height = SizeValue.Fill };
+        Controller(editor);
+        editor.Diagnostics =
+        [
+            Problem(4, 4, 9, "The name 'name4' does not exist."),
+            Problem(6, 4, 9, "Prefer a constant.", CodeDiagnosticSeverity.Warning),
+            Problem(7, 4, 9, "Could be inlined.", CodeDiagnosticSeverity.Hint),
+        ];
+        using var backend = new ReferenceBackend();
+        using var surface = backend.CreateSurface(360, 240);
+        var host = new PhotonHost(editor, PhotonTheme.Instance, mode, 360, 240) { Density = Density.Compact };
+        Settle(host);
+        ClickInto(host, editor);
+        Press(host, "F8");
+        host.RenderFrame(new DisplayListBuilder(), timeMs: 500);
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, timeMs: 1000);
+        backend.Render(builder.Build(), surface);
+
+        editor.Editor.Caret.Should().Be(new CodePosition(4, 4), "F8 reached the error");
+        editor.Editor.Hover.Problems.Should().ContainSingle().Which.Severity.Should().Be(CodeDiagnosticSeverity.Error);
+        GoldenImage.Match(surface, golden);
     }
 }

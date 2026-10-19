@@ -72,13 +72,35 @@ the keyboard asked for SHALL close when the caret moves or the text changes.
 
 The card SHALL stand above the first line of the range it explains, its left edge at the range's
 start, and below the line when the editor's viewport has no room above it. Its right edge SHALL stay
-inside the viewport, and its left edge too when the code is scrolled sideways. It SHALL be as wide as
-its longest line, up to 80 columns and the viewport, and wrap what is longer.
+inside the viewport, and its left edge too when the code is scrolled sideways, including a slide made
+after the card showed (a caret revealed, a wheel). It SHALL be as wide as its longest line, up to 80
+columns and the viewport, and wrap what is longer, and its bottom SHALL be the top of the line it
+stands above: it is measured in the heights its faces lay out at.
 
 #### Scenario: A word on the first visible line
 
 - **WHEN** a card shows for a word on the first line the editor shows
 - **THEN** the card's top is the bottom of that line
+
+#### Scenario: A word in the middle of the view
+
+- **WHEN** a card shows for a word on the eleventh line of a view twenty lines tall
+- **THEN** the card's bottom is the top of that line, and its left edge is the word's
+
+#### Scenario: F8 past the right edge
+
+- **WHEN** F8 goes to a problem past the view's right edge, and the code slides to the caret
+- **THEN** the card's right edge and its left edge are inside the view
+
+### Requirement: One thing at a time over the caret
+
+The completion list opening SHALL close the card, which SHALL NOT come back when the list closes, and
+while a list shows no card SHALL be drawn.
+
+#### Scenario: ⌃Space over a card
+
+- **WHEN** a card shows, ⌃Space opens the completion list and Escape closes it
+- **THEN** the card closed when the list opened, and stays closed
 
 ### Requirement: A screen reader hears the card the keyboard asked for
 

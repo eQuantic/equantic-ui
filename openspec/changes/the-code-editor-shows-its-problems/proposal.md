@@ -33,7 +33,7 @@ For a developer using the SDK:
   by its token. It ignored the token and read a `TimeSpan` as no delay at all.
 
 The parts it reaches: the engine (`eQuantic.UI.Code`), the vocabulary (`CodeSurface.Notes`, the
-cards a surface draws over its code and caret), the components (`CodeEditor`, `CodeBlock`, the new
+positioned nodes a surface draws over its code and caret, each at its start and top), the components (`CodeEditor`, `CodeBlock`, the new
 `CodeHoverCard`), both realizers (the web's C# lowering and the runtime's twin; Photon's surface, its
 hit-testing and its semantics), the host input paths (a pointer passing over a code surface and
 leaving it now reach the model as `PointerPhase.Hover` and `PointerPhase.Exit`), eqc (`Task.Delay`)
@@ -41,7 +41,10 @@ and the runtime (a cancellable delay). The public surface grows; the developer s
 
 A break, allowed in preview: `CodeDecorationKind` gains `Dots`, appended, and `CodeEditorController`'s
 `Changed` carries an edit after an undo or a redo. A listener that resynchronised on null keeps
-working, since an edit is what every other change already carried; nothing to migrate.
+working, since an edit is what every other change already carried; nothing to migrate. On the native
+track, which 1.0 does not promise yet, `CodeRegion` (a code surface in a Photon frame) gains `Notes`, so
+its constructor and its `Deconstruct` widen by one trailing member: a caller that builds one with five
+members still compiles, and one that deconstructs it names the sixth.
 
 ## Capabilities
 

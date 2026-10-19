@@ -84,6 +84,24 @@ hover at the cursor, and a marker keeps its range through edits until its owner 
   marker for that line.
 - **A screen reader hears the keyboard's card.** A card the keyboard asked for is a polite live
   region; one the pointer asked for is not, since a pointer passing over code is no request to speak.
+- **Only a change is announced.** `CodeDiagnostics.Changed` is raised when the problems it holds
+  differ from the ones it held, compared by value, never for an answer or a keystroke that left them
+  equal. A component builds again on that event, so an event for nothing costs a build per key, and
+  worse: a parent that builds on the problems and makes its provider in `Build` hands a new provider
+  every build, which is asked at once and answers, which asked for the next build, without end. With
+  the comparison the second answer says nothing and the builds stop. A provider is still known by
+  reference, as Flutter knows a controller: one made in `Build` is a new one, asked again at once, so
+  the documentation says to keep it in a field. The answer of a provider taken out goes with it.
+- **The card is measured as it lays out.** Its height is computed before it is built, to place it
+  above the line; each line is counted at the height its face lays out at, the type's line height,
+  and never at the code's row, which is taller (a 17dp row of 14.5dp type, measured), or the card
+  stood 2.5dp above its line.
+- **A slide moves the card.** The editor tracks how far the code slid sideways, and asked for a build
+  only while the completion list showed; on the web the code slides outside any build (F8 revealing a
+  caret past the edge), so the card stood where the view had been. It asks while a card shows too.
+- **The new configuration is adopted.** `Diagnostics`, `DiagnosticProviders` and `HoverProviders` are
+  copied by `CodeEditor.AdoptConfig`, or a parent's next build never reaches the editor its position
+  keeps. Nothing guards that list in general; that guard is its own task.
 
 ## Risks and trade-offs
 

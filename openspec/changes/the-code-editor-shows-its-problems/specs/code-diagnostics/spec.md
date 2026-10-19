@@ -8,7 +8,9 @@ A code editor's diagnostics (`CodeDiagnostics`) SHALL hold the problems its app 
 (`Report`) and the latest answer of each of its providers, and SHALL show their union, in document
 order. A report from the app SHALL replace only what the app reported before, and an answer from a
 provider only what that provider answered before. `CodeEditor.Diagnostics` SHALL be reported to the
-editor's diagnostics whenever it holds other problems than the ones last reported.
+editor's diagnostics whenever it holds other problems than the ones last reported. `Diagnostics`,
+`DiagnosticProviders` and `HoverProviders` SHALL reach the editor a position keeps from its parent's
+next build, as its other configuration does.
 
 #### Scenario: The app reports, then a provider answers
 
@@ -20,6 +22,35 @@ editor's diagnostics whenever it holds other problems than the ones last reporte
 - **WHEN** the app reports an error on line 3, a provider answers a warning on line 1, and the app
   reports nothing
 - **THEN** the diagnostics hold the warning alone
+
+#### Scenario: A parent builds again with other problems
+
+- **WHEN** a parent built its editor with an error on line 1, and builds again with an error on line 6
+- **THEN** the editor its position keeps holds the error on line 6 alone
+
+### Requirement: Only a change is announced
+
+`CodeDiagnostics.Changed` SHALL be raised when the problems it holds change, and SHALL NOT be raised
+by an answer, a report or an edit that leaves them equal to those held. The answer of a provider
+taken out of `Providers` SHALL go with it: put back, the provider SHALL show nothing until it answers
+again. A provider is known by reference, so one handed anew is asked at once.
+
+#### Scenario: The same answer again
+
+- **WHEN** a provider answers the problems it answered before, and a character is typed after every
+  problem
+- **THEN** `Changed` is not raised
+
+#### Scenario: A provider made in every build
+
+- **WHEN** a parent builds again whenever the problems change and makes its editor's provider anew in
+  every build
+- **THEN** the builds stop once the provider has answered the same problems twice
+
+#### Scenario: A provider put back
+
+- **WHEN** a provider that answered a warning is taken out and put back, and nothing asks it again
+- **THEN** the diagnostics hold no warning
 
 ### Requirement: A problem travels with the edits after it
 
