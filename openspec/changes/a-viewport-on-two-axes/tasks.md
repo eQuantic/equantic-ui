@@ -117,7 +117,7 @@
 
 ## 8. Proved against the real thing
 
-- [ ] 8.1 A `/table` screen in `DefaultUIDashboard`: 1 048 576 × 16 384 cells showing their addresses,
+- [x] 8.1 A `/table` screen in `DefaultUIDashboard`: 1 048 576 × 16 384 cells showing their addresses,
       one pinned row and one pinned column; prove in Chromium the last row reached, the headers aligned
       at 400, 900 and 1 440 px, Shift+wheel, a thumb dragged to the end, and the table inside the
       console's scrolling page taking its visible height

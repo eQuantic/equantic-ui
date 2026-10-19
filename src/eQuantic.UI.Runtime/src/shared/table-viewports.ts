@@ -39,6 +39,9 @@ interface TableElement extends HTMLElement {
   __eqTableFrame?: number;
   __eqTableReported?: { across: number; down: number; width: number; height: number };
   __eqTableLogged?: number;
+  /** The axes whose extent this half set from a scroller (1 across, 2 down), and the scroller. */
+  __eqTableFitted?: number;
+  __eqTableScroller?: HTMLElement | null;
 }
 
 export function declareTableViewport(path: string, declaration: TableViewportDeclaration): void {
@@ -86,16 +89,18 @@ export function commitTableViewports(): void {
     if (!declaration) continue;
     view.__eqTable = declaration;
     listen(view);
-    arrange(view);
+    arrange(view, true);
     const { node } = declaration;
     if (node.scroll.apply(node.request ?? null, node.rows, node.columns, pinnedRowsOf(node), pinnedColumnsOf(node))) {
-      arrange(view);
+      arrange(view, false);
     }
     paint(view);
     report(view);
     if (typeof ResizeObserver === 'function' && !view.__eqTableObserver) {
+      // A resize is answered without touching the element's own size: re-deciding it here resized
+      // what is being observed inside its own notification, which the browser reports as a loop.
       const observer = new ResizeObserver(() => {
-        arrange(view);
+        arrange(view, false);
         paint(view);
         report(view);
       });
@@ -103,6 +108,9 @@ export function commitTableViewports(): void {
       view.__eqTableObserver = observer;
       watched.add(view);
     }
+    // A viewport that took its scroller's extent follows that scroller's size, which is what changes
+    // when the window does.
+    if (view.__eqTableScroller && view.__eqTableObserver) view.__eqTableObserver.observe(view.__eqTableScroller);
   }
   for (const view of [...watched]) if (!view.isConnected) stopWatching(view);
   declared.clear();
@@ -122,12 +130,12 @@ function pinnedColumnsOf(node: TableViewportNode): number {
  * nothing about it; there it takes the visible extent of the nearest scroller around it, or the
  * window's, as Photon's layout does, and the development log says so once.
  */
-function arrange(view: TableElement): void {
+function arrange(view: TableElement, decide: boolean): void {
   const declaration = view.__eqTable;
   if (!declaration) return;
   const { node } = declaration;
-  const width = fit(view, node, 'width');
-  const height = fit(view, node, 'height');
+  const width = fit(view, node, 'width', decide);
+  const height = fit(view, node, 'height', decide);
   const reduceMotion =
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   node.scroll.arrange(
@@ -140,16 +148,25 @@ function arrange(view: TableElement): void {
   );
 }
 
-/** The extent of one axis, taking the visible extent of a scroller when the axis has none. */
-function fit(view: TableElement, node: TableViewportNode, axis: 'width' | 'height'): number {
+/**
+ * The extent of one axis, taking the visible extent of a scroller when the axis has none. Deciding
+ * (`decide`, after a pass) lets go of the extent set before and measures the box as the page lays it
+ * out; otherwise an axis set from a scroller follows that scroller, and one the page sizes is read.
+ */
+function fit(view: TableElement, node: TableViewportNode, axis: 'width' | 'height', decide: boolean): number {
   const declared = axis === 'width' ? node.width : node.height;
-  if (declared && (declared as { kind?: string }).kind === 'fixed') {
-    return axis === 'width' ? view.clientWidth : view.clientHeight;
+  const own = () => (axis === 'width' ? view.clientWidth : view.clientHeight);
+  if (declared && (declared as { kind?: string }).kind === 'fixed') return own();
+  const bit = axis === 'width' ? 1 : 2;
+  const fitted = ((view.__eqTableFitted ?? 0) & bit) !== 0;
+  if (decide || !fitted) {
+    if (fitted) view.style.removeProperty(axis);
+    view.__eqTableFitted = (view.__eqTableFitted ?? 0) & ~bit;
+    const laid = own();
+    if (laid > 0) return laid;
   }
-  view.style.removeProperty(axis);
-  const own = axis === 'width' ? view.clientWidth : view.clientHeight;
-  if (own > 0) return own;
   const scroller = scrollerAround(view, axis);
+  view.__eqTableScroller = scroller;
   const visible = scroller
     ? axis === 'width'
       ? scroller.clientWidth
@@ -157,8 +174,9 @@ function fit(view: TableElement, node: TableViewportNode, axis: 'width' | 'heigh
     : axis === 'width'
       ? window.innerWidth
       : window.innerHeight;
-  view.style.setProperty(axis, `${visible}px`);
-  const bit = axis === 'width' ? 1 : 2;
+  const spelled = `${visible}px`;
+  if (view.style.getPropertyValue(axis) !== spelled) view.style.setProperty(axis, spelled);
+  view.__eqTableFitted = (view.__eqTableFitted ?? 0) | bit;
   if (((view.__eqTableLogged ?? 0) & bit) === 0) {
     view.__eqTableLogged = (view.__eqTableLogged ?? 0) | bit;
     const label = node.label ? ` (${node.label})` : '';
@@ -328,7 +346,7 @@ function listen(view: TableElement): void {
     if (onScrollbar(scroll, at)) {
       if (!scroll.pointer('down', at, kind, performance.now())) return;
       press = { id: event.pointerId, start: at, kind, time: performance.now(), active: true };
-      view.setPointerCapture?.(event.pointerId);
+      capture(view, event.pointerId, 'take');
       event.preventDefault();
       paint(view);
       report(view);
@@ -350,7 +368,7 @@ function listen(view: TableElement): void {
         return;
       }
       press.active = true;
-      view.setPointerCapture?.(event.pointerId);
+      capture(view, event.pointerId, 'take');
       swallowNextClick();
     }
     scroll.pointer('move', at, press.kind, performance.now());
@@ -367,13 +385,25 @@ function listen(view: TableElement): void {
     const declaration = view.__eqTable;
     if (!declaration) return;
     declaration.node.scroll.pointer(phase, local(event), ended.kind, performance.now());
-    view.releasePointerCapture?.(event.pointerId);
+    capture(view, event.pointerId, 'release');
     paint(view);
     report(view);
     if (phase === 'up') animate(view);
   };
   view.addEventListener('pointerup', end('up'));
   view.addEventListener('pointercancel', end('cancel'));
+}
+
+/** Takes or lets go of a pointer's capture. A pointer the browser no longer tracks (one already
+ * cancelled, or a script's event, which has none) throws `NotFoundError`; the gesture goes on without
+ * the capture rather than stopping half-way through its handler. */
+function capture(view: HTMLElement, pointerId: number, action: 'take' | 'release'): void {
+  try {
+    if (action === 'take') view.setPointerCapture?.(pointerId);
+    else view.releasePointerCapture?.(pointerId);
+  } catch {
+    // Nothing to capture: the pointer is gone.
+  }
 }
 
 /** How far a finger travels before it is a pan rather than a press: the C# `Touch.PressCancelSlop`. */
