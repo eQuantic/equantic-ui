@@ -317,8 +317,23 @@ as C# reads it once lifted `!=` compares values).
 
 ## Where the slices stand
 
-None delivered yet (2026-10-18). Slice 0a is next, and its first step is its OpenSpec proposal:
-each slice proposes, implements and archives its change in its own pull request.
+Each slice proposes, implements and archives its change in its own pull request.
+
+- **0a, delivered (2026-10-19, [#982](https://github.com/eQuantic/equantic-ui/issues/982)).** The
+  vocabulary has a viewport on two axes, `TableViewport`, with the scroll model it carries
+  (`ITableScrollModel`, implemented by `TableScroll`) and the extents of its rows and columns
+  (`TableSpans`, `UniformTableSpans`, `SparseTableSpans`); the components have `TableView`, which
+  builds the window with hysteresis. Both realizers draw it in four pinned bands with its marks and
+  scrollbars, and own its offset, because Chromium draws an element at most 16 777 214 px tall
+  (measured), which Excel's rows pass. Every shell reads both axes of the wheel, a finger pans and
+  flings it, and an axis with no bound takes the visible extent of the scroller around it, with a
+  development log (D1's rule). The cell key is a `long`, so D18 is closed. Proved in Chromium on the
+  dashboard's `/table` (the last cell, `XFD1048576`, reached by both thumbs; the pinned bands
+  aligned at 400, 900 and 1 440 px) and on Photon in the gallery's Table section. Benched over the
+  whole sheet: a step inside the built cells costs 1.2 ms on Photon and 0.7 ms in Chromium, a
+  rebuild of the window 14.6 ms and 14 ms. The spreadsheet itself still draws as before: it moves
+  onto the viewport in 0b.
+- **0b** ([#995](https://github.com/eQuantic/equantic-ui/issues/995)) is next.
 
 ## Fenced, on purpose
 

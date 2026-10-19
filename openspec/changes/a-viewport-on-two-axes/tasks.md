@@ -109,9 +109,9 @@
       `Marks`, `Request`, the reports, `Width`, `Height` and `Label`; the window with hysteresis; cells
       keyed by row and column; verify component tests on Photon for the cells built and the scroll
       inside the overscan that builds nothing
-- [ ] 7.2 Its factory in `UI` and its transpiled pin (`EQ_UPDATE_TRANSPILED=1`); verify
+- [x] 7.2 Its factory in `UI` and its transpiled pin (`EQ_UPDATE_TRANSPILED=1`); verify
       `UiFactoryConformanceTests` and `SharedComponentTranspilationTests`
-- [ ] 7.3 The wiki: a `TableView` page and its line on the components page, in English, Portuguese,
+- [x] 7.3 The wiki: a `TableView` page and its line on the components page, in English, Portuguese,
       Spanish, French and German, on a wiki branch named like this pull request's; verify the wiki
       guards against that branch with `EQ_WIKI_DIR`
 
@@ -123,7 +123,7 @@
       console's scrolling page taking its visible height
 - [ ] 8.2 The same screen in `PhotonDesktop`; prove the trackpad on both axes, a fling, the scrollbars
       and the pinned bands
-- [ ] 8.3 A bench for a scroll step and a window rebuild at 1 048 576 × 16 384 on both targets, with a
+- [x] 8.3 A bench for a scroll step and a window rebuild at 1 048 576 × 16 384 on both targets, with a
       budget that fails; record the numbers in the pull request
 
 ## 9. Closing
