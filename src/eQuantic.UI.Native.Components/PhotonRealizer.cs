@@ -101,9 +101,11 @@ public readonly record struct CursorRegion(Rect Bounds, PointerCursor Cursor);
 /// press there that no row of it took is the list's, and never moves the caret under it.
 /// <paramref name="Visible"/> is the part of <paramref name="Bounds"/> the clips around the surface
 /// leave on screen, which is all a press can land on: a long file's surface runs far past the viewport
-/// that shows it. Null where nothing clips it.</summary>
+/// that shows it. Null where nothing clips it. <paramref name="Notes"/> are where its notes landed
+/// (<see cref="CodeSurface.Notes"/>), on screen: the pointer over one is the note's, a press there moves
+/// no caret and the model hears no hover.</summary>
 public readonly record struct CodeRegion(Rect Bounds, CodeSurface Surface, Element Element, Rect? Offered = null,
-    Rect? Visible = null);
+    Rect? Visible = null, IReadOnlyList<Rect>? Notes = null);
 
 /// <summary>
 /// One stop on the Tab route. Buttons and fields are different kinds of region and are dispatched

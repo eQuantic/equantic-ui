@@ -255,6 +255,23 @@ internal sealed partial class WebLoweringVisitor
             ClassName = "eq-code-input",
             RawAttributes = input,
         });
+        // What the surface EXPLAINS (TS twin: lowerCodeSurface): each note over the code and the caret,
+        // at its start and top in the surface's coordinates. A card shows as a pointer rests or a key
+        // asks, so a page rarely carries one from the server; written when it does, as the list is.
+        foreach (var note in surface.Notes)
+        {
+            if (Lower(note.Child, null) is not { } explained) continue;
+            var wrapper = new RealizedElement("div")
+            {
+                ClassName = "eq-code-note",
+                RawAttributes = new Dictionary<string, string>
+                {
+                    ["style"] = $"position:absolute;left:{TokenCss.Px(note.Start ?? 0)};top:{TokenCss.Px(note.Top ?? 0)};",
+                },
+            };
+            wrapper.Children.Add(explained);
+            element.Children.Add(wrapper);
+        }
         if (list is not null) element.Children.Add(list);
         return element;
     }

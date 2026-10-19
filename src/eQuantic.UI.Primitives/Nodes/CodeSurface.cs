@@ -74,6 +74,18 @@ public sealed class CodeSurface : SingleChildNode
     /// </summary>
     public int HighlightedOption { get; init; } = -1;
 
+    /// <summary>
+    /// What the surface EXPLAINS over its code: a hover card, a problem's message. Each note stands at
+    /// its <see cref="Positioned.Start"/> and <see cref="Positioned.Top"/> in the surface's own
+    /// coordinates (the ones the model's rectangles are in), at the size it asks for, and is drawn over
+    /// the code and its carets, so it moves with the code as the code scrolls. A note takes the pointer:
+    /// while the pointer is over one, the realizer reports nothing to the model, so a card being read
+    /// stays open, and a press on a note is the note's, never the code's under it. The surface owns its
+    /// notes, rather than a layer beside it, for the reason it owns its options: they are drawn over its
+    /// caret, which the realizer paints over everything the child drew. None by default.
+    /// </summary>
+    public IReadOnlyList<Positioned> Notes { get; init; } = [];
+
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

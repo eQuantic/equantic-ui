@@ -1023,6 +1023,14 @@ public sealed class PhotonHost
     /// <summary>A press that began in a code surface is drawing a selection until it lifts.</summary>
     private bool _codeDragging;
 
+    /// <summary>The code surface the pointer is passing over with nothing pressed, which hears that it
+    /// left when the pointer moves off it (<see cref="HoverCode"/>).</summary>
+    private Element? _hoveredCode;
+
+    /// <summary>A press is held, wherever it began: the pointer moving then is dragging, and rests over
+    /// no code (the web twin reads the same from a move's <c>buttons</c>).</summary>
+    private bool _held;
+
     /// <summary>The SPREADSHEET surface being edited, resolved by position every frame like the code
     /// surface: the node is a corpse, the MODEL outlives every rebuild.</summary>
     public SheetSurface? SheetTarget
@@ -1974,6 +1982,7 @@ public sealed class PhotonHost
         // pressing or it is gone — so a touch move ends HERE instead of latching whatever box
         // it happened to cross last.
         if (kind == PointerKind.Touch) return;
+        if (!_held) HoverCode(new Point(x, y));
 
         // The CHAIN of regions under the pointer, topmost first — CSS :hover matches every
         // ancestor, so a button inside a hover-opened panel hovers BOTH (the web twin's answer).
@@ -2103,8 +2112,9 @@ public sealed class PhotonHost
         var code = _lastFrame.CodeRegions;
         for (var i = code.Count - 1; i >= 0; i--)
         {
-            // Over what a surface offers, where no row is, the pointer is the list's and not the code's.
-            if (OnOffered(code, i, point)) return CursorShape.Default;
+            // Over what a surface offers, where no row is, the pointer is the list's and not the code's,
+            // and over a note it is the note's.
+            if (OnOffered(code, i, point) || OnNote(code, i, point)) return CursorShape.Default;
             if (Covers(code, i, code[i].Visible ?? code[i].Bounds, point)) return CursorShape.Text;
         }
         for (var i = links.Count - 1; i >= 0; i--)
@@ -2121,6 +2131,7 @@ public sealed class PhotonHost
     /// <summary>The pointer left the window (or the input is touch) — hover clears.</summary>
     public void PointerLeave()
     {
+        LeaveCode(except: null);
         if (_hoveredCanvas is { } leaving)
         {
             _hoveredCanvas = null;
@@ -2147,6 +2158,7 @@ public sealed class PhotonHost
     public bool PressDown(float x, float y, int clickCount = 1, KeyModifiers modifiers = KeyModifiers.None)
     {
         y += _lift;
+        _held = true;
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
 
@@ -2265,7 +2277,8 @@ public sealed class PhotonHost
         {
             // A press on what the surface offers, that none of its rows took (between them, on the
             // documentation), is the list's: it moves no caret under it, and the code keeps the keyboard.
-            if (OnOffered(surfaces, i, point))
+            // So is a press on a note, a card being read.
+            if (OnOffered(surfaces, i, point) || OnNote(surfaces, i, point))
             {
                 _pressSwallowed = true;
                 return true;
@@ -2384,6 +2397,7 @@ public sealed class PhotonHost
     public bool PressUp(float x, float y, PointerKind kind = PointerKind.Mouse)
     {
         y += _lift;
+        _held = false;
         // The canvas that took the press gets the release, wherever it happens — a drag that ends
         // outside the box still ends, which is what every gesture on every platform means by "up".
         if (_pressedCanvas is { } canvas)
@@ -2651,6 +2665,75 @@ public sealed class PhotonHost
         if (surfaces[index].Offered is not { } offered || !offered.Contains(point)) return false;
         return TransformedAt(surfaces, index) is not { LocalOffered: { } local } region
             || local.Contains(region.Inverse.Transform(point));
+    }
+
+    /// <summary>
+    /// Whether <paramref name="point"/> lands on a note the <paramref name="index"/>th code surface
+    /// draws over its code (<see cref="CodeSurface.Notes"/>): inside the box on screen the note is drawn
+    /// in and, for a surface a transform drew, inside the note itself once the point is taken back into
+    /// the surface's space, as <see cref="OnOffered"/> tests the list.
+    /// </summary>
+    private bool OnNote(IReadOnlyList<CodeRegion> surfaces, int index, Point point)
+    {
+        if (surfaces[index].Notes is not { } notes) return false;
+        for (var note = 0; note < notes.Count; note++)
+        {
+            if (!notes[note].Contains(point)) continue;
+            if (TransformedAt(surfaces, index) is not { LocalNotes: { } local } region
+                || local[note].Contains(region.Inverse.Transform(point))) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// The pointer passing over the code with nothing pressed (web twin: lowerCodeSurface's
+    /// pointermove): the surface it is over hears where it rests, for its hover to explain what is
+    /// there, and a surface it left hears that it left. What is drawn over the code takes the pointer
+    /// as it takes a press: a control or a field, and a surface's own options and notes, so a card being
+    /// read stays open while the pointer is on it.
+    /// </summary>
+    private void HoverCode(Point point)
+    {
+        if (_lastFrame is null) return;
+        var fields = _lastFrame.TextRegions;
+        var over = HitAt(_lastFrame.HitRegions, point) >= 0;
+        for (var i = fields.Count - 1; i >= 0 && !over; i--)
+            over = Covers(fields, i, fields[i].Visible ?? fields[i].Bounds, point);
+        var surfaces = _lastFrame.CodeRegions;
+        for (var i = surfaces.Count - 1; i >= 0 && !over; i--)
+        {
+            if (OnOffered(surfaces, i, point) || OnNote(surfaces, i, point))
+            {
+                // Still over this surface, whose model hears nothing while the pointer is on what it drew.
+                LeaveCode(except: surfaces[i].Element);
+                _hoveredCode = surfaces[i].Element;
+                return;
+            }
+            if (!Covers(surfaces, i, surfaces[i].Visible ?? surfaces[i].Bounds, point)) continue;
+            LeaveCode(except: surfaces[i].Element);
+            _hoveredCode = surfaces[i].Element;
+            if (surfaces[i].Surface.Model.HandlePointer(PointerPhase.Hover,
+                    ToLocal(surfaces, i, surfaces[i].Bounds, point), KeyModifiers.None, 0))
+                SurfaceChanged(surfaces[i].Surface.OnChanged);
+            return;
+        }
+        LeaveCode(except: null);
+    }
+
+    /// <summary>Tells the code surface the pointer was over, unless it is <paramref name="except"/>, that
+    /// the pointer left it.</summary>
+    private void LeaveCode(Element? except)
+    {
+        if (_hoveredCode is not { } left || ReferenceEquals(left, except)) return;
+        _hoveredCode = null;
+        if (_lastFrame is null) return;
+        foreach (var region in _lastFrame.CodeRegions)
+        {
+            if (!ReferenceEquals(region.Element, left)) continue;
+            if (region.Surface.Model.HandlePointer(PointerPhase.Exit, Point.Zero, KeyModifiers.None, 0))
+                SurfaceChanged(region.Surface.OnChanged);
+            return;
+        }
     }
 
     /// <summary>

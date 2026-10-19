@@ -760,6 +760,9 @@ export class CodeSurface extends VisualNode {
   optionsOrigin: Point = Point.zero;
   /** The option row the keyboard is on, in tree order over the options' option rows, or -1. */
   highlightedOption = -1;
+  /** What the surface explains over its code (C# `CodeSurface.Notes`): each at its start and top, in
+   * the surface's coordinates, over the code and its carets, taking the pointer. */
+  notes: readonly VisualChild[] = [];
 
   constructor(child: VisualChild, model: unknown, config?: EqConfig) {
     super();

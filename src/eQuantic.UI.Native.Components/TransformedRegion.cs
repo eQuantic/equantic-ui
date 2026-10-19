@@ -18,5 +18,7 @@ namespace eQuantic.UI.Native.Components;
 /// <param name="LocalOffered">What a code surface offers at its caret, in the surface's own space: a
 /// turned list is tested against its own shape too, or the corners of the box around it took the
 /// presses aimed at the code drawn there.</param>
+/// <param name="LocalNotes">The notes a code surface draws over its code, in the surface's own space,
+/// tested against their own shapes as the list is.</param>
 internal readonly record struct TransformedRegion(object Regions, int Index, Matrix2D Inverse, Rect Local,
-    Rect LocalDrawn, Rect? LocalOffered = null);
+    Rect LocalDrawn, Rect? LocalOffered = null, IReadOnlyList<Rect>? LocalNotes = null);

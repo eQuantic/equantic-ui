@@ -120,6 +120,30 @@ public class SurfaceSsrTests
         html.Should().Contain("tabindex=\"-1\"", "a row is no Tab stop: the arrows walk the list from the code");
     }
 
+    /// <summary>
+    /// What a surface explains over its code (#1005), a card, is written as the client writes it (TS
+    /// twin: lowerCodeSurface): each note a block at its start and top in the surface's coordinates,
+    /// over the input and under the list. A card shows as a pointer rests or a key asks, so a page
+    /// rarely carries one from the server, and one that does keeps the client's shape.
+    /// </summary>
+    [Fact]
+    public void WhatItExplains_IsANoteWhereTheClientWritesIt()
+    {
+        var surface = Code("one\ntwo", new eQuantic.UI.Code.CodePosition(1, 2));
+        surface = new CodeSurface(surface.Child, surface.Model)
+        {
+            Label = "Program.cs",
+            Notes = [new Positioned(new Text("About one.", TypeRole.LabelSmall), top: 30, start: 28)],
+        };
+
+        var html = Render(surface);
+
+        var note = html.IndexOf("eq-code-note", StringComparison.Ordinal);
+        note.Should().BeGreaterThan(html.IndexOf("<textarea", StringComparison.Ordinal), "the note is drawn over the input");
+        html.Should().Contain("position:absolute;left:28px;top:30px;");
+        html[note..].Should().Contain("About one.");
+    }
+
     [Fact]
     public void WithNothingOffered_TheInputNamesNoList()
     {

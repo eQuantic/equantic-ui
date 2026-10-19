@@ -653,6 +653,30 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   }
   surface.children.push(input);
 
+  // What the surface EXPLAINS (C# twin: LowerCodeSurface): each note over the code and the caret, at
+  // its start and top in the surface's coordinates. A note takes the pointer: a press on it is its own,
+  // never the code's under it and never the keyboard's leaving the input, and a pointer moving over it
+  // reaches no model, so the card being read stays open.
+  (node.notes ?? []).forEach((note, at) => {
+    const positioned = note as PositionedNode;
+    const explained = lowerNode(positioned.child, context, null, `${path}/note/${at}`);
+    if (!explained) return;
+    const wrapper = element(
+      'div',
+      { position: 'absolute', left: px(positioned.start ?? 0), top: px(positioned.top ?? 0) },
+      [explained],
+    );
+    prependClass(wrapper, 'eq-code-note');
+    const own = ((event: Event) => {
+      event.stopPropagation();
+      if (event.type === 'mousedown') event.preventDefault();
+    }) as unknown as EventHandler;
+    wrapper.events['pointerdown'] = own;
+    wrapper.events['mousedown'] = own;
+    wrapper.events['pointermove'] = own;
+    surface.children.push(wrapper);
+  });
+
   // What the surface OFFERS at its caret (C# twin: LowerCodeSurface): over the code and the caret, at
   // its origin in the surface's coordinates, as the input's listbox. The rows are options, numbered
   // as an Anchored listbox numbers its rows, and the input names the list and points at the one the
@@ -673,6 +697,8 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
       }) as unknown as EventHandler;
       list.events['pointerdown'] = keep;
       list.events['mousedown'] = keep;
+      // …and a pointer moving over the list is over the list, not over the code it hides.
+      list.events['pointermove'] = keep;
       // No aria-expanded: ARIA allows it on a combobox and not on the textbox a textarea is, and
       // the list it controls and the option it points at already say that one is showing.
       input.attributes['aria-autocomplete'] = 'list';
@@ -871,9 +897,17 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     press(event, event.detail > 0 ? event.detail : 1);
   }) as unknown as EventHandler;
   surface.events['pointermove'] = ((event: PointerEvent) => {
-    // Only a HELD pointer moves the selection; a bare hover is not a drag.
-    if ((event.buttons & 1) === 0) return;
+    // Only a HELD pointer moves the selection; a bare one passing over the code is a hover, which the
+    // model waits on to explain what it rests on (C# twin: PhotonHost.PointerMove). A finger has no
+    // hover: it moves only while it presses.
+    if ((event.buttons & 1) === 0) {
+      if (event.pointerType !== 'touch' && model.handlePointer('hover', local(event), modifiersOf(event), 0)) changed();
+      return;
+    }
     if (model.handlePointer('move', local(event), modifiersOf(event), 1)) changed();
+  }) as unknown as EventHandler;
+  surface.events['pointerleave'] = ((event: PointerEvent) => {
+    if (model.handlePointer('exit', local(event), modifiersOf(event), 0)) changed();
   }) as unknown as EventHandler;
   surface.events['pointerup'] = ((event: PointerEvent) => {
     (event.currentTarget as HTMLElement).releasePointerCapture?.(event.pointerId);
