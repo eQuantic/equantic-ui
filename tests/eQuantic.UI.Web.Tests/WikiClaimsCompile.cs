@@ -109,6 +109,28 @@ public class WikiClaimsCompile
         _ = Grid([GridTrack.AutoFill(210)], gap: 10, width: SizeValue.Fill, children: [tooltip]);
     }
 
+    /// <summary>TableView (#982): Excel's sheet behind a pinned header row and column, a mark, and a
+    /// request that reveals the last row.</summary>
+    [Fact]
+    public void TheTableView_Compiles()
+    {
+        var theme = PhotonTheme.Instance;
+        var version = 1;
+
+        _ = TableView(
+            rows: new eQuantic.UI.Components.UniformTableSpans(1_048_576 + 1, 28),
+            columns: new eQuantic.UI.Components.SparseTableSpans(16_384 + 1, 96, new Dictionary<int, double> { [0] = 48, [3] = 180 }),
+            cellBuilder: (row, column) => Text(row == 0 ? $"{column}" : $"{row}:{column}", TypeRole.Caption),
+            pinnedRows: 1,
+            pinnedColumns: 1,
+            width: SizeValue.Fill,
+            height: SizeValue.Fill,
+            marks: [TableViewCell(row: 4, column: 2, Box(new BoxStyle { BorderWidth = 2, BorderColor = theme.FocusRing }),
+                mark: true, rows: 3, columns: 2)],
+            request: new TableScrollRequest(version) { Reveal = new TableRange(1_048_575, 0) },
+            label: "Sheet");
+    }
+
     [Fact]
     public void TheDeclarativeSnippets_Compile()
     {
