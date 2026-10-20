@@ -224,6 +224,35 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
         return placed;
     }
 
+    /// <summary>How many stops this frame holds so far: where the stops of what is emitted next begin.</summary>
+    public int StopCount => regions.Stops.Count;
+
+    /// <summary>
+    /// Orders the stops registered from <paramref name="from"/> on by <paramref name="key"/>, stably,
+    /// each carrying its transform note with it: a table paints its bands in one order and is read in
+    /// another, its cells' row by row and, inside a cell, in the cell's own order.
+    /// </summary>
+    public void OrderStopsFrom(int from, Func<FocusStop, (int Row, int Column)> key)
+    {
+        var stops = regions.Stops;
+        var count = stops.Count - from;
+        if (count < 2) return;
+        var order = Enumerable.Range(from, count).OrderBy(i => key(stops[i])).ToArray();
+        var moved = new FocusStop[count];
+        var placedAt = new int[count];
+        for (var k = 0; k < count; k++)
+        {
+            moved[k] = stops[order[k]];
+            placedAt[order[k] - from] = from + k;
+        }
+        for (var k = 0; k < count; k++) stops[from + k] = moved[k];
+        if (regions.TransformedOrEmpty.Count == 0) return;
+        var notes = regions.Transformed;
+        for (var i = 0; i < notes.Count; i++)
+            if (ReferenceEquals(notes[i].Regions, stops) && notes[i].Index >= from)
+                notes[i] = notes[i] with { Index = placedAt[notes[i].Index - from] };
+    }
+
     /// <summary>A stop a region implies, already placed, noted with the box it was laid out in: a
     /// reveal carries that box into its scroll view's space by its own corners, and the box around
     /// them on screen, taken back under a turn, grew enough to scroll the wrong way.</summary>
@@ -260,10 +289,14 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     }
 
     /// <summary>A table viewport's window: the wheel, a finger's pan and a scrollbar press go to the
-    /// scroll it carries. It takes no focus; what has focus inside it is its cells'.</summary>
+    /// scroll it carries. It is a stop of the Tab order itself, before its cells' (a scroller a keyboard
+    /// cannot reach scrolls for nobody who only has a keyboard), and the keys it takes go to its scroll.</summary>
     public void Add(TableRegion region)
     {
         var placed = region with { Bounds = Place(region.Bounds) };
+        if (!suppressFocusStops)
+            AddStop(new FocusStop(region.Element.Id, region.Element, null, null, placed.Bounds, Table: region.Viewport),
+                region.Bounds);
         if (!Visible(placed.Bounds)) return;
         Note(regions.Tables, regions.Tables.Count, region.Bounds, region.Bounds);
         regions.Tables.Add(Clip is { } clip ? placed with { Visible = Intersect(clip, placed.Bounds) } : placed);

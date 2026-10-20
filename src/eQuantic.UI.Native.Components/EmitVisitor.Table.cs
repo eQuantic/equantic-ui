@@ -49,6 +49,7 @@ internal sealed partial class EmitVisitor
             new(bounds.X + pinnedAcross, bounds.Y, scrollingAcross, pinnedDown),
             new(bounds.X, bounds.Y, pinnedAcross, pinnedDown),
         ];
+        var firstStop = s.Input.StopCount;
         for (var marks = 0; marks < 2; marks++)
         {
             for (var band = 0; band < bands.Length; band++)
@@ -57,7 +58,19 @@ internal sealed partial class EmitVisitor
                 EmitTableBand(viewport, s, bands[band], band, mark: marks == 1);
             }
         }
+        // Painted band by band, read row by row: the Tab order follows the cells, not the paint.
+        if (s.Node.Element is { } table) s.Input.OrderStopsFrom(firstStop, stop => CellOf(stop.Element, table));
         EmitScrollbars(scroll, s, bounds);
+    }
+
+    /// <summary>The row and the column of the cell a stop lies in: the element right under the
+    /// viewport's own on the way up from the stop's.</summary>
+    private static (int Row, int Column) CellOf(Element at, Element table)
+    {
+        for (var parent = at.Parent; parent is not null; at = parent, parent = parent.Parent)
+            if (ReferenceEquals(parent, table))
+                return at.Configuration is TableViewCell cell ? (cell.Row, cell.Column) : (int.MaxValue, int.MaxValue);
+        return (int.MaxValue, int.MaxValue);
     }
 
     /// <summary>The cells of one band, or its marks, under the band's clip. A mark takes no press and

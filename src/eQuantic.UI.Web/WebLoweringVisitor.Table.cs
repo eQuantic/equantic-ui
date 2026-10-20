@@ -47,7 +47,9 @@ internal sealed partial class WebLoweringVisitor
                 TouchAction = "none",
             },
         };
-        element.RawAttributes = new Dictionary<string, string> { ["role"] = "group" };
+        // A stop of the Tab order itself, before its cells': the keys it takes scroll it, and a scroller
+        // a keyboard cannot reach scrolls for nobody who only has a keyboard.
+        element.RawAttributes = new Dictionary<string, string> { ["role"] = "group", ["tabindex"] = "0" };
         if (viewport.Label is { Length: > 0 } label) element.RawAttributes["aria-label"] = label;
 
         for (var marks = 0; marks < 2; marks++)

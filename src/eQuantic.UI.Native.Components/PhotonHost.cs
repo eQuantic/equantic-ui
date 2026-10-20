@@ -3187,6 +3187,19 @@ public sealed class PhotonHost
             }
         }
 
+        // A table viewport under focus scrolls with the keys its scroll takes: the arrows, the pages
+        // and the ends. Tab is never one of them, so the focus still moves on.
+        if (_focusedId != 0 && _lastFrame?.FocusStops is { } tableStops)
+        {
+            for (var i = 0; i < tableStops.Count; i++)
+            {
+                if (tableStops[i].Id != _focusedId || tableStops[i].Table is not { } table) continue;
+                if (!table.Scroll.Key(key, modifiers)) break;
+                NeedsRender = true;
+                return true;
+            }
+        }
+
         switch (key)
         {
             case "Tab":

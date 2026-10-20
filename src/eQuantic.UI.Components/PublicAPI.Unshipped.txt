@@ -65,3 +65,4 @@ eQuantic.UI.Components.CodeEditor.DiagnosticProviders.set -> void
 eQuantic.UI.Components.CodeEditor.HoverProviders.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.ICodeHoverProvider!>!
 eQuantic.UI.Components.CodeEditor.HoverProviders.set -> void
 eQuantic.UI.Components.TableScroll.Reveal(eQuantic.UI.Primitives.Rect area, bool across, bool down) -> bool
+eQuantic.UI.Components.TableScroll.Key(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers) -> bool

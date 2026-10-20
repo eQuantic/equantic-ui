@@ -12,7 +12,7 @@ import { commitTableViewports, scheduleTableViewportCommit } from './table-viewp
 import { TableScroll } from './components/TableScroll';
 import { UniformTableSpans } from './components/UniformTableSpans';
 import { TableRange, TableScrollRequest } from './value-types';
-import { Box, BoxStyle, TableViewCell, TableViewport, Text } from './vocabulary';
+import { Box, BoxStyle, Pressable, TableViewCell, TableViewport, Text } from './vocabulary';
 import { TableView } from './components/TableView';
 import fixture from './component-parity.fixture.json';
 import type { HtmlNode } from '../core/types';
@@ -298,5 +298,70 @@ describe('TableViewport on the web', () => {
     body.scrollTop = 40;
     body.dispatchEvent(new Event('scroll'));
     expect(body.scrollTop).toBe(0);
+  });
+
+  it('is a stop of the Tab order, and the keys it takes scroll it', () => {
+    const { scroll, view } = build();
+    expect(view.getAttribute('tabindex')).toBe('0');
+    view.focus();
+
+    const key = (name: string, init: KeyboardEventInit = {}) => {
+      const event = new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true, ...init });
+      view.dispatchEvent(event);
+      return event;
+    };
+    expect(key('PageDown').defaultPrevented).toBe(true);
+    expect(scroll.offset.down).toBe(588 - 28);
+    key('End', { metaKey: true });
+    expect(scroll.offset.down + scroll.viewport.height).toBe(1_048_576 * 28);
+    expect(scroll.offset.across + scroll.viewport.width).toBe(16_384 * 96);
+    key('Home');
+    expect(scroll.offset.down).toBe(0);
+    expect(key('ArrowUp').defaultPrevented).toBe(false);
+  });
+
+  it("walks its cells' controls row by row across the bands they are painted in", () => {
+    const node = new TableViewport(new UniformTableSpans(2, 28), new UniformTableSpans(2, 96), new TableScroll(), {
+      pinnedRows: 1,
+      pinnedColumns: 1,
+    });
+    for (let row = 0; row < 2; row++)
+      for (let column = 0; column < 2; column++)
+        node.add(new TableViewCell(row, column, new Pressable(new Text(`${row}:${column}`), () => {}, { label: `${row}:${column}` })));
+    const view = toDom(lowerVisualNode(node as never, context)) as HTMLElement;
+    Object.defineProperty(view, 'clientWidth', { value: 400, configurable: true });
+    Object.defineProperty(view, 'clientHeight', { value: 200, configurable: true });
+    document.body.appendChild(view);
+    commitTableViewports();
+
+    const tab = (shiftKey = false) => {
+      const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey, bubbles: true, cancelable: true });
+      (document.activeElement ?? view).dispatchEvent(event);
+      return event;
+    };
+    const cellOf = () => (document.activeElement as HTMLElement).closest('[data-eq-cell]')?.getAttribute('data-eq-cell');
+
+    view.focus();
+    const visited: (string | null | undefined)[] = [];
+    for (let i = 0; i < 4; i++) {
+      expect(tab().defaultPrevented).toBe(true);
+      visited.push(cellOf());
+    }
+    // Painted body first, read from the corner.
+    expect(visited).toEqual(['0:0', '0:1', '1:0', '1:1']);
+
+    tab(true);
+    expect(cellOf()).toBe('1:0');
+    tab(true);
+    tab(true);
+    tab(true);
+    expect(document.activeElement).toBe(view);
+
+    // Past the last, the browser's own Tab goes on from the last control the document holds here.
+    view.focus();
+    for (let i = 0; i < 4; i++) tab();
+    const leaving = tab();
+    expect(leaving.defaultPrevented).toBe(false);
+    expect(cellOf()).toBe('0:0');
   });
 });

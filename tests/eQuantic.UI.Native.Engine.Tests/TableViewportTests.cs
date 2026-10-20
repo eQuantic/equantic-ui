@@ -343,6 +343,39 @@ public class TableViewportTests
         pieces.Select(p => p.Cell.Key).Should().BeEquivalentTo("mark:0/0", "mark:0/1");
     }
 
+    [Fact]
+    public void ARevealInARowThatGivesTheTableLessThanItFirstMeasured_StillShowsTheCell()
+    {
+        var tally = new Tally();
+        var table = Table(tally, rows: 200, columns: 40,
+            request: new TableScrollRequest(1) { Reveal = new TableRange(1, 10) });
+        var row = new Row();
+        row.Add(new Box(new BoxStyle { Width = 200, Height = 600 }));
+        row.Add(table);
+        var host = Host(row, 900, 600, tally);
+
+        var region = Region(host);
+        var cell = Cells(host).Single(c => c.Cell.Row == 1 && c.Cell.Column == 10);
+        (cell.Bounds.X + cell.Bounds.Width).Should().BeLessThanOrEqualTo(
+            region.Bounds.X + region.Viewport.Scroll.Viewport.Width + 0.5f,
+            "the request is honoured against the width the row finally gave the table");
+        cell.Bounds.X.Should().BeGreaterThanOrEqualTo(region.Bounds.X + 96);
+    }
+
+    [Fact]
+    public void AMouseDragOverTheCells_ScrollsNothing()
+    {
+        var tally = new Tally();
+        var host = Host(Table(tally), 900, 600, tally);
+
+        host.PressDown(450, 300, kind: PointerKind.Mouse);
+        host.PointerMove(450, 200, PointerKind.Mouse);
+        host.PressUp(450, 200, PointerKind.Mouse);
+        Settle(host);
+
+        Region(host).Viewport.Scroll.Offset.Should().Be(TableOffset.Zero, "a mouse's drag is the cells', a finger's pans");
+    }
+
     // ---- the keyboard ------------------------------------------------------------------------------
 
     [Fact]
@@ -359,15 +392,72 @@ public class TableViewportTests
             var frame = host.RenderFrame(new DisplayListBuilder(), _clock += 16);
             var stop = frame.FocusStops.FirstOrDefault(s => s.Id == host.FocusedId);
             if (stop.Element is null) continue;
+            if (stop.Table is not null) continue;
             var view = Region(host).Viewport.Scroll.Viewport;
-            stop.Bounds.Y.Should().BeGreaterThanOrEqualTo(top, $"Tab {i} focused a cell above the table");
-            (stop.Bounds.Y + stop.Bounds.Height).Should().BeLessThanOrEqualTo(top + view.Height + 0.5f,
+            // A pressable's target is grown to a finger's 48 points around its cell: its centre is the cell's.
+            var centre = stop.Bounds.Y + stop.Bounds.Height / 2;
+            centre.Should().BeGreaterThanOrEqualTo(top, $"Tab {i} focused a cell above the table");
+            centre.Should().BeLessThanOrEqualTo(top + view.Height,
                 $"Tab {i} focused a cell below the table's window without scrolling to it");
-            reached = Math.Max(reached, (int)((stop.Bounds.Y - top + Region(host).Viewport.Scroll.Offset.Down) / 28));
+            reached = Math.Max(reached, (int)((centre - top + Region(host).Viewport.Scroll.Offset.Down) / 28));
         }
 
         reached.Should().BeGreaterThan(6, "the Tab order went past the rows the window first showed");
         Region(host).Viewport.Scroll.Offset.Down.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public void TheTabOrder_IsTheTableItself_ThenItsCellsRowByRow()
+    {
+        var tally = new Tally();
+        // Two by two, a pinned row and a pinned column, all of it in view: painted body first.
+        var host = Host(Table(tally, rows: 2, columns: 2, pressable: true), 400, 200, tally);
+
+        var visited = new List<string>();
+        for (var i = 0; i < 5; i++)
+        {
+            host.KeyDown("Tab");
+            var frame = host.RenderFrame(new DisplayListBuilder(), _clock += 16);
+            var stop = frame.FocusStops.First(s => s.Id == host.FocusedId);
+            visited.Add(stop.Table is not null ? "table" : CellText(stop.Element));
+        }
+
+        visited.Should().Equal("table", "0:0", "0:1", "1:0", "1:1");
+    }
+
+    /// <summary>What the cell holding a stop says: the table's builder writes its row and column.</summary>
+    private static string CellText(Element at)
+    {
+        for (Element? e = at; e is not null; e = e.Parent)
+            if (e.Configuration is TableViewCell cell) return $"{cell.Row}:{cell.Column}";
+        return "?";
+    }
+
+    [Fact]
+    public void ATableOfTextAlone_ScrollsFromTheKeyboard()
+    {
+        var tally = new Tally();
+        var host = Host(Table(tally), 900, 600, tally);
+        host.KeyDown("Tab");
+        Settle(host);
+        host.LastFrame!.FocusStops.First(s => s.Id == host.FocusedId).Table.Should().NotBeNull(
+            "a table with nothing to press in its cells is still a stop, or a keyboard could not scroll it");
+
+        host.KeyDown("PageDown").Should().BeTrue();
+        Settle(host);
+        var scroll = Region(host).Viewport.Scroll;
+        scroll.Offset.Down.Should().Be(scroll.Viewport.Height - 28, "a page of the part under the pinned row");
+
+        host.KeyDown("ArrowRight").Should().BeTrue();
+        host.KeyDown("End", KeyModifiers.Command).Should().BeTrue();
+        Settle(host);
+        (scroll.Offset.Down + scroll.Viewport.Height).Should().Be(ExcelRows * 28.0);
+        (scroll.Offset.Across + scroll.Viewport.Width).Should().Be(ExcelColumns * 96.0);
+
+        host.KeyDown("Home").Should().BeTrue();
+        Settle(host);
+        scroll.Offset.Down.Should().Be(0);
+        host.KeyDown("ArrowUp").Should().BeFalse("at the first row, the key travels on");
     }
 
     [Fact]

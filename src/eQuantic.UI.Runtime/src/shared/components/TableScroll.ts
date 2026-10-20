@@ -15,6 +15,7 @@ export class TableScroll {
         this._reduceMotion = false;
         this._barDown = false;
         this._barAcross = false;
+        this._held = null;
         this._honoured = null;
         this._dragging = null;
         this._grab = 0;
@@ -38,6 +39,7 @@ export class TableScroll {
     _reduceMotion!: boolean;
     _barDown!: boolean;
     _barAcross!: boolean;
+    _held!: number | null;
     _honoured!: number | null;
     _dragging!: ScrollAxisValue | null;
     _grab!: number;
@@ -53,6 +55,7 @@ export class TableScroll {
     static flingReach: number = 90;
     static flingFloor: number = 0.05;
     static flingWindow: number = 80;
+    static arrowStep: number = 40;
 
     get offset(): TableOffset {
         return new TableOffset(this._across, this._down);
@@ -94,6 +97,7 @@ export class TableScroll {
     }
 
     wheel(across: number, down: number, stepped: boolean, modifiers: number) {
+        this.letGo();
         let turned = (modifiers & 1) !== 0 && across === 0 && down !== 0;
         if (turned) {
             across = down;
@@ -187,7 +191,7 @@ export class TableScroll {
 
     apply(request: TableScrollRequest | null, rows: TableSpans, columns: TableSpans, pinnedRows: number, pinnedColumns: number) {
         if (request == null || request.version === this._honoured) return false;
-        this._honoured = request.version;
+        this._held = request.version;
         let across = this._across;
         let down = this._down;
         let range: any; 
@@ -209,6 +213,7 @@ export class TableScroll {
     }
 
     reveal(area: Rect, across: boolean, down: boolean) {
+        this.letGo();
         let toAcross = across ? Math.min(Math.max(this._across + TableScroll.into(area.x, Math.fround(area.x + area.width), this._pinnedAcross, this._viewport.width), 0), this.maxAcross) : this._across;
         let toDown = down ? Math.min(Math.max(this._down + TableScroll.into(area.y, Math.fround(area.y + area.height), this._pinnedDown, this._viewport.height), 0), this.maxDown) : this._down;
         if (toAcross === this._across && toDown === this._down) return false;
@@ -217,6 +222,15 @@ export class TableScroll {
         this._across = toAcross;
         this._down = toDown;
         return true;
+    }
+
+    key(key: string, modifiers: number) {
+        let both = (modifiers & (8 | 4)) !== 0;
+        let pageDown = Math.max(TableScroll.arrowStep, this._viewport.height - this._pinnedDown);
+        let [across, down, stepped] = (() => { const $s = key; if ($s === 'ArrowDown') return [0.0, TableScroll.arrowStep, true]; if ($s === 'ArrowUp') return [0.0, -TableScroll.arrowStep, true]; if ($s === 'ArrowRight') return [TableScroll.arrowStep, 0.0, true]; if ($s === 'ArrowLeft') return [-TableScroll.arrowStep, 0.0, true]; if ($s === 'PageDown') return [0.0, pageDown, true]; if ($s === 'PageUp') return [0.0, -pageDown, true]; if ($s === 'Home') return [both ? -(this._targetAcross ?? this._across) : 0.0, -(this._targetDown ?? this._down), false]; if ($s === 'End') return [both ? this.maxAcross - (this._targetAcross ?? this._across) : 0.0, this.maxDown - (this._targetDown ?? this._down), false]; return [0.0, 0.0, false]; })();
+        if (across === 0 && down === 0) return false;
+        let left = this.wheel(across, down, stepped, 0);
+        return left.across !== across || left.down !== down;
     }
 
     static into(start: number, end: number, from: number, to: number) {
@@ -234,12 +248,20 @@ export class TableScroll {
         return offset;
     }
 
+    letGo() {
+        let version: any; 
+        if (!((version = this._held) != null)) return;
+        this._honoured = version;
+        this._held = null;
+    }
+
     press(at: Point, kind: PointerKindValue, time: number) {
         this._dragging = null;
         this._panning = false;
         for (const axis of (['vertical', 'horizontal'] as ScrollAxisValue[])) {
             let track: any; 
             if (!((track = this.trackOf(axis)) != null) || !TableScroll.contains(track, at)) continue;
+            this.letGo();
             let thumb: any; 
             if ((thumb = this.thumbOf(axis)) != null && TableScroll.contains(thumb, at)) {
                 this._dragging = axis;
@@ -255,6 +277,7 @@ export class TableScroll {
             return true;
         }
         if (kind === 'mouse') return false;
+        this.letGo();
         this._panning = true;
         this._panAt = at;
         this._panTime = time;

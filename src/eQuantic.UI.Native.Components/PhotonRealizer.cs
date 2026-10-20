@@ -132,7 +132,7 @@ public readonly record struct CodeRegion(Rect Bounds, CodeSurface Surface, Eleme
 /// </summary>
 public readonly record struct FocusStop(int Id, Element Element, Pressable? Pressable, TextEntry? Entry, Rect Bounds,
     Adjustable? Adjustable = null, CodeSurface? Code = null, Navigable? Grid = null,
-    SheetSurface? Sheet = null);
+    SheetSurface? Sheet = null, TableViewport? Table = null);
 
 /// <summary>The realized frame: the laid-out tree (absolute bounds) and the interactive hit regions.</summary>
 public sealed class RealizeResult

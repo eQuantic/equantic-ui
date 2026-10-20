@@ -53,6 +53,12 @@ public sealed class TableScroll : ITableScrollModel
     private bool _reduceMotion;
     private bool _barDown;
     private bool _barAcross;
+
+    /// <summary>The request version being held: applied again against every layout, so one measured
+    /// twice settles where the last puts it, until the person moves the grid.</summary>
+    private int? _held;
+
+    /// <summary>The version the person moved past, which is never applied again.</summary>
     private int? _honoured;
 
     private ScrollAxis? _dragging;
@@ -101,6 +107,7 @@ public sealed class TableScroll : ITableScrollModel
 
     public TableOffset Wheel(double across, double down, bool stepped, KeyModifiers modifiers)
     {
+        LetGo();
         // Shift turns a wheel that only moves vertically into a horizontal one; a platform that already
         // turned it (macOS) hands a horizontal movement, which is left as it is.
         var turned = (modifiers & KeyModifiers.Shift) != 0 && across == 0 && down != 0;
@@ -217,7 +224,9 @@ public sealed class TableScroll : ITableScrollModel
         int pinnedColumns)
     {
         if (request is null || request.Version == _honoured) return false;
-        _honoured = request.Version;
+        // Held rather than spent: a layout that measures the viewport twice (a row measuring a filling
+        // child before and after its fixed siblings) asks again with the size that stands.
+        _held = request.Version;
         var across = _across;
         var down = _down;
         if (request.Reveal is { } range)
@@ -243,6 +252,7 @@ public sealed class TableScroll : ITableScrollModel
 
     public bool Reveal(Rect area, bool across, bool down)
     {
+        LetGo();
         var toAcross = across
             ? Math.Clamp(_across + Into(area.X, area.X + area.Width, _pinnedAcross, _viewport.Width), 0, MaxAcross)
             : _across;
@@ -255,6 +265,31 @@ public sealed class TableScroll : ITableScrollModel
         _across = toAcross;
         _down = toDown;
         return true;
+    }
+
+    /// <summary>What an arrow moves the grid by, in points: a browser's own step for a scroller.</summary>
+    private const double ArrowStep = 40;
+
+    public bool Key(string key, KeyModifiers modifiers)
+    {
+        var both = (modifiers & (KeyModifiers.Control | KeyModifiers.Command)) != 0;
+        var pageDown = Math.Max(ArrowStep, _viewport.Height - _pinnedDown);
+        // A step and a page glide, as a wheel's notch does; the ends are a jump, as a browser's are.
+        var (across, down, stepped) = key switch
+        {
+            "ArrowDown" => (0.0, ArrowStep, true),
+            "ArrowUp" => (0.0, -ArrowStep, true),
+            "ArrowRight" => (ArrowStep, 0.0, true),
+            "ArrowLeft" => (-ArrowStep, 0.0, true),
+            "PageDown" => (0.0, pageDown, true),
+            "PageUp" => (0.0, -pageDown, true),
+            "Home" => (both ? -(_targetAcross ?? _across) : 0.0, -(_targetDown ?? _down), false),
+            "End" => (both ? MaxAcross - (_targetAcross ?? _across) : 0.0, MaxDown - (_targetDown ?? _down), false),
+            _ => (0.0, 0.0, false),
+        };
+        if (across == 0 && down == 0) return false;
+        var left = Wheel(across, down, stepped, KeyModifiers.None);
+        return left.Across != across || left.Down != down;
     }
 
     /// <summary>How far to move so a run from <paramref name="start"/> to <paramref name="end"/> lies
@@ -285,6 +320,14 @@ public sealed class TableScroll : ITableScrollModel
 
     /// <summary>A press: on a scrollbar it grabs the thumb or pages from the track; a finger or a stylus
     /// takes the grid where it stands; a mouse on the cells is the cells'.</summary>
+    /// <summary>The person moved the grid: the request held until now is spent.</summary>
+    private void LetGo()
+    {
+        if (_held is not { } version) return;
+        _honoured = version;
+        _held = null;
+    }
+
     private bool Press(Point at, PointerKind kind, double time)
     {
         _dragging = null;
@@ -292,6 +335,7 @@ public sealed class TableScroll : ITableScrollModel
         foreach (var axis in new[] { ScrollAxis.Vertical, ScrollAxis.Horizontal })
         {
             if (TrackOf(axis) is not { } track || !Contains(track, at)) continue;
+            LetGo();
             if (ThumbOf(axis) is { } thumb && Contains(thumb, at))
             {
                 _dragging = axis;
@@ -309,6 +353,7 @@ public sealed class TableScroll : ITableScrollModel
             return true;
         }
         if (kind == PointerKind.Mouse) return false;
+        LetGo();
         _panning = true;
         _panAt = at;
         _panTime = time;

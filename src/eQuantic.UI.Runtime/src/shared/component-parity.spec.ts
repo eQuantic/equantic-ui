@@ -575,8 +575,10 @@ function canonical(node: HtmlNode): unknown {
     // The channel KEY itself goes with the channel — a path the client stamps to find the element
     // again after it mounts, which the server has no reason to write. An InView's observer key is
     // the same kind (the C# LowerInView says so): only the client can watch anything. A table
-    // viewport's is a third: the client's after-pass finds the element by it to drive its scroll.
-    if (key === 'data-eq-scroll' || key === 'data-eq-inview' || key === 'data-eq-table') continue;
+    // viewport's is a third: the client's after-pass finds the element by it to drive its scroll, and
+    // its cells by theirs to walk the Tab order row by row.
+    if (key === 'data-eq-scroll' || key === 'data-eq-inview' || key === 'data-eq-table' || key === 'data-eq-cell')
+      continue;
     const value = node.attributes[key];
     if (value !== undefined && value !== null) attrs[key] = normalize(key, value);
   }

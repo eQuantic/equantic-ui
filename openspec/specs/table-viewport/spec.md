@@ -54,7 +54,8 @@ the window's, and SHALL reach the last row and the last column of a grid larger 
 browser lays out. A vertical wheel SHALL scroll vertically, Shift with a vertical wheel SHALL scroll
 horizontally, and a trackpad SHALL scroll both axes by its movement. A finger dragging the cells SHALL
 scroll them with it on both axes, and a finger lifted while moving SHALL glide to rest within the
-extent. The movement the viewport cannot take on an axis, at its end, SHALL pass to the scroller around
+extent. A mouse's or a trackpad pointer's drag over the cells SHALL be the cells', on a phone or a
+tablet as on a desktop, where the platform says which tool it is. The movement the viewport cannot take on an axis, at its end, SHALL pass to the scroller around
 it.
 
 #### Scenario: The last row of Excel's grid in a browser
@@ -113,7 +114,9 @@ A request SHALL carry a version, and the viewport SHALL honour each version once
 offset SHALL move the viewport there, clamped. A request to reveal a range of cells SHALL move the
 viewport by the least on each axis that brings the range inside the part of the window its pinned
 bands leave uncovered. A range larger than that part SHALL have its leading edges brought in. A request
-whose version was already honoured SHALL move nothing, even after the user scrolled away.
+whose version was already honoured SHALL move nothing, even after the user scrolled away. A version
+SHALL be honoured against the layout that stands: until the user moves the grid it SHALL be applied
+again against each layout, so a viewport measured twice settles where the last measure puts it.
 
 #### Scenario: A cell below the window
 
@@ -124,6 +127,12 @@ whose version was already honoured SHALL move nothing, even after the user scrol
 
 - **WHEN** a request with a new version reveals a cell scrolled up under the pinned row
 - **THEN** the cell's top edge meets the pinned row's bottom edge
+
+#### Scenario: A row that gives the table less than it first measured
+
+- **WHEN** a row holds a fixed sibling and a table filling the rest, and a request reveals a column past
+  the window
+- **THEN** the column's right edge lies inside the width the row finally gave the table
 
 #### Scenario: A version already honoured
 
@@ -159,6 +168,25 @@ the cell's band moves along, on every target. A box the browser scrolled by itse
 
 - **WHEN** Tab moves through the controls of a table's cells past the last row the window shows
 - **THEN** each focused control is inside the table's window when it is drawn
+
+### Requirement: The keyboard reaches and scrolls the viewport
+
+The viewport SHALL be a stop of the Tab order itself, before its cells' controls, on every target. While
+it has the focus, the arrows SHALL move it a step, PageUp and PageDown a page of the part that scrolls,
+and Home and End to the first and the last row, with Control or Command to the first and the last
+column too; a key that moves nothing SHALL travel on. Tab SHALL visit its cells' controls row by row,
+and in each cell in the cell's own order, whatever order the bands are painted in.
+
+#### Scenario: A table of text alone
+
+- **WHEN** a table whose cells hold only text has the focus and PageDown is pressed
+- **THEN** the grid moves down by the part of the window under the pinned rows
+
+#### Scenario: A pinned two by two of buttons
+
+- **WHEN** Tab moves from the viewport through a two by two table of buttons with a pinned row and a
+  pinned column
+- **THEN** the buttons are visited at 0:0, 0:1, 1:0 and 1:1, in that order
 
 ### Requirement: A viewport on an unbounded axis takes the visible extent of its scroller
 

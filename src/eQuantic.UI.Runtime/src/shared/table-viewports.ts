@@ -42,6 +42,10 @@ interface TableElement extends HTMLElement {
   /** The axes whose extent this half set from a scroller (1 across, 2 down), and the scroller. */
   __eqTableFitted?: number;
   __eqTableScroller?: HTMLElement | null;
+  /** When a pointer last went down on it: a focus that follows one is a click's, not a keyboard's. */
+  __eqTablePointerAt?: number;
+  /** Set while the Tab order leaves past the last cell: that focus is a step out, not one to reveal. */
+  __eqTableLeaving?: boolean;
 }
 
 export function declareTableViewport(path: string, declaration: TableViewportDeclaration): void {
@@ -340,6 +344,7 @@ function listen(view: TableElement): void {
     );
 
   view.addEventListener('pointerdown', (event: PointerEvent) => {
+    view.__eqTablePointerAt = performance.now();
     const declaration = view.__eqTable;
     if (!declaration) return;
     const scroll = declaration.node.scroll;
@@ -401,7 +406,20 @@ function listen(view: TableElement): void {
   view.addEventListener('focusin', (event: FocusEvent) => {
     const declaration = view.__eqTable;
     const target = event.target as Element | null;
-    if (!declaration || !target) return;
+    if (!declaration || !target || view.__eqTableLeaving) return;
+    // Shift+Tab from past the table lands on the last control the document holds in it; the last one
+    // in reading order is where it belongs. A click's focus stays where the click put it.
+    const from = event.relatedTarget as Node | null;
+    const clicked = performance.now() - (view.__eqTablePointerAt ?? -Infinity) < 500;
+    if (target !== view && from && !view.contains(from) && !clicked
+      && (view.compareDocumentPosition(from) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0) {
+      const order = cellControls(view);
+      const last = order[order.length - 1];
+      if (last && last !== target) {
+        last.focus();
+        return;
+      }
+    }
     let band = -1;
     for (let i = 0; i < 4 && band < 0; i++) if (view.children[i]?.contains(target)) band = i;
     if (band < 0) return;
@@ -413,6 +431,22 @@ function listen(view: TableElement): void {
       report(view);
     }
   });
+  // On the viewport itself the keys scroll it; Tab walks its cells' controls row by row, across the
+  // bands they are painted in, where the document's own order would visit them band by band.
+  view.addEventListener('keydown', (event: KeyboardEvent) => {
+    const declaration = view.__eqTable;
+    if (!declaration) return;
+    if (event.key === 'Tab') {
+      tab(view, event);
+      return;
+    }
+    if (event.target !== view || !declaration.node.scroll.key(event.key, modifiersOf(event))) return;
+    event.preventDefault();
+    paint(view);
+    report(view);
+    animate(view);
+  });
+
   // A box the browser scrolled anyway (a focus it revealed itself, a find in the page) is put back:
   // the bands move by transform, and a clipping box scrolled under them misplaces every cell in it.
   view.addEventListener(
@@ -424,6 +458,62 @@ function listen(view: TableElement): void {
     },
     true,
   );
+}
+
+/** What Tab can land on. */
+const TABBABLE = 'a[href], button, input, select, textarea, [tabindex]';
+
+/** The controls in a viewport's cells in reading order: row by row, and in each cell in its own order.
+ * The marks' bands are inert and hold none. */
+function cellControls(view: HTMLElement): HTMLElement[] {
+  const found: { element: HTMLElement; row: number; column: number; at: number }[] = [];
+  for (let band = 0; band < 4; band++) {
+    const box = view.children[band];
+    if (!box) continue;
+    for (const element of box.querySelectorAll<HTMLElement>(TABBABLE)) {
+      if (element.tabIndex < 0 || (element as HTMLButtonElement).disabled) continue;
+      const cell = element.closest('[data-eq-cell]')?.getAttribute('data-eq-cell');
+      if (!cell) continue;
+      const [row, column] = cell.split(':').map(Number);
+      found.push({ element, row, column, at: found.length });
+    }
+  }
+  found.sort((a, b) => a.row - b.row || a.column - b.column || a.at - b.at);
+  return found.map((entry) => entry.element);
+}
+
+/** Tab inside a viewport: from the viewport to its first control, from control to control in reading
+ * order, back to the viewport before the first, and out past the table after the last. */
+function tab(view: TableElement, event: KeyboardEvent): void {
+  const order = cellControls(view);
+  if (order.length === 0) return;
+  const active = document.activeElement;
+  const at = active === view ? -1 : order.indexOf(active as HTMLElement);
+  if (active !== view && at < 0) return;
+  const back = event.shiftKey;
+  if (back && at === -1) return;
+  const next = back ? at - 1 : at + 1;
+  if (next === -1) {
+    event.preventDefault();
+    view.focus();
+    return;
+  }
+  if (next < order.length) {
+    event.preventDefault();
+    order[next].focus();
+    return;
+  }
+  // Past the last: from the last control the document holds here, the browser's own Tab goes on past
+  // the table.
+  const inDocument = [...view.querySelectorAll<HTMLElement>(TABBABLE)].filter((element) => order.includes(element));
+  const last = inDocument[inDocument.length - 1];
+  if (!last || last === active) return;
+  view.__eqTableLeaving = true;
+  try {
+    last.focus({ preventScroll: true });
+  } finally {
+    view.__eqTableLeaving = false;
+  }
 }
 
 /** Takes or lets go of a pointer's capture. A pointer the browser no longer tracks (one already

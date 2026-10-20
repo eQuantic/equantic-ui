@@ -1688,6 +1688,9 @@ function lowerTableViewport(node: TableViewportNode, context: LoweringContext, p
     children,
   );
   view.attributes['role'] = 'group';
+  // A stop of the Tab order itself, before its cells': the keys it takes scroll it (table-viewports.ts),
+  // and a scroller a keyboard cannot reach scrolls for nobody who only has a keyboard.
+  view.attributes['tabindex'] = '0';
   if (node.label) view.attributes['aria-label'] = node.label;
   view.attributes['data-eq-table'] = path;
   declareTableViewport(path, {
@@ -1786,6 +1789,9 @@ function lowerTableCell(
     },
     child ? [child] : [],
   );
+  // Where the cell is, for the after-pass that walks the Tab order row by row across the bands it is
+  // painted in. Client-only, as the table's own key is.
+  wrapper.attributes['data-eq-cell'] = `${cell.row}:${cell.column}`;
   return decorate(cell as unknown as VisualNodeValue, wrapper);
 }
 

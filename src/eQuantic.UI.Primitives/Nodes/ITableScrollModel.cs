@@ -59,8 +59,10 @@ public interface ITableScrollModel
     Rect? ThumbOf(ScrollAxis axis);
 
     /// <summary>
-    /// The <paramref name="request"/> the tree carries, with the axes it is read against. Honoured once
-    /// per version: answers whether it moved the offset.
+    /// The <paramref name="request"/> the tree carries, with the axes it is read against, after every
+    /// <see cref="Arrange"/>. A version is held until the person moves the grid, and applied against each
+    /// layout until then, so a viewport measured twice settles where the last measure puts it; a version
+    /// the person moved past is not applied again. Answers whether it moved the offset.
     /// </summary>
     bool Apply(TableScrollRequest? request, TableSpans rows, TableSpans columns, int pinnedRows,
         int pinnedColumns);
@@ -72,4 +74,12 @@ public interface ITableScrollModel
     /// control in a cell out of view. Answers whether it moved the offset.
     /// </summary>
     bool Reveal(Rect area, bool across, bool down);
+
+    /// <summary>
+    /// A key pressed while the viewport itself has the focus, in the DOM's names: the arrows move a step,
+    /// PageUp and PageDown a page of the part that scrolls, Home and End to the start and the end of the
+    /// rows (with Control or Command, of the columns too). Answers whether it took the key, which it
+    /// does not where nothing moved, so the key travels on.
+    /// </summary>
+    bool Key(string key, KeyModifiers modifiers);
 }
