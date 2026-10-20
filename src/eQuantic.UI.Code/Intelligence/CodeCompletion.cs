@@ -38,7 +38,6 @@ public sealed class CodeCompletion
     private bool _active;
     private CodePosition _start;
     private bool _openedEmpty;
-    private string _askedWord = "";
     // Two lifetimes: a REQUEST, each provider's newest, is cancelled when its provider is asked again (a
     // word's incomplete answer), and the LIST by closing, which is what a resolve of one of its items is
     // waiting on.
@@ -162,7 +161,7 @@ public sealed class CodeCompletion
         var position = _editor.Caret;
         var context = new CodeCompletionContext(trigger, _editor.Highlighter.Language) { Character = character };
         var askedLineLength = document.Line(position.Line).Length;
-        _askedWord = Word();
+        var word = Word();
 
         var requests = new List<CodeCompletionRequest>();
         foreach (var provider in providers)
@@ -174,7 +173,7 @@ public sealed class CodeCompletion
                 _requests.RemoveAt(i);
                 Cancel(stale.Cancellation);
             }
-            var request = new CodeCompletionRequest(provider);
+            var request = new CodeCompletionRequest(provider, word);
             _requests.Add(request);
             requests.Add(request);
         }
@@ -204,7 +203,7 @@ public sealed class CodeCompletion
         UiThread.Run(() =>
         {
             if (failure is not null) Failed?.Invoke(failure);
-            Deliver(request, new CodeCompletionAnswer(request.Provider, askedLineLength, list));
+            Deliver(request, new CodeCompletionAnswer(request.Provider, request.Word, askedLineLength, list));
         });
     }
 
@@ -228,10 +227,12 @@ public sealed class CodeCompletion
         while (at < _answers.Count && RankOf(_answers[at].Provider) <= rank) at++;
         _answers.Insert(at, answer);
 
-        if (_answers.All(held => held.Offers.Count == 0 && !held.IsIncomplete))
+        // Nothing offered and nothing more to ask for: no list shows for this word. While a provider is
+        // still out the list waits for it, and still takes this answer, which may withdraw every entry it
+        // showed before.
+        if (_answers.All(held => held.Offers.Count == 0 && !held.IsIncomplete) && !IsLoading)
         {
-            // Nothing offered yet: no list shows for this word unless a provider still out offers some.
-            if (!IsLoading) Close(raise: true);
+            Close(raise: true);
             return;
         }
 
@@ -299,14 +300,19 @@ public sealed class CodeCompletion
     }
 
     /// <summary>Asks again every provider whose answer was incomplete, once the word is no longer the
-    /// one it answered for. The rest keep their answers.</summary>
+    /// one IT answered for, unless it is already being asked for this word. Each answer keeps its own
+    /// word: a slow provider's answer for a word left behind is asked again, whoever was asked last.
+    /// The rest keep their answers.</summary>
     private void AskAgainIfIncomplete()
     {
-        if (Word() == _askedWord) return;
+        var word = Word();
         var incomplete = new List<ICodeCompletionProvider>();
         foreach (var answer in _answers)
         {
-            if (answer.IsIncomplete) incomplete.Add(answer.Provider);
+            if (!answer.IsIncomplete || answer.AskedWord == word) continue;
+            if (_requests.Any(request => !request.Answered && request.Word == word
+                && ReferenceEquals(request.Provider, answer.Provider))) continue;
+            incomplete.Add(answer.Provider);
         }
         if (incomplete.Count > 0) Ask(CodeCompletionTrigger.Incomplete, null, incomplete);
     }
@@ -523,25 +529,9 @@ public sealed class CodeCompletion
         if (raise && was) Changed?.Invoke();
     }
 
-    /// <summary>
-    /// Cancels <paramref name="source"/>, which runs at once, on this thread, every callback a
-    /// provider registered on its token. One that throws is that provider's failure, reported like
-    /// any other (<see cref="Failed"/>), and never the keystroke's: cancelling gathers what the
-    /// callbacks threw into one <c>AggregateException</c> after running them all, and it escaped into
-    /// the edit that had closed the list.
-    /// </summary>
-    private void Cancel(CancellationTokenSource? source)
-    {
-        if (source is null) return;
-        try
-        {
-            source.Cancel();
-        }
-        catch (Exception error)
-        {
-            Failed?.Invoke(error);
-        }
-    }
+    /// <summary>Cancels <paramref name="source"/>: a callback that throws is its provider's failure
+    /// (<see cref="Failed"/>), and never the keystroke's that closed the list.</summary>
+    private void Cancel(CancellationTokenSource? source) => ProviderRequest.Cancel(source, Failed);
 
     // ---- resolving ------------------------------------------------------------------------------
 

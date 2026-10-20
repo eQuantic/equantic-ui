@@ -92,7 +92,7 @@ public sealed class CodeSignatureHelpSession
     public bool Dismiss()
     {
         _generation++;
-        _request?.Cancel();
+        ProviderRequest.Cancel(_request, Failed);
         _request = null;
         _answers = [];
         _owed = 0;
@@ -120,9 +120,10 @@ public sealed class CodeSignatureHelpSession
 
     /// <summary>
     /// What typing <paramref name="typed"/> asks, the editor calls once the character is in the document: a
-    /// provider's trigger character asks the providers that declare it, and a retrigger character asks every
-    /// provider while the panel shows, both at once. The move the character made has already asked after the
-    /// pause, which this request replaces.
+    /// provider's trigger character, or a retrigger character while the panel shows, asks every provider at
+    /// once, with the character in the context. Every provider, as VS Code's <c>provideSignatureHelp</c>
+    /// asks every one it holds: the trigger says WHEN to ask, and each provider reads the call itself. The
+    /// move the character made has already asked after the pause, which this request replaces.
     /// </summary>
     internal void Typed(char typed)
     {
@@ -170,7 +171,7 @@ public sealed class CodeSignatureHelpSession
     private async Task Ask(CodeSignatureContext context, bool wait)
     {
         var generation = ++_generation;
-        _request?.Cancel();
+        ProviderRequest.Cancel(_request, Failed);
         var request = new CancellationTokenSource();
         _request = request;
         if (wait && Delay > TimeSpan.Zero)
@@ -200,6 +201,14 @@ public sealed class CodeSignatureHelpSession
         var document = _editor.Document;
         var position = _editor.Caret;
         var providers = Providers.ToList();
+        if (providers.Count == 0)
+        {
+            // Nobody left to ask: the panel closes, as it does when every provider answers none.
+            _answers = [];
+            _owed = 0;
+            Apply();
+            return;
+        }
         _answers = [];
         foreach (var _ in providers) _answers.Add(null);
         _owed = providers.Count;

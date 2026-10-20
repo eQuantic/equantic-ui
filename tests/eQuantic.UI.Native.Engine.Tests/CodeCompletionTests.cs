@@ -79,6 +79,11 @@ public class CodeCompletionTests : IDisposable
 
         public void AnswerItems(int request, params CodeCompletionItem[] items) =>
             _pending[request].SetResult(new CodeCompletionList(items));
+
+        /// <summary>Answers with <paramref name="labels"/>, asking to be asked again as the word changes.</summary>
+        public void AnswerIncomplete(int request, params string[] labels) =>
+            _pending[request].SetResult(new CodeCompletionList(
+                labels.Select(label => new CodeCompletionItem(label)).ToList(), true));
     }
 
     /// <summary>A UI thread that is never the caller's: everything is posted, and runs when drained.</summary>
@@ -620,6 +625,55 @@ public class CodeCompletionTests : IDisposable
         slow.Cancellations[0].IsCancellationRequested.Should().BeFalse("its request is still wanted");
         slow.Answer(0, "Count");
         Labels(editor).Should().Equal("Column", "Count");
+    }
+
+    /// <summary>
+    /// Each incomplete answer is asked for again once the word is not the one IT answered for: a slow
+    /// provider's answer, for a word left behind while a quicker one was asked again, is asked again too.
+    /// One word was kept for the whole list, the one asked last, and the slow answer matched it.
+    /// </summary>
+    [Fact]
+    public void ASlowIncompleteAnswer_ForAWordLeftBehind_IsAskedForAgain()
+    {
+        var slow = new LateProvider();
+        var quick = new Provider { Incomplete = true };
+        quick.Items.Add(new CodeCompletionItem("Column"));
+        var editor = Editor("", quick, slow);
+        editor.HandleText("C");
+        editor.HandleText("o");
+        quick.Asked.Should().HaveCount(2, "the quick answer was incomplete and the word changed");
+
+        slow.AnswerIncomplete(0, "Count");
+
+        slow.Count.Should().Be(2, "its answer was for \"C\", and the word is \"Co\"");
+        slow.AnswerIncomplete(1, "Count");
+        slow.Count.Should().Be(2, "its answer is now for the word typed");
+        Labels(editor).Should().Equal("Column", "Count");
+    }
+
+    /// <summary>
+    /// An answer that withdraws every entry the list showed takes them away at once, though another
+    /// provider is still out: the list waited for that provider without taking the answer, and went on
+    /// showing what had been withdrawn.
+    /// </summary>
+    [Fact]
+    public void AnAnswerWithdrawingEveryEntry_TakesThemAway_WhileAnotherProviderIsOut()
+    {
+        var withdrawing = new LateProvider();
+        var slow = new LateProvider();
+        var editor = Editor("", withdrawing, slow);
+        editor.HandleText("C");
+        withdrawing.AnswerIncomplete(0, "Column");
+        Labels(editor).Should().Equal("Column");
+        editor.HandleText("o");
+        withdrawing.Count.Should().Be(2, "its answer was incomplete");
+
+        withdrawing.Answer(1);
+
+        editor.Completion.IsOpen.Should().BeFalse("no provider offers anything for \"Co\" now");
+        editor.Completion.IsLoading.Should().BeTrue("the slow provider may still offer something");
+        slow.Answer(0, "Count");
+        Labels(editor).Should().Equal("Count");
     }
 
     [Fact]

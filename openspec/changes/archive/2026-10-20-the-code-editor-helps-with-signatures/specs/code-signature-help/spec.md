@@ -5,8 +5,9 @@
 ### Requirement: A trigger character opens the panel
 
 Typing a character that a signature provider declares in `TriggerCharacters` (`(` by default) SHALL ask
-the providers that declare it, with the trigger `Character` and that character, and SHALL show the first
-answer, in the order of `Providers`, that holds a signature. ⌘⇧Space (Ctrl+Shift+Space) SHALL ask every
+every provider, with the trigger `Character` and that character, as VS Code's `provideSignatureHelp` asks
+every provider it holds, and SHALL show the first answer, in the order of `Providers`, that holds a
+signature. ⌘⇧Space (Ctrl+Shift+Space) SHALL ask every
 provider at the caret, with the trigger `Invoked`. An editor with no signature provider SHALL claim none
 of these keys and ask nothing.
 
@@ -42,8 +43,10 @@ request SHALL be dropped. The panel SHALL show the newest answer's active signat
 ### Requirement: The provider closes the panel
 
 An answer with no signature SHALL close the panel, as SHALL Escape (claimed while the panel shows, after a
-completion list and a hover card showing, which it closes first), the editor losing the keyboard and the
-document being replaced. A press in the code SHALL ask again rather than close.
+completion list and a hover card showing, which it closes first), the editor losing the keyboard, the
+document being replaced, and the providers being taken out: with none left, the next request SHALL close
+the panel, and a `CodeEditor` handed other providers SHALL close it at once. A press in the code SHALL ask
+again rather than close.
 
 #### Scenario: A closing parenthesis
 
@@ -55,11 +58,16 @@ document being replaced. A press in the code SHALL ask again rather than close.
 - **WHEN** the panel shows and Escape is pressed
 - **THEN** the panel closes, the editor claims the key, and Tab still indents
 
+#### Scenario: Every provider taken out
+
+- **WHEN** the panel shows for `Column(`, every provider is taken out, and `1` is typed
+- **THEN** the panel closes
+
 ### Requirement: The arrows walk the overloads
 
 With more than one signature, ↑ and ↓ SHALL show the previous and the next signature, round from the last
-to the first, while no completion list shows and no hover card hides the panel, and ⌥↑ and ⌥↓ (Alt+↑,
-Alt+↓) SHALL do so beside a list too; with one, or under a card, they SHALL move the caret. A later answer
+to the first, while no completion list of more than one entry shows and no hover card hides the panel, as
+VS Code's keybindings have it, and ⌥↑ and ⌥↓ (Alt+↑, Alt+↓) SHALL do so beside a list too; with one, or under a card, they SHALL move the caret. A later answer
 that holds as many signatures SHALL keep the signature chosen.
 
 #### Scenario: Three overloads
@@ -72,6 +80,11 @@ that holds as many signatures SHALL keep the signature chosen.
 
 - **WHEN** the panel shows three signatures, a word typed opens the completion list, and ⌥↓ is pressed
 - **THEN** the second signature shows and the list keeps its selection
+
+#### Scenario: Beside a list of one entry
+
+- **WHEN** the panel shows three signatures, a word typed opens a list of one entry, and ↓ is pressed
+- **THEN** the second signature shows and the list stays open
 
 #### Scenario: A card over the panel
 

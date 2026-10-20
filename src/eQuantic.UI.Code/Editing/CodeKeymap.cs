@@ -59,9 +59,10 @@ public static class CodeKeymap
         // ---- an open completion list ---------------------------------------------------------
         // While a list shows, the keys that walk it are ITS keys: the arrows and the page keys step
         // through it, Tab accepts, and Escape closes it, only it, so the trap on Tab stays armed and
-        // a dialog around the editor stays open. An arrow goes back to the caret when one entry
-        // shows, as VS Code has it. Enter accepts only what would change the text: a word typed out
-        // in full ends its line (the list closes as the caret leaves it).
+        // a dialog around the editor stays open. An arrow is not the list's when one entry shows, as
+        // VS Code has it: it goes on to the panel's overloads below, and then to the caret. Enter accepts
+        // only what would change the text: a word typed out in full ends its line (the list closes as
+        // the caret leaves it).
         var completion = editor.Completion;
         if (completion.IsOpen && !command && !control && !alt)
         {
@@ -80,8 +81,10 @@ public static class CodeKeymap
         // ⇧⌘Space (Ctrl+Shift+Space): the panel of the call at the caret, as VS Code has it.
         if (key == " " && (command || control) && shift && !alt) return editor.SignatureHelp.Invoke();
         // ↑ and ↓ walk the overloads while the panel shows more than one, and move the caret otherwise; a
-        // list showing has already taken them above, and a card showing hides the panel, whose keys they
-        // then are not. ⌥↑ and ⌥↓ (Alt+↑, Alt+↓) walk them too, which the list leaves alone, as VS Code
+        // list of two entries or more has already taken them above, and a card showing hides the panel,
+        // whose keys they then are not. Beside a list of ONE entry they are the overloads', as VS Code's
+        // keybindings have it: selectNextSuggestion asks for more than one suggestion, and
+        // showNextParameterHint only for more than one signature. ⌥↑ and ⌥↓ (Alt+↑, Alt+↓) walk them too, which the list leaves alone, as VS Code
         // has it: beside a list, they are the overloads' only keys.
         if (!command && !control && !shift && key is "ArrowUp" or "ArrowDown" && !editor.Hover.IsOpen
             && editor.SignatureHelp.Move(key == "ArrowUp" ? -1 : 1))

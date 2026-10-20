@@ -243,6 +243,27 @@ public class CodeEditorSignatureTests : IDisposable
         first.Editor.SignatureHelp.IsOpen.Should().BeTrue("the provider of the parent's next build reached the editor it keeps");
     }
 
+    /// <summary>A parent's next build handing other providers closes the panel the ones before filled: it
+    /// stayed, with nobody left to ask about the call it explained.</summary>
+    [Fact]
+    public void OtherProvidersHandedByAParent_CloseThePanel()
+    {
+        var first = Editor(Lines(), CallSignatures.ColumnOnly());
+        Controller(first);
+        var parent = new Parent(first);
+        var host = Host(parent);
+        Settle(host);
+        ClickAtEndOf(host, first, 10);
+        Type(host, " Column(");
+        first.Editor.SignatureHelp.IsOpen.Should().BeTrue();
+
+        parent.Hand(Editor(Lines()));
+        Settle(host);
+
+        first.Editor.SignatureHelp.Providers.Should().BeEmpty();
+        first.Editor.SignatureHelp.IsOpen.Should().BeFalse();
+    }
+
     /// <summary>A call whose label is far longer than anything else the panel says.</summary>
     private sealed class LongLabel : ICodeSignatureProvider
     {

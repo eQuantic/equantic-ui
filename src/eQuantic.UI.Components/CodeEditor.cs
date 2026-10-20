@@ -182,7 +182,8 @@ public sealed class CodeEditor : StatefulComponent
 
     /// <summary>
     /// Reports <see cref="Diagnostics"/> when they are other problems than the last ones, and hands the
-    /// problem and hover providers when they are other providers, asking the problem providers at once.
+    /// providers when they are other providers, asking the problem providers at once and closing the card
+    /// and the panel the providers before had filled.
     /// </summary>
     private void HandIntelligence(CodeEditorController editor)
     {
@@ -212,6 +213,8 @@ public sealed class CodeEditor : StatefulComponent
             }
             _explainers = [.. HoverProviders];
             foreach (var provider in _explainers) editor.Hover.Providers.Add(provider);
+            // What the card shows, and what it waits for, came from the providers before.
+            editor.Hover.Dismiss();
         }
         if (!SameProviders(SignatureProviders, _signers))
         {
@@ -222,6 +225,8 @@ public sealed class CodeEditor : StatefulComponent
             }
             _signers = [.. SignatureProviders];
             foreach (var provider in _signers) editor.SignatureHelp.Providers.Add(provider);
+            // What the panel shows, and the requests still out for it, came from the providers before.
+            editor.SignatureHelp.Dismiss();
         }
     }
 

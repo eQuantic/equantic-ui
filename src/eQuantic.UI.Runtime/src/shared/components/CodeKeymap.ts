@@ -61,7 +61,7 @@ export class CodeKeymap {
                         return true;
                     case 'v':
                         if (clipboard == null) return false;
-                        if ((($v9409) => (($v9409 != null && $v9409.length > 0) && (pasted = $v9409, true)))(clipboard.read())) editor.paste(pasted);
+                        if ((($v9720) => (($v9720 != null && $v9720.length > 0) && (pasted = $v9720, true)))(clipboard.read())) editor.paste(pasted);
                         return true;
                     case '/':
                         return editor.toggleLineComment();

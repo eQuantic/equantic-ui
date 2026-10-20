@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeCompletionAnswer, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeCompletionMatch, CodeCompletionOffer, CodeCompletionRequest, CodeCompletionTriggerValue, CodeDocument, CodeEditorController, CodeFuzzyMatch, CodePosition, CodeRange, UiThread } from "../runtime-exports";
+import { $eq, CancellationToken, CancellationTokenSource, CodeCompletionAnswer, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeCompletionMatch, CodeCompletionOffer, CodeCompletionRequest, CodeCompletionTriggerValue, CodeDocument, CodeEditorController, CodeFuzzyMatch, CodePosition, CodeRange, ProviderRequest, UiThread } from "../runtime-exports";
 
 export class CodeCompletion {
     constructor(editor: CodeEditorController) {
@@ -12,7 +12,6 @@ export class CodeCompletion {
         this._active = false;
         this._start = CodePosition.$zero();
         this._openedEmpty = false;
-        this._askedWord = '';
         this._requests = [];
         this._list = null;
         this.providers = [];
@@ -34,7 +33,6 @@ export class CodeCompletion {
     _active!: boolean;
     _start!: CodePosition;
     _openedEmpty!: boolean;
-    _askedWord!: string;
     _requests!: CodeCompletionRequest[];
     _list!: CancellationTokenSource | null;
     providers!: any[];
@@ -112,7 +110,7 @@ export class CodeCompletion {
         let $n16: any; 
         let context = ($n16 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n16.character = character, $n16);
         let askedLineLength = document.line(position.line).length;
-        this._askedWord = this.word();
+        let word = this.word();
         let requests: CodeCompletionRequest[] = [];
         for (const provider of providers) {
             for (let i = this._requests.length - 1; i >= 0; i--) {
@@ -121,7 +119,7 @@ export class CodeCompletion {
                 this._requests.splice(i, 1);
                 this.cancel(stale.cancellation);
             }
-            let request = new CodeCompletionRequest(provider);
+            let request = new CodeCompletionRequest(provider, word);
             this._requests.push(request);
             requests.push(request);
         }
@@ -141,7 +139,7 @@ export class CodeCompletion {
         }
         UiThread.run(() => {
             if (!(failure == null)) this.failed?.(failure);
-            this.deliver(request, new CodeCompletionAnswer(request.provider, askedLineLength, list));
+            this.deliver(request, new CodeCompletionAnswer(request.provider, request.word, askedLineLength, list));
         });
     }
 
@@ -154,8 +152,8 @@ export class CodeCompletion {
         let at = 0;
         while (at < this._answers.length && this.rankOf(this._answers[at].provider) <= rank) at++;
         this._answers.splice(at, 0, answer);
-        if (this._answers.every((held) => held.offers.length === 0 && !held.isIncomplete)) {
-            if (!this.isLoading) this.close(true);
+        if (this._answers.every((held) => held.offers.length === 0 && !held.isIncomplete) && !this.isLoading) {
+            this.close(true);
             return;
         }
         let selected = this._selected >= 0 ? CodeCompletion.entryOf(this._shown[this._selected].item) : null;
@@ -199,10 +197,12 @@ export class CodeCompletion {
     }
 
     askAgainIfIncomplete() {
-        if (this.word() === this._askedWord) return;
+        let word = this.word();
         let incomplete: any[] = [];
         for (const answer of this._answers) {
-            if (answer.isIncomplete) incomplete.push(answer.provider);
+            if (!answer.isIncomplete || answer.askedWord === word) continue;
+            if (this._requests.some((request) => !request.answered && request.word === word && (request.provider === answer.provider))) continue;
+            incomplete.push(answer.provider);
         }
         if (incomplete.length > 0) this.ask('incomplete', null, incomplete);
     }
@@ -344,12 +344,7 @@ export class CodeCompletion {
     }
 
     cancel(source: CancellationTokenSource | null) {
-        if (source == null) return;
-        try {
-            source.cancel();
-        } catch (error: any) {
-            this.failed?.(error);
-        }
+        return ProviderRequest.cancel(source, this.failed);
     }
 
     resolveSelected() {

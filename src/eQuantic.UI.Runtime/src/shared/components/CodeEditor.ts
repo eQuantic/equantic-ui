@@ -217,6 +217,7 @@ export class CodeEditor extends StatefulComponent {
             }
             this._explainers = [...this.hoverProviders];
             for (const provider of this._explainers) $eq.collections.add(editor.hover.providers, provider);
+            editor.hover.dismiss();
         }
         if (!CodeEditor.sameProviders(this.signatureProviders, this._signers)) {
             for (const provider of this._signers) {
@@ -225,6 +226,7 @@ export class CodeEditor extends StatefulComponent {
             }
             this._signers = [...this.signatureProviders];
             for (const provider of this._signers) $eq.collections.add(editor.signatureHelp.providers, provider);
+            editor.signatureHelp.dismiss();
         }
     }
 

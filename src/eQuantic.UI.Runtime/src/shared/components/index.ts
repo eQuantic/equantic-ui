@@ -144,6 +144,7 @@ export { Pagination } from './Pagination';
 export { PlainTextLanguage } from './PlainTextLanguage';
 export { Popover } from './Popover';
 export { ProgressBar } from './ProgressBar';
+export { ProviderRequest } from './ProviderRequest';
 export { PullToRefresh } from './PullToRefresh';
 export { PythonLanguage } from './PythonLanguage';
 export { RadioGroup } from './RadioGroup';

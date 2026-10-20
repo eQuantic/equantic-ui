@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeDiagnostic, CodeDocument, CodeEdit, CodeEditorController, CodePosition, CodeRange, TimeSpan, UiThread } from "../runtime-exports";
+import { $eq, CancellationToken, CancellationTokenSource, CodeDiagnostic, CodeDocument, CodeEdit, CodeEditorController, CodePosition, CodeRange, ProviderRequest, TimeSpan, UiThread } from "../runtime-exports";
 
 export class CodeDiagnostics {
     constructor(editor: CodeEditorController) {
@@ -78,7 +78,7 @@ export class CodeDiagnostics {
 
     async ask(wait: boolean) {
         let generation = ++this._generation;
-        this._request?.cancel();
+        ProviderRequest.cancel(this._request, this.failed);
         this._request = null;
         if ($eq.collections.count(this.providers) === 0) {
             this.gather();

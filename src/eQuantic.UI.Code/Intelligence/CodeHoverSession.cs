@@ -143,7 +143,7 @@ public sealed class CodeHoverSession
     public bool Dismiss()
     {
         _generation++;
-        _request?.Cancel();
+        ProviderRequest.Cancel(_request, Failed);
         _request = null;
         _pending = null;
         _requestByKeyboard = false;
@@ -199,7 +199,7 @@ public sealed class CodeHoverSession
         if (_open && _byKeyboard)
         {
             _generation++;
-            _request?.Cancel();
+            ProviderRequest.Cancel(_request, Failed);
             _request = null;
             _pending = null;
             return;
@@ -226,7 +226,7 @@ public sealed class CodeHoverSession
     {
         if (_editor.Completion.IsOpen) return;
         var generation = ++_generation;
-        _request?.Cancel();
+        ProviderRequest.Cancel(_request, Failed);
         var request = new CancellationTokenSource();
         _request = request;
         _pending = explained;

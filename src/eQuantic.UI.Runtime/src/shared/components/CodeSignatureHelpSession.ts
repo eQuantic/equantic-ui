@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeDocument, CodeEdit, CodeEditorController, CodePosition, CodeSignature, CodeSignatureContext, CodeSignatureHelp, TimeSpan, UiThread } from "../runtime-exports";
+import { $eq, CancellationToken, CancellationTokenSource, CodeDocument, CodeEdit, CodeEditorController, CodePosition, CodeSignature, CodeSignatureContext, CodeSignatureHelp, ProviderRequest, TimeSpan, UiThread } from "../runtime-exports";
 
 export class CodeSignatureHelpSession {
     constructor(editor: CodeEditorController) {
@@ -56,14 +56,14 @@ export class CodeSignatureHelpSession {
 
     invoke() {
         if ($eq.collections.count(this.providers) === 0) return false;
-        let $n39: any; 
-        this.ask(($n39 = new CodeSignatureContext('invoked'), $n39.isRetrigger = this.isOpen, $n39.active = this.shown(), $n39), false);
+        let $n34: any; 
+        this.ask(($n34 = new CodeSignatureContext('invoked'), $n34.isRetrigger = this.isOpen, $n34.active = this.shown(), $n34), false);
         return true;
     }
 
     dismiss() {
         this._generation++;
-        this._request?.cancel();
+        ProviderRequest.cancel(this._request, this.failed);
         this._request = null;
         this._answers = [];
         this._owed = 0;
@@ -94,14 +94,14 @@ export class CodeSignatureHelpSession {
             retriggered = $eq.logic.or(retriggered, provider.retriggerCharacters.includes(typed));
         }
         if (!triggered && !(retriggered && this.isOpen)) return;
-        let $n43: any; 
-        this.ask(($n43 = new CodeSignatureContext('character'), $n43.character = typed, $n43.isRetrigger = this.isOpen, $n43.active = this.shown(), $n43), false);
+        let $n37: any; 
+        this.ask(($n37 = new CodeSignatureContext('character'), $n37.character = typed, $n37.isRetrigger = this.isOpen, $n37.active = this.shown(), $n37), false);
     }
 
     moved() {
         if (this._help == null && this._request == null) return;
-        let $n44: any; 
-        this.ask(($n44 = new CodeSignatureContext('contentChange'), $n44.isRetrigger = this.isOpen, $n44.active = this.shown(), $n44), true);
+        let $n38: any; 
+        this.ask(($n38 = new CodeSignatureContext('contentChange'), $n38.isRetrigger = this.isOpen, $n38.active = this.shown(), $n38), true);
     }
 
     edited(edit: CodeEdit | null) {
@@ -115,7 +115,7 @@ export class CodeSignatureHelpSession {
 
     async ask(context: CodeSignatureContext, wait: boolean) {
         let generation = ++this._generation;
-        this._request?.cancel();
+        ProviderRequest.cancel(this._request, this.failed);
         let request = $eq.cancellation.source();
         this._request = request;
         if (wait && (this.delay.compareTo($eq.time.timeSpan.zero) > 0)) {
@@ -141,6 +141,12 @@ export class CodeSignatureHelpSession {
         let document = this._editor.document;
         let position = this._editor.caret;
         let providers = this.providers.slice();
+        if (providers.length === 0) {
+            this._answers = [];
+            this._owed = 0;
+            this.apply();
+            return;
+        }
         this._answers = [];
         for (const _ of providers) this._answers.push(null);
         this._owed = providers.length;

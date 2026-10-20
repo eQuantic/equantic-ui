@@ -332,12 +332,15 @@ public class CodeCompletionTwinTests
 
     /// <summary>
     /// A provider that answers when a step says so, its oldest request first, with the same entries every
-    /// time: written once here and once in the program the twin runs. It comes FIRST in the providers, so
-    /// its entries list before the document's words whenever its answer lands.
+    /// time but every third, which offers none: written once here and once in the program the twin runs.
+    /// It calls every answer incomplete, so it is asked again as the word changes, each answer for the word
+    /// IT was asked for, and an answer of none withdraws what it offered before. It comes FIRST in the
+    /// providers, so its entries list before the document's words whenever its answer lands.
     /// </summary>
     private sealed class Late(IReadOnlyList<string> words) : ICodeCompletionProvider
     {
         private readonly List<TaskCompletionSource<CodeCompletionList>> _pending = [];
+        private int _answered;
 
         public Task<CodeCompletionList> CompleteAsync(CodeDocument document, CodePosition position,
             CodeCompletionContext context, CancellationToken cancellation)
@@ -353,7 +356,8 @@ public class CodeCompletionTwinTests
             if (_pending.Count == 0) return;
             var answer = _pending[0];
             _pending.RemoveAt(0);
-            answer.SetResult(new CodeCompletionList([.. words.Select(word => new CodeCompletionItem(word))]));
+            IReadOnlyList<string> offered = _answered++ % 3 == 2 ? [] : words;
+            answer.SetResult(new CodeCompletionList([.. offered.Select(word => new CodeCompletionItem(word))], true));
         }
     }
 
@@ -426,12 +430,14 @@ public class CodeCompletionTwinTests
             const sessions = {{encoded}};
             // The program's copy of Late, line for line.
             class Late {
-              constructor() { this.pending = []; this.triggerCharacters = []; }
+              constructor() { this.pending = []; this.answered = 0; this.triggerCharacters = []; }
               completeAsync() { return new Promise((resolve) => this.pending.push(resolve)); }
               resolveAsync(item) { return Promise.resolve(item); }
               answerOldest() {
                 const resolve = this.pending.shift();
-                if (resolve !== undefined) resolve(new CodeCompletionList(words.map((word) => new CodeCompletionItem(word)), false));
+                if (resolve === undefined) return;
+                const offered = this.answered++ % 3 === 2 ? [] : words;
+                resolve(new CodeCompletionList(offered.map((word) => new CodeCompletionItem(word)), true));
               }
             }
             const settle = () => new Promise((resolve) => setTimeout(resolve, 0));

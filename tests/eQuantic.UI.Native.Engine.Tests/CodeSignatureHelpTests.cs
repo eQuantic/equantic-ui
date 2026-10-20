@@ -273,6 +273,23 @@ public class CodeSignatureHelpTests : IDisposable
         editor.Completion.Selected.Should().Be(selected, "and the list kept its selection");
     }
 
+    /// <summary>Beside a list of ONE entry, ↓ walks the overloads, as VS Code has it: its list claims the arrows
+    /// only with more than one suggestion, and the panel claims them with more than one signature.</summary>
+    [Fact]
+    public void BesideAListOfOneEntry_TheArrowsWalkTheOverloads()
+    {
+        var editor = Editor("x.", Overloaded());
+        editor.Completion.Providers.Add(new ListCompletionProvider(new CodeCompletionItem("name")));
+        Type(editor, "Add(");
+        Type(editor, "na");
+        editor.Completion.IsOpen.Should().BeTrue("a word typed opens the list");
+
+        Press(editor, "ArrowDown").Should().BeTrue();
+
+        editor.SignatureHelp.ActiveSignature.Should().Be(1, "↓ walked to the next overload");
+        editor.Completion.IsOpen.Should().BeTrue("and the caret stayed in the word");
+    }
+
     /// <summary>A card hides the panel, and the arrows are then the caret's: they walked the overloads of a
     /// panel nobody could see.</summary>
     [Fact]
@@ -326,6 +343,41 @@ public class CodeSignatureHelpTests : IDisposable
         Type(editor, "Column(");
 
         editor.Document = CodeDocument.FromText("class C { }");
+
+        editor.SignatureHelp.IsOpen.Should().BeFalse();
+    }
+
+    /// <summary>A callback a provider registered on its request throws when Escape cancels it: that is
+    /// the provider's failure, and Escape still closes the panel. It escaped from the key.</summary>
+    [Fact]
+    public void ACancellationThatThrows_IsReported_AndEscapeStillClosesThePanel()
+    {
+        var late = new LateProvider();
+        var editor = Editor("var c = ", ColumnOnly(), late);
+        var failures = new List<Exception>();
+        editor.SignatureHelp.Failed += failures.Add;
+        Type(editor, "Column(");
+        editor.SignatureHelp.IsOpen.Should().BeTrue();
+        late.Tokens[^1].Register(() => throw new InvalidOperationException("the connection dropped"));
+
+        Press(editor, "Escape").Should().BeTrue();
+
+        editor.SignatureHelp.IsOpen.Should().BeFalse();
+        failures.Should().ContainSingle().Which.Should().BeOfType<AggregateException>()
+            .Which.InnerExceptions.Should().ContainSingle().Which.Message.Should().Be("the connection dropped");
+    }
+
+    /// <summary>With every provider taken out, the next move asks nobody and the panel closes: it asked
+    /// nobody and waited, showing what the providers before had answered.</summary>
+    [Fact]
+    public void EveryProviderTakenOut_ClosesThePanel_OnTheNextMove()
+    {
+        var editor = Editor("var c = ", ColumnOnly());
+        Type(editor, "Column(");
+        editor.SignatureHelp.IsOpen.Should().BeTrue();
+
+        editor.SignatureHelp.Providers.Clear();
+        Type(editor, "1");
 
         editor.SignatureHelp.IsOpen.Should().BeFalse();
     }

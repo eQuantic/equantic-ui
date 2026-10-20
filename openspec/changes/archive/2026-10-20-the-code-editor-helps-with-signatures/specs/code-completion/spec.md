@@ -7,7 +7,10 @@
 The completion SHALL apply each provider's answer as it arrives, and SHALL list the offers in the order
 of `Providers` whatever the order the answers land in. When an answer lands, the selected entry SHALL stay
 selected if it is still listed. The list SHALL close for want of offers only once every provider asked has
-answered and none offered anything, and `IsLoading` SHALL be true while a provider asked is still out.
+answered and none offered anything, and `IsLoading` SHALL be true while a provider asked is still out. An
+answer that withdraws every entry its provider offered SHALL take them away as it lands, while another
+provider is still out too. Each incomplete answer SHALL be asked for again once the word is not the one IT
+was asked for, unless its provider is already being asked for the word typed.
 
 #### Scenario: A provider that never answers
 
@@ -19,6 +22,19 @@ answered and none offered anything, and `IsLoading` SHALL be true while a provid
 - **WHEN** a list shows a first provider's `Column`, `Column` is selected, and a second provider then
   answers `Color` and `Count`
 - **THEN** the list shows all three, ranked as one answer would rank them, and `Column` is still selected
+
+#### Scenario: An answer withdrawing every entry
+
+- **WHEN** a list shows a first provider's `Column` for `C`, a second provider has not answered, `o` is
+  typed, and the first provider, asked again, answers nothing
+- **THEN** the list closes at once, `IsLoading` is true, and the second provider's answer still shows when
+  it lands
+
+#### Scenario: A slow incomplete answer for a word left behind
+
+- **WHEN** a quick provider and a slow one are asked for `C`, both incomplete, `o` is typed and the quick one
+  is asked again, and the slow one then answers for `C`
+- **THEN** the slow provider is asked again for `Co`, once
 
 ## MODIFIED Requirements
 

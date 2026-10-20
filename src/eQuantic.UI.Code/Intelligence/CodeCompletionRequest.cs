@@ -8,12 +8,16 @@ namespace eQuantic.UI.Code;
 /// </summary>
 internal sealed class CodeCompletionRequest
 {
-    public CodeCompletionRequest(ICodeCompletionProvider provider)
+    public CodeCompletionRequest(ICodeCompletionProvider provider, string word)
     {
         Provider = provider;
+        Word = word;
     }
 
     public ICodeCompletionProvider Provider { get; }
+
+    /// <summary>The word the provider is asked for.</summary>
+    public string Word { get; }
 
     public CancellationTokenSource Cancellation { get; } = new();
 
