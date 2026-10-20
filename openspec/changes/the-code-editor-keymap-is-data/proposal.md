@@ -28,8 +28,9 @@ For a developer using the SDK:
   back to the host.
 - A chord the table does not name is not the editor's, so the combinations the hand-written keymap
   claimed by accident go to the host: the arrows, Home, End and the page keys with a modifier no
-  convention gives them, Enter, Backspace, Delete and Tab with ⌘ or ⌥ where no command uses them, and
-  the letter chords with an extra modifier (⌘⌥A, ⇧⌘C). Measured against the hand-written keymap, three
+  convention gives them, Enter, Backspace, Delete, Tab and Escape with a modifier no command uses (⌘Enter,
+  ⇧Delete, ⌘Escape among them), the space with ⌘ and ⌃ together, and the letter chords with an extra
+  modifier (⌘⌥A, ⇧⌘C). Measured against the hand-written keymap, three
   named chords change, all on purpose: ⇧Tab and ⇧Enter over a completion list outdent and break the line
   instead of accepting the entry, as VS Code has them, and ⌥↑ ⌥↓ walk the signature panel's overloads
   and otherwise no longer move the caret, which line operations (#1011) take them for.

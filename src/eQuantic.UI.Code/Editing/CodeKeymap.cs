@@ -40,9 +40,12 @@ public static class CodeKeymap
 
     /// <summary>
     /// The bindings an editor answers with no app binding over them, for <paramref name="convention"/>, in
-    /// the order a chord's commands are tried: what an IDE lists in its own sheet of shortcuts.
+    /// the order a chord's commands are tried: what an IDE lists in its own sheet of shortcuts. A copy, so
+    /// sorting it for a sheet changes no editor's keys.
     /// </summary>
-    public static IReadOnlyList<CodeKeyBinding> Defaults(KeyboardConvention convention) =>
+    public static IReadOnlyList<CodeKeyBinding> Defaults(KeyboardConvention convention) => [.. Table(convention)];
+
+    private static List<CodeKeyBinding> Table(KeyboardConvention convention) =>
         convention == KeyboardConvention.Apple ? AppleBindings : StandardBindings;
 
     /// <summary>
@@ -97,7 +100,7 @@ public static class CodeKeymap
     /// </summary>
     private static IReadOnlyList<CodeKeyBinding> Bindings(CodeEditorController editor, KeyboardConvention convention)
     {
-        var defaults = Defaults(convention);
+        var defaults = Table(convention);
         var own = editor.KeyBindings;
         if (own.Count == 0) return defaults;
         var bindings = new List<CodeKeyBinding>(own);

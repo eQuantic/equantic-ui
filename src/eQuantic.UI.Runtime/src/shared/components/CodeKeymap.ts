@@ -38,6 +38,10 @@ export class CodeKeymap {
     }
 
     static defaults(convention: KeyboardConventionValue) {
+        return [...CodeKeymap.table(convention)];
+    }
+
+    static table(convention: KeyboardConventionValue) {
         return convention === 'apple' ? CodeKeymap.appleBindings : CodeKeymap.standardBindings;
     }
 
@@ -62,7 +66,7 @@ export class CodeKeymap {
     }
 
     static bindings(editor: CodeEditorController, convention: KeyboardConventionValue) {
-        let defaults = CodeKeymap.defaults(convention);
+        let defaults = CodeKeymap.table(convention);
         let own = editor.keyBindings;
         if ($eq.collections.count(own) === 0) return defaults;
         let bindings: CodeKeyBinding[] = $eq.collections.listCopy(own);
