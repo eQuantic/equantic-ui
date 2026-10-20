@@ -11,11 +11,16 @@ namespace eQuantic.UI.Code;
 /// lives here, transpiles with everything else, and both surfaces call the same function.
 /// </para>
 /// <para>
-/// It speaks both keyboard traditions (<see cref="KeyboardConvention"/>), because they disagree on
-/// exactly the keys an editor lives on: ⌘← is "line start" on a Mac and Ctrl+← is "one word back"
-/// everywhere else, and <see cref="KeyModifiers.Command"/> is ⌘ on one and Ctrl on the other. A
-/// keymap that knew only one had Windows and Linux users jumping to the start of the line every time
-/// they meant to step over a word.
+/// The mapping is DATA (#1010): a table of <see cref="CodeKeyBinding"/>s from chords to
+/// <see cref="CodeCommand"/>s, one for each keyboard tradition (<see cref="KeyboardConvention"/>), because
+/// they disagree on exactly the keys an editor lives on: ⌘← is "line start" on a Mac and Ctrl+← is "one
+/// word back" everywhere else, and <see cref="KeyModifiers.Command"/> is ⌘ on one and Ctrl on the other.
+/// An app puts its own bindings over the table (<see cref="CodeEditorController.KeyBindings"/>), and
+/// runs a command with no key at all (<see cref="CodeEditorController.Execute"/>).
+/// </para>
+/// <para>
+/// A chord names its modifiers exactly. Written by hand, the keymap read them loosely and claimed ⌃⌥⇧←
+/// on a Mac as a step left and ⌘⌥A as select all; a chord the table does not name is the host's.
 /// </para>
 /// <para>
 /// Typed CHARACTERS do not come through here. What a keystroke produces is the platform's business
@@ -25,6 +30,21 @@ namespace eQuantic.UI.Code;
 /// </summary>
 public static class CodeKeymap
 {
+    /// <summary>The default bindings for a Mac's keyboard: ⌥ steps over words, ⌘ reaches line and
+    /// document ends.</summary>
+    private static readonly List<CodeKeyBinding> AppleBindings = Build(apple: true);
+
+    /// <summary>The default bindings everywhere else: Ctrl (Command, here) steps over words, Home and End
+    /// reach line ends, and Ctrl with them the document's.</summary>
+    private static readonly List<CodeKeyBinding> StandardBindings = Build(apple: false);
+
+    /// <summary>
+    /// The bindings an editor answers with no app binding over them, for <paramref name="convention"/>, in
+    /// the order a chord's commands are tried: what an IDE lists in its own sheet of shortcuts.
+    /// </summary>
+    public static IReadOnlyList<CodeKeyBinding> Defaults(KeyboardConvention convention) =>
+        convention == KeyboardConvention.Apple ? AppleBindings : StandardBindings;
+
     /// <summary>
     /// Runs the command <paramref name="key"/> means, and answers whether the editor CLAIMED it.
     /// False means the key belongs to whatever is around the editor — Tab moving to the next
@@ -33,209 +53,235 @@ public static class CodeKeymap
     public static bool Handle(CodeEditorController editor, string key, KeyModifiers modifiers,
         KeyboardConvention convention, ITextClipboard? clipboard = null)
     {
-        var shift = (modifiers & KeyModifiers.Shift) != 0;
-        var command = (modifiers & KeyModifiers.Command) != 0;
-        var control = (modifiers & KeyModifiers.Control) != 0;
-        var alt = (modifiers & KeyModifiers.Alt) != 0;
-        var apple = convention == KeyboardConvention.Apple;
-
         // ---- the Tab trap --------------------------------------------------------------------
         // An editor TAKES Tab, which is the point — and a keyboard user must still be able to leave
         // it. Escape is the door (the handoff's rule for every editing surface): it releases the
-        // trap (below), so the NEXT Tab moves focus on instead of indenting. Any other key re-arms
-        // it, and does so before anything else here can claim the key: the list's own keys and
+        // trap (ReleaseKeyboard), so the NEXT Tab moves focus on instead of indenting. Any other key
+        // re-arms it, and does so before anything else here can claim the key: the list's own keys and
         // ⌃Space return early, and re-arming after them left Escape, ⌃Space, Escape (the list asked
         // for, then closed) with Tab leaving the editor. A modifier on its own is not "another key",
         // or Shift+Tab could never leave backwards.
         if (key != "Tab" && key != "Escape" && !IsModifierKey(key)) editor.TabMovesFocus = false;
+        if (IsModifierKey(key)) return false;
 
         // ---- a chord half typed ------------------------------------------------------------------
-        // Any key but a modifier ends the wait for a chord's second half (⌘K ⌘I, below), and ends it
-        // here, for the reason the trap above re-arms here: the list's keys, ⌃Space and the panel's
-        // keys return early, and ending the wait after them left ⌘K, ⌃Space, Escape, ⌘I showing the card.
-        var chord = editor.PendingChord;
-        if (!IsModifierKey(key)) editor.PendingChord = null;
+        // Any key but a modifier ends the wait for a chord's second half (⌘K ⌘I), and ends it here, for
+        // the reason the trap above re-arms here: ending the wait after the commands that claim a key
+        // left ⌘K, ⌃Space, Escape, ⌘I showing the card.
+        var first = editor.PendingChord;
+        editor.PendingChord = null;
 
-        // ---- an open completion list ---------------------------------------------------------
-        // While a list shows, the keys that walk it are ITS keys: the arrows and the page keys step
-        // through it, Tab accepts, and Escape closes it, only it, so the trap on Tab stays armed and
-        // a dialog around the editor stays open. An arrow is not the list's when one entry shows, as
-        // VS Code has it: it goes on to the panel's overloads below, and then to the caret. Enter accepts
-        // only what would change the text: a word typed out in full ends its line (the list closes as
-        // the caret leaves it).
-        var completion = editor.Completion;
-        if (completion.IsOpen && !command && !control && !alt)
+        var chord = new KeyChord(key, modifiers);
+        var bindings = Bindings(editor, convention);
+        // The second half of a chord of two keys, then the chord on its own: a key that is not the second
+        // half is handled as itself.
+        if (first is { } waited && Run(editor, bindings, chord, waited, clipboard)) return true;
+        if (Run(editor, bindings, chord, null, clipboard)) return true;
+
+        // ---- the first half of a chord of two keys -------------------------------------------------
+        // It waits only while the second half's command could run: with no card to show, a browser's
+        // Ctrl+K stays the browser's.
+        foreach (var binding in bindings)
         {
-            if (key == "ArrowDown" && !shift && completion.Move(1)) return true;
-            if (key == "ArrowUp" && !shift && completion.Move(-1)) return true;
-            if (key == "PageDown" && !shift && completion.MovePage(1)) return true;
-            if (key == "PageUp" && !shift && completion.MovePage(-1)) return true;
-            if (key == "Tab" && completion.Accept()) return true;
-            if (key == "Enter" && completion.AcceptChangesText && completion.Accept()) return true;
-            if (key == "Escape") return completion.Dismiss();
-        }
-
-        // ⌃Space, which a browser reports as the command key and a Mac's own shell as Control: asks
-        // for the list where the caret is. Before the chords, which would take a space as a letter.
-        if (key == " " && (command || control) && !shift && !alt) return completion.Invoke();
-        // ⇧⌘Space (Ctrl+Shift+Space): the panel of the call at the caret, as VS Code has it.
-        if (key == " " && (command || control) && shift && !alt) return editor.SignatureHelp.Invoke();
-        // ↑ and ↓ walk the overloads while the panel shows more than one, and move the caret otherwise; a
-        // list of two entries or more has already taken them above, and a card showing hides the panel,
-        // whose keys they then are not. Beside a list of ONE entry they are the overloads', as VS Code's
-        // keybindings have it: selectNextSuggestion asks for more than one suggestion, and
-        // showNextParameterHint only for more than one signature. ⌥↑ and ⌥↓ (Alt+↑, Alt+↓) walk them too, which the list leaves alone, as VS Code
-        // has it: beside a list, they are the overloads' only keys.
-        if (!command && !control && !shift && key is "ArrowUp" or "ArrowDown" && !editor.Hover.IsOpen
-            && editor.SignatureHelp.Move(key == "ArrowUp" ? -1 : 1))
-            return true;
-
-        // ---- the card and the problems ------------------------------------------------------------
-        // ⌘K ⌘I (Ctrl+K Ctrl+I) shows the card for the caret, as VS Code has it: ⌘K waits for one key,
-        // and anything but a modifier ends the wait (above), claimed as the second half or handled as
-        // itself. Slice 2 makes the keymap data with chords of its own (#601) and takes this one over.
-        if (chord is not null && command && key is "i" or "I")
-        {
-            editor.Hover.ShowAt(editor.Caret);
+            if (binding.First is not { } starts || !Matches(starts, chord)) continue;
+            if (!editor.CanExecute(binding.Command)) continue;
+            editor.PendingChord = chord;
             return true;
         }
-        // Armed only while a card could show: with no provider to ask and no problem to explain, the key
-        // is the host's (a browser's Ctrl+K).
-        if (command && !shift && !alt && key is "k" or "K"
-            && (editor.Hover.Providers.Count > 0 || editor.Diagnostics.Items.Count > 0))
-        {
-            editor.PendingChord = "K";
-            return true;
-        }
-        // F8 and Shift+F8 walk the problems and show the card of the one they reach, claimed only while
-        // there is one to go to.
-        if (key == "F8" && !command && !control && !alt) return editor.Diagnostics.Next(backward: shift) is not null;
-        // Escape closes a card first, only it, so the trap on Tab stays armed and a dialog around the
-        // editor stays open; a list showing has already taken the key above. A list asked for and not
-        // yet showing goes with whatever Escape closes, the card or the panel below: Escape means it was
-        // not wanted, and its answer, landing after the key, opened a list nobody had asked to see.
-        if (key == "Escape" && editor.Hover.Dismiss())
-        {
-            completion.Dismiss();
-            return true;
-        }
-        // …and then the panel, before the trap on Tab.
-        if (key == "Escape" && editor.SignatureHelp.Dismiss())
-        {
-            completion.Dismiss();
-            return true;
-        }
+        return false;
+    }
 
-        // Escape with no list showing releases the trap, unclaimed, so the host can go on meaning
-        // what Escape means around the editor.
-        if (key == "Escape")
+    /// <summary>
+    /// The bindings a key is looked up in: the app's, then the defaults, without a default the app's
+    /// bindings already name the chord of, so a chord the app binds is the app's alone.
+    /// </summary>
+    private static IReadOnlyList<CodeKeyBinding> Bindings(CodeEditorController editor, KeyboardConvention convention)
+    {
+        var defaults = Defaults(convention);
+        var own = editor.KeyBindings;
+        if (own.Count == 0) return defaults;
+        var bindings = new List<CodeKeyBinding>(own);
+        foreach (var binding in defaults)
         {
-            // A list asked for and not yet showing is dropped: Escape means it was not wanted.
-            completion.Dismiss();
-            editor.TabMovesFocus = true;
-            return false;
-        }
-
-        // ---- the chords ------------------------------------------------------------------------
-        if (command && key.Length == 1)
-        {
-            switch (char.ToLowerInvariant(key[0]))
+            var named = false;
+            foreach (var mine in own)
             {
-                case 'a': editor.SelectAll(); return true;
-                case 'z': return shift ? editor.Redo() : editor.Undo();
-                case 'y': return editor.Redo();
-                // With no clipboard HERE, the host's clipboard arrives as events of its own (a
-                // browser's copy, cut and paste), and those carry the text: claiming the key would
-                // cancel the very event that brings it. With one, the key is claimed even when it
-                // finds nothing to paste — falling through could only do something the user did not
-                // ask for.
-                case 'c':
-                    if (clipboard is null) return false;
-                    clipboard.Write(editor.CopyText());
-                    return true;
-                case 'x':
-                    if (clipboard is null) return false;
-                    // The copy reaches the clipboard before anything is deleted: a clipboard that
-                    // refuses the text leaves the document as it was. Copying first takes what the
-                    // cut takes, the whole line included when nothing is selected.
-                    clipboard.Write(editor.CopyText());
-                    editor.Cut();
-                    return true;
-                case 'v':
-                    if (clipboard is null) return false;
-                    if (clipboard.Read() is { Length: > 0 } pasted) editor.Paste(pasted);
-                    return true;
-                case '/': return editor.ToggleLineComment();
-                default: return false;
+                if (!Matches(mine.Chord, binding.Chord) || !SameFirst(mine.First, binding.First)) continue;
+                named = true;
+                break;
             }
+            if (!named) bindings.Add(binding);
         }
-        // ⌘/ arrives as the key "/" with no letter on some layouts, and as "Slash" on others.
-        if (command && key is "/" or "Slash") return editor.ToggleLineComment();
+        return bindings;
+    }
 
-        // ---- movement --------------------------------------------------------------------------
-        // WORD steps are ⌥ on Apple and Ctrl (Command, there) everywhere else. LINE and DOCUMENT
-        // ends are ⌘+arrows on Apple; everywhere else they are Home/End, with Ctrl for the document.
-        var byWord = apple ? alt : command;
-        switch (key)
+    /// <summary>Runs the commands <paramref name="chord"/> names after <paramref name="first"/>, in order,
+    /// until one runs: that one claims the key.</summary>
+    private static bool Run(CodeEditorController editor, IReadOnlyList<CodeKeyBinding> bindings, KeyChord chord,
+        KeyChord? first, ITextClipboard? clipboard)
+    {
+        foreach (var binding in bindings)
         {
-            case "ArrowLeft":
-                editor.Move(apple && command ? CodeMotion.LineBoundary
-                    : byWord ? CodeMotion.Word : CodeMotion.Character, CodeDirection.Backward, shift);
-                return true;
-            case "ArrowRight":
-                editor.Move(apple && command ? CodeMotion.LineBoundary
-                    : byWord ? CodeMotion.Word : CodeMotion.Character, CodeDirection.Forward, shift);
-                return true;
-            case "ArrowUp":
-                // Ctrl+↑ scrolls the view in every Standard editor; there is no view to scroll from
-                // here, so it is left to the host rather than guessed at.
-                if (!apple && command) return false;
-                editor.Move(apple && command ? CodeMotion.DocumentBoundary : CodeMotion.Line,
-                    CodeDirection.Backward, shift);
-                return true;
-            case "ArrowDown":
-                if (!apple && command) return false;
-                editor.Move(apple && command ? CodeMotion.DocumentBoundary : CodeMotion.Line,
-                    CodeDirection.Forward, shift);
-                return true;
-            case "Home":
-                editor.Move(command ? CodeMotion.DocumentBoundary : CodeMotion.LineBoundary,
-                    CodeDirection.Backward, shift);
-                return true;
-            case "End":
-                editor.Move(command ? CodeMotion.DocumentBoundary : CodeMotion.LineBoundary,
-                    CodeDirection.Forward, shift);
-                return true;
-            case "PageUp":
-                editor.Move(CodeMotion.Page, CodeDirection.Backward, shift);
-                return true;
-            case "PageDown":
-                editor.Move(CodeMotion.Page, CodeDirection.Forward, shift);
-                return true;
+            if (!Matches(binding.Chord, chord) || !SameFirst(binding.First, first)) continue;
+            if (editor.Execute(binding.Command, clipboard)) return true;
         }
+        return false;
+    }
 
-        // ---- editing ---------------------------------------------------------------------------
-        switch (key)
-        {
-            case "Enter":
-                return editor.InsertNewLine();
-            case "Backspace":
-                // ⌘⌫ on Apple takes everything left of the caret on its line.
-                return editor.DeleteBackward(apple && command ? CodeMotion.LineBoundary
-                    : byWord ? CodeMotion.Word : CodeMotion.Character);
-            case "Delete":
-                return editor.DeleteForward(byWord ? CodeMotion.Word : CodeMotion.Character);
-            case "Tab":
-                // Tab INDENTS inside an editor, which is the whole point — unless Escape released
-                // it, or a read-only view has nothing to indent: there Tab belongs to the form.
-                if (editor.ReadOnly || editor.TabMovesFocus) return false;
-                return shift ? editor.Outdent() : editor.Indent();
-            default:
-                return false;
-        }
+    /// <summary>Whether a key pressed is the chord bound: its modifiers exactly, a single letter in either
+    /// case (⇧ with ⌘ reports "Z").</summary>
+    private static bool Matches(KeyChord bound, KeyChord pressed)
+    {
+        if (bound.Modifiers != pressed.Modifiers) return false;
+        if (bound.Key == pressed.Key) return true;
+        return bound.Key.Length == 1 && pressed.Key.Length == 1
+            && char.ToLowerInvariant(bound.Key[0]) == char.ToLowerInvariant(pressed.Key[0]);
+    }
+
+    private static bool SameFirst(KeyChord? bound, KeyChord? pressed)
+    {
+        if (bound is not { } one) return pressed is null;
+        return pressed is { } other && Matches(one, other);
     }
 
     /// <summary>A key that only modifies others — pressing it is not a key of its own.</summary>
     private static bool IsModifierKey(string key) =>
         key is "Shift" or "Control" or "Alt" or "Meta" or "AltGraph" or "CapsLock" or "Fn" or "OS";
+
+    // ---- the tables ---------------------------------------------------------------------------------
+
+    private static CodeKeyBinding Bind(string key, KeyModifiers modifiers, CodeCommand command) =>
+        new(new KeyChord(key, modifiers), command);
+
+    /// <summary>
+    /// The defaults for one convention, in the order a chord's commands are tried: what is over the code
+    /// (the completion list, then the signature panel, then a card) before what moves the caret.
+    /// </summary>
+    private static List<CodeKeyBinding> Build(bool apple)
+    {
+        const KeyModifiers none = KeyModifiers.None;
+        const KeyModifiers shift = KeyModifiers.Shift;
+        const KeyModifiers command = KeyModifiers.Command;
+        const KeyModifiers control = KeyModifiers.Control;
+        const KeyModifiers alt = KeyModifiers.Alt;
+        // WORD steps are ⌥ on Apple and Ctrl (Command, there) everywhere else. LINE and DOCUMENT ends are
+        // ⌘+arrows on Apple; everywhere else they are Home/End, with Ctrl for the document.
+        var word = apple ? alt : command;
+        var bindings = new List<CodeKeyBinding>
+        {
+            // ---- an open completion list: its keys while it shows, as VS Code has them. An arrow goes
+            // back to the caret when one entry shows. Enter accepts only what would change the text, so a
+            // word typed out in full ends its line.
+            Bind("ArrowDown", none, CodeCommand.CompletionNext),
+            Bind("ArrowUp", none, CodeCommand.CompletionPrevious),
+            Bind("PageDown", none, CodeCommand.CompletionNextPage),
+            Bind("PageUp", none, CodeCommand.CompletionPreviousPage),
+            Bind("Tab", none, CodeCommand.CompletionAccept),
+            Bind("Enter", none, CodeCommand.CompletionAcceptChangingText),
+            // ⌃Space, which a browser reports as the command key and a Mac's own shell as Control.
+            Bind(" ", command, CodeCommand.CompletionShow),
+            Bind(" ", control, CodeCommand.CompletionShow),
+
+            // ---- the signature panel: ⇧⌘Space asks at the caret; ↑ and ↓ walk the overloads while it
+            // shows more than one and no card hides it, and ⌥↑ ⌥↓ do it beside a list, which keeps the
+            // plain arrows.
+            Bind(" ", shift | command, CodeCommand.SignatureHelpShow),
+            Bind(" ", shift | control, CodeCommand.SignatureHelpShow),
+            Bind("ArrowDown", none, CodeCommand.SignatureHelpNext),
+            Bind("ArrowUp", none, CodeCommand.SignatureHelpPrevious),
+            Bind("ArrowDown", alt, CodeCommand.SignatureHelpNext),
+            Bind("ArrowUp", alt, CodeCommand.SignatureHelpPrevious),
+
+            // ---- the card and the problems: ⌘K ⌘I shows the card at the caret, and F8 and ⇧F8 walk the
+            // problems.
+            new(new KeyChord("i", command), CodeCommand.HoverShow) { First = new KeyChord("k", command) },
+            Bind("F8", none, CodeCommand.ProblemNext),
+            Bind("F8", shift, CodeCommand.ProblemPrevious),
+
+            // ---- Escape closes what is over the code, the list, then a card, then the panel, one at a
+            // time, so the trap on Tab stays armed and a dialog around the editor stays open; with nothing
+            // over the code it releases the trap and claims nothing. A list asked for and not yet showing
+            // goes with whichever of them Escape closes (HoverHide, SignatureHelpHide, ReleaseKeyboard).
+            Bind("Escape", none, CodeCommand.CompletionHide),
+            Bind("Escape", none, CodeCommand.HoverHide),
+            Bind("Escape", none, CodeCommand.SignatureHelpHide),
+            Bind("Escape", none, CodeCommand.ReleaseKeyboard),
+            Bind("Escape", shift, CodeCommand.CompletionHide),
+            Bind("Escape", shift, CodeCommand.HoverHide),
+            Bind("Escape", shift, CodeCommand.SignatureHelpHide),
+            Bind("Escape", shift, CodeCommand.ReleaseKeyboard),
+
+            // ---- the letter chords. ⌘/ arrives as "/" or as "Slash", and with ⇧ on a layout that types
+            // the slash with it.
+            Bind("a", command, CodeCommand.SelectAll),
+            Bind("z", command, CodeCommand.Undo),
+            Bind("z", shift | command, CodeCommand.Redo),
+            Bind("y", command, CodeCommand.Redo),
+            Bind("c", command, CodeCommand.Copy),
+            Bind("x", command, CodeCommand.Cut),
+            Bind("v", command, CodeCommand.Paste),
+            Bind("/", command, CodeCommand.ToggleLineComment),
+            Bind("/", shift | command, CodeCommand.ToggleLineComment),
+            Bind("Slash", command, CodeCommand.ToggleLineComment),
+            Bind("Slash", shift | command, CodeCommand.ToggleLineComment),
+
+            // ---- the caret, a character and a line at a time, and a word.
+            Bind("ArrowLeft", none, CodeCommand.CursorLeft),
+            Bind("ArrowLeft", shift, CodeCommand.CursorLeftSelect),
+            Bind("ArrowRight", none, CodeCommand.CursorRight),
+            Bind("ArrowRight", shift, CodeCommand.CursorRightSelect),
+            Bind("ArrowUp", none, CodeCommand.CursorUp),
+            Bind("ArrowUp", shift, CodeCommand.CursorUpSelect),
+            Bind("ArrowDown", none, CodeCommand.CursorDown),
+            Bind("ArrowDown", shift, CodeCommand.CursorDownSelect),
+            Bind("ArrowLeft", word, CodeCommand.CursorWordLeft),
+            Bind("ArrowLeft", shift | word, CodeCommand.CursorWordLeftSelect),
+            Bind("ArrowRight", word, CodeCommand.CursorWordRight),
+            Bind("ArrowRight", shift | word, CodeCommand.CursorWordRightSelect),
+
+            // ---- line and document ends: Home and End everywhere, ⌘ with them for the document.
+            Bind("Home", none, CodeCommand.CursorLineStart),
+            Bind("Home", shift, CodeCommand.CursorLineStartSelect),
+            Bind("End", none, CodeCommand.CursorLineEnd),
+            Bind("End", shift, CodeCommand.CursorLineEndSelect),
+            Bind("Home", command, CodeCommand.CursorDocumentStart),
+            Bind("Home", shift | command, CodeCommand.CursorDocumentStartSelect),
+            Bind("End", command, CodeCommand.CursorDocumentEnd),
+            Bind("End", shift | command, CodeCommand.CursorDocumentEndSelect),
+            Bind("PageUp", none, CodeCommand.CursorPageUp),
+            Bind("PageUp", shift, CodeCommand.CursorPageUpSelect),
+            Bind("PageDown", none, CodeCommand.CursorPageDown),
+            Bind("PageDown", shift, CodeCommand.CursorPageDownSelect),
+
+            // ---- editing.
+            Bind("Enter", none, CodeCommand.NewLine),
+            Bind("Enter", shift, CodeCommand.NewLine),
+            Bind("Backspace", none, CodeCommand.DeleteLeft),
+            Bind("Backspace", shift, CodeCommand.DeleteLeft),
+            Bind("Backspace", word, CodeCommand.DeleteWordLeft),
+            Bind("Delete", none, CodeCommand.DeleteRight),
+            Bind("Delete", word, CodeCommand.DeleteWordRight),
+            // Tab INDENTS inside an editor, which is the whole point — unless Escape released it, or a
+            // read-only view has nothing to indent: there Tab belongs to the form.
+            Bind("Tab", none, CodeCommand.Indent),
+            Bind("Tab", shift, CodeCommand.Outdent),
+        };
+        if (apple)
+        {
+            // ⌘← and ⌘→ reach the line's ends, ⌘↑ and ⌘↓ the document's, and ⌘⌫ takes everything left of
+            // the caret on its line.
+            bindings.Add(Bind("ArrowLeft", command, CodeCommand.CursorLineStart));
+            bindings.Add(Bind("ArrowLeft", shift | command, CodeCommand.CursorLineStartSelect));
+            bindings.Add(Bind("ArrowRight", command, CodeCommand.CursorLineEnd));
+            bindings.Add(Bind("ArrowRight", shift | command, CodeCommand.CursorLineEndSelect));
+            bindings.Add(Bind("ArrowUp", command, CodeCommand.CursorDocumentStart));
+            bindings.Add(Bind("ArrowUp", shift | command, CodeCommand.CursorDocumentStartSelect));
+            bindings.Add(Bind("ArrowDown", command, CodeCommand.CursorDocumentEnd));
+            bindings.Add(Bind("ArrowDown", shift | command, CodeCommand.CursorDocumentEndSelect));
+            bindings.Add(Bind("Backspace", command, CodeCommand.DeleteToLineStart));
+        }
+        // Ctrl+↑ scrolls the view in every Standard editor; there is no view to scroll from here, so it
+        // is left to the host rather than guessed at.
+        return bindings;
+    }
 }

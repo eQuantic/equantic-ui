@@ -28,9 +28,11 @@ For a developer using the SDK:
   back to the host.
 - A chord the table does not name is not the editor's, so the combinations the hand-written keymap
   claimed by accident go to the host: the arrows, Home, End and the page keys with a modifier no
-  convention gives them, Enter, Backspace, Delete and Tab with ⌘ or ⌥ where no command uses them, ⇧Tab
-  and ⇧Enter over a completion list (now an outdent and a new line, as VS Code has them), and the
-  letter chords with an extra modifier (⌘⌥A, ⇧⌘C).
+  convention gives them, Enter, Backspace, Delete and Tab with ⌘ or ⌥ where no command uses them, and
+  the letter chords with an extra modifier (⌘⌥A, ⇧⌘C). Measured against the hand-written keymap, three
+  named chords change, all on purpose: ⇧Tab and ⇧Enter over a completion list outdent and break the line
+  instead of accepting the entry, as VS Code has them, and ⌥↑ ⌥↓ walk the signature panel's overloads
+  and otherwise no longer move the caret, which line operations (#1011) take them for.
 
 The parts it reaches: the engine (`eQuantic.UI.Code`: the commands, the bindings, the table and its
 dispatch), the component (`CodeEditor.KeyBindings`), and through the twins both realizers, which call

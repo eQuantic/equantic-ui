@@ -1,128 +1,133 @@
-import { $eq, CodeEditorController, KeyboardConventionValue } from "../runtime-exports";
+import { $eq, CodeCommandValue, CodeEditorController, CodeKeyBinding, KeyboardConventionValue, KeyChord } from "../runtime-exports";
 
 export class CodeKeymap {
-    static handle(editor: CodeEditorController, key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any = null) {
-        let shift = (modifiers & 1) !== 0;
-        let command = (modifiers & 4) !== 0;
-        let control = (modifiers & 8) !== 0;
-        let alt = (modifiers & 2) !== 0;
-        let apple = convention === 'apple';
-        if (key !== 'Tab' && key !== 'Escape' && !CodeKeymap.isModifierKey(key)) editor.tabMovesFocus = false;
-        let chord = editor.pendingChord;
-        if (!CodeKeymap.isModifierKey(key)) editor.pendingChord = null;
-        let completion = editor.completion;
-        if (completion.isOpen && !command && !control && !alt) {
-            if (key === 'ArrowDown' && !shift && completion.move(1)) return true;
-            if (key === 'ArrowUp' && !shift && completion.move(-1)) return true;
-            if (key === 'PageDown' && !shift && completion.movePage(1)) return true;
-            if (key === 'PageUp' && !shift && completion.movePage(-1)) return true;
-            if (key === 'Tab' && completion.accept()) return true;
-            if (key === 'Enter' && completion.acceptChangesText && completion.accept()) return true;
-            if (key === 'Escape') return completion.dismiss();
-        }
-        if (key === ' ' && (command || control) && !shift && !alt) return completion.invoke();
-        if (key === ' ' && (command || control) && shift && !alt) return editor.signatureHelp.invoke();
-        if (!command && !control && !shift && (key === 'ArrowUp' || key === 'ArrowDown') && !editor.hover.isOpen && editor.signatureHelp.move(key === 'ArrowUp' ? -1 : 1)) return true;
-        if (!(chord == null) && command && (key === 'i' || key === 'I')) {
-            editor.hover.showAt(editor.caret);
-            return true;
-        }
-        if (command && !shift && !alt && (key === 'k' || key === 'K') && ($eq.collections.count(editor.hover.providers) > 0 || $eq.collections.count(editor.diagnostics.items) > 0)) {
-            editor.pendingChord = 'K';
-            return true;
-        }
-        if (key === 'F8' && !command && !control && !alt) return !(editor.diagnostics.next(shift) == null);
-        if (key === 'Escape' && editor.hover.dismiss()) {
-            completion.dismiss();
-            return true;
-        }
-        if (key === 'Escape' && editor.signatureHelp.dismiss()) {
-            completion.dismiss();
-            return true;
-        }
-        if (key === 'Escape') {
-            completion.dismiss();
-            editor.tabMovesFocus = true;
-            return false;
-        }
-        if (command && key.length === 1) {
-            {
-                let pasted: any;
-                switch ($eq.text.toLower(key[0], true)) {
-                    case 'a':
-                        editor.selectAll();
-                        return true;
-                    case 'z':
-                        return shift ? editor.redo() : editor.undo();
-                    case 'y':
-                        return editor.redo();
-                    case 'c':
-                        if (clipboard == null) return false;
-                        clipboard.write(editor.copyText());
-                        return true;
-                    case 'x':
-                        if (clipboard == null) return false;
-                        clipboard.write(editor.copyText());
-                        editor.cut();
-                        return true;
-                    case 'v':
-                        if (clipboard == null) return false;
-                        if ((($v10084) => (($v10084 != null && $v10084.length > 0) && (pasted = $v10084, true)))(clipboard.read())) editor.paste(pasted);
-                        return true;
-                    case '/':
-                        return editor.toggleLineComment();
-                    default:
-                        return false;
-                }
+    static $slots: any = null;
+    static $failure: any = null;
+
+    static $init(): any {
+        if (CodeKeymap.$slots === null) {
+            if (CodeKeymap.$failure !== null) throw CodeKeymap.$failure;
+            let $slots: any = CodeKeymap.$slots = {};
+            try {
+                $slots.appleBindings = null;
+                $slots.standardBindings = null;
+                $slots.appleBindings = CodeKeymap.build(true);
+                $slots.standardBindings = CodeKeymap.build(false);
+            } catch ($error) {
+                CodeKeymap.$slots = null;
+                throw CodeKeymap.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Code.CodeKeymap', $error);
             }
         }
-        if (command && (key === '/' || key === 'Slash')) return editor.toggleLineComment();
-        let byWord = apple ? alt : command;
-        switch (key) {
-            case 'ArrowLeft':
-                editor.move(apple && command ? 'lineBoundary' : byWord ? 'word' : 'character', 'backward', shift);
-                return true;
-            case 'ArrowRight':
-                editor.move(apple && command ? 'lineBoundary' : byWord ? 'word' : 'character', 'forward', shift);
-                return true;
-            case 'ArrowUp':
-                if (!apple && command) return false;
-                editor.move(apple && command ? 'documentBoundary' : 'line', 'backward', shift);
-                return true;
-            case 'ArrowDown':
-                if (!apple && command) return false;
-                editor.move(apple && command ? 'documentBoundary' : 'line', 'forward', shift);
-                return true;
-            case 'Home':
-                editor.move(command ? 'documentBoundary' : 'lineBoundary', 'backward', shift);
-                return true;
-            case 'End':
-                editor.move(command ? 'documentBoundary' : 'lineBoundary', 'forward', shift);
-                return true;
-            case 'PageUp':
-                editor.move('page', 'backward', shift);
-                return true;
-            case 'PageDown':
-                editor.move('page', 'forward', shift);
-                return true;
+        return CodeKeymap.$slots;
+    }
+
+    static get appleBindings(): CodeKeyBinding[] {
+        return CodeKeymap.$init().appleBindings;
+    }
+
+    static set appleBindings(value: CodeKeyBinding[]) {
+        CodeKeymap.$init().appleBindings = value;
+    }
+
+    static get standardBindings(): CodeKeyBinding[] {
+        return CodeKeymap.$init().standardBindings;
+    }
+
+    static set standardBindings(value: CodeKeyBinding[]) {
+        CodeKeymap.$init().standardBindings = value;
+    }
+
+    static defaults(convention: KeyboardConventionValue) {
+        return convention === 'apple' ? CodeKeymap.appleBindings : CodeKeymap.standardBindings;
+    }
+
+    static handle(editor: CodeEditorController, key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any = null) {
+        if (key !== 'Tab' && key !== 'Escape' && !CodeKeymap.isModifierKey(key)) editor.tabMovesFocus = false;
+        if (CodeKeymap.isModifierKey(key)) return false;
+        let first = editor.pendingChord;
+        editor.pendingChord = null;
+        let chord = new KeyChord(key, modifiers);
+        let bindings = CodeKeymap.bindings(editor, convention);
+        let waited: any; 
+        if ((waited = first) != null && CodeKeymap.run(editor, bindings, chord, waited, clipboard)) return true;
+        if (CodeKeymap.run(editor, bindings, chord, null, clipboard)) return true;
+        for (const binding of bindings) {
+            let starts: any; 
+            if (!((starts = binding.first) != null) || !CodeKeymap.matches(starts, chord)) continue;
+            if (!editor.canExecute(binding.command)) continue;
+            editor.pendingChord = chord;
+            return true;
         }
-        switch (key) {
-            case 'Enter':
-                return editor.insertNewLine();
-            case 'Backspace':
-                return editor.deleteBackward(apple && command ? 'lineBoundary' : byWord ? 'word' : 'character');
-            case 'Delete':
-                return editor.deleteForward(byWord ? 'word' : 'character');
-            case 'Tab':
-                if (editor.readOnly || editor.tabMovesFocus) return false;
-                return shift ? editor.outdent() : editor.indent();
-            default:
-                return false;
+        return false;
+    }
+
+    static bindings(editor: CodeEditorController, convention: KeyboardConventionValue) {
+        let defaults = CodeKeymap.defaults(convention);
+        let own = editor.keyBindings;
+        if ($eq.collections.count(own) === 0) return defaults;
+        let bindings: CodeKeyBinding[] = $eq.collections.listCopy(own);
+        for (const binding of defaults) {
+            let named = false;
+            for (const mine of own) {
+                if (!CodeKeymap.matches(mine.chord, binding.chord) || !CodeKeymap.sameFirst(mine.first, binding.first)) continue;
+                named = true;
+                break;
+            }
+            if (!named) bindings.push(binding);
         }
+        return bindings;
+    }
+
+    static run(editor: CodeEditorController, bindings: CodeKeyBinding[], chord: KeyChord, first: KeyChord | null, clipboard: any) {
+        for (const binding of bindings) {
+            if (!CodeKeymap.matches(binding.chord, chord) || !CodeKeymap.sameFirst(binding.first, first)) continue;
+            if (editor.execute(binding.command, clipboard)) return true;
+        }
+        return false;
+    }
+
+    static matches(bound: KeyChord, pressed: KeyChord) {
+        if (bound.modifiers !== pressed.modifiers) return false;
+        if (bound.key === pressed.key) return true;
+        return bound.key.length === 1 && pressed.key.length === 1 && $eq.text.toLower(bound.key[0], true) === $eq.text.toLower(pressed.key[0], true);
+    }
+
+    static sameFirst(bound: KeyChord | null, pressed: KeyChord | null) {
+        let one: any; 
+        if (!((one = bound) != null)) return pressed == null;
+        let other: any; 
+        return (other = pressed) != null && CodeKeymap.matches(one, other);
     }
 
     static isModifierKey(key: string) {
         return (((((((key === 'Shift' || key === 'Control') || key === 'Alt') || key === 'Meta') || key === 'AltGraph') || key === 'CapsLock') || key === 'Fn') || key === 'OS');
+    }
+
+    static bind(key: string, modifiers: number, command: CodeCommandValue) {
+        return new CodeKeyBinding(new KeyChord(key, modifiers), command);
+    }
+
+    static build(apple: boolean) {
+        let none = 0;
+        let shift = 1;
+        let command = 4;
+        let control = 8;
+        let alt = 2;
+        let word = apple ? alt : command;
+        let $n15: any; 
+        let bindings = [CodeKeymap.bind('ArrowDown', none, 'completionNext'), CodeKeymap.bind('ArrowUp', none, 'completionPrevious'), CodeKeymap.bind('PageDown', none, 'completionNextPage'), CodeKeymap.bind('PageUp', none, 'completionPreviousPage'), CodeKeymap.bind('Tab', none, 'completionAccept'), CodeKeymap.bind('Enter', none, 'completionAcceptChangingText'), CodeKeymap.bind(' ', command, 'completionShow'), CodeKeymap.bind(' ', control, 'completionShow'), CodeKeymap.bind(' ', shift | command, 'signatureHelpShow'), CodeKeymap.bind(' ', shift | control, 'signatureHelpShow'), CodeKeymap.bind('ArrowDown', none, 'signatureHelpNext'), CodeKeymap.bind('ArrowUp', none, 'signatureHelpPrevious'), CodeKeymap.bind('ArrowDown', alt, 'signatureHelpNext'), CodeKeymap.bind('ArrowUp', alt, 'signatureHelpPrevious'), ($n15 = new CodeKeyBinding(new KeyChord('i', command), 'hoverShow'), $n15.first = new KeyChord('k', command), $n15), CodeKeymap.bind('F8', none, 'problemNext'), CodeKeymap.bind('F8', shift, 'problemPrevious'), CodeKeymap.bind('Escape', none, 'completionHide'), CodeKeymap.bind('Escape', none, 'hoverHide'), CodeKeymap.bind('Escape', none, 'signatureHelpHide'), CodeKeymap.bind('Escape', none, 'releaseKeyboard'), CodeKeymap.bind('Escape', shift, 'completionHide'), CodeKeymap.bind('Escape', shift, 'hoverHide'), CodeKeymap.bind('Escape', shift, 'signatureHelpHide'), CodeKeymap.bind('Escape', shift, 'releaseKeyboard'), CodeKeymap.bind('a', command, 'selectAll'), CodeKeymap.bind('z', command, 'undo'), CodeKeymap.bind('z', shift | command, 'redo'), CodeKeymap.bind('y', command, 'redo'), CodeKeymap.bind('c', command, 'copy'), CodeKeymap.bind('x', command, 'cut'), CodeKeymap.bind('v', command, 'paste'), CodeKeymap.bind('/', command, 'toggleLineComment'), CodeKeymap.bind('/', shift | command, 'toggleLineComment'), CodeKeymap.bind('Slash', command, 'toggleLineComment'), CodeKeymap.bind('Slash', shift | command, 'toggleLineComment'), CodeKeymap.bind('ArrowLeft', none, 'cursorLeft'), CodeKeymap.bind('ArrowLeft', shift, 'cursorLeftSelect'), CodeKeymap.bind('ArrowRight', none, 'cursorRight'), CodeKeymap.bind('ArrowRight', shift, 'cursorRightSelect'), CodeKeymap.bind('ArrowUp', none, 'cursorUp'), CodeKeymap.bind('ArrowUp', shift, 'cursorUpSelect'), CodeKeymap.bind('ArrowDown', none, 'cursorDown'), CodeKeymap.bind('ArrowDown', shift, 'cursorDownSelect'), CodeKeymap.bind('ArrowLeft', word, 'cursorWordLeft'), CodeKeymap.bind('ArrowLeft', shift | word, 'cursorWordLeftSelect'), CodeKeymap.bind('ArrowRight', word, 'cursorWordRight'), CodeKeymap.bind('ArrowRight', shift | word, 'cursorWordRightSelect'), CodeKeymap.bind('Home', none, 'cursorLineStart'), CodeKeymap.bind('Home', shift, 'cursorLineStartSelect'), CodeKeymap.bind('End', none, 'cursorLineEnd'), CodeKeymap.bind('End', shift, 'cursorLineEndSelect'), CodeKeymap.bind('Home', command, 'cursorDocumentStart'), CodeKeymap.bind('Home', shift | command, 'cursorDocumentStartSelect'), CodeKeymap.bind('End', command, 'cursorDocumentEnd'), CodeKeymap.bind('End', shift | command, 'cursorDocumentEndSelect'), CodeKeymap.bind('PageUp', none, 'cursorPageUp'), CodeKeymap.bind('PageUp', shift, 'cursorPageUpSelect'), CodeKeymap.bind('PageDown', none, 'cursorPageDown'), CodeKeymap.bind('PageDown', shift, 'cursorPageDownSelect'), CodeKeymap.bind('Enter', none, 'newLine'), CodeKeymap.bind('Enter', shift, 'newLine'), CodeKeymap.bind('Backspace', none, 'deleteLeft'), CodeKeymap.bind('Backspace', shift, 'deleteLeft'), CodeKeymap.bind('Backspace', word, 'deleteWordLeft'), CodeKeymap.bind('Delete', none, 'deleteRight'), CodeKeymap.bind('Delete', word, 'deleteWordRight'), CodeKeymap.bind('Tab', none, 'indent'), CodeKeymap.bind('Tab', shift, 'outdent')];
+        if (apple) {
+            bindings.push(CodeKeymap.bind('ArrowLeft', command, 'cursorLineStart'));
+            bindings.push(CodeKeymap.bind('ArrowLeft', shift | command, 'cursorLineStartSelect'));
+            bindings.push(CodeKeymap.bind('ArrowRight', command, 'cursorLineEnd'));
+            bindings.push(CodeKeymap.bind('ArrowRight', shift | command, 'cursorLineEndSelect'));
+            bindings.push(CodeKeymap.bind('ArrowUp', command, 'cursorDocumentStart'));
+            bindings.push(CodeKeymap.bind('ArrowUp', shift | command, 'cursorDocumentStartSelect'));
+            bindings.push(CodeKeymap.bind('ArrowDown', command, 'cursorDocumentEnd'));
+            bindings.push(CodeKeymap.bind('ArrowDown', shift | command, 'cursorDocumentEndSelect'));
+            bindings.push(CodeKeymap.bind('Backspace', command, 'deleteToLineStart'));
+        }
+        return bindings;
     }
 }
 
