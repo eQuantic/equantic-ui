@@ -80,4 +80,16 @@ internal sealed class FrameRegions
         (IReadOnlyList<TransformedRegion>?)_transformed ?? Array.Empty<TransformedRegion>();
 
     private List<TransformedRegion>? _transformed;
+
+    /// <summary>
+    /// The notes code surfaces drew over their code, and the hit regions inside and under them. LAZY like
+    /// the transformed regions, and for the same ceiling: nearly every frame has no note.
+    /// </summary>
+    public List<CodeNoteLayer> Notes => _notes ??= [];
+
+    /// <summary>What the frame reads back, without creating the list to find out it is empty.</summary>
+    public IReadOnlyList<CodeNoteLayer> NotesOrEmpty =>
+        (IReadOnlyList<CodeNoteLayer>?)_notes ?? Array.Empty<CodeNoteLayer>();
+
+    private List<CodeNoteLayer>? _notes;
 }

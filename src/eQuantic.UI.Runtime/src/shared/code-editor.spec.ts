@@ -15,7 +15,7 @@ import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
 import { effectiveStyle } from './style-atomizer';
-import { CodeSurface, Text, type VisualNode } from './vocabulary';
+import { CodeSurface, Positioned, Text, type VisualNode } from './vocabulary';
 import { Point, Size, SizeValue } from './value-types';
 import { CodeEditorController } from './components/CodeEditorController';
 import { CodeGrid } from './components/CodeGrid';
@@ -512,7 +512,7 @@ describe('code surface clipboard', () => {
  */
 function pointer(
   lowered: HtmlNode,
-  type: 'pointerdown' | 'pointermove' | 'pointerup' | 'mousedown',
+  type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointerleave' | 'mousedown',
   x: number,
   y: number,
   options: { detail?: number; shift?: boolean; buttons?: number; pointerType?: string } = {},
@@ -638,6 +638,44 @@ describe('code surface pointer (the SAME model the native host drives)', () => {
     expect(captured, 'the release has to reach the pressable, so the surface must not capture it').toBe(false);
     expect(editor.caret.line, 'the caret stays: the press was the pressable’s').toBe(1);
     expect(changed()).toBe(0);
+  });
+
+  it('leaves the pointer over a pressable drawn inside it to the pressable, and the code hears it left', () => {
+    const editor = new CodeEditorController('one two', CodeLanguages.for('csharp'));
+    editor.grid = new CodeGrid(new Point(12, 12), new Size(COLUMN, LINE));
+    const phases: string[] = [];
+    const model = new Proxy(editor, {
+      get(target, property, receiver) {
+        if (property === 'handlePointer')
+          return (phase: string, ...rest: unknown[]) => {
+            phases.push(phase);
+            return (target.handlePointer as (...args: unknown[]) => boolean).call(target, phase, ...rest);
+          };
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    const lowered = lowerVisualNode(new CodeSurface(new Text('', 'labelSmall'), model) as never, {
+      textPrimary: photonTheme.textPrimary,
+      componentContext: { theme: photonTheme, typeScale: 1 },
+    });
+    const button = { tag: 'button' };
+    const event = {
+      clientX: 20,
+      clientY: 14,
+      currentTarget: { getBoundingClientRect: () => ({ left: 0, top: 0 }), contains: (element: unknown) => element === button },
+      target: { closest: () => button },
+      pointerType: 'mouse',
+      buttons: 0,
+      shiftKey: false,
+      altKey: false,
+      metaKey: false,
+      ctrlKey: false,
+    };
+
+    (lowered.events['pointermove'] as unknown as (e: unknown) => void)(event);
+
+    // Found by Copilot reviewing #1008: a move over the button was a hover of the code hidden under it.
+    expect(phases).toEqual(['exit']);
   });
 
   it('two presses take the word, three the line — counted by the mousedown', () => {
@@ -1552,5 +1590,266 @@ describe('a press under the code', () => {
     const lowered = lowerVisualNode(component.build(context as never) as never, context as never);
 
     expect(nodesWhere(lowered, (node) => effectiveStyle(node).includes('min-height: 400px'))).toHaveLength(1);
+  });
+});
+
+/**
+ * The problems and the card that explains the code (#299, #1005) on the web, through the transpiled
+ * CodeEditor and its engine; the C# twins are CodeEditorProblemsTests, on Photon. A problem is a wave
+ * under its range and a mark in the gutter; the pointer resting on a word reaches the model through
+ * the surface's pointermove, and the card comes back as a note over the code, which takes the pointer.
+ */
+describe('the problems and the card', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** The editor holding twenty lines, `var nameL = L;` on line L, as a person's browser builds it. */
+  async function editorWith(setup: (component: Record<string, unknown>) => void) {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const context = {
+      theme,
+      textPrimary: theme.textPrimary,
+      density: 'comfortable',
+      typeScale: 1,
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    const code = Array.from({ length: 20 }, (_, line) => `var name${line} = ${line};`).join('\n');
+    const component = new CodeEditor(code, 'csharp');
+    setup(component as unknown as Record<string, unknown>);
+    const lower = () => lowerVisualNode(component.build(context as never) as never, context as never);
+    // The first build measures the grid every later one places the code on.
+    lower();
+    return { editor: component.editor, lower };
+  }
+
+  const problem = async (line: number, from: number, to: number, message: string, severity = 'error') => {
+    const { CodeDiagnostic } = await import('./components/CodeDiagnostic');
+    const found = new CodeDiagnostic(
+      new CodeRange(new CodePosition(line, from), new CodePosition(line, to)),
+      message,
+      severity,
+    );
+    found.code = 'CS0103';
+    found.source = 'csharp';
+    return found;
+  };
+
+  /** Explains every word it is asked about, at once. */
+  const explainer = async () => {
+    const { CodeHover } = await import('./components/CodeHover');
+    return {
+      hoverAsync: (document: CodeDocument, position: CodePosition) => {
+        const word = document.wordAt(position);
+        const answer = new CodeHover(word, `About ${document.textIn(word)}.`);
+        answer.signature = `int ${document.textIn(word)}`;
+        return Promise.resolve(answer);
+      },
+    };
+  };
+
+  const surfaceIn = (lowered: HtmlNode) =>
+    nodesWhere(lowered, (node) => node.attributes['data-eq-code'] !== undefined)[0];
+  const notesIn = (lowered: HtmlNode) =>
+    nodesWhere(lowered, (node) => (node.attributes['class'] ?? '').split(' ').includes('eq-code-note'));
+  const waves = (lowered: HtmlNode) =>
+    nodesWhere(
+      lowered,
+      (node) => node.tag === 'svg' && node.children.some((path) => (path.attributes['d'] ?? '').startsWith('M0 2 L2 0 L4 2')),
+    );
+  const textOf = (node: HtmlNode): string =>
+    (node.textContent ?? '') + node.children.map((child) => textOf(child)).join('');
+
+  /** The pointer passing over the middle of the character at `line`, `column`, with nothing pressed. */
+  function hover(lowered: HtmlNode, editor: CodeEditorController, line: number, column: number) {
+    const at = editor.caretRect(new CodePosition(line, column));
+    pointer(surfaceIn(lowered), 'pointermove', at.x + editor.grid.cell.width / 2, at.y + at.height / 2, { buttons: 0 });
+  }
+
+  it('draws each problem as a wave under its range, in the colour of its severity', async () => {
+    const error = await problem(3, 4, 9, 'Unused.');
+    const warning = await problem(5, 4, 9, 'Could be a constant.', 'warning');
+    const { lower } = await editorWith((component) => {
+      component.diagnostics = [error, warning];
+    });
+
+    const drawn = waves(lower());
+
+    expect(drawn, 'one wave a problem').toHaveLength(2);
+    const colour = (wave: HtmlNode) => /(?:^|; )color: ([^;]+)/.exec(effectiveStyle(wave))?.[1];
+    expect(colour(drawn[0])).toBeDefined();
+    expect(colour(drawn[0]), "an error's wave is not a warning's").not.toBe(colour(drawn[1]));
+  });
+
+  it("marks each line in the gutter with its worst problem, and a hint's line with none", async () => {
+    const found = [
+      await problem(1, 0, 3, 'An error first.'),
+      await problem(1, 4, 9, 'A warning after it.', 'warning'),
+      await problem(4, 4, 9, 'Only a warning here.', 'warning'),
+      await problem(6, 4, 9, 'Could be a constant.', 'hint'),
+    ];
+    const { lower } = await editorWith((component) => {
+      component.diagnostics = found;
+    });
+
+    // A marker is a 7dp dot; the declarations come sorted, so each is looked for on its own.
+    const marks = nodesWhere(lower(), (node) => {
+      const style = effectiveStyle(node);
+      return /(^|; )width: 7px(;|$)/.test(style) && /(^|; )height: 7px(;|$)/.test(style);
+    });
+
+    expect(marks, 'lines 1 and 4: the hint marks nothing').toHaveLength(2);
+    const colour = (mark: HtmlNode) => /background-color: ([^;]+)/.exec(effectiveStyle(mark))?.[1];
+    // Line 4 holds a warning alone, so its colour is the warning's.
+    expect(colour(marks[0]), "line 1's error outweighs its warning").not.toBe(colour(marks[1]));
+  });
+
+  it('shows the card over the code when the pointer rests on a word, and closes it when the pointer leaves', async () => {
+    vi.useFakeTimers();
+    const provider = await explainer();
+    const { editor, lower } = await editorWith((component) => {
+      component.hoverProviders = [provider];
+    });
+
+    hover(lower(), editor, 10, 6);
+    expect(editor.hover.isOpen, 'a pointer passing over the code asks nothing yet').toBe(false);
+    await vi.advanceTimersByTimeAsync(300);
+
+    expect(editor.hover.isOpen, 'resting, it shows the card').toBe(true);
+    const shown = lower();
+    const notes = notesIn(shown);
+    expect(notes, 'the card is a note over the code').toHaveLength(1);
+    expect(textOf(notes[0])).toContain('int name10');
+    expect(textOf(notes[0])).toContain('About name10.');
+    expect(nodesWhere(notes[0], (node) => node.attributes['aria-live'] !== undefined),
+      'a pointer resting asks nobody to speak').toHaveLength(0);
+
+    pointer(surfaceIn(shown), 'pointerleave', 0, 0, { buttons: 0 });
+
+    expect(editor.hover.isOpen).toBe(false);
+    expect(notesIn(lower())).toHaveLength(0);
+  });
+
+  it('asks nothing while a pointer moves over the code with another button held', async () => {
+    vi.useFakeTimers();
+    const provider = await explainer();
+    const { editor, lower } = await editorWith((component) => {
+      component.hoverProviders = [provider];
+    });
+    const at = editor.caretRect(new CodePosition(10, 6));
+
+    // The right button held: a drag of its own, which rests on nothing (found by Copilot reviewing #1008).
+    pointer(surfaceIn(lower()), 'pointermove', at.x + editor.grid.cell.width / 2, at.y + at.height / 2, { buttons: 2 });
+    await vi.advanceTimersByTimeAsync(300);
+
+    expect(editor.hover.isOpen).toBe(false);
+    expect(editor.selection.isEmpty, 'and it selects nothing either').toBe(true);
+  });
+
+  it('keeps the card while the pointer is on it, and a press there moves no caret', async () => {
+    vi.useFakeTimers();
+    const provider = await explainer();
+    const { editor, lower } = await editorWith((component) => {
+      component.hoverProviders = [provider];
+    });
+    hover(lower(), editor, 10, 6);
+    await vi.advanceTimersByTimeAsync(300);
+    const note = notesIn(lower())[0];
+
+    let stopped = 0;
+    let prevented = false;
+    const event = (type: string) => ({
+      type,
+      buttons: 0,
+      stopPropagation: () => {
+        stopped++;
+      },
+      preventDefault: () => {
+        prevented = true;
+      },
+    });
+    for (const type of ['pointermove', 'pointerdown', 'mousedown'])
+      (note.events[type] as unknown as (e: unknown) => void)(event(type));
+
+    expect(stopped, 'the surface under the card hears none of them').toBe(3);
+    expect(prevented, 'and the input keeps the keyboard').toBe(true);
+    expect(editor.caret).toEqual({ line: 0, column: 0 });
+    expect(editor.hover.isOpen).toBe(true);
+  });
+
+  it('goes to the next problem on F8, and says it in a polite live region', async () => {
+    const found = await problem(8, 4, 9, "The name 'name8' is unused.");
+    const { editor, lower } = await editorWith((component) => {
+      component.diagnostics = [found];
+    });
+    const input = nodesWhere(lower(), (node) => node.tag === 'textarea')[0];
+    let prevented = false;
+    (input.events['keydown'] as unknown as (event: unknown) => void)({
+      key: 'F8',
+      shiftKey: false,
+      altKey: false,
+      metaKey: false,
+      ctrlKey: false,
+      isComposing: false,
+      keyCode: 0,
+      target: { value: '' },
+      preventDefault: () => {
+        prevented = true;
+      },
+    });
+
+    expect(prevented, 'F8 is claimed while there is a problem to go to').toBe(true);
+    expect(editor.caret).toEqual({ line: 8, column: 4 });
+    const notes = notesIn(lower());
+    expect(notes).toHaveLength(1);
+    const region = nodesWhere(notes[0], (node) => node.attributes['aria-live'] === 'polite');
+    expect(region, 'a card a key brought up is read out').toHaveLength(1);
+    expect(textOf(region[0])).toContain("The name 'name8' is unused.  csharp CS0103");
+  });
+
+  /** The white-space the browser applies to the first node `target` accepts: its own, or the nearest
+   * ancestor's that declares one. */
+  const appliedWhiteSpace = (root: HtmlNode, target: (node: HtmlNode) => boolean): string | undefined => {
+    const walk = (node: HtmlNode, chain: HtmlNode[]): HtmlNode[] | null => {
+      const here = [...chain, node];
+      if (target(node)) return here;
+      for (const child of node.children) {
+        const found = walk(child, here);
+        if (found) return found;
+      }
+      return null;
+    };
+    for (const node of (walk(root, []) ?? []).reverse()) {
+      const declared = /(?:^|; )white-space: ([^;]+)/.exec(effectiveStyle(node))?.[1];
+      if (declared !== undefined) return declared;
+    }
+    return undefined;
+  };
+
+  // A card's message and the list's documentation inherited the surface's `pre`, which keeps the code's
+  // token runs on their line, so a text of many lines never wrapped: on a phone the message ran past the
+  // card's edge (found by Copilot reviewing #1008).
+  it("wraps a note's prose and the list's, and keeps the code on its line", () => {
+    const prose = 'Prefer DateTimeOffset: a DateTime carries no offset, and a ledger is read in every time zone.';
+    const editor = new CodeEditorController('let x = 1;', CodeLanguages.for('csharp'));
+    editor.grid = new CodeGrid(new Point(12, 12), new Size(COLUMN, LINE));
+    const surface = new CodeSurface(new Text('let x = 1;', 'labelSmall'), editor, {
+      notes: [new Positioned(new Text(prose, 'labelSmall', null, 4), 0, null, null, 0)],
+      options: new Text(`${prose} The list's.`, 'labelSmall', null, 4),
+    });
+    const lowered = lowerVisualNode(surface as never, {
+      textPrimary: photonTheme.textPrimary,
+      componentContext: { theme: photonTheme, typeScale: 1 },
+    } as never);
+    const holding = (text: string) => (node: HtmlNode) => node.textContent === text;
+
+    expect(appliedWhiteSpace(lowered, holding(prose)), "the card's message").toBe('normal');
+    expect(appliedWhiteSpace(lowered, holding(`${prose} The list's.`)), "the list's documentation").toBe('normal');
+    expect(appliedWhiteSpace(lowered, holding('let x = 1;')), 'the code').toBe('pre');
   });
 });

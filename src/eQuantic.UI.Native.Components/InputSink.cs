@@ -30,6 +30,15 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     /// or null where none is.</summary>
     public Matrix2D? Transform { get; } = transform;
 
+    /// <summary>How many hit regions the frame holds so far: where the next one will stand.</summary>
+    public int HitCount => regions.Hits.Count;
+
+    /// <summary>How many code regions the frame holds so far: where the next one will stand.</summary>
+    public int CodeCount => regions.Codes.Count;
+
+    /// <summary>Records the notes a code surface drew over its code (<see cref="CodeNoteLayer"/>).</summary>
+    public void Add(CodeNoteLayer layer) => regions.Notes.Add(layer);
+
     /// <summary>The same sink, narrowed to a nested clip. Clips INTERSECT: a scroll view inside a
     /// scroll view shows only what both agree on, and so does its input.</summary>
     public InputSink Under(Rect rect)
@@ -72,10 +81,12 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     /// drawn in is exact for a translation and a scale, and a tilted region is tested against its
     /// own shape through this.
     /// </summary>
-    private void Note(object list, int index, Rect local, Rect localDrawn, Rect? localOffered = null)
+    private void Note(object list, int index, Rect local, Rect localDrawn, Rect? localOffered = null,
+        IReadOnlyList<Rect>? localNotes = null)
     {
         if (Transform is not { } m || m.Invert() is not { } inverse) return;
-        regions.Transformed.Add(new TransformedRegion(list, index, inverse, local, localDrawn, localOffered));
+        regions.Transformed.Add(new TransformedRegion(list, index, inverse, local, localDrawn, localOffered,
+            localNotes));
     }
 
     /// <summary>
@@ -196,12 +207,21 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
         {
             Bounds = Place(region.Bounds),
             Offered = region.Offered is { } offered ? Place(offered) : null,
+            Notes = region.Notes is { } notes ? Placed(notes) : null,
         };
         if (!suppressFocusStops)
             AddStop(new FocusStop(region.Element.Id, region.Element, null, null, placed.Bounds, null, region.Surface), region.Bounds);
         if (!Visible(placed.Bounds)) return;
-        Note(regions.Codes, regions.Codes.Count, region.Bounds, region.Bounds, region.Offered);
+        Note(regions.Codes, regions.Codes.Count, region.Bounds, region.Bounds, region.Offered, region.Notes);
         regions.Codes.Add(Clipped(placed));
+    }
+
+    /// <summary>The boxes on screen <paramref name="rects"/>, laid out in this subtree, are drawn in.</summary>
+    private List<Rect> Placed(IReadOnlyList<Rect> rects)
+    {
+        var placed = new List<Rect>(rects.Count);
+        foreach (var rect in rects) placed.Add(Place(rect));
+        return placed;
     }
 
     /// <summary>A stop a region implies, already placed, noted with the box it was laid out in: a
@@ -268,16 +288,24 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     /// and carries the part of them on screen, which is all a press can land on: unclipped, a long
     /// file's surface took the presses aimed at whatever stands below the editor that shows it. What it
     /// offers at its caret is clipped the same way, so a list that left the view with its line takes
-    /// no press outside it.
+    /// no press outside it, and so are the notes it draws over its code.
     /// </summary>
-    private CodeRegion Clipped(CodeRegion region) =>
-        Clip is { } clip
-            ? region with
-            {
-                Visible = Intersect(clip, region.Bounds),
-                Offered = region.Offered is { } offered ? Intersect(clip, offered) : null,
-            }
-            : region;
+    private CodeRegion Clipped(CodeRegion region)
+    {
+        if (Clip is not { } clip) return region;
+        List<Rect>? notes = null;
+        if (region.Notes is { } drawn)
+        {
+            notes = new List<Rect>(drawn.Count);
+            foreach (var note in drawn) notes.Add(Intersect(clip, note));
+        }
+        return region with
+        {
+            Visible = Intersect(clip, region.Bounds),
+            Offered = region.Offered is { } offered ? Intersect(clip, offered) : null,
+            Notes = notes,
+        };
+    }
 
     /// <summary>
     /// A field and a sheet keep their whole bounds, which place the caret and the cells, and carry

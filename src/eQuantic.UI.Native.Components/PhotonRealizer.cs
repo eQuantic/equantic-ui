@@ -101,9 +101,11 @@ public readonly record struct CursorRegion(Rect Bounds, PointerCursor Cursor);
 /// press there that no row of it took is the list's, and never moves the caret under it.
 /// <paramref name="Visible"/> is the part of <paramref name="Bounds"/> the clips around the surface
 /// leave on screen, which is all a press can land on: a long file's surface runs far past the viewport
-/// that shows it. Null where nothing clips it.</summary>
+/// that shows it. Null where nothing clips it. <paramref name="Notes"/> are where its notes landed
+/// (<see cref="CodeSurface.Notes"/>), on screen: the pointer over one is the note's, a press there moves
+/// no caret and the model hears no hover.</summary>
 public readonly record struct CodeRegion(Rect Bounds, CodeSurface Surface, Element Element, Rect? Offered = null,
-    Rect? Visible = null);
+    Rect? Visible = null, IReadOnlyList<Rect>? Notes = null);
 
 /// <summary>
 /// One stop on the Tab route. Buttons and fields are different kinds of region and are dispatched
@@ -179,6 +181,10 @@ public sealed class RealizeResult
     /// <summary>The regions registered under a transform, and what turns a point on screen back into
     /// each one's own space (#513). Empty in a frame that transforms nothing interactive.</summary>
     internal IReadOnlyList<TransformedRegion> TransformedRegions { get; init; } = Array.Empty<TransformedRegion>();
+
+    /// <summary>The notes code surfaces drew over their code, with the hit regions inside and under them.
+    /// Empty in a frame that draws none.</summary>
+    internal IReadOnlyList<CodeNoteLayer> NoteLayers { get; init; } = Array.Empty<CodeNoteLayer>();
 
     /// <summary>Editable code surfaces, in paint order (topmost last).</summary>
     public IReadOnlyList<CodeRegion> CodeRegions { get; }
@@ -443,6 +449,7 @@ public static class PhotonRealizer
             // unchanged, which is also what every existing caller wants.
             LiveRegions = regions.LivesOrEmpty,
             TransformedRegions = regions.TransformedOrEmpty,
+            NoteLayers = regions.NotesOrEmpty,
         };
     }
 

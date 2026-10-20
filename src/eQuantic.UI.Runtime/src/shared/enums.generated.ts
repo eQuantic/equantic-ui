@@ -31,7 +31,7 @@ export type CodeCompletionKindValue =
 export type CodeCompletionTriggerValue = 'invoked' | 'typing' | 'character' | 'incomplete';
 
 export type CodeDecorationKindValue =
-  'highlight' | 'squiggle' | 'outline' | 'strike' | 'underline' | 'line';
+  'highlight' | 'squiggle' | 'outline' | 'strike' | 'underline' | 'line' | 'dots';
 
 export type CodeDiagnosticSeverityValue = 'hint' | 'information' | 'warning' | 'error';
 

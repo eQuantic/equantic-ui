@@ -34,6 +34,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         _selection = new CodeRange(CodePosition.Start);
         Highlighter = new CodeHighlighter(language ?? CodeLanguages.PlainText);
         Completion = new CodeCompletion(this);
+        Diagnostics = new CodeDiagnostics(this);
+        Hover = new CodeHoverSession(this);
     }
 
     /// <summary>The text, as lines. Replacing it is a full reset — a file was opened.</summary>
@@ -100,6 +102,22 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// is open. An IDE adds its language service to <see cref="CodeCompletion.Providers"/>.
     /// </summary>
     public CodeCompletion Completion { get; }
+
+    /// <summary>
+    /// The problems this editor shows: what the app reports and what its providers answer as the text
+    /// changes, carried through every edit. An IDE adds its compiler to
+    /// <see cref="CodeDiagnostics.Providers"/>, or reports a build's output itself.
+    /// </summary>
+    public CodeDiagnostics Diagnostics { get; }
+
+    /// <summary>The card that explains the code under the pointer or the caret. An IDE adds its language
+    /// service to <see cref="CodeHoverSession.Providers"/>.</summary>
+    public CodeHoverSession Hover { get; }
+
+    /// <summary>The first key of a chord the keymap is waiting for the second of (⌘K, for ⌘K ⌘I), or
+    /// null. Any key that is not a modifier ends the wait.</summary>
+    internal string? PendingChord { get; set; }
+
     public CodeLanguageRules Rules => Highlighter.Language.Rules;
 
     /// <summary>Whether edits are refused — a viewer, a diff pane, a running debugger. Turning it on
@@ -380,6 +398,25 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         return new CodePosition(target, CellsOf(target).ColumnAt((point.X - Grid.Origin.X) / Grid.Cell.Width));
     }
 
+    /// <summary>
+    /// The character a point on the surface is over, or null when it is over none: left of the code (the
+    /// gutter), past the end of its line, above the first row or under the last, or on a row that is no
+    /// line of the document (a diff's filler, a folded run). What a pointer resting there explains; a
+    /// press asks <see cref="PositionAt"/>, which lands between characters.
+    /// </summary>
+    public CodePosition? CharacterAt(Point point)
+    {
+        var rows = Grid.Rows?.RowCount ?? _document.LineCount;
+        if (point.X < Grid.Origin.X || point.Y < Grid.Origin.Y) return null;
+        var row = (int)MathF.Floor((point.Y - Grid.Origin.Y) / Grid.Cell.Height);
+        if (row >= rows) return null;
+        if (Grid.Rows is { } map && map.RowAt(row).Kind != CodeRowKind.Line) return null;
+        var line = Grid.LineAt(point.Y);
+        if (line < 0 || line >= _document.LineCount) return null;
+        var column = CellsOf(line).ColumnUnder((point.X - Grid.Origin.X) / Grid.Cell.Width);
+        return column < 0 ? null : new CodePosition(line, column);
+    }
+
     /// <inheritdoc />
     public bool HandleKey(string key, KeyModifiers modifiers, KeyboardConvention convention,
         ITextClipboard? clipboard) =>
@@ -521,8 +558,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         History.Break();
         TabMovesFocus = false;
         if (focused) return;
-        // A list belongs to the editor being typed in, and this one no longer is.
+        // A list and a card belong to the editor being typed in, and this one no longer is; so does a
+        // chord half typed.
         Completion.Dismiss();
+        Hover.Dismiss();
+        PendingChord = null;
         // A composition cannot survive the keyboard leaving: the platform has already dropped it,
         // and text still underlined in the document would claim an input method nobody is using.
         if (_composition is not null) SetComposition("");
@@ -542,6 +582,10 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         {
             case PointerPhase.Down:
             {
+                // A press closes a card, as it does in every editor, even one that leaves the caret
+                // where it was, and ends a chord half typed.
+                Hover.Dismiss();
+                PendingChord = null;
                 // A folded run's row opens on a press, which the component drawing it answers: the
                 // caret stays. It landed in the run's first line, at the column pressed, and revealing
                 // it slid a diff's side sideways as the run opened.
@@ -566,6 +610,14 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             case PointerPhase.Up:
             case PointerPhase.Cancel:
                 _dragging = false;
+                return false;
+            // A pointer passing over the code: the hover waits for it to rest on something to explain,
+            // and the card it shows arrives through the hover's own event, not as a change of the model.
+            case PointerPhase.Hover:
+                Hover.PointerAt(CharacterAt(position));
+                return false;
+            case PointerPhase.Exit:
+                Hover.PointerLeft();
                 return false;
             default:
                 return false;
@@ -1189,6 +1241,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     {
         if (ReadOnly) return false;
         EndComposition();
+        var before = _selection;
+        var previous = _document;
         var next = History.Undo(_document, out var selection, out var replaced, out var written);
         if (next is null) return false;
         _document = next;
@@ -1202,7 +1256,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         var linesRemoved = replaced.End.Line - replaced.Start.Line;
         Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
         WidthsChanged(line, linesInserted, linesRemoved);
-        Changed?.Invoke(null);
+        // The replacement it made, as any edit raises one: null is a document replaced whole, and a
+        // listener that carries a range through an edit (a problem's squiggle, a language server)
+        // could only start over after every undo.
+        Changed?.Invoke(new CodeEdit(replaced, previous.TextIn(replaced), next.TextIn(written), before,
+            _selection, false));
         SelectionChanged?.Invoke(_selection);
         return true;
     }
@@ -1211,6 +1269,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     {
         if (ReadOnly) return false;
         EndComposition();
+        var before = _selection;
+        var previous = _document;
         var next = History.Redo(_document, out var selection, out var replaced, out var written);
         if (next is null) return false;
         _document = next;
@@ -1224,7 +1284,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         var linesRemoved = replaced.End.Line - replaced.Start.Line;
         Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
         WidthsChanged(line, linesInserted, linesRemoved);
-        Changed?.Invoke(null);
+        // The replacement it made, as any edit raises one: null is a document replaced whole, and a
+        // listener that carries a range through an edit (a problem's squiggle, a language server)
+        // could only start over after every undo.
+        Changed?.Invoke(new CodeEdit(replaced, previous.TextIn(replaced), next.TextIn(written), before,
+            _selection, false));
         SelectionChanged?.Invoke(_selection);
         return true;
     }

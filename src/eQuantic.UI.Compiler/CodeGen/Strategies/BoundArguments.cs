@@ -147,22 +147,32 @@ internal sealed class BoundArguments
     /// through <see cref="Eq.ExceptionConstruct"/> with the types it is, the arguments evaluated as they
     /// are for a <c>new</c>.
     /// </summary>
-    public JsExpr New(string type, JsExpr? types = null)
-    {
-        JsExpr Built(IReadOnlyList<JsExpr> arguments) => types is null
+    public JsExpr New(string type, JsExpr? types = null) => Pass(
+        arguments => types is null
             ? JsExpr.New(JsExpr.Identifier(type), arguments)
-            : JsExpr.Call(JsExpr.Identifier(Eq.ExceptionConstruct), [JsExpr.Identifier(type), types, .. arguments]);
+            : JsExpr.Call(JsExpr.Identifier(Eq.ExceptionConstruct), [JsExpr.Identifier(type), types, .. arguments]),
+        types is null ? $"new {type}(" : $"{Eq.ExceptionConstruct}({type}, {JsExprWriter.Write(types)}, ");
+
+    /// <summary><paramref name="function"/>(…) with these arguments, a runtime helper that takes them in
+    /// its parameters' order, evaluated as <see cref="New"/> evaluates them.</summary>
+    public JsExpr Call(string function) =>
+        Pass(arguments => JsExpr.Call(JsExpr.Identifier(function), arguments), $"{function}(");
+
+    /// <summary>The call <paramref name="built"/> writes from the arguments in parameter order, or, where
+    /// that order is not the written one, the template that evaluates them as written and passes them on
+    /// (<paramref name="head"/> is what stands before them in it).</summary>
+    private JsExpr Pass(Func<IReadOnlyList<JsExpr>, JsExpr> built, string head)
+    {
         // Literals and names alone can be read in any order: nothing among them runs.
         if (InWrittenOrder || Written.All(part => part is JsLiteral or JsIdentifier))
-            return Built(InParameterOrder());
+            return built(InParameterOrder());
         if (Written.Count > 10)
         {
             var parameters = string.Join(", ", Written.Select((_, index) => $"$a{index}"));
-            var construction = Built(InParameterOrder(index => JsExpr.Identifier($"$a{index}")));
+            var construction = built(InParameterOrder(index => JsExpr.Identifier($"$a{index}")));
             return JsExpr.Call(JsExpr.Arrow(parameters, construction), Written);
         }
         var holes = Slots.Select(slot => slot.Written < 0 ? "undefined" : (slot.Spread ? "..." : "") + $"{{{slot.Written}}}");
-        var head = types is null ? $"new {type}(" : $"{Eq.ExceptionConstruct}({type}, {JsExprWriter.Write(types)}, ";
         return JsExpr.Template($"({head}{string.Join(", ", holes)}))", Written);
     }
 }

@@ -35,6 +35,52 @@ public sealed record CodeEdit(
         }
     }
 
+    /// <summary>
+    /// Where a range that stood at <paramref name="range"/> before this edit stands after it, as a mark
+    /// travels with the text it marks: a problem's squiggle, a bookmark. A position before the edit
+    /// stays; one after it shifts by what the edit removed and inserted; a start inside the replaced
+    /// text goes to the start of the replacement and an end inside it to its end, so a range whose text
+    /// was rewritten covers the rewrite, and one whose text was deleted is empty where the text was. A
+    /// range never grows at its edges: text inserted where it starts or where it ends is not in it, and
+    /// an empty range stays with the text after it.
+    /// </summary>
+    public CodeRange Carry(CodeRange range)
+    {
+        var start = CarryStart(range.Start);
+        var end = CarryEnd(range.End);
+        return new CodeRange(start, end < start ? start : end);
+    }
+
+    /// <summary>Where a range's start goes: past text inserted right at it, and to the start of a
+    /// replacement it stood inside.</summary>
+    private CodePosition CarryStart(CodePosition position)
+    {
+        if (position < Range.Start) return position;
+        if (position == Range.Start && Range.IsEmpty) return Shifted(position);
+        if (position < Range.End) return Range.Start;
+        return Shifted(position);
+    }
+
+    /// <summary>Where a range's end goes: before text inserted right at it, and to the end of a
+    /// replacement it stood inside.</summary>
+    private CodePosition CarryEnd(CodePosition position)
+    {
+        if (position <= Range.Start) return position;
+        if (position <= Range.End) return InsertedRange.End;
+        return Shifted(position);
+    }
+
+    /// <summary>A position at or after the replaced text's end, moved by what the edit did there: on the
+    /// line the replaced text ended on, after the inserted text's end; on a later line, by the lines the
+    /// edit added or took away.</summary>
+    private CodePosition Shifted(CodePosition position)
+    {
+        var inserted = InsertedRange.End;
+        return position.Line == Range.End.Line
+            ? new CodePosition(inserted.Line, inserted.Column + position.Column - Range.End.Column)
+            : new CodePosition(position.Line + inserted.Line - Range.End.Line, position.Column);
+    }
+
     /// <summary>True when this edit only ADDED text at the caret — the case undo coalesces, so a
     /// sentence typed letter by letter comes back in one press rather than forty.</summary>
     public bool IsSimpleInsert => RemovedText.Length == 0 && !BreaksLine;

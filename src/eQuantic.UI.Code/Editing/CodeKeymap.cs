@@ -49,6 +49,13 @@ public static class CodeKeymap
         // or Shift+Tab could never leave backwards.
         if (key != "Tab" && key != "Escape" && !IsModifierKey(key)) editor.TabMovesFocus = false;
 
+        // ---- a chord half typed ------------------------------------------------------------------
+        // Any key but a modifier ends the wait for a chord's second half (⌘K ⌘I, below), and ends it
+        // here, for the reason the trap above re-arms here: the list's keys and ⌃Space return early,
+        // and ending the wait after them left ⌘K, ⌃Space, Escape, ⌘I showing the card.
+        var chord = editor.PendingChord;
+        if (!IsModifierKey(key)) editor.PendingChord = null;
+
         // ---- an open completion list ---------------------------------------------------------
         // While a list shows, the keys that walk it are ITS keys: the arrows and the page keys step
         // through it, Tab accepts, and Escape closes it, only it, so the trap on Tab stays armed and
@@ -70,6 +77,30 @@ public static class CodeKeymap
         // ⌃Space, which a browser reports as the command key and a Mac's own shell as Control: asks
         // for the list where the caret is. Before the chords, which would take a space as a letter.
         if (key == " " && (command || control) && !shift && !alt) return completion.Invoke();
+
+        // ---- the card and the problems ------------------------------------------------------------
+        // ⌘K ⌘I (Ctrl+K Ctrl+I) shows the card for the caret, as VS Code has it: ⌘K waits for one key,
+        // and anything but a modifier ends the wait (above), claimed as the second half or handled as
+        // itself. Slice 2 makes the keymap data with chords of its own (#601) and takes this one over.
+        if (chord is not null && command && key is "i" or "I")
+        {
+            editor.Hover.ShowAt(editor.Caret);
+            return true;
+        }
+        // Armed only while a card could show: with no provider to ask and no problem to explain, the key
+        // is the host's (a browser's Ctrl+K).
+        if (command && !shift && !alt && key is "k" or "K"
+            && (editor.Hover.Providers.Count > 0 || editor.Diagnostics.Items.Count > 0))
+        {
+            editor.PendingChord = "K";
+            return true;
+        }
+        // F8 and Shift+F8 walk the problems and show the card of the one they reach, claimed only while
+        // there is one to go to.
+        if (key == "F8" && !command && !control && !alt) return editor.Diagnostics.Next(backward: shift) is not null;
+        // Escape closes a card first, only it, so the trap on Tab stays armed and a dialog around the
+        // editor stays open; a list showing has already taken the key above.
+        if (key == "Escape" && editor.Hover.Dismiss()) return true;
 
         // Escape with no list showing releases the trap, unclaimed, so the host can go on meaning
         // what Escape means around the editor.

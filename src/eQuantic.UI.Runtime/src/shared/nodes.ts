@@ -835,6 +835,10 @@ export interface CodeSurfaceNode extends VisualNodeValue {
   optionsOrigin?: { readonly x: number; readonly y: number } | null;
   /** The option row the keyboard is on, in tree order over the options' option rows, or -1. */
   highlightedOption?: number;
+  /** What the surface explains over its code (C# `CodeSurface.Notes`): positioned nodes, each at its
+   * start and top in the surface's coordinates, drawn over the code and its carets. A note takes the
+   * pointer: over one, the model hears nothing, and a press on it is its own. */
+  notes?: readonly VisualNodeValue[] | null;
 }
 
 /** A rectangle the model answers, in the surface's own coordinates. */

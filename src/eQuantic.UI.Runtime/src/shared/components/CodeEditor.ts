@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeEditorController, CodeGrid, CodeGutterMarker, CodeKeywordCompletionProvider, CodeLanguages, CodeRange, CodeSurface, CodeWordCompletionProvider, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeDiagnostic, CodeEditorController, CodeGrid, CodeGutterMarker, CodeHoverCard, CodeKeywordCompletionProvider, CodeLanguages, CodeRange, CodeSurface, CodeWordCompletionProvider, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
 
 export class CodeEditor extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeEditor';
@@ -15,6 +15,9 @@ export class CodeEditor extends StatefulComponent {
     _handed: any = null;
     _handedAny: boolean = false;
     _put: any[] = [];
+    _reported: any = null;
+    _diagnosers: any[] = [];
+    _explainers: any[] = [];
     _toldDocument: any = null;
     _toldSelection: CodeRange = CodeRange.$zero();
     _matches: CodeRange[] = [];
@@ -41,6 +44,9 @@ export class CodeEditor extends StatefulComponent {
     declare searchMatchCase: boolean;
     declare onGutterPressed: ((int: number) => void) | null;
     declare completions: any;
+    declare diagnostics: CodeDiagnostic[];
+    declare diagnosticProviders: any[];
+    declare hoverProviders: any[];
 
     get editor() {
         return this._editor ?? (this._editor = this.create());
@@ -64,6 +70,9 @@ export class CodeEditor extends StatefulComponent {
         if (this.decorations === undefined) this.decorations = [];
         if (this.matchBrackets === undefined) this.matchBrackets = true;
         if (this.searchMatchCase === undefined) this.searchMatchCase = false;
+        if (this.diagnostics === undefined) this.diagnostics = [];
+        if (this.diagnosticProviders === undefined) this.diagnosticProviders = [];
+        if (this.hoverProviders === undefined) this.hoverProviders = [];
         this.initialCode = code;
         this.languageName = language;
         if (props && typeof props === 'object') Object.assign(this, props);
@@ -73,6 +82,7 @@ export class CodeEditor extends StatefulComponent {
         let editor = this.editor;
         editor.readOnly = this.readOnly;
         this.handProviders(editor.completion);
+        this.handIntelligence(editor);
         let highlighter = editor.highlighter;
         let metrics = CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + editor.document.lineCount - 1);
         editor.grid = new CodeGrid(new Point(metrics.contentLeft, metrics.contentTop), new Size(metrics.columnWidth, metrics.lineHeight));
@@ -84,7 +94,7 @@ export class CodeEditor extends StatefulComponent {
         }
         let [first, last] = CodeBlock.windowOf(editor.document.lineCount, metrics.lineHeight, this._offset, this._viewport);
         let matches = this.matchesOf(editor, this.needle);
-        let block = new CodeBlock('', null, { document: editor.document, language: highlighter.language, decorations: this.marks(editor, matches, first, last), showLineNumbers: this.showLineNumbers, firstLineNumber: this.firstLineNumber, standalone: false, size: this.size, inverse: this.inverse, gutterMarkers: this.gutterMarkers, onGutterPressed: this.onGutterPressed, highlighter: highlighter, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._viewportWidth, minHeight: bounded ? this._viewport : 0, activeLine: editor.caret.line, selectionBands: editor.selectionBandsIn(first, last), widestLine: editor.widestLine });
+        let block = new CodeBlock('', null, { document: editor.document, language: highlighter.language, decorations: this.marks(editor, matches, first, last, context.theme), showLineNumbers: this.showLineNumbers, firstLineNumber: this.firstLineNumber, standalone: false, size: this.size, inverse: this.inverse, gutterMarkers: this.gutter(editor, first, last), onGutterPressed: this.onGutterPressed, highlighter: highlighter, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._viewportWidth, minHeight: bounded ? this._viewport : 0, activeLine: editor.caret.line, selectionBands: editor.selectionBandsIn(first, last), widestLine: editor.widestLine });
         let completion = editor.completion;
         let offered: VisualNode | null = null;
         let offeredAt = Point.zero;
@@ -118,13 +128,20 @@ export class CodeEditor extends StatefulComponent {
             this._listColumns = 0;
             this._measured = null;
         }
-        let surface: VisualNode = new CodeSurface(block, editor, { autofocus: this.autofocus, label: this.caption ?? SdkStrings.codeEditor, caretColor: CodeBlock.inkFor(this.inverse, context.theme), onChanged: () => this.setState(() => this.notify(editor)), options: offered, optionsOrigin: offeredAt, highlightedOption: highlighted });
+        let notes: Positioned[] = [];
+        let hover = editor.hover;
+        if (hover.isOpen && offered == null) {
+            let [card, cardWidth, cardHeight] = CodeHoverCard.build(context, hover, metrics, this._viewportWidth);
+            let [x, y] = CodeHoverCard.place(editor.caretRect(hover.range.start), windowed ? this._offset : 0, this._scrollX, this._viewportWidth, cardWidth, cardHeight);
+            notes.push(new Positioned(card, y, null, null, x));
+        }
+        let surface: VisualNode = new CodeSurface(block, editor, { autofocus: this.autofocus, label: this.caption ?? SdkStrings.codeEditor, caretColor: CodeBlock.inkFor(this.inverse, context.theme), onChanged: () => this.setState(() => this.notify(editor)), options: offered, optionsOrigin: offeredAt, highlightedOption: highlighted, notes: notes });
         let viewport: VisualNode = new ScrollView(surface, 'horizontal', { width: SizeValue.fill, onViewportChanged: (width: number) => {
             if (Math.abs(Math.fround(width - this._viewportWidth)) < 1) return;
             this.setState(() => this._viewportWidth = width);
         }, onScrolled: (offset: number) => {
             if (Math.abs(Math.fround(offset - this._scrollX)) < 1) return;
-            if (editor.completion.isOpen) this.setState(() => this._scrollX = offset); else this._scrollX = offset;
+            if (editor.completion.isOpen || editor.hover.isOpen) this.setState(() => this._scrollX = offset); else this._scrollX = offset;
         } });
         if (this.showLineNumbers) {
             let withGutter = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'start' });
@@ -162,25 +179,61 @@ export class CodeEditor extends StatefulComponent {
         this._toldDocument = editor.document;
         this._toldSelection = editor.selection;
         editor.completion.changed = $eq.delegates.combine(editor.completion.changed, () => this.setState(() => {}));
+        editor.diagnostics.changed = $eq.delegates.combine(editor.diagnostics.changed, () => this.setState(() => {}));
+        editor.hover.changed = $eq.delegates.combine(editor.hover.changed, () => this.setState(() => {}));
         return editor;
+    }
+
+    handIntelligence(editor: CodeEditorController) {
+        if (this._reported == null || !CodeEditor.sameProblems(this.diagnostics, this._reported)) {
+            this._reported = [...this.diagnostics];
+            editor.diagnostics.report(this._reported);
+        }
+        if (!CodeEditor.sameProviders(this.diagnosticProviders, this._diagnosers)) {
+            for (const provider of this._diagnosers) {
+                let at = CodeEditor.indexOfInstance(editor.diagnostics.providers, provider);
+                if (at >= 0) editor.diagnostics.providers.splice(at, 1);
+            }
+            this._diagnosers = [...this.diagnosticProviders];
+            for (const provider of this._diagnosers) $eq.collections.add(editor.diagnostics.providers, provider);
+            editor.diagnostics.check();
+        }
+        if (!CodeEditor.sameProviders(this.hoverProviders, this._explainers)) {
+            for (const provider of this._explainers) {
+                let at = CodeEditor.indexOfInstance(editor.hover.providers, provider);
+                if (at >= 0) editor.hover.providers.splice(at, 1);
+            }
+            this._explainers = [...this.hoverProviders];
+            for (const provider of this._explainers) $eq.collections.add(editor.hover.providers, provider);
+        }
+    }
+
+    static sameProblems(one: CodeDiagnostic[], other: CodeDiagnostic[]) {
+        if ($eq.collections.count(one) !== $eq.collections.count(other)) return false;
+        for (let i = 0; i < $eq.collections.count(one); i++) if (!$eq.equalsInstance($eq.collections.item(one, i), $eq.collections.item(other, i))) return false;
+        return true;
     }
 
     handProviders(completion: CodeCompletion) {
         if (this._handedAny && CodeEditor.sameProviders(this.completions, this._handed)) return;
         this._handedAny = true;
         let providers = completion.providers;
-        for (const provider of this._put) CodeEditor.removeInstance(providers, provider);
+        for (const provider of this._put) {
+            let at = CodeEditor.indexOfInstance(providers, provider);
+            if (at >= 0) providers.splice(at, 1);
+        }
         this._put = this.completions == null ? [new CodeKeywordCompletionProvider(), new CodeWordCompletionProvider()] : [...this.completions];
         this._handed = this.completions == null ? null : this._put;
         for (const provider of this._put) $eq.collections.add(providers, provider);
     }
 
-    static removeInstance(providers: any[], provider: any) {
-        for (let i = 0; i < $eq.collections.count(providers); i++) {
-            if (!($eq.collections.item(providers, i) === provider)) continue;
-            providers.splice(i, 1);
-            return;
+    static indexOfInstance(providers: any[], provider: any) {
+        let at = 0;
+        for (const held of providers) {
+            if ((held === provider)) return at;
+            at++;
         }
+        return -1;
     }
 
     static sameProviders(one: any, other: any) {
@@ -210,9 +263,36 @@ export class CodeEditor extends StatefulComponent {
         }
     }
 
-    marks(editor: CodeEditorController, matches: CodeRange[], first: number, last: number) {
-        if ($eq.collections.count(matches) === 0 && !this.matchBrackets && editor.composition == null) return this.decorations;
+    gutter(editor: CodeEditorController, first: number, last: number) {
+        let problems = editor.diagnostics.items;
+        if ($eq.collections.count(problems) === 0) return this.gutterMarkers;
+        let worst: any = $eq.collections.dictionary();
+        for (const problem of problems) {
+            let severity = (($0) => (({ 'hint': 0, 'information': 1, 'warning': 2, 'error': 3 })[$0] ?? $0))(problem.severity);
+            if (severity < 2) continue;
+            let line = problem.range.start.line;
+            if (line < first || line > last) continue;
+            let known: any; 
+            if (!(worst.has(line) ? ((known = worst.get(line)), true) : ((known = 0), false)) || severity > known) $eq.mapSet(worst, line, severity);
+        }
+        if (worst.size === 0) return this.gutterMarkers;
+        let markers: CodeGutterMarker[] = $eq.collections.listCopy(this.gutterMarkers);
+        for (const entry of worst) {
+            if (markers.some((marker) => marker.line === entry.key)) continue;
+            markers.push(new CodeGutterMarker(entry.key, entry.value === 3 ? 'error' : 'warning'));
+        }
+        return markers;
+    }
+
+    marks(editor: CodeEditorController, matches: CodeRange[], first: number, last: number, theme: any) {
+        let problems = editor.diagnostics.items;
+        if ($eq.collections.count(matches) === 0 && !this.matchBrackets && editor.composition == null && $eq.collections.count(problems) === 0) return this.decorations;
         let marks: CodeDecoration[] = $eq.collections.listCopy(this.decorations);
+        for (const problem of problems) {
+            if (problem.range.end.line < first || problem.range.start.line > last) continue;
+            let $n3: any; 
+            marks.push(($n3 = new CodeDecoration(problem.range, problem.severity === 'hint' ? 'dots' : 'squiggle'), $n3.color = CodeHoverCard.severityColor(theme, problem.severity), $n3));
+        }
         let composition: any; 
         if ((composition = editor.composition) != null) marks.push(new CodeDecoration(composition, 'underline'));
         if ($eq.collections.count(matches) > 0) {
@@ -252,6 +332,9 @@ export class CodeEditor extends StatefulComponent {
         this.searchMatchCase = fresh.searchMatchCase;
         this.onGutterPressed = fresh.onGutterPressed;
         this.completions = fresh.completions;
+        this.diagnostics = fresh.diagnostics;
+        this.diagnosticProviders = fresh.diagnosticProviders;
+        this.hoverProviders = fresh.hoverProviders;
     }
 
     matchesOf(editor: CodeEditorController, needle: any) {

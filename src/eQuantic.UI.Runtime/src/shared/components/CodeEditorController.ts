@@ -1,4 +1,4 @@
-import { $eq, CodeCompletion, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineCells, CodeMotionValue, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect } from "../runtime-exports";
+import { $eq, CodeCompletion, CodeDiagnostics, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeHoverSession, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineCells, CodeMotionValue, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect } from "../runtime-exports";
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null) {
@@ -8,6 +8,9 @@ export class CodeEditorController {
         this.highlighter = null!;
         this.history = new CodeHistory();
         this.completion = null!;
+        this.diagnostics = null!;
+        this.hover = null!;
+        this.pendingChord = null;
         this.tabMovesFocus = false;
         this.changed = null;
         this.selectionChanged = null;
@@ -28,6 +31,8 @@ export class CodeEditorController {
         this._selection = new CodeRange(CodePosition.start);
         this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText);
         this.completion = new CodeCompletion(this);
+        this.diagnostics = new CodeDiagnostics(this);
+        this.hover = new CodeHoverSession(this);
     }
 
     _document!: CodeDocument;
@@ -36,6 +41,9 @@ export class CodeEditorController {
     highlighter!: CodeHighlighter;
     history!: CodeHistory;
     completion!: CodeCompletion;
+    diagnostics!: CodeDiagnostics;
+    hover!: CodeHoverSession;
+    pendingChord!: string | null;
     tabMovesFocus!: boolean;
     changed!: ((codeEdit: CodeEdit | null) => void) | null;
     selectionChanged!: ((codeRange: CodeRange) => void) | null;
@@ -237,6 +245,19 @@ export class CodeEditorController {
         return new CodePosition(target, this.cellsOf(target).columnAt(Math.fround(Math.fround(point.x - this.grid.origin.x) / this.grid.cell.width)));
     }
 
+    characterAt(point: Point) {
+        let rows = this.grid.rows?.rowCount ?? this._document.lineCount;
+        if (point.x < this.grid.origin.x || point.y < this.grid.origin.y) return null;
+        let row = (Math.trunc(Math.floor(Math.fround(Math.fround(point.y - this.grid.origin.y) / this.grid.cell.height))) | 0);
+        if (row >= rows) return null;
+        let map: any; 
+        if ((map = this.grid.rows) != null && map.rowAt(row).kind !== 'line') return null;
+        let line = this.grid.lineAt(point.y);
+        if (line < 0 || line >= this._document.lineCount) return null;
+        let column = this.cellsOf(line).columnUnder(Math.fround(Math.fround(point.x - this.grid.origin.x) / this.grid.cell.width));
+        return column < 0 ? null : new CodePosition(line, column);
+    }
+
     handleKey(key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any) {
         return CodeKeymap.handle(this, key, modifiers, convention, clipboard);
     }
@@ -316,6 +337,8 @@ export class CodeEditorController {
         this.tabMovesFocus = false;
         if (focused) return;
         this.completion.dismiss();
+        this.hover.dismiss();
+        this.pendingChord = null;
         if (!(this._composition == null)) this.setComposition('');
         this._dragging = false;
     }
@@ -324,6 +347,8 @@ export class CodeEditorController {
         switch (phase) {
             case 'down':
                 {
+                    this.hover.dismiss();
+                    this.pendingChord = null;
                     if (this.onPlaceholder(position)) return false;
                     let at = this.positionAt(position);
                     if (clicks >= 3) this.selectLine(at.line); else if (clicks === 2) this.selectWord(at); else if ((modifiers & 1) !== 0) this.selection = new CodeRange(this._selection.anchor, at); else this.selection = new CodeRange(at);
@@ -341,6 +366,12 @@ export class CodeEditorController {
             case 'up':
             case 'cancel':
                 this._dragging = false;
+                return false;
+            case 'hover':
+                this.hover.pointerAt(this.characterAt(position));
+                return false;
+            case 'exit':
+                this.hover.pointerLeft();
                 return false;
             default:
                 return false;
@@ -735,6 +766,8 @@ export class CodeEditorController {
     undo() {
         if (this.readOnly) return false;
         this.endComposition();
+        let before = this._selection;
+        let previous = this._document;
         let selection: any; let replaced: any; let written: any; 
         let next = ($o => (selection = $o.selection, replaced = $o.replaced, written = $o.written, $o.$))(this.history.undo(this._document));
         if (next == null) return false;
@@ -747,7 +780,7 @@ export class CodeEditorController {
         let linesRemoved = replaced.end.line - replaced.start.line;
         this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
         this.widthsChanged(line, linesInserted, linesRemoved);
-        this.changed?.(null);
+        this.changed?.(new CodeEdit(replaced, previous.textIn(replaced), next.textIn(written), before, this._selection, false));
         this.selectionChanged?.(this._selection);
         return true;
     }
@@ -755,6 +788,8 @@ export class CodeEditorController {
     redo() {
         if (this.readOnly) return false;
         this.endComposition();
+        let before = this._selection;
+        let previous = this._document;
         let selection: any; let replaced: any; let written: any; 
         let next = ($o => (selection = $o.selection, replaced = $o.replaced, written = $o.written, $o.$))(this.history.redo(this._document));
         if (next == null) return false;
@@ -767,7 +802,7 @@ export class CodeEditorController {
         let linesRemoved = replaced.end.line - replaced.start.line;
         this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
         this.widthsChanged(line, linesInserted, linesRemoved);
-        this.changed?.(null);
+        this.changed?.(new CodeEdit(replaced, previous.textIn(replaced), next.textIn(written), before, this._selection, false));
         this.selectionChanged?.(this._selection);
         return true;
     }
