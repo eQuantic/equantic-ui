@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeDiagnostic, CodeEditorController, CodeGrid, CodeGutterMarker, CodeHoverCard, CodeKeywordCompletionProvider, CodeLanguages, CodeRange, CodeSignatureCard, CodeSurface, CodeWordCompletionProvider, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeDiagnostic, CodeEditorController, CodeGrid, CodeGutterMarker, CodeHoverCard, CodeKeyBinding, CodeKeywordCompletionProvider, CodeLanguages, CodeRange, CodeSignatureCard, CodeSurface, CodeWordCompletionProvider, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
 
 export class CodeEditor extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeEditor';
@@ -19,6 +19,7 @@ export class CodeEditor extends StatefulComponent {
     _diagnosers: any[] = [];
     _explainers: any[] = [];
     _signers: any[] = [];
+    _bindings: CodeKeyBinding[] = [];
     _toldDocument: any = null;
     _toldSelection: CodeRange = CodeRange.$zero();
     _matches: CodeRange[] = [];
@@ -49,6 +50,7 @@ export class CodeEditor extends StatefulComponent {
     declare diagnosticProviders: any[];
     declare hoverProviders: any[];
     declare signatureProviders: any[];
+    declare keyBindings: CodeKeyBinding[];
 
     get editor() {
         return this._editor ?? (this._editor = this.create());
@@ -76,6 +78,7 @@ export class CodeEditor extends StatefulComponent {
         if (this.diagnosticProviders === undefined) this.diagnosticProviders = [];
         if (this.hoverProviders === undefined) this.hoverProviders = [];
         if (this.signatureProviders === undefined) this.signatureProviders = [];
+        if (this.keyBindings === undefined) this.keyBindings = [];
         this.initialCode = code;
         this.languageName = language;
         if (props && typeof props === 'object') Object.assign(this, props);
@@ -86,6 +89,7 @@ export class CodeEditor extends StatefulComponent {
         editor.readOnly = this.readOnly;
         this.handProviders(editor.completion);
         this.handIntelligence(editor);
+        this.handKeyBindings(editor);
         let highlighter = editor.highlighter;
         let metrics = CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + editor.document.lineCount - 1);
         editor.grid = new CodeGrid(new Point(metrics.contentLeft, metrics.contentTop), new Size(metrics.columnWidth, metrics.lineHeight));
@@ -230,6 +234,19 @@ export class CodeEditor extends StatefulComponent {
         }
     }
 
+    handKeyBindings(editor: CodeEditorController) {
+        if (CodeEditor.sameBindings(this.keyBindings, this._bindings)) return;
+        for (const binding of this._bindings) $eq.collections.remove(editor.keyBindings, binding, true);
+        this._bindings = [...this.keyBindings];
+        for (const binding of this._bindings) $eq.collections.add(editor.keyBindings, binding);
+    }
+
+    static sameBindings(one: CodeKeyBinding[], other: CodeKeyBinding[]) {
+        if ($eq.collections.count(one) !== $eq.collections.count(other)) return false;
+        for (let i = 0; i < $eq.collections.count(one); i++) if (!$eq.equals($eq.collections.item(one, i), $eq.collections.item(other, i))) return false;
+        return true;
+    }
+
     static sameProblems(one: CodeDiagnostic[], other: CodeDiagnostic[]) {
         if ($eq.collections.count(one) !== $eq.collections.count(other)) return false;
         for (let i = 0; i < $eq.collections.count(one); i++) if (!$eq.equalsInstance($eq.collections.item(one, i), $eq.collections.item(other, i))) return false;
@@ -358,6 +375,7 @@ export class CodeEditor extends StatefulComponent {
         this.diagnosticProviders = fresh.diagnosticProviders;
         this.hoverProviders = fresh.hoverProviders;
         this.signatureProviders = fresh.signatureProviders;
+        this.keyBindings = fresh.keyBindings;
     }
 
     matchesOf(editor: CodeEditorController, needle: any) {

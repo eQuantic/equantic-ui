@@ -144,6 +144,14 @@ public sealed class CodeEditor : StatefulComponent
     /// </summary>
     public IReadOnlyList<ICodeSignatureProvider> SignatureProviders { get; set; } = [];
 
+    /// <summary>
+    /// An app's own key bindings over the editor's defaults (<see cref="CodeKeymap.Defaults"/>): a chord
+    /// bound here is the app's alone, and one bound to <see cref="CodeCommand.None"/> is given back to the
+    /// host. Handed to <see cref="CodeEditorController.KeyBindings"/>, and taken out again when a later
+    /// build hands others.
+    /// </summary>
+    public IReadOnlyList<CodeKeyBinding> KeyBindings { get; set; } = [];
+
     /// <summary>The live editor: the document, the selection, and every command. An IDE reaches for
     /// this to run its own — a formatter, a refactor, a language server's edit — and they undo like
     /// anything the person typed, because they go through the same primitive.</summary>
@@ -228,6 +236,26 @@ public sealed class CodeEditor : StatefulComponent
             // What the panel shows, and the requests still out for it, came from the providers before.
             editor.SignatureHelp.Dismiss();
         }
+    }
+
+    private List<CodeKeyBinding> _bindings = [];
+
+    /// <summary>Hands <see cref="KeyBindings"/> to the controller when they are other bindings than the
+    /// last ones, taking out the ones handed before; what the app put on the controller itself stays.</summary>
+    private void HandKeyBindings(CodeEditorController editor)
+    {
+        if (SameBindings(KeyBindings, _bindings)) return;
+        foreach (var binding in _bindings) editor.KeyBindings.Remove(binding);
+        _bindings = [.. KeyBindings];
+        foreach (var binding in _bindings) editor.KeyBindings.Add(binding);
+    }
+
+    private static bool SameBindings(IReadOnlyList<CodeKeyBinding> one, IReadOnlyList<CodeKeyBinding> other)
+    {
+        if (one.Count != other.Count) return false;
+        for (var i = 0; i < one.Count; i++)
+            if (!one[i].Equals(other[i])) return false;
+        return true;
     }
 
     /// <summary>Whether two lists hold the same problems in the same order.</summary>
@@ -455,6 +483,7 @@ public sealed class CodeEditor : StatefulComponent
         DiagnosticProviders = fresh.DiagnosticProviders;
         HoverProviders = fresh.HoverProviders;
         SignatureProviders = fresh.SignatureProviders;
+        KeyBindings = fresh.KeyBindings;
     }
 
     /// <summary>What find is looking for: the bar's text while the bar is open, else what the app
@@ -509,6 +538,7 @@ public sealed class CodeEditor : StatefulComponent
         editor.ReadOnly = ReadOnly;
         HandProviders(editor.Completion);
         HandIntelligence(editor);
+        HandKeyBindings(editor);
         // The controller's OWN highlighter, kept across frames: a keystroke re-colours the line it
         // touched and stops, where a fresh one per frame would re-tokenize the file per character.
         var highlighter = editor.Highlighter;

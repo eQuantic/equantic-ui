@@ -1967,3 +1967,53 @@ describe('the panel over a call', () => {
     expect(textOf(notesIn(lower())[0])).toContain('MainAlign main');
   });
 });
+
+/**
+ * An app's own key bindings on the transpiled CodeEditor (#1010): the twin of the C# keymap answers the
+ * editor's keydown through the real lowering; the C# twins are CodeEditorKeyBindingsTests, on Photon.
+ */
+describe('the keys an app binds', () => {
+  it("runs the app's binding from the editor's keydown, and claims the key", async () => {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const { CodeKeyBinding } = await import('./components/CodeKeyBinding');
+    const { KeyChord } = await import('./vocabulary');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const context = {
+      theme,
+      textPrimary: theme.textPrimary,
+      density: 'comfortable',
+      typeScale: 1,
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    const component = new CodeEditor('alpha beta\ngamma', 'csharp');
+    (component as unknown as Record<string, unknown>).keyBindings = [
+      new CodeKeyBinding(KeyChord.command('d'), 'selectAll'),
+    ];
+    const lower = () => lowerVisualNode(component.build(context as never) as never, context as never);
+    lower();
+    const input = nodesWhere(lower(), (node) => node.tag === 'textarea')[0];
+    let prevented = false;
+
+    (input.events['keydown'] as unknown as (event: unknown) => void)({
+      key: 'd',
+      shiftKey: false,
+      altKey: false,
+      metaKey: true,
+      ctrlKey: false,
+      isComposing: false,
+      keyCode: 0,
+      target: { value: '' },
+      preventDefault: () => {
+        prevented = true;
+      },
+    });
+
+    expect(prevented, "the app's chord is the editor's").toBe(true);
+    const selection = component.editor.selection;
+    expect([selection.start.line, selection.start.column, selection.end.line, selection.end.column]).toEqual([0, 0, 1, 5]);
+  });
+});
