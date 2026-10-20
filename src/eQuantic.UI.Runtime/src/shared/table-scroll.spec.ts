@@ -131,6 +131,16 @@ describe('TableScroll (transpiled twin)', () => {
     expect(arranged().pointer('down', new Point(400, 300), 'mouse', 0)).toBe(false);
   });
 
+  it('reveals the part that scrolls of a range crossing the pinned bands', () => {
+    const scroll = arranged();
+    scroll.wheel(500, 500, false, 0);
+    expect(scroll.apply(new TableScrollRequest(1, { reveal: new TableRange(0, 0, 2, 2) }), rows, columns, 1, 1)).toBe(true);
+    expect(offsetOf(scroll)).toEqual([0, 0]);
+    scroll.wheel(500, 500, false, 0);
+    expect(scroll.apply(new TableScrollRequest(2, { reveal: new TableRange(0, 0, 1, 1) }), rows, columns, 1, 1)).toBe(false);
+    expect(offsetOf(scroll)).toEqual([500, 500]);
+  });
+
   it('reveals a row below the window by its bottom edge, once per version', () => {
     const scroll = arranged();
     const request = new TableScrollRequest(1, { reveal: new TableRange(40, 3) });

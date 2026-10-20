@@ -113,7 +113,9 @@ time that changes, once per change, on every target.
 A request SHALL carry a version, and the viewport SHALL honour each version once. A request to an
 offset SHALL move the viewport there, clamped. A request to reveal a range of cells SHALL move the
 viewport by the least on each axis that brings the range inside the part of the window its pinned
-bands leave uncovered. A range larger than that part SHALL have its leading edges brought in. A request
+bands leave uncovered. A range that starts in a pinned band and reaches past it SHALL bring in the part
+past the band, and one wholly inside a pinned band SHALL move nothing on that axis. A range larger than
+that part SHALL have its leading edges brought in. A request
 whose version was already honoured SHALL move nothing, even after the user scrolled away. A version
 SHALL be honoured against the layout that stands: until the user moves the grid it SHALL be applied
 again against each layout, so a viewport measured twice settles where the last measure puts it.
@@ -193,7 +195,8 @@ and in each cell in the cell's own order, whatever order the bands are painted i
 A viewport asked to fill an axis that has no bound SHALL take the visible extent of the nearest
 scroller around it on that axis, or the window's when no scroller is around it, and SHALL scroll its
 grid inside that extent. A development log SHALL say which viewport took which extent and why, once
-per viewport.
+per viewport. A width of its own wider than the room its parent gives SHALL be held to that room, on
+every target; a height of its own SHALL stay its own.
 
 #### Scenario: A table in a scrolling page
 

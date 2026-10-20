@@ -250,6 +250,25 @@ public class TableScrollTests
     // ---- requests -------------------------------------------------------------------------------
 
     [Fact]
+    public void ARevealThatCrossesThePinnedBands_BringsInThePartThatScrolls()
+    {
+        var scroll = Arranged();
+        scroll.Wheel(500, 500, stepped: false, KeyModifiers.None);
+
+        // The pinned row and column with the first row and column under them: those come out from
+        // under the bands, on each axis.
+        scroll.Apply(new TableScrollRequest(1) { Reveal = new TableRange(0, 0, 2, 2) }, Rows, Columns, 1, 1)
+            .Should().BeTrue();
+        scroll.Offset.Should().Be(TableOffset.Zero);
+
+        // A range wholly pinned on an axis moves nothing on it.
+        scroll.Wheel(500, 500, stepped: false, KeyModifiers.None);
+        scroll.Apply(new TableScrollRequest(2) { Reveal = new TableRange(0, 0, 1, 1) }, Rows, Columns, 1, 1)
+            .Should().BeFalse();
+        scroll.Offset.Should().Be(new TableOffset(500, 500));
+    }
+
+    [Fact]
     public void ARevealOfARowBelowTheWindow_BringsItsBottomEdgeToTheWindowsBottom()
     {
         var scroll = Arranged();

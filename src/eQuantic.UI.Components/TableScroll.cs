@@ -310,9 +310,12 @@ public sealed class TableScroll : ITableScrollModel
     private static double Reveal(double offset, TableSpans spans, int first, int count, int pinned,
         double pinnedExtent, double window)
     {
-        if (spans.Count == 0 || first < pinned) return offset;
-        var start = spans.OffsetOf(Math.Clamp(first, 0, spans.Count));
-        var end = spans.OffsetOf(Math.Clamp(first + Math.Max(1, count), 0, spans.Count));
+        var last = first + Math.Max(1, count);
+        // A run wholly inside the pinned band is always in view on this axis; one that crosses its edge
+        // reveals the part that scrolls, from the edge on.
+        if (spans.Count == 0 || last <= pinned) return offset;
+        var start = spans.OffsetOf(Math.Clamp(Math.Max(first, pinned), 0, spans.Count));
+        var end = spans.OffsetOf(Math.Clamp(last, 0, spans.Count));
         if (end - start > window - pinnedExtent || start < offset + pinnedExtent) return start - pinnedExtent;
         if (end > offset + window) return end - window;
         return offset;

@@ -363,6 +363,26 @@ public class TableViewportTests
     }
 
     [Fact]
+    public void ATableWiderThanItsRoom_IsHeldToIt_WithItsScrollbarInside()
+    {
+        var tally = new Tally();
+        var table = new TableView(new UniformTableSpans(100, 28), new UniformTableSpans(20, 96),
+            (row, column) => new Text($"{row}:{column}", TypeRole.BodyM))
+        {
+            PinnedRows = 1,
+            Width = SizeValue.Fixed(1000),
+            Height = SizeValue.Fixed(300),
+        };
+        var host = Host(table, 600, 400, tally);
+
+        var region = Region(host);
+        region.Bounds.Width.Should().Be(600, "the web holds a table to its container's width, and so does Photon");
+        region.Bounds.Height.Should().Be(300, "a height is its own");
+        var track = region.Viewport.Scroll.TrackOf(ScrollAxis.Vertical)!.Value;
+        (region.Bounds.X + track.X + track.Width).Should().BeLessThanOrEqualTo(600);
+    }
+
+    [Fact]
     public void AMouseDragOverTheCells_ScrollsNothing()
     {
         var tally = new Tally();

@@ -240,9 +240,10 @@ export class TableScroll {
     }
 
     static reveal(offset: number, spans: TableSpans, first: number, count: number, pinned: number, pinnedExtent: number, window: number) {
-        if (spans.count === 0 || first < pinned) return offset;
-        let start = spans.offsetOf(Math.min(Math.max(first, 0), spans.count));
-        let end = spans.offsetOf(Math.min(Math.max(first + Math.max(1, count), 0), spans.count));
+        let last = first + Math.max(1, count);
+        if (spans.count === 0 || last <= pinned) return offset;
+        let start = spans.offsetOf(Math.min(Math.max(Math.max(first, pinned), 0), spans.count));
+        let end = spans.offsetOf(Math.min(Math.max(last, 0), spans.count));
         if (end - start > window - pinnedExtent || start < offset + pinnedExtent) return start - pinnedExtent;
         if (end > offset + window) return end - window;
         return offset;

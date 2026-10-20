@@ -93,9 +93,9 @@ internal sealed partial class MeasureVisitor
         switch (size.Kind)
         {
             case SizeKind.Fixed:
-                return size.Value;
+                return Capped(size.Value, axis, across);
             case SizeKind.WindowMinus:
-                return WindowSize(size, window);
+                return Capped(WindowSize(size, window), axis, across);
         }
         // Room to give, even from a parent that sizes from its content: the viewport takes it, as the
         // web's 100% does.
@@ -106,6 +106,12 @@ internal sealed partial class MeasureVisitor
         LogUnbounded(viewport, across, visible, fromScroller);
         return visible;
     }
+
+    /// <summary>A size of its own, held to the room across as the web holds it (<c>max-width: 100%</c>):
+    /// a table wider than its parent puts its scrollbar where nobody sees it. Down, a size is its own on
+    /// both targets.</summary>
+    private static float Capped(float extent, AxisConstraint axis, bool across) =>
+        across && !axis.IsUnbounded ? Math.Min(extent, axis.Max) : extent;
 
     /// <summary>Says, once per viewport and axis, that the viewport took a visible extent because the
     /// axis it was asked to fill had no bound.</summary>

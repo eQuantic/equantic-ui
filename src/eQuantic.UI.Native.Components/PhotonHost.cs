@@ -2055,9 +2055,9 @@ public sealed class PhotonHost
         }
 
         // S5: hover belongs to pointers that can rest over things. A finger cannot — it is
-        // pressing or it is gone — so a touch move ends HERE instead of latching whatever box
-        // it happened to cross last.
-        if (kind == PointerKind.Touch) return;
+        // pressing or it is gone — and a pen the shells report only while it touches cannot either,
+        // so their moves end HERE instead of latching whatever box they happened to cross last.
+        if (kind != PointerKind.Mouse) return;
         if (!_held) HoverCode(new Point(x, y));
 
         // The CHAIN of regions under the pointer, topmost first — CSS :hover matches every
@@ -2496,8 +2496,8 @@ public sealed class PhotonHost
         // The press is over, released or not: the pointer moving next rests on the code again.
         _held = false;
         // The input sequence died with the finger still down — the finger is gone, so nothing
-        // rests over anything. A mouse keeps its position through a cancel, and its hover with it.
-        if (kind == PointerKind.Touch) PointerLeave();
+        // rests over anything; a pen too. A mouse keeps its position through a cancel, and its hover with it.
+        if (kind != PointerKind.Mouse) PointerLeave();
 
         _pan = null;
         if (_tablePress is { } table)
@@ -2580,9 +2580,9 @@ public sealed class PhotonHost
         }
 
         // A finger that lifts is GONE — no pointer rests over anything, whatever set the hover
-        // during the sequence. A mouse stays where it is, so its hover survives the click
-        // (clearing it would flicker on every press).
-        if (kind == PointerKind.Touch) PointerLeave();
+        // during the sequence, and a pen that lifts is the same. A mouse stays where it is, so its
+        // hover survives the click (clearing it would flicker on every press).
+        if (kind != PointerKind.Mouse) PointerLeave();
 
         // A table's press ends: one the table took lands there (a finger still moving flings); a
         // candidate that never left the slop was a tap, which goes on to the cell it began on.
