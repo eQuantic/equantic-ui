@@ -35,7 +35,7 @@
 
 ## 4. Documentation
 
-- [ ] 4.1 docs/CODE-EDITOR-PLAN.md: slice 4 delivered
+- [x] 4.1 docs/CODE-EDITOR-PLAN.md: slice 4 delivered
 - [x] 4.2 The wiki's CodeEditor page in every language it is written in
 - [x] 4.3 One ledger entry, a file under docs/ledger/, citing #298 and #620
 - [x] 4.4 Archive this change before the merge
