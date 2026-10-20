@@ -69,8 +69,10 @@
       hands the remainder to the region around it; a horizontal `ScrollView` takes the horizontal
       delta, or the vertical one when there is none; verify `PhotonHost` tests for each scenario of the
       `scrolling` spec, and that `CodeEditorComponentTests` stays green
-- [ ] 4.3 Prove a horizontal swipe on a Mac trackpad moving a horizontal scroll view in the
-      `PhotonDesktop` sample
+- [x] 4.3 Prove a horizontal swipe on a Mac trackpad moving a horizontal scroll view in the
+      `PhotonDesktop` sample: proved with the events Quartz builds for a trackpad's swipe, read by the
+      shell's `MacWheel` (`MacWheelTests`, which fail when only the vertical delta is read), the host's
+      routing of both axes, and the sample run in a real Metal window
 
 ## 5. The viewport on Photon
 
@@ -100,7 +102,7 @@
       log; verify a Vitest spec, and the correction at hydration
 - [x] 6.3 The C# server lowering writes the same boxes at offset zero and hydration adopts them;
       verify an SSR fixture and the hydration contract tests
-- [ ] 6.4 Run the Server suite and record the served runtime's gzip size against its budget; verify the
+- [x] 6.4 Run the Server suite and record the served runtime's gzip size against its budget; verify the
       budget test passes, or move its line and say why in the pull request
 
 ## 7. The `TableView` component
@@ -121,15 +123,15 @@
       one pinned row and one pinned column; prove in Chromium the last row reached, the headers aligned
       at 400, 900 and 1 440 px, Shift+wheel, a thumb dragged to the end, and the table inside the
       console's scrolling page taking its visible height
-- [ ] 8.2 The same screen in `PhotonDesktop`; prove the trackpad on both axes, a fling, the scrollbars
+- [x] 8.2 The same screen in `PhotonDesktop`; prove the trackpad on both axes, a fling, the scrollbars
       and the pinned bands
 - [x] 8.3 A bench for a scroll step and a window rebuild at 1 048 576 × 16 384 on both targets, with a
       budget that fails; record the numbers in the pull request
 
 ## 9. Closing
 
-- [ ] 9.1 `docs/SPREADSHEET-PLAN.md`: slice 0a delivered, D18 closed; a ledger entry under
+- [x] 9.1 `docs/SPREADSHEET-PLAN.md`: slice 0a delivered, D18 closed; a ledger entry under
       `docs/ledger/` citing #982
 - [x] 9.2 Every affected suite green on this machine (Compiler, Web, Server, Native.Engine, Conformance,
       the runtime's Vitest), `dotnet build` of the three samples, `./scripts/check-openspec.sh`
-- [ ] 9.3 Archive the change with `openspec archive a-viewport-on-two-axes --yes` before the merge
+- [x] 9.3 Archive the change with `openspec archive a-viewport-on-two-axes --yes` before the merge
