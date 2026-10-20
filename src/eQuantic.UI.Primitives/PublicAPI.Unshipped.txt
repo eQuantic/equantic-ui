@@ -111,3 +111,4 @@ eQuantic.UI.Primitives.TableViewport.Rows.get -> eQuantic.UI.Primitives.TableSpa
 eQuantic.UI.Primitives.TableViewport.TableViewport(eQuantic.UI.Primitives.TableSpans! rows, eQuantic.UI.Primitives.TableSpans! columns, eQuantic.UI.Primitives.ITableScrollModel! scroll) -> void
 eQuantic.UI.Primitives.CodeSurface.Notes.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Positioned!>!
 eQuantic.UI.Primitives.CodeSurface.Notes.init -> void
+eQuantic.UI.Primitives.ITableScrollModel.Reveal(eQuantic.UI.Primitives.Rect area, bool across, bool down) -> bool

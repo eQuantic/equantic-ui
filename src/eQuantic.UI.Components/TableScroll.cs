@@ -241,6 +241,32 @@ public sealed class TableScroll : ITableScrollModel
         return true;
     }
 
+    public bool Reveal(Rect area, bool across, bool down)
+    {
+        var toAcross = across
+            ? Math.Clamp(_across + Into(area.X, area.X + area.Width, _pinnedAcross, _viewport.Width), 0, MaxAcross)
+            : _across;
+        var toDown = down
+            ? Math.Clamp(_down + Into(area.Y, area.Y + area.Height, _pinnedDown, _viewport.Height), 0, MaxDown)
+            : _down;
+        if (toAcross == _across && toDown == _down) return false;
+        _targetAcross = null;
+        _targetDown = null;
+        _across = toAcross;
+        _down = toDown;
+        return true;
+    }
+
+    /// <summary>How far to move so a run from <paramref name="start"/> to <paramref name="end"/> lies
+    /// between <paramref name="from"/> and <paramref name="to"/>: the least movement, or its start brought
+    /// in when it is longer than the room.</summary>
+    private static double Into(double start, double end, double from, double to)
+    {
+        if (end - start > to - from || start < from) return start - from;
+        if (end > to) return end - to;
+        return 0;
+    }
+
     /// <summary>
     /// The least movement on one axis that brings a run of rows (or columns) inside the part of the
     /// window the pinned band leaves uncovered. A run inside the pinned band is always in view on this

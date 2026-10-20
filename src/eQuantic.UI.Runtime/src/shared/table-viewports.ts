@@ -68,7 +68,9 @@ let scheduled = false;
 /** Commits after the pass's DOM is written, once for however many passes end before it runs (the
  * scroll viewports' move, for the same reasons). */
 export function scheduleTableViewportCommit(): void {
-  if (scheduled || declared.size === 0) return;
+  // A pass that declared none may still have removed one: the commit is where a table that left the
+  // document lets go of its observer, so it runs while any is watched, as the scroll views' does.
+  if (scheduled || (declared.size === 0 && watched.size === 0)) return;
   scheduled = true;
   const commit = () => {
     scheduled = false;
@@ -79,7 +81,7 @@ export function scheduleTableViewportCommit(): void {
 }
 
 export function commitTableViewports(): void {
-  if (declared.size === 0) return;
+  if (declared.size === 0 && watched.size === 0) return;
   if (typeof document === 'undefined') {
     declared.clear();
     return;
@@ -392,6 +394,36 @@ function listen(view: TableElement): void {
   };
   view.addEventListener('pointerup', end('up'));
   view.addEventListener('pointercancel', end('cancel'));
+
+  // The focus landing on a control in a cell out of view: the model brings it in, on the axes its band
+  // moves along, before the browser would scroll a clipping box to it. Its cells past the window are
+  // built, and Tab reaches them.
+  view.addEventListener('focusin', (event: FocusEvent) => {
+    const declaration = view.__eqTable;
+    const target = event.target as Element | null;
+    if (!declaration || !target) return;
+    let band = -1;
+    for (let i = 0; i < 4 && band < 0; i++) if (view.children[i]?.contains(target)) band = i;
+    if (band < 0) return;
+    const box = view.getBoundingClientRect();
+    const at = target.getBoundingClientRect();
+    const area = { x: at.left - box.left, y: at.top - box.top, width: at.width, height: at.height };
+    if (declaration.node.scroll.reveal(area, band === 0 || band === 2, band === 0 || band === 1)) {
+      paint(view);
+      report(view);
+    }
+  });
+  // A box the browser scrolled anyway (a focus it revealed itself, a find in the page) is put back:
+  // the bands move by transform, and a clipping box scrolled under them misplaces every cell in it.
+  view.addEventListener(
+    'scroll',
+    (event: Event) => {
+      const scrolled = event.target as HTMLElement;
+      if (scrolled.scrollTop !== 0) scrolled.scrollTop = 0;
+      if (scrolled.scrollLeft !== 0) scrolled.scrollLeft = 0;
+    },
+    true,
+  );
 }
 
 /** Takes or lets go of a pointer's capture. A pointer the browser no longer tracks (one already

@@ -675,6 +675,7 @@ export interface TableScrollModelLike {
   trackOf(axis: string): TableRectValue | null;
   thumbOf(axis: string): TableRectValue | null;
   apply(request: unknown, rows: TableSpansLike, columns: TableSpansLike, pinnedRows: number, pinnedColumns: number): boolean;
+  reveal(area: TableRectValue, across: boolean, down: boolean): boolean;
 }
 
 export interface TableViewCellNode extends VisualNodeValue {

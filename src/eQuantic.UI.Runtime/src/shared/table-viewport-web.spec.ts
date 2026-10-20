@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { lowerVisualNode, type LoweringContext } from './lowering';
 import { effectiveStyle } from './style-atomizer';
 import { photonTheme } from './design-system.generated';
-import { commitTableViewports } from './table-viewports';
+import { commitTableViewports, scheduleTableViewportCommit } from './table-viewports';
 import { TableScroll } from './components/TableScroll';
 import { UniformTableSpans } from './components/UniformTableSpans';
 import { TableRange, TableScrollRequest } from './value-types';
@@ -253,5 +253,50 @@ describe('TableViewport on the web', () => {
     expect(scrolled[scrolled.length - 1]).toBe(40);
     expect(layer(view, 0).style.transform).toBe('translate(0px, -40px)');
     expect(server.isConnected).toBe(true);
+  });
+
+  it('lets go of the observer of a table a pass removed, though the pass declared no other', async () => {
+    const observers: { disconnected: boolean }[] = [];
+    const original = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class {
+      readonly record = { disconnected: false };
+      constructor() {
+        observers.push(this.record);
+      }
+      observe() {}
+      disconnect() {
+        this.record.disconnected = true;
+      }
+    } as never;
+    try {
+      const { view } = build();
+      expect(observers).toHaveLength(1);
+
+      // A rerender that dropped the table: nothing is declared, and the commit still sweeps.
+      view.remove();
+      scheduleTableViewportCommit();
+      await Promise.resolve();
+
+      expect(observers[0].disconnected).toBe(true);
+    } finally {
+      globalThis.ResizeObserver = original;
+    }
+  });
+
+  it('brings a focused control in a cell past the window into view, and undoes a box the browser scrolled', () => {
+    const { scroll, view } = build();
+    const body = view.children[0] as HTMLElement;
+    const target = body.querySelector('span') as HTMLElement;
+    // Laid below the 588 points the cells scroll in.
+    target.getBoundingClientRect = () => ({ left: 200, top: 700, width: 96, height: 28, right: 296, bottom: 728, x: 200, y: 700, toJSON: () => ({}) }) as DOMRect;
+
+    target.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+
+    expect([scroll.offset.across, scroll.offset.down]).toEqual([0, 140]);
+    expect(layer(view, 0).style.transform).toBe('translate(0px, -140px)');
+
+    body.scrollTop = 40;
+    body.dispatchEvent(new Event('scroll'));
+    expect(body.scrollTop).toBe(0);
   });
 });

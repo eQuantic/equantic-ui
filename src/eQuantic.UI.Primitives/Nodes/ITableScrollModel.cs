@@ -64,4 +64,12 @@ public interface ITableScrollModel
     /// </summary>
     bool Apply(TableScrollRequest? request, TableSpans rows, TableSpans columns, int pinnedRows,
         int pinnedColumns);
+
+    /// <summary>
+    /// Brings an <paramref name="area"/> of the viewport, in its own coordinates at the current offset,
+    /// into the part the pinned bands leave uncovered, at once and on the axes it moves along there
+    /// (<paramref name="across"/>, <paramref name="down"/>): what a host does when the focus lands on a
+    /// control in a cell out of view. Answers whether it moved the offset.
+    /// </summary>
+    bool Reveal(Rect area, bool across, bool down);
 }

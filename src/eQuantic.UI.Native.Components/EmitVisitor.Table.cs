@@ -60,12 +60,13 @@ internal sealed partial class EmitVisitor
         EmitScrollbars(scroll, s, bounds);
     }
 
-    /// <summary>The cells of one band, or its marks, under the band's clip. A mark takes no press: it
-    /// is drawn over the cells, which keep every press it covers.</summary>
+    /// <summary>The cells of one band, or its marks, under the band's clip. A mark takes no press and
+    /// no focus: it is drawn over the cells, which keep every press it covers, and a control inside one
+    /// is no stop of the Tab order.</summary>
     private void EmitTableBand(TableViewport viewport, EmitState s, Rect band, int which, bool mark)
     {
         s.Builder.PushClip(new RRect(band));
-        var input = mark ? s.Input.Under(new Rect(band.X, band.Y, 0, 0)) : s.Input.Under(band);
+        var input = mark ? s.Input.Under(new Rect(band.X, band.Y, 0, 0)).WithoutFocusStops() : s.Input.Under(band);
         var outerSurface = s.Press.Surface;
         s.Press.Surface = Intersect(outerSurface, band);
         foreach (var child in s.Node)

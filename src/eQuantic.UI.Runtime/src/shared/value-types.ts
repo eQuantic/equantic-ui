@@ -661,18 +661,21 @@ export class TableOffset {
 }
 
 /** Mirror of the C# `TableRange`: a rectangle of cells, from a row and a column, over rows and
- * columns. */
+ * columns. Given a row and a column it covers that one cell, as the C# parameters' defaults say; built
+ * bare it is the struct's default, four zeros, which is what `default(TableRange)` spells here
+ * (`[ZeroConstructs]`). */
 export class TableRange {
   readonly row: number;
   readonly column: number;
   readonly rows: number;
   readonly columns: number;
 
-  constructor(row = 0, column = 0, rows = 1, columns = 1) {
-    this.row = row;
-    this.column = column;
-    this.rows = rows;
-    this.columns = columns;
+  constructor(row?: number, column?: number, rows?: number, columns?: number) {
+    const bare = row === undefined && column === undefined;
+    this.row = row ?? 0;
+    this.column = column ?? 0;
+    this.rows = rows ?? (bare ? 0 : 1);
+    this.columns = columns ?? (bare ? 0 : 1);
   }
 
   get lastRow(): number {

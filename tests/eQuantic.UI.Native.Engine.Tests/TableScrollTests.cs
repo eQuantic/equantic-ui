@@ -120,6 +120,25 @@ public class TableScrollTests
     }
 
     [Fact]
+    public void AnAreaOutOfView_IsRevealedClearOfThePinnedBands_OnTheAxesAsked()
+    {
+        var scroll = Arranged();
+        scroll.Wheel(300, 0, stepped: false, KeyModifiers.None);
+
+        // Below the window's 588 points: down by what it overhangs. Hidden under the 96-point pinned
+        // column, but asked to move down only: across stays where it was.
+        scroll.Reveal(new Rect(50, 700, 96, 28), across: false, down: true).Should().BeTrue();
+        scroll.Offset.Should().Be(new TableOffset(300, 140));
+
+        // Asked across too, it comes out from under the pinned column.
+        scroll.Reveal(new Rect(50, 300, 96, 28), across: true, down: true).Should().BeTrue();
+        scroll.Offset.Should().Be(new TableOffset(254, 140));
+
+        // In view already: nothing moves.
+        scroll.Reveal(new Rect(400, 300, 96, 28), across: true, down: true).Should().BeFalse();
+    }
+
+    [Fact]
     public void ATrackpad_MovesBothAxesByItsMovement()
     {
         var scroll = Arranged();

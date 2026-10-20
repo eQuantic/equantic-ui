@@ -28,6 +28,8 @@ public sealed class UniformTableSpans : TableSpans
     public override int IndexAt(double offset)
     {
         if (Count == 0 || Extent <= 0) return 0;
-        return Math.Clamp((int)Math.Floor(offset / Extent), 0, Count - 1);
+        // Held inside the axis while it is still a double: narrowed first, an offset past what an int
+        // counts wraps in the browser where .NET saturates (#1015).
+        return (int)Math.Clamp(Math.Floor(offset / Extent), 0, Count - 1);
     }
 }

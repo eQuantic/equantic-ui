@@ -4388,7 +4388,8 @@
         {
           "tag": "div",
           "attrs": {
-            "class": "eq-4xxlvk eq-gllhxs eq-kngwsg eq-mbtjfn eq-mfc69x eq-na4661 eq-z6eb5z"
+            "class": "eq-4xxlvk eq-gllhxs eq-kngwsg eq-mbtjfn eq-mfc69x eq-na4661 eq-z6eb5z",
+            "inert": ""
           },
           "events": [],
           "children": [
@@ -4424,7 +4425,8 @@
         {
           "tag": "div",
           "attrs": {
-            "class": "eq-1ogof62 eq-1yxcnfo eq-4xxlvk eq-gllhxs eq-kngwsg eq-mbtjfn eq-mfc69x"
+            "class": "eq-1ogof62 eq-1yxcnfo eq-4xxlvk eq-gllhxs eq-kngwsg eq-mbtjfn eq-mfc69x",
+            "inert": ""
           },
           "events": [],
           "children": [
@@ -4460,7 +4462,8 @@
         {
           "tag": "div",
           "attrs": {
-            "class": "eq-1fo26cq eq-1xlbso6 eq-kngwsg eq-mbtjfn eq-mfc69x eq-na4661 eq-z6eb5z"
+            "class": "eq-1fo26cq eq-1xlbso6 eq-kngwsg eq-mbtjfn eq-mfc69x eq-na4661 eq-z6eb5z",
+            "inert": ""
           },
           "events": [],
           "children": [
@@ -4496,7 +4499,8 @@
         {
           "tag": "div",
           "attrs": {
-            "class": "eq-1fo26cq eq-1ogof62 eq-1xlbso6 eq-1yxcnfo eq-kngwsg eq-mbtjfn eq-mfc69x"
+            "class": "eq-1fo26cq eq-1ogof62 eq-1xlbso6 eq-1yxcnfo eq-kngwsg eq-mbtjfn eq-mfc69x",
+            "inert": ""
           },
           "events": [],
           "children": [

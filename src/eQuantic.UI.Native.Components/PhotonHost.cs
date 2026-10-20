@@ -606,6 +606,7 @@ public sealed class PhotonHost
     private bool ScrollIntoView(FocusStop stop)
     {
         if (_lastFrame is null || stop.Bounds.Height <= 0) return false;
+        if (RevealInTable(stop)) return true;
 
         var regions = _lastFrame.ScrollRegions;
         var best = -1;
@@ -645,6 +646,38 @@ public sealed class PhotonHost
     }
 
     private const float ScrollIntoViewMargin = 24f;
+
+    /// <summary>
+    /// A stop in a table viewport's cell is brought into view by the table's own scroll, which the
+    /// scroll views' search never moves: its cells past the window are built, and Tab reaches them. The
+    /// cell is the element right under the viewport's own, and its band says which axes it moves along,
+    /// so a pinned header is never scrolled after. Answers whether the table moved.
+    /// </summary>
+    private bool RevealInTable(FocusStop stop)
+    {
+        var tables = _lastFrame!.TableRegions;
+        for (var i = tables.Count - 1; i >= 0; i--)
+        {
+            var table = tables[i];
+            TableViewCell? cell = null;
+            var at = stop.Element;
+            for (var parent = at.Parent; parent is not null; at = parent, parent = parent.Parent)
+            {
+                if (!ReferenceEquals(parent, table.Element)) continue;
+                cell = at.Configuration as TableViewCell;
+                break;
+            }
+            if (cell is null || cell.Mark) continue;
+            var viewport = table.Viewport;
+            var area = new Rect(stop.Bounds.X - table.Bounds.X, stop.Bounds.Y - table.Bounds.Y,
+                stop.Bounds.Width, stop.Bounds.Height);
+            if (!viewport.Scroll.Reveal(area, cell.Column >= viewport.PinnedColumns, cell.Row >= viewport.PinnedRows))
+                return false;
+            NeedsRender = true;
+            return true;
+        }
+        return false;
+    }
 
     /// <summary>
     /// Brings each code surface's primary caret into view when its model says it moved — the Photon

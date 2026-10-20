@@ -208,6 +208,23 @@ export class TableScroll {
         return true;
     }
 
+    reveal(area: Rect, across: boolean, down: boolean) {
+        let toAcross = across ? Math.min(Math.max(this._across + TableScroll.into(area.x, Math.fround(area.x + area.width), this._pinnedAcross, this._viewport.width), 0), this.maxAcross) : this._across;
+        let toDown = down ? Math.min(Math.max(this._down + TableScroll.into(area.y, Math.fround(area.y + area.height), this._pinnedDown, this._viewport.height), 0), this.maxDown) : this._down;
+        if (toAcross === this._across && toDown === this._down) return false;
+        this._targetAcross = null;
+        this._targetDown = null;
+        this._across = toAcross;
+        this._down = toDown;
+        return true;
+    }
+
+    static into(start: number, end: number, from: number, to: number) {
+        if (end - start > to - from || start < from) return start - from;
+        if (end > to) return end - to;
+        return 0;
+    }
+
     static reveal(offset: number, spans: TableSpans, first: number, count: number, pinned: number, pinnedExtent: number, window: number) {
         if (spans.count === 0 || first < pinned) return offset;
         let start = spans.offsetOf(Math.min(Math.max(first, 0), spans.count));

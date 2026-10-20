@@ -2,8 +2,10 @@ namespace eQuantic.UI.Primitives;
 
 /// <summary>
 /// A rectangle of cells in a table: the row and the column it starts at, and how many rows and
-/// columns it covers.
+/// columns it covers. Built with a row and a column it covers that one cell; its default, as every
+/// struct's, is four zeros.
 /// </summary>
+[ZeroConstructs("value-types.ts: a bare `new TableRange()` is four zeros; a row and a column given cover one cell.")]
 public readonly record struct TableRange(int Row, int Column, int Rows = 1, int Columns = 1)
 {
     /// <summary>The last row it covers.</summary>

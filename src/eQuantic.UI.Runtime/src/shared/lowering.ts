@@ -1729,7 +1729,7 @@ function lowerTableBand(
     if (placed) cells.push(placed);
   }
   const layer = element('div', { position: 'absolute', left: '0', top: '0' }, cells);
-  return element(
+  const box = element(
     'div',
     {
       position: 'absolute',
@@ -1744,6 +1744,10 @@ function lowerTableBand(
     },
     [layer],
   );
+  // A mark is drawn over the cells and is nothing to reach: no press, no Tab stop, nothing a reader
+  // lands on, whatever it holds.
+  if (marks) box.attributes['inert'] = '';
+  return box;
 }
 
 /** A cell placed in its band's layer over the rows and columns it covers, from the band's corner less

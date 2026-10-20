@@ -87,6 +87,9 @@ internal sealed partial class WebLoweringVisitor
             Style = new HtmlStyle { Position = Position.Absolute, Left = "0", Top = "0" },
         };
         box.Children.Add(layer);
+        // A mark is drawn over the cells and is nothing to reach: no press, no Tab stop, nothing a
+        // reader lands on, whatever it holds.
+        if (marks) (box.RawAttributes ??= new())["inert"] = "";
 
         var offset = viewport.Scroll.Offset;
         foreach (var cell in viewport.Cells)

@@ -9,7 +9,7 @@ import { SparseTableSpans } from './components/SparseTableSpans';
 import { TableScroll } from './components/TableScroll';
 import { UniformTableSpans } from './components/UniformTableSpans';
 import { Dictionary } from '../utils/dictionary';
-import { Point, Size, TableOffset, TableRange, TableScrollRequest } from './value-types';
+import { Point, Rect, Size, TableOffset, TableRange, TableScrollRequest } from './value-types';
 
 const EXCEL_ROWS = 1_048_576;
 const EXCEL_COLUMNS = 16_384;
@@ -33,6 +33,18 @@ describe('TableScroll (transpiled twin)', () => {
     expect(rows.offsetOf(EXCEL_ROWS - 1)).toBe(29_360_100);
     expect(rows.indexAt(29_360_127.5)).toBe(EXCEL_ROWS - 1);
     expect(rows.indexAt(-5)).toBe(0);
+    // Past what an int counts: held inside the axis before it is narrowed, as .NET answers (#1015).
+    expect(rows.indexAt(1e12)).toBe(EXCEL_ROWS - 1);
+    expect(rows.indexAt(70_000_000_000)).toBe(EXCEL_ROWS - 1);
+  });
+
+  it('builds a range of one cell from a row and a column, and four zeros bare, as .NET does', () => {
+    const one = new TableRange(2, 3);
+    expect([one.row, one.column, one.rows, one.columns]).toEqual([2, 3, 1, 1]);
+    const zero = new TableRange();
+    expect([zero.row, zero.column, zero.rows, zero.columns]).toEqual([0, 0, 0, 0]);
+    const offset = new TableOffset();
+    expect([offset.across, offset.down]).toEqual([0, 0]);
   });
 
   it('adds a sparse axis its overrides at both ends', () => {
@@ -71,6 +83,16 @@ describe('TableScroll (transpiled twin)', () => {
     const left = scroll.wheel(0, 100, false, SHIFT);
     expect([left.across, left.down]).toEqual([0, 100]);
     expect(scroll.offset.across).toBe(16_384 * 96 - scroll.viewport.width);
+  });
+
+  it('reveals an area out of view clear of the pinned bands, on the axes asked', () => {
+    const scroll = arranged();
+    scroll.wheel(300, 0, false, 0);
+    expect(scroll.reveal(new Rect(50, 700, 96, 28), false, true)).toBe(true);
+    expect(offsetOf(scroll)).toEqual([300, 140]);
+    expect(scroll.reveal(new Rect(50, 300, 96, 28), true, true)).toBe(true);
+    expect(offsetOf(scroll)).toEqual([254, 140]);
+    expect(scroll.reveal(new Rect(400, 300, 96, 28), true, true)).toBe(false);
   });
 
   it('leaves what it could not take at the end of the grid', () => {

@@ -343,6 +343,46 @@ public class TableViewportTests
         pieces.Select(p => p.Cell.Key).Should().BeEquivalentTo("mark:0/0", "mark:0/1");
     }
 
+    // ---- the keyboard ------------------------------------------------------------------------------
+
+    [Fact]
+    public void TabToACellPastTheWindow_ScrollsTheTableToIt()
+    {
+        var tally = new Tally();
+        var host = Host(Table(tally, rows: 100, columns: 3, pressable: true), 400, 200, tally);
+        var top = Region(host).Bounds.Y;
+        var reached = 0;
+
+        for (var i = 0; i < 30; i++)
+        {
+            host.KeyDown("Tab");
+            var frame = host.RenderFrame(new DisplayListBuilder(), _clock += 16);
+            var stop = frame.FocusStops.FirstOrDefault(s => s.Id == host.FocusedId);
+            if (stop.Element is null) continue;
+            var view = Region(host).Viewport.Scroll.Viewport;
+            stop.Bounds.Y.Should().BeGreaterThanOrEqualTo(top, $"Tab {i} focused a cell above the table");
+            (stop.Bounds.Y + stop.Bounds.Height).Should().BeLessThanOrEqualTo(top + view.Height + 0.5f,
+                $"Tab {i} focused a cell below the table's window without scrolling to it");
+            reached = Math.Max(reached, (int)((stop.Bounds.Y - top + Region(host).Viewport.Scroll.Offset.Down) / 28));
+        }
+
+        reached.Should().BeGreaterThan(6, "the Tab order went past the rows the window first showed");
+        Region(host).Viewport.Scroll.Offset.Down.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public void AControlInsideAMark_IsNoStopOfTheTabOrder()
+    {
+        var tally = new Tally();
+        var plain = Host(Table(tally, rows: 4, columns: 3), 400, 200, tally);
+        var stops = plain.LastFrame!.FocusStops.Count;
+
+        var mark = new TableViewCell(1, 1, new Pressable(new Text("ring", TypeRole.BodyM), () => { }), mark: true);
+        var marked = Host(Table(tally, rows: 4, columns: 3, marks: [mark]), 400, 200, tally);
+
+        marked.LastFrame!.FocusStops.Count.Should().Be(stops);
+    }
+
     // ---- a parent that builds again ---------------------------------------------------------------
 
     /// <summary>A screen whose grid shrinks: its builder refuses a row the grid no longer has.</summary>

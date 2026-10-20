@@ -134,7 +134,8 @@ whose version was already honoured SHALL move nothing, even after the user scrol
 
 A mark SHALL be drawn over the rectangle its range of cells covers, above the cells, and SHALL move
 with them. Where its range reaches a pinned band the mark SHALL be drawn there too, clipped to that
-band, and where it passes under a band it SHALL be hidden beneath it, on every target.
+band, and where it passes under a band it SHALL be hidden beneath it, on every target. A mark SHALL
+take no press and no focus, and SHALL be nothing a screen reader reaches, whatever it holds.
 
 #### Scenario: An outline across the pinned row
 
@@ -142,6 +143,22 @@ band, and where it passes under a band it SHALL be hidden beneath it, on every t
   down by three rows
 - **THEN** the mark is drawn over the pinned row and over rows 4 and 5, and nothing of it shows over the
   pinned row's cells except its own part
+
+#### Scenario: A control inside a mark
+
+- **WHEN** a mark holds a pressable control
+- **THEN** the Tab order holds no stop for it, and the table's accessible tree nothing of it
+
+### Requirement: The focus brings its cell into view
+
+When the focus lands on a control in a cell the window does not show, the viewport SHALL scroll, at
+once, until that control lies in the part of the window the pinned bands leave uncovered, on the axes
+the cell's band moves along, on every target. A box the browser scrolled by itself SHALL be put back.
+
+#### Scenario: Tab past the rows in view
+
+- **WHEN** Tab moves through the controls of a table's cells past the last row the window shows
+- **THEN** each focused control is inside the table's window when it is drawn
 
 ### Requirement: A viewport on an unbounded axis takes the visible extent of its scroller
 
