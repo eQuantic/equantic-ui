@@ -1,1 +1,3 @@
 #nullable enable
+eQuantic.UI.Primitives.CodeSurface.Notes.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Positioned!>!
+eQuantic.UI.Primitives.CodeSurface.Notes.init -> void

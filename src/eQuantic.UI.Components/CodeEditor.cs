@@ -26,7 +26,8 @@ public sealed class CodeEditor : StatefulComponent
     private float _offset;
     private float _viewport;
     private float _viewportWidth;
-    // How far the code has scrolled sideways: where the completion list's right edge has to stop.
+    // How far the code has scrolled sideways: where the completion list's and the card's right edges
+    // have to stop.
     private float _scrollX;
     // The completion list's first row in view, the most columns it has needed since it opened, and
     // the list of entries those columns were last measured over.
@@ -107,6 +108,35 @@ public sealed class CodeEditor : StatefulComponent
     /// </summary>
     public IReadOnlyList<ICodeCompletionProvider>? Completions { get; set; }
 
+    /// <summary>
+    /// The problems the APP knows about: a build's output, an analyzer's run. The editor draws each under
+    /// its range in its severity's colour, marks its line in the gutter, carries it through every edit
+    /// until the app reports again, and explains it in the card the pointer or F8 brings up. A list of
+    /// other problems than the last one replaces it; the same problems again change nothing, so a parent
+    /// rebuilding with the list it keeps does not put a problem back where it was before an edit.
+    /// </summary>
+    public IReadOnlyList<CodeDiagnostic> Diagnostics { get; set; } = [];
+
+    /// <summary>
+    /// What the editor asks for problems as its text changes (<see cref="ICodeDiagnosticProvider"/>): a
+    /// compiler, an analyzer, a server action that builds the buffer. They are asked once when they are
+    /// handed and then once typing pauses, one request out at a time. The editor puts these in its
+    /// diagnostics and takes out only what it put in, as it does with <see cref="Completions"/>.
+    /// <para>
+    /// A provider is known by reference, so keep each in a field, as a parent keeps a controller in
+    /// Flutter: one made in a build is a new provider every build, and is asked again at once, the
+    /// pause typing earns skipped.
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<ICodeDiagnosticProvider> DiagnosticProviders { get; set; } = [];
+
+    /// <summary>
+    /// What explains the code under the pointer or the caret (<see cref="ICodeHoverProvider"/>), in the
+    /// card beside the problems reported there. Put in and taken out as <see cref="DiagnosticProviders"/>
+    /// are.
+    /// </summary>
+    public IReadOnlyList<ICodeHoverProvider> HoverProviders { get; set; } = [];
+
     /// <summary>The live editor: the document, the selection, and every command. An IDE reaches for
     /// this to run its own — a formatter, a refactor, a language server's edit — and they undo like
     /// anything the person typed, because they go through the same primitive.</summary>
@@ -123,6 +153,9 @@ public sealed class CodeEditor : StatefulComponent
         // The list changes outside any input the surface handles (an answer arriving, an entry
         // resolved), and has to be drawn again when it does.
         editor.Completion.Changed += () => SetState(() => { });
+        // So do the problems (an answer, a report) and the card (the pointer resting, an answer).
+        editor.Diagnostics.Changed += () => SetState(() => { });
+        editor.Hover.Changed += () => SetState(() => { });
         return editor;
     }
 
@@ -133,6 +166,55 @@ public sealed class CodeEditor : StatefulComponent
     private bool _handedAny;
     private List<ICodeCompletionProvider> _put = [];
 
+    /// <summary>What was last reported, and the problem and hover providers the editor put in.</summary>
+    private IReadOnlyList<CodeDiagnostic>? _reported;
+    private List<ICodeDiagnosticProvider> _diagnosers = [];
+    private List<ICodeHoverProvider> _explainers = [];
+
+    /// <summary>
+    /// Reports <see cref="Diagnostics"/> when they are other problems than the last ones, and hands the
+    /// problem and hover providers when they are other providers, asking the problem providers at once.
+    /// </summary>
+    private void HandIntelligence(CodeEditorController editor)
+    {
+        if (_reported is null || !SameProblems(Diagnostics, _reported))
+        {
+            _reported = [.. Diagnostics];
+            editor.Diagnostics.Report(_reported);
+        }
+        if (!SameProviders(DiagnosticProviders, _diagnosers))
+        {
+            foreach (var provider in _diagnosers)
+            {
+                var at = IndexOfInstance(editor.Diagnostics.Providers, provider);
+                if (at >= 0) editor.Diagnostics.Providers.RemoveAt(at);
+            }
+            _diagnosers = [.. DiagnosticProviders];
+            foreach (var provider in _diagnosers) editor.Diagnostics.Providers.Add(provider);
+            // Asked at once, and what the providers taken out had found goes with them.
+            editor.Diagnostics.Check();
+        }
+        if (!SameProviders(HoverProviders, _explainers))
+        {
+            foreach (var provider in _explainers)
+            {
+                var at = IndexOfInstance(editor.Hover.Providers, provider);
+                if (at >= 0) editor.Hover.Providers.RemoveAt(at);
+            }
+            _explainers = [.. HoverProviders];
+            foreach (var provider in _explainers) editor.Hover.Providers.Add(provider);
+        }
+    }
+
+    /// <summary>Whether two lists hold the same problems in the same order.</summary>
+    private static bool SameProblems(IReadOnlyList<CodeDiagnostic> one, IReadOnlyList<CodeDiagnostic> other)
+    {
+        if (one.Count != other.Count) return false;
+        for (var i = 0; i < one.Count; i++)
+            if (!one[i].Equals(other[i])) return false;
+        return true;
+    }
+
     /// <summary>Hands <see cref="Completions"/> to the completion, the built-ins for null, unless
     /// what it holds already came from a list of the same providers. A provider the app added to the
     /// completion itself stays: the controller's own documentation tells an IDE to add its language
@@ -142,7 +224,11 @@ public sealed class CodeEditor : StatefulComponent
         if (_handedAny && SameProviders(Completions, _handed)) return;
         _handedAny = true;
         var providers = completion.Providers;
-        foreach (var provider in _put) RemoveInstance(providers, provider);
+        foreach (var provider in _put)
+        {
+            var at = IndexOfInstance(providers, provider);
+            if (at >= 0) providers.RemoveAt(at);
+        }
         _put = Completions is null
             ? [new CodeKeywordCompletionProvider(), new CodeWordCompletionProvider()]
             : [.. Completions];
@@ -152,23 +238,23 @@ public sealed class CodeEditor : StatefulComponent
         foreach (var provider in _put) providers.Add(provider);
     }
 
-    /// <summary>Takes <paramref name="provider"/> itself out of <paramref name="providers"/>: by
-    /// reference, since <c>Remove</c> takes the first one that EQUALS it, which for a provider that
-    /// is a record can be one the app added.</summary>
-    private static void RemoveInstance(IList<ICodeCompletionProvider> providers, ICodeCompletionProvider provider)
+    /// <summary>Where <paramref name="provider"/> itself stands in <paramref name="providers"/>, or -1:
+    /// found by reference, since <c>Remove</c> takes the first one that EQUALS it, which for a provider
+    /// that is a record can be one the app added.</summary>
+    private static int IndexOfInstance(IEnumerable<object> providers, object provider)
     {
-        for (var i = 0; i < providers.Count; i++)
+        var at = 0;
+        foreach (var held in providers)
         {
-            if (!ReferenceEquals(providers[i], provider)) continue;
-            providers.RemoveAt(i);
-            return;
+            if (ReferenceEquals(held, provider)) return at;
+            at++;
         }
+        return -1;
     }
 
     /// <summary>Whether two lists hold the same providers in the same order: a parent's build makes
     /// a new list every time, around the providers it keeps.</summary>
-    private static bool SameProviders(IReadOnlyList<ICodeCompletionProvider>? one,
-        IReadOnlyList<ICodeCompletionProvider>? other)
+    private static bool SameProviders(IReadOnlyList<object>? one, IReadOnlyList<object>? other)
     {
         if (one is null || other is null) return one is null && other is null;
         if (one.Count != other.Count) return false;
@@ -212,22 +298,66 @@ public sealed class CodeEditor : StatefulComponent
     }
 
     /// <summary>
+    /// The gutter's markers: the app's own, and on every other line in view that holds a problem, an
+    /// error's or a warning's marker, the worst problem of the line deciding. An information or a hint
+    /// marks no line: the gutter is where the eye looks for what is wrong.
+    /// </summary>
+    private IReadOnlyList<CodeGutterMarker> Gutter(CodeEditorController editor, int first, int last)
+    {
+        var problems = editor.Diagnostics.Items;
+        if (problems.Count == 0) return GutterMarkers;
+        // The worst severity of each line, as the number it is: a severity is a word in the browser,
+        // where comparing two would compare their letters.
+        var worst = new Dictionary<int, int>();
+        foreach (var problem in problems)
+        {
+            var severity = (int)problem.Severity;
+            if (severity < (int)CodeDiagnosticSeverity.Warning) continue;
+            var line = problem.Range.Start.Line;
+            if (line < first || line > last) continue;
+            if (!worst.TryGetValue(line, out var known) || severity > known) worst[line] = severity;
+        }
+        if (worst.Count == 0) return GutterMarkers;
+        var markers = new List<CodeGutterMarker>(GutterMarkers);
+        foreach (var entry in worst)
+        {
+            if (markers.Any(marker => marker.Line == entry.Key)) continue;
+            markers.Add(new CodeGutterMarker(entry.Key,
+                entry.Value == (int)CodeDiagnosticSeverity.Error ? CodeGutterKind.Error : CodeGutterKind.Warning));
+        }
+        return markers;
+    }
+
+    /// <summary>
     /// Everything the block should mark: what the app handed in, the search matches on the lines from
-    /// <paramref name="first"/> to <paramref name="last"/>, and the bracket pair under the caret.
-    /// Computed per frame from the model rather than stored, because all three are functions of
-    /// where the caret is — and a stored copy would be one keystroke behind.
+    /// <paramref name="first"/> to <paramref name="last"/>, the bracket pair under the caret, and the
+    /// problems on those lines, in the colours of <paramref name="theme"/>. Computed per frame from the
+    /// model rather than stored, because the first three are functions of where the caret is — and a
+    /// stored copy would be one keystroke behind.
     /// <para>
-    /// Only the matches in the window become marks. A search over a long file finds tens of
-    /// thousands, and every one of them was a decoration the block walked twice to throw away, on
-    /// every build.
+    /// Only the matches and the problems in the window become marks. A search over a long file finds
+    /// tens of thousands, and every one of them was a decoration the block walked twice to throw away,
+    /// on every build.
     /// </para>
     /// </summary>
     private IReadOnlyList<CodeDecoration> Marks(CodeEditorController editor, IReadOnlyList<CodeRange> matches,
-        int first, int last)
+        int first, int last, IAppTheme theme)
     {
-        if (matches.Count == 0 && !MatchBrackets && editor.Composition is null) return Decorations;
+        var problems = editor.Diagnostics.Items;
+        if (matches.Count == 0 && !MatchBrackets && editor.Composition is null && problems.Count == 0) return Decorations;
 
         var marks = new List<CodeDecoration>(Decorations);
+        // Each problem in view under its range, as a wave in its severity's colour, or three dots for a
+        // hint; the block draws one of no width under the cell where it stands.
+        foreach (var problem in problems)
+        {
+            if (problem.Range.End.Line < first || problem.Range.Start.Line > last) continue;
+            marks.Add(new CodeDecoration(problem.Range,
+                problem.Severity == CodeDiagnosticSeverity.Hint ? CodeDecorationKind.Dots : CodeDecorationKind.Squiggle)
+            {
+                Color = CodeHoverCard.SeverityColor(theme, problem.Severity),
+            });
+        }
         // The text an input method is still composing is IN the document, and says so: underlined,
         // in the code's own ink, until it is committed or cancelled.
         if (editor.Composition is { } composition)
@@ -297,6 +427,9 @@ public sealed class CodeEditor : StatefulComponent
         SearchMatchCase = fresh.SearchMatchCase;
         OnGutterPressed = fresh.OnGutterPressed;
         Completions = fresh.Completions;
+        Diagnostics = fresh.Diagnostics;
+        DiagnosticProviders = fresh.DiagnosticProviders;
+        HoverProviders = fresh.HoverProviders;
     }
 
     /// <summary>What find is looking for: the bar's text while the bar is open, else what the app
@@ -350,6 +483,7 @@ public sealed class CodeEditor : StatefulComponent
         var editor = Editor;
         editor.ReadOnly = ReadOnly;
         HandProviders(editor.Completion);
+        HandIntelligence(editor);
         // The controller's OWN highlighter, kept across frames: a keystroke re-colours the line it
         // touched and stops, where a fresh one per frame would re-tokenize the file per character.
         var highlighter = editor.Highlighter;
@@ -392,7 +526,7 @@ public sealed class CodeEditor : StatefulComponent
         {
             Document = editor.Document,
             Language = highlighter.Language,
-            Decorations = Marks(editor, matches, first, last),
+            Decorations = Marks(editor, matches, first, last, context.Theme),
             ShowLineNumbers = ShowLineNumbers,
             FirstLineNumber = FirstLineNumber,
             // Bare content — see CodeBlock.Standalone. The slab and both scroll views are built
@@ -401,7 +535,7 @@ public sealed class CodeEditor : StatefulComponent
             Standalone = false,
             Size = Size,
             Inverse = Inverse,
-            GutterMarkers = GutterMarkers,
+            GutterMarkers = Gutter(editor, first, last),
             OnGutterPressed = OnGutterPressed,
             Highlighter = highlighter,
             // THE grid — the same numbers the surface places the caret and the band on.
@@ -481,6 +615,19 @@ public sealed class CodeEditor : StatefulComponent
             _measured = null;
         }
 
+        // The card, while one shows and no list does: drawn by the surface over what it explains, in the
+        // code's own coordinates, so it moves with the code (docs/CODE-EDITOR-PLAN.md, §7), above the
+        // line it explains and below it when the view has no room above.
+        var notes = new List<Positioned>();
+        var hover = editor.Hover;
+        if (hover.IsOpen && offered is null)
+        {
+            var (card, cardWidth, cardHeight) = CodeHoverCard.Build(context, hover, metrics, _viewportWidth);
+            var (x, y) = CodeHoverCard.Place(editor.CaretRect(hover.Range.Start), windowed ? _offset : 0,
+                _scrollX, _viewportWidth, cardWidth, cardHeight);
+            notes.Add(new Positioned(card, top: y, start: x));
+        }
+
         VisualNode surface = new CodeSurface(block, editor)
         {
             Autofocus = Autofocus,
@@ -493,6 +640,7 @@ public sealed class CodeEditor : StatefulComponent
             Options = offered,
             OptionsOrigin = offeredAt,
             HighlightedOption = highlighted,
+            Notes = notes,
         };
 
         // The viewport lives OUT HERE, around the surface, rather than inside the block. One
@@ -513,12 +661,12 @@ public sealed class CodeEditor : StatefulComponent
                 if (MathF.Abs(width - _viewportWidth) < 1) return;
                 SetState(() => _viewportWidth = width);
             },
-            // How far it slid, which only the completion list reads: a rebuild while one shows, and
-            // otherwise a number kept for when one opens.
+            // How far it slid, which only the completion list and the card read: a rebuild while either
+            // shows, and otherwise a number kept for when one opens.
             OnScrolled = offset =>
             {
                 if (MathF.Abs(offset - _scrollX) < 1) return;
-                if (editor.Completion.IsOpen) SetState(() => _scrollX = offset);
+                if (editor.Completion.IsOpen || editor.Hover.IsOpen) SetState(() => _scrollX = offset);
                 else _scrollX = offset;
             },
         };

@@ -176,13 +176,25 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     // Transparent to layout: the surface adds a caret and a selection, never a box. What it OFFERS at
     // its caret (Options) stands at its origin, in the surface's coordinates, at the size it asks for,
     // and takes no room: a list drawn under a line must not lengthen the code it is drawn over.
+    //
+    // Its NOTES (what it explains, a hover card) are laid the same way after the options, each at its
+    // start and top: a card over a line must not lengthen the code either.
     public LayoutNode Visit(CodeSurface node, MeasureState s)
     {
         var result = MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
-        if (node.Options is not { } options) return result;
-        var offered = Measure(options, LayoutConstraints.Unbounded, _ctx, s.At?.ChildAt(1));
-        offered.Bounds = offered.Bounds with { X = node.OptionsOrigin.X, Y = node.OptionsOrigin.Y };
-        result.Adopt(offered);
+        var slot = 1;
+        if (node.Options is { } options)
+        {
+            var offered = Measure(options, LayoutConstraints.Unbounded, _ctx, s.At?.ChildAt(slot++));
+            offered.Bounds = offered.Bounds with { X = node.OptionsOrigin.X, Y = node.OptionsOrigin.Y };
+            result.Adopt(offered);
+        }
+        foreach (var note in node.Notes)
+        {
+            var noted = Measure(note, LayoutConstraints.Unbounded, _ctx, s.At?.ChildAt(slot++));
+            noted.Bounds = noted.Bounds with { X = note.Start ?? 0, Y = note.Top ?? 0 };
+            result.Adopt(noted);
+        }
         return result;
     }
 

@@ -1,1 +1,7 @@
 #nullable enable
+*REMOVED*[EQX0001]eQuantic.UI.Native.Components.CodeRegion.CodeRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.CodeSurface! Surface, eQuantic.UI.Primitives.Element! Element, eQuantic.UI.Primitives.Rect? Offered = null, eQuantic.UI.Primitives.Rect? Visible = null) -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Components.CodeRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.CodeSurface! Surface, out eQuantic.UI.Primitives.Element! Element, out eQuantic.UI.Primitives.Rect? Offered, out eQuantic.UI.Primitives.Rect? Visible) -> void
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.CodeRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.CodeSurface! Surface, eQuantic.UI.Primitives.Element! Element, eQuantic.UI.Primitives.Rect? Offered = null, eQuantic.UI.Primitives.Rect? Visible = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>? Notes = null) -> void
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.CodeSurface! Surface, out eQuantic.UI.Primitives.Element! Element, out eQuantic.UI.Primitives.Rect? Offered, out eQuantic.UI.Primitives.Rect? Visible, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>? Notes) -> void
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.Notes.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>?
+[EQX0001]eQuantic.UI.Native.Components.CodeRegion.Notes.init -> void

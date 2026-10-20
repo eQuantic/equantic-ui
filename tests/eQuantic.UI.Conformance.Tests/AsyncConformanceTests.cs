@@ -22,6 +22,10 @@ namespace eQuantic.UI.Conformance.Tests;
 /// </summary>
 public class AsyncConformanceTests
 {
+    // The harness imports System.Threading.Tasks and not System.Threading, as CancellationConformanceTests
+    // says: the cancellation pair is named whole.
+    private const string Source = "System.Threading.CancellationTokenSource";
+
     [SkippableTheory]
     [InlineData("async Task<int> F(int v) => v * 2; var r = await F(21); return $\"{r}\";")]
     [InlineData("async Task<int> F(int v) => v + 1; var a = await F(1); var b = await F(a); return $\"{a}{b}\";")]
@@ -80,6 +84,49 @@ public class AsyncConformanceTests
     [InlineData("async Task F(int v) { var _ = v; } await F(2); return \"done\";")]
     [InlineData("Func<Task<int>> f = async () => { await Task.Yield(); return 11; }; return $\"{await f()}\";")]
     public void TheTaskSurface_MatchesDotNet(string program)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(program);
+    }
+
+    /// <summary>
+    /// <c>Task.Delay</c> waits as .NET waits (#299). It was a <c>setTimeout</c> of its first argument: a
+    /// <c>TimeSpan</c> was read as no delay at all, so the 60 ms wait below ended at once, and the token
+    /// was dropped, so a cancelled one waited the whole second out. The refusals are .NET's own, each
+    /// overload with its message and its parameter, before the token is looked at.
+    /// <para>
+    /// The wait is measured on one flow, with nothing shared: two waits racing to append to one string ran
+    /// their continuations on two threads of .NET's pool, and under the suite's load one append was lost.
+    /// </para>
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var started = DateTime.UtcNow; await Task.Delay(TimeSpan.FromMilliseconds(60)); "
+        + "return (DateTime.UtcNow - started).TotalMilliseconds >= 50 ? \"waited\" : \"went on at once\";")]
+    [InlineData("var source = new " + Source + "(); source.Cancel(); "
+        + "try { await Task.Delay(1000, source.Token); return \"waited\"; } "
+        + "catch (TaskCanceledException) { return \"canceled\"; }")]
+    [InlineData("var source = new " + Source + "(); var wait = Task.Delay(5000, source.Token); source.CancelAfter(20); "
+        + "try { await wait; return \"waited\"; } catch (TaskCanceledException) { return \"task canceled\"; } catch (OperationCanceledException) { return \"operation canceled\"; }")]
+    [InlineData("var source = new " + Source + "(30); "
+        + "try { await Task.Delay(TimeSpan.FromMilliseconds(-1), source.Token); return \"waited\"; } "
+        + "catch (TaskCanceledException) { return \"canceled\"; }")]
+    [InlineData("try { await Task.Delay(-2); return \"waited\"; } "
+        + "catch (ArgumentOutOfRangeException e) { return $\"{e.ParamName}|{e.Message}\"; }")]
+    [InlineData("var source = new " + Source + "(); source.Cancel(); "
+        + "try { await Task.Delay(TimeSpan.FromMilliseconds(-2), source.Token); return \"waited\"; } "
+        + "catch (ArgumentOutOfRangeException e) { return $\"{e.ParamName}|{e.Message}\"; }")]
+    // Named out of order: the token is the second parameter whatever the order it is written in, so a
+    // cancelled one ends the wait, where the first argument read as the delay waited nothing and went on.
+    [InlineData("var source = new " + Source + "(); source.Cancel(); "
+        + "try { await Task.Delay(cancellationToken: source.Token, millisecondsDelay: 1000); return \"waited\"; } "
+        + "catch (TaskCanceledException) { return \"canceled\"; }")]
+    // No wait at all is a task already done: a token cancelled after the call cannot change it, for
+    // milliseconds as for a TimeSpan (found by Copilot reviewing #1008).
+    [InlineData("var source = new " + Source + "(); var wait = Task.Delay(0, source.Token); source.Cancel(); "
+        + "try { await wait; return \"done\"; } catch (TaskCanceledException) { return \"canceled\"; }")]
+    [InlineData("var source = new " + Source + "(); var wait = Task.Delay(TimeSpan.Zero, source.Token); source.Cancel(); "
+        + "try { await wait; return \"done\"; } catch (TaskCanceledException) { return \"canceled\"; }")]
+    public void TaskDelay_WaitsAndCancelsAsDotNet(string program)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(program);

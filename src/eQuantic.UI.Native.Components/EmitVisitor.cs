@@ -216,15 +216,22 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     public Nothing Visit(Text node, EmitState s) { EmitTextNode(node, s); Descend(s); return Nothing.Value; }
     public Nothing Visit(TextEntry node, EmitState s) { EmitTextEntry(node, s); Descend(s); return Nothing.Value; }
     /// <summary>The code, then its caret, then what the surface offers at the caret (its second
-    /// child, when it has options): over the caret, and registered last, so a press on a row of the
-    /// list lands on the row and not on the code under it.</summary>
+    /// child, when it has options) and its notes: over the caret, and registered last, so a press on a row
+    /// of the list lands on the row and not on the code under it. The hit regions its notes hold are
+    /// recorded (<see cref="CodeNoteLayer"/>), so a note covers a control painted before it.</summary>
     public Nothing Visit(CodeSurface node, EmitState s)
     {
+        var code = s.Input.CodeCount;
         EmitCode(node, s);
+        var registered = s.Input.CodeCount > code;
         var children = s.Node.Children;
         if (children.Count > 0) Emit(s with { Node = children[0] });
         EmitCodeCaret(node, s);
-        for (var i = 1; i < children.Count; i++) Emit(s with { Node = children[i] });
+        var firstNote = node.Options is not null ? 2 : 1;
+        for (var i = 1; i < Math.Min(firstNote, children.Count); i++) Emit(s with { Node = children[i] });
+        var firstHit = s.Input.HitCount;
+        for (var i = firstNote; i < children.Count; i++) Emit(s with { Node = children[i] });
+        if (registered && children.Count > firstNote) s.Input.Add(new CodeNoteLayer(code, firstHit, s.Input.HitCount));
         return Nothing.Value;
     }
     public Nothing Visit(Image node, EmitState s) { EmitImageNode(node, s); Descend(s); return Nothing.Value; }

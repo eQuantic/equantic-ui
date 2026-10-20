@@ -5,7 +5,7 @@ public enum CodeDecorationKind : byte
 {
     /// <summary>A background wash — a search match, a highlighted symbol.</summary>
     Highlight = 0,
-    /// <summary>A wavy underline — a diagnostic, in the diagnostic's colour.</summary>
+    /// <summary>A wavy underline: a problem, in its severity's colour.</summary>
     Squiggle = 1,
     /// <summary>A box around the range — a matching bracket.</summary>
     Outline = 2,
@@ -18,4 +18,7 @@ public enum CodeDecorationKind : byte
     /// a line a diff added or removed. The words that changed in it wear a <see cref="Highlight"/>
     /// over it.</summary>
     Line = 5,
+    /// <summary>Three dots under the range's first characters, in the muted ink: a hint, which says
+    /// something about the code without calling it wrong.</summary>
+    Dots = 6,
 }

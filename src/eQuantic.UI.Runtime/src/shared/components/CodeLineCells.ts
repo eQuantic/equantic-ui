@@ -56,6 +56,12 @@ export class CodeLineCells {
         return this.text.length;
     }
 
+    columnUnder(cell: number) {
+        if (cell < 0) return -1;
+        for (let i = 0; i < this.count; i++) if (cell < Math.fround(this._cells[i + 1])) return this._columns[i];
+        return -1;
+    }
+
     next(column: number) {
         if (column >= this.text.length) return this.text.length;
         if (column < 0) return 0;

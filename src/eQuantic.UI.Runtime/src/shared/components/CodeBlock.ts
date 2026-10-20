@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRow, CodeTokenKindValue, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRow, CodeTokenKindValue, ColorToken, Column, CornerRadii, Drawing, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VectorDrawing, VectorPaint, VectorShape, VisualNode } from "../runtime-exports";
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
@@ -8,6 +8,8 @@ export class CodeBlock extends StatelessComponent {
     static linePass: number = 0;
     static highlightPass: number = 1;
     static outlinePass: number = 2;
+    static waveHeight: number = 4;
+    static wavePeriod: number = 4;
     declare document: CodeDocument;
     declare language: any;
     declare showLineNumbers: boolean;
@@ -56,10 +58,12 @@ export class CodeBlock extends StatelessComponent {
             if (CodeBlock.$failure !== null) throw CodeBlock.$failure;
             let $slots: any = CodeBlock.$slots = {};
             try {
+                $slots.hintDots = null;
                 $slots.codeSlab = undefined;
                 $slots.codeInk = undefined;
                 $slots.codeInkMuted = undefined;
                 $slots.codeSlabActive = undefined;
+                $slots.hintDots = new VectorDrawing(0, 0, 8, 2, [new VectorShape('M0.2 1a0.8 0.8 0 1 0 1.6 0a0.8 0.8 0 1 0 -1.6 0' + 'M3.2 1a0.8 0.8 0 1 0 1.6 0a0.8 0.8 0 1 0 -1.6 0' + 'M6.2 1a0.8 0.8 0 1 0 1.6 0a0.8 0.8 0 1 0 -1.6 0', VectorPaint.inherit)]);
                 $slots.codeSlab = new ColorToken({ r: 0x10, g: 0x14, b: 0x18, a: 0xFF });
                 $slots.codeInk = new ColorToken({ r: 0xC9, g: 0xD4, b: 0xDE, a: 0xFF });
                 $slots.codeInkMuted = new ColorToken({ r: 0x7C, g: 0x8A, b: 0x99, a: 0xFF });
@@ -70,6 +74,14 @@ export class CodeBlock extends StatelessComponent {
             }
         }
         return CodeBlock.$slots;
+    }
+
+    static get hintDots(): VectorDrawing {
+        return CodeBlock.$init().hintDots;
+    }
+
+    static set hintDots(value: VectorDrawing) {
+        CodeBlock.$init().hintDots = value;
     }
 
     static get codeSlab(): ColorToken {
@@ -400,17 +412,25 @@ export class CodeBlock extends StatelessComponent {
             }
             let from = line === start.line ? start.column : 0;
             let to = line === end.line ? end.column : document.line(line).length;
-            if (to <= from) continue;
+            let point = $eq.equals(start, end) && (decoration.kind === 'squiggle' || decoration.kind === 'dots');
+            if (to <= from && !point) continue;
             let cells = cellsOf(line);
             let left = Math.fround(metrics.contentLeft + Math.fround(Math.fround(cells.cellOf(from)) * metrics.columnWidth));
-            let width = Math.fround(Math.fround(cells.cellOf(to) - cells.cellOf(from)) * metrics.columnWidth);
-            _seq.push((() => { const $s = decoration.kind; if ($s === 'outline') return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, borderWidth: 1, borderColor: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); if ($s === 'squiggle') return new Positioned(new Box(new BoxStyle({ width: width, height: 2, background: color })), Math.fround(Math.fround(top + metrics.lineHeight) - 2), null, null, left); if ($s === 'strike') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), Math.fround(top + Math.fround(metrics.lineHeight / 2)), null, null, left); if ($s === 'underline') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), Math.fround(Math.fround(top + metrics.lineHeight) - 2), null, null, left); return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, background: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); })());
+            let width = point ? Math.fround(metrics.columnWidth * Math.fround(Math.max(1, cells.cellOf(Math.min(from + 1, document.line(line).length)) - cells.cellOf(from)))) : Math.fround(Math.fround(cells.cellOf(to) - cells.cellOf(from)) * metrics.columnWidth);
+            _seq.push((() => { const $s = decoration.kind; if ($s === 'outline') return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, borderWidth: 1, borderColor: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); if ($s === 'squiggle') return new Positioned(CodeBlock.wave(width, color), Math.fround(Math.fround(top + metrics.lineHeight) - CodeBlock.waveHeight), null, null, left); if ($s === 'dots') return new Positioned(new Drawing(CodeBlock.hintDots, CodeBlock.hintDots.width, CodeBlock.hintDots.height, color), Math.fround(Math.fround(top + metrics.lineHeight) - CodeBlock.hintDots.height), null, null, left); if ($s === 'strike') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), Math.fround(top + Math.fround(metrics.lineHeight / 2)), null, null, left); if ($s === 'underline') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), Math.fround(Math.fround(top + metrics.lineHeight) - 2), null, null, left); return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, background: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); })());
         }
         return _seq;
     }
 
     defaultColor(kind: CodeDecorationKindValue, theme: any) {
-        return (() => { const $s = kind; if ($s === 'squiggle') return theme.colors('destructive').base; if ($s === 'outline') return theme.borderStrong; if ($s === 'strike') return theme.textMuted; if ($s === 'underline') return CodeBlock.inkFor(this.inverse, theme); if ($s === 'line') return theme.colors('primary').subtle; return theme.colors('warning').subtle; })();
+        return (() => { const $s = kind; if ($s === 'squiggle') return theme.colors('destructive').base; if ($s === 'outline') return theme.borderStrong; if ($s === 'strike') return theme.textMuted; if ($s === 'underline') return CodeBlock.inkFor(this.inverse, theme); if ($s === 'line') return theme.colors('primary').subtle; if ($s === 'dots') return theme.textMuted; return theme.colors('warning').subtle; })();
+    }
+
+    static wave(width: number, color: ColorToken) {
+        let path = $eq.text.stringBuilder('M0 2');
+        for (let x = 0; Math.fround(x) < width; x += CodeBlock.wavePeriod) path.append(' L').append($eq.text.format(x + Math.trunc(CodeBlock.wavePeriod / 2), null, undefined, undefined, 'int32')).append(' 0 L').append($eq.text.format(x + CodeBlock.wavePeriod, null, undefined, undefined, 'int32')).append(' 2');
+        let wave = new VectorDrawing(0, -1, width, CodeBlock.waveHeight, [new VectorShape(path.toString(), VectorPaint.none, VectorPaint.inherit, 1)]);
+        return new Drawing(wave, width, CodeBlock.waveHeight, color);
     }
 
     static addSpan(code: Row, cells: CodeLineCells, from: number, to: number, color: ColorToken, style: TypeStyle, columnWidth: number) {

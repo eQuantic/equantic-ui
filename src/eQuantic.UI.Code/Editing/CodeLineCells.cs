@@ -89,6 +89,19 @@ public sealed class CodeLineCells
         return Text.Length;
     }
 
+    /// <summary>
+    /// The column of the text element drawn on <paramref name="cell"/>, or -1 past the line's last cell:
+    /// what a pointer resting there is over. A click asks the nearer side of an element instead
+    /// (<see cref="ColumnAt"/>), because a caret goes between characters and a hover is about one.
+    /// </summary>
+    public int ColumnUnder(float cell)
+    {
+        if (cell < 0) return -1;
+        for (var i = 0; i < Count; i++)
+            if (cell < _cells[i + 1]) return _columns[i];
+        return -1;
+    }
+
     /// <summary>The boundary after <paramref name="column"/>: where → and Delete go.</summary>
     public int Next(int column)
     {

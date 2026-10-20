@@ -8,7 +8,9 @@ namespace DefaultUIDashboard.Screens;
 /// <summary>
 /// The write-once <see cref="CodeEditor"/>, live in the browser, over a file long enough to scroll
 /// in both directions. The SAME component, controller and keymap run natively on Photon (the
-/// Studio's gallery), so what this screen shows is what an IDE built on the SDK gets.
+/// Studio's gallery), so what this screen shows is what an IDE built on the SDK gets: the problems a
+/// provider finds as the text changes (<see cref="LedgerLint"/>), and the card that explains a name
+/// (<see cref="LedgerHover"/>).
 /// </summary>
 [Page("/code", Title = "Code editor — eQuantic Console")]
 public sealed class CodeScreen : StatefulComponent
@@ -17,6 +19,11 @@ public sealed class CodeScreen : StatefulComponent
     private bool _navOpen;
 
     private string _status = "";
+
+    /// <summary>Kept, as a controller is kept: a provider made in a build would be a new one every
+    /// build, and asked again at once.</summary>
+    private readonly LedgerLint _lint = new();
+    private readonly LedgerHover _hover = new();
 
     private static readonly string Source = BuildSource();
 
@@ -57,7 +64,8 @@ public sealed class CodeScreen : StatefulComponent
             lines.Add("    public void Add(decimal amount)");
             lines.Add("    {");
             lines.Add("        if (amount <= 0) throw new ArgumentOutOfRangeException(nameof(amount));");
-            lines.Add("        _amounts.Add(amount);");
+            // One misspelt field, for the problems to have an error to show: fixing it takes it away.
+            lines.Add(name == "Refund" ? "        _amonts.Add(amount);" : "        _amounts.Add(amount);");
             lines.Add("    }");
             lines.Add("");
             lines.Add("    /* A block comment");
@@ -81,7 +89,7 @@ public sealed class CodeScreen : StatefulComponent
         {
             Width = SizeValue.Fill,
             Padding = new EdgeInsets(Space.S4, Space.S4, 0, Space.S4),
-        }, new Text(_status.Length == 0 ? "Click into the code and type." : _status,
+        }, new Text(_status.Length == 0 ? "Rest the pointer on a name, or click into the code and press F8." : _status,
             TypeRole.BodyM, theme.TextSecondary, maxLines: 1)));
         page.Add(new Box(new BoxStyle
         {
@@ -93,6 +101,8 @@ public sealed class CodeScreen : StatefulComponent
             Caption = "Ledger.cs",
             OnSelectionChanged = range => SetState(() =>
                 _status = $"Ln {range.Focus.Line + 1}, Col {range.Focus.Column + 1}"),
+            DiagnosticProviders = [_lint],
+            HoverProviders = [_hover],
         }));
 
         return new Box(new BoxStyle

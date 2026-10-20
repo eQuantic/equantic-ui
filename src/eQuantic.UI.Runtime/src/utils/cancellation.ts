@@ -265,6 +265,62 @@ export class CancellationTokenRegistration {
   }
 }
 
+/**
+ * `Task.Delay(delay, cancellationToken)`: a task that ends after `delay`, as .NET's does. A number is
+ * the milliseconds overload and a `TimeSpan` the other, each refused below -1 with its own message and
+ * parameter, a `TimeSpan` past the longest timer .NET holds too, before the token is looked at. -1 waits
+ * until the token cancels; a token cancelled before or during the wait ends the task as cancelled, a
+ * `TaskCanceledException` that carries the token, which is what an `await` of it throws. A wait past a
+ * browser timer's range is taken in steps, as `cancelAfter` takes it.
+ */
+export function delay(delay: Delay, token?: CancellationToken): Promise<void> {
+  const milliseconds = typeof delay === 'number' ? delay : Math.trunc(delay.totalMilliseconds);
+  if (typeof delay === 'number' && milliseconds < -1) {
+    throw exception(
+      'System.ArgumentOutOfRangeException',
+      "The value needs to be either -1 (signifying an infinite timeout), 0 or a positive integer. (Parameter 'millisecondsDelay')",
+    );
+  }
+  if (typeof delay !== 'number' && (milliseconds < -1 || milliseconds > LONGEST_DELAY)) {
+    throw exception(
+      'System.ArgumentOutOfRangeException',
+      'The value needs to translate in milliseconds to -1 (signifying an infinite timeout), 0, or a positive integer ' +
+        "less than or equal to the maximum allowed timer duration. (Parameter 'delay')",
+    );
+  }
+  const canceled = (): Error => {
+    const error = exception('System.Threading.Tasks.TaskCanceledException', 'A task was canceled.');
+    Object.defineProperty(error, 'cancellationToken', { value: token ?? CancellationToken.none });
+    return error;
+  };
+  if (token?.isCancellationRequested) return Promise.reject(canceled());
+  // No wait at all is a task already done, as .NET's Task.CompletedTask: a token cancelled after the call
+  // cannot change it.
+  if (milliseconds === 0) return Promise.resolve();
+  return new Promise<void>((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const registration = token?.canBeCanceled
+      ? token.register(() => {
+          if (timer !== null) clearTimeout(timer);
+          reject(canceled());
+        })
+      : null;
+    const wait = (left: number): void => {
+      const step = Math.min(left, LONGEST_STEP);
+      timer = setTimeout(() => {
+        timer = null;
+        if (left > step) {
+          wait(left - step);
+          return;
+        }
+        registration?.dispose();
+        resolve();
+      }, step);
+    };
+    if (milliseconds !== -1) wait(milliseconds);
+  });
+}
+
 const hashes = new WeakMap<object, number>();
 let nextHash = 1;
 

@@ -43,7 +43,11 @@ internal sealed class ChildSlots : IVisualNodeVisitor<WindowSizeClass, NodeSlots
 
     public NodeSlots Visit(Canvas node, WindowSizeClass state) => NodeSlots.None;
 
-    public NodeSlots Visit(CodeSurface node, WindowSizeClass state) => NodeSlots.Two(node.Child, node.Options);
+    // The code, what it offers at its caret when it offers anything, then each note it explains with:
+    // the order the layout measures them in.
+    public NodeSlots Visit(CodeSurface node, WindowSizeClass state) => node.Notes.Count == 0
+        ? NodeSlots.Two(node.Child, node.Options)
+        : NodeSlots.Listed([node.Child, .. node.Options is { } options ? [options] : Array.Empty<VisualNode>(), .. node.Notes]);
 
     public NodeSlots Visit(Column node, WindowSizeClass state) => NodeSlots.Listed(node.Children);
 

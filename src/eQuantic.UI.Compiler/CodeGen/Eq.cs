@@ -257,6 +257,10 @@ public static class Eq
     /// <summary><c>new CancellationTokenSource(delay?)</c> (<c>utils/cancellation.ts</c>).</summary>
     public const string CancellationSource = "$eq.cancellation.source";
 
+    /// <summary><c>Task.Delay(delay, cancellationToken)</c> (<c>utils/cancellation.ts</c>): a <c>TimeSpan</c>
+    /// or milliseconds, refused as .NET refuses them, and ended as cancelled by its token.</summary>
+    public const string TaskDelay = "$eq.task.delay";
+
     /// <summary><c>CancellationToken.None</c>, which is also <c>default(CancellationToken)</c>.</summary>
     public const string CancellationNone = "$eq.cancellation.none";
 

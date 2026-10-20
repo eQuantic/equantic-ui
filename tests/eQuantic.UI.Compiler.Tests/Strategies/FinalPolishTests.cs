@@ -45,12 +45,15 @@ public class FinalPolishTests
     }
 
     // Task Tests
+    /// <summary>Through the runtime's delay, which reads a <c>TimeSpan</c> as milliseconds do, ends cancelled
+    /// with its token and refuses what .NET refuses: a <c>setTimeout</c> of the first argument dropped the
+    /// token and read a <c>TimeSpan</c> as no delay at all (AsyncConformanceTests runs both sides).</summary>
     [Fact]
-    public void Task_Delay_ConvertsToSetTimeout()
+    public void Task_Delay_WaitsThroughTheRuntimesDelay()
     {
         var code = "Task.Delay(100)";
         var js = ConvertExpression(code);
-        Assert.Contains("new Promise(($resolve) => setTimeout($resolve, 100))", js);
+        Assert.Equal("$eq.task.delay(100)", js);
     }
     
     [Fact]
