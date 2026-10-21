@@ -70,11 +70,14 @@ public class PointerHoverTests
         host.Hovered.Should().BeSameAs(((Positioned)stack.Children[1]).Child);
     }
 
-    [Fact]
-    public void TouchMove_NeverHovers()
+    [Theory]
+    [InlineData(PointerKind.Touch)]
+    [InlineData(PointerKind.Stylus)]
+    public void TouchMove_NeverHovers(PointerKind kind)
     {
-        // Spec S5's contract, verbatim: hover never fires on touch. A finger crossing a
-        // hover-reactive box drives drags and pans exactly like a mouse — and hovers nothing.
+        // Spec S5's contract, verbatim: hover never fires on touch. A finger, or a pen the mobile
+        // shells report only while it touches, crossing a hover-reactive box drives drags and pans
+        // exactly like a mouse — and hovers nothing.
         var hovers = new List<bool>();
         var column = new Column(gap: 10);
         column.Add(HoverBox());                                          // y 0–30
@@ -84,17 +87,19 @@ public class PointerHoverTests
         var builder = new DisplayListBuilder();
         host.RenderFrame(builder);
 
-        host.PointerMove(30, 15, PointerKind.Touch);   // over the plain hover box
+        host.PointerMove(30, 15, kind);   // over the plain hover box
         host.Hovered.Should().BeNull("a finger rests over nothing");
         FrameHasHoverFill(host).Should().BeFalse("no frame ever paints a touch 'hover'");
 
-        host.PointerMove(30, 55, PointerKind.Touch);   // over the programmable Hoverable
+        host.PointerMove(30, 55, kind);   // over the programmable Hoverable
         host.Hovered.Should().BeNull();
         hovers.Should().BeEmpty("Hoverable callbacks are pointer-only too");
     }
 
-    [Fact]
-    public void TouchGestureEnd_ClearsWhateverHoverWasLeftBehind()
+    [Theory]
+    [InlineData(PointerKind.Touch)]
+    [InlineData(PointerKind.Stylus)]
+    public void TouchGestureEnd_ClearsWhateverHoverWasLeftBehind(PointerKind kind)
     {
         // The mixed-input belt: a mouse parked a hover, then a finger takes over the same
         // surface. When the FINGER lifts (or the system cancels it), the sequence is over and
@@ -108,12 +113,12 @@ public class PointerHoverTests
 
         host.PointerMove(30, 15);                      // mouse hovers
         host.Hovered.Should().NotBeNull();
-        host.PressUp(150, 150, PointerKind.Touch);     // a finger lifts elsewhere
+        host.PressUp(150, 150, kind);     // a finger lifts elsewhere
         host.Hovered.Should().BeNull("the touch sequence ended — nothing rests over the box");
 
         host.PointerMove(30, 15);                      // mouse hovers again
         host.Hovered.Should().NotBeNull();
-        host.PointerCancel(PointerKind.Touch);         // the system steals the finger
+        host.PointerCancel(kind);         // the system steals the finger
         host.Hovered.Should().BeNull();
     }
 

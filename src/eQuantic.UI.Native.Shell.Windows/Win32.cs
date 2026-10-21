@@ -149,6 +149,9 @@ internal static unsafe partial class Win32
     public const uint TME_LEAVE = 0x00000002;
     public const uint TME_NONCLIENT = 0x00000010;
     public const int WHEEL_DELTA = 120;
+
+    /// <summary>The Shift key's bit in a mouse message's key state (the low word of its wParam).</summary>
+    public const int MK_SHIFT = 0x0004;
     public const uint WHEEL_PAGESCROLL = uint.MaxValue;
 
     // ---- Keyboard -----------------------------------------------------------------------------

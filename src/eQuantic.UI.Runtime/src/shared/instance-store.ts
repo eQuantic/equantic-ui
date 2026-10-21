@@ -21,6 +21,7 @@ import { commitFocusTraps } from '../dom/focus-trap';
 import { installHoverRevealSuppression } from '../dom/hover-reveal';
 import { attachCameraStreams } from './devices/camera';
 import { scheduleScrollViewportCommit } from './scroll-viewports';
+import { scheduleTableViewportCommit } from './table-viewports';
 import { scheduleInViewCommit } from './in-view';
 import { scheduleCanvasCommit } from './canvas-surface';
 import { scheduleAnchorOffset } from './sticky-offset';
@@ -159,6 +160,8 @@ export function exitPass(): void {
   // a windowed list is (offset, viewport), and neither is knowable before the pass has mounted.
   // Measured here, it was the tree before this one (see scroll-viewports.ts).
   scheduleScrollViewportCommit();
+  // A table viewport is measured, arranged and moved there too, and reports what it found.
+  scheduleTableViewportCommit();
   // An element cannot be observed before it exists — and at THIS moment it still does not. The
   // pass produced a tree; the render manager writes it once the pass has returned. So the commit
   // waits for the microtask after the write (see scheduleInViewCommit).

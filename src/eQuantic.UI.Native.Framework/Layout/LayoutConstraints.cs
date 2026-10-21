@@ -79,6 +79,14 @@ public readonly record struct AxisConstraint(float Max, bool Indeterminate, Stre
     /// <summary>The parent decided this child's size, and how.</summary>
     public AxisConstraint Stretched(StretchKind kind) =>
         Stretch == kind ? this : this with { Stretch = kind };
+
+    /// <summary>
+    /// How much of this axis shows, when <see cref="Max"/> is unbounded because a scroller around
+    /// laid its content out without a limit: that scroller's own extent. Zero when no scroller said.
+    /// A <see cref="Primitives.TableViewport"/> asked to fill such an axis takes it, rather than growing to its
+    /// whole grid. Every constraint derived from this one keeps it, as the room is passed down.
+    /// </summary>
+    public float Visible { get; init; }
 }
 
 /// <summary>

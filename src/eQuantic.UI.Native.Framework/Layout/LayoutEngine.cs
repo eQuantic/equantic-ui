@@ -152,6 +152,13 @@ public sealed class LayoutContext
 
     /// <summary>Reduce Motion: transitions snap statically (spec §06 parity with loop motion).</summary>
     public bool ReducedMotion { get; init; }
+
+    /// <summary>
+    /// Where layout says what it decided for the developer, when it decided something they did not
+    /// write: a table that fills an axis with no bound takes the visible extent of the scroller around
+    /// it, and says so here. The host hands its own (<c>PhotonHost.Log</c>); null keeps it quiet.
+    /// </summary>
+    public Action<string>? Log { get; init; }
     public ITextMeasurer Measurer { get; }
     public float TypeScale { get; }
 

@@ -789,15 +789,14 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         switch (e.ActionMasked)
         {
             case MotionEventActions.Down:
-                _host.PressDown(x, y);
+                _kind = KindOf(e.GetToolType(0));
+                _host.PressDown(x, y, kind: _kind);
                 return true;
-            // OnTouchEvent is fingers by definition (a mouse hover arrives as generic motion,
-            // never here) — labelled Touch so drags and pans run and hover never does (spec S5).
             case MotionEventActions.Move:
-                _host.PointerMove(x, y, PointerKind.Touch);
+                _host.PointerMove(x, y, _kind);
                 return true;
             case MotionEventActions.Up:
-                _host.PressUp(x, y, PointerKind.Touch);
+                _host.PressUp(x, y, _kind);
                 // A tap that leaves something being edited brings back a keyboard the person put
                 // away: back hides the keyboard and leaves the field being edited, as Android's own
                 // fields do, and tapping the field again is how they get it back.
@@ -807,12 +806,27 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             // The system took the gesture away — a scroll view claimed it, a call arrived. Nothing
             // was decided, so nothing is reported and every surface returns to the caller's rest.
             case MotionEventActions.Cancel:
-                _host.PointerCancel(PointerKind.Touch);
+                _host.PointerCancel(_kind);
                 return true;
             default:
                 return base.OnTouchEvent(e);
         }
     }
+
+    /// <summary>What the gesture in flight is, read from its tool when it lands and kept until it ends.</summary>
+    private PointerKind _kind = PointerKind.Touch;
+
+    /// <summary>
+    /// A finger, a stylus, or a mouse's button: OnTouchEvent receives all three (a mouse's HOVER alone
+    /// arrives as generic motion). A finger pans what it lands on and never hovers (spec S5); a mouse's
+    /// press is a press, as it is on the desktop.
+    /// </summary>
+    private static PointerKind KindOf(MotionEventToolType tool) => tool switch
+    {
+        MotionEventToolType.Mouse => PointerKind.Mouse,
+        MotionEventToolType.Stylus or MotionEventToolType.Eraser => PointerKind.Stylus,
+        _ => PointerKind.Touch,
+    };
 
     private ThemeMode Mode()
     {

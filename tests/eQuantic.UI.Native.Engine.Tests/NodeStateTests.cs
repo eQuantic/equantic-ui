@@ -103,7 +103,7 @@ public class NodeStateTests
     {
         var swap = new Swap(new FirstPage(List()), new SecondPage(List()));
         var host = Open(swap);
-        host.ScrollBy(Width / 2, Height / 2, 120).Should().BeTrue();
+        host.ScrollBy(Width / 2, Height / 2, 0, 120).Should().BeTrue();
         ScrolledBy(host.RenderFrame(new DisplayListBuilder())).Should().Be(120, "the wheel scrolled the first page");
 
         swap.Next();
@@ -117,7 +117,7 @@ public class NodeStateTests
     {
         var keyed = new Keyed(key => new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }, List(key)));
         var host = Open(keyed);
-        host.ScrollBy(Width / 2, Height / 2, 120).Should().BeTrue();
+        host.ScrollBy(Width / 2, Height / 2, 0, 120).Should().BeTrue();
         host.RenderFrame(new DisplayListBuilder());
 
         keyed.Rekey("b");
@@ -131,7 +131,7 @@ public class NodeStateTests
     {
         var keyed = new Keyed(key => new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }, List(key)));
         var host = Open(keyed);
-        host.ScrollBy(Width / 2, Height / 2, 120).Should().BeTrue();
+        host.ScrollBy(Width / 2, Height / 2, 0, 120).Should().BeTrue();
         host.RenderFrame(new DisplayListBuilder());
 
         keyed.Rekey("a");

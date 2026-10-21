@@ -43,16 +43,16 @@ public class ScrollCompositorTests
         first.ScrollRegions.Should().HaveCount(1);
         first.Root.Children[0].Bounds.Y.Should().Be(0);
 
-        host.ScrollBy(150, 100, 120).Should().BeTrue();
+        host.ScrollBy(150, 100, 0, 120).Should().BeTrue();
         var scrolled = host.RenderFrame(new DisplayListBuilder());
         scrolled.Root.Children[0].Bounds.Y.Should().Be(-120, "the content offsets by the wheel delta");
 
-        host.ScrollBy(150, 100, 10_000).Should().BeTrue();
+        host.ScrollBy(150, 100, 0, 10_000).Should().BeTrue();
         var clamped = host.RenderFrame(new DisplayListBuilder());
         clamped.Root.Children[0].Bounds.Y.Should().Be(-(500 - 200), "offset clamps to content - viewport");
 
-        host.ScrollBy(150, 100, 50).Should().BeFalse("already at the end — nothing changes");
-        host.ScrollBy(999, 999, 50).Should().BeFalse("outside every scroll region");
+        host.ScrollBy(150, 100, 0, 50).Should().BeFalse("already at the end — nothing changes");
+        host.ScrollBy(999, 999, 0, 50).Should().BeFalse("outside every scroll region");
     }
 
     [Fact]
@@ -63,11 +63,11 @@ public class ScrollCompositorTests
         var rest = host.RenderFrame(new DisplayListBuilder());
         StickyNode(rest).Bounds.Y.Should().Be(100, "in flow before any scrolling");
 
-        host.ScrollBy(150, 100, 60);   // header still visible (100 - 60 = 40 from the top)
+        host.ScrollBy(150, 100, 0, 60);   // header still visible (100 - 60 = 40 from the top)
         var partial = host.RenderFrame(new DisplayListBuilder());
         StickyNode(partial).Bounds.Y.Should().Be(40, "still in flow (absolute: 100 - offset 60)");
 
-        host.ScrollBy(150, 100, 120);  // offset 180 > y0 100 → pinned
+        host.ScrollBy(150, 100, 0, 120);  // offset 180 > y0 100 → pinned
         var pinned = host.RenderFrame(new DisplayListBuilder());
         StickyNode(pinned).Bounds.Y.Should().Be(0, "pinned at the viewport start (absolute coords)");
     }

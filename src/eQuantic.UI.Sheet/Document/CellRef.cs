@@ -3,16 +3,18 @@ namespace eQuantic.UI.Sheet;
 /// <summary>
 /// A cell address: 0-based row and column. <see cref="Key"/> is the SINGLE integer the document
 /// indexes by — a record struct makes a fine C# dictionary key and a useless JavaScript Map key
-/// (identity, not value), so the key crosses targets as an int. 16384 columns is Excel's own
-/// ceiling, which makes the packing stable and the interop honest.
+/// (identity, not value), so the key crosses targets as a number. 16384 columns is Excel's own
+/// ceiling, which makes the packing stable and the interop honest. The key is a <see langword="long"/>:
+/// packed into an <see langword="int"/> it overflowed at row 131 072 in .NET and not in the browser,
+/// where every number is a double, so the two targets disagreed long before Excel's 1 048 576 rows.
 /// </summary>
 public readonly record struct CellRef(int Row, int Col) : IComparable<CellRef>
 {
     public const int MaxCols = 16384;
 
-    public int Key => Row * MaxCols + Col;
+    public long Key => (long)Row * MaxCols + Col;
 
-    public static CellRef FromKey(int key) => new(key / MaxCols, key % MaxCols);
+    public static CellRef FromKey(long key) => new((int)(key / MaxCols), (int)(key % MaxCols));
 
     public int CompareTo(CellRef other) =>
         Row != other.Row ? Row.CompareTo(other.Row) : Col.CompareTo(other.Col);

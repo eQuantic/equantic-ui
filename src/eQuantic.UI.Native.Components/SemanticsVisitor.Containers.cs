@@ -78,4 +78,9 @@ internal sealed partial class SemanticsVisitor
 
     /// <inheritdoc cref="PureLayout"/>
     public bool Visit(Stack node, LayoutNode laidOut) => PureLayout;
+
+    /// <summary>A cell is pure layout (<see cref="PureLayout"/>). A MARK is drawn over the cells and is
+    /// never pressed: nothing under it is an object to reach, by a reader or by Tab, whose route the emit
+    /// takes from it too (<c>InputSink.WithoutFocusStops</c>), so the walk stops there.</summary>
+    public bool Visit(TableViewCell node, LayoutNode laidOut) => node.Mark ? Consumed : PureLayout;
 }

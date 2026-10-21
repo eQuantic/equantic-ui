@@ -179,9 +179,20 @@ internal sealed partial class MeasureVisitor
         var result = ctx.Node(scroll);
         var horizontal = scroll.Axis == ScrollAxis.Horizontal;
 
-        var child = Measure(scroll.Child, constraints.ForChild(
+        var forChild = constraints.ForChild(
             horizontal ? float.PositiveInfinity : maxW,
-            horizontal ? maxH : float.PositiveInfinity), ctx, at?.ChildAt(0));
+            horizontal ? maxH : float.PositiveInfinity);
+        // What the scroller shows of its axis, for a table inside that fills an axis it left
+        // unbounded: its own fixed extent, or the room it has. Unbounded too, it passes on the
+        // extent the scroller around IT showed.
+        var shown = horizontal ? maxW : maxH;
+        var declared = horizontal ? scroll.Width : scroll.Height;
+        if (declared.Kind == SizeKind.Fixed) shown = MathF.Min(declared.Value, shown);
+        if (float.IsFinite(shown))
+            forChild = horizontal
+                ? forChild with { Width = forChild.Width with { Visible = shown } }
+                : forChild with { Height = forChild.Height with { Visible = shown } };
+        var child = Measure(scroll.Child, forChild, ctx, at?.ChildAt(0));
         result.Adopt(child);
 
         var width = ResolveSelf(scroll.Width, maxW, MathF.Min(child.Bounds.Width, maxW));

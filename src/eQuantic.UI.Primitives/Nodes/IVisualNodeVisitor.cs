@@ -130,6 +130,10 @@ public interface IVisualNodeVisitor<in TState, out TResult>
 
     TResult Visit(Stack node, TState state);
 
+    TResult Visit(TableViewCell node, TState state);
+
+    TResult Visit(TableViewport node, TState state);
+
     TResult Visit(Text node, TState state);
 
     TResult Visit(TextEntry node, TState state);

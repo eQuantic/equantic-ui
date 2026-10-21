@@ -69,6 +69,7 @@ public static class ConsoleShell
         new(Icons.Mail, "Payments", "/", 7),
         new(Icons.Table, "Rows", "/rows"),
         new(Icons.Copy, "Spreadsheet", "/sheet"),
+        new(Icons.Table, "Table", "/table"),
     ];
 
     public static readonly NavEntry[] Explore =

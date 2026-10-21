@@ -637,6 +637,74 @@ export interface ScrollViewNode extends VisualNodeValue {
   onViewportChanged?: ((height: number) => void) | null;
 }
 
+/** One axis of a table (the C# `TableSpans`): how many, how far each reaches, where each starts. */
+export interface TableSpansLike {
+  readonly count: number;
+  readonly total: number;
+  extentOf(index: number): number;
+  offsetOf(index: number): number;
+  indexAt(offset: number): number;
+}
+
+/** A rectangle in a table viewport's own coordinates, as the scroll model answers it. */
+export interface TableRectValue {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * The scroll behind a table viewport as a realizer sees it (the C# `ITableScrollModel`): what a host
+ * may tell it, and the offset it reads back. Every decision about a movement is its answer.
+ */
+export interface TableScrollModelLike {
+  readonly offset: { across: number; down: number };
+  readonly viewport: { width: number; height: number };
+  arrange(
+    window: { width: number; height: number },
+    gridAcross: number,
+    gridDown: number,
+    pinnedAcross: number,
+    pinnedDown: number,
+    reduceMotion: boolean,
+  ): { width: number; height: number };
+  wheel(across: number, down: number, stepped: boolean, modifiers: number): { across: number; down: number };
+  pointer(phase: PointerPhaseValue, position: { x: number; y: number }, kind: string, time: number): boolean;
+  advance(time: number): boolean;
+  trackOf(axis: string): TableRectValue | null;
+  thumbOf(axis: string): TableRectValue | null;
+  apply(request: unknown, rows: TableSpansLike, columns: TableSpansLike, pinnedRows: number, pinnedColumns: number): boolean;
+  reveal(area: TableRectValue, across: boolean, down: boolean): boolean;
+  key(key: string, modifiers: number): boolean;
+}
+
+export interface TableViewCellNode extends VisualNodeValue {
+  nodeKind: 'tableViewCell';
+  child: VisualNodeValue;
+  row: number;
+  column: number;
+  rows: number;
+  columns: number;
+  mark: boolean;
+}
+
+export interface TableViewportNode extends VisualNodeValue {
+  nodeKind: 'tableViewport';
+  rows: TableSpansLike;
+  columns: TableSpansLike;
+  scroll: TableScrollModelLike;
+  pinnedRows: number;
+  pinnedColumns: number;
+  width?: SizeValueValue;
+  height?: SizeValueValue;
+  request?: unknown;
+  onScrolled?: ((offset: { across: number; down: number }) => void) | null;
+  onViewportChanged?: ((viewport: { width: number; height: number }) => void) | null;
+  label?: string | null;
+  cells: TableViewCellNode[];
+}
+
 export interface SheetSurfaceNode extends VisualNodeValue {
   nodeKind: 'sheetSurface';
   child: VisualNodeValue;

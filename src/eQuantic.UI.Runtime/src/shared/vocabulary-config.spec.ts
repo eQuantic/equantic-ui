@@ -54,7 +54,7 @@ function declaredArity(Klass: { toString(): string }): number {
 }
 
 /** Abstract bases are never constructed by transpiled code — only their concrete subclasses are. */
-const abstractBases = new Set(['VisualNode', 'FlexNode']);
+const abstractBases = new Set(['VisualNode', 'FlexNode', 'TableSpans']);
 
 const classes = (Object.entries(vocabulary) as [string, unknown][])
   .filter(

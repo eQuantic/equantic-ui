@@ -76,6 +76,8 @@ public class StructDefaultTests
         {
             public Cell Home() => default;
             public Point Origin() => default;
+            public TableOffset Scrolled() => default;
+            public TableRange Selected() => default;
             public BoxStyle Style() => default;
             public SizeValue Width() => default;
             public SizeValue? MaybeWidth() => default;
@@ -93,6 +95,8 @@ public class StructDefaultTests
     [Theory]
     [InlineData("home", "Cell.$zero()")]
     [InlineData("origin", "new Point()")]
+    [InlineData("scrolled", "new TableOffset()")]
+    [InlineData("selected", "new TableRange()")]
     [InlineData("style", "undefined")]
     [InlineData("width", "undefined")]
     [InlineData("maybeWidth", "null")]
