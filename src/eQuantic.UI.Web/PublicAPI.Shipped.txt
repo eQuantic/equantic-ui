@@ -575,6 +575,8 @@ eQuantic.UI.Web.HtmlStyle.TextTransform.set -> void
 eQuantic.UI.Web.HtmlStyle.ToCssString() -> string!
 eQuantic.UI.Web.HtmlStyle.Top.get -> string?
 eQuantic.UI.Web.HtmlStyle.Top.set -> void
+eQuantic.UI.Web.HtmlStyle.TouchAction.get -> string?
+eQuantic.UI.Web.HtmlStyle.TouchAction.set -> void
 eQuantic.UI.Web.HtmlStyle.Transform.get -> string?
 eQuantic.UI.Web.HtmlStyle.Transform.set -> void
 eQuantic.UI.Web.HtmlStyle.Transition.get -> string?

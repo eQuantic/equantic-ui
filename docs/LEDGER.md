@@ -3318,6 +3318,64 @@ record of a release, the wiki's Upgrading page is the distillate.
   Portuguese, rewrote the attribute after rendering until now
   ([#942](https://github.com/eQuantic/equantic-ui/issues/942)). Proposed and archived through OpenSpec
   (`openspec/specs/email-realizer`, a new spec).
+- **2026-10-19 · 0.2.0-preview.64 released** from `fddeecdb`: the compiler answering as .NET does,
+  or stopping the build where it went quiet, at a page's boundary (#944, #946), at a .NET read, a
+  method group, a package's static or a construction the browser lacks (#921, #958, #964), in object
+  and enum members (#947), a tuple and an anonymous object (#906), LINQ's keys (#925), a decimal
+  (#923), sorted collections' live views (#919, #929), names spelled with `@` (#931) and nullable
+  structs and their lifted operators (#972, #977); Photon's element tree (#960, #978, #994); the
+  spreadsheet's engine in `eQuantic.UI.Sheet`, a new package (#949); a phone that opens a link
+  (#918); an e-mail that names its culture (#1000); and what 1.0 promises, and to which assembly
+  (#901), with the release's own issue (#1001). All 51 packages answered the version on nuget.org
+  eleven minutes after the publish, the new `eQuantic.UI.Sheet` among them, and an app scaffolded
+  from the published templates restored them cold and built with no warning
+  *([v0.2.0-preview.64](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.64))*.
+- **2026-10-19 · A table scrolls Excel's whole sheet on both axes, on both targets**: the
+  spreadsheet could address 131 071 rows and scroll one axis, because its cell key packed into an
+  `int` and its viewport was a vertical list. The vocabulary gains `TableViewport`, a window onto a
+  grid with pinned leading rows and columns whose scroll model it carries, and the components gain
+  `TableView`, which builds only the cells in view; both realizers own the offset, since Chromium
+  draws an element at most 16 777 214 px tall and a million rows of 28 reach 29 million. Every shell
+  reads both axes of the wheel, and the cell key is a `long`. Proved in Chromium on the dashboard's
+  `/table` and on Photon in the gallery, and benched at 1 048 576 by 16 384: 1.2 ms a step inside the
+  window on Photon, 14.6 ms a rebuild
+  ([#982](https://github.com/eQuantic/equantic-ui/issues/982)). Proposed and archived through
+  OpenSpec (`openspec/specs/table-viewport`).
+- **2026-10-19 · The code editor shows its problems and explains the code**: slice 4 of
+  `docs/CODE-EDITOR-PLAN.md`, its problems and its hover. `CodeDiagnostics` holds what the app reports
+  and what its providers answer, asks them once typing pauses with one request out at a time, and
+  carries every problem through each edit (`CodeEdit.Carry`; undo and redo now raise the edit they
+  make) until whoever reported it reports again. `CodeHoverSession` waits for a pointer to rest, or
+  answers ⌘K ⌘I and F8 at once, and holds the card's problems and answers. `CodeEditor` draws a
+  problem as a wave in its severity's colour, or three dots for a hint, marks a line's worst error or
+  warning in the gutter, and draws the card as a note of its code surface (`CodeSurface.Notes`), a
+  polite live region when a key brought it up; both hosts report a pointer at rest to the model.
+  `Task.Delay` waits in the browser as .NET waits, its cancellation and its argument checks included.
+  Found on the way: an answer that found the same problems made a parent that builds on them build
+  again without end, the three new properties never reached the editor a position keeps, and on the
+  web the card F8 brought up stood where the view had been before the code slid to the caret
+  ([#299](https://github.com/eQuantic/equantic-ui/issues/299),
+  [#1005](https://github.com/eQuantic/equantic-ui/issues/1005)). Proposed and archived through
+  OpenSpec (`openspec/specs/code-diagnostics`, `openspec/specs/code-hover`, new specs).
+- **2026-10-21 · A page uses a passkey, from one C# contract**: D35 of Track D. `IPasskeys` creates a
+  passkey from the relying party's creation options and signs with one from its request options, both
+  the W3C Web Authentication JSON in and out, so an app relays its server's text to the device and the
+  device's back without learning a field of either. Each ceremony answers a `PasskeyResult` whose
+  `PasskeyOutcome` says how it ended (`Succeeded`, `Cancelled`, `AlreadyRegistered`, `Failed`, and
+  `Unavailable`, the zero, so a result nobody filled in never reads as a sign-in), and a cancellation
+  token aborts it. The browser realizes it over `navigator.credentials` in a secure context, through
+  its own JSON conversions where it has them and the members every ceremony needs where it does not;
+  the server render answers unavailable. The documented pattern asks the server for the options when
+  the screen opens, because Safari runs a ceremony only inside the person's gesture and a round trip
+  between the press and the call can spend it, and renews them on a clock while the screen sits idle,
+  because a challenge lapses. The sample's `/passkeys` page creates a passkey, signs in, is refused a
+  second one, recovers from a server that fails mid-ceremony and starts no ceremony with lapsed
+  options, in a real Chrome over a virtual authenticator, kept as
+  `tests/e2e/tests/passkeys.spec.ts` ([#1017](https://github.com/eQuantic/equantic-ui/issues/1017);
+  Apple, Android and Windows follow in [#1018](https://github.com/eQuantic/equantic-ui/issues/1018),
+  [#1019](https://github.com/eQuantic/equantic-ui/issues/1019) and
+  [#1020](https://github.com/eQuantic/equantic-ui/issues/1020)). Proposed and archived through
+  OpenSpec (`openspec/specs/device-passkeys`, a new spec).
 
 ## Retired documents
 

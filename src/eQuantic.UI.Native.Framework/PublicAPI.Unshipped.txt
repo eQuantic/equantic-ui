@@ -1,5 +1,1 @@
 #nullable enable
-[EQX0001]eQuantic.UI.Native.Framework.AxisConstraint.Visible.get -> float
-[EQX0001]eQuantic.UI.Native.Framework.AxisConstraint.Visible.init -> void
-[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Log.get -> System.Action<string!>?
-[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Log.init -> void

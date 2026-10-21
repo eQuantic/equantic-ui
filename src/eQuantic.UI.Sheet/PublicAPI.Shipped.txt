@@ -11,7 +11,7 @@ eQuantic.UI.Sheet.CellRef.Col.init -> void
 eQuantic.UI.Sheet.CellRef.CompareTo(eQuantic.UI.Sheet.CellRef other) -> int
 eQuantic.UI.Sheet.CellRef.Deconstruct(out int Row, out int Col) -> void
 eQuantic.UI.Sheet.CellRef.Equals(eQuantic.UI.Sheet.CellRef other) -> bool
-eQuantic.UI.Sheet.CellRef.Key.get -> int
+eQuantic.UI.Sheet.CellRef.Key.get -> long
 eQuantic.UI.Sheet.CellRef.Row.get -> int
 eQuantic.UI.Sheet.CellRef.Row.init -> void
 eQuantic.UI.Sheet.CellRef.ToA1() -> string!
@@ -76,7 +76,7 @@ eQuantic.UI.Sheet.SheetController.TypeIntoDraft(string! text) -> void
 eQuantic.UI.Sheet.SheetController.Undo() -> bool
 eQuantic.UI.Sheet.SheetController.UpdateFill(eQuantic.UI.Sheet.CellRef at) -> void
 eQuantic.UI.Sheet.SheetDocument
-eQuantic.UI.Sheet.SheetDocument.Cells.get -> System.Collections.Generic.IReadOnlyDictionary<int, string!>!
+eQuantic.UI.Sheet.SheetDocument.Cells.get -> System.Collections.Generic.IReadOnlyDictionary<long, string!>!
 eQuantic.UI.Sheet.SheetDocument.Clamp(eQuantic.UI.Sheet.CellRef cell) -> eQuantic.UI.Sheet.CellRef
 eQuantic.UI.Sheet.SheetDocument.ColWidth(int col) -> float
 eQuantic.UI.Sheet.SheetDocument.Cols.get -> int
@@ -167,7 +167,7 @@ override eQuantic.UI.Sheet.CellRef.GetHashCode() -> int
 override eQuantic.UI.Sheet.SheetCellSnapshot.GetHashCode() -> int
 override eQuantic.UI.Sheet.SheetGrid.GetHashCode() -> int
 override eQuantic.UI.Sheet.SheetRange.GetHashCode() -> int
-static eQuantic.UI.Sheet.CellRef.FromKey(int key) -> eQuantic.UI.Sheet.CellRef
+static eQuantic.UI.Sheet.CellRef.FromKey(long key) -> eQuantic.UI.Sheet.CellRef
 static eQuantic.UI.Sheet.CellRef.ParseA1(string! text) -> eQuantic.UI.Sheet.CellRef?
 static eQuantic.UI.Sheet.CellRef.operator !=(eQuantic.UI.Sheet.CellRef left, eQuantic.UI.Sheet.CellRef right) -> bool
 static eQuantic.UI.Sheet.CellRef.operator ==(eQuantic.UI.Sheet.CellRef left, eQuantic.UI.Sheet.CellRef right) -> bool

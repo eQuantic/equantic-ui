@@ -2,6 +2,11 @@
 abstract eQuantic.UI.Primitives.Element.ChildAt(int slot) -> eQuantic.UI.Primitives.Element?
 abstract eQuantic.UI.Primitives.FlexNode.Cross.get -> eQuantic.UI.Primitives.CrossAlign
 abstract eQuantic.UI.Primitives.FlexNode.Cross.init -> void
+abstract eQuantic.UI.Primitives.TableSpans.Count.get -> int
+abstract eQuantic.UI.Primitives.TableSpans.ExtentOf(int index) -> double
+abstract eQuantic.UI.Primitives.TableSpans.IndexAt(double offset) -> int
+abstract eQuantic.UI.Primitives.TableSpans.OffsetOf(int index) -> double
+abstract eQuantic.UI.Primitives.TableSpans.Total.get -> double
 abstract eQuantic.UI.Primitives.UiComponent.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
 abstract eQuantic.UI.Primitives.VisualNode.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 abstract eQuantic.UI.Primitives.VisualNode.NodeKind.get -> string!
@@ -288,6 +293,8 @@ eQuantic.UI.Primitives.CodeSurface.Label.get -> string?
 eQuantic.UI.Primitives.CodeSurface.Label.init -> void
 eQuantic.UI.Primitives.CodeSurface.Model.get -> eQuantic.UI.Primitives.ICodeSurfaceModel!
 eQuantic.UI.Primitives.CodeSurface.Model.init -> void
+eQuantic.UI.Primitives.CodeSurface.Notes.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Positioned!>!
+eQuantic.UI.Primitives.CodeSurface.Notes.init -> void
 eQuantic.UI.Primitives.CodeSurface.OnChanged.get -> System.Action?
 eQuantic.UI.Primitives.CodeSurface.OnChanged.init -> void
 eQuantic.UI.Primitives.CodeSurface.Options.get -> eQuantic.UI.Primitives.VisualNode?
@@ -793,6 +800,10 @@ eQuantic.UI.Primitives.IMotionSensor.Subscribe(System.Action<eQuantic.UI.Primiti
 eQuantic.UI.Primitives.INetworkStatus
 eQuantic.UI.Primitives.INetworkStatus.Current.get -> eQuantic.UI.Primitives.NetworkState
 eQuantic.UI.Primitives.INetworkStatus.Subscribe(System.Action<eQuantic.UI.Primitives.NetworkState>! onChanged) -> System.IDisposable!
+eQuantic.UI.Primitives.IPasskeys
+eQuantic.UI.Primitives.IPasskeys.AuthenticateAsync(string! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.PasskeyResult>
+eQuantic.UI.Primitives.IPasskeys.CreateAsync(string! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.PasskeyResult>
+eQuantic.UI.Primitives.IPasskeys.IsAvailable.get -> bool
 eQuantic.UI.Primitives.IPhotoLibrary
 eQuantic.UI.Primitives.IPhotoLibrary.GetPermissionAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.PermissionState>
 eQuantic.UI.Primitives.IPhotoLibrary.IsAvailable.get -> bool
@@ -815,6 +826,18 @@ eQuantic.UI.Primitives.ISheetSurfaceModel.HandleKey(string! key, eQuantic.UI.Pri
 eQuantic.UI.Primitives.ISheetSurfaceModel.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks) -> bool
 eQuantic.UI.Primitives.ISheetSurfaceModel.HandleText(string! text) -> bool
 eQuantic.UI.Primitives.ISheetSurfaceModel.Paste(string! text) -> bool
+eQuantic.UI.Primitives.ITableScrollModel
+eQuantic.UI.Primitives.ITableScrollModel.Advance(double time) -> bool
+eQuantic.UI.Primitives.ITableScrollModel.Apply(eQuantic.UI.Primitives.TableScrollRequest? request, eQuantic.UI.Primitives.TableSpans! rows, eQuantic.UI.Primitives.TableSpans! columns, int pinnedRows, int pinnedColumns) -> bool
+eQuantic.UI.Primitives.ITableScrollModel.Arrange(eQuantic.UI.Primitives.Size window, double gridAcross, double gridDown, double pinnedAcross, double pinnedDown, bool reduceMotion) -> eQuantic.UI.Primitives.Size
+eQuantic.UI.Primitives.ITableScrollModel.Key(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers) -> bool
+eQuantic.UI.Primitives.ITableScrollModel.Offset.get -> eQuantic.UI.Primitives.TableOffset
+eQuantic.UI.Primitives.ITableScrollModel.Pointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.PointerKind kind, double time) -> bool
+eQuantic.UI.Primitives.ITableScrollModel.Reveal(eQuantic.UI.Primitives.Rect area, bool across, bool down) -> bool
+eQuantic.UI.Primitives.ITableScrollModel.ThumbOf(eQuantic.UI.Primitives.ScrollAxis axis) -> eQuantic.UI.Primitives.Rect?
+eQuantic.UI.Primitives.ITableScrollModel.TrackOf(eQuantic.UI.Primitives.ScrollAxis axis) -> eQuantic.UI.Primitives.Rect?
+eQuantic.UI.Primitives.ITableScrollModel.Viewport.get -> eQuantic.UI.Primitives.Size
+eQuantic.UI.Primitives.ITableScrollModel.Wheel(double across, double down, bool stepped, eQuantic.UI.Primitives.KeyModifiers modifiers) -> eQuantic.UI.Primitives.TableOffset
 eQuantic.UI.Primitives.ITextClipboard
 eQuantic.UI.Primitives.ITextClipboard.Read() -> string?
 eQuantic.UI.Primitives.ITextClipboard.Write(string! text) -> void
@@ -865,6 +888,8 @@ eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Pri
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Spacer! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Spinner! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Stack! node, TState state) -> TResult
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.TableViewCell! node, TState state) -> TResult
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.TableViewport! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Text! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.TextEntry! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.UiComponent! node, TState state) -> TResult
@@ -1176,6 +1201,21 @@ eQuantic.UI.Primitives.PageAttribute.SsrCacheDuration.get -> int
 eQuantic.UI.Primitives.PageAttribute.SsrCacheDuration.set -> void
 eQuantic.UI.Primitives.PageAttribute.Title.get -> string?
 eQuantic.UI.Primitives.PageAttribute.Title.set -> void
+eQuantic.UI.Primitives.PasskeyOutcome
+eQuantic.UI.Primitives.PasskeyOutcome.AlreadyRegistered = 3 -> eQuantic.UI.Primitives.PasskeyOutcome
+eQuantic.UI.Primitives.PasskeyOutcome.Cancelled = 2 -> eQuantic.UI.Primitives.PasskeyOutcome
+eQuantic.UI.Primitives.PasskeyOutcome.Failed = 4 -> eQuantic.UI.Primitives.PasskeyOutcome
+eQuantic.UI.Primitives.PasskeyOutcome.Succeeded = 1 -> eQuantic.UI.Primitives.PasskeyOutcome
+eQuantic.UI.Primitives.PasskeyOutcome.Unavailable = 0 -> eQuantic.UI.Primitives.PasskeyOutcome
+eQuantic.UI.Primitives.PasskeyResult
+eQuantic.UI.Primitives.PasskeyResult.Credential.get -> string?
+eQuantic.UI.Primitives.PasskeyResult.Credential.init -> void
+eQuantic.UI.Primitives.PasskeyResult.Deconstruct(out eQuantic.UI.Primitives.PasskeyOutcome Outcome, out string? Credential) -> void
+eQuantic.UI.Primitives.PasskeyResult.Equals(eQuantic.UI.Primitives.PasskeyResult other) -> bool
+eQuantic.UI.Primitives.PasskeyResult.Outcome.get -> eQuantic.UI.Primitives.PasskeyOutcome
+eQuantic.UI.Primitives.PasskeyResult.Outcome.init -> void
+eQuantic.UI.Primitives.PasskeyResult.PasskeyResult() -> void
+eQuantic.UI.Primitives.PasskeyResult.PasskeyResult(eQuantic.UI.Primitives.PasskeyOutcome Outcome, string? Credential) -> void
 eQuantic.UI.Primitives.PermissionState
 eQuantic.UI.Primitives.PermissionState.Denied = 2 -> eQuantic.UI.Primitives.PermissionState
 eQuantic.UI.Primitives.PermissionState.Granted = 1 -> eQuantic.UI.Primitives.PermissionState
@@ -1231,6 +1271,10 @@ eQuantic.UI.Primitives.PointerCursor.NotAllowed = 3 -> eQuantic.UI.Primitives.Po
 eQuantic.UI.Primitives.PointerCursor.Pointer = 1 -> eQuantic.UI.Primitives.PointerCursor
 eQuantic.UI.Primitives.PointerCursor.RowResize = 6 -> eQuantic.UI.Primitives.PointerCursor
 eQuantic.UI.Primitives.PointerCursor.Text = 2 -> eQuantic.UI.Primitives.PointerCursor
+eQuantic.UI.Primitives.PointerKind
+eQuantic.UI.Primitives.PointerKind.Mouse = 0 -> eQuantic.UI.Primitives.PointerKind
+eQuantic.UI.Primitives.PointerKind.Stylus = 2 -> eQuantic.UI.Primitives.PointerKind
+eQuantic.UI.Primitives.PointerKind.Touch = 1 -> eQuantic.UI.Primitives.PointerKind
 eQuantic.UI.Primitives.PointerPhase
 eQuantic.UI.Primitives.PointerPhase.Cancel = 5 -> eQuantic.UI.Primitives.PointerPhase
 eQuantic.UI.Primitives.PointerPhase.Down = 0 -> eQuantic.UI.Primitives.PointerPhase
@@ -1685,6 +1729,75 @@ eQuantic.UI.Primitives.StyleDiff.StyleDiff() -> void
 eQuantic.UI.Primitives.StyleDiff.Transform.get -> eQuantic.UI.Primitives.Transform2D?
 eQuantic.UI.Primitives.StyleDiff.Transform.init -> void
 eQuantic.UI.Primitives.SvgDocument
+eQuantic.UI.Primitives.TableOffset
+eQuantic.UI.Primitives.TableOffset.Across.get -> double
+eQuantic.UI.Primitives.TableOffset.Across.init -> void
+eQuantic.UI.Primitives.TableOffset.Deconstruct(out double Across, out double Down) -> void
+eQuantic.UI.Primitives.TableOffset.Down.get -> double
+eQuantic.UI.Primitives.TableOffset.Down.init -> void
+eQuantic.UI.Primitives.TableOffset.Equals(eQuantic.UI.Primitives.TableOffset other) -> bool
+eQuantic.UI.Primitives.TableOffset.TableOffset() -> void
+eQuantic.UI.Primitives.TableOffset.TableOffset(double Across, double Down) -> void
+eQuantic.UI.Primitives.TableRange
+eQuantic.UI.Primitives.TableRange.Column.get -> int
+eQuantic.UI.Primitives.TableRange.Column.init -> void
+eQuantic.UI.Primitives.TableRange.Columns.get -> int
+eQuantic.UI.Primitives.TableRange.Columns.init -> void
+eQuantic.UI.Primitives.TableRange.Deconstruct(out int Row, out int Column, out int Rows, out int Columns) -> void
+eQuantic.UI.Primitives.TableRange.Equals(eQuantic.UI.Primitives.TableRange other) -> bool
+eQuantic.UI.Primitives.TableRange.LastColumn.get -> int
+eQuantic.UI.Primitives.TableRange.LastRow.get -> int
+eQuantic.UI.Primitives.TableRange.Row.get -> int
+eQuantic.UI.Primitives.TableRange.Row.init -> void
+eQuantic.UI.Primitives.TableRange.Rows.get -> int
+eQuantic.UI.Primitives.TableRange.Rows.init -> void
+eQuantic.UI.Primitives.TableRange.TableRange() -> void
+eQuantic.UI.Primitives.TableRange.TableRange(int Row, int Column, int Rows = 1, int Columns = 1) -> void
+eQuantic.UI.Primitives.TableScrollRequest
+eQuantic.UI.Primitives.TableScrollRequest.<Clone>$() -> eQuantic.UI.Primitives.TableScrollRequest!
+eQuantic.UI.Primitives.TableScrollRequest.Deconstruct(out int Version) -> void
+eQuantic.UI.Primitives.TableScrollRequest.Equals(eQuantic.UI.Primitives.TableScrollRequest? other) -> bool
+eQuantic.UI.Primitives.TableScrollRequest.Offset.get -> eQuantic.UI.Primitives.TableOffset?
+eQuantic.UI.Primitives.TableScrollRequest.Offset.init -> void
+eQuantic.UI.Primitives.TableScrollRequest.Reveal.get -> eQuantic.UI.Primitives.TableRange?
+eQuantic.UI.Primitives.TableScrollRequest.Reveal.init -> void
+eQuantic.UI.Primitives.TableScrollRequest.TableScrollRequest(int Version) -> void
+eQuantic.UI.Primitives.TableScrollRequest.Version.get -> int
+eQuantic.UI.Primitives.TableScrollRequest.Version.init -> void
+eQuantic.UI.Primitives.TableSpans
+eQuantic.UI.Primitives.TableSpans.TableSpans() -> void
+eQuantic.UI.Primitives.TableViewCell
+eQuantic.UI.Primitives.TableViewCell.Column.get -> int
+eQuantic.UI.Primitives.TableViewCell.Columns.get -> int
+eQuantic.UI.Primitives.TableViewCell.Columns.init -> void
+eQuantic.UI.Primitives.TableViewCell.Mark.get -> bool
+eQuantic.UI.Primitives.TableViewCell.Row.get -> int
+eQuantic.UI.Primitives.TableViewCell.Rows.get -> int
+eQuantic.UI.Primitives.TableViewCell.Rows.init -> void
+eQuantic.UI.Primitives.TableViewCell.TableViewCell(int row, int column, eQuantic.UI.Primitives.VisualNode! child, bool mark = false) -> void
+eQuantic.UI.Primitives.TableViewport
+eQuantic.UI.Primitives.TableViewport.Add(eQuantic.UI.Primitives.TableViewCell! cell) -> void
+eQuantic.UI.Primitives.TableViewport.Cells.get -> System.Collections.Generic.List<eQuantic.UI.Primitives.TableViewCell!>!
+eQuantic.UI.Primitives.TableViewport.Columns.get -> eQuantic.UI.Primitives.TableSpans!
+eQuantic.UI.Primitives.TableViewport.Height.get -> eQuantic.UI.Primitives.SizeValue
+eQuantic.UI.Primitives.TableViewport.Height.init -> void
+eQuantic.UI.Primitives.TableViewport.Label.get -> string?
+eQuantic.UI.Primitives.TableViewport.Label.init -> void
+eQuantic.UI.Primitives.TableViewport.OnScrolled.get -> System.Action<eQuantic.UI.Primitives.TableOffset>?
+eQuantic.UI.Primitives.TableViewport.OnScrolled.init -> void
+eQuantic.UI.Primitives.TableViewport.OnViewportChanged.get -> System.Action<eQuantic.UI.Primitives.Size>?
+eQuantic.UI.Primitives.TableViewport.OnViewportChanged.init -> void
+eQuantic.UI.Primitives.TableViewport.PinnedColumns.get -> int
+eQuantic.UI.Primitives.TableViewport.PinnedColumns.init -> void
+eQuantic.UI.Primitives.TableViewport.PinnedRows.get -> int
+eQuantic.UI.Primitives.TableViewport.PinnedRows.init -> void
+eQuantic.UI.Primitives.TableViewport.Request.get -> eQuantic.UI.Primitives.TableScrollRequest?
+eQuantic.UI.Primitives.TableViewport.Request.init -> void
+eQuantic.UI.Primitives.TableViewport.Rows.get -> eQuantic.UI.Primitives.TableSpans!
+eQuantic.UI.Primitives.TableViewport.Scroll.get -> eQuantic.UI.Primitives.ITableScrollModel!
+eQuantic.UI.Primitives.TableViewport.TableViewport(eQuantic.UI.Primitives.TableSpans! rows, eQuantic.UI.Primitives.TableSpans! columns, eQuantic.UI.Primitives.ITableScrollModel! scroll) -> void
+eQuantic.UI.Primitives.TableViewport.Width.get -> eQuantic.UI.Primitives.SizeValue
+eQuantic.UI.Primitives.TableViewport.Width.init -> void
 eQuantic.UI.Primitives.Text
 eQuantic.UI.Primitives.Text.Align.get -> eQuantic.UI.Primitives.TextAlignment
 eQuantic.UI.Primitives.Text.Align.init -> void
@@ -2097,6 +2210,7 @@ override eQuantic.UI.Primitives.Navigable.NodeKind.get -> string!
 override eQuantic.UI.Primitives.NetworkState.GetHashCode() -> int
 override eQuantic.UI.Primitives.NodeElement.ChildAt(int slot) -> eQuantic.UI.Primitives.Element?
 override eQuantic.UI.Primitives.Overlay.NodeKind.get -> string!
+override eQuantic.UI.Primitives.PasskeyResult.GetHashCode() -> int
 override eQuantic.UI.Primitives.Pinned.NodeKind.get -> string!
 override eQuantic.UI.Primitives.Point.GetHashCode() -> int
 override eQuantic.UI.Primitives.Presence.NodeKind.get -> string!
@@ -2129,6 +2243,12 @@ override eQuantic.UI.Primitives.StatusScale.GetHashCode() -> int
 override eQuantic.UI.Primitives.StyleDiff.Equals(object? obj) -> bool
 override eQuantic.UI.Primitives.StyleDiff.GetHashCode() -> int
 override eQuantic.UI.Primitives.StyleDiff.ToString() -> string!
+override eQuantic.UI.Primitives.TableOffset.GetHashCode() -> int
+override eQuantic.UI.Primitives.TableRange.GetHashCode() -> int
+override eQuantic.UI.Primitives.TableScrollRequest.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.TableScrollRequest.GetHashCode() -> int
+override eQuantic.UI.Primitives.TableScrollRequest.ToString() -> string!
+override eQuantic.UI.Primitives.TableViewCell.NodeKind.get -> string!
 override eQuantic.UI.Primitives.Text.NodeKind.get -> string!
 override eQuantic.UI.Primitives.TextEntry.NodeKind.get -> string!
 override eQuantic.UI.Primitives.TextRun.Equals(object? obj) -> bool
@@ -2192,6 +2312,9 @@ override sealed eQuantic.UI.Primitives.Spacer.Accept<TState, TResult>(eQuantic.U
 override sealed eQuantic.UI.Primitives.Spinner.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 override sealed eQuantic.UI.Primitives.Stack.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 override sealed eQuantic.UI.Primitives.Stack.NodeKind.get -> string!
+override sealed eQuantic.UI.Primitives.TableViewCell.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
+override sealed eQuantic.UI.Primitives.TableViewport.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
+override sealed eQuantic.UI.Primitives.TableViewport.NodeKind.get -> string!
 override sealed eQuantic.UI.Primitives.Text.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 override sealed eQuantic.UI.Primitives.TextEntry.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 override sealed eQuantic.UI.Primitives.UiComponent.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
@@ -2310,6 +2433,8 @@ static eQuantic.UI.Primitives.Navigator.Handler.set -> void
 static eQuantic.UI.Primitives.NetworkState.operator !=(eQuantic.UI.Primitives.NetworkState left, eQuantic.UI.Primitives.NetworkState right) -> bool
 static eQuantic.UI.Primitives.NetworkState.operator ==(eQuantic.UI.Primitives.NetworkState left, eQuantic.UI.Primitives.NetworkState right) -> bool
 static eQuantic.UI.Primitives.OpenUrlPolicy.Web.get -> eQuantic.UI.Primitives.OpenUrlPolicy!
+static eQuantic.UI.Primitives.PasskeyResult.operator !=(eQuantic.UI.Primitives.PasskeyResult left, eQuantic.UI.Primitives.PasskeyResult right) -> bool
+static eQuantic.UI.Primitives.PasskeyResult.operator ==(eQuantic.UI.Primitives.PasskeyResult left, eQuantic.UI.Primitives.PasskeyResult right) -> bool
 static eQuantic.UI.Primitives.Pinned.ScrolledBase.get -> eQuantic.UI.Primitives.BoxStyle
 static eQuantic.UI.Primitives.Point.operator !=(eQuantic.UI.Primitives.Point left, eQuantic.UI.Primitives.Point right) -> bool
 static eQuantic.UI.Primitives.Point.operator *(eQuantic.UI.Primitives.Point a, float s) -> eQuantic.UI.Primitives.Point
@@ -2376,6 +2501,13 @@ static eQuantic.UI.Primitives.StatusScale.operator ==(eQuantic.UI.Primitives.Sta
 static eQuantic.UI.Primitives.StyleDiff.operator !=(eQuantic.UI.Primitives.StyleDiff? left, eQuantic.UI.Primitives.StyleDiff? right) -> bool
 static eQuantic.UI.Primitives.StyleDiff.operator ==(eQuantic.UI.Primitives.StyleDiff? left, eQuantic.UI.Primitives.StyleDiff? right) -> bool
 static eQuantic.UI.Primitives.SvgDocument.Parse(string! svg) -> eQuantic.UI.Primitives.VectorDrawing!
+static eQuantic.UI.Primitives.TableOffset.Zero.get -> eQuantic.UI.Primitives.TableOffset
+static eQuantic.UI.Primitives.TableOffset.operator !=(eQuantic.UI.Primitives.TableOffset left, eQuantic.UI.Primitives.TableOffset right) -> bool
+static eQuantic.UI.Primitives.TableOffset.operator ==(eQuantic.UI.Primitives.TableOffset left, eQuantic.UI.Primitives.TableOffset right) -> bool
+static eQuantic.UI.Primitives.TableRange.operator !=(eQuantic.UI.Primitives.TableRange left, eQuantic.UI.Primitives.TableRange right) -> bool
+static eQuantic.UI.Primitives.TableRange.operator ==(eQuantic.UI.Primitives.TableRange left, eQuantic.UI.Primitives.TableRange right) -> bool
+static eQuantic.UI.Primitives.TableScrollRequest.operator !=(eQuantic.UI.Primitives.TableScrollRequest? left, eQuantic.UI.Primitives.TableScrollRequest? right) -> bool
+static eQuantic.UI.Primitives.TableScrollRequest.operator ==(eQuantic.UI.Primitives.TableScrollRequest? left, eQuantic.UI.Primitives.TableScrollRequest? right) -> bool
 static eQuantic.UI.Primitives.TextRun.operator !=(eQuantic.UI.Primitives.TextRun? left, eQuantic.UI.Primitives.TextRun? right) -> bool
 static eQuantic.UI.Primitives.TextRun.operator ==(eQuantic.UI.Primitives.TextRun? left, eQuantic.UI.Primitives.TextRun? right) -> bool
 static eQuantic.UI.Primitives.Touch.WheelTravel(float delta, bool precise) -> float
@@ -2498,6 +2630,8 @@ virtual eQuantic.UI.Primitives.UiComponent.AdoptConfig(eQuantic.UI.Primitives.Ui
 ~override eQuantic.UI.Primitives.MotionVector.ToString() -> string
 ~override eQuantic.UI.Primitives.NetworkState.Equals(object obj) -> bool
 ~override eQuantic.UI.Primitives.NetworkState.ToString() -> string
+~override eQuantic.UI.Primitives.PasskeyResult.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.PasskeyResult.ToString() -> string
 ~override eQuantic.UI.Primitives.Point.Equals(object obj) -> bool
 ~override eQuantic.UI.Primitives.Point.ToString() -> string
 ~override eQuantic.UI.Primitives.RRect.Equals(object obj) -> bool
@@ -2524,6 +2658,10 @@ virtual eQuantic.UI.Primitives.UiComponent.AdoptConfig(eQuantic.UI.Primitives.Ui
 ~override eQuantic.UI.Primitives.SpringSpec.ToString() -> string
 ~override eQuantic.UI.Primitives.StatusScale.Equals(object obj) -> bool
 ~override eQuantic.UI.Primitives.StatusScale.ToString() -> string
+~override eQuantic.UI.Primitives.TableOffset.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.TableOffset.ToString() -> string
+~override eQuantic.UI.Primitives.TableRange.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.TableRange.ToString() -> string
 ~override eQuantic.UI.Primitives.Transform2D.Equals(object obj) -> bool
 ~override eQuantic.UI.Primitives.Transform2D.ToString() -> string
 ~override eQuantic.UI.Primitives.TransitionSpec.Equals(object obj) -> bool

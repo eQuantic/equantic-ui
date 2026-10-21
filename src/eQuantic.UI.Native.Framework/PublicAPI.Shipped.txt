@@ -19,6 +19,8 @@
 [EQX0001]eQuantic.UI.Native.Framework.AxisConstraint.Stretch.get -> eQuantic.UI.Native.Framework.StretchKind
 [EQX0001]eQuantic.UI.Native.Framework.AxisConstraint.Stretch.init -> void
 [EQX0001]eQuantic.UI.Native.Framework.AxisConstraint.Stretched(eQuantic.UI.Native.Framework.StretchKind kind) -> eQuantic.UI.Native.Framework.AxisConstraint
+[EQX0001]eQuantic.UI.Native.Framework.AxisConstraint.Visible.get -> float
+[EQX0001]eQuantic.UI.Native.Framework.AxisConstraint.Visible.init -> void
 [EQX0001]eQuantic.UI.Native.Framework.AxisConstraint.WithMax(float max) -> eQuantic.UI.Native.Framework.AxisConstraint
 [EQX0001]eQuantic.UI.Native.Framework.DragClock
 [EQX0001]eQuantic.UI.Native.Framework.DragClock.AnyActive.get -> bool
@@ -84,6 +86,8 @@
 [EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Drags.get -> eQuantic.UI.Native.Framework.DragClock?
 [EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Drags.init -> void
 [EQX0001]eQuantic.UI.Native.Framework.LayoutContext.LayoutContext(eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Native.Framework.ITextMeasurer! measurer, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable) -> void
+[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Log.get -> System.Action<string!>?
+[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Log.init -> void
 [EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Measurer.get -> eQuantic.UI.Native.Framework.ITextMeasurer!
 [EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Pool.get -> eQuantic.UI.Native.Framework.LayoutNodePool?
 [EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Pool.init -> void

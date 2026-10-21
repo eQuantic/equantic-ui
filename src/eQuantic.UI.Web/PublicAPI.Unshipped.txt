@@ -1,3 +1,1 @@
 #nullable enable
-eQuantic.UI.Web.HtmlStyle.TouchAction.get -> string?
-eQuantic.UI.Web.HtmlStyle.TouchAction.set -> void
