@@ -113,11 +113,14 @@ import type {
   ShortcutNode,
   KeyChordValue,
   SheetSurfaceNode,
+  TableViewCellNode,
+  TableViewportNode,
   VisualNodeValue,
 } from './nodes';
 import { declareShortcut, shortcutMark } from '../dom/shortcuts';
 import { installScrolledController } from './scrolled-pinned';
 import { declareScrollViewport } from './scroll-viewports';
+import { declareTableViewport } from './table-viewports';
 import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
 import { localizeDestination } from '../utils/culture-routes';
@@ -387,6 +390,11 @@ function lowerNodeKind(
       return lowerSheetSurface(node as unknown as SheetSurfaceNode, context, horizontalAxis, path);
     case 'scrollView':
       return lowerScrollView(node as ScrollViewNode, context, path);
+    case 'tableViewport':
+      return lowerTableViewport(node as unknown as TableViewportNode, context, path);
+    case 'tableViewCell':
+      // Outside a viewport a cell has nothing to be placed against: it is its child (C# twin).
+      return lowerNode((node as unknown as TableViewCellNode).child, context, horizontalAxis, path + '/0');
     case 'loopMotion':
       return lowerLoopMotion(node as LoopMotionNode, context, path);
     case 'presence':
@@ -1636,6 +1644,170 @@ function lowerSheetSurface(
   }) as EventHandler;
 
   return view;
+}
+
+/**
+ * The table viewport on the web, at the offset its model holds as the pass runs (C# twin:
+ * `WebLoweringVisitor.LowerTableViewport`, which writes the same boxes at offset zero). A box that
+ * clips, holding four bands of cells (the ones that scroll on both axes, the pinned columns, the pinned
+ * rows, the corner), each with a layer the after-pass half moves by transform; the same four bands for
+ * the marks, which take no pointer; a scrollbar on each axis, hidden until the window is measured. The
+ * browser scrolls nothing here: the model owns the offset (see table-viewports.ts).
+ */
+function lowerTableViewport(node: TableViewportNode, context: LoweringContext, path: string): HtmlNode {
+  const pinnedRows = Math.min(Math.max(node.pinnedRows ?? 0, 0), node.rows.count);
+  const pinnedColumns = Math.min(Math.max(node.pinnedColumns ?? 0, 0), node.columns.count);
+  // The C# twin casts these to float before it spells them, so the spelling rounds the same here.
+  const pinnedAcross = Math.fround(node.columns.offsetOf(pinnedColumns));
+  const pinnedDown = Math.fround(node.rows.offsetOf(pinnedRows));
+  const offset = node.scroll.offset;
+  const children: HtmlNode[] = [];
+  for (let marks = 0; marks < 2; marks++) {
+    for (let band = 0; band < 4; band++) {
+      children.push(
+        lowerTableBand(node, context, path, band, marks === 1, pinnedRows, pinnedColumns, pinnedAcross, pinnedDown),
+      );
+    }
+  }
+  children.push(lowerTableScrollbar(), lowerTableScrollbar());
+  const view = element(
+    'div',
+    {
+      position: 'relative',
+      overflow: 'hidden',
+      width: sizeValue(node.width) ?? '100%',
+      height: sizeValue(node.height, true) ?? '100%',
+      'min-width': '0',
+      'min-height': '0',
+      'max-width': '100%',
+      // It takes the wheel, a press and a finger itself, so it declares itself a target, and the
+      // browser pans and zooms nothing under it.
+      'pointer-events': 'auto',
+      'touch-action': 'none',
+    },
+    children,
+  );
+  view.attributes['role'] = 'group';
+  // A stop of the Tab order itself, before its cells': the keys it takes scroll it (table-viewports.ts),
+  // and a scroller a keyboard cannot reach scrolls for nobody who only has a keyboard.
+  view.attributes['tabindex'] = '0';
+  if (node.label) view.attributes['aria-label'] = node.label;
+  view.attributes['data-eq-table'] = path;
+  declareTableViewport(path, {
+    node,
+    base: { across: offset.across, down: offset.down },
+    pinnedAcross,
+    pinnedDown,
+  });
+  return view;
+}
+
+/** One band: a clipping box at its edges, and the layer its cells sit on. */
+function lowerTableBand(
+  node: TableViewportNode,
+  context: LoweringContext,
+  path: string,
+  band: number,
+  marks: boolean,
+  pinnedRows: number,
+  pinnedColumns: number,
+  pinnedAcross: number,
+  pinnedDown: number,
+): HtmlNode {
+  const holdsAcross = band === 1 || band === 3;
+  const holdsDown = band === 2 || band === 3;
+  const offset = node.scroll.offset;
+  const cells: HtmlNode[] = [];
+  const all = node.cells ?? [];
+  for (let i = 0; i < all.length; i++) {
+    const cell = all[i];
+    if (Boolean(cell.mark) !== marks) continue;
+    const inPinnedRow = cell.row < pinnedRows;
+    const inPinnedColumn = cell.column < pinnedColumns;
+    if ((inPinnedColumn ? 1 : 0) + (inPinnedRow ? 2 : 0) !== band) continue;
+    // A cell's path segment is its key, its position, rather than its index: the window moves and
+    // the index with it, and what is kept by path (a component's instance) must stay with the cell.
+    const segment = (cell as { key?: string | null }).key ?? 'm' + i;
+    const placed = lowerTableCell(node, cell, context, path + '/' + segment, inPinnedRow, inPinnedColumn, pinnedAcross, pinnedDown, offset);
+    if (placed) cells.push(placed);
+  }
+  const layer = element('div', { position: 'absolute', left: '0', top: '0' }, cells);
+  const box = element(
+    'div',
+    {
+      position: 'absolute',
+      overflow: 'hidden',
+      left: holdsAcross ? '0' : px(pinnedAcross),
+      top: holdsDown ? '0' : px(pinnedDown),
+      width: holdsAcross ? px(pinnedAcross) : undefined,
+      height: holdsDown ? px(pinnedDown) : undefined,
+      right: holdsAcross ? undefined : '0',
+      bottom: holdsDown ? undefined : '0',
+      'pointer-events': marks ? 'none' : undefined,
+    },
+    [layer],
+  );
+  // A mark is drawn over the cells and is nothing to reach: no press, no Tab stop, nothing a reader
+  // lands on, whatever it holds.
+  if (marks) box.attributes['inert'] = '';
+  return box;
+}
+
+/** A cell placed in its band's layer over the rows and columns it covers, from the band's corner less
+ * the scroll on each axis the band moves along. */
+function lowerTableCell(
+  node: TableViewportNode,
+  cell: TableViewCellNode,
+  context: LoweringContext,
+  path: string,
+  inPinnedRow: boolean,
+  inPinnedColumn: boolean,
+  pinnedAcross: number,
+  pinnedDown: number,
+  offset: { across: number; down: number },
+): HtmlNode | null {
+  const rows = node.rows;
+  const columns = node.columns;
+  const firstRow = Math.min(Math.max(cell.row, 0), rows.count);
+  const firstColumn = Math.min(Math.max(cell.column, 0), columns.count);
+  const endRow = Math.min(Math.max(cell.row + Math.max(1, cell.rows ?? 1), firstRow), rows.count);
+  const endColumn = Math.min(Math.max(cell.column + Math.max(1, cell.columns ?? 1), firstColumn), columns.count);
+  const top = rows.offsetOf(firstRow);
+  const left = columns.offsetOf(firstColumn);
+  const x = inPinnedColumn ? left : left - pinnedAcross - offset.across;
+  const y = inPinnedRow ? top : top - pinnedDown - offset.down;
+  const child = lowerNode(cell.child, context, null, path + '/0');
+  const wrapper = element(
+    'div',
+    {
+      display: 'grid',
+      position: 'absolute',
+      left: px(Math.fround(x)),
+      top: px(Math.fround(y)),
+      width: px(Math.fround(columns.offsetOf(endColumn) - left)),
+      height: px(Math.fround(rows.offsetOf(endRow) - top)),
+    },
+    child ? [child] : [],
+  );
+  // Where the cell is, for the after-pass that walks the Tab order row by row across the bands it is
+  // painted in. Client-only, as the table's own key is.
+  wrapper.attributes['data-eq-cell'] = `${cell.row}:${cell.column}`;
+  return decorate(cell as unknown as VisualNodeValue, wrapper);
+}
+
+/** A scrollbar's track and thumb, hidden until the window is measured (C# twin). */
+function lowerTableScrollbar(): HtmlNode {
+  const thumb = element('div', {
+    position: 'absolute',
+    background: 'var(--eq-color-text-muted)',
+    opacity: '0.55',
+    'border-radius': '999px',
+  });
+  return element(
+    'div',
+    { display: 'none', position: 'absolute', background: 'var(--eq-color-surface-subtle)' },
+    [thumb],
+  );
 }
 
 /** Spec A6 mirror: native browser scrolling — overflow auto on the axis, hidden on the cross. */
@@ -3038,6 +3210,12 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
     case 'stack': {
       const stack = node as StackNode;
       return { width: stack.width?.kind === 'fill', height: stack.height?.kind === 'fill' };
+    }
+    case 'tableViewport': {
+      // A table viewport's hug is a fill: it takes the room it is given unless it says how large (C# twin).
+      const table = node as unknown as TableViewportNode;
+      const sized = (kind?: string) => kind === 'fixed' || kind === 'windowMinus';
+      return { width: !sized(table.width?.kind), height: !sized(table.height?.kind) };
     }
     case 'drawing': {
       // A drawing at its parent's width fills across; its height follows from its aspect (C# twin).

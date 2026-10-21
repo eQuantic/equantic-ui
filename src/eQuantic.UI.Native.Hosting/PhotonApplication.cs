@@ -136,6 +136,14 @@ public sealed class PhotonApplication
             else Console.Error.WriteLine($"{message}: {error}");
         };
 
+        // Layout's development notes (a table that took the visible extent of its scroller) go to the
+        // same logger, at Debug: they are what a developer reads while laying a screen out.
+        eQuantic.UI.Native.Components.PhotonHost.DefaultLog ??= message =>
+        {
+            var log = Services.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+            log?.CreateLogger("eQuantic.UI.Photon").LogDebug("{Message}", message);
+        };
+
         // A RUN starts here, so what it contained starts empty here. The boundary itself remembers
         // nothing across a rebuild — a component that stops throwing simply builds again — and that
         // stays true; this is the run's own tally, and a tally nobody arms is one that survives

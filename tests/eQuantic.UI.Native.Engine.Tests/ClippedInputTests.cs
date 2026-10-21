@@ -57,7 +57,7 @@ public class ClippedInputTests
         page.Fired.Should().Equal(["Toolbar"], "nothing has scrolled yet");
         page.Fired.Clear();
 
-        host.ScrollBy(200, 300, 400);
+        host.ScrollBy(200, 300, 0, 400);
         host.RenderFrame(new DisplayListBuilder(), 1100);
 
         host.PressDown(toolbar.X, toolbar.Y);
@@ -70,7 +70,7 @@ public class ClippedInputTests
     public void NoRegionSurvives_EntirelyOutsideItsScrollViewport()
     {
         var (_, host, _) = Mount();
-        host.ScrollBy(200, 300, 400);
+        host.ScrollBy(200, 300, 0, 400);
         var frame = host.RenderFrame(new DisplayListBuilder(), 1100);
 
         // The toolbar sits above the viewport legitimately — every OTHER region must intersect it.
@@ -86,7 +86,7 @@ public class ClippedInputTests
     public void ARowStraddlingTheEdge_KeepsOnlyThePartYouCanSee()
     {
         var (_, host, _) = Mount();
-        host.ScrollBy(200, 300, 30);   // a partial row at the viewport's top edge
+        host.ScrollBy(200, 300, 0, 30);   // a partial row at the viewport's top edge
         var frame = host.RenderFrame(new DisplayListBuilder(), 1100);
         var viewport = frame.ScrollRegions.Single().Bounds;
 

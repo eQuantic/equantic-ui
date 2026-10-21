@@ -47,6 +47,27 @@ public class SheetControllerTests
         CellRef.FromKey(cell.Key).Should().Be(cell);
     }
 
+    [Fact]
+    public void TheLastCellOfExcelsGrid_KeepsItsValueItsAddressAndItsKey()
+    {
+        // Packed into an int, the key of this cell overflowed to −1 and unpacked to (0, −1), and two
+        // rows 262 144 apart shared a key, so writing one overwrote the other. The browser, where the
+        // key is a double, never overflowed: the two targets disagreed past row 131 071.
+        var sheet = new SheetController(rows: 1_048_576, cols: CellRef.MaxCols);
+        var last = new CellRef(1_048_575, 16_383);
+
+        sheet.Document.SetCell(last, "x");
+        sheet.Document.SetCell(new CellRef(0, 0), "a");
+        sheet.Document.SetCell(new CellRef(262_144, 0), "b");
+
+        sheet.Document.GetCell(last).Should().Be("x");
+        last.ToA1().Should().Be("XFD1048576");
+        last.Key.Should().Be(17_179_869_183L);
+        CellRef.FromKey(last.Key).Should().Be(last);
+        sheet.Document.GetCell(new CellRef(0, 0)).Should().Be("a");
+        sheet.Document.GetCell(new CellRef(262_144, 0)).Should().Be("b");
+    }
+
     // ---- navigation ------------------------------------------------------------------------------
 
     [Fact]

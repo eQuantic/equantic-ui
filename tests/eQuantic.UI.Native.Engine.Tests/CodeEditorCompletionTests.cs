@@ -228,7 +228,7 @@ public class CodeEditorCompletionTests
         ClickAt(host, editor, 1, 0);
         Type(host, "Co");
 
-        host.ScrollBy(300, 30, 200).Should().BeTrue("the long first line scrolls the code sideways");
+        host.ScrollBy(300, 30, 0, 200).Should().BeTrue("the long first line scrolls the code sideways");
         var frame = Settle(host);
 
         editor.Editor.Completion.IsOpen.Should().BeTrue("a scroll moves no caret");
@@ -657,7 +657,7 @@ public class CodeEditorCompletionTests
         ClickAt(host, editor, 1, 0);
         Type(host, "Co");
 
-        host.ScrollBy(8, 100, 120).Should().BeTrue("the code scrolls");
+        host.ScrollBy(8, 100, 0, 120).Should().BeTrue("the code scrolls");
         var frame = Settle(host);
 
         editor.Editor.Completion.IsOpen.Should().BeTrue("a scroll moves no caret, so the list stays open");

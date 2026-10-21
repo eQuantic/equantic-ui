@@ -186,6 +186,12 @@ public class HtmlStyle
     /// someone changed it, as on Photon.
     /// </summary>
     public string? OverflowAnchor { get; set; }
+
+    /// <summary>
+    /// Which gestures the browser may take for itself over the element — <c>none</c> on a table
+    /// viewport, whose own scroll answers a finger, so the page does not pan or zoom under it.
+    /// </summary>
+    public string? TouchAction { get; set; }
     public string? Transition { get; set; }
     public string? Transform { get; set; }
 
@@ -304,6 +310,7 @@ public class HtmlStyle
         AddProperty(properties, "pointer-events", PointerEvents);
         AddProperty(properties, "isolation", Isolation);
         AddProperty(properties, "overflow-anchor", OverflowAnchor);
+        AddProperty(properties, "touch-action", TouchAction);
         AddProperty(properties, "outline", Outline);
         AddProperty(properties, "user-select", UserSelect);
         AddProperty(properties, "-webkit-user-select", UserSelect);

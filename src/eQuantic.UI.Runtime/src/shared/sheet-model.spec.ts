@@ -19,6 +19,23 @@ describe('SheetController (transpiled twin)', () => {
     expect(CellRef.parseA1('1A')).toBeNull();
   });
 
+  it("keeps the last cell of Excel's grid: its value, its address and the key .NET packs", () => {
+    const sheet = new SheetController(1_048_576, 16_384);
+    const last = new CellRef(1_048_575, 16_383);
+
+    sheet.document.setCell(last, 'x');
+    sheet.document.setCell(new CellRef(0, 0), 'a');
+    sheet.document.setCell(new CellRef(262_144, 0), 'b');
+
+    expect(sheet.document.getCell(last)).toBe('x');
+    expect(last.toA1()).toBe('XFD1048576');
+    // A long is a BigInt in the browser, with .NET's arithmetic: the same number .NET packs.
+    expect(last.key).toBe(17_179_869_183n);
+    expect(CellRef.fromKey(last.key)).toEqual(last);
+    expect(sheet.document.getCell(new CellRef(0, 0))).toBe('a');
+    expect(sheet.document.getCell(new CellRef(262_144, 0))).toBe('b');
+  });
+
   it('moves, extends, and Ctrl+arrow jumps like Excel', () => {
     const sheet = new SheetController(100, 26);
     sheet.document.setCell(new CellRef(1, 1), 'b');

@@ -42,7 +42,7 @@ public class SmoothScrollTests
     public void AWheelNotch_GlidesInsteadOfJumping()
     {
         var host = Mount();
-        host.ScrollBy(150, 100, 200);
+        host.ScrollBy(150, 100, 0, 200);
 
         var afterOneFrame = ContentTop(host, 16);
         afterOneFrame.Should().BeLessThan(0, "it started moving");
@@ -53,7 +53,7 @@ public class SmoothScrollTests
     public void ItArrivesExactlyWhereTheWheelSentIt()
     {
         var host = Mount();
-        host.ScrollBy(150, 100, 200);
+        host.ScrollBy(150, 100, 0, 200);
 
         for (var t = 16f; t < 4000; t += 16) ContentTop(host, t);
         ContentTop(host, 4016).Should().Be(-200, "a glide is a path, not a destination of its own");
@@ -63,9 +63,9 @@ public class SmoothScrollTests
     public void NotchesThatARRIVEMidGlide_Accumulate()
     {
         var host = Mount();
-        host.ScrollBy(150, 100, 100);
+        host.ScrollBy(150, 100, 0, 100);
         ContentTop(host, 16);
-        host.ScrollBy(150, 100, 100);   // a second notch before the first settled
+        host.ScrollBy(150, 100, 0, 100);   // a second notch before the first settled
 
         for (var t = 32f; t < 4000; t += 16) ContentTop(host, t);
         ContentTop(host, 4016).Should().Be(-200, "both notches counted, neither restarted the other");
@@ -75,7 +75,7 @@ public class SmoothScrollTests
     public void TurnedOff_ItLandsAtOnce()
     {
         var host = Mount(smooth: false);
-        host.ScrollBy(150, 100, 200);
+        host.ScrollBy(150, 100, 0, 200);
         ContentTop(host, 16).Should().Be(-200);
     }
 
@@ -84,7 +84,7 @@ public class SmoothScrollTests
     {
         var host = Mount();
         host.ReducedMotion = true;
-        host.ScrollBy(150, 100, 200);
+        host.ScrollBy(150, 100, 0, 200);
         ContentTop(host, 16).Should().Be(-200, "smooth scrolling IS movement");
     }
 
@@ -92,7 +92,7 @@ public class SmoothScrollTests
     public void AStillPage_AsksForNoFrames()
     {
         var host = Mount();
-        host.ScrollBy(150, 100, 200);
+        host.ScrollBy(150, 100, 0, 200);
         for (var t = 16f; t < 4000; t += 16) ContentTop(host, t);
 
         host.RenderFrame(new DisplayListBuilder(), 4016);

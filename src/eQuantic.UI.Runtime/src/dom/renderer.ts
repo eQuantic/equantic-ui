@@ -7,6 +7,7 @@
 import { HtmlNode } from '../core/types';
 import { getReconciler, HydrationResult } from './reconciler';
 import { releaseDetachedScrollViewports } from '../shared/scroll-viewports';
+import { releaseDetachedTableViewports } from '../shared/table-viewports';
 
 /**
  * Render context for tracking component state
@@ -88,6 +89,7 @@ export class RenderManager {
       this.container = null;
       // No pass follows an unmount, so nothing else would notice the scroll views it took away.
       releaseDetachedScrollViewports();
+      releaseDetachedTableViewports();
     }
   }
 

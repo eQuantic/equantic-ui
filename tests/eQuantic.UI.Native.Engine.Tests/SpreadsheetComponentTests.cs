@@ -80,7 +80,7 @@ public class SpreadsheetComponentTests
         var (host, sheet) = Open();
 
         // Scroll 10 rows down (280dp), settle the window, click the first visible cell.
-        host.ScrollBy(300, 200, 10 * 28f);
+        host.ScrollBy(300, 200, 0, 10 * 28f);
         host.RenderFrame(new DisplayListBuilder(), 32);
         host.RenderFrame(new DisplayListBuilder(), 48);
 

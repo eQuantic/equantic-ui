@@ -19,12 +19,13 @@ public enum GallerySection
     Containers = 4,
     Progress = 5,
     Sheets = 6,
-    Charts = 7,
-    Navigation = 8,
-    Feedback = 9,
-    Overlays = 10,
-    Device = 11,
-    Culture = 12,
+    Table = 7,
+    Charts = 8,
+    Navigation = 9,
+    Feedback = 10,
+    Overlays = 11,
+    Device = 12,
+    Culture = 13,
 }
 
 /// <summary>
@@ -56,6 +57,7 @@ public static class Gallery
         GallerySection.Feedback => "Banners & toasts",
         GallerySection.Overlays => "Overlays",
         GallerySection.Sheets => "Spreadsheet",
+        GallerySection.Table => "Table",
         GallerySection.Charts => "Charts",
         GallerySection.Culture => "Language",
         _ => "Device",
@@ -67,7 +69,7 @@ public static class Gallery
     {
         GallerySection.Buttons or GallerySection.Inputs or GallerySection.Selection => "Primitives",
         GallerySection.DataDisplay or GallerySection.Containers or GallerySection.Progress
-            or GallerySection.Sheets or GallerySection.Charts => "Data display",
+            or GallerySection.Sheets or GallerySection.Table or GallerySection.Charts => "Data display",
         GallerySection.Navigation => "Navigation",
         GallerySection.Feedback or GallerySection.Overlays => "Feedback",
         _ => "Device",   // Language belongs here too: what the MACHINE says, taken as a service.
@@ -103,6 +105,8 @@ public static class Gallery
             "Surfaces over the page — and how each one maps to a desktop window.",
         GallerySection.Sheets =>
             "The editable grid: Excel's keyboard, TSV clipboard, drag-resize — one C# for every target.",
+        GallerySection.Table =>
+            "Excel's whole grid, built only where it is in view: both axes scroll, the header row and column stay.",
         GallerySection.Charts =>
             "Bars from the theme's data palette, drawn with the engine's own shapes — one C# for the web and this window.",
         GallerySection.Culture =>
@@ -122,6 +126,7 @@ public static class Gallery
         GallerySection.Feedback => Icons.Notifications,
         GallerySection.Overlays => Icons.Info,
         GallerySection.Sheets => Icons.Table,
+        GallerySection.Table => Icons.Table,
         GallerySection.Charts => Icons.Table,
         GallerySection.Culture => Icons.Mail,
         _ => Icons.Person,
@@ -140,6 +145,7 @@ public static class Gallery
         GallerySection.Feedback => 4,
         GallerySection.Overlays => 4,
         GallerySection.Sheets => 1,
+        GallerySection.Table => 1,
         GallerySection.Charts => 1,
         GallerySection.Culture => 2,
         _ => 6,
@@ -159,6 +165,7 @@ public static class Gallery
         GallerySection.Feedback => Feedback(theme, state, mutate),
         GallerySection.Overlays => Overlays(theme, state, mutate),
         GallerySection.Sheets => Sheets(theme, state),
+        GallerySection.Table => TableGrid(theme),
         GallerySection.Charts => Charts(theme),
         GallerySection.Culture => Culture(theme, state),
         _ => Device(theme, state, mutate),
@@ -751,6 +758,45 @@ public static class Gallery
                 Height = SizeValue.Fill,
             }));
         return Section(theme, "Spreadsheet", column);
+    }
+
+    // Excel's sheet, plus the header row and the column of row numbers in front of it.
+    private static readonly TableSpans GridRows = new UniformTableSpans(1_048_576 + 1, 28);
+    private static readonly TableSpans GridColumns = new UniformTableSpans(16_384 + 1, 96);
+
+    /// <summary>The two-axis viewport (#982): the same grid the web dashboard serves at /table, each
+    /// cell showing its address behind a pinned header row and a pinned column of row numbers, built
+    /// only where it is in view.</summary>
+    private static VisualNode TableGrid(IAppTheme theme)
+    {
+        var column = Column(Space.S2);
+        column.Add(Caption(theme,
+            "Scroll both axes with the trackpad or a finger's fling, Shift turns the wheel sideways, "
+            + "and the scrollbars reach the last cell, XFD1048576."));
+        column.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fixed(420) },
+            TableView(GridRows, GridColumns, (row, col) => GridCell(theme, row, col),
+                pinnedRows: 1, pinnedColumns: 1, width: SizeValue.Fill, height: SizeValue.Fill,
+                label: "Excel's grid")));
+        return Section(theme, "Table", column);
+    }
+
+    /// <summary>A header across the top, a number down the side, and an address everywhere else.</summary>
+    private static VisualNode GridCell(IAppTheme theme, int row, int column)
+    {
+        var header = row == 0 || column == 0;
+        var label = row == 0 && column == 0 ? ""
+            : row == 0 ? Spreadsheet.ColumnName(column - 1)
+            : column == 0 ? $"{row}"
+            : $"{Spreadsheet.ColumnName(column - 1)}{row}";
+        return new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Background = header ? theme.SurfaceSubtle : theme.Surface,
+            BorderColor = theme.Border,
+            BorderWidth = 0.5f,
+            Padding = new EdgeInsets(0, 6, 0, 6),
+        }, new Text(label, TypeRole.Caption, header ? theme.TextMuted : theme.TextPrimary, maxLines: 1));
     }
 
     /// <summary>

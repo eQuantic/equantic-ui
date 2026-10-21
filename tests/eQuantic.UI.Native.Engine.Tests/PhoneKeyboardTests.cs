@@ -696,7 +696,7 @@ public class PhoneKeyboardTests
         host.RenderFrame(new DisplayListBuilder(), 32);
         host.RenderFrame(new DisplayListBuilder(), 48);
 
-        host.ScrollBy(100, 100, -1000).Should().BeTrue();
+        host.ScrollBy(100, 100, 0, -1000).Should().BeTrue();
         host.RenderFrame(new DisplayListBuilder(), 64);
         frame = host.RenderFrame(new DisplayListBuilder(), 80);
 

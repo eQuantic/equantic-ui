@@ -751,8 +751,26 @@ public sealed unsafe class PhotonWindow
                 // Wheel messages carry SCREEN coordinates, unlike every other mouse message.
                 var point = new POINT { X = LoWord(lParam), Y = HiWord(lParam) };
                 ScreenToClient(hwnd, &point);
-                var travel = WindowsKeys.WheelTravel(HiWord(wParam), _wheelLines);
-                _host.ScrollBy(point.X / _scale, point.Y / _scale, travel);
+                var notch = HiWord(wParam);
+                var travel = WindowsKeys.WheelTravel(notch, _wheelLines);
+                // Windows leaves Shift with a vertical wheel to the app, and every app it ships turns
+                // it horizontal. A precision touchpad reports less than a notch at a time: that is a
+                // trackpad's movement, which applies as it comes rather than gliding.
+                var across = (LoWord(wParam) & MK_SHIFT) != 0;
+                _host.ScrollBy(point.X / _scale, point.Y / _scale, across ? travel : 0, across ? 0 : travel,
+                    stepped: Math.Abs(notch) >= WHEEL_DELTA);
+                return 0;
+            }
+
+            case WM_MOUSEHWHEEL when _host is not null:
+            {
+                // The tilt wheel and a touchpad's sideways swipe: a positive delta moves to the right,
+                // the opposite sense of the vertical wheel's.
+                var point = new POINT { X = LoWord(lParam), Y = HiWord(lParam) };
+                ScreenToClient(hwnd, &point);
+                var notch = HiWord(wParam);
+                _host.ScrollBy(point.X / _scale, point.Y / _scale, -WindowsKeys.WheelTravel(notch, _wheelLines), 0,
+                    stepped: Math.Abs(notch) >= WHEEL_DELTA);
                 return 0;
             }
 

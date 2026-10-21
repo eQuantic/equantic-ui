@@ -8,7 +8,7 @@ namespace eQuantic.UI.Sheet;
 /// </summary>
 public sealed class SheetDocument
 {
-    private readonly Dictionary<int, string> _cells = new();
+    private readonly Dictionary<long, string> _cells = new();
     private readonly Dictionary<int, float> _rowHeights = new();
     private readonly Dictionary<int, float> _colWidths = new();
 
@@ -27,7 +27,7 @@ public sealed class SheetDocument
     public const float DefaultColWidth = 96f;
 
     /// <summary>Cells that actually HOLD something — iteration for save, copy, and bounds.</summary>
-    public IReadOnlyDictionary<int, string> Cells => _cells;
+    public IReadOnlyDictionary<long, string> Cells => _cells;
 
     public string GetCell(CellRef cell) =>
         _cells.TryGetValue(cell.Key, out var value) ? value : "";

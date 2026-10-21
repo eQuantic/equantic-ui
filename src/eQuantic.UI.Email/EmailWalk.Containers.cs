@@ -40,4 +40,8 @@ internal abstract partial class EmailWalk
     public Nothing Visit(Spacer node, Nothing state) => Refuse(node);
 
     public Nothing Visit(Stack node, Nothing state) => Refuse(node);
+
+    public Nothing Visit(TableViewCell node, Nothing state) => Refuse(node);
+
+    public Nothing Visit(TableViewport node, Nothing state) => Refuse(node);
 }

@@ -28,6 +28,9 @@ export {
   Pressable,
   CodeSurface,
   SheetSurface,
+  TableViewport,
+  TableViewCell,
+  TableSpans,
   Hoverable,
   Flexible,
   Spacer,
@@ -97,7 +100,16 @@ export { DataPalette, DivergingScale, StatusScale } from './data-palette';
 export { RouteValues } from './route-values';
 // Same promise, same failure shape: a page writing BoxStyle.Transform / .Pattern / .Glow names
 // these, and eqc routes every Primitives name here.
-export { FaceName, Point, Rect, Size, Transform2D } from './value-types';
+export {
+  FaceName,
+  Point,
+  Rect,
+  Size,
+  TableOffset,
+  TableRange,
+  TableScrollRequest,
+  Transform2D,
+} from './value-types';
 // A page placing a WebFrame names this to say WHICH form its content is; same implicit promise.
 export { WebContent } from './value-types';
 export { GridPattern, InFlow, InView, RadialGradient, Simulated } from './vocabulary';
