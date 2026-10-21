@@ -111,10 +111,20 @@ public static class CodeKeymap
         // there is one to go to.
         if (key == "F8" && !command && !control && !alt) return editor.Diagnostics.Next(backward: shift) is not null;
         // Escape closes a card first, only it, so the trap on Tab stays armed and a dialog around the
-        // editor stays open; a list showing has already taken the key above.
-        if (key == "Escape" && editor.Hover.Dismiss()) return true;
+        // editor stays open; a list showing has already taken the key above. A list asked for and not
+        // yet showing goes with whatever Escape closes, the card or the panel below: Escape means it was
+        // not wanted, and its answer, landing after the key, opened a list nobody had asked to see.
+        if (key == "Escape" && editor.Hover.Dismiss())
+        {
+            completion.Dismiss();
+            return true;
+        }
         // …and then the panel, before the trap on Tab.
-        if (key == "Escape" && editor.SignatureHelp.Dismiss()) return true;
+        if (key == "Escape" && editor.SignatureHelp.Dismiss())
+        {
+            completion.Dismiss();
+            return true;
+        }
 
         // Escape with no list showing releases the trap, unclaimed, so the host can go on meaning
         // what Escape means around the editor.

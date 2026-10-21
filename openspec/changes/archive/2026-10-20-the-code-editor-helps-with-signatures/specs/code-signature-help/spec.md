@@ -43,7 +43,8 @@ request SHALL be dropped. The panel SHALL show the newest answer's active signat
 ### Requirement: The provider closes the panel
 
 An answer with no signature SHALL close the panel, as SHALL Escape (claimed while the panel shows, after a
-completion list and a hover card showing, which it closes first), the editor losing the keyboard, the
+completion list and a hover card showing, which it closes first), a completion list asked for and not yet
+showing going with it, the editor losing the keyboard, the
 document being replaced, and the providers being taken out: with none left, the next request SHALL close
 the panel, and a `CodeEditor` handed other providers SHALL close it at once. A press in the code SHALL ask
 again rather than close.
@@ -57,6 +58,13 @@ again rather than close.
 
 - **WHEN** the panel shows and Escape is pressed
 - **THEN** the panel closes, the editor claims the key, and Tab still indents
+
+#### Scenario: Escape over a list not yet showing
+
+- **WHEN** the panel shows for `Column(`, `a` is typed and its completion provider has not answered, and
+  Escape is pressed
+- **THEN** the panel closes, the list asked for is dropped, its answer opens no list, and Tab still
+  indents
 
 #### Scenario: Every provider taken out
 

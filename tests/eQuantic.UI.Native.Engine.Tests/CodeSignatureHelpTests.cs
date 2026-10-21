@@ -48,6 +48,29 @@ public class CodeSignatureHelpTests : IDisposable
             Task.FromResult<CodeHover?>(new CodeHover(document.WordAt(position), "explained"));
     }
 
+    /// <summary>A completion provider whose answer comes when the test says so: a list asked for and not
+    /// yet showing.</summary>
+    private sealed class LateCompletion : ICodeCompletionProvider
+    {
+        private readonly List<TaskCompletionSource<CodeCompletionList>> _pending = [];
+        public IReadOnlyList<char> TriggerCharacters => [];
+
+        public Task<CodeCompletionList> CompleteAsync(CodeDocument document, CodePosition position,
+            CodeCompletionContext context, CancellationToken cancellation)
+        {
+            var answer = new TaskCompletionSource<CodeCompletionList>();
+            _pending.Add(answer);
+            return answer.Task;
+        }
+
+        public Task<CodeCompletionItem> ResolveAsync(CodeCompletionItem item, CancellationToken cancellation) =>
+            Task.FromResult(item);
+
+        /// <summary>Answers the newest request with <paramref name="labels"/>.</summary>
+        public void AnswerNewest(params string[] labels) =>
+            _pending[^1].SetResult(new CodeCompletionList(labels.Select(label => new CodeCompletionItem(label)).ToList()));
+    }
+
     /// <summary>A provider that throws on every request.</summary>
     private sealed class Throwing : ICodeSignatureProvider
     {
@@ -225,6 +248,53 @@ public class CodeSignatureHelpTests : IDisposable
 
         editor.SignatureHelp.IsOpen.Should().BeFalse();
         editor.TabMovesFocus.Should().BeFalse("the trap on Tab stays armed while a panel closes");
+    }
+
+    /// <summary>
+    /// Escape closing the panel drops a list asked for and not yet showing too, and the trap on Tab stays
+    /// armed: the list's answer, landing after the key, opened a list nobody had asked to see (Copilot's
+    /// third round on #1009).
+    /// </summary>
+    [Fact]
+    public void Escape_ClosingThePanel_DropsAListNotYetShowing()
+    {
+        var late = new LateCompletion();
+        var editor = Editor("var c = ", ColumnOnly());
+        editor.Completion.Providers.Add(late);
+        Type(editor, "Column(a");
+        editor.SignatureHelp.IsOpen.Should().BeTrue();
+        editor.Completion.IsLoading.Should().BeTrue("the word started asked for a list, and its answer is late");
+
+        Press(editor, "Escape").Should().BeTrue("the panel took it");
+
+        editor.SignatureHelp.IsOpen.Should().BeFalse();
+        editor.Completion.IsLoading.Should().BeFalse("the list asked for went with the panel");
+        late.AnswerNewest("alpha");
+        editor.Completion.IsOpen.Should().BeFalse("its answer lands on no list");
+        editor.TabMovesFocus.Should().BeFalse("the trap on Tab stays armed");
+    }
+
+    /// <summary>The same for a card: Escape closing it drops a list asked for and not yet showing.</summary>
+    [Fact]
+    public void Escape_ClosingACard_DropsAListNotYetShowing()
+    {
+        var late = new LateCompletion();
+        var editor = Editor("var c = ", ColumnOnly());
+        editor.Completion.Providers.Add(late);
+        editor.Hover.Providers.Add(new Explainer());
+        Type(editor, "alp");
+        editor.Completion.IsLoading.Should().BeTrue();
+        Press(editor, "k", KeyModifiers.Command).Should().BeTrue();
+        Press(editor, "i", KeyModifiers.Command).Should().BeTrue();
+        editor.Hover.IsOpen.Should().BeTrue("⌘K ⌘I showed the card over the word");
+
+        Press(editor, "Escape").Should().BeTrue("the card took it");
+
+        editor.Hover.IsOpen.Should().BeFalse();
+        editor.Completion.IsLoading.Should().BeFalse("the list asked for went with the card");
+        late.AnswerNewest("alpha");
+        editor.Completion.IsOpen.Should().BeFalse("its answer lands on no list");
+        editor.TabMovesFocus.Should().BeFalse("the trap on Tab stays armed");
     }
 
     [Fact]

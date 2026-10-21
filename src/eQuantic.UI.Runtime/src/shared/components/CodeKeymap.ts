@@ -32,8 +32,14 @@ export class CodeKeymap {
             return true;
         }
         if (key === 'F8' && !command && !control && !alt) return !(editor.diagnostics.next(shift) == null);
-        if (key === 'Escape' && editor.hover.dismiss()) return true;
-        if (key === 'Escape' && editor.signatureHelp.dismiss()) return true;
+        if (key === 'Escape' && editor.hover.dismiss()) {
+            completion.dismiss();
+            return true;
+        }
+        if (key === 'Escape' && editor.signatureHelp.dismiss()) {
+            completion.dismiss();
+            return true;
+        }
         if (key === 'Escape') {
             completion.dismiss();
             editor.tabMovesFocus = true;
@@ -61,7 +67,7 @@ export class CodeKeymap {
                         return true;
                     case 'v':
                         if (clipboard == null) return false;
-                        if ((($v9720) => (($v9720 != null && $v9720.length > 0) && (pasted = $v9720, true)))(clipboard.read())) editor.paste(pasted);
+                        if ((($v10084) => (($v10084 != null && $v10084.length > 0) && (pasted = $v10084, true)))(clipboard.read())) editor.paste(pasted);
                         return true;
                     case '/':
                         return editor.toggleLineComment();
