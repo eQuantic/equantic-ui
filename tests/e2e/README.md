@@ -46,7 +46,14 @@ the sample's `/passkeys` page runs a real Web Authentication ceremony through `I
 1. **A passkey is created, signs in, and is not created twice**: the sample's relying party finds the
    challenge it issued in each answer's client data, and a second creation, which excludes the passkey
    just registered, answers `AlreadyRegistered`.
-2. **A page outside a secure context has no passkey to offer**: `passkeys.test` is mapped to this
+2. **A server that does not take the answer leaves the page ready to try again**: the first answer
+   handed to the server meets a 503, the page says so, and the next press registers the passkey.
+3. **Options the server cannot renew are asked for again outside the press**: with the page's clock
+   moved a minute on (`page.clock`), a renewal that fails leaves the page with no options and the
+   buttons off, and the next renewal brings them back with nobody pressing anything.
+4. **Options older than the page uses start no ceremony**: with the page's clock moved past them and no
+   renewal fired, a press asks for new options instead, and the authenticator is never asked.
+5. **A page outside a secure context has no passkey to offer**: `passkeys.test` is mapped to this
    machine, so the page is served over plain http from a name that is not localhost, and `CreateAsync`
    answers `Unavailable`.
 

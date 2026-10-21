@@ -20,13 +20,9 @@ namespace eQuantic.Console;
 [ServerOnly]
 public static class DemoRelyingParty
 {
-    /// <summary>How long a challenge stays good: the ceremony's own timeout, which the options
-    /// state.</summary>
-    private static readonly TimeSpan Lifetime = TimeSpan.FromMinutes(1);
-
     /// <summary>Each challenge issued and not spent yet, with the ceremony it was issued for and when.
-    /// One a page asked for and never used lapses after <see cref="Lifetime"/>, and the next issue
-    /// forgets it.</summary>
+    /// One a page asked for and never used lapses after <see cref="PasskeyTiming.Challenge"/>, and the
+    /// next issue forgets it.</summary>
     private static readonly ConcurrentDictionary<string, (string Ceremony, DateTimeOffset Issued)> Challenges =
         new(StringComparer.Ordinal);
 
@@ -46,7 +42,7 @@ public static class DemoRelyingParty
         pubKeyCredParams = new[] { new { type = "public-key", alg = -7 }, new { type = "public-key", alg = -257 } },
         excludeCredentials = Passkeys.Keys.Select(id => new { type = "public-key", id }).ToArray(),
         authenticatorSelection = new { residentKey = "required", userVerification = "preferred" },
-        timeout = (int)Lifetime.TotalMilliseconds,
+        timeout = (int)PasskeyTiming.Prompt.TotalMilliseconds,
     });
 
     /// <summary>The options to sign in. A passkey is discoverable, so the device offers its own even
@@ -56,7 +52,7 @@ public static class DemoRelyingParty
         challenge = Issue("webauthn.get"),
         allowCredentials = Passkeys.Keys.Select(id => new { type = "public-key", id }).ToArray(),
         userVerification = "preferred",
-        timeout = (int)Lifetime.TotalMilliseconds,
+        timeout = (int)PasskeyTiming.Prompt.TotalMilliseconds,
     });
 
     /// <summary>Takes a new passkey's credential and says what it proved.</summary>
@@ -83,7 +79,7 @@ public static class DemoRelyingParty
     {
         var now = DateTimeOffset.UtcNow;
         foreach (var (lapsed, issued) in Challenges)
-            if (now - issued.Issued > Lifetime) Challenges.TryRemove(lapsed, out _);
+            if (now - issued.Issued > PasskeyTiming.Challenge) Challenges.TryRemove(lapsed, out _);
         var challenge = Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(32));
         Challenges[challenge] = (ceremony, now);
         return challenge;
@@ -113,7 +109,7 @@ public static class DemoRelyingParty
         }
         if (!Challenges.TryRemove(challenge, out var issued) || issued.Ceremony != ceremony)
             return (id, "the challenge is not one this server issued for it");
-        if (DateTimeOffset.UtcNow - issued.Issued > Lifetime)
+        if (DateTimeOffset.UtcNow - issued.Issued > PasskeyTiming.Challenge)
             return (id, "the challenge lapsed before the answer came back");
         return type == ceremony ? (id, null) : (id, $"the client data says {type}, not {ceremony}");
     }

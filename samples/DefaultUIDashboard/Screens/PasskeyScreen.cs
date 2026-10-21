@@ -12,23 +12,48 @@ namespace eQuantic.Console;
 /// one only inside the person's gesture, and a round trip to the server in between can spend it. A
 /// challenge is good for one ceremony, so each ceremony asks for the next options once it is done.
 /// </para>
+/// <para>
+/// And a challenge is good for a while only (<see cref="PasskeyTiming"/>), so the page renews the
+/// options it keeps while it sits idle, on the clock and never inside a press, and starts no ceremony
+/// with options older than it can use: the server would refuse the answer, and a passkey created
+/// for it would stay on the device with nothing recording it.
+/// </para>
 /// </summary>
 [Page("/passkeys", Title = "Passkeys — eQuantic Console")]
 public sealed class PasskeyScreen : StatefulComponent
 {
+    private const string Unanswered = "The server did not take the answer: press again.";
+    private const string Unreachable =
+        "The server did not answer, so the page holds no options: it asks again in a minute.";
+    private const string Lapsed = "These options lapsed while the page was away: press again.";
+
     private readonly IPasskeys? _passkeys;
+    private readonly IClock? _clock;
+    private IDisposable? _renewal;
     private string? _creation;
     private string? _request;
+    private DateTime _issued;
     private string _said = "";
     private bool _busy;
     private bool _navOpen;
 
-    public PasskeyScreen(IPasskeys? passkeys = null)
+    public PasskeyScreen(IPasskeys? passkeys = null, IClock? clock = null)
     {
         _passkeys = passkeys;
+        _clock = clock;
     }
 
-    protected override void OnMount() => _ = Prepare();
+    protected override void OnMount()
+    {
+        if (_passkeys is not { IsAvailable: true }) return;
+        _ = Renew(_said);
+        _renewal = _clock?.Every(PasskeyTiming.Renewal, () =>
+        {
+            if (!_busy) _ = Renew(_said);
+        });
+    }
+
+    protected override void OnUnmount() => _renewal?.Dispose();
 
     [ServerAction]
     public Task<string> BeginRegistration() => Task.FromResult(DemoRelyingParty.CreationOptions());
@@ -42,49 +67,94 @@ public sealed class PasskeyScreen : StatefulComponent
     [ServerAction]
     public Task<string> FinishSignIn(string credential) => Task.FromResult(DemoRelyingParty.SignIn(credential));
 
-    private async Task Prepare()
-    {
-        if (_passkeys is not { IsAvailable: true }) return;
-        await Renew(_said);
-    }
-
-    /// <summary>Asks for the next options of both ceremonies, the two requests at once, and shows
-    /// what the last ceremony said.</summary>
+    /// <summary>
+    /// Asks for the next options of both ceremonies, the two requests at once, and shows what the last
+    /// ceremony said. When the server does not answer, the page keeps no options, so no press reuses a
+    /// spent or lapsed challenge, and the clock's next renewal asks again.
+    /// </summary>
     private async Task Renew(string said)
     {
-        var creation = BeginRegistration();
-        var request = BeginSignIn();
-        var nextCreation = await creation;
-        var nextRequest = await request;
-        SetState(() =>
+        _busy = true;
+        try
         {
-            _said = said;
-            _creation = nextCreation;
-            _request = nextRequest;
+            var creation = BeginRegistration();
+            var request = BeginSignIn();
+            var nextCreation = await creation;
+            var nextRequest = await request;
+            SetState(() =>
+            {
+                // A renewal that works ends the notice that the last one did not.
+                _said = said == Unreachable ? "" : said;
+                _creation = nextCreation;
+                _request = nextRequest;
+                _issued = DateTime.UtcNow;
+            });
+        }
+        catch (Exception)
+        {
+            SetState(() =>
+            {
+                _said = Unreachable;
+                _creation = null;
+                _request = null;
+            });
+        }
+        finally
+        {
             _busy = false;
-        });
+        }
     }
+
+    /// <summary>Whether the options are older than the page uses: a renewal that came late, on a
+    /// device that slept or in a tab the browser held back.</summary>
+    private bool Stale() => DateTime.UtcNow - _issued > PasskeyTiming.Usable;
 
     private async Task Create()
     {
         if (_busy || _passkeys is null || _creation is not { } options) return;
+        if (Stale())
+        {
+            await Renew(Lapsed);
+            return;
+        }
         _busy = true;
-        // The ceremony first, inside the press; the server only after it.
-        var result = await _passkeys.CreateAsync(options);
-        var said = result.Outcome == PasskeyOutcome.Succeeded
-            ? await FinishRegistration(result.Credential!)
-            : Explain(result.Outcome);
+        string said;
+        try
+        {
+            // The ceremony first, inside the press; the server only after it.
+            var result = await _passkeys.CreateAsync(options);
+            said = result.Outcome == PasskeyOutcome.Succeeded
+                ? await FinishRegistration(result.Credential!)
+                : Explain(result.Outcome);
+        }
+        catch (Exception)
+        {
+            said = Unanswered;
+        }
         await Renew(said);
     }
 
     private async Task SignIn()
     {
         if (_busy || _passkeys is null || _request is not { } options) return;
+        if (Stale())
+        {
+            await Renew(Lapsed);
+            return;
+        }
         _busy = true;
-        var result = await _passkeys.AuthenticateAsync(options);
-        var said = result.Outcome == PasskeyOutcome.Succeeded
-            ? await FinishSignIn(result.Credential!)
-            : Explain(result.Outcome);
+        string said;
+        try
+        {
+            var result = await _passkeys.AuthenticateAsync(options);
+            said = result.Outcome == PasskeyOutcome.Succeeded
+                ? await FinishSignIn(result.Credential!)
+                : Explain(result.Outcome);
+        }
+        catch (Exception)
+        {
+            said = Unanswered;
+        }
         await Renew(said);
     }
 

@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page, type Request } from '@playwright/test';
 
 /**
  * Passkeys from one C# contract (#1017), on the sample's /passkeys page. Chrome's virtual authenticator,
@@ -27,6 +27,14 @@ async function withAuthenticator(page: Page) {
     },
   });
   return { cdp, authenticatorId };
+}
+
+/** Every server action the page calls goes to this one endpoint, named in the body. */
+const actions = '**/api/_equantic/actions';
+
+function actionOf(request: Request): string {
+  const body = request.postDataJSON() as { actionId?: string } | null;
+  return body?.actionId ?? '';
 }
 
 /** Presses a button once it is enabled: the page enables it when the options for its ceremony arrived. */
@@ -59,6 +67,71 @@ test.describe('Passkeys', () => {
     await expect(
       page.getByText('This device already holds a passkey for this account. Sign in with it instead.'),
     ).toBeVisible({ timeout: 20_000 });
+  });
+
+  test('a server that does not take the answer leaves the page ready to try again', async ({ page }) => {
+    await withAuthenticator(page);
+    // The first answer the page hands its server meets an outage.
+    let refused = false;
+    await page.route(actions, async (route) => {
+      if (!refused && actionOf(route.request()) === 'PasskeyScreen/FinishRegistration') {
+        refused = true;
+        await route.fulfill({ status: 503, body: 'down for a moment' });
+        return;
+      }
+      await route.continue();
+    });
+    await page.goto('/passkeys');
+
+    await press(page, 'Create a passkey');
+    await expect(page.getByText('The server did not take the answer: press again.')).toBeVisible({
+      timeout: 20_000,
+    });
+
+    await press(page, 'Create a passkey');
+    await expect(page.getByText(/^Registered passkey \S+:/)).toBeVisible({ timeout: 20_000 });
+  });
+
+  test('options the server cannot renew are asked for again outside the press', async ({ page }) => {
+    await page.clock.install();
+    await page.goto('/passkeys');
+    const create = page.getByRole('button', { name: 'Create a passkey', exact: true });
+    await expect(create).toBeEnabled({ timeout: 20_000 });
+
+    // A minute idle with the server down: the renewal fails, and the page keeps no options it cannot trust.
+    await page.route(actions, (route) => route.fulfill({ status: 503, body: 'down for a moment' }));
+    await page.clock.fastForward('01:01');
+    await expect(
+      page.getByText('The server did not answer, so the page holds no options: it asks again in a minute.'),
+    ).toBeVisible();
+    await expect(create).toBeDisabled();
+
+    // The server is back, and the next renewal finds it with nobody pressing anything.
+    await page.unroute(actions);
+    await page.clock.fastForward('01:01');
+    await expect(create).toBeEnabled();
+  });
+
+  test('options older than the page uses start no ceremony', async ({ page }) => {
+    const { cdp, authenticatorId } = await withAuthenticator(page);
+    await page.clock.install();
+    await page.goto('/passkeys');
+    const create = page.getByRole('button', { name: 'Create a passkey', exact: true });
+    await expect(create).toBeEnabled({ timeout: 20_000 });
+
+    // The renewal never came: a device that slept, a tab the browser held back. The page's clock moves on
+    // without firing a timer, so the options it holds are older than their challenge stays good.
+    await page.clock.setSystemTime(new Date(Date.now() + 10 * 60_000));
+    await create.click();
+    await expect(page.getByText('These options lapsed while the page was away: press again.')).toBeVisible({
+      timeout: 20_000,
+    });
+    const { credentials } = await cdp.send('WebAuthn.getCredentials', { authenticatorId });
+    expect(credentials).toHaveLength(0);
+
+    // The press asked for new options, and the next one uses them.
+    await press(page, 'Create a passkey');
+    await expect(page.getByText(/^Registered passkey \S+:/)).toBeVisible({ timeout: 20_000 });
   });
 
   test('a page outside a secure context has no passkey to offer', async ({ page, baseURL }) => {

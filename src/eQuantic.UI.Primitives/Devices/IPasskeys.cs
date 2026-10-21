@@ -18,7 +18,10 @@ namespace eQuantic.UI.Primitives;
 /// Ask the server for the options when the screen opens, and call the ceremony from the press
 /// itself: Safari runs one only inside the person's gesture, and a round trip between the press and
 /// the call can spend it (see <see cref="PasskeyOutcome.Cancelled"/>). A challenge is good for one
-/// ceremony, so ask again after each.
+/// ceremony, so ask again after each, and for a while only: a screen that keeps its options while it
+/// sits idle renews them on a clock (<see cref="IClock"/>), inside the lifetime the relying party gives
+/// a challenge, and starts no ceremony with options older than that, since the server would refuse the
+/// answer and a passkey created for it would stay on the device unrecorded.
 /// </para>
 /// </summary>
 public interface IPasskeys

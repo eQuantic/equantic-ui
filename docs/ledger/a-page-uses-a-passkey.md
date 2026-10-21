@@ -8,8 +8,10 @@
   its own JSON conversions where it has them and the members every ceremony needs where it does not;
   the server render answers unavailable. The documented pattern asks the server for the options when
   the screen opens, because Safari runs a ceremony only inside the person's gesture and a round trip
-  between the press and the call can spend it. The sample's `/passkeys` page creates a passkey, signs
-  in and is refused a second one in a real Chrome over a virtual authenticator, kept as
+  between the press and the call can spend it, and renews them on a clock while the screen sits idle,
+  because a challenge lapses. The sample's `/passkeys` page creates a passkey, signs in, is refused a
+  second one, recovers from a server that fails mid-ceremony and starts no ceremony with lapsed
+  options, in a real Chrome over a virtual authenticator, kept as
   `tests/e2e/tests/passkeys.spec.ts` ([#1017](https://github.com/eQuantic/equantic-ui/issues/1017);
   Apple, Android and Windows follow in [#1018](https://github.com/eQuantic/equantic-ui/issues/1018),
   [#1019](https://github.com/eQuantic/equantic-ui/issues/1019) and
