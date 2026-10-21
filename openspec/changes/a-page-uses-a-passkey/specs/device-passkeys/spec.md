@@ -56,6 +56,10 @@ token cancelled before the ceremony ends SHALL abort it and answer `Cancelled`.
 - **WHEN** the page cancels the token while the prompt is open
 - **THEN** the ceremony is aborted and the answer is `Cancelled`
 
+#### Scenario: A result nobody filled in
+- **WHEN** a component reads a `PasskeyResult` it never received, its default
+- **THEN** its outcome is `Unavailable` and it carries no credential, never `Succeeded`
+
 ### Requirement: A host without passkeys says so
 `IsAvailable` SHALL be `true` only where the host can run a ceremony: in a browser, a secure context with
 the Web Authentication API. Where it is `false`, both methods SHALL answer `Unavailable` without asking

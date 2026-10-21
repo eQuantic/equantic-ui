@@ -65,7 +65,24 @@ timeout alike; `InvalidStateError` on creation is `AlreadyRegistered`; a host wi
   has them (current Chrome, Edge, Firefox and Safari), and by decoding the base64url members by hand
   otherwise (the challenge, `user.id`, and each listed credential's `id`).
 - Answer: `credential.toJSON()` where the browser has it, and the same members encoded by hand otherwise.
-- The cancellation token drives an `AbortController` whose signal goes to the ceremony.
+- The cancellation token drives an `AbortController` whose signal goes to the ceremony. No device
+  realization took a token before this one: the runtime's twin (`utils/cancellation.ts`) carries
+  `register`, so the realization registers the abort on it and lets the registration go when the
+  ceremony ends, and a token the call omitted, `undefined` on this side, cancels nothing.
+
+### The outcome's zero is `Unavailable`
+`default(PasskeyResult)` is a result nobody filled in, and with `Succeeded` as the enum's zero it would
+read as a success with no credential, which is the one wrong answer a sign-in must never get by
+accident. `BiometricResult` puts `Succeeded` first; this contract does not follow it there.
+
+### The options are asked for before the press
+Safari runs a Web Authentication ceremony only inside a gesture the person made, and a page that awaits
+a server action between the press and `CreateAsync` can spend it: Safari then refuses with
+`NotAllowedError`, the same error a person who backed out produces, so the page reads `Cancelled`. The
+pattern the documentation and the sample show is the one the relying party's flow allows anyway: the
+page asks a server action for the options when the screen opens, keeps them, and the press calls the
+ceremony at once. A challenge is good for one ceremony, so the page asks for fresh options after each
+one.
 
 ## Risks / Trade-offs
 
@@ -75,6 +92,9 @@ timeout alike; `InvalidStateError` on creation is `AlreadyRegistered`; a host wi
   paths over a stubbed API.
 - [A real ceremony needs an authenticator] → The browser check uses Chrome's virtual authenticator, which
   creates and signs without hardware.
+- [Safari's gesture rule] → Measured nowhere automatically: Safari offers no virtual authenticator. The
+  documented pattern keeps the ceremony inside the press, and the documentation says `Cancelled` can mean
+  a spent gesture in Safari, where a page that does not follow the pattern will see it.
 
 ## Migration Plan
 

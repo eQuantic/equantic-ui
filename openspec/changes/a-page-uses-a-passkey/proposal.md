@@ -15,14 +15,18 @@ no passkey sign-in, no passkey as a second factor, no passkey as the way to set 
 - **A passkey is a contract of its own.** `IPasskeys` in `eQuantic.UI.Primitives`, taken through a
   constructor like every other capability:
   - `IsAvailable`: whether this host can create and use a passkey at all.
-  - `CreateAsync(options)`: creates a passkey from the relying party's creation options and answers the
-    new credential, for the server to verify and store.
-  - `AuthenticateAsync(options)`: signs with a passkey from the relying party's request options and
-    answers the assertion, for the server to verify.
+  - `CreateAsync(string options, CancellationToken cancellationToken = default)`: creates a passkey
+    from the relying party's creation options and answers the new credential, for the server to
+    verify and store.
+  - `AuthenticateAsync(string options, CancellationToken cancellationToken = default)`: signs with a
+    passkey from the relying party's request options and answers the assertion, for the server to
+    verify.
+  The token aborts the ceremony, as it cancels every other asynchronous capability.
 - **Both answer how it went, not a boolean.** A `PasskeyResult` carries a `PasskeyOutcome` (succeeded,
   cancelled, already registered, failed, unavailable) and, when it succeeded, the credential. "Did not
   succeed" hides situations an app must tell apart: a person who backed out is not shown an error, and a
-  device that already holds a passkey for the account is told so.
+  device that already holds a passkey for the account is told so. `Unavailable` is the outcome's zero, so
+  a result nobody filled in never reads as a success.
 - **The options and the credential are the relying party's own JSON.** The W3C Web Authentication JSON
   that every relying-party library writes and verifies, and that Android's Credential Manager takes as
   is. The app hands the server's text to the device and the device's text to the server, and never
@@ -30,9 +34,12 @@ no passkey sign-in, no passkey as a second factor, no passkey as the way to set 
 - **The browser realizes it**, in a secure context, over the platform's authenticators and security
   keys. The server render answers `Unavailable`, as it answers every device it has none of.
 
-For a developer: take an `IPasskeys?` in a component's constructor, pass the options a server action
-answered to `CreateAsync` or `AuthenticateAsync`, and send `result.Credential` back to the server when
-`result.Outcome` is `Succeeded`. No JavaScript, no base64, no `ArrayBuffer`.
+For a developer: take an `IPasskeys?` in a component's constructor, ask a server action for the
+options when the screen opens, pass them to `CreateAsync` or `AuthenticateAsync` when the person
+presses, and send `result.Credential` back to the server when `result.Outcome` is `Succeeded`. No
+JavaScript, no base64, no `ArrayBuffer`. The options are asked for before the press because Safari runs
+a ceremony only inside the person's gesture, and a round trip to the server between the press and the
+ceremony can spend it.
 
 Nothing is removed, so no app changes to upgrade.
 
@@ -50,8 +57,9 @@ None.
 ## Impact
 
 - **The vocabulary** (`eQuantic.UI.Primitives`): `IPasskeys`, `PasskeyResult`, `PasskeyOutcome`. The
-  public surface grows by these three; the developer surface (`developer-surface.baseline.txt`) moves
-  only by them.
+  public surface grows by these three. The developer surface (`developer-surface.baseline.txt`) does not
+  move: a passkey needs no MSBuild property, no configuration section and no template parameter on the
+  web.
 - **The runtime** (`eQuantic.UI.Runtime`): `WebPasskeys`, registered as `IPasskeys`; the TypeScript twin
   of `PasskeyResult` and the union of `PasskeyOutcome`, generated like every other.
 - **The server** (`eQuantic.UI.Server`): an absent `IPasskeys` for the server render.
