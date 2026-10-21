@@ -61,8 +61,11 @@ test.describe('Passkeys', () => {
     ).toBeVisible({ timeout: 20_000 });
   });
 
-  test('a page outside a secure context has no passkey to offer', async ({ page }) => {
-    await page.goto('http://passkeys.test:5200/passkeys');
+  test('a page outside a secure context has no passkey to offer', async ({ page, baseURL }) => {
+    // The server the configuration starts, under the mapped name instead of localhost.
+    const outsider = new URL('/passkeys', baseURL);
+    outsider.hostname = 'passkeys.test';
+    await page.goto(outsider.href);
 
     // A string, so the test runner's transform leaves the module import for the browser to resolve
     // through the page's own import map.

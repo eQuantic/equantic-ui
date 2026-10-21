@@ -10,7 +10,10 @@ import { PasskeyResult } from '../primitive-values';
  * takes and the credential's bytes back into base64url. Where the browser carries the standard's own
  * conversions (`PublicKeyCredential.parseCreationOptionsFromJSON`, `parseRequestOptionsFromJSON` and
  * `toJSON()`), it uses them, so an extension or a member this file has never heard of crosses as the
- * browser understands it. Where it does not, the members every ceremony needs are converted here.
+ * browser understands it. Where it does not, the members every ceremony needs are converted here,
+ * and those alone: an extension whose members are bytes (`prf`, `largeBlob`) needs a browser that
+ * carries the conversions, since its salts would reach the API as text and its results come back as
+ * empty objects.
  *
  * Like every realization, it resolves and never rejects: each way a ceremony ends is an outcome, and
  * the error names Web Authentication gives are mapped once, below.

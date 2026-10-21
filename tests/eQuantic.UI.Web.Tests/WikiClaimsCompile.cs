@@ -314,7 +314,12 @@ public class WikiClaimsCompile
             if (passkeys is null || _options is not { } options) return;
             var result = await passkeys.AuthenticateAsync(options);   // the first thing the press does
             var signedIn = result.Outcome == PasskeyOutcome.Succeeded && await FinishSignIn(result.Credential!);
-            SetState(() => _said = signedIn ? "Welcome back." : "Not signed in.");
+            var next = await BeginSignIn();
+            SetState(() =>
+            {
+                _said = signedIn ? "Welcome back." : "Not signed in.";
+                _options = next;
+            });
         }
 
         public override VisualNode Build(ComponentContext context) =>

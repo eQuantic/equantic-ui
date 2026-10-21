@@ -20,8 +20,15 @@ namespace eQuantic.Console;
 [ServerOnly]
 public static class DemoRelyingParty
 {
-    /// <summary>Each challenge issued and not spent yet, with the ceremony it was issued for.</summary>
-    private static readonly ConcurrentDictionary<string, string> Challenges = new(StringComparer.Ordinal);
+    /// <summary>How long a challenge stays good: the ceremony's own timeout, which the options
+    /// state.</summary>
+    private static readonly TimeSpan Lifetime = TimeSpan.FromMinutes(1);
+
+    /// <summary>Each challenge issued and not spent yet, with the ceremony it was issued for and when.
+    /// One a page asked for and never used lapses after <see cref="Lifetime"/>, and the next issue
+    /// forgets it.</summary>
+    private static readonly ConcurrentDictionary<string, (string Ceremony, DateTimeOffset Issued)> Challenges =
+        new(StringComparer.Ordinal);
 
     /// <summary>The passkeys registered here, by credential id.</summary>
     private static readonly ConcurrentDictionary<string, byte> Passkeys = new(StringComparer.Ordinal);
@@ -39,7 +46,7 @@ public static class DemoRelyingParty
         pubKeyCredParams = new[] { new { type = "public-key", alg = -7 }, new { type = "public-key", alg = -257 } },
         excludeCredentials = Passkeys.Keys.Select(id => new { type = "public-key", id }).ToArray(),
         authenticatorSelection = new { residentKey = "required", userVerification = "preferred" },
-        timeout = 60_000,
+        timeout = (int)Lifetime.TotalMilliseconds,
     });
 
     /// <summary>The options to sign in. A passkey is discoverable, so the device offers its own even
@@ -49,7 +56,7 @@ public static class DemoRelyingParty
         challenge = Issue("webauthn.get"),
         allowCredentials = Passkeys.Keys.Select(id => new { type = "public-key", id }).ToArray(),
         userVerification = "preferred",
-        timeout = 60_000,
+        timeout = (int)Lifetime.TotalMilliseconds,
     });
 
     /// <summary>Takes a new passkey's credential and says what it proved.</summary>
@@ -74,24 +81,40 @@ public static class DemoRelyingParty
 
     private static string Issue(string ceremony)
     {
+        var now = DateTimeOffset.UtcNow;
+        foreach (var (lapsed, issued) in Challenges)
+            if (now - issued.Issued > Lifetime) Challenges.TryRemove(lapsed, out _);
         var challenge = Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(32));
-        Challenges[challenge] = ceremony;
+        Challenges[challenge] = (ceremony, now);
         return challenge;
     }
 
     /// <summary>The credential's id, and what is wrong with it, read from its client data: the
-    /// ceremony it says it was, and whether this server issued its challenge for that ceremony. The
-    /// challenge is spent either way, so an answer is never taken twice.</summary>
+    /// ceremony it says it was, and whether this server issued its challenge for that ceremony, within
+    /// its lifetime. The challenge is spent either way, so an answer is never taken twice, and an
+    /// answer that is not a credential is a problem to say rather than an exception.</summary>
     private static (string Id, string? Problem) Read(string credential, string ceremony)
     {
-        using var answer = JsonDocument.Parse(credential);
-        var id = answer.RootElement.GetProperty("id").GetString() ?? "";
-        var encoded = answer.RootElement.GetProperty("response").GetProperty("clientDataJSON").GetString() ?? "";
-        using var clientData = JsonDocument.Parse(Base64Url.DecodeFromChars(encoded));
-        var type = clientData.RootElement.GetProperty("type").GetString();
-        var challenge = clientData.RootElement.GetProperty("challenge").GetString() ?? "";
-        if (!Challenges.TryRemove(challenge, out var issuedFor) || issuedFor != ceremony)
+        string id, challenge;
+        string? type;
+        try
+        {
+            using var answer = JsonDocument.Parse(credential);
+            id = answer.RootElement.GetProperty("id").GetString() ?? "";
+            var encoded = answer.RootElement.GetProperty("response").GetProperty("clientDataJSON").GetString() ?? "";
+            using var clientData = JsonDocument.Parse(Base64Url.DecodeFromChars(encoded));
+            type = clientData.RootElement.GetProperty("type").GetString();
+            challenge = clientData.RootElement.GetProperty("challenge").GetString() ?? "";
+        }
+        catch (Exception error) when (error is JsonException or KeyNotFoundException or InvalidOperationException
+            or FormatException)
+        {
+            return ("", "the answer is not a Web Authentication credential");
+        }
+        if (!Challenges.TryRemove(challenge, out var issued) || issued.Ceremony != ceremony)
             return (id, "the challenge is not one this server issued for it");
+        if (DateTimeOffset.UtcNow - issued.Issued > Lifetime)
+            return (id, "the challenge lapsed before the answer came back");
         return type == ceremony ? (id, null) : (id, $"the client data says {type}, not {ceremony}");
     }
 

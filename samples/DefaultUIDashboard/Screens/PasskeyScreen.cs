@@ -20,6 +20,7 @@ public sealed class PasskeyScreen : StatefulComponent
     private string? _creation;
     private string? _request;
     private string _said = "";
+    private bool _busy;
     private bool _navOpen;
 
     public PasskeyScreen(IPasskeys? passkeys = null)
@@ -44,46 +45,47 @@ public sealed class PasskeyScreen : StatefulComponent
     private async Task Prepare()
     {
         if (_passkeys is not { IsAvailable: true }) return;
-        var creation = await BeginRegistration();
-        var request = await BeginSignIn();
+        await Renew(_said);
+    }
+
+    /// <summary>Asks for the next options of both ceremonies, the two requests at once, and shows
+    /// what the last ceremony said.</summary>
+    private async Task Renew(string said)
+    {
+        var creation = BeginRegistration();
+        var request = BeginSignIn();
+        var nextCreation = await creation;
+        var nextRequest = await request;
         SetState(() =>
         {
-            _creation = creation;
-            _request = request;
+            _said = said;
+            _creation = nextCreation;
+            _request = nextRequest;
+            _busy = false;
         });
     }
 
     private async Task Create()
     {
-        if (_passkeys is null || _creation is not { } options) return;
+        if (_busy || _passkeys is null || _creation is not { } options) return;
+        _busy = true;
         // The ceremony first, inside the press; the server only after it.
         var result = await _passkeys.CreateAsync(options);
         var said = result.Outcome == PasskeyOutcome.Succeeded
             ? await FinishRegistration(result.Credential!)
             : Explain(result.Outcome);
-        var creation = await BeginRegistration();
-        var request = await BeginSignIn();
-        SetState(() =>
-        {
-            _said = said;
-            _creation = creation;
-            _request = request;
-        });
+        await Renew(said);
     }
 
     private async Task SignIn()
     {
-        if (_passkeys is null || _request is not { } options) return;
+        if (_busy || _passkeys is null || _request is not { } options) return;
+        _busy = true;
         var result = await _passkeys.AuthenticateAsync(options);
         var said = result.Outcome == PasskeyOutcome.Succeeded
             ? await FinishSignIn(result.Credential!)
             : Explain(result.Outcome);
-        var request = await BeginSignIn();
-        SetState(() =>
-        {
-            _said = said;
-            _request = request;
-        });
+        await Renew(said);
     }
 
     private static string Explain(PasskeyOutcome outcome) => outcome switch
