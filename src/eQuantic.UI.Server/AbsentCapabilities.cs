@@ -109,6 +109,22 @@ internal static class AbsentCapabilities
             new(BiometricResult.Unavailable);
     }
 
+    /// <summary>No ceremony on a server: the authenticator that would create or sign is the
+    /// visitor's, and the relying party this server is verifies the answer rather than giving
+    /// one.</summary>
+    internal sealed class Passkeys : IPasskeys
+    {
+        public bool IsAvailable => false;
+
+        public ValueTask<PasskeyResult> CreateAsync(string options,
+            CancellationToken cancellationToken = default) =>
+            new(new PasskeyResult(PasskeyOutcome.Unavailable, null));
+
+        public ValueTask<PasskeyResult> AuthenticateAsync(string options,
+            CancellationToken cancellationToken = default) =>
+            new(new PasskeyResult(PasskeyOutcome.Unavailable, null));
+    }
+
     /// <summary>
     /// The one that does NOT report absence — and the exception is the point. "Offline" here would
     /// mean the SSR pass renders the offline banner into the markup every crawler and every first

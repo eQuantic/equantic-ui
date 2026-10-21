@@ -297,4 +297,57 @@ public class WikiClaimsCompile
         public ShadowSpec Elevation(int level) => inner.Elevation(level);
         public float Shape(ShapeScale scale) => inner.Shape(scale);
     }
+
+    /// <summary>The relying party the Capabilities page's passkey sign-in calls: a Web Authentication
+    /// library writes the options and verifies the answer.</summary>
+    private static class RelyingParty
+    {
+        public static Task<string> RequestOptionsAsync() => Task.FromResult("{}");
+
+        public static Task<bool> VerifyAsync(string credential) => Task.FromResult(credential.Length > 0);
+    }
+
+    /// <summary>Capabilities, "Passkeys" (preview.65): a sign-in that asks for the options when the
+    /// screen opens and starts the ceremony first thing in the press, as the page writes it.</summary>
+    [Page("/sign-in")]
+    private sealed class SignInPage(IPasskeys? passkeys = null) : Primitives.StatefulComponent
+    {
+        private string? _options;
+        private string _said = "";
+
+        // Asked for when the screen opens, so the press can start the ceremony at once.
+        protected override void OnMount() => _ = Prepare();
+
+        [ServerAction]
+        public Task<string> BeginSignIn() => RelyingParty.RequestOptionsAsync();   // your Web Authentication library
+
+        [ServerAction]
+        public Task<bool> FinishSignIn(string credential) => RelyingParty.VerifyAsync(credential);
+
+        private async Task Prepare()
+        {
+            if (passkeys is not { IsAvailable: true }) return;
+            var options = await BeginSignIn();
+            SetState(() => _options = options);
+        }
+
+        private async Task SignIn()
+        {
+            if (passkeys is null || _options is not { } options) return;
+            var result = await passkeys.AuthenticateAsync(options);   // the first thing the press does
+            var signedIn = result.Outcome == PasskeyOutcome.Succeeded && await FinishSignIn(result.Credential!);
+            var next = await BeginSignIn();
+            SetState(() =>
+            {
+                _said = signedIn ? "Welcome back." : "Not signed in.";
+                _options = next;
+            });
+        }
+
+        public override VisualNode Build(ComponentContext context) =>
+            Column(gap: Space.S3, children: [
+                Button("Sign in with a passkey", onPressed: () => _ = SignIn()),
+                Text(_said, TypeRole.BodyM),
+            ]);
+    }
 }

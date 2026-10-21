@@ -33,6 +33,7 @@ public sealed class IdentityScreen(ConsoleIdentity? identity = null) : Stateless
                     TypeRole.BodyL, theme.TextPrimary),
                 Link(identity is null ? "/form" : "/server-data",
                     Text(identity is null ? "Sign in" : "See what the server knows", TypeRole.BodyM, theme.TextSecondary)),
+                Link("/passkeys", Text("Use a passkey", TypeRole.BodyM, theme.TextSecondary)),
             ])),
             navOpen: false, onToggleNav: () => { });
     }

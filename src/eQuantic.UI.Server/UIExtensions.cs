@@ -153,6 +153,7 @@ public static class UIExtensions
         services.TryAddSingleton<eQuantic.UI.Primitives.ILocation, AbsentCapabilities.Location>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IMotionSensor, AbsentCapabilities.MotionSensor>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IBiometrics, AbsentCapabilities.Biometrics>();
+        services.TryAddSingleton<eQuantic.UI.Primitives.IPasskeys, AbsentCapabilities.Passkeys>();
         services.TryAddSingleton<eQuantic.UI.Primitives.INetworkStatus, AbsentCapabilities.NetworkStatus>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IServerEvents, AbsentCapabilities.ServerEvents>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IAnalytics, AbsentCapabilities.Analytics>();

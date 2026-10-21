@@ -81,6 +81,7 @@ public class StructDefaultTests
             public BoxStyle Style() => default;
             public SizeValue Width() => default;
             public SizeValue? MaybeWidth() => default;
+            public PasskeyResult Passkey() => default;
         }
         """;
 
@@ -99,6 +100,8 @@ public class StructDefaultTests
     [InlineData("style", "undefined")]
     [InlineData("width", "undefined")]
     [InlineData("maybeWidth", "null")]
+    // A passkey result nobody filled in is the twin's zero, which reads as unavailable (#1017).
+    [InlineData("passkey", "new PasskeyResult()")]
     public void ADefaultLiteral_IsTheZeroTheTwinCanBuild(string method, string expected)
     {
         var ts = TypeScriptOf(DefaultsSource, "Defaults.cs", "Defaults");
