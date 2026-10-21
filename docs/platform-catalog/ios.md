@@ -351,7 +351,7 @@ Secondary sources, used only for dates:
 | 294 | Networking | Distributed actors across devices | Distributed | 16.0 | no | swift-only | no | Swift language library. |  |
 | 295 | Networking | Local network permission and Bonjour declarations | Info.plist `NSLocalNetworkUsageDescription`, `NSBonjourServices` | 14.0 | no | build-time | n/a | Pure Info.plist keys. |  |
 | 296 | Security & identity | Face ID / Touch ID / passcode authentication | LocalAuthentication `LAContext`, `LARight` | 8.0 / 16.0 | no | objc | yes | Info.plist `NSFaceIDUsageDescription`. | ✅ `IBiometrics` |
-| 297 | Security & identity | Passkeys (sign in, register) | AuthenticationServices `ASAuthorizationPlatformPublicKeyCredentialProvider` | 15.0 | no | objc; entitlement: associated-domains (webcredentials) | yes | — |  |
+| 297 | Security & identity | Passkeys (sign in, register) | AuthenticationServices `ASAuthorizationPlatformPublicKeyCredentialProvider` | 15.0 | no | objc; entitlement: associated-domains (webcredentials) | yes | — | [#1018](https://github.com/eQuantic/equantic-ui/issues/1018) (the contract is `IPasskeys`, realized on the web) |
 | 298 | Security & identity | Passkey-first account creation | AuthenticationServices `ASAuthorizationAccountCreationProvider` | NEW in iOS 26 | no | swift-only | no | — |  |
 | 299 | Security & identity | Import/export credentials between managers (Credential Exchange) | AuthenticationServices `ASCredentialImportManager`, `ASCredentialExportManager` | NEW in iOS 26 | no | swift-only | no | — |  |
 | 300 | Security & identity | OAuth / web login session | AuthenticationServices `ASWebAuthenticationSession` | 12.0 | no | objc | yes | — |  |

@@ -38,12 +38,34 @@ npm run report
 4. **Estado inicial deve ser hidratado corretamente**: Valida que os dados do estado foram hidratados
 5. **Eventos devem funcionar após hidratação**: Valida que event handlers estão funcionando
 
+### `passkeys.spec.ts`
+
+Chrome's virtual authenticator, driven over the DevTools protocol, creates and signs with no hardware, so
+the sample's `/passkeys` page runs a real Web Authentication ceremony through `IPasskeys` (#1017). Every
+test also fails on an exception or a rejected promise the page left unhandled, which the runtime's
+development overlay would have shown:
+
+1. **A passkey is created, signs in, and is not created twice**: the sample's relying party finds the
+   challenge it issued in each answer's client data, and a second creation, which excludes the passkey
+   just registered, answers `AlreadyRegistered`.
+2. **A server that does not take the answer leaves the page ready to try again**: the first answer
+   handed to the server meets a 503, the page says so, and the next press registers the passkey.
+3. **Options the server cannot renew are asked for again outside the press**: with the page's clock
+   moved a minute on (`page.clock`), a renewal that fails leaves the page with no options and the
+   buttons off, and the next renewal brings them back with nobody pressing anything.
+4. **Options older than the page uses start no ceremony**: with the page's clock moved past them and no
+   renewal fired, a press asks for new options instead, and the authenticator is never asked.
+5. **A page outside a secure context has no passkey to offer**: `passkeys.test` is mapped to this
+   machine, so the page is served over plain http from a name that is not localhost, and `CreateAsync`
+   answers `Unavailable`.
+
 ## Estrutura
 
 ```
 tests/e2e/
 ├── playwright.config.ts    # Configuração do Playwright
 ├── tests/
+│   ├── passkeys.spec.ts       # Passkeys through IPasskeys (#1017)
 │   └── ssr-hydration.spec.ts  # Testes de SSR/hidratação
 └── package.json
 ```

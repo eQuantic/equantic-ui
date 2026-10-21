@@ -5,6 +5,7 @@ import { WebCamera } from './camera';
 import { WebLocation } from './location';
 import { WebMotionSensor } from './motion-sensor';
 import { WebNetworkStatus } from './network-status';
+import { WebPasskeys } from './passkeys';
 import { WebPhotoLibrary } from './photo-library';
 import { WebTextClipboard } from './text-clipboard';
 import { WebCultureController } from './culture-controller';
@@ -31,6 +32,9 @@ export function registerDeviceCapabilities(): void {
   // Registered even though it reports itself unavailable: a page that takes one must RECEIVE one,
   // or it fails to construct instead of showing the fallback it already knows how to show.
   services.registerSingleton('IBiometrics', () => new WebBiometrics());
+  // What a browser CAN do for a sign-in: a passkey, over Web Authentication. Registered everywhere,
+  // and it reports itself unavailable outside a secure context, for the same reason as above.
+  services.registerSingleton('IPasskeys', () => new WebPasskeys());
   services.registerSingleton('INetworkStatus', () => new WebNetworkStatus());
   services.registerSingleton('IMotionSensor', () => new WebMotionSensor());
   services.registerSingleton('ILocation', () => new WebLocation());

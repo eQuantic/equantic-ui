@@ -343,6 +343,7 @@ export {
   MotionSpec,
   MotionVector,
   NetworkState,
+  PasskeyResult,
   ServerConnection,
   ServerTopic,
   ServerTopicRefusal,

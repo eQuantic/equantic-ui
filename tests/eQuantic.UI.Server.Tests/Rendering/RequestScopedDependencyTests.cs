@@ -91,6 +91,42 @@ public class RequestScopedDependencyTests
             "the server has nothing to hand back, and says so instead of pretending");
     }
 
+    /// <summary>A sign-in page that offers a passkey where the host can run one.</summary>
+    [Page("/passkey-test")]
+    private sealed class PasskeyPage(IPasskeys passkeys) : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            new Text(passkeys.IsAvailable ? "Sign in with a passkey" : "Sign in with your password",
+                TypeRole.Heading);
+    }
+
+    /// <summary>
+    /// A page taking <see cref="IPasskeys"/> renders on the server, with an absent one: the
+    /// authenticator is the visitor's, and the server is the relying party that verifies, not the
+    /// device that signs. A ceremony asked of it answers <see cref="PasskeyOutcome.Unavailable"/>
+    /// without a credential.
+    /// </summary>
+    [Fact]
+    public async Task APageTakingPasskeys_RendersOnTheServer_WithNoneToOffer()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddUI(o => o.ScanAssembly(typeof(RequestScopedDependencyTests).Assembly));
+        var root = services.BuildServiceProvider(validateScopes: true);
+
+        using var scope = root.CreateScope();
+        var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
+        var service = scope.ServiceProvider.GetRequiredService<IServerRenderingService>();
+
+        var result = await service.RenderPageAsync(typeof(PasskeyPage), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("Sign in with your password", "the server has no passkey to offer");
+        var passkeys = scope.ServiceProvider.GetRequiredService<IPasskeys>();
+        (await passkeys.AuthenticateAsync("{}")).Should().Be(new PasskeyResult(PasskeyOutcome.Unavailable, null));
+        (await passkeys.CreateAsync("{}")).Should().Be(new PasskeyResult(PasskeyOutcome.Unavailable, null));
+    }
+
     private static ServerRenderingService CreateService(out ServiceProvider root)
     {
         var options = new UIOptions();

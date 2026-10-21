@@ -30,7 +30,12 @@ API uses. Nothing has run on a physical device. Since then the Android shell rea
 ([#775](https://github.com/eQuantic/equantic-ui/issues/775)), both phones realize `IDeepLinks`
 ([#777](https://github.com/eQuantic/equantic-ui/issues/777)), and every shell opens a link through
 `IUrlLauncher`, which took the link methods out of the desktop-only `IWorkspace`
-([#778](https://github.com/eQuantic/equantic-ui/issues/778)). The wiki's Capabilities page keeps the
+([#778](https://github.com/eQuantic/equantic-ui/issues/778)). A passkey is a contract of its own,
+`IPasskeys`, realized in the browser first ([#1017](https://github.com/eQuantic/equantic-ui/issues/1017),
+D35); Apple, Android and Windows realize it in
+[#1018](https://github.com/eQuantic/equantic-ui/issues/1018),
+[#1019](https://github.com/eQuantic/equantic-ui/issues/1019) and
+[#1020](https://github.com/eQuantic/equantic-ui/issues/1020). The wiki's Capabilities page keeps the
 count per contract and shell, compared with the registrations by `WikiShellRealizationsTests`.
 
 Two defects found while cataloguing come before any new capability on iOS:
@@ -184,7 +189,8 @@ entitlements, as it does for entitlements on macOS.
 ## Order
 
 1. **The defects**: #796 and #795.
-2. **What needs no bridge**: the epic's contracts D8–D23 and the phone prerequisites outside it
+2. **What needs no bridge**: the epic's contracts D8–D23, passkeys on each shell (D36–D38), and the
+   phone prerequisites outside it
    (text input [#770](https://github.com/eQuantic/equantic-ui/issues/770), the lifecycle
    [#771](https://github.com/eQuantic/equantic-ui/issues/771), the back gesture
    [#772](https://github.com/eQuantic/equantic-ui/issues/772), image decoding on Android

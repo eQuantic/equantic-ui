@@ -96,6 +96,9 @@ export type NavigableRoleValue = 'grid';
 
 export type NetworkKindValue = 'none' | 'wifi' | 'cellular' | 'wired' | 'other';
 
+export type PasskeyOutcomeValue =
+  'unavailable' | 'succeeded' | 'cancelled' | 'alreadyRegistered' | 'failed';
+
 export type PermissionStateValue =
   'notDetermined' | 'granted' | 'denied' | 'limited' | 'unavailable';
 
