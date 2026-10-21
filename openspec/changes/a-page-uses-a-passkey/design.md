@@ -75,6 +75,12 @@ timeout alike; `InvalidStateError` on creation is `AlreadyRegistered`; a host wi
 read as a success with no credential, which is the one wrong answer a sign-in must never get by
 accident. `BiometricResult` puts `Succeeded` first; this contract does not follow it there.
 
+The zero has to hold in the browser too. The twin's constructor defaults to `'unavailable'` and no
+credential, and the struct carries `[ZeroConstructs]` naming that constructor, so eqc writes
+`default(PasskeyResult)` as `new PasskeyResult()` rather than `undefined`, which a page would fail on at
+its first read. The twin hashes by value (`hashesByValue`), as every twin of a vocabulary record does,
+so two equal results compare and hash alike on both sides.
+
 ### The options are asked for before the press
 Safari runs a Web Authentication ceremony only inside a gesture the person made, and a page that awaits
 a server action between the press and `CreateAsync` can spend it: Safari then refuses with

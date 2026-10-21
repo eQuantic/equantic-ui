@@ -189,6 +189,7 @@ hashesByValue(
   MotionVector,
   MotionReading,
   NetworkState,
+  PasskeyResult,
   SpringSpec,
   MotionSpec,
   ServerTopic,

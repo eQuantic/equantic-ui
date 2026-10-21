@@ -10,4 +10,5 @@ namespace eQuantic.UI.Primitives;
 /// otherwise. The app hands it to its server as it is: the server's Web Authentication library
 /// reads it, and the app never needs a field of it.
 /// </param>
+[ZeroConstructs("primitive-values.ts: `constructor(outcome = 'unavailable', credential = null)`.")]
 public readonly record struct PasskeyResult(PasskeyOutcome Outcome, string? Credential);
