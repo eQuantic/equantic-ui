@@ -41,7 +41,9 @@ npm run report
 ### `passkeys.spec.ts`
 
 Chrome's virtual authenticator, driven over the DevTools protocol, creates and signs with no hardware, so
-the sample's `/passkeys` page runs a real Web Authentication ceremony through `IPasskeys` (#1017):
+the sample's `/passkeys` page runs a real Web Authentication ceremony through `IPasskeys` (#1017). Every
+test also fails on an exception or a rejected promise the page left unhandled, which the runtime's
+development overlay would have shown:
 
 1. **A passkey is created, signs in, and is not created twice**: the sample's relying party finds the
    challenge it issued in each answer's client data, and a second creation, which excludes the passkey

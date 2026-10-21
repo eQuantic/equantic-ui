@@ -45,6 +45,18 @@ async function press(page: Page, name: string) {
 }
 
 test.describe('Passkeys', () => {
+  // An exception or a rejected promise nothing handled fails the test that left it, whatever the page
+  // showed: in development the runtime puts each one in its error overlay.
+  const uncaught = new WeakMap<Page, string[]>();
+  test.beforeEach(({ page }) => {
+    const errors: string[] = [];
+    uncaught.set(page, errors);
+    page.on('pageerror', (error) => errors.push(error.message));
+  });
+  test.afterEach(({ page }) => {
+    expect(uncaught.get(page), 'errors nothing in the page handled').toEqual([]);
+  });
+
   test('a passkey is created, signs in, and is not created twice for the account', async ({ page }) => {
     const { cdp, authenticatorId } = await withAuthenticator(page);
     await page.goto('/passkeys');

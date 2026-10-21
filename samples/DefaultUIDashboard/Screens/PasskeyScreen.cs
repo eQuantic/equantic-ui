@@ -77,16 +77,15 @@ public sealed class PasskeyScreen : StatefulComponent
         _busy = true;
         try
         {
-            var creation = BeginRegistration();
-            var request = BeginSignIn();
-            var nextCreation = await creation;
-            var nextRequest = await request;
+            // Both requests at once, awaited together: a failure of either reaches the catch below,
+            // and neither is left a rejection nothing handles.
+            var options = await Task.WhenAll(BeginRegistration(), BeginSignIn());
             SetState(() =>
             {
                 // A renewal that works ends the notice that the last one did not.
                 _said = said == Unreachable ? "" : said;
-                _creation = nextCreation;
-                _request = nextRequest;
+                _creation = options[0];
+                _request = options[1];
                 _issued = DateTime.UtcNow;
             });
         }
