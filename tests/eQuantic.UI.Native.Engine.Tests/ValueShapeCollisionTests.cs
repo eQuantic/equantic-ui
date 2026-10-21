@@ -67,6 +67,10 @@ public class ValueShapeCollisionTests
             "a position, an extent, and a clock reading (seconds and delta). Point and Size are "
             + "deliberately NOT one type: adding two sizes is meaningless and adding two points is "
             + "not, which is the distinction dart:ui draws with Offset and Size and we draw here."),
+        ["Int32,Int32,Int32,Int32"] = (
+            ["CodeCell", "TableRange"],
+            "a code view's cell and a table's rectangle of cells: one is a place in a run of text, the "
+            + "other a span of rows and columns in a grid. Nothing here converts one into the other."),
         ["Int32,Int32"] = (
             ["CellRef", "CodePosition"],
             "a spreadsheet cell is (row, column) and a caret is (line, character). They look alike "

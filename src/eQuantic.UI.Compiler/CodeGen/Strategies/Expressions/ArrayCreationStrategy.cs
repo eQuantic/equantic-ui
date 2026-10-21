@@ -33,7 +33,8 @@ public class ArrayCreationStrategy : IConversionStrategy
         if (initializer != null)
         {
             var elements = initializer.Expressions.Select(e => context.Converter.ConvertExpression(e));
-            return $"[{string.Join(", ", elements)}]";
+            var literal = $"[{string.Join(", ", elements)}]";
+            return EnumUnion(node, context) is { } union ? $"({literal} as {union}[])" : literal;
         }
 
         // Sized array without initializer: new T[n] → new Array(n).fill(<default for T>).
@@ -83,6 +84,29 @@ public class ArrayCreationStrategy : IConversionStrategy
         var fill = TypeDeclarationExtensions.DefaultFor(type.ElementType);
         if (fill.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
         return fill;
+    }
+
+    /// <summary>
+    /// The union an array of a vocabulary ENUM's values is typed by, as a local holding one is
+    /// (<c>LocalDeclarationStrategy</c>): in the runtime such an enum is a union of its members' names,
+    /// and an array literal of them is a <c>string[]</c> to TypeScript unless it says which. Iterating
+    /// <c>new[] { ScrollAxis.Vertical, ScrollAxis.Horizontal }</c> then handed each element, a
+    /// <c>string</c>, to a parameter of the enum's type, which failed to type-check. A [Flags] enum is
+    /// a number, and plain JavaScript has no annotation to write.
+    /// </summary>
+    private static string? EnumUnion(SyntaxNode node, ConversionContext context)
+    {
+        if (!context.TypeAnnotations) return null;
+        if (context.SemanticHelper.GetType(node) is not IArrayTypeSymbol
+            {
+                ElementType: { TypeKind: TypeKind.Enum } element,
+            })
+            return null;
+        if (element.GetAttributes().Any(a => a.AttributeClass?.Name == "FlagsAttribute")) return null;
+        if (CodeGen.TypeScriptEmitter.VocabularyUnionFor(element) is not { } union) return null;
+        // The name has to travel with the module, like every other runtime-provided one.
+        context.UsedRuntimeTypes.Add(union);
+        return union;
     }
 
     public int Priority => 0;

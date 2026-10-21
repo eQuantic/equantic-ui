@@ -355,6 +355,8 @@ public sealed class PhotonHost
         // point, and it always wins.
         _scrolls.Smooth = SmoothScroll && !ReducedMotion;
         var gliding = _scrolls.Advance(timeMs);
+        // A table's glide and fling move on the same clock: its scroll is the table's own.
+        if (AdvanceTables(timeMs)) gliding = true;
         var previousFrame = _lastFrame;
         // Taken and cleared as late as possible: whatever the drain, the frame ticker or an edit
         // asked for before this point is in this frame, and anything after it is in the next.
@@ -365,7 +367,7 @@ public sealed class PhotonHost
             markedText: _marked, composing: _composing,
             hoveredAt: _hoverAt,
             nodePool: RecycleFrames ? _nodePool : null,
-            windowControlsInsets: WindowControlsInsets, sizedLike: previousFrame, rebuildAll: rebuildAll);
+            windowControlsInsets: WindowControlsInsets, sizedLike: previousFrame, rebuildAll: rebuildAll, log: Log);
         if (_lift != 0) builder.Pop();
         if (RenderScale != 1f) builder.Pop();
         // The frame shows what the app made of the keyboard's edit. A composition in a text the app
@@ -463,11 +465,30 @@ public sealed class PhotonHost
         float LastAt, float LastTimeMs, float Velocity, bool Active)? _pan;
 
     /// <summary>
+    /// A press a table viewport's scroll took. On a scrollbar it is the scroll's from the start
+    /// (<c>Active</c>). A finger's is a CANDIDATE, as a pan of a scroll view is: the press goes on to the
+    /// cell under it, and the table takes it only once it travels past the slop, cancelling that press,
+    /// so a tap on a cell is still a tap.
+    /// </summary>
+    private (TableViewport Viewport, Rect Bounds, float StartX, float StartY, bool Active)? _tablePress;
+
+    /// <summary>
     /// Whether a wheel or drag GLIDES to where it was sent instead of jumping there. On by default
     /// — a jump reads as a redraw rather than as movement, and the eye loses its place. Reduce
     /// Motion turns it off whatever the app said: it is movement, and that setting means it.
     /// </summary>
     public bool SmoothScroll { get; set; } = true;
+
+    /// <summary>
+    /// Where this host's layout says what it decided that the app did not write: a table that fills an
+    /// axis with no bound takes the visible extent of the scroller around it, and says so here. Every
+    /// host starts with <see cref="DefaultLog"/>, which the application arms with its logger.
+    /// </summary>
+    public Action<string>? Log { get; set; } = DefaultLog;
+
+    /// <summary>The <see cref="Log"/> a new host starts with. The application points it at its logger,
+    /// so a shell that builds a host passes nothing for it.</summary>
+    public static Action<string>? DefaultLog { get; set; }
     private readonly PresenceClock _presences = new();
     private readonly DragClock _drags = new();
 
@@ -585,6 +606,7 @@ public sealed class PhotonHost
     private bool ScrollIntoView(FocusStop stop)
     {
         if (_lastFrame is null || stop.Bounds.Height <= 0) return false;
+        if (RevealInTable(stop)) return true;
 
         var regions = _lastFrame.ScrollRegions;
         var best = -1;
@@ -624,6 +646,38 @@ public sealed class PhotonHost
     }
 
     private const float ScrollIntoViewMargin = 24f;
+
+    /// <summary>
+    /// A stop in a table viewport's cell is brought into view by the table's own scroll, which the
+    /// scroll views' search never moves: its cells past the window are built, and Tab reaches them. The
+    /// cell is the element right under the viewport's own, and its band says which axes it moves along,
+    /// so a pinned header is never scrolled after. Answers whether the table moved.
+    /// </summary>
+    private bool RevealInTable(FocusStop stop)
+    {
+        var tables = _lastFrame!.TableRegions;
+        for (var i = tables.Count - 1; i >= 0; i--)
+        {
+            var table = tables[i];
+            TableViewCell? cell = null;
+            var at = stop.Element;
+            for (var parent = at.Parent; parent is not null; at = parent, parent = parent.Parent)
+            {
+                if (!ReferenceEquals(parent, table.Element)) continue;
+                cell = at.Configuration as TableViewCell;
+                break;
+            }
+            if (cell is null || cell.Mark) continue;
+            var viewport = table.Viewport;
+            var area = new Rect(stop.Bounds.X - table.Bounds.X, stop.Bounds.Y - table.Bounds.Y,
+                stop.Bounds.Width, stop.Bounds.Height);
+            if (!viewport.Scroll.Reveal(area, cell.Column >= viewport.PinnedColumns, cell.Row >= viewport.PinnedRows))
+                return false;
+            NeedsRender = true;
+            return true;
+        }
+        return false;
+    }
 
     /// <summary>
     /// Brings each code surface's primary caret into view when its model says it moved — the Photon
@@ -1850,6 +1904,28 @@ public sealed class PhotonHost
             if (_pressedCanvas is not null) return;   // a drag belongs to the canvas alone
         }
 
+        // A press a table's scroll took, or a finger's candidate pan of a table: past the slop the table
+        // takes it and the press under it is cancelled, as a scroll view's pan does.
+        if (_tablePress is { } table)
+        {
+            if (!table.Active
+                && MathF.Max(MathF.Abs(x - table.StartX), MathF.Abs(y - table.StartY)) > Touch.PressCancelSlop)
+            {
+                _pressed = null;
+                _pressedAt = null;
+                _sheetPressed = false;
+                table.Active = true;
+                _tablePress = table;
+            }
+            if (table.Active)
+            {
+                table.Viewport.Scroll.Pointer(PointerPhase.Move, TableLocal(table.Viewport, table.Bounds, new Point(x, y)),
+                    kind, _lastTimeMs);
+                NeedsRender = true;
+                return;
+            }
+        }
+
         // A press that began in a sheet: told to its model, which knows whether the press is growing
         // the selection or dragging a fill, and follows the pointer if it is.
         if (_sheetPressed && _lastFrame is not null)
@@ -1979,9 +2055,9 @@ public sealed class PhotonHost
         }
 
         // S5: hover belongs to pointers that can rest over things. A finger cannot — it is
-        // pressing or it is gone — so a touch move ends HERE instead of latching whatever box
-        // it happened to cross last.
-        if (kind == PointerKind.Touch) return;
+        // pressing or it is gone — and a pen the shells report only while it touches cannot either,
+        // so their moves end HERE instead of latching whatever box they happened to cross last.
+        if (kind != PointerKind.Mouse) return;
         if (!_held) HoverCode(new Point(x, y));
 
         // The CHAIN of regions under the pointer, topmost first — CSS :hover matches every
@@ -2039,25 +2115,84 @@ public sealed class PhotonHost
     }
 
     /// <summary>
-    /// Scroll compositor v1 — wheel/drag input: routes <paramref name="delta"/> (dp toward the
-    /// content end) to the TOPMOST scrollable viewport under the pointer, clamped to the frame's
-    /// measured extent. Returns true (and marks the frame dirty) when the offset changed.
+    /// A wheel or a trackpad moved by <paramref name="across"/> and <paramref name="down"/> dp toward
+    /// the content's end, over the point (<paramref name="x"/>, <paramref name="y"/>); a
+    /// <paramref name="stepped"/> movement is a wheel's notch, which glides. The topmost table viewport
+    /// under the point takes what its scroll can, and what it leaves goes to the scroll views around,
+    /// each axis to the topmost one that moves along it: a horizontal view takes the horizontal
+    /// movement, or the vertical one when there is none, as a mouse with one wheel expects. Returns true
+    /// (and marks the frame dirty) when something moved or began to glide.
     /// </summary>
-    public bool ScrollBy(float x, float y, float delta)
+    public bool ScrollBy(float x, float y, float across, float down, bool stepped = true,
+        KeyModifiers modifiers = KeyModifiers.None)
     {
         y += _lift;
-        var regions = _lastFrame?.ScrollRegions;
-        if (regions is null) return false;
-        for (var i = regions.Count - 1; i >= 0; i--)
+        if (_lastFrame is null) return false;
+        var point = new Point(x, y);
+        var leftAcross = across;
+        var leftDown = down;
+        var moved = false;
+
+        var tables = _lastFrame.TableRegions;
+        for (var i = tables.Count - 1; i >= 0; i--)
+        {
+            if (!Covers(tables, i, tables[i].Visible ?? tables[i].Bounds, point)) continue;
+            var left = tables[i].Viewport.Scroll.Wheel(leftAcross, leftDown, stepped, modifiers);
+            if (left.Across != leftAcross || left.Down != leftDown) moved = true;
+            leftAcross = (float)left.Across;
+            leftDown = (float)left.Down;
+            break;
+        }
+
+        var regions = _lastFrame.ScrollRegions;
+        for (var i = regions.Count - 1; i >= 0 && (leftAcross != 0 || leftDown != 0); i--)
         {
             var region = regions[i];
-            if (!Covers(regions, i, region.Bounds, new Point(x, y))) continue;
-            if (!_scrolls.ScrollBy(region.Element, delta, region.MaxOffset, region.Fallback)) return false;
-            NeedsRender = true;
-            return true;
+            if (!Covers(regions, i, region.Bounds, point)) continue;
+            var horizontal = region.Axis == ScrollAxis.Horizontal;
+            var takesAcross = horizontal && leftAcross != 0;
+            var delta = horizontal ? (takesAcross ? leftAcross : leftDown) : leftDown;
+            if (delta == 0) continue;
+            // A view that cannot move passes the movement on to the one around it.
+            if (!_scrolls.ScrollBy(region.Element, delta, region.MaxOffset, region.Fallback)) continue;
+            moved = true;
+            if (takesAcross) leftAcross = 0;
+            else leftDown = 0;
         }
-        return false;
+
+        if (moved) NeedsRender = true;
+        return moved;
     }
+
+    /// <summary>Moves on every table viewport's glide or fling the last frame drew. Answers whether one
+    /// is still moving, which keeps the frames coming.</summary>
+    private bool AdvanceTables(float timeMs)
+    {
+        if (_lastFrame is null) return false;
+        var moving = false;
+        foreach (var table in _lastFrame.TableRegions)
+            if (table.Viewport.Scroll.Advance(timeMs)) moving = true;
+        return moving;
+    }
+
+    /// <summary>A point on screen in the own space of the table viewport a press began on, found in the
+    /// last frame by the scroll it carries (a rebuild draws a new node over the same scroll), through
+    /// the transform that drew it as the press itself was (<see cref="ToLocal"/>); the box the press
+    /// began in when the last frame no longer draws it.</summary>
+    private Point TableLocal(TableViewport viewport, Rect pressedIn, Point point)
+    {
+        var tables = _lastFrame?.TableRegions;
+        if (tables is not null)
+            for (var i = tables.Count - 1; i >= 0; i--)
+                if (ReferenceEquals(tables[i].Viewport.Scroll, viewport.Scroll))
+                    return ToLocal(tables, i, tables[i].Bounds, point);
+        return new Point(point.X - pressedIn.X, point.Y - pressedIn.Y);
+    }
+
+    /// <summary>Whether a point in a table viewport's own space lands on one of its scrollbars.</summary>
+    private static bool OnScrollbar(ITableScrollModel scroll, Point local) =>
+        scroll.TrackOf(ScrollAxis.Vertical) is { } vertical && vertical.Contains(local)
+        || scroll.TrackOf(ScrollAxis.Horizontal) is { } horizontal && horizontal.Contains(local);
 
     /// <summary>
     /// What the pointer should LOOK like where it is. The web has had this since it had a mouse —
@@ -2159,7 +2294,8 @@ public sealed class PhotonHost
     /// the next frame renders its pressed token swap. Returns whether a region captured the press.
     /// (v1 fence: drag-slop/cancel and fling join the gesture system.)
     /// </summary>
-    public bool PressDown(float x, float y, int clickCount = 1, KeyModifiers modifiers = KeyModifiers.None)
+    public bool PressDown(float x, float y, int clickCount = 1, KeyModifiers modifiers = KeyModifiers.None,
+        PointerKind kind = PointerKind.Mouse)
     {
         y += _lift;
         _held = true;
@@ -2173,6 +2309,23 @@ public sealed class PhotonHost
         {
             _pressedCanvas = pressed;
             pressed.Node.OnPointerDown?.Invoke(Local(pressed, point, pressedNow: true, modifiers));
+            NeedsRender = true;
+            return true;
+        }
+
+        // A table viewport's scroll: a press on its scrollbar is the scroll's from the start; a finger
+        // on its cells is a candidate pan, and the press goes on to the cell (see _tablePress).
+        _tablePress = null;
+        var tables = _lastFrame.TableRegions;
+        for (var i = tables.Count - 1; i >= 0; i--)
+        {
+            if (!Covers(tables, i, tables[i].Visible ?? tables[i].Bounds, point)) continue;
+            var viewport = tables[i].Viewport;
+            var local = ToLocal(tables, i, tables[i].Bounds, point);
+            var onBar = OnScrollbar(viewport.Scroll, local);
+            if (!viewport.Scroll.Pointer(PointerPhase.Down, local, kind, _lastTimeMs)) break;
+            _tablePress = (viewport, tables[i].Bounds, x, y, onBar);
+            if (!onBar) break;
             NeedsRender = true;
             return true;
         }
@@ -2194,7 +2347,7 @@ public sealed class PhotonHost
         // …and the topmost SCROLLABLE surface, the same way. A drag surface is the more specific
         // gesture and keeps priority; where there is none, a finger scrolls.
         _pan = null;
-        if (_drag is null)
+        if (_drag is null && _tablePress is null)
         {
             var scrollRegions = _lastFrame.ScrollRegions;
             for (var i = scrollRegions.Count - 1; i >= 0; i--)
@@ -2343,10 +2496,15 @@ public sealed class PhotonHost
         // The press is over, released or not: the pointer moving next rests on the code again.
         _held = false;
         // The input sequence died with the finger still down — the finger is gone, so nothing
-        // rests over anything. A mouse keeps its position through a cancel, and its hover with it.
-        if (kind == PointerKind.Touch) PointerLeave();
+        // rests over anything; a pen too. A mouse keeps its position through a cancel, and its hover with it.
+        if (kind != PointerKind.Mouse) PointerLeave();
 
         _pan = null;
+        if (_tablePress is { } table)
+        {
+            _tablePress = null;
+            table.Viewport.Scroll.Pointer(PointerPhase.Cancel, Point.Zero, kind, _lastTimeMs);
+        }
 
         // A press an editing surface owned is told it was taken away: a code surface's drag ends, and
         // a sheet's fill pours nothing.
@@ -2422,9 +2580,25 @@ public sealed class PhotonHost
         }
 
         // A finger that lifts is GONE — no pointer rests over anything, whatever set the hover
-        // during the sequence. A mouse stays where it is, so its hover survives the click
-        // (clearing it would flicker on every press).
-        if (kind == PointerKind.Touch) PointerLeave();
+        // during the sequence, and a pen that lifts is the same. A mouse stays where it is, so its
+        // hover survives the click (clearing it would flicker on every press).
+        if (kind != PointerKind.Mouse) PointerLeave();
+
+        // A table's press ends: one the table took lands there (a finger still moving flings); a
+        // candidate that never left the slop was a tap, which goes on to the cell it began on.
+        if (_tablePress is { } table)
+        {
+            _tablePress = null;
+            var local = TableLocal(table.Viewport, table.Bounds, new Point(x, y));
+            if (table.Active)
+            {
+                table.Viewport.Scroll.Pointer(PointerPhase.Up, local, kind, _lastTimeMs);
+                _pan = null;
+                NeedsRender = true;
+                return true;
+            }
+            table.Viewport.Scroll.Pointer(PointerPhase.Cancel, local, kind, _lastTimeMs);
+        }
 
         _dragSelecting = false;
         if (_codeDragging && _lastFrame is not null)
@@ -3008,6 +3182,19 @@ public sealed class PhotonHost
             {
                 if (gridStops[i].Id != _focusedId || gridStops[i].Grid is not { } grid) continue;
                 grid.OnMove(move);
+                NeedsRender = true;
+                return true;
+            }
+        }
+
+        // A table viewport under focus scrolls with the keys its scroll takes: the arrows, the pages
+        // and the ends. Tab is never one of them, so the focus still moves on.
+        if (_focusedId != 0 && _lastFrame?.FocusStops is { } tableStops)
+        {
+            for (var i = 0; i < tableStops.Count; i++)
+            {
+                if (tableStops[i].Id != _focusedId || tableStops[i].Table is not { } table) continue;
+                if (!table.Scroll.Key(key, modifiers)) break;
                 NeedsRender = true;
                 return true;
             }

@@ -161,6 +161,11 @@ public class ComponentParityFixtureTests
             [new DataColumn("Name", GridTrack.Flex()), new DataColumn("Size", GridTrack.Fixed(80), TextAlignment.End)],
             [new DataRow("a", [new Text("alpha", TypeRole.BodyM, Theme.TextPrimary),
                                new Text("1", TypeRole.BodyM, Theme.TextPrimary)])]), NoPresses),
+        // A TABLE VIEW at offset zero (#982): the four bands of cells, the four of marks and both
+        // scrollbars, each cell placed in its band, and a mark over the corner cut into one piece per
+        // band it reaches. The after-pass moves the layers by transform; what both sides write is the
+        // boxes it starts from, which hydration adopts by their class hashes.
+        ("table-view", TableGrid(), NoPresses),
         ("popover-closed", new Popover(new Button("Info"),
             new Text("the content", TypeRole.BodyM, Theme.TextPrimary), false), NoPresses),
         ("drawer-open", new Drawer(new Text("side", TypeRole.BodyM, Theme.TextPrimary), true), NoPresses),
@@ -322,6 +327,19 @@ public class ComponentParityFixtureTests
     {
         Disabled = true,
         PressedBackground = Theme.SurfaceSubtle,
+    };
+
+    private static TableView TableGrid() => new(new UniformTableSpans(6, 28), new UniformTableSpans(4, 96),
+        (row, column) => new Text($"{row}:{column}", TypeRole.Caption, Theme.TextPrimary))
+    {
+        PinnedRows = 1,
+        PinnedColumns = 1,
+        Label = "grid",
+        Marks = [new TableViewCell(0, 0, new Box(new BoxStyle { BorderWidth = 2, BorderColor = Theme.FocusRing }), mark: true)
+        {
+            Rows = 2,
+            Columns = 2,
+        }],
     };
 
     private static VisualNode Stack(float gap, params VisualNode[] children)

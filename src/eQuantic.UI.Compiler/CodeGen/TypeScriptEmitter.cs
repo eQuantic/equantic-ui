@@ -2531,6 +2531,27 @@ public class TypeScriptEmitter
         return null;
     }
 
+    /// <summary>
+    /// Whether the class's base is a HAND-WRITTEN twin of the visual vocabulary (a table's axis,
+    /// <c>TableSpans</c>) rather than a class this compiler writes: a type of the vocabulary's own
+    /// namespace, whose twin <c>[TwinIsTranspiled]</c> does not say is transpiled. The first such base
+    /// was imported from <c>./TableSpans</c>, a module nobody writes, and the runtime failed to build.
+    /// </summary>
+    private bool BaseIsHandWritten(ClassDeclarationSyntax cls)
+    {
+        if (cls.BaseList is null || _semanticModel is null) return false;
+        foreach (var entry in cls.BaseList.Types)
+        {
+            if (_semanticModel.GetSymbolInfo(entry.Type).Symbol is not INamedTypeSymbol { TypeKind: TypeKind.Class } resolved)
+                continue;
+            var space = resolved.ContainingNamespace?.ToDisplayString() ?? "";
+            return RuntimeProvidedTypeScanner.IsVocabularyNamespace(space)
+                && !RuntimeProvidedTypeScanner.IsTranspiledNamespace(space)
+                && !resolved.GetAttributes().Any(a => a.AttributeClass?.Name == "TwinIsTranspiledAttribute");
+        }
+        return false;
+    }
+
     /// <summary>Whether the class extends one this compilation EMITS — an interface in the base
     /// list is not a base class, and calling super() for one would call Object's.</summary>
     private bool HasEmittedBase(ClassDeclarationSyntax cls) => BaseClassOf(cls) is not null;
@@ -2745,7 +2766,12 @@ public class TypeScriptEmitter
         // aggregator's binding is still undefined and the class fails to define at all. A method
         // body is fine through it (it dereferences when called); a base class is not.
         var baseName = BaseClassOf(cls);
-        if (baseName is not null) runtimeProvided.Remove(baseName);
+        // …unless it is a HAND-WRITTEN twin of the vocabulary: the runtime's own modules define it
+        // before any transpiled module evaluates, so it comes through the runtime as every other
+        // vocabulary name does, and `./Base` names a module nobody writes.
+        var handWrittenBase = baseName is not null && BaseIsHandWritten(cls);
+        if (baseName is not null && !handWrittenBase) runtimeProvided.Remove(baseName);
+        if (handWrittenBase) runtimeProvided.Add(baseName!);
         // The runtime's exception base is reached through `$eq`, which the module imports, and is no
         // module of its own (#611).
         if (baseName == Eq.ExceptionBase)
@@ -2766,7 +2792,7 @@ public class TypeScriptEmitter
         if (core.Count > 0) imports.Add(new JsImport(core.ToList(), "@equantic/runtime"));
         // The base class is imported whether or not the syntax scanner noticed it: `extends` is the
         // one reference that must resolve before this module's first statement runs.
-        if (baseName is not null) imports.Add(new JsImport([baseName], $"./{baseName}"));
+        if (baseName is not null && !handWrittenBase) imports.Add(new JsImport([baseName], $"./{baseName}"));
         foreach (var t in CollectComponentTypesFromNode(cls, asComponent: false, new HashSet<string> { name })
                      .Concat(inheritedDefaults.SelectMany(inherited => CollectComponentTypesFromNode(inherited, asComponent: false, new HashSet<string> { name })))
                      .Concat(_converter.UsedAppTypes) // conversion-introduced names (reduced extension calls)

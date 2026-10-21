@@ -17,10 +17,10 @@ public static class TestHelper
     /// emitter an app build uses. What a method's signature and body become — as opposed to one
     /// expression in isolation — is only visible here.
     /// </summary>
-    public static string ConvertClass(string members, string className = "Sample")
+    public static string ConvertClass(string members, string className = "Sample", string? baseList = null)
     {
         var source = "using System;\nusing System.Collections.Generic;\nusing System.Linq;\n\n"
-            + "public class " + className + "\n{\n" + members + "\n}\n";
+            + "public class " + className + (baseList is null ? "" : " : " + baseList) + "\n{\n" + members + "\n}\n";
         var tree = CSharpSyntaxTree.ParseText(source);
         var compilation = CSharpCompilation.Create("ClassUnderTest", [tree],
             ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)

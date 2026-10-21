@@ -33,6 +33,7 @@ internal sealed class FrameRegions
         Stops = new List<FocusStop>(sizedLike?.FocusStops.Count ?? 0);
         Codes = new List<CodeRegion>(sizedLike?.CodeRegions.Count ?? 0);
         Sheets = new List<SheetRegion>(sizedLike?.SheetRegions.Count ?? 0);
+        Tables = new List<TableRegion>(sizedLike?.TableRegions.Count ?? 0);
         Cursors = new List<CursorRegion>(sizedLike?.CursorRegions.Count ?? 0);
         Canvases = new List<CanvasRegion>(sizedLike?.CanvasRegions.Count ?? 0);
     }
@@ -47,6 +48,7 @@ internal sealed class FrameRegions
     public List<FocusStop> Stops { get; }
     public List<CodeRegion> Codes { get; }
     public List<SheetRegion> Sheets { get; }
+    public List<TableRegion> Tables { get; }
     public List<CursorRegion> Cursors { get; }
     public List<CanvasRegion> Canvases { get; }
 

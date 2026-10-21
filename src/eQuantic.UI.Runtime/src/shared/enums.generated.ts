@@ -102,6 +102,8 @@ export type PermissionStateValue =
 export type PointerCursorValue =
   'default' | 'pointer' | 'text' | 'notAllowed' | 'crosshair' | 'colResize' | 'rowResize';
 
+export type PointerKindValue = 'mouse' | 'touch' | 'stylus';
+
 export type PointerPhaseValue = 'down' | 'move' | 'up' | 'hover' | 'exit' | 'cancel';
 
 export type PresenceMotionValue = 'fade' | 'slideUp';

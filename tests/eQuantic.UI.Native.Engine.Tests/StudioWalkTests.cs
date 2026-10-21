@@ -159,10 +159,11 @@ public class StudioWalkTests(ITestOutputHelper output)
         void Walk(LayoutNode node)
         {
             // Nodes that place children OUTSIDE themselves on purpose: a stack overlaps, an
-            // anchored panel hangs off its trigger, a drag translates. Everything else is flow,
-            // and in flow a child that sticks out is content nobody can reach.
+            // anchored panel hangs off its trigger, a drag translates, and a table viewport places
+            // the cells past its edges under its clips, where a scroll reaches them. Everything else
+            // is flow, and in flow a child that sticks out is content nobody can reach.
             var placesFreely = node.Source is Stack or Overlay or Anchored or Positioned
-                or Draggable or DragDismiss
+                or Draggable or DragDismiss or TableViewport
                 or eQuantic.UI.Components.Tooltip or eQuantic.UI.Components.Menu
                 or eQuantic.UI.Components.Select;
             if (!placesFreely)

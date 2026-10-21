@@ -179,27 +179,42 @@ public sealed class PhotonViewController : UIViewController
     // is worse than a second finger that does nothing.
     private UITouch? _tracking;
 
+    /// <summary>What the tracked touch is, read when it lands and kept for the whole gesture.</summary>
+    private PointerKind _kind = PointerKind.Touch;
+
     public override void TouchesBegan(NSSet touches, UIEvent? evt)
     {
         if (_tracking is not null || _host is null) return;
         if (touches.AnyObject is not UITouch touch) return;
         _tracking = touch;
+        _kind = KindOf(touch);
         var point = touch.LocationInView(View);
-        _host.PressDown((float)point.X, (float)point.Y);
+        _host.PressDown((float)point.X, (float)point.Y, kind: _kind);
     }
+
+    /// <summary>
+    /// A finger, the Pencil, or the pointer of a trackpad or a mouse on an iPad, which arrives as a touch
+    /// too. A finger pans what it lands on and never hovers (spec S5); a pointer's click is a press, as
+    /// a mouse's is on the desktop.
+    /// </summary>
+    private static PointerKind KindOf(UITouch touch) => touch.Type switch
+    {
+        UITouchType.IndirectPointer => PointerKind.Mouse,
+        UITouchType.Stylus => PointerKind.Stylus,
+        _ => PointerKind.Touch,
+    };
 
     public override void TouchesMoved(NSSet touches, UIEvent? evt)
     {
         if (Tracked(touches) is not { } point || _host is null) return;
-        // A finger, labelled as one: drags and pans run; hover never does (spec S5).
-        _host.PointerMove((float)point.X, (float)point.Y, PointerKind.Touch);
+        _host.PointerMove((float)point.X, (float)point.Y, _kind);
     }
 
     public override void TouchesEnded(NSSet touches, UIEvent? evt)
     {
         if (Tracked(touches) is not { } point || _host is null) return;
         _tracking = null;
-        _host.PressUp((float)point.X, (float)point.Y, PointerKind.Touch);
+        _host.PressUp((float)point.X, (float)point.Y, _kind);
     }
 
     /// <summary>
@@ -211,7 +226,7 @@ public sealed class PhotonViewController : UIViewController
     {
         if (Tracked(touches) is null || _host is null) return;
         _tracking = null;
-        _host.PointerCancel(PointerKind.Touch);
+        _host.PointerCancel(_kind);
     }
 
     /// <summary>The position of the finger we are tracking, or null when this set is not about it.</summary>
