@@ -109,6 +109,7 @@
   "NetworkState",
   "OpenUrlPolicy",
   "Overlay",
+  "PasskeyResult",
   "PhotonTheme",
   "Pinned",
   "PlainTextLanguage",

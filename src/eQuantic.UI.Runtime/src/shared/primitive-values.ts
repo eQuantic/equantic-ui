@@ -16,6 +16,7 @@ import { exception } from '../utils/exceptions';
 import { hashesByValue } from '../utils/hash';
 import type { HydrationSpec } from '../utils/hydrate';
 import type { CurveValue } from './nodes';
+import type { PasskeyOutcomeValue } from './enums.generated';
 
 /** The C# `ImageData` — a picture the user chose, as bytes plus what they are. */
 export class ImageData {
@@ -71,6 +72,18 @@ export class NetworkState {
   ) {}
 
   static readonly offline = new NetworkState(false, 'none');
+}
+
+/**
+ * The C# `PasskeyResult` — how a passkey ceremony ended, and on success the credential as the
+ * relying party's Web Authentication JSON. `outcome` is the `PasskeyOutcome` enum as its wire string,
+ * and `'unavailable'`, the enum's zero, is what a result nobody filled in reads as.
+ */
+export class PasskeyResult {
+  constructor(
+    readonly outcome: PasskeyOutcomeValue = 'unavailable',
+    readonly credential: string | null = null,
+  ) {}
 }
 
 /** The C# `SpringSpec` — a spring by its physics, not by a duration. */

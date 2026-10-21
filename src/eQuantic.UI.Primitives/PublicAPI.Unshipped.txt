@@ -1,3 +1,27 @@
 #nullable enable
 eQuantic.UI.Primitives.CodeSurface.Notes.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Positioned!>!
 eQuantic.UI.Primitives.CodeSurface.Notes.init -> void
+eQuantic.UI.Primitives.IPasskeys
+eQuantic.UI.Primitives.IPasskeys.IsAvailable.get -> bool
+eQuantic.UI.Primitives.IPasskeys.CreateAsync(string! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.PasskeyResult>
+eQuantic.UI.Primitives.IPasskeys.AuthenticateAsync(string! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.PasskeyResult>
+eQuantic.UI.Primitives.PasskeyOutcome
+eQuantic.UI.Primitives.PasskeyOutcome.Unavailable = 0 -> eQuantic.UI.Primitives.PasskeyOutcome
+eQuantic.UI.Primitives.PasskeyOutcome.Succeeded = 1 -> eQuantic.UI.Primitives.PasskeyOutcome
+eQuantic.UI.Primitives.PasskeyOutcome.Cancelled = 2 -> eQuantic.UI.Primitives.PasskeyOutcome
+eQuantic.UI.Primitives.PasskeyOutcome.AlreadyRegistered = 3 -> eQuantic.UI.Primitives.PasskeyOutcome
+eQuantic.UI.Primitives.PasskeyOutcome.Failed = 4 -> eQuantic.UI.Primitives.PasskeyOutcome
+eQuantic.UI.Primitives.PasskeyResult
+eQuantic.UI.Primitives.PasskeyResult.Deconstruct(out eQuantic.UI.Primitives.PasskeyOutcome Outcome, out string? Credential) -> void
+eQuantic.UI.Primitives.PasskeyResult.Equals(eQuantic.UI.Primitives.PasskeyResult other) -> bool
+eQuantic.UI.Primitives.PasskeyResult.PasskeyResult() -> void
+eQuantic.UI.Primitives.PasskeyResult.PasskeyResult(eQuantic.UI.Primitives.PasskeyOutcome Outcome, string? Credential) -> void
+override eQuantic.UI.Primitives.PasskeyResult.GetHashCode() -> int
+static eQuantic.UI.Primitives.PasskeyResult.operator !=(eQuantic.UI.Primitives.PasskeyResult left, eQuantic.UI.Primitives.PasskeyResult right) -> bool
+static eQuantic.UI.Primitives.PasskeyResult.operator ==(eQuantic.UI.Primitives.PasskeyResult left, eQuantic.UI.Primitives.PasskeyResult right) -> bool
+~override eQuantic.UI.Primitives.PasskeyResult.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.PasskeyResult.ToString() -> string
+eQuantic.UI.Primitives.PasskeyResult.Outcome.get -> eQuantic.UI.Primitives.PasskeyOutcome
+eQuantic.UI.Primitives.PasskeyResult.Outcome.init -> void
+eQuantic.UI.Primitives.PasskeyResult.Credential.get -> string?
+eQuantic.UI.Primitives.PasskeyResult.Credential.init -> void
