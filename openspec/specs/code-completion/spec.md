@@ -432,10 +432,13 @@ providers it put in, by reference.
 The completion SHALL apply each provider's answer as it arrives, and SHALL list the offers in the order
 of `Providers` whatever the order the answers land in. When an answer lands, the selected entry SHALL stay
 selected if it is still listed. The list SHALL close for want of offers only once every provider asked has
-answered and none offered anything, and `IsLoading` SHALL be true while a provider asked is still out. An
-answer that withdraws every entry its provider offered SHALL take them away as it lands, while another
-provider is still out too. Each incomplete answer SHALL be asked for again once the word is not the one IT
-was asked for, unless its provider is already being asked for the word typed.
+answered and none offered anything, and `IsLoading` SHALL be true while a provider asked is still out. A
+list opening SHALL raise `Changed` once its requests are out and before any answer lands, so `IsLoading`
+says so to whoever hears it. An answer that withdraws every entry its provider offered SHALL take them away
+as it lands, while another provider is still out too. Each incomplete answer SHALL be asked for again once
+the word is not the one its provider was asked for last, the word of its answer or of a request of its
+still out, so a request out for another word is replaced even when the answer in hand is for the word
+typed.
 
 #### Scenario: A provider that never answers
 
@@ -460,3 +463,16 @@ was asked for, unless its provider is already being asked for the word typed.
 - **WHEN** a quick provider and a slow one are asked for `C`, both incomplete, `o` is typed and the quick one
   is asked again, and the slow one then answers for `C`
 - **THEN** the slow provider is asked again for `Co`, once
+
+#### Scenario: A letter typed, then backspaced
+
+- **WHEN** a provider answers `Cat` and `Column` for `C`, incomplete, `o` is typed and the provider is
+  asked for `Co`, and Backspace is pressed before it answers
+- **THEN** the provider is asked again for `C`, its request for `Co` is cancelled, and that request's
+  answer, if it lands, is dropped
+
+#### Scenario: A list heard of as loading
+
+- **WHEN** ⌃Space asks a provider that has not answered
+- **THEN** `Changed` is raised once, with `IsLoading` true, and again with it false when the provider
+  answers

@@ -1,4 +1,5 @@
 using eQuantic.UI.Code;
+using eQuantic.UI.Primitives;
 
 namespace DefaultUIDashboard.Screens;
 
@@ -6,7 +7,9 @@ namespace DefaultUIDashboard.Screens;
 /// The code screen's signature help: the calls the ledger makes, read from the text alone. It finds the
 /// call the caret is in (the innermost parenthesis still open before it on its line), the argument it is on
 /// (the commas at that depth) and an argument named <c>name:</c>, as a language server would, and answers
-/// nothing outside a call, which closes the panel. A real app hands its language service the same way.
+/// nothing outside a call, which closes the panel. A parenthesis, a comma or a colon inside a string, a
+/// character or a comment is that text's, never the call's: the SDK's own C# tokens say which characters
+/// are, the ones the editor colours by. A real app hands its language service the same way.
 /// </summary>
 public sealed class LedgerSignatures : ICodeSignatureProvider
 {
@@ -17,7 +20,8 @@ public sealed class LedgerSignatures : ICodeSignatureProvider
     {
         var line = document.Line(position.Line);
         var caret = Math.Min(position.Column, line.Length);
-        var open = OpenParenthesis(line, caret);
+        var notCode = NotCode(document, position.Line, caret);
+        var open = OpenParenthesis(line, caret, notCode);
         if (open < 0) return Task.FromResult<CodeSignatureHelp?>(null);
         var signatures = Known(Callee(line, open));
         if (signatures.Count == 0) return Task.FromResult<CodeSignatureHelp?>(null);
@@ -29,6 +33,7 @@ public sealed class LedgerSignatures : ICodeSignatureProvider
         var depth = 0;
         for (var i = open + 1; i < caret; i++)
         {
+            if (notCode[i]) continue;
             var c = line[i];
             if (c == '(') depth++;
             else if (c == ')') depth--;
@@ -38,9 +43,10 @@ public sealed class LedgerSignatures : ICodeSignatureProvider
                 from = i + 1;
             }
         }
-        var typed = line.Substring(from, caret - from).Trim();
-        var colon = typed.IndexOf(':');
-        var name = colon > 0 ? typed.Substring(0, colon).Trim() : null;
+        var colon = from;
+        while (colon < caret && (notCode[colon] || line[colon] != ':')) colon++;
+        var name = colon < caret ? line.Substring(from, colon - from).Trim() : null;
+        if (name is { Length: 0 }) name = null;
 
         // The first signature that names the argument, or with room for it, as overload resolution would
         // start, and the parameter the caret is on in it.
@@ -70,12 +76,14 @@ public sealed class LedgerSignatures : ICodeSignatureProvider
         return -1;
     }
 
-    /// <summary>Where the innermost parenthesis still open before <paramref name="caret"/> stands, or -1.</summary>
-    private static int OpenParenthesis(string line, int caret)
+    /// <summary>Where the innermost parenthesis still open before <paramref name="caret"/> stands, or -1:
+    /// one inside a string or a comment opens nothing.</summary>
+    private static int OpenParenthesis(string line, int caret, bool[] notCode)
     {
         var depth = 0;
         for (var i = caret - 1; i >= 0; i--)
         {
+            if (notCode[i]) continue;
             if (line[i] == ')') depth++;
             else if (line[i] == '(')
             {
@@ -84,6 +92,22 @@ public sealed class LedgerSignatures : ICodeSignatureProvider
             }
         }
         return -1;
+    }
+
+    /// <summary>
+    /// Which characters of <paramref name="line"/> before <paramref name="caret"/> are the text of a string,
+    /// a character or a comment, by the SDK's C# tokens: a string still open runs to the end of its line, a
+    /// verbatim string to its closing quote, on whatever line, so a highlighter reads the lines before.
+    /// </summary>
+    private static bool[] NotCode(CodeDocument document, int line, int caret)
+    {
+        var notCode = new bool[caret];
+        foreach (var token in new CodeHighlighter(CodeLanguages.CSharp).TokensFor(document, line))
+        {
+            if (token.Kind != CodeTokenKind.String && token.Kind != CodeTokenKind.Comment) continue;
+            for (var i = token.Start; i < token.End && i < caret; i++) notCode[i] = true;
+        }
+        return notCode;
     }
 
     /// <summary>The name a call's parenthesis follows.</summary>

@@ -101,8 +101,7 @@ public sealed class CodeCompletion
     public bool Invoke()
     {
         if (_editor.ReadOnly || Providers.Count == 0) return false;
-        Open(WordStart(_editor.Caret));
-        Ask(CodeCompletionTrigger.Invoked, null, Providers.ToList());
+        Open(WordStart(_editor.Caret), CodeCompletionTrigger.Invoked, null, Providers.ToList());
         return true;
     }
 
@@ -122,8 +121,7 @@ public sealed class CodeCompletion
         }
         if (triggered.Count > 0)
         {
-            Open(_editor.Caret);
-            Ask(CodeCompletionTrigger.Character, typed, triggered);
+            Open(_editor.Caret, CodeCompletionTrigger.Character, typed, triggered);
             return;
         }
 
@@ -134,28 +132,35 @@ public sealed class CodeCompletion
         // A number is not a word anybody completes.
         if (!char.IsLetter(first) && first != '_') return;
         if (InCommentOrString(caret)) return;
-        Open(start);
-        Ask(CodeCompletionTrigger.Typing, typed, Providers.ToList());
+        Open(start, CodeCompletionTrigger.Typing, typed, Providers.ToList());
     }
 
     /// <summary>Starts completing the word that begins at <paramref name="start"/>, dropping any
-    /// list before it.</summary>
-    private void Open(CodePosition start)
+    /// list before it, and asks <paramref name="providers"/> for it.</summary>
+    private void Open(CodePosition start, CodeCompletionTrigger trigger, char? character,
+        List<ICodeCompletionProvider> providers)
     {
         Close(raise: false);
         _active = true;
         _start = start;
         _openedEmpty = start == _editor.Caret;
         _list = new CancellationTokenSource();
-        Changed?.Invoke();
+        Ask(trigger, character, providers, announce: true);
     }
 
     /// <summary>
     /// Asks <paramref name="providers"/> for the word, each with a request of its own: one still out for
     /// the same provider is cancelled, and another provider's goes on. Every provider is asked before any
     /// answer is applied, so they work at the same time.
+    /// <para>
+    /// A list opening (<paramref name="announce"/>) is heard of here, once its requests are out and
+    /// before any answer lands, so <see cref="IsLoading"/> already says what is still out: it was heard
+    /// of before its requests were made, and a list asked of providers that all answer late never said
+    /// it was loading. A list asked again is heard of by whoever asked (a keystroke, an answer).
+    /// </para>
     /// </summary>
-    private void Ask(CodeCompletionTrigger trigger, char? character, List<ICodeCompletionProvider> providers)
+    private void Ask(CodeCompletionTrigger trigger, char? character, List<ICodeCompletionProvider> providers,
+        bool announce)
     {
         var document = _editor.Document;
         var position = _editor.Caret;
@@ -177,6 +182,7 @@ public sealed class CodeCompletion
             _requests.Add(request);
             requests.Add(request);
         }
+        if (announce) Changed?.Invoke();
         foreach (var request in requests) _ = AskOne(request, document, position, context, askedLineLength);
     }
 
@@ -299,22 +305,34 @@ public sealed class CodeCompletion
         Changed?.Invoke();
     }
 
-    /// <summary>Asks again every provider whose answer was incomplete, once the word is no longer the
-    /// one IT answered for, unless it is already being asked for this word. Each answer keeps its own
-    /// word: a slow provider's answer for a word left behind is asked again, whoever was asked last.
-    /// The rest keep their answers.</summary>
+    /// <summary>
+    /// Asks again every provider whose answer was incomplete, once the word is not the one that provider
+    /// was asked for LAST: the word of its answer, or of a request of its still out. Each provider keeps
+    /// its own word, so a slow provider's answer for a word left behind is asked again, whoever was asked
+    /// last. And a request still out for another word is replaced even when the answer in hand is for
+    /// the word typed (a letter typed, then backspaced): it would land over that answer, with what it
+    /// offers for the other word. The rest keep their answers.
+    /// </summary>
     private void AskAgainIfIncomplete()
     {
         var word = Word();
         var incomplete = new List<ICodeCompletionProvider>();
         foreach (var answer in _answers)
         {
-            if (!answer.IsIncomplete || answer.AskedWord == word) continue;
-            if (_requests.Any(request => !request.Answered && request.Word == word
-                && ReferenceEquals(request.Provider, answer.Provider))) continue;
-            incomplete.Add(answer.Provider);
+            if (answer.IsIncomplete && LastAskedWord(answer.Provider) != word) incomplete.Add(answer.Provider);
         }
-        if (incomplete.Count > 0) Ask(CodeCompletionTrigger.Incomplete, null, incomplete);
+        if (incomplete.Count > 0) Ask(CodeCompletionTrigger.Incomplete, null, incomplete, announce: false);
+    }
+
+    /// <summary>The word <paramref name="provider"/> was asked for last: that of its newest request,
+    /// answered or still out, the one request of it the list holds.</summary>
+    private string? LastAskedWord(ICodeCompletionProvider provider)
+    {
+        foreach (var request in _requests)
+        {
+            if (ReferenceEquals(request.Provider, provider)) return request.Word;
+        }
+        return null;
     }
 
     /// <summary>

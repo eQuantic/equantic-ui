@@ -652,6 +652,57 @@ public class CodeCompletionTests : IDisposable
     }
 
     /// <summary>
+    /// A letter typed and then backspaced replaces the request still out for the word with the letter:
+    /// the answer in hand is for the word typed, but that request's answer would land over it, with what
+    /// the provider offers for a word nobody is typing any more. The word the provider was asked for last
+    /// decides, not the word of the answer it holds.
+    /// </summary>
+    [Fact]
+    public void ALetterTypedThenBackspaced_ReplacesTheRequestOutForTheWordWithIt()
+    {
+        var server = new LateProvider();
+        var editor = Editor("", server);
+        editor.HandleText("C");
+        server.AnswerIncomplete(0, "Cat", "Column");
+        editor.HandleText("o");
+        server.Count.Should().Be(2, "the answer was incomplete, and the word changed");
+
+        Key(editor, "Backspace").Should().BeTrue();
+
+        server.Count.Should().Be(3, "asked again for \"C\", which its request still out was not for");
+        server.Cancellations[1].IsCancellationRequested.Should().BeTrue("the request for \"Co\" is replaced");
+        server.Answer(1, "Column");
+        Labels(editor).Should().Equal("Cat", "Column");
+        server.AnswerIncomplete(2, "Cat", "Column");
+        Labels(editor).Should().Equal("Cat", "Column");
+        server.Count.Should().Be(3);
+    }
+
+    /// <summary>
+    /// A list asked for is heard of once its requests are out, so <see cref="CodeCompletion.IsLoading"/>
+    /// already says so: it was heard of before the requests were made, and a list whose providers all
+    /// answer late never said it was loading, whoever drew a spinner from <c>Changed</c>.
+    /// </summary>
+    [Fact]
+    public void AListAskedFor_IsHeardOfAsLoading_UntilItsProviderAnswers()
+    {
+        var server = new LateProvider();
+        var editor = Editor("", server);
+        var heard = new List<bool>();
+        editor.Completion.Changed += () => heard.Add(editor.Completion.IsLoading);
+
+        editor.Completion.Invoke().Should().BeTrue();
+        heard.Should().Equal([true], "⌃Space asked a provider that has not answered");
+        server.Answer(0, "Column");
+        heard.Should().Equal([true, false]);
+
+        editor.Completion.Dismiss();
+        heard.Clear();
+        editor.HandleText("C");
+        heard.Should().Equal([true], "a word started asked it again");
+    }
+
+    /// <summary>
     /// An answer that withdraws every entry the list showed takes them away at once, though another
     /// provider is still out: the list waited for that provider without taking the answer, and went on
     /// showing what had been withdrawn.

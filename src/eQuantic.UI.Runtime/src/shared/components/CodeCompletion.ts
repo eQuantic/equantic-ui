@@ -69,8 +69,7 @@ export class CodeCompletion {
 
     invoke() {
         if (this._editor.readOnly || $eq.collections.count(this.providers) === 0) return false;
-        this.open(this.wordStart(this._editor.caret));
-        this.ask('invoked', null, this.providers.slice());
+        this.open(this.wordStart(this._editor.caret), 'invoked', null, this.providers.slice());
         return true;
     }
 
@@ -81,8 +80,7 @@ export class CodeCompletion {
             if (provider.triggerCharacters.includes(typed)) triggered.push(provider);
         }
         if (triggered.length > 0) {
-            this.open(this._editor.caret);
-            this.ask('character', typed, triggered);
+            this.open(this._editor.caret, 'character', typed, triggered);
             return;
         }
         if (!this.opensAsYouType || !CodeDocument.isWordChar(typed)) return;
@@ -91,24 +89,23 @@ export class CodeCompletion {
         let first = this._editor.document.line(caret.line)[start.column];
         if (!(/^\p{L}$/u.test(first)) && first !== '_') return;
         if (this.inCommentOrString(caret)) return;
-        this.open(start);
-        this.ask('typing', typed, this.providers.slice());
+        this.open(start, 'typing', typed, this.providers.slice());
     }
 
-    open(start: CodePosition) {
+    open(start: CodePosition, trigger: CodeCompletionTriggerValue, character: string | null, providers: any[]) {
         this.close(false);
         this._active = true;
         this._start = start;
         this._openedEmpty = $eq.equals(start, this._editor.caret);
         this._list = $eq.cancellation.source();
-        this.changed?.();
+        this.ask(trigger, character, providers, true);
     }
 
-    ask(trigger: CodeCompletionTriggerValue, character: string | null, providers: any[]) {
+    ask(trigger: CodeCompletionTriggerValue, character: string | null, providers: any[], announce: boolean) {
         let document = this._editor.document;
         let position = this._editor.caret;
-        let $n16: any; 
-        let context = ($n16 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n16.character = character, $n16);
+        let $n15: any; 
+        let context = ($n15 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n15.character = character, $n15);
         let askedLineLength = document.line(position.line).length;
         let word = this.word();
         let requests: CodeCompletionRequest[] = [];
@@ -123,6 +120,7 @@ export class CodeCompletion {
             this._requests.push(request);
             requests.push(request);
         }
+        if (announce) this.changed?.();
         for (const request of requests) this.askOne(request, document, position, context, askedLineLength);
     }
 
@@ -200,11 +198,16 @@ export class CodeCompletion {
         let word = this.word();
         let incomplete: any[] = [];
         for (const answer of this._answers) {
-            if (!answer.isIncomplete || answer.askedWord === word) continue;
-            if (this._requests.some((request) => !request.answered && request.word === word && (request.provider === answer.provider))) continue;
-            incomplete.push(answer.provider);
+            if (answer.isIncomplete && this.lastAskedWord(answer.provider) !== word) incomplete.push(answer.provider);
         }
-        if (incomplete.length > 0) this.ask('incomplete', null, incomplete);
+        if (incomplete.length > 0) this.ask('incomplete', null, incomplete, false);
+    }
+
+    lastAskedWord(provider: any) {
+        for (const request of this._requests) {
+            if ((request.provider === provider)) return request.word;
+        }
+        return null;
     }
 
     gather() {
