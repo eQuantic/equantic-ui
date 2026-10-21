@@ -1,7 +1,1 @@
 #nullable enable
-eQuantic.UI.Sheet.CellRef.Key.get -> long
-eQuantic.UI.Sheet.SheetDocument.Cells.get -> System.Collections.Generic.IReadOnlyDictionary<long, string!>!
-static eQuantic.UI.Sheet.CellRef.FromKey(long key) -> eQuantic.UI.Sheet.CellRef
-*REMOVED*eQuantic.UI.Sheet.CellRef.Key.get -> int
-*REMOVED*eQuantic.UI.Sheet.SheetDocument.Cells.get -> System.Collections.Generic.IReadOnlyDictionary<int, string!>!
-*REMOVED*static eQuantic.UI.Sheet.CellRef.FromKey(int key) -> eQuantic.UI.Sheet.CellRef

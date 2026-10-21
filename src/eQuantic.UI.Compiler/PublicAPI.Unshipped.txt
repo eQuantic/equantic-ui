@@ -1,2 +1,1 @@
 #nullable enable
-const eQuantic.UI.Compiler.CodeGen.Eq.TaskDelay = "$eq.task.delay" -> string!
