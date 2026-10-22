@@ -48,6 +48,8 @@ export type CodePatchLineKindValue = 'context' | 'removed' | 'added';
 
 export type CodeRowKindValue = 'line' | 'filler' | 'placeholder';
 
+export type CodeSignatureTriggerValue = 'invoked' | 'character' | 'contentChange';
+
 export type CodeTokenKindValue =
   'plain' | 'keyword' | 'type' | 'string' | 'number' | 'comment' | 'operator' | 'punctuation'
   | 'function' | 'attribute' | 'property' | 'constant';

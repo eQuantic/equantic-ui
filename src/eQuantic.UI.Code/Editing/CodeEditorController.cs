@@ -36,6 +36,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         Completion = new CodeCompletion(this);
         Diagnostics = new CodeDiagnostics(this);
         Hover = new CodeHoverSession(this);
+        SignatureHelp = new CodeSignatureHelpSession(this);
     }
 
     /// <summary>The text, as lines. Replacing it is a full reset — a file was opened.</summary>
@@ -113,6 +114,10 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <summary>The card that explains the code under the pointer or the caret. An IDE adds its language
     /// service to <see cref="CodeHoverSession.Providers"/>.</summary>
     public CodeHoverSession Hover { get; }
+
+    /// <summary>The panel that explains the call being written: its signatures and the argument the caret is
+    /// on. An IDE adds its language service to <see cref="CodeSignatureHelpSession.Providers"/>.</summary>
+    public CodeSignatureHelpSession SignatureHelp { get; }
 
     /// <summary>The first key of a chord the keymap is waiting for the second of (⌘K, for ⌘K ⌘I), or
     /// null. Any key that is not a modifier ends the wait.</summary>
@@ -452,7 +457,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         // A step of its OWN, after as well as before (SetComposition broke the run it began at):
         // the typing that follows a commit does not join it.
         if (committing) History.Break();
-        if (typed) Completion.Typed(text[text.Length - 1]);
+        if (typed)
+        {
+            Completion.Typed(text[text.Length - 1]);
+            SignatureHelp.Typed(text[text.Length - 1]);
+        }
         return typed;
     }
 
@@ -562,6 +571,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         // chord half typed.
         Completion.Dismiss();
         Hover.Dismiss();
+        SignatureHelp.Dismiss();
         PendingChord = null;
         // A composition cannot survive the keyboard leaving: the platform has already dropped it,
         // and text still underlined in the document would claim an input method nobody is using.

@@ -222,7 +222,7 @@ export { DataPalette, DivergingScale, StatusScale } from './shared/data-palette'
 export { SheetTheme } from './shared/sheet-theme';
 // The vocabulary's interface defaults, which an app's twin delegates to where eqc has the
 // interface's signature and not its body (#414).
-export { IAppTheme, ICodeCompletionProvider, ICodeLanguage } from './shared/interface-defaults';
+export { IAppTheme, ICodeCompletionProvider, ICodeLanguage, ICodeSignatureProvider } from './shared/interface-defaults';
 export { materializeTheme } from './shared/theme-bridge';
 export type { ThemeData } from './shared/theme-bridge';
 export { VisualNodeComponent } from './shared/visual-node-component';

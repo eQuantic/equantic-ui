@@ -75,6 +75,10 @@
     <!-- The walk behind "a node belongs to ONE tree", compiled in from the web tests rather than
          copied: the native shells are held to the same rule by the same instrument. -->
     <Compile Include="..\eQuantic.UI.Web.Tests\NodePlacements.cs" Link="Shared\NodePlacements.cs" />
+    <!-- The dashboard's signature provider, the one its code screen hands the editor, compiled in so
+         its reading of a call is asked here as the panel asks it (LedgerSignaturesTests). The web
+         sample is no project this one can reference: it is an app over the web SDK. -->
+    <Compile Include="..\..\samples\DefaultUIDashboard\Screens\LedgerSignatures.cs" Link="Samples\LedgerSignatures.cs" />
   </ItemGroup>
 
   <ItemGroup>

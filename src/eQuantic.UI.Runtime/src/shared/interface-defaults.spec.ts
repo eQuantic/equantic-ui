@@ -2,10 +2,10 @@
  * The runtime's copy of every vocabulary interface default, cross-pinned with
  * `VocabularyInterfaceDefaultsTests.cs`, which lists the defaults by reflection into the fixture.
  *
- * The twin of an app's theme, language or completion provider delegates a default it relies on to
- * this copy, because the app compiles against the vocabulary's assemblies and eqc has no body to
- * convert there (#414). A line with no function here is a member that app's twin answers
- * undefined for.
+ * The twin of an app's theme, language, completion provider or signature provider delegates a
+ * default it relies on to this copy, because the app compiles against the vocabulary's assemblies
+ * and eqc has no body to convert there (#414). A line with no function here is a member that app's
+ * twin answers undefined for.
  */
 
 import { readFileSync } from 'node:fs';
@@ -60,6 +60,9 @@ describe('the vocabulary interface defaults (cross-pinned with VocabularyInterfa
     expect(defaults.ICodeCompletionProvider.triggerCharacters({})).toEqual([]);
     const item = { label: 'Theme' };
     await expect(defaults.ICodeCompletionProvider.resolveAsync({}, item, null)).resolves.toBe(item);
+    // A call opens at its parenthesis and moves to its next argument at a comma, unless a provider says otherwise.
+    expect(defaults.ICodeSignatureProvider.triggerCharacters({})).toEqual(['(']);
+    expect(defaults.ICodeSignatureProvider.retriggerCharacters({})).toEqual([',']);
     expect(defaults.IAppTheme.monoFamily(photonTheme)).toBeNull();
     expect(defaults.IAppTheme.data(photonTheme)).toBe(DataPalette.default);
     expect(defaults.IAppTheme.code(photonTheme, 'keyword')).toEqual(

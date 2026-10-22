@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeDiagnostic, CodeDiagnostics, CodeDocument, CodeEditorController, CodeHover, CodePosition, CodeRange, TimeSpan, UiThread } from "../runtime-exports";
+import { $eq, CancellationToken, CancellationTokenSource, CodeDiagnostic, CodeDiagnostics, CodeDocument, CodeEditorController, CodeHover, CodePosition, CodeRange, ProviderRequest, TimeSpan, UiThread } from "../runtime-exports";
 
 export class CodeHoverSession {
     constructor(editor: CodeEditorController) {
@@ -95,7 +95,7 @@ export class CodeHoverSession {
 
     dismiss() {
         this._generation++;
-        this._request?.cancel();
+        ProviderRequest.cancel(this._request, this.failed);
         this._request = null;
         this._pending = null;
         this._requestByKeyboard = false;
@@ -134,7 +134,7 @@ export class CodeHoverSession {
         if (this._requestByKeyboard) return;
         if (this._open && this._byKeyboard) {
             this._generation++;
-            this._request?.cancel();
+            ProviderRequest.cancel(this._request, this.failed);
             this._request = null;
             this._pending = null;
             return;
@@ -150,7 +150,7 @@ export class CodeHoverSession {
     async rest(explained: CodeRange, position: CodePosition, wait: boolean, keyboard: boolean, ask: boolean) {
         if (this._editor.completion.isOpen) return;
         let generation = ++this._generation;
-        this._request?.cancel();
+        ProviderRequest.cancel(this._request, this.failed);
         let request = $eq.cancellation.source();
         this._request = request;
         this._pending = explained;

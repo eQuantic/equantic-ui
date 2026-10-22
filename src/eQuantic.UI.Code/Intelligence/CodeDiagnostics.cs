@@ -142,7 +142,7 @@ public sealed class CodeDiagnostics
     private async Task Ask(bool wait)
     {
         var generation = ++_generation;
-        _request?.Cancel();
+        ProviderRequest.Cancel(_request, Failed);
         _request = null;
         if (Providers.Count == 0)
         {

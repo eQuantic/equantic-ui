@@ -42,3 +42,11 @@ export const ICodeCompletionProvider = {
   /** `Task<CodeCompletionItem> ResolveAsync(item, cancellation) => Task.FromResult(item);` */
   resolveAsync: <T>(_provider: unknown, item: T, _cancellation?: unknown): Promise<T> => Promise.resolve(item),
 };
+
+/** `ICodeSignatureProvider`'s defaults. */
+export const ICodeSignatureProvider = {
+  /** `IReadOnlyList<char> TriggerCharacters => ['('];` — a new list per read, as C#'s is. */
+  triggerCharacters: (_provider: unknown): string[] => ['('],
+  /** `IReadOnlyList<char> RetriggerCharacters => [','];` */
+  retriggerCharacters: (_provider: unknown): string[] => [','],
+};

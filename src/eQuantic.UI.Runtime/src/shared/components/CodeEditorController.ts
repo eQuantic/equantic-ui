@@ -1,4 +1,4 @@
-import { $eq, CodeCompletion, CodeDiagnostics, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeHoverSession, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineCells, CodeMotionValue, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect } from "../runtime-exports";
+import { $eq, CodeCompletion, CodeDiagnostics, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeHoverSession, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineCells, CodeMotionValue, CodePosition, CodeRange, CodeSignatureHelpSession, KeyboardConventionValue, Point, PointerPhaseValue, Rect } from "../runtime-exports";
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null) {
@@ -10,6 +10,7 @@ export class CodeEditorController {
         this.completion = null!;
         this.diagnostics = null!;
         this.hover = null!;
+        this.signatureHelp = null!;
         this.pendingChord = null;
         this.tabMovesFocus = false;
         this.changed = null;
@@ -33,6 +34,7 @@ export class CodeEditorController {
         this.completion = new CodeCompletion(this);
         this.diagnostics = new CodeDiagnostics(this);
         this.hover = new CodeHoverSession(this);
+        this.signatureHelp = new CodeSignatureHelpSession(this);
     }
 
     _document!: CodeDocument;
@@ -43,6 +45,7 @@ export class CodeEditorController {
     completion!: CodeCompletion;
     diagnostics!: CodeDiagnostics;
     hover!: CodeHoverSession;
+    signatureHelp!: CodeSignatureHelpSession;
     pendingChord!: string | null;
     tabMovesFocus!: boolean;
     changed!: ((codeEdit: CodeEdit | null) => void) | null;
@@ -275,7 +278,10 @@ export class CodeEditorController {
             typed = $eq.logic.or(typed, end - starts[i] === 1 ? this.type(text[starts[i]]) : this.edit(this._selection, $eq.text.substring(text, starts[i], end - starts[i]), true));
         }
         if (committing) this.history.break();
-        if (typed) this.completion.typed(text[text.length - 1]);
+        if (typed) {
+            this.completion.typed(text[text.length - 1]);
+            this.signatureHelp.typed(text[text.length - 1]);
+        }
         return typed;
     }
 
@@ -338,6 +344,7 @@ export class CodeEditorController {
         if (focused) return;
         this.completion.dismiss();
         this.hover.dismiss();
+        this.signatureHelp.dismiss();
         this.pendingChord = null;
         if (!(this._composition == null)) this.setComposition('');
         this._dragging = false;
