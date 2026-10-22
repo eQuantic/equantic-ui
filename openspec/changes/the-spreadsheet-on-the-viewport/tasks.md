@@ -16,10 +16,10 @@
       `runtime.js` from its new home, and move the samples (`SheetScreen`, the gallery's Spreadsheet
       section, `TableScreen`'s `ColumnName`) to the new namespace or the factory; verify
       `SharedComponentTranspilationTests`, the runtime's Vitest and `dotnet build` of the four samples
-- [ ] 1.4 The wiki's Package Architecture page and the Components page's Spreadsheet section name the
+- [x] 1.4 The wiki's Package Architecture page and the Components page's Spreadsheet section name the
       new assembly, in English, Portuguese, Spanish, French and German, on the wiki branch named like
       this pull request's; verify the wiki guards against it with `EQ_WIKI_DIR`
-- [ ] 1.5 Prove the real consumer path: the dashboard's `/sheet` serves and takes a click and a key in
+- [x] 1.5 Prove the real consumer path: the dashboard's `/sheet` serves and takes a click and a key in
       Chromium, and the gallery's Spreadsheet section draws on Photon, both from the moved assembly
 
 ## 2. The vocabulary and the viewport
