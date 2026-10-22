@@ -113,7 +113,7 @@
 
 - [x] 7.1 `docs/SPREADSHEET-PLAN.md`: slice 0b delivered, D1 to D4 and D6's scroll closed; a ledger
       entry under `docs/ledger/` citing #995
-- [ ] 7.2 Every affected suite green on this machine (Compiler, Web, Server, Native.Engine,
+- [x] 7.2 Every affected suite green on this machine (Compiler, Web, Server, Native.Engine,
       Conformance, the runtime's Vitest), `dotnet build` of the four samples, `./scripts/check-openspec.sh`
-- [ ] 7.3 Archive the change with `openspec archive the-spreadsheet-on-the-viewport --yes` before the
+- [x] 7.3 Archive the change with `openspec archive the-spreadsheet-on-the-viewport --yes` before the
       merge
