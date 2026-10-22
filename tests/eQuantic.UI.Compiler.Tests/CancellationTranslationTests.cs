@@ -72,6 +72,25 @@ public class CancellationTranslationTests
         Assert.Contains(expected, js);
     }
 
+    /// <summary>A member the twin carries is the twin's own, and a module whose cancellation is only that
+    /// imports no <c>$eq</c>: it imported one it never read, which a type-checked module refuses (TS6133).
+    /// What the runtime builds still imports it.</summary>
+    [Theory]
+    [InlineData("field?.Cancel();", false)]
+    [InlineData("var a = given.IsCancellationRequested;", false)]
+    [InlineData("given.ThrowIfCancellationRequested();", false)]
+    [InlineData("var s = new CancellationTokenSource();", true)]
+    [InlineData("var t = CancellationToken.None;", true)]
+    [InlineData("var l = CancellationTokenSource.CreateLinkedTokenSource(given);", true)]
+    public void EqIsImported_OnlyWhereANameOfItIsWritten(string body, bool imported)
+    {
+        var (js, errors) = Convert(body);
+
+        Assert.Empty(errors);
+        Assert.Equal(imported, js.Contains("$eq."));
+        Assert.Equal(imported, _converter.UsedHelpers.Contains(Eq.Import));
+    }
+
     [Fact]
     public void AFieldOfTheRegistrationType_StartsAsTheRegistrationOfNothing()
     {

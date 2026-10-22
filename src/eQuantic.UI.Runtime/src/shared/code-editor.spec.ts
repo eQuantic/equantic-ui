@@ -1853,3 +1853,117 @@ describe('the problems and the card', () => {
     expect(appliedWhiteSpace(lowered, holding('let x = 1;')), 'the code').toBe('pre');
   });
 });
+
+/**
+ * The panel that explains the call being written (#298) on the web, through the transpiled CodeEditor and
+ * its engine; the C# twins are CodeEditorSignatureTests, on Photon. Typing a call through the input opens
+ * it as a note over the code, a polite live region, the argument the caret is on marked in the label.
+ */
+describe('the panel over a call', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function editorWith(setup: (component: Record<string, unknown>) => void) {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const context = {
+      theme,
+      textPrimary: theme.textPrimary,
+      density: 'comfortable',
+      typeScale: 1,
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    const code = Array.from({ length: 20 }, (_, line) => `var name${line} = ${line};`).join('\n');
+    const component = new CodeEditor(code, 'csharp');
+    component.completions = [];
+    setup(component as unknown as Record<string, unknown>);
+    const lower = () => lowerVisualNode(component.build(context as never) as never, context as never);
+    lower();
+    return { editor: component.editor, lower };
+  }
+
+  /** Column's signature, its active parameter the commas typed after the parenthesis. */
+  const columns = async () => {
+    const { CodeSignature } = await import('./components/CodeSignature');
+    const { CodeSignatureParameter } = await import('./components/CodeSignatureParameter');
+    const { CodeSignatureHelp } = await import('./components/CodeSignatureHelp');
+    const signature = new CodeSignature('Column(float gap, MainAlign main)');
+    const gap = new CodeSignatureParameter('float gap');
+    gap.documentation = 'The space between two children.';
+    signature.parameters = [gap, new CodeSignatureParameter('MainAlign main')];
+    return {
+      triggerCharacters: ['('],
+      retriggerCharacters: [','],
+      signatureHelpAsync: (document: CodeDocument, position: CodePosition) => {
+        const line = document.line(position.line);
+        const open = line.lastIndexOf('(', position.column - 1);
+        const close = line.indexOf(')', open);
+        if (open < 0 || (close >= 0 && close < position.column)) return Promise.resolve(null);
+        const help = new CodeSignatureHelp([signature]);
+        help.activeParameter = (line.slice(open + 1, position.column).match(/,/g) ?? []).length;
+        return Promise.resolve(help);
+      },
+    };
+  };
+
+  const notesIn = (lowered: HtmlNode) =>
+    nodesWhere(lowered, (node) => (node.attributes['class'] ?? '').split(' ').includes('eq-code-note'));
+  const textOf = (node: HtmlNode): string =>
+    (node.textContent ?? '') + node.children.map((child) => textOf(child)).join('');
+
+  function typeInto(lowered: HtmlNode, text: string) {
+    const input = nodesWhere(lowered, (node) => node.tag === 'textarea')[0];
+    for (const c of text) {
+      (input.events['beforeinput'] as unknown as (event: unknown) => void)({
+        inputType: 'insertText',
+        data: c,
+        target: { value: '' },
+        preventDefault: () => {},
+      });
+    }
+  }
+
+  it('opens over the code on an opening parenthesis, a polite live region', async () => {
+    vi.useFakeTimers();
+    const provider = await columns();
+    const { editor, lower } = await editorWith((component) => {
+      component.signatureProviders = [provider];
+    });
+    // The end of line 10, `var name10 = 10;`.
+    editor.selection = new CodeRange(new CodePosition(10, 16));
+
+    typeInto(lower(), ' Column(');
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(editor.signatureHelp.isOpen).toBe(true);
+    const notes = notesIn(lower());
+    expect(notes, 'the panel is a note over the code').toHaveLength(1);
+    expect(textOf(notes[0])).toContain('Column(float gap, MainAlign main)');
+    expect(textOf(notes[0])).toContain('float gap: The space between two children.');
+    expect(nodesWhere(notes[0], (node) => node.attributes['aria-live'] === 'polite')).toHaveLength(1);
+  });
+
+  it('follows the arguments as they are typed', async () => {
+    vi.useFakeTimers();
+    const provider = await columns();
+    const { editor, lower } = await editorWith((component) => {
+      component.signatureProviders = [provider];
+    });
+    // The end of line 10, `var name10 = 10;`.
+    editor.selection = new CodeRange(new CodePosition(10, 16));
+    typeInto(lower(), ' Column(');
+    await vi.advanceTimersByTimeAsync(0);
+
+    // The digit asks again after the pause, and the comma, a retrigger character, at once.
+    typeInto(lower(), '1, ');
+    await vi.advanceTimersByTimeAsync(150);
+
+    expect(editor.signatureHelp.activeParameter, 'the comma moved to the second argument').toBe(1);
+    expect(textOf(notesIn(lower())[0])).toContain('MainAlign main');
+  });
+});

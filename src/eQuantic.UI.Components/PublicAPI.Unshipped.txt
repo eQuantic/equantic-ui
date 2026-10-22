@@ -1,1 +1,3 @@
 #nullable enable
+eQuantic.UI.Components.CodeEditor.SignatureProviders.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.ICodeSignatureProvider!>!
+eQuantic.UI.Components.CodeEditor.SignatureProviders.set -> void

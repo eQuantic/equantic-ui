@@ -51,17 +51,18 @@ public static class CodeKeymap
 
         // ---- a chord half typed ------------------------------------------------------------------
         // Any key but a modifier ends the wait for a chord's second half (⌘K ⌘I, below), and ends it
-        // here, for the reason the trap above re-arms here: the list's keys and ⌃Space return early,
-        // and ending the wait after them left ⌘K, ⌃Space, Escape, ⌘I showing the card.
+        // here, for the reason the trap above re-arms here: the list's keys, ⌃Space and the panel's
+        // keys return early, and ending the wait after them left ⌘K, ⌃Space, Escape, ⌘I showing the card.
         var chord = editor.PendingChord;
         if (!IsModifierKey(key)) editor.PendingChord = null;
 
         // ---- an open completion list ---------------------------------------------------------
         // While a list shows, the keys that walk it are ITS keys: the arrows and the page keys step
         // through it, Tab accepts, and Escape closes it, only it, so the trap on Tab stays armed and
-        // a dialog around the editor stays open. An arrow goes back to the caret when one entry
-        // shows, as VS Code has it. Enter accepts only what would change the text: a word typed out
-        // in full ends its line (the list closes as the caret leaves it).
+        // a dialog around the editor stays open. An arrow is not the list's when one entry shows, as
+        // VS Code has it: it goes on to the panel's overloads below, and then to the caret. Enter accepts
+        // only what would change the text: a word typed out in full ends its line (the list closes as
+        // the caret leaves it).
         var completion = editor.Completion;
         if (completion.IsOpen && !command && !control && !alt)
         {
@@ -77,6 +78,17 @@ public static class CodeKeymap
         // ⌃Space, which a browser reports as the command key and a Mac's own shell as Control: asks
         // for the list where the caret is. Before the chords, which would take a space as a letter.
         if (key == " " && (command || control) && !shift && !alt) return completion.Invoke();
+        // ⇧⌘Space (Ctrl+Shift+Space): the panel of the call at the caret, as VS Code has it.
+        if (key == " " && (command || control) && shift && !alt) return editor.SignatureHelp.Invoke();
+        // ↑ and ↓ walk the overloads while the panel shows more than one, and move the caret otherwise; a
+        // list of two entries or more has already taken them above, and a card showing hides the panel,
+        // whose keys they then are not. Beside a list of ONE entry they are the overloads', as VS Code's
+        // keybindings have it: selectNextSuggestion asks for more than one suggestion, and
+        // showNextParameterHint only for more than one signature. ⌥↑ and ⌥↓ (Alt+↑, Alt+↓) walk them too, which the list leaves alone, as VS Code
+        // has it: beside a list, they are the overloads' only keys.
+        if (!command && !control && !shift && key is "ArrowUp" or "ArrowDown" && !editor.Hover.IsOpen
+            && editor.SignatureHelp.Move(key == "ArrowUp" ? -1 : 1))
+            return true;
 
         // ---- the card and the problems ------------------------------------------------------------
         // ⌘K ⌘I (Ctrl+K Ctrl+I) shows the card for the caret, as VS Code has it: ⌘K waits for one key,
@@ -99,8 +111,20 @@ public static class CodeKeymap
         // there is one to go to.
         if (key == "F8" && !command && !control && !alt) return editor.Diagnostics.Next(backward: shift) is not null;
         // Escape closes a card first, only it, so the trap on Tab stays armed and a dialog around the
-        // editor stays open; a list showing has already taken the key above.
-        if (key == "Escape" && editor.Hover.Dismiss()) return true;
+        // editor stays open; a list showing has already taken the key above. A list asked for and not
+        // yet showing goes with whatever Escape closes, the card or the panel below: Escape means it was
+        // not wanted, and its answer, landing after the key, opened a list nobody had asked to see.
+        if (key == "Escape" && editor.Hover.Dismiss())
+        {
+            completion.Dismiss();
+            return true;
+        }
+        // …and then the panel, before the trap on Tab.
+        if (key == "Escape" && editor.SignatureHelp.Dismiss())
+        {
+            completion.Dismiss();
+            return true;
+        }
 
         // Escape with no list showing releases the trap, unclaimed, so the host can go on meaning
         // what Escape means around the editor.

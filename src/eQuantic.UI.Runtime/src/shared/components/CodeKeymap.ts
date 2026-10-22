@@ -21,6 +21,8 @@ export class CodeKeymap {
             if (key === 'Escape') return completion.dismiss();
         }
         if (key === ' ' && (command || control) && !shift && !alt) return completion.invoke();
+        if (key === ' ' && (command || control) && shift && !alt) return editor.signatureHelp.invoke();
+        if (!command && !control && !shift && (key === 'ArrowUp' || key === 'ArrowDown') && !editor.hover.isOpen && editor.signatureHelp.move(key === 'ArrowUp' ? -1 : 1)) return true;
         if (!(chord == null) && command && (key === 'i' || key === 'I')) {
             editor.hover.showAt(editor.caret);
             return true;
@@ -30,7 +32,14 @@ export class CodeKeymap {
             return true;
         }
         if (key === 'F8' && !command && !control && !alt) return !(editor.diagnostics.next(shift) == null);
-        if (key === 'Escape' && editor.hover.dismiss()) return true;
+        if (key === 'Escape' && editor.hover.dismiss()) {
+            completion.dismiss();
+            return true;
+        }
+        if (key === 'Escape' && editor.signatureHelp.dismiss()) {
+            completion.dismiss();
+            return true;
+        }
         if (key === 'Escape') {
             completion.dismiss();
             editor.tabMovesFocus = true;
@@ -58,7 +67,7 @@ export class CodeKeymap {
                         return true;
                     case 'v':
                         if (clipboard == null) return false;
-                        if ((($v8479) => (($v8479 != null && $v8479.length > 0) && (pasted = $v8479, true)))(clipboard.read())) editor.paste(pasted);
+                        if ((($v10084) => (($v10084 != null && $v10084.length > 0) && (pasted = $v10084, true)))(clipboard.read())) editor.paste(pasted);
                         return true;
                     case '/':
                         return editor.toggleLineComment();

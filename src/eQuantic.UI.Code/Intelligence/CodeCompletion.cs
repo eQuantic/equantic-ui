@@ -11,8 +11,10 @@ namespace eQuantic.UI.Code;
 /// Latency decides the shape (the plan's sixth section). A list asks its providers ONCE, when a word
 /// starts: a trigger character, a word started by typing, ⌃Space. Every keystroke after that filters
 /// and ranks what they answered, here and at once (<see cref="CodeFuzzyMatch"/>), and only a provider
-/// that called its answer incomplete is asked again. An answer that arrives after its word was left,
-/// or after a newer request, is dropped by its generation rather than trusted to have been cancelled.
+/// that called its answer incomplete is asked again. Each answer shows as it arrives, listed in the
+/// order of <see cref="Providers"/> whatever the order the answers land in, so a slow provider holds
+/// back no other (#620). An answer that arrives after its word was left, or after its own provider was
+/// asked again, is dropped rather than trusted to have been cancelled.
 /// </para>
 /// <para>
 /// An editor with no language service still completes, from the language's own words
@@ -36,11 +38,10 @@ public sealed class CodeCompletion
     private bool _active;
     private CodePosition _start;
     private bool _openedEmpty;
-    private string _askedWord = "";
-    private int _generation;
-    // Two lifetimes: a REQUEST is cancelled by the next one (a word's incomplete answer asked again),
-    // and the LIST by closing, which is what a resolve of one of its items is waiting on.
-    private CancellationTokenSource? _request;
+    // Two lifetimes: a REQUEST, each provider's newest, is cancelled when its provider is asked again (a
+    // word's incomplete answer), and the LIST by closing, which is what a resolve of one of its items is
+    // waiting on.
+    private readonly List<CodeCompletionRequest> _requests = [];
     private CancellationTokenSource? _list;
 
     internal CodeCompletion(CodeEditorController editor)
@@ -67,8 +68,8 @@ public sealed class CodeCompletion
     /// <summary>Whether a list is showing: a word is being completed and something matches it.</summary>
     public bool IsOpen => _active && _items.Count > 0;
 
-    /// <summary>Whether a word is being completed and no provider has answered for it yet.</summary>
-    public bool IsLoading => _active && _answers.Count == 0;
+    /// <summary>Whether a word is being completed and a provider asked for it has not answered yet.</summary>
+    public bool IsLoading => _active && _requests.Any(request => !request.Answered);
 
     /// <summary>What matches the word, best first.</summary>
     public IReadOnlyList<CodeCompletionMatch> Items => _items;
@@ -100,8 +101,7 @@ public sealed class CodeCompletion
     public bool Invoke()
     {
         if (_editor.ReadOnly || Providers.Count == 0) return false;
-        Open(WordStart(_editor.Caret));
-        _ = Ask(CodeCompletionTrigger.Invoked, null, Providers.ToList());
+        Open(WordStart(_editor.Caret), CodeCompletionTrigger.Invoked, null, Providers.ToList());
         return true;
     }
 
@@ -121,8 +121,7 @@ public sealed class CodeCompletion
         }
         if (triggered.Count > 0)
         {
-            Open(_editor.Caret);
-            _ = Ask(CodeCompletionTrigger.Character, typed, triggered);
+            Open(_editor.Caret, CodeCompletionTrigger.Character, typed, triggered);
             return;
         }
 
@@ -133,104 +132,142 @@ public sealed class CodeCompletion
         // A number is not a word anybody completes.
         if (!char.IsLetter(first) && first != '_') return;
         if (InCommentOrString(caret)) return;
-        Open(start);
-        _ = Ask(CodeCompletionTrigger.Typing, typed, Providers.ToList());
+        Open(start, CodeCompletionTrigger.Typing, typed, Providers.ToList());
     }
 
     /// <summary>Starts completing the word that begins at <paramref name="start"/>, dropping any
-    /// list before it.</summary>
-    private void Open(CodePosition start)
+    /// list before it, and asks <paramref name="providers"/> for it.</summary>
+    private void Open(CodePosition start, CodeCompletionTrigger trigger, char? character,
+        List<ICodeCompletionProvider> providers)
     {
         Close(raise: false);
         _active = true;
         _start = start;
         _openedEmpty = start == _editor.Caret;
         _list = new CancellationTokenSource();
-        Changed?.Invoke();
+        Ask(trigger, character, providers, announce: true);
     }
 
-    private async Task Ask(CodeCompletionTrigger trigger, char? character, List<ICodeCompletionProvider> providers)
+    /// <summary>
+    /// Asks <paramref name="providers"/> for the word, each with a request of its own: one still out for
+    /// the same provider is cancelled, and another provider's goes on. Every provider is asked before any
+    /// answer is applied, so they work at the same time.
+    /// <para>
+    /// A list opening (<paramref name="announce"/>) is heard of here, once its requests are out and
+    /// before any answer lands, so <see cref="IsLoading"/> already says what is still out: it was heard
+    /// of before its requests were made, and a list asked of providers that all answer late never said
+    /// it was loading. A list asked again is heard of by whoever asked (a keystroke, an answer).
+    /// </para>
+    /// </summary>
+    private void Ask(CodeCompletionTrigger trigger, char? character, List<ICodeCompletionProvider> providers,
+        bool announce)
     {
-        var generation = ++_generation;
-        Cancel(_request);
-        var cancellation = new CancellationTokenSource();
-        _request = cancellation;
         var document = _editor.Document;
         var position = _editor.Caret;
         var context = new CodeCompletionContext(trigger, _editor.Highlighter.Language) { Character = character };
-        _askedWord = Word();
+        var askedLineLength = document.Line(position.Line).Length;
+        var word = Word();
 
-        // Every provider is asked before any is waited for, so they work at the same time.
-        var asked = new List<Task<CodeCompletionList>?>();
-        var errors = new List<Exception>();
+        var requests = new List<CodeCompletionRequest>();
         foreach (var provider in providers)
         {
-            try
+            for (var i = _requests.Count - 1; i >= 0; i--)
             {
-                asked.Add(provider.CompleteAsync(document, position, context, cancellation.Token));
+                if (!ReferenceEquals(_requests[i].Provider, provider)) continue;
+                var stale = _requests[i];
+                _requests.RemoveAt(i);
+                Cancel(stale.Cancellation);
             }
-            catch (Exception error)
-            {
-                asked.Add(null);
-                errors.Add(error);
-            }
+            var request = new CodeCompletionRequest(provider, word);
+            _requests.Add(request);
+            requests.Add(request);
         }
+        if (announce) Changed?.Invoke();
+        foreach (var request in requests) _ = AskOne(request, document, position, context, askedLineLength);
+    }
 
-        var answers = new List<CodeCompletionAnswer>();
-        for (var i = 0; i < providers.Count; i++)
+    private async Task AskOne(CodeCompletionRequest request, CodeDocument document, CodePosition position,
+        CodeCompletionContext context, int askedLineLength)
+    {
+        var list = CodeCompletionList.Empty;
+        Exception? failure = null;
+        try
         {
-            var list = CodeCompletionList.Empty;
-            if (asked[i] is { } answer)
-            {
-                try
-                {
-                    list = await answer;
-                }
-                catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
-                {
-                    // Cancelled because the answer was no longer wanted: the generation drops it. One
-                    // the provider threw on its own, with this request still wanted, is its failure.
-                }
-                catch (Exception error)
-                {
-                    errors.Add(error);
-                }
-            }
-            answers.Add(new CodeCompletionAnswer(providers[i], document.Line(position.Line).Length, list));
+            list = await request.Provider.CompleteAsync(document, position, context, request.Cancellation.Token);
+        }
+        catch (OperationCanceledException) when (request.Cancellation.IsCancellationRequested)
+        {
+            // Cancelled because the answer was no longer wanted: its request is no longer the list's, and
+            // the answer is dropped. One the provider threw on its own, with the request still wanted, is
+            // its failure.
+        }
+        catch (Exception error)
+        {
+            failure = error;
         }
 
         UiThread.Run(() =>
         {
-            foreach (var error in errors) Failed?.Invoke(error);
-            Deliver(generation, answers);
+            if (failure is not null) Failed?.Invoke(failure);
+            Deliver(request, new CodeCompletionAnswer(request.Provider, request.Word, askedLineLength, list));
         });
     }
 
-    /// <summary>Takes the answers of the request numbered <paramref name="generation"/>, unless a
-    /// newer one was made or the list closed while they were on their way.</summary>
-    private void Deliver(int generation, List<CodeCompletionAnswer> answers)
+    /// <summary>
+    /// Takes the answer to <paramref name="request"/>, unless its provider was asked again or the list
+    /// closed while it was on its way. It is listed where its provider stands in
+    /// <see cref="Providers"/>, and the entry selected stays selected if it is still listed. With nothing
+    /// offered by any answer and nothing more to ask for, the list closes once no provider owes one.
+    /// </summary>
+    private void Deliver(CodeCompletionRequest request, CodeCompletionAnswer answer)
     {
-        if (generation != _generation || !_active) return;
+        if (!_active || request.Answered || _requests.IndexOf(request) < 0) return;
+        request.Answered = true;
 
-        foreach (var answer in answers)
-        {
-            var at = _answers.FindIndex(known => ReferenceEquals(known.Provider, answer.Provider));
-            if (at >= 0) _answers[at] = answer;
-            else _answers.Add(answer);
-        }
+        var known = _answers.FindIndex(held => ReferenceEquals(held.Provider, answer.Provider));
+        if (known >= 0) _answers.RemoveAt(known);
+        // In the providers' order, whatever the order the answers land in: the ranking's last tie is that
+        // order, and it must not depend on which provider was quicker.
+        var rank = RankOf(answer.Provider);
+        var at = 0;
+        while (at < _answers.Count && RankOf(_answers[at].Provider) <= rank) at++;
+        _answers.Insert(at, answer);
 
-        // Nothing offered and nothing more to ask for: no list will show for this word.
-        if (_answers.All(answer => answer.Offers.Count == 0 && !answer.IsIncomplete))
+        // Nothing offered and nothing more to ask for: no list shows for this word. While a provider is
+        // still out the list waits for it, and still takes this answer, which may withdraw every entry it
+        // showed before.
+        if (_answers.All(held => held.Offers.Count == 0 && !held.IsIncomplete) && !IsLoading)
         {
             Close(raise: true);
             return;
         }
 
+        // The entry, not the offer: an answer that lands may bring its own copy of the entry selected,
+        // which is the one listed when its provider comes first.
+        var selected = _selected >= 0 ? EntryOf(_shown[_selected].Item) : null;
         Gather();
         Filter();
+        if (selected is not null)
+        {
+            for (var i = 0; i < _shown.Count; i++)
+            {
+                if (EntryOf(_shown[i].Item) != selected) continue;
+                _selected = i;
+                break;
+            }
+        }
         AskAgainIfIncomplete();
         ResolveSelected();
         Changed?.Invoke();
+    }
+
+    /// <summary>Where <paramref name="provider"/> stands in <see cref="Providers"/>, or after all of
+    /// them once it has been taken out.</summary>
+    private int RankOf(ICodeCompletionProvider provider)
+    {
+        for (var i = 0; i < Providers.Count; i++)
+            if (ReferenceEquals(Providers[i], provider)) return i;
+        return Providers.Count;
     }
 
     // ---- following the word -----------------------------------------------------------------
@@ -268,17 +305,34 @@ public sealed class CodeCompletion
         Changed?.Invoke();
     }
 
-    /// <summary>Asks again every provider whose answer was incomplete, once the word is no longer the
-    /// one it answered for. The rest keep their answers.</summary>
+    /// <summary>
+    /// Asks again every provider whose answer was incomplete, once the word is not the one that provider
+    /// was asked for LAST: the word of its answer, or of a request of its still out. Each provider keeps
+    /// its own word, so a slow provider's answer for a word left behind is asked again, whoever was asked
+    /// last. And a request still out for another word is replaced even when the answer in hand is for
+    /// the word typed (a letter typed, then backspaced): it would land over that answer, with what it
+    /// offers for the other word. The rest keep their answers.
+    /// </summary>
     private void AskAgainIfIncomplete()
     {
-        if (Word() == _askedWord) return;
+        var word = Word();
         var incomplete = new List<ICodeCompletionProvider>();
         foreach (var answer in _answers)
         {
-            if (answer.IsIncomplete) incomplete.Add(answer.Provider);
+            if (answer.IsIncomplete && LastAskedWord(answer.Provider) != word) incomplete.Add(answer.Provider);
         }
-        if (incomplete.Count > 0) _ = Ask(CodeCompletionTrigger.Incomplete, null, incomplete);
+        if (incomplete.Count > 0) Ask(CodeCompletionTrigger.Incomplete, null, incomplete, announce: false);
+    }
+
+    /// <summary>The word <paramref name="provider"/> was asked for last: that of its newest request,
+    /// answered or still out, the one request of it the list holds.</summary>
+    private string? LastAskedWord(ICodeCompletionProvider provider)
+    {
+        foreach (var request in _requests)
+        {
+            if (ReferenceEquals(request.Provider, provider)) return request.Word;
+        }
+        return null;
     }
 
     /// <summary>
@@ -296,9 +350,7 @@ public sealed class CodeCompletion
             foreach (var offer in answer.Offers)
             {
                 var item = offer.Item;
-                // The label's length leads, so that no label and inserted text run together into
-                // another pair's: "ab" inserting "c" and "a" inserting "bc" are two entries.
-                var key = item.Label.Length + ":" + item.Label + (item.InsertText ?? item.Label);
+                var key = EntryOf(item);
                 if (!groups.TryGetValue(key, out var group))
                 {
                     group = groups.Count;
@@ -376,6 +428,12 @@ public sealed class CodeCompletion
             break;
         }
     }
+
+    /// <summary>What makes two offers one entry: one label and one inserted text, whichever provider
+    /// offered them. The label's length leads, so that no label and inserted text run together into
+    /// another pair's: "ab" inserting "c" and "a" inserting "bc" are two entries.</summary>
+    private static string EntryOf(CodeCompletionItem item) =>
+        item.Label.Length + ":" + item.Label + (item.InsertText ?? item.Label);
 
     // ---- the list's keys --------------------------------------------------------------------
 
@@ -471,10 +529,9 @@ public sealed class CodeCompletion
     private void Close(bool raise)
     {
         // A request still out is no longer wanted: its answer, and every resolve, is dropped.
-        _generation++;
-        var request = _request;
+        var requests = _requests.ToList();
+        _requests.Clear();
         var list = _list;
-        _request = null;
         _list = null;
         var was = _active;
         _active = false;
@@ -485,30 +542,14 @@ public sealed class CodeCompletion
         _shown = [];
         _selected = -1;
         // Once the list is closed, so that what cancelling runs at once finds it closed.
-        Cancel(request);
+        foreach (var request in requests) Cancel(request.Cancellation);
         Cancel(list);
         if (raise && was) Changed?.Invoke();
     }
 
-    /// <summary>
-    /// Cancels <paramref name="source"/>, which runs at once, on this thread, every callback a
-    /// provider registered on its token. One that throws is that provider's failure, reported like
-    /// any other (<see cref="Failed"/>), and never the keystroke's: cancelling gathers what the
-    /// callbacks threw into one <c>AggregateException</c> after running them all, and it escaped into
-    /// the edit that had closed the list.
-    /// </summary>
-    private void Cancel(CancellationTokenSource? source)
-    {
-        if (source is null) return;
-        try
-        {
-            source.Cancel();
-        }
-        catch (Exception error)
-        {
-            Failed?.Invoke(error);
-        }
-    }
+    /// <summary>Cancels <paramref name="source"/>: a callback that throws is its provider's failure
+    /// (<see cref="Failed"/>), and never the keystroke's that closed the list.</summary>
+    private void Cancel(CancellationTokenSource? source) => ProviderRequest.Cancel(source, Failed);
 
     // ---- resolving ------------------------------------------------------------------------------
 

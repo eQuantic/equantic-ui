@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeCompletionAnswer, CodeCompletionContext, CodeCompletionList, CodeCompletionMatch, CodeCompletionOffer, CodeCompletionTriggerValue, CodeDocument, CodeEditorController, CodeFuzzyMatch, CodePosition, CodeRange, UiThread } from "../runtime-exports";
+import { $eq, CancellationToken, CancellationTokenSource, CodeCompletionAnswer, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeCompletionMatch, CodeCompletionOffer, CodeCompletionRequest, CodeCompletionTriggerValue, CodeDocument, CodeEditorController, CodeFuzzyMatch, CodePosition, CodeRange, ProviderRequest, UiThread } from "../runtime-exports";
 
 export class CodeCompletion {
     constructor(editor: CodeEditorController) {
@@ -12,9 +12,7 @@ export class CodeCompletion {
         this._active = false;
         this._start = CodePosition.$zero();
         this._openedEmpty = false;
-        this._askedWord = '';
-        this._generation = 0;
-        this._request = null;
+        this._requests = [];
         this._list = null;
         this.providers = [];
         this.opensAsYouType = true;
@@ -35,9 +33,7 @@ export class CodeCompletion {
     _active!: boolean;
     _start!: CodePosition;
     _openedEmpty!: boolean;
-    _askedWord!: string;
-    _generation!: number;
-    _request!: CancellationTokenSource | null;
+    _requests!: CodeCompletionRequest[];
     _list!: CancellationTokenSource | null;
     providers!: any[];
     opensAsYouType!: boolean;
@@ -50,7 +46,7 @@ export class CodeCompletion {
     }
 
     get isLoading(): boolean {
-        return this._active && this._answers.length === 0;
+        return this._active && this._requests.some((request) => !request.answered);
     }
 
     get items(): CodeCompletionMatch[] {
@@ -73,8 +69,7 @@ export class CodeCompletion {
 
     invoke() {
         if (this._editor.readOnly || $eq.collections.count(this.providers) === 0) return false;
-        this.open(this.wordStart(this._editor.caret));
-        this.ask('invoked', null, this.providers.slice());
+        this.open(this.wordStart(this._editor.caret), 'invoked', null, this.providers.slice());
         return true;
     }
 
@@ -85,8 +80,7 @@ export class CodeCompletion {
             if (provider.triggerCharacters.includes(typed)) triggered.push(provider);
         }
         if (triggered.length > 0) {
-            this.open(this._editor.caret);
-            this.ask('character', typed, triggered);
+            this.open(this._editor.caret, 'character', typed, triggered);
             return;
         }
         if (!this.opensAsYouType || !CodeDocument.isWordChar(typed)) return;
@@ -95,76 +89,89 @@ export class CodeCompletion {
         let first = this._editor.document.line(caret.line)[start.column];
         if (!(/^\p{L}$/u.test(first)) && first !== '_') return;
         if (this.inCommentOrString(caret)) return;
-        this.open(start);
-        this.ask('typing', typed, this.providers.slice());
+        this.open(start, 'typing', typed, this.providers.slice());
     }
 
-    open(start: CodePosition) {
+    open(start: CodePosition, trigger: CodeCompletionTriggerValue, character: string | null, providers: any[]) {
         this.close(false);
         this._active = true;
         this._start = start;
         this._openedEmpty = $eq.equals(start, this._editor.caret);
         this._list = $eq.cancellation.source();
-        this.changed?.();
+        this.ask(trigger, character, providers, true);
     }
 
-    async ask(trigger: CodeCompletionTriggerValue, character: string | null, providers: any[]) {
-        let generation = ++this._generation;
-        this.cancel(this._request);
-        let cancellation = $eq.cancellation.source();
-        this._request = cancellation;
+    ask(trigger: CodeCompletionTriggerValue, character: string | null, providers: any[], announce: boolean) {
         let document = this._editor.document;
         let position = this._editor.caret;
-        let $n16: any; 
-        let context = ($n16 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n16.character = character, $n16);
-        this._askedWord = this.word();
-        let asked = [];
-        let errors: Error[] = [];
+        let $n15: any; 
+        let context = ($n15 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n15.character = character, $n15);
+        let askedLineLength = document.line(position.line).length;
+        let word = this.word();
+        let requests: CodeCompletionRequest[] = [];
         for (const provider of providers) {
-            try {
-                asked.push(provider.completeAsync(document, position, context, cancellation.token));
-            } catch (error: any) {
-                asked.push(null);
-                errors.push(error);
+            for (let i = this._requests.length - 1; i >= 0; i--) {
+                if (!(this._requests[i].provider === provider)) continue;
+                let stale = this._requests[i];
+                this._requests.splice(i, 1);
+                this.cancel(stale.cancellation);
             }
+            let request = new CodeCompletionRequest(provider, word);
+            this._requests.push(request);
+            requests.push(request);
         }
-        let answers: CodeCompletionAnswer[] = [];
-        for (let i = 0; i < providers.length; i++) {
-            let list = CodeCompletionList.empty;
-            let answer: any; 
-            if ((answer = asked[i]) != null) {
-                try {
-                    list = await answer;
-                } catch ($e: any) {
-                    let error = $e;
-                    if ($eq.exceptions.is($e, 'System.OperationCanceledException') && $eq.exceptions.filter(() => cancellation.isCancellationRequested)) {} else {
-                        errors.push(error);
-                    }
-                }
+        if (announce) this.changed?.();
+        for (const request of requests) this.askOne(request, document, position, context, askedLineLength);
+    }
+
+    async askOne(request: CodeCompletionRequest, document: CodeDocument, position: CodePosition, context: CodeCompletionContext, askedLineLength: number) {
+        let list = CodeCompletionList.empty;
+        let failure: Error | null = null;
+        try {
+            list = await request.provider.completeAsync(document, position, context, request.cancellation.token);
+        } catch ($e: any) {
+            let error = $e;
+            if ($eq.exceptions.is($e, 'System.OperationCanceledException') && $eq.exceptions.filter(() => request.cancellation.isCancellationRequested)) {} else {
+                failure = error;
             }
-            answers.push(new CodeCompletionAnswer(providers[i], document.line(position.line).length, list));
         }
         UiThread.run(() => {
-            for (const error of errors) this.failed?.(error);
-            this.deliver(generation, answers);
+            if (!(failure == null)) this.failed?.(failure);
+            this.deliver(request, new CodeCompletionAnswer(request.provider, request.word, askedLineLength, list));
         });
     }
 
-    deliver(generation: number, answers: CodeCompletionAnswer[]) {
-        if (generation !== this._generation || !this._active) return;
-        for (const answer of answers) {
-            let at = this._answers.findIndex((known) => (known.provider === answer.provider));
-            if (at >= 0) this._answers[at] = answer; else this._answers.push(answer);
-        }
-        if (this._answers.every((answer) => answer.offers.length === 0 && !answer.isIncomplete)) {
+    deliver(request: CodeCompletionRequest, answer: CodeCompletionAnswer) {
+        if (!this._active || request.answered || $eq.collections.indexOf(this._requests, request, 'item') < 0) return;
+        request.answered = true;
+        let known = this._answers.findIndex((held) => (held.provider === answer.provider));
+        if (known >= 0) this._answers.splice(known, 1);
+        let rank = this.rankOf(answer.provider);
+        let at = 0;
+        while (at < this._answers.length && this.rankOf(this._answers[at].provider) <= rank) at++;
+        this._answers.splice(at, 0, answer);
+        if (this._answers.every((held) => held.offers.length === 0 && !held.isIncomplete) && !this.isLoading) {
             this.close(true);
             return;
         }
+        let selected = this._selected >= 0 ? CodeCompletion.entryOf(this._shown[this._selected].item) : null;
         this.gather();
         this.filter();
+        if (!(selected == null)) {
+            for (let i = 0; i < this._shown.length; i++) {
+                if (CodeCompletion.entryOf(this._shown[i].item) !== selected) continue;
+                this._selected = i;
+                break;
+            }
+        }
         this.askAgainIfIncomplete();
         this.resolveSelected();
         this.changed?.();
+    }
+
+    rankOf(provider: any) {
+        for (let i = 0; i < $eq.collections.count(this.providers); i++) if (($eq.collections.item(this.providers, i) === provider)) return i;
+        return $eq.collections.count(this.providers);
     }
 
     follow() {
@@ -188,12 +195,19 @@ export class CodeCompletion {
     }
 
     askAgainIfIncomplete() {
-        if (this.word() === this._askedWord) return;
+        let word = this.word();
         let incomplete: any[] = [];
         for (const answer of this._answers) {
-            if (answer.isIncomplete) incomplete.push(answer.provider);
+            if (answer.isIncomplete && this.lastAskedWord(answer.provider) !== word) incomplete.push(answer.provider);
         }
-        if (incomplete.length > 0) this.ask('incomplete', null, incomplete);
+        if (incomplete.length > 0) this.ask('incomplete', null, incomplete, false);
+    }
+
+    lastAskedWord(provider: any) {
+        for (const request of this._requests) {
+            if ((request.provider === provider)) return request.word;
+        }
+        return null;
     }
 
     gather() {
@@ -202,7 +216,7 @@ export class CodeCompletion {
         for (const answer of this._answers) {
             for (const offer of answer.offers) {
                 let item = offer.item;
-                let key = $eq.text.format(item.label.length, null, undefined, undefined, 'int32') + ':' + item.label + (item.insertText ?? item.label);
+                let key = CodeCompletion.entryOf(item);
                 let group: any; 
                 if (!(groups.has(key) ? ((group = groups.get(key)), true) : ((group = 0), false))) {
                     group = groups.size;
@@ -260,6 +274,10 @@ export class CodeCompletion {
         }
     }
 
+    static entryOf(item: CodeCompletionItem) {
+        return $eq.text.format(item.label.length, null, undefined, undefined, 'int32') + ':' + item.label + (item.insertText ?? item.label);
+    }
+
     move(delta: number) {
         if (!this.isOpen || this._items.length < 2) return false;
         let count = this._items.length;
@@ -311,10 +329,9 @@ export class CodeCompletion {
     }
 
     close(raise: boolean) {
-        this._generation++;
-        let request = this._request;
+        let requests = this._requests.slice();
+        this._requests.splice(0);
         let list = this._list;
-        this._request = null;
         this._list = null;
         let was = this._active;
         this._active = false;
@@ -324,18 +341,13 @@ export class CodeCompletion {
         this._items = [];
         this._shown = [];
         this._selected = -1;
-        this.cancel(request);
+        for (const request of requests) this.cancel(request.cancellation);
         this.cancel(list);
         if (raise && was) this.changed?.();
     }
 
     cancel(source: CancellationTokenSource | null) {
-        if (source == null) return;
-        try {
-            source.cancel();
-        } catch (error: any) {
-            this.failed?.(error);
-        }
+        return ProviderRequest.cancel(source, this.failed);
     }
 
     resolveSelected() {

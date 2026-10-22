@@ -22,7 +22,7 @@ internal static class CodeHoverCard
     internal const int MaxLinesEach = 8;
 
     /// <summary>The card's frame, a hairline.</summary>
-    private const float Border = 1;
+    internal const float Border = 1;
 
     /// <summary>A problem's severity mark: a dot this wide, before its message.</summary>
     private const float Mark = 8;
@@ -183,7 +183,7 @@ internal static class CodeHoverCard
     };
 
     /// <summary>The widest paragraph of <paramref name="text"/> in <paramref name="style"/>.</summary>
-    private static float Widest(ComponentContext context, string text, TypeStyle style)
+    internal static float Widest(ComponentContext context, string text, TypeStyle style)
     {
         var widest = 0f;
         foreach (var paragraph in text.Split('\n'))
@@ -193,7 +193,7 @@ internal static class CodeHoverCard
 
     /// <summary>How many lines <paramref name="text"/> takes <paramref name="room"/> wide: at least one
     /// per paragraph, and no more than <see cref="MaxLinesEach"/>.</summary>
-    private static int LinesOf(ComponentContext context, string text, TypeStyle style, float room)
+    internal static int LinesOf(ComponentContext context, string text, TypeStyle style, float room)
     {
         var lines = 0;
         foreach (var paragraph in text.Split('\n'))

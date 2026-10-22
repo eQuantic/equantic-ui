@@ -91,8 +91,9 @@ request the pointer made that is still waiting or unanswered SHALL end the same 
 while a card could show (a hover provider, or a problem), and a press SHALL end a chord half typed, as
 SHALL any key but a modifier, whatever takes it.
 Escape SHALL close a card and be claimed when one shows, after a completion list showing, which it
-closes first. A card the keyboard asked for SHALL close when the caret moves or the text changes. A
-card asked for over one that shows SHALL replace it, and SHALL announce that it closed while nothing is
+closes first, and a completion list asked for and not yet showing SHALL go with the card. A card the
+keyboard asked for SHALL close when the caret moves or the text changes. A card asked for over one that
+shows SHALL replace it, and SHALL announce that it closed while nothing is
 there to show yet. The pointer leaving SHALL end only what the pointer asked for: a card the keyboard
 showed stays, and so does a request the keyboard made that its providers have not answered yet.
 
@@ -110,6 +111,13 @@ showed stays, and so does a request the keyboard made that its providers have no
 
 - **WHEN** a card shows and Escape is pressed
 - **THEN** the card closes, the editor claims the key, and Tab still indents
+
+#### Scenario: Escape over a list not yet showing
+
+- **WHEN** a word is typed whose completion provider has not answered, ⌘K ⌘I shows a card, and Escape is
+  pressed
+- **THEN** the card closes, the list asked for is dropped, its answer opens no list, and Tab still
+  indents
 
 #### Scenario: The pointer leaving while the keyboard asks
 

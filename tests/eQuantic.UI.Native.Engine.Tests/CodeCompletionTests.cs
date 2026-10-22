@@ -76,6 +76,14 @@ public class CodeCompletionTests : IDisposable
 
         public void Answer(int request, params string[] labels) =>
             _pending[request].SetResult(new CodeCompletionList(labels.Select(label => new CodeCompletionItem(label)).ToList()));
+
+        public void AnswerItems(int request, params CodeCompletionItem[] items) =>
+            _pending[request].SetResult(new CodeCompletionList(items));
+
+        /// <summary>Answers with <paramref name="labels"/>, asking to be asked again as the word changes.</summary>
+        public void AnswerIncomplete(int request, params string[] labels) =>
+            _pending[request].SetResult(new CodeCompletionList(
+                labels.Select(label => new CodeCompletionItem(label)).ToList(), true));
     }
 
     /// <summary>A UI thread that is never the caller's: everything is posted, and runs when drained.</summary>
@@ -551,6 +559,186 @@ public class CodeCompletionTests : IDisposable
         dispatcher.Drain();
         editor.Completion.IsOpen.Should().BeTrue();
         Labels(editor).Should().Equal("Column");
+    }
+
+    // ---- answers one by one (#620) ----------------------------------------------------------------
+
+    /// <summary>
+    /// A provider that never answers, a language server that hangs, holds back no other: each answer shows
+    /// as it arrives. The list waited for every provider, so the language's words and the document's were
+    /// held back for every word typed after it.
+    /// </summary>
+    [Fact]
+    public void AProviderThatNeverAnswers_HoldsBackNoOther()
+    {
+        var never = new LateProvider();
+        var editor = Editor("", never, Offering("Column", "Count"));
+
+        Type(editor, "Co");
+
+        Labels(editor).Should().Equal("Column", "Count");
+        editor.Completion.IsLoading.Should().BeTrue("a provider asked has not answered");
+    }
+
+    /// <summary>
+    /// A later answer is listed in the order of the providers, whatever the order the answers landed in, and
+    /// the entry selected stays selected: the first provider's copy of an entry both offer is the one listed,
+    /// as it would be had they answered together.
+    /// </summary>
+    [Fact]
+    public void ALaterAnswer_IsListedInTheProvidersOrder_AndTheSelectedEntryStaysSelected()
+    {
+        var first = new LateProvider();
+        var second = new Provider();
+        second.Items.Add(new CodeCompletionItem("Column") { Detail = "the second's" });
+        var editor = Editor("", first, second);
+        Type(editor, "Co");
+        SelectedLabel(editor).Should().Be("Column");
+
+        first.AnswerItems(0, new CodeCompletionItem("Color"), new CodeCompletionItem("Column") { Detail = "the first's" },
+            new CodeCompletionItem("Count"));
+
+        Labels(editor).Should().Equal("Color", "Column", "Count");
+        SelectedLabel(editor).Should().Be("Column", "the entry selected stays selected when an answer lands");
+        editor.Completion.Items[editor.Completion.Selected].Item.Detail.Should().Be("the first's",
+            "the first provider's copy is listed, whichever answered first");
+        editor.Completion.IsLoading.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Asking a provider again, because it called its answer incomplete, cancels its own request and no
+    /// other: the answer a slow provider still owes lands. Every request was one, and asking one provider
+    /// again dropped the others' answers for good.
+    /// </summary>
+    [Fact]
+    public void AnIncompleteAnswerAskedAgain_LeavesASlowProvidersRequestOut()
+    {
+        var slow = new LateProvider();
+        var incomplete = new Provider { Incomplete = true };
+        incomplete.Items.Add(new CodeCompletionItem("Column"));
+        var editor = Editor("", slow, incomplete);
+
+        Type(editor, "Co");
+
+        incomplete.Asked.Should().HaveCount(2, "the word changed, and its answer was incomplete");
+        slow.Count.Should().Be(1, "the slow provider was asked once");
+        slow.Cancellations[0].IsCancellationRequested.Should().BeFalse("its request is still wanted");
+        slow.Answer(0, "Count");
+        Labels(editor).Should().Equal("Column", "Count");
+    }
+
+    /// <summary>
+    /// Each incomplete answer is asked for again once the word is not the one IT answered for: a slow
+    /// provider's answer, for a word left behind while a quicker one was asked again, is asked again too.
+    /// One word was kept for the whole list, the one asked last, and the slow answer matched it.
+    /// </summary>
+    [Fact]
+    public void ASlowIncompleteAnswer_ForAWordLeftBehind_IsAskedForAgain()
+    {
+        var slow = new LateProvider();
+        var quick = new Provider { Incomplete = true };
+        quick.Items.Add(new CodeCompletionItem("Column"));
+        var editor = Editor("", quick, slow);
+        editor.HandleText("C");
+        editor.HandleText("o");
+        quick.Asked.Should().HaveCount(2, "the quick answer was incomplete and the word changed");
+
+        slow.AnswerIncomplete(0, "Count");
+
+        slow.Count.Should().Be(2, "its answer was for \"C\", and the word is \"Co\"");
+        slow.AnswerIncomplete(1, "Count");
+        slow.Count.Should().Be(2, "its answer is now for the word typed");
+        Labels(editor).Should().Equal("Column", "Count");
+    }
+
+    /// <summary>
+    /// A letter typed and then backspaced replaces the request still out for the word with the letter:
+    /// the answer in hand is for the word typed, but that request's answer would land over it, with what
+    /// the provider offers for a word nobody is typing any more. The word the provider was asked for last
+    /// decides, not the word of the answer it holds.
+    /// </summary>
+    [Fact]
+    public void ALetterTypedThenBackspaced_ReplacesTheRequestOutForTheWordWithIt()
+    {
+        var server = new LateProvider();
+        var editor = Editor("", server);
+        editor.HandleText("C");
+        server.AnswerIncomplete(0, "Cat", "Column");
+        editor.HandleText("o");
+        server.Count.Should().Be(2, "the answer was incomplete, and the word changed");
+
+        Key(editor, "Backspace").Should().BeTrue();
+
+        server.Count.Should().Be(3, "asked again for \"C\", which its request still out was not for");
+        server.Cancellations[1].IsCancellationRequested.Should().BeTrue("the request for \"Co\" is replaced");
+        server.Answer(1, "Column");
+        Labels(editor).Should().Equal("Cat", "Column");
+        server.AnswerIncomplete(2, "Cat", "Column");
+        Labels(editor).Should().Equal("Cat", "Column");
+        server.Count.Should().Be(3);
+    }
+
+    /// <summary>
+    /// A list asked for is heard of once its requests are out, so <see cref="CodeCompletion.IsLoading"/>
+    /// already says so: it was heard of before the requests were made, and a list whose providers all
+    /// answer late never said it was loading, whoever drew a spinner from <c>Changed</c>.
+    /// </summary>
+    [Fact]
+    public void AListAskedFor_IsHeardOfAsLoading_UntilItsProviderAnswers()
+    {
+        var server = new LateProvider();
+        var editor = Editor("", server);
+        var heard = new List<bool>();
+        editor.Completion.Changed += () => heard.Add(editor.Completion.IsLoading);
+
+        editor.Completion.Invoke().Should().BeTrue();
+        heard.Should().Equal([true], "⌃Space asked a provider that has not answered");
+        server.Answer(0, "Column");
+        heard.Should().Equal([true, false]);
+
+        editor.Completion.Dismiss();
+        heard.Clear();
+        editor.HandleText("C");
+        heard.Should().Equal([true], "a word started asked it again");
+    }
+
+    /// <summary>
+    /// An answer that withdraws every entry the list showed takes them away at once, though another
+    /// provider is still out: the list waited for that provider without taking the answer, and went on
+    /// showing what had been withdrawn.
+    /// </summary>
+    [Fact]
+    public void AnAnswerWithdrawingEveryEntry_TakesThemAway_WhileAnotherProviderIsOut()
+    {
+        var withdrawing = new LateProvider();
+        var slow = new LateProvider();
+        var editor = Editor("", withdrawing, slow);
+        editor.HandleText("C");
+        withdrawing.AnswerIncomplete(0, "Column");
+        Labels(editor).Should().Equal("Column");
+        editor.HandleText("o");
+        withdrawing.Count.Should().Be(2, "its answer was incomplete");
+
+        withdrawing.Answer(1);
+
+        editor.Completion.IsOpen.Should().BeFalse("no provider offers anything for \"Co\" now");
+        editor.Completion.IsLoading.Should().BeTrue("the slow provider may still offer something");
+        slow.Answer(0, "Count");
+        Labels(editor).Should().Equal("Count");
+    }
+
+    [Fact]
+    public void TheListClosesForWantOfOffers_OnlyOnceEveryProviderHasAnswered()
+    {
+        var late = new LateProvider();
+        var editor = Editor("", late, Offering());
+        Type(editor, "Co");
+        editor.Completion.IsLoading.Should().BeTrue("the late provider may still offer something");
+
+        late.AnswerItems(0);
+
+        editor.Completion.IsLoading.Should().BeFalse();
+        editor.Completion.Dismiss().Should().BeFalse("nothing was offered, and the list closed");
     }
 
     // ---- what providers can say ---------------------------------------------------------------------

@@ -56,9 +56,13 @@ public class CancellationStrategy : IExpressionIrStrategy
         context.SemanticHelper.GetSymbol(access) is { ContainingType: { } declaring }
         && Members.ContainsKey(declaring.OriginalDefinition.ToDisplayString());
 
+    /// <summary>
+    /// The import of <c>$eq</c> is added where a name of it is written, and only there: a member of a source
+    /// or a token is the twin's own (<c>source.cancel()</c>), and a module whose cancellation is only that
+    /// imported a <c>$eq</c> it never read, which a type-checked module refuses (TS6133).
+    /// </summary>
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
-        context.UsedHelpers.Add(Eq.Import);
         switch (node)
         {
             case BaseObjectCreationExpressionSyntax creation:
@@ -70,7 +74,10 @@ public class CancellationStrategy : IExpressionIrStrategy
                 var arguments = invocation.ArgumentList.Arguments
                     .Select(argument => context.Converter.ConvertIr(argument.Expression)).ToList();
                 if (symbol is { IsStatic: true, Name: "CreateLinkedTokenSource" })
+                {
+                    context.UsedHelpers.Add(Eq.Import);
                     return JsExpr.Call(JsExpr.Identifier(Eq.CancellationLinked), arguments);
+                }
                 if (!Supported(symbol))
                     return Refused(invocation, symbol, context);
                 return JsExpr.Call(
@@ -81,7 +88,11 @@ public class CancellationStrategy : IExpressionIrStrategy
             case MemberAccessExpressionSyntax access:
             {
                 var symbol = context.SemanticHelper.GetSymbol(access)!;
-                if (symbol is { IsStatic: true, Name: "None" }) return JsExpr.Identifier(Eq.CancellationNone);
+                if (symbol is { IsStatic: true, Name: "None" })
+                {
+                    context.UsedHelpers.Add(Eq.Import);
+                    return JsExpr.Identifier(Eq.CancellationNone);
+                }
                 if (!Supported(symbol)) return Refused(access, symbol, context);
                 return JsExpr.Member(context.Converter.ConvertIr(access.Expression), symbol.Name.ToCamelCase());
             }
@@ -93,6 +104,7 @@ public class CancellationStrategy : IExpressionIrStrategy
     /// <c>new CancellationToken(canceled)</c>: the one cancelled token, or the one that never is.</summary>
     private static JsExpr Creation(BaseObjectCreationExpressionSyntax creation, ConversionContext context)
     {
+        context.UsedHelpers.Add(Eq.Import);
         // The runtime's source takes a delay or nothing, and its token a flag. A constructor that takes
         // more (a TimeProvider beside the delay) went out without it, and the source was timed by the
         // real clock where the C# chose another.
