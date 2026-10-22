@@ -179,6 +179,93 @@ public class CodeKeymapTableTests : IDisposable
         editor.Selection.Should().Be(Everything(editor));
     }
 
+    /// <summary>
+    /// An app's chord of two keys starts on a key the defaults bind on their own: its bindings come before
+    /// every default, of either kind. The defaults' ⌘A selected all, and the app's ⌘A ⌘D never started
+    /// (Copilot's first round on #1027).
+    /// </summary>
+    [Fact]
+    public void AnAppsChordOfTwoKeys_StartsOnAKeyTheDefaultsBindAlone()
+    {
+        var editor = Editor();
+        var before = editor.Selection;
+        editor.KeyBindings.Add(new CodeKeyBinding(KeyChord.Command("d"), CodeCommand.CursorDocumentEnd) { First = KeyChord.Command("a") });
+
+        Press(editor, "a", KeyModifiers.Command).Should().BeTrue("the app's first half waits");
+        editor.Selection.Should().Be(before, "and the defaults' select all did not run");
+        Press(editor, "d", KeyModifiers.Command).Should().BeTrue();
+
+        editor.Caret.Should().Be(editor.Document.End);
+    }
+
+    /// <summary>A command that does nothing answers false, so the next command its chord names runs: the
+    /// card with nothing to explain claimed the key, and the select all after it never ran.</summary>
+    [Fact]
+    public void ACardWithNothingToExplain_LetsTheChordsNextCommandRun()
+    {
+        var editor = Editor();
+        editor.KeyBindings.Add(new CodeKeyBinding(KeyChord.Command("j"), CodeCommand.HoverShow));
+        editor.KeyBindings.Add(new CodeKeyBinding(KeyChord.Command("j"), CodeCommand.SelectAll));
+
+        editor.CanExecute(CodeCommand.HoverShow).Should().BeFalse("no provider, and no problem at the caret");
+        Press(editor, "j", KeyModifiers.Command).Should().BeTrue();
+
+        editor.Hover.IsOpen.Should().BeFalse();
+        editor.Selection.Should().Be(Everything(editor));
+    }
+
+    /// <summary>A list of one entry has nowhere to walk, so its navigation cannot run: a menu greys it out,
+    /// and a chord of two keys ending in it does not wait (Copilot's first round on #1027).</summary>
+    [Fact]
+    public void AListOfOneEntry_CannotBeWalked()
+    {
+        var editor = Editor("x\n");
+        editor.Selection = new CodeRange(new CodePosition(0, 1));
+        editor.Completion.Providers.Add(new ListCompletionProvider(new CodeCompletionItem("xylophone")));
+        editor.Completion.Invoke().Should().BeTrue();
+        editor.Completion.Items.Should().ContainSingle();
+        editor.KeyBindings.Add(new CodeKeyBinding(KeyChord.Command("n"), CodeCommand.CompletionNext) { First = KeyChord.Command("g") });
+
+        foreach (var walk in new[] { CodeCommand.CompletionNext, CodeCommand.CompletionPrevious, CodeCommand.CompletionNextPage, CodeCommand.CompletionPreviousPage })
+            editor.CanExecute(walk).Should().BeFalse($"{walk} has nowhere to go");
+        editor.CanExecute(CodeCommand.CompletionAccept).Should().BeTrue("the one entry can still be accepted");
+        editor.CanExecute(CodeCommand.CompletionHide).Should().BeTrue();
+
+        Press(editor, "g", KeyModifiers.Command).Should().BeFalse("the chord's command could not run, so ⌘G is the host's");
+    }
+
+    /// <summary>⌘K waits only while a card could show at the caret: a problem elsewhere explains nothing
+    /// here, and ⌘K is the host's (a browser's Ctrl+K), as with no problem at all.</summary>
+    [Fact]
+    public void CommandK_WaitsOnlyWhileACardCouldShowAtTheCaret()
+    {
+        var editor = Editor();
+        editor.Diagnostics.Report([new CodeDiagnostic(new CodeRange(new CodePosition(2, 0), new CodePosition(2, 7)), "misspelt")]);
+
+        Press(editor, "k", KeyModifiers.Command).Should().BeFalse("the problem is on another line");
+
+        editor.Selection = new CodeRange(new CodePosition(2, 3));
+        Press(editor, "k", KeyModifiers.Command).Should().BeTrue("the caret is on the problem");
+        Press(editor, "i", KeyModifiers.Command).Should().BeTrue();
+        editor.Hover.IsOpen.Should().BeTrue("⌘K ⌘I showed the problem's card");
+    }
+
+    /// <summary>The key that completes a chord of two keys is the chord's even when its command found
+    /// nothing to do, as VS Code has it: it is never handed on as itself.</summary>
+    [Fact]
+    public void TheSecondHalf_IsTheChordsEvenWhenItsCommandDidNothing()
+    {
+        var editor = Editor();
+        editor.Diagnostics.Report([new CodeDiagnostic(new CodeRange(new CodePosition(1, 0), new CodePosition(1, 5)), "unused")]);
+        Press(editor, "k", KeyModifiers.Command).Should().BeTrue("the caret is on the problem");
+        // The problem goes before the second half: a build's report, an answer landing.
+        editor.Diagnostics.Report([]);
+
+        Press(editor, "i", KeyModifiers.Command).Should().BeTrue("⌘I completes ⌘K ⌘I");
+
+        editor.Hover.IsOpen.Should().BeFalse("there was nothing left to explain");
+    }
+
     /// <summary>The first half of a chord of two keys waits only while its second half's command could
     /// run: with no card to show, ⌘K is the host's.</summary>
     [Fact]

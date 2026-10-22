@@ -515,9 +515,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             case CodeCommand.SignatureHelpNext: return !Hover.IsOpen && SignatureHelp.Move(1);
             case CodeCommand.SignatureHelpPrevious: return !Hover.IsOpen && SignatureHelp.Move(-1);
             case CodeCommand.SignatureHelpHide: return DroppingAnUnshownList(SignatureHelp.Dismiss());
-            case CodeCommand.HoverShow:
-                Hover.ShowAt(Caret);
-                return true;
+            // False when no card could show (a list showing, nothing to explain at the caret), so the next
+            // command a chord names runs.
+            case CodeCommand.HoverShow: return Hover.ShowAt(Caret);
             case CodeCommand.HoverHide: return DroppingAnUnshownList(Hover.Dismiss());
             case CodeCommand.ProblemNext: return Diagnostics.Next(backward: false) is not null;
             case CodeCommand.ProblemPrevious: return Diagnostics.Next(backward: true) is not null;
@@ -558,15 +558,17 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         CodeCommand.Undo => !ReadOnly && History.CanUndo,
         CodeCommand.Redo => !ReadOnly && History.CanRedo,
         CodeCommand.CompletionShow => !ReadOnly && Completion.Providers.Count > 0,
+        // A list of one entry has nowhere to walk: Move and MovePage refuse it, and the arrows are the
+        // overloads' or the caret's.
         CodeCommand.CompletionNext or CodeCommand.CompletionPrevious or CodeCommand.CompletionNextPage
-            or CodeCommand.CompletionPreviousPage or CodeCommand.CompletionAccept
-            or CodeCommand.CompletionHide => Completion.IsOpen,
+            or CodeCommand.CompletionPreviousPage => Completion.IsOpen && Completion.Items.Count > 1,
+        CodeCommand.CompletionAccept or CodeCommand.CompletionHide => Completion.IsOpen,
         CodeCommand.CompletionAcceptChangingText => Completion.IsOpen && Completion.AcceptChangesText,
         CodeCommand.SignatureHelpShow => SignatureHelp.Providers.Count > 0,
         CodeCommand.SignatureHelpNext or CodeCommand.SignatureHelpPrevious =>
             !Hover.IsOpen && SignatureHelp.Help is { } help && help.Signatures.Count > 1,
         CodeCommand.SignatureHelpHide => SignatureHelp.IsOpen,
-        CodeCommand.HoverShow => Hover.Providers.Count > 0 || Diagnostics.Items.Count > 0,
+        CodeCommand.HoverShow => Hover.CanShowAt(Caret),
         CodeCommand.HoverHide => Hover.IsOpen,
         CodeCommand.ProblemNext or CodeCommand.ProblemPrevious => Diagnostics.Items.Count > 0,
         _ => true,

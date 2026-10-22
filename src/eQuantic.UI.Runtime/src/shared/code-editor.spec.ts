@@ -2016,4 +2016,70 @@ describe('the keys an app binds', () => {
     const selection = component.editor.selection;
     expect([selection.start.line, selection.start.column, selection.end.line, selection.end.column]).toEqual([0, 0, 1, 5]);
   });
+
+  /**
+   * Copy and Cut bound to a key the browser gives no clipboard event reach the clipboard through the
+   * Clipboard API, and the browser's own ⌘C still goes to its copy event (Copilot's first round on
+   * #1027: a rebound Copy got no clipboard on the web and did nothing).
+   */
+  it('reaches the clipboard for Copy and Cut bound to other keys, and leaves ⌘C to the copy event', async () => {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const { CodeKeyBinding } = await import('./components/CodeKeyBinding');
+    const { KeyChord } = await import('./vocabulary');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const context = {
+      theme,
+      textPrimary: theme.textPrimary,
+      density: 'comfortable',
+      typeScale: 1,
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    const written: string[] = [];
+    const clipboard = { writeText: (text: string) => (written.push(text), Promise.resolve()) };
+    const saved = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    Object.defineProperty(navigator, 'clipboard', { value: clipboard, configurable: true });
+    try {
+      const component = new CodeEditor('alpha beta\ngamma', 'csharp');
+      (component as unknown as Record<string, unknown>).keyBindings = [
+        new CodeKeyBinding(KeyChord.command('d'), 'copy'),
+        new CodeKeyBinding(KeyChord.command('e'), 'cut'),
+      ];
+      const lower = () => lowerVisualNode(component.build(context as never) as never, context as never);
+      lower();
+      const input = nodesWhere(lower(), (node) => node.tag === 'textarea')[0];
+      const press = (key: string) => {
+        let prevented = false;
+        (input.events['keydown'] as unknown as (event: unknown) => void)({
+          key,
+          shiftKey: false,
+          altKey: false,
+          metaKey: true,
+          ctrlKey: false,
+          isComposing: false,
+          keyCode: 0,
+          target: { value: '' },
+          preventDefault: () => {
+            prevented = true;
+          },
+        });
+        return prevented;
+      };
+      component.editor.selectAll();
+
+      expect(press('c'), "⌘C is the browser's, whose copy event carries the text").toBe(false);
+      expect(written, 'and the keymap wrote nothing for it').toEqual([]);
+      expect(press('d'), 'a Copy bound to ⌘D is the editor\'s').toBe(true);
+      expect(written).toEqual(['alpha beta\ngamma']);
+      expect(press('e'), 'and a Cut bound to ⌘E').toBe(true);
+      expect(written).toEqual(['alpha beta\ngamma', 'alpha beta\ngamma']);
+      expect(component.editor.document.text, 'the cut took the text').toBe('');
+    } finally {
+      if (saved) Object.defineProperty(navigator, 'clipboard', saved);
+      else delete (navigator as unknown as Record<string, unknown>).clipboard;
+    }
+  });
 });

@@ -798,7 +798,6 @@ Apple problems / Command => claimed text=// alpha beta\n    gamma delta\nepsilon
 Apple problems / Shift+Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
 Apple problems Slash Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
 Apple problems Slash Shift+Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
-Apple problems k Command => claimed unchanged
 Apple problems F8 - => claimed selection=1:4>1:4 card=open
 Apple problems F8 Shift => claimed selection=2:8>2:8 card=open
 Apple chord ArrowLeft - => claimed selection=1:5>1:5
@@ -1587,7 +1586,6 @@ Standard problems / Command => claimed text=// alpha beta\n    gamma delta\nepsi
 Standard problems / Shift+Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
 Standard problems Slash Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
 Standard problems Slash Shift+Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
-Standard problems k Command => claimed unchanged
 Standard problems F8 - => claimed selection=1:4>1:4 card=open
 Standard problems F8 Shift => claimed selection=2:8>2:8 card=open
 Standard chord ArrowLeft - => claimed selection=1:5>1:5

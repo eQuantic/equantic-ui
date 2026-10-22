@@ -18,6 +18,7 @@ import { Dictionary, plainBag } from '../utils/dictionary';
 import { PINNED_MARKER } from './markers';
 import type { EventHandler, HtmlNode } from '../core/types';
 import { CanvasPointer } from './canvas-pointer';
+import { WebTextClipboard } from './devices/text-clipboard';
 // Leaf helpers — see css-values for why they are not defined here.
 import { hex, modifiersOf, num, tokenValue } from './css-values';
 export { num, tokenValue };
@@ -753,9 +754,13 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     // An input method owns the keyboard while it composes: its keys build the composition, and
     // Enter, Escape and the arrows belong to its candidate window, not to the document.
     if (event.isComposing || event.keyCode === 229) return;
-    // No clipboard is handed over: the browser's own copy, cut and paste events carry the text
-    // (see below), and claiming ⌘C here would cancel the very event that brings it.
-    if (model.handleKey(event.key, modifiersOf(event), convention, null)) {
+    // The browser answers its own clipboard keys with copy, cut and paste events that carry the text
+    // (see below), so those keys go without a clipboard: claiming ⌘C here would cancel the very event
+    // that brings it. Any other key an app binds to Copy or Cut reaches the clipboard itself, through
+    // the service a page's own Copy button uses. One it binds to Paste finds nothing to read there: a
+    // page reads the clipboard only in a paste event or behind a prompt (`WebTextClipboard`, #1028).
+    const clipboard = browserClipboardKey(event, convention) ? null : codeClipboard;
+    if (model.handleKey(event.key, modifiersOf(event), convention, clipboard)) {
       event.preventDefault();
       changed();
     }
@@ -992,6 +997,24 @@ function keyboardConvention(): 'apple' | 'standard' {
     navigator.platform ??
     '';
   return /mac|iphone|ipad|ipod/i.test(platform) ? 'apple' : 'standard';
+}
+
+/** What a code surface hands its keys as the clipboard, for a key the browser gives no clipboard event. */
+const codeClipboard = new WebTextClipboard();
+
+/**
+ * Whether the browser answers this key with a clipboard event of its own: C, X and V with ⌘ or Ctrl, and
+ * off a Mac Ctrl+Insert, Shift+Insert and Shift+Delete too. Ctrl counts on a Mac as well, though its
+ * browser copies nothing there: the keymap reads Ctrl as ⌘ on the web (`modifiersOf`), and those keys
+ * kept going without a clipboard, as every key did before an app could bind its own.
+ */
+function browserClipboardKey(event: KeyboardEvent, convention: 'apple' | 'standard'): boolean {
+  const command = event.metaKey || event.ctrlKey;
+  const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+  if (command && !event.altKey && (key === 'c' || key === 'x' || key === 'v')) return true;
+  if (convention === 'apple') return false;
+  if (key === 'Insert') return (command || event.shiftKey) && !event.altKey;
+  return key === 'Delete' && event.shiftKey && !command && !event.altKey;
 }
 
 /** The modifier that makes a deletion take a word: ⌥ on Apple, Ctrl (Command there) elsewhere. */

@@ -53,14 +53,24 @@ export class CodeKeymap {
         let chord = new KeyChord(key, modifiers);
         let bindings = CodeKeymap.bindings(editor, convention);
         let waited: any; 
-        if ((waited = first) != null && CodeKeymap.run(editor, bindings, chord, waited, clipboard)) return true;
-        if (CodeKeymap.run(editor, bindings, chord, null, clipboard)) return true;
+        if ((waited = first) != null) {
+            let completes = false;
+            for (const binding of bindings) {
+                let starts: any; 
+                if (!((starts = binding.first) != null) || !CodeKeymap.matches(starts, waited) || !CodeKeymap.matches(binding.chord, chord)) continue;
+                completes = true;
+                if (editor.execute(binding.command, clipboard)) return true;
+            }
+            if (completes) return true;
+        }
         for (const binding of bindings) {
             let starts: any; 
-            if (!((starts = binding.first) != null) || !CodeKeymap.matches(starts, chord)) continue;
-            if (!editor.canExecute(binding.command)) continue;
-            editor.pendingChord = chord;
-            return true;
+            if ((starts = binding.first) != null) {
+                if (!CodeKeymap.matches(starts, chord) || !editor.canExecute(binding.command)) continue;
+                editor.pendingChord = chord;
+                return true;
+            }
+            if (CodeKeymap.matches(binding.chord, chord) && editor.execute(binding.command, clipboard)) return true;
         }
         return false;
     }
@@ -80,14 +90,6 @@ export class CodeKeymap {
             if (!named) bindings.push(binding);
         }
         return bindings;
-    }
-
-    static run(editor: CodeEditorController, bindings: CodeKeyBinding[], chord: KeyChord, first: KeyChord | null, clipboard: any) {
-        for (const binding of bindings) {
-            if (!CodeKeymap.matches(binding.chord, chord) || !CodeKeymap.sameFirst(binding.first, first)) continue;
-            if (editor.execute(binding.command, clipboard)) return true;
-        }
-        return false;
     }
 
     static matches(bound: KeyChord, pressed: KeyChord) {

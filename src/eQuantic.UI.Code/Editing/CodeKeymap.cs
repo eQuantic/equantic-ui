@@ -76,20 +76,35 @@ public static class CodeKeymap
 
         var chord = new KeyChord(key, modifiers);
         var bindings = Bindings(editor, convention);
-        // The second half of a chord of two keys, then the chord on its own: a key that is not the second
-        // half is handled as itself.
-        if (first is { } waited && Run(editor, bindings, chord, waited, clipboard)) return true;
-        if (Run(editor, bindings, chord, null, clipboard)) return true;
+        // The second half of a chord of two keys. It is the chord's even when none of its commands did
+        // anything, as VS Code has it: the key that completes a chord is never handed on as itself. A key
+        // that is not the second half is handled as itself.
+        if (first is { } waited)
+        {
+            var completes = false;
+            foreach (var binding in bindings)
+            {
+                if (binding.First is not { } starts || !Matches(starts, waited) || !Matches(binding.Chord, chord))
+                    continue;
+                completes = true;
+                if (editor.Execute(binding.Command, clipboard)) return true;
+            }
+            if (completes) return true;
+        }
 
-        // ---- the first half of a chord of two keys -------------------------------------------------
-        // It waits only while the second half's command could run: with no card to show, a browser's
-        // Ctrl+K stays the browser's.
+        // ---- the chord on its own, and the first half of a chord of two keys --------------------------
+        // In the table's order, so an app's binding of either kind comes before every default: an app's
+        // ⌘A ⌘D starts on ⌘A though the defaults select all there. A first half waits only while its
+        // second half's command could run: with no card to show, a browser's Ctrl+K stays the browser's.
         foreach (var binding in bindings)
         {
-            if (binding.First is not { } starts || !Matches(starts, chord)) continue;
-            if (!editor.CanExecute(binding.Command)) continue;
-            editor.PendingChord = chord;
-            return true;
+            if (binding.First is { } starts)
+            {
+                if (!Matches(starts, chord) || !editor.CanExecute(binding.Command)) continue;
+                editor.PendingChord = chord;
+                return true;
+            }
+            if (Matches(binding.Chord, chord) && editor.Execute(binding.Command, clipboard)) return true;
         }
         return false;
     }
@@ -116,19 +131,6 @@ public static class CodeKeymap
             if (!named) bindings.Add(binding);
         }
         return bindings;
-    }
-
-    /// <summary>Runs the commands <paramref name="chord"/> names after <paramref name="first"/>, in order,
-    /// until one runs: that one claims the key.</summary>
-    private static bool Run(CodeEditorController editor, IReadOnlyList<CodeKeyBinding> bindings, KeyChord chord,
-        KeyChord? first, ITextClipboard? clipboard)
-    {
-        foreach (var binding in bindings)
-        {
-            if (!Matches(binding.Chord, chord) || !SameFirst(binding.First, first)) continue;
-            if (editor.Execute(binding.Command, clipboard)) return true;
-        }
-        return false;
     }
 
     /// <summary>Whether a key pressed is the chord bound: its modifiers exactly, a single letter in either
