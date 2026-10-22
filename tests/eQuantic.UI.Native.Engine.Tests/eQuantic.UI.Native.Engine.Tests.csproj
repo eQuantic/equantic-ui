@@ -88,5 +88,6 @@
     <!-- How a test starts a program: one deadline over the exit and both streams, and for dotnet a
          build that leaves nothing holding its output (#971). -->
     <Compile Include="..\Shared\ChildProcess.cs" Link="Shared\ChildProcess.cs" />
+    <Compile Include="..\Shared\SheetSlotTheme.cs" Link="Shared\SheetSlotTheme.cs" />
   </ItemGroup>
 </Project>

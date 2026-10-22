@@ -325,6 +325,71 @@ public class SheetSurfaceModelTests
     }
 
     [Fact]
+    public void AMovePastTheEdge_AsksForFrames_EvenOnTheCellItAlreadyReached()
+    {
+        // The host asks for frames only when a move answers true; the scroll the move arms needs them.
+        var sheet = new SheetController(rows: 200, cols: 8);
+        var scroll = SheetScrolls.Place(sheet);
+        ISheetSurfaceModel model = sheet;
+        var x = SheetScrolls.HeaderWidth + 96 + 48;
+        Press(sheet, new Point(x, SheetScrolls.HeaderHeight + 28 + 14));
+        model.HandlePointer(PointerPhase.Move, new Point(x, scroll.Viewport.Height - 2), KeyModifiers.None, 1, PointerKind.Mouse);
+
+        model.HandlePointer(PointerPhase.Move, new Point(x, scroll.Viewport.Height + 3), KeyModifiers.None, 1, PointerKind.Mouse)
+            .Should().BeTrue("the pointer is past the bottom edge, where the grid scrolls");
+        model.HandlePointer(PointerPhase.Move, new Point(x, scroll.Viewport.Height + 9), KeyModifiers.None, 1, PointerKind.Mouse)
+            .Should().BeTrue("and still past it");
+    }
+
+    [Fact]
+    public void ADragPastTheEdge_HoldsTheLastCellShown_UntilTheGridScrollsMore()
+    {
+        var sheet = new SheetController(rows: 200, cols: 8);
+        var scroll = SheetScrolls.Place(sheet);
+        var x = SheetScrolls.HeaderWidth + 96 + 48;
+        var model = Press(sheet, new Point(x, SheetScrolls.HeaderHeight + 28 + 14));
+
+        model.HandlePointer(PointerPhase.Move, new Point(x, scroll.Viewport.Height + 60), KeyModifiers.None, 1, PointerKind.Mouse);
+
+        var lastShown = sheet.Document.RowSpans.IndexAt(scroll.Offset.Down + scroll.Viewport.Height - SheetScrolls.HeaderHeight - 1);
+        sheet.Selection.Focus.Row.Should().Be(lastShown, "the drag holds the edge the person sees, as Excel's does");
+    }
+
+    [Fact]
+    public void ADragInsideTheCells_LeavesAGlideInFlightAlone()
+    {
+        var sheet = new SheetController(rows: 200, cols: 8);
+        var scroll = SheetScrolls.Place(sheet);
+        scroll.Arrange(new Size(900, 586), SheetScrolls.HeaderWidth + sheet.Document.ColumnSpans.Total,
+            SheetScrolls.HeaderHeight + sheet.Document.RowSpans.Total, SheetScrolls.HeaderWidth, SheetScrolls.HeaderHeight,
+            reduceMotion: false);
+        scroll.Wheel(0, 120, stepped: true, KeyModifiers.None);
+        var model = Press(sheet, CenterOf(1, 1, new Point(SheetScrolls.HeaderWidth, SheetScrolls.HeaderHeight)));
+
+        model.HandlePointer(PointerPhase.Move, CenterOf(3, 2, new Point(SheetScrolls.HeaderWidth, SheetScrolls.HeaderHeight)),
+            KeyModifiers.None, 1, PointerKind.Mouse);
+        scroll.Advance(0);
+        scroll.Advance(400);
+
+        scroll.Offset.Down.Should().BeApproximately(120, 0.5, "the notch's glide went on to where it was going");
+    }
+
+    [Fact]
+    public void ASelectionSetFromOutside_IsRevealed_AndAPressIsNot()
+    {
+        var sheet = new SheetController(rows: 2000, cols: 8);
+        var version = sheet.RevealVersion;
+
+        sheet.Selection = new SheetRange(new CellRef(500, 2));
+        sheet.RevealVersion.Should().BeGreaterThan(version);
+        sheet.RevealCell.Should().Be(new CellRef(500, 2));
+
+        version = sheet.RevealVersion;
+        Press(sheet, CenterOf(3, 1));
+        sheet.RevealVersion.Should().Be(version);
+    }
+
+    [Fact]
     public void Follow_WithNoDragInFlight_ChangesNothing()
     {
         var sheet = new SheetController(rows: 200, cols: 8);

@@ -2484,6 +2484,13 @@ public sealed class PhotonHost
             sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Down,
                 ToLocal(sheetRegions, i, sheetRegions[i].Bounds, point), modifiers, clickCount, kind);
             _sheetPressed = true;
+            // A pen's press on the cells is the sheet's, as a mouse's is: its drag selects, so the
+            // table's candidate pan lets go of it. A finger's stays a candidate, a tap or a pan.
+            if (kind != PointerKind.Touch && _tablePress is { Active: false } candidate)
+            {
+                _tablePress = null;
+                candidate.Viewport.Scroll.Pointer(PointerPhase.Cancel, Point.Zero, kind, _lastTimeMs);
+            }
             SurfaceChanged(sheetRegions[i].Surface.OnChanged);
             return true;
         }

@@ -1,3 +1,4 @@
+using eQuantic.UI.Tests;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Framework;
@@ -341,26 +342,46 @@ public class SpreadsheetViewportTests
     }
 
     [Fact]
-    public void AStylusPressTheGridTakesAsAPan_StopsSelecting_WhileTheGridScrollsUnderIt()
+    public void AStylusDrag_SelectsAsAMouseDoes_AndScrollsNothing()
     {
-        // A stylus press selects its cell at once, as a mouse's does; dragged past the slop it is the
-        // table's pan, and the sheet is told the press was taken away, or the grid moving under the
-        // still-held drag would stretch the selection as it scrolled.
+        // A pen on the cells is the sheet's, as on the web, where the surface captures it: its press
+        // selects at once and its drag stretches the selection, and the table's candidate pan lets go.
         var (host, sheet) = Open(200, 8);
-        var at = CenterOf(host, new CellRef(4, 3));
+        var from = CenterOf(host, new CellRef(1, 1));
+        var to = CenterOf(host, new CellRef(4, 3));
 
-        host.PressDown(at.X, at.Y, kind: PointerKind.Stylus);
-        sheet.Selection.Should().Be(new SheetRange(new CellRef(4, 3)));
+        host.PressDown(from.X, from.Y, kind: PointerKind.Stylus);
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 1)));
         for (var step = 1; step <= 10; step++)
         {
-            host.PointerMove(at.X, at.Y - 20 * step, PointerKind.Stylus);
+            host.PointerMove(from.X + (to.X - from.X) * step / 10, from.Y + (to.Y - from.Y) * step / 10, PointerKind.Stylus);
             Settle(host, 1);
         }
-        host.PressUp(at.X, at.Y - 200, PointerKind.Stylus);
+        host.PressUp(to.X, to.Y, PointerKind.Stylus);
         Settle(host);
 
-        Region(host).Viewport.Scroll.Offset.Down.Should().BeGreaterThan(0, "the grid scrolled down");
-        sheet.Selection.Should().Be(new SheetRange(new CellRef(4, 3)), "the pan selected nothing more");
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 1), new CellRef(4, 3)), "B2:D5");
+        Region(host).Viewport.Scroll.Offset.Should().Be(TableOffset.Zero, "the pen dragged no grid");
+    }
+
+    [Fact]
+    public void AFingersPan_AfterATap_TellsTheEngineThePressWasTakenAway()
+    {
+        // The protocol the engine is promised: a pan the table takes is a Cancel, never an Up.
+        var (host, sheet) = Open(200, 8);
+        Click(host, new CellRef(1, 1));
+        var at = CenterOf(host, new CellRef(8, 3));
+
+        host.PressDown(at.X, at.Y, kind: PointerKind.Touch);
+        for (var step = 1; step <= 10; step++)
+        {
+            host.PointerMove(at.X, at.Y - 20 * step, PointerKind.Touch);
+            Settle(host, 1);
+        }
+        host.PressUp(at.X, at.Y - 200, PointerKind.Touch);
+        Settle(host);
+        sheet.Follow().Should().BeFalse();
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 1)));
     }
 
     [Fact]

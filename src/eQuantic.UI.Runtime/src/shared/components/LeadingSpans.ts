@@ -37,7 +37,7 @@ export class LeadingSpans extends TableSpans {
     }
 
     indexAt(offset: number) {
-        return offset < this._lead ? 0 : this._rest.indexAt(offset - this._lead) + 1;
+        return offset < this._lead || this._rest.count === 0 ? 0 : this._rest.indexAt(offset - this._lead) + 1;
     }
 }
 

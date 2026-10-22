@@ -230,6 +230,24 @@ describe('SheetController (transpiled twin)', () => {
     expect(sheet.revealCell).toEqual(new CellRef(1, 0));
   });
 
+  it('asks for frames past the edge, holds the last cell shown, and reveals a selection set from outside', () => {
+    const sheet = new SheetController(200, 8);
+    const scroll = place(sheet);
+    const x = HEADER_WIDTH + 96 + 48;
+    sheet.handlePointer('down', new Point(x, HEADER_HEIGHT + 28 + 14), 0, 1, 'mouse');
+    sheet.handlePointer('move', new Point(x, scroll.viewport.height - 2), 0, 1, 'mouse');
+    expect(sheet.handlePointer('move', new Point(x, scroll.viewport.height + 3), 0, 1, 'mouse')).toBe(true);
+    const lastShown = sheet.document.rowSpans.indexAt(scroll.offset.down + scroll.viewport.height - HEADER_HEIGHT - 1);
+    sheet.handlePointer('move', new Point(x, scroll.viewport.height + 60), 0, 1, 'mouse');
+    expect(sheet.selection.focus.row).toBe(lastShown);
+    sheet.handlePointer('up', new Point(x, scroll.viewport.height + 60), 0, 1, 'mouse');
+
+    const version = sheet.revealVersion;
+    sheet.selection = new SheetRange(new CellRef(150, 2));
+    expect(sheet.revealVersion).toBeGreaterThan(version);
+    expect(sheet.revealCell).toEqual(new CellRef(150, 2));
+  });
+
   it('moves a page by the rows shown under the headers, and takes no page without a viewport', () => {
     const sheet = new SheetController(200, 8);
     expect(sheet.handleKey('PageDown', 0, null)).toBe(false);

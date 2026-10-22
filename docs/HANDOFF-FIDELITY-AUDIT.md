@@ -145,7 +145,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:2517-2528  _pan = null;
+  PhotonHost.cs:2524-2535  _pan = null;
           if (_drag is null)
           {
               var scrollRegions = _lastFrame.ScrollRegions;
@@ -2308,7 +2308,7 @@ the pill's 40 down.
 
   ```
   lowering.ts:3857-3874  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3171  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:3178  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · metric · **CONFIRMED**
@@ -2334,7 +2334,7 @@ the pill's 40 down.
 
   ```
   lowering.ts:3857-3874  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3171  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:3178  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · missing-feature · **unverified**

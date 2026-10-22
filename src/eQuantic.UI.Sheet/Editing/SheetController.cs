@@ -32,15 +32,24 @@ public sealed class SheetController : ISheetSurfaceModel
     /// <summary>Raised after any change to data or structure — never for selection moves.</summary>
     public Action<SheetEdit>? Changed { get; set; }
 
-    /// <summary>The selected rectangle. Setting it puts the active cell at its focus end.</summary>
+    /// <summary>The selected rectangle. Setting it puts the active cell at its focus end, and asks the
+    /// grid to bring that cell into view (<see cref="RevealVersion"/>), as a command that moves it does.</summary>
     public SheetRange Selection
     {
         get => _selection;
         set
         {
-            _selection = new SheetRange(Document.Clamp(value.Anchor), Document.Clamp(value.Focus));
-            _active = _selection.Focus;
+            Select(value);
+            Reveal();
         }
+    }
+
+    /// <summary>The selection, clamped into the grid, with the active cell at its focus end and nothing
+    /// asked of the grid: a press and a drag land on cells the person can see.</summary>
+    private void Select(SheetRange range)
+    {
+        _selection = new SheetRange(Document.Clamp(range.Anchor), Document.Clamp(range.Focus));
+        _active = _selection.Focus;
     }
 
     /// <summary>
@@ -317,7 +326,7 @@ public sealed class SheetController : ISheetSurfaceModel
         if (count < 1) return;
         var selectionBefore = _selection;
         var removed = axis == SheetAxis.Rows ? Document.ShiftRows(at, -count) : Document.ShiftCols(at, -count);
-        Selection = _selection;   // re-clamp into the smaller grid
+        Select(_selection);   // re-clamp into the smaller grid
         Commit(new SheetEdit
         {
             Kind = axis == SheetAxis.Rows ? SheetEditKind.DeleteRows : SheetEditKind.DeleteCols,
@@ -677,8 +686,12 @@ public sealed class SheetController : ISheetSurfaceModel
             {
                 if (!Filling && !_selecting) return false;
                 _dragAt = position;
-                Grid.Scroll?.AutoScroll(position);
-                return Drag(position);
+                // Past an edge of the cells the grid scrolls toward the pointer, and the move answers
+                // true whatever cell it reached, so the host asks for the frames that scroll it. Inside
+                // them nothing scrolls, and a glide in flight goes on.
+                var past = PastTheCells(position);
+                Grid.Scroll?.AutoScroll(past ? position : null);
+                return Drag(position) || past;
             }
             case PointerPhase.Up:
             {
@@ -722,23 +735,41 @@ public sealed class SheetController : ISheetSurfaceModel
     private void Press(CellRef cell, KeyModifiers modifiers, int clicks)
     {
         if ((modifiers & KeyModifiers.Shift) != 0) SelectTo(cell);
-        else Selection = new SheetRange(cell);
+        else Select(new SheetRange(cell));
         if (clicks >= 2) BeginEdit(Document.GetCell(cell));
     }
 
-    /// <summary>The drag in flight reaches the cell under <paramref name="position"/>.</summary>
+    /// <summary>The drag in flight reaches the cell under <paramref name="position"/>, held to the cells
+    /// the grid shows: past an edge it holds the edge, as Excel's does, and the rows beyond reach it as
+    /// the grid scrolls them in.</summary>
     private bool Drag(Point position)
     {
+        var cell = CellAt(InsideTheCells(position));
         if (Filling)
         {
             var before = FillTarget;
-            UpdateFill(CellAt(position));
+            UpdateFill(cell);
             return FillTarget != before;
         }
-        var cell = CellAt(position);
         if (cell == _selection.Focus) return false;
-        Selection = new SheetRange(_selection.Anchor, cell);
+        Select(new SheetRange(_selection.Anchor, cell));
         return true;
+    }
+
+    /// <summary>Whether a point lies past an edge of the part of the viewport where the cells scroll:
+    /// over a pinned header, or past the window. Without a viewport, nothing is past.</summary>
+    private bool PastTheCells(Point position) =>
+        Grid.Scroll is { } scroll
+        && (position.X < Grid.HeaderWidth || position.Y < Grid.HeaderHeight
+            || position.X >= scroll.Viewport.Width || position.Y >= scroll.Viewport.Height);
+
+    /// <summary>The point held inside the cells the viewport shows; without a viewport, the point.</summary>
+    private Point InsideTheCells(Point position)
+    {
+        if (Grid.Scroll is not { } scroll || scroll.Viewport.Width <= 0 || scroll.Viewport.Height <= 0) return position;
+        return new Point(
+            Math.Clamp(position.X, Grid.HeaderWidth, Math.Max(Grid.HeaderWidth, scroll.Viewport.Width - 1)),
+            Math.Clamp(position.Y, Grid.HeaderHeight, Math.Max(Grid.HeaderHeight, scroll.Viewport.Height - 1)));
     }
 
     private void StopDrag()

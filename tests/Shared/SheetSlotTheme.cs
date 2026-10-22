@@ -1,6 +1,6 @@
 using eQuantic.UI.Primitives;
 
-namespace eQuantic.UI.Web.Tests;
+namespace eQuantic.UI.Tests;
 
 /// <summary>A theme that answers a spreadsheet slot, and is <paramref name="inner"/> in everything else.</summary>
 internal sealed class SheetSlotTheme(IAppTheme inner, SheetTheme sheet) : IAppTheme

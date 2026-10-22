@@ -32,5 +32,6 @@ internal sealed class LeadingSpans : TableSpans
 
     public override double OffsetOf(int index) => index <= 0 ? 0 : _lead + _rest.OffsetOf(index - 1);
 
-    public override int IndexAt(double offset) => offset < _lead ? 0 : _rest.IndexAt(offset - _lead) + 1;
+    public override int IndexAt(double offset) =>
+        offset < _lead || _rest.Count == 0 ? 0 : _rest.IndexAt(offset - _lead) + 1;
 }

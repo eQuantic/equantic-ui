@@ -1,3 +1,4 @@
+using eQuantic.UI.Tests;
 using System.Runtime.CompilerServices;
 using eQuantic.UI.Material;
 using eQuantic.UI.Primitives;

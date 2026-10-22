@@ -42,8 +42,8 @@ export class SheetController {
     }
 
     set selection(value: SheetRange) {
-        this._selection = new SheetRange(this.document.clamp(value.anchor), this.document.clamp(value.focus));
-        this._active = this._selection.focus;
+        this.select(value);
+        this.reveal();
     }
 
     get activeCell(): CellRef {
@@ -52,6 +52,11 @@ export class SheetController {
 
     get filling(): boolean {
         return !(this.fillSource == null);
+    }
+
+    select(range: SheetRange) {
+        this._selection = new SheetRange(this.document.clamp(range.anchor), this.document.clamp(range.focus));
+        this._active = this._selection.focus;
     }
 
     move(dRow: number, dCol: number, motion: SheetMotionValue = 'cell', extend: boolean = false) {
@@ -222,7 +227,7 @@ export class SheetController {
         if (count < 1) return;
         let selectionBefore = this._selection;
         let removed = axis === 'rows' ? this.document.shiftRows(at, -count) : this.document.shiftCols(at, -count);
-        this.selection = this._selection;
+        this.select(this._selection);
         let $n56: any; 
         this.commit(($n56 = new SheetEdit(), $n56.kind = axis === 'rows' ? 'deleteRows' : 'deleteCols', $n56.at = at, $n56.count = count, $n56.removed = removed, $n56.selectionBefore = selectionBefore, $n56.selectionAfter = this._selection, $n56));
     }
@@ -419,8 +424,9 @@ export class SheetController {
                 {
                     if (!this.filling && !this._selecting) return false;
                     this._dragAt = position;
-                    this.grid.scroll?.autoScroll(position);
-                    return this.drag(position);
+                    let past = this.pastTheCells(position);
+                    this.grid.scroll?.autoScroll(past ? position : null);
+                    return this.drag(position) || past;
                 }
             case 'up':
                 {
@@ -455,20 +461,31 @@ export class SheetController {
     }
 
     press(cell: CellRef, modifiers: number, clicks: number) {
-        if ((modifiers & 1) !== 0) this.selectTo(cell); else this.selection = new SheetRange(cell);
+        if ((modifiers & 1) !== 0) this.selectTo(cell); else this.select(new SheetRange(cell));
         if (clicks >= 2) this.beginEdit(this.document.getCell(cell));
     }
 
     drag(position: Point) {
+        let cell = this.cellAt(this.insideTheCells(position));
         if (this.filling) {
             let before = this.fillTarget;
-            this.updateFill(this.cellAt(position));
+            this.updateFill(cell);
             return !$eq.equals(this.fillTarget, before);
         }
-        let cell = this.cellAt(position);
         if ($eq.equals(cell, this._selection.focus)) return false;
-        this.selection = new SheetRange(this._selection.anchor, cell);
+        this.select(new SheetRange(this._selection.anchor, cell));
         return true;
+    }
+
+    pastTheCells(position: Point) {
+        let scroll: any; 
+        return (scroll = this.grid.scroll) != null && (position.x < this.grid.headerWidth || position.y < this.grid.headerHeight || position.x >= scroll.viewport.width || position.y >= scroll.viewport.height);
+    }
+
+    insideTheCells(position: Point) {
+        let scroll: any; 
+        if (!((scroll = this.grid.scroll) != null) || scroll.viewport.width <= 0 || scroll.viewport.height <= 0) return position;
+        return new Point(Math.min(Math.max(position.x, this.grid.headerWidth), Math.max(this.grid.headerWidth, Math.fround(scroll.viewport.width - 1))), Math.min(Math.max(position.y, this.grid.headerHeight), Math.max(this.grid.headerHeight, Math.fround(scroll.viewport.height - 1))));
     }
 
     stopDrag() {
