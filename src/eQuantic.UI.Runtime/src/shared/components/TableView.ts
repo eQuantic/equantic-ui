@@ -73,7 +73,7 @@ export class TableView extends StatefulComponent {
         let pinnedRows = Math.min(Math.max(config.pinnedRows, 0), rows.count);
         let pinnedColumns = Math.min(Math.max(config.pinnedColumns, 0), columns.count);
         let scroll = config.scroll ?? this._ownScroll;
-        if (!this.covers(scroll.offset)) this.window(scroll.offset);
+        if (!this.covers(scroll.offset) || this._lastRow >= rows.count || this._lastColumn >= columns.count) this.window(scroll.offset);
         let viewport = new TableViewport(rows, columns, scroll, { pinnedRows: pinnedRows, pinnedColumns: pinnedColumns, width: config.width, height: config.height, request: config.request, onScrolled: this.scrolled.bind(this), onViewportChanged: this.viewportChanged.bind(this), label: config.label, canRequestFocus: config.canRequestFocus });
         for (let row = 0; row < pinnedRows; row++) {
             for (let column = 0; column < pinnedColumns; column++) this.place(viewport, row, column);

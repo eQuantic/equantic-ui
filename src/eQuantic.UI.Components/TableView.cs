@@ -118,7 +118,10 @@ public sealed class TableView : StatefulComponent
         var pinnedRows = Math.Clamp(config.PinnedRows, 0, rows.Count);
         var pinnedColumns = Math.Clamp(config.PinnedColumns, 0, columns.Count);
         var scroll = config.Scroll ?? _ownScroll;
-        if (!Covers(scroll.Offset)) Window(scroll.Offset);
+        // An axis can shrink IN PLACE, the same object answering fewer rows (a spreadsheet's document
+        // after a delete), which AdoptConfig cannot see: the window built before it then reaches past
+        // the end, and is chosen again rather than asking the builder for rows the grid no longer has.
+        if (!Covers(scroll.Offset) || _lastRow >= rows.Count || _lastColumn >= columns.Count) Window(scroll.Offset);
 
         var viewport = new TableViewport(rows, columns, scroll)
         {

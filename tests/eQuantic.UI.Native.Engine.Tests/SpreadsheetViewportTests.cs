@@ -175,6 +175,22 @@ public class SpreadsheetViewportTests
         first.Node.Bounds.X.Should().BeApproximately(number.Node.Bounds.Right, 0.5f, "the cells start at its edge");
     }
 
+    [Fact]
+    public void RowsAndColumnsDeleted_LeaveNoCellOfThemBuilt()
+    {
+        // The document's axes shrink in place: the table is handed the same spans, with fewer rows.
+        var (host, sheet) = Open(30, 12, 1440, 1000);
+        Cells(host).Max(c => c.Cell.Row).Should().Be(30, "the whole sheet fits the window");
+
+        sheet.Delete(SheetAxis.Rows, 20, 10);
+        sheet.Delete(SheetAxis.Cols, 8, 4);
+        host.Invalidate();
+        Settle(host);
+
+        Cells(host).Should().OnlyContain(c => c.Cell.Row <= 20 && c.Cell.Column <= 8,
+            "twenty rows and eight columns are left, behind the headers");
+    }
+
     // ---- the active cell kept in view -----------------------------------------------------------------
 
     [Fact]

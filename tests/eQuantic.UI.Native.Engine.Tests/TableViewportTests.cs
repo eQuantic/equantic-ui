@@ -556,6 +556,65 @@ public class TableViewportTests
         }
     }
 
+    /// <summary>An axis that changes its count in place, as a spreadsheet's document does after a
+    /// delete: the same object, fewer rows.</summary>
+    private sealed class LiveSpans(int count, double extent) : TableSpans
+    {
+        public int Size { get; set; } = count;
+        public override int Count => Size;
+        public override double Total => Size * extent;
+        public override double ExtentOf(int index) => extent;
+        public override double OffsetOf(int index) => Math.Clamp(index, 0, Size) * extent;
+        public override int IndexAt(double offset) => Size == 0 ? 0 : Math.Clamp((int)(offset / extent), 0, Size - 1);
+    }
+
+    /// <summary>A screen whose axes shrink in place: its builder refuses a row or a column they no
+    /// longer have.</summary>
+    private sealed class ShrinkingInPlace(Tally tally) : StatefulComponent
+    {
+        public LiveSpans Rows { get; } = new(11, 28);
+        public LiveSpans Columns { get; } = new(11, 96);
+
+        public void Shrink() => SetState(() =>
+        {
+            Rows.Size = 7;
+            Columns.Size = 7;
+        });
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var rows = Rows;
+            var columns = Columns;
+            return new TableView(rows, columns, (row, column) =>
+            {
+                if (row >= rows.Count || column >= columns.Count)
+                    throw new InvalidOperationException($"cell {row}:{column} asked of a grid of {rows.Count} by {columns.Count}");
+                tally.Built++;
+                return new Text($"{row}:{column}", TypeRole.BodyM);
+            })
+            {
+                PinnedRows = 1,
+                PinnedColumns = 1,
+            };
+        }
+    }
+
+    [Fact]
+    public void AGridWhoseAxesShrinkInPlace_IsAskedOnlyForTheCellsItHas()
+    {
+        var tally = new Tally();
+        var screen = new ShrinkingInPlace(tally);
+        var host = Host(screen, 900, 600, tally);
+        Cells(host).Max(c => c.Cell.Row).Should().Be(10, "the whole grid fits the window and its overscan");
+
+        // The same axis objects, four rows and four columns fewer: AdoptConfig sees the same spans.
+        screen.Shrink();
+        Settle(host);
+
+        Cells(host).Should().OnlyContain(c => c.Cell.Row < 7 && c.Cell.Column < 7);
+        tally.Logged.Should().NotContain(line => line.Contains("asked of a grid"));
+    }
+
     [Fact]
     public void AGridThatShrinks_IsAskedOnlyForTheRowsItHas()
     {
