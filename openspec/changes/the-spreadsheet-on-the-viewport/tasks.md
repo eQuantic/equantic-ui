@@ -111,7 +111,7 @@
 
 ## 7. Closing
 
-- [ ] 7.1 `docs/SPREADSHEET-PLAN.md`: slice 0b delivered, D1 to D4 and D6's scroll closed; a ledger
+- [x] 7.1 `docs/SPREADSHEET-PLAN.md`: slice 0b delivered, D1 to D4 and D6's scroll closed; a ledger
       entry under `docs/ledger/` citing #995
 - [ ] 7.2 Every affected suite green on this machine (Compiler, Web, Server, Native.Engine,
       Conformance, the runtime's Vitest), `dotnet build` of the four samples, `./scripts/check-openspec.sh`
