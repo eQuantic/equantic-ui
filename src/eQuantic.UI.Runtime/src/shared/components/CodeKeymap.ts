@@ -83,7 +83,10 @@ export class CodeKeymap {
         for (const binding of defaults) {
             let named = false;
             for (const mine of own) {
-                if (!CodeKeymap.matches(mine.chord, binding.chord) || !CodeKeymap.sameFirst(mine.first, binding.first)) continue;
+                let sameChord = CodeKeymap.matches(mine.chord, binding.chord) && CodeKeymap.sameFirst(mine.first, binding.first);
+                let starts: any; 
+                let startsOnMine = mine.first == null && (starts = binding.first) != null && CodeKeymap.matches(mine.chord, starts);
+                if (!sameChord && !startsOnMine) continue;
                 named = true;
                 break;
             }

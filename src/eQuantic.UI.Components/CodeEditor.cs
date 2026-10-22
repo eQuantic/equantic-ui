@@ -240,14 +240,66 @@ public sealed class CodeEditor : StatefulComponent
 
     private List<CodeKeyBinding> _bindings = [];
 
-    /// <summary>Hands <see cref="KeyBindings"/> to the controller when they are other bindings than the
-    /// last ones, taking out the ones handed before; what the app put on the controller itself stays.</summary>
+    /// <summary>
+    /// Hands <see cref="KeyBindings"/> to the controller when they are other bindings than the last ones:
+    /// the block handed before comes out and the new one goes in at the end, and what the app put on the
+    /// controller itself stays, in its order. The block comes out whole, where it stands last, since it went
+    /// in at the end and whatever the app puts before it leaves it there; never by value, binding by binding,
+    /// where a binding of the controller's equal to one of the component's went in its place, and the
+    /// controller's own order, and with it what a key ran, changed (Copilot's second round on #1027).
+    /// </summary>
     private void HandKeyBindings(CodeEditorController editor)
     {
         if (SameBindings(KeyBindings, _bindings)) return;
-        foreach (var binding in _bindings) editor.KeyBindings.Remove(binding);
+        var list = editor.KeyBindings;
+        var at = LastBlockAt(list, _bindings);
+        if (at >= 0)
+        {
+            for (var i = 0; i < _bindings.Count; i++) list.RemoveAt(at);
+        }
+        else
+        {
+            // The app split the block up: each binding comes out where it stands last, nearest the end the
+            // block was put at.
+            for (var i = _bindings.Count - 1; i >= 0; i--)
+            {
+                var last = LastIndexOf(list, _bindings[i]);
+                if (last >= 0) list.RemoveAt(last);
+            }
+        }
         _bindings = [.. KeyBindings];
-        foreach (var binding in _bindings) editor.KeyBindings.Add(binding);
+        foreach (var binding in _bindings) list.Add(binding);
+    }
+
+    /// <summary>The last place <paramref name="block"/> stands whole and in order in <paramref name="list"/>,
+    /// or -1.</summary>
+    private static int LastBlockAt(IList<CodeKeyBinding> list, List<CodeKeyBinding> block)
+    {
+        if (block.Count == 0) return -1;
+        for (var at = list.Count - block.Count; at >= 0; at--)
+        {
+            if (Holds(list, block, at)) return at;
+        }
+        return -1;
+    }
+
+    private static bool Holds(IList<CodeKeyBinding> list, List<CodeKeyBinding> block, int at)
+    {
+        if (at < 0 || at + block.Count > list.Count) return false;
+        for (var i = 0; i < block.Count; i++)
+        {
+            if (!list[at + i].Equals(block[i])) return false;
+        }
+        return true;
+    }
+
+    private static int LastIndexOf(IList<CodeKeyBinding> list, CodeKeyBinding binding)
+    {
+        for (var i = list.Count - 1; i >= 0; i--)
+        {
+            if (list[i].Equals(binding)) return i;
+        }
+        return -1;
     }
 
     private static bool SameBindings(IReadOnlyList<CodeKeyBinding> one, IReadOnlyList<CodeKeyBinding> other)

@@ -107,4 +107,28 @@ public class CodeEditorKeyBindingsTests : IDisposable
         host.KeyDown("e", KeyModifiers.Command).Should().BeTrue();
         first.Editor.Selection.Should().Be(Everything(first));
     }
+
+    /// <summary>
+    /// The bindings a parent stops handing come out where the component put them, never by value: the
+    /// controller's own ⌘D → select all, equal to the component's, went in its place, and ⌘D ran the
+    /// controller's second binding instead (Copilot's second round on #1027).
+    /// </summary>
+    [Fact]
+    public void BindingsAParentStopsHanding_LeaveTheControllersOwnInTheirOrder()
+    {
+        var first = new CodeEditor(Code, "csharp") { Height = SizeValue.Fill, KeyBindings = [SelectAllOnD] };
+        first.Editor.KeyBindings.Add(SelectAllOnD);
+        first.Editor.KeyBindings.Add(new CodeKeyBinding(KeyChord.Command("d"), CodeCommand.CursorDocumentEnd));
+        var parent = new Parent(first);
+        var host = Host(parent);
+        ClickInto(host, first);
+        first.Editor.KeyBindings.Should().HaveCount(3, "the controller's two, and the component's at the end");
+
+        parent.Hand(new CodeEditor(Code, "csharp") { Height = SizeValue.Fill });
+        Settle(host);
+
+        first.Editor.KeyBindings.Select(binding => binding.Command).Should().Equal(CodeCommand.SelectAll, CodeCommand.CursorDocumentEnd);
+        host.KeyDown("d", KeyModifiers.Command).Should().BeTrue();
+        first.Editor.Selection.Should().Be(Everything(first), "⌘D still runs the controller's first binding");
+    }
 }

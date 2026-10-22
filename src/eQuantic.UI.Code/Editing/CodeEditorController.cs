@@ -552,8 +552,10 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     {
         CodeCommand.None or CodeCommand.ReleaseKeyboard => false,
         CodeCommand.NewLine or CodeCommand.DeleteLeft or CodeCommand.DeleteRight or CodeCommand.DeleteWordLeft
-            or CodeCommand.DeleteWordRight or CodeCommand.DeleteToLineStart or CodeCommand.ToggleLineComment
+            or CodeCommand.DeleteWordRight or CodeCommand.DeleteToLineStart
             or CodeCommand.Cut or CodeCommand.Paste => !ReadOnly,
+        // A language with no line comment (JSON, plain text) has nothing to toggle.
+        CodeCommand.ToggleLineComment => !ReadOnly && Rules.LineComment is not null,
         CodeCommand.Indent or CodeCommand.Outdent => !ReadOnly && !TabMovesFocus,
         CodeCommand.Undo => !ReadOnly && History.CanUndo,
         CodeCommand.Redo => !ReadOnly && History.CanRedo,

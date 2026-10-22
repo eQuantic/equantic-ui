@@ -236,9 +236,41 @@ export class CodeEditor extends StatefulComponent {
 
     handKeyBindings(editor: CodeEditorController) {
         if (CodeEditor.sameBindings(this.keyBindings, this._bindings)) return;
-        for (const binding of this._bindings) $eq.collections.remove(editor.keyBindings, binding, true);
+        let list = editor.keyBindings;
+        let at = CodeEditor.lastBlockAt(list, this._bindings);
+        if (at >= 0) {
+            for (let i = 0; i < this._bindings.length; i++) list.splice(at, 1);
+        } else {
+            for (let i = this._bindings.length - 1; i >= 0; i--) {
+                let last = CodeEditor.lastIndexOf(list, this._bindings[i]);
+                if (last >= 0) list.splice(last, 1);
+            }
+        }
         this._bindings = [...this.keyBindings];
-        for (const binding of this._bindings) $eq.collections.add(editor.keyBindings, binding);
+        for (const binding of this._bindings) $eq.collections.add(list, binding);
+    }
+
+    static lastBlockAt(list: CodeKeyBinding[], block: CodeKeyBinding[]) {
+        if (block.length === 0) return -1;
+        for (let at = $eq.collections.count(list) - block.length; at >= 0; at--) {
+            if (CodeEditor.holds(list, block, at)) return at;
+        }
+        return -1;
+    }
+
+    static holds(list: CodeKeyBinding[], block: CodeKeyBinding[], at: number) {
+        if (at < 0 || at + block.length > $eq.collections.count(list)) return false;
+        for (let i = 0; i < block.length; i++) {
+            if (!$eq.equals($eq.collections.item(list, at + i), block[i])) return false;
+        }
+        return true;
+    }
+
+    static lastIndexOf(list: CodeKeyBinding[], binding: CodeKeyBinding) {
+        for (let i = $eq.collections.count(list) - 1; i >= 0; i--) {
+            if ($eq.equals($eq.collections.item(list, i), binding)) return i;
+        }
+        return -1;
     }
 
     static sameBindings(one: CodeKeyBinding[], other: CodeKeyBinding[]) {

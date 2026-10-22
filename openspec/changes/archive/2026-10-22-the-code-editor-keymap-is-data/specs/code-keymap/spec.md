@@ -24,6 +24,11 @@ whether it would, so a command it answers true for does something when it runs.
 - **THEN** `CanExecute` answers false for walking it (`CompletionNext`, `CompletionPrevious` and the page
   commands) and true for accepting it and hiding it
 
+#### Scenario: A language with no line comment
+
+- **WHEN** an editor holds JSON, which has no line comment
+- **THEN** `CanExecute(CodeCommand.ToggleLineComment)` answers false, and ⌘/ is not claimed
+
 ### Requirement: The defaults name their chords exactly
 
 The default bindings SHALL be one table for each keyboard convention, `CodeKeymap.Defaults`. A key SHALL
@@ -90,7 +95,9 @@ its command finds nothing to do, as VS Code claims it.
 The bindings an app gives an editor (`CodeEditorController.KeyBindings`, `CodeEditor.KeyBindings`) SHALL
 be tried before the defaults, single keys and the first halves of chords of two keys alike, and a chord
 the app binds SHALL NOT be looked up in the defaults: binding a chord to `CodeCommand.None` gives it back
-to the host.
+to the host. A key the app binds on its own SHALL take with it the default chords of two keys that start on
+it. A `CodeEditor`'s bindings SHALL go to the controller after the controller's own, and the ones a later
+build stops handing SHALL come out whole, leaving the controller's own in their order.
 
 #### Scenario: A key of the app's own
 
@@ -107,17 +114,43 @@ to the host.
 - **WHEN** an app binds ⌘A then ⌘D to `CodeCommand.CursorDocumentEnd`, and ⌘A then ⌘D are pressed
 - **THEN** ⌘A selects nothing, and ⌘D puts the caret at the end of the document
 
-### Requirement: The clipboard's keys on the web
+#### Scenario: A first half given back
 
-On the web, a key the browser answers with a clipboard event of its own (C, X and V with ⌘ or Ctrl, and
-off a Mac Ctrl+Insert, Shift+Insert and Shift+Delete) SHALL be left to that event, which carries the text.
-Any other key an app binds to `CodeCommand.Copy` or `CodeCommand.Cut` SHALL reach the clipboard through the
-browser's Clipboard API. A key an app binds to `CodeCommand.Paste` finds nothing to read there, since a page
-reads the clipboard only in a paste event or behind a prompt.
+- **WHEN** a hover provider is set, an app binds ⌘K to `CodeCommand.None`, and ⌘K then ⌘I are pressed
+- **THEN** the editor claims neither key, and no card shows
+
+#### Scenario: A component's bindings withdrawn
+
+- **WHEN** a controller holds ⌘D bound to select all and then to the document's end, its `CodeEditor` hands
+  ⌘D bound to select all as well, and the next build hands none
+- **THEN** the controller holds its two bindings in their order, and ⌘D selects all
+
+### Requirement: The clipboard on the web
+
+On the web, `CodeCommand.Copy` and `CodeCommand.Cut` SHALL write through the browser's own copy event, which
+the key's handler fires (`document.execCommand('copy')`), on whatever key they are bound to, as VS Code's
+do, and the command bound to the key SHALL decide, never the key. A cut SHALL delete only what that event
+took to the clipboard, and a write the browser refused SHALL leave the key to the browser. A paste SHALL be
+the browser's paste event: on a key the browser pastes on, the key goes on to the browser, whose event
+brings the text, and a key an app binds to `CodeCommand.Paste` elsewhere finds nothing to read, since a
+page reads the clipboard only in a paste event.
 
 #### Scenario: Copy on a key of the app's own
 
-- **WHEN** an app binds ⌘D to `CodeCommand.Copy` on the web, selects the whole document, and presses ⌘D,
-  then ⌘C
-- **THEN** ⌘D writes the text through the Clipboard API, and ⌘C is not claimed, so the browser's copy event
-  carries the text
+- **WHEN** an app binds ⌘D to `CodeCommand.Copy` on the web, selects the whole document, and presses ⌘D
+- **THEN** the browser's copy event takes the text to the clipboard, and the editor claims the key
+
+#### Scenario: Copy on the browser's cut key
+
+- **WHEN** an app binds ⌘X to `CodeCommand.Copy` on the web and presses it over a selection
+- **THEN** the text is copied, and nothing is deleted
+
+#### Scenario: A cut the browser takes no copy for
+
+- **WHEN** a key bound to `CodeCommand.Cut` is pressed on the web and the browser fires no copy event
+- **THEN** nothing is deleted, and the editor does not claim the key
+
+#### Scenario: Paste on ⌘V
+
+- **WHEN** ⌘V is pressed on the web
+- **THEN** the editor does not claim the key, and the browser's paste event pastes the clipboard's text

@@ -111,7 +111,11 @@ public static class CodeKeymap
 
     /// <summary>
     /// The bindings a key is looked up in: the app's, then the defaults, without a default the app's
-    /// bindings already name the chord of, so a chord the app binds is the app's alone.
+    /// bindings already name the chord of, so a chord the app binds is the app's alone. A key the app binds
+    /// on its own takes the defaults' chords of two keys that start on it as well: ⌘K bound to
+    /// <see cref="CodeCommand.None"/> is the host's, and the default ⌘K ⌘I started there all the same
+    /// (Copilot's second round on #1027). A chord of the app's own that starts where a default's does
+    /// leaves the default alone: both wait on the same first half.
     /// </summary>
     private static IReadOnlyList<CodeKeyBinding> Bindings(CodeEditorController editor, KeyboardConvention convention)
     {
@@ -124,7 +128,9 @@ public static class CodeKeymap
             var named = false;
             foreach (var mine in own)
             {
-                if (!Matches(mine.Chord, binding.Chord) || !SameFirst(mine.First, binding.First)) continue;
+                var sameChord = Matches(mine.Chord, binding.Chord) && SameFirst(mine.First, binding.First);
+                var startsOnMine = mine.First is null && binding.First is { } starts && Matches(mine.Chord, starts);
+                if (!sameChord && !startsOnMine) continue;
                 named = true;
                 break;
             }

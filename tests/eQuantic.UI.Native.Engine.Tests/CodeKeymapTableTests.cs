@@ -266,6 +266,58 @@ public class CodeKeymapTableTests : IDisposable
         editor.Hover.IsOpen.Should().BeFalse("there was nothing left to explain");
     }
 
+    /// <summary>A language with no line comment has nothing to toggle: a menu greys the command out, ⌘/ is
+    /// the host's, and a chord of two keys ending in it does not wait (Copilot's second round on #1027).</summary>
+    [Fact]
+    public void ALanguageWithNoLineComment_HasNothingToToggle()
+    {
+        var editor = new CodeEditorController("{ \"a\": 1 }", CodeLanguages.Json);
+        editor.KeyBindings.Add(new CodeKeyBinding(KeyChord.Command("u"), CodeCommand.ToggleLineComment) { First = KeyChord.Command("k") });
+
+        editor.CanExecute(CodeCommand.ToggleLineComment).Should().BeFalse("JSON has no line comment");
+        Press(editor, "/", KeyModifiers.Command).Should().BeFalse();
+        Press(editor, "k", KeyModifiers.Command).Should().BeFalse("its chord's command could not run");
+        editor.Document.Text.Should().Be("{ \"a\": 1 }");
+    }
+
+    /// <summary>Explains every word it is asked about, at once.</summary>
+    private sealed class Explainer : ICodeHoverProvider
+    {
+        public Task<CodeHover?> HoverAsync(CodeDocument document, CodePosition position, CancellationToken cancellation) =>
+            Task.FromResult<CodeHover?>(new CodeHover(document.WordAt(position), "explained"));
+    }
+
+    /// <summary>A key an app binds on its own takes the defaults' chords that start on it: ⌘K bound to
+    /// <see cref="CodeCommand.None"/> is the host's though a card could show, where the default ⌘K ⌘I
+    /// started all the same (Copilot's second round on #1027).</summary>
+    [Fact]
+    public void CommandK_BoundToNothing_IsTheHosts_ThoughACardCouldShow()
+    {
+        var editor = Editor();
+        editor.Hover.Providers.Add(new Explainer());
+        editor.KeyBindings.Add(new CodeKeyBinding(KeyChord.Command("k"), CodeCommand.None));
+
+        editor.CanExecute(CodeCommand.HoverShow).Should().BeTrue("a provider could explain the caret");
+        Press(editor, "k", KeyModifiers.Command).Should().BeFalse();
+        Press(editor, "i", KeyModifiers.Command).Should().BeFalse("no chord was waiting");
+        editor.Hover.IsOpen.Should().BeFalse();
+    }
+
+    /// <summary>An app's chord of two keys that starts where a default's does leaves the default alone:
+    /// both wait on the same first half.</summary>
+    [Fact]
+    public void AnAppsChordSharingAFirstHalf_KeepsTheDefaultsChord()
+    {
+        var editor = Editor();
+        editor.Hover.Providers.Add(new Explainer());
+        editor.KeyBindings.Add(new CodeKeyBinding(KeyChord.Command("u"), CodeCommand.SelectAll) { First = KeyChord.Command("k") });
+
+        Press(editor, "k", KeyModifiers.Command).Should().BeTrue();
+        Press(editor, "i", KeyModifiers.Command).Should().BeTrue();
+
+        editor.Hover.IsOpen.Should().BeTrue("the default ⌘K ⌘I still showed the card");
+    }
+
     /// <summary>The first half of a chord of two keys waits only while its second half's command could
     /// run: with no card to show, ⌘K is the host's.</summary>
     [Fact]
