@@ -368,8 +368,6 @@ public sealed class TableScroll : ITableScrollModel
         return offset;
     }
 
-    /// <summary>A press: on a scrollbar it grabs the thumb or pages from the track; a finger or a stylus
-    /// takes the grid where it stands; a mouse on the cells is the cells'.</summary>
     /// <summary>The person moved the grid: the request held until now is spent.</summary>
     private void LetGo()
     {
@@ -378,6 +376,8 @@ public sealed class TableScroll : ITableScrollModel
         _held = null;
     }
 
+    /// <summary>A press: on a scrollbar it grabs the thumb or pages from the track; a finger or a stylus
+    /// takes the grid where it stands; a mouse on the cells is the cells'.</summary>
     private bool Press(Point at, PointerKind kind, double time)
     {
         _dragging = null;

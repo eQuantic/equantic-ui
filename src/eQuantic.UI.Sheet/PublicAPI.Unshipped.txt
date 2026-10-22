@@ -31,3 +31,4 @@ override eQuantic.UI.Sheet.SheetSpans.Total.get -> double
 *REMOVED*eQuantic.UI.Sheet.SheetGrid.Origin.init -> void
 *REMOVED*eQuantic.UI.Sheet.SheetGrid.SheetGrid(eQuantic.UI.Primitives.Point Origin, int FirstRow, int FirstCol) -> void
 eQuantic.UI.Sheet.SheetController.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
+eQuantic.UI.Sheet.SheetController.RevealCell.get -> eQuantic.UI.Sheet.CellRef

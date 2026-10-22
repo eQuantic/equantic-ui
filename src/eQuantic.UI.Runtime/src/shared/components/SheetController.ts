@@ -8,6 +8,7 @@ export class SheetController {
         this.history = new SheetHistory();
         this.changed = null;
         this.revealVersion = 0;
+        this.revealCell = CellRef.$zero();
         this.editing = false;
         this.draft = '';
         this.fillSource = null;
@@ -25,6 +26,7 @@ export class SheetController {
     history!: SheetHistory;
     changed!: ((sheetEdit: SheetEdit) => void) | null;
     revealVersion!: number;
+    revealCell!: CellRef;
     editing!: boolean;
     draft!: string;
     fillSource!: SheetRange | null;
@@ -75,7 +77,8 @@ export class SheetController {
     }
 
     reveal() {
-        return this.revealVersion++;
+        this.revealVersion++;
+        this.revealCell = this._active;
     }
 
     dataEdge(from: CellRef, dRow: number, dCol: number) {

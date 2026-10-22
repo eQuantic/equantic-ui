@@ -229,6 +229,29 @@ public class SpreadsheetViewportTests
     }
 
     [Fact]
+    public void ADragInsideTheGrid_AfterAKey_ScrollsNothing()
+    {
+        // The key's reveal is held until the person moves the grid. A drag that then reaches the row
+        // half under the bottom edge moves the active cell there, and a request built from the active
+        // cell as it stands revealed it: the grid scrolled under a pointer still inside the cells.
+        var (host, sheet) = Open(200, 8);
+        Click(host, new CellRef(0, 0));
+        host.KeyDown("ArrowDown");
+        Settle(host);
+        var region = Region(host);
+        var start = CenterOf(host, new CellRef(1, 1));
+        var edge = region.Bounds.Y + region.Viewport.Scroll.Viewport.Height - 6;
+
+        host.PressDown(start.X, start.Y);
+        host.PointerMove(start.X, edge);
+        Settle(host);
+
+        sheet.Selection.Focus.Row.Should().BeGreaterThan(15, "the drag reached the row at the bottom edge");
+        Region(host).Viewport.Scroll.Offset.Down.Should().Be(0, "a drag inside the cells moves no grid");
+        host.PressUp(start.X, edge);
+    }
+
+    [Fact]
     public void ADragHeldBelowTheGrid_ScrollsAndKeepsExtending_UntilTheRelease()
     {
         var (host, sheet) = Open(400, 8);

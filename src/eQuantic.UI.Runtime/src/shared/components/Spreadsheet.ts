@@ -43,9 +43,9 @@ export class Spreadsheet extends StatefulComponent {
             this._columns = new LeadingSpans(document.columnSpans, numbers);
         }
         this.controller.grid = new SheetGrid(this._scroll, numbers, Spreadsheet.headerHeight);
-        let active = this.controller.activeCell;
-        let table = new TableView(this._rows, this._columns, (row: number, column: number) => this.cell(row, column, document, palette, numbers), { pinnedRows: 1, pinnedColumns: 1, overscan: this._config.overscan, width: SizeValue.fill, height: SizeValue.fill, scroll: this._scroll, marks: this.marks(palette), request: new TableScrollRequest(this.controller.revealVersion, { reveal: new TableRange(active.row + 1, active.col + 1) }), onScrolled: this.scrolled.bind(this), onViewportChanged: this.viewportChanged.bind(this), canRequestFocus: false });
-        return new Box(new BoxStyle({ width: this._config.width, height: this._config.height, borderColor: palette.gridline, borderWidth: 1, clip: true }), new SheetSurface(table, this.controller, { onChanged: () => this.setState(() => {}), label: SdkStrings.spreadsheet }));
+        let revealed = this.controller.revealCell;
+        let table = new TableView(this._rows, this._columns, (row: number, column: number) => this.cell(row, column, document, palette, numbers), { pinnedRows: 1, pinnedColumns: 1, overscan: this._config.overscan, width: SizeValue.fill, height: SizeValue.fill, scroll: this._scroll, marks: this.marks(palette), request: new TableScrollRequest(this.controller.revealVersion, { reveal: new TableRange(revealed.row + 1, revealed.col + 1) }), onScrolled: this.scrolled.bind(this), onViewportChanged: this.viewportChanged.bind(this), canRequestFocus: false });
+        return new Box(new BoxStyle({ width: this._config.width, height: this._config.height, borderColor: palette.gridline, borderWidth: 1, clip: true }), new SheetSurface(new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill }), table), this.controller, { onChanged: () => this.setState(() => {}), label: SdkStrings.spreadsheet }));
     }
 
     adoptConfig(next: UiComponent) {

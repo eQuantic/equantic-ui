@@ -245,6 +245,23 @@ describe('SheetSurface on the web', () => {
     expect(sheet.history.canUndo).toBe(false);
   });
 
+  it('keeps a press across the renders its own drag causes', () => {
+    // A sheet that follows a held drag renders on every frame of it: the release arrives at the
+    // handlers of a render that never saw the press.
+    const sheet = new SheetController(50, 8);
+    sheet.document.setCell(new CellRef(0, 0), 'seed');
+    const target = makeTarget();
+    press(surfaceFor(sheet), target, { clientX: 95, clientY: 27 });
+    expect(sheet.filling).toBe(true);
+
+    const rendered = surfaceFor(sheet);
+    move(rendered, target, { clientX: 95, clientY: 28 * 2 + 14 });
+    lift(rendered, target, { clientX: 95, clientY: 28 * 2 + 14 });
+
+    expect(sheet.filling).toBe(false);
+    expect(sheet.document.getCell(new CellRef(2, 0))).toBe('seed');
+  });
+
   it('a move with no button held ends the press its release never reached', () => {
     const sheet = new SheetController(50, 8);
     sheet.document.setCell(new CellRef(0, 0), 'seed');

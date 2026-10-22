@@ -99,7 +99,19 @@ public sealed class SheetController : ISheetSurfaceModel
     /// </summary>
     public int RevealVersion { get; private set; }
 
-    private void Reveal() => RevealVersion++;
+    /// <summary>
+    /// The cell <see cref="RevealVersion"/> asks to have in view: the active cell as the command that
+    /// raised the version left it. A viewport holds a request until the person moves the grid, so a
+    /// request built from the active cell as it stands would chase every cell a later drag reaches,
+    /// scrolling the grid under the pointer frame after frame.
+    /// </summary>
+    public CellRef RevealCell { get; private set; }
+
+    private void Reveal()
+    {
+        RevealVersion++;
+        RevealCell = _active;
+    }
 
     private CellRef DataEdge(CellRef from, int dRow, int dCol)
     {

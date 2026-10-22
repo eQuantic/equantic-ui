@@ -465,6 +465,22 @@ public class SheetControllerTests
     }
 
     [Fact]
+    public void TheCellToReveal_IsTheOneTheCommandLeft_NotOneALaterDragReaches()
+    {
+        var sheet = Sheet();
+        ISheetSurfaceModel model = sheet;
+
+        model.HandleKey("ArrowDown", KeyModifiers.None, null);
+        sheet.RevealCell.Should().Be(new CellRef(1, 0));
+
+        model.HandlePointer(PointerPhase.Down, new Point(96 + 48, 28 * 3 + 14), KeyModifiers.None, 1, PointerKind.Mouse);
+        model.HandlePointer(PointerPhase.Move, new Point(96 * 3 + 48, 28 * 9 + 14), KeyModifiers.None, 1, PointerKind.Mouse);
+
+        sheet.ActiveCell.Should().Be(new CellRef(9, 3));
+        sheet.RevealCell.Should().Be(new CellRef(1, 0), "the version the key raised still asks for the cell it left");
+    }
+
+    [Fact]
     public void PageDownAndPageUp_MoveByTheRowsShownUnderTheHeaders()
     {
         var sheet = new SheetController(rows: 200, cols: 8);

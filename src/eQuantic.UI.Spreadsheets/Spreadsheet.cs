@@ -106,7 +106,7 @@ public sealed class Spreadsheet : StatefulComponent
         // corner into the fill handle's place, so the cells drawn and the cells pressed cannot disagree.
         Controller.Grid = new SheetGrid(_scroll, numbers, HeaderHeight);
 
-        var active = Controller.ActiveCell;
+        var revealed = Controller.RevealCell;
         var table = new TableView(_rows, _columns, (row, column) => Cell(row, column, document, palette, numbers))
         {
             PinnedRows = 1,
@@ -116,7 +116,7 @@ public sealed class Spreadsheet : StatefulComponent
             Height = SizeValue.Fill,
             Scroll = _scroll,
             Marks = Marks(palette),
-            Request = new TableScrollRequest(Controller.RevealVersion) { Reveal = new TableRange(active.Row + 1, active.Col + 1) },
+            Request = new TableScrollRequest(Controller.RevealVersion) { Reveal = new TableRange(revealed.Row + 1, revealed.Col + 1) },
             OnScrolled = Scrolled,
             OnViewportChanged = ViewportChanged,
             // The surface is the sheet's one stop of the Tab order, and an arrow moves the active cell.
@@ -130,7 +130,10 @@ public sealed class Spreadsheet : StatefulComponent
             BorderColor = palette.Gridline,
             BorderWidth = 1f,
             Clip = true,
-        }, new SheetSurface(table, Controller)
+        }, new SheetSurface(
+            // The surface fills by what it holds, and a component says nothing until it builds: the box
+            // says it, so the sheet takes the room the page gives it rather than its table's first guess.
+            new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }, table), Controller)
         {
             OnChanged = () => SetState(() => { }),
             Label = SdkStrings.Spreadsheet,

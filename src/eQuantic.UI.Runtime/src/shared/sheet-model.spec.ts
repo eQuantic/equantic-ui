@@ -218,6 +218,18 @@ describe('SheetController (transpiled twin)', () => {
     expect(sheet.revealVersion).toBe(version);
   });
 
+  it('reveals the cell the command left, never one a later drag reaches', () => {
+    const sheet = new SheetController(100, 26);
+    sheet.handleKey('ArrowDown', 0, null);
+    expect(sheet.revealCell).toEqual(new CellRef(1, 0));
+
+    sheet.handlePointer('down', new Point(96 + 48, 28 * 3 + 14), 0, 1, 'mouse');
+    sheet.handlePointer('move', new Point(96 * 3 + 48, 28 * 9 + 14), 0, 1, 'mouse');
+
+    expect(sheet.activeCell).toEqual(new CellRef(9, 3));
+    expect(sheet.revealCell).toEqual(new CellRef(1, 0));
+  });
+
   it('moves a page by the rows shown under the headers, and takes no page without a viewport', () => {
     const sheet = new SheetController(200, 8);
     expect(sheet.handleKey('PageDown', 0, null)).toBe(false);

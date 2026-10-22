@@ -126,6 +126,12 @@ request until the person moves the grid and re-applies it against each layout, s
 layout that measures twice, and it reveals clear of the pinned bands. A press needs no reveal: the
 cell is under the pointer.
 
+The request reveals the cell the command left (`SheetController.RevealCell`, captured with the
+version), never the active cell as it stands: the viewport holds a version until the person moves the
+grid, and a drag moves the active cell without moving the grid, so a request read from the active cell
+chased every cell the drag reached, scrolling the grid under a pointer still inside the cells (found
+in Chromium, pinned on Photon).
+
 PageUp and PageDown join the keymap here, moving the active cell by the rows the viewport shows under
 its pinned row, because the engine now knows that height and #995's acceptance names the key; the
 rest of the page chords (Alt with them, across) stay slice 2's. *How does Flutter solve it?* `Scrollable.ensureVisible` from the focused

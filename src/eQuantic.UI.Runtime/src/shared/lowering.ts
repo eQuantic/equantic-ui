@@ -1582,26 +1582,22 @@ function lowerSheetSurface(
   const kindOf = (event: PointerEvent) =>
     event.pointerType === 'touch' ? 'touch' : event.pointerType === 'pen' ? 'stylus' : 'mouse';
 
-  // The press in flight: its pointer, its kind, the element it began on. A mouse's and a pen's press is
-  // the sheet's until it lifts, wherever the pointer goes, so the surface captures it. A finger's is a
-  // candidate the table around the cells may take as a pan, so nothing captures it here, and the
-  // table marks the release of a pan it took as handled: the engine hears a cancel, never a tap. A
-  // press can also end where this page never hears it lift (the window lost focus, or a move comes with
-  // no button held): the engine is told it was taken away, so a fill nobody let go of pours nothing.
-  let press: { id: number; kind: string; target: HTMLElement } | null = null;
+  // The press in flight is kept by MODEL (sheetPresses): a sheet that follows a held drag renders on
+  // every frame of it, and a press kept in this render's closure was gone by the time it lifted.
   const settle = () => {
-    if (!press) return;
-    window.removeEventListener('blur', cancel);
+    const press = sheetPresses.get(model);
+    if (!press) return undefined;
+    sheetPresses.delete(model);
+    window.removeEventListener('blur', press.blur);
     try {
       press.target.releasePointerCapture?.(press.id);
     } catch {
       // The pointer is gone, and its capture with it.
     }
-    press = null;
+    return press;
   };
   const cancel = () => {
-    const ended = press;
-    settle();
+    const ended = settle();
     if (ended && model.handlePointer('cancel', { x: 0, y: 0 }, 0, 1, ended.kind)) changed();
   };
   // Where the press landed is read BEFORE the keyboard moves. The keyboard follows the press, focused
@@ -1618,11 +1614,12 @@ function lowerSheetSurface(
   };
 
   view.events['pointerdown'] = ((event: PointerEvent) => {
-    if (press) cancel();
+    if (sheetPresses.has(model)) cancel();
     if (notTheSheets(event)) return;
     const target = event.currentTarget as HTMLElement;
-    press = { id: event.pointerId, kind: kindOf(event), target };
-    window.addEventListener('blur', cancel);
+    const press = { id: event.pointerId, kind: kindOf(event), target, blur: cancel };
+    sheetPresses.set(model, press);
+    window.addEventListener('blur', press.blur);
     if (press.kind !== 'touch') {
       try {
         target.setPointerCapture?.(event.pointerId);
@@ -1638,7 +1635,7 @@ function lowerSheetSurface(
   }) as unknown as EventHandler;
 
   view.events['mousedown'] = ((event: MouseEvent) => {
-    if (press?.kind !== 'mouse') return;
+    if (sheetPresses.get(model)?.kind !== 'mouse') return;
     // The browser's own reaction to a press (a text sweep, a drag of what is under it, the focus moved
     // to whatever was pressed) would fight the band, the fill and the keyboard the sheet keeps.
     event.preventDefault();
@@ -1647,6 +1644,7 @@ function lowerSheetSurface(
 
   view.events['pointermove'] = ((event: PointerEvent) => {
     const target = event.currentTarget as HTMLElement;
+    const press = sheetPresses.get(model);
     if (!press || press.id !== event.pointerId) {
       // A pointer resting on the sheet, no button held, looks as the engine answers: a crosshair where a
       // press would grab the fill handle. A finger has no hover.
@@ -1668,9 +1666,8 @@ function lowerSheetSurface(
   }) as unknown as EventHandler;
 
   view.events['pointerup'] = ((event: PointerEvent) => {
-    if (!press || press.id !== event.pointerId) return;
-    const ended = press;
-    settle();
+    if (sheetPresses.get(model)?.id !== event.pointerId) return;
+    const ended = settle()!;
     // The release of a finger's pan, which the table marked handled, is no tap.
     const phase = ended.kind === 'touch' && event.defaultPrevented ? 'cancel' : 'up';
     const at = local(ended.target, event.clientX, event.clientY);
@@ -1678,7 +1675,7 @@ function lowerSheetSurface(
   }) as unknown as EventHandler;
 
   view.events['pointercancel'] = ((event: PointerEvent) => {
-    if (press?.id === event.pointerId) cancel();
+    if (sheetPresses.get(model)?.id === event.pointerId) cancel();
   }) as unknown as EventHandler;
 
   view.events['copy'] = ((event: ClipboardEvent) => {
@@ -1707,6 +1704,9 @@ function lowerSheetSurface(
 
   return view;
 }
+
+/** The press in flight on each sheet surface, by MODEL — see lowerSheetSurface. */
+const sheetPresses = new WeakMap<object, { id: number; kind: string; target: HTMLElement; blur: () => void }>();
 
 /**
  * The table viewport on the web, at the offset its model holds as the pass runs (C# twin:

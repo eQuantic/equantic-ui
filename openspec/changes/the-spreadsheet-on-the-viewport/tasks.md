@@ -94,9 +94,9 @@
       not measure (the row numbers' width), and hydration draws them and hands the client's sheet the
       press; verify a `spreadsheet` case in the component parity fixture and a hydration spec over its
       markup
-- [ ] 5.3 Run the Server suite and record the served runtime's gzip size against its budget; verify the
+- [x] 5.3 Run the Server suite and record the served runtime's gzip size against its budget; verify the
       budget test passes, or move its line and say in the commit what the bytes bought
-- [ ] 5.4 Prove in Chromium on the dashboard's `/sheet`: the headers aligned at 400, 900 and 1 440 px,
+- [x] 5.4 Prove in Chromium on the dashboard's `/sheet`: the headers aligned at 400, 900 and 1 440 px,
       both axes by the wheel, forty ↓ and PageDown keeping the active cell in view, a drag held past
       the bottom scrolling and extending, the sheet scrolling inside its frame in the console's page
 
