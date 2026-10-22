@@ -135,7 +135,7 @@ export class Spreadsheet extends StatefulComponent {
         } else if (value.length > 0) {
             content = new Text(value, 'bodyM', palette.cellText, 1);
         }
-        return new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, background: palette.cellBackground, borderColor: palette.gridline, borderWidth: 0.5, padding: new EdgeInsets(0, 6, 0, 6) }), content);
+        return new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, background: palette.cellBackground, borderColor: palette.gridline, borderWidth: 0.5, padding: EdgeInsets.symmetric(6, 4) }), content);
     }
 
     marks(palette: SheetPalette) {

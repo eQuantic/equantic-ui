@@ -59,7 +59,7 @@ public sealed class TableScreen : StatefulComponent
             Background = header ? theme.SurfaceSubtle : theme.Surface,
             BorderColor = theme.Border,
             BorderWidth = 0.5f,
-            Padding = new EdgeInsets(0, 6, 0, 6),
+            Padding = EdgeInsets.All(6),
         }, new Text(label, TypeRole.Caption, header ? theme.TextMuted : theme.TextPrimary, maxLines: 1));
     }
 }

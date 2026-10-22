@@ -749,8 +749,9 @@ public static class Gallery
         var sheet = state.Sheet ??= SeedSheet();
         var column = Column(Space.S2);
         column.Add(Caption(theme,
-            "Click a cell and type (Excel's replace-and-go), Enter commits stepping down, "
-            + "drag a header separator to resize, ⌘C/⌘V speak TSV, ⌘Z undoes."));
+            "A hundred thousand rows by a hundred columns, scrolled on both axes under pinned headers. "
+            + "Click a cell and type (Excel's replace-and-go), Enter commits stepping down, drag past an "
+            + "edge to scroll, drag a header separator to resize, ⌘C/⌘V speak TSV, ⌘Z undoes."));
         column.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fixed(420) },
             Spreadsheet(sheet, width: SizeValue.Fill, height: SizeValue.Fill)));
         return Section(theme, "Spreadsheet", column);
@@ -791,7 +792,7 @@ public static class Gallery
             Background = header ? theme.SurfaceSubtle : theme.Surface,
             BorderColor = theme.Border,
             BorderWidth = 0.5f,
-            Padding = new EdgeInsets(0, 6, 0, 6),
+            Padding = EdgeInsets.All(6),
         }, new Text(label, TypeRole.Caption, header ? theme.TextMuted : theme.TextPrimary, maxLines: 1));
     }
 
@@ -898,10 +899,9 @@ public static class Gallery
 
     private static SheetController SeedSheet()
     {
-        // Six columns FIT the studio's content pane (44 + 6×96 = 620dp). Eight would hang past the
-        // right edge, and until wide sheets get 2D scroll (a stated fence) the clipped columns
-        // would be content nobody can reach — the walk test is what said so.
-        var sheet = new SheetController(rows: 200, cols: 6);
+        // A hundred thousand rows by a hundred columns: the sheet builds only the cells in view on both
+        // axes and scrolls the rest under its pinned headers, so its size costs what a screenful costs.
+        var sheet = new SheetController(rows: 100_000, cols: 100);
         sheet.Document.SetCell(new CellRef(0, 0), "Ledger");
         sheet.Document.SetCell(new CellRef(0, 1), "Amount");
         sheet.Document.SetCell(new CellRef(0, 2), "Status");

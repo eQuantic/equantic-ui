@@ -308,7 +308,9 @@ public sealed class Spreadsheet : StatefulComponent
             Background = palette.CellBackground,
             BorderColor = palette.Gridline,
             BorderWidth = 0.5f,
-            Padding = new EdgeInsets(0, 6, 0, 6),
+            // Six points from the gridlines on each side, and the body's 20-point line centred in the
+            // default row's 28.
+            Padding = EdgeInsets.Symmetric(6, 4),
         }, content);
     }
 
