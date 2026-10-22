@@ -102,10 +102,10 @@
 
 ## 6. Photon and the bench
 
-- [ ] 6.1 The gallery's Spreadsheet section on the new component, a sheet of 100 000 × 100; prove it in
+- [x] 6.1 The gallery's Spreadsheet section on the new component, a sheet of 100 000 × 100; prove it in
       a real Metal window (`--Photon:MaxFrames`) and by its headless picture; retake the README's
       gallery pictures if they change, look at them, and record them
-- [ ] 6.2 A bench for a keystroke and a scroll step at 100 000 × 100 on both targets (Photon host, the
+- [x] 6.2 A bench for a keystroke and a scroll step at 100 000 × 100 on both targets (Photon host, the
       runtime under happy-dom), each with a ceiling that fails and a count of what was built; record
       the numbers in the pull request
 
