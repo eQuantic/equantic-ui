@@ -80,18 +80,20 @@
       theme that names a gridline colour and one that names nothing
 - [x] 4.6 A finger on Photon: a tap selects on its release, a pan scrolls and selects nothing (the host
       tells the model `Cancel` when the table's pan takes the press); verify Photon host tests
-- [ ] 4.7 The wiki's Components page, Spreadsheet section, describes the grid on two axes, the kept
+- [x] 4.7 The wiki's Components page, Spreadsheet section, describes the grid on two axes, the kept
       active cell, the held drag, the marks and the theme slot, in five languages; verify the wiki
       guards and a `WikiClaimsCompile` claim for its snippet
 
 ## 5. The web
 
-- [ ] 5.1 The sheet surface takes pointer events with capture instead of mouse events and document
+- [x] 5.1 The sheet surface takes pointer events with capture instead of mouse events and document
       listeners, passing the pointer's kind; the table's after-pass marks a `pointerup` that ended a
       pan, and the surface reads it as a cancel; verify web specs with real events: a mouse drag
       selects, a finger's tap selects on release, a finger's pan scrolls and selects nothing
-- [ ] 5.2 The C# server lowering writes the spreadsheet's boxes and hydration adopts them; verify a
-      `spreadsheet` case in the component parity fixture and a hydration spec over its markup
+- [x] 5.2 The C# server lowering writes the spreadsheet's boxes, marked as laid out on text it could
+      not measure (the row numbers' width), and hydration draws them and hands the client's sheet the
+      press; verify a `spreadsheet` case in the component parity fixture and a hydration spec over its
+      markup
 - [ ] 5.3 Run the Server suite and record the served runtime's gzip size against its budget; verify the
       budget test passes, or move its line and say in the commit what the bytes bought
 - [ ] 5.4 Prove in Chromium on the dashboard's `/sheet`: the headers aligned at 400, 900 and 1 440 px,

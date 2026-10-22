@@ -18,7 +18,7 @@ import { describe, expect, it } from 'vitest';
 import fixture from './component-parity.fixture.json';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
-import { setPhotonTheme } from './photon-context';
+import { measurePhotonText, setPhotonTheme } from './photon-context';
 import type { HtmlNode } from '../core/types';
 import {
   AdaptiveNode,
@@ -81,6 +81,10 @@ import { DataColumn } from './components/DataColumn';
 import { DataRow } from './components/DataRow';
 import { TableView } from './components/TableView';
 import { UniformTableSpans } from './components/UniformTableSpans';
+import { Spreadsheet } from './components/Spreadsheet';
+import { SheetController } from './components/SheetController';
+import { CellRef } from './components/CellRef';
+import { SheetRange } from './components/SheetRange';
 import { Popover } from './components/Popover';
 import { Drawer } from './components/Drawer';
 import { Avatar } from './components/Avatar';
@@ -103,7 +107,9 @@ installCulture('en-US', 'en-US', {}, calendarFormat(calendarNames['en-US']));
 const lower = (node: unknown): HtmlNode =>
   lowerVisualNode(node as never, {
     textPrimary: photonTheme.textPrimary,
-    componentContext: { theme: photonTheme, typeScale: 1 },
+    // The runtime's own measurer, as every page's context carries it: a spreadsheet sizes its row
+    // numbers with it (happy-dom has no canvas, so it answers 0 and the column keeps its floor).
+    componentContext: { theme: photonTheme, typeScale: 1, measureText: measurePhotonText },
   });
 
 /**
@@ -357,6 +363,15 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         (row: number, column: number) => new Text(`${row}:${column}`, 'caption', photonTheme.textPrimary),
         { pinnedRows: 1, canRequestFocus: false },
       ),
+    ),
+    spreadsheet: still(
+      (() => {
+        const sheet = new SheetController(30, 6);
+        sheet.document.setCell(new CellRef(0, 0), 'Ledger');
+        sheet.document.setCell(new CellRef(1, 1), '42');
+        sheet.selection = new SheetRange(new CellRef(1, 1), new CellRef(2, 2));
+        return new Spreadsheet(sheet, { width: SizeValue.fill, height: SizeValue.fixed(240) });
+      })(),
     ),
     'popover-closed': still(
       new Popover(

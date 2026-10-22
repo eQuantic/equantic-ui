@@ -78,7 +78,7 @@ export class Spreadsheet extends StatefulComponent {
     }
 
     static headerCell(label: string, palette: SheetPalette, selected: boolean = false, onPressed: (() => void) | null = null) {
-        let cell = new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, background: selected ? palette.headerSelectedBackground : palette.headerBackground, borderColor: palette.gridline, borderWidth: 0.5 }), VisualNodeExtensions.centered(new Text(label, 'caption', selected ? palette.headerSelectedText : palette.headerText, 1)));
+        let cell = new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, background: selected ? palette.headerSelectedBackground : palette.headerBackground, borderColor: palette.gridline, borderWidth: 0.5 }), label.length === 0 ? null : VisualNodeExtensions.centered(new Text(label, 'caption', selected ? palette.headerSelectedText : palette.headerText, 1)));
         return onPressed == null ? cell : new Pressable(cell, onPressed, { canRequestFocus: false });
     }
 

@@ -81,6 +81,11 @@ which the engine already references, and the component wraps them with the heade
 The component owns the scroll and hands it to its `TableView` (`TableView.Scroll`, Flutter's
 `ScrollController` handed to a scrollable), so the engine and the viewport read the same object.
 
+The row-number column is as wide as its widest number, measured in the header's type
+(`ComponentContext.MeasureText`). The server has no fonts, so it marks the sheet as laid out on text it
+could not measure, and hydration draws the sheet rather than adopting a width built on zeros, the rule
+a code block's gutter already follows.
+
 A point over a pinned band reads the band's row or column the way the viewport draws it: over the
 header row during a drag, the drag holds the first visible row and auto-scrolls (decision 4).
 

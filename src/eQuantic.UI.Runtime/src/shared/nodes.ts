@@ -735,6 +735,8 @@ export interface SheetSurfaceModelLike {
     clicks: number,
     kind: string,
   ): boolean;
+  /** What the pointer looks like resting at a point: a PointerCursor member name ('crosshair'). */
+  cursorAt(position: { x: number; y: number }): string;
 }
 
 /** Arrow-key adjustment semantics — one Tab stop wrapping a slider-like control. */

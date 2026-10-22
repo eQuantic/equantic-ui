@@ -32,6 +32,17 @@ public class SpreadsheetRowHeaderTests
             "the band the cells scroll in starts where the numbers end");
     }
 
+    [Fact]
+    public void TheServer_LeavesTheSheetForTheBrowserToDraw()
+    {
+        // The row numbers are as wide as their widest number, in the header's type: text the server
+        // has no fonts to measure, so it says so, and hydration draws the sheet rather than adopting
+        // a width built on zeros.
+        var root = WebRealizer.Lower(new Spreadsheet(new SheetController()), PhotonTheme.Instance).Render();
+
+        root.Attributes.Should().ContainKey("data-" + WebLoweringVisitor.UnmeasuredMark);
+    }
+
     private sealed record PlacedCell(string? Left, string? Width, string Text);
 
     /// <summary>Every absolutely placed cell, with the text it holds.</summary>

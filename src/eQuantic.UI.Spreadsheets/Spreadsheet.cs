@@ -180,8 +180,8 @@ public sealed class Spreadsheet : StatefulComponent
             Background = selected ? palette.HeaderSelectedBackground : palette.HeaderBackground,
             BorderColor = palette.Gridline,
             BorderWidth = 0.5f,
-        }, new Text(label, TypeRole.Caption, selected ? palette.HeaderSelectedText : palette.HeaderText,
-            maxLines: 1).Centered());
+        }, label.Length == 0 ? null : new Text(label, TypeRole.Caption,
+            selected ? palette.HeaderSelectedText : palette.HeaderText, maxLines: 1).Centered());
         // A header press leaves the keyboard on the sheet, the one stop of the Tab order, as Excel's
         // header does: the arrows go on moving the active cell after a column is selected.
         return onPressed is null ? cell : new Pressable(cell, onPressed) { CanRequestFocus = false };

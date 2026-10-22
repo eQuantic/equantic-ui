@@ -395,6 +395,9 @@ function listen(view: TableElement): void {
     const declaration = view.__eqTable;
     if (!declaration) return;
     declaration.node.scroll.pointer(phase, local(event), ended.kind, performance.now());
+    // Handled: the release of a pan is no tap, and what composes the table reads it so (a spreadsheet's
+    // surface tells its engine the press was taken away).
+    event.preventDefault();
     capture(view, event.pointerId, 'release');
     paint(view);
     report(view);

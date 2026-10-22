@@ -173,6 +173,9 @@ public class ComponentParityFixtureTests
             PinnedRows = 1,
             CanRequestFocus = false,
         }, NoPresses),
+        // A SPREADSHEET (#995): the sheet's surface around the table it composes, the headers pinned, a
+        // value in a cell, and a range selected, so the band, the ring and the fill handle are marks.
+        ("spreadsheet", Sheet(), NoPresses),
         ("popover-closed", new Popover(new Button("Info"),
             new Text("the content", TypeRole.BodyM, Theme.TextPrimary), false), NoPresses),
         ("drawer-open", new Drawer(new Text("side", TypeRole.BodyM, Theme.TextPrimary), true), NoPresses),
@@ -336,6 +339,16 @@ public class ComponentParityFixtureTests
         PressedBackground = Theme.SurfaceSubtle,
     };
 
+    private static eQuantic.UI.Spreadsheets.Spreadsheet Sheet()
+    {
+        var sheet = new eQuantic.UI.Sheet.SheetController(rows: 30, cols: 6);
+        sheet.Document.SetCell(new eQuantic.UI.Sheet.CellRef(0, 0), "Ledger");
+        sheet.Document.SetCell(new eQuantic.UI.Sheet.CellRef(1, 1), "42");
+        sheet.Selection = new eQuantic.UI.Sheet.SheetRange(new eQuantic.UI.Sheet.CellRef(1, 1),
+            new eQuantic.UI.Sheet.CellRef(2, 2));
+        return new eQuantic.UI.Spreadsheets.Spreadsheet(sheet) { Width = SizeValue.Fill, Height = SizeValue.Fixed(240) };
+    }
+
     private static TableView TableGrid() => new(new UniformTableSpans(6, 28), new UniformTableSpans(4, 96),
         (row, column) => new Text($"{row}:{column}", TypeRole.Caption, Theme.TextPrimary))
     {
@@ -492,7 +505,10 @@ public class ComponentParityFixtureTests
     {
         var attributes = new JsonObject();
         foreach (var pair in node.Attributes.OrderBy(a => a.Key, StringComparer.Ordinal))
-            if (pair.Value is not null)
+            // The server's note to hydration that it laid a subtree out on text it could not measure
+            // (WebLoweringVisitor.UnmeasuredMark) is the server's alone: the browser measures, so its
+            // lowering has nothing to say there, and the client-only keys the twin drops are the mirror.
+            if (pair.Value is not null && pair.Key != "data-" + WebLoweringVisitor.UnmeasuredMark)
                 attributes[pair.Key] = JsonValue.Text(Normalize(pair.Key, pair.Value));
 
         var result = new JsonObject { ["tag"] = JsonValue.Text(node.Tag) };
