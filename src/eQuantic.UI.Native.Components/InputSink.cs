@@ -294,7 +294,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     public void Add(TableRegion region)
     {
         var placed = region with { Bounds = Place(region.Bounds) };
-        if (!suppressFocusStops)
+        if (!suppressFocusStops && region.Viewport.CanRequestFocus)
             AddStop(new FocusStop(region.Element.Id, region.Element, null, null, placed.Bounds, Table: region.Viewport),
                 region.Bounds);
         if (!Visible(placed.Bounds)) return;

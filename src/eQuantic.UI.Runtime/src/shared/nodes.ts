@@ -702,6 +702,8 @@ export interface TableViewportNode extends VisualNodeValue {
   onScrolled?: ((offset: { across: number; down: number }) => void) | null;
   onViewportChanged?: ((viewport: { width: number; height: number }) => void) | null;
   label?: string | null;
+  /** False: no Tab stop of its own and no keys (the C# `CanRequestFocus`). */
+  canRequestFocus?: boolean;
   cells: TableViewCellNode[];
 }
 

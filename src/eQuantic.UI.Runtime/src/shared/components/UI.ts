@@ -101,8 +101,8 @@ export class UI {
         return new ScrollView(child, axis, { width: width, height: height });
     }
 
-    static tableViewport(rows: TableSpans, columns: TableSpans, scroll: any, pinnedRows: number = 0, pinnedColumns: number = 0, width?: SizeValue, height?: SizeValue, request: TableScrollRequest | null = null, onScrolled: ((tableOffset: TableOffset) => void) | null = null, onViewportChanged: ((size: Size) => void) | null = null, label: string | null = null, children: VisualNode[] | null = null) {
-        let node = new TableViewport(rows, columns, scroll, { pinnedRows: pinnedRows, pinnedColumns: pinnedColumns, width: width, height: height, request: request, onScrolled: onScrolled, onViewportChanged: onViewportChanged, label: label });
+    static tableViewport(rows: TableSpans, columns: TableSpans, scroll: any, pinnedRows: number = 0, pinnedColumns: number = 0, width?: SizeValue, height?: SizeValue, request: TableScrollRequest | null = null, onScrolled: ((tableOffset: TableOffset) => void) | null = null, onViewportChanged: ((size: Size) => void) | null = null, label: string | null = null, canRequestFocus: boolean = true, children: VisualNode[] | null = null) {
+        let node = new TableViewport(rows, columns, scroll, { pinnedRows: pinnedRows, pinnedColumns: pinnedColumns, width: width, height: height, request: request, onScrolled: onScrolled, onViewportChanged: onViewportChanged, label: label, canRequestFocus: canRequestFocus });
         if (children != null) for (const child of children) node.add((($as: any) => $as instanceof TableViewCell ? $as : null)(child) ?? $eq.exceptions.raise($eq.exceptions.create(['System.ArgumentException', 'System.SystemException', 'System.Exception'], 'A table viewport places TableViewCells, and nothing else.', { paramName: 'children' })));
         return node;
     }
@@ -343,8 +343,8 @@ export class UI {
         return new Skeleton(shape, width, height);
     }
 
-    static tableView(rows: TableSpans, columns: TableSpans, cellBuilder: (arg1: number, arg2: number) => VisualNode | null, pinnedRows: number = 0, pinnedColumns: number = 0, overscan: number = 3, width?: SizeValue, height?: SizeValue, marks: TableViewCell[] | null = null, request: TableScrollRequest | null = null, onScrolled: ((tableOffset: TableOffset) => void) | null = null, onViewportChanged: ((size: Size) => void) | null = null, label: string | null = null) {
-        return new TableView(rows, columns, cellBuilder, { pinnedRows: pinnedRows, pinnedColumns: pinnedColumns, overscan: overscan, width: width, height: height, marks: marks, request: request, onScrolled: onScrolled, onViewportChanged: onViewportChanged, label: label });
+    static tableView(rows: TableSpans, columns: TableSpans, cellBuilder: (arg1: number, arg2: number) => VisualNode | null, pinnedRows: number = 0, pinnedColumns: number = 0, overscan: number = 3, width?: SizeValue, height?: SizeValue, marks: TableViewCell[] | null = null, request: TableScrollRequest | null = null, onScrolled: ((tableOffset: TableOffset) => void) | null = null, onViewportChanged: ((size: Size) => void) | null = null, label: string | null = null, canRequestFocus: boolean = true) {
+        return new TableView(rows, columns, cellBuilder, { pinnedRows: pinnedRows, pinnedColumns: pinnedColumns, overscan: overscan, width: width, height: height, marks: marks, request: request, onScrolled: onScrolled, onViewportChanged: onViewportChanged, label: label, canRequestFocus: canRequestFocus });
     }
 }
 

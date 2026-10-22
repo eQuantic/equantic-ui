@@ -350,6 +350,14 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         },
       ),
     ),
+    'table-view-unfocusable': still(
+      new TableView(
+        new UniformTableSpans(3, 28),
+        new UniformTableSpans(2, 96),
+        (row: number, column: number) => new Text(`${row}:${column}`, 'caption', photonTheme.textPrimary),
+        { pinnedRows: 1, canRequestFocus: false },
+      ),
+    ),
     'popover-closed': still(
       new Popover(
         new Button('Info'),

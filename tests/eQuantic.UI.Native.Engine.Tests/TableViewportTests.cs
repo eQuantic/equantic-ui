@@ -29,7 +29,7 @@ public class TableViewportTests
 
     private static TableView Table(Tally tally, int rows = ExcelRows, int columns = ExcelColumns,
         bool pressable = false, TableScrollRequest? request = null, IReadOnlyList<TableViewCell>? marks = null,
-        SizeValue height = default) =>
+        SizeValue height = default, bool canRequestFocus = true) =>
         new(new UniformTableSpans(rows, 28), new UniformTableSpans(columns, 96), (row, column) =>
         {
             tally.Built++;
@@ -42,6 +42,7 @@ public class TableViewportTests
             Request = request,
             Marks = marks,
             Height = height,
+            CanRequestFocus = canRequestFocus,
             OnScrolled = _ => tally.Scrolled++,
         };
 
@@ -478,6 +479,26 @@ public class TableViewportTests
         Settle(host);
         scroll.Offset.Down.Should().Be(0);
         host.KeyDown("ArrowUp").Should().BeFalse("at the first row, the key travels on");
+    }
+
+    [Fact]
+    public void ATableThatDeclinesTheFocus_IsNoStop_AndItsCellsStillAre()
+    {
+        var tally = new Tally();
+        var host = Host(Table(tally, rows: 2, columns: 2, pressable: true, canRequestFocus: false), 400, 200, tally);
+
+        var visited = new List<string>();
+        for (var i = 0; i < 4; i++)
+        {
+            host.KeyDown("Tab");
+            var frame = host.RenderFrame(new DisplayListBuilder(), _clock += 16);
+            var stop = frame.FocusStops.First(s => s.Id == host.FocusedId);
+            visited.Add(stop.Table is not null ? "table" : CellText(stop.Element));
+        }
+
+        visited.Should().Equal("0:0", "0:1", "1:0", "1:1");
+        host.KeyDown("ArrowDown").Should().BeFalse("the keys are the composing component's, not the table's");
+        Region(host).Viewport.Scroll.Offset.Should().Be(TableOffset.Zero);
     }
 
     [Fact]

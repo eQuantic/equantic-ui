@@ -24,7 +24,7 @@
 
 ## 2. The vocabulary and the viewport
 
-- [ ] 2.1 `TableViewport.CanRequestFocus` (default true) and its pass-through on `TableView`: Photon
+- [x] 2.1 `TableViewport.CanRequestFocus` (default true) and its pass-through on `TableView`: Photon
       registers no stop and routes no key for a viewport that declines, the web writes no `tabindex`
       and takes no key; verify a Photon test and a web spec with a button in a cell (Tab lands on the
       button, never on the viewport) and the parity fixture's table case both ways

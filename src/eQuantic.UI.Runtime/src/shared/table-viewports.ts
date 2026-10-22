@@ -493,24 +493,25 @@ function tab(view: TableElement, event: KeyboardEvent): void {
   const back = event.shiftKey;
   if (back && at === -1) return;
   const next = back ? at - 1 : at + 1;
-  if (next === -1) {
+  // Before the first, the viewport itself, when it is a stop of its own.
+  if (next === -1 && view.hasAttribute('tabindex')) {
     event.preventDefault();
     view.focus();
     return;
   }
-  if (next < order.length) {
+  if (next >= 0 && next < order.length) {
     event.preventDefault();
     order[next].focus();
     return;
   }
-  // Past the last: from the last control the document holds here, the browser's own Tab goes on past
-  // the table.
+  // Out of the table: from the control the document holds at that end here, the browser's own Tab
+  // goes on past the table, forward from the last, back from the first.
   const inDocument = [...view.querySelectorAll<HTMLElement>(TABBABLE)].filter((element) => order.includes(element));
-  const last = inDocument[inDocument.length - 1];
-  if (!last || last === active) return;
+  const edge = next === -1 ? inDocument[0] : inDocument[inDocument.length - 1];
+  if (!edge || edge === active) return;
   view.__eqTableLeaving = true;
   try {
-    last.focus({ preventScroll: true });
+    edge.focus({ preventScroll: true });
   } finally {
     view.__eqTableLeaving = false;
   }

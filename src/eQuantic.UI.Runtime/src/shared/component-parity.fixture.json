@@ -4571,6 +4571,350 @@
       ]
     }
   ],
+  "table-view-unfocusable": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-182ppyb eq-18plna0 eq-1eviv88 eq-1gudvpj eq-1jjc6f6 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn",
+        "role": "group"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1ogof62 eq-4xxlvk eq-gllhxs eq-mbtjfn eq-mfc69x eq-z6eb5z"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1ogof62 eq-1xlbso6 eq-mfc69x"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "key": "1:0",
+                  "attrs": {
+                    "class": "eq-1avhl7d eq-1fo26cq eq-1ogof62 eq-1xlbso6 eq-1yxcnfo eq-mfc69x"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-16x7aca eq-7gvrt4 eq-type-caption"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "1:0",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "tag": "div",
+                  "key": "1:1",
+                  "attrs": {
+                    "class": "eq-1avhl7d eq-1fo26cq eq-1xlbso6 eq-1yxcnfo eq-mfc69x eq-na4661"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-16x7aca eq-7gvrt4 eq-type-caption"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "1:1",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "tag": "div",
+                  "key": "2:0",
+                  "attrs": {
+                    "class": "eq-1avhl7d eq-1fo26cq eq-1ogof62 eq-1yxcnfo eq-gllhxs eq-mfc69x"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-16x7aca eq-7gvrt4 eq-type-caption"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "2:0",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "tag": "div",
+                  "key": "2:1",
+                  "attrs": {
+                    "class": "eq-1avhl7d eq-1fo26cq eq-1yxcnfo eq-gllhxs eq-mfc69x eq-na4661"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-16x7aca eq-7gvrt4 eq-type-caption"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "2:1",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1ogof62 eq-2l5nkt eq-4xxlvk eq-gllhxs eq-mbtjfn eq-mfc69x"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1ogof62 eq-1xlbso6 eq-mfc69x"
+              },
+              "events": [],
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1fo26cq eq-1ogof62 eq-1xlbso6 eq-mbtjfn eq-mfc69x eq-z6eb5z"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1ogof62 eq-1xlbso6 eq-mfc69x"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "key": "0:0",
+                  "attrs": {
+                    "class": "eq-1avhl7d eq-1fo26cq eq-1ogof62 eq-1xlbso6 eq-1yxcnfo eq-mfc69x"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-16x7aca eq-7gvrt4 eq-type-caption"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "0:0",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "tag": "div",
+                  "key": "0:1",
+                  "attrs": {
+                    "class": "eq-1avhl7d eq-1fo26cq eq-1xlbso6 eq-1yxcnfo eq-mfc69x eq-na4661"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-16x7aca eq-7gvrt4 eq-type-caption"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "0:1",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1fo26cq eq-1ogof62 eq-1xlbso6 eq-2l5nkt eq-mbtjfn eq-mfc69x"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1ogof62 eq-1xlbso6 eq-mfc69x"
+              },
+              "events": [],
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1ogof62 eq-4xxlvk eq-gllhxs eq-kngwsg eq-mbtjfn eq-mfc69x eq-z6eb5z",
+            "inert": ""
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1ogof62 eq-1xlbso6 eq-mfc69x"
+              },
+              "events": [],
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1ogof62 eq-2l5nkt eq-4xxlvk eq-gllhxs eq-kngwsg eq-mbtjfn eq-mfc69x",
+            "inert": ""
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1ogof62 eq-1xlbso6 eq-mfc69x"
+              },
+              "events": [],
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1fo26cq eq-1ogof62 eq-1xlbso6 eq-kngwsg eq-mbtjfn eq-mfc69x eq-z6eb5z",
+            "inert": ""
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1ogof62 eq-1xlbso6 eq-mfc69x"
+              },
+              "events": [],
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1fo26cq eq-1ogof62 eq-1xlbso6 eq-2l5nkt eq-kngwsg eq-mbtjfn eq-mfc69x",
+            "inert": ""
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1ogof62 eq-1xlbso6 eq-mfc69x"
+              },
+              "events": [],
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-7572tv eq-mfc69x eq-uydnfn"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-17a2pwz eq-1mfci38 eq-1n8pavh eq-mfc69x"
+              },
+              "events": [],
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-7572tv eq-mfc69x eq-uydnfn"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-17a2pwz eq-1mfci38 eq-1n8pavh eq-mfc69x"
+              },
+              "events": [],
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "popover-closed": [
     {
       "tag": "div",

@@ -82,6 +82,10 @@ public sealed class TableView : StatefulComponent
     /// <summary>Accessible name.</summary>
     public string? Label { get; init; }
 
+    /// <summary>Whether the table is a stop of the Tab order itself and scrolls by the keys
+    /// (<see cref="TableViewport.CanRequestFocus"/>): false leaves the keyboard to what composes it.</summary>
+    public bool CanRequestFocus { get; init; } = true;
+
     public override void AdoptConfig(UiComponent next)
     {
         if (next is not TableView fresh) return;
@@ -116,6 +120,7 @@ public sealed class TableView : StatefulComponent
             OnScrolled = Scrolled,
             OnViewportChanged = ViewportChanged,
             Label = config.Label,
+            CanRequestFocus = config.CanRequestFocus,
         };
 
         // The corner, the pinned rows over the columns in the window, the pinned columns down the rows

@@ -166,6 +166,13 @@ public class ComponentParityFixtureTests
         // band it reaches. The after-pass moves the layers by transform; what both sides write is the
         // boxes it starts from, which hydration adopts by their class hashes.
         ("table-view", TableGrid(), NoPresses),
+        // One that declines the focus: no Tab stop of its own on either side.
+        ("table-view-unfocusable", new TableView(new UniformTableSpans(3, 28), new UniformTableSpans(2, 96),
+            (row, column) => new Text($"{row}:{column}", TypeRole.Caption, Theme.TextPrimary))
+        {
+            PinnedRows = 1,
+            CanRequestFocus = false,
+        }, NoPresses),
         ("popover-closed", new Popover(new Button("Info"),
             new Text("the content", TypeRole.BodyM, Theme.TextPrimary), false), NoPresses),
         ("drawer-open", new Drawer(new Text("side", TypeRole.BodyM, Theme.TextPrimary), true), NoPresses),

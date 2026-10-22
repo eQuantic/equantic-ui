@@ -22,6 +22,7 @@ export class TableView extends StatefulComponent {
     declare onScrolled: ((tableOffset: TableOffset) => void) | null;
     declare onViewportChanged: ((size: Size) => void) | null;
     declare label: any;
+    declare canRequestFocus: boolean;
     static $slots: any = null;
     static $failure: any = null;
 
@@ -56,6 +57,7 @@ export class TableView extends StatefulComponent {
         if (this.pinnedRows === undefined) this.pinnedRows = 0;
         if (this.pinnedColumns === undefined) this.pinnedColumns = 0;
         if (this.overscan === undefined) this.overscan = 3;
+        if (this.canRequestFocus === undefined) this.canRequestFocus = true;
         this.rows = rows;
         this.columns = columns;
         this.cellBuilder = cellBuilder;
@@ -70,7 +72,7 @@ export class TableView extends StatefulComponent {
         let pinnedRows = Math.min(Math.max(config.pinnedRows, 0), rows.count);
         let pinnedColumns = Math.min(Math.max(config.pinnedColumns, 0), columns.count);
         if (!this.covers(this._scroll.offset)) this.window(this._scroll.offset);
-        let viewport = new TableViewport(rows, columns, this._scroll, { pinnedRows: pinnedRows, pinnedColumns: pinnedColumns, width: config.width, height: config.height, request: config.request, onScrolled: this.scrolled.bind(this), onViewportChanged: this.viewportChanged.bind(this), label: config.label });
+        let viewport = new TableViewport(rows, columns, this._scroll, { pinnedRows: pinnedRows, pinnedColumns: pinnedColumns, width: config.width, height: config.height, request: config.request, onScrolled: this.scrolled.bind(this), onViewportChanged: this.viewportChanged.bind(this), label: config.label, canRequestFocus: config.canRequestFocus });
         for (let row = 0; row < pinnedRows; row++) {
             for (let column = 0; column < pinnedColumns; column++) this.place(viewport, row, column);
             for (let column = this._firstColumn; column <= this._lastColumn; column++) this.place(viewport, row, column);

@@ -1689,8 +1689,9 @@ function lowerTableViewport(node: TableViewportNode, context: LoweringContext, p
   );
   view.attributes['role'] = 'group';
   // A stop of the Tab order itself, before its cells': the keys it takes scroll it (table-viewports.ts),
-  // and a scroller a keyboard cannot reach scrolls for nobody who only has a keyboard.
-  view.attributes['tabindex'] = '0';
+  // and a scroller a keyboard cannot reach scrolls for nobody who only has a keyboard. Unless it
+  // declines, for a component that composes it and keeps the keyboard.
+  if (node.canRequestFocus !== false) view.attributes['tabindex'] = '0';
   if (node.label) view.attributes['aria-label'] = node.label;
   view.attributes['data-eq-table'] = path;
   declareTableViewport(path, {
