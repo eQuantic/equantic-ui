@@ -551,9 +551,13 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     public bool CanExecute(CodeCommand command) => command switch
     {
         CodeCommand.None or CodeCommand.ReleaseKeyboard => false,
-        CodeCommand.NewLine or CodeCommand.DeleteLeft or CodeCommand.DeleteRight or CodeCommand.DeleteWordLeft
-            or CodeCommand.DeleteWordRight or CodeCommand.DeleteToLineStart
-            or CodeCommand.Cut or CodeCommand.Paste => !ReadOnly,
+        CodeCommand.NewLine or CodeCommand.Cut or CodeCommand.Paste => !ReadOnly,
+        // A deletion has something to take: a selection, or text on its side of the caret. ⌘⌫ at column
+        // zero of a later line joins it to the line above, as Backspace does.
+        CodeCommand.DeleteLeft or CodeCommand.DeleteWordLeft or CodeCommand.DeleteToLineStart =>
+            !ReadOnly && (!_selection.IsEmpty || Caret != CodePosition.Start),
+        CodeCommand.DeleteRight or CodeCommand.DeleteWordRight =>
+            !ReadOnly && (!_selection.IsEmpty || Caret != _document.End),
         // A language with no line comment (JSON, plain text) has nothing to toggle.
         CodeCommand.ToggleLineComment => !ReadOnly && Rules.LineComment is not null,
         CodeCommand.Indent or CodeCommand.Outdent => !ReadOnly && !TabMovesFocus,

@@ -318,6 +318,44 @@ public class CodeKeymapTableTests : IDisposable
         editor.Hover.IsOpen.Should().BeTrue("the default ⌘K ⌘I still showed the card");
     }
 
+    /// <summary>
+    /// A deletion can run only where it has something to take, a selection or text on its side of the
+    /// caret: nothing is left of the caret at the document's start, nor right of it at its end, and there a
+    /// menu greys it out and a chord of two keys ending in it does not wait (Copilot's third round on #1027).
+    /// ⌘⌫ at column zero of a later line joins it to the line above.
+    /// </summary>
+    [Fact]
+    public void ADeletion_CanRunOnlyWhereItHasSomethingToTake()
+    {
+        var editor = Editor("ab\ncd");
+        CodeCommand[] left = [CodeCommand.DeleteLeft, CodeCommand.DeleteWordLeft, CodeCommand.DeleteToLineStart];
+        CodeCommand[] right = [CodeCommand.DeleteRight, CodeCommand.DeleteWordRight];
+
+        editor.Selection = new CodeRange(CodePosition.Start);
+        foreach (var command in left)
+        {
+            editor.CanExecute(command).Should().BeFalse($"nothing is left of the start for {command}");
+            editor.Execute(command).Should().BeFalse();
+        }
+        foreach (var command in right) editor.CanExecute(command).Should().BeTrue($"{command} has the text after it");
+
+        editor.Selection = new CodeRange(editor.Document.End);
+        foreach (var command in right) editor.CanExecute(command).Should().BeFalse($"nothing is right of the end for {command}");
+        foreach (var command in left) editor.CanExecute(command).Should().BeTrue($"{command} has the text before it");
+
+        editor.Selection = new CodeRange(CodePosition.Start, new CodePosition(0, 1));
+        foreach (var command in left.Concat(right)) editor.CanExecute(command).Should().BeTrue($"{command} takes the selection");
+
+        editor.Selection = new CodeRange(CodePosition.Start);
+        editor.KeyBindings.Add(new CodeKeyBinding(KeyChord.Command("h"), CodeCommand.DeleteLeft) { First = KeyChord.Command("g") });
+        Press(editor, "g", KeyModifiers.Command).Should().BeFalse("the chord's deletion could not run");
+
+        editor.Selection = new CodeRange(new CodePosition(1, 0));
+        editor.CanExecute(CodeCommand.DeleteToLineStart).Should().BeTrue("at column zero it joins the line above");
+        editor.Execute(CodeCommand.DeleteToLineStart).Should().BeTrue();
+        editor.Document.Text.Should().Be("abcd");
+    }
+
     /// <summary>The first half of a chord of two keys waits only while its second half's command could
     /// run: with no card to show, ⌘K is the host's.</summary>
     [Fact]

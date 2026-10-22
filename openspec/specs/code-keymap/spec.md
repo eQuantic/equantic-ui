@@ -32,6 +32,12 @@ whether it would, so a command it answers true for does something when it runs.
 - **WHEN** an editor holds JSON, which has no line comment
 - **THEN** `CanExecute(CodeCommand.ToggleLineComment)` answers false, and ⌘/ is not claimed
 
+#### Scenario: A deletion with nothing to take
+
+- **WHEN** the caret stands at the start of the document with nothing selected
+- **THEN** `CanExecute` answers false for `DeleteLeft`, `DeleteWordLeft` and `DeleteToLineStart`, and true
+  for `DeleteRight`
+
 ### Requirement: The defaults name their chords exactly
 
 The default bindings SHALL be one table for each keyboard convention, `CodeKeymap.Defaults`. A key SHALL
