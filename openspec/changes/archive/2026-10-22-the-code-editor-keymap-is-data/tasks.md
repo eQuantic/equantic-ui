@@ -23,8 +23,8 @@
 
 ## 4. Documentation
 
-- [ ] 4.1 docs/CODE-EDITOR-PLAN.md: the row of slice 2's first part
+- [x] 4.1 docs/CODE-EDITOR-PLAN.md: the row of slice 2's first part
 - [x] 4.2 The wiki's CodeEditor page in every language it is written in: the keymap, the commands, an
       app's bindings
 - [x] 4.3 One ledger entry, a file under docs/ledger/, citing #1010
-- [ ] 4.4 Archive this change before the merge
+- [x] 4.4 Archive this change before the merge
