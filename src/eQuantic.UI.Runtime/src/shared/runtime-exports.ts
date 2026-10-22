@@ -95,6 +95,7 @@ export {
 } from './value-types';
 export { ComponentContext } from './photon-context';
 export { DataPalette, DivergingScale, StatusScale } from './data-palette';
+export { SheetTheme } from './sheet-theme';
 // Primitives types route to @equantic/runtime implicitly, so a page reading its route needs this
 // name to resolve here or it dies at hydration on an unresolvable import.
 export { RouteValues } from './route-values';

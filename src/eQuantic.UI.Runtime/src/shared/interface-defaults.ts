@@ -12,6 +12,7 @@
 
 import { CodeLanguageRules } from './components/CodeLanguageRules';
 import { DataPalette } from './data-palette';
+import type { SheetTheme } from './sheet-theme';
 import { codeTokenColor, type AppTheme, type ColorToken } from './value-types';
 
 /** `IAppTheme`'s defaults. */
@@ -20,6 +21,8 @@ export const IAppTheme = {
   monoFamily: (_theme: AppTheme): string | null => null,
   /** `DataPalette Data => DataPalette.Default;` — the validated reference palette. */
   data: (_theme: AppTheme): DataPalette => DataPalette.default,
+  /** `SheetTheme? Sheet => null;` — the spreadsheet's own colours, from the foundation. */
+  sheet: (_theme: AppTheme): SheetTheme | null => null,
   /** `ColorToken Code(CodeTokenKind kind)` — a token's colour from the theme's own roles. */
   code: (theme: AppTheme, kind: string): ColorToken => codeTokenColor(theme, kind),
 };

@@ -1,6 +1,7 @@
 IAppTheme.code
 IAppTheme.data
 IAppTheme.monoFamily
+IAppTheme.sheet
 ICodeCompletionProvider.resolveAsync
 ICodeCompletionProvider.triggerCharacters
 ICodeLanguage.keywords

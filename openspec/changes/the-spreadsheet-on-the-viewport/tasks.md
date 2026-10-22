@@ -34,7 +34,7 @@
       below, above the pinned row, further-is-faster, the end of the grid and the stop
 - [x] 2.3 Both hosts keep ticking a table that auto-scrolls (Photon's `AdvanceTables`, the web's
       `animate`); verify a Photon host test and a web spec where frames run with a pointer held below
-- [ ] 2.4 `SheetTheme` (every member an optional `ColorToken`) and `IAppTheme.Sheet`, a default member
+- [x] 2.4 `SheetTheme` (every member an optional `ColorToken`) and `IAppTheme.Sheet`, a default member
       answering null, with its TypeScript twin; the theme bridge writes `sheet` when the slot is not
       null, as it writes `data`, and the browser's theme answers it; verify the bridge's pinned JSON
       both ways (a theme with a slot, one without) and a spec reading the slot back in the browser

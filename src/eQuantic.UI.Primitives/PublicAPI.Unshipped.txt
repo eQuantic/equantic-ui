@@ -2,3 +2,35 @@
 eQuantic.UI.Primitives.TableViewport.CanRequestFocus.get -> bool
 eQuantic.UI.Primitives.TableViewport.CanRequestFocus.init -> void
 eQuantic.UI.Primitives.ITableScrollModel.AutoScroll(eQuantic.UI.Primitives.Point? pointer) -> void
+eQuantic.UI.Primitives.IAppTheme.Sheet.get -> eQuantic.UI.Primitives.SheetTheme?
+eQuantic.UI.Primitives.SheetTheme
+eQuantic.UI.Primitives.SheetTheme.<Clone>$() -> eQuantic.UI.Primitives.SheetTheme!
+eQuantic.UI.Primitives.SheetTheme.ActiveOutline.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.ActiveOutline.init -> void
+eQuantic.UI.Primitives.SheetTheme.CellBackground.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.CellBackground.init -> void
+eQuantic.UI.Primitives.SheetTheme.CellText.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.CellText.init -> void
+eQuantic.UI.Primitives.SheetTheme.Equals(eQuantic.UI.Primitives.SheetTheme? other) -> bool
+eQuantic.UI.Primitives.SheetTheme.FillHandle.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.FillHandle.init -> void
+eQuantic.UI.Primitives.SheetTheme.FillPreview.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.FillPreview.init -> void
+eQuantic.UI.Primitives.SheetTheme.Gridline.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.Gridline.init -> void
+eQuantic.UI.Primitives.SheetTheme.HeaderBackground.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.HeaderBackground.init -> void
+eQuantic.UI.Primitives.SheetTheme.HeaderSelectedBackground.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.HeaderSelectedBackground.init -> void
+eQuantic.UI.Primitives.SheetTheme.HeaderSelectedText.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.HeaderSelectedText.init -> void
+eQuantic.UI.Primitives.SheetTheme.HeaderText.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.HeaderText.init -> void
+eQuantic.UI.Primitives.SheetTheme.RangeFill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.RangeFill.init -> void
+eQuantic.UI.Primitives.SheetTheme.SheetTheme() -> void
+override eQuantic.UI.Primitives.SheetTheme.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.SheetTheme.GetHashCode() -> int
+override eQuantic.UI.Primitives.SheetTheme.ToString() -> string!
+static eQuantic.UI.Primitives.SheetTheme.operator !=(eQuantic.UI.Primitives.SheetTheme? left, eQuantic.UI.Primitives.SheetTheme? right) -> bool
+static eQuantic.UI.Primitives.SheetTheme.operator ==(eQuantic.UI.Primitives.SheetTheme? left, eQuantic.UI.Primitives.SheetTheme? right) -> bool
