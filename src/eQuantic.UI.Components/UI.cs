@@ -713,7 +713,7 @@ public static class UI
         int pinnedRows = 0, int pinnedColumns = 0, int overscan = 3, SizeValue width = default,
         SizeValue height = default, IReadOnlyList<TableViewCell>? marks = null, TableScrollRequest? request = null,
         Action<TableOffset>? onScrolled = null, Action<Size>? onViewportChanged = null, string? label = null,
-        bool canRequestFocus = true) =>
+        bool canRequestFocus = true, TableScroll? scroll = null) =>
         new TableView(rows, columns, cellBuilder)
         {
             PinnedRows = pinnedRows,
@@ -727,5 +727,6 @@ public static class UI
             OnViewportChanged = onViewportChanged,
             Label = label,
             CanRequestFocus = canRequestFocus,
+            Scroll = scroll,
         };
 }

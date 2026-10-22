@@ -18,3 +18,4 @@ eQuantic.UI.Spreadsheets.SpreadsheetsUI
 override eQuantic.UI.Spreadsheets.Spreadsheet.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
 override eQuantic.UI.Spreadsheets.Spreadsheet.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
 static eQuantic.UI.Spreadsheets.SpreadsheetsUI.Spreadsheet(eQuantic.UI.Sheet.SheetController! controller, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue), int overscan = 3) -> eQuantic.UI.Spreadsheets.Spreadsheet!
+const eQuantic.UI.Spreadsheets.Spreadsheet.NumberPadding = 8 -> float

@@ -380,4 +380,125 @@ public class SheetControllerTests
         sheet.Selection.Should().Be(new SheetRange(new CellRef(2, 2), new CellRef(5, 4)));
         sheet.ActiveCell.Should().Be(new CellRef(2, 2), "shift+click never moves the active cell");
     }
+
+    // ---- the axes as a table reads them --------------------------------------------------------
+
+    [Fact]
+    public void TheDocumentsAxes_AreSpans_AtBothEndsOfExcelsGrid()
+    {
+        var sheet = new SheetController(rows: 1_048_576, cols: 16_384);
+        sheet.Document.SetRowHeight(0, 40);
+        sheet.Document.SetRowHeight(1_048_575, 50);
+        var rows = sheet.Document.RowSpans;
+
+        rows.Count.Should().Be(1_048_576);
+        rows.OffsetOf(1).Should().Be(40);
+        rows.OffsetOf(2).Should().Be(68);
+        rows.OffsetOf(1_048_575).Should().Be(40 + 1_048_574 * 28.0);
+        rows.Total.Should().Be(40 + 1_048_574 * 28.0 + 50);
+        rows.ExtentOf(1_048_575).Should().Be(50);
+        rows.IndexAt(39.9).Should().Be(0);
+        rows.IndexAt(40).Should().Be(1);
+        rows.IndexAt(rows.Total - 1).Should().Be(1_048_575);
+        rows.IndexAt(rows.Total + 100).Should().Be(1_048_575, "past the end holds the last");
+        rows.IndexAt(-5).Should().Be(0, "before the start holds the first");
+        sheet.Document.ColumnSpans.Count.Should().Be(16_384);
+        sheet.Document.ColumnSpans.OffsetOf(16_384).Should().Be(16_384 * 96.0);
+    }
+
+    [Fact]
+    public void ASizeThatChanges_IsReadAgain_ByTheSpansAlreadyHanded()
+    {
+        var sheet = Sheet();
+        var rows = sheet.Document.RowSpans;
+        rows.OffsetOf(10).Should().Be(280);
+
+        sheet.Resize(SheetAxis.Rows, 5, 100);
+        rows.OffsetOf(10).Should().Be(280 + 72);
+
+        sheet.Insert(SheetAxis.Rows, 0);
+        rows.Count.Should().Be(101);
+        rows.ExtentOf(6).Should().Be(100, "the resized row moved down with the insert");
+        rows.OffsetOf(11).Should().Be(280 + 28 + 72);
+
+        sheet.Undo();
+        rows.Count.Should().Be(100);
+        rows.ExtentOf(5).Should().Be(100);
+    }
+
+    // ---- the active cell kept in view --------------------------------------------------------------
+
+    [Fact]
+    public void EveryCommandThatMovesTheActiveCell_RaisesTheRevealVersion_AndAPressDoesNot()
+    {
+        var sheet = Sheet();
+        ISheetSurfaceModel model = sheet;
+        var clipboard = new HeldClipboard();
+        var version = sheet.RevealVersion;
+
+        void Raised(string because)
+        {
+            sheet.RevealVersion.Should().BeGreaterThan(version, because);
+            version = sheet.RevealVersion;
+        }
+
+        model.HandleKey("ArrowDown", KeyModifiers.None, clipboard);
+        Raised("an arrow");
+        model.HandleKey("Enter", KeyModifiers.None, clipboard);
+        Raised("Enter");
+        model.HandleKey("ArrowDown", KeyModifiers.Command, clipboard);
+        Raised("a jump to the data's edge");
+        sheet.Paste("a\tb");
+        Raised("a paste");
+        sheet.Document.SetCell(new CellRef(0, 0), "x");
+        sheet.Selection = new SheetRange(new CellRef(0, 0), new CellRef(3, 0));
+        sheet.FillDown().Should().BeTrue();
+        Raised("a fill");
+        sheet.Undo();
+        Raised("an undo");
+        sheet.Redo();
+        Raised("a redo");
+
+        model.HandlePointer(PointerPhase.Down, new Point(200, 200), KeyModifiers.None, 1, PointerKind.Mouse);
+        model.HandlePointer(PointerPhase.Up, new Point(200, 200), KeyModifiers.None, 1, PointerKind.Mouse);
+        sheet.RevealVersion.Should().Be(version, "a pressed cell is under the pointer already");
+    }
+
+    [Fact]
+    public void PageDownAndPageUp_MoveByTheRowsShownUnderTheHeaders()
+    {
+        var sheet = new SheetController(rows: 200, cols: 8);
+        // A window whose cells take 20 rows of 28 under a 26-point header row.
+        SheetScrolls.Place(sheet, height: 26 + 20 * 28);
+        ISheetSurfaceModel model = sheet;
+        var version = sheet.RevealVersion;
+
+        model.HandleKey("PageDown", KeyModifiers.None, null).Should().BeTrue();
+        sheet.ActiveCell.Should().Be(new CellRef(20, 0), "A21");
+        sheet.RevealVersion.Should().BeGreaterThan(version);
+
+        model.HandleKey("PageDown", KeyModifiers.Shift, null).Should().BeTrue();
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(20, 0), new CellRef(40, 0)), "Shift keeps the anchor");
+
+        model.HandleKey("PageUp", KeyModifiers.None, null).Should().BeTrue();
+        sheet.ActiveCell.Should().Be(new CellRef(20, 0));
+        model.HandleKey("PageUp", KeyModifiers.None, null);
+        model.HandleKey("PageUp", KeyModifiers.None, null);
+        sheet.ActiveCell.Should().Be(new CellRef(0, 0), "the first row holds");
+    }
+
+    [Fact]
+    public void PageDown_WithNoViewport_IsNotTaken()
+    {
+        ISheetSurfaceModel model = Sheet();
+
+        model.HandleKey("PageDown", KeyModifiers.None, null).Should().BeFalse("there is no page to measure");
+    }
+
+    private sealed class HeldClipboard : ITextClipboard
+    {
+        public string? Held;
+        public void Write(string text) => Held = text;
+        public string? Read() => Held;
+    }
 }

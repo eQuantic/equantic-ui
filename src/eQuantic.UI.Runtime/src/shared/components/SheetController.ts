@@ -7,12 +7,15 @@ export class SheetController {
         this.document = null!;
         this.history = new SheetHistory();
         this.changed = null;
+        this.revealVersion = 0;
         this.editing = false;
         this.draft = '';
         this.fillSource = null;
         this.fillTarget = null;
         this.grid = SheetGrid.default;
         this._selecting = false;
+        this._tapped = null;
+        this._dragAt = null;
         this.document = new SheetDocument(rows, cols);
     }
 
@@ -21,12 +24,15 @@ export class SheetController {
     document!: SheetDocument;
     history!: SheetHistory;
     changed!: ((sheetEdit: SheetEdit) => void) | null;
+    revealVersion!: number;
     editing!: boolean;
     draft!: string;
     fillSource!: SheetRange | null;
     fillTarget!: SheetRange | null;
     grid!: SheetGrid;
     _selecting!: boolean;
+    _tapped!: CellRef | null;
+    _dragAt!: Point | null;
     static fillHandleGrab: number = 8;
 
     get selection(): SheetRange {
@@ -52,6 +58,24 @@ export class SheetController {
         landed = this.document.clamp(landed);
         this._selection = extend ? new SheetRange(this._selection.anchor, landed) : new SheetRange(landed);
         this._active = landed;
+        this.reveal();
+    }
+
+    movePage(direction: number, extend: boolean = false) {
+        let scroll: any; 
+        if (!((scroll = this.grid.scroll) != null)) return false;
+        let page = Math.max(this.document.rowSpans.extentOf(this._active.row), Math.fround(scroll.viewport.height - this.grid.headerHeight));
+        let from = this.document.rowSpans.offsetOf(this._active.row);
+        let row = this.document.rowSpans.indexAt(from + Math.sign(direction) * page);
+        let landed = this.document.clamp(new CellRef(row, this._active.col));
+        this._selection = extend ? new SheetRange(this._selection.anchor, landed) : new SheetRange(landed);
+        this._active = landed;
+        this.reveal();
+        return true;
+    }
+
+    reveal() {
+        return this.revealVersion++;
     }
 
     dataEdge(from: CellRef, dRow: number, dCol: number) {
@@ -106,6 +130,7 @@ export class SheetController {
             }
         }
         this._active = new CellRef(row, col);
+        this.reveal();
     }
 
     selectRows(fromRow: number, toRow: number) {
@@ -240,6 +265,7 @@ export class SheetController {
             }
         }
         this._selection = new SheetRange(origin, this.document.clamp(new CellRef(origin.row + grid.length - 1, origin.col + maxCols - 1)));
+        this.reveal();
         if (edit.before.length === 0) return false;
         edit.selectionAfter = this._selection;
         this.commit(edit);
@@ -302,6 +328,7 @@ export class SheetController {
         if (edit.before.length === 0) return false;
         edit.selectionAfter = this._selection;
         this.commit(edit);
+        this.reveal();
         return true;
     }
 
@@ -332,29 +359,25 @@ export class SheetController {
     }
 
     cellAt(point: Point) {
-        let x = Math.fround(point.x - this.grid.origin.x);
-        let y = Math.fround(point.y - this.grid.origin.y);
-        let col = this.grid.firstCol;
-        let acc = 0;
-        while (col < this.document.cols - 1 && Math.fround(acc + this.document.colWidth(col)) <= x) {
-            acc = Math.fround(acc + this.document.colWidth(col));
-            col++;
-        }
-        let row = this.grid.firstRow;
-        acc = 0;
-        while (row < this.document.rows - 1 && Math.fround(acc + this.document.rowHeight(row)) <= y) {
-            acc = Math.fround(acc + this.document.rowHeight(row));
-            row++;
-        }
-        return this.document.clamp(new CellRef(row, col));
+        let offset = this.grid.offset;
+        let across = Math.max(Math.fround(point.x - this.grid.headerWidth), 0) + offset.across;
+        let down = Math.max(Math.fround(point.y - this.grid.headerHeight), 0) + offset.down;
+        return this.document.clamp(new CellRef(this.document.rowSpans.indexAt(down), this.document.columnSpans.indexAt(across)));
     }
 
     fillHandleCorner() {
-        let x = this.grid.origin.x;
-        for (let c = this.grid.firstCol; c <= this._selection.rightCol; c++) x = Math.fround(x + this.document.colWidth(c));
-        let y = this.grid.origin.y;
-        for (let r = this.grid.firstRow; r <= this._selection.bottomRow; r++) y = Math.fround(y + this.document.rowHeight(r));
-        return new Point(x, y);
+        let offset = this.grid.offset;
+        return new Point(Math.fround((this.grid.headerWidth + this.document.columnSpans.offsetOf(this._selection.rightCol + 1) - offset.across)), Math.fround((this.grid.headerHeight + this.document.rowSpans.offsetOf(this._selection.bottomRow + 1) - offset.down)));
+    }
+
+    onFillHandle(position: Point) {
+        if (this.editing) return false;
+        let corner = this.fillHandleCorner();
+        return corner.x > this.grid.headerWidth && corner.y > this.grid.headerHeight && Math.abs(Math.fround(position.x - corner.x)) <= SheetController.fillHandleGrab && Math.abs(Math.fround(position.y - corner.y)) <= SheetController.fillHandleGrab;
+    }
+
+    cursorAt(position: Point) {
+        return this.onFillHandle(position) ? 'crosshair' : 'default';
     }
 
     handleKey(key: string, modifiers: number, clipboard: any) {
@@ -367,48 +390,53 @@ export class SheetController {
         return true;
     }
 
-    handlePointer(phase: PointerPhaseValue, position: Point, modifiers: number, clicks: number, _kind: PointerKindValue) {
+    handlePointer(phase: PointerPhaseValue, position: Point, modifiers: number, clicks: number, kind: PointerKindValue) {
         switch (phase) {
             case 'down':
                 {
                     this._selecting = false;
+                    this._tapped = null;
                     if (this.filling) this.cancelFill();
+                    if (kind === 'touch') {
+                        this._tapped = this.cellAt(position);
+                        return false;
+                    }
                     if (this.editing) this.commitEdit();
-                    let corner = this.fillHandleCorner();
-                    if (Math.abs(Math.fround(position.x - corner.x)) <= SheetController.fillHandleGrab && Math.abs(Math.fround(position.y - corner.y)) <= SheetController.fillHandleGrab) {
+                    if (this.onFillHandle(position)) {
                         this.beginFill();
+                        this._dragAt = position;
                         return true;
                     }
-                    let cell = this.cellAt(position);
-                    let shift = (modifiers & 1) !== 0;
-                    if (shift) this.selectTo(cell); else this.selection = new SheetRange(cell);
-                    if (clicks >= 2) this.beginEdit(this.document.getCell(cell));
-                    this._selecting = clicks < 2 && !shift;
+                    this.press(this.cellAt(position), modifiers, clicks);
+                    this._selecting = clicks < 2 && (modifiers & 1) === 0;
+                    if (this._selecting) this._dragAt = position;
                     return true;
                 }
             case 'move':
                 {
-                    if (this.filling) {
-                        let before = this.fillTarget;
-                        this.updateFill(this.cellAt(position));
-                        return !$eq.equals(this.fillTarget, before);
-                    }
-                    if (!this._selecting) return false;
-                    let cell = this.cellAt(position);
-                    if ($eq.equals(cell, this._selection.focus)) return false;
-                    this.selection = new SheetRange(this._selection.anchor, cell);
-                    return true;
+                    if (!this.filling && !this._selecting) return false;
+                    this._dragAt = position;
+                    this.grid.scroll?.autoScroll(position);
+                    return this.drag(position);
                 }
             case 'up':
                 {
-                    this._selecting = false;
+                    this.stopDrag();
+                    let tapped: any; 
+                    if ((tapped = this._tapped) != null) {
+                        this._tapped = null;
+                        if (this.editing) this.commitEdit();
+                        this.press(tapped, modifiers, clicks);
+                        return true;
+                    }
                     if (!this.filling) return false;
                     this.commitFill();
                     return true;
                 }
             case 'cancel':
                 {
-                    this._selecting = false;
+                    this.stopDrag();
+                    this._tapped = null;
                     if (!this.filling) return false;
                     this.cancelFill();
                     return true;
@@ -418,12 +446,42 @@ export class SheetController {
         }
     }
 
+    follow() {
+        let at: any; 
+        return (at = this._dragAt) != null && (this.filling || this._selecting) && this.drag(at);
+    }
+
+    press(cell: CellRef, modifiers: number, clicks: number) {
+        if ((modifiers & 1) !== 0) this.selectTo(cell); else this.selection = new SheetRange(cell);
+        if (clicks >= 2) this.beginEdit(this.document.getCell(cell));
+    }
+
+    drag(position: Point) {
+        if (this.filling) {
+            let before = this.fillTarget;
+            this.updateFill(this.cellAt(position));
+            return !$eq.equals(this.fillTarget, before);
+        }
+        let cell = this.cellAt(position);
+        if ($eq.equals(cell, this._selection.focus)) return false;
+        this.selection = new SheetRange(this._selection.anchor, cell);
+        return true;
+    }
+
+    stopDrag() {
+        this._selecting = false;
+        if (this._dragAt == null) return;
+        this._dragAt = null;
+        this.grid.scroll?.autoScroll(null);
+    }
+
     undo() {
         let edit = this.history.popUndo();
         if (edit == null) return false;
         this.apply(edit, false);
         this._selection = edit.selectionBefore;
         this._active = this._selection.focus;
+        this.reveal();
         this.changed?.(edit);
         return true;
     }
@@ -434,6 +492,7 @@ export class SheetController {
         this.apply(edit, true);
         this._selection = edit.selectionAfter;
         this._active = this._selection.focus;
+        this.reveal();
         this.changed?.(edit);
         return true;
     }

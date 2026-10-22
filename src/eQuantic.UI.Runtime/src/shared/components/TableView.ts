@@ -2,7 +2,7 @@ import { $eq, BuildContext, Size, SizeValue, StatefulComponent, TableOffset, Tab
 
 export class TableView extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TableView';
-    _scroll: TableScroll = new TableScroll();
+    _ownScroll: TableScroll = new TableScroll();
     _config: TableView;
     _viewport: Size = new Size();
     _firstRow: number = 0;
@@ -22,6 +22,7 @@ export class TableView extends StatefulComponent {
     declare onScrolled: ((tableOffset: TableOffset) => void) | null;
     declare onViewportChanged: ((size: Size) => void) | null;
     declare label: any;
+    declare scroll: any;
     declare canRequestFocus: boolean;
     static $slots: any = null;
     static $failure: any = null;
@@ -71,8 +72,9 @@ export class TableView extends StatefulComponent {
         let columns = config.columns;
         let pinnedRows = Math.min(Math.max(config.pinnedRows, 0), rows.count);
         let pinnedColumns = Math.min(Math.max(config.pinnedColumns, 0), columns.count);
-        if (!this.covers(this._scroll.offset)) this.window(this._scroll.offset);
-        let viewport = new TableViewport(rows, columns, this._scroll, { pinnedRows: pinnedRows, pinnedColumns: pinnedColumns, width: config.width, height: config.height, request: config.request, onScrolled: this.scrolled.bind(this), onViewportChanged: this.viewportChanged.bind(this), label: config.label, canRequestFocus: config.canRequestFocus });
+        let scroll = config.scroll ?? this._ownScroll;
+        if (!this.covers(scroll.offset)) this.window(scroll.offset);
+        let viewport = new TableViewport(rows, columns, scroll, { pinnedRows: pinnedRows, pinnedColumns: pinnedColumns, width: config.width, height: config.height, request: config.request, onScrolled: this.scrolled.bind(this), onViewportChanged: this.viewportChanged.bind(this), label: config.label, canRequestFocus: config.canRequestFocus });
         for (let row = 0; row < pinnedRows; row++) {
             for (let column = 0; column < pinnedColumns; column++) this.place(viewport, row, column);
             for (let column = this._firstColumn; column <= this._lastColumn; column++) this.place(viewport, row, column);

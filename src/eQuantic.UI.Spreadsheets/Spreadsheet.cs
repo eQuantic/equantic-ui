@@ -5,28 +5,46 @@ using eQuantic.UI.Sheet;
 namespace eQuantic.UI.Spreadsheets;
 
 /// <summary>
-/// The editable grid, write-once: column headers fixed on top, row headers scrolling WITH the
-/// rows, and the visible window of cells wrapped in a <see cref="SheetSurface"/> that lives
-/// INSIDE the scroll — so the selection band and the active-cell ring translate with the content
-/// and stay aligned at any scroll position, by construction. Rows virtualize the ListView way:
-/// the window plus spacers, converging through the ScrollView's out-channels.
+/// The editable grid, write-once: a <see cref="SheetSurface"/> over a <see cref="TableView"/> whose
+/// pinned first row is the column headers, whose pinned first column is the row numbers, and whose cell
+/// <c>(r + 1, c + 1)</c> is the sheet's cell <c>(r, c)</c>. Headers and cells share one layout and one
+/// scroll, so a cell starts under its column's header at every width and every offset, by construction,
+/// and only the cells in view are built, on both axes, up to Excel's 1 048 576 rows by 16 384 columns.
 /// <para>
-/// All interaction lives in the <see cref="SheetController"/> the app owns (click/drag select,
-/// Excel's keyboard, TSV clipboard, in-cell editing), the surface's model. v1 fences: vertical
-/// virtualization only (columns materialize — sheets in the tens of columns; wide-sheet 2D scroll
-/// joins later).
+/// A cell is built from its value alone. The selection's band, the active cell's ring, the fill's
+/// preview and the fill handle are marks the table draws above the cells, from the engine's rectangles,
+/// so a selection change restyles no cell. The surface wraps the whole table, so its coordinates are
+/// the table's: the engine reads every press against the scroll this component keeps
+/// (<see cref="SheetController.Grid"/>), a key that moves the active cell asks the table to reveal it,
+/// and a drag held past an edge scrolls the grid while the engine follows it.
+/// </para>
+/// <para>
+/// All interaction lives in the <see cref="SheetController"/> the app owns (press and drag select,
+/// Excel's keyboard, TSV clipboard, in-cell editing), the surface's model.
 /// </para>
 /// </summary>
 public sealed class Spreadsheet : StatefulComponent
 {
-    private float _offset;
-    private float _viewport;
-    private int _first;
-    private int _last = -1;
+    /// <summary>What the row-number column is laid out for before the table has said how tall its window
+    /// is.</summary>
+    private const double FirstGuess = 768;
+
+    private readonly TableScroll _scroll = new();
+    private LeadingSpans? _rows;
+    private LeadingSpans? _columns;
+    private SheetDocument? _document;
+
+    /// <summary>How many digits the widest row number the window shows has.</summary>
+    private int _digits = 1;
+
+    /// <summary>The configuration of the latest build: a parent that builds again hands a new one, and
+    /// its init-only settings are read from it.</summary>
+    private Spreadsheet _config;
 
     public Spreadsheet(SheetController controller)
     {
         Controller = controller;
+        _config = this;
     }
 
     public SheetController Controller { get; private set; }
@@ -34,11 +52,15 @@ public sealed class Spreadsheet : StatefulComponent
     public SizeValue Width { get; init; }
     public SizeValue Height { get; init; }
 
-    /// <summary>Rows built past each viewport edge, so a scroll shows cells, not blank.</summary>
+    /// <summary>Rows and columns built past each edge of the window, so a scroll shows cells, not blank.</summary>
     public int Overscan { get; init; } = 3;
 
+    /// <summary>The narrowest the row-number column is, however few digits its numbers have.</summary>
     public const float HeaderWidth = 44f;
     public const float HeaderHeight = 26f;
+
+    /// <summary>What the row-number column keeps on each side of its widest number.</summary>
+    public const float NumberPadding = 8f;
 
     /// <summary>Resize floors — Excel lets a column vanish; we keep a sliver so it stays grabbable.</summary>
     public const float MinColWidth = 24f;
@@ -55,134 +77,114 @@ public sealed class Spreadsheet : StatefulComponent
 
     public override void AdoptConfig(UiComponent next)
     {
-        if (next is Spreadsheet fresh) Controller = fresh.Controller;
-    }
-
-    /// <summary>The reconciliation key of a row's nodes: its number, unique among the siblings of
-    /// the window and the same whichever window holds it.</summary>
-    private static string RowKey(int row) => row.ToString();
-
-    private (int First, int Last, float Top) WindowFor(float offset, float viewport)
-    {
-        var document = Controller.Document;
-        var row = 0;
-        var top = 0f;
-        while (row < document.Rows - 1 && top + document.RowHeight(row) <= offset)
-        {
-            top += document.RowHeight(row);
-            row++;
-        }
-        var first = Math.Max(0, row - Overscan);
-        var firstTop = top;
-        for (var r = row - 1; r >= first; r--) firstTop -= document.RowHeight(r);
-
-        var last = row;
-        var covered = top - offset;
-        while (last < document.Rows - 1 && covered < viewport)
-        {
-            covered += document.RowHeight(last);
-            last++;
-        }
-        last = Math.Min(document.Rows - 1, last + Overscan);
-        return (first, last, firstTop);
-    }
-
-    private void OnScrolled(float offset)
-    {
-        _offset = offset;
-        var (first, last, _) = WindowFor(offset, _viewport > 0 ? _viewport : HeaderHeight * 14);
-        if (first == _first && last == _last) return;
-        SetState(() => { });
-    }
-
-    private void OnViewportChanged(float viewport)
-    {
-        if (Math.Abs(viewport - _viewport) < 0.5f) return;
-        SetState(() => _viewport = viewport);
+        if (next is not Spreadsheet fresh) return;
+        Controller = fresh.Controller;
+        _config = fresh;
     }
 
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
+        var palette = SheetPalette.Of(theme);
         var document = Controller.Document;
-        float topOfWindow;
-        (_first, _last, topOfWindow) = WindowFor(_offset, _viewport > 0 ? _viewport : HeaderHeight * 14);
+        _digits = DigitsShown(document);
 
-        // THE window, handed to the engine: the surface sits beside the row headers, inside the
-        // scroll, so its first cell is the window's first row at the surface's own corner. The only
-        // thing that turns a press into a cell, and the selection's corner into the fill handle's
-        // place, so the cells drawn below and the cells pressed cannot disagree.
-        Controller.Grid = new SheetGrid(Point.Zero, _first, 0);
-
-        // ---- fixed column headers (the corner + A..Z) --------------------------------------------
-        var headerRow = new Row(gap: 0) { Width = SizeValue.Fill };
-        headerRow.Add(HeaderCell("", HeaderWidth, HeaderHeight, theme,
-            onPressed: () => SetState(Controller.SelectAll)));
-        for (var c = 0; c < document.Cols; c++)
-            headerRow.Add(ColumnHeader(c, document, theme));
-
-        // ---- the scrolling half: row headers + the surface, INSIDE the scroll --------------------
-        // Keyed too: the spacer standing in for the rows above appears the moment the window leaves
-        // row 0, and would push this row from the first position to the second — a keyed row inside
-        // a shifted parent is a moved row all the same.
-        var windowRows = new Row(gap: 0) { Key = "window" };
-        // As wide as the header, and SAID: a strip that hugged its row headers had a minimum of zero
-        // on the web (a row header is a Stack, whose layers may not grow past it), so beside a grid
-        // wider than the window the browser shrank it to nothing and every cell slid left over the
-        // numbers (#613). A Fixed size shrinks on neither target.
-        var rowHeaders = new Column(gap: 0) { Width = SizeValue.Fixed(HeaderWidth) };
-        var grid = new Column(gap: 0);
-        for (var r = _first; r <= _last; r++)
+        // As wide as the widest number the window shows, in the header's type: row 10 000 needs a column
+        // row 10 does not. Measured, and never narrower than the floor, which is also what a render with
+        // no measurer gets.
+        var numbers = Math.Max(HeaderWidth,
+            MathF.Ceiling(context.MeasureText(new string('0', _digits), theme.Type(TypeRole.Caption))) + 2 * NumberPadding);
+        if (_rows is null || _columns is null || _document != document || _columns.Lead != numbers)
         {
-            rowHeaders.Add(RowHeader(r, document, theme));
-            grid.Add(GridRow(r, document, theme));
+            _document = document;
+            _rows = new LeadingSpans(document.RowSpans, HeaderHeight);
+            _columns = new LeadingSpans(document.ColumnSpans, numbers);
         }
-        windowRows.Add(rowHeaders);
-        windowRows.Add(new SheetSurface(grid, Controller)
+
+        // THE geometry, handed to the engine: the scroll that places the cells, read live, and the bands
+        // pinned in front of them. The only thing that turns a press into a cell, and the selection's
+        // corner into the fill handle's place, so the cells drawn and the cells pressed cannot disagree.
+        Controller.Grid = new SheetGrid(_scroll, numbers, HeaderHeight);
+
+        var active = Controller.ActiveCell;
+        var table = new TableView(_rows, _columns, (row, column) => Cell(row, column, document, palette, numbers))
+        {
+            PinnedRows = 1,
+            PinnedColumns = 1,
+            Overscan = _config.Overscan,
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Scroll = _scroll,
+            Marks = Marks(palette),
+            Request = new TableScrollRequest(Controller.RevealVersion) { Reveal = new TableRange(active.Row + 1, active.Col + 1) },
+            OnScrolled = Scrolled,
+            OnViewportChanged = ViewportChanged,
+            // The surface is the sheet's one stop of the Tab order, and an arrow moves the active cell.
+            CanRequestFocus = false,
+        };
+
+        return new Box(new BoxStyle
+        {
+            Width = _config.Width,
+            Height = _config.Height,
+            BorderColor = palette.Gridline,
+            BorderWidth = 1f,
+            Clip = true,
+        }, new SheetSurface(table, Controller)
         {
             OnChanged = () => SetState(() => { }),
             Label = SdkStrings.Spreadsheet,
         });
-
-        var content = new Column(gap: 0) { Width = SizeValue.Fill };
-        if (topOfWindow > 0) content.Add(Spacer.Fixed(topOfWindow));
-        content.Add(windowRows);
-        var below = 0f;
-        for (var r = _last + 1; r < document.Rows; r++) below += document.RowHeight(r);
-        if (below > 0) content.Add(Spacer.Fixed(below));
-
-        var frame = new Column(gap: 0) { Width = Width, Height = Height };
-        frame.Add(headerRow);
-        frame.Add(new Flexible(new ScrollView(content)
-        {
-            OnScrolled = OnScrolled,
-            OnViewportChanged = OnViewportChanged,
-        }, 1));
-
-        return new Box(new BoxStyle
-        {
-            Width = Width,
-            Height = Height,
-            BorderColor = theme.Border,
-            BorderWidth = 1f,
-            Clip = true,
-        }, frame);
     }
 
-    private static VisualNode HeaderCell(string label, float width, float height, IAppTheme theme,
-        bool selected = false, Action? onPressed = null)
+    /// <summary>How many digits the last row number the window shows has, at the scroll's offset now.</summary>
+    private int DigitsShown(SheetDocument document)
+    {
+        var height = _scroll.Viewport.Height > 0 ? _scroll.Viewport.Height : FirstGuess;
+        var last = document.RowSpans.IndexAt(_scroll.Offset.Down + height) + 1;
+        return last.ToString().Length;
+    }
+
+    /// <summary>The grid moved: a drag in flight reaches what scrolled in under it, and a row number that
+    /// gained a digit widens its column.</summary>
+    private void Scrolled(TableOffset offset)
+    {
+        var followed = Controller.Follow();
+        if (followed || DigitsShown(Controller.Document) != _digits) SetState(() => { });
+    }
+
+    private void ViewportChanged(Size viewport)
+    {
+        if (DigitsShown(Controller.Document) != _digits) SetState(() => { });
+    }
+
+    /// <summary>The table's cell at a row and a column: the corner, a column header, a row number, or the
+    /// sheet's own cell one up and one to the left.</summary>
+    private VisualNode Cell(int row, int column, SheetDocument document, SheetPalette palette, float numbers)
+    {
+        if (row == 0 && column == 0)
+            return HeaderCell("", palette, onPressed: () => SetState(Controller.SelectAll));
+        if (row == 0) return ColumnHeader(column - 1, palette);
+        if (column == 0) return RowHeader(row - 1, palette, numbers);
+        return SheetCell(new CellRef(row - 1, column - 1), document, palette);
+    }
+
+    private static VisualNode HeaderCell(string label, SheetPalette palette, bool selected = false,
+        Action? onPressed = null)
     {
         // A header inside the selection's band shades, exactly as Excel marks it.
         var cell = new Box(new BoxStyle
         {
-            Width = SizeValue.Fixed(width),
-            Height = SizeValue.Fixed(height),
-            Background = selected ? theme.SurfaceHighlight : theme.SurfaceSubtle,
-            BorderColor = theme.Border,
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Background = selected ? palette.HeaderSelectedBackground : palette.HeaderBackground,
+            BorderColor = palette.Gridline,
             BorderWidth = 0.5f,
-        }, new Text(label, TypeRole.Caption, selected ? theme.TextPrimary : theme.TextMuted,
+        }, new Text(label, TypeRole.Caption, selected ? palette.HeaderSelectedText : palette.HeaderText,
             maxLines: 1).Centered());
-        return onPressed is null ? cell : new Pressable(cell, onPressed);
+        // A header press leaves the keyboard on the sheet, the one stop of the Tab order, as Excel's
+        // header does: the arrows go on moving the active cell after a column is selected.
+        return onPressed is null ? cell : new Pressable(cell, onPressed) { CanRequestFocus = false };
     }
 
     // ---- resize grips: an invisible Draggable riding each header's trailing edge ----------------
@@ -190,14 +192,14 @@ public sealed class Spreadsheet : StatefulComponent
     // previews straight into the document every move, and the release replays the whole gesture as
     // ONE undoable Controller.Resize.
 
-    private VisualNode ColumnHeader(int c, SheetDocument document, IAppTheme theme)
+    private VisualNode ColumnHeader(int c, SheetPalette palette)
     {
         var col = c;   // the loop variable would be shared by every closure
         var selection = Controller.Selection;
         var inBand = c >= selection.LeftCol && c <= selection.RightCol;
         var stack = new Stack();
-        stack.Add(HeaderCell(CellRef.ColumnName(c), document.ColWidth(c), HeaderHeight, theme,
-            selected: inBand, onPressed: () => SetState(() => Controller.SelectCols(col, col))));
+        stack.Add(HeaderCell(CellRef.ColumnName(c), palette, selected: inBand,
+            onPressed: () => SetState(() => Controller.SelectCols(col, col))));
         stack.Add(new Positioned(new Draggable(new Box(new BoxStyle
         {
             Width = SizeValue.Fixed(Grip),
@@ -215,21 +217,17 @@ public sealed class Spreadsheet : StatefulComponent
         return stack;
     }
 
-    private VisualNode RowHeader(int r, SheetDocument document, IAppTheme theme)
+    private VisualNode RowHeader(int r, SheetPalette palette, float width)
     {
         var row = r;
         var selection = Controller.Selection;
         var inBand = r >= selection.TopRow && r <= selection.BottomRow;
-        // Keyed by ROW: the window slides, and a header's identity must not slide with it — focus
-        // and hover are remembered by path on Photon and by key on the web, and both realizers read
-        // this one Key. Without it, Tab down the headers restarted from the first control the
-        // moment the window shifted past the rows it began with.
-        var stack = new Stack { Key = RowKey(r) };
-        stack.Add(HeaderCell($"{r + 1}", HeaderWidth, document.RowHeight(r), theme,
-            selected: inBand, onPressed: () => SetState(() => Controller.SelectRows(row, row))));
+        var stack = new Stack();
+        stack.Add(HeaderCell($"{r + 1}", palette, selected: inBand,
+            onPressed: () => SetState(() => Controller.SelectRows(row, row))));
         stack.Add(new Positioned(new Draggable(new Box(new BoxStyle
         {
-            Width = SizeValue.Fixed(HeaderWidth),
+            Width = SizeValue.Fixed(width),
             Height = SizeValue.Fixed(Grip),
             Cursor = PointerCursor.RowResize,
         }))
@@ -273,73 +271,105 @@ public sealed class Spreadsheet : StatefulComponent
         SetState(() => { });
     }
 
-    private VisualNode GridRow(int row, SheetDocument document, IAppTheme theme)
+    /// <summary>A cell of the sheet, from its value alone, or the draft and its caret while it is being
+    /// edited.</summary>
+    private VisualNode SheetCell(CellRef cell, SheetDocument document, SheetPalette palette)
     {
-        // Selection, the active ring, the editing draft, the FILL HANDLE and the fill preview all
-        // paint ON THE CELLS — write-once, so both targets are identical by construction.
-        var selection = Controller.Selection;
-        var active = Controller.ActiveCell;
-        var fillTarget = Controller.FillTarget;
-        var line = new Row(gap: 0) { Key = RowKey(row) };
-        for (var c = 0; c < document.Cols; c++)
+        var editingHere = Controller.Editing && cell == Controller.ActiveCell;
+        var value = editingHere ? Controller.Draft : document.GetCell(cell);
+
+        VisualNode? content = null;
+        if (editingHere)
         {
-            var cell = new CellRef(row, c);
-            var isActive = cell == active;
-            var selected = selection.Contains(cell) && !selection.IsSingleCell;
-            var inFillPreview = fillTarget is { } preview && preview.Contains(cell);
-            var editingHere = isActive && Controller.Editing;
-            var value = editingHere ? Controller.Draft : document.GetCell(cell);
-
-            VisualNode? content = null;
-            if (editingHere)
+            var draftLine = new Row(gap: 0) { Cross = CrossAlign.Center };
+            if (value.Length > 0)
+                draftLine.Add(new Text(value, TypeRole.BodyM, palette.CellText, maxLines: 1));
+            // The caret at the draft's end — a thin bar, steady (the blink is the host's).
+            draftLine.Add(new Box(new BoxStyle
             {
-                var draftLine = new Row(gap: 0) { Cross = CrossAlign.Center };
-                if (value.Length > 0)
-                    draftLine.Add(new Text(value, TypeRole.BodyM, theme.TextPrimary, maxLines: 1));
-                // The caret at the draft's end — a thin bar, steady (the blink is the host's).
-                draftLine.Add(new Box(new BoxStyle
-                {
-                    Width = SizeValue.Fixed(2),
-                    Height = SizeValue.Fixed(document.RowHeight(row) - 8),
-                    Background = theme.TextPrimary,
-                }));
-                content = draftLine;
-            }
-            else if (value.Length > 0)
-            {
-                content = new Text(value, TypeRole.BodyM, theme.TextPrimary, maxLines: 1);
-            }
-
-            var box = new Box(new BoxStyle
-            {
-                Width = SizeValue.Fixed(document.ColWidth(c)),
-                Height = SizeValue.Fixed(document.RowHeight(row)),
-                Background = selected ? theme.SurfaceHighlight : theme.Surface,
-                BorderColor = isActive || inFillPreview ? theme.FocusRing : theme.Border,
-                BorderWidth = isActive ? 2f : inFillPreview ? 1.5f : 0.5f,
-                Padding = new EdgeInsets(0, 6, 0, 6),
-            }, content);
-
-            // Excel's little square: the fill handle rides the selection's bottom-right corner.
-            // Grabbing and dragging it is the surface's gesture; this is only the pixels + cursor.
-            if (!editingHere && row == selection.BottomRow && c == selection.RightCol)
-            {
-                var handled = new Stack();
-                handled.Add(box);
-                handled.Add(new Positioned(new Box(new BoxStyle
-                {
-                    Width = SizeValue.Fixed(FillHandle),
-                    Height = SizeValue.Fixed(FillHandle),
-                    Background = theme.FocusRing,
-                    BorderColor = theme.Surface,
-                    BorderWidth = 1f,
-                    Cursor = PointerCursor.Crosshair,
-                }), bottom: -1, end: -1) { Layer = 2 });
-                line.Add(handled);
-                continue;
-            }
-            line.Add(box);
+                Width = SizeValue.Fixed(2),
+                Height = SizeValue.Fixed(document.RowHeight(cell.Row) - 8),
+                Background = palette.CellText,
+            }));
+            content = draftLine;
         }
-        return line;
+        else if (value.Length > 0)
+        {
+            content = new Text(value, TypeRole.BodyM, palette.CellText, maxLines: 1);
+        }
+
+        return new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Background = palette.CellBackground,
+            BorderColor = palette.Gridline,
+            BorderWidth = 0.5f,
+            Padding = new EdgeInsets(0, 6, 0, 6),
+        }, content);
     }
+
+    /// <summary>
+    /// What the selection draws above the cells, from the engine's rectangles in the table's indices: the
+    /// band over a range of more than one cell, the fill's preview, the active cell's ring, and the fill
+    /// handle on the selection's bottom-right corner.
+    /// </summary>
+    private List<TableViewCell> Marks(SheetPalette palette)
+    {
+        var marks = new List<TableViewCell>();
+        var selection = Controller.Selection;
+        if (!selection.IsSingleCell)
+        {
+            marks.Add(Mark(selection, new Box(new BoxStyle
+            {
+                Width = SizeValue.Fill,
+                Height = SizeValue.Fill,
+                Background = palette.RangeFill,
+            })));
+        }
+        if (Controller.FillTarget is { } preview)
+        {
+            marks.Add(Mark(preview, new Box(new BoxStyle
+            {
+                Width = SizeValue.Fill,
+                Height = SizeValue.Fill,
+                BorderColor = palette.FillPreview,
+                BorderWidth = 1.5f,
+            })));
+        }
+        marks.Add(Mark(new SheetRange(Controller.ActiveCell), new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            BorderColor = palette.ActiveOutline,
+            BorderWidth = 2f,
+        })));
+        if (!Controller.Editing)
+        {
+            // Excel's little square on the selection's corner. Grabbing it, and the crosshair over it, are
+            // the engine's answers; this is only the pixels.
+            // The Stack takes the cell's size from a box that draws nothing, and the handle sits on its
+            // corner.
+            var corner = new Stack();
+            corner.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }));
+            corner.Add(new Positioned(new Box(new BoxStyle
+            {
+                Width = SizeValue.Fixed(FillHandle),
+                Height = SizeValue.Fixed(FillHandle),
+                Background = palette.FillHandle,
+                BorderColor = palette.CellBackground,
+                BorderWidth = 1f,
+            }), bottom: -1, end: -1));
+            marks.Add(Mark(new SheetRange(new CellRef(selection.BottomRow, selection.RightCol)), corner));
+        }
+        return marks;
+    }
+
+    /// <summary>A mark over a range of the sheet, in the table's indices (one past the headers).</summary>
+    private static TableViewCell Mark(SheetRange range, VisualNode child) =>
+        new(range.TopRow + 1, range.LeftCol + 1, child, mark: true)
+        {
+            Rows = range.BottomRow - range.TopRow + 1,
+            Columns = range.RightCol - range.LeftCol + 1,
+        };
 }

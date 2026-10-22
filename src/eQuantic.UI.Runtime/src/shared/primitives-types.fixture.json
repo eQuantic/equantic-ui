@@ -139,6 +139,7 @@
   "SheetHistory",
   "SheetKeymap",
   "SheetRange",
+  "SheetSpans",
   "SheetSurface",
   "SheetTheme",
   "Shortcut",

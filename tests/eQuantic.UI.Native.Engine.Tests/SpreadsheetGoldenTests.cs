@@ -20,7 +20,7 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// </summary>
 public class SpreadsheetGoldenTests
 {
-    private static (PhotonHost Host, SheetController Sheet) Open()
+    private static (PhotonHost Host, SheetController Sheet) Open(ThemeMode mode = ThemeMode.Light)
     {
         var sheet = new SheetController(rows: 30, cols: 4);
         sheet.Document.SetCell(new CellRef(0, 0), "Ledger");
@@ -34,7 +34,7 @@ public class SpreadsheetGoldenTests
         }
         var host = new PhotonHost(
             new Spreadsheet(sheet) { Width = SizeValue.Fill, Height = SizeValue.Fill },
-            PhotonTheme.Instance, ThemeMode.Light, 460, 260)
+            PhotonTheme.Instance, mode, 460, 260)
         {
             SmoothScroll = false,
         };
@@ -124,5 +124,38 @@ public class SpreadsheetGoldenTests
         sheet.Draft.Should().Be("Budget");
 
         Render(host, "sheet-editing-draft");
+    }
+
+    [Fact]
+    public void SelectionBand_Ring_AndFillHandle_InTheDark()
+    {
+        var (host, sheet) = Open(ThemeMode.Dark);
+        sheet.Selection = new SheetRange(new CellRef(1, 0), new CellRef(3, 1));
+        Changed(host);
+        host.RenderFrame(new DisplayListBuilder(), 50);
+
+        host.CursorAt(Spreadsheet.HeaderWidth + 2 * 96f - 2f, Spreadsheet.HeaderHeight + 4 * 28f - 2f)
+            .Should().Be(CursorShape.Crosshair);
+
+        Render(host, "sheet-selection-band-dark");
+    }
+
+    [Fact]
+    public void ARangeScrolledUnderTheHeaderRow_IsCutThere()
+    {
+        var (host, sheet) = Open();
+        sheet.Selection = new SheetRange(new CellRef(1, 0), new CellRef(5, 1));
+        Changed(host);
+        host.RenderFrame(new DisplayListBuilder(), 50);
+        var region = host.LastFrame!.TableRegions.Single();
+        host.ScrollBy(region.Bounds.X + 200, region.Bounds.Y + 100, 0, 3 * 28f, stepped: false);
+        host.RenderFrame(new DisplayListBuilder(), 66);
+
+        // The assertion beside the image: the grid stands three rows down, so rows 2 and 3 of the band
+        // are under the header row and its first row shown is row 4.
+        host.LastFrame!.TableRegions.Single().Viewport.Scroll.Offset.Down.Should().Be(3 * 28);
+        sheet.CellAt(new Point(Spreadsheet.HeaderWidth + 10, Spreadsheet.HeaderHeight + 1)).Should().Be(new CellRef(3, 0));
+
+        Render(host, "sheet-band-under-header", 82);
     }
 }

@@ -57,38 +57,43 @@ export class SheetKeymap {
             }
             return false;
         }
-        switch (key) {
-            case 'F2':
+        {
+            const $s = key;
+            if ($s === 'F2') {
                 sheet.beginEdit(sheet.document.getCell(sheet.activeCell));
                 return true;
-            case 'ArrowUp':
+            } else if ($s === 'ArrowUp') {
                 sheet.move(-1, 0, motion, shift);
                 return true;
-            case 'ArrowDown':
+            } else if ($s === 'ArrowDown') {
                 sheet.move(1, 0, motion, shift);
                 return true;
-            case 'ArrowLeft':
+            } else if ($s === 'ArrowLeft') {
                 sheet.move(0, -1, motion, shift);
                 return true;
-            case 'ArrowRight':
+            } else if ($s === 'ArrowRight') {
                 sheet.move(0, 1, motion, shift);
                 return true;
-            case 'Tab':
+            } else if ($s === 'Tab') {
                 sheet.step(0, shift ? -1 : 1);
                 return true;
-            case 'Enter':
+            } else if ($s === 'Enter') {
                 sheet.step(shift ? -1 : 1, 0);
                 return true;
-            case 'Home':
+            } else if ($s === 'Home') {
                 sheet.move(0, -1, command ? 'sheetBoundary' : 'rowBoundary', shift);
                 return true;
-            case 'End':
+            } else if ($s === 'End') {
                 sheet.move(0, 1, command ? 'sheetBoundary' : 'rowBoundary', shift);
                 return true;
-            case 'Backspace':
-            case 'Delete':
+            } else if (($s === 'PageUp' && (!command))) {
+                return sheet.movePage(-1, shift);
+            } else if (($s === 'PageDown' && (!command))) {
+                return sheet.movePage(1, shift);
+            } else if ($s === 'Backspace' || $s === 'Delete') {
                 sheet.clearSelection();
                 return true;
+            }
         }
         if (command && key.length === 1) {
             switch (key) {

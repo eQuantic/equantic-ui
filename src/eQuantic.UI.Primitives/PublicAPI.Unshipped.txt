@@ -36,3 +36,4 @@ static eQuantic.UI.Primitives.SheetTheme.operator !=(eQuantic.UI.Primitives.Shee
 static eQuantic.UI.Primitives.SheetTheme.operator ==(eQuantic.UI.Primitives.SheetTheme? left, eQuantic.UI.Primitives.SheetTheme? right) -> bool
 eQuantic.UI.Primitives.ISheetSurfaceModel.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks, eQuantic.UI.Primitives.PointerKind kind) -> bool
 *REMOVED*eQuantic.UI.Primitives.ISheetSurfaceModel.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks) -> bool
+eQuantic.UI.Primitives.ISheetSurfaceModel.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor

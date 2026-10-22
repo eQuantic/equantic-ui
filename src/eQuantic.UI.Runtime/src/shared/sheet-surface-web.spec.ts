@@ -13,7 +13,8 @@ import { SheetController } from './components/SheetController';
 import { CellRef } from './components/CellRef';
 import { SheetRange } from './components/SheetRange';
 import { SheetGrid } from './components/SheetGrid';
-import { Point } from './runtime-exports';
+import { TableScroll } from './components/TableScroll';
+import { Size, TableOffset, TableScrollRequest } from './runtime-exports';
 import type { HtmlNode } from '../core/types';
 
 type Handler = (event: Event) => void;
@@ -158,8 +159,12 @@ describe('SheetSurface on the web', () => {
 
   it('reads a press against the window the engine was handed', () => {
     const sheet = new SheetController(200, 8);
-    // A scrolled window: the surface's first row draws the sheet's row 40.
-    sheet.grid = new SheetGrid(Point.zero, 40, 0);
+    // A scrolled window: the grid stands 40 rows down, so the surface's first row draws row 40.
+    const scroll = new TableScroll();
+    scroll.arrange(new Size(900, 600), sheet.document.columnSpans.total, sheet.document.rowSpans.total, 0, 0, true);
+    scroll.apply(new TableScrollRequest(1, { offset: new TableOffset(0, 40 * 28) }), sheet.document.rowSpans,
+      sheet.document.columnSpans, 0, 0);
+    sheet.grid = new SheetGrid(scroll, 0, 0);
     const node = surfaceFor(sheet);
 
     const event = new MouseEvent('mousedown', { clientX: 96 + 48, clientY: 28 * 2 + 14 });

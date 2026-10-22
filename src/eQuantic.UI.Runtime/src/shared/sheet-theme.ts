@@ -6,6 +6,7 @@
  */
 
 import type { ColorToken } from './value-types';
+import { hashesByValue } from '../utils/hash';
 
 export class SheetTheme {
   gridline: ColorToken | null = null;
@@ -24,3 +25,6 @@ export class SheetTheme {
     if (config) Object.assign(this, config);
   }
 }
+
+/** A record: it hashes by its members, as `equals` compares it (`ValueTwinHashTests` holds this to the C#). */
+hashesByValue(SheetTheme);

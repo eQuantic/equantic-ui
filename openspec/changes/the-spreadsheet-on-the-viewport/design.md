@@ -64,7 +64,9 @@ is the surface's.
 
 The surface is the sheet's one Tab stop, so the table inside declines the focus
 (`CanRequestFocus = false`, below) and the keys stay the engine's: an arrow moves the active cell,
-where on a bare table it would scroll.
+where on a bare table it would scroll. The headers' `Pressable`s decline it too, as Excel's headers
+do: a header press selects its band and leaves the keyboard on the sheet. Inside the surface the
+readers still meet the headers as buttons and the cells as their values.
 
 ### 2. The engine reads a point against the viewport's live offset
 
@@ -76,6 +78,8 @@ the row-number column's width). `CellAt` reads the column and row through the do
 `FillHandleCorner` is its inverse. The document answers its axes as `TableSpans` adapters over its
 size dictionaries, with prefix sums rebuilt when a size changes: `TableSpans` is in the vocabulary,
 which the engine already references, and the component wraps them with the header's extent at index 0.
+The component owns the scroll and hands it to its `TableView` (`TableView.Scroll`, Flutter's
+`ScrollController` handed to a scrollable), so the engine and the viewport read the same object.
 
 A point over a pinned band reads the band's row or column the way the viewport draws it: over the
 header row during a drag, the drag holds the first visible row and auto-scrolls (decision 4).
@@ -86,7 +90,10 @@ The band's fill, the active ring, the fill preview and the fill handle become `T
 from the engine's rectangles (the selection, the active cell, `FillTarget`, the handle's cell), in
 the colours of decision 6. A cell is then built from its value alone, so a selection change rebuilds
 no cell's look and the later slices add marks, never cell styles. 0a already cuts a mark at the pinned
-bands, takes no press or focus on it, and keys its pieces.
+bands, takes no press or focus on it, and keys its pieces. A mark shows no cursor either (the web
+draws it `inert`), so the crosshair over the fill handle is the engine's answer,
+`ISheetSurfaceModel.CursorAt`, which each host asks over the surface as it asks it what a press means;
+the corner counts as the handle only where it is drawn, never under a pinned header.
 
 ### 4. Auto-scroll is the scroll model's, driven by the engine and reported back
 

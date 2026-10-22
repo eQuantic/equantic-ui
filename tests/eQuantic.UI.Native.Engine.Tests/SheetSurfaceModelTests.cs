@@ -1,3 +1,4 @@
+using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Sheet;
 using FluentAssertions;
@@ -61,23 +62,54 @@ public class SheetSurfaceModelTests
     [Fact]
     public void APress_InAScrolledWindow_LandsOnTheCellTheWindowDrawsThere()
     {
-        var sheet = new SheetController(rows: 200, cols: 8) { Grid = new SheetGrid(Point.Zero, 40, 0) };
+        // Down by 40 rows and across by one column; the press is in the second column and the third row
+        // shown under the headers.
+        var sheet = new SheetController(rows: 200, cols: 8);
+        SheetScrolls.Place(sheet, across: 96, down: 40 * 28, width: 400);
 
-        Press(sheet, CenterOf(2, 1));
+        Press(sheet, CenterOf(2, 1, new Point(SheetScrolls.HeaderWidth, SheetScrolls.HeaderHeight)));
 
-        sheet.Selection.Should().Be(new SheetRange(new CellRef(42, 1)));
-        sheet.ActiveCell.Should().Be(new CellRef(42, 1));
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(42, 2)), "row 42 counted from 0, column C");
+        sheet.ActiveCell.Should().Be(new CellRef(42, 2));
     }
 
     [Fact]
-    public void TheGridsOrigin_PlacesTheFirstCellPastWhatTheChildDrawsBeforeIt()
+    public void APress_ReadsTheOffsetAtThatMoment_NotTheOneTheGridWasHandedWith()
     {
-        var origin = new Point(40, 24);
-        var sheet = new SheetController(rows: 50, cols: 8) { Grid = new SheetGrid(origin, 0, 0) };
+        // A scroll step inside the cells already built builds nothing, so the geometry is never handed
+        // over again: the engine has to read the scroll as it stands.
+        var sheet = new SheetController(rows: 200, cols: 8);
+        var scroll = SheetScrolls.Place(sheet);
+        scroll.Wheel(0, 28 * 5, stepped: false, KeyModifiers.None);
 
-        sheet.CellAt(CenterOf(0, 0, origin)).Should().Be(new CellRef(0, 0));
-        sheet.CellAt(new Point(39, 23)).Should().Be(new CellRef(0, 0), "a point before the first cell holds the edge");
-        sheet.CellAt(new Point(100_000, 100_000)).Should().Be(new CellRef(49, 7), "and one past the last holds the far edge");
+        Press(sheet, CenterOf(0, 0, new Point(SheetScrolls.HeaderWidth, SheetScrolls.HeaderHeight)));
+
+        sheet.ActiveCell.Should().Be(new CellRef(5, 0));
+    }
+
+    [Fact]
+    public void APointOverThePinnedHeaders_ReadsTheFirstCellShownPastThem()
+    {
+        var sheet = new SheetController(rows: 200, cols: 8);
+        SheetScrolls.Place(sheet, across: 96, down: 40 * 28, width: 400);
+
+        sheet.CellAt(new Point(SheetScrolls.HeaderWidth + 10, 5)).Should().Be(new CellRef(40, 1),
+            "over the header row, the first row shown");
+        sheet.CellAt(new Point(5, SheetScrolls.HeaderHeight + 10)).Should().Be(new CellRef(40, 1),
+            "over the row numbers, the first column shown");
+        sheet.CellAt(new Point(100_000, 100_000)).Should().Be(new CellRef(199, 7), "and one past the last holds the far edge");
+    }
+
+    [Fact]
+    public void TheFillHandle_IsGrabbedWhereTheScrolledGridDrawsIt()
+    {
+        var sheet = new SheetController(rows: 200, cols: 8) { Selection = new SheetRange(new CellRef(42, 2)) };
+        SheetScrolls.Place(sheet, across: 96, down: 40 * 28, width: 400);
+
+        // The bottom-right corner of C43: past the headers, less the offset.
+        Press(sheet, new Point(SheetScrolls.HeaderWidth + 3 * 96 - 96, SheetScrolls.HeaderHeight + 43 * 28 - 40 * 28));
+
+        sheet.Filling.Should().BeTrue();
     }
 
     [Fact]
@@ -123,6 +155,185 @@ public class SheetSurfaceModelTests
         sheet.Editing.Should().BeTrue();
         sheet.Draft.Should().Be("42");
         sheet.ActiveCell.Should().Be(new CellRef(2, 2));
+    }
+
+    // ---- the pointer's look ------------------------------------------------------------------
+
+    [Fact]
+    public void ThePointer_IsACrosshair_WhereAPressWouldGrabTheFillHandle()
+    {
+        var sheet = new SheetController(rows: 50, cols: 8) { Selection = new SheetRange(new CellRef(1, 1)) };
+        ISheetSurfaceModel model = sheet;
+
+        model.CursorAt(new Point(2 * 96 - 3, 2 * 28 - 3)).Should().Be(PointerCursor.Crosshair);
+        model.CursorAt(CenterOf(1, 1)).Should().Be(PointerCursor.Default, "a cell's middle grabs nothing");
+
+        sheet.BeginEdit("x");
+        model.CursorAt(new Point(2 * 96 - 3, 2 * 28 - 3)).Should().Be(PointerCursor.Default, "an edit draws no handle");
+    }
+
+    [Fact]
+    public void ACornerScrolledUnderTheHeaders_IsNoHandle()
+    {
+        // B2's corner stands under the header row once the grid is two rows down: nothing draws the
+        // handle there, so nothing grabs it, and the press selects the first row shown.
+        var sheet = new SheetController(rows: 200, cols: 8) { Selection = new SheetRange(new CellRef(1, 1)) };
+        SheetScrolls.Place(sheet, down: 2 * 28 + 10);
+        var corner = new Point(SheetScrolls.HeaderWidth + 2 * 96, SheetScrolls.HeaderHeight - 10);
+
+        ((ISheetSurfaceModel)sheet).CursorAt(corner).Should().Be(PointerCursor.Default);
+        Press(sheet, corner);
+        sheet.Filling.Should().BeFalse();
+    }
+
+    // ---- a finger ---------------------------------------------------------------------------
+
+    [Fact]
+    public void AFingersTap_SelectsTheCellItBeganOn_WhenItLifts()
+    {
+        var sheet = new SheetController(rows: 50, cols: 8) { Selection = new SheetRange(new CellRef(1, 1)) };
+        ISheetSurfaceModel model = sheet;
+
+        model.HandlePointer(PointerPhase.Down, CenterOf(4, 3), KeyModifiers.None, 1, PointerKind.Touch)
+            .Should().BeFalse("a finger's press means nothing until it lifts: the grid may take it as a pan");
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 1)));
+
+        model.HandlePointer(PointerPhase.Up, CenterOf(4, 3), KeyModifiers.None, 1, PointerKind.Touch).Should().BeTrue();
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(4, 3)), "D5");
+    }
+
+    [Fact]
+    public void AFingersPan_TheGridTakes_SelectsNothing()
+    {
+        var sheet = new SheetController(rows: 50, cols: 8) { Selection = new SheetRange(new CellRef(1, 1)) };
+        sheet.Document.SetCell(new CellRef(1, 1), "7");
+        ISheetSurfaceModel model = sheet;
+
+        model.HandlePointer(PointerPhase.Down, CenterOf(4, 3), KeyModifiers.None, 1, PointerKind.Touch);
+        model.HandlePointer(PointerPhase.Move, CenterOf(2, 3), KeyModifiers.None, 1, PointerKind.Touch)
+            .Should().BeFalse("a finger never drags a selection");
+        model.HandlePointer(PointerPhase.Cancel, CenterOf(2, 3), KeyModifiers.None, 1, PointerKind.Touch);
+        model.HandlePointer(PointerPhase.Up, CenterOf(2, 3), KeyModifiers.None, 1, PointerKind.Touch)
+            .Should().BeFalse("the pan's end is no tap");
+
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 1)), "the selection stays B2");
+        sheet.Filling.Should().BeFalse();
+    }
+
+    [Fact]
+    public void AFingerOnTheFillHandle_SelectsTheCellUnderIt_AndPoursNothing()
+    {
+        // Dragging the handle by touch arrives with the long press: until then a finger pans everywhere.
+        var sheet = new SheetController(rows: 50, cols: 8) { Selection = new SheetRange(new CellRef(1, 1)) };
+        ISheetSurfaceModel model = sheet;
+
+        model.HandlePointer(PointerPhase.Down, new Point(2 * 96, 2 * 28), KeyModifiers.None, 1, PointerKind.Touch);
+
+        sheet.Filling.Should().BeFalse();
+    }
+
+    [Fact]
+    public void AStylus_PressesAsAMouseDoes()
+    {
+        var sheet = new SheetController(rows: 50, cols: 8);
+        ISheetSurfaceModel model = sheet;
+
+        model.HandlePointer(PointerPhase.Down, CenterOf(4, 3), KeyModifiers.None, 1, PointerKind.Stylus)
+            .Should().BeTrue();
+
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(4, 3)));
+    }
+
+    // ---- a drag held past an edge ---------------------------------------------------------------
+
+    /// <summary>Frames of the scroll's clock for <paramref name="milliseconds"/>, the engine following
+    /// every one that moved the grid, as the component does from the viewport's report.</summary>
+    private static void Hold(SheetController sheet, TableScroll scroll, double milliseconds, ref double clock)
+    {
+        for (var elapsed = 0.0; elapsed <= milliseconds; elapsed += 16)
+        {
+            var before = scroll.Offset;
+            scroll.Advance(clock);
+            clock += 16;
+            if (scroll.Offset != before) sheet.Follow();
+        }
+    }
+
+    [Fact]
+    public void ASelectionHeldBelowTheGrid_ScrollsIt_AndKeepsExtending_UntilTheRelease()
+    {
+        var sheet = new SheetController(rows: 200, cols: 8);
+        var scroll = SheetScrolls.Place(sheet);
+        var origin = new Point(SheetScrolls.HeaderWidth, SheetScrolls.HeaderHeight);
+        var model = Press(sheet, CenterOf(1, 1, origin));
+        var below = new Point(origin.X + 96 + 48, scroll.Viewport.Height + 60);
+
+        model.HandlePointer(PointerPhase.Move, below, KeyModifiers.None, 1, PointerKind.Mouse);
+        var clock = 0.0;
+        Hold(sheet, scroll, 1000, ref clock);
+
+        scroll.Offset.Down.Should().BeGreaterThan(0, "the grid scrolled down");
+        sheet.Selection.Anchor.Should().Be(new CellRef(1, 1));
+        sheet.Selection.Focus.Row.Should().BeGreaterThan(20, "the selection reached rows past the ones first shown");
+
+        model.HandlePointer(PointerPhase.Up, below, KeyModifiers.None, 1, PointerKind.Mouse);
+        var stopped = scroll.Offset;
+        Hold(sheet, scroll, 200, ref clock);
+        scroll.Offset.Should().Be(stopped, "the release stops the scroll");
+    }
+
+    [Fact]
+    public void FurtherPastTheEdge_ScrollsFaster()
+    {
+        double Scrolled(float pastTheEdge)
+        {
+            var sheet = new SheetController(rows: 1000, cols: 8);
+            var scroll = SheetScrolls.Place(sheet);
+            var model = Press(sheet, CenterOf(1, 1, new Point(SheetScrolls.HeaderWidth, SheetScrolls.HeaderHeight)));
+            model.HandlePointer(PointerPhase.Move, new Point(200, scroll.Viewport.Height + pastTheEdge),
+                KeyModifiers.None, 1, PointerKind.Mouse);
+            var clock = 0.0;
+            Hold(sheet, scroll, 1000, ref clock);
+            return scroll.Offset.Down;
+        }
+
+        Scrolled(120).Should().BeGreaterThan(Scrolled(30));
+    }
+
+    [Fact]
+    public void AFillHeldBelowTheGrid_ReachesTheCellsThatScrollIn_AndACancelPoursNothing()
+    {
+        var sheet = new SheetController(rows: 200, cols: 8) { Selection = new SheetRange(new CellRef(1, 1)) };
+        sheet.Document.SetCell(new CellRef(1, 1), "7");
+        var scroll = SheetScrolls.Place(sheet);
+        var model = Press(sheet, new Point(SheetScrolls.HeaderWidth + 2 * 96, SheetScrolls.HeaderHeight + 2 * 28));
+        sheet.Filling.Should().BeTrue();
+
+        model.HandlePointer(PointerPhase.Move, new Point(200, scroll.Viewport.Height + 60), KeyModifiers.None, 1,
+            PointerKind.Mouse);
+        var clock = 0.0;
+        Hold(sheet, scroll, 1000, ref clock);
+
+        sheet.FillTarget!.Value.BottomRow.Should().BeGreaterThan(20, "the preview follows the cells that scrolled in");
+
+        model.HandlePointer(PointerPhase.Cancel, default, KeyModifiers.None, 1, PointerKind.Mouse);
+        var stopped = scroll.Offset;
+        Hold(sheet, scroll, 200, ref clock);
+        scroll.Offset.Should().Be(stopped, "the cancel stops the scroll");
+        sheet.Document.GetCell(new CellRef(2, 1)).Should().BeEmpty("a fill the system takes away pours nothing");
+        sheet.History.CanUndo.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Follow_WithNoDragInFlight_ChangesNothing()
+    {
+        var sheet = new SheetController(rows: 200, cols: 8);
+        SheetScrolls.Place(sheet, down: 28 * 10);
+
+        sheet.Follow().Should().BeFalse();
+        Press(sheet, CenterOf(1, 1));
+        ((ISheetSurfaceModel)sheet).HandlePointer(PointerPhase.Up, CenterOf(1, 1), KeyModifiers.None, 1, PointerKind.Mouse);
+        sheet.Follow().Should().BeFalse("a released press is no drag");
     }
 
     [Fact]

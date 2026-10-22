@@ -81,7 +81,7 @@ public class SpreadsheetComponentTests
         var (host, sheet) = Open();
 
         // Scroll 10 rows down (280dp), settle the window, click the first visible cell.
-        host.ScrollBy(300, 200, 0, 10 * 28f);
+        host.ScrollBy(300, 200, 0, 10 * 28f, stepped: false);
         host.RenderFrame(new DisplayListBuilder(), 32);
         host.RenderFrame(new DisplayListBuilder(), 48);
 
@@ -236,38 +236,42 @@ public class SpreadsheetComponentTests
     }
 
     /// <summary>
-    /// Tab down the row headers, past the rows the window began with. The window slides under the
-    /// ring — rows leave at the top, rows arrive at the bottom — and the ring must not slide with
-    /// it: every Tab lands on the NEXT row, brought into view, and the walk never restarts from the
-    /// first control. Rows are keyed by number, which is what keeps their positions through the slide.
+    /// The sheet is ONE stop of the Tab order, as Excel's grid is: the table inside declines the focus
+    /// and so do the headers. Tab arrives on it, as on every surface that owns the keyboard; once a
+    /// press has entered it, Tab is the sheet's own key, walking the active cell to the right.
     /// </summary>
     [Fact]
-    public void TabbingDownTheRowHeaders_KeepsTheRing_WhileTheWindowSlides()
+    public void TheSheet_IsTheOneStopOfTheTabOrder_AndTabWalksItsActiveCell()
     {
-        var (host, _) = Open();
-        var initial = host.RenderFrame(new DisplayListBuilder(), 32).FocusStops.Count;
+        var (host, sheet) = Open();
+        var frame = host.RenderFrame(new DisplayListBuilder(), 32);
+        frame.FocusStops.Should().ContainSingle("the headers and the table decline the focus; the surface is the stop");
 
-        var visited = new List<int>();
-        RealizeResult? last = null;
-        for (var i = 0; i < initial + 20; i++)
-        {
-            host.KeyDown("Tab");
-            var frame = last = host.RenderFrame(new DisplayListBuilder(), 48 + 16 * i);
-            var focused = host.FocusedId;
-            focused.Should().NotBeNull($"Tab #{i + 1} left the focus nowhere");
-            visited.Add(focused!.Value);
+        host.KeyDown("Tab");
+        host.RenderFrame(new DisplayListBuilder(), 48);
+        host.FocusedId.Should().Be(frame.FocusStops[0].Id);
 
-            var stop = frame.FocusStops.FirstOrDefault(s => s.Id == focused);
-            stop.Id.Should().Be(focused!.Value, $"Tab #{i + 1} focused {focused}, which the frame does not have");
-            stop.Bounds.Y.Should().BeLessThan(400, $"Tab #{i + 1} focused {focused} below the window");
-            (stop.Bounds.Y + stop.Bounds.Height).Should().BeGreaterThan(0, $"Tab #{i + 1} focused {focused} above the window");
-        }
+        host.PressDown(Spreadsheet.HeaderWidth + 48f, Spreadsheet.HeaderHeight + 14f);
+        host.PressUp(Spreadsheet.HeaderWidth + 48f, Spreadsheet.HeaderHeight + 14f);
+        host.KeyDown("Tab");
+        host.KeyDown("Tab");
+        sheet.ActiveCell.Should().Be(new CellRef(0, 2), "Tab inside the sheet steps the active cell");
+        host.FocusedId.Should().Be(frame.FocusStops[0].Id, "and the keyboard stays on the sheet");
+    }
 
-        visited.Should().OnlyHaveUniqueItems("the ring restarted, or a row was visited twice");
-        Positions.IsKeyed(Positions.Of(last!, visited[^1])!)
-            .Should().BeTrue("the walk ended on a keyed row well past the first window");
-        host.ScrollOffsetOf(host.RenderFrame(new DisplayListBuilder()).ScrollRegions
-            .Single(r => r.MaxOffset > 0).Element).Should().BeGreaterThan(0, "the sheet scrolled to follow the ring");
+    [Fact]
+    public void AHeaderPress_LeavesTheKeyboardOnTheSheet()
+    {
+        var (host, sheet) = Open();
+        host.PressDown(Spreadsheet.HeaderWidth + 48f, Spreadsheet.HeaderHeight + 14f);   // A1: the sheet takes the keyboard
+        host.PressUp(Spreadsheet.HeaderWidth + 48f, Spreadsheet.HeaderHeight + 14f);
+
+        host.PressDown(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight / 2);   // column B's header
+        host.PressUp(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight / 2);
+        sheet.Selection.LeftCol.Should().Be(1);
+
+        host.KeyDown("ArrowRight", KeyModifiers.None);
+        sheet.ActiveCell.Should().Be(new CellRef(0, 2), "the arrows go on moving the active cell");
     }
 
     [Fact]

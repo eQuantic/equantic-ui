@@ -43,42 +43,42 @@
 
 ## 3. The engine on the viewport
 
-- [ ] 3.1 The document answers its rows and columns as `TableSpans` (prefix sums over its size
+- [x] 3.1 The document answers its rows and columns as `TableSpans` (prefix sums over its size
       dictionaries, rebuilt when a size changes); verify `SheetControllerTests` for offsets and
       index-at with resized rows at both ends of a 1 048 576-row sheet, and the twin in
       `sheet-model.spec.ts`
-- [ ] 3.2 `SheetGrid` becomes the viewport's geometry (the scroll model, read live, and the pinned
+- [x] 3.2 `SheetGrid` becomes the viewport's geometry (the scroll model, read live, and the pinned
       header extents); `CellAt` and the fill handle's corner read through the spans and the offset;
       verify the spec's "A press in a scrolled window" in `SheetControllerTests` and its twin, and that a
       point over the header row reads the first visible row
-- [ ] 3.3 A reveal version bumped by every command that moves the active cell from a key, a paste, a
+- [x] 3.3 A reveal version bumped by every command that moves the active cell from a key, a paste, a
       fill, an undo and a redo, but not by a press; PageUp and PageDown by the rows shown under the
       header; verify `SheetControllerTests` for each and the twin
-- [ ] 3.4 A finger's press selects on its release and nothing on a cancel; a mouse's and a stylus's
+- [x] 3.4 A finger's press selects on its release and nothing on a cancel; a mouse's and a stylus's
       as before; verify both kinds through the engine in `SheetControllerTests` and the twin
-- [ ] 3.5 Auto-scroll from the engine: a selecting or filling drag hands its position to the scroll
+- [x] 3.5 Auto-scroll from the engine: a selecting or filling drag hands its position to the scroll
       model and null on release or cancel, and `Follow` re-reads the drag's last position when the grid
       moves under it; verify `SheetControllerTests` with a `TableScroll` advanced under a held point
 
 ## 4. The spreadsheet on the viewport
 
-- [ ] 4.1 `Spreadsheet` composes a `SheetSurface` over a `TableView`: table row 0 the column headers,
+- [x] 4.1 `Spreadsheet` composes a `SheetSurface` over a `TableView`: table row 0 the column headers,
       column 0 the row numbers, both pinned, cells built from their values alone, the headers'
       `Pressable`s and resize grips kept, the table declining the focus; verify Photon component tests
       for the cells built at 100 000 × 100 and the headers aligned with their columns at 400, 900 and
       1 440 points wide and scrolled on both axes
-- [ ] 4.2 The marks: the selection's band, the active ring, the fill preview and the fill handle from
+- [x] 4.2 The marks: the selection's band, the active ring, the fill preview and the fill handle from
       the engine's rectangles; verify the Photon goldens (light and dark, a range across the pinned
       header, a fill preview) reviewed and an assertion of state beside each, and that a selection
       change leaves the cells' nodes unchanged
-- [ ] 4.3 The row-number column measured from its widest visible number; verify a Photon test that it
+- [x] 4.3 The row-number column measured from its widest visible number; verify a Photon test that it
       widens past row 9 999 and the cells still start at its edge
-- [ ] 4.4 The reveal request from the engine's version and `Follow` wired from `OnScrolled`; verify
+- [x] 4.4 The reveal request from the engine's version and `Follow` wired from `OnScrolled`; verify
       Photon host tests for forty ↓, PageDown, ⌘↓ ⌘→ at Excel's extent, an undo out of view, and a
       drag held below the grid that keeps extending
-- [ ] 4.5 The colours from the sheet slot with the foundation defaults; verify a Photon test with a
+- [x] 4.5 The colours from the sheet slot with the foundation defaults; verify a Photon test with a
       theme that names a gridline colour and one that names nothing
-- [ ] 4.6 A finger on Photon: a tap selects on its release, a pan scrolls and selects nothing (the host
+- [x] 4.6 A finger on Photon: a tap selects on its release, a pan scrolls and selects nothing (the host
       tells the model `Cancel` when the table's pan takes the press); verify Photon host tests
 - [ ] 4.7 The wiki's Components page, Spreadsheet section, describes the grid on two axes, the kept
       active cell, the held drag, the marks and the theme slot, in five languages; verify the wiki

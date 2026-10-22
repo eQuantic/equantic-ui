@@ -26,7 +26,8 @@ public sealed class TableView : StatefulComponent
     /// rather than nothing, so the first frame shows cells.</summary>
     private static readonly Size FirstGuess = new(1024, 768);
 
-    private readonly TableScroll _scroll = new();
+    /// <summary>The scroll the table keeps when the configuration hands it none.</summary>
+    private readonly TableScroll _ownScroll = new();
 
     /// <summary>The configuration of the latest build: a parent that builds again hands a new one, and
     /// everything is read from it, its init-only settings included.</summary>
@@ -82,6 +83,14 @@ public sealed class TableView : StatefulComponent
     /// <summary>Accessible name.</summary>
     public string? Label { get; init; }
 
+    /// <summary>
+    /// The scroll to keep the grid's offset in, when what composes the table must read it between builds
+    /// (a scroll step inside the cells already built builds nothing): a spreadsheet's engine reads a press
+    /// against it. Null keeps one the table owns. <em>How does Flutter solve it?</em> The
+    /// <c>ScrollController</c> a scrollable is handed, kept by its owner across rebuilds.
+    /// </summary>
+    public TableScroll? Scroll { get; init; }
+
     /// <summary>Whether the table is a stop of the Tab order itself and scrolls by the keys
     /// (<see cref="TableViewport.CanRequestFocus"/>): false leaves the keyboard to what composes it.</summary>
     public bool CanRequestFocus { get; init; } = true;
@@ -108,9 +117,10 @@ public sealed class TableView : StatefulComponent
         var columns = config.Columns;
         var pinnedRows = Math.Clamp(config.PinnedRows, 0, rows.Count);
         var pinnedColumns = Math.Clamp(config.PinnedColumns, 0, columns.Count);
-        if (!Covers(_scroll.Offset)) Window(_scroll.Offset);
+        var scroll = config.Scroll ?? _ownScroll;
+        if (!Covers(scroll.Offset)) Window(scroll.Offset);
 
-        var viewport = new TableViewport(rows, columns, _scroll)
+        var viewport = new TableViewport(rows, columns, scroll)
         {
             PinnedRows = pinnedRows,
             PinnedColumns = pinnedColumns,

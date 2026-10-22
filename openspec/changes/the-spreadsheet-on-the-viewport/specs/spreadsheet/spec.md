@@ -71,6 +71,11 @@ pours nothing, and a drag stops where it stood.
   released
 - **THEN** B3 and B4 hold `7`, and one undo empties both
 
+#### Scenario: The fill handle's pointer
+
+- **WHEN** B2 is selected and the pointer rests on its bottom-right corner
+- **THEN** the pointer is a crosshair, on the web as on Photon, and over the middle of B2 it is not
+
 #### Scenario: A finger's tap
 
 - **WHEN** B2 is selected and a finger lands on D5 and lifts without moving

@@ -50,10 +50,15 @@ internal sealed partial class SemanticsVisitor
     }
 
     /// <summary>
-    /// v1: a grid announces as an editable region with its label; per-cell semantics (the real AX
-    /// grid role) joins with the component slice.
+    /// A grid announces as an editable region with its label, and what it draws inside after it: its
+    /// headers announce as the buttons they are, and its cells as their values. Per-cell semantics (the
+    /// real AX grid role) joins with a later slice.
     /// </summary>
-    public bool Visit(SheetSurface node, LayoutNode laidOut) =>
+    public bool Visit(SheetSurface node, LayoutNode laidOut)
+    {
         Announce(new(SemanticRole.CodeField, IdOf(laidOut), laidOut.Bounds,
             node.Label ?? "", null, false));
+        foreach (var child in laidOut.Children) SemanticsTree.Walk(child, this);
+        return Consumed;
+    }
 }

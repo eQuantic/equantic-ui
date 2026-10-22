@@ -55,4 +55,12 @@ public interface ISheetSurfaceModel
     /// the pointer goes. Answers whether the model changed, or needs a frame to follow it.
     /// </summary>
     bool HandlePointer(PointerPhase phase, Point position, KeyModifiers modifiers, int clicks, PointerKind kind);
+
+    /// <summary>
+    /// What the pointer looks like resting at <paramref name="position"/>, in the surface's own
+    /// coordinates: the sheet's answer, because only it knows what a press there would do (a crosshair
+    /// where it would grab the fill handle). What the component draws over the cells takes no pointer on
+    /// any target, so no drawn box can say it.
+    /// </summary>
+    PointerCursor CursorAt(Point position);
 }

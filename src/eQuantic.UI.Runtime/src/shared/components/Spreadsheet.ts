@@ -1,13 +1,17 @@
-import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, Flexible, Point, Positioned, Pressable, Row, ScrollView, SdkStrings, SheetAxisValue, SheetController, SheetDocument, SheetGrid, SheetSurface, SizeValue, Spacer, Stack, StatefulComponent, Text, UiComponent, VisualNode, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CellRef, Draggable, EdgeInsets, LeadingSpans, Positioned, Pressable, Row, SdkStrings, SheetAxisValue, SheetController, SheetDocument, SheetGrid, SheetPalette, SheetRange, SheetSurface, Size, SizeValue, Stack, StatefulComponent, TableOffset, TableRange, TableScroll, TableScrollRequest, TableView, TableViewCell, Text, UiComponent, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class Spreadsheet extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Spreadsheets.Spreadsheet';
-    _offset: number = 0;
-    _viewport: number = 0;
-    _first: number = 0;
-    _last: number = -1;
+    static firstGuess: number = 768;
+    _scroll: TableScroll = new TableScroll();
+    _rows: any = null;
+    _columns: any = null;
+    _document: any = null;
+    _digits: number = 1;
+    _config: Spreadsheet;
     static headerWidth: number = 44;
     static headerHeight: number = 26;
+    static numberPadding: number = 8;
     static minColWidth: number = 24;
     static minRowHeight: number = 14;
     static grip: number = 6;
@@ -23,103 +27,78 @@ export class Spreadsheet extends StatefulComponent {
         if (controller !== undefined) this.controller = controller;
         if (this.overscan === undefined) this.overscan = 3;
         this.controller = controller;
+        this._config = this;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
+        let palette = SheetPalette.of(theme);
         let document = this.controller.document;
-        let topOfWindow = null;
-        [this._first, this._last, topOfWindow] = this.windowFor(this._offset, this._viewport > 0 ? this._viewport : Math.fround(Spreadsheet.headerHeight * 14));
-        this.controller.grid = new SheetGrid(Point.zero, this._first, 0);
-        let headerRow = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill });
-        headerRow.add(Spreadsheet.headerCell('', Spreadsheet.headerWidth, Spreadsheet.headerHeight, theme, false, () => this.setState((($0) => $0.selectAll.bind($0))(this.controller))));
-        for (let c = 0; c < document.cols; c++) headerRow.add(this.columnHeader(c, document, theme));
-        let windowRows = new Row(0, 'start', 'center', false, null, null, { key: 'window' });
-        let rowHeaders = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fixed(Spreadsheet.headerWidth) });
-        let grid = new Column(0);
-        for (let r = this._first; r <= this._last; r++) {
-            rowHeaders.add(this.rowHeader(r, document, theme));
-            grid.add(this.gridRow(r, document, theme));
+        this._digits = this.digitsShown(document);
+        let numbers = Math.max(Spreadsheet.headerWidth, Math.fround(Math.ceil(context.measureText('0'.repeat(this._digits), theme.type('caption'))) + Math.fround(2 * Spreadsheet.numberPadding)));
+        if (this._rows == null || this._columns == null || this._document !== document || this._columns.lead !== numbers) {
+            this._document = document;
+            this._rows = new LeadingSpans(document.rowSpans, Spreadsheet.headerHeight);
+            this._columns = new LeadingSpans(document.columnSpans, numbers);
         }
-        windowRows.add(rowHeaders);
-        windowRows.add(new SheetSurface(grid, this.controller, { onChanged: () => this.setState(() => {}), label: SdkStrings.spreadsheet }));
-        let content = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        if (topOfWindow > 0) content.add(Spacer.fixed(topOfWindow));
-        content.add(windowRows);
-        let below = 0;
-        for (let r = this._last + 1; r < document.rows; r++) below = Math.fround(below + document.rowHeight(r));
-        if (below > 0) content.add(Spacer.fixed(below));
-        let frame = new Column(0, 'start', 'stretch', false, null, null, { width: this.width, height: this.height });
-        frame.add(headerRow);
-        frame.add(new Flexible(new ScrollView(content, 'vertical', { onScrolled: this.onScrolled.bind(this), onViewportChanged: this.onViewportChanged.bind(this) }), 1));
-        return new Box(new BoxStyle({ width: this.width, height: this.height, borderColor: theme.border, borderWidth: 1, clip: true }), frame);
+        this.controller.grid = new SheetGrid(this._scroll, numbers, Spreadsheet.headerHeight);
+        let active = this.controller.activeCell;
+        let table = new TableView(this._rows, this._columns, (row: number, column: number) => this.cell(row, column, document, palette, numbers), { pinnedRows: 1, pinnedColumns: 1, overscan: this._config.overscan, width: SizeValue.fill, height: SizeValue.fill, scroll: this._scroll, marks: this.marks(palette), request: new TableScrollRequest(this.controller.revealVersion, { reveal: new TableRange(active.row + 1, active.col + 1) }), onScrolled: this.scrolled.bind(this), onViewportChanged: this.viewportChanged.bind(this), canRequestFocus: false });
+        return new Box(new BoxStyle({ width: this._config.width, height: this._config.height, borderColor: palette.gridline, borderWidth: 1, clip: true }), new SheetSurface(table, this.controller, { onChanged: () => this.setState(() => {}), label: SdkStrings.spreadsheet }));
     }
 
     adoptConfig(next: UiComponent) {
         let fresh: any; 
-        if ((next instanceof Spreadsheet && (fresh = next, true))) this.controller = fresh.controller;
+        if (!((next instanceof Spreadsheet && (fresh = next, true)))) return;
+        this.controller = fresh.controller;
+        this._config = fresh;
     }
 
-    static rowKey(row: number) {
-        return $eq.text.format(row, null, undefined, undefined, 'int32');
+    digitsShown(document: SheetDocument) {
+        let height = this._scroll.viewport.height > 0 ? this._scroll.viewport.height : Spreadsheet.firstGuess;
+        let last = document.rowSpans.indexAt(this._scroll.offset.down + height) + 1;
+        return $eq.text.format(last, null, undefined, undefined, 'int32').length;
     }
 
-    windowFor(offset: number, viewport: number): [number, number, number] {
-        let document = this.controller.document;
-        let row = 0;
-        let top = 0;
-        while (row < document.rows - 1 && Math.fround(top + document.rowHeight(row)) <= offset) {
-            top = Math.fround(top + document.rowHeight(row));
-            row++;
-        }
-        let first = Math.max(0, row - this.overscan);
-        let firstTop = top;
-        for (let r = row - 1; r >= first; r--) firstTop = Math.fround(firstTop - document.rowHeight(r));
-        let last = row;
-        let covered = Math.fround(top - offset);
-        while (last < document.rows - 1 && covered < viewport) {
-            covered = Math.fround(covered + document.rowHeight(last));
-            last++;
-        }
-        last = Math.min(document.rows - 1, last + this.overscan);
-        return [first, last, firstTop];
+    scrolled(_offset: TableOffset) {
+        let followed = this.controller.follow();
+        if (followed || this.digitsShown(this.controller.document) !== this._digits) this.setState(() => {});
     }
 
-    onScrolled(offset: number) {
-        this._offset = offset;
-        let [first, last, ] = this.windowFor(offset, this._viewport > 0 ? this._viewport : Math.fround(Spreadsheet.headerHeight * 14));
-        if (first === this._first && last === this._last) return;
-        this.setState(() => {});
+    viewportChanged(_viewport: Size) {
+        if (this.digitsShown(this.controller.document) !== this._digits) this.setState(() => {});
     }
 
-    onViewportChanged(viewport: number) {
-        if (Math.abs(Math.fround(viewport - this._viewport)) < 0.5) return;
-        this.setState(() => this._viewport = viewport);
+    cell(row: number, column: number, document: SheetDocument, palette: SheetPalette, numbers: number) {
+        if (row === 0 && column === 0) return Spreadsheet.headerCell('', palette, false, () => this.setState((($0) => $0.selectAll.bind($0))(this.controller)));
+        if (row === 0) return this.columnHeader(column - 1, palette);
+        if (column === 0) return this.rowHeader(row - 1, palette, numbers);
+        return this.sheetCell(new CellRef(row - 1, column - 1), document, palette);
     }
 
-    static headerCell(label: string, width: number, height: number, theme: any, selected: boolean = false, onPressed: (() => void) | null = null) {
-        let cell = new Box(new BoxStyle({ width: SizeValue.fixed(width), height: SizeValue.fixed(height), background: selected ? theme.surfaceHighlight : theme.surfaceSubtle, borderColor: theme.border, borderWidth: 0.5 }), VisualNodeExtensions.centered(new Text(label, 'caption', selected ? theme.textPrimary : theme.textMuted, 1)));
-        return onPressed == null ? cell : new Pressable(cell, onPressed);
+    static headerCell(label: string, palette: SheetPalette, selected: boolean = false, onPressed: (() => void) | null = null) {
+        let cell = new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, background: selected ? palette.headerSelectedBackground : palette.headerBackground, borderColor: palette.gridline, borderWidth: 0.5 }), VisualNodeExtensions.centered(new Text(label, 'caption', selected ? palette.headerSelectedText : palette.headerText, 1)));
+        return onPressed == null ? cell : new Pressable(cell, onPressed, { canRequestFocus: false });
     }
 
-    columnHeader(c: number, document: SheetDocument, theme: any) {
+    columnHeader(c: number, palette: SheetPalette) {
         let col = c;
         let selection = this.controller.selection;
         let inBand = c >= selection.leftCol && c <= selection.rightCol;
         let stack = new Stack();
-        stack.add(Spreadsheet.headerCell(CellRef.columnName(c), document.colWidth(c), Spreadsheet.headerHeight, theme, inBand, () => this.setState(() => this.controller.selectCols(col, col))));
+        stack.add(Spreadsheet.headerCell(CellRef.columnName(c), palette, inBand, () => this.setState(() => this.controller.selectCols(col, col))));
         stack.add(new Positioned(new Draggable(new Box(new BoxStyle({ width: SizeValue.fixed(Spreadsheet.grip), height: SizeValue.fixed(Spreadsheet.headerHeight), cursor: 'colResize' })), null, { axis: 'horizontal', min: -4000, max: 4000, follows: false, onMoved: (delta: number) => this.previewResize('cols', col, delta), onReleased: (delta: number) => this.commitResize('cols', col, delta) }), 0, 0, null, null, { layer: 1 }));
         return stack;
     }
 
-    rowHeader(r: number, document: SheetDocument, theme: any) {
+    rowHeader(r: number, palette: SheetPalette, width: number) {
         let row = r;
         let selection = this.controller.selection;
         let inBand = r >= selection.topRow && r <= selection.bottomRow;
-        let stack = new Stack('topStart', { key: Spreadsheet.rowKey(r) });
-        stack.add(Spreadsheet.headerCell(`${$eq.text.format(r + 1, null, undefined, undefined, 'int32')}`, Spreadsheet.headerWidth, document.rowHeight(r), theme, inBand, () => this.setState(() => this.controller.selectRows(row, row))));
-        stack.add(new Positioned(new Draggable(new Box(new BoxStyle({ width: SizeValue.fixed(Spreadsheet.headerWidth), height: SizeValue.fixed(Spreadsheet.grip), cursor: 'rowResize' })), null, { axis: 'vertical', min: -4000, max: 4000, follows: false, onMoved: (delta: number) => this.previewResize('rows', row, delta), onReleased: (delta: number) => this.commitResize('rows', row, delta) }), null, null, 0, 0, { layer: 1 }));
+        let stack = new Stack();
+        stack.add(Spreadsheet.headerCell(`${$eq.text.format(r + 1, null, undefined, undefined, 'int32')}`, palette, inBand, () => this.setState(() => this.controller.selectRows(row, row))));
+        stack.add(new Positioned(new Draggable(new Box(new BoxStyle({ width: SizeValue.fixed(width), height: SizeValue.fixed(Spreadsheet.grip), cursor: 'rowResize' })), null, { axis: 'vertical', min: -4000, max: 4000, follows: false, onMoved: (delta: number) => this.previewResize('rows', row, delta), onReleased: (delta: number) => this.commitResize('rows', row, delta) }), null, null, 0, 0, { layer: 1 }));
         return stack;
     }
 
@@ -144,39 +123,43 @@ export class Spreadsheet extends StatefulComponent {
         this.setState(() => {});
     }
 
-    gridRow(row: number, document: SheetDocument, theme: any) {
-        let selection = this.controller.selection;
-        let active = this.controller.activeCell;
-        let fillTarget = this.controller.fillTarget;
-        let line = new Row(0, 'start', 'center', false, null, null, { key: Spreadsheet.rowKey(row) });
-        for (let c = 0; c < document.cols; c++) {
-            let cell = new CellRef(row, c);
-            let isActive = $eq.equals(cell, active);
-            let selected = selection.contains(cell) && !selection.isSingleCell;
-            let preview: any; 
-            let inFillPreview = (preview = fillTarget) != null && preview.contains(cell);
-            let editingHere = isActive && this.controller.editing;
-            let value = editingHere ? this.controller.draft : document.getCell(cell);
-            let content: VisualNode | null = null;
-            if (editingHere) {
-                let draftLine = new Row(0, 'start', 'center', false, null, null, { cross: 'center' });
-                if (value.length > 0) draftLine.add(new Text(value, 'bodyM', theme.textPrimary, 1));
-                draftLine.add(new Box(new BoxStyle({ width: SizeValue.fixed(2), height: SizeValue.fixed(Math.fround(document.rowHeight(row) - 8)), background: theme.textPrimary })));
-                content = draftLine;
-            } else if (value.length > 0) {
-                content = new Text(value, 'bodyM', theme.textPrimary, 1);
-            }
-            let box = new Box(new BoxStyle({ width: SizeValue.fixed(document.colWidth(c)), height: SizeValue.fixed(document.rowHeight(row)), background: selected ? theme.surfaceHighlight : theme.surface, borderColor: isActive || inFillPreview ? theme.focusRing : theme.border, borderWidth: isActive ? 2 : inFillPreview ? 1.5 : 0.5, padding: new EdgeInsets(0, 6, 0, 6) }), content);
-            if (!editingHere && row === selection.bottomRow && c === selection.rightCol) {
-                let handled = new Stack();
-                handled.add(box);
-                handled.add(new Positioned(new Box(new BoxStyle({ width: SizeValue.fixed(Spreadsheet.fillHandle), height: SizeValue.fixed(Spreadsheet.fillHandle), background: theme.focusRing, borderColor: theme.surface, borderWidth: 1, cursor: 'crosshair' })), null, -1, -1, null, { layer: 2 }));
-                line.add(handled);
-                continue;
-            }
-            line.add(box);
+    sheetCell(cell: CellRef, document: SheetDocument, palette: SheetPalette) {
+        let editingHere = this.controller.editing && $eq.equals(cell, this.controller.activeCell);
+        let value = editingHere ? this.controller.draft : document.getCell(cell);
+        let content: VisualNode | null = null;
+        if (editingHere) {
+            let draftLine = new Row(0, 'start', 'center', false, null, null, { cross: 'center' });
+            if (value.length > 0) draftLine.add(new Text(value, 'bodyM', palette.cellText, 1));
+            draftLine.add(new Box(new BoxStyle({ width: SizeValue.fixed(2), height: SizeValue.fixed(Math.fround(document.rowHeight(cell.row) - 8)), background: palette.cellText })));
+            content = draftLine;
+        } else if (value.length > 0) {
+            content = new Text(value, 'bodyM', palette.cellText, 1);
         }
-        return line;
+        return new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, background: palette.cellBackground, borderColor: palette.gridline, borderWidth: 0.5, padding: new EdgeInsets(0, 6, 0, 6) }), content);
+    }
+
+    marks(palette: SheetPalette) {
+        let marks: TableViewCell[] = [];
+        let selection = this.controller.selection;
+        if (!selection.isSingleCell) {
+            marks.push(Spreadsheet.mark(selection, new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, background: palette.rangeFill }))));
+        }
+        let preview: any; 
+        if ((preview = this.controller.fillTarget) != null) {
+            marks.push(Spreadsheet.mark(preview, new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, borderColor: palette.fillPreview, borderWidth: 1.5 }))));
+        }
+        marks.push(Spreadsheet.mark(new SheetRange(this.controller.activeCell), new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, borderColor: palette.activeOutline, borderWidth: 2 }))));
+        if (!this.controller.editing) {
+            let corner = new Stack();
+            corner.add(new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill })));
+            corner.add(new Positioned(new Box(new BoxStyle({ width: SizeValue.fixed(Spreadsheet.fillHandle), height: SizeValue.fixed(Spreadsheet.fillHandle), background: palette.fillHandle, borderColor: palette.cellBackground, borderWidth: 1 })), null, -1, -1));
+            marks.push(Spreadsheet.mark(new SheetRange(new CellRef(selection.bottomRow, selection.rightCol)), corner));
+        }
+        return marks;
+    }
+
+    static mark(range: SheetRange, child: VisualNode) {
+        return new TableViewCell(range.topRow + 1, range.leftCol + 1, child, true, { rows: range.bottomRow - range.topRow + 1, columns: range.rightCol - range.leftCol + 1 });
     }
 }
 
