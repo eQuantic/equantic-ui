@@ -102,6 +102,9 @@ export function commitTableViewports(): void {
     }
     paint(view);
     report(view);
+    // A drag the composing component holds past the edge scrolls on the clock, which a pass can start
+    // without any event of this viewport's own; with nothing moving, the first frame ends it.
+    animate(view);
     if (typeof ResizeObserver === 'function' && !view.__eqTableObserver) {
       // A resize is answered without touching the element's own size: re-deciding it here resized
       // what is being observed inside its own notification, which the browser reports as a loop.

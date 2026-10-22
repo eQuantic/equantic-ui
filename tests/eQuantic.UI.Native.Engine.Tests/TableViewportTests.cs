@@ -397,6 +397,24 @@ public class TableViewportTests
         Region(host).Viewport.Scroll.Offset.Should().Be(TableOffset.Zero, "a mouse's drag is the cells', a finger's pans");
     }
 
+    [Fact]
+    public void ADragHeldBelowTheCells_KeepsTheFramesComingAndScrolls()
+    {
+        var tally = new Tally();
+        var host = Host(Table(tally), 900, 600, tally);
+        var scroll = Region(host).Viewport.Scroll;
+
+        scroll.AutoScroll(new Point(450, scroll.Viewport.Height + 60));
+        host.RenderFrame(new DisplayListBuilder(), _clock += 16);
+        host.NeedsRender.Should().BeTrue("a held drag keeps the clock turning");
+        for (var i = 0; i < 30; i++) host.RenderFrame(new DisplayListBuilder(), _clock += 16);
+
+        scroll.Offset.Down.Should().BeApproximately(30 * 16 * 60 * 0.02, 0.5);
+        scroll.AutoScroll(null);
+        Settle(host);
+        host.NeedsRender.Should().BeFalse();
+    }
+
     // ---- the keyboard ------------------------------------------------------------------------------
 
     [Fact]

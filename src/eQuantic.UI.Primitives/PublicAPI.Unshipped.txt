@@ -1,3 +1,4 @@
 #nullable enable
 eQuantic.UI.Primitives.TableViewport.CanRequestFocus.get -> bool
 eQuantic.UI.Primitives.TableViewport.CanRequestFocus.init -> void
+eQuantic.UI.Primitives.ITableScrollModel.AutoScroll(eQuantic.UI.Primitives.Point? pointer) -> void

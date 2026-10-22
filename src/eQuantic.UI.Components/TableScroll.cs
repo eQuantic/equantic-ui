@@ -39,6 +39,13 @@ public sealed class TableScroll : ITableScrollModel
     /// <summary>How long a finger may rest before it lifts and still be moving, in milliseconds.</summary>
     private const double FlingWindow = 80;
 
+    /// <summary>How fast a held drag scrolls for each point it is past the edge, in points per
+    /// millisecond: 60 points past is 1.2 a millisecond, a screenful of rows in about half a second.</summary>
+    private const double AutoScrollRate = 0.02;
+
+    /// <summary>The fastest a held drag scrolls, in points per millisecond, however far past it is.</summary>
+    private const double AutoScrollCap = 4;
+
     private double _across;
     private double _down;
     private double? _targetAcross;
@@ -68,6 +75,9 @@ public sealed class TableScroll : ITableScrollModel
     private double _panTime;
     private double _velocityAcross;
     private double _velocityDown;
+
+    /// <summary>Where a held drag is, in the viewport's own coordinates, or null when none is.</summary>
+    private Point? _autoScroll;
 
     public TableOffset Offset => new(_across, _down);
 
@@ -160,15 +170,17 @@ public sealed class TableScroll : ITableScrollModel
     {
         var elapsed = double.IsNaN(_lastTime) ? 0 : Math.Max(0, time - _lastTime);
         _lastTime = time;
+        var drifting = Drift(elapsed);
         if (_targetAcross is null && _targetDown is null)
         {
-            _lastTime = double.NaN;
-            return false;
+            if (!drifting) _lastTime = double.NaN;
+            return drifting;
         }
         if (_reduceMotion)
         {
             Land();
-            return false;
+            if (!drifting) _lastTime = double.NaN;
+            return drifting;
         }
         // 1 - (1-k)^dt: the same fraction per millisecond however long the frame took.
         var step = 1 - Math.Pow(1 - SmoothingPerMs, elapsed);
@@ -190,9 +202,44 @@ public sealed class TableScroll : ITableScrollModel
                 _targetDown = null;
             }
         }
-        var moving = _targetAcross is not null || _targetDown is not null;
+        var moving = _targetAcross is not null || _targetDown is not null || drifting;
         if (!moving) _lastTime = double.NaN;
         return moving;
+    }
+
+    public void AutoScroll(Point? pointer)
+    {
+        _autoScroll = pointer;
+        if (pointer is null) return;
+        // The drag takes the grid: a glide still in flight would carry it away from the pointer.
+        _targetAcross = null;
+        _targetDown = null;
+    }
+
+    /// <summary>Moves the grid by a held drag's speed over <paramref name="elapsed"/> milliseconds.
+    /// Answers whether the drag still moves it: the pointer is past an edge, and the grid can still go
+    /// that way.</summary>
+    private bool Drift(double elapsed)
+    {
+        if (_autoScroll is not { } at) return false;
+        var across = Speed(at.X, _pinnedAcross, _viewport.Width);
+        var down = Speed(at.Y, _pinnedDown, _viewport.Height);
+        if (across == 0 && down == 0) return false;
+        var toAcross = Math.Clamp(_across + across * elapsed, 0, MaxAcross);
+        var toDown = Math.Clamp(_down + down * elapsed, 0, MaxDown);
+        if (toAcross != _across || toDown != _down) LetGo();
+        _across = toAcross;
+        _down = toDown;
+        return across < 0 && _across > 0 || across > 0 && _across < MaxAcross
+            || down < 0 && _down > 0 || down > 0 && _down < MaxDown;
+    }
+
+    /// <summary>A held drag's speed on one axis, in points per millisecond: toward the pointer when it
+    /// is before <paramref name="from"/> or past <paramref name="to"/>, by how far.</summary>
+    private static double Speed(double at, double from, double to)
+    {
+        var past = at < from ? at - from : at > to ? at - to : 0;
+        return Math.Clamp(past * AutoScrollRate, -AutoScrollCap, AutoScrollCap);
     }
 
     public Rect? TrackOf(ScrollAxis axis)
@@ -438,14 +485,17 @@ public sealed class TableScroll : ITableScrollModel
         _targetDown = target;
     }
 
-    /// <summary>Whatever a glide was heading for, now.</summary>
+    /// <summary>Whatever a glide was heading for, now. The clock stops with it, unless a held drag is
+    /// still running on it: a layout lands glides every frame under reduced motion, and a drag that
+    /// lost its clock each frame would never move.</summary>
     private void Land()
     {
+        if (_targetAcross is null && _targetDown is null) return;
         if (_targetAcross is { } across) _across = across;
         if (_targetDown is { } down) _down = down;
         _targetAcross = null;
         _targetDown = null;
-        _lastTime = double.NaN;
+        if (_autoScroll is null) _lastTime = double.NaN;
     }
 
     private static bool Contains(Rect box, Point at) =>

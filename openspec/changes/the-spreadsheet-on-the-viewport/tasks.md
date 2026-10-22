@@ -28,11 +28,11 @@
       registers no stop and routes no key for a viewport that declines, the web writes no `tabindex`
       and takes no key; verify a Photon test and a web spec with a button in a cell (Tab lands on the
       button, never on the viewport) and the parity fixture's table case both ways
-- [ ] 2.2 `ITableScrollModel.AutoScroll(Point? pointer)` in `TableScroll`: a velocity per axis from the
+- [x] 2.2 `ITableScrollModel.AutoScroll(Point? pointer)` in `TableScroll`: a velocity per axis from the
       distance past the edges of the part that scrolls, applied in `Advance`, null stopping it, the
       same under reduced motion; verify `TableScrollTests` and its twin in `table-scroll.spec.ts` for
       below, above the pinned row, further-is-faster, the end of the grid and the stop
-- [ ] 2.3 Both hosts keep ticking a table that auto-scrolls (Photon's `AdvanceTables`, the web's
+- [x] 2.3 Both hosts keep ticking a table that auto-scrolls (Photon's `AdvanceTables`, the web's
       `animate`); verify a Photon host test and a web spec where frames run with a pointer held below
 - [ ] 2.4 `SheetTheme` (every member an optional `ColorToken`) and `IAppTheme.Sheet`, a default member
       answering null, with its TypeScript twin; the theme bridge writes `sheet` when the slot is not

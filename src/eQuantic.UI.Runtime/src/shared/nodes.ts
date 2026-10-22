@@ -677,6 +677,7 @@ export interface TableScrollModelLike {
   apply(request: unknown, rows: TableSpansLike, columns: TableSpansLike, pinnedRows: number, pinnedColumns: number): boolean;
   reveal(area: TableRectValue, across: boolean, down: boolean): boolean;
   key(key: string, modifiers: number): boolean;
+  autoScroll(pointer: { x: number; y: number } | null): void;
 }
 
 export interface TableViewCellNode extends VisualNodeValue {

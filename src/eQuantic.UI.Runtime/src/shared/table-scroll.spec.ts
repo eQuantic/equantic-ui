@@ -131,6 +131,34 @@ describe('TableScroll (transpiled twin)', () => {
     expect(arranged().pointer('down', new Point(400, 300), 'mouse', 0)).toBe(false);
   });
 
+  it('scrolls by a drag held past the cells, by its distance, under reduced motion too', () => {
+    for (const reduceMotion of [true, false]) {
+      const scroll = arranged(reduceMotion);
+      scroll.autoScroll(new Point(400, 588 + 60));
+      expect(scroll.advance(0)).toBe(true);
+      expect(scroll.advance(500)).toBe(true);
+      expect(scroll.offset.down).toBeCloseTo(600, 6);
+    }
+    const up = arranged();
+    up.wheel(0, 500, false, 0);
+    up.autoScroll(new Point(400, 10));
+    up.advance(0);
+    up.advance(500);
+    expect(up.offset.down).toBeCloseTo(500 - 18 * 0.02 * 500, 6);
+  });
+
+  it('stops a held drag at the grid’s end, and when it ends', () => {
+    const scroll = arranged(true, 30);
+    scroll.autoScroll(new Point(400, 588 + 60));
+    scroll.advance(0);
+    expect(scroll.advance(1000)).toBe(false);
+    expect(scroll.offset.down).toBe(30 * 28 - 588);
+    scroll.wheel(0, -100, false, 0);
+    scroll.autoScroll(null);
+    expect(scroll.advance(2000)).toBe(false);
+    expect(scroll.offset.down).toBe(30 * 28 - 588 - 100);
+  });
+
   it('reveals the part that scrolls of a range crossing the pinned bands', () => {
     const scroll = arranged();
     scroll.wheel(500, 500, false, 0);

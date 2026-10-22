@@ -82,4 +82,13 @@ public interface ITableScrollModel
     /// does not where nothing moved, so the key travels on.
     /// </summary>
     bool Key(string key, KeyModifiers modifiers);
+
+    /// <summary>
+    /// A drag the composing component holds, at <paramref name="pointer"/> in the viewport's own
+    /// coordinates, or null when it ends: while the pointer is past an edge of the part where the cells
+    /// scroll (the pinned bands count as outside it), every <see cref="Advance"/> scrolls toward it, faster
+    /// the further past it is, until the grid's end. Under reduced motion it scrolls all the same: the
+    /// person is holding it there. <em>How does Flutter solve it?</em> <c>EdgeDraggingAutoScroller</c>.
+    /// </summary>
+    void AutoScroll(Point? pointer);
 }

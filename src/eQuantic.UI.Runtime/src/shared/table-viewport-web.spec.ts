@@ -11,7 +11,7 @@ import { photonTheme } from './design-system.generated';
 import { commitTableViewports, scheduleTableViewportCommit } from './table-viewports';
 import { TableScroll } from './components/TableScroll';
 import { UniformTableSpans } from './components/UniformTableSpans';
-import { TableRange, TableScrollRequest } from './value-types';
+import { Point, TableRange, TableScrollRequest } from './value-types';
 import { Box, BoxStyle, Pressable, TableViewCell, TableViewport, Text } from './vocabulary';
 import { TableView } from './components/TableView';
 import fixture from './component-parity.fixture.json';
@@ -395,5 +395,17 @@ describe('TableViewport on the web', () => {
     tab(true);
     expect(cellOf()).toBe('0:0');
     expect(tab(true).defaultPrevented).toBe(false);
+  });
+
+  it('keeps scrolling while a drag the composing component holds is past the cells', async () => {
+    const { scroll, view } = build();
+    scroll.autoScroll(new Point(400, scroll.viewport.height + 60));
+    // A pass, as the composing component's rebuild brings, starts the clock.
+    commitTableViewports();
+    await new Promise((resolve) => setTimeout(resolve, 120));
+
+    expect(scroll.offset.down).toBeGreaterThan(0);
+    expect(layer(view, 0).style.transform).toContain(`-${scroll.offset.down}px`);
+    scroll.autoScroll(null);
   });
 });
