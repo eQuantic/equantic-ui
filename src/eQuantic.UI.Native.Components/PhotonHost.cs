@@ -1935,7 +1935,7 @@ public sealed class PhotonHost
             {
                 if (!ReferenceEquals(sheetRegions[i].Element, _textAt)) continue;
                 if (!sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Move,
-                        ToLocal(sheetRegions, i, sheetRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1)) break;
+                        ToLocal(sheetRegions, i, sheetRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1, kind)) break;
                 SurfaceChanged(sheetRegions[i].Surface.OnChanged);
                 break;
             }
@@ -2472,7 +2472,7 @@ public sealed class PhotonHost
             _focused = null;
             ForgetFocus();
             sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Down,
-                ToLocal(sheetRegions, i, sheetRegions[i].Bounds, point), modifiers, clickCount);
+                ToLocal(sheetRegions, i, sheetRegions[i].Bounds, point), modifiers, clickCount, kind);
             _sheetPressed = true;
             SurfaceChanged(sheetRegions[i].Surface.OnChanged);
             return true;
@@ -2526,7 +2526,7 @@ public sealed class PhotonHost
             for (var i = 0; i < sheetRegions.Count; i++)
             {
                 if (!ReferenceEquals(sheetRegions[i].Element, _textAt)) continue;
-                if (sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1))
+                if (sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1, kind))
                     SurfaceChanged(sheetRegions[i].Surface.OnChanged);
                 break;
             }
@@ -2625,7 +2625,7 @@ public sealed class PhotonHost
                 // undo step, and the release is the sheet's. A selection drag simply ends, changing
                 // nothing, and the release goes on like any other.
                 if (!sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Up,
-                        ToLocal(sheetRegions, i, sheetRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1)) break;
+                        ToLocal(sheetRegions, i, sheetRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1, kind)) break;
                 SurfaceChanged(sheetRegions[i].Surface.OnChanged);
                 return true;
             }

@@ -38,7 +38,7 @@
       answering null, with its TypeScript twin; the theme bridge writes `sheet` when the slot is not
       null, as it writes `data`, and the browser's theme answers it; verify the bridge's pinned JSON
       both ways (a theme with a slot, one without) and a spec reading the slot back in the browser
-- [ ] 2.5 `ISheetSurfaceModel.HandlePointer` takes the pointer's kind, and every caller passes it
+- [x] 2.5 `ISheetSurfaceModel.HandlePointer` takes the pointer's kind, and every caller passes it
       (Photon's host, the web's lowering, the tests); verify the solution and the runtime's `tsc` build
 
 ## 3. The engine on the viewport

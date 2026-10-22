@@ -47,9 +47,12 @@ public interface ISheetSurfaceModel
     /// <summary>
     /// A pointer over the surface, at <paramref name="position"/> in the surface's own coordinates.
     /// <paramref name="clicks"/> is the platform's click count on a <see cref="PointerPhase.Down"/>:
-    /// its double-click interval is a system setting, never the engine's to guess. A host routes the
+    /// its double-click interval is a system setting, never the engine's to guess. <paramref name="kind"/>
+    /// is what pressed, which the engine reads as Flutter's drag devices do: a mouse's or a stylus's drag
+    /// selects, a finger's pans the grid around the sheet, so a finger's press is a tap that lands when
+    /// it lifts, and the host says <see cref="PointerPhase.Cancel"/> when a pan took it. A host routes the
     /// moves and the release of a press that began on the surface to it until the press lifts, wherever
-    /// the pointer goes. Answers whether the model changed.
+    /// the pointer goes. Answers whether the model changed, or needs a frame to follow it.
     /// </summary>
-    bool HandlePointer(PointerPhase phase, Point position, KeyModifiers modifiers, int clicks);
+    bool HandlePointer(PointerPhase phase, Point position, KeyModifiers modifiers, int clicks, PointerKind kind);
 }

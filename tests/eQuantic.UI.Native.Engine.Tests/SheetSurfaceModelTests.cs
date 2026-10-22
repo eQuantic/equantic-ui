@@ -34,7 +34,7 @@ public class SheetSurfaceModelTests
         KeyModifiers modifiers = KeyModifiers.None, int clicks = 1)
     {
         ISheetSurfaceModel model = sheet;
-        model.HandlePointer(PointerPhase.Down, at, modifiers, clicks);
+        model.HandlePointer(PointerPhase.Down, at, modifiers, clicks, PointerKind.Mouse);
         return model;
     }
 
@@ -86,14 +86,14 @@ public class SheetSurfaceModelTests
         var sheet = new SheetController(rows: 50, cols: 8);
         var model = Press(sheet, CenterOf(1, 1));
 
-        model.HandlePointer(PointerPhase.Move, CenterOf(3, 3), KeyModifiers.None, 1).Should().BeTrue();
-        model.HandlePointer(PointerPhase.Move, CenterOf(3, 3), KeyModifiers.None, 1)
+        model.HandlePointer(PointerPhase.Move, CenterOf(3, 3), KeyModifiers.None, 1, PointerKind.Mouse).Should().BeTrue();
+        model.HandlePointer(PointerPhase.Move, CenterOf(3, 3), KeyModifiers.None, 1, PointerKind.Mouse)
             .Should().BeFalse("the same cell again changes nothing");
-        model.HandlePointer(PointerPhase.Up, CenterOf(3, 3), KeyModifiers.None, 1).Should().BeFalse();
+        model.HandlePointer(PointerPhase.Up, CenterOf(3, 3), KeyModifiers.None, 1, PointerKind.Mouse).Should().BeFalse();
 
         sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 1), new CellRef(3, 3)));
         sheet.ActiveCell.Should().Be(new CellRef(3, 3));
-        model.HandlePointer(PointerPhase.Move, CenterOf(5, 5), KeyModifiers.None, 1)
+        model.HandlePointer(PointerPhase.Move, CenterOf(5, 5), KeyModifiers.None, 1, PointerKind.Mouse)
             .Should().BeFalse("once the press lifts, a move is a hover");
     }
 
@@ -102,10 +102,10 @@ public class SheetSurfaceModelTests
     {
         var sheet = new SheetController(rows: 50, cols: 8);
         Press(sheet, CenterOf(1, 1));
-        ((ISheetSurfaceModel)sheet).HandlePointer(PointerPhase.Up, CenterOf(1, 1), KeyModifiers.None, 1);
+        ((ISheetSurfaceModel)sheet).HandlePointer(PointerPhase.Up, CenterOf(1, 1), KeyModifiers.None, 1, PointerKind.Mouse);
 
         var model = Press(sheet, CenterOf(4, 3), KeyModifiers.Shift);
-        model.HandlePointer(PointerPhase.Move, CenterOf(6, 6), KeyModifiers.Shift, 1).Should().BeFalse();
+        model.HandlePointer(PointerPhase.Move, CenterOf(6, 6), KeyModifiers.Shift, 1, PointerKind.Mouse).Should().BeFalse();
 
         sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 1), new CellRef(4, 3)));
         sheet.ActiveCell.Should().Be(new CellRef(1, 1), "Excel leaves the active cell standing");
@@ -147,11 +147,11 @@ public class SheetSurfaceModelTests
         ISheetSurfaceModel model = sheet;
 
         // B2's bottom-right corner, where the handle is drawn, give or take the grab.
-        model.HandlePointer(PointerPhase.Down, new Point(2 * 96f - 5, 2 * 28f + 5), KeyModifiers.None, 1)
+        model.HandlePointer(PointerPhase.Down, new Point(2 * 96f - 5, 2 * 28f + 5), KeyModifiers.None, 1, PointerKind.Mouse)
             .Should().BeTrue();
         sheet.Filling.Should().BeTrue();
-        model.HandlePointer(PointerPhase.Move, CenterOf(3, 1), KeyModifiers.None, 1).Should().BeTrue();
-        model.HandlePointer(PointerPhase.Up, CenterOf(3, 1), KeyModifiers.None, 1).Should().BeTrue();
+        model.HandlePointer(PointerPhase.Move, CenterOf(3, 1), KeyModifiers.None, 1, PointerKind.Mouse).Should().BeTrue();
+        model.HandlePointer(PointerPhase.Up, CenterOf(3, 1), KeyModifiers.None, 1, PointerKind.Mouse).Should().BeTrue();
 
         sheet.Filling.Should().BeFalse();
         sheet.Document.GetCell(new CellRef(2, 1)).Should().Be("7");
@@ -169,19 +169,19 @@ public class SheetSurfaceModelTests
         sheet.Selection = new SheetRange(new CellRef(1, 1));
         ISheetSurfaceModel model = sheet;
 
-        model.HandlePointer(PointerPhase.Down, new Point(2 * 96f, 2 * 28f), KeyModifiers.None, 1);
-        model.HandlePointer(PointerPhase.Move, CenterOf(3, 1), KeyModifiers.None, 1);
-        model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1).Should().BeTrue();
+        model.HandlePointer(PointerPhase.Down, new Point(2 * 96f, 2 * 28f), KeyModifiers.None, 1, PointerKind.Mouse);
+        model.HandlePointer(PointerPhase.Move, CenterOf(3, 1), KeyModifiers.None, 1, PointerKind.Mouse);
+        model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1, PointerKind.Mouse).Should().BeTrue();
 
         sheet.Filling.Should().BeFalse();
         sheet.Document.GetCell(new CellRef(2, 1)).Should().Be("", "the system took the press away");
         sheet.History.CanUndo.Should().BeFalse();
 
         Press(sheet, CenterOf(4, 4));
-        model.HandlePointer(PointerPhase.Move, CenterOf(6, 6), KeyModifiers.None, 1);
-        model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1).Should().BeFalse();
+        model.HandlePointer(PointerPhase.Move, CenterOf(6, 6), KeyModifiers.None, 1, PointerKind.Mouse);
+        model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1, PointerKind.Mouse).Should().BeFalse();
         sheet.Selection.Should().Be(new SheetRange(new CellRef(4, 4), new CellRef(6, 6)));
-        model.HandlePointer(PointerPhase.Move, CenterOf(8, 8), KeyModifiers.None, 1)
+        model.HandlePointer(PointerPhase.Move, CenterOf(8, 8), KeyModifiers.None, 1, PointerKind.Mouse)
             .Should().BeFalse("a cancelled drag follows the pointer no further");
     }
 
@@ -192,12 +192,12 @@ public class SheetSurfaceModelTests
         sheet.Document.SetCell(new CellRef(1, 1), "7");
         sheet.Selection = new SheetRange(new CellRef(1, 1));
         ISheetSurfaceModel model = sheet;
-        model.HandlePointer(PointerPhase.Down, new Point(2 * 96f, 2 * 28f), KeyModifiers.None, 1);
+        model.HandlePointer(PointerPhase.Down, new Point(2 * 96f, 2 * 28f), KeyModifiers.None, 1, PointerKind.Mouse);
 
         // Its release never came: the next press selects, and its own release pours nothing.
         Press(sheet, CenterOf(5, 5));
-        model.HandlePointer(PointerPhase.Move, CenterOf(3, 1), KeyModifiers.None, 1);
-        model.HandlePointer(PointerPhase.Up, CenterOf(3, 1), KeyModifiers.None, 1);
+        model.HandlePointer(PointerPhase.Move, CenterOf(3, 1), KeyModifiers.None, 1, PointerKind.Mouse);
+        model.HandlePointer(PointerPhase.Up, CenterOf(3, 1), KeyModifiers.None, 1, PointerKind.Mouse);
 
         sheet.Filling.Should().BeFalse();
         sheet.Document.GetCell(new CellRef(2, 1)).Should().Be("");
@@ -210,16 +210,16 @@ public class SheetSurfaceModelTests
         var sheet = new SheetController(rows: 50, cols: 8);
         sheet.Selection = new SheetRange(new CellRef(1, 1));
         ISheetSurfaceModel model = sheet;
-        model.HandlePointer(PointerPhase.Down, new Point(2 * 96f, 2 * 28f), KeyModifiers.None, 1);
+        model.HandlePointer(PointerPhase.Down, new Point(2 * 96f, 2 * 28f), KeyModifiers.None, 1, PointerKind.Mouse);
 
-        model.HandlePointer(PointerPhase.Move, CenterOf(3, 1), KeyModifiers.None, 1).Should().BeTrue();
-        model.HandlePointer(PointerPhase.Move, new Point(CenterOf(3, 1).X + 10, CenterOf(3, 1).Y), KeyModifiers.None, 1)
+        model.HandlePointer(PointerPhase.Move, CenterOf(3, 1), KeyModifiers.None, 1, PointerKind.Mouse).Should().BeTrue();
+        model.HandlePointer(PointerPhase.Move, new Point(CenterOf(3, 1).X + 10, CenterOf(3, 1).Y), KeyModifiers.None, 1, PointerKind.Mouse)
             .Should().BeFalse("the same cell again is the same preview");
         // Back into the source the preview clears, which is a change; inside it, none before and none after
         // is none (the twin's spec makes the same moves, through C#'s lift of != over two nullable ranges).
-        model.HandlePointer(PointerPhase.Move, CenterOf(1, 1), KeyModifiers.None, 1).Should().BeTrue();
+        model.HandlePointer(PointerPhase.Move, CenterOf(1, 1), KeyModifiers.None, 1, PointerKind.Mouse).Should().BeTrue();
         sheet.FillTarget.Should().BeNull();
-        model.HandlePointer(PointerPhase.Move, new Point(CenterOf(1, 1).X + 10, CenterOf(1, 1).Y), KeyModifiers.None, 1)
+        model.HandlePointer(PointerPhase.Move, new Point(CenterOf(1, 1).X + 10, CenterOf(1, 1).Y), KeyModifiers.None, 1, PointerKind.Mouse)
             .Should().BeFalse("no preview before the move and none after it");
     }
 

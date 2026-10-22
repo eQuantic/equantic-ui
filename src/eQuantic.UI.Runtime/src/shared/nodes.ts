@@ -733,6 +733,7 @@ export interface SheetSurfaceModelLike {
     position: { x: number; y: number },
     modifiers: number,
     clicks: number,
+    kind: string,
   ): boolean;
 }
 

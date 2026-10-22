@@ -34,3 +34,5 @@ override eQuantic.UI.Primitives.SheetTheme.GetHashCode() -> int
 override eQuantic.UI.Primitives.SheetTheme.ToString() -> string!
 static eQuantic.UI.Primitives.SheetTheme.operator !=(eQuantic.UI.Primitives.SheetTheme? left, eQuantic.UI.Primitives.SheetTheme? right) -> bool
 static eQuantic.UI.Primitives.SheetTheme.operator ==(eQuantic.UI.Primitives.SheetTheme? left, eQuantic.UI.Primitives.SheetTheme? right) -> bool
+eQuantic.UI.Primitives.ISheetSurfaceModel.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks, eQuantic.UI.Primitives.PointerKind kind) -> bool
+*REMOVED*eQuantic.UI.Primitives.ISheetSurfaceModel.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks) -> bool

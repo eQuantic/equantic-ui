@@ -92,11 +92,11 @@ describe('SheetController (transpiled twin)', () => {
     sheet.selection = new SheetRange(new CellRef(1, 1));
 
     // B2's bottom-right corner, where the handle is drawn.
-    sheet.handlePointer('down', new Point(192, 56), 0, 1);
-    expect(sheet.handlePointer('move', new Point(144, 98), 0, 1)).toBe(true);
+    sheet.handlePointer('down', new Point(192, 56), 0, 1, 'mouse');
+    expect(sheet.handlePointer('move', new Point(144, 98), 0, 1, 'mouse')).toBe(true);
     // The same cell again is the same preview: compared by value, as .NET compares it.
-    expect(sheet.handlePointer('move', new Point(154, 98), 0, 1)).toBe(false);
-    expect(sheet.handlePointer('cancel', new Point(0, 0), 0, 1)).toBe(true);
+    expect(sheet.handlePointer('move', new Point(154, 98), 0, 1, 'mouse')).toBe(false);
+    expect(sheet.handlePointer('cancel', new Point(0, 0), 0, 1, 'mouse')).toBe(true);
 
     expect(sheet.filling).toBe(false);
     expect(sheet.document.getCell(new CellRef(2, 1))).toBe('');
@@ -106,15 +106,15 @@ describe('SheetController (transpiled twin)', () => {
     const sheet = new SheetController(50, 8);
     sheet.selection = new SheetRange(new CellRef(1, 1));
 
-    sheet.handlePointer('down', new Point(192, 56), 0, 1);
+    sheet.handlePointer('down', new Point(192, 56), 0, 1, 'mouse');
     // Inside the source: no preview before the move, and none after it.
-    expect(sheet.handlePointer('move', new Point(144, 42), 0, 1)).toBe(false);
+    expect(sheet.handlePointer('move', new Point(144, 42), 0, 1, 'mouse')).toBe(false);
     // Out to B4: a preview where there was none.
-    expect(sheet.handlePointer('move', new Point(144, 98), 0, 1)).toBe(true);
+    expect(sheet.handlePointer('move', new Point(144, 98), 0, 1, 'mouse')).toBe(true);
     // Back into B2: the preview clears, which is a change too.
-    expect(sheet.handlePointer('move', new Point(150, 40), 0, 1)).toBe(true);
+    expect(sheet.handlePointer('move', new Point(150, 40), 0, 1, 'mouse')).toBe(true);
     expect(sheet.fillTarget).toBeNull();
-    expect(sheet.handlePointer('move', new Point(160, 44), 0, 1)).toBe(false);
+    expect(sheet.handlePointer('move', new Point(160, 44), 0, 1, 'mouse')).toBe(false);
   });
 
   it('TSV round-trips through copy and paste', () => {

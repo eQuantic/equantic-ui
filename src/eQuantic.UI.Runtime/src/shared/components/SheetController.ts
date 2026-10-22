@@ -1,4 +1,4 @@
-import { $eq, CellRef, Point, PointerPhaseValue, SheetAxisValue, SheetCellSnapshot, SheetDocument, SheetEdit, SheetGrid, SheetHistory, SheetKeymap, SheetMotionValue, SheetRange, TsvCodec } from "../runtime-exports";
+import { $eq, CellRef, Point, PointerKindValue, PointerPhaseValue, SheetAxisValue, SheetCellSnapshot, SheetDocument, SheetEdit, SheetGrid, SheetHistory, SheetKeymap, SheetMotionValue, SheetRange, TsvCodec } from "../runtime-exports";
 
 export class SheetController {
     constructor(rows: number = 1000, cols: number = 26) {
@@ -367,7 +367,7 @@ export class SheetController {
         return true;
     }
 
-    handlePointer(phase: PointerPhaseValue, position: Point, modifiers: number, clicks: number) {
+    handlePointer(phase: PointerPhaseValue, position: Point, modifiers: number, clicks: number, _kind: PointerKindValue) {
         switch (phase) {
             case 'down':
                 {

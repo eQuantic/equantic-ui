@@ -587,7 +587,7 @@ public sealed class SheetController : ISheetSurfaceModel
     /// one that grabbed the handle previews the fill, and the release lands it as one undo step. A
     /// press the system cancels lands nothing, and a press that finds a fill still in flight drops it.
     /// </summary>
-    public bool HandlePointer(PointerPhase phase, Point position, KeyModifiers modifiers, int clicks)
+    public bool HandlePointer(PointerPhase phase, Point position, KeyModifiers modifiers, int clicks, PointerKind kind)
     {
         switch (phase)
         {

@@ -1579,7 +1579,7 @@ function lowerSheetSurface(
     const at = local(target, event.clientX, event.clientY);
     target.focus({ preventScroll: true });
     // The platform counts the clicks — its double-click interval is a system setting, never ours.
-    model.handlePointer('down', at, modifiersOf(event), event.detail > 0 ? event.detail : 1);
+    model.handlePointer('down', at, modifiersOf(event), event.detail > 0 ? event.detail : 1, 'mouse');
     // The press is the sheet's until it lifts: its moves and its release go to the model through
     // document-level listeners, so a sweep survives leaving the grid. The model knows whether the
     // press is growing the selection or dragging a fill, and answers whether a move changed it.
@@ -1593,20 +1593,20 @@ function lowerSheetSurface(
     };
     const cancel = () => {
       end();
-      if (model.handlePointer('cancel', { x: 0, y: 0 }, 0, 1)) changed();
+      if (model.handlePointer('cancel', { x: 0, y: 0 }, 0, 1, 'mouse')) changed();
     };
     const move = (ev: MouseEvent) => {
       if (ev.buttons === 0) {
         cancel();
         return;
       }
-      if (model.handlePointer('move', local(target, ev.clientX, ev.clientY), modifiersOf(ev), 1)) {
+      if (model.handlePointer('move', local(target, ev.clientX, ev.clientY), modifiersOf(ev), 1, 'mouse')) {
         changed();
       }
     };
     const up = (ev: MouseEvent) => {
       end();
-      if (model.handlePointer('up', local(target, ev.clientX, ev.clientY), modifiersOf(ev), 1)) {
+      if (model.handlePointer('up', local(target, ev.clientX, ev.clientY), modifiersOf(ev), 1, 'mouse')) {
         changed();
       }
     };
