@@ -1,7 +1,8 @@
+using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Sheet;
 
-namespace eQuantic.UI.Components;
+namespace eQuantic.UI.Spreadsheets;
 
 /// <summary>
 /// The editable grid, write-once: column headers fixed on top, row headers scrolling WITH the
@@ -60,19 +61,6 @@ public sealed class Spreadsheet : StatefulComponent
     /// <summary>The reconciliation key of a row's nodes: its number, unique among the siblings of
     /// the window and the same whichever window holds it.</summary>
     private static string RowKey(int row) => row.ToString();
-
-    /// <summary>Column name the way every spreadsheet spells it: A..Z, AA..</summary>
-    public static string ColumnName(int col)
-    {
-        var name = "";
-        while (true)
-        {
-            name = (char)('A' + col % 26) + name;
-            col = col / 26 - 1;
-            if (col < 0) break;
-        }
-        return name;
-    }
 
     private (int First, int Last, float Top) WindowFor(float offset, float viewport)
     {
@@ -208,7 +196,7 @@ public sealed class Spreadsheet : StatefulComponent
         var selection = Controller.Selection;
         var inBand = c >= selection.LeftCol && c <= selection.RightCol;
         var stack = new Stack();
-        stack.Add(HeaderCell(ColumnName(c), document.ColWidth(c), HeaderHeight, theme,
+        stack.Add(HeaderCell(CellRef.ColumnName(c), document.ColWidth(c), HeaderHeight, theme,
             selected: inBand, onPressed: () => SetState(() => Controller.SelectCols(col, col))));
         stack.Add(new Positioned(new Draggable(new Box(new BoxStyle
         {

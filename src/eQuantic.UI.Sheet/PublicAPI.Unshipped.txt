@@ -1,1 +1,2 @@
 #nullable enable
+static eQuantic.UI.Sheet.CellRef.ColumnName(int col) -> string!

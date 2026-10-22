@@ -7,6 +7,7 @@ using eQuantic.UI.Primitives;
 using eQuantic.UI.Sheet;
 using FluentAssertions;
 using Xunit;
+using eQuantic.UI.Spreadsheets;
 
 namespace eQuantic.UI.Native.Engine.Tests;
 

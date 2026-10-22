@@ -157,6 +157,7 @@ export { Skeleton } from './Skeleton';
 export { Slider } from './Slider';
 export { SparseTableSpans } from './SparseTableSpans';
 export { Spreadsheet } from './Spreadsheet';
+export { SpreadsheetsUI } from './SpreadsheetsUI';
 export { Stepper } from './Stepper';
 export { SwipeableRow } from './SwipeableRow';
 export { Switch } from './Switch';

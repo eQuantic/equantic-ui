@@ -34,6 +34,7 @@ public class VocabularyInterfaceDefaultsTests
         typeof(eQuantic.UI.Sheet.SheetController).Assembly,
         typeof(eQuantic.UI.Components.CodeEditor).Assembly,
         typeof(eQuantic.UI.Charts.BarChart).Assembly,
+        typeof(eQuantic.UI.Spreadsheets.Spreadsheet).Assembly,
     ];
 
     /// <summary>`Interface.member`, the member as the twin names it, for every default: an instance

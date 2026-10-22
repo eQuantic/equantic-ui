@@ -2,17 +2,17 @@
 
 ## 1. The family's assembly
 
-- [ ] 1.1 Create `src/eQuantic.UI.Spreadsheets` (a `contract` assembly above `eQuantic.UI.Components`
+- [x] 1.1 Create `src/eQuantic.UI.Spreadsheets` (a `contract` assembly above `eQuantic.UI.Components`
       and `eQuantic.UI.Sheet`, packed with its sources under `tools/source` as the charts' are, with
       `PublicAPI` files) and move `Spreadsheet` into it unchanged, with `SpreadsheetsUI` holding its
       `Spreadsheet(controller, …)` factory; add it to the solution; verify the solution builds with no
       warning and the analyzers report the moved lines as `*REMOVED*` in Components and added here
-- [ ] 1.2 Wire it as the charts are: both SDKs' `PackageReference`, the source-tree
+- [x] 1.2 Wire it as the charts are: both SDKs' `PackageReference`, the source-tree
       `ProjectReference`, the static `Using` of `SpreadsheetsUI`, `Sdk.targets` handing eqc its
       sources, `RuntimeProvidedTypeScanner`'s list, the test projects' references, and the packaging
       check's list (`scripts/check-package-surface.cs`); verify `UiFactoryConformanceTests`,
       `DeveloperSurfaceContractTests` (unchanged baseline) and the package surface check pass
-- [ ] 1.3 Regenerate the transpiled pins (`EQ_UPDATE_TRANSPILED=1`) so `Spreadsheet` ships in
+- [x] 1.3 Regenerate the transpiled pins (`EQ_UPDATE_TRANSPILED=1`) so `Spreadsheet` ships in
       `runtime.js` from its new home, and move the samples (`SheetScreen`, the gallery's Spreadsheet
       section, `TableScreen`'s `ColumnName`) to the new namespace or the factory; verify
       `SharedComponentTranspilationTests`, the runtime's Vitest and `dotnet build` of the four samples

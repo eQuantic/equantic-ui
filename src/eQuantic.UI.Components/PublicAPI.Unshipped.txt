@@ -1,1 +1,19 @@
 #nullable enable
+*REMOVED*const eQuantic.UI.Components.Spreadsheet.FillHandle = 7 -> float
+*REMOVED*const eQuantic.UI.Components.Spreadsheet.Grip = 6 -> float
+*REMOVED*const eQuantic.UI.Components.Spreadsheet.HeaderHeight = 26 -> float
+*REMOVED*const eQuantic.UI.Components.Spreadsheet.HeaderWidth = 44 -> float
+*REMOVED*const eQuantic.UI.Components.Spreadsheet.MinColWidth = 24 -> float
+*REMOVED*const eQuantic.UI.Components.Spreadsheet.MinRowHeight = 14 -> float
+*REMOVED*eQuantic.UI.Components.Spreadsheet
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Controller.get -> eQuantic.UI.Sheet.SheetController!
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Height.get -> eQuantic.UI.Primitives.SizeValue
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Height.init -> void
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Overscan.get -> int
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Overscan.init -> void
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Spreadsheet(eQuantic.UI.Sheet.SheetController! controller) -> void
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Width.get -> eQuantic.UI.Primitives.SizeValue
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Width.init -> void
+*REMOVED*override eQuantic.UI.Components.Spreadsheet.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+*REMOVED*override eQuantic.UI.Components.Spreadsheet.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+*REMOVED*static eQuantic.UI.Components.Spreadsheet.ColumnName(int col) -> string!

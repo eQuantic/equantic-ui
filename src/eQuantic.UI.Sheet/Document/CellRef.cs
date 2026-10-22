@@ -20,17 +20,20 @@ public readonly record struct CellRef(int Row, int Col) : IComparable<CellRef>
         Row != other.Row ? Row.CompareTo(other.Row) : Col.CompareTo(other.Col);
 
     /// <summary>"A1" for (0,0) — the spelling every spreadsheet user already reads.</summary>
-    public string ToA1()
+    public string ToA1() => ColumnName(Col) + (Row + 1);
+
+    /// <summary>A column's name the way every spreadsheet spells it: A to Z, then AA, AB, and on to
+    /// XFD, the last of Excel's.</summary>
+    public static string ColumnName(int col)
     {
         var name = "";
-        var col = Col;
         while (true)
         {
             name = (char)('A' + col % 26) + name;
             col = col / 26 - 1;
             if (col < 0) break;
         }
-        return name + (Row + 1);
+        return name;
     }
 
     /// <summary>Parses "B12" back to (11, 1). Null for anything that is not an A1 address.</summary>

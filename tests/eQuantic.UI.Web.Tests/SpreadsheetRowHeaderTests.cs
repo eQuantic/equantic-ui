@@ -3,6 +3,7 @@ using eQuantic.UI.Primitives;
 using eQuantic.UI.Sheet;
 using eQuantic.UI.Web;
 using FluentAssertions;
+using eQuantic.UI.Spreadsheets;
 
 namespace eQuantic.UI.Web.Tests;
 

@@ -31,6 +31,8 @@ public class SharedComponentTranspilationTests
             // The chart library is the second shared library, runtime-provided the same way
             // (docs/CHARTS-PLAN.md): its directory IS its roster too.
             .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Charts"), "*.cs"))
+            // And the spreadsheet family, the third (docs/SPREADSHEET-PLAN.md).
+            .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Spreadsheets"), "*.cs"))
             .OrderBy(path => path, StringComparer.Ordinal)
             .ToArray();
 

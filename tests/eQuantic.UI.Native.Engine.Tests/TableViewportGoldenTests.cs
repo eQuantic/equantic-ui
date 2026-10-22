@@ -4,6 +4,7 @@ using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Engine.Reference;
 using eQuantic.UI.Native.Engine.Tests.Golden;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Sheet;
 using FluentAssertions;
 using Xunit;
 
@@ -34,7 +35,7 @@ public class TableViewportGoldenTests
         var table = new TableView(rows, columns, (row, column) =>
         {
             var pinned = row == 0 || column == 0;
-            var label = row == 0 ? Spreadsheet.ColumnName(column) : column == 0 ? $"{row + 1}" : $"{row},{column}";
+            var label = row == 0 ? CellRef.ColumnName(column) : column == 0 ? $"{row + 1}" : $"{row},{column}";
             return new Box(new BoxStyle
             {
                 Width = SizeValue.Fill,

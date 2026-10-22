@@ -752,11 +752,7 @@ public static class Gallery
             "Click a cell and type (Excel's replace-and-go), Enter commits stepping down, "
             + "drag a header separator to resize, ⌘C/⌘V speak TSV, ⌘Z undoes."));
         column.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fixed(420) },
-            new eQuantic.UI.Components.Spreadsheet(sheet)
-            {
-                Width = SizeValue.Fill,
-                Height = SizeValue.Fill,
-            }));
+            Spreadsheet(sheet, width: SizeValue.Fill, height: SizeValue.Fill)));
         return Section(theme, "Spreadsheet", column);
     }
 
@@ -785,9 +781,9 @@ public static class Gallery
     {
         var header = row == 0 || column == 0;
         var label = row == 0 && column == 0 ? ""
-            : row == 0 ? Spreadsheet.ColumnName(column - 1)
+            : row == 0 ? CellRef.ColumnName(column - 1)
             : column == 0 ? $"{row}"
-            : $"{Spreadsheet.ColumnName(column - 1)}{row}";
+            : $"{CellRef.ColumnName(column - 1)}{row}";
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,

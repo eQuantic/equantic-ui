@@ -1,7 +1,7 @@
 import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, Flexible, Point, Positioned, Pressable, Row, ScrollView, SdkStrings, SheetAxisValue, SheetController, SheetDocument, SheetGrid, SheetSurface, SizeValue, Spacer, Stack, StatefulComponent, Text, UiComponent, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class Spreadsheet extends StatefulComponent {
-    static $typeId = 'eQuantic.UI.Components.Spreadsheet';
+    static $typeId = 'eQuantic.UI.Spreadsheets.Spreadsheet';
     _offset: number = 0;
     _viewport: number = 0;
     _first: number = 0;
@@ -65,16 +65,6 @@ export class Spreadsheet extends StatefulComponent {
         return $eq.text.format(row, null, undefined, undefined, 'int32');
     }
 
-    static columnName(col: number) {
-        let name = '';
-        while (true) {
-            name = String.fromCharCode((65 + col % 26)) + name;
-            col = Math.trunc(col / 26) - 1;
-            if (col < 0) break;
-        }
-        return name;
-    }
-
     windowFor(offset: number, viewport: number): [number, number, number] {
         let document = this.controller.document;
         let row = 0;
@@ -118,7 +108,7 @@ export class Spreadsheet extends StatefulComponent {
         let selection = this.controller.selection;
         let inBand = c >= selection.leftCol && c <= selection.rightCol;
         let stack = new Stack();
-        stack.add(Spreadsheet.headerCell(Spreadsheet.columnName(c), document.colWidth(c), Spreadsheet.headerHeight, theme, inBand, () => this.setState(() => this.controller.selectCols(col, col))));
+        stack.add(Spreadsheet.headerCell(CellRef.columnName(c), document.colWidth(c), Spreadsheet.headerHeight, theme, inBand, () => this.setState(() => this.controller.selectCols(col, col))));
         stack.add(new Positioned(new Draggable(new Box(new BoxStyle({ width: SizeValue.fixed(Spreadsheet.grip), height: SizeValue.fixed(Spreadsheet.headerHeight), cursor: 'colResize' })), null, { axis: 'horizontal', min: -4000, max: 4000, follows: false, onMoved: (delta: number) => this.previewResize('cols', col, delta), onReleased: (delta: number) => this.commitResize('cols', col, delta) }), 0, 0, null, null, { layer: 1 }));
         return stack;
     }

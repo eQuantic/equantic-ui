@@ -5,6 +5,7 @@ using eQuantic.UI.Primitives;
 using eQuantic.UI.Sheet;
 using FluentAssertions;
 using Xunit;
+using eQuantic.UI.Spreadsheets;
 
 namespace eQuantic.UI.Native.Engine.Tests;
 
@@ -56,10 +57,10 @@ public class SpreadsheetComponentTests
     [Fact]
     public void ColumnNames_SpellLikeExcel()
     {
-        Spreadsheet.ColumnName(0).Should().Be("A");
-        Spreadsheet.ColumnName(25).Should().Be("Z");
-        Spreadsheet.ColumnName(26).Should().Be("AA");
-        Spreadsheet.ColumnName(701).Should().Be("ZZ");
+        CellRef.ColumnName(0).Should().Be("A");
+        CellRef.ColumnName(25).Should().Be("Z");
+        CellRef.ColumnName(26).Should().Be("AA");
+        CellRef.ColumnName(701).Should().Be("ZZ");
     }
 
     [Fact]
