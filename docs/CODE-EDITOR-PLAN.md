@@ -35,7 +35,7 @@ slice that delivers it. "Further" is where the design is meant to be better, not
 | Keyboard conventions per platform (⌥/⌘ on Apple, Ctrl elsewhere) | ✓ | ✓ | 1 | |
 | Custom key bindings, commands callable from menus and palettes | ✓ | ✓ | 2 | the keymap is data, typed |
 | Tabs, wide characters, grapheme-safe caret | ✓ | ✓ | 1 | |
-| Line operations (move, copy, delete, join, insert above/below) | ✓ | ✓ | 2 | |
+| Line operations (move, copy, delete, join, insert above/below) | ✓ | ✓ | 2 | and two sorts, the same order on both targets |
 | Multiple cursors, add next occurrence, column selection | ✓ | ✓ | 2 | |
 | Snippets with tab stops, placeholders, choices, mirrors | ✓ | ✓ | 2 | |
 | Find / replace — case, whole word, regex, in selection | ✓ | ✓ | 1 (find) / 6 (regex) | |

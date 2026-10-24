@@ -25,9 +25,12 @@ kept on the lines each moved, the same C# on both targets.
 - **The selection an edit leaves is the history's.** `Edit` gains the selection to leave, and the history
   records it as the edit's selection after, so redo of a moved line selects the line again instead of
   the caret at the end of what was written. Undo already puts back the selection before.
-- **Join as VS Code's `JoinLinesAction`:** the next line's leading white space goes, one space joins the
-  two unless the text before ends with white space (collapsed to one space) or is empty, and a next line
-  of white space alone adds nothing. With nothing selected the caret stands where the lines met.
+- **Join as VS Code's `JoinLinesAction`:** the next line's leading spaces and tabs go, one space joins the
+  two unless the text before ends with a space or a tab (collapsed to one space) or is empty, and a next
+  line of spaces and tabs alone adds nothing. Spaces and tabs alone, as VS Code's: a no-break space is
+  text, in a string literal as anywhere, and .NET and JavaScript disagree on what else is white space. A
+  join takes every line the selection touches, the one it ends at the start of included, as VS Code's
+  does. With nothing selected the caret stands where the lines met.
 - **Sort ordinal, case aside, with an ordinal tie-break.** VS Code sorts with the locale's collator;
   .NET's culture and the browser's `Intl` do not agree on every pair, and the two targets must give the
   same lines. Ordinal ignoring case, ties broken ordinally, is the same on both and puts `apple`,
