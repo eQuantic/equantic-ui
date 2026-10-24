@@ -878,7 +878,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         // undo after pasting "x\ry" into "abc" left "a" and "ybc" (#600).
         var edit = new CodeEdit(ordered, removed, next.TextIn(new CodeRange(ordered.Start, caret)), before,
             _selection, typed);
-        History.Record(edit);
+        if (_step is { } step) step.Add(edit);
+        else History.Record([edit]);
         Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
         WidthsChanged(line, linesInserted, linesRemoved);
 
@@ -886,6 +887,33 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         SelectionChanged?.Invoke(_selection);
         _desiredCell = -1;
         return true;
+    }
+
+    /// <summary>The edits of the command being made while it makes several as ONE undo step (#1031); null
+    /// otherwise, when every edit is a step of its own.</summary>
+    private List<CodeEdit>? _step;
+
+    /// <summary>
+    /// Runs <paramref name="edits"/>, which make their edits through <see cref="Edit"/> one after another,
+    /// and records what they made as one undo step, which undo takes back last first. Each edit is the
+    /// door's as any other: the colours, the widths, <see cref="Changed"/> and the selection each leaves,
+    /// so a listener hears every replacement in the document it was made on. Answers what
+    /// <paramref name="edits"/> answers; inside another step, it is part of that one.
+    /// </summary>
+    private bool AsOneStep(Func<bool> edits)
+    {
+        if (_step is not null) return edits();
+        _step = [];
+        try
+        {
+            return edits();
+        }
+        finally
+        {
+            var step = _step;
+            _step = null;
+            History.Record(step);
+        }
     }
 
     /// <summary>Types text at the caret, replacing the selection — including a paste.</summary>
@@ -1503,10 +1531,23 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         // once the block passed it, and at the start of an empty last line it would leave that line out of
         // the next move.
         if (up ? first == 0 : _selection.End.Line == _document.LineCount - 1) return false;
-        var block = string.Join("\n", LinesOf(first, last));
-        return up
-            ? Edit(WholeLines(first - 1, last), block + "\n" + _document.Line(first - 1), false, SelectionMovedBy(-1))
-            : Edit(WholeLines(first, last + 1), _document.Line(last + 1) + "\n" + block, false, SelectionMovedBy(1));
+        // The line passed is the one written again, on the block's other side, and deleted where it was, as
+        // one step: the block's lines are never rewritten, so a problem on them travels with them, where one
+        // replacement over both took it to the replacement's ends (#1031). The later edit first, so the
+        // earlier one is made on text it did not move.
+        var after = SelectionMovedBy(up ? -1 : 1);
+        var end = new CodePosition(last, _document.Line(last).Length);
+        if (up)
+        {
+            var passed = _document.Line(first - 1);
+            return AsOneStep(() =>
+                Edit(new CodeRange(end), "\n" + passed, false, _selection)
+                && Edit(new CodeRange(new CodePosition(first - 1, 0), new CodePosition(first, 0)), string.Empty, false, after));
+        }
+        var below = _document.Line(last + 1);
+        return AsOneStep(() =>
+            Edit(new CodeRange(end, new CodePosition(last + 1, below.Length)), string.Empty, false, _selection)
+            && Edit(new CodeRange(new CodePosition(first, 0)), below + "\n", false, after));
     }
 
     /// <summary>
@@ -1722,27 +1763,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     {
         if (ReadOnly) return false;
         EndComposition();
-        var before = _selection;
-        var previous = _document;
-        var next = History.Undo(_document, out var selection, out var replaced, out var written);
-        if (next is null) return false;
-        _document = next;
-        _revealVersion++;
-        _selection = new CodeRange(next.Clamp(selection.Anchor), next.Clamp(selection.Focus));
-        _desiredCell = -1;
-        // One replacement, as an edit is: the colours and the widths follow the lines it touched,
-        // where both were thrown away and measured again over the whole file.
-        var line = replaced.Start.Line;
-        var linesInserted = written.End.Line - written.Start.Line;
-        var linesRemoved = replaced.End.Line - replaced.Start.Line;
-        Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
-        WidthsChanged(line, linesInserted, linesRemoved);
-        // The replacement it made, as any edit raises one: null is a document replaced whole, and a
-        // listener that carries a range through an edit (a problem's squiggle, a language server)
-        // could only start over after every undo.
-        Changed?.Invoke(new CodeEdit(replaced, previous.TextIn(replaced), next.TextIn(written), before,
-            _selection, false));
-        SelectionChanged?.Invoke(_selection);
+        if (History.Undo(_document, out var selection, out var made) is null) return false;
+        Replay(made, selection);
         return true;
     }
 
@@ -1750,28 +1772,34 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     {
         if (ReadOnly) return false;
         EndComposition();
-        var before = _selection;
-        var previous = _document;
-        var next = History.Redo(_document, out var selection, out var replaced, out var written);
-        if (next is null) return false;
-        _document = next;
-        _revealVersion++;
-        _selection = new CodeRange(next.Clamp(selection.Anchor), next.Clamp(selection.Focus));
-        _desiredCell = -1;
-        // One replacement, as an edit is: the colours and the widths follow the lines it touched,
-        // where both were thrown away and measured again over the whole file.
-        var line = replaced.Start.Line;
-        var linesInserted = written.End.Line - written.Start.Line;
-        var linesRemoved = replaced.End.Line - replaced.Start.Line;
-        Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
-        WidthsChanged(line, linesInserted, linesRemoved);
-        // The replacement it made, as any edit raises one: null is a document replaced whole, and a
-        // listener that carries a range through an edit (a problem's squiggle, a language server)
-        // could only start over after every undo.
-        Changed?.Invoke(new CodeEdit(replaced, previous.TextIn(replaced), next.TextIn(written), before,
-            _selection, false));
-        SelectionChanged?.Invoke(_selection);
+        if (History.Redo(_document, out var selection, out var made) is null) return false;
+        Replay(made, selection);
         return true;
+    }
+
+    /// <summary>
+    /// Makes the replacements an undo or a redo made, one after another as the history made them, each
+    /// raised as any edit is: the colours and the widths follow the lines it touched, where both were
+    /// thrown away and measured again over the whole file, and a listener that carries a range through an
+    /// edit (a problem's squiggle, a language server) hears every replacement in the document it was made
+    /// on, where it could only start over after every undo. Then the selection the step restores.
+    /// </summary>
+    private void Replay(IReadOnlyList<CodeEdit> made, CodeRange selection)
+    {
+        foreach (var edit in made)
+        {
+            _document = _document.Replace(edit.Range, edit.InsertedText, out var end);
+            var line = edit.Range.Start.Line;
+            var linesInserted = end.Line - line;
+            var linesRemoved = edit.Range.End.Line - line;
+            Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
+            WidthsChanged(line, linesInserted, linesRemoved);
+            Changed?.Invoke(edit);
+        }
+        _revealVersion++;
+        _selection = OnElementEdges(selection);
+        _desiredCell = -1;
+        SelectionChanged?.Invoke(_selection);
     }
 
     // ---- finding ------------------------------------------------------------------------------

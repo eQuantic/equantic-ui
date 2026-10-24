@@ -183,3 +183,9 @@ eQuantic.UI.Code.CodeEditorController.DeleteLines() -> bool
 eQuantic.UI.Code.CodeEditorController.JoinLines() -> bool
 eQuantic.UI.Code.CodeEditorController.SortLines(bool descending) -> bool
 eQuantic.UI.Code.CodeEditorController.InsertLine(eQuantic.UI.Code.CodeDirection direction) -> bool
+*REMOVED*eQuantic.UI.Code.CodeHistory.Record(eQuantic.UI.Code.CodeEdit! edit) -> void
+*REMOVED*eQuantic.UI.Code.CodeHistory.Redo(eQuantic.UI.Code.CodeDocument! document, out eQuantic.UI.Code.CodeRange selection, out eQuantic.UI.Code.CodeRange replaced, out eQuantic.UI.Code.CodeRange written) -> eQuantic.UI.Code.CodeDocument?
+*REMOVED*eQuantic.UI.Code.CodeHistory.Undo(eQuantic.UI.Code.CodeDocument! document, out eQuantic.UI.Code.CodeRange selection, out eQuantic.UI.Code.CodeRange replaced, out eQuantic.UI.Code.CodeRange written) -> eQuantic.UI.Code.CodeDocument?
+eQuantic.UI.Code.CodeHistory.Redo(eQuantic.UI.Code.CodeDocument! document, out eQuantic.UI.Code.CodeRange selection, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeEdit!>! made) -> eQuantic.UI.Code.CodeDocument?
+eQuantic.UI.Code.CodeHistory.Record(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeEdit!>! edits) -> void
+eQuantic.UI.Code.CodeHistory.Undo(eQuantic.UI.Code.CodeDocument! document, out eQuantic.UI.Code.CodeRange selection, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeEdit!>! made) -> eQuantic.UI.Code.CodeDocument?

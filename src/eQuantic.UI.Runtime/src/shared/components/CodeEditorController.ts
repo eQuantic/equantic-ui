@@ -28,6 +28,7 @@ export class CodeEditorController {
         this._composition = null;
         this._compositionReplaced = '';
         this._compositionSelection = CodeRange.$zero();
+        this._step = null;
         this._wholeLineCopy = null;
         this._document = CodeDocument.fromText(text);
         this._selection = new CodeRange(CodePosition.start);
@@ -64,6 +65,7 @@ export class CodeEditorController {
     _composition!: CodeRange | null;
     _compositionReplaced!: string;
     _compositionSelection!: CodeRange;
+    _step!: CodeEdit[] | null;
     _wholeLineCopy!: string | null;
     static caretWidth: number = 2;
 
@@ -597,13 +599,26 @@ export class CodeEditorController {
         this._selection = (left = after) != null ? this.onElementEdges(left) : new CodeRange(caret);
         this._revealVersion++;
         let edit = new CodeEdit(ordered, removed, next.textIn(new CodeRange(ordered.start, caret)), before, this._selection, typed);
-        this.history.record(edit);
+        let step: any; 
+        if ((step = this._step) != null) step.push(edit); else this.history.record([edit]);
         this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
         this.widthsChanged(line, linesInserted, linesRemoved);
         this.changed?.(edit);
         this.selectionChanged?.(this._selection);
         this._desiredCell = -1;
         return true;
+    }
+
+    asOneStep(edits: () => boolean) {
+        if (!(this._step == null)) return edits();
+        this._step = [];
+        try {
+            return edits();
+        } finally {
+            let step = this._step;
+            this._step = null;
+            this.history.record(step);
+        }
     }
 
     insert(text: string) {
@@ -983,8 +998,14 @@ export class CodeEditorController {
         let [first, last] = this.selectedLines();
         let up = direction === 'backward';
         if (up ? first === 0 : this._selection.end.line === this._document.lineCount - 1) return false;
-        let block = $eq.text.join('\n', this.linesOf(first, last));
-        return up ? this.edit(this.wholeLines(first - 1, last), block + '\n' + this._document.line(first - 1), false, this.selectionMovedBy(-1)) : this.edit(this.wholeLines(first, last + 1), this._document.line(last + 1) + '\n' + block, false, this.selectionMovedBy(1));
+        let after = this.selectionMovedBy(up ? -1 : 1);
+        let end = new CodePosition(last, this._document.line(last).length);
+        if (up) {
+            let passed = this._document.line(first - 1);
+            return this.asOneStep(() => this.edit(new CodeRange(end), '\n' + passed, false, this._selection) && this.edit(new CodeRange(new CodePosition(first - 1, 0), new CodePosition(first, 0)), '', false, after));
+        }
+        let below = this._document.line(last + 1);
+        return this.asOneStep(() => this.edit(new CodeRange(end, new CodePosition(last + 1, below.length)), '', false, this._selection) && this.edit(new CodeRange(new CodePosition(first, 0)), below + '\n', false, after));
     }
 
     copyLines(direction: CodeDirectionValue) {
@@ -1036,7 +1057,7 @@ export class CodeEditorController {
             }
             let space = length > 0;
             let tail = parts[parts.length - 1];
-            if (space && (($v78887) => ($v78887 === ' ' || $v78887 === '\t'))(tail[tail.length - 1])) {
+            if (space && (($v80791) => ($v80791 === ' ' || $v80791 === '\t'))(tail[tail.length - 1])) {
                 space = false;
                 let kept = $eq.text.trimEnd(tail, [' ', '\t']);
                 parts[parts.length - 1] = kept;
@@ -1118,45 +1139,36 @@ export class CodeEditorController {
     undo() {
         if (this.readOnly) return false;
         this.endComposition();
-        let before = this._selection;
-        let previous = this._document;
-        let selection: any; let replaced: any; let written: any; 
-        let next = ($o => (selection = $o.selection, replaced = $o.replaced, written = $o.written, $o.$))(this.history.undo(this._document));
-        if (next == null) return false;
-        this._document = next;
-        this._revealVersion++;
-        this._selection = new CodeRange(next.clamp(selection.anchor), next.clamp(selection.focus));
-        this._desiredCell = -1;
-        let line = replaced.start.line;
-        let linesInserted = written.end.line - written.start.line;
-        let linesRemoved = replaced.end.line - replaced.start.line;
-        this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
-        this.widthsChanged(line, linesInserted, linesRemoved);
-        this.changed?.(new CodeEdit(replaced, previous.textIn(replaced), next.textIn(written), before, this._selection, false));
-        this.selectionChanged?.(this._selection);
+        let selection: any; let made: any; 
+        if (($o => (selection = $o.selection, made = $o.made, $o.$))(this.history.undo(this._document)) == null) return false;
+        this.replay(made, selection);
         return true;
     }
 
     redo() {
         if (this.readOnly) return false;
         this.endComposition();
-        let before = this._selection;
-        let previous = this._document;
-        let selection: any; let replaced: any; let written: any; 
-        let next = ($o => (selection = $o.selection, replaced = $o.replaced, written = $o.written, $o.$))(this.history.redo(this._document));
-        if (next == null) return false;
-        this._document = next;
-        this._revealVersion++;
-        this._selection = new CodeRange(next.clamp(selection.anchor), next.clamp(selection.focus));
-        this._desiredCell = -1;
-        let line = replaced.start.line;
-        let linesInserted = written.end.line - written.start.line;
-        let linesRemoved = replaced.end.line - replaced.start.line;
-        this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
-        this.widthsChanged(line, linesInserted, linesRemoved);
-        this.changed?.(new CodeEdit(replaced, previous.textIn(replaced), next.textIn(written), before, this._selection, false));
-        this.selectionChanged?.(this._selection);
+        let selection: any; let made: any; 
+        if (($o => (selection = $o.selection, made = $o.made, $o.$))(this.history.redo(this._document)) == null) return false;
+        this.replay(made, selection);
         return true;
+    }
+
+    replay(made: CodeEdit[], selection: CodeRange) {
+        for (const edit of made) {
+            let end: any; 
+            this._document = ($o => (end = $o.caret, $o.$))(this._document.replace(edit.range, edit.insertedText));
+            let line = edit.range.start.line;
+            let linesInserted = end.line - line;
+            let linesRemoved = edit.range.end.line - line;
+            this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
+            this.widthsChanged(line, linesInserted, linesRemoved);
+            this.changed?.(edit);
+        }
+        this._revealVersion++;
+        this._selection = this.onElementEdges(selection);
+        this._desiredCell = -1;
+        this.selectionChanged?.(this._selection);
     }
 
     findAll(needle: string, matchCase: boolean = false) {

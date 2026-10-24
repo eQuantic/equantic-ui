@@ -74,6 +74,59 @@ public class CodeLinesTests : IDisposable
         editor.Selection.Should().Be(new CodeRange(At(2, 0), At(4, 0)));
     }
 
+    /// <summary>
+    /// A move is the line it passes written on the block's other side and deleted where it was: two
+    /// replacements, one undo step, and every replacement heard, through the move, its undo and its redo,
+    /// in the document it was made on (#1031).
+    /// </summary>
+    [Fact]
+    public void AMove_IsTwoReplacementsInOneStep_EachOneHeard()
+    {
+        var editor = Editor("one\ntwo\nthree", At(1, 1));
+        var heard = new List<string>();
+        editor.Changed += edit => heard.Add($"{edit!.Range.Start}-{edit.Range.End} {edit.RemovedText.Replace("\n", "|")}>{edit.InsertedText.Replace("\n", "|")} {editor.Document.Text.Replace("\n", "|")}");
+
+        Press(editor, "ArrowUp", KeyModifiers.Alt).Should().BeTrue();
+        editor.Document.Text.Should().Be("two\none\nthree");
+        editor.Undo().Should().BeTrue();
+        editor.Document.Text.Should().Be("one\ntwo\nthree");
+        editor.Selection.Should().Be(new CodeRange(At(1, 1)));
+        editor.Redo().Should().BeTrue();
+        editor.Document.Text.Should().Be("two\none\nthree");
+        editor.Selection.Should().Be(new CodeRange(At(0, 1)));
+
+        heard.Should().Equal(
+            "1:3-1:3 >|one one|two|one|three",
+            "0:0-1:0 one|> two|one|three",
+            "0:0-0:0 >one| one|two|one|three",
+            "1:3-2:3 |one> one|two|three",
+            "1:3-1:3 >|one one|two|one|three",
+            "0:0-1:0 one|> two|one|three");
+    }
+
+    /// <summary>A problem on a moved line stays on its text, through the move, its undo and its redo, and
+    /// covers nothing of the line it passed; one replacement over both took it to the replacement's ends
+    /// (#1031).</summary>
+    [Fact]
+    public void AProblemOnAMovedLine_StaysOnItsText()
+    {
+        foreach (var down in new[] { false, true })
+        {
+            var editor = Editor("alpha\nbeta\ngamma", At(1, 0));
+            editor.Diagnostics.Report([new CodeDiagnostic(new CodeRange(At(1, 1), At(1, 3)), "bad")]);
+
+            Press(editor, "Arrow" + (down ? "Down" : "Up"), KeyModifiers.Alt).Should().BeTrue();
+            var moved = down ? 2 : 0;
+            editor.Diagnostics.Items.Single().Range.Should().Be(new CodeRange(At(moved, 1), At(moved, 3)), "the problem moved with beta");
+
+            editor.Undo().Should().BeTrue();
+            editor.Diagnostics.Items.Single().Range.Should().Be(new CodeRange(At(1, 1), At(1, 3)), "undo took it back");
+
+            editor.Redo().Should().BeTrue();
+            editor.Diagnostics.Items.Single().Range.Should().Be(new CodeRange(At(moved, 1), At(moved, 3)), "redo moved it again");
+        }
+    }
+
     /// <summary>A move down is refused while the selection reaches the document's last line, its end at
     /// the start of that line included, as VS Code's <c>MoveLinesCommand</c> refuses it: there is no line
     /// after the block for that end to stand at once it moved, and an end at the start of an empty last line

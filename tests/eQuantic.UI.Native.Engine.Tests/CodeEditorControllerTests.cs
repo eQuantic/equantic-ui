@@ -463,10 +463,10 @@ public class CodeEditorControllerTests
         var afterBreak = start.Replace(broke.Range, broke.InsertedText, out _);
         var typed = new CodeEdit(new CodeRange(broke.InsertedRange.End), "", "x", default, default, Typed: true);
         var afterTyping = afterBreak.Replace(typed.Range, typed.InsertedText, out _);
-        history.Record(broke);
-        history.Record(typed);
+        history.Record([broke]);
+        history.Record([typed]);
 
-        var undone = history.Undo(afterTyping, out _, out _, out _)!;
+        var undone = history.Undo(afterTyping, out _, out _)!;
 
         undone.Text.Should().Be(afterBreak.Text, "one undo takes back the character typed after the break, and only it");
     }
