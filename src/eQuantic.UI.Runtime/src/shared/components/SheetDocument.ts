@@ -1,23 +1,39 @@
-import { $eq, CellRef, SheetCellSnapshot } from "../runtime-exports";
+import { $eq, CellRef, SheetCellSnapshot, SheetSpans } from "../runtime-exports";
 
 export class SheetDocument {
     constructor(rows: number = 1000, cols: number = 26) {
         this._cells = $eq.collections.dictionary();
         this._rowHeights = $eq.collections.dictionary();
         this._colWidths = $eq.collections.dictionary();
+        this.rowSpans = null!;
+        this.columnSpans = null!;
+        this.sizeVersion = 0;
         this.rows = 0;
         this.cols = 0;
         this.rows = Math.max(1, rows);
         this.cols = Math.max(1, Math.min(cols, 16384));
+        this.rowSpans = new SheetSpans(this, 'rows');
+        this.columnSpans = new SheetSpans(this, 'cols');
     }
 
     _cells!: any;
     _rowHeights!: any;
     _colWidths!: any;
+    rowSpans!: SheetSpans;
+    columnSpans!: SheetSpans;
+    sizeVersion!: number;
     rows!: number;
     cols!: number;
     static defaultRowHeight: number = 28;
     static defaultColWidth: number = 96;
+
+    get rowHeights(): any {
+        return this._rowHeights;
+    }
+
+    get colWidths(): any {
+        return this._colWidths;
+    }
 
     get cells(): any {
         return this._cells;
@@ -44,10 +60,12 @@ export class SheetDocument {
 
     setRowHeight(row: number, height: number) {
         if (Math.abs(Math.fround(height - SheetDocument.defaultRowHeight)) < Math.fround(0.01)) this._rowHeights.delete(row); else $eq.mapSet(this._rowHeights, row, Math.max(12, height));
+        this.sizeVersion++;
     }
 
     setColWidth(col: number, width: number) {
         if (Math.abs(Math.fround(width - SheetDocument.defaultColWidth)) < Math.fround(0.01)) this._colWidths.delete(col); else $eq.mapSet(this._colWidths, col, Math.max(24, width));
+        this.sizeVersion++;
     }
 
     clamp(cell: CellRef) {
@@ -75,6 +93,7 @@ export class SheetDocument {
         for (const snapshot of moved) $eq.mapSet(this._cells, new CellRef(snapshot.cell.row + delta, snapshot.cell.col).key, snapshot.value);
         SheetDocument.shiftSizes(this._rowHeights, atRow, delta);
         this.rows = Math.max(1, this.rows + delta);
+        this.sizeVersion++;
         return removed;
     }
 
@@ -95,6 +114,7 @@ export class SheetDocument {
         for (const snapshot of moved) $eq.mapSet(this._cells, new CellRef(snapshot.cell.row, snapshot.cell.col + delta).key, snapshot.value);
         SheetDocument.shiftSizes(this._colWidths, atCol, delta);
         this.cols = Math.max(1, Math.min(this.cols + delta, 16384));
+        this.sizeVersion++;
         return removed;
     }
 

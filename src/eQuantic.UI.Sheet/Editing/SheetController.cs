@@ -32,15 +32,24 @@ public sealed class SheetController : ISheetSurfaceModel
     /// <summary>Raised after any change to data or structure — never for selection moves.</summary>
     public Action<SheetEdit>? Changed { get; set; }
 
-    /// <summary>The selected rectangle. Setting it puts the active cell at its focus end.</summary>
+    /// <summary>The selected rectangle. Setting it puts the active cell at its focus end, and asks the
+    /// grid to bring that cell into view (<see cref="RevealVersion"/>), as a command that moves it does.</summary>
     public SheetRange Selection
     {
         get => _selection;
         set
         {
-            _selection = new SheetRange(Document.Clamp(value.Anchor), Document.Clamp(value.Focus));
-            _active = _selection.Focus;
+            Select(value);
+            Reveal();
         }
+    }
+
+    /// <summary>The selection, clamped into the grid, with the active cell at its focus end and nothing
+    /// asked of the grid: a press and a drag land on cells the person can see.</summary>
+    private void Select(SheetRange range)
+    {
+        _selection = new SheetRange(Document.Clamp(range.Anchor), Document.Clamp(range.Focus));
+        _active = _selection.Focus;
     }
 
     /// <summary>
@@ -71,6 +80,46 @@ public sealed class SheetController : ISheetSurfaceModel
         landed = Document.Clamp(landed);
         _selection = extend ? new SheetRange(_selection.Anchor, landed) : new SheetRange(landed);
         _active = landed;
+        Reveal();
+    }
+
+    /// <summary>
+    /// PageDown and PageUp: the active cell by the rows the grid shows under its headers, the selection
+    /// with it (extend keeps the anchor, Shift's way). Without a viewport to measure there is no page, and
+    /// the key is not taken.
+    /// </summary>
+    public bool MovePage(int direction, bool extend = false)
+    {
+        if (Grid.Scroll is not { } scroll) return false;
+        var page = Math.Max(Document.RowSpans.ExtentOf(_active.Row), scroll.Viewport.Height - Grid.HeaderHeight);
+        var from = Document.RowSpans.OffsetOf(_active.Row);
+        var row = Document.RowSpans.IndexAt(from + Math.Sign(direction) * page);
+        var landed = Document.Clamp(new CellRef(row, _active.Col));
+        _selection = extend ? new SheetRange(_selection.Anchor, landed) : new SheetRange(landed);
+        _active = landed;
+        Reveal();
+        return true;
+    }
+
+    /// <summary>
+    /// Counts every command that moved the active cell from the keyboard, a paste, a fill, an undo or a
+    /// redo, never a press (the cell is under the pointer): the composing component hands it to its
+    /// viewport as a request's version, revealing the active cell once per count.
+    /// </summary>
+    public int RevealVersion { get; private set; }
+
+    /// <summary>
+    /// The cell <see cref="RevealVersion"/> asks to have in view: the active cell as the command that
+    /// raised the version left it. A viewport holds a request until the person moves the grid, so a
+    /// request built from the active cell as it stands would chase every cell a later drag reaches,
+    /// scrolling the grid under the pointer frame after frame.
+    /// </summary>
+    public CellRef RevealCell { get; private set; }
+
+    private void Reveal()
+    {
+        RevealVersion++;
+        RevealCell = _active;
     }
 
     private CellRef DataEdge(CellRef from, int dRow, int dCol)
@@ -133,6 +182,7 @@ public sealed class SheetController : ISheetSurfaceModel
         }
         // The RECTANGLE stays; only the active cell walked inside it.
         _active = new CellRef(row, col);
+        Reveal();
     }
 
     /// <summary>Select the whole row band / column band of the current selection (header clicks).</summary>
@@ -276,7 +326,7 @@ public sealed class SheetController : ISheetSurfaceModel
         if (count < 1) return;
         var selectionBefore = _selection;
         var removed = axis == SheetAxis.Rows ? Document.ShiftRows(at, -count) : Document.ShiftCols(at, -count);
-        Selection = _selection;   // re-clamp into the smaller grid
+        Select(_selection);   // re-clamp into the smaller grid
         Commit(new SheetEdit
         {
             Kind = axis == SheetAxis.Rows ? SheetEditKind.DeleteRows : SheetEditKind.DeleteCols,
@@ -355,6 +405,7 @@ public sealed class SheetController : ISheetSurfaceModel
         }
         _selection = new SheetRange(origin,
             Document.Clamp(new CellRef(origin.Row + grid.Count - 1, origin.Col + maxCols - 1)));
+        Reveal();
         if (edit.Before.Count == 0) return false;
         edit.SelectionAfter = _selection;
         Commit(edit);
@@ -470,6 +521,7 @@ public sealed class SheetController : ISheetSurfaceModel
         if (edit.Before.Count == 0) return false;
         edit.SelectionAfter = _selection;
         Commit(edit);
+        Reveal();
         return true;
     }
 
@@ -516,9 +568,10 @@ public sealed class SheetController : ISheetSurfaceModel
     public const float FillHandleGrab = 8f;
 
     /// <summary>
-    /// The window the surface draws. The composing component hands it over on every build, before it
-    /// reads the selection; this is the only place that turns a point into a cell with it, and the
-    /// selection's corner back into a point.
+    /// The viewport the surface draws: the scroll that places its cells and the pinned headers in front
+    /// of them. The composing component hands it over on every build, before it reads the selection;
+    /// this is the only place that turns a point into a cell with it, and the selection's corner back
+    /// into a point.
     /// </summary>
     public SheetGrid Grid { get; set; } = SheetGrid.Default;
 
@@ -526,42 +579,51 @@ public sealed class SheetController : ISheetSurfaceModel
     /// selection's far corner. A press on the fill handle is <see cref="Filling"/> instead.</summary>
     private bool _selecting;
 
+    /// <summary>The cell a finger landed on, which its release selects; none once a pan took it.</summary>
+    private CellRef? _tapped;
+
+    /// <summary>Where the drag in flight last stood, which <see cref="Follow"/> reads again when the grid
+    /// moves under it.</summary>
+    private Point? _dragAt;
+
     /// <summary>
-    /// The cell a point in the surface's own coordinates lands on: prefix sums over the document's
-    /// sizes from the window's first cell, clamped into the grid, so a drag past the edge holds the
-    /// edge.
+    /// The cell a point in the surface's own coordinates lands on, read through the document's spans at
+    /// the grid's offset at this moment. A point over a pinned header reads the first cell shown past it,
+    /// and one past the grid's end its last, so a drag past an edge holds the edge.
     /// </summary>
     public CellRef CellAt(Point point)
     {
-        var x = point.X - Grid.Origin.X;
-        var y = point.Y - Grid.Origin.Y;
-        var col = Grid.FirstCol;
-        var acc = 0f;
-        while (col < Document.Cols - 1 && acc + Document.ColWidth(col) <= x)
-        {
-            acc += Document.ColWidth(col);
-            col++;
-        }
-        var row = Grid.FirstRow;
-        acc = 0f;
-        while (row < Document.Rows - 1 && acc + Document.RowHeight(row) <= y)
-        {
-            acc += Document.RowHeight(row);
-            row++;
-        }
-        return Document.Clamp(new CellRef(row, col));
+        var offset = Grid.Offset;
+        var across = Math.Max(point.X - Grid.HeaderWidth, 0) + offset.Across;
+        var down = Math.Max(point.Y - Grid.HeaderHeight, 0) + offset.Down;
+        return Document.Clamp(new CellRef(Document.RowSpans.IndexAt(down), Document.ColumnSpans.IndexAt(across)));
     }
 
     /// <summary>The bottom-right corner of the selection's bottom-right cell, in the surface's own
     /// coordinates: where the fill handle sits. The inverse of <see cref="CellAt"/>.</summary>
     private Point FillHandleCorner()
     {
-        var x = Grid.Origin.X;
-        for (var c = Grid.FirstCol; c <= _selection.RightCol; c++) x += Document.ColWidth(c);
-        var y = Grid.Origin.Y;
-        for (var r = Grid.FirstRow; r <= _selection.BottomRow; r++) y += Document.RowHeight(r);
-        return new Point(x, y);
+        var offset = Grid.Offset;
+        return new Point(
+            (float)(Grid.HeaderWidth + Document.ColumnSpans.OffsetOf(_selection.RightCol + 1) - offset.Across),
+            (float)(Grid.HeaderHeight + Document.RowSpans.OffsetOf(_selection.BottomRow + 1) - offset.Down));
     }
+
+    /// <summary>Whether a press at <paramref name="position"/> grabs the fill handle: within
+    /// <see cref="FillHandleGrab"/> of the selection's corner, while no cell is being edited and the corner
+    /// is drawn, which it is not under a pinned header.</summary>
+    private bool OnFillHandle(Point position)
+    {
+        if (Editing) return false;
+        var corner = FillHandleCorner();
+        return corner.X > Grid.HeaderWidth && corner.Y > Grid.HeaderHeight
+            && Math.Abs(position.X - corner.X) <= FillHandleGrab
+            && Math.Abs(position.Y - corner.Y) <= FillHandleGrab;
+    }
+
+    /// <inheritdoc />
+    public PointerCursor CursorAt(Point position) =>
+        OnFillHandle(position) ? PointerCursor.Crosshair : PointerCursor.Default;
 
     /// <inheritdoc />
     public bool HandleKey(string key, KeyModifiers modifiers, ITextClipboard? clipboard) =>
@@ -584,10 +646,16 @@ public sealed class SheetController : ISheetSurfaceModel
     /// the selection's corner, or selects the cell under it, stretching the selection from its anchor
     /// with Shift, and the second press of a double click begins editing that cell with its value. A
     /// drag that began with a plain single press moves the selection's far corner with the pointer;
-    /// one that grabbed the handle previews the fill, and the release lands it as one undo step. A
+    /// one that grabbed the handle previews the fill, and the release lands it as one undo step. Either
+    /// drag hands its position to the grid's scroll, which scrolls while it is held past an edge. A
     /// press the system cancels lands nothing, and a press that finds a fill still in flight drops it.
+    /// <para>
+    /// A finger is the exception, as a touch platform reads one: its press means nothing until it
+    /// lifts, because the grid may take it as a pan; its release selects the cell it began on, and a
+    /// cancel (the pan) selects nothing.
+    /// </para>
     /// </summary>
-    public bool HandlePointer(PointerPhase phase, Point position, KeyModifiers modifiers, int clicks)
+    public bool HandlePointer(PointerPhase phase, Point position, KeyModifiers modifiers, int clicks, PointerKind kind)
     {
         switch (phase)
         {
@@ -595,49 +663,56 @@ public sealed class SheetController : ISheetSurfaceModel
             {
                 // A fill whose release never came is over: this press starts afresh.
                 _selecting = false;
+                _tapped = null;
                 if (Filling) CancelFill();
+                if (kind == PointerKind.Touch)
+                {
+                    _tapped = CellAt(position);
+                    return false;
+                }
                 if (Editing) CommitEdit();
-                var corner = FillHandleCorner();
-                if (Math.Abs(position.X - corner.X) <= FillHandleGrab
-                    && Math.Abs(position.Y - corner.Y) <= FillHandleGrab)
+                if (OnFillHandle(position))
                 {
                     BeginFill();
+                    _dragAt = position;
                     return true;
                 }
-                var cell = CellAt(position);
-                var shift = (modifiers & KeyModifiers.Shift) != 0;
-                if (shift) SelectTo(cell);
-                else Selection = new SheetRange(cell);
-                if (clicks >= 2) BeginEdit(Document.GetCell(cell));
-                _selecting = clicks < 2 && !shift;
+                Press(CellAt(position), modifiers, clicks);
+                _selecting = clicks < 2 && (modifiers & KeyModifiers.Shift) == 0;
+                if (_selecting) _dragAt = position;
                 return true;
             }
             case PointerPhase.Move:
             {
-                if (Filling)
-                {
-                    var before = FillTarget;
-                    UpdateFill(CellAt(position));
-                    return FillTarget != before;
-                }
-                if (!_selecting) return false;
-                var cell = CellAt(position);
-                if (cell == _selection.Focus) return false;
-                Selection = new SheetRange(_selection.Anchor, cell);
-                return true;
+                if (!Filling && !_selecting) return false;
+                _dragAt = position;
+                // Past an edge of the cells the grid scrolls toward the pointer, and the move answers
+                // true whatever cell it reached, so the host asks for the frames that scroll it. Inside
+                // them nothing scrolls, and a glide in flight goes on.
+                var past = PastTheCells(position);
+                Grid.Scroll?.AutoScroll(past ? position : null);
+                return Drag(position) || past;
             }
             case PointerPhase.Up:
             {
-                _selecting = false;
+                StopDrag();
+                if (_tapped is { } tapped)
+                {
+                    _tapped = null;
+                    if (Editing) CommitEdit();
+                    Press(tapped, modifiers, clicks);
+                    return true;
+                }
                 if (!Filling) return false;
                 CommitFill();
                 return true;
             }
             case PointerPhase.Cancel:
             {
-                // Taken away, not released: the selection stays where the drag left it, and a fill
-                // pours nothing.
-                _selecting = false;
+                // Taken away, not released: the selection stays where the drag left it, a fill pours
+                // nothing, and a finger the grid took as a pan selects nothing.
+                StopDrag();
+                _tapped = null;
                 if (!Filling) return false;
                 CancelFill();
                 return true;
@@ -645,6 +720,64 @@ public sealed class SheetController : ISheetSurfaceModel
             default:
                 return false;
         }
+    }
+
+    /// <summary>
+    /// The grid moved under a drag in flight (the viewport reports every offset, and the component hands
+    /// it here): the drag's last position is read again as a move, so a selection held past an edge
+    /// keeps reaching the cells that scroll in under it. Answers whether the selection or the fill's
+    /// preview changed; with no drag in flight it changes nothing.
+    /// </summary>
+    public bool Follow() => _dragAt is { } at && (Filling || _selecting) && Drag(at);
+
+    /// <summary>A press that selects: the cell, the selection stretched to it with Shift, and the
+    /// second press of a double click editing it.</summary>
+    private void Press(CellRef cell, KeyModifiers modifiers, int clicks)
+    {
+        if ((modifiers & KeyModifiers.Shift) != 0) SelectTo(cell);
+        else Select(new SheetRange(cell));
+        if (clicks >= 2) BeginEdit(Document.GetCell(cell));
+    }
+
+    /// <summary>The drag in flight reaches the cell under <paramref name="position"/>, held to the cells
+    /// the grid shows: past an edge it holds the edge, as Excel's does, and the rows beyond reach it as
+    /// the grid scrolls them in.</summary>
+    private bool Drag(Point position)
+    {
+        var cell = CellAt(InsideTheCells(position));
+        if (Filling)
+        {
+            var before = FillTarget;
+            UpdateFill(cell);
+            return FillTarget != before;
+        }
+        if (cell == _selection.Focus) return false;
+        Select(new SheetRange(_selection.Anchor, cell));
+        return true;
+    }
+
+    /// <summary>Whether a point lies past an edge of the part of the viewport where the cells scroll:
+    /// over a pinned header, or past the window. Without a viewport, nothing is past.</summary>
+    private bool PastTheCells(Point position) =>
+        Grid.Scroll is { } scroll
+        && (position.X < Grid.HeaderWidth || position.Y < Grid.HeaderHeight
+            || position.X >= scroll.Viewport.Width || position.Y >= scroll.Viewport.Height);
+
+    /// <summary>The point held inside the cells the viewport shows; without a viewport, the point.</summary>
+    private Point InsideTheCells(Point position)
+    {
+        if (Grid.Scroll is not { } scroll || scroll.Viewport.Width <= 0 || scroll.Viewport.Height <= 0) return position;
+        return new Point(
+            Math.Clamp(position.X, Grid.HeaderWidth, Math.Max(Grid.HeaderWidth, scroll.Viewport.Width - 1)),
+            Math.Clamp(position.Y, Grid.HeaderHeight, Math.Max(Grid.HeaderHeight, scroll.Viewport.Height - 1)));
+    }
+
+    private void StopDrag()
+    {
+        _selecting = false;
+        if (_dragAt is null) return;
+        _dragAt = null;
+        Grid.Scroll?.AutoScroll(null);
     }
 
     // ---- undo/redo -------------------------------------------------------------------------------
@@ -656,6 +789,7 @@ public sealed class SheetController : ISheetSurfaceModel
         Apply(edit, forward: false);
         _selection = edit.SelectionBefore;
         _active = _selection.Focus;
+        Reveal();
         Changed?.Invoke(edit);
         return true;
     }
@@ -667,6 +801,7 @@ public sealed class SheetController : ISheetSurfaceModel
         Apply(edit, forward: true);
         _selection = edit.SelectionAfter;
         _active = _selection.Focus;
+        Reveal();
         Changed?.Invoke(edit);
         return true;
     }

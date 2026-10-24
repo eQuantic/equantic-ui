@@ -1,3 +1,4 @@
+using eQuantic.UI.Tests;
 using System.Runtime.CompilerServices;
 using eQuantic.UI.Material;
 using eQuantic.UI.Primitives;
@@ -94,4 +95,36 @@ public class ThemeBridgeTests
         blue.Should().NotBe(ThemeBridge.SerializeJson(MaterialTheme.Instance),
             "a seeded theme differs from the fixed baseline on the wire");
     }
+
+    /// <summary>
+    /// The spreadsheet's slot crosses as the data palette does (#995): absent from the wire when the
+    /// theme answers none, which is every theme the SDK ships, and with the members it names when it
+    /// answers one, so the browser draws the grid the server drew.
+    /// </summary>
+    [Fact]
+    public void TheSheetSlot_CrossesWithTheMembersItNames_AndIsAbsentWhenThereIsNone()
+    {
+        ThemeBridge.SerializeJson(PhotonTheme.Instance).Should().NotContain("\"sheet\"");
+
+        var gridline = new ColorToken(Color.FromRgb(0x12, 0x34, 0x56), Color.FromRgb(0x65, 0x43, 0x21));
+        var json = ThemeBridge.SerializeJson(new SheetSlotTheme(PhotonTheme.Instance, new SheetTheme { Gridline = gridline }));
+
+        var sheet = System.Text.Json.JsonDocument.Parse(json).RootElement.GetProperty("sheet");
+        sheet.EnumerateObject().Select(p => p.Name).Should().Equal("gridline");
+        sheet.GetProperty("gridline")[0].EnumerateArray().Select(v => v.GetDouble()).Take(3)
+            .Should().Equal(0x12, 0x34, 0x56);
+    }
+
+    /// <summary>Every member of the slot has a name on the wire: a member the record gains and the
+    /// bridge forgets is a colour the browser never draws.</summary>
+    [Fact]
+    public void EveryMemberOfTheSheetSlot_Crosses()
+    {
+        var named = ThemeBridge.SheetMembers(new SheetTheme()).Select(m => m.Name).ToList();
+
+        named.Should().Equal(typeof(SheetTheme).GetProperties()
+            .Where(p => p.PropertyType == typeof(ColorToken?))
+            .Select(p => char.ToLowerInvariant(p.Name[0]) + p.Name[1..]));
+    }
 }
+

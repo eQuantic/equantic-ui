@@ -1,1 +1,34 @@
 #nullable enable
+static eQuantic.UI.Sheet.CellRef.ColumnName(int col) -> string!
+eQuantic.UI.Sheet.SheetController.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks, eQuantic.UI.Primitives.PointerKind kind) -> bool
+*REMOVED*eQuantic.UI.Sheet.SheetController.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks) -> bool
+eQuantic.UI.Sheet.SheetController.Follow() -> bool
+eQuantic.UI.Sheet.SheetController.MovePage(int direction, bool extend = false) -> bool
+eQuantic.UI.Sheet.SheetController.RevealVersion.get -> int
+eQuantic.UI.Sheet.SheetDocument.ColumnSpans.get -> eQuantic.UI.Sheet.SheetSpans!
+eQuantic.UI.Sheet.SheetDocument.RowSpans.get -> eQuantic.UI.Sheet.SheetSpans!
+eQuantic.UI.Sheet.SheetGrid.Deconstruct(out eQuantic.UI.Primitives.ITableScrollModel? Scroll, out float HeaderWidth, out float HeaderHeight) -> void
+eQuantic.UI.Sheet.SheetGrid.HeaderHeight.get -> float
+eQuantic.UI.Sheet.SheetGrid.HeaderHeight.init -> void
+eQuantic.UI.Sheet.SheetGrid.HeaderWidth.get -> float
+eQuantic.UI.Sheet.SheetGrid.HeaderWidth.init -> void
+eQuantic.UI.Sheet.SheetGrid.Offset.get -> eQuantic.UI.Primitives.TableOffset
+eQuantic.UI.Sheet.SheetGrid.Scroll.get -> eQuantic.UI.Primitives.ITableScrollModel?
+eQuantic.UI.Sheet.SheetGrid.Scroll.init -> void
+eQuantic.UI.Sheet.SheetGrid.SheetGrid(eQuantic.UI.Primitives.ITableScrollModel? Scroll, float HeaderWidth, float HeaderHeight) -> void
+eQuantic.UI.Sheet.SheetSpans
+override eQuantic.UI.Sheet.SheetSpans.Count.get -> int
+override eQuantic.UI.Sheet.SheetSpans.ExtentOf(int index) -> double
+override eQuantic.UI.Sheet.SheetSpans.IndexAt(double offset) -> int
+override eQuantic.UI.Sheet.SheetSpans.OffsetOf(int index) -> double
+override eQuantic.UI.Sheet.SheetSpans.Total.get -> double
+*REMOVED*eQuantic.UI.Sheet.SheetGrid.Deconstruct(out eQuantic.UI.Primitives.Point Origin, out int FirstRow, out int FirstCol) -> void
+*REMOVED*eQuantic.UI.Sheet.SheetGrid.FirstCol.get -> int
+*REMOVED*eQuantic.UI.Sheet.SheetGrid.FirstCol.init -> void
+*REMOVED*eQuantic.UI.Sheet.SheetGrid.FirstRow.get -> int
+*REMOVED*eQuantic.UI.Sheet.SheetGrid.FirstRow.init -> void
+*REMOVED*eQuantic.UI.Sheet.SheetGrid.Origin.get -> eQuantic.UI.Primitives.Point
+*REMOVED*eQuantic.UI.Sheet.SheetGrid.Origin.init -> void
+*REMOVED*eQuantic.UI.Sheet.SheetGrid.SheetGrid(eQuantic.UI.Primitives.Point Origin, int FirstRow, int FirstCol) -> void
+eQuantic.UI.Sheet.SheetController.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
+eQuantic.UI.Sheet.SheetController.RevealCell.get -> eQuantic.UI.Sheet.CellRef

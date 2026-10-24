@@ -84,7 +84,11 @@ namespace eQuantic.UI.Web.Tests
         [Fact]
         public void Every_shared_component_twin_carries_the_identity_the_server_keys_it_by()
         {
-            var assemblies = new[] { typeof(eQuantic.UI.Components.UI).Assembly, typeof(eQuantic.UI.Charts.BarChart).Assembly };
+            var assemblies = new[]
+            {
+                typeof(eQuantic.UI.Components.UI).Assembly, typeof(eQuantic.UI.Charts.BarChart).Assembly,
+                typeof(eQuantic.UI.Spreadsheets.Spreadsheet).Assembly,
+            };
             var components = assemblies.SelectMany(a => a.GetTypes())
                 .Where(t => typeof(UiComponent).IsAssignableFrom(t) && !t.IsAbstract && (t.IsPublic || t.IsNestedPublic))
                 .GroupBy(TwinNameOf)

@@ -102,6 +102,9 @@ export function commitTableViewports(): void {
     }
     paint(view);
     report(view);
+    // A drag the composing component holds past the edge scrolls on the clock, which a pass can start
+    // without any event of this viewport's own; with nothing moving, the first frame ends it.
+    animate(view);
     if (typeof ResizeObserver === 'function' && !view.__eqTableObserver) {
       // A resize is answered without touching the element's own size: re-deciding it here resized
       // what is being observed inside its own notification, which the browser reports as a loop.
@@ -392,6 +395,9 @@ function listen(view: TableElement): void {
     const declaration = view.__eqTable;
     if (!declaration) return;
     declaration.node.scroll.pointer(phase, local(event), ended.kind, performance.now());
+    // Handled: the release of a pan is no tap, and what composes the table reads it so (a spreadsheet's
+    // surface tells its engine the press was taken away).
+    event.preventDefault();
     capture(view, event.pointerId, 'release');
     paint(view);
     report(view);
@@ -493,24 +499,25 @@ function tab(view: TableElement, event: KeyboardEvent): void {
   const back = event.shiftKey;
   if (back && at === -1) return;
   const next = back ? at - 1 : at + 1;
-  if (next === -1) {
+  // Before the first, the viewport itself, when it is a stop of its own.
+  if (next === -1 && view.hasAttribute('tabindex')) {
     event.preventDefault();
     view.focus();
     return;
   }
-  if (next < order.length) {
+  if (next >= 0 && next < order.length) {
     event.preventDefault();
     order[next].focus();
     return;
   }
-  // Past the last: from the last control the document holds here, the browser's own Tab goes on past
-  // the table.
+  // Out of the table: from the control the document holds at that end here, the browser's own Tab
+  // goes on past the table, forward from the last, back from the first.
   const inDocument = [...view.querySelectorAll<HTMLElement>(TABBABLE)].filter((element) => order.includes(element));
-  const last = inDocument[inDocument.length - 1];
-  if (!last || last === active) return;
+  const edge = next === -1 ? inDocument[0] : inDocument[inDocument.length - 1];
+  if (!edge || edge === active) return;
   view.__eqTableLeaving = true;
   try {
-    last.focus({ preventScroll: true });
+    edge.focus({ preventScroll: true });
   } finally {
     view.__eqTableLeaving = false;
   }

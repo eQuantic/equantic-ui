@@ -260,7 +260,8 @@ public static class UI
     public static TableViewport TableViewport(TableSpans rows, TableSpans columns, ITableScrollModel scroll,
         int pinnedRows = 0, int pinnedColumns = 0, SizeValue width = default, SizeValue height = default,
         TableScrollRequest? request = null, Action<TableOffset>? onScrolled = null,
-        Action<Size>? onViewportChanged = null, string? label = null, VisualNode[]? children = null)
+        Action<Size>? onViewportChanged = null, string? label = null, bool canRequestFocus = true,
+        VisualNode[]? children = null)
     {
         var node = new TableViewport(rows, columns, scroll)
         {
@@ -272,6 +273,7 @@ public static class UI
             OnScrolled = onScrolled,
             OnViewportChanged = onViewportChanged,
             Label = label,
+            CanRequestFocus = canRequestFocus,
         };
         if (children != null)
             foreach (var child in children)
@@ -710,7 +712,8 @@ public static class UI
     public static TableView TableView(TableSpans rows, TableSpans columns, Func<int, int, VisualNode?> cellBuilder,
         int pinnedRows = 0, int pinnedColumns = 0, int overscan = 3, SizeValue width = default,
         SizeValue height = default, IReadOnlyList<TableViewCell>? marks = null, TableScrollRequest? request = null,
-        Action<TableOffset>? onScrolled = null, Action<Size>? onViewportChanged = null, string? label = null) =>
+        Action<TableOffset>? onScrolled = null, Action<Size>? onViewportChanged = null, string? label = null,
+        bool canRequestFocus = true, TableScroll? scroll = null) =>
         new TableView(rows, columns, cellBuilder)
         {
             PinnedRows = pinnedRows,
@@ -723,5 +726,7 @@ public static class UI
             OnScrolled = onScrolled,
             OnViewportChanged = onViewportChanged,
             Label = label,
+            CanRequestFocus = canRequestFocus,
+            Scroll = scroll,
         };
 }

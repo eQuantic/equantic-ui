@@ -333,7 +333,29 @@ Each slice proposes, implements and archives its change in its own pull request.
   whole sheet: a step inside the built cells costs 1.2 ms on Photon and 0.7 ms in Chromium, a
   rebuild of the window 14.6 ms and 14 ms. The spreadsheet itself still draws as before: it moves
   onto the viewport in 0b.
-- **0b** ([#995](https://github.com/eQuantic/equantic-ui/issues/995)) is next.
+- **0b, delivered (2026-10-22, [#995](https://github.com/eQuantic/equantic-ui/issues/995)).** The
+  spreadsheet has an assembly of its own, `eQuantic.UI.Spreadsheets`, which the SDK adds as it adds the
+  charts. `Spreadsheet` is a `SheetSurface` over a `TableView` whose pinned first row is the column
+  headers and pinned first column the row numbers, measured from the widest number in view, so a cell
+  starts under its header by construction and only the cells in view are built, on both axes (D1, D3,
+  D4 closed). The engine reads a press against the viewport's live scroll through the document's axes
+  as `TableSpans`; a key, a paste, a fill, an undo and a redo raise a reveal version that carries the
+  cell the command left, PageUp and PageDown move by the rows shown (D2 closed); a held drag hands its
+  position to the scroll, which scrolls toward it while the engine follows the grid. The selection, the
+  active ring, the fill's preview and its handle are marks above the cells, the fill handle's crosshair
+  is the engine's answer, and the colours come from the theme's sheet slot (`SheetTheme`). The web
+  surface takes pointer events: a mouse's and a pen's press is captured, a finger's is a tap on release
+  or the table's pan (D6's scroll closed; a fill by touch waits for the long press of slice 3). Proved
+  in Chromium on the dashboard's `/sheet` (headers aligned to 0 px at 400, 900 and 1 440 px scrolled on
+  both axes, forty ↓ and PageDown in view, a drag held below the grid scrolling and extending until the
+  release) and on Photon in the gallery's Spreadsheet section, a sheet of 100 000 × 100, in a Metal
+  window and headless. Benched at 100 000 × 100: a keystroke costs 2.6 ms on Photon and 9.1 ms in the
+  runtime, a scroll step inside the built cells 2.2 ms and 0.3 ms. Found on the way and fixed: a reveal
+  request read from the active cell chased every cell a drag reached; the web kept a press in one
+  render's closure and lost its release; the cells' padding was written in the wrong order since the
+  first spreadsheet; a `Draggable` on the web added `pointer-events: auto` beside the `none` its child
+  said.
+- **1** ([#983](https://github.com/eQuantic/equantic-ui/issues/983)) is next.
 
 ## Fenced, on purpose
 

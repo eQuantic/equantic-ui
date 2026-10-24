@@ -1,5 +1,6 @@
 using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Sheet;
 
 namespace eQuantic.Console;
 
@@ -48,9 +49,9 @@ public sealed class TableScreen : StatefulComponent
     {
         var header = row == 0 || column == 0;
         var label = row == 0 && column == 0 ? ""
-            : row == 0 ? Spreadsheet.ColumnName(column - 1)
+            : row == 0 ? CellRef.ColumnName(column - 1)
             : column == 0 ? $"{row}"
-            : $"{Spreadsheet.ColumnName(column - 1)}{row}";
+            : $"{CellRef.ColumnName(column - 1)}{row}";
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
@@ -58,7 +59,7 @@ public sealed class TableScreen : StatefulComponent
             Background = header ? theme.SurfaceSubtle : theme.Surface,
             BorderColor = theme.Border,
             BorderWidth = 0.5f,
-            Padding = new EdgeInsets(0, 6, 0, 6),
+            Padding = EdgeInsets.All(6),
         }, new Text(label, TypeRole.Caption, header ? theme.TextMuted : theme.TextPrimary, maxLines: 1));
     }
 }

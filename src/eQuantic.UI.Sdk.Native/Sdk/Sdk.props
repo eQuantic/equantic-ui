@@ -32,6 +32,7 @@
     <ItemGroup Condition="'$(EQuanticImplicitFactoryUsing)' != 'false'">
         <Using Include="eQuantic.UI.Components.UI" Static="true" />
         <Using Include="eQuantic.UI.Charts.ChartsUI" Static="true" />
+        <Using Include="eQuantic.UI.Spreadsheets.SpreadsheetsUI" Static="true" />
     </ItemGroup>
 
     <!--
@@ -116,6 +117,7 @@
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Sheet\eQuantic.UI.Sheet.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Charts\eQuantic.UI.Charts.csproj" />
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Spreadsheets\eQuantic.UI.Spreadsheets.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Native.Hosting\eQuantic.UI.Native.Hosting.csproj" />
     </ItemGroup>
     <ItemGroup Condition="'$(IsEQuanticDevMode)' != 'true'">
@@ -124,6 +126,7 @@
         <PackageReference Include="eQuantic.UI.Sheet" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Components" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Charts" Version="$(EQuanticUIVersion)" />
+        <PackageReference Include="eQuantic.UI.Spreadsheets" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Native.Hosting" Version="$(EQuanticUIVersion)" />
     </ItemGroup>
 

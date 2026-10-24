@@ -58,6 +58,7 @@
         <PackageReference Include="eQuantic.UI.Sheet" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Components" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" />
         <PackageReference Include="eQuantic.UI.Charts" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" />
+        <PackageReference Include="eQuantic.UI.Spreadsheets" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" />
         <PackageReference Include="eQuantic.UI.Web" Version="$(EQuanticUIVersion)" />
         <!-- The Server carries the runtime it serves as a file too (tools/runtime/runtime.js). -->
         <PackageReference Include="eQuantic.UI.Server" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" />
@@ -118,6 +119,7 @@
         <ProjectReference
             Include="$(_DevRootDir)eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Charts\eQuantic.UI.Charts.csproj" />
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Spreadsheets\eQuantic.UI.Spreadsheets.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Web\eQuantic.UI.Web.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
 
@@ -178,6 +180,7 @@
     <ItemGroup Condition="'$(EQuanticImplicitFactoryUsing)' != 'false'">
         <Using Include="eQuantic.UI.Components.UI" Static="true" />
         <Using Include="eQuantic.UI.Charts.ChartsUI" Static="true" />
+        <Using Include="eQuantic.UI.Spreadsheets.SpreadsheetsUI" Static="true" />
     </ItemGroup>
 
     <!--

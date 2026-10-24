@@ -677,6 +677,7 @@ export interface TableScrollModelLike {
   apply(request: unknown, rows: TableSpansLike, columns: TableSpansLike, pinnedRows: number, pinnedColumns: number): boolean;
   reveal(area: TableRectValue, across: boolean, down: boolean): boolean;
   key(key: string, modifiers: number): boolean;
+  autoScroll(pointer: { x: number; y: number } | null): void;
 }
 
 export interface TableViewCellNode extends VisualNodeValue {
@@ -702,6 +703,8 @@ export interface TableViewportNode extends VisualNodeValue {
   onScrolled?: ((offset: { across: number; down: number }) => void) | null;
   onViewportChanged?: ((viewport: { width: number; height: number }) => void) | null;
   label?: string | null;
+  /** False: no Tab stop of its own and no keys (the C# `CanRequestFocus`). */
+  canRequestFocus?: boolean;
   cells: TableViewCellNode[];
 }
 
@@ -730,7 +733,10 @@ export interface SheetSurfaceModelLike {
     position: { x: number; y: number },
     modifiers: number,
     clicks: number,
+    kind: string,
   ): boolean;
+  /** What the pointer looks like resting at a point: a PointerCursor member name ('crosshair'). */
+  cursorAt(position: { x: number; y: number }): string;
 }
 
 /** Arrow-key adjustment semantics — one Tab stop wrapping a slider-like control. */

@@ -247,6 +247,70 @@ public class TableScrollTests
         scroll.Offset.Down.Should().Be(scroll.Viewport.Height - 28);
     }
 
+    // ---- a held drag ------------------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ADragHeldBelowTheCells_ScrollsDownByItsDistance_UnderReducedMotionToo(bool reduceMotion)
+    {
+        var scroll = Arranged(reduceMotion);
+
+        // 60 points below the 588 the cells scroll in: 1.2 points a millisecond.
+        scroll.AutoScroll(new Point(400, 588 + 60));
+        scroll.Advance(0).Should().BeTrue();
+        scroll.Advance(500).Should().BeTrue();
+
+        scroll.Offset.Down.Should().BeApproximately(600, 0.001);
+        scroll.Offset.Across.Should().Be(0);
+    }
+
+    [Fact]
+    public void ADragHeldOverThePinnedRow_ScrollsUp()
+    {
+        var scroll = Arranged();
+        scroll.Wheel(0, 500, stepped: false, KeyModifiers.None);
+
+        // 18 points above the cells' top edge, the pinned row's bottom at 28.
+        scroll.AutoScroll(new Point(400, 10));
+        scroll.Advance(0);
+        scroll.Advance(500);
+
+        scroll.Offset.Down.Should().BeApproximately(500 - 18 * 0.02 * 500, 0.001);
+    }
+
+    [Fact]
+    public void ADragHeldFurtherPast_ScrollsFaster()
+    {
+        var near = Arranged();
+        near.AutoScroll(new Point(400, 588 + 30));
+        near.Advance(0);
+        near.Advance(1000);
+        var far = Arranged();
+        far.AutoScroll(new Point(400, 588 + 120));
+        far.Advance(0);
+        far.Advance(1000);
+
+        far.Offset.Down.Should().BeGreaterThan(near.Offset.Down);
+    }
+
+    [Fact]
+    public void ADragHeldAtTheGridsEnd_StopsThere_AndALetGoStopsIt()
+    {
+        var scroll = Arranged(rows: 30);
+        scroll.AutoScroll(new Point(400, 588 + 60));
+        scroll.Advance(0);
+
+        scroll.Advance(1000).Should().BeFalse("the grid's end is reached");
+        scroll.Offset.Down.Should().Be(30 * 28 - 588);
+
+        scroll.Wheel(0, -100, stepped: false, KeyModifiers.None);
+        scroll.AutoScroll(null);
+        scroll.Advance(2000).Should().BeFalse();
+        scroll.Advance(3000).Should().BeFalse();
+        scroll.Offset.Down.Should().Be(30 * 28 - 588 - 100, "a drag that ended moves nothing more");
+    }
+
     // ---- requests -------------------------------------------------------------------------------
 
     [Fact]

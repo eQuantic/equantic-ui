@@ -15,8 +15,8 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// </summary>
 public class SheetSurfaceTests
 {
-    private const float HeaderW = 40f;
-    private const float HeaderH = 24f;
+    private const float HeaderW = SheetScrolls.HeaderWidth;
+    private const float HeaderH = SheetScrolls.HeaderHeight;
 
     private sealed class Page : Primitives.StatefulComponent
     {
@@ -25,10 +25,14 @@ public class SheetSurfaceTests
         /// <summary>The sheet row the window's first drawn row is: past 0, a scrolled window.</summary>
         public int FirstRow { get; init; }
 
+        private TableScroll? _scroll;
+
         public override VisualNode Build(ComponentContext context)
         {
-            // A child that draws its own headers: the window's first cell begins past them.
-            Sheet.Grid = new SheetGrid(new Point(HeaderW, HeaderH), FirstRow, 0);
+            // A child that draws its own headers: the window's first cell begins past them, and the
+            // grid stands scrolled by the rows above the first one drawn.
+            if (_scroll is null) _scroll = SheetScrolls.Place(Sheet, down: FirstRow * 28);
+            else Sheet.Grid = new SheetGrid(_scroll, HeaderW, HeaderH);
             return new SheetSurface(
                 new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }),
                 Sheet)
