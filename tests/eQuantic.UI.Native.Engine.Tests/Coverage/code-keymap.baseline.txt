@@ -1,0 +1,1637 @@
+Apple plain ArrowLeft - => claimed selection=1:5>1:5
+Apple plain ArrowLeft Shift => claimed selection=1:6>1:5
+Apple plain ArrowLeft Command => claimed selection=1:4>1:4
+Apple plain ArrowLeft Shift+Command => claimed selection=1:6>1:4
+Apple plain ArrowLeft Alt => claimed selection=1:4>1:4
+Apple plain ArrowLeft Shift+Alt => claimed selection=1:6>1:4
+Apple plain ArrowRight - => claimed selection=1:7>1:7
+Apple plain ArrowRight Shift => claimed selection=1:6>1:7
+Apple plain ArrowRight Command => claimed selection=1:15>1:15
+Apple plain ArrowRight Shift+Command => claimed selection=1:6>1:15
+Apple plain ArrowRight Alt => claimed selection=1:10>1:10
+Apple plain ArrowRight Shift+Alt => claimed selection=1:6>1:10
+Apple plain ArrowUp - => claimed selection=0:6>0:6
+Apple plain ArrowUp Shift => claimed selection=1:6>0:6
+Apple plain ArrowUp Command => claimed selection=0:0>0:0
+Apple plain ArrowUp Shift+Command => claimed selection=1:6>0:0
+Apple plain ArrowDown - => claimed selection=2:6>2:6
+Apple plain ArrowDown Shift => claimed selection=1:6>2:6
+Apple plain ArrowDown Command => claimed selection=2:12>2:12
+Apple plain ArrowDown Shift+Command => claimed selection=1:6>2:12
+Apple plain Home - => claimed selection=1:4>1:4
+Apple plain Home Shift => claimed selection=1:6>1:4
+Apple plain Home Command => claimed selection=0:0>0:0
+Apple plain Home Shift+Command => claimed selection=1:6>0:0
+Apple plain End - => claimed selection=1:15>1:15
+Apple plain End Shift => claimed selection=1:6>1:15
+Apple plain End Command => claimed selection=2:12>2:12
+Apple plain End Shift+Command => claimed selection=1:6>2:12
+Apple plain PageUp - => claimed selection=0:6>0:6
+Apple plain PageUp Shift => claimed selection=1:6>0:6
+Apple plain PageDown - => claimed selection=2:6>2:6
+Apple plain PageDown Shift => claimed selection=1:6>2:6
+Apple plain Enter - => claimed text=alpha beta\n    ga\n    mma delta\nepsilon zeta selection=2:4>2:4
+Apple plain Enter Shift => claimed text=alpha beta\n    ga\n    mma delta\nepsilon zeta selection=2:4>2:4
+Apple plain Backspace - => claimed text=alpha beta\n    gmma delta\nepsilon zeta selection=1:5>1:5
+Apple plain Backspace Shift => claimed text=alpha beta\n    gmma delta\nepsilon zeta selection=1:5>1:5
+Apple plain Backspace Command => claimed text=alpha beta\nmma delta\nepsilon zeta selection=1:0>1:0
+Apple plain Backspace Alt => claimed text=alpha beta\n    mma delta\nepsilon zeta selection=1:4>1:4
+Apple plain Delete - => claimed text=alpha beta\n    gama delta\nepsilon zeta
+Apple plain Delete Alt => claimed text=alpha beta\n    gadelta\nepsilon zeta
+Apple plain Tab - => claimed text=alpha beta\n    ga  mma delta\nepsilon zeta selection=1:8>1:8
+Apple plain Tab Shift => claimed text=alpha beta\ngamma delta\nepsilon zeta selection=1:2>1:2
+Apple plain Escape - => unclaimed trap=released
+Apple plain Escape Shift => unclaimed trap=released
+Apple plain a Command => claimed selection=0:0>2:12
+Apple plain c Command => claimed clipboard=    gamma delta
+
+Apple plain x Command => claimed text=alpha beta\nepsilon zeta selection=1:0>1:0 clipboard=    gamma delta
+
+Apple plain v Command => claimed text=alpha beta\n    gaPASTEDmma delta\nepsilon zeta selection=1:12>1:12
+Apple plain / Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Apple plain / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Apple plain Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Apple plain Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Apple selection ArrowLeft - => claimed selection=1:4>1:4
+Apple selection ArrowLeft Shift => claimed selection=1:4>1:8
+Apple selection ArrowLeft Command => claimed selection=1:4>1:4
+Apple selection ArrowLeft Shift+Command => claimed selection=1:4>1:4
+Apple selection ArrowLeft Alt => claimed selection=1:4>1:4
+Apple selection ArrowLeft Shift+Alt => claimed selection=1:4>1:4
+Apple selection ArrowRight - => claimed selection=1:9>1:9
+Apple selection ArrowRight Shift => claimed selection=1:4>1:10
+Apple selection ArrowRight Command => claimed selection=1:15>1:15
+Apple selection ArrowRight Shift+Command => claimed selection=1:4>1:15
+Apple selection ArrowRight Alt => claimed selection=1:10>1:10
+Apple selection ArrowRight Shift+Alt => claimed selection=1:4>1:10
+Apple selection ArrowUp - => claimed selection=0:9>0:9
+Apple selection ArrowUp Shift => claimed selection=1:4>0:9
+Apple selection ArrowUp Command => claimed selection=0:0>0:0
+Apple selection ArrowUp Shift+Command => claimed selection=1:4>0:0
+Apple selection ArrowDown - => claimed selection=2:9>2:9
+Apple selection ArrowDown Shift => claimed selection=1:4>2:9
+Apple selection ArrowDown Command => claimed selection=2:12>2:12
+Apple selection ArrowDown Shift+Command => claimed selection=1:4>2:12
+Apple selection Home - => claimed selection=1:4>1:4
+Apple selection Home Shift => claimed selection=1:4>1:4
+Apple selection Home Command => claimed selection=0:0>0:0
+Apple selection Home Shift+Command => claimed selection=1:4>0:0
+Apple selection End - => claimed selection=1:15>1:15
+Apple selection End Shift => claimed selection=1:4>1:15
+Apple selection End Command => claimed selection=2:12>2:12
+Apple selection End Shift+Command => claimed selection=1:4>2:12
+Apple selection PageUp - => claimed selection=0:9>0:9
+Apple selection PageUp Shift => claimed selection=1:4>0:9
+Apple selection PageDown - => claimed selection=2:9>2:9
+Apple selection PageDown Shift => claimed selection=1:4>2:9
+Apple selection Enter - => claimed text=alpha beta\n    \n     delta\nepsilon zeta selection=2:4>2:4
+Apple selection Enter Shift => claimed text=alpha beta\n    \n     delta\nepsilon zeta selection=2:4>2:4
+Apple selection Backspace - => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Apple selection Backspace Shift => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Apple selection Backspace Command => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Apple selection Backspace Alt => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Apple selection Delete - => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Apple selection Delete Alt => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Apple selection Tab - => claimed text=alpha beta\n        gamma delta\nepsilon zeta selection=1:8>1:13
+Apple selection Tab Shift => claimed text=alpha beta\ngamma delta\nepsilon zeta selection=1:0>1:5
+Apple selection Escape - => unclaimed trap=released
+Apple selection Escape Shift => unclaimed trap=released
+Apple selection a Command => claimed selection=0:0>2:12
+Apple selection c Command => claimed clipboard=gamma
+Apple selection x Command => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4 clipboard=gamma
+Apple selection v Command => claimed text=alpha beta\n    PASTED delta\nepsilon zeta selection=1:10>1:10
+Apple selection / Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Apple selection / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Apple selection Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Apple selection Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Apple no-clipboard ArrowLeft - => claimed selection=1:4>1:4
+Apple no-clipboard ArrowLeft Shift => claimed selection=1:4>1:8
+Apple no-clipboard ArrowLeft Command => claimed selection=1:4>1:4
+Apple no-clipboard ArrowLeft Shift+Command => claimed selection=1:4>1:4
+Apple no-clipboard ArrowLeft Alt => claimed selection=1:4>1:4
+Apple no-clipboard ArrowLeft Shift+Alt => claimed selection=1:4>1:4
+Apple no-clipboard ArrowRight - => claimed selection=1:9>1:9
+Apple no-clipboard ArrowRight Shift => claimed selection=1:4>1:10
+Apple no-clipboard ArrowRight Command => claimed selection=1:15>1:15
+Apple no-clipboard ArrowRight Shift+Command => claimed selection=1:4>1:15
+Apple no-clipboard ArrowRight Alt => claimed selection=1:10>1:10
+Apple no-clipboard ArrowRight Shift+Alt => claimed selection=1:4>1:10
+Apple no-clipboard ArrowUp - => claimed selection=0:9>0:9
+Apple no-clipboard ArrowUp Shift => claimed selection=1:4>0:9
+Apple no-clipboard ArrowUp Command => claimed selection=0:0>0:0
+Apple no-clipboard ArrowUp Shift+Command => claimed selection=1:4>0:0
+Apple no-clipboard ArrowDown - => claimed selection=2:9>2:9
+Apple no-clipboard ArrowDown Shift => claimed selection=1:4>2:9
+Apple no-clipboard ArrowDown Command => claimed selection=2:12>2:12
+Apple no-clipboard ArrowDown Shift+Command => claimed selection=1:4>2:12
+Apple no-clipboard Home - => claimed selection=1:4>1:4
+Apple no-clipboard Home Shift => claimed selection=1:4>1:4
+Apple no-clipboard Home Command => claimed selection=0:0>0:0
+Apple no-clipboard Home Shift+Command => claimed selection=1:4>0:0
+Apple no-clipboard End - => claimed selection=1:15>1:15
+Apple no-clipboard End Shift => claimed selection=1:4>1:15
+Apple no-clipboard End Command => claimed selection=2:12>2:12
+Apple no-clipboard End Shift+Command => claimed selection=1:4>2:12
+Apple no-clipboard PageUp - => claimed selection=0:9>0:9
+Apple no-clipboard PageUp Shift => claimed selection=1:4>0:9
+Apple no-clipboard PageDown - => claimed selection=2:9>2:9
+Apple no-clipboard PageDown Shift => claimed selection=1:4>2:9
+Apple no-clipboard Enter - => claimed text=alpha beta\n    \n     delta\nepsilon zeta selection=2:4>2:4
+Apple no-clipboard Enter Shift => claimed text=alpha beta\n    \n     delta\nepsilon zeta selection=2:4>2:4
+Apple no-clipboard Backspace - => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Apple no-clipboard Backspace Shift => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Apple no-clipboard Backspace Command => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Apple no-clipboard Backspace Alt => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Apple no-clipboard Delete - => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Apple no-clipboard Delete Alt => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Apple no-clipboard Tab - => claimed text=alpha beta\n        gamma delta\nepsilon zeta selection=1:8>1:13
+Apple no-clipboard Tab Shift => claimed text=alpha beta\ngamma delta\nepsilon zeta selection=1:0>1:5
+Apple no-clipboard Escape - => unclaimed trap=released
+Apple no-clipboard Escape Shift => unclaimed trap=released
+Apple no-clipboard a Command => claimed selection=0:0>2:12
+Apple no-clipboard / Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Apple no-clipboard / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Apple no-clipboard Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Apple no-clipboard Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Apple read-only ArrowLeft - => claimed selection=1:5>1:5
+Apple read-only ArrowLeft Shift => claimed selection=1:6>1:5
+Apple read-only ArrowLeft Command => claimed selection=1:4>1:4
+Apple read-only ArrowLeft Shift+Command => claimed selection=1:6>1:4
+Apple read-only ArrowLeft Alt => claimed selection=1:4>1:4
+Apple read-only ArrowLeft Shift+Alt => claimed selection=1:6>1:4
+Apple read-only ArrowRight - => claimed selection=1:7>1:7
+Apple read-only ArrowRight Shift => claimed selection=1:6>1:7
+Apple read-only ArrowRight Command => claimed selection=1:15>1:15
+Apple read-only ArrowRight Shift+Command => claimed selection=1:6>1:15
+Apple read-only ArrowRight Alt => claimed selection=1:10>1:10
+Apple read-only ArrowRight Shift+Alt => claimed selection=1:6>1:10
+Apple read-only ArrowUp - => claimed selection=0:6>0:6
+Apple read-only ArrowUp Shift => claimed selection=1:6>0:6
+Apple read-only ArrowUp Command => claimed selection=0:0>0:0
+Apple read-only ArrowUp Shift+Command => claimed selection=1:6>0:0
+Apple read-only ArrowDown - => claimed selection=2:6>2:6
+Apple read-only ArrowDown Shift => claimed selection=1:6>2:6
+Apple read-only ArrowDown Command => claimed selection=2:12>2:12
+Apple read-only ArrowDown Shift+Command => claimed selection=1:6>2:12
+Apple read-only Home - => claimed selection=1:4>1:4
+Apple read-only Home Shift => claimed selection=1:6>1:4
+Apple read-only Home Command => claimed selection=0:0>0:0
+Apple read-only Home Shift+Command => claimed selection=1:6>0:0
+Apple read-only End - => claimed selection=1:15>1:15
+Apple read-only End Shift => claimed selection=1:6>1:15
+Apple read-only End Command => claimed selection=2:12>2:12
+Apple read-only End Shift+Command => claimed selection=1:6>2:12
+Apple read-only PageUp - => claimed selection=0:6>0:6
+Apple read-only PageUp Shift => claimed selection=1:6>0:6
+Apple read-only PageDown - => claimed selection=2:6>2:6
+Apple read-only PageDown Shift => claimed selection=1:6>2:6
+Apple read-only Escape - => unclaimed trap=released
+Apple read-only Escape Shift => unclaimed trap=released
+Apple read-only a Command => claimed selection=0:0>2:12
+Apple read-only c Command => claimed clipboard=    gamma delta
+
+Apple read-only x Command => claimed selection=1:0>2:0 clipboard=    gamma delta
+
+Apple read-only v Command => claimed unchanged
+Apple released ArrowLeft - => claimed selection=1:5>1:5 trap=armed
+Apple released ArrowLeft Shift => claimed selection=1:6>1:5 trap=armed
+Apple released ArrowLeft Command => claimed selection=1:4>1:4 trap=armed
+Apple released ArrowLeft Shift+Command => claimed selection=1:6>1:4 trap=armed
+Apple released ArrowLeft Control => unclaimed trap=armed
+Apple released ArrowLeft Shift+Control => unclaimed trap=armed
+Apple released ArrowLeft Command+Control => unclaimed trap=armed
+Apple released ArrowLeft Shift+Command+Control => unclaimed trap=armed
+Apple released ArrowLeft Alt => claimed selection=1:4>1:4 trap=armed
+Apple released ArrowLeft Shift+Alt => claimed selection=1:6>1:4 trap=armed
+Apple released ArrowLeft Command+Alt => unclaimed trap=armed
+Apple released ArrowLeft Shift+Command+Alt => unclaimed trap=armed
+Apple released ArrowLeft Control+Alt => unclaimed trap=armed
+Apple released ArrowLeft Shift+Control+Alt => unclaimed trap=armed
+Apple released ArrowLeft Command+Control+Alt => unclaimed trap=armed
+Apple released ArrowLeft Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released ArrowRight - => claimed selection=1:7>1:7 trap=armed
+Apple released ArrowRight Shift => claimed selection=1:6>1:7 trap=armed
+Apple released ArrowRight Command => claimed selection=1:15>1:15 trap=armed
+Apple released ArrowRight Shift+Command => claimed selection=1:6>1:15 trap=armed
+Apple released ArrowRight Control => unclaimed trap=armed
+Apple released ArrowRight Shift+Control => unclaimed trap=armed
+Apple released ArrowRight Command+Control => unclaimed trap=armed
+Apple released ArrowRight Shift+Command+Control => unclaimed trap=armed
+Apple released ArrowRight Alt => claimed selection=1:10>1:10 trap=armed
+Apple released ArrowRight Shift+Alt => claimed selection=1:6>1:10 trap=armed
+Apple released ArrowRight Command+Alt => unclaimed trap=armed
+Apple released ArrowRight Shift+Command+Alt => unclaimed trap=armed
+Apple released ArrowRight Control+Alt => unclaimed trap=armed
+Apple released ArrowRight Shift+Control+Alt => unclaimed trap=armed
+Apple released ArrowRight Command+Control+Alt => unclaimed trap=armed
+Apple released ArrowRight Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released ArrowUp - => claimed selection=0:6>0:6 trap=armed
+Apple released ArrowUp Shift => claimed selection=1:6>0:6 trap=armed
+Apple released ArrowUp Command => claimed selection=0:0>0:0 trap=armed
+Apple released ArrowUp Shift+Command => claimed selection=1:6>0:0 trap=armed
+Apple released ArrowUp Control => unclaimed trap=armed
+Apple released ArrowUp Shift+Control => unclaimed trap=armed
+Apple released ArrowUp Command+Control => unclaimed trap=armed
+Apple released ArrowUp Shift+Command+Control => unclaimed trap=armed
+Apple released ArrowUp Alt => unclaimed trap=armed
+Apple released ArrowUp Shift+Alt => unclaimed trap=armed
+Apple released ArrowUp Command+Alt => unclaimed trap=armed
+Apple released ArrowUp Shift+Command+Alt => unclaimed trap=armed
+Apple released ArrowUp Control+Alt => unclaimed trap=armed
+Apple released ArrowUp Shift+Control+Alt => unclaimed trap=armed
+Apple released ArrowUp Command+Control+Alt => unclaimed trap=armed
+Apple released ArrowUp Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released ArrowDown - => claimed selection=2:6>2:6 trap=armed
+Apple released ArrowDown Shift => claimed selection=1:6>2:6 trap=armed
+Apple released ArrowDown Command => claimed selection=2:12>2:12 trap=armed
+Apple released ArrowDown Shift+Command => claimed selection=1:6>2:12 trap=armed
+Apple released ArrowDown Control => unclaimed trap=armed
+Apple released ArrowDown Shift+Control => unclaimed trap=armed
+Apple released ArrowDown Command+Control => unclaimed trap=armed
+Apple released ArrowDown Shift+Command+Control => unclaimed trap=armed
+Apple released ArrowDown Alt => unclaimed trap=armed
+Apple released ArrowDown Shift+Alt => unclaimed trap=armed
+Apple released ArrowDown Command+Alt => unclaimed trap=armed
+Apple released ArrowDown Shift+Command+Alt => unclaimed trap=armed
+Apple released ArrowDown Control+Alt => unclaimed trap=armed
+Apple released ArrowDown Shift+Control+Alt => unclaimed trap=armed
+Apple released ArrowDown Command+Control+Alt => unclaimed trap=armed
+Apple released ArrowDown Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released Home - => claimed selection=1:4>1:4 trap=armed
+Apple released Home Shift => claimed selection=1:6>1:4 trap=armed
+Apple released Home Command => claimed selection=0:0>0:0 trap=armed
+Apple released Home Shift+Command => claimed selection=1:6>0:0 trap=armed
+Apple released Home Control => unclaimed trap=armed
+Apple released Home Shift+Control => unclaimed trap=armed
+Apple released Home Command+Control => unclaimed trap=armed
+Apple released Home Shift+Command+Control => unclaimed trap=armed
+Apple released Home Alt => unclaimed trap=armed
+Apple released Home Shift+Alt => unclaimed trap=armed
+Apple released Home Command+Alt => unclaimed trap=armed
+Apple released Home Shift+Command+Alt => unclaimed trap=armed
+Apple released Home Control+Alt => unclaimed trap=armed
+Apple released Home Shift+Control+Alt => unclaimed trap=armed
+Apple released Home Command+Control+Alt => unclaimed trap=armed
+Apple released Home Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released End - => claimed selection=1:15>1:15 trap=armed
+Apple released End Shift => claimed selection=1:6>1:15 trap=armed
+Apple released End Command => claimed selection=2:12>2:12 trap=armed
+Apple released End Shift+Command => claimed selection=1:6>2:12 trap=armed
+Apple released End Control => unclaimed trap=armed
+Apple released End Shift+Control => unclaimed trap=armed
+Apple released End Command+Control => unclaimed trap=armed
+Apple released End Shift+Command+Control => unclaimed trap=armed
+Apple released End Alt => unclaimed trap=armed
+Apple released End Shift+Alt => unclaimed trap=armed
+Apple released End Command+Alt => unclaimed trap=armed
+Apple released End Shift+Command+Alt => unclaimed trap=armed
+Apple released End Control+Alt => unclaimed trap=armed
+Apple released End Shift+Control+Alt => unclaimed trap=armed
+Apple released End Command+Control+Alt => unclaimed trap=armed
+Apple released End Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released PageUp - => claimed selection=0:6>0:6 trap=armed
+Apple released PageUp Shift => claimed selection=1:6>0:6 trap=armed
+Apple released PageUp Command => unclaimed trap=armed
+Apple released PageUp Shift+Command => unclaimed trap=armed
+Apple released PageUp Control => unclaimed trap=armed
+Apple released PageUp Shift+Control => unclaimed trap=armed
+Apple released PageUp Command+Control => unclaimed trap=armed
+Apple released PageUp Shift+Command+Control => unclaimed trap=armed
+Apple released PageUp Alt => unclaimed trap=armed
+Apple released PageUp Shift+Alt => unclaimed trap=armed
+Apple released PageUp Command+Alt => unclaimed trap=armed
+Apple released PageUp Shift+Command+Alt => unclaimed trap=armed
+Apple released PageUp Control+Alt => unclaimed trap=armed
+Apple released PageUp Shift+Control+Alt => unclaimed trap=armed
+Apple released PageUp Command+Control+Alt => unclaimed trap=armed
+Apple released PageUp Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released PageDown - => claimed selection=2:6>2:6 trap=armed
+Apple released PageDown Shift => claimed selection=1:6>2:6 trap=armed
+Apple released PageDown Command => unclaimed trap=armed
+Apple released PageDown Shift+Command => unclaimed trap=armed
+Apple released PageDown Control => unclaimed trap=armed
+Apple released PageDown Shift+Control => unclaimed trap=armed
+Apple released PageDown Command+Control => unclaimed trap=armed
+Apple released PageDown Shift+Command+Control => unclaimed trap=armed
+Apple released PageDown Alt => unclaimed trap=armed
+Apple released PageDown Shift+Alt => unclaimed trap=armed
+Apple released PageDown Command+Alt => unclaimed trap=armed
+Apple released PageDown Shift+Command+Alt => unclaimed trap=armed
+Apple released PageDown Control+Alt => unclaimed trap=armed
+Apple released PageDown Shift+Control+Alt => unclaimed trap=armed
+Apple released PageDown Command+Control+Alt => unclaimed trap=armed
+Apple released PageDown Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released Enter - => claimed text=alpha beta\n    ga\n    mma delta\nepsilon zeta selection=2:4>2:4 trap=armed
+Apple released Enter Shift => claimed text=alpha beta\n    ga\n    mma delta\nepsilon zeta selection=2:4>2:4 trap=armed
+Apple released Enter Command => unclaimed trap=armed
+Apple released Enter Shift+Command => unclaimed trap=armed
+Apple released Enter Control => unclaimed trap=armed
+Apple released Enter Shift+Control => unclaimed trap=armed
+Apple released Enter Command+Control => unclaimed trap=armed
+Apple released Enter Shift+Command+Control => unclaimed trap=armed
+Apple released Enter Alt => unclaimed trap=armed
+Apple released Enter Shift+Alt => unclaimed trap=armed
+Apple released Enter Command+Alt => unclaimed trap=armed
+Apple released Enter Shift+Command+Alt => unclaimed trap=armed
+Apple released Enter Control+Alt => unclaimed trap=armed
+Apple released Enter Shift+Control+Alt => unclaimed trap=armed
+Apple released Enter Command+Control+Alt => unclaimed trap=armed
+Apple released Enter Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released Backspace - => claimed text=alpha beta\n    gmma delta\nepsilon zeta selection=1:5>1:5 trap=armed
+Apple released Backspace Shift => claimed text=alpha beta\n    gmma delta\nepsilon zeta selection=1:5>1:5 trap=armed
+Apple released Backspace Command => claimed text=alpha beta\nmma delta\nepsilon zeta selection=1:0>1:0 trap=armed
+Apple released Backspace Shift+Command => unclaimed trap=armed
+Apple released Backspace Control => unclaimed trap=armed
+Apple released Backspace Shift+Control => unclaimed trap=armed
+Apple released Backspace Command+Control => unclaimed trap=armed
+Apple released Backspace Shift+Command+Control => unclaimed trap=armed
+Apple released Backspace Alt => claimed text=alpha beta\n    mma delta\nepsilon zeta selection=1:4>1:4 trap=armed
+Apple released Backspace Shift+Alt => unclaimed trap=armed
+Apple released Backspace Command+Alt => unclaimed trap=armed
+Apple released Backspace Shift+Command+Alt => unclaimed trap=armed
+Apple released Backspace Control+Alt => unclaimed trap=armed
+Apple released Backspace Shift+Control+Alt => unclaimed trap=armed
+Apple released Backspace Command+Control+Alt => unclaimed trap=armed
+Apple released Backspace Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released Delete - => claimed text=alpha beta\n    gama delta\nepsilon zeta trap=armed
+Apple released Delete Shift => unclaimed trap=armed
+Apple released Delete Command => unclaimed trap=armed
+Apple released Delete Shift+Command => unclaimed trap=armed
+Apple released Delete Control => unclaimed trap=armed
+Apple released Delete Shift+Control => unclaimed trap=armed
+Apple released Delete Command+Control => unclaimed trap=armed
+Apple released Delete Shift+Command+Control => unclaimed trap=armed
+Apple released Delete Alt => claimed text=alpha beta\n    gadelta\nepsilon zeta trap=armed
+Apple released Delete Shift+Alt => unclaimed trap=armed
+Apple released Delete Command+Alt => unclaimed trap=armed
+Apple released Delete Shift+Command+Alt => unclaimed trap=armed
+Apple released Delete Control+Alt => unclaimed trap=armed
+Apple released Delete Shift+Control+Alt => unclaimed trap=armed
+Apple released Delete Command+Control+Alt => unclaimed trap=armed
+Apple released Delete Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released Space - => unclaimed trap=armed
+Apple released Space Shift => unclaimed trap=armed
+Apple released Space Command => unclaimed trap=armed
+Apple released Space Shift+Command => unclaimed trap=armed
+Apple released Space Control => unclaimed trap=armed
+Apple released Space Shift+Control => unclaimed trap=armed
+Apple released Space Command+Control => unclaimed trap=armed
+Apple released Space Shift+Command+Control => unclaimed trap=armed
+Apple released Space Alt => unclaimed trap=armed
+Apple released Space Shift+Alt => unclaimed trap=armed
+Apple released Space Command+Alt => unclaimed trap=armed
+Apple released Space Shift+Command+Alt => unclaimed trap=armed
+Apple released Space Control+Alt => unclaimed trap=armed
+Apple released Space Shift+Control+Alt => unclaimed trap=armed
+Apple released Space Command+Control+Alt => unclaimed trap=armed
+Apple released Space Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released a - => unclaimed trap=armed
+Apple released a Shift => unclaimed trap=armed
+Apple released a Command => claimed selection=0:0>2:12 trap=armed
+Apple released a Shift+Command => unclaimed trap=armed
+Apple released a Control => unclaimed trap=armed
+Apple released a Shift+Control => unclaimed trap=armed
+Apple released a Command+Control => unclaimed trap=armed
+Apple released a Shift+Command+Control => unclaimed trap=armed
+Apple released a Alt => unclaimed trap=armed
+Apple released a Shift+Alt => unclaimed trap=armed
+Apple released a Command+Alt => unclaimed trap=armed
+Apple released a Shift+Command+Alt => unclaimed trap=armed
+Apple released a Control+Alt => unclaimed trap=armed
+Apple released a Shift+Control+Alt => unclaimed trap=armed
+Apple released a Command+Control+Alt => unclaimed trap=armed
+Apple released a Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released z - => unclaimed trap=armed
+Apple released z Shift => unclaimed trap=armed
+Apple released z Command => unclaimed trap=armed
+Apple released z Shift+Command => unclaimed trap=armed
+Apple released z Control => unclaimed trap=armed
+Apple released z Shift+Control => unclaimed trap=armed
+Apple released z Command+Control => unclaimed trap=armed
+Apple released z Shift+Command+Control => unclaimed trap=armed
+Apple released z Alt => unclaimed trap=armed
+Apple released z Shift+Alt => unclaimed trap=armed
+Apple released z Command+Alt => unclaimed trap=armed
+Apple released z Shift+Command+Alt => unclaimed trap=armed
+Apple released z Control+Alt => unclaimed trap=armed
+Apple released z Shift+Control+Alt => unclaimed trap=armed
+Apple released z Command+Control+Alt => unclaimed trap=armed
+Apple released z Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released y - => unclaimed trap=armed
+Apple released y Shift => unclaimed trap=armed
+Apple released y Command => unclaimed trap=armed
+Apple released y Shift+Command => unclaimed trap=armed
+Apple released y Control => unclaimed trap=armed
+Apple released y Shift+Control => unclaimed trap=armed
+Apple released y Command+Control => unclaimed trap=armed
+Apple released y Shift+Command+Control => unclaimed trap=armed
+Apple released y Alt => unclaimed trap=armed
+Apple released y Shift+Alt => unclaimed trap=armed
+Apple released y Command+Alt => unclaimed trap=armed
+Apple released y Shift+Command+Alt => unclaimed trap=armed
+Apple released y Control+Alt => unclaimed trap=armed
+Apple released y Shift+Control+Alt => unclaimed trap=armed
+Apple released y Command+Control+Alt => unclaimed trap=armed
+Apple released y Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released c - => unclaimed trap=armed
+Apple released c Shift => unclaimed trap=armed
+Apple released c Command => claimed trap=armed clipboard=    gamma delta
+
+Apple released c Shift+Command => unclaimed trap=armed
+Apple released c Control => unclaimed trap=armed
+Apple released c Shift+Control => unclaimed trap=armed
+Apple released c Command+Control => unclaimed trap=armed
+Apple released c Shift+Command+Control => unclaimed trap=armed
+Apple released c Alt => unclaimed trap=armed
+Apple released c Shift+Alt => unclaimed trap=armed
+Apple released c Command+Alt => unclaimed trap=armed
+Apple released c Shift+Command+Alt => unclaimed trap=armed
+Apple released c Control+Alt => unclaimed trap=armed
+Apple released c Shift+Control+Alt => unclaimed trap=armed
+Apple released c Command+Control+Alt => unclaimed trap=armed
+Apple released c Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released x - => unclaimed trap=armed
+Apple released x Shift => unclaimed trap=armed
+Apple released x Command => claimed text=alpha beta\nepsilon zeta selection=1:0>1:0 trap=armed clipboard=    gamma delta
+
+Apple released x Shift+Command => unclaimed trap=armed
+Apple released x Control => unclaimed trap=armed
+Apple released x Shift+Control => unclaimed trap=armed
+Apple released x Command+Control => unclaimed trap=armed
+Apple released x Shift+Command+Control => unclaimed trap=armed
+Apple released x Alt => unclaimed trap=armed
+Apple released x Shift+Alt => unclaimed trap=armed
+Apple released x Command+Alt => unclaimed trap=armed
+Apple released x Shift+Command+Alt => unclaimed trap=armed
+Apple released x Control+Alt => unclaimed trap=armed
+Apple released x Shift+Control+Alt => unclaimed trap=armed
+Apple released x Command+Control+Alt => unclaimed trap=armed
+Apple released x Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released v - => unclaimed trap=armed
+Apple released v Shift => unclaimed trap=armed
+Apple released v Command => claimed text=alpha beta\n    gaPASTEDmma delta\nepsilon zeta selection=1:12>1:12 trap=armed
+Apple released v Shift+Command => unclaimed trap=armed
+Apple released v Control => unclaimed trap=armed
+Apple released v Shift+Control => unclaimed trap=armed
+Apple released v Command+Control => unclaimed trap=armed
+Apple released v Shift+Command+Control => unclaimed trap=armed
+Apple released v Alt => unclaimed trap=armed
+Apple released v Shift+Alt => unclaimed trap=armed
+Apple released v Command+Alt => unclaimed trap=armed
+Apple released v Shift+Command+Alt => unclaimed trap=armed
+Apple released v Control+Alt => unclaimed trap=armed
+Apple released v Shift+Control+Alt => unclaimed trap=armed
+Apple released v Command+Control+Alt => unclaimed trap=armed
+Apple released v Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released / - => unclaimed trap=armed
+Apple released / Shift => unclaimed trap=armed
+Apple released / Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9 trap=armed
+Apple released / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9 trap=armed
+Apple released / Control => unclaimed trap=armed
+Apple released / Shift+Control => unclaimed trap=armed
+Apple released / Command+Control => unclaimed trap=armed
+Apple released / Shift+Command+Control => unclaimed trap=armed
+Apple released / Alt => unclaimed trap=armed
+Apple released / Shift+Alt => unclaimed trap=armed
+Apple released / Command+Alt => unclaimed trap=armed
+Apple released / Shift+Command+Alt => unclaimed trap=armed
+Apple released / Control+Alt => unclaimed trap=armed
+Apple released / Shift+Control+Alt => unclaimed trap=armed
+Apple released / Command+Control+Alt => unclaimed trap=armed
+Apple released / Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released Slash - => unclaimed trap=armed
+Apple released Slash Shift => unclaimed trap=armed
+Apple released Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9 trap=armed
+Apple released Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9 trap=armed
+Apple released Slash Control => unclaimed trap=armed
+Apple released Slash Shift+Control => unclaimed trap=armed
+Apple released Slash Command+Control => unclaimed trap=armed
+Apple released Slash Shift+Command+Control => unclaimed trap=armed
+Apple released Slash Alt => unclaimed trap=armed
+Apple released Slash Shift+Alt => unclaimed trap=armed
+Apple released Slash Command+Alt => unclaimed trap=armed
+Apple released Slash Shift+Command+Alt => unclaimed trap=armed
+Apple released Slash Control+Alt => unclaimed trap=armed
+Apple released Slash Shift+Control+Alt => unclaimed trap=armed
+Apple released Slash Command+Control+Alt => unclaimed trap=armed
+Apple released Slash Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released k - => unclaimed trap=armed
+Apple released k Shift => unclaimed trap=armed
+Apple released k Command => unclaimed trap=armed
+Apple released k Shift+Command => unclaimed trap=armed
+Apple released k Control => unclaimed trap=armed
+Apple released k Shift+Control => unclaimed trap=armed
+Apple released k Command+Control => unclaimed trap=armed
+Apple released k Shift+Command+Control => unclaimed trap=armed
+Apple released k Alt => unclaimed trap=armed
+Apple released k Shift+Alt => unclaimed trap=armed
+Apple released k Command+Alt => unclaimed trap=armed
+Apple released k Shift+Command+Alt => unclaimed trap=armed
+Apple released k Control+Alt => unclaimed trap=armed
+Apple released k Shift+Control+Alt => unclaimed trap=armed
+Apple released k Command+Control+Alt => unclaimed trap=armed
+Apple released k Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released i - => unclaimed trap=armed
+Apple released i Shift => unclaimed trap=armed
+Apple released i Command => unclaimed trap=armed
+Apple released i Shift+Command => unclaimed trap=armed
+Apple released i Control => unclaimed trap=armed
+Apple released i Shift+Control => unclaimed trap=armed
+Apple released i Command+Control => unclaimed trap=armed
+Apple released i Shift+Command+Control => unclaimed trap=armed
+Apple released i Alt => unclaimed trap=armed
+Apple released i Shift+Alt => unclaimed trap=armed
+Apple released i Command+Alt => unclaimed trap=armed
+Apple released i Shift+Command+Alt => unclaimed trap=armed
+Apple released i Control+Alt => unclaimed trap=armed
+Apple released i Shift+Control+Alt => unclaimed trap=armed
+Apple released i Command+Control+Alt => unclaimed trap=armed
+Apple released i Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released F8 - => unclaimed trap=armed
+Apple released F8 Shift => unclaimed trap=armed
+Apple released F8 Command => unclaimed trap=armed
+Apple released F8 Shift+Command => unclaimed trap=armed
+Apple released F8 Control => unclaimed trap=armed
+Apple released F8 Shift+Control => unclaimed trap=armed
+Apple released F8 Command+Control => unclaimed trap=armed
+Apple released F8 Shift+Command+Control => unclaimed trap=armed
+Apple released F8 Alt => unclaimed trap=armed
+Apple released F8 Shift+Alt => unclaimed trap=armed
+Apple released F8 Command+Alt => unclaimed trap=armed
+Apple released F8 Shift+Command+Alt => unclaimed trap=armed
+Apple released F8 Control+Alt => unclaimed trap=armed
+Apple released F8 Shift+Control+Alt => unclaimed trap=armed
+Apple released F8 Command+Control+Alt => unclaimed trap=armed
+Apple released F8 Shift+Command+Control+Alt => unclaimed trap=armed
+Apple released q - => unclaimed trap=armed
+Apple released q Shift => unclaimed trap=armed
+Apple released q Command => unclaimed trap=armed
+Apple released q Shift+Command => unclaimed trap=armed
+Apple released q Control => unclaimed trap=armed
+Apple released q Shift+Control => unclaimed trap=armed
+Apple released q Command+Control => unclaimed trap=armed
+Apple released q Shift+Command+Control => unclaimed trap=armed
+Apple released q Alt => unclaimed trap=armed
+Apple released q Shift+Alt => unclaimed trap=armed
+Apple released q Command+Alt => unclaimed trap=armed
+Apple released q Shift+Command+Alt => unclaimed trap=armed
+Apple released q Control+Alt => unclaimed trap=armed
+Apple released q Shift+Control+Alt => unclaimed trap=armed
+Apple released q Command+Control+Alt => unclaimed trap=armed
+Apple released q Shift+Command+Control+Alt => unclaimed trap=armed
+Apple list ArrowLeft - => claimed selection=2:14>2:14
+Apple list ArrowLeft Shift => claimed selection=2:15>2:14 list=-
+Apple list ArrowLeft Command => claimed selection=2:0>2:0 list=-
+Apple list ArrowLeft Shift+Command => claimed selection=2:15>2:0 list=-
+Apple list ArrowLeft Alt => claimed selection=2:13>2:13 list=-
+Apple list ArrowLeft Shift+Alt => claimed selection=2:15>2:13 list=-
+Apple list ArrowRight - => claimed unchanged
+Apple list ArrowRight Shift => claimed unchanged
+Apple list ArrowRight Command => claimed unchanged
+Apple list ArrowRight Shift+Command => claimed unchanged
+Apple list ArrowRight Alt => claimed unchanged
+Apple list ArrowRight Shift+Alt => claimed unchanged
+Apple list ArrowUp - => claimed list=2
+Apple list ArrowUp Shift => claimed selection=2:15>1:15 list=-
+Apple list ArrowUp Command => claimed selection=0:0>0:0 list=-
+Apple list ArrowUp Shift+Command => claimed selection=2:15>0:0 list=-
+Apple list ArrowDown - => claimed list=1
+Apple list ArrowDown Shift => claimed unchanged
+Apple list ArrowDown Command => claimed unchanged
+Apple list ArrowDown Shift+Command => claimed unchanged
+Apple list Home - => claimed selection=2:0>2:0 list=-
+Apple list Home Shift => claimed selection=2:15>2:0 list=-
+Apple list Home Command => claimed selection=0:0>0:0 list=-
+Apple list Home Shift+Command => claimed selection=2:15>0:0 list=-
+Apple list End - => claimed unchanged
+Apple list End Shift => claimed unchanged
+Apple list End Command => claimed unchanged
+Apple list End Shift+Command => claimed unchanged
+Apple list PageUp - => claimed unchanged
+Apple list PageUp Shift => claimed selection=2:15>0:10 list=-
+Apple list PageDown - => claimed list=2
+Apple list PageDown Shift => claimed unchanged
+Apple list Enter - => claimed text=alpha beta\n    gamma delta\nepsilon zeta gamma selection=2:18>2:18 list=-
+Apple list Enter Shift => claimed text=alpha beta\n    gamma delta\nepsilon zeta ga\n selection=3:0>3:0 list=-
+Apple list Backspace - => claimed text=alpha beta\n    gamma delta\nepsilon zeta g selection=2:14>2:14
+Apple list Backspace Shift => claimed text=alpha beta\n    gamma delta\nepsilon zeta g selection=2:14>2:14
+Apple list Backspace Command => claimed text=alpha beta\n    gamma delta\n selection=2:0>2:0 list=-
+Apple list Backspace Alt => claimed text=alpha beta\n    gamma delta\nepsilon zeta  selection=2:13>2:13 list=-
+Apple list Tab - => claimed text=alpha beta\n    gamma delta\nepsilon zeta gamma selection=2:18>2:18 list=-
+Apple list Tab Shift => claimed unchanged
+Apple list Escape - => claimed list=-
+Apple list Escape Shift => claimed list=-
+Apple list Space Command => claimed unchanged
+Apple list Space Control => claimed unchanged
+Apple list a Command => claimed selection=0:0>2:15 list=-
+Apple list z Command => claimed text=alpha beta\n    gamma delta\nepsilon zeta selection=2:12>2:12 list=-
+Apple list c Command => claimed clipboard=epsilon zeta ga
+
+Apple list x Command => claimed text=alpha beta\n    gamma delta\n selection=2:0>2:0 list=- clipboard=epsilon zeta ga
+
+Apple list v Command => claimed text=alpha beta\n    gamma delta\nepsilon zeta gaPASTED selection=2:21>2:21 list=-
+Apple list / Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18 list=-
+Apple list / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18 list=-
+Apple list Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18 list=-
+Apple list Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18 list=-
+Apple card ArrowLeft - => claimed selection=1:5>1:5 card=-
+Apple card ArrowLeft Shift => claimed selection=1:6>1:5 card=-
+Apple card ArrowLeft Command => claimed selection=1:4>1:4 card=-
+Apple card ArrowLeft Shift+Command => claimed selection=1:6>1:4 card=-
+Apple card ArrowLeft Alt => claimed selection=1:4>1:4 card=-
+Apple card ArrowLeft Shift+Alt => claimed selection=1:6>1:4 card=-
+Apple card ArrowRight - => claimed selection=1:7>1:7 card=-
+Apple card ArrowRight Shift => claimed selection=1:6>1:7 card=-
+Apple card ArrowRight Command => claimed selection=1:15>1:15 card=-
+Apple card ArrowRight Shift+Command => claimed selection=1:6>1:15 card=-
+Apple card ArrowRight Alt => claimed selection=1:10>1:10 card=-
+Apple card ArrowRight Shift+Alt => claimed selection=1:6>1:10 card=-
+Apple card ArrowUp - => claimed selection=0:6>0:6 card=-
+Apple card ArrowUp Shift => claimed selection=1:6>0:6 card=-
+Apple card ArrowUp Command => claimed selection=0:0>0:0 card=-
+Apple card ArrowUp Shift+Command => claimed selection=1:6>0:0 card=-
+Apple card ArrowDown - => claimed selection=2:6>2:6 card=-
+Apple card ArrowDown Shift => claimed selection=1:6>2:6 card=-
+Apple card ArrowDown Command => claimed selection=2:12>2:12 card=-
+Apple card ArrowDown Shift+Command => claimed selection=1:6>2:12 card=-
+Apple card Home - => claimed selection=1:4>1:4 card=-
+Apple card Home Shift => claimed selection=1:6>1:4 card=-
+Apple card Home Command => claimed selection=0:0>0:0 card=-
+Apple card Home Shift+Command => claimed selection=1:6>0:0 card=-
+Apple card End - => claimed selection=1:15>1:15 card=-
+Apple card End Shift => claimed selection=1:6>1:15 card=-
+Apple card End Command => claimed selection=2:12>2:12 card=-
+Apple card End Shift+Command => claimed selection=1:6>2:12 card=-
+Apple card PageUp - => claimed selection=0:6>0:6 card=-
+Apple card PageUp Shift => claimed selection=1:6>0:6 card=-
+Apple card PageDown - => claimed selection=2:6>2:6 card=-
+Apple card PageDown Shift => claimed selection=1:6>2:6 card=-
+Apple card Enter - => claimed text=alpha beta\n    ga\n    mma delta\nepsilon zeta selection=2:4>2:4 card=-
+Apple card Enter Shift => claimed text=alpha beta\n    ga\n    mma delta\nepsilon zeta selection=2:4>2:4 card=-
+Apple card Backspace - => claimed text=alpha beta\n    gmma delta\nepsilon zeta selection=1:5>1:5 card=-
+Apple card Backspace Shift => claimed text=alpha beta\n    gmma delta\nepsilon zeta selection=1:5>1:5 card=-
+Apple card Backspace Command => claimed text=alpha beta\nmma delta\nepsilon zeta selection=1:0>1:0 card=-
+Apple card Backspace Alt => claimed text=alpha beta\n    mma delta\nepsilon zeta selection=1:4>1:4 card=-
+Apple card Delete - => claimed text=alpha beta\n    gama delta\nepsilon zeta card=-
+Apple card Delete Alt => claimed text=alpha beta\n    gadelta\nepsilon zeta card=-
+Apple card Tab - => claimed text=alpha beta\n    ga  mma delta\nepsilon zeta selection=1:8>1:8 card=-
+Apple card Tab Shift => claimed text=alpha beta\ngamma delta\nepsilon zeta selection=1:2>1:2 card=-
+Apple card Escape - => claimed card=-
+Apple card Escape Shift => claimed card=-
+Apple card a Command => claimed selection=0:0>2:12 card=-
+Apple card c Command => claimed clipboard=    gamma delta
+
+Apple card x Command => claimed text=alpha beta\nepsilon zeta selection=1:0>1:0 card=- clipboard=    gamma delta
+
+Apple card v Command => claimed text=alpha beta\n    gaPASTEDmma delta\nepsilon zeta selection=1:12>1:12 card=-
+Apple card / Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9 card=-
+Apple card / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9 card=-
+Apple card Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9 card=-
+Apple card Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9 card=-
+Apple card k Command => claimed unchanged
+Apple panel ArrowLeft - => claimed selection=2:18>2:18 panel=-
+Apple panel ArrowLeft Shift => claimed selection=2:19>2:18 panel=-
+Apple panel ArrowLeft Command => claimed selection=2:0>2:0 panel=-
+Apple panel ArrowLeft Shift+Command => claimed selection=2:19>2:0 panel=-
+Apple panel ArrowLeft Alt => claimed selection=2:18>2:18 panel=-
+Apple panel ArrowLeft Shift+Alt => claimed selection=2:19>2:18 panel=-
+Apple panel ArrowRight - => claimed selection=2:20>2:20 panel=-
+Apple panel ArrowRight Shift => claimed selection=2:19>2:20 panel=-
+Apple panel ArrowRight Command => claimed selection=2:20>2:20 panel=-
+Apple panel ArrowRight Shift+Command => claimed selection=2:19>2:20 panel=-
+Apple panel ArrowRight Alt => claimed selection=2:20>2:20 panel=-
+Apple panel ArrowRight Shift+Alt => claimed selection=2:19>2:20 panel=-
+Apple panel ArrowUp - => claimed panel=2
+Apple panel ArrowUp Shift => claimed selection=2:19>1:15 panel=-
+Apple panel ArrowUp Command => claimed selection=0:0>0:0 panel=-
+Apple panel ArrowUp Shift+Command => claimed selection=2:19>0:0 panel=-
+Apple panel ArrowUp Alt => claimed panel=2
+Apple panel ArrowDown - => claimed panel=1
+Apple panel ArrowDown Shift => claimed unchanged
+Apple panel ArrowDown Command => claimed selection=2:20>2:20 panel=-
+Apple panel ArrowDown Shift+Command => claimed selection=2:19>2:20 panel=-
+Apple panel ArrowDown Alt => claimed panel=1
+Apple panel Home - => claimed selection=2:0>2:0 panel=-
+Apple panel Home Shift => claimed selection=2:19>2:0 panel=-
+Apple panel Home Command => claimed selection=0:0>0:0 panel=-
+Apple panel Home Shift+Command => claimed selection=2:19>0:0 panel=-
+Apple panel End - => claimed selection=2:20>2:20 panel=-
+Apple panel End Shift => claimed selection=2:19>2:20 panel=-
+Apple panel End Command => claimed selection=2:20>2:20 panel=-
+Apple panel End Shift+Command => claimed selection=2:19>2:20 panel=-
+Apple panel PageUp - => claimed selection=0:10>0:10 panel=-
+Apple panel PageUp Shift => claimed selection=2:19>0:10 panel=-
+Apple panel PageDown - => claimed unchanged
+Apple panel PageDown Shift => claimed unchanged
+Apple panel Enter - => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add(\n    \n) selection=3:4>3:4 panel=-
+Apple panel Enter Shift => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add(\n    \n) selection=3:4>3:4 panel=-
+Apple panel Backspace - => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add selection=2:18>2:18 panel=-
+Apple panel Backspace Shift => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add selection=2:18>2:18 panel=-
+Apple panel Backspace Command => claimed text=alpha beta\n    gamma delta\n) selection=2:0>2:0 panel=-
+Apple panel Backspace Alt => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add) selection=2:18>2:18 panel=-
+Apple panel Delete - => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add(
+Apple panel Delete Alt => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add(
+Apple panel Tab - => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add( ) selection=2:20>2:20
+Apple panel Tab Shift => claimed panel=-
+Apple panel Escape - => claimed panel=-
+Apple panel Escape Shift => claimed panel=-
+Apple panel Space Shift+Command => claimed unchanged
+Apple panel Space Shift+Control => claimed unchanged
+Apple panel a Command => claimed selection=0:0>2:20 panel=-
+Apple panel z Command => claimed text=alpha beta\n    gamma delta\nepsilon zeta selection=2:12>2:12 panel=-
+Apple panel c Command => claimed clipboard=epsilon zeta x.Add()
+
+Apple panel x Command => claimed text=alpha beta\n    gamma delta\n selection=2:0>2:0 panel=- clipboard=epsilon zeta x.Add()
+
+Apple panel v Command => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add(PASTED) selection=2:25>2:25
+Apple panel / Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22 panel=-
+Apple panel / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22 panel=-
+Apple panel Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22 panel=-
+Apple panel Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22 panel=-
+Apple problems ArrowLeft - => claimed unchanged
+Apple problems ArrowLeft Shift => claimed unchanged
+Apple problems ArrowLeft Command => claimed unchanged
+Apple problems ArrowLeft Shift+Command => claimed unchanged
+Apple problems ArrowLeft Alt => claimed unchanged
+Apple problems ArrowLeft Shift+Alt => claimed unchanged
+Apple problems ArrowRight - => claimed selection=0:1>0:1
+Apple problems ArrowRight Shift => claimed selection=0:0>0:1
+Apple problems ArrowRight Command => claimed selection=0:10>0:10
+Apple problems ArrowRight Shift+Command => claimed selection=0:0>0:10
+Apple problems ArrowRight Alt => claimed selection=0:6>0:6
+Apple problems ArrowRight Shift+Alt => claimed selection=0:0>0:6
+Apple problems ArrowUp - => claimed unchanged
+Apple problems ArrowUp Shift => claimed unchanged
+Apple problems ArrowUp Command => claimed unchanged
+Apple problems ArrowUp Shift+Command => claimed unchanged
+Apple problems ArrowDown - => claimed selection=1:0>1:0
+Apple problems ArrowDown Shift => claimed selection=0:0>1:0
+Apple problems ArrowDown Command => claimed selection=2:12>2:12
+Apple problems ArrowDown Shift+Command => claimed selection=0:0>2:12
+Apple problems Home - => claimed unchanged
+Apple problems Home Shift => claimed unchanged
+Apple problems Home Command => claimed unchanged
+Apple problems Home Shift+Command => claimed unchanged
+Apple problems End - => claimed selection=0:10>0:10
+Apple problems End Shift => claimed selection=0:0>0:10
+Apple problems End Command => claimed selection=2:12>2:12
+Apple problems End Shift+Command => claimed selection=0:0>2:12
+Apple problems PageUp - => claimed unchanged
+Apple problems PageUp Shift => claimed unchanged
+Apple problems PageDown - => claimed selection=2:0>2:0
+Apple problems PageDown Shift => claimed selection=0:0>2:0
+Apple problems Enter - => claimed text=\nalpha beta\n    gamma delta\nepsilon zeta selection=1:0>1:0
+Apple problems Enter Shift => claimed text=\nalpha beta\n    gamma delta\nepsilon zeta selection=1:0>1:0
+Apple problems Delete - => claimed text=lpha beta\n    gamma delta\nepsilon zeta
+Apple problems Delete Alt => claimed text=beta\n    gamma delta\nepsilon zeta
+Apple problems Tab - => claimed text=    alpha beta\n    gamma delta\nepsilon zeta selection=0:4>0:4
+Apple problems Tab Shift => claimed unchanged
+Apple problems Escape - => unclaimed trap=released
+Apple problems Escape Shift => unclaimed trap=released
+Apple problems a Command => claimed selection=0:0>2:12
+Apple problems c Command => claimed clipboard=alpha beta
+
+Apple problems x Command => claimed text=    gamma delta\nepsilon zeta clipboard=alpha beta
+
+Apple problems v Command => claimed text=PASTEDalpha beta\n    gamma delta\nepsilon zeta selection=0:6>0:6
+Apple problems / Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
+Apple problems / Shift+Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
+Apple problems Slash Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
+Apple problems Slash Shift+Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
+Apple problems F8 - => claimed selection=1:4>1:4 card=open
+Apple problems F8 Shift => claimed selection=2:8>2:8 card=open
+Apple chord ArrowLeft - => claimed selection=1:5>1:5
+Apple chord ArrowLeft Shift => claimed selection=1:6>1:5
+Apple chord ArrowLeft Command => claimed selection=1:4>1:4
+Apple chord ArrowLeft Shift+Command => claimed selection=1:6>1:4
+Apple chord ArrowLeft Alt => claimed selection=1:4>1:4
+Apple chord ArrowLeft Shift+Alt => claimed selection=1:6>1:4
+Apple chord ArrowRight - => claimed selection=1:7>1:7
+Apple chord ArrowRight Shift => claimed selection=1:6>1:7
+Apple chord ArrowRight Command => claimed selection=1:15>1:15
+Apple chord ArrowRight Shift+Command => claimed selection=1:6>1:15
+Apple chord ArrowRight Alt => claimed selection=1:10>1:10
+Apple chord ArrowRight Shift+Alt => claimed selection=1:6>1:10
+Apple chord ArrowUp - => claimed selection=0:6>0:6
+Apple chord ArrowUp Shift => claimed selection=1:6>0:6
+Apple chord ArrowUp Command => claimed selection=0:0>0:0
+Apple chord ArrowUp Shift+Command => claimed selection=1:6>0:0
+Apple chord ArrowDown - => claimed selection=2:6>2:6
+Apple chord ArrowDown Shift => claimed selection=1:6>2:6
+Apple chord ArrowDown Command => claimed selection=2:12>2:12
+Apple chord ArrowDown Shift+Command => claimed selection=1:6>2:12
+Apple chord Home - => claimed selection=1:4>1:4
+Apple chord Home Shift => claimed selection=1:6>1:4
+Apple chord Home Command => claimed selection=0:0>0:0
+Apple chord Home Shift+Command => claimed selection=1:6>0:0
+Apple chord End - => claimed selection=1:15>1:15
+Apple chord End Shift => claimed selection=1:6>1:15
+Apple chord End Command => claimed selection=2:12>2:12
+Apple chord End Shift+Command => claimed selection=1:6>2:12
+Apple chord PageUp - => claimed selection=0:6>0:6
+Apple chord PageUp Shift => claimed selection=1:6>0:6
+Apple chord PageDown - => claimed selection=2:6>2:6
+Apple chord PageDown Shift => claimed selection=1:6>2:6
+Apple chord Enter - => claimed text=alpha beta\n    ga\n    mma delta\nepsilon zeta selection=2:4>2:4
+Apple chord Enter Shift => claimed text=alpha beta\n    ga\n    mma delta\nepsilon zeta selection=2:4>2:4
+Apple chord Backspace - => claimed text=alpha beta\n    gmma delta\nepsilon zeta selection=1:5>1:5
+Apple chord Backspace Shift => claimed text=alpha beta\n    gmma delta\nepsilon zeta selection=1:5>1:5
+Apple chord Backspace Command => claimed text=alpha beta\nmma delta\nepsilon zeta selection=1:0>1:0
+Apple chord Backspace Alt => claimed text=alpha beta\n    mma delta\nepsilon zeta selection=1:4>1:4
+Apple chord Delete - => claimed text=alpha beta\n    gama delta\nepsilon zeta
+Apple chord Delete Alt => claimed text=alpha beta\n    gadelta\nepsilon zeta
+Apple chord Tab - => claimed text=alpha beta\n    ga  mma delta\nepsilon zeta selection=1:8>1:8
+Apple chord Tab Shift => claimed text=alpha beta\ngamma delta\nepsilon zeta selection=1:2>1:2
+Apple chord Escape - => unclaimed trap=released
+Apple chord Escape Shift => unclaimed trap=released
+Apple chord a Command => claimed selection=0:0>2:12
+Apple chord c Command => claimed clipboard=    gamma delta
+
+Apple chord x Command => claimed text=alpha beta\nepsilon zeta selection=1:0>1:0 clipboard=    gamma delta
+
+Apple chord v Command => claimed text=alpha beta\n    gaPASTEDmma delta\nepsilon zeta selection=1:12>1:12
+Apple chord / Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Apple chord / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Apple chord Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Apple chord Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Apple chord k Command => claimed unchanged
+Apple chord i Command => claimed card=open
+Standard plain ArrowLeft - => claimed selection=1:5>1:5
+Standard plain ArrowLeft Shift => claimed selection=1:6>1:5
+Standard plain ArrowLeft Command => claimed selection=1:4>1:4
+Standard plain ArrowLeft Shift+Command => claimed selection=1:6>1:4
+Standard plain ArrowRight - => claimed selection=1:7>1:7
+Standard plain ArrowRight Shift => claimed selection=1:6>1:7
+Standard plain ArrowRight Command => claimed selection=1:10>1:10
+Standard plain ArrowRight Shift+Command => claimed selection=1:6>1:10
+Standard plain ArrowUp - => claimed selection=0:6>0:6
+Standard plain ArrowUp Shift => claimed selection=1:6>0:6
+Standard plain ArrowDown - => claimed selection=2:6>2:6
+Standard plain ArrowDown Shift => claimed selection=1:6>2:6
+Standard plain Home - => claimed selection=1:4>1:4
+Standard plain Home Shift => claimed selection=1:6>1:4
+Standard plain Home Command => claimed selection=0:0>0:0
+Standard plain Home Shift+Command => claimed selection=1:6>0:0
+Standard plain End - => claimed selection=1:15>1:15
+Standard plain End Shift => claimed selection=1:6>1:15
+Standard plain End Command => claimed selection=2:12>2:12
+Standard plain End Shift+Command => claimed selection=1:6>2:12
+Standard plain PageUp - => claimed selection=0:6>0:6
+Standard plain PageUp Shift => claimed selection=1:6>0:6
+Standard plain PageDown - => claimed selection=2:6>2:6
+Standard plain PageDown Shift => claimed selection=1:6>2:6
+Standard plain Enter - => claimed text=alpha beta\n    ga\n    mma delta\nepsilon zeta selection=2:4>2:4
+Standard plain Enter Shift => claimed text=alpha beta\n    ga\n    mma delta\nepsilon zeta selection=2:4>2:4
+Standard plain Backspace - => claimed text=alpha beta\n    gmma delta\nepsilon zeta selection=1:5>1:5
+Standard plain Backspace Shift => claimed text=alpha beta\n    gmma delta\nepsilon zeta selection=1:5>1:5
+Standard plain Backspace Command => claimed text=alpha beta\n    mma delta\nepsilon zeta selection=1:4>1:4
+Standard plain Delete - => claimed text=alpha beta\n    gama delta\nepsilon zeta
+Standard plain Delete Command => claimed text=alpha beta\n    gadelta\nepsilon zeta
+Standard plain Tab - => claimed text=alpha beta\n    ga  mma delta\nepsilon zeta selection=1:8>1:8
+Standard plain Tab Shift => claimed text=alpha beta\ngamma delta\nepsilon zeta selection=1:2>1:2
+Standard plain Escape - => unclaimed trap=released
+Standard plain Escape Shift => unclaimed trap=released
+Standard plain a Command => claimed selection=0:0>2:12
+Standard plain c Command => claimed clipboard=    gamma delta
+
+Standard plain x Command => claimed text=alpha beta\nepsilon zeta selection=1:0>1:0 clipboard=    gamma delta
+
+Standard plain v Command => claimed text=alpha beta\n    gaPASTEDmma delta\nepsilon zeta selection=1:12>1:12
+Standard plain / Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Standard plain / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Standard plain Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Standard plain Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Standard selection ArrowLeft - => claimed selection=1:4>1:4
+Standard selection ArrowLeft Shift => claimed selection=1:4>1:8
+Standard selection ArrowLeft Command => claimed selection=1:4>1:4
+Standard selection ArrowLeft Shift+Command => claimed selection=1:4>1:4
+Standard selection ArrowRight - => claimed selection=1:9>1:9
+Standard selection ArrowRight Shift => claimed selection=1:4>1:10
+Standard selection ArrowRight Command => claimed selection=1:10>1:10
+Standard selection ArrowRight Shift+Command => claimed selection=1:4>1:10
+Standard selection ArrowUp - => claimed selection=0:9>0:9
+Standard selection ArrowUp Shift => claimed selection=1:4>0:9
+Standard selection ArrowDown - => claimed selection=2:9>2:9
+Standard selection ArrowDown Shift => claimed selection=1:4>2:9
+Standard selection Home - => claimed selection=1:4>1:4
+Standard selection Home Shift => claimed selection=1:4>1:4
+Standard selection Home Command => claimed selection=0:0>0:0
+Standard selection Home Shift+Command => claimed selection=1:4>0:0
+Standard selection End - => claimed selection=1:15>1:15
+Standard selection End Shift => claimed selection=1:4>1:15
+Standard selection End Command => claimed selection=2:12>2:12
+Standard selection End Shift+Command => claimed selection=1:4>2:12
+Standard selection PageUp - => claimed selection=0:9>0:9
+Standard selection PageUp Shift => claimed selection=1:4>0:9
+Standard selection PageDown - => claimed selection=2:9>2:9
+Standard selection PageDown Shift => claimed selection=1:4>2:9
+Standard selection Enter - => claimed text=alpha beta\n    \n     delta\nepsilon zeta selection=2:4>2:4
+Standard selection Enter Shift => claimed text=alpha beta\n    \n     delta\nepsilon zeta selection=2:4>2:4
+Standard selection Backspace - => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Standard selection Backspace Shift => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Standard selection Backspace Command => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Standard selection Delete - => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Standard selection Delete Command => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Standard selection Tab - => claimed text=alpha beta\n        gamma delta\nepsilon zeta selection=1:8>1:13
+Standard selection Tab Shift => claimed text=alpha beta\ngamma delta\nepsilon zeta selection=1:0>1:5
+Standard selection Escape - => unclaimed trap=released
+Standard selection Escape Shift => unclaimed trap=released
+Standard selection a Command => claimed selection=0:0>2:12
+Standard selection c Command => claimed clipboard=gamma
+Standard selection x Command => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4 clipboard=gamma
+Standard selection v Command => claimed text=alpha beta\n    PASTED delta\nepsilon zeta selection=1:10>1:10
+Standard selection / Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Standard selection / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Standard selection Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Standard selection Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Standard no-clipboard ArrowLeft - => claimed selection=1:4>1:4
+Standard no-clipboard ArrowLeft Shift => claimed selection=1:4>1:8
+Standard no-clipboard ArrowLeft Command => claimed selection=1:4>1:4
+Standard no-clipboard ArrowLeft Shift+Command => claimed selection=1:4>1:4
+Standard no-clipboard ArrowRight - => claimed selection=1:9>1:9
+Standard no-clipboard ArrowRight Shift => claimed selection=1:4>1:10
+Standard no-clipboard ArrowRight Command => claimed selection=1:10>1:10
+Standard no-clipboard ArrowRight Shift+Command => claimed selection=1:4>1:10
+Standard no-clipboard ArrowUp - => claimed selection=0:9>0:9
+Standard no-clipboard ArrowUp Shift => claimed selection=1:4>0:9
+Standard no-clipboard ArrowDown - => claimed selection=2:9>2:9
+Standard no-clipboard ArrowDown Shift => claimed selection=1:4>2:9
+Standard no-clipboard Home - => claimed selection=1:4>1:4
+Standard no-clipboard Home Shift => claimed selection=1:4>1:4
+Standard no-clipboard Home Command => claimed selection=0:0>0:0
+Standard no-clipboard Home Shift+Command => claimed selection=1:4>0:0
+Standard no-clipboard End - => claimed selection=1:15>1:15
+Standard no-clipboard End Shift => claimed selection=1:4>1:15
+Standard no-clipboard End Command => claimed selection=2:12>2:12
+Standard no-clipboard End Shift+Command => claimed selection=1:4>2:12
+Standard no-clipboard PageUp - => claimed selection=0:9>0:9
+Standard no-clipboard PageUp Shift => claimed selection=1:4>0:9
+Standard no-clipboard PageDown - => claimed selection=2:9>2:9
+Standard no-clipboard PageDown Shift => claimed selection=1:4>2:9
+Standard no-clipboard Enter - => claimed text=alpha beta\n    \n     delta\nepsilon zeta selection=2:4>2:4
+Standard no-clipboard Enter Shift => claimed text=alpha beta\n    \n     delta\nepsilon zeta selection=2:4>2:4
+Standard no-clipboard Backspace - => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Standard no-clipboard Backspace Shift => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Standard no-clipboard Backspace Command => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Standard no-clipboard Delete - => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Standard no-clipboard Delete Command => claimed text=alpha beta\n     delta\nepsilon zeta selection=1:4>1:4
+Standard no-clipboard Tab - => claimed text=alpha beta\n        gamma delta\nepsilon zeta selection=1:8>1:13
+Standard no-clipboard Tab Shift => claimed text=alpha beta\ngamma delta\nepsilon zeta selection=1:0>1:5
+Standard no-clipboard Escape - => unclaimed trap=released
+Standard no-clipboard Escape Shift => unclaimed trap=released
+Standard no-clipboard a Command => claimed selection=0:0>2:12
+Standard no-clipboard / Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Standard no-clipboard / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Standard no-clipboard Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Standard no-clipboard Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Standard read-only ArrowLeft - => claimed selection=1:5>1:5
+Standard read-only ArrowLeft Shift => claimed selection=1:6>1:5
+Standard read-only ArrowLeft Command => claimed selection=1:4>1:4
+Standard read-only ArrowLeft Shift+Command => claimed selection=1:6>1:4
+Standard read-only ArrowRight - => claimed selection=1:7>1:7
+Standard read-only ArrowRight Shift => claimed selection=1:6>1:7
+Standard read-only ArrowRight Command => claimed selection=1:10>1:10
+Standard read-only ArrowRight Shift+Command => claimed selection=1:6>1:10
+Standard read-only ArrowUp - => claimed selection=0:6>0:6
+Standard read-only ArrowUp Shift => claimed selection=1:6>0:6
+Standard read-only ArrowDown - => claimed selection=2:6>2:6
+Standard read-only ArrowDown Shift => claimed selection=1:6>2:6
+Standard read-only Home - => claimed selection=1:4>1:4
+Standard read-only Home Shift => claimed selection=1:6>1:4
+Standard read-only Home Command => claimed selection=0:0>0:0
+Standard read-only Home Shift+Command => claimed selection=1:6>0:0
+Standard read-only End - => claimed selection=1:15>1:15
+Standard read-only End Shift => claimed selection=1:6>1:15
+Standard read-only End Command => claimed selection=2:12>2:12
+Standard read-only End Shift+Command => claimed selection=1:6>2:12
+Standard read-only PageUp - => claimed selection=0:6>0:6
+Standard read-only PageUp Shift => claimed selection=1:6>0:6
+Standard read-only PageDown - => claimed selection=2:6>2:6
+Standard read-only PageDown Shift => claimed selection=1:6>2:6
+Standard read-only Escape - => unclaimed trap=released
+Standard read-only Escape Shift => unclaimed trap=released
+Standard read-only a Command => claimed selection=0:0>2:12
+Standard read-only c Command => claimed clipboard=    gamma delta
+
+Standard read-only x Command => claimed selection=1:0>2:0 clipboard=    gamma delta
+
+Standard read-only v Command => claimed unchanged
+Standard released ArrowLeft - => claimed selection=1:5>1:5 trap=armed
+Standard released ArrowLeft Shift => claimed selection=1:6>1:5 trap=armed
+Standard released ArrowLeft Command => claimed selection=1:4>1:4 trap=armed
+Standard released ArrowLeft Shift+Command => claimed selection=1:6>1:4 trap=armed
+Standard released ArrowLeft Control => unclaimed trap=armed
+Standard released ArrowLeft Shift+Control => unclaimed trap=armed
+Standard released ArrowLeft Command+Control => unclaimed trap=armed
+Standard released ArrowLeft Shift+Command+Control => unclaimed trap=armed
+Standard released ArrowLeft Alt => unclaimed trap=armed
+Standard released ArrowLeft Shift+Alt => unclaimed trap=armed
+Standard released ArrowLeft Command+Alt => unclaimed trap=armed
+Standard released ArrowLeft Shift+Command+Alt => unclaimed trap=armed
+Standard released ArrowLeft Control+Alt => unclaimed trap=armed
+Standard released ArrowLeft Shift+Control+Alt => unclaimed trap=armed
+Standard released ArrowLeft Command+Control+Alt => unclaimed trap=armed
+Standard released ArrowLeft Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released ArrowRight - => claimed selection=1:7>1:7 trap=armed
+Standard released ArrowRight Shift => claimed selection=1:6>1:7 trap=armed
+Standard released ArrowRight Command => claimed selection=1:10>1:10 trap=armed
+Standard released ArrowRight Shift+Command => claimed selection=1:6>1:10 trap=armed
+Standard released ArrowRight Control => unclaimed trap=armed
+Standard released ArrowRight Shift+Control => unclaimed trap=armed
+Standard released ArrowRight Command+Control => unclaimed trap=armed
+Standard released ArrowRight Shift+Command+Control => unclaimed trap=armed
+Standard released ArrowRight Alt => unclaimed trap=armed
+Standard released ArrowRight Shift+Alt => unclaimed trap=armed
+Standard released ArrowRight Command+Alt => unclaimed trap=armed
+Standard released ArrowRight Shift+Command+Alt => unclaimed trap=armed
+Standard released ArrowRight Control+Alt => unclaimed trap=armed
+Standard released ArrowRight Shift+Control+Alt => unclaimed trap=armed
+Standard released ArrowRight Command+Control+Alt => unclaimed trap=armed
+Standard released ArrowRight Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released ArrowUp - => claimed selection=0:6>0:6 trap=armed
+Standard released ArrowUp Shift => claimed selection=1:6>0:6 trap=armed
+Standard released ArrowUp Command => unclaimed trap=armed
+Standard released ArrowUp Shift+Command => unclaimed trap=armed
+Standard released ArrowUp Control => unclaimed trap=armed
+Standard released ArrowUp Shift+Control => unclaimed trap=armed
+Standard released ArrowUp Command+Control => unclaimed trap=armed
+Standard released ArrowUp Shift+Command+Control => unclaimed trap=armed
+Standard released ArrowUp Alt => unclaimed trap=armed
+Standard released ArrowUp Shift+Alt => unclaimed trap=armed
+Standard released ArrowUp Command+Alt => unclaimed trap=armed
+Standard released ArrowUp Shift+Command+Alt => unclaimed trap=armed
+Standard released ArrowUp Control+Alt => unclaimed trap=armed
+Standard released ArrowUp Shift+Control+Alt => unclaimed trap=armed
+Standard released ArrowUp Command+Control+Alt => unclaimed trap=armed
+Standard released ArrowUp Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released ArrowDown - => claimed selection=2:6>2:6 trap=armed
+Standard released ArrowDown Shift => claimed selection=1:6>2:6 trap=armed
+Standard released ArrowDown Command => unclaimed trap=armed
+Standard released ArrowDown Shift+Command => unclaimed trap=armed
+Standard released ArrowDown Control => unclaimed trap=armed
+Standard released ArrowDown Shift+Control => unclaimed trap=armed
+Standard released ArrowDown Command+Control => unclaimed trap=armed
+Standard released ArrowDown Shift+Command+Control => unclaimed trap=armed
+Standard released ArrowDown Alt => unclaimed trap=armed
+Standard released ArrowDown Shift+Alt => unclaimed trap=armed
+Standard released ArrowDown Command+Alt => unclaimed trap=armed
+Standard released ArrowDown Shift+Command+Alt => unclaimed trap=armed
+Standard released ArrowDown Control+Alt => unclaimed trap=armed
+Standard released ArrowDown Shift+Control+Alt => unclaimed trap=armed
+Standard released ArrowDown Command+Control+Alt => unclaimed trap=armed
+Standard released ArrowDown Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released Home - => claimed selection=1:4>1:4 trap=armed
+Standard released Home Shift => claimed selection=1:6>1:4 trap=armed
+Standard released Home Command => claimed selection=0:0>0:0 trap=armed
+Standard released Home Shift+Command => claimed selection=1:6>0:0 trap=armed
+Standard released Home Control => unclaimed trap=armed
+Standard released Home Shift+Control => unclaimed trap=armed
+Standard released Home Command+Control => unclaimed trap=armed
+Standard released Home Shift+Command+Control => unclaimed trap=armed
+Standard released Home Alt => unclaimed trap=armed
+Standard released Home Shift+Alt => unclaimed trap=armed
+Standard released Home Command+Alt => unclaimed trap=armed
+Standard released Home Shift+Command+Alt => unclaimed trap=armed
+Standard released Home Control+Alt => unclaimed trap=armed
+Standard released Home Shift+Control+Alt => unclaimed trap=armed
+Standard released Home Command+Control+Alt => unclaimed trap=armed
+Standard released Home Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released End - => claimed selection=1:15>1:15 trap=armed
+Standard released End Shift => claimed selection=1:6>1:15 trap=armed
+Standard released End Command => claimed selection=2:12>2:12 trap=armed
+Standard released End Shift+Command => claimed selection=1:6>2:12 trap=armed
+Standard released End Control => unclaimed trap=armed
+Standard released End Shift+Control => unclaimed trap=armed
+Standard released End Command+Control => unclaimed trap=armed
+Standard released End Shift+Command+Control => unclaimed trap=armed
+Standard released End Alt => unclaimed trap=armed
+Standard released End Shift+Alt => unclaimed trap=armed
+Standard released End Command+Alt => unclaimed trap=armed
+Standard released End Shift+Command+Alt => unclaimed trap=armed
+Standard released End Control+Alt => unclaimed trap=armed
+Standard released End Shift+Control+Alt => unclaimed trap=armed
+Standard released End Command+Control+Alt => unclaimed trap=armed
+Standard released End Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released PageUp - => claimed selection=0:6>0:6 trap=armed
+Standard released PageUp Shift => claimed selection=1:6>0:6 trap=armed
+Standard released PageUp Command => unclaimed trap=armed
+Standard released PageUp Shift+Command => unclaimed trap=armed
+Standard released PageUp Control => unclaimed trap=armed
+Standard released PageUp Shift+Control => unclaimed trap=armed
+Standard released PageUp Command+Control => unclaimed trap=armed
+Standard released PageUp Shift+Command+Control => unclaimed trap=armed
+Standard released PageUp Alt => unclaimed trap=armed
+Standard released PageUp Shift+Alt => unclaimed trap=armed
+Standard released PageUp Command+Alt => unclaimed trap=armed
+Standard released PageUp Shift+Command+Alt => unclaimed trap=armed
+Standard released PageUp Control+Alt => unclaimed trap=armed
+Standard released PageUp Shift+Control+Alt => unclaimed trap=armed
+Standard released PageUp Command+Control+Alt => unclaimed trap=armed
+Standard released PageUp Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released PageDown - => claimed selection=2:6>2:6 trap=armed
+Standard released PageDown Shift => claimed selection=1:6>2:6 trap=armed
+Standard released PageDown Command => unclaimed trap=armed
+Standard released PageDown Shift+Command => unclaimed trap=armed
+Standard released PageDown Control => unclaimed trap=armed
+Standard released PageDown Shift+Control => unclaimed trap=armed
+Standard released PageDown Command+Control => unclaimed trap=armed
+Standard released PageDown Shift+Command+Control => unclaimed trap=armed
+Standard released PageDown Alt => unclaimed trap=armed
+Standard released PageDown Shift+Alt => unclaimed trap=armed
+Standard released PageDown Command+Alt => unclaimed trap=armed
+Standard released PageDown Shift+Command+Alt => unclaimed trap=armed
+Standard released PageDown Control+Alt => unclaimed trap=armed
+Standard released PageDown Shift+Control+Alt => unclaimed trap=armed
+Standard released PageDown Command+Control+Alt => unclaimed trap=armed
+Standard released PageDown Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released Enter - => claimed text=alpha beta\n    ga\n    mma delta\nepsilon zeta selection=2:4>2:4 trap=armed
+Standard released Enter Shift => claimed text=alpha beta\n    ga\n    mma delta\nepsilon zeta selection=2:4>2:4 trap=armed
+Standard released Enter Command => unclaimed trap=armed
+Standard released Enter Shift+Command => unclaimed trap=armed
+Standard released Enter Control => unclaimed trap=armed
+Standard released Enter Shift+Control => unclaimed trap=armed
+Standard released Enter Command+Control => unclaimed trap=armed
+Standard released Enter Shift+Command+Control => unclaimed trap=armed
+Standard released Enter Alt => unclaimed trap=armed
+Standard released Enter Shift+Alt => unclaimed trap=armed
+Standard released Enter Command+Alt => unclaimed trap=armed
+Standard released Enter Shift+Command+Alt => unclaimed trap=armed
+Standard released Enter Control+Alt => unclaimed trap=armed
+Standard released Enter Shift+Control+Alt => unclaimed trap=armed
+Standard released Enter Command+Control+Alt => unclaimed trap=armed
+Standard released Enter Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released Backspace - => claimed text=alpha beta\n    gmma delta\nepsilon zeta selection=1:5>1:5 trap=armed
+Standard released Backspace Shift => claimed text=alpha beta\n    gmma delta\nepsilon zeta selection=1:5>1:5 trap=armed
+Standard released Backspace Command => claimed text=alpha beta\n    mma delta\nepsilon zeta selection=1:4>1:4 trap=armed
+Standard released Backspace Shift+Command => unclaimed trap=armed
+Standard released Backspace Control => unclaimed trap=armed
+Standard released Backspace Shift+Control => unclaimed trap=armed
+Standard released Backspace Command+Control => unclaimed trap=armed
+Standard released Backspace Shift+Command+Control => unclaimed trap=armed
+Standard released Backspace Alt => unclaimed trap=armed
+Standard released Backspace Shift+Alt => unclaimed trap=armed
+Standard released Backspace Command+Alt => unclaimed trap=armed
+Standard released Backspace Shift+Command+Alt => unclaimed trap=armed
+Standard released Backspace Control+Alt => unclaimed trap=armed
+Standard released Backspace Shift+Control+Alt => unclaimed trap=armed
+Standard released Backspace Command+Control+Alt => unclaimed trap=armed
+Standard released Backspace Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released Delete - => claimed text=alpha beta\n    gama delta\nepsilon zeta trap=armed
+Standard released Delete Shift => unclaimed trap=armed
+Standard released Delete Command => claimed text=alpha beta\n    gadelta\nepsilon zeta trap=armed
+Standard released Delete Shift+Command => unclaimed trap=armed
+Standard released Delete Control => unclaimed trap=armed
+Standard released Delete Shift+Control => unclaimed trap=armed
+Standard released Delete Command+Control => unclaimed trap=armed
+Standard released Delete Shift+Command+Control => unclaimed trap=armed
+Standard released Delete Alt => unclaimed trap=armed
+Standard released Delete Shift+Alt => unclaimed trap=armed
+Standard released Delete Command+Alt => unclaimed trap=armed
+Standard released Delete Shift+Command+Alt => unclaimed trap=armed
+Standard released Delete Control+Alt => unclaimed trap=armed
+Standard released Delete Shift+Control+Alt => unclaimed trap=armed
+Standard released Delete Command+Control+Alt => unclaimed trap=armed
+Standard released Delete Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released Space - => unclaimed trap=armed
+Standard released Space Shift => unclaimed trap=armed
+Standard released Space Command => unclaimed trap=armed
+Standard released Space Shift+Command => unclaimed trap=armed
+Standard released Space Control => unclaimed trap=armed
+Standard released Space Shift+Control => unclaimed trap=armed
+Standard released Space Command+Control => unclaimed trap=armed
+Standard released Space Shift+Command+Control => unclaimed trap=armed
+Standard released Space Alt => unclaimed trap=armed
+Standard released Space Shift+Alt => unclaimed trap=armed
+Standard released Space Command+Alt => unclaimed trap=armed
+Standard released Space Shift+Command+Alt => unclaimed trap=armed
+Standard released Space Control+Alt => unclaimed trap=armed
+Standard released Space Shift+Control+Alt => unclaimed trap=armed
+Standard released Space Command+Control+Alt => unclaimed trap=armed
+Standard released Space Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released a - => unclaimed trap=armed
+Standard released a Shift => unclaimed trap=armed
+Standard released a Command => claimed selection=0:0>2:12 trap=armed
+Standard released a Shift+Command => unclaimed trap=armed
+Standard released a Control => unclaimed trap=armed
+Standard released a Shift+Control => unclaimed trap=armed
+Standard released a Command+Control => unclaimed trap=armed
+Standard released a Shift+Command+Control => unclaimed trap=armed
+Standard released a Alt => unclaimed trap=armed
+Standard released a Shift+Alt => unclaimed trap=armed
+Standard released a Command+Alt => unclaimed trap=armed
+Standard released a Shift+Command+Alt => unclaimed trap=armed
+Standard released a Control+Alt => unclaimed trap=armed
+Standard released a Shift+Control+Alt => unclaimed trap=armed
+Standard released a Command+Control+Alt => unclaimed trap=armed
+Standard released a Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released z - => unclaimed trap=armed
+Standard released z Shift => unclaimed trap=armed
+Standard released z Command => unclaimed trap=armed
+Standard released z Shift+Command => unclaimed trap=armed
+Standard released z Control => unclaimed trap=armed
+Standard released z Shift+Control => unclaimed trap=armed
+Standard released z Command+Control => unclaimed trap=armed
+Standard released z Shift+Command+Control => unclaimed trap=armed
+Standard released z Alt => unclaimed trap=armed
+Standard released z Shift+Alt => unclaimed trap=armed
+Standard released z Command+Alt => unclaimed trap=armed
+Standard released z Shift+Command+Alt => unclaimed trap=armed
+Standard released z Control+Alt => unclaimed trap=armed
+Standard released z Shift+Control+Alt => unclaimed trap=armed
+Standard released z Command+Control+Alt => unclaimed trap=armed
+Standard released z Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released y - => unclaimed trap=armed
+Standard released y Shift => unclaimed trap=armed
+Standard released y Command => unclaimed trap=armed
+Standard released y Shift+Command => unclaimed trap=armed
+Standard released y Control => unclaimed trap=armed
+Standard released y Shift+Control => unclaimed trap=armed
+Standard released y Command+Control => unclaimed trap=armed
+Standard released y Shift+Command+Control => unclaimed trap=armed
+Standard released y Alt => unclaimed trap=armed
+Standard released y Shift+Alt => unclaimed trap=armed
+Standard released y Command+Alt => unclaimed trap=armed
+Standard released y Shift+Command+Alt => unclaimed trap=armed
+Standard released y Control+Alt => unclaimed trap=armed
+Standard released y Shift+Control+Alt => unclaimed trap=armed
+Standard released y Command+Control+Alt => unclaimed trap=armed
+Standard released y Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released c - => unclaimed trap=armed
+Standard released c Shift => unclaimed trap=armed
+Standard released c Command => claimed trap=armed clipboard=    gamma delta
+
+Standard released c Shift+Command => unclaimed trap=armed
+Standard released c Control => unclaimed trap=armed
+Standard released c Shift+Control => unclaimed trap=armed
+Standard released c Command+Control => unclaimed trap=armed
+Standard released c Shift+Command+Control => unclaimed trap=armed
+Standard released c Alt => unclaimed trap=armed
+Standard released c Shift+Alt => unclaimed trap=armed
+Standard released c Command+Alt => unclaimed trap=armed
+Standard released c Shift+Command+Alt => unclaimed trap=armed
+Standard released c Control+Alt => unclaimed trap=armed
+Standard released c Shift+Control+Alt => unclaimed trap=armed
+Standard released c Command+Control+Alt => unclaimed trap=armed
+Standard released c Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released x - => unclaimed trap=armed
+Standard released x Shift => unclaimed trap=armed
+Standard released x Command => claimed text=alpha beta\nepsilon zeta selection=1:0>1:0 trap=armed clipboard=    gamma delta
+
+Standard released x Shift+Command => unclaimed trap=armed
+Standard released x Control => unclaimed trap=armed
+Standard released x Shift+Control => unclaimed trap=armed
+Standard released x Command+Control => unclaimed trap=armed
+Standard released x Shift+Command+Control => unclaimed trap=armed
+Standard released x Alt => unclaimed trap=armed
+Standard released x Shift+Alt => unclaimed trap=armed
+Standard released x Command+Alt => unclaimed trap=armed
+Standard released x Shift+Command+Alt => unclaimed trap=armed
+Standard released x Control+Alt => unclaimed trap=armed
+Standard released x Shift+Control+Alt => unclaimed trap=armed
+Standard released x Command+Control+Alt => unclaimed trap=armed
+Standard released x Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released v - => unclaimed trap=armed
+Standard released v Shift => unclaimed trap=armed
+Standard released v Command => claimed text=alpha beta\n    gaPASTEDmma delta\nepsilon zeta selection=1:12>1:12 trap=armed
+Standard released v Shift+Command => unclaimed trap=armed
+Standard released v Control => unclaimed trap=armed
+Standard released v Shift+Control => unclaimed trap=armed
+Standard released v Command+Control => unclaimed trap=armed
+Standard released v Shift+Command+Control => unclaimed trap=armed
+Standard released v Alt => unclaimed trap=armed
+Standard released v Shift+Alt => unclaimed trap=armed
+Standard released v Command+Alt => unclaimed trap=armed
+Standard released v Shift+Command+Alt => unclaimed trap=armed
+Standard released v Control+Alt => unclaimed trap=armed
+Standard released v Shift+Control+Alt => unclaimed trap=armed
+Standard released v Command+Control+Alt => unclaimed trap=armed
+Standard released v Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released / - => unclaimed trap=armed
+Standard released / Shift => unclaimed trap=armed
+Standard released / Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9 trap=armed
+Standard released / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9 trap=armed
+Standard released / Control => unclaimed trap=armed
+Standard released / Shift+Control => unclaimed trap=armed
+Standard released / Command+Control => unclaimed trap=armed
+Standard released / Shift+Command+Control => unclaimed trap=armed
+Standard released / Alt => unclaimed trap=armed
+Standard released / Shift+Alt => unclaimed trap=armed
+Standard released / Command+Alt => unclaimed trap=armed
+Standard released / Shift+Command+Alt => unclaimed trap=armed
+Standard released / Control+Alt => unclaimed trap=armed
+Standard released / Shift+Control+Alt => unclaimed trap=armed
+Standard released / Command+Control+Alt => unclaimed trap=armed
+Standard released / Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released Slash - => unclaimed trap=armed
+Standard released Slash Shift => unclaimed trap=armed
+Standard released Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9 trap=armed
+Standard released Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9 trap=armed
+Standard released Slash Control => unclaimed trap=armed
+Standard released Slash Shift+Control => unclaimed trap=armed
+Standard released Slash Command+Control => unclaimed trap=armed
+Standard released Slash Shift+Command+Control => unclaimed trap=armed
+Standard released Slash Alt => unclaimed trap=armed
+Standard released Slash Shift+Alt => unclaimed trap=armed
+Standard released Slash Command+Alt => unclaimed trap=armed
+Standard released Slash Shift+Command+Alt => unclaimed trap=armed
+Standard released Slash Control+Alt => unclaimed trap=armed
+Standard released Slash Shift+Control+Alt => unclaimed trap=armed
+Standard released Slash Command+Control+Alt => unclaimed trap=armed
+Standard released Slash Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released k - => unclaimed trap=armed
+Standard released k Shift => unclaimed trap=armed
+Standard released k Command => unclaimed trap=armed
+Standard released k Shift+Command => unclaimed trap=armed
+Standard released k Control => unclaimed trap=armed
+Standard released k Shift+Control => unclaimed trap=armed
+Standard released k Command+Control => unclaimed trap=armed
+Standard released k Shift+Command+Control => unclaimed trap=armed
+Standard released k Alt => unclaimed trap=armed
+Standard released k Shift+Alt => unclaimed trap=armed
+Standard released k Command+Alt => unclaimed trap=armed
+Standard released k Shift+Command+Alt => unclaimed trap=armed
+Standard released k Control+Alt => unclaimed trap=armed
+Standard released k Shift+Control+Alt => unclaimed trap=armed
+Standard released k Command+Control+Alt => unclaimed trap=armed
+Standard released k Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released i - => unclaimed trap=armed
+Standard released i Shift => unclaimed trap=armed
+Standard released i Command => unclaimed trap=armed
+Standard released i Shift+Command => unclaimed trap=armed
+Standard released i Control => unclaimed trap=armed
+Standard released i Shift+Control => unclaimed trap=armed
+Standard released i Command+Control => unclaimed trap=armed
+Standard released i Shift+Command+Control => unclaimed trap=armed
+Standard released i Alt => unclaimed trap=armed
+Standard released i Shift+Alt => unclaimed trap=armed
+Standard released i Command+Alt => unclaimed trap=armed
+Standard released i Shift+Command+Alt => unclaimed trap=armed
+Standard released i Control+Alt => unclaimed trap=armed
+Standard released i Shift+Control+Alt => unclaimed trap=armed
+Standard released i Command+Control+Alt => unclaimed trap=armed
+Standard released i Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released F8 - => unclaimed trap=armed
+Standard released F8 Shift => unclaimed trap=armed
+Standard released F8 Command => unclaimed trap=armed
+Standard released F8 Shift+Command => unclaimed trap=armed
+Standard released F8 Control => unclaimed trap=armed
+Standard released F8 Shift+Control => unclaimed trap=armed
+Standard released F8 Command+Control => unclaimed trap=armed
+Standard released F8 Shift+Command+Control => unclaimed trap=armed
+Standard released F8 Alt => unclaimed trap=armed
+Standard released F8 Shift+Alt => unclaimed trap=armed
+Standard released F8 Command+Alt => unclaimed trap=armed
+Standard released F8 Shift+Command+Alt => unclaimed trap=armed
+Standard released F8 Control+Alt => unclaimed trap=armed
+Standard released F8 Shift+Control+Alt => unclaimed trap=armed
+Standard released F8 Command+Control+Alt => unclaimed trap=armed
+Standard released F8 Shift+Command+Control+Alt => unclaimed trap=armed
+Standard released q - => unclaimed trap=armed
+Standard released q Shift => unclaimed trap=armed
+Standard released q Command => unclaimed trap=armed
+Standard released q Shift+Command => unclaimed trap=armed
+Standard released q Control => unclaimed trap=armed
+Standard released q Shift+Control => unclaimed trap=armed
+Standard released q Command+Control => unclaimed trap=armed
+Standard released q Shift+Command+Control => unclaimed trap=armed
+Standard released q Alt => unclaimed trap=armed
+Standard released q Shift+Alt => unclaimed trap=armed
+Standard released q Command+Alt => unclaimed trap=armed
+Standard released q Shift+Command+Alt => unclaimed trap=armed
+Standard released q Control+Alt => unclaimed trap=armed
+Standard released q Shift+Control+Alt => unclaimed trap=armed
+Standard released q Command+Control+Alt => unclaimed trap=armed
+Standard released q Shift+Command+Control+Alt => unclaimed trap=armed
+Standard list ArrowLeft - => claimed selection=2:14>2:14
+Standard list ArrowLeft Shift => claimed selection=2:15>2:14 list=-
+Standard list ArrowLeft Command => claimed selection=2:13>2:13 list=-
+Standard list ArrowLeft Shift+Command => claimed selection=2:15>2:13 list=-
+Standard list ArrowRight - => claimed unchanged
+Standard list ArrowRight Shift => claimed unchanged
+Standard list ArrowRight Command => claimed unchanged
+Standard list ArrowRight Shift+Command => claimed unchanged
+Standard list ArrowUp - => claimed list=2
+Standard list ArrowUp Shift => claimed selection=2:15>1:15 list=-
+Standard list ArrowDown - => claimed list=1
+Standard list ArrowDown Shift => claimed unchanged
+Standard list Home - => claimed selection=2:0>2:0 list=-
+Standard list Home Shift => claimed selection=2:15>2:0 list=-
+Standard list Home Command => claimed selection=0:0>0:0 list=-
+Standard list Home Shift+Command => claimed selection=2:15>0:0 list=-
+Standard list End - => claimed unchanged
+Standard list End Shift => claimed unchanged
+Standard list End Command => claimed unchanged
+Standard list End Shift+Command => claimed unchanged
+Standard list PageUp - => claimed unchanged
+Standard list PageUp Shift => claimed selection=2:15>0:10 list=-
+Standard list PageDown - => claimed list=2
+Standard list PageDown Shift => claimed unchanged
+Standard list Enter - => claimed text=alpha beta\n    gamma delta\nepsilon zeta gamma selection=2:18>2:18 list=-
+Standard list Enter Shift => claimed text=alpha beta\n    gamma delta\nepsilon zeta ga\n selection=3:0>3:0 list=-
+Standard list Backspace - => claimed text=alpha beta\n    gamma delta\nepsilon zeta g selection=2:14>2:14
+Standard list Backspace Shift => claimed text=alpha beta\n    gamma delta\nepsilon zeta g selection=2:14>2:14
+Standard list Backspace Command => claimed text=alpha beta\n    gamma delta\nepsilon zeta  selection=2:13>2:13 list=-
+Standard list Tab - => claimed text=alpha beta\n    gamma delta\nepsilon zeta gamma selection=2:18>2:18 list=-
+Standard list Tab Shift => claimed unchanged
+Standard list Escape - => claimed list=-
+Standard list Escape Shift => claimed list=-
+Standard list Space Command => claimed unchanged
+Standard list Space Control => claimed unchanged
+Standard list a Command => claimed selection=0:0>2:15 list=-
+Standard list z Command => claimed text=alpha beta\n    gamma delta\nepsilon zeta selection=2:12>2:12 list=-
+Standard list c Command => claimed clipboard=epsilon zeta ga
+
+Standard list x Command => claimed text=alpha beta\n    gamma delta\n selection=2:0>2:0 list=- clipboard=epsilon zeta ga
+
+Standard list v Command => claimed text=alpha beta\n    gamma delta\nepsilon zeta gaPASTED selection=2:21>2:21 list=-
+Standard list / Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18 list=-
+Standard list / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18 list=-
+Standard list Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18 list=-
+Standard list Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18 list=-
+Standard card ArrowLeft - => claimed selection=1:5>1:5 card=-
+Standard card ArrowLeft Shift => claimed selection=1:6>1:5 card=-
+Standard card ArrowLeft Command => claimed selection=1:4>1:4 card=-
+Standard card ArrowLeft Shift+Command => claimed selection=1:6>1:4 card=-
+Standard card ArrowRight - => claimed selection=1:7>1:7 card=-
+Standard card ArrowRight Shift => claimed selection=1:6>1:7 card=-
+Standard card ArrowRight Command => claimed selection=1:10>1:10 card=-
+Standard card ArrowRight Shift+Command => claimed selection=1:6>1:10 card=-
+Standard card ArrowUp - => claimed selection=0:6>0:6 card=-
+Standard card ArrowUp Shift => claimed selection=1:6>0:6 card=-
+Standard card ArrowDown - => claimed selection=2:6>2:6 card=-
+Standard card ArrowDown Shift => claimed selection=1:6>2:6 card=-
+Standard card Home - => claimed selection=1:4>1:4 card=-
+Standard card Home Shift => claimed selection=1:6>1:4 card=-
+Standard card Home Command => claimed selection=0:0>0:0 card=-
+Standard card Home Shift+Command => claimed selection=1:6>0:0 card=-
+Standard card End - => claimed selection=1:15>1:15 card=-
+Standard card End Shift => claimed selection=1:6>1:15 card=-
+Standard card End Command => claimed selection=2:12>2:12 card=-
+Standard card End Shift+Command => claimed selection=1:6>2:12 card=-
+Standard card PageUp - => claimed selection=0:6>0:6 card=-
+Standard card PageUp Shift => claimed selection=1:6>0:6 card=-
+Standard card PageDown - => claimed selection=2:6>2:6 card=-
+Standard card PageDown Shift => claimed selection=1:6>2:6 card=-
+Standard card Enter - => claimed text=alpha beta\n    ga\n    mma delta\nepsilon zeta selection=2:4>2:4 card=-
+Standard card Enter Shift => claimed text=alpha beta\n    ga\n    mma delta\nepsilon zeta selection=2:4>2:4 card=-
+Standard card Backspace - => claimed text=alpha beta\n    gmma delta\nepsilon zeta selection=1:5>1:5 card=-
+Standard card Backspace Shift => claimed text=alpha beta\n    gmma delta\nepsilon zeta selection=1:5>1:5 card=-
+Standard card Backspace Command => claimed text=alpha beta\n    mma delta\nepsilon zeta selection=1:4>1:4 card=-
+Standard card Delete - => claimed text=alpha beta\n    gama delta\nepsilon zeta card=-
+Standard card Delete Command => claimed text=alpha beta\n    gadelta\nepsilon zeta card=-
+Standard card Tab - => claimed text=alpha beta\n    ga  mma delta\nepsilon zeta selection=1:8>1:8 card=-
+Standard card Tab Shift => claimed text=alpha beta\ngamma delta\nepsilon zeta selection=1:2>1:2 card=-
+Standard card Escape - => claimed card=-
+Standard card Escape Shift => claimed card=-
+Standard card a Command => claimed selection=0:0>2:12 card=-
+Standard card c Command => claimed clipboard=    gamma delta
+
+Standard card x Command => claimed text=alpha beta\nepsilon zeta selection=1:0>1:0 card=- clipboard=    gamma delta
+
+Standard card v Command => claimed text=alpha beta\n    gaPASTEDmma delta\nepsilon zeta selection=1:12>1:12 card=-
+Standard card / Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9 card=-
+Standard card / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9 card=-
+Standard card Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9 card=-
+Standard card Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9 card=-
+Standard card k Command => claimed unchanged
+Standard panel ArrowLeft - => claimed selection=2:18>2:18 panel=-
+Standard panel ArrowLeft Shift => claimed selection=2:19>2:18 panel=-
+Standard panel ArrowLeft Command => claimed selection=2:18>2:18 panel=-
+Standard panel ArrowLeft Shift+Command => claimed selection=2:19>2:18 panel=-
+Standard panel ArrowRight - => claimed selection=2:20>2:20 panel=-
+Standard panel ArrowRight Shift => claimed selection=2:19>2:20 panel=-
+Standard panel ArrowRight Command => claimed selection=2:20>2:20 panel=-
+Standard panel ArrowRight Shift+Command => claimed selection=2:19>2:20 panel=-
+Standard panel ArrowUp - => claimed panel=2
+Standard panel ArrowUp Shift => claimed selection=2:19>1:15 panel=-
+Standard panel ArrowUp Alt => claimed panel=2
+Standard panel ArrowDown - => claimed panel=1
+Standard panel ArrowDown Shift => claimed unchanged
+Standard panel ArrowDown Alt => claimed panel=1
+Standard panel Home - => claimed selection=2:0>2:0 panel=-
+Standard panel Home Shift => claimed selection=2:19>2:0 panel=-
+Standard panel Home Command => claimed selection=0:0>0:0 panel=-
+Standard panel Home Shift+Command => claimed selection=2:19>0:0 panel=-
+Standard panel End - => claimed selection=2:20>2:20 panel=-
+Standard panel End Shift => claimed selection=2:19>2:20 panel=-
+Standard panel End Command => claimed selection=2:20>2:20 panel=-
+Standard panel End Shift+Command => claimed selection=2:19>2:20 panel=-
+Standard panel PageUp - => claimed selection=0:10>0:10 panel=-
+Standard panel PageUp Shift => claimed selection=2:19>0:10 panel=-
+Standard panel PageDown - => claimed unchanged
+Standard panel PageDown Shift => claimed unchanged
+Standard panel Enter - => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add(\n    \n) selection=3:4>3:4 panel=-
+Standard panel Enter Shift => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add(\n    \n) selection=3:4>3:4 panel=-
+Standard panel Backspace - => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add selection=2:18>2:18 panel=-
+Standard panel Backspace Shift => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add selection=2:18>2:18 panel=-
+Standard panel Backspace Command => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add) selection=2:18>2:18 panel=-
+Standard panel Delete - => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add(
+Standard panel Delete Command => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add(
+Standard panel Tab - => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add( ) selection=2:20>2:20
+Standard panel Tab Shift => claimed panel=-
+Standard panel Escape - => claimed panel=-
+Standard panel Escape Shift => claimed panel=-
+Standard panel Space Shift+Command => claimed unchanged
+Standard panel Space Shift+Control => claimed unchanged
+Standard panel a Command => claimed selection=0:0>2:20 panel=-
+Standard panel z Command => claimed text=alpha beta\n    gamma delta\nepsilon zeta selection=2:12>2:12 panel=-
+Standard panel c Command => claimed clipboard=epsilon zeta x.Add()
+
+Standard panel x Command => claimed text=alpha beta\n    gamma delta\n selection=2:0>2:0 panel=- clipboard=epsilon zeta x.Add()
+
+Standard panel v Command => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add(PASTED) selection=2:25>2:25
+Standard panel / Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22 panel=-
+Standard panel / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22 panel=-
+Standard panel Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22 panel=-
+Standard panel Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22 panel=-
+Standard problems ArrowLeft - => claimed unchanged
+Standard problems ArrowLeft Shift => claimed unchanged
+Standard problems ArrowLeft Command => claimed unchanged
+Standard problems ArrowLeft Shift+Command => claimed unchanged
+Standard problems ArrowRight - => claimed selection=0:1>0:1
+Standard problems ArrowRight Shift => claimed selection=0:0>0:1
+Standard problems ArrowRight Command => claimed selection=0:6>0:6
+Standard problems ArrowRight Shift+Command => claimed selection=0:0>0:6
+Standard problems ArrowUp - => claimed unchanged
+Standard problems ArrowUp Shift => claimed unchanged
+Standard problems ArrowDown - => claimed selection=1:0>1:0
+Standard problems ArrowDown Shift => claimed selection=0:0>1:0
+Standard problems Home - => claimed unchanged
+Standard problems Home Shift => claimed unchanged
+Standard problems Home Command => claimed unchanged
+Standard problems Home Shift+Command => claimed unchanged
+Standard problems End - => claimed selection=0:10>0:10
+Standard problems End Shift => claimed selection=0:0>0:10
+Standard problems End Command => claimed selection=2:12>2:12
+Standard problems End Shift+Command => claimed selection=0:0>2:12
+Standard problems PageUp - => claimed unchanged
+Standard problems PageUp Shift => claimed unchanged
+Standard problems PageDown - => claimed selection=2:0>2:0
+Standard problems PageDown Shift => claimed selection=0:0>2:0
+Standard problems Enter - => claimed text=\nalpha beta\n    gamma delta\nepsilon zeta selection=1:0>1:0
+Standard problems Enter Shift => claimed text=\nalpha beta\n    gamma delta\nepsilon zeta selection=1:0>1:0
+Standard problems Delete - => claimed text=lpha beta\n    gamma delta\nepsilon zeta
+Standard problems Delete Command => claimed text=beta\n    gamma delta\nepsilon zeta
+Standard problems Tab - => claimed text=    alpha beta\n    gamma delta\nepsilon zeta selection=0:4>0:4
+Standard problems Tab Shift => claimed unchanged
+Standard problems Escape - => unclaimed trap=released
+Standard problems Escape Shift => unclaimed trap=released
+Standard problems a Command => claimed selection=0:0>2:12
+Standard problems c Command => claimed clipboard=alpha beta
+
+Standard problems x Command => claimed text=    gamma delta\nepsilon zeta clipboard=alpha beta
+
+Standard problems v Command => claimed text=PASTEDalpha beta\n    gamma delta\nepsilon zeta selection=0:6>0:6
+Standard problems / Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
+Standard problems / Shift+Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
+Standard problems Slash Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
+Standard problems Slash Shift+Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
+Standard problems F8 - => claimed selection=1:4>1:4 card=open
+Standard problems F8 Shift => claimed selection=2:8>2:8 card=open
+Standard chord ArrowLeft - => claimed selection=1:5>1:5
+Standard chord ArrowLeft Shift => claimed selection=1:6>1:5
+Standard chord ArrowLeft Command => claimed selection=1:4>1:4
+Standard chord ArrowLeft Shift+Command => claimed selection=1:6>1:4
+Standard chord ArrowRight - => claimed selection=1:7>1:7
+Standard chord ArrowRight Shift => claimed selection=1:6>1:7
+Standard chord ArrowRight Command => claimed selection=1:10>1:10
+Standard chord ArrowRight Shift+Command => claimed selection=1:6>1:10
+Standard chord ArrowUp - => claimed selection=0:6>0:6
+Standard chord ArrowUp Shift => claimed selection=1:6>0:6
+Standard chord ArrowDown - => claimed selection=2:6>2:6
+Standard chord ArrowDown Shift => claimed selection=1:6>2:6
+Standard chord Home - => claimed selection=1:4>1:4
+Standard chord Home Shift => claimed selection=1:6>1:4
+Standard chord Home Command => claimed selection=0:0>0:0
+Standard chord Home Shift+Command => claimed selection=1:6>0:0
+Standard chord End - => claimed selection=1:15>1:15
+Standard chord End Shift => claimed selection=1:6>1:15
+Standard chord End Command => claimed selection=2:12>2:12
+Standard chord End Shift+Command => claimed selection=1:6>2:12
+Standard chord PageUp - => claimed selection=0:6>0:6
+Standard chord PageUp Shift => claimed selection=1:6>0:6
+Standard chord PageDown - => claimed selection=2:6>2:6
+Standard chord PageDown Shift => claimed selection=1:6>2:6
+Standard chord Enter - => claimed text=alpha beta\n    ga\n    mma delta\nepsilon zeta selection=2:4>2:4
+Standard chord Enter Shift => claimed text=alpha beta\n    ga\n    mma delta\nepsilon zeta selection=2:4>2:4
+Standard chord Backspace - => claimed text=alpha beta\n    gmma delta\nepsilon zeta selection=1:5>1:5
+Standard chord Backspace Shift => claimed text=alpha beta\n    gmma delta\nepsilon zeta selection=1:5>1:5
+Standard chord Backspace Command => claimed text=alpha beta\n    mma delta\nepsilon zeta selection=1:4>1:4
+Standard chord Delete - => claimed text=alpha beta\n    gama delta\nepsilon zeta
+Standard chord Delete Command => claimed text=alpha beta\n    gadelta\nepsilon zeta
+Standard chord Tab - => claimed text=alpha beta\n    ga  mma delta\nepsilon zeta selection=1:8>1:8
+Standard chord Tab Shift => claimed text=alpha beta\ngamma delta\nepsilon zeta selection=1:2>1:2
+Standard chord Escape - => unclaimed trap=released
+Standard chord Escape Shift => unclaimed trap=released
+Standard chord a Command => claimed selection=0:0>2:12
+Standard chord c Command => claimed clipboard=    gamma delta
+
+Standard chord x Command => claimed text=alpha beta\nepsilon zeta selection=1:0>1:0 clipboard=    gamma delta
+
+Standard chord v Command => claimed text=alpha beta\n    gaPASTEDmma delta\nepsilon zeta selection=1:12>1:12
+Standard chord / Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Standard chord / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Standard chord Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Standard chord Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Standard chord k Command => claimed unchanged
+Standard chord i Command => claimed card=open

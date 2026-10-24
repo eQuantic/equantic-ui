@@ -40,6 +40,7 @@
   "CodeHover",
   "CodeHoverSession",
   "CodeInnerChange",
+  "CodeKeyBinding",
   "CodeKeymap",
   "CodeKeywordCompletionProvider",
   "CodeLanguageRules",

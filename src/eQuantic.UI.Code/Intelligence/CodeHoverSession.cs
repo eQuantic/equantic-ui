@@ -129,13 +129,24 @@ public sealed class CodeHoverSession
     /// </summary>
     public bool ShowAt(CodePosition position)
     {
-        // One thing at a time over the caret: while the list shows, the card waits for it to go.
-        if (_editor.Completion.IsOpen) return false;
+        if (!CanShowAt(position)) return false;
         var at = _editor.Document.Clamp(position);
         var explained = Explained(at, character: false);
-        if (explained is null && Providers.Count == 0) return false;
         _ = Rest(explained ?? new CodeRange(at), at, wait: false, keyboard: true, ask: true);
         return true;
+    }
+
+    /// <summary>
+    /// Whether <see cref="ShowAt"/> would show a card for <paramref name="position"/>: no completion list
+    /// showing, and a provider to ask or a problem there. What the keymap reads before it waits for the
+    /// second half of ⌘K ⌘I, so the chord waits only while its card could show. A word alone explains
+    /// nothing: ShowAt answered true over one with no provider and no problem, and showed no card.
+    /// </summary>
+    internal bool CanShowAt(CodePosition position)
+    {
+        // One thing at a time over the caret: while the list shows, the card waits for it to go.
+        if (_editor.Completion.IsOpen) return false;
+        return Providers.Count > 0 || _editor.Diagnostics.At(_editor.Document.Clamp(position)).Count > 0;
     }
 
     /// <summary>Closes the card, and drops what was being waited for. Answers whether a card was

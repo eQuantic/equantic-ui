@@ -1,4 +1,4 @@
-import { $eq, CodeCompletion, CodeDiagnostics, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeHoverSession, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineCells, CodeMotionValue, CodePosition, CodeRange, CodeSignatureHelpSession, KeyboardConventionValue, Point, PointerPhaseValue, Rect } from "../runtime-exports";
+import { $eq, CodeCommandValue, CodeCompletion, CodeDiagnostics, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeHoverSession, CodeKeyBinding, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineCells, CodeMotionValue, CodePosition, CodeRange, CodeSignatureHelpSession, KeyboardConventionValue, KeyChord, Point, PointerPhaseValue, Rect } from "../runtime-exports";
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null) {
@@ -12,6 +12,7 @@ export class CodeEditorController {
         this.hover = null!;
         this.signatureHelp = null!;
         this.pendingChord = null;
+        this.keyBindings = [];
         this.tabMovesFocus = false;
         this.changed = null;
         this.selectionChanged = null;
@@ -46,7 +47,8 @@ export class CodeEditorController {
     diagnostics!: CodeDiagnostics;
     hover!: CodeHoverSession;
     signatureHelp!: CodeSignatureHelpSession;
-    pendingChord!: string | null;
+    pendingChord!: KeyChord | null;
+    keyBindings!: CodeKeyBinding[];
     tabMovesFocus!: boolean;
     changed!: ((codeEdit: CodeEdit | null) => void) | null;
     selectionChanged!: ((codeRange: CodeRange) => void) | null;
@@ -263,6 +265,152 @@ export class CodeEditorController {
 
     handleKey(key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any) {
         return CodeKeymap.handle(this, key, modifiers, convention, clipboard);
+    }
+
+    execute(command: CodeCommandValue, clipboard: any = null) {
+        {
+            let pasted: any;
+            switch (command) {
+                case 'cursorLeft':
+                    return this.step('character', 'backward', false);
+                case 'cursorLeftSelect':
+                    return this.step('character', 'backward', true);
+                case 'cursorRight':
+                    return this.step('character', 'forward', false);
+                case 'cursorRightSelect':
+                    return this.step('character', 'forward', true);
+                case 'cursorUp':
+                    return this.step('line', 'backward', false);
+                case 'cursorUpSelect':
+                    return this.step('line', 'backward', true);
+                case 'cursorDown':
+                    return this.step('line', 'forward', false);
+                case 'cursorDownSelect':
+                    return this.step('line', 'forward', true);
+                case 'cursorWordLeft':
+                    return this.step('word', 'backward', false);
+                case 'cursorWordLeftSelect':
+                    return this.step('word', 'backward', true);
+                case 'cursorWordRight':
+                    return this.step('word', 'forward', false);
+                case 'cursorWordRightSelect':
+                    return this.step('word', 'forward', true);
+                case 'cursorLineStart':
+                    return this.step('lineBoundary', 'backward', false);
+                case 'cursorLineStartSelect':
+                    return this.step('lineBoundary', 'backward', true);
+                case 'cursorLineEnd':
+                    return this.step('lineBoundary', 'forward', false);
+                case 'cursorLineEndSelect':
+                    return this.step('lineBoundary', 'forward', true);
+                case 'cursorDocumentStart':
+                    return this.step('documentBoundary', 'backward', false);
+                case 'cursorDocumentStartSelect':
+                    return this.step('documentBoundary', 'backward', true);
+                case 'cursorDocumentEnd':
+                    return this.step('documentBoundary', 'forward', false);
+                case 'cursorDocumentEndSelect':
+                    return this.step('documentBoundary', 'forward', true);
+                case 'cursorPageUp':
+                    return this.step('page', 'backward', false);
+                case 'cursorPageUpSelect':
+                    return this.step('page', 'backward', true);
+                case 'cursorPageDown':
+                    return this.step('page', 'forward', false);
+                case 'cursorPageDownSelect':
+                    return this.step('page', 'forward', true);
+                case 'selectAll':
+                    this.selectAll();
+                    return true;
+                case 'newLine':
+                    return this.insertNewLine();
+                case 'deleteLeft':
+                    return this.deleteBackward('character');
+                case 'deleteRight':
+                    return this.deleteForward('character');
+                case 'deleteWordLeft':
+                    return this.deleteBackward('word');
+                case 'deleteWordRight':
+                    return this.deleteForward('word');
+                case 'deleteToLineStart':
+                    return this.deleteBackward('lineBoundary');
+                case 'indent':
+                    return !this.readOnly && !this.tabMovesFocus && this.indent();
+                case 'outdent':
+                    return !this.readOnly && !this.tabMovesFocus && this.outdent();
+                case 'toggleLineComment':
+                    return this.toggleLineComment();
+                case 'undo':
+                    return this.undo();
+                case 'redo':
+                    return this.redo();
+                case 'copy':
+                    if (clipboard == null) return false;
+                    clipboard.write(this.copyText());
+                    return true;
+                case 'cut':
+                    if (clipboard == null) return false;
+                    clipboard.write(this.copyText());
+                    this.cut();
+                    return true;
+                case 'paste':
+                    if (clipboard == null) return false;
+                    if ((($v25781) => (($v25781 != null && $v25781.length > 0) && (pasted = $v25781, true)))(clipboard.read())) this.paste(pasted);
+                    return true;
+                case 'completionShow':
+                    return this.completion.invoke();
+                case 'completionNext':
+                    return this.completion.isOpen && this.completion.move(1);
+                case 'completionPrevious':
+                    return this.completion.isOpen && this.completion.move(-1);
+                case 'completionNextPage':
+                    return this.completion.isOpen && this.completion.movePage(1);
+                case 'completionPreviousPage':
+                    return this.completion.isOpen && this.completion.movePage(-1);
+                case 'completionAccept':
+                    return this.completion.isOpen && this.completion.accept();
+                case 'completionAcceptChangingText':
+                    return this.completion.isOpen && this.completion.acceptChangesText && this.completion.accept();
+                case 'completionHide':
+                    return this.completion.isOpen && this.completion.dismiss();
+                case 'signatureHelpShow':
+                    return this.signatureHelp.invoke();
+                case 'signatureHelpNext':
+                    return !this.hover.isOpen && this.signatureHelp.move(1);
+                case 'signatureHelpPrevious':
+                    return !this.hover.isOpen && this.signatureHelp.move(-1);
+                case 'signatureHelpHide':
+                    return this.droppingAnUnshownList(this.signatureHelp.dismiss());
+                case 'hoverShow':
+                    return this.hover.showAt(this.caret);
+                case 'hoverHide':
+                    return this.droppingAnUnshownList(this.hover.dismiss());
+                case 'problemNext':
+                    return !(this.diagnostics.next(false) == null);
+                case 'problemPrevious':
+                    return !(this.diagnostics.next(true) == null);
+                case 'releaseKeyboard':
+                    this.completion.dismiss();
+                    this.tabMovesFocus = true;
+                    return false;
+                default:
+                    return false;
+            }
+        }
+    }
+
+    droppingAnUnshownList(closed: boolean) {
+        if (closed && !this.completion.isOpen) this.completion.dismiss();
+        return closed;
+    }
+
+    canExecute(command: CodeCommandValue) {
+        return (() => {let help: any;  const $s = command; if (($s === 'none' || $s === 'releaseKeyboard')) return false; if ((($s === 'newLine' || $s === 'cut') || $s === 'paste')) return !this.readOnly; if ((($s === 'deleteLeft' || $s === 'deleteWordLeft') || $s === 'deleteToLineStart')) return !this.readOnly && (!this._selection.isEmpty || !$eq.equals(this.caret, CodePosition.start)); if (($s === 'deleteRight' || $s === 'deleteWordRight')) return !this.readOnly && (!this._selection.isEmpty || !$eq.equals(this.caret, this._document.end)); if ($s === 'toggleLineComment') return !this.readOnly && !(this.rules.lineComment == null); if (($s === 'indent' || $s === 'outdent')) return !this.readOnly && !this.tabMovesFocus; if ($s === 'undo') return !this.readOnly && this.history.canUndo; if ($s === 'redo') return !this.readOnly && this.history.canRedo; if ($s === 'completionShow') return !this.readOnly && $eq.collections.count(this.completion.providers) > 0; if (((($s === 'completionNext' || $s === 'completionPrevious') || $s === 'completionNextPage') || $s === 'completionPreviousPage')) return this.completion.isOpen && $eq.collections.count(this.completion.items) > 1; if (($s === 'completionAccept' || $s === 'completionHide')) return this.completion.isOpen; if ($s === 'completionAcceptChangingText') return this.completion.isOpen && this.completion.acceptChangesText; if ($s === 'signatureHelpShow') return $eq.collections.count(this.signatureHelp.providers) > 0; if (($s === 'signatureHelpNext' || $s === 'signatureHelpPrevious')) return !this.hover.isOpen && (help = this.signatureHelp.help) != null && $eq.collections.count(help.signatures) > 1; if ($s === 'signatureHelpHide') return this.signatureHelp.isOpen; if ($s === 'hoverShow') return this.hover.canShowAt(this.caret); if ($s === 'hoverHide') return this.hover.isOpen; if (($s === 'problemNext' || $s === 'problemPrevious')) return $eq.collections.count(this.diagnostics.items) > 0; return true; })();
+    }
+
+    step(motion: CodeMotionValue, direction: CodeDirectionValue, extend: boolean) {
+        this.move(motion, direction, extend);
+        return true;
     }
 
     handleText(text: string) {

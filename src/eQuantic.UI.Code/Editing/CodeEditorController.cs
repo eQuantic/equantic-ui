@@ -121,7 +121,14 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
     /// <summary>The first key of a chord the keymap is waiting for the second of (⌘K, for ⌘K ⌘I), or
     /// null. Any key that is not a modifier ends the wait.</summary>
-    internal string? PendingChord { get; set; }
+    internal KeyChord? PendingChord { get; set; }
+
+    /// <summary>
+    /// An app's own key bindings, tried before the defaults (<see cref="CodeKeymap.Defaults"/>): a chord
+    /// bound here is the app's alone, and one bound to <see cref="CodeCommand.None"/> is given back to the
+    /// host. Empty to begin with.
+    /// </summary>
+    public IList<CodeKeyBinding> KeyBindings { get; } = [];
 
     public CodeLanguageRules Rules => Highlighter.Language.Rules;
 
@@ -426,6 +433,159 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     public bool HandleKey(string key, KeyModifiers modifiers, KeyboardConvention convention,
         ITextClipboard? clipboard) =>
         CodeKeymap.Handle(this, key, modifiers, convention, clipboard);
+
+    /// <summary>
+    /// Runs <paramref name="command"/> as its key would, with no key: what a menu, a command palette or an
+    /// app's own shortcut calls. Answers whether it did anything, which is whether the key would have been
+    /// claimed: a list's command with no list showing does nothing and answers false. The clipboard is the
+    /// one a copy writes and a paste reads; with none, they do nothing, and a host whose clipboard arrives
+    /// as events of its own (a browser's copy, cut and paste) keeps the key for those events.
+    /// </summary>
+    public bool Execute(CodeCommand command, ITextClipboard? clipboard = null)
+    {
+        switch (command)
+        {
+            case CodeCommand.CursorLeft: return Step(CodeMotion.Character, CodeDirection.Backward, false);
+            case CodeCommand.CursorLeftSelect: return Step(CodeMotion.Character, CodeDirection.Backward, true);
+            case CodeCommand.CursorRight: return Step(CodeMotion.Character, CodeDirection.Forward, false);
+            case CodeCommand.CursorRightSelect: return Step(CodeMotion.Character, CodeDirection.Forward, true);
+            case CodeCommand.CursorUp: return Step(CodeMotion.Line, CodeDirection.Backward, false);
+            case CodeCommand.CursorUpSelect: return Step(CodeMotion.Line, CodeDirection.Backward, true);
+            case CodeCommand.CursorDown: return Step(CodeMotion.Line, CodeDirection.Forward, false);
+            case CodeCommand.CursorDownSelect: return Step(CodeMotion.Line, CodeDirection.Forward, true);
+            case CodeCommand.CursorWordLeft: return Step(CodeMotion.Word, CodeDirection.Backward, false);
+            case CodeCommand.CursorWordLeftSelect: return Step(CodeMotion.Word, CodeDirection.Backward, true);
+            case CodeCommand.CursorWordRight: return Step(CodeMotion.Word, CodeDirection.Forward, false);
+            case CodeCommand.CursorWordRightSelect: return Step(CodeMotion.Word, CodeDirection.Forward, true);
+            case CodeCommand.CursorLineStart: return Step(CodeMotion.LineBoundary, CodeDirection.Backward, false);
+            case CodeCommand.CursorLineStartSelect: return Step(CodeMotion.LineBoundary, CodeDirection.Backward, true);
+            case CodeCommand.CursorLineEnd: return Step(CodeMotion.LineBoundary, CodeDirection.Forward, false);
+            case CodeCommand.CursorLineEndSelect: return Step(CodeMotion.LineBoundary, CodeDirection.Forward, true);
+            case CodeCommand.CursorDocumentStart: return Step(CodeMotion.DocumentBoundary, CodeDirection.Backward, false);
+            case CodeCommand.CursorDocumentStartSelect: return Step(CodeMotion.DocumentBoundary, CodeDirection.Backward, true);
+            case CodeCommand.CursorDocumentEnd: return Step(CodeMotion.DocumentBoundary, CodeDirection.Forward, false);
+            case CodeCommand.CursorDocumentEndSelect: return Step(CodeMotion.DocumentBoundary, CodeDirection.Forward, true);
+            case CodeCommand.CursorPageUp: return Step(CodeMotion.Page, CodeDirection.Backward, false);
+            case CodeCommand.CursorPageUpSelect: return Step(CodeMotion.Page, CodeDirection.Backward, true);
+            case CodeCommand.CursorPageDown: return Step(CodeMotion.Page, CodeDirection.Forward, false);
+            case CodeCommand.CursorPageDownSelect: return Step(CodeMotion.Page, CodeDirection.Forward, true);
+            case CodeCommand.SelectAll:
+                SelectAll();
+                return true;
+            case CodeCommand.NewLine: return InsertNewLine();
+            case CodeCommand.DeleteLeft: return DeleteBackward(CodeMotion.Character);
+            case CodeCommand.DeleteRight: return DeleteForward(CodeMotion.Character);
+            case CodeCommand.DeleteWordLeft: return DeleteBackward(CodeMotion.Word);
+            case CodeCommand.DeleteWordRight: return DeleteForward(CodeMotion.Word);
+            case CodeCommand.DeleteToLineStart: return DeleteBackward(CodeMotion.LineBoundary);
+            case CodeCommand.Indent: return !ReadOnly && !TabMovesFocus && Indent();
+            case CodeCommand.Outdent: return !ReadOnly && !TabMovesFocus && Outdent();
+            case CodeCommand.ToggleLineComment: return ToggleLineComment();
+            case CodeCommand.Undo: return Undo();
+            case CodeCommand.Redo: return Redo();
+            case CodeCommand.Copy:
+                if (clipboard is null) return false;
+                clipboard.Write(CopyText());
+                return true;
+            case CodeCommand.Cut:
+                if (clipboard is null) return false;
+                // The copy reaches the clipboard before anything is deleted: a clipboard that refuses the
+                // text leaves the document as it was. Copying first takes what the cut takes, the whole
+                // line included when nothing is selected.
+                clipboard.Write(CopyText());
+                Cut();
+                return true;
+            case CodeCommand.Paste:
+                // Claimed even when it finds nothing to paste: going on to another command could only do
+                // something nobody asked for.
+                if (clipboard is null) return false;
+                if (clipboard.Read() is { Length: > 0 } pasted) Paste(pasted);
+                return true;
+            case CodeCommand.CompletionShow: return Completion.Invoke();
+            case CodeCommand.CompletionNext: return Completion.IsOpen && Completion.Move(1);
+            case CodeCommand.CompletionPrevious: return Completion.IsOpen && Completion.Move(-1);
+            case CodeCommand.CompletionNextPage: return Completion.IsOpen && Completion.MovePage(1);
+            case CodeCommand.CompletionPreviousPage: return Completion.IsOpen && Completion.MovePage(-1);
+            case CodeCommand.CompletionAccept: return Completion.IsOpen && Completion.Accept();
+            case CodeCommand.CompletionAcceptChangingText:
+                return Completion.IsOpen && Completion.AcceptChangesText && Completion.Accept();
+            case CodeCommand.CompletionHide: return Completion.IsOpen && Completion.Dismiss();
+            case CodeCommand.SignatureHelpShow: return SignatureHelp.Invoke();
+            // A card showing hides the panel, and keys of a panel nobody can see would walk it unseen.
+            case CodeCommand.SignatureHelpNext: return !Hover.IsOpen && SignatureHelp.Move(1);
+            case CodeCommand.SignatureHelpPrevious: return !Hover.IsOpen && SignatureHelp.Move(-1);
+            case CodeCommand.SignatureHelpHide: return DroppingAnUnshownList(SignatureHelp.Dismiss());
+            // False when no card could show (a list showing, nothing to explain at the caret), so the next
+            // command a chord names runs.
+            case CodeCommand.HoverShow: return Hover.ShowAt(Caret);
+            case CodeCommand.HoverHide: return DroppingAnUnshownList(Hover.Dismiss());
+            case CodeCommand.ProblemNext: return Diagnostics.Next(backward: false) is not null;
+            case CodeCommand.ProblemPrevious: return Diagnostics.Next(backward: true) is not null;
+            case CodeCommand.ReleaseKeyboard:
+                // A list asked for and not yet showing is dropped: Escape means it was not wanted.
+                Completion.Dismiss();
+                TabMovesFocus = true;
+                return false;
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>
+    /// What closing the card or the panel does to a completion list asked for and not yet showing, when it
+    /// closed one (<paramref name="closed"/>): it drops the list too. Escape means nothing over the caret
+    /// was wanted, and the list's answer, landing after the key, opened a list nobody had asked to see
+    /// (#1009's third review round). A list showing is left to its own command.
+    /// </summary>
+    private bool DroppingAnUnshownList(bool closed)
+    {
+        if (closed && !Completion.IsOpen) Completion.Dismiss();
+        return closed;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="command"/> would do something now: a menu greys an item out from it, and the
+    /// keymap waits for the second half of a chord only when its command could run. The clipboard's
+    /// commands answer true, since the clipboard they are given is the caller's.
+    /// </summary>
+    public bool CanExecute(CodeCommand command) => command switch
+    {
+        CodeCommand.None or CodeCommand.ReleaseKeyboard => false,
+        CodeCommand.NewLine or CodeCommand.Cut or CodeCommand.Paste => !ReadOnly,
+        // A deletion has something to take: a selection, or text on its side of the caret. ⌘⌫ at column
+        // zero of a later line joins it to the line above, as Backspace does.
+        CodeCommand.DeleteLeft or CodeCommand.DeleteWordLeft or CodeCommand.DeleteToLineStart =>
+            !ReadOnly && (!_selection.IsEmpty || Caret != CodePosition.Start),
+        CodeCommand.DeleteRight or CodeCommand.DeleteWordRight =>
+            !ReadOnly && (!_selection.IsEmpty || Caret != _document.End),
+        // A language with no line comment (JSON, plain text) has nothing to toggle.
+        CodeCommand.ToggleLineComment => !ReadOnly && Rules.LineComment is not null,
+        CodeCommand.Indent or CodeCommand.Outdent => !ReadOnly && !TabMovesFocus,
+        CodeCommand.Undo => !ReadOnly && History.CanUndo,
+        CodeCommand.Redo => !ReadOnly && History.CanRedo,
+        CodeCommand.CompletionShow => !ReadOnly && Completion.Providers.Count > 0,
+        // A list of one entry has nowhere to walk: Move and MovePage refuse it, and the arrows are the
+        // overloads' or the caret's.
+        CodeCommand.CompletionNext or CodeCommand.CompletionPrevious or CodeCommand.CompletionNextPage
+            or CodeCommand.CompletionPreviousPage => Completion.IsOpen && Completion.Items.Count > 1,
+        CodeCommand.CompletionAccept or CodeCommand.CompletionHide => Completion.IsOpen,
+        CodeCommand.CompletionAcceptChangingText => Completion.IsOpen && Completion.AcceptChangesText,
+        CodeCommand.SignatureHelpShow => SignatureHelp.Providers.Count > 0,
+        CodeCommand.SignatureHelpNext or CodeCommand.SignatureHelpPrevious =>
+            !Hover.IsOpen && SignatureHelp.Help is { } help && help.Signatures.Count > 1,
+        CodeCommand.SignatureHelpHide => SignatureHelp.IsOpen,
+        CodeCommand.HoverShow => Hover.CanShowAt(Caret),
+        CodeCommand.HoverHide => Hover.IsOpen,
+        CodeCommand.ProblemNext or CodeCommand.ProblemPrevious => Diagnostics.Items.Count > 0,
+        _ => true,
+    };
+
+    /// <summary>A move of the caret, which always claims its key.</summary>
+    private bool Step(CodeMotion motion, CodeDirection direction, bool extend)
+    {
+        Move(motion, direction, extend);
+        return true;
+    }
 
     /// <inheritdoc />
     public bool HandleText(string text)

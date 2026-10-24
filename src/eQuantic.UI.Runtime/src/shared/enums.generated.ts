@@ -22,6 +22,20 @@ export type AnchorPlacementValue =
 export type BiometricResultValue =
   'succeeded' | 'failed' | 'cancelled' | 'fallbackRequested' | 'notEnrolled' | 'unavailable';
 
+export type CodeCommandValue =
+  'none' | 'cursorLeft' | 'cursorLeftSelect' | 'cursorRight' | 'cursorRightSelect' | 'cursorUp'
+  | 'cursorUpSelect' | 'cursorDown' | 'cursorDownSelect' | 'cursorWordLeft' | 'cursorWordLeftSelect'
+  | 'cursorWordRight' | 'cursorWordRightSelect' | 'cursorLineStart' | 'cursorLineStartSelect'
+  | 'cursorLineEnd' | 'cursorLineEndSelect' | 'cursorDocumentStart' | 'cursorDocumentStartSelect'
+  | 'cursorDocumentEnd' | 'cursorDocumentEndSelect' | 'cursorPageUp' | 'cursorPageUpSelect'
+  | 'cursorPageDown' | 'cursorPageDownSelect' | 'selectAll' | 'newLine' | 'deleteLeft'
+  | 'deleteRight' | 'deleteWordLeft' | 'deleteWordRight' | 'deleteToLineStart' | 'indent'
+  | 'outdent' | 'toggleLineComment' | 'undo' | 'redo' | 'copy' | 'cut' | 'paste' | 'completionShow'
+  | 'completionNext' | 'completionPrevious' | 'completionNextPage' | 'completionPreviousPage'
+  | 'completionAccept' | 'completionAcceptChangingText' | 'completionHide' | 'signatureHelpShow'
+  | 'signatureHelpNext' | 'signatureHelpPrevious' | 'signatureHelpHide' | 'hoverShow' | 'hoverHide'
+  | 'problemNext' | 'problemPrevious' | 'releaseKeyboard';
+
 export type CodeCompletionKindValue =
   'text' | 'method' | 'function' | 'constructor' | 'field' | 'variable' | 'class' | 'interface'
   | 'module' | 'property' | 'enum' | 'keyword' | 'snippet' | 'file' | 'struct' | 'enumMember'
