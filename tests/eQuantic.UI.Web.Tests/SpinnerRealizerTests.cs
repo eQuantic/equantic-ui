@@ -70,7 +70,7 @@ public class SpinnerRealizerTests
     [Fact]
     public void GeneratedStylesheet_CarriesTheSpinnerMechanics()
     {
-        var css = PhotonCssGenerator.Generate(Theme);
+        var css = ThemeStylesheet.Generate(Theme);
 
         css.Should().Contain("@keyframes eq-spinner-fade { from { opacity: 1; } to { opacity: 0.3; } }");
         css.Should().Contain(".eq-spinner rect { animation-name: eq-spinner-fade; animation-duration: 800ms; animation-timing-function: linear; animation-iteration-count: infinite; }");
@@ -97,7 +97,7 @@ public class SpinnerRealizerTests
     [Fact]
     public void NoRule_OutranksTheDelayABarCarries()
     {
-        var css = PhotonCssGenerator.Generate(Theme);
+        var css = ThemeStylesheet.Generate(Theme);
 
         var rulesTouchingABarsDelay = css.Split('\n')
             .Select(line => line.Trim())

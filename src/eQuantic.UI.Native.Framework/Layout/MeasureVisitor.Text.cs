@@ -326,7 +326,7 @@ internal sealed partial class MeasureVisitor
     private LayoutNode MeasureTextEntry(TextEntry entry, float maxW, LayoutContext ctx)
     {
         var result = ctx.Node(entry);
-        var style = ctx.Theme.Type(entry.Role).AtWindow(ctx.WindowWidth);
+        var style = entry.Resolve(ctx.Theme).AtWindow(ctx.WindowWidth);
         var shown = entry.Value.Length > 0 ? entry.Value : entry.Placeholder ?? string.Empty;
         var lines = Math.Max(1, entry.Lines);
         var measurement = ctx.Measurer.Measure(shown, style, ctx.TypeScale, maxW, maxLines: lines);

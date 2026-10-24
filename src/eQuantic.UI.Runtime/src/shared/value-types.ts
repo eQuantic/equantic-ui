@@ -532,6 +532,16 @@ export interface AppTheme {
   focusRing: ColorToken;
   linkColor: ColorToken;
   scrim: ColorToken;
+  /** The wash behind selected text (C# `IAppTheme.Selection`). */
+  selection: ColorToken;
+  /** The selected text's colour (C# `IAppTheme.OnSelection`), or undefined for its own. */
+  onSelection?: ColorToken | null;
+  /** An empty field's placeholder (C# `IAppTheme.Placeholder`). */
+  placeholder: ColorToken;
+  /** A scrollbar's thumb (C# `IAppTheme.ScrollbarThumb`). */
+  scrollbarThumb: ColorToken;
+  /** A scrollbar's track (C# `IAppTheme.ScrollbarTrack`). */
+  scrollbarTrack: ColorToken;
   /** The colours a chart draws DATA with (C# `IAppTheme.Data`): series, sequential, diverging, other, status. */
   data: DataPalette;
   disabledOpacity: number;
@@ -542,6 +552,8 @@ export interface AppTheme {
    * EQ2010 exist to close — and a theme property is better carried than fenced.
    */
   monoFamily?: string;
+  /** The face this theme sets TEXT in (C# `IAppTheme.TextFamily`), or undefined for the platform's own. */
+  textFamily?: string;
   colors(variant: string): VariantColors;
   type(role: string): TypeStyle;
   elevation(level: number): ShadowSpec;

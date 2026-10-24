@@ -34,18 +34,6 @@ public class CodeEditorProblemsTests : IDisposable
 
     // ---- the fixtures ---------------------------------------------------------------------------
 
-    private sealed class FixedWidthRasterizer : ITextRasterizer
-    {
-        public TextRaster? Rasterize(string content, TypeStyle style, float typeScale,
-            float maxWidth, int maxLines, float scale, TextAlignment align)
-        {
-            if (string.IsNullOrEmpty(content)) return null;
-            var width = Math.Max(1, (int)Math.Min(content.Length * 8 * scale, maxWidth * scale));
-            var height = Math.Max(1, (int)(style.LineHeight * scale));
-            return new TextRaster(width, height, new byte[width * height]);
-        }
-    }
-
     /// <summary>Explains every word it is asked about, at once.</summary>
     private sealed class Explainer : ICodeHoverProvider
     {

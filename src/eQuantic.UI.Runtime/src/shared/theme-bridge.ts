@@ -37,6 +37,10 @@ export interface ThemeData {
   >;
   /** The theme's code face, present only when it names one — same rule as the type tail. */
   monoFamily?: string;
+  /** The theme's text face, by the same rule. */
+  textFamily?: string;
+  /** The selected text's colour, present only when the theme names one. */
+  onSelection?: TokenTuple;
   elevations: ReadonlyArray<readonly [number, number, number, TokenTuple]>;
   shape: Record<string, number>;
   /** The data palette: series and sequential as token lists, diverging as [negative, midpoint,
@@ -123,6 +127,8 @@ export function materializeTheme(data: ThemeData): AppTheme {
     data: palette,
     disabledOpacity: data.disabledOpacity,
     monoFamily: data.monoFamily,
+    textFamily: data.textFamily,
+    onSelection: data.onSelection ? token(data.onSelection) : undefined,
     colors(variant: string): VariantColors {
       return variants[variant] ?? variants.primary;
     },

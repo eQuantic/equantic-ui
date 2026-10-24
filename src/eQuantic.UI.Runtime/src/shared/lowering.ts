@@ -1828,13 +1828,12 @@ function lowerTableCell(
 function lowerTableScrollbar(): HtmlNode {
   const thumb = element('div', {
     position: 'absolute',
-    background: 'var(--eq-color-text-muted)',
-    opacity: '0.55',
+    background: 'var(--eq-color-scrollbar-thumb)',
     'border-radius': '999px',
   });
   return element(
     'div',
-    { display: 'none', position: 'absolute', background: 'var(--eq-color-surface-subtle)' },
+    { display: 'none', position: 'absolute', background: 'var(--eq-color-scrollbar-track)' },
     [thumb],
   );
 }

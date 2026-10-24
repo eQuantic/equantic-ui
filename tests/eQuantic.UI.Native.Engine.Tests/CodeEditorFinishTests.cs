@@ -15,18 +15,6 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// </summary>
 public class CodeEditorFinishTests
 {
-    private sealed class FixedWidthRasterizer : Framework.ITextRasterizer
-    {
-        public Framework.TextRaster? Rasterize(string content, TypeStyle style, float typeScale,
-            float maxWidth, int maxLines, float scale, TextAlignment align)
-        {
-            if (string.IsNullOrEmpty(content)) return null;
-            var width = Math.Max(1, (int)Math.Min(content.Length * 8 * scale, maxWidth * scale));
-            var height = Math.Max(1, (int)(style.LineHeight * scale));
-            return new Framework.TextRaster(width, height, new byte[width * height]);
-        }
-    }
-
     private static (PhotonHost Host, CodeSurface Surface) Open(CodeEditor editor,
         float width = 500, float height = 400)
     {
@@ -120,8 +108,7 @@ public class CodeEditorFinishTests
         var builder = new DisplayListBuilder();
         var region = host.RenderFrame(builder, 0).CodeRegions.Single();
 
-        var band = CodeBlock.SelectionFor(false, PhotonTheme.Instance)
-            .WithOpacity(CodeBlock.SelectionAlpha).Resolve(ThemeMode.Light);
+        var band = CodeBlock.SelectionFor(false, PhotonTheme.Instance).Resolve(ThemeMode.Light);
         var drawn = builder.Build().Commands.ToArray()
             .Single(c => c.Kind == DrawCommandKind.FillRRect && c.Paint.Color == band);
         var grid = region.Surface.Grid();
@@ -145,8 +132,7 @@ public class CodeEditorFinishTests
         host.RenderFrame(builder, 0);
         var commands = builder.Build().Commands.ToArray();
 
-        var band = CodeBlock.SelectionFor(false, PhotonTheme.Instance)
-            .WithOpacity(CodeBlock.SelectionAlpha).Resolve(ThemeMode.Light);
+        var band = CodeBlock.SelectionFor(false, PhotonTheme.Instance).Resolve(ThemeMode.Light);
         var fills = commands.Where(c => c.Kind == DrawCommandKind.FillRRect
             && MathF.Abs(c.Shape.Rect.Width - 3 * surface.Grid().Cell.Width) < 0.5f).ToArray();
         var washes = fills.Where(c => c.Paint.Color != band).ToArray();
