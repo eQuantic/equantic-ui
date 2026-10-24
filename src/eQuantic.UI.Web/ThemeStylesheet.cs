@@ -133,7 +133,13 @@ public static class ThemeStylesheet
             ? "::selection { background: var(--eq-color-selection); }"
             : "::selection { background: var(--eq-color-selection); color: var(--eq-color-on-selection); }");
         css.AppendLine("::placeholder { color: var(--eq-color-placeholder); opacity: 1; }");
-        css.AppendLine(":root { scrollbar-color: var(--eq-color-scrollbar-thumb) var(--eq-color-scrollbar-track); }");
+        // The page's own scrollbars only when the theme has an opinion on them. `scrollbar-color` is
+        // inherited by every element, and Chromium ignores `::-webkit-scrollbar` wherever it is set,
+        // so writing the defaults would switch off an app's own scrollbar CSS for a colour the
+        // platform's scrollbars already follow through `color-scheme`. The SDK's own drawn
+        // scrollbars (a table's) take the slots either way.
+        if (theme.ScrollbarThumb != theme.TextMuted.WithOpacity(0.55f) || theme.ScrollbarTrack != theme.SurfaceSubtle)
+            css.AppendLine(":root { scrollbar-color: var(--eq-color-scrollbar-thumb) var(--eq-color-scrollbar-track); }");
 
         // Type roles (§02) — one class per role; components reference the class, never raw sizes.
         //

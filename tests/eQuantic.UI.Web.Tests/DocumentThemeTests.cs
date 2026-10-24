@@ -98,14 +98,24 @@ public class DocumentThemeTests
             + "font-family: var(--eq-font-family, system-ui, -apple-system, sans-serif); -webkit-font-smoothing: antialiased; "
             + "-moz-osx-font-smoothing: grayscale; }");
         css.Should().Contain("::selection { background: var(--eq-color-selection); }")
-            .And.Contain("::placeholder { color: var(--eq-color-placeholder); opacity: 1; }")
-            .And.Contain(":root { scrollbar-color: var(--eq-color-scrollbar-thumb) var(--eq-color-scrollbar-track); }");
+            .And.Contain("::placeholder { color: var(--eq-color-placeholder); opacity: 1; }");
+        css.Should().NotContain("scrollbar-color",
+            "with the default slots the page keeps the platform's scrollbars, so an app's own scrollbar CSS still applies");
         css.Should().Contain($"--eq-color-selection: {TokenCss.Value(Photon.Selection)};")
             .And.Contain($"--eq-color-placeholder: {TokenCss.Value(Photon.Placeholder)};")
             .And.Contain($"--eq-color-scrollbar-thumb: {TokenCss.Value(Photon.ScrollbarThumb)};")
             .And.Contain($"--eq-color-scrollbar-track: {TokenCss.Value(Photon.ScrollbarTrack)};");
         css.Should().NotContain("--eq-font-family:", "Photon names no text face, so the platform's own is the document's")
             .And.NotContain("--eq-color-on-selection", "and its selected text keeps its own colour");
+    }
+
+    /// <summary>A theme with an opinion on the scrollbars gets the page's too.</summary>
+    [Fact]
+    public void AThemesOwnScrollbars_AreThePagesScrollbars()
+    {
+        var css = ThemeStylesheet.Generate(new DocumentTheme(Photon) { Thumb = new ColorToken(new Color(0x1B, 0x5E, 0x4B, 255)) });
+
+        css.Should().Contain(":root { scrollbar-color: var(--eq-color-scrollbar-thumb) var(--eq-color-scrollbar-track); }");
     }
 
     [Fact]

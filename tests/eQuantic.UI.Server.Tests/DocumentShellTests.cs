@@ -90,6 +90,8 @@ public class DocumentShellTests
 
         head.IndexOf(".first", StringComparison.Ordinal).Should().BeGreaterThan(head.IndexOf(ThemeSheet, StringComparison.Ordinal))
             .And.BeLessThan(head.IndexOf(".second", StringComparison.Ordinal));
+        head.Should().Contain("<style>.first { color: red; }</style>").And.Contain("<style>.second { color: blue; }</style>",
+            "each call is an element of its own, so a malformed chunk cannot swallow the next one");
     }
 
     [Fact]

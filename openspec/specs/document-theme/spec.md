@@ -25,7 +25,9 @@ On the web the theme's stylesheet SHALL set the document's background to the the
 
 `IAppTheme` SHALL carry `Selection`, `OnSelection`, `Placeholder`, `ScrollbarThumb` and `ScrollbarTrack`, defaulting to `FocusRing` at 28%, the text's own colour, `TextMuted`, `TextMuted` at 55% and `SurfaceSubtle`. Every target SHALL draw what it draws of them from the slots:
 
-- the web, the document's `::selection`, every field's placeholder and the page's scrollbars;
+- the web, the document's `::selection`, every field's placeholder and, when the theme sets the
+  scrollbar slots, the page's scrollbars (with the defaults the page keeps the platform's own, so an
+  app's own scrollbar CSS still applies);
 - both targets, a `TextEntry`'s placeholder, a table's scrollbars and the code editor's selection.
 
 #### Scenario: The defaults change nothing on Photon

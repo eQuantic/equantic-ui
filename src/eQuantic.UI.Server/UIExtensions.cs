@@ -2,6 +2,7 @@ using eQuantic.UI.Primitives;
 using eQuantic.UI.Web;
 using System.IO.Compression;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using eQuantic.UI.Server.Assets;
@@ -704,6 +705,17 @@ public static class UIExtensions
         return true;
     }
 
+    /// <summary>The theme's stylesheet for each mode a request can paint in, written once per theme:
+    /// it depends on nothing else, and every page carries it.</summary>
+    private static readonly ConditionalWeakTable<IAppTheme, string?[]> ThemeSheets = new();
+
+    private static string ThemeStyles(IAppTheme theme, ThemeMode? mode)
+    {
+        var sheets = ThemeSheets.GetValue(theme, _ => new string?[3]);
+        var slot = mode switch { ThemeMode.Light => 1, ThemeMode.Dark => 2, _ => 0 };
+        return sheets[slot] ??= ThemeStylesheet.Generate(theme, mode);
+    }
+
     private static async Task ServeAppShell(HttpContext context, Type? page, DeclaredPage? declared)
     {
         // A client navigation asks the same route for the page's data instead of a document.
@@ -734,7 +746,7 @@ public static class UIExtensions
         // already carries the right mode, instead of the default arriving and hydration correcting
         // it in front of the reader.
         var requestedMode = ThemeCookie.Resolve(context, options.InitialThemeMode, options.ThemeCookie?.Name);
-        var themeStyles = ThemeStylesheet.Generate(options.Theme ?? PhotonTheme.Instance, requestedMode);
+        var themeStyles = ThemeStyles(options.Theme ?? PhotonTheme.Instance, requestedMode);
 
         // A CHOSEN theme also crosses as data, into window.__EQ_THEME__, so boot can setPhotonTheme
         // before hydration and the client's re-renders resolve the colours and shapes the server
@@ -970,7 +982,8 @@ public static class UIExtensions
                .Set("MetadataTags", metadata.RenderTags())
                .Set("BuildId", BuildId)
                .Set("ThemeStyles", themeStyles)
-               .SetOrEmpty("AppStyles", shell.Styles.Count > 0 ? string.Join("\n", shell.Styles) : null)
+               // One element per AddStyles call, so a malformed chunk cannot swallow the next one.
+               .SetOrEmpty("AppStyles", string.Join("\n        ", shell.Styles.Select(css => $"<style>{css}</style>")))
                .Set("HeadTags", string.Join("\n    ", headTags))
                .Set("SsrEnabled", ssrEnabled.ToString().ToLowerInvariant())
                .Set("SsrContent", ssrContent)
