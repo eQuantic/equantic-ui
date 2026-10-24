@@ -12,12 +12,12 @@ namespace eQuantic.UI.Conformance.Tests;
 /// two whose i's differ (tr and az), and the two whose JavaScript locale casing differs from the plain
 /// one (lt, el), which .NET does not follow.
 /// <para>
-/// The runtime follows the servers a page is rendered on, Linux's ICU 74 (Unicode 15.1) and Windows'
-/// own, and the cases that read every code point, or a letter Unicode 16 cased, compare there. Apple's
-/// ICU is the operating system's and moved first: .NET 10 on macOS 26 upper-cases <c>ƛ</c> to
-/// <c>Ƛ</c>, so on a Mac whose ICU does, those cases are skipped rather than held against a casing no
-/// server has. On Linux and Windows they fail when the host's ICU moves, which is when the runtime's
-/// list has to.
+/// The runtime cases as .NET 10 does over ICU 78, which is Unicode 17, Ubuntu 26.04's, where
+/// <c>ubuntu-latest</c> runs, and over macOS 26's (#1032). On a host whose ICU is older, Ubuntu 24.04's or
+/// Windows' own, .NET leaves the letters Unicode 16 and 17 cased as they are, so there the cases that read
+/// every code point leave those letters out and still compare every other one, and the case of a letter a
+/// later Unicode cased is skipped rather than held against a Unicode the runtime has left. On a host
+/// whose ICU moves past Unicode 17 they fail, which is when the runtime has to move.
 /// </para>
 /// </summary>
 public class CasingConformanceTests
@@ -27,13 +27,30 @@ public class CasingConformanceTests
     private const string Invariant = "System.Globalization.CultureInfo.InvariantCulture";
     private const string Current = "System.Globalization.CultureInfo.CurrentCulture";
 
+    /// <summary>Whether this host's ICU cases by a Unicode older than the 17 the runtime follows: it leaves
+    /// the Beria Erfe capitals, which Unicode 17 cased, as they are.</summary>
+    private static readonly bool CasesBehindTheRuntime =
+        char.ConvertFromUtf32(0x16EA0).ToLowerInvariant() == char.ConvertFromUtf32(0x16EA0);
+
+    /// <summary>On a host whose ICU is older, the code units of the case pairs Unicode 16 and 17 added,
+    /// which every case below leaves out there; nothing on a host whose ICU has them.</summary>
+    private static readonly string NewerUnits = CasesBehindTheRuntime
+        ? "if (unit == 0x19b || unit == 0x264 || unit == 0x1c89 || unit == 0x1c8a || unit >= 0xa7cb && unit <= 0xa7cf "
+          + "|| unit >= 0xa7d2 && unit <= 0xa7d5 || unit >= 0xa7da && unit <= 0xa7dc) continue; "
+        : "";
+
+    /// <summary>The same for the code points of the first supplementary plane: Garay and Beria Erfe.</summary>
+    private static readonly string NewerPoints = CasesBehindTheRuntime
+        ? "if (point >= 0x10d50 && point <= 0x10d85 || point >= 0x16ea0 && point <= 0x16ed3) continue; "
+        : "";
+
     /// <summary>A digest of what a casing does to every code unit of the BMP: how many it changes, and a
     /// hash of each one changed with what it became. Two numbers that differ if any one of the 65,536
     /// is cased otherwise.</summary>
     private static string EveryCodeUnit(string upper, string lower) =>
         "var s = \"\"; "
         + "for (var way = 0; way < 2; way++) { var count = 0; var hash = 0; "
-        + "for (var unit = 0; unit < 65536; unit++) { var c = (char)unit; var text = c.ToString(); "
+        + "for (var unit = 0; unit < 65536; unit++) { " + NewerUnits + "var c = (char)unit; var text = c.ToString(); "
         + $"var changed = way == 0 ? {upper} : {lower}; "
         + "if (changed == text) continue; count++; hash = (hash * 31 + unit) % 1000003; "
         + "for (var k = 0; k < changed.Length; k++) hash = (hash * 31 + changed[k]) % 1000003; } "
@@ -65,11 +82,20 @@ public class CasingConformanceTests
             + "for (var k = 0; k < s.Length; k++) r += (int)s[k] + \",\"; return r;",
     ];
 
-    /// <summary>The cases whose answer is the Unicode version of the host's ICU.</summary>
+    /// <summary>The cases of a letter a later Unicode cased, whose answer is the Unicode of the host's ICU.</summary>
+    private static readonly string[] LaterUnicode =
+    [
+        // Unicode 16's capital of a letter an older ICU does not case, its Garay, and Unicode 17's Beria
+        // Erfe, as code units: the harness's JSON spells a character past the BMP one way on each side.
+        "var s = \"\\u019b\\u0264\".ToUpper() + \"\\ua7dc\\ua7cb\".ToLower() + char.ConvertFromUtf32(0x16ebb).ToUpper() "
+            + "+ char.ConvertFromUtf32(0x10d50).ToLowerInvariant(); var r = \"\"; "
+            + "for (var k = 0; k < s.Length; k++) r += (int)s[k] + \",\"; return r;",
+    ];
+
+    /// <summary>The cases that read every code point, which leave out the letters a later Unicode cased on a
+    /// host whose ICU is older.</summary>
     private static readonly string[] EveryCodePoint =
     [
-        // Unicode 16's capital of a letter the servers' ICU does not case.
-        "return \"\\u019b\\u0264\".ToUpper() + \"|\" + \"\\ua7dc\\ua7cb\".ToLower();",
         // Every code unit, through the string's casing and the char's.
         EveryCodeUnit("text.ToUpper()", "text.ToLower()"),
         EveryCodeUnit("text.ToUpperInvariant()", "text.ToLowerInvariant()"),
@@ -77,20 +103,18 @@ public class CasingConformanceTests
         EveryCodeUnit("char.ToUpperInvariant(c).ToString()", "char.ToLowerInvariant(c).ToString()"),
         // Every code point of the first supplementary plane, which holds the cased scripts past the BMP.
         "var s = \"\"; for (var way = 0; way < 2; way++) { var count = 0; var hash = 0; "
-            + "for (var point = 0x10000; point < 0x20000; point++) { var text = char.ConvertFromUtf32(point); "
+            + "for (var point = 0x10000; point < 0x20000; point++) { " + NewerPoints + "var text = char.ConvertFromUtf32(point); "
             + "var changed = way == 0 ? text.ToUpper() : text.ToLower(); if (changed == text) continue; "
             + "count++; hash = (hash * 31 + point % 1000003) % 1000003; "
             + "for (var k = 0; k < changed.Length; k++) hash = (hash * 31 + changed[k]) % 1000003; } "
             + "s += count + \":\" + hash + \"|\"; } return s;",
     ];
 
-    /// <summary>Whether this host is a Mac whose ICU cases by a later Unicode than the servers'.</summary>
-    private static readonly bool CasesAheadOfTheServers =
-        OperatingSystem.IsMacOS() && "ƛ".ToUpperInvariant() != "ƛ";
-
     public static IEnumerable<object?[]> CasesInEveryCulture() => InEveryCulture(Cases);
 
     public static IEnumerable<object?[]> EveryCodePointInEveryCulture() => InEveryCulture(EveryCodePoint);
+
+    public static IEnumerable<object?[]> LaterUnicodeInEveryCulture() => InEveryCulture(LaterUnicode);
 
     private static IEnumerable<object?[]> InEveryCulture(string[] cases) =>
         cases.SelectMany(statements => Cultures.Select(culture => new object?[] { statements, culture }));
@@ -108,8 +132,15 @@ public class CasingConformanceTests
     public void EveryCodePoint_ChangesCaseAsAServersDotNetDoes(string statements, string? culture)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
-        Skip.If(CasesAheadOfTheServers,
-            "This Mac's ICU cases by Unicode 16, ahead of the Linux and Windows servers the runtime follows.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, culture: culture);
+    }
+
+    [SkippableTheory]
+    [MemberData(nameof(LaterUnicodeInEveryCulture))]
+    public void ALetterALaterUnicodeCased_ChangesCaseAsDotNetDoesOverIcu78(string statements, string? culture)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        Skip.If(CasesBehindTheRuntime, "This host's ICU cases by a Unicode older than the 17 the runtime follows.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, culture: culture);
     }
 }

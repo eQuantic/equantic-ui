@@ -16,20 +16,18 @@ import { exception } from './exceptions';
  *   letters with an iota subscript, which take the letter with a prosgegrammeni (`ᾳ` is `ᾼ`);
  * - the dotted and the dotless i are the culture's: tr and az upper-case `i` to `İ` and lower-case `I`
  *   to `ı`, every other culture upper-cases `ı` to `I` and lower-cases `İ` to `i`, and the invariant
- *   culture leaves both as they are;
- * - a code point the engine's Unicode cases and a server's .NET does not keeps its case: `ƛ`, whose
- *   capital is Unicode 16's, and the scripts that came with it.
+ *   culture leaves both as they are.
  *
- * .NET cases by the ICU of the machine it runs on, so for those letters its answer is the host's: the
- * Linux servers of .NET 10's year carry ICU 74, which is Unicode 15.1, and Windows its own of the same
- * casing, while Apple's ICU on macOS 26 cases by Unicode 16. The runtime follows the servers, where a
- * page is rendered and hydrated: the last list is the difference measured, code point by code point
- * over every plane, between .NET 10 over ICU 74 and engines of a later Unicode (bun 1.4, Node 22, and
- * the browsers of their year). The bun this repository ships cases as .NET 10 does there, so the
- * conformance suite, which compares every code unit of the BMP and every code point of the first
- * supplementary plane with .NET's own answer on Linux and Windows, proves the rest of the rules. An
- * engine whose Unicode is older than the server's can still leave out a mapping .NET has; the list
- * moves when either side does.
+ * .NET cases by the ICU of the machine it runs on, so for a letter a later Unicode cased its answer is
+ * the host's. The runtime cases as .NET 10 does over ICU 78, which is Unicode 17, Ubuntu 26.04's, and over
+ * macOS 26's (#1032): the conformance suite compares every code unit of the BMP and every code point of
+ * the first supplementary plane, in eight cultures, with .NET's own answer on such a host. The letters
+ * Unicode 16 and 17 cased are written out ({@link NEWER_UPPER}), so a browser whose Unicode is older,
+ * which leaves them as they are, answers as such a server does too; every other letter is the engine's.
+ * A server whose ICU is older, Ubuntu 24.04's or Windows' own, leaves those letters as they are, where
+ * the runtime cases them; until #1032 the runtime kept them as those servers did. When the engines'
+ * Unicode runs ahead of the servers' again, the code points the engines case and the servers do not
+ * are what to keep.
  */
 
 /** How a culture cases the two i's. */
@@ -38,20 +36,24 @@ type Casing = 'invariant' | 'turkic' | 'other';
 /** `ArgumentNullException` for a char's culture handed as null, in .NET's words. */
 const NULL_CULTURE = "Value cannot be null. (Parameter 'culture')";
 
-/** The code points .NET 10 does not case over a server's ICU and an engine of a later Unicode does,
- * as ranges. */
-const KEEPS_CASE: readonly (readonly [number, number])[] = [
-  [0x019b, 0x019b],
-  [0x0264, 0x0264],
+/** The case pairs Unicode 16 and 17 added, `[upper, lower]`: `ƛ` and `ɤ`, whose capitals came with Unicode
+ * 16, its Latin pairs, and the Garay and Beria Erfe scripts. */
+const NEWER_PAIRS: (readonly [number, number])[] = [
+  [0xa7dc, 0x019b],
+  [0xa7cb, 0x0264],
   [0x1c89, 0x1c8a],
-  [0xa7cb, 0xa7cf],
-  [0xa7d2, 0xa7d5],
-  [0xa7da, 0xa7dc],
-  [0x10d50, 0x10d65],
-  [0x10d70, 0x10d85],
-  [0x16ea0, 0x16eb8],
-  [0x16ebb, 0x16ed3],
+  [0xa7cc, 0xa7cd],
+  [0xa7ce, 0xa7cf],
+  [0xa7d2, 0xa7d3],
+  [0xa7d4, 0xa7d5],
+  [0xa7da, 0xa7db],
 ];
+for (let upper = 0x10d50; upper <= 0x10d65; upper++) NEWER_PAIRS.push([upper, upper + 0x20]);
+for (let upper = 0x16ea0; upper <= 0x16eb8; upper++) NEWER_PAIRS.push([upper, upper + 0x1b]);
+
+/** The upper case of a small letter of {@link NEWER_PAIRS}, and the lower case of a capital. */
+const NEWER_UPPER = new Map<number, number>(NEWER_PAIRS.map(([upper, lower]) => [lower, upper]));
+const NEWER_LOWER = new Map<number, number>(NEWER_PAIRS.map(([upper, lower]) => [upper, lower]));
 
 /** The simple upper case of a letter whose full one lengthens, where it is not the letter itself. */
 const SIMPLE_UPPER = new Map<number, number>([
@@ -64,7 +66,8 @@ for (const start of [0x1f80, 0x1f90, 0x1fa0]) {
 }
 
 /** The characters an engine upper-cases otherwise than .NET does, the culture's i's aside: those whose
- * full mapping lengthens, those of {@link KEEPS_CASE} in the BMP, and any surrogate. */
+ * full mapping lengthens, the letters of {@link NEWER_PAIRS} in the BMP, which an engine of an older
+ * Unicode leaves as they are, and any surrogate. */
 const UPPER_APART =
   '\\u00df\\u0149\\u01f0\\u0390\\u03b0\\u0587\\u1e96-\\u1e9a\\u1f50\\u1f52\\u1f54\\u1f56\\u1f80-\\u1faf' +
   '\\u1fb2-\\u1fb4\\u1fb6\\u1fb7\\u1fbc\\u1fc2-\\u1fc4\\u1fc6\\u1fc7\\u1fcc\\u1fd2\\u1fd3\\u1fd6\\u1fd7' +
@@ -74,29 +77,21 @@ const UPPER_APART =
  * capital I, whose full mapping lengthens. */
 const LOWER_APART = '\\u03a3\\u0130';
 
-const BMP_KEEPS_CASE = '\\u019b\\u0264\\u1c89\\u1c8a\\ua7cb-\\ua7cf\\ua7d2-\\ua7d5\\ua7da-\\ua7dc';
+const BMP_NEWER = '\\u019b\\u0264\\u1c89\\u1c8a\\ua7cb-\\ua7cf\\ua7d2-\\ua7d5\\ua7da-\\ua7dc';
 
 /** Whether a text holds a character the engine cases otherwise than .NET, per direction and culture. */
 const APART = {
   upper: {
-    invariant: new RegExp(`[${UPPER_APART}${BMP_KEEPS_CASE}\\u0131\\ud800-\\udfff]`),
-    turkic: new RegExp(`[${UPPER_APART}${BMP_KEEPS_CASE}i\\u0131\\ud800-\\udfff]`),
-    other: new RegExp(`[${UPPER_APART}${BMP_KEEPS_CASE}\\ud800-\\udfff]`),
+    invariant: new RegExp(`[${UPPER_APART}${BMP_NEWER}\\u0131\\ud800-\\udfff]`),
+    turkic: new RegExp(`[${UPPER_APART}${BMP_NEWER}i\\u0131\\ud800-\\udfff]`),
+    other: new RegExp(`[${UPPER_APART}${BMP_NEWER}\\ud800-\\udfff]`),
   },
   lower: {
-    invariant: new RegExp(`[${LOWER_APART}${BMP_KEEPS_CASE}\\ud800-\\udfff]`),
-    turkic: new RegExp(`[${LOWER_APART}${BMP_KEEPS_CASE}I\\ud800-\\udfff]`),
-    other: new RegExp(`[${LOWER_APART}${BMP_KEEPS_CASE}\\ud800-\\udfff]`),
+    invariant: new RegExp(`[${LOWER_APART}${BMP_NEWER}\\ud800-\\udfff]`),
+    turkic: new RegExp(`[${LOWER_APART}${BMP_NEWER}I\\ud800-\\udfff]`),
+    other: new RegExp(`[${LOWER_APART}${BMP_NEWER}\\ud800-\\udfff]`),
   },
 } as const;
-
-function keepsCase(codePoint: number): boolean {
-  for (const [first, last] of KEEPS_CASE) {
-    if (codePoint < first) return false;
-    if (codePoint <= last) return true;
-  }
-  return false;
-}
 
 /**
  * The casing of the culture the call names: the invariant one, or the page's, which is the invariant
@@ -116,7 +111,9 @@ function casingOf(invariant: boolean | undefined): Casing {
  * (`ordinalUpper`).
  */
 export function invariantUpper(codePoint: number): number {
-  if (codePoint === 0x131 || keepsCase(codePoint)) return codePoint;
+  if (codePoint === 0x131) return codePoint;
+  const newer = NEWER_UPPER.get(codePoint);
+  if (newer !== undefined) return newer;
   const upper = [...String.fromCodePoint(codePoint).toUpperCase()];
   return upper.length === 1
     ? (upper[0].codePointAt(0) as number)
@@ -134,7 +131,8 @@ function upperOf(codePoint: number, casing: Casing): number {
 function lowerOf(codePoint: number, casing: Casing): number {
   if (codePoint === 0x49) return casing === 'turkic' ? 0x131 : 0x69;
   if (codePoint === 0x130) return casing === 'invariant' ? codePoint : 0x69;
-  if (keepsCase(codePoint)) return codePoint;
+  const newer = NEWER_LOWER.get(codePoint);
+  if (newer !== undefined) return newer;
   // One code point alone has no context, so a capital sigma is the medial one, as .NET maps it.
   const lower = [...String.fromCodePoint(codePoint).toLowerCase()];
   return lower.length === 1 ? (lower[0].codePointAt(0) as number) : codePoint;
