@@ -598,7 +598,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         // A move needs a line to pass, a delete something to take, a join a line to join, and a sort
         // lines out of order.
         CodeCommand.MoveLinesUp => !ReadOnly && SelectedLines().First > 0,
-        CodeCommand.MoveLinesDown => !ReadOnly && SelectedLines().Last < _document.LineCount - 1,
+        CodeCommand.MoveLinesDown => !ReadOnly && _selection.End.Line < _document.LineCount - 1,
         CodeCommand.CopyLinesUp or CodeCommand.CopyLinesDown or CodeCommand.InsertLineAbove
             or CodeCommand.InsertLineBelow => !ReadOnly,
         CodeCommand.DeleteLines => !ReadOnly && (_document.LineCount > 1 || _document.Line(0).Length > 0),
@@ -1498,18 +1498,15 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         EndComposition();
         var (first, last) = SelectedLines();
         var up = direction == CodeDirection.Backward;
-        if (up ? first == 0 : last == _document.LineCount - 1) return false;
+        // Down, while the selection reaches the last line, its end at the start of that line included, the
+        // move is refused, as VS Code's MoveLinesCommand refuses it: that end would have no line to stand at
+        // once the block passed it, and at the start of an empty last line it would leave that line out of
+        // the next move.
+        if (up ? first == 0 : _selection.End.Line == _document.LineCount - 1) return false;
         var block = string.Join("\n", LinesOf(first, last));
-        if (up)
-            return Edit(WholeLines(first - 1, last), block + "\n" + _document.Line(first - 1), false, SelectionMovedBy(-1));
-        // An end at the start of the line after the block moves to the start of the line after it; when the
-        // line the block passes is the document's last there is none, and the block's own end stands for
-        // it, so every line of the block stays selected and the next move takes them all.
-        var count = _document.LineCount;
-        var end = new CodePosition(count - 1, _document.Line(last).Length);
-        var moved = SelectionMovedBy(1);
-        return Edit(WholeLines(first, last + 1), _document.Line(last + 1) + "\n" + block, false,
-            new CodeRange(moved.Anchor.Line < count ? moved.Anchor : end, moved.Focus.Line < count ? moved.Focus : end));
+        return up
+            ? Edit(WholeLines(first - 1, last), block + "\n" + _document.Line(first - 1), false, SelectionMovedBy(-1))
+            : Edit(WholeLines(first, last + 1), _document.Line(last + 1) + "\n" + block, false, SelectionMovedBy(1));
     }
 
     /// <summary>
@@ -1580,6 +1577,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         // Where the selection's end stands in the joined text, once its line is joined; none while its
         // line adds nothing.
         var end = -1;
+        // Where the first line's trailing spaces and tabs began, when the first join collapsed them to one
+        // space; none while they stand. Only the first join can: every later one collapses what an earlier
+        // one appended.
+        var cut = -1;
+        var appended = false;
         for (var line = first + 1; line <= last; line++)
         {
             var text = _document.Line(line);
@@ -1594,8 +1596,10 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             {
                 space = false;
                 joined = joined.TrimEnd(' ', '\t') + " ";
+                if (!appended) cut = joined.Length - 1;
             }
             joined += (space ? " " : string.Empty) + rest;
+            appended = true;
             met = rest.Length + (space ? 1 : 0);
             if (line == _selection.End.Line)
                 end = joined.Length - rest.Length + Math.Max(0, _selection.End.Column - (text.Length - rest.Length));
@@ -1607,20 +1611,27 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         }
         else if (_selection.Start.Line == _selection.End.Line)
         {
-            after = _selection;
+            // An end in the white space the join collapsed stands after the one space left: the white space
+            // it held is gone, and the text after it was never selected.
+            after = new CodeRange(new CodePosition(first, Collapsed(_selection.Anchor.Column, cut)),
+                new CodePosition(first, Collapsed(_selection.Focus.Column, cut)));
         }
         else
         {
             // The end keeps its place in its text, as VS Code's join keeps it, so the text after it stays
             // unselected: one in the indentation that went stands where the text begins, and one on a blank
-            // line that added nothing at the joined text's end. The direction is the selection's.
+            // line that added nothing at the joined text's end. The start, on the first line, goes through
+            // that line's collapsed white space as a selection on it does. The direction is the selection's.
+            var from = new CodePosition(first, Collapsed(_selection.Start.Column, cut));
             var to = new CodePosition(first, end < 0 ? joined.Length : end);
-            after = _selection.Anchor == _selection.Start
-                ? new CodeRange(_selection.Start, to)
-                : new CodeRange(to, _selection.Start);
+            after = _selection.Anchor == _selection.Start ? new CodeRange(from, to) : new CodeRange(to, from);
         }
         return Edit(WholeLines(first, last), joined, false, after);
     }
+
+    /// <summary>A column of a join's first line once its trailing white space, from <paramref name="cut"/>,
+    /// collapsed to one space: one in that white space stands after the space; none other moves.</summary>
+    private static int Collapsed(int column, int cut) => cut >= 0 && column > cut ? Math.Min(column, cut + 1) : column;
 
     /// <summary>
     /// Sorts the lines the selection takes, ordinally and case aside with ties broken ordinally, as one

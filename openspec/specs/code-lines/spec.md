@@ -33,8 +33,9 @@ has.
 ### Requirement: Move the lines
 
 ⌥↑ and ⌥↓ (Alt+↑, Alt+↓) SHALL move the lines one line up or down past the line beside them, the selection
-moving with them. At the document's first line a move up, and at its last line a move down, SHALL do
-nothing and SHALL NOT be claimed. While the signature panel shows more than one signature, the two keys
+moving with them. At the document's first line a move up SHALL do nothing and SHALL NOT be claimed, and so
+SHALL a move down while the selection reaches the document's last line, its end at the start of that line
+included, as VS Code's move refuses it. While the signature panel shows more than one signature, the two keys
 SHALL walk the overloads instead.
 
 #### Scenario: A line down
@@ -42,11 +43,17 @@ SHALL walk the overloads instead.
 - **WHEN** the caret is on line 1 of three, and ⌥↓ is pressed
 - **THEN** line 1 changes places with line 2, and the caret is on the moved line at its column
 
-#### Scenario: Down to the document's end
+#### Scenario: A selection reaching the last line
 
 - **WHEN** lines 1 and 2 of three are selected from the start of line 1 to the start of line 3, and ⌥↓ is
   pressed
-- **THEN** they are lines 2 and 3, both still selected, the selection ending at the document's end
+- **THEN** nothing moves, and the editor does not claim the key, as VS Code's move refuses it
+
+#### Scenario: A block ending on a blank line
+
+- **WHEN** the first two lines of `a`, an empty line, `c` and `d` are selected from the start of the first
+  line to the start of the third, ⌥↓ is pressed and then ⌥↑
+- **THEN** the text is as it was, the empty line included, and so is the selection
 
 #### Scenario: At the top
 
@@ -90,7 +97,8 @@ selected, as VS Code joins them: each next line's leading spaces and tabs go, on
 the text before is empty or ends with a space or a tab, which collapse to one space, and a next line of spaces
 and tabs alone adds nothing. No other character is white space to a join: a no-break space is text. With
 nothing selected the caret SHALL stand where the lines met; with lines selected the selection's end SHALL
-keep its place in its text, as VS Code's join keeps it. On the last line, with nothing selected, there is
+keep its place in its text, as VS Code's join keeps it, and an end in the first line's white space that the
+join collapsed SHALL stand after the one space left. On the last line, with nothing selected, there is
 nothing to join and the key SHALL NOT be claimed. On Windows and Linux
 `CodeCommand.JoinLines` has no default key, as in VS Code.
 
@@ -103,6 +111,12 @@ nothing to join and the key SHALL NOT be claimed. On Windows and Linux
 
 - **WHEN** `b` of `ab` and `c` of the next line `cdef` are selected, and ⌃J is pressed
 - **THEN** the line is `ab cdef`, and `b c` is selected, `def` not
+
+#### Scenario: A start in the collapsed white space
+
+- **WHEN** a selection starts in the spaces that end `ab        ` and ends after the `c` of the next line
+  `cdef`, and ⌃J is pressed
+- **THEN** the line is `ab cdef`, and the `c` alone is selected
 
 #### Scenario: A selection ending at a line's start
 

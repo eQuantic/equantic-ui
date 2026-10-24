@@ -74,27 +74,39 @@ public class CodeLinesTests : IDisposable
         editor.Selection.Should().Be(new CodeRange(At(2, 0), At(4, 0)));
     }
 
-    /// <summary>A selection that ends at the start of the line after the block keeps that end when the
-    /// block moves down to the document's end, where there is no line after it: the end of the document
-    /// stands for it, so both lines stay selected and the next move takes them both (Copilot, #1033).</summary>
+    /// <summary>A move down is refused while the selection reaches the document's last line, its end at
+    /// the start of that line included, as VS Code's <c>MoveLinesCommand</c> refuses it: there is no line
+    /// after the block for that end to stand at once it moved, and an end at the start of an empty last line
+    /// would leave that line out of the next move (Copilot, #1033).</summary>
     [Fact]
-    public void AMoveDownToTheEnd_KeepsEveryLineOfTheBlockSelected()
+    public void AMoveDown_WhoseSelectionReachesTheLastLine_IsTheHosts()
     {
-        var editor = Editor("a\nb\nc", At(0, 0), At(2, 0));
+        foreach (var text in new[] { "a\nb\nc", "a\n\nc" })
+        {
+            var editor = Editor(text, At(0, 0), At(2, 0));
+
+            editor.CanExecute(CodeCommand.MoveLinesDown).Should().BeFalse();
+            Press(editor, "ArrowDown", KeyModifiers.Alt).Should().BeFalse();
+
+            editor.Document.Text.Should().Be(text);
+            editor.Selection.Should().Be(new CodeRange(At(0, 0), At(2, 0)));
+        }
+    }
+
+    /// <summary>A block whose last line is empty goes down and comes back whole, the empty line with it
+    /// (Copilot, #1033).</summary>
+    [Fact]
+    public void ABlockEndingOnABlankLine_GoesDownAndComesBackWhole()
+    {
+        var editor = Editor("a\n\nc\nd", At(0, 0), At(2, 0));
 
         Press(editor, "ArrowDown", KeyModifiers.Alt).Should().BeTrue();
+        editor.Document.Text.Should().Be("c\na\n\nd");
+        editor.Selection.Should().Be(new CodeRange(At(1, 0), At(3, 0)));
 
-        editor.Document.Text.Should().Be("c\na\nb");
-        editor.Selection.Should().Be(new CodeRange(At(1, 0), At(2, 1)));
         Press(editor, "ArrowUp", KeyModifiers.Alt).Should().BeTrue();
-        editor.Document.Text.Should().Be("a\nb\nc");
-        editor.Undo().Should().BeTrue();
-        editor.Redo().Should().BeTrue();
-        editor.Selection.Should().Be(new CodeRange(At(0, 0), At(1, 1)));
-
-        var upward = Editor("a\nb\nc", At(2, 0), At(0, 0));
-        Press(upward, "ArrowDown", KeyModifiers.Alt).Should().BeTrue();
-        upward.Selection.Should().Be(new CodeRange(At(2, 1), At(1, 0)), "the direction kept");
+        editor.Document.Text.Should().Be("a\n\nc\nd");
+        editor.Selection.Should().Be(new CodeRange(At(0, 0), At(2, 0)));
     }
 
     [Fact]
@@ -265,6 +277,27 @@ public class CodeLinesTests : IDisposable
         editor.Execute(CodeCommand.JoinLines).Should().BeTrue();
 
         editor.Document.Text.Should().Be("x = \"a\u00A0 \u00A0  b\"");
+    }
+
+    /// <summary>The white space a join collapses at the end of the first line takes the selection's ends
+    /// that stood in it to the one space left, the start of a selection over lines and both ends of one on
+    /// that line, so typing never replaces text the selection did not hold (Copilot, #1033).</summary>
+    [Fact]
+    public void AJoin_TakesTheEndsInTheCollapsedWhiteSpaceToTheSpaceLeft()
+    {
+        var forward = Editor("ab        \ncdef", At(0, 8), At(1, 1));
+        forward.Execute(CodeCommand.JoinLines).Should().BeTrue();
+        forward.Document.Text.Should().Be("ab cdef");
+        forward.Selection.Should().Be(new CodeRange(At(0, 3), At(0, 4)), "the c alone, as the selection held it");
+
+        var backward = Editor("ab        \ncdef", At(1, 1), At(0, 8));
+        backward.Execute(CodeCommand.JoinLines).Should().BeTrue();
+        backward.Selection.Should().Be(new CodeRange(At(0, 4), At(0, 3)));
+
+        var onTheLine = Editor("ab    \ncd", At(0, 3), At(0, 5));
+        onTheLine.Execute(CodeCommand.JoinLines).Should().BeTrue();
+        onTheLine.Document.Text.Should().Be("ab cd");
+        onTheLine.Selection.Should().Be(new CodeRange(At(0, 3)), "the white space it held is gone");
     }
 
     /// <summary>A selection over lines keeps its end at the text it stood before, as VS Code's join keeps
