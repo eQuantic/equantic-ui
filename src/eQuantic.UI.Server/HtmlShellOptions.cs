@@ -7,11 +7,12 @@ public class HtmlShellOptions
 {
     public string Title { get; set; } = "eQuantic.UI App";
     public string HtmlClass { get; set; } = "";
-    public string BaseStyles { get; set; } = @"
-        body { font-family: system-ui, sans-serif; margin: 0; padding: 0; }
-        .loading { display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 1.5rem; }
-    ";
     public List<string> HeadTags { get; } = new();
+
+    /// <summary>The app's own CSS, in the order <see cref="AddStyles"/> added it.</summary>
+    public IReadOnlyList<string> Styles => _styles;
+
+    private readonly List<string> _styles = new();
 
     public HtmlShellOptions SetTitle(string title)
     {
@@ -93,9 +94,16 @@ public class HtmlShellOptions
     public HtmlShellOptions AddScript(Uri src, bool defer = true) =>
         AddHeadTag(HtmlTag.Script(src.ToString(), defer));
 
-    public HtmlShellOptions SetBaseStyles(string styles)
+    /// <summary>
+    /// ESCAPE HATCH: CSS of the app's own, for what the theme cannot say yet. The document's surface,
+    /// text, faces, selection, placeholder and scrollbars are the theme's (<c>IAppTheme</c>), written
+    /// in the theme's stylesheet; this CSS comes after it in the head, so a rule here wins every tie
+    /// with the SDK's. Each call appends, and nothing an app adds replaces the SDK's rules.
+    /// </summary>
+    public HtmlShellOptions AddStyles(string css)
     {
-        BaseStyles = styles;
+        ArgumentNullException.ThrowIfNull(css);
+        _styles.Add(css);
         return this;
     }
 }

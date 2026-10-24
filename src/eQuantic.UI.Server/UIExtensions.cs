@@ -721,10 +721,12 @@ public static class UIExtensions
         // shell.HeadTags directly is not thread-safe and leaks tags across requests.
         var headTags = new List<string>(shell.HeadTags);
 
-        // Write-once theme selection (options.UseTheme): emit the selected theme's NORMATIVE token
-        // stylesheet, and serialize it into window.__EQ_THEME__ so boot can setPhotonTheme before
-        // hydration (SSR markup + client re-renders then resolve the same colors/shape). Absent a
-        // selection, nothing is injected — the runtime keeps its baked-in photonTheme default.
+        // The theme's stylesheet, on EVERY page: the theme the app chose (options.UseTheme), or
+        // Photon's, the one the browser runtime falls back to. It carries the document's rules and
+        // every variable the lowered markup names, so a page whose app chose no theme is drawn from
+        // one rather than left to the browser's defaults with variables nothing defines. The
+        // template writes it before the app's own CSS, so an app's rule wins every tie with it.
+        //
         // The mode THIS request paints in: what the visitor last chose, or the app's declared
         // default when they have not chosen. The cookie is written by the browser's own controller
         // on a toggle (see WebThemeController) — no round trip, and the server can read it, which
@@ -732,13 +734,12 @@ public static class UIExtensions
         // already carries the right mode, instead of the default arriving and hydration correcting
         // it in front of the reader.
         var requestedMode = ThemeCookie.Resolve(context, options.InitialThemeMode, options.ThemeCookie?.Name);
+        var themeStyles = ThemeStylesheet.Generate(options.Theme ?? PhotonTheme.Instance, requestedMode);
 
-        string? themeDataJson = null;
-        if (options.Theme is { } appTheme)
-        {
-            headTags.Add($"<style>{eQuantic.UI.Web.ThemeStylesheet.Generate(appTheme, requestedMode)}</style>");
-            themeDataJson = eQuantic.UI.Web.ThemeBridge.SerializeJson(appTheme);
-        }
+        // A CHOSEN theme also crosses as data, into window.__EQ_THEME__, so boot can setPhotonTheme
+        // before hydration and the client's re-renders resolve the colours and shapes the server
+        // rendered. With none chosen the runtime already carries Photon's.
+        var themeDataJson = options.Theme is { } appTheme ? ThemeBridge.SerializeJson(appTheme) : null;
 
         // Track L D4/D5: the request's culture rides the shell — <html lang> for assistive tech
         // (pronunciation follows it), and window.__EQ_CULTURE__ with the format culture's data and
@@ -968,7 +969,8 @@ public static class UIExtensions
                .Set("Title", System.Web.HttpUtility.HtmlEncode(metadata.Title ?? string.Empty))
                .Set("MetadataTags", metadata.RenderTags())
                .Set("BuildId", BuildId)
-               .SetOrEmpty("BaseStyles", shell.BaseStyles)
+               .Set("ThemeStyles", themeStyles)
+               .SetOrEmpty("AppStyles", shell.Styles.Count > 0 ? string.Join("\n", shell.Styles) : null)
                .Set("HeadTags", string.Join("\n    ", headTags))
                .Set("SsrEnabled", ssrEnabled.ToString().ToLowerInvariant())
                .Set("SsrContent", ssrContent)

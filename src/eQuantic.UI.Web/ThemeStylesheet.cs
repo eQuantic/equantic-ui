@@ -9,8 +9,13 @@ namespace eQuantic.UI.Web;
 /// "every CSS artifact the embedded engine ships is GENERATED at build time from the Primitives tokens
 /// — hand-maintained CSS copies of token values are forbidden"). One theme in, one stylesheet out:
 /// <c>color-scheme</c> setup, <c>--eq-*</c> custom properties (colors as <c>light-dark()</c> pairs,
-/// radius/space scales), <c>.eq-type-*</c> classes for the type roles, and <c>.eq-elevation-*</c>
-/// shadows. Parity with the C# tokens is TESTED, not promised.
+/// radius/space scales, the theme's faces), the document's rules (its surface, text, face,
+/// selection, placeholder and scrollbars), <c>.eq-type-*</c> classes for the type roles, and
+/// <c>.eq-elevation-*</c> shadows. Parity with the C# tokens is TESTED, not promised.
+/// <para>
+/// Every page carries it, the theme the app chose or Photon's, and it comes before the app's own
+/// CSS in the head, so an app's rule wins every tie with it.
+/// </para>
 /// </summary>
 public static class ThemeStylesheet
 {
@@ -58,6 +63,13 @@ public static class ThemeStylesheet
         AppendColor(css, "link", theme.LinkColor);
         AppendColor(css, "scrim", theme.Scrim);
 
+        // The document's chrome (#1038): what the page draws around the components.
+        AppendColor(css, "selection", theme.Selection);
+        if (theme.OnSelection is { } onSelection) AppendColor(css, "on-selection", onSelection);
+        AppendColor(css, "placeholder", theme.Placeholder);
+        AppendColor(css, "scrollbar-thumb", theme.ScrollbarThumb);
+        AppendColor(css, "scrollbar-track", theme.ScrollbarTrack);
+
         // Interactive variants — the five sub-tokens each (§01).
         foreach (var variant in new[]
                  {
@@ -94,9 +106,13 @@ public static class ThemeStylesheet
         // `var(--eq-font-mono, …)`, so declaring it here reaches the role class, every node that
         // says mono, the client's own lowering and the canvas measurer at once — without the
         // lowering having to learn about a theme it cannot see. The app keeps the last word: this
-        // is a declaration on `:root`, and an app's own `:root` rule still wins.
+        // sheet comes before the app's own CSS, so an app's own `:root` rule wins.
         if (FaceName.Usable(theme.MonoFamily) is { } code)
             css.AppendLine($"  --eq-font-mono: \"{code}\", {TokenCss.MonoFallback};");
+        // And its TEXT FACE, by the same rule: `SansStack` is `var(--eq-font-family, …)`, and the
+        // document below and every role with no face of its own are set in it.
+        if (FaceName.Usable(theme.TextFamily) is { } text)
+            css.AppendLine($"  --eq-font-family: \"{text}\", {TokenCss.SansFallback};");
 
         // Motion (§06).
         css.AppendLine($"  --eq-motion-fast: {Motion.FastMs}ms;");
@@ -106,6 +122,18 @@ public static class ThemeStylesheet
         css.AppendLine($"  --eq-curve-decelerate: cubic-bezier({Cubic(Curve.Decelerate)});");
         css.AppendLine($"  --eq-curve-accelerate: cubic-bezier({Cubic(Curve.Accelerate)});");
         css.AppendLine("}");
+
+        // The DOCUMENT (#1038): the page around the components, from the theme rather than from a
+        // block each app wrote. Ordinary selectors on purpose: this sheet comes before the app's own
+        // CSS in the head, so an app's rule wins every tie by coming later. The placeholder's
+        // opacity is the UA's: Firefox draws it at 54% unless told, which is not the theme's colour.
+        css.AppendLine("body { margin: 0; background: var(--eq-color-background); color: var(--eq-color-text-primary); "
+            + $"font-family: {TokenCss.SansStack}; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }}");
+        css.AppendLine(theme.OnSelection is null
+            ? "::selection { background: var(--eq-color-selection); }"
+            : "::selection { background: var(--eq-color-selection); color: var(--eq-color-on-selection); }");
+        css.AppendLine("::placeholder { color: var(--eq-color-placeholder); opacity: 1; }");
+        css.AppendLine(":root { scrollbar-color: var(--eq-color-scrollbar-thumb) var(--eq-color-scrollbar-track); }");
 
         // Type roles (§02) — one class per role; components reference the class, never raw sizes.
         //
@@ -347,7 +375,8 @@ public static class ThemeStylesheet
         css.AppendLine(".eq-code-input { position: absolute; width: 1px; padding: 0; margin: 0; border: 0; outline: none; resize: none; overflow: hidden; white-space: pre; opacity: 0; color: transparent; background: transparent; caret-color: transparent; pointer-events: none; z-index: -1; }");
 
         // Text entry mechanics (spec B9): the input is chrome-less — the container shows focus —
-        // and the placeholder rides TextMuted. Values are tokens; only mechanics live here.
+        // and its placeholder is the document's, in the theme's Placeholder (above). Values are
+        // tokens; only mechanics live here.
         css.AppendLine(".eq-entry { outline: none; }");
         // The .eq-field shell FILLS its container and centres what is in it. Without this it was a
         // plain block of content height, so an entry dropped straight into a fixed-height Box —
@@ -357,6 +386,7 @@ public static class ThemeStylesheet
         // with it. Centring here fixes every composition instead of asking each one to remember a
         // Row, and a multi-line entry is unaffected (its height is its own, and centring a single
         // child that already fills the line is a no-op).
+        css.AppendLine(".eq-field { display: flex; align-items: center; height: 100%; }");
         // A heading is a heading for the OUTLINE, never for the paint: the type role already
         // carries size, weight and line height, and the browser's own h1–h6 rules would add a
         // margin and a font size on top of it. Zeroed here rather than per element, so choosing a
@@ -370,8 +400,6 @@ public static class ThemeStylesheet
         // the rule is exactly as scoped as it looks.
         css.AppendLine("h1, h2, h3, h4, h5, h6 { display: inline; margin: 0; font-size: inherit; "
             + "font-weight: inherit; line-height: inherit; }");
-        css.AppendLine(".eq-field { display: flex; align-items: center; height: 100%; }");
-        css.AppendLine(".eq-entry::placeholder { color: var(--eq-color-text-muted); }");
         // AUTOFILL. Chrome paints its own background and text colour over an autofilled control,
         // ignoring ours — so a themed field showed a pale rectangle floating inside it, in the one
         // flow (a filled form) where the app looks least finished. Clipping that background to the

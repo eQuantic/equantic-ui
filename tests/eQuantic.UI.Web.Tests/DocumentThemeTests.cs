@@ -83,6 +83,52 @@ public class DocumentThemeTests
         new TextRun("then").Resolve(paragraph, theme).Family.Should().Be("Atkinson Hyperlegible Next");
     }
 
+    /// <summary>
+    /// The web's document, written from the theme rather than from a block each app wrote: the body,
+    /// the selection, every field's placeholder and the page's scrollbars, through the variables the
+    /// theme's slots declare.
+    /// </summary>
+    [Fact]
+    public void TheStylesheet_DrawsTheDocumentFromTheTheme()
+    {
+        var css = ThemeStylesheet.Generate(Photon);
+
+        css.Should().Contain("body { margin: 0; background: var(--eq-color-background); color: var(--eq-color-text-primary); "
+            + "font-family: var(--eq-font-family, system-ui, -apple-system, sans-serif); -webkit-font-smoothing: antialiased; "
+            + "-moz-osx-font-smoothing: grayscale; }");
+        css.Should().Contain("::selection { background: var(--eq-color-selection); }")
+            .And.Contain("::placeholder { color: var(--eq-color-placeholder); opacity: 1; }")
+            .And.Contain(":root { scrollbar-color: var(--eq-color-scrollbar-thumb) var(--eq-color-scrollbar-track); }");
+        css.Should().Contain($"--eq-color-selection: {TokenCss.Value(Photon.Selection)};")
+            .And.Contain($"--eq-color-placeholder: {TokenCss.Value(Photon.Placeholder)};")
+            .And.Contain($"--eq-color-scrollbar-thumb: {TokenCss.Value(Photon.ScrollbarThumb)};")
+            .And.Contain($"--eq-color-scrollbar-track: {TokenCss.Value(Photon.ScrollbarTrack)};");
+        css.Should().NotContain("--eq-font-family:", "Photon names no text face, so the platform's own is the document's")
+            .And.NotContain("--eq-color-on-selection", "and its selected text keeps its own colour");
+    }
+
+    [Fact]
+    public void AThemesTextFace_IsTheDocumentsFace()
+    {
+        var css = ThemeStylesheet.Generate(new DocumentTheme(Photon) { Text = "Atkinson Hyperlegible Next" });
+
+        css.Should().Contain("--eq-font-family: \"Atkinson Hyperlegible Next\", system-ui, -apple-system, sans-serif;",
+            "the face is declared in front of the platform's own, which a browser without it falls back to");
+    }
+
+    [Fact]
+    public void AThemesSelectedTextColour_IsTheSelectionsColour()
+    {
+        var css = ThemeStylesheet.Generate(new DocumentTheme(Photon)
+        {
+            Wash = new ColorToken(new Color(0x1B, 0x5E, 0x4B, 255)),
+            SelectedText = new ColorToken(Color.White),
+        });
+
+        css.Should().Contain("--eq-color-on-selection: #ffffff;")
+            .And.Contain("::selection { background: var(--eq-color-selection); color: var(--eq-color-on-selection); }");
+    }
+
     /// <summary>A theme over another, answering the document's slots it is given and the rest as the
     /// inner theme does.</summary>
     internal sealed class DocumentTheme(IAppTheme inner) : IAppTheme

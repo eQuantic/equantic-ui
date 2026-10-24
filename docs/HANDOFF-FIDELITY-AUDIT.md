@@ -1353,7 +1353,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  ThemeStylesheet.cs:167  css.AppendLine(":where(.eq-pressable > :first-child) { transition: background-color var(--eq-motion-fast) ease-out; }");   with ThemeStylesheet.cs:102  --eq-motion-fast: {Motion.FastMs}ms;
+  ThemeStylesheet.cs:195  css.AppendLine(":where(.eq-pressable > :first-child) { transition: background-color var(--eq-motion-fast) ease-out; }");   with ThemeStylesheet.cs:118  --eq-motion-fast: {Motion.FastMs}ms;
   ```
 
 ### A12 Button · missing-feature · **unverified**
@@ -1446,8 +1446,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  ThemeStylesheet.cs:167  css.AppendLine(":where(.eq-pressable > :first-child) { transition: background-color var(--eq-motion-fast) ease-out; }");
-  ThemeStylesheet.cs:172  css.AppendLine(".eq-press-fill:active > :first-child { background-color: var(--eq-pressed-bg) !important; }");
+  ThemeStylesheet.cs:195  css.AppendLine(":where(.eq-pressable > :first-child) { transition: background-color var(--eq-motion-fast) ease-out; }");
+  ThemeStylesheet.cs:200  css.AppendLine(".eq-press-fill:active > :first-child { background-color: var(--eq-pressed-bg) !important; }");
   ```
 
 ### B2 List · ListItem · missing-feature · **CONFIRMED**
@@ -2205,7 +2205,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  ThemeStylesheet.cs:309        css.AppendLine(".eq-presence-slideup { animation: eq-presence-slideup var(--eq-motion-base) ease-out; }");
+  ThemeStylesheet.cs:337        css.AppendLine(".eq-presence-slideup { animation: eq-presence-slideup var(--eq-motion-base) ease-out; }");
   ```
 
 ### C5 Drawer · missing-feature · **unverified**
@@ -2579,7 +2579,7 @@ the pill's 40 down.
 
   ```
   Tooltip.cs:39  }, new Text(Text, TypeRole.Caption, theme.TextInverse, maxLines: 1));
-  ThemeStylesheet.cs:249  css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; width: max-content; max-width: min(92vw, 420px); }");
+  ThemeStylesheet.cs:277  css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; width: max-content; max-width: min(92vw, 420px); }");
   ```
 
 ### C13 Tooltip · metric · **unverified**
@@ -3337,7 +3337,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  ThemeStylesheet.cs:329  css.AppendLine($".eq-spinner {{ opacity: 0; animation: eq-appear 1ms linear {Spinner.AppearDelayMs}ms forwards; }}");
+  ThemeStylesheet.cs:357  css.AppendLine($".eq-spinner {{ opacity: 0; animation: eq-appear 1ms linear {Spinner.AppearDelayMs}ms forwards; }}");
   EmitVisitor.Media.cs:295  motion.Active = true;   // EmitSpinner — no AppearDelayMs anywhere
   ```
 
@@ -3394,7 +3394,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  ThemeStylesheet.cs:315        css.AppendLine(".eq-presence-exit-fade { animation: eq-presence-exit-fade var(--eq-motion-fast) ease-in forwards; }");
+  ThemeStylesheet.cs:343        css.AppendLine(".eq-presence-exit-fade { animation: eq-presence-exit-fade var(--eq-motion-fast) ease-in forwards; }");
   ```
 
 ### C2 Modal · metric · **unverified**
@@ -3491,7 +3491,7 @@ the pill's 40 down.
   ```
   EmitVisitor.Interaction.cs:173  private static Rect ExpandHitRect(Rect bounds, Density density = Density.Comfortable)   // native only
   WebLoweringVisitor.Interaction.cs:490-498  Padding = "0", Border = "none", Background = "none", ... Width = fills.Width ? "100%" : null, Height = fills.Height ? "100%" : null,
-  ThemeStylesheet.cs:162  css.AppendLine(".eq-pressable { -webkit-tap-highlight-color: transparent; }");
+  ThemeStylesheet.cs:190  css.AppendLine(".eq-pressable { -webkit-tap-highlight-color: transparent; }");
   ```
 
 ### C9 PullToRefresh · missing-feature · **unverified**
@@ -3589,7 +3589,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  ThemeStylesheet.cs:264  css.AppendLine(".eq-hoverreveal > .eq-anchor-panel { opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }");
+  ThemeStylesheet.cs:292  css.AppendLine(".eq-hoverreveal > .eq-anchor-panel { opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }");
   Tokens.cs:276  public const int FastMs = 100;
   ```
 
@@ -3602,7 +3602,7 @@ the pill's 40 down.
 
   ```
   Tooltip.cs:16  /// v1 fences: show/hide delay, arrow caret.
-  ThemeStylesheet.cs:265  css.AppendLine(".eq-hoverreveal:hover > .eq-anchor-panel { opacity: 1; }");
+  ThemeStylesheet.cs:293  css.AppendLine(".eq-hoverreveal:hover > .eq-anchor-panel { opacity: 1; }");
   ```
 
 ### C13 Tooltip · documented-deviation · **unverified**

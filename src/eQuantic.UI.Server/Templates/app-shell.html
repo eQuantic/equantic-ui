@@ -29,11 +29,17 @@
                    grid-template-rows: 100dvh; align-items: start; }
             #app > * { min-height: 100%; }
         </style>
-        {{?BaseStyles}}
+        <!-- The theme's stylesheet: its tokens, the document it draws (surface, text, faces,
+             selection, placeholder, scrollbars) and the classes the components name. Before the
+             app's own CSS, so an app's rule wins every tie with the SDK's. -->
         <style>
-            {{BaseStyles}}
+            {{ThemeStyles}}
         </style>
-        {{/BaseStyles}} {{HeadTags}}
+        {{?AppStyles}}
+        <style>
+            {{AppStyles}}
+        </style>
+        {{/AppStyles}} {{HeadTags}}
 
         <!-- Import Map for bare modules -->
         <script type="importmap">

@@ -23,15 +23,35 @@ public static class TokenCss
         ? Hex(token.Light)
         : $"light-dark({Hex(token.Light)}, {Hex(token.Dark)})";
 
-    /// <summary>dp → px (1:1 on web; density is the platform's concern).</summary>
     /// <summary>
-    /// The monospace stack (Text.Mono / rich runs) with an APP-SETTABLE hook in front of it —
-    /// ui-monospace first inside the fallback, so each OS uses its native mono face.
+    /// The PROPORTIONAL stack, behind <c>--eq-font-family</c>: the theme's text face
+    /// (<see cref="IAppTheme.TextFamily"/>), which the theme's stylesheet declares on <c>:root</c> when
+    /// the theme names one, in front of the platform's own. The document and every role with no face
+    /// of its own are set in it.
     /// <para>
-    /// A mono run lands on an atomic class, and an atomic class beats a <c>body</c> rule, so an app
-    /// that wanted its own code face had nowhere to put it: the class name is a content hash that
-    /// moves between builds, which is no hook at all. Setting <c>--eq-font-mono</c> on <c>:root</c>
-    /// is the hook.
+    /// CHARACTER-IDENTICAL to the runtime's SANS_STACK (lowering.ts), for the reason
+    /// <see cref="MonoStack"/> gives.
+    /// </para>
+    /// </summary>
+    public const string SansStack = "var(--eq-font-family, " + SansFallback + ")";
+
+    /// <summary>The stack behind <c>--eq-font-family</c> — named once so the variable's declaration
+    /// and its fallback cannot drift apart.</summary>
+    public const string SansFallback = "system-ui, -apple-system, sans-serif";
+
+    /// <summary>The stack behind <c>--eq-font-mono</c> — named once so the variable's declaration
+    /// and its fallback cannot drift apart.</summary>
+    public const string MonoFallback =
+        "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace";
+
+    /// <summary>
+    /// The monospace stack (Text.Mono / rich runs), behind <c>--eq-font-mono</c>: the theme's code
+    /// face (<see cref="IAppTheme.MonoFamily"/>) when it names one, in front of ui-monospace, so each
+    /// OS otherwise uses its native mono face.
+    /// <para>
+    /// A mono run lands on an atomic class, and an atomic class beats a <c>body</c> rule, so a face
+    /// for code reaches it through the variable: the class name is a content hash that moves between
+    /// builds, which is no hook at all.
     /// </para>
     /// <para>
     /// This string must stay CHARACTER-IDENTICAL to the runtime's MONO_STACK (lowering.ts): the
@@ -40,16 +60,6 @@ public static class TokenCss
     /// hydration.
     /// </para>
     /// </summary>
-    /// <summary>The PROPORTIONAL stack, behind <c>--eq-font-family</c>: the hook an app sets on
-    /// <c>:root</c> for its own face, as <c>--eq-font-mono</c> is for code. The SDK declares
-    /// neither, so the fallback is what a page paints with unless the app says otherwise.</summary>
-    public const string SansStack = "var(--eq-font-family, system-ui, -apple-system, sans-serif)";
-
-    /// <summary>The stack behind <c>--eq-font-mono</c> — named once so the variable's declaration
-    /// and its fallback cannot drift apart.</summary>
-    public const string MonoFallback =
-        "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace";
-
     public const string MonoStack = "var(--eq-font-mono, " + MonoFallback + ")";
 
     /// <summary>
@@ -70,6 +80,7 @@ public static class TokenCss
     public static string Face(string family, bool mono) =>
         $"\"{family}\", " + (mono ? MonoStack : SansStack);
 
+    /// <summary>dp → px (1:1 on web; density is the platform's concern).</summary>
     public static string Px(float dp) => dp switch
     {
         0 => "0",
