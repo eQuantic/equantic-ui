@@ -34,7 +34,9 @@ export type CodeCommandValue =
   | 'completionNext' | 'completionPrevious' | 'completionNextPage' | 'completionPreviousPage'
   | 'completionAccept' | 'completionAcceptChangingText' | 'completionHide' | 'signatureHelpShow'
   | 'signatureHelpNext' | 'signatureHelpPrevious' | 'signatureHelpHide' | 'hoverShow' | 'hoverHide'
-  | 'problemNext' | 'problemPrevious' | 'releaseKeyboard';
+  | 'problemNext' | 'problemPrevious' | 'releaseKeyboard' | 'moveLinesUp' | 'moveLinesDown'
+  | 'copyLinesUp' | 'copyLinesDown' | 'deleteLines' | 'joinLines' | 'sortLinesAscending'
+  | 'sortLinesDescending' | 'insertLineAbove' | 'insertLineBelow';
 
 export type CodeCompletionKindValue =
   'text' | 'method' | 'function' | 'constructor' | 'field' | 'variable' | 'class' | 'interface'

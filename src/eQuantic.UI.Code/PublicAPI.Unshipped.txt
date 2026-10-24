@@ -167,3 +167,19 @@ eQuantic.UI.Code.CodeKeyBinding.Command.init -> void
 eQuantic.UI.Code.CodeKeyBinding.First.get -> eQuantic.UI.Primitives.KeyChord?
 eQuantic.UI.Code.CodeKeyBinding.First.init -> void
 static eQuantic.UI.Code.CodeKeymap.Defaults(eQuantic.UI.Primitives.KeyboardConvention convention) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeKeyBinding>!
+eQuantic.UI.Code.CodeCommand.MoveLinesUp = 57 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.MoveLinesDown = 58 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CopyLinesUp = 59 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CopyLinesDown = 60 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.DeleteLines = 61 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.JoinLines = 62 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.SortLinesAscending = 63 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.SortLinesDescending = 64 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.InsertLineAbove = 65 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.InsertLineBelow = 66 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeEditorController.MoveLines(eQuantic.UI.Code.CodeDirection direction) -> bool
+eQuantic.UI.Code.CodeEditorController.CopyLines(eQuantic.UI.Code.CodeDirection direction) -> bool
+eQuantic.UI.Code.CodeEditorController.DeleteLines() -> bool
+eQuantic.UI.Code.CodeEditorController.JoinLines() -> bool
+eQuantic.UI.Code.CodeEditorController.SortLines(bool descending) -> bool
+eQuantic.UI.Code.CodeEditorController.InsertLine(eQuantic.UI.Code.CodeDirection direction) -> bool
