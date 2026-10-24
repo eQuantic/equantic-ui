@@ -7,3 +7,4 @@ eQuantic.UI.Primitives.IAppTheme.ScrollbarTrack.get -> eQuantic.UI.Primitives.Co
 eQuantic.UI.Primitives.IAppTheme.Selection.get -> eQuantic.UI.Primitives.ColorToken
 eQuantic.UI.Primitives.IAppTheme.TextFamily.get -> string?
 static eQuantic.UI.Primitives.EffectiveTypeStyle.WithThemeFace(this eQuantic.UI.Primitives.TypeStyle style, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.TypeStyle
+static eQuantic.UI.Primitives.EffectiveTypeStyle.Resolve(this eQuantic.UI.Primitives.TextEntry! entry, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.TypeStyle

@@ -2,7 +2,6 @@ import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
-    static selectionAlpha: number = 0.2800000011920929;
     _cells: any = $eq.collections.dictionary();
     _fillerCells: any = $eq.collections.dictionary();
     static linePass: number = 0;
@@ -172,7 +171,7 @@ export class CodeBlock extends StatelessComponent {
         }
         this.addMarks(marks, CodeBlock.highlightPass, metrics, theme, first, last, firstLine, lastLine, width);
         if ($eq.collections.count(this.selectionBands) > 0) {
-            let band = CodeBlock.selectionFor(this.inverse, theme).withOpacity(CodeBlock.selectionAlpha);
+            let band = CodeBlock.selectionFor(this.inverse, theme);
             let windowTop = Math.fround(metrics.contentTop + Math.fround(Math.fround(first) * lineHeight));
             let windowBottom = Math.fround(metrics.contentTop + Math.fround(Math.fround(last + 1) * lineHeight));
             for (const rect of this.selectionBands) {
@@ -475,7 +474,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     static selectionFor(inverse: boolean, theme: any) {
-        return inverse ? new ColorToken(theme.focusRing.dark, theme.focusRing.dark) : theme.focusRing;
+        return inverse ? new ColorToken(theme.selection.dark, theme.selection.dark) : theme.selection;
     }
 
     static surfaceFor(inverse: boolean, theme: any) {

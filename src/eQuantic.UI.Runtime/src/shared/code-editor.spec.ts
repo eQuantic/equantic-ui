@@ -1051,7 +1051,7 @@ describe('the component draws the selection, under the text', () => {
     if (Array.isArray(n.children)) for (const c of n.children) walk(c, context, visit);
   };
 
-  it('washes each band to 28% (CodeBlock.SelectionAlpha), one per line of the selection', async () => {
+  it("washes each band in the theme's Selection (the focus colour at 28%), one per line of the selection", async () => {
     const { materializeTheme } = await import('./theme-bridge');
     const photonData = (await import('./theme-bridge.photon.json')).default;
     const { CodeEditor } = await import('./components/CodeEditor');

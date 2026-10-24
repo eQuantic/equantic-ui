@@ -1,3 +1,4 @@
+using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Web;
 using FluentAssertions;
@@ -127,6 +128,33 @@ public class DocumentThemeTests
 
         css.Should().Contain("--eq-color-on-selection: #ffffff;")
             .And.Contain("::selection { background: var(--eq-color-selection); color: var(--eq-color-on-selection); }");
+    }
+
+    /// <summary>
+    /// A table's scrollbars, which the web draws as elements of its own, take the theme's scrollbar
+    /// colours through the variables the stylesheet declares, as Photon takes them from the slots.
+    /// The thumb used to be the muted text with the element's opacity at 55%, which is the slot's
+    /// default now, so the default draws the same.
+    /// </summary>
+    [Fact]
+    public void ATablesScrollbars_AreDrawnFromTheScrollbarSlots()
+    {
+        var table = new TableView(new UniformTableSpans(100, 28), new UniformTableSpans(10, 96),
+            (row, column) => new Text($"{row}:{column}", TypeRole.BodyM));
+
+        var styles = Walk(WebRealizer.Lower(table, Photon).Render())
+            .Select(n => n.Attributes.GetValueOrDefault("style") ?? "").ToList();
+
+        styles.Should().Contain(s => s.Contains("background: var(--eq-color-scrollbar-track)"))
+            .And.Contain(s => s.Contains("background: var(--eq-color-scrollbar-thumb)") && !s.Contains("opacity"));
+    }
+
+    private static IEnumerable<HtmlNode> Walk(HtmlNode node)
+    {
+        yield return node;
+        foreach (var child in node.Children)
+            foreach (var descendant in Walk(child))
+                yield return descendant;
     }
 
     /// <summary>A theme over another, answering the document's slots it is given and the rest as the

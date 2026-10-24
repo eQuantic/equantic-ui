@@ -64,6 +64,15 @@ public static class EffectiveTypeStyle
     }
 
     /// <summary>
+    /// The style a <see cref="TextEntry"/> is set in: its role, and the theme's face when the role
+    /// named none. The field's twin of <see cref="Resolve(Text, IAppTheme)"/>: four places measured,
+    /// drew and hit-tested a field's text from the role alone, so a theme's text face would have
+    /// reached every label and missed the field a person types into.
+    /// </summary>
+    public static TypeStyle Resolve(this TextEntry entry, IAppTheme theme) =>
+        theme.Type(entry.Role).WithThemeFace(theme);
+
+    /// <summary>
     /// The style a RUN inside a paragraph is set in: the paragraph's, plus what the run said, plus
     /// the theme's faces. The run-level twin of <see cref="Resolve(Text, IAppTheme)"/>, and here
     /// for the reason that function exists at all — this merge was written out by hand in the layout

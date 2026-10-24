@@ -122,10 +122,6 @@ public sealed class CodeBlock : StatelessComponent
     /// <summary>A press on a folded run's row, with the first line it hides: a diff opens it.</summary>
     public Action<int>? OnPlaceholderPressed { get; init; }
 
-    /// <summary>How much of the selection's ink shows — the band sits under the text, so it only has
-    /// to be seen, never read through.</summary>
-    public const float SelectionAlpha = 0.28f;
-
     /// <summary>Shown top-right, over the code — a file name, a language label.</summary>
     public string? Caption { get; init; }
 
@@ -306,7 +302,7 @@ public sealed class CodeBlock : StatelessComponent
         {
             // …and the selection's bands, one per line, drawn for the lines in the window only: a
             // select-all over a long file was a band per line of it, each build.
-            var band = SelectionFor(Inverse, theme).WithOpacity(SelectionAlpha);
+            var band = SelectionFor(Inverse, theme);
             var windowTop = metrics.ContentTop + first * lineHeight;
             var windowBottom = metrics.ContentTop + (last + 1) * lineHeight;
             foreach (var rect in SelectionBands)
@@ -947,10 +943,11 @@ public sealed class CodeBlock : StatelessComponent
     public static ColorToken InkFor(bool inverse, IAppTheme theme) =>
         inverse ? CodeInk : theme.TextPrimary;
 
-    /// <summary>The selection band's colour, by the same rule: on the dark slab the DARK half of
-    /// the focus ring is used in both modes (see <see cref="InverseCode"/>).</summary>
+    /// <summary>The selection band's colour: the theme's <see cref="IAppTheme.Selection"/>, a wash
+    /// under the text, so it only has to be seen, never read through. By the same rule as the ink, on
+    /// the dark slab its DARK half is used in both modes (see <see cref="InverseCode"/>).</summary>
     public static ColorToken SelectionFor(bool inverse, IAppTheme theme) =>
-        inverse ? new ColorToken(theme.FocusRing.Dark, theme.FocusRing.Dark) : theme.FocusRing;
+        inverse ? new ColorToken(theme.Selection.Dark, theme.Selection.Dark) : theme.Selection;
 
     /// <summary>The slab under the code — asked for by the same editor that asks for the ink, for
     /// the same reason: when the block is bare content the frame is built outside it, and a frame
