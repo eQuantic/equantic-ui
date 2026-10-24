@@ -201,7 +201,7 @@ public class GradientShimmerRealizerTests
     [Fact]
     public void GeneratedStylesheet_HidesRestHiddenLoops_AndCarriesTheHighlightToken()
     {
-        var css = PhotonCssGenerator.Generate(Theme);
+        var css = ThemeStylesheet.Generate(Theme);
 
         css.Should().Contain(
             "@media (prefers-reduced-motion: reduce) { .eq-loop { animation: none; } .eq-loop-rest-hidden { visibility: hidden; } }");

@@ -10,9 +10,9 @@ namespace eQuantic.UI.Web.Tests;
 /// TESTED. These tests recompute the expected values from the same tokens the native realizer uses,
 /// so a drift between web CSS and Photon is a build failure.
 /// </summary>
-public class PhotonCssGeneratorTests
+public class ThemeStylesheetTests
 {
-    private static readonly string Css = PhotonCssGenerator.Generate(PhotonTheme.Instance);
+    private static readonly string Css = ThemeStylesheet.Generate(PhotonTheme.Instance);
 
     /// <summary>
     /// EVERY role gets a rule. The emitter used a hand-written list of seven, and the scale later
@@ -50,7 +50,7 @@ public class PhotonCssGeneratorTests
     [InlineData(ThemeMode.Dark, "color-scheme: dark;")]
     public void ADeclaredMode_PinsTheColorScheme(ThemeMode mode, string expected)
     {
-        PhotonCssGenerator.Generate(PhotonTheme.Instance, mode).Should().Contain(expected);
+        ThemeStylesheet.Generate(PhotonTheme.Instance, mode).Should().Contain(expected);
     }
 
     /// <summary>
@@ -65,7 +65,7 @@ public class PhotonCssGeneratorTests
     [InlineData(ThemeMode.Light, ".eq-themed-light { display: block; }")]
     public void ADeclaredMode_DecidesTheThemedImagePair(ThemeMode mode, string expected)
     {
-        var css = PhotonCssGenerator.Generate(PhotonTheme.Instance, mode);
+        var css = ThemeStylesheet.Generate(PhotonTheme.Instance, mode);
 
         css.Should().Contain(expected);
         css.Should().NotContain("@media (prefers-color-scheme: dark) { .eq-themed-light",
@@ -80,7 +80,7 @@ public class PhotonCssGeneratorTests
     [InlineData(ThemeMode.Dark)]
     public void TheRuntimeToggle_AlwaysOutranksTheDefault(ThemeMode? mode)
     {
-        var css = PhotonCssGenerator.Generate(PhotonTheme.Instance, mode);
+        var css = ThemeStylesheet.Generate(PhotonTheme.Instance, mode);
 
         css.Should().Contain(":root[data-theme=\"dark\"] .eq-themed-dark { display: block; }");
         css.Should().Contain(":root[data-theme=\"light\"] .eq-themed-light { display: block; }");
@@ -90,7 +90,7 @@ public class PhotonCssGeneratorTests
     [Fact]
     public void WithoutADeclaredMode_TheOsDecides()
     {
-        var css = PhotonCssGenerator.Generate(PhotonTheme.Instance);
+        var css = ThemeStylesheet.Generate(PhotonTheme.Instance);
 
         css.Should().Contain("color-scheme: light dark;");
         css.Should().Contain("@media (prefers-color-scheme: dark) { .eq-themed-light",

@@ -49,7 +49,7 @@ public class PressedStateRealizerTests
     [Fact]
     public void GeneratedCss_CarriesThePressedMechanics()
     {
-        var css = PhotonCssGenerator.Generate(Theme);
+        var css = ThemeStylesheet.Generate(Theme);
         css.Should().Contain(".eq-press-fill:active > :first-child { background-color: var(--eq-pressed-bg) !important; }");
         css.Should().Contain(".eq-pressed.eq-press-fill > :first-child { background-color: var(--eq-pressed-bg) !important; }");
         css.Should().NotContain(".eq-pressable:active > :first-child { background-color",
@@ -69,7 +69,7 @@ public class PressedStateRealizerTests
     [Fact]
     public void GeneratedCss_LetsAWrappedInertControlYieldTheClick()
     {
-        var css = PhotonCssGenerator.Generate(Theme);
+        var css = ThemeStylesheet.Generate(Theme);
         css.Should().Contain(
             ".eq-pressable [disabled], .eq-pressable [aria-disabled=\"true\"] { pointer-events: none; }");
     }

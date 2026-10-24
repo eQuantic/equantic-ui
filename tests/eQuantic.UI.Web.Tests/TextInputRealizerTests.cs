@@ -130,7 +130,7 @@ public class TextInputRealizerTests
     [Fact]
     public void GeneratedStylesheet_CarriesTheEntryMechanics()
     {
-        var css = PhotonCssGenerator.Generate(Theme);
+        var css = ThemeStylesheet.Generate(Theme);
         css.Should().Contain(".eq-entry { outline: none; }",
             "the container shows focus — the input itself is chrome-less");
         css.Should().Contain(".eq-entry::placeholder { color: var(--eq-color-text-muted); }");

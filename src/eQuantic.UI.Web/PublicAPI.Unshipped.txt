@@ -1,1 +1,5 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Web.PhotonCssGenerator
+*REMOVED*static eQuantic.UI.Web.PhotonCssGenerator.Generate(eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode? mode = null) -> string!
+eQuantic.UI.Web.ThemeStylesheet
+static eQuantic.UI.Web.ThemeStylesheet.Generate(eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode? mode = null) -> string!

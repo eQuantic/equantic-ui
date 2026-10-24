@@ -415,7 +415,7 @@ Bun and the JS bundling chain, the TypeScript runtime.
   keeps the truncation contract), Text→role-classed span (+system StyleOverride inline), Pressable→
   neutralized `<button>` (aria-label, disabled swallows, OnPressed→OnClick). Colors lower as
   `light-dark()` straight from tokens — the DOM stays MODE-FREE like the abstract tree.
-  `PhotonCssGenerator` produces the NORMATIVE embedded stylesheet from the tokens (custom properties,
+  `ThemeStylesheet` produces the NORMATIVE embedded stylesheet from the tokens (custom properties,
   `.eq-type-*` role classes, `.eq-elevation-*` shadows, motion vars) with per-value parity tests —
   the "web embedded CSS = mobile design system" rule is now enforced by CI. The shared Button/Card
   lower with exact spec metrics (the write-once proof test composes the native golden card tree as

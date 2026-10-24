@@ -144,7 +144,7 @@ public class NamedFaceTests
     [Fact]
     public void EverythingARoleCuts_RidesItsClass()
     {
-        var css = PhotonCssGenerator.Generate(new RoleTheme(Theme, TypeRole.Caption,
+        var css = ThemeStylesheet.Generate(new RoleTheme(Theme, TypeRole.Caption,
             Theme.Type(TypeRole.Caption) with { Family = "IBM Plex Mono", Mono = true, Italic = true }));
 
         var block = Block(css, ".eq-type-caption");
@@ -161,7 +161,7 @@ public class NamedFaceTests
     [Fact]
     public void TheEntryResetYieldsToARoleThatNamesAFace()
     {
-        var css = PhotonCssGenerator.Generate(new RoleTheme(Theme, TypeRole.BodyL,
+        var css = ThemeStylesheet.Generate(new RoleTheme(Theme, TypeRole.BodyL,
             Theme.Type(TypeRole.BodyL) with { Family = "IBM Plex Sans" }));
 
         css.Should().NotContain(".eq-entry.eq-type-bodyl {",
@@ -194,7 +194,7 @@ public class NamedFaceTests
     [Fact]
     public void AThemeCanNameTheFaceItSetsCodeIn()
     {
-        var css = PhotonCssGenerator.Generate(new CodeFacedTheme(Theme, "JetBrains Mono"));
+        var css = ThemeStylesheet.Generate(new CodeFacedTheme(Theme, "JetBrains Mono"));
 
         css.Should().Contain("--eq-font-mono: \"JetBrains Mono\", ui-monospace",
             "the declaration carries the brand in front of the stack it falls back to");
@@ -203,7 +203,7 @@ public class NamedFaceTests
     [Fact]
     public void NoCodeFace_LeavesTheVariableUndeclared()
     {
-        PhotonCssGenerator.Generate(Theme).Should().NotContain("--eq-font-mono:",
+        ThemeStylesheet.Generate(Theme).Should().NotContain("--eq-font-mono:",
             "an app with no opinion keeps the platform's own fixed-pitch face, and the hook stays free");
     }
 

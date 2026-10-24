@@ -1,51 +1,5 @@
 namespace eQuantic.UI.Primitives;
 
-/// <summary>Interactive variants — conceptual parity with the web SDK's Variant set (spec §01/§09).</summary>
-public enum Variant : byte
-{
-    Primary = 0,
-    Secondary = 1,
-    Destructive = 2,
-    Outline = 3,
-    Ghost = 4,
-    Link = 5,
-    Success = 6,
-    Warning = 7,
-    Info = 8,
-    /// <summary>The M3 tertiary role — a contrasting accent for balance. Photon tones it from Info.</summary>
-    Tertiary = 9,
-}
-
-/// <summary>
-/// Corner-shape scale — a semantic ladder (M3's shape scale) themes resolve to concrete radii, so
-/// SHAPE is theme-driven: Photon returns its own radii, Material returns the M3 shape values, a brand
-/// theme returns whatever it likes. Components request a role, never a hardcoded dp.
-/// </summary>
-public enum ShapeScale : byte
-{
-    None = 0,
-    ExtraSmall = 1,
-    Small = 2,
-    Medium = 3,
-    Large = 4,
-    ExtraLarge = 5,
-    /// <summary>Fully rounded (pills, avatars) — engine-clamped to min(w,h)/2.</summary>
-    Full = 6,
-}
-
-/// <summary>
-/// Control size tiers — heights 32 · 40 · 48 · 56 dp (spec §09). Named <c>SizeVariant</c> (not the
-/// design sketch's <c>Size</c>) for parity with the web SDK and because <c>Size</c> is the engine's
-/// geometry struct.
-/// </summary>
-public enum SizeVariant : byte
-{
-    Small = 0,
-    Medium = 1,
-    Large = 2,
-    XLarge = 3,
-}
-
 /// <summary>
 /// The Photon theme contract (spec §09 — conceptual parity with the web <c>IAppTheme</c>): every color
 /// is a light/dark <see cref="ColorToken"/>, resolution happens once per build pass, and resolved styles

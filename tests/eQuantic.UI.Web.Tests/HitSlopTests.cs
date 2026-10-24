@@ -19,7 +19,7 @@ namespace eQuantic.UI.Web.Tests;
 /// </summary>
 public class HitSlopTests
 {
-    private static string Css() => PhotonCssGenerator.Generate(PhotonTheme.Instance);
+    private static string Css() => ThemeStylesheet.Generate(PhotonTheme.Instance);
 
     /// <summary>The rules inside one pointer's gate, with the spaces taken out.</summary>
     private static string Gate(string pointer)
