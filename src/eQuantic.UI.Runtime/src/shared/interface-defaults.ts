@@ -16,6 +16,18 @@ import { codeTokenColor, type AppTheme, type ColorToken } from './value-types';
 
 /** `IAppTheme`'s defaults. */
 export const IAppTheme = {
+  /** `ColorToken Selection => FocusRing.WithOpacity(0.28f);` — the focus colour, washed. */
+  selection: (theme: AppTheme): ColorToken => theme.focusRing.withOpacity(0.28),
+  /** `ColorToken? OnSelection => null;` — selected text keeps its own colour. */
+  onSelection: (_theme: AppTheme): ColorToken | null => null,
+  /** `ColorToken Placeholder => TextMuted;` */
+  placeholder: (theme: AppTheme): ColorToken => theme.textMuted,
+  /** `ColorToken ScrollbarThumb => TextMuted.WithOpacity(0.55f);` */
+  scrollbarThumb: (theme: AppTheme): ColorToken => theme.textMuted.withOpacity(0.55),
+  /** `ColorToken ScrollbarTrack => SurfaceSubtle;` */
+  scrollbarTrack: (theme: AppTheme): ColorToken => theme.surfaceSubtle,
+  /** `string? TextFamily => null;` — no text face of its own. */
+  textFamily: (_theme: AppTheme): string | null => null,
   /** `string? MonoFamily => null;` — no code face of its own. */
   monoFamily: (_theme: AppTheme): string | null => null,
   /** `DataPalette Data => DataPalette.Default;` — the validated reference palette. */

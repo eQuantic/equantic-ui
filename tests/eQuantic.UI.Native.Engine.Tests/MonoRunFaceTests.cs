@@ -18,7 +18,7 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// </para>
 ///
 /// <para>
-/// The defect: a run's style started from the paragraph's, and <c>WithCodeFace</c> only fills a
+/// The defect: a run's style started from the paragraph's, and <c>WithThemeFace</c> only fills a
 /// family that is NULL. A branded theme therefore handed inline code the body face, and every shell
 /// resolves a face as <c>family ?? the OS fixed-pitch face</c> (<c>CoreTextService.FontFor</c>,
 /// <c>AndroidTextService.PaintFor</c>, <c>DirectWriteTextService</c>), so the inherited family won

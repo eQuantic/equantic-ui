@@ -215,8 +215,8 @@ public class NamedFaceTests
         var theme = new CodeFacedTheme(Theme, "JetBrains Mono");
         var named = Theme.Type(TypeRole.BodyM) with { Mono = true, Family = "IBM Plex Mono" };
 
-        named.WithCodeFace(theme).Family.Should().Be("IBM Plex Mono");
-        (Theme.Type(TypeRole.BodyM) with { Mono = true }).WithCodeFace(theme).Family
+        named.WithThemeFace(theme).Family.Should().Be("IBM Plex Mono");
+        (Theme.Type(TypeRole.BodyM) with { Mono = true }).WithThemeFace(theme).Family
             .Should().Be("JetBrains Mono", "and an unnamed one takes the theme's");
     }
 
@@ -225,7 +225,7 @@ public class NamedFaceTests
     {
         var theme = new CodeFacedTheme(Theme, "JetBrains Mono");
 
-        Theme.Type(TypeRole.BodyM).WithCodeFace(theme).Family.Should().BeNull();
+        Theme.Type(TypeRole.BodyM).WithThemeFace(theme).Family.Should().BeNull();
     }
 
     /// <summary>
@@ -302,7 +302,7 @@ public class NamedFaceTests
     /// <para>
     /// Reported by the eQuantic Code IDE after adopting it. Their theme is the normal way to brand
     /// type — <c>Base.Type(role) with { Family = brandSans }</c> — so every role named a face, and
-    /// <c>WithCodeFace</c> read that as a specific call site and stepped aside. The rule it was
+    /// <c>WithThemeFace</c> read that as a specific call site and stepped aside. The rule it was
     /// applying is right; what it could not see is that the family came from the ROLE and was never
     /// chosen for this text. They worked around it by naming the family at every node, which is the
     /// work a theme exists to remove.

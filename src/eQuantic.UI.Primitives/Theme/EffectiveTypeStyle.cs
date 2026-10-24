@@ -2,7 +2,8 @@ namespace eQuantic.UI.Primitives;
 
 /// <summary>
 /// The style a <see cref="Text"/> is actually set in: the ROLE the theme cut, what the NODE said on
-/// top of it, and the theme's code face when the result is monospaced.
+/// top of it, and the theme's face when neither named one: its code face for monospaced text, its
+/// text face for the rest.
 ///
 /// <para>
 /// One function because there were three, one per realizer, each merging the same three facts its
@@ -18,7 +19,12 @@ namespace eQuantic.UI.Primitives;
 /// themeable per role and <see cref="TypeStyle.Mono"/> is a per-node flag, so a theme had no way to
 /// name the face its monospaced text should use — the role never tells it which text wanted the
 /// other one. Resolved HERE, where the role, the node and the theme are all in hand for the only
-/// time.
+/// time. The TEXT FACE resolves beside it, for the same reason and by the same rule.
+/// </para>
+/// <para>
+/// The web takes neither from here: its document's face is inherited, and its role classes name a
+/// face only where the role has one, so a text the theme's face reaches is written with no family
+/// of its own.
 /// </para>
 /// </summary>
 [ServerOnly]
@@ -30,7 +36,7 @@ public static class EffectiveTypeStyle
     /// </summary>
     public static TypeStyle Resolve(this Text text, IAppTheme theme)
     {
-        // WHERE the style came from, kept before it is flattened. `WithCodeFace` steps aside for a
+        // WHERE the style came from, kept before it is flattened. `WithThemeFace` steps aside for a
         // style that NAMES a family, on the rule that the call site was specific — and after this
         // line nothing can tell a family the CALL SITE chose from one the ROLE supplied as a
         // default. Reported by the eQuantic Code IDE, whose theme is
@@ -54,12 +60,12 @@ public static class EffectiveTypeStyle
         // the role was not code itself, and the node is what made this monospaced.
         if (!chosen && !roleIsCode && text.Mono) style = style with { Family = null };
 
-        return style.WithCodeFace(theme);
+        return style.WithThemeFace(theme);
     }
 
     /// <summary>
     /// The style a RUN inside a paragraph is set in: the paragraph's, plus what the run said, plus
-    /// the theme's code face. The run-level twin of <see cref="Resolve(Text, IAppTheme)"/>, and here
+    /// the theme's faces. The run-level twin of <see cref="Resolve(Text, IAppTheme)"/>, and here
     /// for the reason that function exists at all — this merge was written out by hand in the layout
     /// engine and got the family wrong, which is what a second voice does.
     ///
@@ -82,16 +88,22 @@ public static class EffectiveTypeStyle
         if (run.Mono) style = style with { Mono = true, Family = null };
         if (run.Italic) style = style with { Italic = true };
         if (run.Weight is { } weight) style = style with { Weight = weight };
-        return style.WithCodeFace(theme);
+        return style.WithThemeFace(theme);
     }
 
     /// <summary>
-    /// The theme's code face, when this style is monospaced and named no face of its own. A style
-    /// that NAMES a family keeps it: the call site was specific, and specificity wins over a theme
+    /// The theme's face, for a style that named none of its own: <see cref="IAppTheme.MonoFamily"/>
+    /// when it is monospaced, <see cref="IAppTheme.TextFamily"/> when it is not. A style that NAMES a
+    /// family keeps it: the call site or the role was specific, and specificity wins over a theme
     /// default the way it does everywhere else here.
+    /// <para>
+    /// A paragraph takes the text face here, and a monospaced run inside it drops the inherited
+    /// family before it comes back (see <see cref="Resolve(TextRun, TypeStyle, IAppTheme)"/>), so the
+    /// run is set in the code face and the words around it in the text face.
+    /// </para>
     /// </summary>
-    public static TypeStyle WithCodeFace(this TypeStyle style, IAppTheme theme) =>
-        style.Mono && style.Family is null && theme.MonoFamily is { Length: > 0 } code
-            ? style with { Family = code }
+    public static TypeStyle WithThemeFace(this TypeStyle style, IAppTheme theme) =>
+        style.Family is null && (style.Mono ? theme.MonoFamily : theme.TextFamily) is { Length: > 0 } face
+            ? style with { Family = face }
             : style;
 }

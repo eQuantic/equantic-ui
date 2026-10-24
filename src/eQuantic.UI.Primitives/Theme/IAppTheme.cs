@@ -1,10 +1,12 @@
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
-/// The Photon theme contract (spec §09 — conceptual parity with the web <c>IAppTheme</c>): every color
-/// is a light/dark <see cref="ColorToken"/>, resolution happens once per build pass, and resolved styles
-/// are plain structs on the primitive tree (zero allocation in steady state, plan D9). No CSS anywhere
-/// (plan D11) — <c>StyleBuilder</c>/class-strings remain web-only.
+/// The theme every target draws with (spec §09): the web writes it into the page's stylesheet, Photon
+/// resolves it once per build pass into plain structs on the primitive tree (zero allocation in
+/// steady state, plan D9), and an email inlines it. Every colour is a light/dark
+/// <see cref="ColorToken"/>. It says the document as well as the components (the surface, the text,
+/// the faces, the selection, the placeholder and the scrollbars), so an app writes no CSS for any of
+/// them.
 /// </summary>
 public interface IAppTheme
 {
@@ -28,6 +30,34 @@ public interface IAppTheme
     ColorToken FocusRing { get; }
     ColorToken LinkColor { get; }
     ColorToken Scrim { get; }
+
+    // The document's chrome: what a page or a window draws around the components. Each defaults to
+    // the value the SDK drew with before it was the theme's, so a theme that sets none draws as it did.
+
+    /// <summary>
+    /// The wash behind selected text: the document's selection on the web, and the code editor's on
+    /// every target. Defaults to <see cref="FocusRing"/> at 28%, translucent so the text keeps its
+    /// colour through it.
+    /// </summary>
+    ColorToken Selection => FocusRing.WithOpacity(0.28f);
+
+    /// <summary>
+    /// The colour selected text takes, or null for its own. A theme whose <see cref="Selection"/> is
+    /// opaque names one, so the selected text stays readable on it.
+    /// </summary>
+    ColorToken? OnSelection => null;
+
+    /// <summary>The placeholder an empty field shows. Defaults to <see cref="TextMuted"/>.</summary>
+    ColorToken Placeholder => TextMuted;
+
+    /// <summary>
+    /// A scrollbar's thumb: the page's on the web, and a table's on every target. Defaults to
+    /// <see cref="TextMuted"/> at 55%.
+    /// </summary>
+    ColorToken ScrollbarThumb => TextMuted.WithOpacity(0.55f);
+
+    /// <summary>A scrollbar's track. Defaults to <see cref="SurfaceSubtle"/>.</summary>
+    ColorToken ScrollbarTrack => SurfaceSubtle;
 
     /// <summary>
     /// The five sub-tokens for a variant. Filled variants come from the palette; Outline / Ghost / Link
@@ -58,6 +88,17 @@ public interface IAppTheme
     /// </para>
     /// </summary>
     string? MonoFamily => null;
+
+    /// <summary>
+    /// The face this theme sets TEXT in, or null for the platform's own: the face of every text whose
+    /// role and call site name none, and the document's face on the web. The proportional twin of
+    /// <see cref="MonoFamily"/>, resolved by the same merge (<c>EffectiveTypeStyle.WithThemeFace</c>).
+    /// <para>
+    /// Naming a face does not make it available: a face the platform does not have falls back on the
+    /// web, and Photon reports it unresolved, as it does for a role's face.
+    /// </para>
+    /// </summary>
+    string? TextFamily => null;
 
     /// <summary>Elevation level 0–5 (spec §05). Level 0 is none (+1dp Border); dark E1–E2 ALSO require a 1dp border.</summary>
     ShadowSpec Elevation(int level);
