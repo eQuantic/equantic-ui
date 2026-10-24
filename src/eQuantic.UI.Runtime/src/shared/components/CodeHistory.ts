@@ -41,7 +41,7 @@ export class CodeHistory {
     }
 
     undo(document: CodeDocument) {
-        let selection, replaced, written;
+        let selection: any, replaced: any, written: any;
         const $r = (() => {
             selection = CodeRange.$zero();
             replaced = CodeRange.$zero();
@@ -62,7 +62,7 @@ export class CodeHistory {
     }
 
     redo(document: CodeDocument) {
-        let selection, replaced, written;
+        let selection: any, replaced: any, written: any;
         const $r = (() => {
             selection = CodeRange.$zero();
             replaced = CodeRange.$zero();
