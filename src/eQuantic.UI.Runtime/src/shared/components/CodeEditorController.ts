@@ -141,15 +141,19 @@ export class CodeEditorController {
 
     select(value: CodeRange, keepCell: boolean) {
         if (!keepCell) this._desiredCell = -1;
-        let anchor = this._document.clamp(value.anchor);
-        let focus = this._document.clamp(value.focus);
-        let backwards = !$eq.equals(new CodeRange(anchor, focus).start, anchor);
-        let next = $eq.equals(anchor, focus) ? new CodeRange(this.boundary(anchor, false)) : new CodeRange(this.boundary(anchor, backwards), this.boundary(focus, !backwards));
+        let next = this.onElementEdges(value);
         if ($eq.equals(next, this._selection)) return;
         this.history.break();
         this._selection = next;
         this._revealVersion++;
         this.selectionChanged?.(next);
+    }
+
+    onElementEdges(value: CodeRange) {
+        let anchor = this._document.clamp(value.anchor);
+        let focus = this._document.clamp(value.focus);
+        let backwards = !$eq.equals(new CodeRange(anchor, focus).start, anchor);
+        return $eq.equals(anchor, focus) ? new CodeRange(this.boundary(anchor, false)) : new CodeRange(this.boundary(anchor, backwards), this.boundary(focus, !backwards));
     }
 
     widthsChanged(line: number, linesInserted: number, linesRemoved: number) {
@@ -379,7 +383,7 @@ export class CodeEditorController {
                     return true;
                 case 'paste':
                     if (clipboard == null) return false;
-                    if ((($v26592) => (($v26592 != null && $v26592.length > 0) && (pasted = $v26592, true)))(clipboard.read())) this.paste(pasted);
+                    if ((($v26867) => (($v26867 != null && $v26867.length > 0) && (pasted = $v26867, true)))(clipboard.read())) this.paste(pasted);
                     return true;
                 case 'completionShow':
                     return this.completion.invoke();
@@ -590,7 +594,7 @@ export class CodeEditorController {
         let linesInserted = caret.line - ordered.start.line;
         this._document = next;
         let left: any; 
-        this._selection = (left = after) != null ? new CodeRange(next.clamp(left.anchor), next.clamp(left.focus)) : new CodeRange(caret);
+        this._selection = (left = after) != null ? this.onElementEdges(left) : new CodeRange(caret);
         this._revealVersion++;
         let edit = new CodeEdit(ordered, removed, next.textIn(new CodeRange(ordered.start, caret)), before, this._selection, typed);
         this.history.record(edit);
@@ -980,7 +984,11 @@ export class CodeEditorController {
         let up = direction === 'backward';
         if (up ? first === 0 : last === this._document.lineCount - 1) return false;
         let block = $eq.text.join('\n', this.linesOf(first, last));
-        return up ? this.edit(this.wholeLines(first - 1, last), block + '\n' + this._document.line(first - 1), false, this.selectionMovedBy(-1)) : this.edit(this.wholeLines(first, last + 1), this._document.line(last + 1) + '\n' + block, false, this.selectionMovedBy(1));
+        if (up) return this.edit(this.wholeLines(first - 1, last), block + '\n' + this._document.line(first - 1), false, this.selectionMovedBy(-1));
+        let count = this._document.lineCount;
+        let end = new CodePosition(count - 1, this._document.line(last).length);
+        let moved = this.selectionMovedBy(1);
+        return this.edit(this.wholeLines(first, last + 1), this._document.line(last + 1) + '\n' + block, false, new CodeRange(moved.anchor.line < count ? moved.anchor : end, moved.focus.line < count ? moved.focus : end));
     }
 
     copyLines(direction: CodeDirectionValue) {
@@ -1019,6 +1027,7 @@ export class CodeEditorController {
         }
         let joined = this._document.line(first);
         let met = 0;
+        let end = -1;
         for (let line = first + 1; line <= last; line++) {
             let text = this._document.line(line);
             let rest = $eq.text.trimStart(text, [' ', '\t']);
@@ -1027,12 +1036,13 @@ export class CodeEditorController {
                 continue;
             }
             let space = joined.length > 0;
-            if (space && (($v77380) => ($v77380 === ' ' || $v77380 === '\t'))(joined[joined.length - 1])) {
+            if (space && (($v78338) => ($v78338 === ' ' || $v78338 === '\t'))(joined[joined.length - 1])) {
                 space = false;
                 joined = $eq.text.trimEnd(joined, [' ', '\t']) + ' ';
             }
             joined += (space ? ' ' : '') + rest;
             met = rest.length + (space ? 1 : 0);
+            if (line === this._selection.end.line) end = joined.length - rest.length + Math.max(0, this._selection.end.column - (text.length - rest.length));
         }
         let after = null;
         if (this._selection.isEmpty) {
@@ -1040,7 +1050,8 @@ export class CodeEditorController {
         } else if (this._selection.start.line === this._selection.end.line) {
             after = this._selection;
         } else {
-            after = new CodeRange(this._selection.start, new CodePosition(first, joined.length));
+            let to = new CodePosition(first, end < 0 ? joined.length : end);
+            after = $eq.equals(this._selection.anchor, this._selection.start) ? new CodeRange(this._selection.start, to) : new CodeRange(to, this._selection.start);
         }
         return this.edit(this.wholeLines(first, last), joined, false, after);
     }

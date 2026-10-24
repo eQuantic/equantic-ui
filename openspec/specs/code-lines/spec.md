@@ -10,12 +10,19 @@ What a code editor does to whole lines, on both targets and with VS Code's keys:
 A line operation SHALL take the lines the selection touches, a selection that ends at column 0 leaving that
 line out, or the caret's line when nothing is selected. A join SHALL take every line the selection touches,
 that one included, as VS Code's join does. Each SHALL be ONE undo step, undo SHALL put back
-the selection it found and redo the selection it left, and none SHALL run in a read-only editor.
+the selection it found and redo the selection it left, and none SHALL run in a read-only editor. The
+selection an operation leaves SHALL have no end inside a text element, as no selection placed any other way
+has.
 
 #### Scenario: A selection ending at a line's start
 
 - **WHEN** lines 1 and 2 are selected from the start of line 1 to the start of line 3, and ⌥↓ is pressed
 - **THEN** lines 1 and 2 move down, and line 3 goes above them
+
+#### Scenario: A deleted line's column inside an emoji
+
+- **WHEN** the caret is at column 1 of `ab`, the next line starts with an emoji, and ⇧⌘K is pressed
+- **THEN** the caret stands at column 0 of the emoji's line, never between the emoji's two halves
 
 #### Scenario: Undo and redo of a move
 
@@ -34,6 +41,12 @@ SHALL walk the overloads instead.
 
 - **WHEN** the caret is on line 1 of three, and ⌥↓ is pressed
 - **THEN** line 1 changes places with line 2, and the caret is on the moved line at its column
+
+#### Scenario: Down to the document's end
+
+- **WHEN** lines 1 and 2 of three are selected from the start of line 1 to the start of line 3, and ⌥↓ is
+  pressed
+- **THEN** they are lines 2 and 3, both still selected, the selection ending at the document's end
 
 #### Scenario: At the top
 
@@ -75,14 +88,21 @@ their place at the column it had, or on the line before when the last lines go.
 ⌃J on a Mac SHALL join the lines into one, or the caret's line with the next when nothing spanning lines is
 selected, as VS Code joins them: each next line's leading spaces and tabs go, one space joins the text unless
 the text before is empty or ends with a space or a tab, which collapse to one space, and a next line of spaces
-and tabs alone adds nothing. No other character is white space to a join: a no-break space is text. With nothing selected the caret SHALL stand where the lines met. On the last line,
-with nothing selected, there is nothing to join and the key SHALL NOT be claimed. On Windows and Linux
+and tabs alone adds nothing. No other character is white space to a join: a no-break space is text. With
+nothing selected the caret SHALL stand where the lines met; with lines selected the selection's end SHALL
+keep its place in its text, as VS Code's join keeps it. On the last line, with nothing selected, there is
+nothing to join and the key SHALL NOT be claimed. On Windows and Linux
 `CodeCommand.JoinLines` has no default key, as in VS Code.
 
 #### Scenario: A line and the next
 
 - **WHEN** line 1 is `int a =` and line 2 is `    1;`, the caret is on line 1, and ⌃J is pressed
 - **THEN** line 1 is `int a = 1;`, and the caret stands before the space
+
+#### Scenario: A selection's end keeps its text
+
+- **WHEN** `b` of `ab` and `c` of the next line `cdef` are selected, and ⌃J is pressed
+- **THEN** the line is `ab cdef`, and `b c` is selected, `def` not
 
 #### Scenario: A selection ending at a line's start
 

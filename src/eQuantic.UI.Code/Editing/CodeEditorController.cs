@@ -73,16 +73,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     private void Select(CodeRange value, bool keepCell)
     {
         if (!keepCell) _desiredCell = -1;
-        // A position INSIDE a text element is one no caret may hold: an edit from there splits the
-        // element (a Backspace at column 1 of an emoji took its high half). A caret goes to the
-        // element's start, where it is drawn, and a range grows to take in the elements it cuts,
-        // keeping its direction.
-        var anchor = _document.Clamp(value.Anchor);
-        var focus = _document.Clamp(value.Focus);
-        var backwards = new CodeRange(anchor, focus).Start != anchor;
-        var next = anchor == focus
-            ? new CodeRange(Boundary(anchor, after: false))
-            : new CodeRange(Boundary(anchor, after: backwards), Boundary(focus, after: !backwards));
+        var next = OnElementEdges(value);
         if (next == _selection) return;
         // Moving the caret ENDS the typing run: the next character starts a new undo step,
         // because a person who moved and typed did two things.
@@ -90,6 +81,23 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         _selection = next;
         _revealVersion++;
         SelectionChanged?.Invoke(next);
+    }
+
+    /// <summary>
+    /// <paramref name="value"/> in the document, with no end inside a text element. A position INSIDE one
+    /// is one no caret may hold: an edit from there splits the element (a Backspace at column 1 of an
+    /// emoji took its high half). A caret goes to the element's start, where it is drawn, and a range
+    /// grows to take in the elements it cuts, keeping its direction. Every selection is placed through
+    /// it, the one an edit leaves included.
+    /// </summary>
+    private CodeRange OnElementEdges(CodeRange value)
+    {
+        var anchor = _document.Clamp(value.Anchor);
+        var focus = _document.Clamp(value.Focus);
+        var backwards = new CodeRange(anchor, focus).Start != anchor;
+        return anchor == focus
+            ? new CodeRange(Boundary(anchor, after: false))
+            : new CodeRange(Boundary(anchor, after: backwards), Boundary(focus, after: !backwards));
     }
 
     /// <summary>The caret — the moving end of the selection.</summary>
@@ -863,7 +871,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         var linesInserted = caret.Line - ordered.Start.Line;
 
         _document = next;
-        _selection = after is { } left ? new CodeRange(next.Clamp(left.Anchor), next.Clamp(left.Focus)) : new CodeRange(caret);
+        _selection = after is { } left ? OnElementEdges(left) : new CodeRange(caret);
         _revealVersion++;
         // The edit carries the text the document HOLDS, its line breaks as the document broke them.
         // Handed on raw, a pasted lone CR was one line to the history and two to the document, and
@@ -1492,9 +1500,16 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         var up = direction == CodeDirection.Backward;
         if (up ? first == 0 : last == _document.LineCount - 1) return false;
         var block = string.Join("\n", LinesOf(first, last));
-        return up
-            ? Edit(WholeLines(first - 1, last), block + "\n" + _document.Line(first - 1), false, SelectionMovedBy(-1))
-            : Edit(WholeLines(first, last + 1), _document.Line(last + 1) + "\n" + block, false, SelectionMovedBy(1));
+        if (up)
+            return Edit(WholeLines(first - 1, last), block + "\n" + _document.Line(first - 1), false, SelectionMovedBy(-1));
+        // An end at the start of the line after the block moves to the start of the line after it; when the
+        // line the block passes is the document's last there is none, and the block's own end stands for
+        // it, so every line of the block stays selected and the next move takes them all.
+        var count = _document.LineCount;
+        var end = new CodePosition(count - 1, _document.Line(last).Length);
+        var moved = SelectionMovedBy(1);
+        return Edit(WholeLines(first, last + 1), _document.Line(last + 1) + "\n" + block, false,
+            new CodeRange(moved.Anchor.Line < count ? moved.Anchor : end, moved.Focus.Line < count ? moved.Focus : end));
     }
 
     /// <summary>
@@ -1562,6 +1577,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         var joined = _document.Line(first);
         // How far before the joined text's end the last join happened, VS Code's columnDeltaOffset.
         var met = 0;
+        // Where the selection's end stands in the joined text, once its line is joined; none while its
+        // line adds nothing.
+        var end = -1;
         for (var line = first + 1; line <= last; line++)
         {
             var text = _document.Line(line);
@@ -1579,6 +1597,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             }
             joined += (space ? " " : string.Empty) + rest;
             met = rest.Length + (space ? 1 : 0);
+            if (line == _selection.End.Line)
+                end = joined.Length - rest.Length + Math.Max(0, _selection.End.Column - (text.Length - rest.Length));
         }
         CodeRange after;
         if (_selection.IsEmpty)
@@ -1591,7 +1611,13 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         }
         else
         {
-            after = new CodeRange(_selection.Start, new CodePosition(first, joined.Length));
+            // The end keeps its place in its text, as VS Code's join keeps it, so the text after it stays
+            // unselected: one in the indentation that went stands where the text begins, and one on a blank
+            // line that added nothing at the joined text's end. The direction is the selection's.
+            var to = new CodePosition(first, end < 0 ? joined.Length : end);
+            after = _selection.Anchor == _selection.Start
+                ? new CodeRange(_selection.Start, to)
+                : new CodeRange(to, _selection.Start);
         }
         return Edit(WholeLines(first, last), joined, false, after);
     }

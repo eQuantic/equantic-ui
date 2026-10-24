@@ -74,6 +74,29 @@ public class CodeLinesTests : IDisposable
         editor.Selection.Should().Be(new CodeRange(At(2, 0), At(4, 0)));
     }
 
+    /// <summary>A selection that ends at the start of the line after the block keeps that end when the
+    /// block moves down to the document's end, where there is no line after it: the end of the document
+    /// stands for it, so both lines stay selected and the next move takes them both (Copilot, #1033).</summary>
+    [Fact]
+    public void AMoveDownToTheEnd_KeepsEveryLineOfTheBlockSelected()
+    {
+        var editor = Editor("a\nb\nc", At(0, 0), At(2, 0));
+
+        Press(editor, "ArrowDown", KeyModifiers.Alt).Should().BeTrue();
+
+        editor.Document.Text.Should().Be("c\na\nb");
+        editor.Selection.Should().Be(new CodeRange(At(1, 0), At(2, 1)));
+        Press(editor, "ArrowUp", KeyModifiers.Alt).Should().BeTrue();
+        editor.Document.Text.Should().Be("a\nb\nc");
+        editor.Undo().Should().BeTrue();
+        editor.Redo().Should().BeTrue();
+        editor.Selection.Should().Be(new CodeRange(At(0, 0), At(1, 1)));
+
+        var upward = Editor("a\nb\nc", At(2, 0), At(0, 0));
+        Press(upward, "ArrowDown", KeyModifiers.Alt).Should().BeTrue();
+        upward.Selection.Should().Be(new CodeRange(At(2, 1), At(1, 0)), "the direction kept");
+    }
+
     [Fact]
     public void AMoveWithNoLineToPass_IsTheHosts()
     {
@@ -244,6 +267,33 @@ public class CodeLinesTests : IDisposable
         editor.Document.Text.Should().Be("x = \"a\u00A0 \u00A0  b\"");
     }
 
+    /// <summary>A selection over lines keeps its end at the text it stood before, as VS Code's join keeps
+    /// it, so typing replaces what was selected and nothing after it (Copilot, #1033).</summary>
+    [Fact]
+    public void AJoin_KeepsTheSelectionsEndAtItsText()
+    {
+        var editor = Editor("ab\ncdef", At(0, 1), At(1, 1));
+
+        editor.Execute(CodeCommand.JoinLines).Should().BeTrue();
+
+        editor.Document.Text.Should().Be("ab cdef");
+        editor.Selection.Should().Be(new CodeRange(At(0, 1), At(0, 4)));
+
+        var upward = Editor("ab\n    cdef\nx", At(1, 6), At(0, 1));
+        upward.Execute(CodeCommand.JoinLines).Should().BeTrue();
+        upward.Document.Text.Should().Be("ab cdef\nx");
+        upward.Selection.Should().Be(new CodeRange(At(0, 5), At(0, 1)), "the direction kept, the indentation gone");
+
+        var inTheIndentation = Editor("ab\n    cd", At(0, 1), At(1, 2));
+        inTheIndentation.Execute(CodeCommand.JoinLines).Should().BeTrue();
+        inTheIndentation.Selection.Should().Be(new CodeRange(At(0, 1), At(0, 3)), "an end in the indentation goes to the text");
+
+        var aBlankLast = Editor("ab\n   ", At(0, 1), At(1, 2));
+        aBlankLast.Execute(CodeCommand.JoinLines).Should().BeTrue();
+        aBlankLast.Document.Text.Should().Be("ab");
+        aBlankLast.Selection.Should().Be(new CodeRange(At(0, 1), At(0, 2)), "a blank last line adds nothing, and the end is the line's");
+    }
+
     [Fact]
     public void JoiningTheLastLine_IsTheHosts_AndWindowsBindsNoJoin()
     {
@@ -332,6 +382,33 @@ public class CodeLinesTests : IDisposable
             editor.Document.Text.Should().Be(text, $"one undo takes {command} back");
             editor.Selection.Should().Be(new CodeRange(At(1, 1), At(2, 3)));
         }
+    }
+
+    /// <summary>The selection an operation leaves never stands inside a text element, as no selection
+    /// placed any other way does: a deleted line's column goes to the edge of the element it would cut
+    /// (Copilot, #1033).</summary>
+    [Fact]
+    public void ADeletedLinesColumn_NeverCutsATextElement()
+    {
+        var editor = Editor("ab\n\uD83D\uDE00x", At(0, 1));
+
+        editor.Execute(CodeCommand.DeleteLines).Should().BeTrue();
+
+        editor.Document.Text.Should().Be("\uD83D\uDE00x");
+        editor.Caret.Should().Be(At(0, 0));
+    }
+
+    /// <summary>A sort keeps the selection's columns, and an end the sort puts inside a text element goes
+    /// to its edge (Copilot, #1033).</summary>
+    [Fact]
+    public void ASortedSelection_NeverCutsATextElement()
+    {
+        var editor = Editor("ab\n\uD83D\uDE00x", At(0, 1), At(1, 2));
+
+        editor.Execute(CodeCommand.SortLinesDescending).Should().BeTrue();
+
+        editor.Document.Text.Should().Be("\uD83D\uDE00x\nab");
+        editor.Selection.Should().Be(new CodeRange(At(0, 0), At(1, 2)), "the anchor's column 1 is inside the emoji now");
     }
 
     /// <summary>A composition comes out before a line operation, as before a paste: the operation works on
