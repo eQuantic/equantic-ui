@@ -18,6 +18,7 @@ import { Dictionary, plainBag } from '../utils/dictionary';
 import { PINNED_MARKER } from './markers';
 import type { EventHandler, HtmlNode } from '../core/types';
 import { CanvasPointer } from './canvas-pointer';
+import { browserPastesOn, ClipboardRefused, CodeSurfaceClipboard } from './code-surface-clipboard';
 // Leaf helpers — see css-values for why they are not defined here.
 import { hex, modifiersOf, num, tokenValue } from './css-values';
 export { num, tokenValue };
@@ -753,9 +754,20 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     // An input method owns the keyboard while it composes: its keys build the composition, and
     // Enter, Escape and the arrows belong to its candidate window, not to the document.
     if (event.isComposing || event.keyCode === 229) return;
-    // No clipboard is handed over: the browser's own copy, cut and paste events carry the text
-    // (see below), and claiming ⌘C here would cancel the very event that brings it.
-    if (model.handleKey(event.key, modifiersOf(event), convention, null)) {
+    // Copy and Cut write through the browser's own copy event, on whatever key they are bound to; a
+    // write it refused leaves the key to the browser. A paste is the paste event's, which the browser
+    // fires on its own paste keys only (`CodeSurfaceClipboard`, #1028).
+    const clipboard = surfaceClipboardOf(model);
+    clipboard.pasteAsked = false;
+    let claimed: boolean;
+    try {
+      claimed = model.handleKey(event.key, modifiersOf(event), convention, clipboard);
+    } catch (error) {
+      if (!(error instanceof ClipboardRefused)) throw error;
+      claimed = false;
+    }
+    if (claimed && clipboard.pasteAsked && browserPastesOn(event, convention)) return;
+    if (claimed) {
       event.preventDefault();
       changed();
     }
@@ -838,7 +850,11 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   }) as unknown as EventHandler;
   input.events['copy'] = ((event: ClipboardEvent) => {
     event.preventDefault();
-    event.clipboardData?.setData('text/plain', model.copyText());
+    if (!event.clipboardData) return;
+    // What a command's write was given, while one waits for this event; the selection otherwise.
+    const clipboard = surfaceClipboardOf(model);
+    event.clipboardData.setData('text/plain', clipboard.pending ?? model.copyText());
+    clipboard.written = true;
   }) as unknown as EventHandler;
   input.events['cut'] = ((event: ClipboardEvent) => {
     event.preventDefault();
@@ -992,6 +1008,19 @@ function keyboardConvention(): 'apple' | 'standard' {
     navigator.platform ??
     '';
   return /mac|iphone|ipad|ipod/i.test(platform) ? 'apple' : 'standard';
+}
+
+/** The clipboard each code surface's model hands its keymap, one per model, which every lowering of
+ *  it shares: a write waits for the copy event the newest lowering's handler answers. */
+const surfaceClipboards = new WeakMap<object, CodeSurfaceClipboard>();
+
+function surfaceClipboardOf(model: object): CodeSurfaceClipboard {
+  let clipboard = surfaceClipboards.get(model);
+  if (clipboard === undefined) {
+    clipboard = new CodeSurfaceClipboard();
+    surfaceClipboards.set(model, clipboard);
+  }
+  return clipboard;
 }
 
 /** The modifier that makes a deletion take a word: ⌥ on Apple, Ctrl (Command there) elsewhere. */

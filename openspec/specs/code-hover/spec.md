@@ -88,14 +88,20 @@ request the pointer made that is still waiting or unanswered SHALL end the same 
 ### Requirement: The keyboard shows and closes the card
 
 ⌘K followed by ⌘I (Ctrl+K, Ctrl+I) SHALL show the card for the caret at once; ⌘K SHALL be claimed only
-while a card could show (a hover provider, or a problem), and a press SHALL end a chord half typed, as
-SHALL any key but a modifier, whatever takes it.
+while a card could show there (a hover provider, or a problem at the caret, and no completion list), and a
+press SHALL end a chord half typed, as SHALL any key but a modifier, whatever takes it.
 Escape SHALL close a card and be claimed when one shows, after a completion list showing, which it
 closes first, and a completion list asked for and not yet showing SHALL go with the card. A card the
 keyboard asked for SHALL close when the caret moves or the text changes. A card asked for over one that
 shows SHALL replace it, and SHALL announce that it closed while nothing is
 there to show yet. The pointer leaving SHALL end only what the pointer asked for: a card the keyboard
 showed stays, and so does a request the keyboard made that its providers have not answered yet.
+
+#### Scenario: A problem on another line
+
+- **WHEN** no hover provider is set, a problem is reported on another line than the caret's, and ⌘K is
+  pressed
+- **THEN** the editor does not claim the key, which is the host's
 
 #### Scenario: Showing the card at the caret
 

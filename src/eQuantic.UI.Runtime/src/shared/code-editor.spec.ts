@@ -1967,3 +1967,212 @@ describe('the panel over a call', () => {
     expect(textOf(notesIn(lower())[0])).toContain('MainAlign main');
   });
 });
+
+/**
+ * An app's own key bindings on the transpiled CodeEditor (#1010): the twin of the C# keymap answers the
+ * editor's keydown through the real lowering; the C# twins are CodeEditorKeyBindingsTests, on Photon.
+ */
+describe('the keys an app binds', () => {
+  it("runs the app's binding from the editor's keydown, and claims the key", async () => {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const { CodeKeyBinding } = await import('./components/CodeKeyBinding');
+    const { KeyChord } = await import('./vocabulary');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const context = {
+      theme,
+      textPrimary: theme.textPrimary,
+      density: 'comfortable',
+      typeScale: 1,
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    const component = new CodeEditor('alpha beta\ngamma', 'csharp');
+    (component as unknown as Record<string, unknown>).keyBindings = [
+      new CodeKeyBinding(KeyChord.command('d'), 'selectAll'),
+    ];
+    const lower = () => lowerVisualNode(component.build(context as never) as never, context as never);
+    lower();
+    const input = nodesWhere(lower(), (node) => node.tag === 'textarea')[0];
+    let prevented = false;
+
+    (input.events['keydown'] as unknown as (event: unknown) => void)({
+      key: 'd',
+      shiftKey: false,
+      altKey: false,
+      metaKey: true,
+      ctrlKey: false,
+      isComposing: false,
+      keyCode: 0,
+      target: { value: '' },
+      preventDefault: () => {
+        prevented = true;
+      },
+    });
+
+    expect(prevented, "the app's chord is the editor's").toBe(true);
+    const selection = component.editor.selection;
+    expect([selection.start.line, selection.start.column, selection.end.line, selection.end.column]).toEqual([0, 0, 1, 5]);
+  });
+
+  /** A transpiled CodeEditor lowered for the web, its keydown driven as the browser drives it. */
+  async function surface(bindings: (KeyChord: { command(key: string): unknown }, Binding: new (chord: unknown, command: string) => unknown) => unknown[]) {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const { CodeKeyBinding } = await import('./components/CodeKeyBinding');
+    const { KeyChord } = await import('./vocabulary');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const context = {
+      theme,
+      textPrimary: theme.textPrimary,
+      density: 'comfortable',
+      typeScale: 1,
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    const component = new CodeEditor('alpha beta\ngamma', 'csharp');
+    (component as unknown as Record<string, unknown>).keyBindings = bindings(KeyChord as never, CodeKeyBinding as never);
+    const lower = () => lowerVisualNode(component.build(context as never) as never, context as never);
+    lower();
+    const input = nodesWhere(lower(), (node) => node.tag === 'textarea')[0];
+    const press = (key: string) => {
+      let prevented = false;
+      (input.events['keydown'] as unknown as (event: unknown) => void)({
+        key,
+        shiftKey: false,
+        altKey: false,
+        metaKey: true,
+        ctrlKey: false,
+        isComposing: false,
+        keyCode: 0,
+        target: { value: '' },
+        preventDefault: () => {
+          prevented = true;
+        },
+      });
+      return prevented;
+    };
+    return { component, input, press, lower };
+  }
+
+  /**
+   * The browser's copy event, fired as `document.execCommand('copy')` fires it, inside the key's handler:
+   * `copied` collects what the surface put on the clipboard. `refuse` fires none, as a browser that takes
+   * no copy.
+   */
+  function copyEvents(input: { events: Record<string, unknown> }, refuse = false) {
+    const copied: string[] = [];
+    const saved = Object.getOwnPropertyDescriptor(document, 'execCommand');
+    Object.defineProperty(document, 'execCommand', {
+      configurable: true,
+      value: (command: string) => {
+        if (refuse || command !== 'copy') return false;
+        (input.events['copy'] as unknown as (event: unknown) => void)({
+          clipboardData: { setData: (_type: string, text: string) => copied.push(text) },
+          preventDefault: () => {},
+        });
+        return true;
+      },
+    });
+    const restore = () => {
+      if (saved) Object.defineProperty(document, 'execCommand', saved);
+      else delete (document as unknown as Record<string, unknown>).execCommand;
+    };
+    return { copied, restore };
+  }
+
+  /**
+   * Copy and Cut write through the browser's copy event on whatever key they are bound to, and the command
+   * decides, never the key: ⌘X bound to Copy copies and deletes nothing, and a Copy that completes ⌘K ⌘C
+   * copies (Copilot's second round on #1027: the key chose the clipboard's path, so ⌘X ran the browser's cut).
+   */
+  it('copies and cuts through the copy event, as the command bound to the key says', async () => {
+    const { component, input, press } = await surface((KeyChord, Binding) => [
+      new Binding(KeyChord.command('d'), 'copy'),
+      new Binding(KeyChord.command('x'), 'copy'),
+      new Binding(KeyChord.command('e'), 'cut'),
+      Object.assign(new Binding(KeyChord.command('c'), 'copy') as object, { first: KeyChord.command('k') }),
+    ]);
+    const { copied, restore } = copyEvents(input as never);
+    try {
+      component.editor.selectAll();
+
+      expect(press('d'), 'a Copy bound to ⌘D').toBe(true);
+      expect(press('x'), 'and to ⌘X, which the browser would cut on').toBe(true);
+      expect(component.editor.document.text, 'the Copy on ⌘X deleted nothing').toBe('alpha beta\ngamma');
+      expect(press('k')).toBe(true);
+      expect(press('c'), 'the Copy that completes ⌘K ⌘C').toBe(true);
+      expect(copied).toEqual(['alpha beta\ngamma', 'alpha beta\ngamma', 'alpha beta\ngamma']);
+      expect(press('e'), 'a Cut bound to ⌘E').toBe(true);
+      expect(copied).toHaveLength(4);
+      expect(component.editor.document.text, 'the cut took the text it copied').toBe('');
+    } finally {
+      restore();
+    }
+  });
+
+  /** A cut the browser took no copy for deletes nothing, and the key goes on to the browser. */
+  it('deletes nothing when the browser takes no copy', async () => {
+    const { component, input, press } = await surface((KeyChord, Binding) => [new Binding(KeyChord.command('e'), 'cut')]);
+    const { copied, restore } = copyEvents(input as never, true);
+    try {
+      component.editor.selectAll();
+
+      expect(press('e'), "the key is the browser's").toBe(false);
+      expect(copied).toEqual([]);
+      expect(component.editor.document.text).toBe('alpha beta\ngamma');
+    } finally {
+      restore();
+    }
+  });
+
+  /**
+   * A paste is the browser's paste event: ⌘V goes on to it, which brings the text, and a Paste bound to a
+   * key the browser does not paste on finds nothing to read (#1028).
+   */
+  it("leaves ⌘V to the browser's paste event", async () => {
+    const { component, input, press } = await surface((KeyChord, Binding) => [new Binding(KeyChord.command('j'), 'paste')]);
+    component.editor.selectAll();
+
+    expect(press('v'), "⌘V is the paste event's").toBe(false);
+    (input.events['paste'] as unknown as (event: unknown) => void)({
+      clipboardData: { getData: () => 'pasted' },
+      preventDefault: () => {},
+    });
+    expect(component.editor.document.text).toBe('pasted');
+    expect(press('j'), 'a Paste on ⌘J is claimed').toBe(true);
+    expect(component.editor.document.text, 'and finds nothing to read').toBe('pasted');
+  });
+
+  /**
+   * The bindings a component stops handing come out where it put them: the controller's own ⌘D, equal to
+   * the component's, stays first (Copilot's second round on #1027).
+   */
+  it("withdraws the component's bindings and leaves the controller's in their order", async () => {
+    const { component, press, lower } = await surface((KeyChord, Binding) => [new Binding(KeyChord.command('d'), 'selectAll')]);
+    const { KeyChord } = await import('./vocabulary');
+    const { CodeKeyBinding } = await import('./components/CodeKeyBinding');
+    const editor = component.editor as unknown as { keyBindings: unknown[] };
+    // The controller's own, before the component's block, as an IDE puts them.
+    editor.keyBindings.splice(
+      0,
+      0,
+      new CodeKeyBinding(KeyChord.command('d'), 'selectAll'),
+      new CodeKeyBinding(KeyChord.command('d'), 'cursorDocumentEnd'),
+    );
+    (component as unknown as Record<string, unknown>).keyBindings = [];
+    lower();
+
+    expect(editor.keyBindings.map((binding) => (binding as { command: string }).command)).toEqual([
+      'selectAll',
+      'cursorDocumentEnd',
+    ]);
+    expect(press('d')).toBe(true);
+    const selection = component.editor.selection;
+    expect([selection.start.line, selection.start.column, selection.end.line, selection.end.column]).toEqual([0, 0, 1, 5]);
+  });
+});

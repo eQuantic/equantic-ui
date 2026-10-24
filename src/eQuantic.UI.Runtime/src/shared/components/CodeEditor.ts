@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeDiagnostic, CodeEditorController, CodeGrid, CodeGutterMarker, CodeHoverCard, CodeKeywordCompletionProvider, CodeLanguages, CodeRange, CodeSignatureCard, CodeSurface, CodeWordCompletionProvider, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeDiagnostic, CodeEditorController, CodeGrid, CodeGutterMarker, CodeHoverCard, CodeKeyBinding, CodeKeywordCompletionProvider, CodeLanguages, CodeRange, CodeSignatureCard, CodeSurface, CodeWordCompletionProvider, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
 
 export class CodeEditor extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeEditor';
@@ -19,6 +19,7 @@ export class CodeEditor extends StatefulComponent {
     _diagnosers: any[] = [];
     _explainers: any[] = [];
     _signers: any[] = [];
+    _bindings: CodeKeyBinding[] = [];
     _toldDocument: any = null;
     _toldSelection: CodeRange = CodeRange.$zero();
     _matches: CodeRange[] = [];
@@ -49,6 +50,7 @@ export class CodeEditor extends StatefulComponent {
     declare diagnosticProviders: any[];
     declare hoverProviders: any[];
     declare signatureProviders: any[];
+    declare keyBindings: CodeKeyBinding[];
 
     get editor() {
         return this._editor ?? (this._editor = this.create());
@@ -76,6 +78,7 @@ export class CodeEditor extends StatefulComponent {
         if (this.diagnosticProviders === undefined) this.diagnosticProviders = [];
         if (this.hoverProviders === undefined) this.hoverProviders = [];
         if (this.signatureProviders === undefined) this.signatureProviders = [];
+        if (this.keyBindings === undefined) this.keyBindings = [];
         this.initialCode = code;
         this.languageName = language;
         if (props && typeof props === 'object') Object.assign(this, props);
@@ -86,6 +89,7 @@ export class CodeEditor extends StatefulComponent {
         editor.readOnly = this.readOnly;
         this.handProviders(editor.completion);
         this.handIntelligence(editor);
+        this.handKeyBindings(editor);
         let highlighter = editor.highlighter;
         let metrics = CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + editor.document.lineCount - 1);
         editor.grid = new CodeGrid(new Point(metrics.contentLeft, metrics.contentTop), new Size(metrics.columnWidth, metrics.lineHeight));
@@ -230,6 +234,51 @@ export class CodeEditor extends StatefulComponent {
         }
     }
 
+    handKeyBindings(editor: CodeEditorController) {
+        if (CodeEditor.sameBindings(this.keyBindings, this._bindings)) return;
+        let list = editor.keyBindings;
+        let at = CodeEditor.lastBlockAt(list, this._bindings);
+        if (at >= 0) {
+            for (let i = 0; i < this._bindings.length; i++) list.splice(at, 1);
+        } else {
+            for (let i = this._bindings.length - 1; i >= 0; i--) {
+                let last = CodeEditor.lastIndexOf(list, this._bindings[i]);
+                if (last >= 0) list.splice(last, 1);
+            }
+        }
+        this._bindings = [...this.keyBindings];
+        for (const binding of this._bindings) $eq.collections.add(list, binding);
+    }
+
+    static lastBlockAt(list: CodeKeyBinding[], block: CodeKeyBinding[]) {
+        if (block.length === 0) return -1;
+        for (let at = $eq.collections.count(list) - block.length; at >= 0; at--) {
+            if (CodeEditor.holds(list, block, at)) return at;
+        }
+        return -1;
+    }
+
+    static holds(list: CodeKeyBinding[], block: CodeKeyBinding[], at: number) {
+        if (at < 0 || at + block.length > $eq.collections.count(list)) return false;
+        for (let i = 0; i < block.length; i++) {
+            if (!$eq.equals($eq.collections.item(list, at + i), block[i])) return false;
+        }
+        return true;
+    }
+
+    static lastIndexOf(list: CodeKeyBinding[], binding: CodeKeyBinding) {
+        for (let i = $eq.collections.count(list) - 1; i >= 0; i--) {
+            if ($eq.equals($eq.collections.item(list, i), binding)) return i;
+        }
+        return -1;
+    }
+
+    static sameBindings(one: CodeKeyBinding[], other: CodeKeyBinding[]) {
+        if ($eq.collections.count(one) !== $eq.collections.count(other)) return false;
+        for (let i = 0; i < $eq.collections.count(one); i++) if (!$eq.equals($eq.collections.item(one, i), $eq.collections.item(other, i))) return false;
+        return true;
+    }
+
     static sameProblems(one: CodeDiagnostic[], other: CodeDiagnostic[]) {
         if ($eq.collections.count(one) !== $eq.collections.count(other)) return false;
         for (let i = 0; i < $eq.collections.count(one); i++) if (!$eq.equalsInstance($eq.collections.item(one, i), $eq.collections.item(other, i))) return false;
@@ -358,6 +407,7 @@ export class CodeEditor extends StatefulComponent {
         this.diagnosticProviders = fresh.diagnosticProviders;
         this.hoverProviders = fresh.hoverProviders;
         this.signatureProviders = fresh.signatureProviders;
+        this.keyBindings = fresh.keyBindings;
     }
 
     matchesOf(editor: CodeEditorController, needle: any) {

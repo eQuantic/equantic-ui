@@ -89,3 +89,81 @@ eQuantic.UI.Code.ICodeSignatureProvider.TriggerCharacters.get -> System.Collecti
 eQuantic.UI.Code.ICodeSignatureProvider.RetriggerCharacters.get -> System.Collections.Generic.IReadOnlyList<char>!
 eQuantic.UI.Code.ICodeSignatureProvider.SignatureHelpAsync(eQuantic.UI.Code.CodeDocument! document, eQuantic.UI.Code.CodePosition position, eQuantic.UI.Code.CodeSignatureContext! context, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<eQuantic.UI.Code.CodeSignatureHelp?>!
 eQuantic.UI.Code.ICodeSignatureProvider
+eQuantic.UI.Code.CodeCommand.Redo = 36 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.Copy = 37 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.Cut = 38 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.Paste = 39 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CompletionShow = 40 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CompletionNext = 41 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CompletionPrevious = 42 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CompletionNextPage = 43 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CompletionPreviousPage = 44 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CompletionAccept = 45 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CompletionAcceptChangingText = 46 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CompletionHide = 47 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.SignatureHelpShow = 48 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.SignatureHelpNext = 49 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.SignatureHelpPrevious = 50 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.SignatureHelpHide = 51 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.HoverShow = 52 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.HoverHide = 53 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.ProblemNext = 54 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.ProblemPrevious = 55 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.ReleaseKeyboard = 56 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.None = 0 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorLeft = 1 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorLeftSelect = 2 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorRight = 3 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorRightSelect = 4 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorUp = 5 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorUpSelect = 6 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorDown = 7 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorDownSelect = 8 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorWordLeft = 9 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorWordLeftSelect = 10 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorWordRight = 11 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorWordRightSelect = 12 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorLineStart = 13 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorLineStartSelect = 14 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorLineEnd = 15 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorLineEndSelect = 16 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorDocumentStart = 17 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorDocumentStartSelect = 18 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorDocumentEnd = 19 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorDocumentEndSelect = 20 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorPageUp = 21 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorPageUpSelect = 22 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorPageDown = 23 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.CursorPageDownSelect = 24 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.SelectAll = 25 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.NewLine = 26 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.DeleteLeft = 27 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.DeleteRight = 28 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.DeleteWordLeft = 29 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.DeleteWordRight = 30 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.DeleteToLineStart = 31 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.Indent = 32 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.Outdent = 33 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.ToggleLineComment = 34 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.Undo = 35 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeEditorController.KeyBindings.get -> System.Collections.Generic.IList<eQuantic.UI.Code.CodeKeyBinding>!
+eQuantic.UI.Code.CodeEditorController.Execute(eQuantic.UI.Code.CodeCommand command, eQuantic.UI.Primitives.ITextClipboard? clipboard = null) -> bool
+eQuantic.UI.Code.CodeEditorController.CanExecute(eQuantic.UI.Code.CodeCommand command) -> bool
+eQuantic.UI.Code.CodeKeyBinding
+eQuantic.UI.Code.CodeKeyBinding.CodeKeyBinding() -> void
+eQuantic.UI.Code.CodeKeyBinding.CodeKeyBinding(eQuantic.UI.Primitives.KeyChord Chord, eQuantic.UI.Code.CodeCommand Command) -> void
+eQuantic.UI.Code.CodeKeyBinding.Deconstruct(out eQuantic.UI.Primitives.KeyChord Chord, out eQuantic.UI.Code.CodeCommand Command) -> void
+eQuantic.UI.Code.CodeKeyBinding.Equals(eQuantic.UI.Code.CodeKeyBinding other) -> bool
+override eQuantic.UI.Code.CodeKeyBinding.GetHashCode() -> int
+static eQuantic.UI.Code.CodeKeyBinding.operator !=(eQuantic.UI.Code.CodeKeyBinding left, eQuantic.UI.Code.CodeKeyBinding right) -> bool
+static eQuantic.UI.Code.CodeKeyBinding.operator ==(eQuantic.UI.Code.CodeKeyBinding left, eQuantic.UI.Code.CodeKeyBinding right) -> bool
+~override eQuantic.UI.Code.CodeKeyBinding.Equals(object obj) -> bool
+~override eQuantic.UI.Code.CodeKeyBinding.ToString() -> string
+eQuantic.UI.Code.CodeKeyBinding.Chord.get -> eQuantic.UI.Primitives.KeyChord
+eQuantic.UI.Code.CodeKeyBinding.Chord.init -> void
+eQuantic.UI.Code.CodeKeyBinding.Command.get -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeKeyBinding.Command.init -> void
+eQuantic.UI.Code.CodeKeyBinding.First.get -> eQuantic.UI.Primitives.KeyChord?
+eQuantic.UI.Code.CodeKeyBinding.First.init -> void
+static eQuantic.UI.Code.CodeKeymap.Defaults(eQuantic.UI.Primitives.KeyboardConvention convention) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeKeyBinding>!

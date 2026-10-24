@@ -104,8 +104,8 @@ export class CodeCompletion {
     ask(trigger: CodeCompletionTriggerValue, character: string | null, providers: any[], announce: boolean) {
         let document = this._editor.document;
         let position = this._editor.caret;
-        let $n15: any; 
-        let context = ($n15 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n15.character = character, $n15);
+        let $n16: any; 
+        let context = ($n16 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n16.character = character, $n16);
         let askedLineLength = document.line(position.line).length;
         let word = this.word();
         let requests: CodeCompletionRequest[] = [];

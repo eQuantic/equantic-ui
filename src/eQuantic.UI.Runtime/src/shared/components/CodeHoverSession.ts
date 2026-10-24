@@ -85,12 +85,16 @@ export class CodeHoverSession {
     }
 
     showAt(position: CodePosition) {
-        if (this._editor.completion.isOpen) return false;
+        if (!this.canShowAt(position)) return false;
         let at = this._editor.document.clamp(position);
         let explained = this.explained(at, false);
-        if (explained == null && $eq.collections.count(this.providers) === 0) return false;
         this.rest(explained ?? new CodeRange(at), at, false, true, true);
         return true;
+    }
+
+    canShowAt(position: CodePosition) {
+        if (this._editor.completion.isOpen) return false;
+        return $eq.collections.count(this.providers) > 0 || $eq.collections.count(this._editor.diagnostics.at(this._editor.document.clamp(position))) > 0;
     }
 
     dismiss() {

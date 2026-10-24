@@ -144,6 +144,14 @@ public sealed class CodeEditor : StatefulComponent
     /// </summary>
     public IReadOnlyList<ICodeSignatureProvider> SignatureProviders { get; set; } = [];
 
+    /// <summary>
+    /// An app's own key bindings over the editor's defaults (<see cref="CodeKeymap.Defaults"/>): a chord
+    /// bound here is the app's alone, and one bound to <see cref="CodeCommand.None"/> is given back to the
+    /// host. Handed to <see cref="CodeEditorController.KeyBindings"/>, and taken out again when a later
+    /// build hands others.
+    /// </summary>
+    public IReadOnlyList<CodeKeyBinding> KeyBindings { get; set; } = [];
+
     /// <summary>The live editor: the document, the selection, and every command. An IDE reaches for
     /// this to run its own — a formatter, a refactor, a language server's edit — and they undo like
     /// anything the person typed, because they go through the same primitive.</summary>
@@ -228,6 +236,78 @@ public sealed class CodeEditor : StatefulComponent
             // What the panel shows, and the requests still out for it, came from the providers before.
             editor.SignatureHelp.Dismiss();
         }
+    }
+
+    private List<CodeKeyBinding> _bindings = [];
+
+    /// <summary>
+    /// Hands <see cref="KeyBindings"/> to the controller when they are other bindings than the last ones:
+    /// the block handed before comes out and the new one goes in at the end, and what the app put on the
+    /// controller itself stays, in its order. The block comes out whole, where it stands last, since it went
+    /// in at the end and whatever the app puts before it leaves it there; never by value, binding by binding,
+    /// where a binding of the controller's equal to one of the component's went in its place, and the
+    /// controller's own order, and with it what a key ran, changed (Copilot's second round on #1027).
+    /// </summary>
+    private void HandKeyBindings(CodeEditorController editor)
+    {
+        if (SameBindings(KeyBindings, _bindings)) return;
+        var list = editor.KeyBindings;
+        var at = LastBlockAt(list, _bindings);
+        if (at >= 0)
+        {
+            for (var i = 0; i < _bindings.Count; i++) list.RemoveAt(at);
+        }
+        else
+        {
+            // The app split the block up: each binding comes out where it stands last, nearest the end the
+            // block was put at.
+            for (var i = _bindings.Count - 1; i >= 0; i--)
+            {
+                var last = LastIndexOf(list, _bindings[i]);
+                if (last >= 0) list.RemoveAt(last);
+            }
+        }
+        _bindings = [.. KeyBindings];
+        foreach (var binding in _bindings) list.Add(binding);
+    }
+
+    /// <summary>The last place <paramref name="block"/> stands whole and in order in <paramref name="list"/>,
+    /// or -1.</summary>
+    private static int LastBlockAt(IList<CodeKeyBinding> list, List<CodeKeyBinding> block)
+    {
+        if (block.Count == 0) return -1;
+        for (var at = list.Count - block.Count; at >= 0; at--)
+        {
+            if (Holds(list, block, at)) return at;
+        }
+        return -1;
+    }
+
+    private static bool Holds(IList<CodeKeyBinding> list, List<CodeKeyBinding> block, int at)
+    {
+        if (at < 0 || at + block.Count > list.Count) return false;
+        for (var i = 0; i < block.Count; i++)
+        {
+            if (!list[at + i].Equals(block[i])) return false;
+        }
+        return true;
+    }
+
+    private static int LastIndexOf(IList<CodeKeyBinding> list, CodeKeyBinding binding)
+    {
+        for (var i = list.Count - 1; i >= 0; i--)
+        {
+            if (list[i].Equals(binding)) return i;
+        }
+        return -1;
+    }
+
+    private static bool SameBindings(IReadOnlyList<CodeKeyBinding> one, IReadOnlyList<CodeKeyBinding> other)
+    {
+        if (one.Count != other.Count) return false;
+        for (var i = 0; i < one.Count; i++)
+            if (!one[i].Equals(other[i])) return false;
+        return true;
     }
 
     /// <summary>Whether two lists hold the same problems in the same order.</summary>
@@ -455,6 +535,7 @@ public sealed class CodeEditor : StatefulComponent
         DiagnosticProviders = fresh.DiagnosticProviders;
         HoverProviders = fresh.HoverProviders;
         SignatureProviders = fresh.SignatureProviders;
+        KeyBindings = fresh.KeyBindings;
     }
 
     /// <summary>What find is looking for: the bar's text while the bar is open, else what the app
@@ -509,6 +590,7 @@ public sealed class CodeEditor : StatefulComponent
         editor.ReadOnly = ReadOnly;
         HandProviders(editor.Completion);
         HandIntelligence(editor);
+        HandKeyBindings(editor);
         // The controller's OWN highlighter, kept across frames: a keystroke re-colours the line it
         // touched and stops, where a fresh one per frame would re-tokenize the file per character.
         var highlighter = editor.Highlighter;
