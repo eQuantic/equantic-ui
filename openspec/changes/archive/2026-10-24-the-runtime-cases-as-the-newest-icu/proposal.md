@@ -1,7 +1,7 @@
 ## Why
 
 Closes #1032, a bug under #849. `main` and every pull request are red on `test (ubuntu-latest)`, which
-now names Ubuntu 26.04: its ICU is 78, Unicode 17, and .NET 10 there upper-cases `ƛ` to `Ꟍ`, where the
+now names Ubuntu 26.04: its ICU is 78, Unicode 17, and .NET 10 there upper-cases `ƛ` to `Ƛ`, where the
 runtime kept the letters Unicode 16 and 17 cased as the servers of Ubuntu 24.04 and Windows keep them. The
 suite compares the runtime with the .NET of the host it runs on, so 48 cases of
 `CasingConformanceTests.EveryCodePoint_ChangesCaseAsAServersDotNetDoes` fail there.

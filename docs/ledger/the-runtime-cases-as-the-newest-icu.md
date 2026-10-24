@@ -1,5 +1,5 @@
 - **2026-10-24 · The runtime cases as the newest ICU does**: `ubuntu-latest` moved to Ubuntu 26.04, whose
-  ICU is 78, Unicode 17, and .NET 10 there upper-cases `ƛ` to `Ꟍ`, where the runtime kept the letters
+  ICU is 78, Unicode 17, and .NET 10 there upper-cases `ƛ` to `Ƛ`, where the runtime kept the letters
   Unicode 16 and 17 cased as the servers of Ubuntu 24.04 and Windows keep them: 48 cases of
   `CasingConformanceTests` failed on `main` and on every pull request. Edgar's decision was the newer
   Unicode: the runtime's list of the code points to keep their case became the list of their case pairs,

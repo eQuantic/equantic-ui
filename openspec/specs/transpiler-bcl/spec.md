@@ -1021,7 +1021,7 @@ name does (EQ2108).
 #### Scenario: A letter Unicode 16 cased
 
 - **WHEN** `"ƛ".ToUpper()` runs
-- **THEN** it answers `Ꟍ`, as .NET 10 does over ICU 78, where it answered `ƛ`, on an engine whose own
+- **THEN** it answers `Ƛ`, as .NET 10 does over ICU 78, where it answered `ƛ`, on an engine whose own
   Unicode leaves `ƛ` as it is too
 
 #### Scenario: A final sigma
