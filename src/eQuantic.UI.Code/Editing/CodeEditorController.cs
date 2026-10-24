@@ -1571,7 +1571,12 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             if (first == _document.LineCount - 1) return false;
             last = first + 1;
         }
-        var joined = _document.Line(first);
+        // The joined line is written once, from its parts: appended to the text so far, each line copied all
+        // the lines before it, 32 GB of copies for 12,000 lines of 80 characters. The white space a join
+        // collapses is always the last part's end, since every part after the first line starts with text,
+        // so only that part is cut.
+        var parts = new List<string> { _document.Line(first) };
+        var length = parts[0].Length;
         // How far before the joined text's end the last join happened, VS Code's columnDeltaOffset.
         var met = 0;
         // Where the selection's end stands in the joined text, once its line is joined; none while its
@@ -1591,19 +1596,31 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 met = 0;
                 continue;
             }
-            var space = joined.Length > 0;
-            if (space && joined[^1] is ' ' or '\t')
+            var space = length > 0;
+            var tail = parts[parts.Count - 1];
+            if (space && tail[^1] is ' ' or '\t')
             {
                 space = false;
-                joined = joined.TrimEnd(' ', '\t') + " ";
-                if (!appended) cut = joined.Length - 1;
+                var kept = tail.TrimEnd(' ', '\t');
+                parts[parts.Count - 1] = kept;
+                length -= tail.Length - kept.Length;
+                parts.Add(" ");
+                length++;
+                if (!appended) cut = length - 1;
             }
-            joined += (space ? " " : string.Empty) + rest;
+            if (space)
+            {
+                parts.Add(" ");
+                length++;
+            }
+            parts.Add(rest);
+            length += rest.Length;
             appended = true;
             met = rest.Length + (space ? 1 : 0);
             if (line == _selection.End.Line)
-                end = joined.Length - rest.Length + Math.Max(0, _selection.End.Column - (text.Length - rest.Length));
+                end = length - rest.Length + Math.Max(0, _selection.End.Column - (text.Length - rest.Length));
         }
+        var joined = string.Concat(parts);
         CodeRange after;
         if (_selection.IsEmpty)
         {

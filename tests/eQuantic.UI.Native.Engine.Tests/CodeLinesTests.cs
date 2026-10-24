@@ -327,6 +327,26 @@ public class CodeLinesTests : IDisposable
         aBlankLast.Selection.Should().Be(new CodeRange(At(0, 1), At(0, 2)), "a blank last line adds nothing, and the end is the line's");
     }
 
+    /// <summary>
+    /// A join of many lines writes the joined line once. Built by appending each line to the text so far,
+    /// every line copied all the lines before it, and collapsing the white space at the end copied them
+    /// again: 12,000 lines of 80 characters copied some 5.8 billion on the input's own thread (Copilot,
+    /// #1033). What it allocates is measured, which a shared machine's clock is not.
+    /// </summary>
+    [Fact]
+    public void JoiningManyLines_WritesTheJoinedLineOnce()
+    {
+        var text = string.Join("\n", Enumerable.Range(0, 12_000).Select(i => $"    line {i} {new string('x', 64)}  "));
+        var editor = Editor(text, At(0, 0), At(11_999, 4));
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        editor.Execute(CodeCommand.JoinLines).Should().BeTrue();
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        editor.Document.LineCount.Should().Be(1);
+        allocated.Should().BeLessThan(text.Length * 2L * 100, "a join allocates in proportion to the text it joins");
+    }
+
     [Fact]
     public void JoiningTheLastLine_IsTheHosts_AndWindowsBindsNoJoin()
     {

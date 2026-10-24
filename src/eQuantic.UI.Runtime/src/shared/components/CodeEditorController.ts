@@ -1021,7 +1021,8 @@ export class CodeEditorController {
             if (first === this._document.lineCount - 1) return false;
             last = first + 1;
         }
-        let joined = this._document.line(first);
+        let parts = [this._document.line(first)];
+        let length = parts[0].length;
         let met = 0;
         let end = -1;
         let cut = -1;
@@ -1033,17 +1034,28 @@ export class CodeEditorController {
                 met = 0;
                 continue;
             }
-            let space = joined.length > 0;
-            if (space && (($v78428) => ($v78428 === ' ' || $v78428 === '\t'))(joined[joined.length - 1])) {
+            let space = length > 0;
+            let tail = parts[parts.length - 1];
+            if (space && (($v78887) => ($v78887 === ' ' || $v78887 === '\t'))(tail[tail.length - 1])) {
                 space = false;
-                joined = $eq.text.trimEnd(joined, [' ', '\t']) + ' ';
-                if (!appended) cut = joined.length - 1;
+                let kept = $eq.text.trimEnd(tail, [' ', '\t']);
+                parts[parts.length - 1] = kept;
+                length -= tail.length - kept.length;
+                parts.push(' ');
+                length++;
+                if (!appended) cut = length - 1;
             }
-            joined += (space ? ' ' : '') + rest;
+            if (space) {
+                parts.push(' ');
+                length++;
+            }
+            parts.push(rest);
+            length += rest.length;
             appended = true;
             met = rest.length + (space ? 1 : 0);
-            if (line === this._selection.end.line) end = joined.length - rest.length + Math.max(0, this._selection.end.column - (text.length - rest.length));
+            if (line === this._selection.end.line) end = length - rest.length + Math.max(0, this._selection.end.column - (text.length - rest.length));
         }
+        let joined = [...parts].join('');
         let after = null;
         if (this._selection.isEmpty) {
             after = new CodeRange(new CodePosition(first, joined.length - met));
