@@ -33,9 +33,29 @@ describe('casing: one code unit to one', () => {
     expect(toLower('\udc28𐐀')).toBe('\udc28𐐨');
   });
 
-  it('leaves a letter a server’s .NET 10 does not case, whatever the engine’s Unicode says', () => {
-    expect(toUpper('ƛɤ')).toBe('ƛɤ');
-    expect(toLower('ꟜꟋ')).toBe('ꟜꟋ');
+  it('cases the letters Unicode 16 and 17 cased as .NET 10 does over ICU 78 (#1032)', () => {
+    expect(toUpper('ƛɤ' + String.fromCodePoint(0x10d70, 0x16ebb))).toBe('ꟜꟋ' + String.fromCodePoint(0x10d50, 0x16ea0));
+    expect(toLower('ꟜꟋ' + String.fromCodePoint(0x10d50, 0x16ea0))).toBe('ƛɤ' + String.fromCodePoint(0x10d70, 0x16ebb));
+  });
+
+  it('cases them so on an engine whose Unicode is older, which leaves them as they are', () => {
+    const newer = /[\u019b\u0264\ua7cb\ua7dc]|\ud803[\udd50-\udd85]|\ud81b[\udea0-\uded3]/;
+    const upper = String.prototype.toUpperCase;
+    const lower = String.prototype.toLowerCase;
+    const older = (change: () => string) =>
+      function (this: string) {
+        return [...this].map((c) => (newer.test(c) ? c : change.call(c))).join('');
+      };
+    String.prototype.toUpperCase = older(upper);
+    String.prototype.toLowerCase = older(lower);
+    try {
+      expect('ƛ'.toUpperCase()).toBe('ƛ');
+      expect(toUpper('aƛɤ' + String.fromCodePoint(0x16ebb))).toBe('AꟜꟋ' + String.fromCodePoint(0x16ea0));
+      expect(toLower('AꟜꟋ' + String.fromCodePoint(0x10d50))).toBe('aƛɤ' + String.fromCodePoint(0x10d70));
+    } finally {
+      String.prototype.toUpperCase = upper;
+      String.prototype.toLowerCase = lower;
+    }
   });
 
   it('cases the rest as the engine does', () => {
