@@ -483,6 +483,16 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             case CodeCommand.ToggleLineComment: return ToggleLineComment();
             case CodeCommand.Undo: return Undo();
             case CodeCommand.Redo: return Redo();
+            case CodeCommand.MoveLinesUp: return MoveLines(CodeDirection.Backward);
+            case CodeCommand.MoveLinesDown: return MoveLines(CodeDirection.Forward);
+            case CodeCommand.CopyLinesUp: return CopyLines(CodeDirection.Backward);
+            case CodeCommand.CopyLinesDown: return CopyLines(CodeDirection.Forward);
+            case CodeCommand.DeleteLines: return DeleteLines();
+            case CodeCommand.JoinLines: return JoinLines();
+            case CodeCommand.SortLinesAscending: return SortLines(descending: false);
+            case CodeCommand.SortLinesDescending: return SortLines(descending: true);
+            case CodeCommand.InsertLineAbove: return InsertLine(CodeDirection.Backward);
+            case CodeCommand.InsertLineBelow: return InsertLine(CodeDirection.Forward);
             case CodeCommand.Copy:
                 if (clipboard is null) return false;
                 clipboard.Write(CopyText());
@@ -577,8 +587,31 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         CodeCommand.HoverShow => Hover.CanShowAt(Caret),
         CodeCommand.HoverHide => Hover.IsOpen,
         CodeCommand.ProblemNext or CodeCommand.ProblemPrevious => Diagnostics.Items.Count > 0,
+        // A move needs a line to pass, a delete something to take, a join a line to join, and a sort
+        // lines out of order.
+        CodeCommand.MoveLinesUp => !ReadOnly && SelectedLines().First > 0,
+        CodeCommand.MoveLinesDown => !ReadOnly && SelectedLines().Last < _document.LineCount - 1,
+        CodeCommand.CopyLinesUp or CodeCommand.CopyLinesDown or CodeCommand.InsertLineAbove
+            or CodeCommand.InsertLineBelow => !ReadOnly,
+        CodeCommand.DeleteLines => !ReadOnly && (_document.LineCount > 1 || _document.Line(0).Length > 0),
+        CodeCommand.JoinLines => !ReadOnly && CanJoin(),
+        CodeCommand.SortLinesAscending => !ReadOnly && !InOrder(descending: false),
+        CodeCommand.SortLinesDescending => !ReadOnly && !InOrder(descending: true),
         _ => true,
     };
+
+    /// <summary>Whether ⌃J has lines to join: the selection's, or the caret's line and a line after it.</summary>
+    private bool CanJoin()
+    {
+        var (first, last) = JoinedLines();
+        return last > first || first < _document.LineCount - 1;
+    }
+
+    /// <summary>
+    /// The lines ⌃J joins: every line the selection touches, the one it ends at the start of included, as
+    /// VS Code's join takes them, where the other line operations leave that line out.
+    /// </summary>
+    private (int First, int Last) JoinedLines() => (_selection.Start.Line, _selection.End.Line);
 
     /// <summary>A move of the caret, which always claims its key.</summary>
     private bool Step(CodeMotion motion, CodeDirection direction, bool extend)
@@ -811,8 +844,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <summary>
     /// The one door every change to the document goes through. <paramref name="typed"/> says a
     /// person typed it, which is what lets undo join it to the run before (see <see cref="CodeEdit.Typed"/>).
+    /// <paramref name="after"/> is the selection the edit leaves, the caret at the end of what it wrote when
+    /// none is given, and the history records it as the edit's selection after: redo of a line moved
+    /// selects the lines again, where it came back to that caret alone.
     /// </summary>
-    private bool Edit(CodeRange range, string text, bool typed)
+    private bool Edit(CodeRange range, string text, bool typed, CodeRange? after = null)
     {
         if (ReadOnly) return false;
 
@@ -827,7 +863,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         var linesInserted = caret.Line - ordered.Start.Line;
 
         _document = next;
-        _selection = new CodeRange(caret);
+        _selection = after is { } left ? new CodeRange(next.Clamp(left.Anchor), next.Clamp(left.Focus)) : new CodeRange(caret);
         _revealVersion++;
         // The edit carries the text the document HOLDS, its line breaks as the document broke them.
         // Handed on raw, a pasted lone CR was one line to the history and two to the document, and
@@ -946,12 +982,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         CodeLanguageRules rules = Rules;
         var line = _document.Line(Caret.Line);
         var indent = _document.IndentOf(Caret.Line);
-        var step = rules.InsertSpaces ? new string(' ', rules.IndentWidth) : "\t";
+        var step = IndentStep;
 
-        var beforeCaret = line[..Math.Min(Caret.Column, line.Length)].TrimEnd();
         var afterCaret = Caret.Column < line.Length ? line[Caret.Column..].TrimStart() : string.Empty;
 
-        var opens = beforeCaret.Length > 0 && rules.IndentAfter.Contains(beforeCaret[^1]);
+        var opens = OpensBlock(line[..Math.Min(Caret.Column, line.Length)]);
         var closesNext = afterCaret.Length > 0 && rules.OutdentOn.Contains(afterCaret[0]);
 
         if (opens && closesNext)
@@ -962,6 +997,17 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             return true;
         }
         return Apply(_selection, "\n" + indent + (opens ? step : string.Empty));
+    }
+
+    /// <summary>One step of indentation, as Tab writes it: the language's spaces, or a tab.</summary>
+    private string IndentStep => Rules.InsertSpaces ? new string(' ', Rules.IndentWidth) : "\t";
+
+    /// <summary>Whether a new line after <paramref name="text"/> gains a step: the text ends, white space
+    /// aside, on what opens a block.</summary>
+    private bool OpensBlock(string text)
+    {
+        var trimmed = text.TrimEnd();
+        return trimmed.Length > 0 && Rules.IndentAfter.Contains(trimmed[^1]);
     }
 
     /// <summary>Backspace: the selection if there is one, else the character before the caret —
@@ -1053,12 +1099,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
     private bool ShiftLines(bool add)
     {
-        var step = Rules.InsertSpaces ? new string(' ', Rules.IndentWidth) : "\t";
-        var first = _selection.Start.Line;
-        var last = _selection.End.Line;
-        // A selection that ends at column 0 does not include that line — the same rule every
-        // editor uses, and the reason shift+down then Tab does not indent one line too many.
-        if (last > first && _selection.End.Column == 0) last--;
+        var step = IndentStep;
+        var (first, last) = SelectedLines();
 
         // What each line gains (Tab) or loses (Shift+Tab), all of it at column 0: the selection's
         // two ends move by their OWN line's change, which is what keeps it what it was.
@@ -1124,9 +1166,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     {
         if (ReadOnly || Rules.LineComment is not { } marker) return false;
 
-        var first = _selection.Start.Line;
-        var last = _selection.End.Line;
-        if (last > first && _selection.End.Column == 0) last--;
+        var (first, last) = SelectedLines();
 
         var allCommented = true;
         for (var line = first; line <= last; line++)
@@ -1403,6 +1443,223 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             return true;
         }
         return Insert(text);
+    }
+
+    // ---- lines --------------------------------------------------------------------------------
+
+    /// <summary>
+    /// The lines a line operation takes, Tab and ⌘/ among them: the selection's, or the caret's. A
+    /// selection that ends at column 0 does not include that line — the same rule every editor uses, and
+    /// the reason shift+down then Tab does not indent one line too many.
+    /// </summary>
+    private (int First, int Last) SelectedLines()
+    {
+        var first = _selection.Start.Line;
+        var last = _selection.End.Line;
+        if (last > first && _selection.End.Column == 0) last--;
+        return (first, last);
+    }
+
+    /// <summary>Lines <paramref name="first"/> to <paramref name="last"/>, from the first's start to the last's
+    /// end.</summary>
+    private CodeRange WholeLines(int first, int last) =>
+        new(new CodePosition(first, 0), new CodePosition(last, _document.Line(last).Length));
+
+    /// <summary>The text of lines <paramref name="first"/> to <paramref name="last"/>, a line each.</summary>
+    private List<string> LinesOf(int first, int last)
+    {
+        var lines = new List<string>();
+        for (var line = first; line <= last; line++) lines.Add(_document.Line(line));
+        return lines;
+    }
+
+    /// <summary>The selection moved <paramref name="lines"/> lines down, or up when negative, each end at its
+    /// column.</summary>
+    private CodeRange SelectionMovedBy(int lines) =>
+        new(_selection.Anchor with { Line = _selection.Anchor.Line + lines },
+            _selection.Focus with { Line = _selection.Focus.Line + lines });
+
+    /// <summary>
+    /// ⌥↑ and ⌥↓: moves the lines the selection takes one line up (<see cref="CodeDirection.Backward"/>) or
+    /// down, past the line beside them, and the selection with them, as one undo step. False going up from
+    /// the first line, or down from the last.
+    /// </summary>
+    public bool MoveLines(CodeDirection direction)
+    {
+        if (ReadOnly) return false;
+        EndComposition();
+        var (first, last) = SelectedLines();
+        var up = direction == CodeDirection.Backward;
+        if (up ? first == 0 : last == _document.LineCount - 1) return false;
+        var block = string.Join("\n", LinesOf(first, last));
+        return up
+            ? Edit(WholeLines(first - 1, last), block + "\n" + _document.Line(first - 1), false, SelectionMovedBy(-1))
+            : Edit(WholeLines(first, last + 1), _document.Line(last + 1) + "\n" + block, false, SelectionMovedBy(1));
+    }
+
+    /// <summary>
+    /// ⇧⌥↑ and ⇧⌥↓: copies the lines the selection takes above (<see cref="CodeDirection.Backward"/>) or
+    /// below themselves, as one undo step, the selection on the upper copy going up and on the lower one
+    /// going down.
+    /// </summary>
+    public bool CopyLines(CodeDirection direction)
+    {
+        if (ReadOnly) return false;
+        EndComposition();
+        var (first, last) = SelectedLines();
+        var block = string.Join("\n", LinesOf(first, last));
+        if (direction == CodeDirection.Backward)
+            return Edit(new CodeRange(new CodePosition(first, 0)), block + "\n", false, _selection);
+        var end = new CodePosition(last, _document.Line(last).Length);
+        return Edit(new CodeRange(end), "\n" + block, false, SelectionMovedBy(last - first + 1));
+    }
+
+    /// <summary>
+    /// ⇧⌘K: deletes the lines the selection takes, a line break with them, as one undo step. The caret goes
+    /// to the line that takes their place, at the column it had, or to the line before when the last lines
+    /// go. False when there is nothing to delete, a document of one empty line.
+    /// </summary>
+    public bool DeleteLines()
+    {
+        if (ReadOnly) return false;
+        EndComposition();
+        var (first, last) = SelectedLines();
+        var column = Caret.Column;
+        if (last < _document.LineCount - 1)
+        {
+            var next = _document.Line(last + 1);
+            return Edit(new CodeRange(new CodePosition(first, 0), new CodePosition(last + 1, 0)), string.Empty, false,
+                new CodeRange(new CodePosition(first, Math.Min(column, next.Length))));
+        }
+        if (first > 0)
+        {
+            var before = _document.Line(first - 1);
+            return Edit(new CodeRange(new CodePosition(first - 1, before.Length), new CodePosition(last, _document.Line(last).Length)),
+                string.Empty, false, new CodeRange(new CodePosition(first - 1, Math.Min(column, before.Length))));
+        }
+        return Edit(WholeLines(first, last), string.Empty, false, new CodeRange(CodePosition.Start));
+    }
+
+    /// <summary>
+    /// ⌃J: joins the lines the selection touches into one, or the caret's line with the next when nothing
+    /// spanning lines is selected, as one undo step and as VS Code's <c>JoinLinesAction</c> joins them: each
+    /// next line's leading spaces and tabs go, one space joins the text unless the text before is empty or
+    /// ends with a space or a tab, which collapse to one space, and a next line of spaces and tabs alone
+    /// adds nothing. Spaces and tabs alone, as VS Code's: a no-break space is text, in a string literal as
+    /// anywhere. With nothing selected the caret stands where the lines met. False on the last line with
+    /// nothing to join it to.
+    /// </summary>
+    public bool JoinLines()
+    {
+        if (ReadOnly) return false;
+        EndComposition();
+        var (first, last) = JoinedLines();
+        if (last == first)
+        {
+            if (first == _document.LineCount - 1) return false;
+            last = first + 1;
+        }
+        var joined = _document.Line(first);
+        // How far before the joined text's end the last join happened, VS Code's columnDeltaOffset.
+        var met = 0;
+        for (var line = first + 1; line <= last; line++)
+        {
+            var text = _document.Line(line);
+            var rest = text.TrimStart(' ', '\t');
+            if (rest.Length == 0)
+            {
+                met = 0;
+                continue;
+            }
+            var space = joined.Length > 0;
+            if (space && joined[^1] is ' ' or '\t')
+            {
+                space = false;
+                joined = joined.TrimEnd(' ', '\t') + " ";
+            }
+            joined += (space ? " " : string.Empty) + rest;
+            met = rest.Length + (space ? 1 : 0);
+        }
+        CodeRange after;
+        if (_selection.IsEmpty)
+        {
+            after = new CodeRange(new CodePosition(first, joined.Length - met));
+        }
+        else if (_selection.Start.Line == _selection.End.Line)
+        {
+            after = _selection;
+        }
+        else
+        {
+            after = new CodeRange(_selection.Start, new CodePosition(first, joined.Length));
+        }
+        return Edit(WholeLines(first, last), joined, false, after);
+    }
+
+    /// <summary>
+    /// Sorts the lines the selection takes, ordinally and case aside with ties broken ordinally, as one
+    /// undo step, the selection kept: the same order on both targets, where a culture's collation is not
+    /// (VS Code sorts by the locale's). False when there are fewer than two lines, or they are in order.
+    /// </summary>
+    public bool SortLines(bool descending)
+    {
+        if (ReadOnly) return false;
+        EndComposition();
+        if (Sorted(descending) is not { } sorted) return false;
+        var (first, last) = SelectedLines();
+        return Edit(WholeLines(first, last), sorted, false, _selection);
+    }
+
+    /// <summary>The lines the selection takes in order, or null when sorting them would change nothing.</summary>
+    private string? Sorted(bool descending)
+    {
+        if (InOrder(descending)) return null;
+        var (first, last) = SelectedLines();
+        var sorted = LinesOf(first, last);
+        sorted.Sort((a, b) => descending ? CompareLines(b, a) : CompareLines(a, b));
+        return string.Join("\n", sorted);
+    }
+
+    /// <summary>
+    /// Whether the lines the selection takes are already in order, one line or none included: each beside
+    /// the next in the order a sort gives, which is one pass where a sort is several. The order is total, a
+    /// tie being the same line twice, so lines in order are the lines a sort would write.
+    /// </summary>
+    private bool InOrder(bool descending)
+    {
+        var (first, last) = SelectedLines();
+        for (var line = first; line < last; line++)
+        {
+            var order = CompareLines(_document.Line(line), _document.Line(line + 1));
+            if (descending ? order < 0 : order > 0) return false;
+        }
+        return true;
+    }
+
+    private static int CompareLines(string a, string b)
+    {
+        var aside = string.Compare(a, b, StringComparison.OrdinalIgnoreCase);
+        return aside != 0 ? aside : string.CompareOrdinal(a, b);
+    }
+
+    /// <summary>
+    /// ⌘↩ and ⇧⌘↩: opens a line below the caret's, or above it (<see cref="CodeDirection.Backward"/>),
+    /// wherever the caret stands on its line, as one undo step. The new line is indented as the caret's, and
+    /// below a line that opens a block one step more, as Enter indents; the caret goes to its indent.
+    /// </summary>
+    public bool InsertLine(CodeDirection direction)
+    {
+        if (ReadOnly) return false;
+        EndComposition();
+        var line = Caret.Line;
+        var indent = _document.IndentOf(line);
+        if (direction == CodeDirection.Backward)
+            return Edit(new CodeRange(new CodePosition(line, 0)), indent + "\n", false,
+                new CodeRange(new CodePosition(line, indent.Length)));
+        var text = _document.Line(line);
+        var opened = indent + (OpensBlock(text) ? IndentStep : string.Empty);
+        return Edit(new CodeRange(new CodePosition(line, text.Length)), "\n" + opened, false,
+            new CodeRange(new CodePosition(line + 1, opened.Length)));
     }
 
     // ---- history ------------------------------------------------------------------------------

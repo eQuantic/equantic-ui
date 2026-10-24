@@ -276,6 +276,17 @@ public static class CodeKeymap
             // read-only view has nothing to indent: there Tab belongs to the form.
             Bind("Tab", none, CodeCommand.Indent),
             Bind("Tab", shift, CodeCommand.Outdent),
+
+            // ---- lines, as VS Code has them: ⌥↑ ⌥↓ move them, named after the panel's own ⌥↑ ⌥↓ so it
+            // keeps them while it shows overloads; ⇧⌥↑ ⇧⌥↓ copy them; ⇧⌘K deletes them; ⌘↩ and ⇧⌘↩ open a
+            // line below and above the caret's.
+            Bind("ArrowUp", alt, CodeCommand.MoveLinesUp),
+            Bind("ArrowDown", alt, CodeCommand.MoveLinesDown),
+            Bind("ArrowUp", shift | alt, CodeCommand.CopyLinesUp),
+            Bind("ArrowDown", shift | alt, CodeCommand.CopyLinesDown),
+            Bind("k", shift | command, CodeCommand.DeleteLines),
+            Bind("Enter", command, CodeCommand.InsertLineBelow),
+            Bind("Enter", shift | command, CodeCommand.InsertLineAbove),
         };
         if (apple)
         {
@@ -290,6 +301,11 @@ public static class CodeKeymap
             bindings.Add(Bind("ArrowDown", command, CodeCommand.CursorDocumentEnd));
             bindings.Add(Bind("ArrowDown", shift | command, CodeCommand.CursorDocumentEndSelect));
             bindings.Add(Bind("Backspace", command, CodeCommand.DeleteToLineStart));
+            // ⌃J joins the lines, a Mac's alone as in VS Code, and on ⌘ too, as ⌃Space is: the browser
+            // reports Ctrl as the command key. On Windows and Linux, where VS Code binds no join, Ctrl+J
+            // stays the browser's.
+            bindings.Add(Bind("j", control, CodeCommand.JoinLines));
+            bindings.Add(Bind("j", command, CodeCommand.JoinLines));
         }
         // Ctrl+↑ scrolls the view in every Standard editor; there is no view to scroll from here, so it
         // is left to the host rather than guessed at.
