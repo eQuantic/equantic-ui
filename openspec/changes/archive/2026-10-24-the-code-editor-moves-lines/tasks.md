@@ -16,7 +16,7 @@
 
 ## 3. Documentation
 
-- [ ] 3.1 docs/CODE-EDITOR-PLAN.md: the row of slice 2's second part
+- [x] 3.1 docs/CODE-EDITOR-PLAN.md: the row of slice 2's second part
 - [x] 3.2 The wiki's CodeEditor page in every language it is written in
 - [x] 3.3 One ledger entry, a file under docs/ledger/, citing #1011
-- [ ] 3.4 Archive this change before the merge
+- [x] 3.4 Archive this change before the merge
