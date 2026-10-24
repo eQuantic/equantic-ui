@@ -417,6 +417,72 @@ public class CodeLinesTests : IDisposable
         }
     }
 
+    /// <summary>
+    /// What every operation promises, over seeded documents and selections rather than hand-picked ones:
+    /// its undo gives back the text and the selection it found, redo the text and the selection it left, the
+    /// selection it leaves cuts no text element, a move with its opposite after it gives the text back, and
+    /// the selection holds after a move, a copy or a join the text it held before, a join's white space
+    /// aside. Copilot's two rounds on #1033 found five selections the hand-picked cases did not reach: these
+    /// are the promises those cases broke, and the ends at column 0 that a person's ⇧↓ makes are drawn
+    /// half the time.
+    /// </summary>
+    [Fact]
+    public void EveryOperation_KeepsItsPromises_OverSeededDocumentsAndSelections()
+    {
+        string[] pool = ["", "a", "  b", "c  ", "\t{", "}", "x y", "\uD83D\uDE00z", "Bb", "aa  ", "e \t", "   "];
+        var random = new Random(2026_10_24);
+        var failures = new List<string>();
+        for (var round = 0; round < 3000; round++)
+        {
+            var lines = Enumerable.Range(0, random.Next(1, 7)).Select(_ => pool[random.Next(pool.Length)]).ToList();
+            var text = string.Join("\n", lines);
+            CodePosition Somewhere()
+            {
+                var line = random.Next(lines.Count);
+                return At(line, random.Next(2) == 0 ? 0 : random.Next(lines[line].Length + 1));
+            }
+            var anchor = Somewhere();
+            var focus = random.Next(3) == 0 ? anchor : Somewhere();
+            foreach (var command in Operations)
+            {
+                var editor = Editor(text, anchor, focus);
+                var before = editor.Selection;
+                var held = editor.Document.TextIn(before);
+                var what = $"{command} over {System.Text.Json.JsonSerializer.Serialize(text)} from {before.Anchor}-{before.Focus}";
+                if (!editor.Execute(command)) continue;
+                var done = editor.Document.Text;
+                var left = editor.Selection;
+                var holds = editor.Document.TextIn(left);
+                var moved = command is CodeCommand.MoveLinesUp or CodeCommand.MoveLinesDown or CodeCommand.CopyLinesUp
+                    or CodeCommand.CopyLinesDown;
+                if ((moved && holds != held)
+                    || (command == CodeCommand.JoinLines && !before.IsEmpty && Blanked(holds) != Blanked(held)))
+                    failures.Add($"{what}: holds {System.Text.Json.JsonSerializer.Serialize(holds)}, where it held {System.Text.Json.JsonSerializer.Serialize(held)}");
+                editor.Selection = left;
+                if (editor.Selection != left) failures.Add($"{what}: leaves {left.Anchor}-{left.Focus}, inside a text element");
+                if (command is CodeCommand.MoveLinesUp or CodeCommand.MoveLinesDown)
+                {
+                    var back = command == CodeCommand.MoveLinesUp ? CodeCommand.MoveLinesDown : CodeCommand.MoveLinesUp;
+                    if (!editor.Execute(back) || editor.Document.Text != text)
+                        failures.Add($"{what}: {back} after it gives {System.Text.Json.JsonSerializer.Serialize(editor.Document.Text)}");
+                    editor.Undo();
+                }
+                editor.Undo().Should().BeTrue(what);
+                if (editor.Document.Text != text || editor.Selection != before)
+                    failures.Add($"{what}: undo gives {System.Text.Json.JsonSerializer.Serialize(editor.Document.Text)} at {editor.Selection.Anchor}-{editor.Selection.Focus}");
+                editor.Redo().Should().BeTrue(what);
+                if (editor.Document.Text != done || editor.Selection != left)
+                    failures.Add($"{what}: redo gives {System.Text.Json.JsonSerializer.Serialize(editor.Document.Text)} at {editor.Selection.Anchor}-{editor.Selection.Focus}");
+            }
+        }
+        failures.Should().BeEmpty($"{failures.Count} broke, among them:\n{string.Join("\n", failures.Take(10))}");
+    }
+
+    /// <summary>Text with every run of spaces, tabs and line breaks one space, and none at its ends: what a
+    /// join leaves of the text it joins.</summary>
+    private static string Blanked(string text) =>
+        System.Text.RegularExpressions.Regex.Replace(text, "[ \\t\\n]+", " ").Trim();
+
     /// <summary>The selection an operation leaves never stands inside a text element, as no selection
     /// placed any other way does: a deleted line's column goes to the edge of the element it would cut
     /// (Copilot, #1033).</summary>
