@@ -19,12 +19,14 @@
 - [x] 3.2 The head holds the invariants, the theme's stylesheet, the app's own styles and the app's head tags, in that order, and a page with no chosen theme carries Photon's stylesheet
 - [x] 3.3 `SetBaseStyles` and `BaseStyles` go, and `AddStyles` appends the app's own CSS
 - [x] 3.4 Proof: the shell's head read back from a served page, in order, with and without a theme, and with an app's `AddStyles`
+- [x] 3.5 The placeholder a page the server does not render shows is `eq-loading` on both doors, centred by the theme's stylesheet, and a `DisableSsr` page answers 200 rather than the 500 page (found in review)
 
 ## 4. Every target draws the slots
 
 - [x] 4.1 A field's placeholder, a table's scrollbars (Photon, and the web's lowering on both sides of the parity line) and the code editor's selection read the slots
 - [x] 4.2 Photon sets text with no face of its own in `TextFamily`
 - [x] 4.3 Proof: the goldens unchanged under every theme that sets no slot, a theme that sets them drawn from them on both targets, and the hydration contract held for the table's scrollbars
+- [x] 4.4 The text the code editor's selection covers takes `OnSelection` on both targets, and only that text (found in review)
 
 ## 5. The sample and the real thing
 

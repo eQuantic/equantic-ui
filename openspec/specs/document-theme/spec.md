@@ -28,7 +28,9 @@ On the web the theme's stylesheet SHALL set the document's background to the the
 - the web, the document's `::selection`, every field's placeholder and, when the theme sets the
   scrollbar slots, the page's scrollbars (with the defaults the page keeps the platform's own, so an
   app's own scrollbar CSS still applies);
-- both targets, a `TextEntry`'s placeholder, a table's scrollbars and the code editor's selection.
+- both targets, a `TextEntry`'s placeholder, a table's scrollbars and the code editor's selection: its
+  band in `Selection`, and the text it covers in `OnSelection` when the theme names one, so a band a
+  theme draws opaque does not hide the text under it.
 
 #### Scenario: The defaults change nothing on Photon
 
@@ -38,7 +40,7 @@ On the web the theme's stylesheet SHALL set the document's background to the the
 #### Scenario: A theme's own selection
 
 - **WHEN** a theme answers `Selection` as its brand green and `OnSelection` as white
-- **THEN** the web writes `::selection` with that background and that colour, and the code editor's selection band takes the green on both targets
+- **THEN** the web writes `::selection` with that background and that colour, and on both targets the code editor's selection band takes the green and the text it covers the white, while the rest of the line keeps its colours
 
 #### Scenario: A theme's own scrollbars
 
@@ -53,3 +55,14 @@ The head SHALL hold the framework's invariants, then the theme's stylesheet, the
 
 - **WHEN** an app adds `body { background: white; }` with `AddStyles`
 - **THEN** the rule comes after the theme's stylesheet in the head, and the body is white
+
+### Requirement: A page the server does not render shows a placeholder the SDK styles
+
+Until its module mounts, a page the server does not render SHALL show the SDK's placeholder, written
+with the class `eq-loading` by both the shell and `boot.ts`, and the theme's stylesheet SHALL centre it
+in the window, so no app writes CSS for it.
+
+#### Scenario: A client-only page
+
+- **WHEN** a visitor asks for a page marked `DisableSsr`
+- **THEN** the page holds `<div class="eq-loading">`, and the head holds the theme's `.eq-loading` rule

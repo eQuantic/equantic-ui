@@ -48,9 +48,11 @@ It is written for every app, Photon's theme when the app chose none, and it come
 
 **Photon and the components read the slots.**
 - Photon sets text with no face of its own in `TextFamily`, through the merge the code face already goes through, renamed `WithThemeFace`.
-- A field's placeholder, a table's scrollbars and the code editor's selection read the slots on both targets.
+- A field's placeholder, a table's scrollbars and the code editor's selection read the slots on both targets. The text a selection covers takes `OnSelection` when the theme names one, so a theme can draw its selection opaque without hiding the text under it.
 
-**The files this touches hold one type each.** `IAppTheme.cs`, `UIExtensions.cs` and `TokenCss.cs` split, and their entries leave the one-type-per-file baseline. The theme's stylesheet generator is renamed from `PhotonCssGenerator`, a name from before it served any theme, to `ThemeStylesheet`. `HtmlShellOptions.BaseStyles` held a `.loading` rule nothing uses, and it goes with it.
+**The files this touches hold one type each.** `IAppTheme.cs`, `UIExtensions.cs` and `TokenCss.cs` split, and their entries leave the one-type-per-file baseline. The theme's stylesheet generator is renamed from `PhotonCssGenerator`, a name from before it served any theme, to `ThemeStylesheet`. `HtmlShellOptions.BaseStyles` also centred the placeholder a page the server does not render shows until its module mounts. That rule moves to the theme's stylesheet, under the class `eq-loading` that `boot.ts` already wrote, so the shell and `boot.ts` now write one class.
+
+**A page that opted out of server rendering is not an error.** The server told a page marked `DisableSsr` from one whose render broke by the placeholder's text, which both carry, so in production an app with a 500 page answered every `DisableSsr` page with it. `ServerRenderResult.Failed` says which, and only a render that broke is answered with the 500 page.
 
 ### For a developer using the SDK
 
@@ -58,9 +60,7 @@ An app deletes its `SetBaseStyles` call. Its body rules are the SDK's now, and t
 
 The migration line is: `shell.SetBaseStyles(css)` → delete it, or `shell.AddStyles(css)` for what the theme cannot say.
 
-On the web, an app that sets nothing new sees two changes:
-- its selected text washed in the theme's focus colour instead of the browser's;
-- its page scrollbars in the colours of the SDK's own.
+On the web, an app that sets nothing new sees its selected text washed in the theme's focus colour instead of the browser's. Its page scrollbars stay the platform's own until the theme sets the scrollbar slots, so an app's own scrollbar CSS still applies.
 
 Text is antialiased on macOS, as all five apps measured had asked for by hand.
 
@@ -68,7 +68,7 @@ Text is antialiased on macOS, as all five apps measured had asked for by hand.
 
 - **Primitives:** the theme's contract, and the type merge.
 - **Web realizer:** the theme's stylesheet, and a table's scrollbars.
-- **Server:** the head's order, the shell's options, the template.
+- **Server:** the head's order, the shell's options, the template, and when the 500 page answers.
 - **Components:** the code editor's selection.
 - **Photon:** a field's placeholder, a table's scrollbars, the face it sets text in.
 - **Runtime:** the theme's twin, its defaults and the bridge.
@@ -91,3 +91,4 @@ The developer surface does not move: no MSBuild property and no configuration se
 ### Modified Capabilities
 
 - `typography`: text with no face of its own is set in the theme's text face.
+- `page-routes`: the 500 page answers only a render that broke, never a page that opted out of server rendering.
