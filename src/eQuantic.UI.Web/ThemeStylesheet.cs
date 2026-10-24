@@ -133,6 +133,9 @@ public static class ThemeStylesheet
             ? "::selection { background: var(--eq-color-selection); }"
             : "::selection { background: var(--eq-color-selection); color: var(--eq-color-on-selection); }");
         css.AppendLine("::placeholder { color: var(--eq-color-placeholder); opacity: 1; }");
+        // The placeholder a page shows until its module mounts, when the server did not render it
+        // (the shell's and boot.ts's): centred in the frame, as the shell's base block styled it.
+        css.AppendLine(".eq-loading { display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 1.5rem; }");
         // The page's own scrollbars only when the theme has an opinion on them. `scrollbar-color` is
         // inherited by every element, and Chromium ignores `::-webkit-scrollbar` wherever it is set,
         // so writing the defaults would switch off an app's own scrollbar CSS for a colour the

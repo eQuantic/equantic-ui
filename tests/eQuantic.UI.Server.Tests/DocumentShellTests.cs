@@ -25,6 +25,12 @@ public class DocumentShellTests
         public override VisualNode Build(ComponentContext context) => new Text("document", TypeRole.BodyM);
     }
 
+    [Page("/document-client-only", DisableSsr = true)]
+    public sealed class ClientOnlyDocumentPage : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => new Text("client", TypeRole.BodyM);
+    }
+
     private const string ThemeSheet = "/* GENERATED from eQuantic.UI.Primitives design tokens";
 
     private static async Task<string> PageOf(Action<UIOptions> configure)
@@ -100,6 +106,28 @@ public class DocumentShellTests
         var head = HeadOf(await PageOf(_ => { }));
 
         Regex.IsMatch(head, @"<style>\s*</style>").Should().BeFalse("an empty style element is a block for nothing");
+    }
+
+    /// <summary>A page the server does not render shows a placeholder until its module mounts, and the
+    /// theme's stylesheet centres it: the rule lived in the base block AddStyles replaced. And it
+    /// answers 200: the error page used to answer for it in production whenever the app declared one,
+    /// because the server told a page that opted out from one that broke by the placeholder's text.</summary>
+    [Fact]
+    public async Task APageTheServerDoesNotRender_ShowsAStyledPlaceholder()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddUI(options => options.ScanAssembly(Assembly.GetExecutingAssembly()));
+        await using var app = builder.Build();
+        app.MapUI();
+        await app.StartAsync();
+        var response = await app.GetTestClient().GetAsync("/document-client-only");
+        var page = await response.Content.ReadAsStringAsync();
+
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK,
+            "a page that opted out of server rendering did not fail, though this assembly declares a /500 page");
+        page.Should().Contain("<div class=\"eq-loading\">", "the class boot.ts writes too");
+        HeadOf(page).Should().Contain(".eq-loading { display: flex; justify-content: center; align-items: center;");
     }
 
     [Fact]

@@ -775,11 +775,16 @@ public static class UIExtensions
         var metadata = PageMetadata(context, options, declared);
 
         // Attempt SSR if page name is provided and SSR is enabled
-        var ssrContent = "<div class=\"loading\">Loading...</div>";
+        // The placeholder a page shows until its module mounts, when the server does not render it:
+        // the class boot.ts writes too, styled by the theme's stylesheet.
+        var ssrContent = "<div class=\"eq-loading\">Loading...</div>";
         // The page's paint servers, if it drew any — see GradientSink for why they are not inside
         // each drawing any more.
         string? vectorDefs = null;
         var ssrEnabled = false;
+        // Whether rendering was attempted and BROKE, which is the only case the app's error page
+        // answers. A page that opted out of server rendering shows its placeholder instead.
+        var ssrFailed = false;
         string? serializedState = null;
 
         // ONE adoption for BOTH doors to the same page: the mapped route, and the fallback every
@@ -816,6 +821,7 @@ public static class UIExtensions
                 try
                 {
                     var result = await renderingService.RenderPageAsync(page, context);
+                    ssrFailed = result.Failed;
                     if (result.Success && result.Html != null)
                     {
                         AdoptSsr(result);
@@ -833,6 +839,7 @@ public static class UIExtensions
                 }
                 catch (Exception ex)
                 {
+                    ssrFailed = true;
                     var logger = context.RequestServices.GetService<ILogger<UIOptions>>();
                     logger?.LogWarning(ex, "SSR failed for page {PageName}, falling back to client-side rendering", page.FullName);
                 }
@@ -888,14 +895,13 @@ public static class UIExtensions
 
         if (!ssrEnabled && page != null && options.EnableSsr && !alreadyNotFound)
         {
-            // If we are here, it means SSR failed or was disabled.
-            // We need to check if it failed due to an exception (which we can't easily track from here without earlier logic change)
-            // or if we should show the 500 page.
-            
-            // Actually, the SSR catch block above sets ssrEnabled = false.
-            // If we are in Production and SSR failed, we should render the 500 page.
+            // The page was not rendered here: either it opted out of server rendering, and shows its
+            // placeholder until its module mounts, or its render BROKE, and in production the app's
+            // error page answers for it. Only the second is a 500. This used to read the placeholder's
+            // text to decide, which both cases carry, so a client-only page in an app with a /500 page
+            // was answered with the error page.
             var isDev = context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
-            if (!isDev && options.ErrorPageType != null && ssrContent.Contains("Loading...")
+            if (!isDev && options.ErrorPageType != null && ssrFailed
                 && await PageAuthorization.AllowsAsync(context, options.ErrorPageType))
             {
                 // Re-attempt SSR with the 500 page
