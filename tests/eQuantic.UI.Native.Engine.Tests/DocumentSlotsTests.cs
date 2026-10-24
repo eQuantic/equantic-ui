@@ -2,6 +2,7 @@ using eQuantic.UI.Code;
 using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
+using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 using Xunit;
@@ -74,6 +75,39 @@ public class DocumentSlotsTests
             .Should().Contain(c => c.Kind == DrawCommandKind.FillRRect && c.Paint.Color == Forest.WithOpacity(0.4f).Resolve(ThemeMode.Light));
     }
 
+    /// <summary>
+    /// A theme that draws its selection opaque names the colour selected text takes, and the editor's
+    /// selected glyphs take it, or they would vanish into the band. The rest keep their colours, and a
+    /// theme that names none recolours nothing.
+    /// </summary>
+    [Fact]
+    public void TheCodeEditorsSelectedText_TakesTheThemesOnSelection()
+    {
+        var magenta = new ColorToken(new Color(255, 0, 255, 255));
+        var opaque = new SlottedTheme(PhotonTheme.Instance) { Wash = Forest, SelectedText = magenta };
+
+        SelectedRuns(opaque, magenta).Should().Equal("two");
+        SelectedRuns(PhotonTheme.Instance, magenta).Should().BeEmpty();
+    }
+
+    private static List<string> SelectedRuns(IAppTheme theme, ColorToken ink)
+    {
+        var editor = new CodeEditor("one two", "csharp") { ShowLineNumbers = false, MatchBrackets = false };
+        editor.Editor.Selection = new CodeRange(new CodePosition(0, 4), new CodePosition(0, 7));
+        var host = new PhotonHost(editor, theme, ThemeMode.Light, 500, 400) { TextRasterizer = new FixedWidthRasterizer() };
+        host.RenderFrame(new DisplayListBuilder(), 0);
+        host.RenderFrame(new DisplayListBuilder(), 16);
+
+        var runs = new List<string>();
+        void Walk(LayoutNode node)
+        {
+            if (node.Source is Text text && text.Color == ink) runs.Add(text.Content);
+            foreach (var child in node.Children) Walk(child);
+        }
+        Walk(host.LastFrame!.Root);
+        return runs;
+    }
+
     private static Color[] TableScrollbarPaints(IAppTheme theme)
     {
         var table = new TableView(new UniformTableSpans(1_000, 28), new UniformTableSpans(100, 96),
@@ -92,12 +126,14 @@ public class DocumentSlotsTests
     {
         public string? Text { get; init; }
         public ColorToken? Wash { get; init; }
+        public ColorToken? SelectedText { get; init; }
         public ColorToken? Hint { get; init; }
         public ColorToken? Thumb { get; init; }
         public ColorToken? Track { get; init; }
 
         public string? TextFamily => Text;
         public ColorToken Selection => Wash ?? inner.Selection;
+        public ColorToken? OnSelection => SelectedText ?? inner.OnSelection;
         public ColorToken Placeholder => Hint ?? inner.Placeholder;
         public ColorToken ScrollbarThumb => Thumb ?? inner.ScrollbarThumb;
         public ColorToken ScrollbarTrack => Track ?? inner.ScrollbarTrack;

@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRow, CodeTokenKindValue, ColorToken, Column, CornerRadii, Drawing, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VectorDrawing, VectorPaint, VectorShape, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRange, CodeRow, CodeTokenKindValue, ColorToken, Column, CornerRadii, Drawing, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VectorDrawing, VectorPaint, VectorShape, VisualNode } from "../runtime-exports";
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
@@ -26,6 +26,7 @@ export class CodeBlock extends StatelessComponent {
     declare decorations: CodeDecoration[];
     declare activeLine: any;
     declare selectionBands: Rect[];
+    declare selection: CodeRange;
     declare widestLine: any;
     declare rows: any;
     declare fillerDocument: any;
@@ -127,6 +128,7 @@ export class CodeBlock extends StatelessComponent {
         if (this.gutterMarkers === undefined) this.gutterMarkers = [];
         if (this.decorations === undefined) this.decorations = [];
         if (this.selectionBands === undefined) this.selectionBands = [];
+        if (this.selection === undefined) this.selection = CodeRange.$zero();
         if (this.fillerDecorations === undefined) this.fillerDecorations = [];
         if (this.viewportOffset === undefined) this.viewportOffset = 0;
         if (this.viewportHeight === undefined) this.viewportHeight = 0;
@@ -264,10 +266,10 @@ export class CodeBlock extends StatelessComponent {
     }
 
     rowView(shown: CodeRow, highlighter: CodeHighlighter, fillerHighlighter: any, metrics: CodeBlock$CodeMetrics, ink: ColorToken, theme: any) {
-        if (shown.kind === 'line') return this.lineRow(this.document, highlighter, this.cellsOf(shown.line), shown.line, metrics, ink, theme);
+        if (shown.kind === 'line') return this.lineRow(this.document, highlighter, this.cellsOf(shown.line), shown.line, metrics, ink, theme, true);
         if (shown.kind === 'placeholder') return this.placeholderRow(shown, metrics, theme);
         let fillers: any; let colours: any; 
-        if (shown.sourceLine >= 0 && (fillers = this.fillerDocument) != null && (colours = fillerHighlighter) != null && shown.sourceLine < fillers.lineCount) return this.lineRow(fillers, colours, this.fillerCellsOf(shown.sourceLine), shown.sourceLine, metrics, ink, theme);
+        if (shown.sourceLine >= 0 && (fillers = this.fillerDocument) != null && (colours = fillerHighlighter) != null && shown.sourceLine < fillers.lineCount) return this.lineRow(fillers, colours, this.fillerCellsOf(shown.sourceLine), shown.sourceLine, metrics, ink, theme, false);
         return this.fillerRow(shown, metrics, theme);
     }
 
@@ -291,7 +293,7 @@ export class CodeBlock extends StatelessComponent {
         return new Text(text, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style });
     }
 
-    lineRow(document: CodeDocument, highlighter: CodeHighlighter, cells: CodeLineCells, index: number, metrics: CodeBlock$CodeMetrics, ink: ColorToken, theme: any) {
+    lineRow(document: CodeDocument, highlighter: CodeHighlighter, cells: CodeLineCells, index: number, metrics: CodeBlock$CodeMetrics, ink: ColorToken, theme: any, selectable: boolean) {
         let style = metrics.style;
         let lineHeight = metrics.lineHeight;
         let columnWidth = metrics.columnWidth;
@@ -299,15 +301,16 @@ export class CodeBlock extends StatelessComponent {
         let code = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, cross: 'center' });
         let text = document.line(index);
         let tokens = highlighter.tokensFor(document, index);
+        let [selectedFrom, selectedTo, selectedInk] = this.selectedOn(selectable, index, text.length, ink, theme);
         let at = 0;
         for (const token of tokens) {
             let start = Math.min(Math.max(token.start, at), text.length);
             let end = Math.min(Math.max(token.end, start), text.length);
-            if (start > at) CodeBlock.addSpan(code, cells, at, start, ink, style, columnWidth);
-            CodeBlock.addSpan(code, cells, start, end, this.inverse ? CodeBlock.inverseCode(token.kind, theme) : theme.code(token.kind), style, columnWidth);
+            if (start > at) CodeBlock.addSpans(code, cells, at, start, ink, style, columnWidth, selectedFrom, selectedTo, selectedInk);
+            CodeBlock.addSpans(code, cells, start, end, this.inverse ? CodeBlock.inverseCode(token.kind, theme) : theme.code(token.kind), style, columnWidth, selectedFrom, selectedTo, selectedInk);
             at = end;
         }
-        if (at < text.length) CodeBlock.addSpan(code, cells, at, text.length, ink, style, columnWidth);
+        if (at < text.length) CodeBlock.addSpans(code, cells, at, text.length, ink, style, columnWidth, selectedFrom, selectedTo, selectedInk);
         if (text.length === 0) code.add(CodeBlock.run(' ', ink, style));
         row.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(12, 0) }), code));
         return row;
@@ -449,6 +452,23 @@ export class CodeBlock extends StatelessComponent {
             } else run += text;
         }
         if (run.length > 0) code.add(CodeBlock.run(run, color, style));
+    }
+
+    selectedOn(selectable: boolean, line: number, length: number, ink: ColorToken, theme: any): [number, number, ColorToken] {
+        let on: any; 
+        if (!selectable || !((on = theme.onSelection) != null) || this.selection.isEmpty) return [0, 0, ink];
+        let start = this.selection.start;
+        let end = this.selection.end;
+        if (line < start.line || line > end.line) return [0, 0, ink];
+        return [line === start.line ? start.column : 0, line === end.line ? end.column : length, this.inverse ? new ColorToken(on.dark, on.dark) : on];
+    }
+
+    static addSpans(code: Row, cells: CodeLineCells, from: number, to: number, color: ColorToken, style: TypeStyle, columnWidth: number, selectedFrom: number, selectedTo: number, selectedInk: ColorToken) {
+        let inFrom = Math.min(Math.max(selectedFrom, from), to);
+        let inTo = Math.min(Math.max(selectedTo, inFrom), to);
+        CodeBlock.addSpan(code, cells, from, inFrom, color, style, columnWidth);
+        CodeBlock.addSpan(code, cells, inFrom, inTo, selectedInk, style, columnWidth);
+        CodeBlock.addSpan(code, cells, inTo, to, color, style, columnWidth);
     }
 
     static run(content: string, color: ColorToken, style: TypeStyle) {
