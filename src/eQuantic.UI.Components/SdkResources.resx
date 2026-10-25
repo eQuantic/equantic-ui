@@ -75,6 +75,15 @@
   <data name="Spreadsheet" xml:space="preserve">
     <value>Spreadsheet</value>
   </data>
+  <data name="FormulaBar" xml:space="preserve">
+    <value>Formula bar</value>
+  </data>
+  <data name="NameBox" xml:space="preserve">
+    <value>Name box</value>
+  </data>
+  <data name="RangeSize" xml:space="preserve">
+    <value>{0}R x {1}C</value>
+  </data>
   <data name="Back" xml:space="preserve">
     <value>Back</value>
   </data>

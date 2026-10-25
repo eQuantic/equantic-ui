@@ -125,7 +125,7 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     expect(node.tag).toBe('span');
     expect(node.attributes['class']).toMatch(/^eq-type-caption(?: |$)/);
     expect(effectiveStyle(node)).toContain('color: light-dark(#5f6b7a, #acb7c5)');
-    expect(effectiveStyle(node)).toContain('white-space: nowrap');
+    expect(effectiveStyle(node)).toContain('white-space: pre');
     expect(effectiveStyle(node)).toContain('text-overflow: ellipsis');
     expect(node.children[0].textContent).toBe('Saldo disponível');
   });
@@ -396,6 +396,20 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     expect(empty.attributes['title']).toBe('Empty');
   });
 
+  it('a single line keeps its spaces, as Photon draws them (#983), and folds a break into the line', () => {
+    const entry = {
+      nodeKind: 'text',
+      content: '  a  b',
+      role: 'bodyM',
+      maxLines: 1,
+    } as VisualNodeValue;
+    expect(effectiveStyle(lowerVisualNode(entry, ctx))).toContain('white-space: pre');
+    expect(effectiveStyle(lowerVisualNode(entry, ctx))).not.toContain('nowrap');
+
+    const broken = { ...entry, content: 'first\nsecond' } as unknown as VisualNodeValue;
+    expect(effectiveStyle(lowerVisualNode(broken, ctx))).toContain('white-space: nowrap');
+  });
+
   it('single-line MONO text keeps its spaces (nowrap would collapse the indentation)', () => {
     const code: VisualNodeValue = {
       nodeKind: 'text',
@@ -407,7 +421,7 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     expect(effectiveStyle(lowerVisualNode(code, ctx))).toContain('white-space: pre');
     expect(effectiveStyle(lowerVisualNode(code, ctx))).not.toContain('white-space: nowrap');
 
-    const label = { ...code, mono: false, content: 'a long label' } as unknown as VisualNodeValue;
+    const label = { ...code, mono: false, content: 'a long\nlabel' } as unknown as VisualNodeValue;
     expect(effectiveStyle(lowerVisualNode(label, ctx))).toContain('white-space: nowrap');
   });
 

@@ -43,6 +43,20 @@ describe('the measuring canvas is given a font it can parse', () => {
     expect(fonts[0]).not.toContain('regular');
   });
 
+  it('adds the tracking the lowering draws as letter-spacing, once a character (#983)', async () => {
+    const { measurePhotonText } = await import('./photon-context');
+    const bodyM = { size: 14, lineHeight: 20, weight: 'regular', tracking: 0.25 };
+
+    // The canvas answers 7 a UTF-16 unit; the spacing stands after each of the 3 characters.
+    expect(measurePhotonText('abc', bodyM)).toBeCloseTo(3 * 7 + 3 * 0.25);
+    // An emoji with its tone is one character to the browser, however many units it takes.
+    expect(measurePhotonText('👍🏽', bodyM)).toBeCloseTo(4 * 7 + 0.25);
+    // A fluid size draws its tracking as an em ratio, which follows the scale.
+    expect(measurePhotonText('ab', { ...bodyM, fluid: { min: 12, percentOfWindow: 2, max: 18 } }, 2))
+      .toBeCloseTo(2 * 7 + 2 * 0.25 * 2);
+    expect(measurePhotonText('ab', { ...bodyM, tracking: 0 })).toBe(14);
+  });
+
   it('maps every weight the type scale uses', () => {
     expect(cssFontWeight('regular')).toBe(400);
     expect(cssFontWeight('medium')).toBe(500);

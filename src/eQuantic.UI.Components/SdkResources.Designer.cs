@@ -162,6 +162,21 @@ namespace eQuantic.UI.Components
             get { return ResourceManager.GetString("Spreadsheet", Culture)!; }
         }
 
+        internal static string FormulaBar
+        {
+            get { return ResourceManager.GetString("FormulaBar", Culture)!; }
+        }
+
+        internal static string NameBox
+        {
+            get { return ResourceManager.GetString("NameBox", Culture)!; }
+        }
+
+        internal static string RangeSize
+        {
+            get { return ResourceManager.GetString("RangeSize", Culture)!; }
+        }
+
         internal static string Back
         {
             get { return ResourceManager.GetString("Back", Culture)!; }

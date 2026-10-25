@@ -20,6 +20,7 @@ export class SheetTheme {
   activeOutline: ColorToken | null = null;
   fillPreview: ColorToken | null = null;
   fillHandle: ColorToken | null = null;
+  entrySelection: ColorToken | null = null;
 
   constructor(config?: Partial<SheetTheme>) {
     if (config) Object.assign(this, config);

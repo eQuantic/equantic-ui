@@ -44,8 +44,9 @@ public class AssemblyLayeringTests
         // vocabulary alone: it knows the surface's protocol and nothing about any host.
         ["eQuantic.UI.Code"] = ["eQuantic.UI.Primitives"],
 
-        // The spreadsheet engine — what a SheetSurface's realizer drives, on the same terms.
-        ["eQuantic.UI.Sheet"] = ["eQuantic.UI.Primitives"],
+        // The spreadsheet engine — what a SheetSurface's realizer drives, on the same terms, with the code
+        // engine beside it: a cell's entry IS the code engine's document (#983).
+        ["eQuantic.UI.Sheet"] = ["eQuantic.UI.Primitives", "eQuantic.UI.Code"],
 
         // Written once, against the vocabulary and nothing else — plus, for the code editor, the
         // engine it is a view of.

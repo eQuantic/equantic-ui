@@ -105,13 +105,26 @@ public class S1StyleRealizerTests
     }
 
     [Fact]
-    public void SingleLinePlainText_StillTruncates()
+    public void SingleLinePlainText_KeepsItsSpaces_AndStillTruncates()
     {
+        // A line's spaces are content, as Photon draws them and Flutter's Text keeps them: a cell's entry
+        // `  a` drew its `a` at the start while the measured caret stood two spaces in (#983).
         var node = WebRealizer.Lower(
-            new Text("a very long label", TypeRole.BodyM, maxLines: 1), PhotonTheme.Instance).Render();
+            new Text("  a very  long label", TypeRole.BodyM, maxLines: 1), PhotonTheme.Instance).Render();
 
-        node.Attributes["style"].Should().Contain("white-space: nowrap")
-            .And.Contain("text-overflow: ellipsis");
+        node.Attributes["style"].Should().Contain("white-space: pre")
+            .And.Contain("text-overflow: ellipsis")
+            .And.NotContain("nowrap");
+    }
+
+    [Fact]
+    public void SingleLinePlainText_WithABreak_StillFoldsItIntoTheLine()
+    {
+        // `pre` would break there and draw a second line the single line has no room for.
+        var node = WebRealizer.Lower(
+            new Text("first\nsecond", TypeRole.BodyM, maxLines: 1), PhotonTheme.Instance).Render();
+
+        node.Attributes["style"].Should().Contain("white-space: nowrap");
     }
 
     [Fact]

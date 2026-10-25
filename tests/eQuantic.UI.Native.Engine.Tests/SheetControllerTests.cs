@@ -442,11 +442,11 @@ public class SheetControllerTests
             version = sheet.RevealVersion;
         }
 
-        model.HandleKey("ArrowDown", KeyModifiers.None, clipboard);
+        model.HandleKey("ArrowDown", KeyModifiers.None, KeyboardConvention.Standard, clipboard);
         Raised("an arrow");
-        model.HandleKey("Enter", KeyModifiers.None, clipboard);
+        model.HandleKey("Enter", KeyModifiers.None, KeyboardConvention.Standard, clipboard);
         Raised("Enter");
-        model.HandleKey("ArrowDown", KeyModifiers.Command, clipboard);
+        model.HandleKey("ArrowDown", KeyModifiers.Command, KeyboardConvention.Standard, clipboard);
         Raised("a jump to the data's edge");
         sheet.Paste("a\tb");
         Raised("a paste");
@@ -470,7 +470,7 @@ public class SheetControllerTests
         var sheet = Sheet();
         ISheetSurfaceModel model = sheet;
 
-        model.HandleKey("ArrowDown", KeyModifiers.None, null);
+        model.HandleKey("ArrowDown", KeyModifiers.None, KeyboardConvention.Standard, null);
         sheet.RevealCell.Should().Be(new CellRef(1, 0));
 
         model.HandlePointer(PointerPhase.Down, new Point(96 + 48, 28 * 3 + 14), KeyModifiers.None, 1, PointerKind.Mouse);
@@ -489,17 +489,17 @@ public class SheetControllerTests
         ISheetSurfaceModel model = sheet;
         var version = sheet.RevealVersion;
 
-        model.HandleKey("PageDown", KeyModifiers.None, null).Should().BeTrue();
+        model.HandleKey("PageDown", KeyModifiers.None, KeyboardConvention.Standard, null).Should().BeTrue();
         sheet.ActiveCell.Should().Be(new CellRef(20, 0), "A21");
         sheet.RevealVersion.Should().BeGreaterThan(version);
 
-        model.HandleKey("PageDown", KeyModifiers.Shift, null).Should().BeTrue();
+        model.HandleKey("PageDown", KeyModifiers.Shift, KeyboardConvention.Standard, null).Should().BeTrue();
         sheet.Selection.Should().Be(new SheetRange(new CellRef(20, 0), new CellRef(40, 0)), "Shift keeps the anchor");
 
-        model.HandleKey("PageUp", KeyModifiers.None, null).Should().BeTrue();
+        model.HandleKey("PageUp", KeyModifiers.None, KeyboardConvention.Standard, null).Should().BeTrue();
         sheet.ActiveCell.Should().Be(new CellRef(20, 0));
-        model.HandleKey("PageUp", KeyModifiers.None, null);
-        model.HandleKey("PageUp", KeyModifiers.None, null);
+        model.HandleKey("PageUp", KeyModifiers.None, KeyboardConvention.Standard, null);
+        model.HandleKey("PageUp", KeyModifiers.None, KeyboardConvention.Standard, null);
         sheet.ActiveCell.Should().Be(new CellRef(0, 0), "the first row holds");
     }
 
@@ -508,7 +508,7 @@ public class SheetControllerTests
     {
         ISheetSurfaceModel model = Sheet();
 
-        model.HandleKey("PageDown", KeyModifiers.None, null).Should().BeFalse("there is no page to measure");
+        model.HandleKey("PageDown", KeyModifiers.None, KeyboardConvention.Standard, null).Should().BeFalse("there is no page to measure");
     }
 
     private sealed class HeldClipboard : ITextClipboard

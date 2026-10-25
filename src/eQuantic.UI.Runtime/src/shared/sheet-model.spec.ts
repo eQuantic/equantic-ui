@@ -200,7 +200,7 @@ describe('SheetController (transpiled twin)', () => {
       version = sheet.revealVersion;
     };
 
-    sheet.handleKey('ArrowDown', 0, null);
+    sheet.handleKey('ArrowDown', 0, 'standard', null);
     raised();
     sheet.paste('a\tb');
     raised();
@@ -220,7 +220,7 @@ describe('SheetController (transpiled twin)', () => {
 
   it('reveals the cell the command left, never one a later drag reaches', () => {
     const sheet = new SheetController(100, 26);
-    sheet.handleKey('ArrowDown', 0, null);
+    sheet.handleKey('ArrowDown', 0, 'standard', null);
     expect(sheet.revealCell).toEqual(new CellRef(1, 0));
 
     sheet.handlePointer('down', new Point(96 + 48, 28 * 3 + 14), 0, 1, 'mouse');
@@ -250,14 +250,14 @@ describe('SheetController (transpiled twin)', () => {
 
   it('moves a page by the rows shown under the headers, and takes no page without a viewport', () => {
     const sheet = new SheetController(200, 8);
-    expect(sheet.handleKey('PageDown', 0, null)).toBe(false);
+    expect(sheet.handleKey('PageDown', 0, 'standard', null)).toBe(false);
 
     place(sheet, 0, 0, 900, HEADER_HEIGHT + 20 * 28);
-    expect(sheet.handleKey('PageDown', 0, null)).toBe(true);
+    expect(sheet.handleKey('PageDown', 0, 'standard', null)).toBe(true);
     expect(sheet.activeCell).toEqual(new CellRef(20, 0));
-    expect(sheet.handleKey('PageDown', 1, null)).toBe(true);
+    expect(sheet.handleKey('PageDown', 1, 'standard', null)).toBe(true);
     expect(sheet.selection).toEqual(new SheetRange(new CellRef(20, 0), new CellRef(40, 0)));
-    sheet.handleKey('PageUp', 0, null);
+    sheet.handleKey('PageUp', 0, 'standard', null);
     expect(sheet.activeCell).toEqual(new CellRef(20, 0));
   });
 

@@ -176,6 +176,9 @@ public class ComponentParityFixtureTests
         // A SPREADSHEET (#995): the sheet's surface around the table it composes, the headers pinned, a
         // value in a cell, and a range selected, so the band, the ring and the fill handle are marks.
         ("spreadsheet", Sheet(), NoPresses),
+        ("spreadsheet-editing", new eQuantic.UI.Spreadsheets.Spreadsheet(Editing()) { Width = SizeValue.Fill, Height = SizeValue.Fixed(240) }, NoPresses),
+        ("formula-bar", new eQuantic.UI.Spreadsheets.FormulaBar(Editing()), NoPresses),
+        ("name-box", new eQuantic.UI.Spreadsheets.NameBox(Editing()), NoPresses),
         ("popover-closed", new Popover(new Button("Info"),
             new Text("the content", TypeRole.BodyM, Theme.TextPrimary), false), NoPresses),
         ("drawer-open", new Drawer(new Text("side", TypeRole.BodyM, Theme.TextPrimary), true), NoPresses),
@@ -347,6 +350,19 @@ public class ComponentParityFixtureTests
         sheet.Selection = new eQuantic.UI.Sheet.SheetRange(new eQuantic.UI.Sheet.CellRef(1, 1),
             new eQuantic.UI.Sheet.CellRef(2, 2));
         return new eQuantic.UI.Spreadsheets.Spreadsheet(sheet) { Width = SizeValue.Fill, Height = SizeValue.Fixed(240) };
+    }
+
+    /// <summary>A sheet whose B2 is being edited from its value, with part of the entry selected: the cell's
+    /// editor draws the entry, the band under the selection and the caret.</summary>
+    private static eQuantic.UI.Sheet.SheetController Editing()
+    {
+        var sheet = new eQuantic.UI.Sheet.SheetController(rows: 30, cols: 6);
+        sheet.Document.SetCell(new eQuantic.UI.Sheet.CellRef(1, 1), "Budget");
+        sheet.Selection = new eQuantic.UI.Sheet.SheetRange(new eQuantic.UI.Sheet.CellRef(1, 1));
+        sheet.BeginEdit("Budget", eQuantic.UI.Sheet.SheetEditMode.Edit);
+        sheet.Entry.Selection = new eQuantic.UI.Code.CodeRange(new eQuantic.UI.Code.CodePosition(0, 2),
+            new eQuantic.UI.Code.CodePosition(0, 5));
+        return sheet;
     }
 
     private static TableView TableGrid() => new(new UniformTableSpans(6, 28), new UniformTableSpans(4, 96),
