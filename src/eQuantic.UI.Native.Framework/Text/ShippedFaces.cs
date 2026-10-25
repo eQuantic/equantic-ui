@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Native.Framework;
@@ -44,5 +45,39 @@ public sealed class ShippedFaces(Func<FontFile, byte[], bool> register)
     public bool IsRegistered(FontFile file)
     {
         lock (_gate) return _registered.GetValueOrDefault(file);
+    }
+
+    /// <summary>
+    /// Where a text engine that opens a face only from a FILE, as Android's does, opens
+    /// <paramref name="file"/>: its <paramref name="bytes"/> written once under <paramref name="folder"/>,
+    /// named by their hash, and published only WHOLE, written beside that name and then moved onto it,
+    /// so a write a full disk cut short is never what a later launch opens. Null when the cache cannot
+    /// take it, which is a face that did not register: it threw where text was measured, and the
+    /// family failed the text instead of falling back (Copilot's third review of #1062).
+    /// </summary>
+    public static string? CacheFile(string folder, FontFile file, byte[] bytes)
+    {
+        var path = Path.Combine(folder, Convert.ToHexStringLower(SHA256.HashData(bytes))[..16] + Path.GetExtension(file.Resource));
+        if (File.Exists(path)) return path;
+        var partial = path + "." + Path.GetRandomFileName();
+        try
+        {
+            Directory.CreateDirectory(folder);
+            File.WriteAllBytes(partial, bytes);
+            File.Move(partial, path, overwrite: true);
+            return path;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            try
+            {
+                File.Delete(partial);
+            }
+            catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException)
+            {
+                // The cache is failing already, and what is left is named apart from the face.
+            }
+            return null;
+        }
     }
 }

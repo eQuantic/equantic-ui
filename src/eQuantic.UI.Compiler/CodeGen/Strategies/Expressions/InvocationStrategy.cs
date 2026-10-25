@@ -122,26 +122,18 @@ public class InvocationStrategy : IExpressionIrStrategy
         // signature's slots, filling skipped parameters from their defaults — otherwise
         // `Primary(label, compact: true)` lands `true` in the `leading` slot (an 8px ghost
         // icon and the wrong size, found on the header CTA).
+        // A positional argument's place is its LIST position (`Column(gap: Space.S3, [children])`),
+        // and the elements a call lists for a params parameter all go to that one (BoundArguments.InPlaces).
         if (symbol != null && invocation.ArgumentList.Arguments.Any(a => a.NameColon != null))
         {
-            var slots = new JsExpr?[symbol.Parameters.Length];
-            var arguments = invocation.ArgumentList.Arguments;
-            for (var i = 0; i < arguments.Count && i < argsList.Count; i++)
-            {
-                var name = arguments[i].NameColon?.Name.Identifier.ValueText;
-                // A positional argument's slot is its LIST position — C# only allows positionals
-                // after a named argument when that named argument sits IN its own position
-                // (`Column(gap: Space.S3, [children])`), so the list index is the parameter index.
-                // An independent counter restarted at 0 after the named ones and CLOBBERED slot 0.
-                var ordinal = name == null
-                    ? i
-                    : symbol.Parameters.FirstOrDefault(p => p.Name == name)?.Ordinal ?? -1;
-                if (ordinal >= 0 && ordinal < slots.Length) slots[ordinal] = argsList[i];
-            }
-            var lastSet = Array.FindLastIndex(slots, s => s != null);
+            var places = BoundArguments.InPlaces(invocation.ArgumentList.Arguments, argsList, symbol);
+            var lastSet = Array.FindLastIndex(places, place => place != null);
             argsList = new List<JsExpr>();
             for (var i = 0; i <= lastSet; i++)
-                argsList.Add(slots[i] ?? JsExpr.Opaque(ObjectCreationStrategy.DefaultLiteralFor(symbol.Parameters[i], context)));
+            {
+                if (places[i] is { } supplied) argsList.AddRange(supplied);
+                else argsList.Add(JsExpr.Opaque(ObjectCreationStrategy.DefaultLiteralFor(symbol.Parameters[i], context)));
+            }
         }
         var argIrs = argsList;
         // The same arguments as text, for the template branches that splice them.
