@@ -62,9 +62,13 @@ Every declared file is bundled with the app and registered with the engine at st
 - Android: the bytes are written once to the app's cache directory and opened with `Typeface.CreateFromFile`, one typeface for each file, chosen by its italic flag.
 - A file that cannot be read or registered is reported through `FaceResolution`, which is where an unresolved family is already reported.
 
+**A page that measured text in a face still on its way rebuilds when it arrives.**
+- The runtime measures text with a canvas: a code editor's column advance, a spreadsheet's header, a hover card's width. A canvas measures a declared face that has not loaded as its fallback, and the text is drawn in the face once it arrives, so the measurement and the drawing disagree.
+- One function measures for every component, so the fix is there. When it measures in a face `document.fonts` says is declared and not loaded, it keeps the rebuild of the page whose build is in flight, and calls it once the face has loaded. Only the pages that measured with the wrong metrics rebuild, and each one once.
+
 **Weights on Photon stay what they are.** A shell picks regular or bold, as it does for an installed family. Exact weights from a variable font's axis are a change to every shell's matching, not to how a face is loaded.
 
 ## Risks
 
 - **The Windows interop is reached through vtable slots** (`IDWriteFactory3`, `IDWriteFactory5`, `IDWriteFontSetBuilder1`, `IDWriteInMemoryFontFileLoader`), and this machine cannot run it. A test on the Windows runner registers a face and measures text in it, so a wrong slot fails there rather than in an app.
-- **The test font.** No font file is committed, for its licence and its size. The tests build a small TrueType file in code, with a family name nobody has installed and advances wide enough that text measured in it cannot be mistaken for the system face.
+- **The test font.** No third-party font file is committed, for its licence. The tests build small TrueType files in code (TestFont), with a family name nobody has installed and advances wide enough that text measured in it cannot be mistaken for the system face. The two files the server's and the shells' tests embed, 5 KB each, are files that builder wrote.

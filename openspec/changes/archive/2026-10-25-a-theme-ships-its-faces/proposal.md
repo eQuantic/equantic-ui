@@ -58,7 +58,7 @@ public static FontFamily Roboto { get; } = new("Roboto",
 ### Parts reached
 
 - **Primitives:** `FontFamily`, `FontFile`, `FontCatalogAttribute`; the typed slots; the type merge.
-- **Runtime:** the twins of the two types, the theme's twin and the bridge.
+- **Runtime:** the twins of the two types, the theme's twin and the bridge, and a page that measured text in a face still loading rebuilds when it arrives.
 - **Web realizer:** the `@font-face` rules; the lowering reads a family's name.
 - **Server:** the font route, the rules in the head, the preloads.
 - **Photon:** registration in the Apple, Windows and Android shells.
@@ -66,7 +66,7 @@ public static FontFamily Roboto { get; } = new("Roboto",
 - **eqicon:** reads an OpenType file and writes the catalog.
 - **The email realizer:** reads a family's name.
 
-The public surface moves in Primitives, Web, Server and the native shells. `TypeStyle.Family`, `IAppTheme.TextFamily` and `IAppTheme.MonoFamily` change type. The developer surface gains the catalog's file and namespace properties, as the vectors have.
+The public surface moves in Primitives, Web and Native.Framework. `TypeStyle.Family`, `IAppTheme.TextFamily` and `IAppTheme.MonoFamily` change type. The developer surface gains the catalog's file and namespace properties, as the vectors have.
 
 The migration line is: a theme declares `TextFamily` and `MonoFamily` as `FontFamily?`, and a family named by a string is written `new("Georgia")`. A face the app loaded with CSS moves its files to `Assets/Fonts/` and is named by its catalog member.
 
