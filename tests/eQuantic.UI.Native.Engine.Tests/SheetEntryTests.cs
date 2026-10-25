@@ -420,6 +420,32 @@ public class SheetEntryTests
         sheet.CellEditorGrid.Origin.X.Should().Be(B2Left + 6, "twenty characters fit, so nothing stays slid away");
     }
 
+    [Fact]
+    public void LinesPastTheViewsLastRow_SlideUp_ToKeepTheCaretsLine()
+    {
+        var sheet = Sheet();
+        // The last row the 586-point view shows any of.
+        var last = sheet.CellAt(new Point(B2Left, 586 - 0.5f)).Row;
+        sheet.Selection = new SheetRange(new CellRef(last, 1));
+        Type(sheet, "one");
+        Key(sheet, "Enter", KeyModifiers.Alt);
+        Type(sheet, "two");
+        Key(sheet, "Enter", KeyModifiers.Alt);
+        Type(sheet, "three");
+
+        sheet.EditorRange.BottomRow.Should().Be(last, "the editor grows no row past the view");
+        var bounds = sheet.EditorBounds;
+        var caret = sheet.Carets.Should().ContainSingle().Subject;
+        caret.Y.Should().BeGreaterThanOrEqualTo(bounds.Y);
+        caret.Bottom.Should().BeLessThanOrEqualTo(bounds.Bottom, "the lines slid up so the caret's line shows");
+        sheet.InputBounds.Should().Be(caret, "the input method's window stands at the caret that shows");
+
+        // Back to one line, the entry shows from its first line again.
+        for (var i = 0; i < "\nthree\ntwo".Length; i++) Key(sheet, "Backspace");
+        Text(sheet).Should().Be("one");
+        sheet.CellEditorGrid.Origin.Y.Should().Be(bounds.Y + 4, "one line fits, so nothing stays slid away");
+    }
+
     // ---- a press while editing ------------------------------------------------------------------------------
 
     [Fact]

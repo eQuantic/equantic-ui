@@ -258,6 +258,19 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     }
 
     /// <summary>
+    /// Whether the document is ONE line, as a single-line field's is (Flutter's <c>maxLines: 1</c>, #983): a
+    /// line break typed, pasted or composed is left out of the text, as Flutter's single-line formatter
+    /// leaves it out, and an edit that would still make a second line, a line copied down or one inserted
+    /// below, is refused at the door every edit goes through. The name box's entry is one; a cell's is not.
+    /// </summary>
+    public bool SingleLine { get; set; }
+
+    /// <summary><paramref name="text"/> as the document takes it from an input: whole, or without its line
+    /// breaks when the document is one line.</summary>
+    private string Admitted(string text) =>
+        SingleLine ? text.Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal) : text;
+
+    /// <summary>
     /// Whether the next Tab LEAVES the editor instead of indenting. Escape sets it — the one way out
     /// a keyboard user has from a surface that takes Tab — and any other key, or coming back into
     /// the editor, clears it (see <see cref="CodeKeymap"/>).
@@ -855,6 +868,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <inheritdoc />
     public bool HandleText(string text)
     {
+        text = Admitted(text);
         if (ReadOnly || text.Length == 0) return false;
         TabMovesFocus = false;
         // An input method's commit REPLACES what it was composing: the composition comes out first,
@@ -915,6 +929,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     public bool SetComposition(string text)
     {
         if (ReadOnly) return false;
+        text = Admitted(text);
         if (_composition is not { } current)
         {
             if (text.Length == 0) return false;
@@ -1111,6 +1126,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     private bool Edit(CodeRange range, string text, bool typed, CodeRange? after = null)
     {
         if (ReadOnly) return false;
+        // What reaches here with a break in it is a command making a line: a one-line document has none.
+        if (SingleLine && (text.Contains('\n') || text.Contains('\r'))) return false;
 
         var ordered = new CodeRange(_document.Clamp(range.Start), _document.Clamp(range.End));
         var removed = _document.TextIn(ordered);
@@ -2096,6 +2113,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// </summary>
     public bool Paste(string text)
     {
+        text = Admitted(text);
         if (ReadOnly || text.Length == 0) return false;
         TabMovesFocus = false;
         EndComposition();

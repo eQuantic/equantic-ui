@@ -15,7 +15,7 @@ namespace eQuantic.UI.Sheet;
 public sealed class SheetNameBox : ICodeSurfaceModel
 {
     private readonly SheetController _sheet;
-    private readonly CodeEditorController _box = new("", new SheetEntryLanguage());
+    private readonly CodeEditorController _box = new("", new SheetEntryLanguage()) { SingleLine = true };
     private int _focusVersion;
     private int _placed;
 

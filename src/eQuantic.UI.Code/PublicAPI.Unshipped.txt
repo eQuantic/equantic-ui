@@ -240,3 +240,5 @@ eQuantic.UI.Code.CodeEditorController.SelectAllOccurrences() -> bool
 eQuantic.UI.Code.CodeEditorController.RemoveSecondaryCursors() -> bool
 eQuantic.UI.Code.CodeEditorController.SelectionsIn(int first, int last) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>!
 eQuantic.UI.Code.CodeEditorController.CaretLinesIn(int first, int last) -> System.Collections.Generic.IReadOnlyList<int>!
+eQuantic.UI.Code.CodeEditorController.SingleLine.get -> bool
+eQuantic.UI.Code.CodeEditorController.SingleLine.set -> void

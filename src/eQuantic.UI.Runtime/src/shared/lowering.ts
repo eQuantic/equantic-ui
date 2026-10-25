@@ -3249,9 +3249,10 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
 
   // Single line → shaping-style ellipsis (spec A8).
   if (text.maxLines === 1) {
-    // MONO keeps `pre` (C# twin): nowrap collapses runs of spaces, and in code the spaces ARE
-    // the content. `pre` refuses to wrap just the same, so the ellipsis contract holds.
-    style['white-space'] = nodeMono(text) ? 'pre' : 'nowrap';
+    // A line keeps its spaces, as Photon and Flutter's Text keep them (C# twin): nowrap collapses
+    // runs of spaces. `pre` refuses to wrap just the same, so the ellipsis contract holds. A line
+    // break in a single line still folds into it, as nowrap folds it; mono keeps `pre` throughout.
+    style['white-space'] = nodeMono(text) || !plainContent(text).includes('\n') ? 'pre' : 'nowrap';
     style.overflow = 'hidden';
     style['text-overflow'] = 'ellipsis';
     // The other two need the BLOCK every Text is (C# twin): they are inert on an inline box.

@@ -269,6 +269,7 @@ public sealed class SheetController : ISheetSurfaceModel
         EditMode = mode;
         EntryView = SheetEntryView.Cell;
         _slide = 0;
+        _rise = 0;
         Entry.Document = CodeDocument.FromText(seed);
         Entry.Selection = new CodeRange(Entry.Document.End);
     }
@@ -741,6 +742,10 @@ public sealed class SheetController : ISheetSurfaceModel
     /// entry's line is wider than the editor can grow.</summary>
     private float _slide;
 
+    /// <summary>How far the cell's editor has slid its text up, to keep the caret's line inside it when the
+    /// entry has more lines than the editor can grow rows for.</summary>
+    private float _rise;
+
     /// <summary>Where the drag in flight last stood, which <see cref="Follow"/> reads again when the grid
     /// moves under it.</summary>
     private Point? _dragAt;
@@ -854,9 +859,10 @@ public sealed class SheetController : ISheetSurfaceModel
 
     /// <summary>
     /// The grid the entry is drawn on in the cell's editor, in the surface's own coordinates: the editor's
-    /// corner inside the cell's padding, slid left as far as it has to be for the caret to stay inside the
-    /// editor, a line of the cells' type tall, measured in the cells' type. What the composing component
-    /// draws the entry's lines on, and what places the caret the host paints.
+    /// corner inside the cell's padding, slid left and up as far as it has to be for the caret to stay inside
+    /// the editor, a line of the cells' type tall, measured in the cells' type. What the composing component
+    /// draws the entry's lines on, what a press and a drag are read on, and what places the caret the host
+    /// paints and the input method's window stands at.
     /// </summary>
     public CodeGrid CellEditorGrid
     {
@@ -866,26 +872,34 @@ public sealed class SheetController : ISheetSurfaceModel
             var padding = Grid.CellPadding;
             var left = bounds.X + padding.Start;
             var right = bounds.Right - padding.End - CodeEditorController.CaretWidth;
-            Entry.Grid = CellGrid(bounds, _slide);
-            var caret = Entry.CaretRect(Entry.Caret).X;
+            var top = bounds.Y + padding.Top;
+            var bottom = bounds.Bottom - padding.Bottom;
+            Entry.Grid = CellGrid(bounds, _slide, _rise);
+            var caret = Entry.CaretRect(Entry.Caret);
             var slide = _slide;
-            if (caret > right) slide += caret - right;
-            else if (caret < left) slide -= left - caret;
-            // Never further than the text needs: a line that shrank back shows from its start again.
+            if (caret.X > right) slide += caret.X - right;
+            else if (caret.X < left) slide -= left - caret.X;
+            var rise = _rise;
+            if (caret.Bottom > bottom) rise += caret.Bottom - bottom;
+            else if (caret.Y < top) rise -= top - caret.Y;
+            // Never further than the text needs: a line that shrank back shows from its start again, and an
+            // entry that lost lines shows from its first.
             slide = Math.Clamp(slide, 0, Math.Max(0, WidestEntryLine() - (right - left)));
-            if (slide != _slide)
+            rise = Math.Clamp(rise, 0, Math.Max(0, Entry.Document.LineCount * LineHeight - (bottom - top)));
+            if (slide != _slide || rise != _rise)
             {
                 _slide = slide;
-                Entry.Grid = CellGrid(bounds, slide);
+                _rise = rise;
+                Entry.Grid = CellGrid(bounds, slide, rise);
             }
             return Entry.Grid;
         }
     }
 
-    private CodeGrid CellGrid(Rect bounds, float slide)
+    private CodeGrid CellGrid(Rect bounds, float slide, float rise)
     {
         var padding = Grid.CellPadding;
-        var origin = new Point(bounds.X + padding.Start - slide, bounds.Y + padding.Top);
+        var origin = new Point(bounds.X + padding.Start - slide, bounds.Y + padding.Top - rise);
         // Measured, a cell of the grid is only the room a band leaves for a line's break.
         return Grid.Measure is { } measure
             ? new CodeGrid(origin, new Size(Math.Max(measure(" "), 4f), LineHeight), Measure: measure)

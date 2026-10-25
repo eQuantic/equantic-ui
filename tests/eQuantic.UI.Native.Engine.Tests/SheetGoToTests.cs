@@ -207,6 +207,20 @@ public class SheetGoToTests
     }
 
     [Fact]
+    public void TheBox_StaysOneLine_WhateverItIsGiven()
+    {
+        var (sheet, box) = Boxed();
+        box.FocusChanged(true);
+
+        box.Paste("B7\nC8").Should().BeTrue();
+        box.HandleKey("ArrowDown", KeyModifiers.Shift | KeyModifiers.Alt, KeyboardConvention.Standard, null);
+        box.HandleKey("ArrowDown", KeyModifiers.Shift | KeyModifiers.Alt, KeyboardConvention.Apple, null);
+
+        sheet.NameBox.Entry.Document.LineCount.Should().Be(1, "the box draws one line, and Go To reads what it draws");
+        sheet.NameBox.Entry.Document.Text.Should().Be("B7C8");
+    }
+
+    [Fact]
     public void Escape_PutsTheAddressBack_AndHandsTheKeyboardBack()
     {
         var (sheet, box) = Boxed();

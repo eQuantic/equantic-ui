@@ -444,11 +444,13 @@ internal sealed partial class WebLoweringVisitor
         // Single line → shaping-style ellipsis (spec A8).
         if (text.MaxLines == 1)
         {
-            // MONO keeps `pre`: nowrap COLLAPSES runs of spaces, and in code the spaces ARE the
-            // content — every indented line of the playground's editor started at column zero
-            // while Photon (which draws literal glyph runs) indented it correctly. `pre` refuses
-            // to wrap exactly like nowrap, so the ellipsis contract is untouched.
-            element.Style!.WhiteSpace = mono ? "pre" : "nowrap";
+            // A line keeps its spaces, as Photon (which draws literal glyph runs) and Flutter's Text
+            // keep them: nowrap COLLAPSES runs of spaces, and every indented line of the playground's
+            // editor started at column zero, and a cell's entry `  a` drew where its measured caret did
+            // not stand (#983). `pre` refuses to wrap exactly like nowrap, so the ellipsis contract is
+            // untouched. A line break in a single line still folds into it, as nowrap folds it, where
+            // `pre` would break there; mono, code, keeps `pre` throughout.
+            element.Style!.WhiteSpace = mono || !text.PlainContent.Contains('\n') ? "pre" : "nowrap";
             element.Style.Overflow = "hidden";
             element.Style.TextOverflow = "ellipsis";
             // The other two need the BLOCK every Text is: `overflow` and `text-overflow` are inert
