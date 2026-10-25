@@ -13,6 +13,7 @@ internal static unsafe partial class DWrite
     private static partial int DWriteCreateFactory(uint factoryType, Guid* iid, void** factory);
 
     private static readonly Guid IID_IDWriteFactory = new("b859ee5a-d838-4b5b-a2e8-1adc7d93db48");
+    private static readonly Guid IID_IDWriteFactory5 = new("958db99a-be2a-4f09-af7d-65189803d1d3");
 
     public const uint StyleNormal = 0;
     public const uint StyleItalic = 2;
@@ -114,6 +115,62 @@ internal static unsafe partial class DWrite
         float maxWidth, float maxHeight, void** layout) =>
         ((delegate* unmanaged<void*, char*, uint, void*, float, float, void**, int>)Com.Method(factory, 18))(
             factory, text, length, format, maxWidth, maxHeight, layout);
+
+    /// <summary>The factory as an IDWriteFactory5, or null where the system has none (Windows 10
+    /// before 1703): in-memory font files and font sets, which a face the app ships needs, begin there.
+    /// IUnknown's QueryInterface, slot 0; the caller releases what it answers.</summary>
+    public static void* QueryFactory5(void* factory)
+    {
+        void* factory5;
+        var iid = IID_IDWriteFactory5;
+        return ((delegate* unmanaged<void*, Guid*, void**, int>)Com.Method(factory, 0))(factory, &iid, &factory5) < 0
+            ? null
+            : factory5;
+    }
+
+    public static int RegisterFontFileLoader(void* factory, void* loader) =>
+        ((delegate* unmanaged<void*, void*, int>)Com.Method(factory, 13))(factory, loader);
+
+    public static int UnregisterFontFileLoader(void* factory, void* loader) =>
+        ((delegate* unmanaged<void*, void*, int>)Com.Method(factory, 14))(factory, loader);
+
+    // ---- IDWriteFactory3 (through an IDWriteFactory5, which derives from it) ------------------
+    //
+    // IDWriteFactory1 adds 2 slots after IDWriteFactory's 21 (24–25), IDWriteFactory2 adds 5 (26–30)
+    // and IDWriteFactory3 adds 9 (31–39), so its seventh, CreateFontCollectionFromFontSet, is 37.
+    // Its two CreateFontFaceReference overloads sit at 33–34, in whichever order the compiler lays
+    // overloads out; nothing here calls them, and no slot used here sits between them.
+
+    public static int CreateFontCollectionFromFontSet(void* factory3, void* fontSet, void** collection) =>
+        ((delegate* unmanaged<void*, void*, void**, int>)Com.Method(factory3, 37))(factory3, fontSet, collection);
+
+    // ---- IDWriteFactory5 ----------------------------------------------------------------------
+    //
+    // IDWriteFactory4 adds 3 slots (40–42), so IDWriteFactory5's own begin at 43.
+
+    /// <summary>An IDWriteFontSetBuilder1, which can add a font FILE rather than a face reference.</summary>
+    public static int CreateFontSetBuilder1(void* factory5, void** builder) =>
+        ((delegate* unmanaged<void*, void**, int>)Com.Method(factory5, 43))(factory5, builder);
+
+    public static int CreateInMemoryFontFileLoader(void* factory5, void** loader) =>
+        ((delegate* unmanaged<void*, void**, int>)Com.Method(factory5, 44))(factory5, loader);
+
+    // ---- IDWriteInMemoryFontFileLoader : IDWriteFontFileLoader (CreateStreamFromKey, 3) --------
+
+    /// <summary>A font file over <paramref name="size"/> bytes at <paramref name="data"/>. With no
+    /// owner the loader copies them, so the caller's array may go.</summary>
+    public static int CreateInMemoryFontFileReference(void* loader, void* factory, void* data, uint size, void* owner,
+        void** fontFile) =>
+        ((delegate* unmanaged<void*, void*, void*, uint, void*, void**, int>)Com.Method(loader, 4))(
+            loader, factory, data, size, owner, fontFile);
+
+    // ---- IDWriteFontSetBuilder (AddFontFaceReference ×2 at 3–4, AddFontSet 5) and its 1 ---------
+
+    public static int CreateFontSet(void* builder, void** fontSet) =>
+        ((delegate* unmanaged<void*, void**, int>)Com.Method(builder, 6))(builder, fontSet);
+
+    public static int AddFontFile(void* builder1, void* fontFile) =>
+        ((delegate* unmanaged<void*, void*, int>)Com.Method(builder1, 7))(builder1, fontFile);
 
     // ---- IDWriteFontCollection ----------------------------------------------------------------
 

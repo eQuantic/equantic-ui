@@ -670,10 +670,10 @@
         package mode because the SDK ships it under tools/; the only way to get here without it is a
         broken package or a broken tree, and that deserves its own name.
     -->
-    <Target Name="EQuanticRequireIconTool" BeforeTargets="EQuanticVectors;EQuanticWebAppIcon"
+    <Target Name="EQuanticRequireIconTool" BeforeTargets="EQuanticVectors;EQuanticFonts;EQuanticWebAppIcon"
         Condition="(Exists('$(EQuanticAssetsDir)') OR '$(EQuanticAppIconSource)' != '') AND !Exists('$(_EqIconToolDir)eqicon.dll')">
         <Error Code="EQ4001"
-            Text="This project generates assets with the eQuantic icon tool (the vector catalog from '$(EQuanticAssetsDir)', the app icon from '$(EQuanticAppIconSource)'), and the tool is missing at '$(_EqIconToolDir)eqicon.dll'. In a source-tree build this is a broken build graph (eQuantic.UI.Native.Build did not build first); from a package it is a broken SDK package. Neither is fixed by building twice." />
+            Text="This project generates assets with the eQuantic icon tool (the vector and font catalogs from '$(EQuanticAssetsDir)', the app icon from '$(EQuanticAppIconSource)'), and the tool is missing at '$(_EqIconToolDir)eqicon.dll'. In a source-tree build this is a broken build graph (eQuantic.UI.Native.Build did not build first); from a package it is a broken SDK package. Neither is fixed by building twice." />
     </Target>
 
     <!--
@@ -706,7 +706,7 @@
             <_EqVectorsArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
             <_EqVectorsArgument Include="command" Value="vectors" />
             <_EqVectorsArgument Include="assets" Option="--assets" Value="$(EQuanticAssetsDir)" />
-            <_EqVectorsArgument Include="catalog" Option="--out" Value="$(MSBuildProjectDirectory)/$(EQuanticVectorsFile)" />
+            <_EqVectorsArgument Include="catalog" Option="--out" Value="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(EQuanticVectorsFile)'))" />
             <_EqVectorsArgument Include="namespace" Option="--namespace" Value="$(EQuanticVectorsNamespace)" />
         </ItemGroup>
         <RunProgram Program="dotnet" Arguments="@(_EqVectorsArgument)" StandardOutputImportance="normal" />
@@ -723,6 +723,73 @@
              prune above, on every build whose SVGs did not change. -->
         <ItemGroup>
             <Compile Include="$(EQuanticVectorsFile)" Condition="Exists('$(EQuanticVectorsFile)')" />
+        </ItemGroup>
+    </Target>
+
+    <!--
+        The app's FACES: every OpenType file under Assets, embedded in the app's assembly and read by
+        eqicon into one class with a FontFamily per family (#1055). The server serves a face from the
+        assembly and Photon registers it from there, so the file is copied nowhere else, and the app
+        declares nothing: the family, the weights and the italic are read from the file itself.
+
+        Embedded at EVALUATION, where every other EmbeddedResource is: a font is a source file, there
+        when MSBuild evaluates the project, and the compile's resource inputs are settled before any
+        target of this file runs. The items state each file's resource name once, and the catalog is
+        handed that name rather than deriving it a second time. The name is the file's own, with no
+        folder: a font file is already named for its family and its style, and two that share a name
+        stop the compile on the duplicate resource, naming it.
+    -->
+    <PropertyGroup>
+        <EQuanticFontsFile Condition="'$(EQuanticFontsFile)' == ''">$(IntermediateOutputPath)generated/eQuantic.UI.Fonts/Fonts.g.cs</EQuanticFontsFile>
+        <EQuanticFontsNamespace Condition="'$(EQuanticFontsNamespace)' == ''">$(RootNamespace)</EQuanticFontsNamespace>
+        <EQuanticFontsNamespace Condition="'$(EQuanticFontsNamespace)' == ''">$(AssemblyName)</EQuanticFontsNamespace>
+    </PropertyGroup>
+    <ItemGroup Condition="Exists('$(EQuanticAssetsDir)')">
+        <EmbeddedResource Include="$(EQuanticAssetsDir)/**/*.ttf;$(EQuanticAssetsDir)/**/*.otf" EQuanticFont="true"
+            LogicalName="eQuantic.UI.Fonts/%(Filename)%(Extension)" />
+    </ItemGroup>
+
+    <!-- What eqicon is handed, two lines a file: its path, then the resource name it is embedded under.
+         One line a file, `path|resource`, was cut at the first bar, which a path may hold on macOS and
+         Linux, and the record was passed over: a catalog with no face, and a theme that named one did
+         not compile. Beside it, the record of the SET, as the vectors keep one: a removed font changes
+         no remaining file, and the assembly and the namespace change the catalog too. -->
+    <Target Name="_EQuanticFontInputs">
+        <ItemGroup>
+            <_EqFontSource Include="@(EmbeddedResource->WithMetadataValue('EQuanticFont', 'true'))" />
+        </ItemGroup>
+        <PropertyGroup>
+            <_EqFontListFile>$(IntermediateOutputPath)equantic.fonts.txt</_EqFontListFile>
+            <_EqFontInputsFile>$(IntermediateOutputPath)equantic.fonts.inputs</_EqFontInputsFile>
+        </PropertyGroup>
+        <WriteLinesToFile File="$(_EqFontListFile)" Condition="'@(_EqFontSource)' != ''"
+            Lines="@(_EqFontSource->'%(FullPath)%0A%(LogicalName)')"
+            Overwrite="true" WriteOnlyWhenDifferent="true" />
+        <WriteLinesToFile File="$(_EqFontInputsFile)" Condition="'@(_EqFontSource)' != ''"
+            Lines="assembly=$(AssemblyName);namespace=$(EQuanticFontsNamespace)"
+            Overwrite="true" WriteOnlyWhenDifferent="true" />
+    </Target>
+
+    <Target Name="EQuanticFonts" BeforeTargets="BeforeCompile;CompileEQuanticUI"
+        DependsOnTargets="_EQuanticFontInputs"
+        Condition="'@(EmbeddedResource->WithMetadataValue('EQuanticFont', 'true'))' != ''"
+        Inputs="@(_EqFontSource);$(_EqFontListFile);$(_EqFontInputsFile);$(_EqIconToolDir)eqicon.dll"
+        Outputs="$(EQuanticFontsFile)">
+        <ItemGroup>
+            <_EqFontsArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
+            <_EqFontsArgument Include="command" Value="fonts" />
+            <!-- Joined to the project only when relative: an artifacts layout or a shared obj makes
+                 the intermediate path absolute, and a prefix would name a file nobody wrote. -->
+            <_EqFontsArgument Include="list" Option="--list" Value="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(_EqFontListFile)'))" />
+            <_EqFontsArgument Include="assembly" Option="--assembly" Value="$(AssemblyName)" />
+            <_EqFontsArgument Include="catalog" Option="--out" Value="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(EQuanticFontsFile)'))" />
+            <_EqFontsArgument Include="namespace" Option="--namespace" Value="$(EQuanticFontsNamespace)" />
+        </ItemGroup>
+        <RunProgram Program="dotnet" Arguments="@(_EqFontsArgument)" StandardOutputImportance="normal" />
+        <Touch Files="$(EQuanticFontsFile)" Condition="Exists('$(EQuanticFontsFile)')" />
+        <!-- Added here, and when the target is skipped too, for the reasons the vectors give. -->
+        <ItemGroup>
+            <Compile Include="$(EQuanticFontsFile)" Condition="Exists('$(EQuanticFontsFile)')" />
         </ItemGroup>
     </Target>
 

@@ -196,8 +196,13 @@ public class WikiClaimsCompile
         _ = new Text("git log", TypeRole.Caption) { Mono = true };
         _ = new Text("git log", TypeRole.Caption)
         {
-            StyleOverride = brand.Type(TypeRole.Caption) with { Family = "Fira Code", Mono = true },
+            StyleOverride = brand.Type(TypeRole.Caption) with { Family = new("Fira Code"), Mono = true },
         };
+
+        // DesignSystem, "Shipping a typeface" (preview.66): a theme naming a family its catalog ships,
+        // and a library declaring the files of its own.
+        _ = new ShippedTheme(PhotonTheme.Instance).TextFamily;
+        _ = Roboto.Files;
 
         // Styling, "A state changes any member of the style" (preview.60): the card that lifts and
         // deepens its glow on hover, the hover that keeps a resting rotation, and the one that
@@ -293,11 +298,14 @@ public class WikiClaimsCompile
     }
 
     /// <summary>The theme the DesignSystem page shows, whose body is elided there as "the rest
-    /// delegates to inner" — written out here so the two lines that are NOT elided compile.</summary>
+    /// delegates to inner" — written out here so the lines that are NOT elided compile.</summary>
     private sealed class BrandTheme(IAppTheme inner) : IAppTheme
     {
-        public TypeStyle Type(TypeRole role) => inner.Type(role) with { Family = "IBM Plex Sans" };
-        public string? MonoFamily => "JetBrains Mono";
+        public FontFamily? TextFamily => new("IBM Plex Sans");
+        public FontFamily? MonoFamily => new("JetBrains Mono");
+        public TypeStyle Type(TypeRole role) => role is TypeRole.Display or TypeRole.Heading
+            ? inner.Type(role) with { Family = new("Newsreader") }
+            : inner.Type(role);
 
         public ColorToken Background => inner.Background;
         public ColorToken Surface => inner.Surface;
@@ -317,6 +325,44 @@ public class WikiClaimsCompile
         public ShadowSpec Elevation(int level) => inner.Elevation(level);
         public float Shape(ShapeScale scale) => inner.Shape(scale);
     }
+
+    /// <summary>What the SDK writes for an app with the files of one family under its Assets folder,
+    /// which the "Shipping a typeface" theme names.</summary>
+    private static class Fonts
+    {
+        public static FontFamily AtkinsonHyperlegibleNext { get; } = new("Atkinson Hyperlegible Next",
+            new FontFile("Acme.App", "eQuantic.UI.Fonts/AtkinsonHyperlegibleNext-Variable.ttf", 200, 800));
+    }
+
+    /// <summary>The "Shipping a typeface" theme, its elided body written out.</summary>
+    private sealed class ShippedTheme(IAppTheme inner) : IAppTheme
+    {
+        public FontFamily? TextFamily => Fonts.AtkinsonHyperlegibleNext;
+
+        public ColorToken Background => inner.Background;
+        public ColorToken Surface => inner.Surface;
+        public ColorToken SurfaceSubtle => inner.SurfaceSubtle;
+        public ColorToken SurfaceHighlight => inner.SurfaceHighlight;
+        public ColorToken Border => inner.Border;
+        public ColorToken BorderStrong => inner.BorderStrong;
+        public ColorToken TextPrimary => inner.TextPrimary;
+        public ColorToken TextSecondary => inner.TextSecondary;
+        public ColorToken TextMuted => inner.TextMuted;
+        public ColorToken TextInverse => inner.TextInverse;
+        public ColorToken FocusRing => inner.FocusRing;
+        public ColorToken LinkColor => inner.LinkColor;
+        public ColorToken Scrim => inner.Scrim;
+        public float DisabledOpacity => inner.DisabledOpacity;
+        public VariantColors Colors(Variant variant) => inner.Colors(variant);
+        public TypeStyle Type(TypeRole role) => inner.Type(role);
+        public ShadowSpec Elevation(int level) => inner.Elevation(level);
+        public float Shape(ShapeScale scale) => inner.Shape(scale);
+    }
+
+    /// <summary>The library's family the "Shipping a typeface" page declares, as it is written there.</summary>
+    public static FontFamily Roboto { get; } = new("Roboto",
+        new FontFile("Acme.Theme", "Fonts/Roboto-Variable.ttf", 100, 900),
+        new FontFile("Acme.Theme", "Fonts/Roboto-Italic-Variable.ttf", 100, 900, Italic: true));
 
     /// <summary>The relying party the Capabilities page's passkey sign-in calls: a Web Authentication
     /// library writes the options and verifies the answer.</summary>

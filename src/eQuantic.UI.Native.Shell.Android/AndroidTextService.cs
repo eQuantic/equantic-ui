@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Android.Graphics;
 using Android.Text;
 using eQuantic.UI.Native.Framework;
@@ -21,7 +22,54 @@ namespace eQuantic.UI.Native.Shell.Android;
 /// </summary>
 public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
 {
-    private readonly Dictionary<(float Size, FontWeight Weight, bool Mono, bool Italic, string? Family), TextPaint> _paints = new();
+    private readonly Dictionary<(float Size, FontWeight Weight, bool Mono, bool Italic, FontFamily? Family), TextPaint> _paints = new();
+
+    // A face the app SHIPS (#1055). Android opens a typeface from a FILE, so each one is written once
+    // to the app's cache, named by the hash of its bytes, and opened there: one typeface per file,
+    // the one a style asks for chosen by its slant and its weight (ShippedFace).
+    private static readonly ShippedFaces Shipped = new(Register);
+    private static readonly Dictionary<FontFile, Typeface> ShippedTypefaces = new();
+
+    private static bool Register(FontFile file, byte[] bytes)
+    {
+        if (global::Android.App.Application.Context.CacheDir?.AbsolutePath is not { } cache) return false;
+        var folder = System.IO.Path.Combine(cache, "eq-fonts");
+        Directory.CreateDirectory(folder);
+        var path = System.IO.Path.Combine(folder,
+            Convert.ToHexStringLower(SHA256.HashData(bytes))[..16] + System.IO.Path.GetExtension(file.Resource));
+        if (!System.IO.File.Exists(path)) System.IO.File.WriteAllBytes(path, bytes);
+        Typeface? typeface;
+        try
+        {
+            // A file the platform cannot load THROWS rather than answering null.
+            typeface = Typeface.CreateFromFile(path);
+        }
+        catch (Java.Lang.RuntimeException)
+        {
+            return false;
+        }
+        if (typeface is null) return false;
+        lock (ShippedTypefaces) ShippedTypefaces[file] = typeface;
+        return true;
+    }
+
+    /// <summary>
+    /// The typeface of a shipped <paramref name="family"/> for a style: the file of its slant whose
+    /// weights hold the one asked for, else any file of its slant, else any file. Null when its files
+    /// did not all register: the family resolves from them whole or not at all, so a missing cut is
+    /// reported and falls back rather than being drawn from another.
+    /// </summary>
+    private static Typeface? ShippedFace(FontFamily family, FontWeight weight, bool italic)
+    {
+        if (!Shipped.Register(family)) return null;
+        var asked = (int)weight;
+        var file = family.Files.Where(f => f.Italic == italic && asked >= f.MinWeight && asked <= f.MaxWeight)
+            .Concat(family.Files.Where(f => f.Italic == italic))
+            .Concat(family.Files)
+            .FirstOrDefault(Shipped.IsRegistered);
+        if (file is null) return null;
+        lock (ShippedTypefaces) return ShippedTypefaces.GetValueOrDefault(file);
+    }
 
     public TextMeasurement Measure(string content, TypeStyle style, float typeScale, float maxWidth, int maxLines)
     {
@@ -134,7 +182,7 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
         return lines;
     }
 
-    private TextPaint PaintFor(float size, FontWeight weight, bool mono, bool italic, string? family = null)
+    private TextPaint PaintFor(float size, FontWeight weight, bool mono, bool italic, FontFamily? family = null)
     {
         if (_paints.TryGetValue((size, weight, mono, italic, family), out var cached)) return cached;
 
@@ -163,15 +211,20 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
         // missing — and an instrument that cries wolf on a correct value is one nobody reads by the
         // end of the week. What is left is a brand face, which is the case this exists for.
         var baseFace = mono ? Typeface.Monospace : Typeface.Default;
-        if (family is { Length: > 0 })
+        if (family is { Files.Count: > 0 })
         {
-            var named = Typeface.Create(family, style);
+            if (ShippedFace(family, weight, italic) is { } shipped) baseFace = shipped;
+            else eQuantic.UI.Primitives.FaceResolution.Missing(family.Name);
+        }
+        else if (family is { Name.Length: > 0 })
+        {
+            var named = Typeface.Create(family.Name, style);
             if (named is null)
-                eQuantic.UI.Primitives.FaceResolution.Missing(family);
-            else if (IsSystemAlias(family) || !named.Equals(Typeface.Create(Typeface.Default, style)))
+                eQuantic.UI.Primitives.FaceResolution.Missing(family.Name);
+            else if (IsSystemAlias(family.Name) || !named.Equals(Typeface.Create(Typeface.Default, style)))
                 baseFace = named;
             else
-                eQuantic.UI.Primitives.FaceResolution.Missing(family);
+                eQuantic.UI.Primitives.FaceResolution.Missing(family.Name);
         }
         paint.SetTypeface(Typeface.Create(baseFace, style));
         _paints[(size, weight, mono, italic, family)] = paint;

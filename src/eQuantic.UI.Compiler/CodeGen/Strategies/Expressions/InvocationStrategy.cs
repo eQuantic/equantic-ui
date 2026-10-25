@@ -110,23 +110,12 @@ public class InvocationStrategy : IExpressionIrStrategy
             // `out` is not passed IN — it comes back in the result object. `ref` is read before it
             // is written, so it stays an argument as well as a field of the result.
             if (arg.RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword)) continue;
+            // A `params` parameter is a REST parameter on the other side, so the two C# call forms
+            // diverge: `Count("a", "b")` already lines up, and a collection handed whole,
+            // `Count(names)`, would arrive as ONE element, so it spreads (BoundArguments.Convert).
             argsList.Add(arg.Expression is DeclarationExpressionSyntax declaration
                 ? JsExpr.Identifier(declaration.Designation.ToString().ToJsIdentifier())
-                : context.Converter.ConvertIr(arg.Expression));
-        }
-
-        // A `params` parameter is a REST parameter on the other side, so the two C# call forms
-        // diverge here. `Count("a", "b")` already lines up; `Count(new[] { "a" })` — passing the
-        // array whole, which C# also allows — would arrive as ONE element rather than the array,
-        // so it spreads. Recognised from the SIGNATURE plus the argument's own type, because that
-        // is the only thing that tells the two forms apart.
-        if (symbol is { Parameters.Length: > 0 } && symbol.Parameters[^1].IsParams
-            && argsList.Count == symbol.Parameters.Length
-            && invocation.ArgumentList.Arguments.Count == symbol.Parameters.Length
-            && context.SemanticHelper.GetType(invocation.ArgumentList.Arguments[^1].Expression)
-                is IArrayTypeSymbol)
-        {
-            argsList[^1] = JsExpr.Opaque($"...{JsExprWriter.WriteIn(argsList[^1], JsPrecedence.Assignment)}");
+                : BoundArguments.Convert(arg, context));
         }
 
         // NAMED arguments bind by NAME in C# but JS only has positions: reorder into the

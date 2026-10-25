@@ -40,7 +40,18 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
     private readonly Dictionary<FormatKey, Format> _formats = new();
     private bool _disposed;
 
-    private readonly record struct FormatKey(float Size, float LineHeight, FontWeight Weight, bool Mono, bool Italic, string? Family);
+    // The faces the app SHIPS (#1055): each file handed to DirectWrite from memory, all of them made
+    // into a collection of their own, and text in a family that ships files formatted against it. The
+    // system's collection keeps every other family. Built when the first such family is asked for;
+    // where the system predates in-memory font files (Windows 10 before 1703), a shipped family is
+    // left to fall back and is reported, as any family the machine does not have is.
+    private readonly ShippedFaces _shipped;
+    private void* _factory5;              // IDWriteFactory5
+    private void* _memoryLoader;          // IDWriteInMemoryFontFileLoader, registered with the factory
+    private readonly List<nint> _shippedFiles = new();   // IDWriteFontFile
+    private void* _shippedCollection;     // IDWriteFontCollection1 over every shipped file
+
+    private readonly record struct FormatKey(float Size, float LineHeight, FontWeight Weight, bool Mono, bool Italic, FontFamily? Family);
 
     /// <summary>A text format and the metrics of the face it resolved to, in dp at its size.</summary>
     private sealed unsafe class Format
@@ -61,6 +72,7 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
         Com.Check(DWrite.GetSystemFontCollection(_factory, &collection), "system font collection");
         _collection = collection;
 
+        _shipped = new ShippedFaces(RegisterShipped);
         _textFamily = FirstInstalled("Segoe UI") ?? FirstInstalled("Arial") ?? "Segoe UI";
         _monoFamily = FirstInstalled("Cascadia Mono") ?? FirstInstalled("Consolas") ?? _textFamily;
         _locale = CultureInfo.CurrentUICulture.Name is { Length: > 0 } name ? name : "en-us";
@@ -87,21 +99,71 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
         return exists != 0 ? family : null;
     }
 
-    /// <summary>Whether the system collection has this family — the question DirectWrite answers
-    /// directly, so nothing has to compare a name it got back against the one it asked for.</summary>
-    private bool HasFamily(string family)
+    /// <summary>Whether <paramref name="collection"/> has this family — the question DirectWrite
+    /// answers directly, so nothing has to compare a name it got back against the one it asked for.</summary>
+    private static bool HasFamily(void* collection, string family)
     {
         uint index;
         int exists;
         fixed (char* name = family)
         {
-            if (DWrite.FindFamilyName(_collection, name, &index, &exists) < 0) return false;
+            if (DWrite.FindFamilyName(collection, name, &index, &exists) < 0) return false;
         }
         return exists != 0;
     }
 
+    /// <summary>One shipped file, handed to DirectWrite from memory, and the collection rebuilt with it.</summary>
+    private bool RegisterShipped(FontFile file, byte[] bytes)
+    {
+        if (_memoryLoader is null)
+        {
+            _factory5 = DWrite.QueryFactory5(_factory);
+            if (_factory5 is null) return false;
+            void* loader;
+            if (DWrite.CreateInMemoryFontFileLoader(_factory5, &loader) < 0) return false;
+            if (DWrite.RegisterFontFileLoader(_factory, loader) < 0)
+            {
+                Com.Release(loader);
+                return false;
+            }
+            _memoryLoader = loader;
+        }
+
+        void* fontFile;
+        fixed (byte* data = bytes)
+        {
+            if (DWrite.CreateInMemoryFontFileReference(_memoryLoader, _factory, data, (uint)bytes.Length, null, &fontFile) < 0)
+                return false;
+        }
+        _shippedFiles.Add((nint)fontFile);
+
+        void* builder = null;
+        void* fontSet = null;
+        void* collection = null;
+        try
+        {
+            if (DWrite.CreateFontSetBuilder1(_factory5, &builder) < 0) return false;
+            foreach (var shipped in _shippedFiles)
+                if (DWrite.AddFontFile(builder, (void*)shipped) < 0) return false;
+            if (DWrite.CreateFontSet(builder, &fontSet) < 0) return false;
+            if (DWrite.CreateFontCollectionFromFontSet(_factory5, fontSet, &collection) < 0) return false;
+            // A format made before this file joined holds the collection it was made against, which
+            // still has every file that format's family needs.
+            Com.Release(ref _shippedCollection);
+            _shippedCollection = collection;
+            collection = null;
+            return true;
+        }
+        finally
+        {
+            Com.Release(ref collection);
+            Com.Release(ref fontSet);
+            Com.Release(ref builder);
+        }
+    }
+
     private Format FormatFor(float size, float lineHeight, FontWeight weight, bool mono, bool italic,
-        string? named = null)
+        FontFamily? named = null)
     {
         var key = new FormatKey(size, lineHeight, weight, mono, italic, named);
         if (_formats.TryGetValue(key, out var cached)) return cached;
@@ -111,24 +173,37 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
         // family is checked BEFORE it is asked for, and an absent one falls back to the system face
         // rather than to whatever DirectWrite chooses.
         var family = mono ? _monoFamily : _textFamily;
-        if (named is { Length: > 0 })
+        var collection = _collection;
+        if (named is { Name.Length: > 0 })
         {
-            if (HasFamily(named)) family = named;
-            else Primitives.FaceResolution.Missing(named);
+            // A family that ships files is set from the collection they were registered in, WHOLE or
+            // not at all: one whose files did not all register is reported and falls back, never to
+            // an installed family of the same name, which would hide the packaging error here alone.
+            if (named.Files.Count > 0)
+            {
+                if (_shipped.Register(named) && HasFamily(_shippedCollection, named.Name))
+                {
+                    family = named.Name;
+                    collection = _shippedCollection;
+                }
+                else Primitives.FaceResolution.Missing(named.Name);
+            }
+            else if (HasFamily(_collection, named.Name)) family = named.Name;
+            else Primitives.FaceResolution.Missing(named.Name);
         }
         var style = italic ? DWrite.StyleItalic : DWrite.StyleNormal;
         void* format;
         fixed (char* familyName = family)
         fixed (char* locale = _locale)
         {
-            Com.Check(DWrite.CreateTextFormat(_factory, familyName, null, (int)weight, style,
+            Com.Check(DWrite.CreateTextFormat(_factory, familyName, collection == _collection ? null : collection, (int)weight, style,
                 DWrite.StretchNormal, size, locale, &format), "text format creation");
         }
         Com.Check(DWrite.SetWordWrapping(format, DWrite.WordWrappingWrap), "word wrapping");
 
         // The face's ascent and descent at this size, so the line box centres the glyph run on
         // OUR grid exactly as the Mac does — layout and raster agree on where a baseline is.
-        var (ascent, descent) = FaceMetrics(family, weight, style, size);
+        var (ascent, descent) = FaceMetrics(collection, family, weight, style, size);
         var baseline = (lineHeight - (ascent + descent)) / 2 + ascent;
         Com.Check(DWrite.SetLineSpacing(format, DWrite.LineSpacingUniform, lineHeight, baseline), "line spacing");
 
@@ -137,7 +212,7 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
         return created;
     }
 
-    private (float Ascent, float Descent) FaceMetrics(string family, FontWeight weight, uint style, float size)
+    private static (float Ascent, float Descent) FaceMetrics(void* collection, string family, FontWeight weight, uint style, float size)
     {
         void* fontFamily = null;
         void* font = null;
@@ -147,10 +222,10 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
             int exists;
             fixed (char* name = family)
             {
-                if (DWrite.FindFamilyName(_collection, name, &index, &exists) < 0 || exists == 0)
+                if (DWrite.FindFamilyName(collection, name, &index, &exists) < 0 || exists == 0)
                     return (size * 0.8f, size * 0.2f);
             }
-            if (DWrite.GetFontFamily(_collection, index, &fontFamily) < 0) return (size * 0.8f, size * 0.2f);
+            if (DWrite.GetFontFamily(collection, index, &fontFamily) < 0) return (size * 0.8f, size * 0.2f);
             if (DWrite.GetFirstMatchingFont(fontFamily, (int)weight, DWrite.StretchNormal, style, &font) < 0)
                 return (size * 0.8f, size * 0.2f);
 
@@ -340,6 +415,15 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
         _disposed = true;
         foreach (var format in _formats.Values) Com.Release(format.Handle);
         _formats.Clear();
+        Com.Release(ref _shippedCollection);
+        foreach (var file in _shippedFiles) Com.Release((void*)file);
+        _shippedFiles.Clear();
+        if (_memoryLoader is not null)
+        {
+            DWrite.UnregisterFontFileLoader(_factory, _memoryLoader);
+            Com.Release(ref _memoryLoader);
+        }
+        Com.Release(ref _factory5);
         Com.Release(_renderingParams);
         Com.Release(_collection);
         Com.Release(_wic);
