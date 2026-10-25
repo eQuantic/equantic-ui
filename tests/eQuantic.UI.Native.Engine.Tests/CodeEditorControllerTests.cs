@@ -463,8 +463,8 @@ public class CodeEditorControllerTests
         var afterBreak = start.Replace(broke.Range, broke.InsertedText, out _);
         var typed = new CodeEdit(new CodeRange(broke.InsertedRange.End), "", "x", default, default, Typed: true);
         var afterTyping = afterBreak.Replace(typed.Range, typed.InsertedText, out _);
-        history.Record([broke]);
-        history.Record([typed]);
+        history.Record(new CodeStep([broke], [new CodeRange(broke.Range.Start)], [new CodeRange(broke.InsertedRange.End)]));
+        history.Record(new CodeStep([typed], [new CodeRange(typed.Range.Start)], [new CodeRange(typed.InsertedRange.End)]));
 
         var undone = history.Undo(afterTyping, out _, out _)!;
 

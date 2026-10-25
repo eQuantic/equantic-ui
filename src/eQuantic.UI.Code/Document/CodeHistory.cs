@@ -11,14 +11,15 @@ namespace eQuantic.UI.Code;
 /// A step is the edits ONE command made, in the order it made them, each in the coordinates of the
 /// document it was made on: a line moved is the line it passed written on its other side and deleted
 /// where it was, two edits and one step (#1031). Undo takes them back last first, and redo makes them
-/// again first first.
+/// again first first. A command made at several carets is one step too, with every caret on each side
+/// of it (<see cref="CodeStep"/>), and typing at several carets is one run, as typing at one is (#1012).
 /// </para>
 /// </summary>
 public sealed class CodeHistory
 {
-    private readonly List<IReadOnlyList<CodeEdit>> _past = [];
-    private readonly List<IReadOnlyList<CodeEdit>> _future = [];
-    private CodePosition _runEnd = new(-1, -1);
+    private readonly List<CodeStep> _past = [];
+    private readonly List<CodeStep> _future = [];
+    private bool _running;
 
     /// <summary>How many steps deep the history goes before the oldest is dropped.</summary>
     public int Limit { get; init; } = 500;
@@ -26,47 +27,84 @@ public sealed class CodeHistory
     public bool CanUndo => _past.Count > 0;
     public bool CanRedo => _future.Count > 0;
 
-    /// <summary>Records the edits of one step, in the order they were made. A new step always kills the
-    /// redo branch — the future you did not take stops existing the moment you type something else,
-    /// which is what every editor does. A step of no edits records nothing.</summary>
-    public void Record(IReadOnlyList<CodeEdit> edits)
+    /// <summary>Records one step. A new step always kills the redo branch — the future you did not take
+    /// stops existing the moment you type something else, which is what every editor does. A step of no
+    /// edits records nothing.</summary>
+    public void Record(CodeStep step)
     {
-        if (edits.Count == 0) return;
+        if (step.Edits.Count == 0) return;
         _future.Clear();
 
-        // Coalesce: a character TYPED right where the last typed one landed continues that run, and
-        // a run may begin by typing over a selection, the replacement being its first step. What
-        // was not typed (a paste, a cut, an indent) never joins one and never starts one, and neither
-        // does a step of several edits.
-        var edit = edits[0];
-        if (edits.Count == 1 && edit.Typed && edit.IsSimpleInsert && _past.Count > 0 && edit.Range.Start == _runEnd)
+        // Coalesce: characters TYPED at the carets, right where the last ones typed left them, continue that
+        // run, and a run may begin by typing over a selection, the replacement being its first step. What was
+        // not typed (a paste, a cut, an indent) never joins one and never starts one, and neither does a
+        // step that is not one typed edit at each caret.
+        if (_running && _past.Count > 0 && Continues(_past[^1], step))
         {
-            var step = _past[^1];
-            if (step.Count == 1 && step[0] is { Typed: true, BreaksLine: false } previous)
-            {
-                _past[^1] =
-                [
-                    previous with
-                    {
-                        InsertedText = previous.InsertedText + edit.InsertedText,
-                        SelectionAfter = edit.SelectionAfter,
-                    },
-                ];
-                _runEnd = edit.InsertedRange.End;
-                return;
-            }
+            _past[^1] = Joined(_past[^1], step);
+            return;
         }
 
-        _past.Add(edits);
+        _past.Add(step);
         if (_past.Count > Limit) _past.RemoveAt(0);
-        _runEnd = edits.Count == 1 && edit.Typed && !edit.BreaksLine
-            ? edit.InsertedRange.End
-            : new CodePosition(-1, -1);
+        _running = Runs(step);
+    }
+
+    /// <summary>Whether <paramref name="step"/> may begin a run: one typed edit at each caret, none of them
+    /// breaking a line.</summary>
+    private static bool Runs(CodeStep step)
+    {
+        if (step.Edits.Count != step.Before.Count) return false;
+        foreach (var edit in step.Edits)
+            if (!edit.Typed || edit.BreaksLine) return false;
+        return true;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="step"/> goes on with the run <paramref name="previous"/> is: as many carets,
+    /// each where the run left it, and at each one character typed there. The edits of a step at several
+    /// carets are made from the last caret to the first, so the one made k-th is at the caret k-th from
+    /// the end, in coordinates no edit before it moved.
+    /// </summary>
+    private static bool Continues(CodeStep previous, CodeStep step)
+    {
+        var count = step.Edits.Count;
+        if (count != previous.Edits.Count || count != step.Before.Count || count != previous.After.Count)
+            return false;
+        for (var i = 0; i < count; i++)
+            if (step.Before[i] != previous.After[i] || !step.Before[i].IsEmpty) return false;
+        var carets = new List<CodePosition>();
+        foreach (var caret in step.Before) carets.Add(caret.Focus);
+        carets.Sort();
+        for (var k = 0; k < count; k++)
+        {
+            var edit = step.Edits[k];
+            if (!edit.Typed || !edit.IsSimpleInsert || edit.Range.Start != carets[count - 1 - k]) return false;
+        }
+        return true;
+    }
+
+    /// <summary><paramref name="previous"/> and <paramref name="step"/> as one step: each caret's text typed
+    /// on after its own, from the carets the run found to the ones it leaves.</summary>
+    private static CodeStep Joined(CodeStep previous, CodeStep step)
+    {
+        var edits = new List<CodeEdit>();
+        for (var k = 0; k < step.Edits.Count; k++)
+        {
+            var before = previous.Edits[k];
+            var edit = step.Edits[k];
+            edits.Add(before with
+            {
+                InsertedText = before.InsertedText + edit.InsertedText,
+                SelectionAfter = edit.SelectionAfter,
+            });
+        }
+        return new CodeStep(edits, previous.Before, step.After);
     }
 
     /// <summary>Ends the current typing run, so the NEXT character starts a new undo step. Called
     /// when the caret moves somewhere else, when the editor loses focus, when a file is saved.</summary>
-    public void Break() => _runEnd = new CodePosition(-1, -1);
+    public void Break() => _running = false;
 
     /// <summary>
     /// Takes the last step back, applying it to <paramref name="document"/>: its edits last first, each
@@ -74,11 +112,12 @@ public sealed class CodeHistory
     /// replacement that made, in the order made, each in the coordinates of the document it was made on
     /// and holding what it removed and what it wrote, which is what anything kept per line (the colours,
     /// the widths) and anything carrying a range through edits is brought up to date by, as it is for an
-    /// edit. <paramref name="selection"/> is the selection the step found.
+    /// edit. <paramref name="selections"/> are the selections the step found, the primary first.
     /// </summary>
-    public CodeDocument? Undo(CodeDocument document, out CodeRange selection, out IReadOnlyList<CodeEdit> made)
+    public CodeDocument? Undo(CodeDocument document, out IReadOnlyList<CodeRange> selections,
+        out IReadOnlyList<CodeEdit> made)
     {
-        selection = default;
+        selections = [];
         made = [];
         if (_past.Count == 0) return null;
 
@@ -89,9 +128,9 @@ public sealed class CodeHistory
 
         var next = document;
         var undone = new List<CodeEdit>();
-        for (var i = step.Count - 1; i >= 0; i--)
+        for (var i = step.Edits.Count - 1; i >= 0; i--)
         {
-            var edit = step[i];
+            var edit = step.Edits[i];
             var replaced = new CodeRange(next.Clamp(edit.InsertedRange.Start), next.Clamp(edit.InsertedRange.End));
             var removed = next.TextIn(replaced);
             next = next.Replace(replaced, edit.RemovedText, out var end);
@@ -99,15 +138,16 @@ public sealed class CodeHistory
                 edit.SelectionAfter, edit.SelectionBefore, false));
         }
         made = undone;
-        selection = step[0].SelectionBefore;
+        selections = step.Before;
         return next;
     }
 
     /// <summary>Puts back what <see cref="Undo"/> took, its edits first first, and says what it made and
-    /// the selection the step left as <see cref="Undo"/> does.</summary>
-    public CodeDocument? Redo(CodeDocument document, out CodeRange selection, out IReadOnlyList<CodeEdit> made)
+    /// the selections the step left as <see cref="Undo"/> does.</summary>
+    public CodeDocument? Redo(CodeDocument document, out IReadOnlyList<CodeRange> selections,
+        out IReadOnlyList<CodeEdit> made)
     {
-        selection = default;
+        selections = [];
         made = [];
         if (_future.Count == 0) return null;
 
@@ -118,7 +158,7 @@ public sealed class CodeHistory
 
         var next = document;
         var redone = new List<CodeEdit>();
-        foreach (var edit in step)
+        foreach (var edit in step.Edits)
         {
             var replaced = new CodeRange(next.Clamp(edit.Range.Start), next.Clamp(edit.Range.End));
             var removed = next.TextIn(replaced);
@@ -127,7 +167,7 @@ public sealed class CodeHistory
                 edit.SelectionBefore, edit.SelectionAfter, false));
         }
         made = redone;
-        selection = step[^1].SelectionAfter;
+        selections = step.After;
         return next;
     }
 

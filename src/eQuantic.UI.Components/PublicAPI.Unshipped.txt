@@ -31,5 +31,9 @@ eQuantic.UI.Components.CodeEditor.SignatureProviders.set -> void
 eQuantic.UI.Components.CodeEditor.KeyBindings.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeKeyBinding>!
 eQuantic.UI.Components.CodeEditor.KeyBindings.set -> void
 *REMOVED*const eQuantic.UI.Components.CodeBlock.SelectionAlpha = 0.28 -> float
-eQuantic.UI.Components.CodeBlock.Selection.get -> eQuantic.UI.Code.CodeRange
-eQuantic.UI.Components.CodeBlock.Selection.init -> void
+*REMOVED*eQuantic.UI.Components.CodeBlock.ActiveLine.get -> int?
+*REMOVED*eQuantic.UI.Components.CodeBlock.ActiveLine.init -> void
+eQuantic.UI.Components.CodeBlock.ActiveLines.get -> System.Collections.Generic.IReadOnlyList<int>!
+eQuantic.UI.Components.CodeBlock.ActiveLines.init -> void
+eQuantic.UI.Components.CodeBlock.Selections.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>!
+eQuantic.UI.Components.CodeBlock.Selections.init -> void

@@ -74,8 +74,8 @@ public sealed class CodeBlock : StatelessComponent
     /// <summary>Ranges to mark: search matches, the symbol under the caret, a squiggle.</summary>
     public IReadOnlyList<CodeDecoration> Decorations { get; init; } = [];
 
-    /// <summary>A line to wash — the caret's line in an editor, a debugger's stop.</summary>
-    public int? ActiveLine { get; init; }
+    /// <summary>The lines to wash — every caret's line in an editor (#1012), a debugger's stop.</summary>
+    public IReadOnlyList<int> ActiveLines { get; init; } = [];
 
     /// <summary>
     /// The selection, as the engine measured it: one band per line, in the surface's own coordinates
@@ -87,12 +87,12 @@ public sealed class CodeBlock : StatelessComponent
     public IReadOnlyList<Rect> SelectionBands { get; init; } = [];
 
     /// <summary>
-    /// The text the selection covers, by position: its bands are <see cref="SelectionBands"/>, and its
-    /// glyphs take the theme's <see cref="IAppTheme.OnSelection"/> when the theme names one, so a
-    /// selection a theme draws opaque stays readable over its band. Empty, the default, recolours
-    /// nothing.
+    /// The text every selection covers, by position, in document order (#1012): their bands are
+    /// <see cref="SelectionBands"/>, and their glyphs take the theme's <see cref="IAppTheme.OnSelection"/>
+    /// when the theme names one, so a selection a theme draws opaque stays readable over its band. None,
+    /// the default, recolours nothing.
     /// </summary>
-    public CodeRange Selection { get; init; }
+    public IReadOnlyList<CodeRange> Selections { get; init; } = [];
 
     /// <summary>
     /// How many cells the widest line takes, when whoever composes the block keeps it across builds
@@ -296,8 +296,9 @@ public sealed class CodeBlock : StatelessComponent
         // A changed line's wash is under everything else, so the words that changed, the caret's
         // line and the selection all read over it.
         AddMarks(marks, LinePass, metrics, theme, first, last, firstLine, lastLine, width);
-        if (ActiveLine is { } activeLine && activeLine >= 0 && activeLine < Document.LineCount && Shows(activeLine))
+        foreach (var activeLine in ActiveLines)
         {
+            if (activeLine < 0 || activeLine >= Document.LineCount || !Shows(activeLine)) continue;
             marks.Add(new Positioned(new Box(new BoxStyle
             {
                 Width = width,
@@ -510,7 +511,7 @@ public sealed class CodeBlock : StatelessComponent
             Padding = new EdgeInsets(0, 0, Space.S3, 0),
             // A row that shows no line carries the wash its code does, so the stripe crosses both.
             Background = !isLine ? FillerColor
-                : ActiveLine == index ? (Inverse ? CodeSlabActive : theme.Colors(Variant.Primary).Subtle)
+                : ActiveLines.Contains(index) ? (Inverse ? CodeSlabActive : theme.Colors(Variant.Primary).Subtle)
                 : null,
         }, numbers);
 
@@ -592,7 +593,7 @@ public sealed class CodeBlock : StatelessComponent
         // The stretch of this line the selection covers, in the ink selected text takes: the band
         // under it may be opaque, and glyphs in their usual colour would vanish into it. Only the
         // block's own lines are selected; a diff's filler lines are the other side's.
-        var (selectedFrom, selectedTo, selectedInk) = SelectedOn(selectable, index, text.Length, ink, theme);
+        var (selected, selectedInk) = SelectedOn(selectable, index, text.Length, ink, theme);
         var at = 0;
         foreach (var token in tokens)
         {
@@ -601,13 +602,13 @@ public sealed class CodeBlock : StatelessComponent
             // drawn twice and none past the end of its line.
             var start = Math.Clamp(token.Start, at, text.Length);
             var end = Math.Clamp(token.End, start, text.Length);
-            if (start > at) AddSpans(code, cells, at, start, ink, style, columnWidth, selectedFrom, selectedTo, selectedInk);
+            if (start > at) AddSpans(code, cells, at, start, ink, style, columnWidth, selected, selectedInk);
             AddSpans(code, cells, start, end, Inverse ? InverseCode(token.Kind, theme) : theme.Code(token.Kind),
-                style, columnWidth, selectedFrom, selectedTo, selectedInk);
+                style, columnWidth, selected, selectedInk);
             at = end;
         }
         if (at < text.Length)
-            AddSpans(code, cells, at, text.Length, ink, style, columnWidth, selectedFrom, selectedTo, selectedInk);
+            AddSpans(code, cells, at, text.Length, ink, style, columnWidth, selected, selectedInk);
         // An empty line still needs its height, and a space is the cheapest way to say so.
         if (text.Length == 0) code.Add(Run(" ", ink, style));
 
@@ -906,33 +907,44 @@ public sealed class CodeBlock : StatelessComponent
     }
 
     /// <summary>
-    /// The stretch of <paramref name="line"/> the selection covers, from the column it starts at to the
-    /// one it ends at, and the ink its glyphs take; an empty stretch, in <paramref name="ink"/>, when
-    /// the line is not the block's own (<paramref name="selectable"/>), nothing on it is selected or
-    /// the theme recolours nothing. On the dark slab the DARK half of the theme's colour is used in
-    /// both modes, as the band's is (see <see cref="SelectionFor"/>).
+    /// The stretches of <paramref name="line"/> the selections cover, each from the column it starts at to
+    /// the one it ends at, in order, and the ink their glyphs take; none, in <paramref name="ink"/>, when
+    /// the line is not the block's own (<paramref name="selectable"/>), nothing on it is selected or the
+    /// theme recolours nothing. On the dark slab the DARK half of the theme's colour is used in both modes,
+    /// as the band's is (see <see cref="SelectionFor"/>).
     /// </summary>
-    private (int From, int To, ColorToken Ink) SelectedOn(bool selectable, int line, int length, ColorToken ink,
-        IAppTheme theme)
+    private (List<(int From, int To)> Stretches, ColorToken Ink) SelectedOn(bool selectable, int line, int length,
+        ColorToken ink, IAppTheme theme)
     {
-        if (!selectable || theme.OnSelection is not { } on || Selection.IsEmpty) return (0, 0, ink);
-        var start = Selection.Start;
-        var end = Selection.End;
-        if (line < start.Line || line > end.Line) return (0, 0, ink);
-        return (line == start.Line ? start.Column : 0, line == end.Line ? end.Column : length,
-            Inverse ? new ColorToken(on.Dark, on.Dark) : on);
+        var stretches = new List<(int From, int To)>();
+        if (!selectable || theme.OnSelection is not { } on) return (stretches, ink);
+        foreach (var selection in Selections)
+        {
+            if (selection.IsEmpty) continue;
+            var start = selection.Start;
+            var end = selection.End;
+            if (line < start.Line || line > end.Line) continue;
+            stretches.Add((line == start.Line ? start.Column : 0, line == end.Line ? end.Column : length));
+        }
+        return (stretches, Inverse ? new ColorToken(on.Dark, on.Dark) : on);
     }
 
-    /// <summary><see cref="AddSpan"/> for [<paramref name="from"/>, <paramref name="to"/>), with the
-    /// part the selection covers in <paramref name="selectedInk"/>.</summary>
+    /// <summary><see cref="AddSpan"/> for [<paramref name="from"/>, <paramref name="to"/>), with the parts the
+    /// selections cover, <paramref name="selected"/> in order, in <paramref name="selectedInk"/>.</summary>
     private static void AddSpans(Row code, CodeLineCells cells, int from, int to, ColorToken color, TypeStyle style,
-        float columnWidth, int selectedFrom, int selectedTo, ColorToken selectedInk)
+        float columnWidth, List<(int From, int To)> selected, ColorToken selectedInk)
     {
-        var inFrom = Math.Clamp(selectedFrom, from, to);
-        var inTo = Math.Clamp(selectedTo, inFrom, to);
-        AddSpan(code, cells, from, inFrom, color, style, columnWidth);
-        AddSpan(code, cells, inFrom, inTo, selectedInk, style, columnWidth);
-        AddSpan(code, cells, inTo, to, color, style, columnWidth);
+        var at = from;
+        foreach (var stretch in selected)
+        {
+            var inFrom = Math.Clamp(stretch.From, at, to);
+            var inTo = Math.Clamp(stretch.To, inFrom, to);
+            if (inTo <= inFrom) continue;
+            AddSpan(code, cells, at, inFrom, color, style, columnWidth);
+            AddSpan(code, cells, inFrom, inTo, selectedInk, style, columnWidth);
+            at = inTo;
+        }
+        AddSpan(code, cells, at, to, color, style, columnWidth);
     }
 
     private static VisualNode Run(string content, ColorToken color, TypeStyle style) =>

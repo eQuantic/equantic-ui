@@ -16,12 +16,14 @@ Apple plain ArrowUp Command => claimed selection=0:0>0:0
 Apple plain ArrowUp Shift+Command => claimed selection=1:6>0:0
 Apple plain ArrowUp Alt => claimed text=    gamma delta\nalpha beta\nepsilon zeta selection=0:6>0:6
 Apple plain ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta
+Apple plain ArrowUp Command+Alt => claimed selection=0:6>0:6
 Apple plain ArrowDown - => claimed selection=2:6>2:6
 Apple plain ArrowDown Shift => claimed selection=1:6>2:6
 Apple plain ArrowDown Command => claimed selection=2:12>2:12
 Apple plain ArrowDown Shift+Command => claimed selection=1:6>2:12
 Apple plain ArrowDown Alt => claimed text=alpha beta\nepsilon zeta\n    gamma delta selection=2:6>2:6
 Apple plain ArrowDown Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta selection=2:6>2:6
+Apple plain ArrowDown Command+Alt => claimed selection=2:6>2:6
 Apple plain Home - => claimed selection=1:4>1:4
 Apple plain Home Shift => claimed selection=1:6>1:4
 Apple plain Home Command => claimed selection=0:0>0:0
@@ -79,12 +81,14 @@ Apple selection ArrowUp Command => claimed selection=0:0>0:0
 Apple selection ArrowUp Shift+Command => claimed selection=1:4>0:0
 Apple selection ArrowUp Alt => claimed text=    gamma delta\nalpha beta\nepsilon zeta selection=0:4>0:9
 Apple selection ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta
+Apple selection ArrowUp Command+Alt => claimed selection=0:9>0:9
 Apple selection ArrowDown - => claimed selection=2:9>2:9
 Apple selection ArrowDown Shift => claimed selection=1:4>2:9
 Apple selection ArrowDown Command => claimed selection=2:12>2:12
 Apple selection ArrowDown Shift+Command => claimed selection=1:4>2:12
 Apple selection ArrowDown Alt => claimed text=alpha beta\nepsilon zeta\n    gamma delta selection=2:4>2:9
 Apple selection ArrowDown Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta selection=2:4>2:9
+Apple selection ArrowDown Command+Alt => claimed selection=2:9>2:9
 Apple selection Home - => claimed selection=1:4>1:4
 Apple selection Home Shift => claimed selection=1:4>1:4
 Apple selection Home Command => claimed selection=0:0>0:0
@@ -140,12 +144,14 @@ Apple no-clipboard ArrowUp Command => claimed selection=0:0>0:0
 Apple no-clipboard ArrowUp Shift+Command => claimed selection=1:4>0:0
 Apple no-clipboard ArrowUp Alt => claimed text=    gamma delta\nalpha beta\nepsilon zeta selection=0:4>0:9
 Apple no-clipboard ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta
+Apple no-clipboard ArrowUp Command+Alt => claimed selection=0:9>0:9
 Apple no-clipboard ArrowDown - => claimed selection=2:9>2:9
 Apple no-clipboard ArrowDown Shift => claimed selection=1:4>2:9
 Apple no-clipboard ArrowDown Command => claimed selection=2:12>2:12
 Apple no-clipboard ArrowDown Shift+Command => claimed selection=1:4>2:12
 Apple no-clipboard ArrowDown Alt => claimed text=alpha beta\nepsilon zeta\n    gamma delta selection=2:4>2:9
 Apple no-clipboard ArrowDown Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta selection=2:4>2:9
+Apple no-clipboard ArrowDown Command+Alt => claimed selection=2:9>2:9
 Apple no-clipboard Home - => claimed selection=1:4>1:4
 Apple no-clipboard Home Shift => claimed selection=1:4>1:4
 Apple no-clipboard Home Command => claimed selection=0:0>0:0
@@ -196,10 +202,12 @@ Apple read-only ArrowUp - => claimed selection=0:6>0:6
 Apple read-only ArrowUp Shift => claimed selection=1:6>0:6
 Apple read-only ArrowUp Command => claimed selection=0:0>0:0
 Apple read-only ArrowUp Shift+Command => claimed selection=1:6>0:0
+Apple read-only ArrowUp Command+Alt => claimed selection=0:6>0:6
 Apple read-only ArrowDown - => claimed selection=2:6>2:6
 Apple read-only ArrowDown Shift => claimed selection=1:6>2:6
 Apple read-only ArrowDown Command => claimed selection=2:12>2:12
 Apple read-only ArrowDown Shift+Command => claimed selection=1:6>2:12
+Apple read-only ArrowDown Command+Alt => claimed selection=2:6>2:6
 Apple read-only Home - => claimed selection=1:4>1:4
 Apple read-only Home Shift => claimed selection=1:6>1:4
 Apple read-only Home Command => claimed selection=0:0>0:0
@@ -262,7 +270,7 @@ Apple released ArrowUp Command+Control => unclaimed trap=armed
 Apple released ArrowUp Shift+Command+Control => unclaimed trap=armed
 Apple released ArrowUp Alt => claimed text=    gamma delta\nalpha beta\nepsilon zeta selection=0:6>0:6 trap=armed
 Apple released ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta trap=armed
-Apple released ArrowUp Command+Alt => unclaimed trap=armed
+Apple released ArrowUp Command+Alt => claimed selection=0:6>0:6 trap=armed
 Apple released ArrowUp Shift+Command+Alt => unclaimed trap=armed
 Apple released ArrowUp Control+Alt => unclaimed trap=armed
 Apple released ArrowUp Shift+Control+Alt => unclaimed trap=armed
@@ -278,7 +286,7 @@ Apple released ArrowDown Command+Control => unclaimed trap=armed
 Apple released ArrowDown Shift+Command+Control => unclaimed trap=armed
 Apple released ArrowDown Alt => claimed text=alpha beta\nepsilon zeta\n    gamma delta selection=2:6>2:6 trap=armed
 Apple released ArrowDown Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta selection=2:6>2:6 trap=armed
-Apple released ArrowDown Command+Alt => unclaimed trap=armed
+Apple released ArrowDown Command+Alt => claimed selection=2:6>2:6 trap=armed
 Apple released ArrowDown Shift+Command+Alt => unclaimed trap=armed
 Apple released ArrowDown Control+Alt => unclaimed trap=armed
 Apple released ArrowDown Shift+Control+Alt => unclaimed trap=armed
@@ -640,6 +648,7 @@ Apple list ArrowUp Command => claimed selection=0:0>0:0 list=-
 Apple list ArrowUp Shift+Command => claimed selection=2:15>0:0 list=-
 Apple list ArrowUp Alt => claimed text=alpha beta\nepsilon zeta ga\n    gamma delta selection=1:15>1:15 list=-
 Apple list ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\nepsilon zeta ga\nepsilon zeta ga
+Apple list ArrowUp Command+Alt => claimed selection=1:15>1:15 list=-
 Apple list ArrowDown - => claimed list=1
 Apple list ArrowDown Shift => claimed unchanged
 Apple list ArrowDown Command => claimed unchanged
@@ -701,12 +710,14 @@ Apple card ArrowUp Command => claimed selection=0:0>0:0 card=-
 Apple card ArrowUp Shift+Command => claimed selection=1:6>0:0 card=-
 Apple card ArrowUp Alt => claimed text=    gamma delta\nalpha beta\nepsilon zeta selection=0:6>0:6 card=-
 Apple card ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta card=-
+Apple card ArrowUp Command+Alt => claimed selection=0:6>0:6 card=-
 Apple card ArrowDown - => claimed selection=2:6>2:6 card=-
 Apple card ArrowDown Shift => claimed selection=1:6>2:6 card=-
 Apple card ArrowDown Command => claimed selection=2:12>2:12 card=-
 Apple card ArrowDown Shift+Command => claimed selection=1:6>2:12 card=-
 Apple card ArrowDown Alt => claimed text=alpha beta\nepsilon zeta\n    gamma delta selection=2:6>2:6 card=-
 Apple card ArrowDown Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta selection=2:6>2:6 card=-
+Apple card ArrowDown Command+Alt => claimed selection=2:6>2:6 card=-
 Apple card Home - => claimed selection=1:4>1:4 card=-
 Apple card Home Shift => claimed selection=1:6>1:4 card=-
 Apple card Home Command => claimed selection=0:0>0:0 card=-
@@ -765,6 +776,7 @@ Apple panel ArrowUp Command => claimed selection=0:0>0:0 panel=-
 Apple panel ArrowUp Shift+Command => claimed selection=2:19>0:0 panel=-
 Apple panel ArrowUp Alt => claimed panel=2
 Apple panel ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add()\nepsilon zeta x.Add()
+Apple panel ArrowUp Command+Alt => claimed selection=1:15>1:15 panel=-
 Apple panel ArrowDown - => claimed panel=1
 Apple panel ArrowDown Shift => claimed unchanged
 Apple panel ArrowDown Command => claimed selection=2:20>2:20 panel=-
@@ -794,7 +806,7 @@ Apple panel Backspace Alt => claimed text=alpha beta\n    gamma delta\nepsilon z
 Apple panel Delete - => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add(
 Apple panel Delete Alt => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add(
 Apple panel Tab - => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add( ) selection=2:20>2:20
-Apple panel Tab Shift => claimed panel=-
+Apple panel Tab Shift => claimed unchanged
 Apple panel Escape - => claimed panel=-
 Apple panel Escape Shift => claimed panel=-
 Apple panel Space Shift+Command => claimed unchanged
@@ -806,10 +818,10 @@ Apple panel c Command => claimed clipboard=epsilon zeta x.Add()
 Apple panel x Command => claimed text=alpha beta\n    gamma delta\n selection=2:0>2:0 panel=- clipboard=epsilon zeta x.Add()
 
 Apple panel v Command => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add(PASTED) selection=2:25>2:25
-Apple panel / Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22 panel=-
-Apple panel / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22 panel=-
-Apple panel Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22 panel=-
-Apple panel Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22 panel=-
+Apple panel / Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22
+Apple panel / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22
+Apple panel Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22
+Apple panel Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22
 Apple panel k Shift+Command => claimed text=alpha beta\n    gamma delta selection=1:15>1:15 panel=-
 Apple problems ArrowLeft - => claimed unchanged
 Apple problems ArrowLeft Shift => claimed unchanged
@@ -834,6 +846,7 @@ Apple problems ArrowDown Command => claimed selection=2:12>2:12
 Apple problems ArrowDown Shift+Command => claimed selection=0:0>2:12
 Apple problems ArrowDown Alt => claimed text=    gamma delta\nalpha beta\nepsilon zeta selection=1:0>1:0
 Apple problems ArrowDown Shift+Alt => claimed text=alpha beta\nalpha beta\n    gamma delta\nepsilon zeta selection=1:0>1:0
+Apple problems ArrowDown Command+Alt => claimed selection=1:0>1:0
 Apple problems Home - => claimed unchanged
 Apple problems Home Shift => claimed unchanged
 Apple problems Home Command => claimed unchanged
@@ -889,12 +902,14 @@ Apple chord ArrowUp Command => claimed selection=0:0>0:0
 Apple chord ArrowUp Shift+Command => claimed selection=1:6>0:0
 Apple chord ArrowUp Alt => claimed text=    gamma delta\nalpha beta\nepsilon zeta selection=0:6>0:6
 Apple chord ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta
+Apple chord ArrowUp Command+Alt => claimed selection=0:6>0:6
 Apple chord ArrowDown - => claimed selection=2:6>2:6
 Apple chord ArrowDown Shift => claimed selection=1:6>2:6
 Apple chord ArrowDown Command => claimed selection=2:12>2:12
 Apple chord ArrowDown Shift+Command => claimed selection=1:6>2:12
 Apple chord ArrowDown Alt => claimed text=alpha beta\nepsilon zeta\n    gamma delta selection=2:6>2:6
 Apple chord ArrowDown Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta selection=2:6>2:6
+Apple chord ArrowDown Command+Alt => claimed selection=2:6>2:6
 Apple chord Home - => claimed selection=1:4>1:4
 Apple chord Home Shift => claimed selection=1:6>1:4
 Apple chord Home Command => claimed selection=0:0>0:0
@@ -948,10 +963,12 @@ Standard plain ArrowUp - => claimed selection=0:6>0:6
 Standard plain ArrowUp Shift => claimed selection=1:6>0:6
 Standard plain ArrowUp Alt => claimed text=    gamma delta\nalpha beta\nepsilon zeta selection=0:6>0:6
 Standard plain ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta
+Standard plain ArrowUp Command+Alt => claimed selection=0:6>0:6
 Standard plain ArrowDown - => claimed selection=2:6>2:6
 Standard plain ArrowDown Shift => claimed selection=1:6>2:6
 Standard plain ArrowDown Alt => claimed text=alpha beta\nepsilon zeta\n    gamma delta selection=2:6>2:6
 Standard plain ArrowDown Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta selection=2:6>2:6
+Standard plain ArrowDown Command+Alt => claimed selection=2:6>2:6
 Standard plain Home - => claimed selection=1:4>1:4
 Standard plain Home Shift => claimed selection=1:6>1:4
 Standard plain Home Command => claimed selection=0:0>0:0
@@ -1000,10 +1017,12 @@ Standard selection ArrowUp - => claimed selection=0:9>0:9
 Standard selection ArrowUp Shift => claimed selection=1:4>0:9
 Standard selection ArrowUp Alt => claimed text=    gamma delta\nalpha beta\nepsilon zeta selection=0:4>0:9
 Standard selection ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta
+Standard selection ArrowUp Command+Alt => claimed selection=0:9>0:9
 Standard selection ArrowDown - => claimed selection=2:9>2:9
 Standard selection ArrowDown Shift => claimed selection=1:4>2:9
 Standard selection ArrowDown Alt => claimed text=alpha beta\nepsilon zeta\n    gamma delta selection=2:4>2:9
 Standard selection ArrowDown Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta selection=2:4>2:9
+Standard selection ArrowDown Command+Alt => claimed selection=2:9>2:9
 Standard selection Home - => claimed selection=1:4>1:4
 Standard selection Home Shift => claimed selection=1:4>1:4
 Standard selection Home Command => claimed selection=0:0>0:0
@@ -1050,10 +1069,12 @@ Standard no-clipboard ArrowUp - => claimed selection=0:9>0:9
 Standard no-clipboard ArrowUp Shift => claimed selection=1:4>0:9
 Standard no-clipboard ArrowUp Alt => claimed text=    gamma delta\nalpha beta\nepsilon zeta selection=0:4>0:9
 Standard no-clipboard ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta
+Standard no-clipboard ArrowUp Command+Alt => claimed selection=0:9>0:9
 Standard no-clipboard ArrowDown - => claimed selection=2:9>2:9
 Standard no-clipboard ArrowDown Shift => claimed selection=1:4>2:9
 Standard no-clipboard ArrowDown Alt => claimed text=alpha beta\nepsilon zeta\n    gamma delta selection=2:4>2:9
 Standard no-clipboard ArrowDown Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta selection=2:4>2:9
+Standard no-clipboard ArrowDown Command+Alt => claimed selection=2:9>2:9
 Standard no-clipboard Home - => claimed selection=1:4>1:4
 Standard no-clipboard Home Shift => claimed selection=1:4>1:4
 Standard no-clipboard Home Command => claimed selection=0:0>0:0
@@ -1095,8 +1116,10 @@ Standard read-only ArrowRight Command => claimed selection=1:10>1:10
 Standard read-only ArrowRight Shift+Command => claimed selection=1:6>1:10
 Standard read-only ArrowUp - => claimed selection=0:6>0:6
 Standard read-only ArrowUp Shift => claimed selection=1:6>0:6
+Standard read-only ArrowUp Command+Alt => claimed selection=0:6>0:6
 Standard read-only ArrowDown - => claimed selection=2:6>2:6
 Standard read-only ArrowDown Shift => claimed selection=1:6>2:6
+Standard read-only ArrowDown Command+Alt => claimed selection=2:6>2:6
 Standard read-only Home - => claimed selection=1:4>1:4
 Standard read-only Home Shift => claimed selection=1:6>1:4
 Standard read-only Home Command => claimed selection=0:0>0:0
@@ -1159,7 +1182,7 @@ Standard released ArrowUp Command+Control => unclaimed trap=armed
 Standard released ArrowUp Shift+Command+Control => unclaimed trap=armed
 Standard released ArrowUp Alt => claimed text=    gamma delta\nalpha beta\nepsilon zeta selection=0:6>0:6 trap=armed
 Standard released ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta trap=armed
-Standard released ArrowUp Command+Alt => unclaimed trap=armed
+Standard released ArrowUp Command+Alt => claimed selection=0:6>0:6 trap=armed
 Standard released ArrowUp Shift+Command+Alt => unclaimed trap=armed
 Standard released ArrowUp Control+Alt => unclaimed trap=armed
 Standard released ArrowUp Shift+Control+Alt => unclaimed trap=armed
@@ -1175,7 +1198,7 @@ Standard released ArrowDown Command+Control => unclaimed trap=armed
 Standard released ArrowDown Shift+Command+Control => unclaimed trap=armed
 Standard released ArrowDown Alt => claimed text=alpha beta\nepsilon zeta\n    gamma delta selection=2:6>2:6 trap=armed
 Standard released ArrowDown Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta selection=2:6>2:6 trap=armed
-Standard released ArrowDown Command+Alt => unclaimed trap=armed
+Standard released ArrowDown Command+Alt => claimed selection=2:6>2:6 trap=armed
 Standard released ArrowDown Shift+Command+Alt => unclaimed trap=armed
 Standard released ArrowDown Control+Alt => unclaimed trap=armed
 Standard released ArrowDown Shift+Control+Alt => unclaimed trap=armed
@@ -1531,6 +1554,7 @@ Standard list ArrowUp - => claimed list=2
 Standard list ArrowUp Shift => claimed selection=2:15>1:15 list=-
 Standard list ArrowUp Alt => claimed text=alpha beta\nepsilon zeta ga\n    gamma delta selection=1:15>1:15 list=-
 Standard list ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\nepsilon zeta ga\nepsilon zeta ga
+Standard list ArrowUp Command+Alt => claimed selection=1:15>1:15 list=-
 Standard list ArrowDown - => claimed list=1
 Standard list ArrowDown Shift => claimed unchanged
 Standard list ArrowDown Shift+Alt => claimed text=alpha beta\n    gamma delta\nepsilon zeta ga\nepsilon zeta ga selection=3:15>3:15 list=-
@@ -1583,10 +1607,12 @@ Standard card ArrowUp - => claimed selection=0:6>0:6 card=-
 Standard card ArrowUp Shift => claimed selection=1:6>0:6 card=-
 Standard card ArrowUp Alt => claimed text=    gamma delta\nalpha beta\nepsilon zeta selection=0:6>0:6 card=-
 Standard card ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta card=-
+Standard card ArrowUp Command+Alt => claimed selection=0:6>0:6 card=-
 Standard card ArrowDown - => claimed selection=2:6>2:6 card=-
 Standard card ArrowDown Shift => claimed selection=1:6>2:6 card=-
 Standard card ArrowDown Alt => claimed text=alpha beta\nepsilon zeta\n    gamma delta selection=2:6>2:6 card=-
 Standard card ArrowDown Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta selection=2:6>2:6 card=-
+Standard card ArrowDown Command+Alt => claimed selection=2:6>2:6 card=-
 Standard card Home - => claimed selection=1:4>1:4 card=-
 Standard card Home Shift => claimed selection=1:6>1:4 card=-
 Standard card Home Command => claimed selection=0:0>0:0 card=-
@@ -1636,6 +1662,7 @@ Standard panel ArrowUp - => claimed panel=2
 Standard panel ArrowUp Shift => claimed selection=2:19>1:15 panel=-
 Standard panel ArrowUp Alt => claimed panel=2
 Standard panel ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add()\nepsilon zeta x.Add()
+Standard panel ArrowUp Command+Alt => claimed selection=1:15>1:15 panel=-
 Standard panel ArrowDown - => claimed panel=1
 Standard panel ArrowDown Shift => claimed unchanged
 Standard panel ArrowDown Alt => claimed panel=1
@@ -1662,7 +1689,7 @@ Standard panel Backspace Command => claimed text=alpha beta\n    gamma delta\nep
 Standard panel Delete - => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add(
 Standard panel Delete Command => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add(
 Standard panel Tab - => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add( ) selection=2:20>2:20
-Standard panel Tab Shift => claimed panel=-
+Standard panel Tab Shift => claimed unchanged
 Standard panel Escape - => claimed panel=-
 Standard panel Escape Shift => claimed panel=-
 Standard panel Space Shift+Command => claimed unchanged
@@ -1674,10 +1701,10 @@ Standard panel c Command => claimed clipboard=epsilon zeta x.Add()
 Standard panel x Command => claimed text=alpha beta\n    gamma delta\n selection=2:0>2:0 panel=- clipboard=epsilon zeta x.Add()
 
 Standard panel v Command => claimed text=alpha beta\n    gamma delta\nepsilon zeta x.Add(PASTED) selection=2:25>2:25
-Standard panel / Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22 panel=-
-Standard panel / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22 panel=-
-Standard panel Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22 panel=-
-Standard panel Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22 panel=-
+Standard panel / Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22
+Standard panel / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22
+Standard panel Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22
+Standard panel Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22
 Standard panel k Shift+Command => claimed text=alpha beta\n    gamma delta selection=1:15>1:15 panel=-
 Standard problems ArrowLeft - => claimed unchanged
 Standard problems ArrowLeft Shift => claimed unchanged
@@ -1694,6 +1721,7 @@ Standard problems ArrowDown - => claimed selection=1:0>1:0
 Standard problems ArrowDown Shift => claimed selection=0:0>1:0
 Standard problems ArrowDown Alt => claimed text=    gamma delta\nalpha beta\nepsilon zeta selection=1:0>1:0
 Standard problems ArrowDown Shift+Alt => claimed text=alpha beta\nalpha beta\n    gamma delta\nepsilon zeta selection=1:0>1:0
+Standard problems ArrowDown Command+Alt => claimed selection=1:0>1:0
 Standard problems Home - => claimed unchanged
 Standard problems Home Shift => claimed unchanged
 Standard problems Home Command => claimed unchanged
@@ -1741,10 +1769,12 @@ Standard chord ArrowUp - => claimed selection=0:6>0:6
 Standard chord ArrowUp Shift => claimed selection=1:6>0:6
 Standard chord ArrowUp Alt => claimed text=    gamma delta\nalpha beta\nepsilon zeta selection=0:6>0:6
 Standard chord ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta
+Standard chord ArrowUp Command+Alt => claimed selection=0:6>0:6
 Standard chord ArrowDown - => claimed selection=2:6>2:6
 Standard chord ArrowDown Shift => claimed selection=1:6>2:6
 Standard chord ArrowDown Alt => claimed text=alpha beta\nepsilon zeta\n    gamma delta selection=2:6>2:6
 Standard chord ArrowDown Shift+Alt => claimed text=alpha beta\n    gamma delta\n    gamma delta\nepsilon zeta selection=2:6>2:6
+Standard chord ArrowDown Command+Alt => claimed selection=2:6>2:6
 Standard chord Home - => claimed selection=1:4>1:4
 Standard chord Home Shift => claimed selection=1:6>1:4
 Standard chord Home Command => claimed selection=0:0>0:0

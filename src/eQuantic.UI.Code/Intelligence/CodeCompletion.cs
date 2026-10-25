@@ -486,6 +486,12 @@ public sealed class CodeCompletion
         var text = offer.Item.InsertText ?? offer.Item.Label;
         Close(raise: true);
 
+        // With several carets the entry goes in at each, replacing around each what it replaces around the
+        // primary, as VS Code applies one suggestion at every cursor (#1012).
+        var caret = _editor.Caret;
+        if (_editor.HasOtherCarets && range.Start.Line == caret.Line && range.End.Line == caret.Line)
+            return _editor.ReplaceAroundEveryCaret(caret.Column - range.Start.Column, range.End.Column - caret.Column, text);
+
         // Accepting what is already there is a step that changes nothing, and nothing to undo.
         if (_editor.Document.TextIn(range) == text)
         {

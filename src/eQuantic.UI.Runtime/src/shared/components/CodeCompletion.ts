@@ -104,8 +104,8 @@ export class CodeCompletion {
     ask(trigger: CodeCompletionTriggerValue, character: string | null, providers: any[], announce: boolean) {
         let document = this._editor.document;
         let position = this._editor.caret;
-        let $n9: any; 
-        let context = ($n9 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n9.character = character, $n9);
+        let $n12: any; 
+        let context = ($n12 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n12.character = character, $n12);
         let askedLineLength = document.line(position.line).length;
         let word = this.word();
         let requests: CodeCompletionRequest[] = [];
@@ -309,6 +309,8 @@ export class CodeCompletion {
         let range = this.rangeOf(offer);
         let text = offer.item.insertText ?? offer.item.label;
         this.close(true);
+        let caret = this._editor.caret;
+        if (this._editor.hasOtherCarets && range.start.line === caret.line && range.end.line === caret.line) return this._editor.replaceAroundEveryCaret(caret.column - range.start.column, range.end.column - caret.column, text);
         if (this._editor.document.textIn(range) === text) {
             this._editor.selection = new CodeRange(range.end);
             return true;

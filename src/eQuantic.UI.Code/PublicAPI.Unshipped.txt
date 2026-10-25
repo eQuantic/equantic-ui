@@ -186,9 +186,6 @@ eQuantic.UI.Code.CodeEditorController.InsertLine(eQuantic.UI.Code.CodeDirection 
 *REMOVED*eQuantic.UI.Code.CodeHistory.Record(eQuantic.UI.Code.CodeEdit! edit) -> void
 *REMOVED*eQuantic.UI.Code.CodeHistory.Redo(eQuantic.UI.Code.CodeDocument! document, out eQuantic.UI.Code.CodeRange selection, out eQuantic.UI.Code.CodeRange replaced, out eQuantic.UI.Code.CodeRange written) -> eQuantic.UI.Code.CodeDocument?
 *REMOVED*eQuantic.UI.Code.CodeHistory.Undo(eQuantic.UI.Code.CodeDocument! document, out eQuantic.UI.Code.CodeRange selection, out eQuantic.UI.Code.CodeRange replaced, out eQuantic.UI.Code.CodeRange written) -> eQuantic.UI.Code.CodeDocument?
-eQuantic.UI.Code.CodeHistory.Redo(eQuantic.UI.Code.CodeDocument! document, out eQuantic.UI.Code.CodeRange selection, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeEdit!>! made) -> eQuantic.UI.Code.CodeDocument?
-eQuantic.UI.Code.CodeHistory.Record(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeEdit!>! edits) -> void
-eQuantic.UI.Code.CodeHistory.Undo(eQuantic.UI.Code.CodeDocument! document, out eQuantic.UI.Code.CodeRange selection, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeEdit!>! made) -> eQuantic.UI.Code.CodeDocument?
 *REMOVED*eQuantic.UI.Code.CodeEditorController.Changed -> System.Action<eQuantic.UI.Code.CodeEdit?>?
 eQuantic.UI.Code.CodeChange
 eQuantic.UI.Code.CodeChange.<Clone>$() -> eQuantic.UI.Code.CodeChange!
@@ -205,3 +202,35 @@ eQuantic.UI.Code.CodeChange.Edits.init -> void
 eQuantic.UI.Code.CodeChange.Replaced.get -> bool
 eQuantic.UI.Code.CodeChange.Replaced.init -> void
 eQuantic.UI.Code.CodeEditorController.Changed -> System.Action<eQuantic.UI.Code.CodeChange!>?
+eQuantic.UI.Code.CodeHistory.Undo(eQuantic.UI.Code.CodeDocument! document, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>! selections, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeEdit!>! made) -> eQuantic.UI.Code.CodeDocument?
+eQuantic.UI.Code.CodeHistory.Redo(eQuantic.UI.Code.CodeDocument! document, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>! selections, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeEdit!>! made) -> eQuantic.UI.Code.CodeDocument?
+eQuantic.UI.Code.CodeHistory.Record(eQuantic.UI.Code.CodeStep! step) -> void
+eQuantic.UI.Code.CodeStep
+eQuantic.UI.Code.CodeStep.<Clone>$() -> eQuantic.UI.Code.CodeStep!
+eQuantic.UI.Code.CodeStep.CodeStep(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeEdit!>! Edits, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>! Before, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>! After) -> void
+eQuantic.UI.Code.CodeStep.Deconstruct(out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeEdit!>! Edits, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>! Before, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>! After) -> void
+eQuantic.UI.Code.CodeStep.Equals(eQuantic.UI.Code.CodeStep? other) -> bool
+override eQuantic.UI.Code.CodeStep.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeStep.GetHashCode() -> int
+override eQuantic.UI.Code.CodeStep.ToString() -> string!
+static eQuantic.UI.Code.CodeStep.operator !=(eQuantic.UI.Code.CodeStep? left, eQuantic.UI.Code.CodeStep? right) -> bool
+static eQuantic.UI.Code.CodeStep.operator ==(eQuantic.UI.Code.CodeStep? left, eQuantic.UI.Code.CodeStep? right) -> bool
+eQuantic.UI.Code.CodeStep.Edits.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeEdit!>!
+eQuantic.UI.Code.CodeStep.Edits.init -> void
+eQuantic.UI.Code.CodeStep.Before.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>!
+eQuantic.UI.Code.CodeStep.Before.init -> void
+eQuantic.UI.Code.CodeStep.After.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>!
+eQuantic.UI.Code.CodeStep.After.init -> void
+eQuantic.UI.Code.CodeEditorController.Selections.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>!
+eQuantic.UI.Code.CodeEditorController.Selections.set -> void
+eQuantic.UI.Code.CodeCommand.AddCursorAbove = 67 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.AddCursorBelow = 68 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.AddNextOccurrence = 69 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.SelectAllOccurrences = 70 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.RemoveSecondaryCursors = 71 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeEditorController.AddCursor(eQuantic.UI.Code.CodeDirection direction) -> bool
+eQuantic.UI.Code.CodeEditorController.AddNextOccurrence() -> bool
+eQuantic.UI.Code.CodeEditorController.SelectAllOccurrences() -> bool
+eQuantic.UI.Code.CodeEditorController.RemoveSecondaryCursors() -> bool
+eQuantic.UI.Code.CodeEditorController.SelectionsIn(int first, int last) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>!
+eQuantic.UI.Code.CodeEditorController.CaretLinesIn(int first, int last) -> System.Collections.Generic.IReadOnlyList<int>!

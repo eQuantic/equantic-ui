@@ -660,6 +660,10 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     input.events[MOUNTED_HOOK] = ((element: HTMLElement) =>
       element.focus({ preventScroll: true })) as unknown as EventHandler;
   }
+  // Keyed, so it is always the same element whatever stands around it: matched by place among the
+  // carets before it and the notes after, a press that added carets while a note appeared matched it
+  // with a new caret's mark, and the input made anew in its place left the keyboard on the page (#1012).
+  input.key = `${path}/input`;
   surface.children.push(input);
 
   // What the surface EXPLAINS (C# twin: LowerCodeSurface): each note over the code and the caret, at

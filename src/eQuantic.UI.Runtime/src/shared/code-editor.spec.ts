@@ -109,6 +109,52 @@ describe('code surface (web)', () => {
     expect(heard, 'the move and its undo, one change of two replacements each').toEqual(['>one\n, one\n>', '>one\n, one\n>']);
   });
 
+  it('adds the next occurrence on ⌘D, types at both carets, and draws a caret at each (#1012)', () => {
+    const { editor, lowered } = surfaceFor('count = count + counter;');
+    editor.selection = new CodeRange(new CodePosition(0, 2));
+
+    expect(press(lowered, 'd', { meta: true }), 'the editor claims ⌘D').toBe(true);
+    expect(press(lowered, 'd', { meta: true })).toBe(true);
+    expect(editor.selections.length, 'two whole occurrences, counter left out').toBe(2);
+    type(lowered, 'n');
+
+    expect(editor.document.text).toBe('n = n + counter;');
+    const node = lowerVisualNode(new CodeSurface(new Text('', 'labelSmall'), editor) as never, {
+      textPrimary: photonTheme.textPrimary,
+      componentContext: { theme: photonTheme, typeScale: 1 },
+    });
+    expect(node.children.filter((c) => c.attributes['class'] === 'eq-code-caret').length).toBe(2);
+  });
+
+  it('keeps its input when the carets change in number, so the keyboard stays in the code (#1012)', () => {
+    const editor = new CodeEditorController('count = count + count;\nx', CodeLanguages.for('csharp'));
+    editor.grid = new CodeGrid(new Point(12, 12), new Size(COLUMN, LINE));
+    editor.selection = new CodeRange(new CodePosition(0, 2));
+    const lower = (notes: VisualNode[]) =>
+      lowerVisualNode(new CodeSurface(new Text('', 'labelSmall'), editor, { notes }) as never, {
+        textPrimary: photonTheme.textPrimary,
+        componentContext: { theme: photonTheme, typeScale: 1 },
+      });
+    const parent = document.createElement('div');
+    document.body.appendChild(parent);
+    const reconciler = new Reconciler();
+    const first = lower([]);
+    reconciler.reconcile(parent, null, first);
+    const input = parent.querySelector('textarea')!;
+    input.focus();
+
+    // Two more carets, and a note over the code at the same time, as a list opening as they type.
+    editor.addNextOccurrence();
+    editor.addNextOccurrence();
+    editor.addNextOccurrence();
+    reconciler.reconcile(parent, first, lower([new Positioned(new Text('a note', 'labelSmall'))]), 0);
+
+    expect(parent.querySelectorAll('.eq-code-caret').length).toBe(3);
+    expect(parent.querySelector('textarea'), 'the same input, never one made anew').toBe(input);
+    expect(document.activeElement, 'the keyboard is still in the code').toBe(input);
+    parent.remove();
+  });
+
   it('types through an input of its own, which says what it is', () => {
     const { lowered } = surfaceFor('var x = 1;');
     const input = inputOf(lowered);
