@@ -45,6 +45,17 @@ eQuantic.UI.Primitives.IAppTheme.ScrollbarTrack.get -> eQuantic.UI.Primitives.Co
 eQuantic.UI.Primitives.IAppTheme.Selection.get -> eQuantic.UI.Primitives.ColorToken
 static eQuantic.UI.Primitives.EffectiveTypeStyle.WithThemeFace(this eQuantic.UI.Primitives.TypeStyle style, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.TypeStyle
 static eQuantic.UI.Primitives.EffectiveTypeStyle.Resolve(this eQuantic.UI.Primitives.TextEntry! entry, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.TypeStyle
+eQuantic.UI.Primitives.ISheetSurfaceModel.Carets.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
+eQuantic.UI.Primitives.ISheetSurfaceModel.FocusChanged(bool focused) -> void
+eQuantic.UI.Primitives.ISheetSurfaceModel.FocusVersion.get -> int
+eQuantic.UI.Primitives.ISheetSurfaceModel.HandleKey(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.KeyboardConvention convention, eQuantic.UI.Primitives.ITextClipboard? clipboard) -> bool
+eQuantic.UI.Primitives.ISheetSurfaceModel.InputBounds.get -> eQuantic.UI.Primitives.Rect
+eQuantic.UI.Primitives.ISheetSurfaceModel.SetComposition(string! text) -> bool
+eQuantic.UI.Primitives.SheetSurface.CaretColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetSurface.CaretColor.init -> void
+eQuantic.UI.Primitives.SheetTheme.EntrySelection.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.EntrySelection.init -> void
+*REMOVED*eQuantic.UI.Primitives.ISheetSurfaceModel.HandleKey(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.ITextClipboard? clipboard) -> bool
 *REMOVED*eQuantic.UI.Primitives.IAppTheme.MonoFamily.get -> string?
 *REMOVED*eQuantic.UI.Primitives.TypeStyle.Deconstruct(out float Size, out float LineHeight, out eQuantic.UI.Primitives.FontWeight Weight, out float Tracking, out float MaxScale, out bool Mono, out bool Italic, out string? Family) -> void
 *REMOVED*eQuantic.UI.Primitives.TypeStyle.Family.get -> string?

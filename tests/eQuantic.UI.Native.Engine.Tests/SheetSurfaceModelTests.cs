@@ -51,9 +51,11 @@ public class SheetSurfaceModelTests
         vocabulary.GetExportedTypes().Select(type => type.Name)
             .Should().NotIntersectWith(engine.GetExportedTypes().Select(type => type.Name),
                 "the spreadsheet's controller, document, history, keymap and cells are the engine's (#185)");
+        var code = typeof(eQuantic.UI.Code.CodeEditorController).Assembly.GetName().Name;
         engine.GetReferencedAssemblies().Select(name => name.Name)
             .Should().Contain(vocabulary.GetName().Name, "the engine is written against the vocabulary")
-            .And.NotContain(name => name!.StartsWith("eQuantic.UI.") && name != vocabulary.GetName().Name,
+            .And.Contain(code, "and a cell's entry is the code engine's document (#983)")
+            .And.NotContain(name => name!.StartsWith("eQuantic.UI.") && name != vocabulary.GetName().Name && name != code,
                 "and against nothing else of the SDK");
     }
 
@@ -113,7 +115,7 @@ public class SheetSurfaceModelTests
     }
 
     [Fact]
-    public void ADrag_FromAPlainPress_MovesTheFarCorner_AndTheReleaseChangesNothing()
+    public void ADrag_FromAPlainPress_MovesTheFarCorner_AndTheReleaseEndsTheRange()
     {
         var sheet = new SheetController(rows: 50, cols: 8);
         var model = Press(sheet, CenterOf(1, 1));
@@ -121,7 +123,10 @@ public class SheetSurfaceModelTests
         model.HandlePointer(PointerPhase.Move, CenterOf(3, 3), KeyModifiers.None, 1, PointerKind.Mouse).Should().BeTrue();
         model.HandlePointer(PointerPhase.Move, CenterOf(3, 3), KeyModifiers.None, 1, PointerKind.Mouse)
             .Should().BeFalse("the same cell again changes nothing");
-        model.HandlePointer(PointerPhase.Up, CenterOf(3, 3), KeyModifiers.None, 1, PointerKind.Mouse).Should().BeFalse();
+        sheet.Selecting.Should().BeTrue();
+        model.HandlePointer(PointerPhase.Up, CenterOf(3, 3), KeyModifiers.None, 1, PointerKind.Mouse)
+            .Should().BeTrue("the range is no longer being drawn, which the name box shows");
+        sheet.Selecting.Should().BeFalse();
 
         sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 1), new CellRef(3, 3)));
         sheet.ActiveCell.Should().Be(new CellRef(3, 3));
@@ -153,7 +158,7 @@ public class SheetSurfaceModelTests
         Press(sheet, CenterOf(2, 2), clicks: 2);
 
         sheet.Editing.Should().BeTrue();
-        sheet.Draft.Should().Be("42");
+        sheet.Entry.Document.Text.Should().Be("42");
         sheet.ActiveCell.Should().Be(new CellRef(2, 2));
     }
 
@@ -168,8 +173,9 @@ public class SheetSurfaceModelTests
         model.CursorAt(new Point(2 * 96 - 3, 2 * 28 - 3)).Should().Be(PointerCursor.Crosshair);
         model.CursorAt(CenterOf(1, 1)).Should().Be(PointerCursor.Default, "a cell's middle grabs nothing");
 
-        sheet.BeginEdit("x");
-        model.CursorAt(new Point(2 * 96 - 3, 2 * 28 - 3)).Should().Be(PointerCursor.Default, "an edit draws no handle");
+        sheet.BeginEdit("x", SheetEditMode.Enter);
+        model.CursorAt(new Point(2 * 96 - 3, 2 * 28 - 3)).Should().Be(PointerCursor.Text,
+            "an edit draws no handle: the corner is the cell's editor, which takes a beam");
     }
 
     [Fact]
@@ -523,9 +529,9 @@ public class SheetSurfaceModelTests
         model.HandleText("4").Should().BeTrue();
         model.HandleText("2").Should().BeTrue();
         model.HandleText("").Should().BeFalse("nothing typed is nothing taken");
-        sheet.Draft.Should().Be("42");
+        sheet.Entry.Document.Text.Should().Be("42");
 
-        model.HandleKey("Enter", KeyModifiers.None, null).Should().BeTrue();
+        model.HandleKey("Enter", KeyModifiers.None, KeyboardConvention.Standard, null).Should().BeTrue();
         sheet.Document.GetCell(new CellRef(0, 0)).Should().Be("42");
         sheet.ActiveCell.Should().Be(new CellRef(1, 0));
     }
@@ -542,14 +548,14 @@ public class SheetSurfaceModelTests
         var clipboard = new FakeClipboard();
         ISheetSurfaceModel model = sheet;
 
-        model.HandleKey("c", KeyModifiers.Command, clipboard).Should().BeTrue();
+        model.HandleKey("c", KeyModifiers.Command, KeyboardConvention.Standard, clipboard).Should().BeTrue();
         clipboard.Held.Should().Be("1\t2\n3\t4");
 
-        model.HandleKey("x", KeyModifiers.Command, clipboard).Should().BeTrue();
+        model.HandleKey("x", KeyModifiers.Command, KeyboardConvention.Standard, clipboard).Should().BeTrue();
         sheet.Document.GetCell(new CellRef(1, 1)).Should().Be("");
 
         sheet.Selection = new SheetRange(new CellRef(5, 5));
-        model.HandleKey("v", KeyModifiers.Command, clipboard).Should().BeTrue();
+        model.HandleKey("v", KeyModifiers.Command, KeyboardConvention.Standard, clipboard).Should().BeTrue();
         sheet.Document.GetCell(new CellRef(6, 6)).Should().Be("4");
     }
 
@@ -560,7 +566,7 @@ public class SheetSurfaceModelTests
         sheet.Document.SetCell(new CellRef(0, 0), "7");
         ISheetSurfaceModel model = sheet;
 
-        FluentActions.Invoking(() => model.HandleKey("x", KeyModifiers.Command, new RefusingClipboard()))
+        FluentActions.Invoking(() => model.HandleKey("x", KeyModifiers.Command, KeyboardConvention.Standard, new RefusingClipboard()))
             .Should().Throw<IOException>();
 
         sheet.Document.GetCell(new CellRef(0, 0)).Should().Be("7", "the copy reaches the clipboard before anything is emptied");
@@ -574,9 +580,9 @@ public class SheetSurfaceModelTests
         sheet.Document.SetCell(new CellRef(0, 0), "7");
         ISheetSurfaceModel model = sheet;
 
-        model.HandleKey("c", KeyModifiers.Command, null).Should().BeFalse();
-        model.HandleKey("x", KeyModifiers.Command, null).Should().BeFalse();
-        model.HandleKey("v", KeyModifiers.Command, null).Should().BeFalse();
+        model.HandleKey("c", KeyModifiers.Command, KeyboardConvention.Standard, null).Should().BeFalse();
+        model.HandleKey("x", KeyModifiers.Command, KeyboardConvention.Standard, null).Should().BeFalse();
+        model.HandleKey("v", KeyModifiers.Command, KeyboardConvention.Standard, null).Should().BeFalse();
 
         sheet.Document.GetCell(new CellRef(0, 0)).Should().Be("7", "a cut with nowhere to go takes nothing");
         model.CopyText().Should().Be("7", "the platform's copy event asks the model for the text");
@@ -592,9 +598,9 @@ public class SheetSurfaceModelTests
         var sheet = new SheetController(rows: 50, cols: 8);
         ISheetSurfaceModel model = sheet;
 
-        model.HandleKey("Escape", KeyModifiers.None, null).Should().BeFalse();
+        model.HandleKey("Escape", KeyModifiers.None, KeyboardConvention.Standard, null).Should().BeFalse();
         model.HandleText("a");
-        model.HandleKey("Escape", KeyModifiers.None, null).Should().BeTrue("inside an edit it cancels the draft");
+        model.HandleKey("Escape", KeyModifiers.None, KeyboardConvention.Standard, null).Should().BeTrue("inside an edit it cancels the draft");
         sheet.Editing.Should().BeFalse();
     }
 }

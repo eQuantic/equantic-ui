@@ -69,12 +69,14 @@ internal sealed partial class EmitVisitor
 
     private void EmitSheet(SheetSurface sheetSurface, EmitState s)
     {
-        // The child paints EVERYTHING — cells, selection, active ring, the editing draft —
-        // write-once in the shared component, so web and native cannot drift. This node only
-        // registers the input region.
+        // The child paints the cells, the selection, the active ring and the cell's editor, write-once in
+        // the shared component, so web and native cannot drift. This node registers the input region and
+        // paints the one mark that blinks, the entry's caret, over everything the child drew, as a code
+        // surface paints its own.
         s.Input.Add(new SheetRegion(s.Node.Bounds, sheetSurface, PositionOf(s.Node)));
         foreach (var child in s.Node)
             Emit(s with { Node = child });
+        EmitCarets(s.Node, sheetSurface.Model.Carets, sheetSurface.CaretColor, s.Theme, s.Mode, s.Builder, s.Press);
     }
 
     // An Overlay queues for the viewport pass — nothing renders in the page flow. Its child is

@@ -43,10 +43,10 @@ internal sealed partial class EmitVisitor
     }
 
     /// <summary>The code surface's carets, painted once its child has been — see
-    /// <see cref="EmitCodeCarets"/>.</summary>
+    /// <see cref="EmitCarets"/>.</summary>
     private void EmitCodeCaret(CodeSurface surface, EmitState s)
     {
-        EmitCodeCarets(s.Node, surface, s.Theme, s.Mode, s.Builder, s.Press);
+        EmitCarets(s.Node, surface.Model.Carets, surface.CaretColor, s.Theme, s.Mode, s.Builder, s.Press);
     }
 
     /// <summary>2dp: thin enough to sit between glyphs, thick enough to see on a scaled display.</summary>
@@ -349,14 +349,13 @@ internal sealed partial class EmitVisitor
     /// coordinates, and this only offsets them by where the surface landed.
     /// </para>
     /// </summary>
-    private static void EmitCodeCarets(LayoutNode node, CodeSurface surface, IAppTheme theme,
-        ThemeMode mode, DisplayListBuilder builder, PressScope press)
+    private static void EmitCarets(LayoutNode node, IReadOnlyList<Rect> carets, ColorToken? caretColor,
+        IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, PressScope press)
     {
         var editing = press.TextAt is not null && ReferenceEquals(node.Element, press.TextAt);
-        if (!editing || !press.CaretVisible) return;
+        if (!editing || !press.CaretVisible || carets.Count == 0) return;
 
-        var ink = Paint.Solid((surface.CaretColor ?? theme.TextPrimary).Resolve(mode));
-        var carets = surface.Model.Carets;
+        var ink = Paint.Solid((caretColor ?? theme.TextPrimary).Resolve(mode));
         for (var i = 0; i < carets.Count; i++)
         {
             var caret = carets[i];

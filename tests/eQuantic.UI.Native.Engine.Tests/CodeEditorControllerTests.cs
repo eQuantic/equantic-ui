@@ -606,6 +606,40 @@ public class CodeEditorControllerTests
         editor.Undo();
         editor.Document.Text.Should().Be("var name = 1;");
     }
+
+    // ---- one line ---------------------------------------------------------------------------------------
+
+    [Fact]
+    public void AOneLineDocument_LeavesOutTheBreaksItIsGiven()
+    {
+        var editor = Editor("B", CodeLanguages.PlainText);
+        editor.SingleLine = true;
+
+        editor.HandleText("7\n").Should().BeTrue();
+        editor.Paste(":C\r\n8").Should().BeTrue();
+        editor.SetComposition("x\ny").Should().BeTrue();
+        editor.HandleText("xy").Should().BeTrue();
+
+        editor.Document.Text.Should().Be("B7:C8xy", "a break typed, pasted or composed is left out, as Flutter's single-line field leaves it");
+        editor.Document.LineCount.Should().Be(1);
+    }
+
+    [Theory]
+    [InlineData(CodeCommand.NewLine)]
+    [InlineData(CodeCommand.CopyLinesDown)]
+    [InlineData(CodeCommand.CopyLinesUp)]
+    [InlineData(CodeCommand.InsertLineBelow)]
+    [InlineData(CodeCommand.InsertLineAbove)]
+    public void AOneLineDocument_RefusesACommandThatMakesALine(CodeCommand command)
+    {
+        var editor = Editor("B7", CodeLanguages.PlainText);
+        editor.SingleLine = true;
+
+        editor.Execute(command);
+
+        editor.Document.Text.Should().Be("B7");
+        editor.Document.LineCount.Should().Be(1);
+    }
 }
 
 /// <summary>Folding, which every editor of this class has, derived from indentation alone so it

@@ -33,15 +33,29 @@ function surfaceFor(sheet: SheetController): HtmlNode {
 
 const events = (node: HtmlNode) => (node as { events: Record<string, Handler> }).events;
 
-/** A stand-in grid element: zeroed rect (so clientX/Y ARE grid coordinates) and a focus sink. */
+/** The surface's TEXT DOOR: the textarea its keys, its text and its clipboard come through. */
+const door = (node: HtmlNode) => node.children.find((child) => child.tag === 'textarea') as HtmlNode;
+const doorEvents = (node: HtmlNode) => events(door(node));
+
+/** A stand-in grid element: zeroed rect (so clientX/Y ARE grid coordinates), and its door, a focus sink. */
 function makeTarget(): HTMLElement {
   const target = document.createElement('div');
-  target.focus = () => {};
+  const input = document.createElement('textarea');
+  input.className = 'eq-code-input';
+  input.focus = () => {};
+  target.appendChild(input);
   return target;
 }
 
 function key(node: HtmlNode, keyName: string, init: KeyboardEventInit = {}): void {
-  events(node)['keydown'](new KeyboardEvent('keydown', { key: keyName, ...init }));
+  doorEvents(node)['keydown'](new KeyboardEvent('keydown', { key: keyName, cancelable: true, ...init }));
+}
+
+/** Text the platform decided the user typed: what `beforeinput` carries, never the keydown. */
+function type(node: HtmlNode, text: string): void {
+  for (const c of text) {
+    doorEvents(node)['beforeinput'](new InputEvent('beforeinput', { inputType: 'insertText', data: c, cancelable: true }));
+  }
 }
 
 type PointerInit = MouseEventInit & { pointerType?: string };
@@ -68,11 +82,12 @@ function lift(node: HtmlNode, target: HTMLElement, init: PointerInit = {}): void
 }
 
 describe('SheetSurface on the web', () => {
-  it('is a focusable grid whose keyboard is the shared keymap', () => {
+  it('is a grid whose door holds its stop of the Tab order, and whose keyboard is the shared keymap', () => {
     const sheet = new SheetController(50, 8);
     const node = surfaceFor(sheet);
 
-    expect((node as { attributes: Record<string, string> }).attributes['tabindex']).toBe('0');
+    expect((door(node) as { attributes: Record<string, string> }).attributes['tabindex']).toBe('0');
+    expect((node as { attributes: Record<string, string> }).attributes['tabindex']).toBeUndefined();
     expect((node as { attributes: Record<string, string> }).attributes['role']).toBe('grid');
     // A selection drag must paint the band, not the browser's blue text sweep.
     expect(effectiveStyle(node)).toContain('user-select: none');
@@ -89,10 +104,10 @@ describe('SheetSurface on the web', () => {
     sheet.document.setCell(new CellRef(0, 0), 'old');
     const node = surfaceFor(sheet);
 
-    key(node, '4');
-    key(node, '2');
+    type(node, '4');
+    type(node, '2');
     expect(sheet.editing).toBe(true);
-    expect(sheet.draft).toBe('42');
+    expect(sheet.entry.document.text).toBe('42');
     expect(sheet.document.getCell(new CellRef(0, 0))).toBe('old');
 
     key(node, 'Enter');
@@ -104,11 +119,11 @@ describe('SheetSurface on the web', () => {
     const sheet = new SheetController(50, 8);
     const node = surfaceFor(sheet);
 
-    key(node, 'x');
+    type(node, 'x');
     key(node, 'Escape');
     expect(sheet.document.getCell(new CellRef(0, 0))).toBe('');
 
-    key(node, 'a');
+    type(node, 'a');
     key(node, 'Enter');
     key(node, 'z', { metaKey: true });
     expect(sheet.document.getCell(new CellRef(0, 0))).toBe('');
@@ -174,7 +189,7 @@ describe('SheetSurface on the web', () => {
 
     expect(sheet.activeCell).toEqual(new CellRef(1, 1));
     expect(sheet.editing).toBe(true);
-    expect(sheet.draft).toBe('42');
+    expect(sheet.entry.document.text).toBe('42');
   });
 
   it('reads a press against the window the engine was handed', () => {
@@ -203,10 +218,13 @@ describe('SheetSurface on the web', () => {
     const focusOptions: (FocusOptions | undefined)[] = [];
     const target = document.createElement('div');
     target.getBoundingClientRect = () => ({ left: 0, top, x: 0, y: top, width: 768, height: 5600, right: 768, bottom: top + 5600, toJSON: () => ({}) }) as DOMRect;
-    target.focus = (options?: FocusOptions) => {
+    const input = document.createElement('textarea');
+    input.className = 'eq-code-input';
+    input.focus = (options?: FocusOptions) => {
       focusOptions.push(options);
       if (!options?.preventScroll) top -= 127;
     };
+    target.appendChild(input);
 
     press(node, target, { clientX: 96 + 48, clientY: 28 * 2 + 14 });
     lift(node, target, { clientX: 96 + 48, clientY: 28 * 2 + 14 });
@@ -220,7 +238,7 @@ describe('SheetSurface on the web', () => {
     const node = surfaceFor(sheet);
 
     const copyKey = new KeyboardEvent('keydown', { key: 'c', metaKey: true, cancelable: true });
-    events(node)['keydown'](copyKey);
+    doorEvents(node)['keydown'](copyKey);
 
     expect(copyKey.defaultPrevented).toBe(false);
     expect(sheet.editing).toBe(false);
@@ -292,7 +310,7 @@ describe('SheetSurface on the web', () => {
         },
       },
     });
-    expect(() => events(node)['cut'](cutEvent)).toThrow();
+    expect(() => doorEvents(node)['cut'](cutEvent)).toThrow();
 
     expect(sheet.document.getCell(new CellRef(0, 0))).toBe('kept');
     expect(sheet.history.canUndo).toBe(false);
@@ -304,7 +322,7 @@ describe('SheetSurface on the web', () => {
     const node = surfaceFor(sheet);
 
     const cutEvent = new Event('cut', { cancelable: true }) as ClipboardEvent;
-    events(node)['cut'](cutEvent);
+    doorEvents(node)['cut'](cutEvent);
 
     expect(sheet.document.getCell(new CellRef(0, 0))).toBe('kept');
   });
@@ -332,7 +350,7 @@ describe('SheetSurface on the web', () => {
     Object.defineProperty(copyEvent, 'clipboardData', {
       value: { setData: (type: string, value: string) => (written[type] = value) },
     });
-    events(node)['copy'](copyEvent);
+    doorEvents(node)['copy'](copyEvent);
     expect(written['text/plain']).toContain('a\tb');
 
     const target = new SheetController(50, 8);
@@ -341,7 +359,7 @@ describe('SheetSurface on the web', () => {
     Object.defineProperty(pasteEvent, 'clipboardData', {
       value: { getData: () => 'x\ty' },
     });
-    events(targetNode)['paste'](pasteEvent);
+    doorEvents(targetNode)['paste'](pasteEvent);
     expect(target.document.getCell(new CellRef(0, 0))).toBe('x');
     expect(target.document.getCell(new CellRef(0, 1))).toBe('y');
   });

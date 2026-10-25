@@ -24,4 +24,8 @@ public static class SpreadsheetsUI
             Height = height,
             Overscan = overscan,
         };
+
+    public static Spreadsheets.FormulaBar FormulaBar(SheetController controller) => new(controller);
+
+    public static Spreadsheets.NameBox NameBox(SheetController controller) => new(controller);
 }

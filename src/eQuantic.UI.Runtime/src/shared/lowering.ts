@@ -118,6 +118,7 @@ import type {
   TableViewportNode,
   VisualNodeValue,
 } from './nodes';
+import type { KeyboardConventionValue } from './enums.generated';
 import { declareShortcut, shortcutMark } from '../dom/shortcuts';
 import { installScrolledController } from './scrolled-pinned';
 import { declareScrollViewport } from './scroll-viewports';
@@ -752,6 +753,128 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   }
 
   const changed = () => node.onChanged?.();
+  // Copy and Cut run through the browser's copy event on whatever key the editor binds them to.
+  openTextDoor(input, model, changed, surfaceClipboardOf(model), () => false);
+
+  // The pointer's whole life goes to the model: the press, every move while it is held — which is
+  // what draws a selection — and the release. CAPTURED on the press, so a drag that leaves the
+  // surface keeps reporting until the button comes up, the way a selection drag does everywhere.
+  const local = (event: MouseEvent) => {
+    const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    return { x: event.clientX - box.left, y: event.clientY - box.top };
+  };
+  // The keyboard goes to the surface's input, WITHOUT the scroll `focus()` does by default: the
+  // surface is taller than its viewport, so the browser scrolled the page to bring its top into
+  // view on every press — measured: 78px on the first click of a double click, which put the second
+  // click on another line and selected the wrong word.
+  const focusInput = (event: MouseEvent) =>
+    ((event.currentTarget as HTMLElement).querySelector('.eq-code-input') as HTMLElement | null)?.focus(
+      { preventScroll: true },
+    );
+  // THE PRESS. A mouse's press is read from `mousedown`, because that is the only event that
+  // carries the platform's click count: Chrome reports `detail: 0` on every `pointerdown`, measured,
+  // so a surface that counted clicks there never saw a double click — the word and the line were
+  // never selectable here. A finger or a pen has no click count to lose, and its compatibility
+  // `mousedown` arrives only AFTER the touch ended, so for those the press is the `pointerdown`.
+  // The capture is taken on the `pointerdown` either way, since it names the pointer to capture.
+  let pressedBy = 'mouse';
+  // A PRESSABLE drawn inside the surface takes its own press, as it does on Photon, where a press goes
+  // to what is drawn on top: a diff's folded run opens on a press on its row. The surface captured
+  // the pointer on every press, so the release went to the surface and the row's click never came.
+  const onPressable = (event: Event) => {
+    const surfaceElement = event.currentTarget as HTMLElement | null;
+    const pressed = (event.target as Element | null)?.closest?.('button, [role="button"]');
+    return pressed != null && pressed !== surfaceElement && surfaceElement?.contains?.(pressed) === true;
+  };
+  const press = (event: MouseEvent, clicks: number) => {
+    model.handlePointer('down', local(event), modifiersOf(event), clicks);
+    changed();
+  };
+  surface.events['pointerdown'] = ((event: PointerEvent) => {
+    if (onPressable(event)) return;
+    pressedBy = event.pointerType || 'mouse';
+    (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+    if (pressedBy !== 'mouse') {
+      focusInput(event);
+      press(event, 1);
+    }
+  }) as unknown as EventHandler;
+  surface.events['mousedown'] = ((event: MouseEvent) => {
+    if (onPressable(event)) return;
+    // Cancelled, whoever pressed: the browser's own reaction to a press is to move the focus to what
+    // was pressed — the code's text, which cannot hold it — and that took it from the input the
+    // keyboard types into, the moment it had been given.
+    event.preventDefault();
+    if (pressedBy !== 'mouse') return;
+    focusInput(event);
+    // The platform counts the clicks — its double-click interval is a system setting, never ours.
+    press(event, event.detail > 0 ? event.detail : 1);
+  }) as unknown as EventHandler;
+  surface.events['pointermove'] = ((event: PointerEvent) => {
+    // Only the primary button HELD moves the selection, and only a pointer with NO button held passing
+    // over the code is a hover, which the model waits on to explain what it rests on (C# twin:
+    // PhotonHost.PointerMove): one dragged with another button rests on nothing. A finger has no hover:
+    // it moves only while it presses.
+    if (event.buttons === 0) {
+      if (event.pointerType === 'touch') return;
+      // Over a pressable drawn inside the surface, the pointer is the pressable's, as a press there is:
+      // the code under it hears that the pointer left it (C# twin: PhotonHost.HoverCode).
+      const phase = onPressable(event) ? 'exit' : 'hover';
+      if (model.handlePointer(phase, local(event), modifiersOf(event), 0)) changed();
+      return;
+    }
+    if ((event.buttons & 1) === 0) return;
+    if (model.handlePointer('move', local(event), modifiersOf(event), 1)) changed();
+  }) as unknown as EventHandler;
+  surface.events['pointerleave'] = ((event: PointerEvent) => {
+    if (model.handlePointer('exit', local(event), modifiersOf(event), 0)) changed();
+  }) as unknown as EventHandler;
+  surface.events['pointerup'] = ((event: PointerEvent) => {
+    (event.currentTarget as HTMLElement).releasePointerCapture?.(event.pointerId);
+    if (model.handlePointer('up', local(event), modifiersOf(event), 1)) changed();
+  }) as unknown as EventHandler;
+
+  return surface;
+}
+
+/**
+ * The model a TEXT DOOR feeds (C# twins: `ICodeSurfaceModel`, `ISheetSurfaceModel`): what a key, some text,
+ * a composition, the clipboard's events and focus are told, the same members on both surfaces.
+ */
+interface TextDoorModel {
+  handleKey(key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: unknown): boolean;
+  handleText(text: string): boolean;
+  setComposition(text: string): boolean;
+  copyText(): string;
+  cut(): string;
+  paste(text: string): boolean;
+  focusChanged(focused: boolean): void;
+}
+
+/**
+ * THE TEXT DOOR, one for every surface that keeps its text to itself: the code surface and the sheet
+ * (D5 of docs/SPREADSHEET-PLAN.md). TEXT comes through the textarea, never from `keydown`: a dead key, an
+ * input method's candidates, AltGr on a European layout, a phone's soft keyboard, dictation and the emoji
+ * picker each deliver their text as INPUT, and a surface that read characters off `keydown` lost every one
+ * of them. So `keydown` carries only what the model claims as a command, and everything else is left to
+ * become the `beforeinput`, the composition or the paste it really is. The textarea holds nothing: what
+ * reaches it is taken out as an edit of the model's document.
+ * <p>
+ * `clipboard` is what the model's copy keys write through (a code surface's binds Copy and Cut to keys an
+ * app may move), or null to leave those keys to the browser's own copy, cut and paste events, as a sheet
+ * does. `leftToBrowser` names keys the model is never handed: the browser's own, which a page must not
+ * take (a sheet's F5 and reload chords). `modifiers` reads a key's modifiers, a Mac's Control apart from
+ * its Command, as its shell does.
+ * </p>
+ */
+function openTextDoor(
+  input: HtmlNode,
+  model: TextDoorModel,
+  changed: () => void,
+  clipboard: CodeSurfaceClipboard | null,
+  leftToBrowser: (event: KeyboardEvent) => boolean,
+  modifiers: (event: KeyboardEvent, convention: KeyboardConventionValue) => number = doorModifiers,
+): void {
   const convention = keyboardConvention();
   const ime = compositionOf(model);
 
@@ -759,19 +882,20 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     // An input method owns the keyboard while it composes: its keys build the composition, and
     // Enter, Escape and the arrows belong to its candidate window, not to the document.
     if (event.isComposing || event.keyCode === 229) return;
+    if (leftToBrowser(event)) return;
     // Copy and Cut write through the browser's own copy event, on whatever key they are bound to; a
     // write it refused leaves the key to the browser. A paste is the paste event's, which the browser
-    // fires on its own paste keys only (`CodeSurfaceClipboard`, #1028).
-    const clipboard = surfaceClipboardOf(model);
-    clipboard.pasteAsked = false;
+    // fires on its own paste keys only (`CodeSurfaceClipboard`, #1028). With no clipboard the copy keys
+    // are not the model's at all, and the browser's events carry them.
+    if (clipboard) clipboard.pasteAsked = false;
     let claimed: boolean;
     try {
-      claimed = model.handleKey(event.key, modifiersOf(event), convention, clipboard);
+      claimed = model.handleKey(event.key, modifiers(event, convention), convention, clipboard);
     } catch (error) {
       if (!(error instanceof ClipboardRefused)) throw error;
       claimed = false;
     }
-    if (claimed && clipboard.pasteAsked && browserPastesOn(event, convention)) return;
+    if (claimed && clipboard?.pasteAsked && browserPastesOn(event, convention)) return;
     if (claimed) {
       event.preventDefault();
       changed();
@@ -856,17 +980,21 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   input.events['copy'] = ((event: ClipboardEvent) => {
     event.preventDefault();
     if (!event.clipboardData) return;
-    // What a command's write was given, while one waits for this event; the selection otherwise.
-    const clipboard = surfaceClipboardOf(model);
-    event.clipboardData.setData('text/plain', clipboard.pending ?? model.copyText());
-    clipboard.written = true;
+    // What a command's write was given, while one waits for this event; the selection otherwise. An
+    // entry with nothing selected copies nothing, and the clipboard keeps what it held.
+    const text = clipboard?.pending ?? model.copyText();
+    if (!text) return;
+    event.clipboardData.setData('text/plain', text);
+    if (clipboard) clipboard.written = true;
   }) as unknown as EventHandler;
   input.events['cut'] = ((event: ClipboardEvent) => {
     event.preventDefault();
     // The copy reaches the clipboard before anything is deleted, the keymap's order: a write
     // that fails leaves the text where it was.
     if (!event.clipboardData) return;
-    event.clipboardData.setData('text/plain', model.copyText());
+    const text = model.copyText();
+    if (!text) return;
+    event.clipboardData.setData('text/plain', text);
     model.cut();
     changed();
   }) as unknown as EventHandler;
@@ -881,86 +1009,6 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     model.focusChanged(false);
     changed();
   }) as unknown as EventHandler;
-
-  // The pointer's whole life goes to the model: the press, every move while it is held — which is
-  // what draws a selection — and the release. CAPTURED on the press, so a drag that leaves the
-  // surface keeps reporting until the button comes up, the way a selection drag does everywhere.
-  const local = (event: MouseEvent) => {
-    const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    return { x: event.clientX - box.left, y: event.clientY - box.top };
-  };
-  // The keyboard goes to the surface's input, WITHOUT the scroll `focus()` does by default: the
-  // surface is taller than its viewport, so the browser scrolled the page to bring its top into
-  // view on every press — measured: 78px on the first click of a double click, which put the second
-  // click on another line and selected the wrong word.
-  const focusInput = (event: MouseEvent) =>
-    ((event.currentTarget as HTMLElement).querySelector('.eq-code-input') as HTMLElement | null)?.focus(
-      { preventScroll: true },
-    );
-  // THE PRESS. A mouse's press is read from `mousedown`, because that is the only event that
-  // carries the platform's click count: Chrome reports `detail: 0` on every `pointerdown`, measured,
-  // so a surface that counted clicks there never saw a double click — the word and the line were
-  // never selectable here. A finger or a pen has no click count to lose, and its compatibility
-  // `mousedown` arrives only AFTER the touch ended, so for those the press is the `pointerdown`.
-  // The capture is taken on the `pointerdown` either way, since it names the pointer to capture.
-  let pressedBy = 'mouse';
-  // A PRESSABLE drawn inside the surface takes its own press, as it does on Photon, where a press goes
-  // to what is drawn on top: a diff's folded run opens on a press on its row. The surface captured
-  // the pointer on every press, so the release went to the surface and the row's click never came.
-  const onPressable = (event: Event) => {
-    const surfaceElement = event.currentTarget as HTMLElement | null;
-    const pressed = (event.target as Element | null)?.closest?.('button, [role="button"]');
-    return pressed != null && pressed !== surfaceElement && surfaceElement?.contains?.(pressed) === true;
-  };
-  const press = (event: MouseEvent, clicks: number) => {
-    model.handlePointer('down', local(event), modifiersOf(event), clicks);
-    changed();
-  };
-  surface.events['pointerdown'] = ((event: PointerEvent) => {
-    if (onPressable(event)) return;
-    pressedBy = event.pointerType || 'mouse';
-    (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
-    if (pressedBy !== 'mouse') {
-      focusInput(event);
-      press(event, 1);
-    }
-  }) as unknown as EventHandler;
-  surface.events['mousedown'] = ((event: MouseEvent) => {
-    if (onPressable(event)) return;
-    // Cancelled, whoever pressed: the browser's own reaction to a press is to move the focus to what
-    // was pressed — the code's text, which cannot hold it — and that took it from the input the
-    // keyboard types into, the moment it had been given.
-    event.preventDefault();
-    if (pressedBy !== 'mouse') return;
-    focusInput(event);
-    // The platform counts the clicks — its double-click interval is a system setting, never ours.
-    press(event, event.detail > 0 ? event.detail : 1);
-  }) as unknown as EventHandler;
-  surface.events['pointermove'] = ((event: PointerEvent) => {
-    // Only the primary button HELD moves the selection, and only a pointer with NO button held passing
-    // over the code is a hover, which the model waits on to explain what it rests on (C# twin:
-    // PhotonHost.PointerMove): one dragged with another button rests on nothing. A finger has no hover:
-    // it moves only while it presses.
-    if (event.buttons === 0) {
-      if (event.pointerType === 'touch') return;
-      // Over a pressable drawn inside the surface, the pointer is the pressable's, as a press there is:
-      // the code under it hears that the pointer left it (C# twin: PhotonHost.HoverCode).
-      const phase = onPressable(event) ? 'exit' : 'hover';
-      if (model.handlePointer(phase, local(event), modifiersOf(event), 0)) changed();
-      return;
-    }
-    if ((event.buttons & 1) === 0) return;
-    if (model.handlePointer('move', local(event), modifiersOf(event), 1)) changed();
-  }) as unknown as EventHandler;
-  surface.events['pointerleave'] = ((event: PointerEvent) => {
-    if (model.handlePointer('exit', local(event), modifiersOf(event), 0)) changed();
-  }) as unknown as EventHandler;
-  surface.events['pointerup'] = ((event: PointerEvent) => {
-    (event.currentTarget as HTMLElement).releasePointerCapture?.(event.pointerId);
-    if (model.handlePointer('up', local(event), modifiersOf(event), 1)) changed();
-  }) as unknown as EventHandler;
-
-  return surface;
 }
 
 /** The reveal version each code surface was last rendered at, by path — see lowerCodeSurface. */
@@ -970,7 +1018,7 @@ const revealedVersions = new Map<string, number>();
 const focusedVersions = new WeakMap<object, number>();
 
 /**
- * Where a code surface's input method stands: whether a composition is open, and the text it
+ * Where a text door's input method stands: whether a composition is open, and the text it
  * committed in this task. Kept by MODEL, because the model outlives every render and a closure
  * does not.
  * <p>
@@ -1087,12 +1135,12 @@ function revealCaret(path: string): void {
  * nothing to focus, or when nothing has the keyboard any more, which is the render taking the
  * focused element away.
  */
-function focusSurface(path: string): void {
+function focusSurface(path: string, attribute = 'data-eq-code'): void {
   if (typeof document === 'undefined') return;
   let given = false;
   const focus = () => {
     if (typeof document === 'undefined') return;
-    const input = document.querySelector<HTMLElement>(`[data-eq-code="${path}"] textarea`);
+    const input = document.querySelector<HTMLElement>(`[${attribute}="${path}"] textarea.eq-code-input`);
     if (!input) return;
     if (given && document.activeElement !== null && document.activeElement !== document.body) return;
     given = true;
@@ -1543,11 +1591,18 @@ function lowerLoopMotion(node: LoopMotionNode, context: LoweringContext, path: s
 }
 
 /**
- * The spreadsheet's web half: a focusable region that hands the platform's events to the sheet's
- * MODEL (the C# `ISheetSurfaceModel`; PhotonHost hands the same model the same events, so the two
- * cannot drift), and whose clipboard speaks through the browser's own copy/cut/paste events (no
- * permissions dance — the user's ⌘C is the grant). What a key or a press means, and which cell a
- * point lands on, are the model's answers: this half only says where on the surface a point is.
+ * The spreadsheet's web half: a region that hands the platform's events to the sheet's MODEL (the C#
+ * `ISheetSurfaceModel`; PhotonHost hands the same model the same events, so the two cannot drift). What a
+ * key or a press means, and which cell a point lands on, are the model's answers: this half only says
+ * where on the surface a point is, and paints the entry's carets, which blink.
+ * <p>
+ * Its keyboard is the code surface's TEXT DOOR (`openTextDoor`): a textarea at the model's input bounds,
+ * the active cell's at rest and the caret's while a cell is edited, that holds the focus for the sheet's
+ * whole life. The first character typed into a cell at rest may be a dead key or begin a composition, and
+ * moving the focus to another element in the middle of one cancels it, so the door never moves (D5). Its
+ * clipboard is the browser's own copy, cut and paste events (no permissions dance, the user's ⌘C is the
+ * grant), and the browser's reload keys are never the sheet's.
+ * </p>
  */
 function lowerSheetSurface(
   node: SheetSurfaceNode,
@@ -1563,46 +1618,70 @@ function lowerSheetSurface(
   const view = element(
     'div',
     {
-      // FIT-CONTENT, not nothing (C# twin: LowerSheetSurface) — this host carries role="grid" and
-      // a tabindex, so its box is what a reader outlines and what the focus ring is drawn on.
+      // FIT-CONTENT, not nothing (C# twin: LowerSheetSurface) — this host carries role="grid", so its
+      // box is what a reader outlines.
       width: fill.width ? '100%' : 'fit-content',
       'max-width': sizeValue(cap),
       height: fill.height ? '100%' : undefined,
       // A sheet surface takes the pointer for its own cell hit-testing, so it declares itself a
       // target — `none` inherits from any transparent row above it.
       'pointer-events': 'auto',
+      // The door and the carets stand at the model's rectangles, in the surface's own coordinates.
+      position: 'relative',
       outline: 'none',
       'user-select': 'none',
       '-webkit-user-select': 'none',
     },
     child ? [child] : [],
   );
-  view.attributes['tabindex'] = '0';
+  prependClass(view, 'eq-sheet-surface');
   view.attributes['role'] = 'grid';
   if (node.label) view.attributes['aria-label'] = node.label;
+  // The surface's identity across rebuilds, which a focus request finds it by after the render.
+  view.attributes['data-eq-sheet'] = path;
 
   const model = node.model;
+
+  // The entry's carets, over everything the child drew, in the cell text's ink.
+  const caretInk = tokenValue(node.caretColor ?? getPhotonTheme().textPrimary);
+  for (const caret of model.carets) {
+    view.children.push(mark(caret.x, caret.y, caret.width, caret.height, 'eq-code-caret', caretInk, 0));
+  }
+
+  // THE DOOR, at the input bounds: an input method opens its window where the text will land.
+  const at = model.inputBounds;
+  const input: HtmlNode = {
+    tag: 'textarea',
+    attributes: {
+      class: 'eq-code-input',
+      style: `left:${px(at.x)};top:${px(at.y)};height:${px(at.height)};`,
+      tabindex: '0',
+      autocomplete: 'off',
+      autocorrect: 'off',
+      autocapitalize: 'off',
+      spellcheck: 'false',
+      'aria-multiline': 'true',
+    },
+    events: {},
+    children: [],
+  };
+  if (node.label) input.attributes['aria-label'] = node.label;
+  view.children.push(input);
+
   const changed = () => node.onChanged?.();
+  openTextDoor(input, model, changed, null, browserReloads);
+
+  // The model ASKED for the keyboard back (C# twin: PhotonHost.AdoptFocusRequests): the formula bar or
+  // the name box is done with it. Remembered per model and counted from 0, as a code surface's.
+  if (typeof document !== 'undefined' && (focusedVersions.get(model) ?? 0) !== model.focusVersion) {
+    focusedVersions.set(model, model.focusVersion);
+    focusSurface(path, 'data-eq-sheet');
+  }
+
   const local = (target: HTMLElement, clientX: number, clientY: number) => {
     const box = target.getBoundingClientRect();
     return { x: clientX - box.left, y: clientY - box.top };
   };
-
-  view.events['keydown'] = ((event: KeyboardEvent) => {
-    const modifiers = modifiersOf(event);
-    // No clipboard is handed over: the browser's own copy, cut and paste events carry the text
-    // (below), and claiming ⌘C here would cancel the very event that brings it.
-    if (model.handleKey(event.key, modifiers, null)) {
-      event.preventDefault();
-      changed();
-      return;
-    }
-    // A key that names one character, with no command held, is what the user typed.
-    if ((modifiers & 4) === 0 && event.key.length === 1 && model.handleText(event.key)) {
-      event.preventDefault();
-      changed();
-    }
-  }) as EventHandler;
 
   // A press is the sheet's unless something drawn inside the surface takes it, as on Photon, where a
   // press goes to what is drawn on top: a header's pressable, a resize grip (`[data-eq-drag]`), or the
@@ -1642,7 +1721,7 @@ function lowerSheetSurface(
   const begin = (event: MouseEvent, kind: string, clicks: number) => {
     const target = event.currentTarget as HTMLElement;
     const at = local(target, event.clientX, event.clientY);
-    target.focus({ preventScroll: true });
+    target.querySelector<HTMLElement>('textarea.eq-code-input')?.focus({ preventScroll: true });
     model.handlePointer('down', at, modifiersOf(event), clicks, kind);
     changed();
   };
@@ -1712,31 +1791,25 @@ function lowerSheetSurface(
     if (sheetPresses.get(model)?.id === event.pointerId) cancel();
   }) as unknown as EventHandler;
 
-  view.events['copy'] = ((event: ClipboardEvent) => {
-    event.clipboardData?.setData('text/plain', model.copyText());
-    event.preventDefault();
-  }) as EventHandler;
-
-  view.events['cut'] = ((event: ClipboardEvent) => {
-    event.preventDefault();
-    // The copy reaches the clipboard before anything is emptied, the keymap's order: a write
-    // that fails leaves every cell where it was.
-    if (!event.clipboardData) return;
-    event.clipboardData.setData('text/plain', model.copyText());
-    model.cut();
-    changed();
-  }) as EventHandler;
-
-  view.events['paste'] = ((event: ClipboardEvent) => {
-    const text = event.clipboardData?.getData('text/plain');
-    if (text) {
-      model.paste(text);
-      changed();
-    }
-    event.preventDefault();
-  }) as EventHandler;
-
   return view;
+}
+
+/**
+ * A key's modifiers as a text door reads them: ⌘ is Command and ⌃ is Control on a Mac, as the macOS shell
+ * reports them, because a Mac gives the two different chords (Excel for Mac's ⌃; types the date and ⌘; the
+ * time, ⌃G goes to a cell, the code editor's ⌃J joins lines); everywhere else Ctrl is Command, the
+ * browser's idiom. The formula bar and the name box are code surfaces, so the sheet's chords read alike
+ * in the grid and in them.
+ */
+function doorModifiers(event: KeyboardEvent, convention: KeyboardConventionValue): number {
+  if (convention !== 'apple') return modifiersOf(event);
+  return (event.shiftKey ? 1 : 0) | (event.altKey ? 2 : 0) | (event.metaKey ? 4 : 0) | (event.ctrlKey ? 8 : 0);
+}
+
+/** The browser's own reload keys, which a page never takes from it: F5, and R with ⌘ or Ctrl. */
+function browserReloads(event: KeyboardEvent): boolean {
+  if (event.key === 'F5') return true;
+  return (event.metaKey || event.ctrlKey) && !event.altKey && (event.key === 'r' || event.key === 'R');
 }
 
 /** The press in flight on each sheet surface, by MODEL — see lowerSheetSurface. */
@@ -3180,9 +3253,10 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
 
   // Single line → shaping-style ellipsis (spec A8).
   if (text.maxLines === 1) {
-    // MONO keeps `pre` (C# twin): nowrap collapses runs of spaces, and in code the spaces ARE
-    // the content. `pre` refuses to wrap just the same, so the ellipsis contract holds.
-    style['white-space'] = nodeMono(text) ? 'pre' : 'nowrap';
+    // A line keeps its spaces, as Photon and Flutter's Text keep them (C# twin): nowrap collapses
+    // runs of spaces. `pre` refuses to wrap just the same, so the ellipsis contract holds. A line
+    // break in a single line still folds into it, as nowrap folds it; mono keeps `pre` throughout.
+    style['white-space'] = nodeMono(text) || !plainContent(text).includes('\n') ? 'pre' : 'nowrap';
     style.overflow = 'hidden';
     style['text-overflow'] = 'ellipsis';
     // The other two need the BLOCK every Text is (C# twin): they are inert on an inline box.

@@ -11,11 +11,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The vocabulary ONLY, as for the code editing engine beside it. The engine is what a
-         SheetSurface's realizer drives, so it may know the surface's protocol and the vocabulary's
-         values (a point, a modifier key, a clipboard) and nothing about any host: the same code runs
-         in a window and, transpiled, in a browser. -->
+    <!-- The vocabulary, and the code editing engine beside it. The engine is what a SheetSurface's
+         realizer drives, so it may know the surface's protocol and the vocabulary's values (a point, a
+         modifier key, a clipboard) and nothing about any host: the same code runs in a window and,
+         transpiled, in a browser. A cell's entry IS the code engine's document (docs/SPREADSHEET-PLAN.md
+         §4): its caret, selection, composition and undo, rather than a second text editor. -->
     <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
+    <ProjectReference Include="..\eQuantic.UI.Code\eQuantic.UI.Code.csproj" />
   </ItemGroup>
 
 </Project>

@@ -118,7 +118,7 @@ public class WebRealizerTests
         node.Attributes["class"].Should().Be("eq-type-caption");
         var style = node.Attributes["style"]!;
         style.Should().Contain($"color: {TokenCss.Value(Theme.TextMuted)}");
-        style.Should().Contain("white-space: nowrap");
+        style.Should().Contain("white-space: pre", "a line keeps its spaces, and refuses to wrap");
         style.Should().Contain("text-overflow: ellipsis");
         node.Children[0].TextContent.Should().Be("Saldo disponível");
     }

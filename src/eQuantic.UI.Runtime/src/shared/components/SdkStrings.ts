@@ -117,6 +117,14 @@ export class SdkStrings {
         return $eq.str('SdkResources', 'Spreadsheet');
     }
 
+    static get formulaBar(): string {
+        return $eq.str('SdkResources', 'FormulaBar');
+    }
+
+    static get nameBox(): string {
+        return $eq.str('SdkResources', 'NameBox');
+    }
+
     static get back(): string {
         return $eq.str('SdkResources', 'Back');
     }
@@ -169,6 +177,10 @@ export class SdkStrings {
             i += run;
         }
         return hint.toString();
+    }
+
+    static rangeSize(rows: number, columns: number) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'RangeSize'), $eq.text.asNumber(rows, 'int32'), $eq.text.asNumber(columns, 'int32'));
     }
 }
 

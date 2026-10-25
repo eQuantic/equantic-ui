@@ -1,3 +1,5 @@
+using System.Globalization;
+using eQuantic.UI.Code;
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Sheet;
@@ -24,13 +26,34 @@ public sealed class SheetController : ISheetSurfaceModel
     public SheetController(int rows = 1000, int cols = 26)
     {
         Document = new SheetDocument(rows, cols);
+        Entry = new CodeEditorController("", new SheetEntryLanguage());
+        FormulaBar = new SheetFormulaBar(this);
+        NameBox = new SheetNameBox(this);
     }
+
+    /// <summary>The formula bar's model: the entry's second view, which the formula bar component draws.</summary>
+    public SheetFormulaBar FormulaBar { get; }
+
+    /// <summary>The name box's model: the address of the selection, and Go To.</summary>
+    public SheetNameBox NameBox { get; }
 
     public SheetDocument Document { get; }
     public SheetHistory History { get; } = new();
 
     /// <summary>Raised after any change to data or structure — never for selection moves.</summary>
     public Action<SheetEdit>? Changed { get; set; }
+
+    /// <summary>
+    /// Raised when the views of this sheet should build again: an input changed what the grid, the formula
+    /// bar or the name box shows. The views are separate components the app places, and a keystroke in one
+    /// changes what the others show, so every one of them listens, as a Flutter widget listens to its
+    /// controller's <c>ChangeNotifier</c>.
+    /// </summary>
+    public event Action? Refreshed;
+
+    /// <summary>Tells every view of this sheet to build again: what a view calls after an input it handled,
+    /// and what an app calls after it changed the sheet itself.</summary>
+    public void Refresh() => Refreshed?.Invoke();
 
     /// <summary>The selected rectangle. Setting it puts the active cell at its focus end, and asks the
     /// grid to bring that cell into view (<see cref="RevealVersion"/>), as a command that moves it does.</summary>
@@ -211,49 +234,146 @@ public sealed class SheetController : ISheetSurfaceModel
 
     // ---- in-cell editing -------------------------------------------------------------------------
     //
-    // The DRAFT lives here, not in a surface: both targets edit the same way, and the document
-    // only changes on COMMIT — Escape restores exactly what was there, like every spreadsheet.
+    // The ENTRY is a text document, the code engine's: a caret, a selection, word moves, a composition and
+    // an undo of its own. It lives here, not in a surface: both targets edit the same way, and the cell's
+    // editor and the formula bar are two views of it (EntryView says which one holds the caret), so they
+    // cannot disagree. The sheet's document changes only on COMMIT: Escape leaves the cell as it was, like
+    // every spreadsheet.
 
-    /// <summary>Whether the active cell is being edited (the draft renders in its place).</summary>
+    /// <summary>Whether the active cell is being edited (its editor is drawn over it).</summary>
     public bool Editing { get; private set; }
 
-    /// <summary>The text being typed — the cell's value-to-be, until commit or cancel.</summary>
-    public string Draft { get; private set; } = "";
+    /// <summary>
+    /// The entry being typed, the cell's value-to-be until it is committed or cancelled: the code engine's
+    /// editor over one cell's text, in a language that pairs nothing and indents nothing
+    /// (<see cref="SheetEntryLanguage"/>). Its text is <c>Entry.Document.Text</c>; between entries it is
+    /// empty.
+    /// </summary>
+    public CodeEditorController Entry { get; }
+
+    /// <summary>What the arrows do while editing: commit and move, or move the caret.</summary>
+    public SheetEditMode EditMode { get; private set; }
+
+    /// <summary>Which view of the entry holds its caret: the cell's editor or the formula bar.</summary>
+    public SheetEntryView EntryView { get; private set; }
 
     /// <summary>
-    /// Starts editing the ACTIVE cell. Typing starts with the typed character (Excel: typing
-    /// REPLACES); F2 and double-click start with the cell's current value (editing in place).
+    /// Starts editing the ACTIVE cell with <paramref name="seed"/>, the caret at its end. Typing starts with
+    /// nothing in <see cref="SheetEditMode.Enter"/> mode (Excel: typing REPLACES); F2 and a double click
+    /// start with the cell's value in <see cref="SheetEditMode.Edit"/> mode. The entry's own undo starts
+    /// empty.
     /// </summary>
-    public void BeginEdit(string seed)
+    public void BeginEdit(string seed, SheetEditMode mode)
     {
         Editing = true;
-        Draft = seed;
+        EditMode = mode;
+        EntryView = SheetEntryView.Cell;
+        _slide = 0;
+        _rise = 0;
+        Entry.Document = CodeDocument.FromText(seed);
+        Entry.Selection = new CodeRange(Entry.Document.End);
     }
 
-    /// <summary>Appends typed text to the draft (the platform composes; this just receives).</summary>
-    public void TypeIntoDraft(string text) => Draft += text;
-
-    /// <summary>Removes the draft's last character — Backspace while editing.</summary>
-    public void EraseFromDraft()
+    /// <summary>A press in the cell's editor or the formula bar: the arrows move the caret from now on.</summary>
+    internal void EnterEditMode()
     {
-        if (Draft.Length > 0) Draft = Draft[..^1];
+        if (Editing) EditMode = SheetEditMode.Edit;
     }
 
-    /// <summary>The draft becomes the cell's value (one undo step). Answers whether it changed.</summary>
+    /// <summary>Makes <paramref name="view"/> the one that holds the entry's caret, its geometry the entry's.</summary>
+    internal void HoldEntryIn(SheetEntryView view)
+    {
+        EntryView = view;
+        UseView();
+    }
+
+    /// <summary>Puts the entry on the geometry of the view that holds its caret, the one the next geometric
+    /// answer is read on: the cell's editor's, or the formula bar's.</summary>
+    internal void UseView()
+    {
+        if (EntryView == SheetEntryView.FormulaBar) Entry.Grid = FormulaBar.Grid;
+        else _ = CellEditorGrid;
+    }
+
+    /// <summary>
+    /// Excel's Go To: <paramref name="reference"/>, a cell, a range, whole rows or whole columns
+    /// (<see cref="SheetReference"/>), becomes the selection with its first cell active and in view, and the
+    /// grid takes the keyboard. Answers false, changing nothing, for text that names nothing in the grid.
+    /// </summary>
+    public bool GoTo(string reference)
+    {
+        if (!SheetReference.TryParse(reference, Document.Rows, Document.Cols, out var range)) return false;
+        if (Editing) CommitEdit();
+        _selection = range;
+        _active = range.TopLeft;
+        Reveal();
+        RequestFocus();
+        return true;
+    }
+
+    /// <summary>Whether a drag from a plain press is drawing a range of more than one cell: what the name box
+    /// shows the size of while it lasts.</summary>
+    public bool Selecting => _selecting && !_selection.IsSingleCell;
+
+    /// <summary>F2 while editing: Enter mode becomes Edit mode, and back.</summary>
+    public void ToggleEditMode()
+    {
+        if (Editing) EditMode = EditMode == SheetEditMode.Enter ? SheetEditMode.Edit : SheetEditMode.Enter;
+    }
+
+    /// <summary>The entry becomes the cell's value (one undo step). Answers whether it changed.</summary>
     public bool CommitEdit()
     {
         if (!Editing) return false;
-        var changed = SetCell(ActiveCell, Draft);
-        Editing = false;
-        Draft = "";
+        var changed = SetCell(ActiveCell, Entry.Document.Text);
+        EndEdit();
         return changed;
     }
 
-    /// <summary>Excel's Escape: the draft is discarded and the cell keeps what it had.</summary>
+    /// <summary>Excel's Escape: the entry is discarded and the cell keeps what it had.</summary>
     public void CancelEdit()
     {
+        if (Editing) EndEdit();
+    }
+
+    /// <summary>
+    /// Excel's Ctrl+Enter: the entry is written into EVERY cell of the selection, as one undo step, and the
+    /// selection stays where it was. Answers whether a cell changed.
+    /// </summary>
+    public bool FillSelectionWithEntry()
+    {
+        if (!Editing) return false;
+        var value = Entry.Document.Text;
+        EndEdit();
+        return FillSelection(value);
+    }
+
+    private void EndEdit()
+    {
         Editing = false;
-        Draft = "";
+        EntryView = SheetEntryView.Cell;
+        Entry.Document = CodeDocument.FromText("");
+    }
+
+    /// <summary>The clock the date and time chords read. A test names its own moment.</summary>
+    public Func<DateTime> Now { get; set; } = () => DateTime.Now;
+
+    /// <summary>
+    /// Today's date, or the time, written by the culture's short date or short time pattern: what Excel's
+    /// date and time chords type. At rest the text begins an entry in Enter mode; while editing it goes in
+    /// at the caret.
+    /// </summary>
+    public void TypeNow(bool time)
+    {
+        var text = Now().ToString(time ? "t" : "d", CultureInfo.CurrentCulture);
+        if (!Editing) BeginEdit(text, SheetEditMode.Enter);
+        else Entry.Insert(text);
+    }
+
+    /// <summary>Alt+Enter: a line break inside the entry.</summary>
+    public void BreakLine()
+    {
+        if (Editing) Entry.Insert("\n");
     }
 
     // ---- cell edits ------------------------------------------------------------------------------
@@ -296,6 +416,32 @@ public sealed class SheetController : ISheetSurfaceModel
                 edit.Before.Add(new SheetCellSnapshot(cell, old));
                 edit.After.Add(new SheetCellSnapshot(cell, ""));
                 Document.SetCell(cell, "");
+            }
+        }
+        if (edit.Before.Count == 0) return false;
+        Commit(edit);
+        return true;
+    }
+
+    /// <summary>Every cell of the selection gets <paramref name="value"/>, as one undo step.</summary>
+    public bool FillSelection(string value)
+    {
+        var edit = new SheetEdit
+        {
+            Kind = SheetEditKind.SetCells,
+            SelectionBefore = _selection,
+            SelectionAfter = _selection,
+        };
+        for (var row = _selection.TopRow; row <= _selection.BottomRow; row++)
+        {
+            for (var col = _selection.LeftCol; col <= _selection.RightCol; col++)
+            {
+                var cell = new CellRef(row, col);
+                var old = Document.GetCell(cell);
+                if (old == value) continue;
+                edit.Before.Add(new SheetCellSnapshot(cell, old));
+                edit.After.Add(new SheetCellSnapshot(cell, value));
+                Document.SetCell(cell, value);
             }
         }
         if (edit.Before.Count == 0) return false;
@@ -357,13 +503,16 @@ public sealed class SheetController : ISheetSurfaceModel
 
     // ---- clipboard -------------------------------------------------------------------------------
 
-    /// <summary>The selection as TSV — hand it to the platform clipboard and Excel pastes it.</summary>
-    public string CopyText() => TsvCodec.Serialize(Document, _selection);
+    /// <summary>The selection as TSV — hand it to the platform clipboard and Excel pastes it. While a cell
+    /// is being edited, the entry's selected text, and nothing when nothing is selected in it.</summary>
+    public string CopyText() =>
+        Editing ? Entry.Document.TextIn(Entry.Selection) : TsvCodec.Serialize(Document, _selection);
 
-    /// <summary>A copy that also empties what it took, as one undo step. Answers the TSV for the
+    /// <summary>A copy that also empties what it took, as one undo step. Answers the text for the
     /// clipboard.</summary>
     public string Cut()
     {
+        if (Editing) return Entry.Selection.IsEmpty ? "" : Entry.Cut();
         var text = CopyText();
         ClearSelection();
         return text;
@@ -375,6 +524,9 @@ public sealed class SheetController : ISheetSurfaceModel
     /// </summary>
     public bool Paste(string text)
     {
+        // While editing, the clipboard's text is TEXT: it goes in at the caret, tabs and line breaks as
+        // they are, as one step of the entry's undo.
+        if (Editing) return Entry.Paste(text);
         var grid = TsvCodec.Parse(text);
         if (grid.Count == 0) return false;
         var origin = _selection.TopLeft;
@@ -582,6 +734,18 @@ public sealed class SheetController : ISheetSurfaceModel
     /// <summary>The cell a finger landed on, which its release selects; none once a pan took it.</summary>
     private CellRef? _tapped;
 
+    /// <summary>Whether the press in flight began inside the cell's editor, whose moves and release are the
+    /// entry's: they place its caret and draw its selection.</summary>
+    private bool _entryPressed;
+
+    /// <summary>How far the cell's editor has slid its text to the left, to keep the caret inside it when the
+    /// entry's line is wider than the editor can grow.</summary>
+    private float _slide;
+
+    /// <summary>How far the cell's editor has slid its text up, to keep the caret's line inside it when the
+    /// entry has more lines than the editor can grow rows for.</summary>
+    private float _rise;
+
     /// <summary>Where the drag in flight last stood, which <see cref="Follow"/> reads again when the grid
     /// moves under it.</summary>
     private Point? _dragAt;
@@ -609,6 +773,157 @@ public sealed class SheetController : ISheetSurfaceModel
             (float)(Grid.HeaderHeight + Document.RowSpans.OffsetOf(_selection.BottomRow + 1) - offset.Down));
     }
 
+    /// <summary>A range of cells as a rectangle in the surface's own coordinates, at the grid's offset now.</summary>
+    private Rect BoundsOf(SheetRange range)
+    {
+        var offset = Grid.Offset;
+        var left = Grid.HeaderWidth + Document.ColumnSpans.OffsetOf(range.LeftCol) - offset.Across;
+        var top = Grid.HeaderHeight + Document.RowSpans.OffsetOf(range.TopRow) - offset.Down;
+        var right = Grid.HeaderWidth + Document.ColumnSpans.OffsetOf(range.RightCol + 1) - offset.Across;
+        var bottom = Grid.HeaderHeight + Document.RowSpans.OffsetOf(range.BottomRow + 1) - offset.Down;
+        return new Rect((float)left, (float)top, (float)(right - left), (float)(bottom - top));
+    }
+
+    /// <summary>The last column and the last row the viewport shows any of; the grid's last ones when
+    /// nothing scrolls it.</summary>
+    private CellRef LastInView()
+    {
+        if (Grid.Scroll is not { } scroll || scroll.Viewport.Width <= 0 || scroll.Viewport.Height <= 0)
+            return new CellRef(Document.Rows - 1, Document.Cols - 1);
+        var offset = Grid.Offset;
+        var across = offset.Across + Math.Max(0, scroll.Viewport.Width - Grid.HeaderWidth) - 0.5;
+        var down = offset.Down + Math.Max(0, scroll.Viewport.Height - Grid.HeaderHeight) - 0.5;
+        return Document.Clamp(new CellRef(Document.RowSpans.IndexAt(down), Document.ColumnSpans.IndexAt(across)));
+    }
+
+    /// <summary>How tall a line of the cells' type is: what the grid says, or the body's 20 points when
+    /// nothing said.</summary>
+    private float LineHeight => Grid.LineHeight > 0 ? Grid.LineHeight : 20f;
+
+    /// <summary>
+    /// The cells the cell's editor covers while the active cell is edited: the active cell, widened to the
+    /// right in whole columns while the entry's widest line needs more room, and down in whole rows while its
+    /// lines need more height, never past the last column and the last row in view. At rest, the active cell.
+    /// </summary>
+    public SheetRange EditorRange
+    {
+        get
+        {
+            var active = _active;
+            if (!Editing) return new SheetRange(active);
+            var padding = Grid.CellPadding;
+            var wide = WidestEntryLine() + padding.Start + padding.End + CodeEditorController.CaretWidth;
+            var tall = Entry.Document.LineCount * LineHeight + padding.Top + padding.Bottom;
+            var last = LastInView();
+            var right = active.Col;
+            var width = Document.ColumnSpans.ExtentOf(right);
+            while (width < wide && right < last.Col)
+            {
+                right++;
+                width += Document.ColumnSpans.ExtentOf(right);
+            }
+            var bottom = active.Row;
+            var height = Document.RowSpans.ExtentOf(bottom);
+            while (height < tall && bottom < last.Row)
+            {
+                bottom++;
+                height += Document.RowSpans.ExtentOf(bottom);
+            }
+            return new SheetRange(active, new CellRef(bottom, right));
+        }
+    }
+
+    /// <summary>The document and the measurer the widest line was last measured for, and its width: an entry
+    /// is measured once per edit, not on every pointer move that asks where the editor is.</summary>
+    private CodeDocument? _widestOf;
+    private Func<string, float>? _widestBy;
+    private float _widest;
+
+    /// <summary>How wide the entry's widest line is in the cells' type; 0 where nothing measures.</summary>
+    private float WidestEntryLine()
+    {
+        if (Grid.Measure is not { } measure) return 0;
+        var document = Entry.Document;
+        if (ReferenceEquals(document, _widestOf) && ReferenceEquals(measure, _widestBy)) return _widest;
+        var widest = 0f;
+        for (var line = 0; line < document.LineCount; line++)
+            widest = Math.Max(widest, measure(document.Line(line)));
+        _widestOf = document;
+        _widestBy = measure;
+        _widest = widest;
+        return widest;
+    }
+
+    /// <summary>The cell's editor as a rectangle in the surface's own coordinates.</summary>
+    public Rect EditorBounds => BoundsOf(EditorRange);
+
+    /// <summary>
+    /// The grid the entry is drawn on in the cell's editor, in the surface's own coordinates: the editor's
+    /// corner inside the cell's padding, slid left and up as far as it has to be for the caret to stay inside
+    /// the editor, a line of the cells' type tall, measured in the cells' type. What the composing component
+    /// draws the entry's lines on, what a press and a drag are read on, and what places the caret the host
+    /// paints and the input method's window stands at.
+    /// </summary>
+    public CodeGrid CellEditorGrid
+    {
+        get
+        {
+            var bounds = EditorBounds;
+            var padding = Grid.CellPadding;
+            // Kept inside the part of the editor that SHOWS: its last column or row may be one the view
+            // shows only some of, and a caret at the editor's own edge stood past the viewport's.
+            var shown = bounds.Intersect(Body());
+            var left = Math.Max(bounds.X + padding.Start, shown.X);
+            var right = Math.Min(bounds.Right - padding.End, shown.Right) - CodeEditorController.CaretWidth;
+            var top = Math.Max(bounds.Y + padding.Top, shown.Y);
+            var bottom = Math.Min(bounds.Bottom - padding.Bottom, shown.Bottom);
+            Entry.Grid = CellGrid(bounds, _slide, _rise);
+            var caret = Entry.CaretRect(Entry.Caret);
+            var slide = _slide;
+            if (caret.X > right) slide += caret.X - right;
+            else if (caret.X < left) slide -= left - caret.X;
+            var rise = _rise;
+            if (caret.Bottom > bottom) rise += caret.Bottom - bottom;
+            else if (caret.Y < top) rise -= top - caret.Y;
+            // The start wins where what shows is narrower or shorter than the caret (a last row the scroll
+            // bar half covers): never past the slide that stands the caret at the start, or the two rules
+            // undid each other on every call.
+            slide = Math.Min(slide, caret.X + _slide - left);
+            rise = Math.Min(rise, caret.Y + _rise - top);
+            // Never further than the text needs: a line that shrank back shows from its start again, and an
+            // entry that lost lines shows from its first.
+            slide = Math.Clamp(slide, 0, Math.Max(0, WidestEntryLine() - (right - left)));
+            rise = Math.Clamp(rise, 0, Math.Max(0, Entry.Document.LineCount * LineHeight - (bottom - top)));
+            if (slide != _slide || rise != _rise)
+            {
+                _slide = slide;
+                _rise = rise;
+                Entry.Grid = CellGrid(bounds, slide, rise);
+            }
+            return Entry.Grid;
+        }
+    }
+
+    private CodeGrid CellGrid(Rect bounds, float slide, float rise)
+    {
+        var padding = Grid.CellPadding;
+        var origin = new Point(bounds.X + padding.Start - slide, bounds.Y + padding.Top - rise);
+        // Measured, a cell of the grid is only the room a band leaves for a line's break.
+        return Grid.Measure is { } measure
+            ? new CodeGrid(origin, new Size(Math.Max(measure(" "), 4f), LineHeight), Measure: measure)
+            : new CodeGrid(origin, new Size(8, LineHeight));
+    }
+
+    /// <summary>Puts the entry on the cell's editor's grid, the one the next geometric answer is read on.</summary>
+    private void UseCellView()
+    {
+        EntryView = SheetEntryView.Cell;
+        _ = CellEditorGrid;
+    }
+
+    /// <summary>Whether a point lies inside the cell's editor while a cell is edited.</summary>
+    private bool InEditor(Point position) => Editing && EditorBounds.Contains(position);
+
     /// <summary>Whether a press at <paramref name="position"/> grabs the fill handle: within
     /// <see cref="FillHandleGrab"/> of the selection's corner, while no cell is being edited and the corner
     /// is drawn, which it is not under a pinned header.</summary>
@@ -623,21 +938,133 @@ public sealed class SheetController : ISheetSurfaceModel
 
     /// <inheritdoc />
     public PointerCursor CursorAt(Point position) =>
-        OnFillHandle(position) ? PointerCursor.Crosshair : PointerCursor.Default;
+        InEditor(position) ? PointerCursor.Text
+        : OnFillHandle(position) ? PointerCursor.Crosshair
+        : PointerCursor.Default;
 
     /// <inheritdoc />
-    public bool HandleKey(string key, KeyModifiers modifiers, ITextClipboard? clipboard) =>
-        SheetKeymap.Handle(this, key, modifiers, clipboard);
+    public bool HandleKey(string key, KeyModifiers modifiers, KeyboardConvention convention, ITextClipboard? clipboard) =>
+        SheetKeymap.Handle(this, key, modifiers, convention, clipboard);
 
     /// <summary>
-    /// Typed text, Excel's way: the first character of an entry REPLACES the active cell (a fresh
-    /// draft seeded with it), and the rest append to the draft. The document changes on commit.
+    /// Typed text, Excel's way: the first character of an entry REPLACES the active cell (a fresh, empty
+    /// entry in Enter mode takes it), and the rest go in at the entry's caret. The document changes on
+    /// commit.
     /// </summary>
     public bool HandleText(string text)
     {
         if (text.Length == 0) return false;
-        SheetKeymap.Type(this, text);
-        return true;
+        TabReleased = false;
+        if (!Editing) BeginEdit("", SheetEditMode.Enter);
+        UseCellView();
+        return Entry.HandleText(text);
+    }
+
+    /// <inheritdoc />
+    public bool SetComposition(string text)
+    {
+        if (!Editing)
+        {
+            if (text.Length == 0) return false;
+            TabReleased = false;
+            BeginEdit("", SheetEditMode.Enter);
+        }
+        UseCellView();
+        return Entry.SetComposition(text);
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<Rect> Carets
+    {
+        get
+        {
+            if (!Editing || EntryView != SheetEntryView.Cell) return [];
+            _ = CellEditorGrid;
+            // Clipped to the part of the editor that shows: an editor scrolled partly under the pinned
+            // headers is drawn clipped by the body, and a caret drawn whole stood over the headers.
+            var shown = EditorBounds.Intersect(Body());
+            var carets = new List<Rect>();
+            foreach (var caret in Entry.Carets)
+            {
+                var clipped = caret.Intersect(shown);
+                if (clipped.Width > 0 && clipped.Height > 0) carets.Add(clipped);
+            }
+            return carets;
+        }
+    }
+
+    /// <summary>The cells' part of the surface, past the pinned headers, as far as the viewport shows; the
+    /// whole editor when nothing scrolls the grid.</summary>
+    private Rect Body() =>
+        Grid.Scroll is { } scroll && scroll.Viewport.Width > 0 && scroll.Viewport.Height > 0
+            ? Rect.FromLTRB(Grid.HeaderWidth, Grid.HeaderHeight, scroll.Viewport.Width, scroll.Viewport.Height)
+            : EditorBounds;
+
+    /// <inheritdoc />
+    public Rect InputBounds =>
+        Carets is { Count: > 0 } carets ? carets[0] : BoundsOf(new SheetRange(_active));
+
+    private int _focusVersion;
+
+    /// <inheritdoc />
+    public int FocusVersion => _focusVersion;
+
+    /// <summary>Asks for the keyboard: whichever host draws this sheet gives it to the surface on its next
+    /// frame. What the formula bar and the name box call when they are done with it.</summary>
+    public void RequestFocus() => _focusVersion++;
+
+    /// <inheritdoc />
+    public void FocusChanged(bool focused)
+    {
+        // Coming back takes Tab again, as a code editor's does; leaving cancels a composition and keeps the
+        // entry open, as Excel keeps it while another window has the keyboard.
+        if (focused) TabReleased = false;
+        else if (Editing && EntryView == SheetEntryView.Cell) Entry.FocusChanged(false);
+    }
+
+    /// <summary>
+    /// Whether the next Tab LEAVES the sheet instead of moving the active cell: Escape at rest sets it, the
+    /// one way out a keyboard has from a grid that takes Tab, and any other key, or coming back to the sheet,
+    /// clears it (WCAG 2.1.2, as the code editor's <c>TabMovesFocus</c>).
+    /// </summary>
+    public bool TabReleased { get; set; }
+
+    /// <summary>
+    /// Whether <paramref name="command"/> is one a cell's entry has no use for, among the code engine's
+    /// chords: indenting, comments, the line operations, and the completion, signature, hover and problem
+    /// keys until a language for formulas brings them (slice 7). The entry gives them back to the host
+    /// rather than run them.
+    /// </summary>
+    private static bool NotACellsCommand(CodeCommand command) =>
+        command is CodeCommand.Indent or CodeCommand.Outdent or CodeCommand.ToggleLineComment
+            or CodeCommand.MoveLinesUp or CodeCommand.MoveLinesDown or CodeCommand.CopyLinesUp
+            or CodeCommand.CopyLinesDown or CodeCommand.DeleteLines or CodeCommand.JoinLines
+            or CodeCommand.InsertLineAbove or CodeCommand.InsertLineBelow or CodeCommand.CompletionShow
+            or CodeCommand.SignatureHelpShow or CodeCommand.HoverShow or CodeCommand.ProblemNext
+            or CodeCommand.ProblemPrevious;
+
+    /// <summary>The keyboard tradition the entry's given-back chords were read for, or null before any.</summary>
+    private KeyboardConvention? _entryKeysFor;
+
+    /// <summary>
+    /// A key for the entry, through the code engine's keymap in the keyboard's own tradition, once the chords
+    /// a cell has no use for are given back (<see cref="CodeEditorController.KeyBindings"/>). Answers whether
+    /// the entry claimed it.
+    /// </summary>
+    internal bool EntryKey(string key, KeyModifiers modifiers, KeyboardConvention convention)
+    {
+        if (_entryKeysFor != convention)
+        {
+            Entry.KeyBindings.Clear();
+            foreach (var binding in CodeKeymap.Defaults(convention))
+            {
+                if (NotACellsCommand(binding.Command))
+                    Entry.KeyBindings.Add(binding with { Command = CodeCommand.None });
+            }
+            _entryKeysFor = convention;
+        }
+        UseView();
+        return Entry.HandleKey(key, modifiers, convention, null);
     }
 
     /// <summary>
@@ -664,11 +1091,22 @@ public sealed class SheetController : ISheetSurfaceModel
                 // A fill whose release never came is over: this press starts afresh.
                 _selecting = false;
                 _tapped = null;
+                _entryPressed = false;
                 if (Filling) CancelFill();
                 if (kind == PointerKind.Touch)
                 {
                     _tapped = CellAt(position);
                     return false;
+                }
+                // Inside the cell's editor a press is the entry's: it places the caret, a double click
+                // selects a word and a drag selects text, in Edit mode, as a press in Excel's editor does.
+                if (InEditor(position))
+                {
+                    EditMode = SheetEditMode.Edit;
+                    UseCellView();
+                    _entryPressed = true;
+                    Entry.HandlePointer(PointerPhase.Down, position, modifiers, clicks);
+                    return true;
                 }
                 if (Editing) CommitEdit();
                 if (OnFillHandle(position))
@@ -677,13 +1115,18 @@ public sealed class SheetController : ISheetSurfaceModel
                     _dragAt = position;
                     return true;
                 }
-                Press(CellAt(position), modifiers, clicks);
+                Press(CellAt(position), position, modifiers, clicks);
                 _selecting = clicks < 2 && (modifiers & KeyModifiers.Shift) == 0;
                 if (_selecting) _dragAt = position;
                 return true;
             }
             case PointerPhase.Move:
             {
+                if (_entryPressed)
+                {
+                    UseCellView();
+                    return Entry.HandlePointer(PointerPhase.Move, position, modifiers, clicks);
+                }
                 if (!Filling && !_selecting) return false;
                 _dragAt = position;
                 // Past an edge of the cells the grid scrolls toward the pointer, and the move answers
@@ -695,15 +1138,32 @@ public sealed class SheetController : ISheetSurfaceModel
             }
             case PointerPhase.Up:
             {
+                // A drag that drew a range ends here, and what shows its size changes with it.
+                var wasSelecting = Selecting;
                 StopDrag();
+                if (_entryPressed)
+                {
+                    _entryPressed = false;
+                    UseCellView();
+                    Entry.HandlePointer(PointerPhase.Up, position, modifiers, clicks);
+                    return true;
+                }
                 if (_tapped is { } tapped)
                 {
                     _tapped = null;
+                    // A finger that lifts inside the editor places the caret there, in Edit mode.
+                    if (InEditor(position))
+                    {
+                        EditMode = SheetEditMode.Edit;
+                        UseCellView();
+                        Entry.Selection = new CodeRange(Entry.PositionAt(position));
+                        return true;
+                    }
                     if (Editing) CommitEdit();
-                    Press(tapped, modifiers, clicks);
+                    Press(tapped, position, modifiers, clicks);
                     return true;
                 }
-                if (!Filling) return false;
+                if (!Filling) return wasSelecting;
                 CommitFill();
                 return true;
             }
@@ -713,6 +1173,12 @@ public sealed class SheetController : ISheetSurfaceModel
                 // nothing, and a finger the grid took as a pan selects nothing.
                 StopDrag();
                 _tapped = null;
+                if (_entryPressed)
+                {
+                    _entryPressed = false;
+                    Entry.HandlePointer(PointerPhase.Cancel, position, modifiers, clicks);
+                    return true;
+                }
                 if (!Filling) return false;
                 CancelFill();
                 return true;
@@ -731,12 +1197,15 @@ public sealed class SheetController : ISheetSurfaceModel
     public bool Follow() => _dragAt is { } at && (Filling || _selecting) && Drag(at);
 
     /// <summary>A press that selects: the cell, the selection stretched to it with Shift, and the
-    /// second press of a double click editing it.</summary>
-    private void Press(CellRef cell, KeyModifiers modifiers, int clicks)
+    /// second press of a double click editing it in Edit mode, with the caret where it landed.</summary>
+    private void Press(CellRef cell, Point position, KeyModifiers modifiers, int clicks)
     {
         if ((modifiers & KeyModifiers.Shift) != 0) SelectTo(cell);
         else Select(new SheetRange(cell));
-        if (clicks >= 2) BeginEdit(Document.GetCell(cell));
+        if (clicks < 2) return;
+        BeginEdit(Document.GetCell(cell), SheetEditMode.Edit);
+        UseCellView();
+        Entry.Selection = new CodeRange(Entry.PositionAt(position));
     }
 
     /// <summary>The drag in flight reaches the cell under <paramref name="position"/>, held to the cells
