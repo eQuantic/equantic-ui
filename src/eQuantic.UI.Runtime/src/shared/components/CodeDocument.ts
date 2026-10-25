@@ -127,7 +127,7 @@ export class CodeDocument {
     }
 
     replace(range: CodeRange, text: string) {
-        let caret;
+        let caret: any;
         const $r = (() => {
             let start = this.clamp(range.start);
             let end = this.clamp(range.end);

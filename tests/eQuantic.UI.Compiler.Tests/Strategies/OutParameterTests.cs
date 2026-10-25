@@ -28,8 +28,28 @@ public class OutParameterTests
             """);
 
         js.Should().Contain("head(text: string, at: number)", "an out parameter is not passed IN");
-        js.Should().Contain("let rest;");
+        js.Should().Contain("let rest: any;");
         js.Should().Contain("return { $: $r, rest };", "the value and the out come back together");
+    }
+
+    /// <summary>
+    /// An out is declared <c>any</c> in TypeScript, as every variable an arrow binds is: the body assigns it
+    /// inside the arrow it runs in, TypeScript cannot follow that, and an out assigned an empty list read
+    /// as an implicit <c>any[]</c>, which fails the runtime's type check (TS7005, #1034).
+    /// </summary>
+    [Fact]
+    public void AnOutInTypeScript_IsDeclaredAny_SoAnEmptyListTypeChecks()
+    {
+        var js = Convert("""
+            public bool Take(out List<int> taken, out int count)
+            {
+                taken = [];
+                count = 0;
+                return true;
+            }
+            """);
+
+        js.Should().Contain("let taken: any, count: any;");
     }
 
     [Fact]
@@ -49,7 +69,7 @@ public class OutParameterTests
             }
             """);
 
-        js.Should().Contain("let rest;", "the variable exists before the call assigns it");
+        js.Should().Contain("let rest: any;", "the variable exists before the call assigns it");
         js.Should().Contain("($o => (rest = $o.rest, $o.$))(this.head(text, 2))");
     }
 

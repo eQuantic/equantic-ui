@@ -26,6 +26,7 @@ export { Chip } from './Chip';
 export { CodeBlock } from './CodeBlock';
 export { CodeBlock$CodeMetrics } from './CodeBlock$CodeMetrics';
 export { CodeCell } from './CodeCell';
+export { CodeChange } from './CodeChange';
 export { CodeCollapse } from './CodeCollapse';
 export { CodeCompletion } from './CodeCompletion';
 export { CodeCompletionAnswer } from './CodeCompletionAnswer';
