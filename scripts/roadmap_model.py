@@ -179,8 +179,9 @@ def delivered_points(issue: Issue) -> float | None:
 
 
 def unread(issues: dict) -> list:
-    """The merged pull requests whose size a delivered, unpointed issue still needs."""
-    return sorted({p.number for i in issues.values() if i.closed and i.completed and i.points is None
+    """The merged pull requests whose size a delivered issue still needs: one nobody pointed, and a
+    parent, whatever points it carries, since a parent delivers its own pull requests' size."""
+    return sorted({p.number for i in issues.values() if i.closed and i.completed and (i.points is None or i.children)
                    for p in i.pulls if p.merged and p.written is None})
 
 
@@ -408,26 +409,32 @@ def forecast(issues: dict, milestones: dict, today: dt.date) -> Forecast | None:
     return Forecast(measured, cost, lanes, order, span, today)
 
 
-def plan(issues: dict, fc: Forecast) -> dict:
+def plan(issues: dict, fc: Forecast | None) -> dict:
     """The start and target of every dated issue, each with where it came from: what happened where
-    it happened, the plan for the rest."""
+    it happened, the plan for the rest. With no forecast (no pace measured), only what happened."""
     found = {}
     for issue in issues.values():
         if issue.type not in DATED or (issue.closed and not issue.completed):
             continue
-        ahead = [fc.span[w.number] for w in work(issue) if w.number in fc.span]
         began, ended = real_start(issue), real_end(issue)
+        ahead = [fc.span[w.number] for w in work(issue) if w.number in fc.span] if fc else []
         firsts = [s for s, _ in ahead if s is not None]
         if began:
             start = (began, "real")
+        elif fc is None:
+            start = (None, "no pace")
+        elif firsts:
+            start = (fc.day(min(firsts)), "forecast")
         else:
-            start = (fc.day(min(firsts)) if firsts else None, "forecast")
+            start = (None, "beyond the horizon")
         if ended:
             target = (ended, "real")
+        elif fc is None:
+            target = (None, "no pace")
         elif ahead and all(e is not None for _, e in ahead):
             target = (fc.day(max(e for _, e in ahead)), "forecast")
         else:
-            target = (None, "beyond the horizon" if ahead else "nothing open")
+            target = (None, "beyond the horizon")
         found[issue.number] = (start, target)
     return found
 
@@ -436,10 +443,12 @@ def changes(issues: dict, dates: dict) -> list:
     """What the board should change: the points a delivered issue's size says when nobody gave it any,
     a parent under way shown In progress, a closed issue shown Done, and the dates of the plan. It
     never closes an issue: whether a parent is done is a judgement its sub-issues cannot make, so the
-    report lists those for a person to close."""
+    report lists those for a person to close. A date the plan no longer reaches is cleared, so the
+    board never shows one the report does not stand behind; with no pace, a date is left as it is."""
     found = []
     for issue in sorted(issues.values(), key=lambda i: i.number):
-        if issue.points is None and issue.item and (points := delivered_points(issue)):
+        # A parent's points are its sub-issues': it is never given its own.
+        if issue.points is None and not issue.children and issue.item and (points := delivered_points(issue)):
             found.append(Change(issue, "Estimate", None, points, f"{size(issue):.0f} lines written"))
         if issue.type in ROLLED_UP and issue.children and not issue.closed and issue.status not in STARTED \
                 and progressing(issue):
@@ -447,11 +456,12 @@ def changes(issues: dict, dates: dict) -> list:
         if issue.closed and issue.completed and issue.item and issue.status != "Done":
             found.append(Change(issue, "status", issue.status, "Done", "it is closed"))
         if issue.number in dates:
-            (start, start_why), (target, target_why) = dates[issue.number]
-            if start and start != issue.start:
-                found.append(Change(issue, "Start date", issue.start, start, start_why))
-            if target and target != issue.target:
-                found.append(Change(issue, "Target date", issue.target, target, target_why))
+            for name, (value, why), held in zip(("Start date", "Target date"), dates[issue.number],
+                                                (issue.start, issue.target)):
+                if value and value != held:
+                    found.append(Change(issue, name, held, value, why))
+                elif value is None and held and why == "beyond the horizon":
+                    found.append(Change(issue, name, held, None, why))
     return found
 
 

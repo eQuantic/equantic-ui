@@ -147,10 +147,11 @@ def set_points(meta: dict, issue: Issue, points: float):
         p=project["id"], i=issue.item, f=project["estimate"]["id"], n=float(points))
 
 
-def set_dates(meta: dict, issue: Issue, start: dt.date | None, target: dt.date | None):
+def set_dates(meta: dict, issue: Issue, dates: dict):
+    """Writes `dates`, {"Start date" or "Target date": a date, or None to clear the field}."""
     fields = {f["name"]: f["id"] for f in meta["organization"]["issueFields"]["nodes"] if f}
-    values = [{"fieldId": fields[name], "dateValue": value.isoformat()}
-              for name, value in (("Start date", start), ("Target date", target)) if value]
+    values = [{"fieldId": fields[name], "dateValue": value.isoformat()} if value else
+              {"fieldId": fields[name], "delete": True} for name, value in dates.items()]
     if values:
         gql("""mutation($i: ID!, $f: [IssueFieldCreateOrUpdateInput!]!) { setIssueFieldValue(input: {
             issueId: $i, issueFields: $f }) { clientMutationId } }""", i=issue.id, f=values)

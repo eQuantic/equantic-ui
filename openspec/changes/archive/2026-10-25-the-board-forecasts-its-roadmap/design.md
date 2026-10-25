@@ -52,7 +52,7 @@ milestone, 1.0 first, with its uncertainty said; a size for every issue, past an
 
 - Lines are a proxy for effort: an investigation that ends in a ten-line fix is pointed 1. The scale
   is for what nobody pointed; a person's estimate is kept.
-- The board grows faster than it delivers today (453 issues gained in the window that delivered 1,133
+- The board grows faster than it delivers today (453 issues gained in the window that delivered 1,141
   points). The forecast counts the board as it stands, and the report says how much it grew.
 - A feature whose slices are not filed is forecast at what is filed. The plan's slices go on the board,
   and an issue past 13 points is listed until it is split.

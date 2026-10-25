@@ -41,6 +41,16 @@ def numbers(issues: list) -> str:
     return ", ".join(f"#{i.number}" for i in sorted(issues, key=lambda i: i.number))
 
 
+def show(found: list):
+    print()
+    for c in found:
+        new = "cleared" if c.new is None else str(c.new)
+        print(f"#{c.issue.number:<5} {c.issue.type:<10} {c.kind:<11} {str(c.old or '-'):<11} → {new:<11} "
+              f"{c.why[:28]:<28} {c.issue.title[:58]}")
+    if not found:
+        print("The board already shows this.")
+
+
 def report(issues: dict, milestones: dict, fc, runs: int, seed: int) -> list:
     p = fc.pace
     ahead = scope(issues, None)
@@ -75,12 +85,7 @@ def report(issues: dict, milestones: dict, fc, runs: int, seed: int) -> list:
               "close the ones that are done.")
 
     found = changes(issues, plan(issues, fc))
-    print()
-    for c in found:
-        print(f"#{c.issue.number:<5} {c.issue.type:<10} {c.kind:<11} {str(c.old or '-'):<11} → {str(c.new):<11} "
-              f"{c.why[:28]:<28} {c.issue.title[:58]}")
-    if not found:
-        print("The board already shows this.")
+    show(found)
 
     groups = {m: scope(issues, m) for m in milestones}
     groups[None] = ahead
@@ -115,10 +120,9 @@ def apply(meta: dict, found: list):
         elif c.kind == "Estimate":
             board.set_points(meta, c.issue, c.new)
         else:
-            dates[c.issue.number]["start" if c.kind == "Start date" else "target"] = (c.issue, c.new)
-    for wanted in dates.values():
-        issue = next(iter(wanted.values()))[0]
-        board.set_dates(meta, issue, wanted.get("start", (None, None))[1], wanted.get("target", (None, None))[1])
+            dates[c.issue.number][c.kind] = c.new
+    for c in {c.issue.number: c for c in found if c.issue.number in dates}.values():
+        board.set_dates(meta, c.issue, dates[c.issue.number])
 
 
 def main():
@@ -131,9 +135,13 @@ def main():
     meta, milestones, issues = board.load()
     fc = forecast(issues, milestones, dt.date.today())
     if fc is None:
-        print("The board has delivered nothing yet, so there is no pace to forecast from.")
-        return
-    found = report(issues, milestones, fc, args.runs, args.seed)
+        # What happened still reaches the board: the points, the statuses and the real dates need no pace.
+        print("Nothing was delivered in the window, so there is no pace to forecast from: only what happened "
+              "is written.")
+        found = changes(issues, plan(issues, None))
+        show(found)
+    else:
+        found = report(issues, milestones, fc, args.runs, args.seed)
     if args.apply and found:
         apply(meta, found)
         print(f"\nWrote {len(found)} changes to the board.")

@@ -5,7 +5,7 @@
 import datetime as dt
 import unittest
 
-from roadmap_model import (NO_EPIC, Issue, PullRequest, changes, delivered_points, done_below, forecast, link,
+from roadmap_model import (NO_EPIC, Forecast, Issue, PullRequest, changes, unread, delivered_points, done_below, forecast, link,
                            monte_carlo, pace, plan, points_for, progressing, queues, scope, simulate, size, work,
                            written)
 
@@ -220,6 +220,37 @@ class ChangeTests(unittest.TestCase):
         issue = done(1, points=2)
         issue.status = "In progress"
         self.assertEqual([(c.kind, c.new) for c in changes(board(issue), {})], [("status", "Done")])
+
+    def test_a_parent_is_never_given_points_of_its_own(self):
+        issues = board(done(1, "Feature", closed=1, pulls=[pull(10, 6, 1, lines=900)]),
+                       done(2, parent=1, closed=2, points=3))
+        self.assertNotIn("Estimate", {c.kind for c in changes(issues, {})})
+
+    def test_a_parent_s_pull_requests_are_read_whatever_points_it_carries(self):
+        # A parent delivers its own pull requests' size, so its points never stop the reading: a
+        # reload of a board that gave it some must not drop it from the pace.
+        issues = board(done(1, "Feature", closed=1, points=5, pulls=[pull(10, 6, 1)]),
+                       done(2, parent=1, closed=2, points=3, pulls=[pull(11, 6, 2)]))
+        self.assertEqual(unread(issues), [10])
+
+    def test_with_no_pace_what_happened_still_reaches_the_board(self):
+        issues = board(done(1, "Feature", closed=40, pulls=[pull(10, opened=45, merged=40, lines=300)]))
+        issues[1].status = "In progress"
+        found = changes(issues, plan(issues, None))
+        self.assertEqual({(c.kind, c.new) for c in found},
+                         {("Estimate", 2), ("status", "Done"), ("Start date", day(45)), ("Target date", day(40))})
+
+    def test_a_date_the_plan_no_longer_reaches_is_cleared(self):
+        issues = board(todo(1, "Feature", points=8))
+        issues[1].start, issues[1].target = day(-3), day(-9)
+        fc = Forecast(None, {}, {}, [], {1: (None, None)}, TODAY)
+        found = changes(issues, plan(issues, fc))
+        self.assertEqual({(c.kind, c.new) for c in found}, {("Start date", None), ("Target date", None)})
+
+    def test_with_no_pace_a_forecast_date_is_left_as_it_is(self):
+        issues = board(todo(1, "Feature", points=8))
+        issues[1].target = day(-9)
+        self.assertEqual(changes(issues, plan(issues, None)), [])
 
     def test_an_issue_no_epic_holds_works_in_a_lane_of_its_own(self):
         issues = board(todo(1, points=3), done(2, closed=1, points=3))
