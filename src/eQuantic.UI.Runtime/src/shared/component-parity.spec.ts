@@ -627,7 +627,12 @@ function canonical(node: HtmlNode): unknown {
     if (value !== undefined && value !== null) attrs[key] = normalize(key, value);
   }
   const result: Record<string, unknown> = { tag: node.tag };
-  if (node.key !== undefined && node.key !== null) result.key = node.key;
+  // A code surface's door is keyed by the surface's PATH (#1012), so the reconciler keeps the one
+  // element the keyboard is in whatever carets and notes stand around it: a path, like the surface's
+  // own data-eq-code above, that only the client has. The server lowers no paths and writes none.
+  const pathKeyedDoor = node.tag === 'textarea' && node.attributes?.['class'] === 'eq-code-input'
+    && typeof node.key === 'string' && node.key.endsWith('/input');
+  if (node.key !== undefined && node.key !== null && !pathKeyedDoor) result.key = node.key;
   if (node.textContent !== undefined && node.textContent !== null) result.text = node.textContent;
   result.attrs = attrs;
   const entry = ENTRY_TAGS.has(node.tag);
