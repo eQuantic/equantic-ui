@@ -209,19 +209,21 @@ public static class CodeKeymap
             Bind("F8", none, CodeCommand.ProblemNext),
             Bind("F8", shift, CodeCommand.ProblemPrevious),
 
-            // ---- Escape closes what is over the code, the list, then a card, then the panel, then takes
-            // away every caret but the primary, one at a time, so the trap on Tab stays armed and a dialog
-            // around the editor stays open; with nothing over the code and one caret it releases the trap and
-            // claims nothing. A list asked for and not yet showing goes with whichever of them Escape closes
-            // (HoverHide, SignatureHelpHide, ReleaseKeyboard).
+            // ---- Escape closes what is over the code, the list, then a card, then the panel, then leaves a
+            // snippet, then takes away every caret but the primary, one at a time, so the trap on Tab stays
+            // armed and a dialog around the editor stays open; with nothing over the code and one caret it
+            // releases the trap and claims nothing. A list asked for and not yet showing goes with whichever of
+            // them Escape closes (HoverHide, SignatureHelpHide, LeaveSnippet, ReleaseKeyboard).
             Bind("Escape", none, CodeCommand.CompletionHide),
             Bind("Escape", none, CodeCommand.HoverHide),
             Bind("Escape", none, CodeCommand.SignatureHelpHide),
+            Bind("Escape", none, CodeCommand.LeaveSnippet),
             Bind("Escape", none, CodeCommand.RemoveSecondaryCursors),
             Bind("Escape", none, CodeCommand.ReleaseKeyboard),
             Bind("Escape", shift, CodeCommand.CompletionHide),
             Bind("Escape", shift, CodeCommand.HoverHide),
             Bind("Escape", shift, CodeCommand.SignatureHelpHide),
+            Bind("Escape", shift, CodeCommand.LeaveSnippet),
             Bind("Escape", shift, CodeCommand.RemoveSecondaryCursors),
             Bind("Escape", shift, CodeCommand.ReleaseKeyboard),
 
@@ -275,6 +277,10 @@ public static class CodeKeymap
             Bind("Backspace", word, CodeCommand.DeleteWordLeft),
             Bind("Delete", none, CodeCommand.DeleteRight),
             Bind("Delete", word, CodeCommand.DeleteWordRight),
+            // Tab walks a snippet's stops while one is being filled in, after the list's own Tab and before
+            // indenting; ⇧Tab at its first stop goes on to outdent, as VS Code's has no stop to go back to.
+            Bind("Tab", none, CodeCommand.NextTabStop),
+            Bind("Tab", shift, CodeCommand.PreviousTabStop),
             // Tab INDENTS inside an editor, which is the whole point — unless Escape released it, or a
             // read-only view has nothing to indent: there Tab belongs to the form.
             Bind("Tab", none, CodeCommand.Indent),

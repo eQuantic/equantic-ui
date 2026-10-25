@@ -38,6 +38,9 @@ public sealed class CodeCompletion
     private bool _active;
     private CodePosition _start;
     private bool _openedEmpty;
+    // The list shows a snippet's choice (#1013): every option while its placeholder is selected, and accepting
+    // one writes it over every place the stop is written.
+    private bool _choosing;
     // Every edit made since the list opened, in the order made: a provider's range is in the document it
     // was asked about, and stands where the edits made after it carried it (see CodeCompletionAnswer.Asked).
     private readonly List<CodeEdit> _edits = [];
@@ -142,17 +145,37 @@ public sealed class CodeCompletion
     }
 
     /// <summary>Starts completing the word that begins at <paramref name="start"/>, dropping any
-    /// list before it, and asks <paramref name="providers"/> for it.</summary>
+    /// list before it, and asks <paramref name="providers"/> for it. A snippet's choice is
+    /// <paramref name="choosing"/>, set before the providers are asked, since an answer that is already
+    /// there is filtered as it lands.</summary>
     private void Open(CodePosition start, CodeCompletionTrigger trigger, char? character,
-        List<ICodeCompletionProvider> providers)
+        List<ICodeCompletionProvider> providers, bool choosing = false)
     {
         Close(raise: false);
         _active = true;
+        _choosing = choosing;
         _edits.Clear();
         _start = start;
-        _openedEmpty = start == _editor.Caret;
+        _openedEmpty = choosing || start == _editor.Caret;
         _list = new CancellationTokenSource();
         Ask(trigger, character, providers, announce: true);
+    }
+
+    /// <summary>
+    /// Shows <paramref name="options"/>, a snippet's choice, as the list at <paramref name="at"/>, the stop's
+    /// placeholder (#1013): every option, in its order, while the placeholder is selected, and those that match
+    /// what is typed in it after. Accepting one writes it over every place the stop is written.
+    /// </summary>
+    internal void OfferChoices(CodeRange at, IReadOnlyList<string> options)
+    {
+        if (_editor.ReadOnly) return;
+        Open(at.Start, CodeCompletionTrigger.Invoked, null, [new CodeChoiceProvider(options)], choosing: true);
+    }
+
+    /// <summary>Closes the list when it shows a snippet's choice: the snippet's session ended.</summary>
+    internal void DropChoices()
+    {
+        if (_choosing) Close(raise: true);
     }
 
     /// <summary>
@@ -291,7 +314,9 @@ public sealed class CodeCompletion
     {
         if (!_active) return;
         var caret = _editor.Caret;
-        if (!_editor.Selection.IsEmpty || caret.Line != _start.Line || caret.Column < _start.Column
+        // A choice's placeholder is selected while its list shows: the selection that closes a list is the
+        // choice's own there.
+        if ((!_editor.Selection.IsEmpty && !_choosing) || caret.Line != _start.Line || caret.Column < _start.Column
             || (caret.Column == _start.Column && !_openedEmpty))
         {
             Close(raise: true);
@@ -440,11 +465,14 @@ public sealed class CodeCompletion
         }
     }
 
-    /// <summary>What makes two offers one entry: one label and one inserted text, whichever provider
-    /// offered them. The label's length leads, so that no label and inserted text run together into
+    /// <summary>What makes two offers one entry: one label and one inserted text, or one snippet, whichever
+    /// provider offered them. The label's length leads, so that no label and inserted text run together into
     /// another pair's: "ab" inserting "c" and "a" inserting "bc" are two entries.</summary>
     private static string EntryOf(CodeCompletionItem item) =>
-        item.Label.Length + ":" + item.Label + (item.InsertText ?? item.Label);
+        item.Label.Length + ":" + item.Label
+        // A snippet is another entry than text that reads the same: a language's `for` and a snippet named
+        // `for` are both listed, where the snippet went into the keyword's entry and was never offered (#1013).
+        + (item.Snippet is { } snippet ? "s" + snippet.Body : "t" + (item.InsertText ?? item.Label));
 
     // ---- the list's keys --------------------------------------------------------------------
 
@@ -493,13 +521,23 @@ public sealed class CodeCompletion
     {
         if (!IsOpen || _selected < 0) return false;
         var offer = _shown[_selected];
+        // A snippet's choice is written over every place its stop is written (#1013).
+        if (_choosing)
+        {
+            var option = offer.Item.Label;
+            Close(raise: true);
+            return _editor.Snippet.Choose(option);
+        }
         var range = RangeOf(offer);
         var text = offer.Item.InsertText ?? offer.Item.Label;
         Close(raise: true);
 
         // With several carets the entry goes in at each, replacing around each what it replaces around the
-        // primary, as VS Code applies one suggestion at every cursor (#1012).
+        // primary, as VS Code applies one suggestion at every cursor (#1012). A snippet goes in the same way,
+        // and its session starts (#1013).
         var caret = _editor.Caret;
+        if (offer.Item.Snippet is { } snippet && range.Start.Line == caret.Line && range.End.Line == caret.Line)
+            return _editor.InsertSnippetAround(snippet, caret.Column - range.Start.Column, range.End.Column - caret.Column);
         if (_editor.HasOtherCarets && range.Start.Line == caret.Line && range.End.Line == caret.Line)
             return _editor.ReplaceAroundEveryCaret(caret.Column - range.Start.Column, range.End.Column - caret.Column, text);
 
@@ -524,6 +562,8 @@ public sealed class CodeCompletion
         {
             if (!IsOpen || _selected < 0) return false;
             var offer = _shown[_selected];
+            // A choice taken, and a snippet, which starts a session whatever its text, are always accepted.
+            if (_choosing || offer.Item.Snippet is not null) return true;
             return _editor.Document.TextIn(RangeOf(offer)) != (offer.Item.InsertText ?? offer.Item.Label);
         }
     }
@@ -552,6 +592,7 @@ public sealed class CodeCompletion
         _list = null;
         var was = _active;
         _active = false;
+        _choosing = false;
         _edits.Clear();
         _answers.Clear();
         _candidates = [];
@@ -614,9 +655,11 @@ public sealed class CodeCompletion
 
     // ---- what the word is -------------------------------------------------------------------------
 
-    /// <summary>The word typed so far: from where it starts to the caret.</summary>
+    /// <summary>The word typed so far: from where it starts to the caret, and nothing while a choice's
+    /// placeholder is selected, so every option shows.</summary>
     private string Word()
     {
+        if (_choosing && !_editor.Selection.IsEmpty) return "";
         var caret = _editor.Caret;
         if (caret.Line != _start.Line || caret.Column < _start.Column) return "";
         return _editor.Document.Line(caret.Line).Substring(_start.Column, caret.Column - _start.Column);

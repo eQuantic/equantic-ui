@@ -234,3 +234,41 @@ eQuantic.UI.Code.CodeEditorController.SelectAllOccurrences() -> bool
 eQuantic.UI.Code.CodeEditorController.RemoveSecondaryCursors() -> bool
 eQuantic.UI.Code.CodeEditorController.SelectionsIn(int first, int last) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>!
 eQuantic.UI.Code.CodeEditorController.CaretLinesIn(int first, int last) -> System.Collections.Generic.IReadOnlyList<int>!
+eQuantic.UI.Code.CodeCommand.NextTabStop = 72 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.PreviousTabStop = 73 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.LeaveSnippet = 74 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeEditorController.InsertSnippet(eQuantic.UI.Code.CodeSnippet! snippet) -> bool
+eQuantic.UI.Code.CodeEditorController.Snippet.get -> eQuantic.UI.Code.CodeSnippetSession!
+eQuantic.UI.Code.CodeCompletionItem.Snippet.get -> eQuantic.UI.Code.CodeSnippet?
+eQuantic.UI.Code.CodeCompletionItem.Snippet.init -> void
+eQuantic.UI.Code.CodeSnippetCompletionProvider.CodeSnippetCompletionProvider(System.Collections.Generic.IEnumerable<eQuantic.UI.Code.CodeSnippetDefinition!>! snippets) -> void
+eQuantic.UI.Code.CodeSnippetCompletionProvider.CompleteAsync(eQuantic.UI.Code.CodeDocument! document, eQuantic.UI.Code.CodePosition position, eQuantic.UI.Code.CodeCompletionContext! context, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<eQuantic.UI.Code.CodeCompletionList!>!
+eQuantic.UI.Code.CodeSnippetCompletionProvider
+eQuantic.UI.Code.CodeSnippet
+eQuantic.UI.Code.CodeSnippet.Body.get -> string!
+static eQuantic.UI.Code.CodeSnippet.Parse(string! body) -> eQuantic.UI.Code.CodeSnippet!
+override eQuantic.UI.Code.CodeSnippet.ToString() -> string!
+eQuantic.UI.Code.CodeSnippetDefinition
+eQuantic.UI.Code.CodeSnippetDefinition.<Clone>$() -> eQuantic.UI.Code.CodeSnippetDefinition!
+eQuantic.UI.Code.CodeSnippetDefinition.CodeSnippetDefinition(string! Prefix, string! Body, string? Description = null) -> void
+eQuantic.UI.Code.CodeSnippetDefinition.Deconstruct(out string! Prefix, out string! Body, out string? Description) -> void
+eQuantic.UI.Code.CodeSnippetDefinition.Equals(eQuantic.UI.Code.CodeSnippetDefinition? other) -> bool
+override eQuantic.UI.Code.CodeSnippetDefinition.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeSnippetDefinition.GetHashCode() -> int
+override eQuantic.UI.Code.CodeSnippetDefinition.ToString() -> string!
+static eQuantic.UI.Code.CodeSnippetDefinition.operator !=(eQuantic.UI.Code.CodeSnippetDefinition? left, eQuantic.UI.Code.CodeSnippetDefinition? right) -> bool
+static eQuantic.UI.Code.CodeSnippetDefinition.operator ==(eQuantic.UI.Code.CodeSnippetDefinition? left, eQuantic.UI.Code.CodeSnippetDefinition? right) -> bool
+eQuantic.UI.Code.CodeSnippetDefinition.Prefix.get -> string!
+eQuantic.UI.Code.CodeSnippetDefinition.Prefix.init -> void
+eQuantic.UI.Code.CodeSnippetDefinition.Body.get -> string!
+eQuantic.UI.Code.CodeSnippetDefinition.Body.init -> void
+eQuantic.UI.Code.CodeSnippetDefinition.Description.get -> string?
+eQuantic.UI.Code.CodeSnippetDefinition.Description.init -> void
+eQuantic.UI.Code.CodeSnippetSession
+eQuantic.UI.Code.CodeSnippetSession.IsActive.get -> bool
+eQuantic.UI.Code.CodeSnippetSession.HasPrevious.get -> bool
+eQuantic.UI.Code.CodeSnippetSession.Changed -> System.Action?
+eQuantic.UI.Code.CodeSnippetSession.Next() -> bool
+eQuantic.UI.Code.CodeSnippetSession.Previous() -> bool
+eQuantic.UI.Code.CodeSnippetSession.Leave() -> bool
+eQuantic.UI.Code.CodeSnippetSession.PlaceholdersIn(int first, int last) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>!

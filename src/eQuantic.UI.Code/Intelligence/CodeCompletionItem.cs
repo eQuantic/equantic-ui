@@ -31,11 +31,19 @@ public sealed record CodeCompletionItem(string Label, CodeCompletionKind Kind = 
 
     /// <summary>
     /// The range accepting replaces, on the line of the position the provider was asked about and as
-    /// the document stood when it was asked: LSP's edit range. Its end keeps its distance from the end
-    /// of the line, so what is typed or deleted at the caret moves it and a move of the caret does
-    /// not. Null replaces the word typed before the caret.
+    /// the document stood when it was asked: LSP's edit range. It is carried through every edit made
+    /// since, at the caret and at every other caret, what is typed at its start or end taken in, so a
+    /// move of the caret alone moves nothing (#1068). Null replaces the word typed before the caret.
     /// </summary>
     public CodeRange? Replacing { get; init; }
+
+    /// <summary>
+    /// What accepting inserts as a snippet, with tab stops, placeholders, choices and mirrors (#1013): LSP's
+    /// <c>insertTextFormat</c> of <c>Snippet</c>, which an adapter reads with <see cref="CodeSnippet.Parse"/>.
+    /// It goes in over what the entry replaces, at every caret, and its session starts at its first stop.
+    /// Null inserts <see cref="InsertText"/>, or the label, as text.
+    /// </summary>
+    public CodeSnippet? Snippet { get; init; }
 
     /// <summary>Selected when the list opens, among the items that match best: what a language
     /// server knows the person most likely wants next.</summary>

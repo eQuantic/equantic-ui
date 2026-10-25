@@ -197,6 +197,7 @@ export class CodeEditor extends StatefulComponent {
         editor.diagnostics.changed = $eq.delegates.combine(editor.diagnostics.changed, () => this.setState(() => {}));
         editor.hover.changed = $eq.delegates.combine(editor.hover.changed, () => this.setState(() => {}));
         editor.signatureHelp.changed = $eq.delegates.combine(editor.signatureHelp.changed, () => this.setState(() => {}));
+        editor.snippet.changed = $eq.delegates.combine(editor.snippet.changed, () => this.setState(() => {}));
         return editor;
     }
 
@@ -357,12 +358,16 @@ export class CodeEditor extends StatefulComponent {
 
     marks(editor: CodeEditorController, matches: CodeRange[], first: number, last: number, theme: any) {
         let problems = editor.diagnostics.items;
-        if ($eq.collections.count(matches) === 0 && !this.matchBrackets && editor.composition == null && $eq.collections.count(problems) === 0) return this.decorations;
+        if ($eq.collections.count(matches) === 0 && !this.matchBrackets && editor.composition == null && $eq.collections.count(problems) === 0 && !editor.snippet.isActive) return this.decorations;
         let marks: CodeDecoration[] = $eq.collections.listCopy(this.decorations);
+        for (const placeholder of editor.snippet.placeholdersIn(first, last)) {
+            let $n3: any; 
+            marks.push(($n3 = new CodeDecoration(placeholder, 'highlight'), $n3.color = theme.colors('info').subtle, $n3));
+        }
         for (const problem of problems) {
             if (problem.range.end.line < first || problem.range.start.line > last) continue;
-            let $n3: any; 
-            marks.push(($n3 = new CodeDecoration(problem.range, problem.severity === 'hint' ? 'dots' : 'squiggle'), $n3.color = CodeHoverCard.severityColor(theme, problem.severity), $n3));
+            let $n4: any; 
+            marks.push(($n4 = new CodeDecoration(problem.range, problem.severity === 'hint' ? 'dots' : 'squiggle'), $n4.color = CodeHoverCard.severityColor(theme, problem.severity), $n4));
         }
         let composition: any; 
         if ((composition = editor.composition) != null) marks.push(new CodeDecoration(composition, 'underline'));
