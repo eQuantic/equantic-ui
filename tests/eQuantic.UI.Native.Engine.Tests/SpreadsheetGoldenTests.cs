@@ -121,7 +121,7 @@ public class SpreadsheetGoldenTests
         host.PressUp(Spreadsheet.HeaderWidth + 48f, Spreadsheet.HeaderHeight + 14f);
         host.TextInput("Budget");
         sheet.Editing.Should().BeTrue();
-        sheet.Draft.Should().Be("Budget");
+        sheet.Entry.Document.Text.Should().Be("Budget");
 
         Render(host, "sheet-editing-draft");
     }

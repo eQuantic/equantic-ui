@@ -32,3 +32,94 @@ override eQuantic.UI.Sheet.SheetSpans.Total.get -> double
 *REMOVED*eQuantic.UI.Sheet.SheetGrid.SheetGrid(eQuantic.UI.Primitives.Point Origin, int FirstRow, int FirstCol) -> void
 eQuantic.UI.Sheet.SheetController.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
 eQuantic.UI.Sheet.SheetController.RevealCell.get -> eQuantic.UI.Sheet.CellRef
+eQuantic.UI.Sheet.SheetController.BeginEdit(string! seed, eQuantic.UI.Sheet.SheetEditMode mode) -> void
+eQuantic.UI.Sheet.SheetController.BreakLine() -> void
+eQuantic.UI.Sheet.SheetController.Carets.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
+eQuantic.UI.Sheet.SheetController.CellEditorGrid.get -> eQuantic.UI.Code.CodeGrid
+eQuantic.UI.Sheet.SheetController.EditMode.get -> eQuantic.UI.Sheet.SheetEditMode
+eQuantic.UI.Sheet.SheetController.EditorBounds.get -> eQuantic.UI.Primitives.Rect
+eQuantic.UI.Sheet.SheetController.EditorRange.get -> eQuantic.UI.Sheet.SheetRange
+eQuantic.UI.Sheet.SheetController.Entry.get -> eQuantic.UI.Code.CodeEditorController!
+eQuantic.UI.Sheet.SheetController.EntryView.get -> eQuantic.UI.Sheet.SheetEntryView
+eQuantic.UI.Sheet.SheetController.FillSelection(string! value) -> bool
+eQuantic.UI.Sheet.SheetController.FillSelectionWithEntry() -> bool
+eQuantic.UI.Sheet.SheetController.FocusChanged(bool focused) -> void
+eQuantic.UI.Sheet.SheetController.FocusVersion.get -> int
+eQuantic.UI.Sheet.SheetController.HandleKey(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.KeyboardConvention convention, eQuantic.UI.Primitives.ITextClipboard? clipboard) -> bool
+eQuantic.UI.Sheet.SheetController.InputBounds.get -> eQuantic.UI.Primitives.Rect
+eQuantic.UI.Sheet.SheetController.Now.get -> System.Func<System.DateTime>!
+eQuantic.UI.Sheet.SheetController.Now.set -> void
+eQuantic.UI.Sheet.SheetController.RequestFocus() -> void
+eQuantic.UI.Sheet.SheetController.SetComposition(string! text) -> bool
+eQuantic.UI.Sheet.SheetController.TabReleased.get -> bool
+eQuantic.UI.Sheet.SheetController.TabReleased.set -> void
+eQuantic.UI.Sheet.SheetController.ToggleEditMode() -> void
+eQuantic.UI.Sheet.SheetController.TypeNow(bool time) -> void
+eQuantic.UI.Sheet.SheetEditMode
+eQuantic.UI.Sheet.SheetEditMode.Edit = 1 -> eQuantic.UI.Sheet.SheetEditMode
+eQuantic.UI.Sheet.SheetEditMode.Enter = 0 -> eQuantic.UI.Sheet.SheetEditMode
+eQuantic.UI.Sheet.SheetEntryLanguage
+eQuantic.UI.Sheet.SheetEntryLanguage.Name.get -> string!
+eQuantic.UI.Sheet.SheetEntryLanguage.Rules.get -> eQuantic.UI.Code.CodeLanguageRules!
+eQuantic.UI.Sheet.SheetEntryLanguage.SheetEntryLanguage() -> void
+eQuantic.UI.Sheet.SheetEntryLanguage.Tokenize(string! line, int state, System.Collections.Generic.List<eQuantic.UI.Code.CodeToken>! into) -> int
+eQuantic.UI.Sheet.SheetEntryView
+eQuantic.UI.Sheet.SheetEntryView.Cell = 0 -> eQuantic.UI.Sheet.SheetEntryView
+eQuantic.UI.Sheet.SheetEntryView.FormulaBar = 1 -> eQuantic.UI.Sheet.SheetEntryView
+eQuantic.UI.Sheet.SheetGrid.CellPadding.get -> eQuantic.UI.Primitives.EdgeInsets
+eQuantic.UI.Sheet.SheetGrid.CellPadding.init -> void
+eQuantic.UI.Sheet.SheetGrid.LineHeight.get -> float
+eQuantic.UI.Sheet.SheetGrid.LineHeight.init -> void
+eQuantic.UI.Sheet.SheetGrid.Measure.get -> System.Func<string!, float>?
+eQuantic.UI.Sheet.SheetGrid.Measure.init -> void
+static eQuantic.UI.Sheet.SheetKeymap.Handle(eQuantic.UI.Sheet.SheetController! sheet, string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.KeyboardConvention convention, eQuantic.UI.Primitives.ITextClipboard? clipboard = null) -> bool
+*REMOVED*eQuantic.UI.Sheet.SheetController.BeginEdit(string! seed) -> void
+*REMOVED*eQuantic.UI.Sheet.SheetController.Draft.get -> string!
+*REMOVED*eQuantic.UI.Sheet.SheetController.EraseFromDraft() -> void
+*REMOVED*eQuantic.UI.Sheet.SheetController.HandleKey(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.ITextClipboard? clipboard) -> bool
+*REMOVED*eQuantic.UI.Sheet.SheetController.TypeIntoDraft(string! text) -> void
+*REMOVED*static eQuantic.UI.Sheet.SheetKeymap.Handle(eQuantic.UI.Sheet.SheetController! sheet, string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.ITextClipboard? clipboard = null) -> bool
+*REMOVED*static eQuantic.UI.Sheet.SheetKeymap.Type(eQuantic.UI.Sheet.SheetController! sheet, string! text) -> void
+eQuantic.UI.Sheet.SheetController.FormulaBar.get -> eQuantic.UI.Sheet.SheetFormulaBar!
+eQuantic.UI.Sheet.SheetController.GoTo(string! reference) -> bool
+eQuantic.UI.Sheet.SheetController.NameBox.get -> eQuantic.UI.Sheet.SheetNameBox!
+eQuantic.UI.Sheet.SheetController.Selecting.get -> bool
+eQuantic.UI.Sheet.SheetFormulaBar
+eQuantic.UI.Sheet.SheetFormulaBar.Carets.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
+eQuantic.UI.Sheet.SheetFormulaBar.CopyText() -> string!
+eQuantic.UI.Sheet.SheetFormulaBar.Cut() -> string!
+eQuantic.UI.Sheet.SheetFormulaBar.FocusChanged(bool focused) -> void
+eQuantic.UI.Sheet.SheetFormulaBar.FocusVersion.get -> int
+eQuantic.UI.Sheet.SheetFormulaBar.Grid.get -> eQuantic.UI.Code.CodeGrid
+eQuantic.UI.Sheet.SheetFormulaBar.Grid.set -> void
+eQuantic.UI.Sheet.SheetFormulaBar.HandleKey(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.KeyboardConvention convention, eQuantic.UI.Primitives.ITextClipboard? clipboard) -> bool
+eQuantic.UI.Sheet.SheetFormulaBar.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks) -> bool
+eQuantic.UI.Sheet.SheetFormulaBar.HandleText(string! text) -> bool
+eQuantic.UI.Sheet.SheetFormulaBar.HoldsTheCaret.get -> bool
+eQuantic.UI.Sheet.SheetFormulaBar.Paste(string! text) -> bool
+eQuantic.UI.Sheet.SheetFormulaBar.RequestFocus() -> void
+eQuantic.UI.Sheet.SheetFormulaBar.RevealVersion.get -> int
+eQuantic.UI.Sheet.SheetFormulaBar.SetComposition(string! text) -> bool
+eQuantic.UI.Sheet.SheetNameBox
+eQuantic.UI.Sheet.SheetNameBox.Carets.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
+eQuantic.UI.Sheet.SheetNameBox.CopyText() -> string!
+eQuantic.UI.Sheet.SheetNameBox.Cut() -> string!
+eQuantic.UI.Sheet.SheetNameBox.Entry.get -> eQuantic.UI.Code.CodeEditorController!
+eQuantic.UI.Sheet.SheetNameBox.FocusChanged(bool focused) -> void
+eQuantic.UI.Sheet.SheetNameBox.FocusVersion.get -> int
+eQuantic.UI.Sheet.SheetNameBox.Grid.get -> eQuantic.UI.Code.CodeGrid
+eQuantic.UI.Sheet.SheetNameBox.Grid.set -> void
+eQuantic.UI.Sheet.SheetNameBox.HandleKey(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.KeyboardConvention convention, eQuantic.UI.Primitives.ITextClipboard? clipboard) -> bool
+eQuantic.UI.Sheet.SheetNameBox.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks) -> bool
+eQuantic.UI.Sheet.SheetNameBox.HandleText(string! text) -> bool
+eQuantic.UI.Sheet.SheetNameBox.Invalid.get -> bool
+eQuantic.UI.Sheet.SheetNameBox.IsPlaced.get -> bool
+eQuantic.UI.Sheet.SheetNameBox.Paste(string! text) -> bool
+eQuantic.UI.Sheet.SheetNameBox.Placed() -> void
+eQuantic.UI.Sheet.SheetNameBox.Removed() -> void
+eQuantic.UI.Sheet.SheetNameBox.RequestFocus() -> void
+eQuantic.UI.Sheet.SheetNameBox.RevealVersion.get -> int
+eQuantic.UI.Sheet.SheetNameBox.SetComposition(string! text) -> bool
+eQuantic.UI.Sheet.SheetNameBox.Typing.get -> bool
+eQuantic.UI.Sheet.SheetReference
+static eQuantic.UI.Sheet.SheetReference.TryParse(string! text, int rows, int cols, out eQuantic.UI.Sheet.SheetRange range) -> bool

@@ -1,4 +1,4 @@
-import { $eq, CodeChange, CodeCommandValue, CodeCompletion, CodeDiagnostics, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeHoverSession, CodeKeyBinding, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineCells, CodeMotionValue, CodePosition, CodeRange, CodeSignatureHelpSession, KeyboardConventionValue, KeyChord, Point, PointerPhaseValue, Rect } from "../runtime-exports";
+import { $eq, CodeChange, CodeCommandValue, CodeCompletion, CodeDiagnostics, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeHoverSession, CodeKeyBinding, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineAdvances, CodeLineCells, CodeMotionValue, CodePosition, CodeRange, CodeSignatureHelpSession, KeyboardConventionValue, KeyChord, Point, PointerPhaseValue, Rect } from "../runtime-exports";
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null) {
@@ -16,8 +16,9 @@ export class CodeEditorController {
         this.tabMovesFocus = false;
         this.changed = null;
         this.selectionChanged = null;
-        this._desiredCell = -1;
+        this._desiredAdvance = -1;
         this._cells = $eq.collections.dictionary();
+        this._advances = $eq.collections.dictionary();
         this._widths = null;
         this._widthsTabs = 0;
         this._widest = 0;
@@ -56,8 +57,9 @@ export class CodeEditorController {
     tabMovesFocus!: boolean;
     changed!: ((codeChange: CodeChange) => void) | null;
     selectionChanged!: ((codeRange: CodeRange) => void) | null;
-    _desiredCell!: number;
+    _desiredAdvance!: number;
     _cells!: any;
+    _advances!: any;
     _widths!: number[] | null;
     _widthsTabs!: number;
     _widest!: number;
@@ -149,7 +151,7 @@ export class CodeEditorController {
     }
 
     select(value: CodeRange, keepCell: boolean) {
-        if (!keepCell) this._desiredCell = -1;
+        if (!keepCell) this._desiredAdvance = -1;
         let next = this.onElementEdges(value);
         if ($eq.equals(next, this._selection)) return;
         this.history.break();
@@ -210,6 +212,37 @@ export class CodeEditorController {
         return cells;
     }
 
+    advancesOf(line: number, measure: (value: string) => number) {
+        let cells = this.cellsOf(line);
+        let advances: any; 
+        if ((($0) => ($0.has(line) ? ((advances = $0.get(line)), true) : ((advances = null), false)))(this._advances) && advances.text === cells.text && advances.measure === measure) return advances;
+        advances = new CodeLineAdvances(cells, measure);
+        $eq.mapSet(this._advances, line, advances);
+        return advances;
+    }
+
+    advanceOf(line: number, column: number) {
+        let measure: any; 
+        return (measure = this.grid.measure) != null ? this.advancesOf(line, measure).of(column) : Math.fround(this.cellsOf(line).cellOf(column));
+    }
+
+    columnAtAdvance(line: number, advance: number) {
+        let measure: any; 
+        return (measure = this.grid.measure) != null ? this.advancesOf(line, measure).columnAt(advance) : this.cellsOf(line).columnAt(advance);
+    }
+
+    advanceAtX(x: number) {
+        return this.grid.measure == null ? Math.fround(Math.fround(x - this.grid.origin.x) / this.grid.cell.width) : Math.fround(x - this.grid.origin.x);
+    }
+
+    xAtAdvance(advance: number) {
+        return this.grid.measure == null ? Math.fround(this.grid.origin.x + Math.fround(advance * this.grid.cell.width)) : Math.fround(this.grid.origin.x + advance);
+    }
+
+    topOf(line: number) {
+        return Math.fround(this.grid.origin.y + Math.fround(Math.fround(this.grid.rowOf(line)) * this.grid.cell.height));
+    }
+
     before(position: CodePosition) {
         let here = this._document.clamp(position);
         if (here.column > 0) return $eq.withPatch(here, { column: this.cellsOf(here.line).previous(here.column) });
@@ -241,12 +274,11 @@ export class CodeEditorController {
             let from = line === start.line ? start.column : 0;
             let rows: any; 
             if ((rows = this.grid.rows) != null && !rows.isVisible(line)) continue;
-            let cells = this.cellsOf(line);
-            let fromCell = cells.cellOf(from);
-            let toCell = line === end.line ? cells.cellOf(end.column) : cells.width + 1;
-            if (toCell <= fromCell) continue;
-            let at = this.grid.pointOf(line, fromCell);
-            bands.push(new Rect(at.x, at.y, Math.fround(Math.fround(toCell - fromCell) * this.grid.cell.width), this.grid.cell.height));
+            let fromAdvance = this.advanceOf(line, from);
+            let toAdvance = line === end.line ? this.advanceOf(line, end.column) : this.grid.measure == null ? Math.fround(this.cellsOf(line).width + 1) : Math.fround(this.advanceOf(line, this._document.line(line).length) + this.grid.cell.width);
+            if (toAdvance <= fromAdvance) continue;
+            let width = this.grid.measure == null ? Math.fround(Math.fround(toAdvance - fromAdvance) * this.grid.cell.width) : Math.fround(toAdvance - fromAdvance);
+            bands.push(new Rect(this.xAtAdvance(fromAdvance), this.topOf(line), width, this.grid.cell.height));
         }
         return bands;
     }
@@ -256,15 +288,14 @@ export class CodeEditorController {
     }
 
     caretRect(position: CodePosition) {
-        let at = this.grid.pointOf(position.line, this.cellsOf(position.line).cellOf(position.column));
-        return new Rect(at.x, at.y, CodeEditorController.caretWidth, this.grid.cell.height);
+        return new Rect(this.xAtAdvance(this.advanceOf(position.line, position.column)), this.topOf(position.line), CodeEditorController.caretWidth, this.grid.cell.height);
     }
 
     positionAt(point: Point) {
         let rows = this.grid.rows?.rowCount ?? this._document.lineCount;
         if (point.y >= Math.fround(this.grid.origin.y + Math.fround(Math.fround(rows) * this.grid.cell.height))) return this._document.end;
         let target = this._document.clamp(new CodePosition(Math.max(0, this.grid.lineAt(point.y)), 0)).line;
-        return new CodePosition(target, this.cellsOf(target).columnAt(Math.fround(Math.fround(point.x - this.grid.origin.x) / this.grid.cell.width)));
+        return new CodePosition(target, this.columnAtAdvance(target, this.advanceAtX(point.x)));
     }
 
     characterAt(point: Point) {
@@ -276,7 +307,9 @@ export class CodeEditorController {
         if ((map = this.grid.rows) != null && map.rowAt(row).kind !== 'line') return null;
         let line = this.grid.lineAt(point.y);
         if (line < 0 || line >= this._document.lineCount) return null;
-        let column = this.cellsOf(line).columnUnder(Math.fround(Math.fround(point.x - this.grid.origin.x) / this.grid.cell.width));
+        let advance = this.advanceAtX(point.x);
+        let measure: any; 
+        let column = (measure = this.grid.measure) != null ? this.advancesOf(line, measure).columnUnder(advance) : this.cellsOf(line).columnUnder(advance);
         return column < 0 ? null : new CodePosition(line, column);
     }
 
@@ -392,7 +425,7 @@ export class CodeEditorController {
                     return true;
                 case 'paste':
                     if (clipboard == null) return false;
-                    if ((($v27509) => (($v27509 != null && $v27509.length > 0) && (pasted = $v27509, true)))(clipboard.read())) this.paste(pasted);
+                    if ((($v30395) => (($v30395 != null && $v30395.length > 0) && (pasted = $v30395, true)))(clipboard.read())) this.paste(pasted);
                     return true;
                 case 'completionShow':
                     return this.completion.invoke();
@@ -520,7 +553,7 @@ export class CodeEditorController {
         this._document = next;
         this._selection = new CodeRange(caret);
         this._revealVersion++;
-        this._desiredCell = -1;
+        this._desiredAdvance = -1;
         let edit = new CodeEdit(ordered, removed, next.textIn(new CodeRange(ordered.start, caret)), before, this._selection, false);
         this.took(edit);
         this.raise(new CodeChange([edit]));
@@ -599,7 +632,7 @@ export class CodeEditorController {
         this._revealVersion++;
         let edit = new CodeEdit(ordered, removed, next.textIn(new CodeRange(ordered.start, caret)), before, this._selection, typed);
         this.took(edit);
-        this._desiredCell = -1;
+        this._desiredAdvance = -1;
         let step: any; 
         if ((step = this._step) != null) step.push(edit); else {
             this.history.record([edit]);
@@ -883,28 +916,28 @@ export class CodeEditorController {
         let forward = direction === 'forward';
         switch (motion) {
             case 'character':
-                this._desiredCell = -1;
+                this._desiredAdvance = -1;
                 return forward ? this.after(from) : this.before(from);
             case 'word':
-                this._desiredCell = -1;
+                this._desiredAdvance = -1;
                 return this.wordStep(from, forward);
             case 'line':
                 {
-                    if (this._desiredCell < 0) this._desiredCell = this.cellsOf(from.line).cellOf(from.column);
+                    if (this._desiredAdvance < 0) this._desiredAdvance = this.advanceOf(from.line, from.column);
                     let line = this.visibleLineFrom(from.line, forward ? 1 : -1);
-                    return new CodePosition(line, this.cellsOf(line).columnAt(Math.fround(this._desiredCell)));
+                    return new CodePosition(line, this.columnAtAdvance(line, this._desiredAdvance));
                 }
             case 'page':
                 {
-                    if (this._desiredCell < 0) this._desiredCell = this.cellsOf(from.line).cellOf(from.column);
+                    if (this._desiredAdvance < 0) this._desiredAdvance = this.advanceOf(from.line, from.column);
                     let line = this.visibleLineFrom(from.line, forward ? pageLines : -pageLines);
-                    return new CodePosition(line, this.cellsOf(line).columnAt(Math.fround(this._desiredCell)));
+                    return new CodePosition(line, this.columnAtAdvance(line, this._desiredAdvance));
                 }
             case 'lineBoundary':
-                this._desiredCell = -1;
+                this._desiredAdvance = -1;
                 return forward ? this._document.lineEnd(from) : this._document.lineStart(from);
             default:
-                this._desiredCell = -1;
+                this._desiredAdvance = -1;
                 return forward ? this._document.end : CodePosition.start;
         }
     }
@@ -1083,7 +1116,7 @@ export class CodeEditorController {
             }
             let space = length > 0;
             let tail = parts[parts.length - 1];
-            if (space && (($v84129) => ($v84129 === ' ' || $v84129 === '\t'))(tail[tail.length - 1])) {
+            if (space && (($v87118) => ($v87118 === ' ' || $v87118 === '\t'))(tail[tail.length - 1])) {
                 space = false;
                 let kept = $eq.text.trimEnd(tail, [' ', '\t']);
                 parts[parts.length - 1] = kept;
@@ -1188,7 +1221,7 @@ export class CodeEditorController {
         }
         this._selection = this.onElementEdges(selection);
         this._revealVersion++;
-        this._desiredCell = -1;
+        this._desiredAdvance = -1;
         this.raise(new CodeChange(this.heard(made, before)));
     }
 

@@ -586,8 +586,9 @@ function frames(node: unknown, presses: number[]): unknown[] {
  * matching filter on that side — the asymmetry is the point.
  *
  * Scoped to the entry's own tag on purpose. Other components attach the same NAMES for their own
- * reasons — the spreadsheet surface listens for keydown and the clipboard trio — and filtering
- * globally would hide a real regression the day one of those joins the fixture.
+ * reasons — a table viewport listens for keydown — and filtering globally would hide a real
+ * regression the day one of those joins the fixture. The spreadsheet's door is a textarea, an entry
+ * of this kind: its keydown, clipboard trio and focus are the client's alone too.
  */
 const CLIENT_ONLY_EVENTS = new Set(['focus', 'blur', 'input', 'keydown', 'paste', 'cut', 'copy']);
 const ENTRY_TAGS = new Set(['input', 'textarea']);
@@ -600,7 +601,9 @@ function canonical(node: HtmlNode): unknown {
     // the same kind (the C# LowerInView says so): only the client can watch anything. A table
     // viewport's is a third: the client's after-pass finds the element by it to drive its scroll, and
     // its cells by theirs to walk the Tab order row by row.
-    if (key === 'data-eq-scroll' || key === 'data-eq-inview' || key === 'data-eq-table' || key === 'data-eq-cell')
+    // A sheet's is a fourth: a focus request finds the surface by it after the render.
+    if (key === 'data-eq-scroll' || key === 'data-eq-inview' || key === 'data-eq-table' || key === 'data-eq-cell'
+      || key === 'data-eq-sheet')
       continue;
     const value = node.attributes[key];
     if (value !== undefined && value !== null) attrs[key] = normalize(key, value);

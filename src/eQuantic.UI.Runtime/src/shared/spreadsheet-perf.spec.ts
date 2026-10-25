@@ -39,7 +39,8 @@ async function open(): Promise<{ grid: HTMLElement; view: HTMLElement; sheet: Sh
   Object.defineProperty(view, 'clientWidth', { value: 1440, configurable: true });
   Object.defineProperty(view, 'clientHeight', { value: 900, configurable: true });
   await settle();
-  const grid = container.querySelector('[role="grid"]') as HTMLElement;
+  // The keys reach the sheet through its door, the textarea that holds its stop of the Tab order.
+  const grid = container.querySelector('[role="grid"] textarea.eq-code-input') as HTMLElement;
   grid.focus = () => {};
   return { grid, view: container.querySelector('[data-eq-table]') as HTMLElement, sheet };
 }

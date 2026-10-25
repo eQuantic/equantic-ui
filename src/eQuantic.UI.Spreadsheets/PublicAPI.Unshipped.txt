@@ -19,3 +19,23 @@ override eQuantic.UI.Spreadsheets.Spreadsheet.AdoptConfig(eQuantic.UI.Primitives
 override eQuantic.UI.Spreadsheets.Spreadsheet.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
 static eQuantic.UI.Spreadsheets.SpreadsheetsUI.Spreadsheet(eQuantic.UI.Sheet.SheetController! controller, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue), int overscan = 3) -> eQuantic.UI.Spreadsheets.Spreadsheet!
 const eQuantic.UI.Spreadsheets.Spreadsheet.NumberPadding = 8 -> float
+static eQuantic.UI.Spreadsheets.Spreadsheet.CellPadding.get -> eQuantic.UI.Primitives.EdgeInsets
+const eQuantic.UI.Spreadsheets.NameBox.DefaultWidth = 96 -> float
+eQuantic.UI.Spreadsheets.FormulaBar
+eQuantic.UI.Spreadsheets.FormulaBar.Controller.get -> eQuantic.UI.Sheet.SheetController!
+eQuantic.UI.Spreadsheets.FormulaBar.FormulaBar(eQuantic.UI.Sheet.SheetController! controller) -> void
+eQuantic.UI.Spreadsheets.FormulaBar.Width.get -> eQuantic.UI.Primitives.SizeValue
+eQuantic.UI.Spreadsheets.FormulaBar.Width.init -> void
+eQuantic.UI.Spreadsheets.NameBox
+eQuantic.UI.Spreadsheets.NameBox.Controller.get -> eQuantic.UI.Sheet.SheetController!
+eQuantic.UI.Spreadsheets.NameBox.NameBox(eQuantic.UI.Sheet.SheetController! controller) -> void
+eQuantic.UI.Spreadsheets.NameBox.Width.get -> eQuantic.UI.Primitives.SizeValue
+eQuantic.UI.Spreadsheets.NameBox.Width.init -> void
+override eQuantic.UI.Spreadsheets.FormulaBar.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Spreadsheets.FormulaBar.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Spreadsheets.NameBox.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Spreadsheets.NameBox.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+static eQuantic.UI.Spreadsheets.FormulaBar.Padding.get -> eQuantic.UI.Primitives.EdgeInsets
+static eQuantic.UI.Spreadsheets.NameBox.Padding.get -> eQuantic.UI.Primitives.EdgeInsets
+static eQuantic.UI.Spreadsheets.SpreadsheetsUI.FormulaBar(eQuantic.UI.Sheet.SheetController! controller, eQuantic.UI.Primitives.SizeValue? width = null) -> eQuantic.UI.Spreadsheets.FormulaBar!
+static eQuantic.UI.Spreadsheets.SpreadsheetsUI.NameBox(eQuantic.UI.Sheet.SheetController! controller, eQuantic.UI.Primitives.SizeValue? width = null) -> eQuantic.UI.Spreadsheets.NameBox!

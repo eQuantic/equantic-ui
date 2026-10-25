@@ -1,10 +1,10 @@
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
-/// An EDITABLE SPREADSHEET surface: the grid its child draws, plus Excel's keyboard, pointer and
-/// clipboard. The child is whatever renders the visible cells (the shared Spreadsheet component, in
-/// practice), and it draws the selection band, the active-cell ring and the draft too, so this node
-/// adds nothing to the picture. Everything a key or a press MEANS belongs to the <see cref="Model"/>,
+/// An EDITABLE SPREADSHEET surface: the grid its child draws, plus Excel's keyboard, pointer, text input
+/// and clipboard. The child is whatever renders the visible cells (the shared Spreadsheet component, in
+/// practice), and it draws the selection band, the active-cell ring and the cell's editor too, so this
+/// node adds nothing to the picture but the entry's carets, which the realizer paints and blinks. Everything a key or a press MEANS belongs to the <see cref="Model"/>,
 /// which both targets share: a realizer hands it the platform's events (<see cref="ISheetSurfaceModel"/>).
 /// <para>
 /// The model is a live object the composing component owns, surviving the rebuild every keystroke
@@ -33,6 +33,13 @@ public sealed class SheetSurface : SingleChildNode
 
     /// <summary>Accessible name (role: grid).</summary>
     public string? Label { get; init; }
+
+    /// <summary>
+    /// The entry's caret ink, carried HERE as a code surface carries its own: the realizer paints the
+    /// carets over what the child drew, and only the component knows the ink the cell's text is in. Null
+    /// falls back to the theme's <c>TextPrimary</c>.
+    /// </summary>
+    public ColorToken? CaretColor { get; init; }
 
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);

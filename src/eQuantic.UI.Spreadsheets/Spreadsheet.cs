@@ -62,6 +62,14 @@ public sealed class Spreadsheet : StatefulComponent
     /// <summary>What the row-number column keeps on each side of its widest number.</summary>
     public const float NumberPadding = 8f;
 
+    /// <summary>What a cell keeps between its gridlines and its text: six points on each side, and the body's
+    /// 20-point line centred in the default row's 28. A property that builds on read, as every value the
+    /// runtime's barrel may evaluate before its module.</summary>
+    public static EdgeInsets CellPadding => EdgeInsets.Symmetric(6, 4);
+
+    /// <summary>The type a cell's value and its entry are written in.</summary>
+    private const TypeRole CellType = TypeRole.BodyM;
+
     /// <summary>Resize floors — Excel lets a column vanish; we keep a sliver so it stays grabbable.</summary>
     public const float MinColWidth = 24f;
     public const float MinRowHeight = 14f;
@@ -101,10 +109,17 @@ public sealed class Spreadsheet : StatefulComponent
             _columns = new LeadingSpans(document.ColumnSpans, numbers);
         }
 
-        // THE geometry, handed to the engine: the scroll that places the cells, read live, and the bands
-        // pinned in front of them. The only thing that turns a press into a cell, and the selection's
-        // corner into the fill handle's place, so the cells drawn and the cells pressed cannot disagree.
-        Controller.Grid = new SheetGrid(_scroll, numbers, HeaderHeight);
+        // THE geometry, handed to the engine: the scroll that places the cells, read live, the bands
+        // pinned in front of them, and the cells' type, measured here. The only thing that turns a press into
+        // a cell, the selection's corner into the fill handle's place and a column of the entry into its
+        // caret, so the cells drawn and the cells pressed cannot disagree.
+        var cellType = theme.Type(CellType);
+        Controller.Grid = new SheetGrid(_scroll, numbers, HeaderHeight)
+        {
+            Measure = text => context.MeasureText(text, cellType),
+            LineHeight = cellType.LineHeight,
+            CellPadding = CellPadding,
+        };
 
         var revealed = Controller.RevealCell;
         var table = new TableView(_rows, _columns, (row, column) => Cell(row, column, document, palette, numbers))
@@ -137,6 +152,7 @@ public sealed class Spreadsheet : StatefulComponent
         {
             OnChanged = () => SetState(() => { }),
             Label = SdkStrings.Spreadsheet,
+            CaretColor = palette.CellText,
         });
     }
 
@@ -274,31 +290,24 @@ public sealed class Spreadsheet : StatefulComponent
         SetState(() => { });
     }
 
-    /// <summary>A cell of the sheet, from its value alone, or the draft and its caret while it is being
-    /// edited.</summary>
-    private VisualNode SheetCell(CellRef cell, SheetDocument document, SheetPalette palette)
+    /// <summary>A cell of the sheet, from its value alone: the entry being typed into it is drawn over it,
+    /// as a mark, by the cell's editor.</summary>
+    private static VisualNode SheetCell(CellRef cell, SheetDocument document, SheetPalette palette)
     {
-        var editingHere = Controller.Editing && cell == Controller.ActiveCell;
-        var value = editingHere ? Controller.Draft : document.GetCell(cell);
-
+        var value = document.GetCell(cell);
         VisualNode? content = null;
-        if (editingHere)
+        if (value.Contains('\n'))
         {
-            var draftLine = new Row(gap: 0) { Cross = CrossAlign.Center };
-            if (value.Length > 0)
-                draftLine.Add(new Text(value, TypeRole.BodyM, palette.CellText, maxLines: 1));
-            // The caret at the draft's end — a thin bar, steady (the blink is the host's).
-            draftLine.Add(new Box(new BoxStyle
-            {
-                Width = SizeValue.Fixed(2),
-                Height = SizeValue.Fixed(document.RowHeight(cell.Row) - 8),
-                Background = palette.CellText,
-            }));
-            content = draftLine;
+            // A value of several lines shows them from the top, each on its own, as many as the row's
+            // height holds: the row does not grow with them until wrapping rows come (slice 6).
+            var lines = new Column(gap: 0);
+            foreach (var line in value.Split('\n'))
+                lines.Add(new Text(line, CellType, palette.CellText, maxLines: 1));
+            content = lines;
         }
         else if (value.Length > 0)
         {
-            content = new Text(value, TypeRole.BodyM, palette.CellText, maxLines: 1);
+            content = new Text(value, CellType, palette.CellText, maxLines: 1);
         }
 
         return new Box(new BoxStyle
@@ -308,9 +317,8 @@ public sealed class Spreadsheet : StatefulComponent
             Background = palette.CellBackground,
             BorderColor = palette.Gridline,
             BorderWidth = 0.5f,
-            // Six points from the gridlines on each side, and the body's 20-point line centred in the
-            // default row's 28.
-            Padding = EdgeInsets.Symmetric(6, 4),
+            Padding = CellPadding,
+            Clip = true,
         }, content);
     }
 
@@ -342,6 +350,11 @@ public sealed class Spreadsheet : StatefulComponent
                 BorderWidth = 1.5f,
             })));
         }
+        if (Controller.Editing)
+        {
+            marks.Add(Mark(Controller.EditorRange, Editor(palette)));
+            return marks;
+        }
         marks.Add(Mark(new SheetRange(Controller.ActiveCell), new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
@@ -349,25 +362,44 @@ public sealed class Spreadsheet : StatefulComponent
             BorderColor = palette.ActiveOutline,
             BorderWidth = 2f,
         })));
-        if (!Controller.Editing)
+        // Excel's little square on the selection's corner. Grabbing it, and the crosshair over it, are
+        // the engine's answers; this is only the pixels.
+        // The Stack takes the cell's size from a box that draws nothing, and the handle sits on its
+        // corner.
+        var corner = new Stack();
+        corner.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }));
+        corner.Add(new Positioned(new Box(new BoxStyle
         {
-            // Excel's little square on the selection's corner. Grabbing it, and the crosshair over it, are
-            // the engine's answers; this is only the pixels.
-            // The Stack takes the cell's size from a box that draws nothing, and the handle sits on its
-            // corner.
-            var corner = new Stack();
-            corner.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }));
-            corner.Add(new Positioned(new Box(new BoxStyle
-            {
-                Width = SizeValue.Fixed(FillHandle),
-                Height = SizeValue.Fixed(FillHandle),
-                Background = palette.FillHandle,
-                BorderColor = palette.CellBackground,
-                BorderWidth = 1f,
-            }), bottom: -1, end: -1));
-            marks.Add(Mark(new SheetRange(new CellRef(selection.BottomRow, selection.RightCol)), corner));
-        }
+            Width = SizeValue.Fixed(FillHandle),
+            Height = SizeValue.Fixed(FillHandle),
+            Background = palette.FillHandle,
+            BorderColor = palette.CellBackground,
+            BorderWidth = 1f,
+        }), bottom: -1, end: -1));
+        marks.Add(Mark(new SheetRange(new CellRef(selection.BottomRow, selection.RightCol)), corner));
         return marks;
+    }
+
+    /// <summary>
+    /// The cell's editor, over the cells the engine says it covers: the cells' background, hiding what it
+    /// covers, the active outline around it, and the entry's lines on the grid the engine placed them on,
+    /// with its selection and its composition while the editor holds the caret. It clips, so a line slid
+    /// to keep the caret in view shows its part that fits.
+    /// </summary>
+    private Box Editor(SheetPalette palette)
+    {
+        var grid = Controller.CellEditorGrid;
+        var bounds = Controller.EditorBounds;
+        return new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Background = palette.CellBackground,
+            BorderColor = palette.ActiveOutline,
+            BorderWidth = 2f,
+            Clip = true,
+        }, new EntryLines(Controller.Entry, grid, new Point(bounds.X, bounds.Y), CellType, palette,
+            active: Controller.EntryView == SheetEntryView.Cell));
     }
 
     /// <summary>A mark over a range of the sheet, in the table's indices (one past the headers).</summary>

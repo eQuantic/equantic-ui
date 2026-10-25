@@ -33,3 +33,6 @@ eQuantic.UI.Components.CodeEditor.KeyBindings.set -> void
 *REMOVED*const eQuantic.UI.Components.CodeBlock.SelectionAlpha = 0.28 -> float
 eQuantic.UI.Components.CodeBlock.Selection.get -> eQuantic.UI.Code.CodeRange
 eQuantic.UI.Components.CodeBlock.Selection.init -> void
+static eQuantic.UI.Components.SdkStrings.FormulaBar.get -> string!
+static eQuantic.UI.Components.SdkStrings.NameBox.get -> string!
+static eQuantic.UI.Components.SdkStrings.RangeSize(int rows, int columns) -> string!

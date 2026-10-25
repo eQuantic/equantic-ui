@@ -1245,10 +1245,33 @@ public sealed class PhotonHost
             else box.Value = version;
             BeginCodeEditing(region);
         }
+        // A sheet asks the same way, when the formula bar or the name box is done with the keyboard.
+        var sheets = _lastFrame.SheetRegions;
+        for (var i = 0; i < sheets.Count; i++)
+        {
+            var region = sheets[i];
+            var model = region.Surface.Model;
+            var version = model.FocusVersion;
+            var seen = _sheetFocusRequests.TryGetValue(model, out var box) ? box.Value : 0;
+            if (version == seen) continue;
+            if (box is null) _sheetFocusRequests.Add(model, new System.Runtime.CompilerServices.StrongBox<int>(version));
+            else box.Value = version;
+            var changed = !ReferenceEquals(_textAt, region.Element);
+            if (changed) EndEditing();
+            _textAt = region.Element;
+            _focused = null;
+            ForgetFocus();
+            if (changed) model.FocusChanged(true);
+            RestartBlink();
+            NeedsRender = true;
+        }
     }
 
     private readonly System.Runtime.CompilerServices.ConditionalWeakTable<ICodeSurfaceModel,
         System.Runtime.CompilerServices.StrongBox<int>> _focusRequests = new();
+
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<ISheetSurfaceModel,
+        System.Runtime.CompilerServices.StrongBox<int>> _sheetFocusRequests = new();
 
     private void BeginEditing(TextRegion field, float? localX = null) =>
         BeginEditing(field.Entry, field.Element, localX is { } x ? IndexAt(field.Entry, x) : null);
@@ -1289,6 +1312,12 @@ public sealed class PhotonHost
             code.Model.FocusChanged(false);
             SurfaceChanged(code.OnChanged);
         }
+        // …and a sheet: its entry stays open, as Excel keeps it, and its composition goes.
+        if (SheetTarget is { } sheet)
+        {
+            sheet.Model.FocusChanged(false);
+            SurfaceChanged(sheet.OnChanged);
+        }
         _textAt = null;
         _marked = "";
         _edited = null;
@@ -1305,11 +1334,12 @@ public sealed class PhotonHost
     public bool TextInput(string text)
     {
         if (string.IsNullOrEmpty(text)) return false;
-        // A focused SHEET types Excel's way: the first character REPLACES the cell (a fresh draft
-        // seeded with it); the rest append. The document only changes on commit.
+        // A focused SHEET types Excel's way: the first character REPLACES the cell (a fresh entry
+        // takes it); the rest go in at the entry's caret. The document only changes on commit.
         if (SheetTarget is { } sheetTarget)
         {
-            sheetTarget.Model.HandleText(text);
+            if (!sheetTarget.Model.HandleText(text)) return false;
+            RestartBlink();
             SurfaceChanged(sheetTarget.OnChanged);
             return true;
         }
@@ -1369,6 +1399,13 @@ public sealed class PhotonHost
             // the platform asks the HOST whether anything is marked. A cancellation still clears it.
             if (!code.Model.SetComposition(text) && text.Length > 0) return false;
             SurfaceChanged(code.OnChanged);
+        }
+        // A sheet composes in its entry the same way, and a composition at rest begins one, as typing
+        // does: the cell's editor shows the marked text where it will land.
+        if (SheetTarget is { } sheet)
+        {
+            if (!sheet.Model.SetComposition(text) && text.Length > 0) return false;
+            SurfaceChanged(sheet.OnChanged);
         }
         if (TextTarget is { } entry && !entry.Disabled)
         {
@@ -1521,6 +1558,15 @@ public sealed class PhotonHost
             return ToScreen(fields, i, bounds, new Rect(MathF.Max(advance, 0), 0, 2f, style.LineHeight));
         }
 
+        // A sheet's input stands at its entry's caret while a cell is edited and at the active cell before,
+        // so the candidate window of a composition begun at rest opens at the cell it will type into.
+        var sheets = _lastFrame.SheetRegions;
+        for (var i = 0; i < sheets.Count; i++)
+        {
+            if (!ReferenceEquals(sheets[i].Element, _textAt)) continue;
+            return ToScreen(sheets, i, sheets[i].Bounds, sheets[i].Surface.Model.InputBounds);
+        }
+
         var surfaces = _lastFrame.CodeRegions;
         for (var i = 0; i < surfaces.Count; i++)
         {
@@ -1669,23 +1715,16 @@ public sealed class PhotonHost
     /// <summary>
     /// Excel's keyboard over the focused sheet, through its model: the web surface hands keys to the
     /// same one, so the two cannot drift, and this host's clipboard goes with them so the copy keys
-    /// are served through it. Answers false for keys the sheet does not claim.
+    /// are served through it. Answers false for keys the sheet does not claim. The keyboard stays on the
+    /// sheet for an Escape it does not claim: the model released Tab, and the Tab that follows moves on
+    /// from the sheet's own stop, which a dropped keyboard had forgotten (#732).
     /// </summary>
     private bool SheetKey(SheetSurface surface, string key, KeyModifiers modifiers)
     {
-        if (surface.Model.HandleKey(key, modifiers, Clipboard))
-        {
-            SurfaceChanged(surface.OnChanged);
-            return true;
-        }
-
-        // What stays with the host is the focus: Escape outside an edit leaves the sheet.
-        if (key == "Escape")
-        {
-            EndEditing();
-            return true;
-        }
-        return false;
+        if (!surface.Model.HandleKey(key, modifiers, KeyboardConvention, Clipboard)) return false;
+        RestartBlink();
+        SurfaceChanged(surface.OnChanged);
+        return true;
     }
 
     /// <summary>Runs the focused control, the way Enter and Space do everywhere else. Answers false
@@ -2481,6 +2520,8 @@ public sealed class PhotonHost
             _textAt = sheetRegions[i].Element;
             _focused = null;
             ForgetFocus();
+            if (changed) sheetRegions[i].Surface.Model.FocusChanged(true);
+            RestartBlink();
             sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Down,
                 ToLocal(sheetRegions, i, sheetRegions[i].Bounds, point), modifiers, clickCount, kind);
             _sheetPressed = true;

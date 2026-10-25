@@ -24,4 +24,16 @@ public static class SpreadsheetsUI
             Height = height,
             Overscan = overscan,
         };
+
+    public static Spreadsheets.FormulaBar FormulaBar(SheetController controller, SizeValue? width = null) =>
+        new(controller)
+        {
+            Width = width ?? SizeValue.Fill,
+        };
+
+    public static Spreadsheets.NameBox NameBox(SheetController controller, SizeValue? width = null) =>
+        new(controller)
+        {
+            Width = width ?? SizeValue.Fixed(Spreadsheets.NameBox.DefaultWidth),
+        };
 }

@@ -405,10 +405,16 @@ edit and keep the hold. This SHALL hold on both targets, inside a dialog and out
 
 #### Scenario: Leaving a sheet in a dialog
 
-- **WHEN** a sheet is the last control of a dialog that does not close on Escape, the sheet has the
-  keyboard, and Escape then Tab are pressed; and again with the sheet first and Escape then Shift+Tab
-- **THEN** the focus moves on as the dialog cycles and the active cell has not moved, in Chromium and
-  on Photon
+- **WHEN** a sheet stands between two buttons of a dialog that does not close on Escape, the sheet has
+  the keyboard, and Escape then Tab are pressed; and again with Escape then Shift+Tab
+- **THEN** the button after the sheet has the keyboard, and then the one before it, and the active cell
+  has not moved, in Chromium and on Photon
+
+#### Scenario: A sheet at the end of a dialog in a browser
+
+- **WHEN** a sheet is the last control of a dialog in Chromium, the sheet has the keyboard, and Escape
+  then Tab are pressed
+- **THEN** the focus moves on as the dialog's trap cycles, to its first control
 
 #### Scenario: Another key takes Tab back
 

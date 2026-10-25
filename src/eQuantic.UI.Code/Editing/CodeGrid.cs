@@ -17,8 +17,14 @@ namespace eQuantic.UI.Code;
 /// from its index (docs/CODE-EDITOR-PLAN.md, the shape, §9): a diff's padding, a collapsed run of
 /// unchanged lines. Without it a row is a line.
 /// </para>
+/// <para>
+/// With <see cref="Measure"/> the text is in a PROPORTIONAL face, and a column is placed by the measured
+/// width of the line's text before it (<see cref="CodeLineAdvances"/>) instead of by a count of cells: what
+/// the spreadsheet's cell editor, formula bar and name box draw on. <see cref="Cell"/>'s width is then
+/// only the room a band leaves past a line's end for its line break; its height is still a line's.
+/// </para>
 /// </summary>
-public readonly record struct CodeGrid(Point Origin, Size Cell, CodeRows? Rows = null)
+public readonly record struct CodeGrid(Point Origin, Size Cell, CodeRows? Rows = null, Func<string, float>? Measure = null)
 {
     /// <summary>
     /// What a surface nobody has measured yet draws on: 8dp columns, 18dp lines, the content at the

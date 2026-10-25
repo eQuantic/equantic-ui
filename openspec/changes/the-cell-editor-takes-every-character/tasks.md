@@ -2,14 +2,14 @@
 
 ## 1. The code engine measures
 
-- [ ] 1.1 `CodeGrid` gains `Func<string, float>? Measure` (last positional parameter, defaulting to
+- [x] 1.1 `CodeGrid` gains `Func<string, float>? Measure` (last positional parameter, defaulting to
       null), and `CodeEditorController`'s geometry (`CaretRect`, `SelectionBandsIn`, `PositionAt`,
       `CharacterAt`, the hover's and the press's reads) goes through two private helpers, the x of a
       column on a line and the column at an x; with a measurer, the x is the measured prefix at a text
       element boundary, kept per line text as `CellsOf` keeps cells, and the column is the nearer
       boundary found by a binary search; verify new `CodeMeasuredGridTests` for the spec's caret, press
       and band scenarios with a stub measurer
-- [ ] 1.2 The column a vertical move aims at becomes a distance from the line's start (`_desiredCell`
+- [x] 1.2 The column a vertical move aims at becomes a distance from the line's start (`_desiredCell`
       → a desired x), the same number a monospaced grid computed; verify the spec's vertical-move
       scenario measured, and that `CodeEditorController`'s existing ↑/↓ tests and `CodeCellsTests` pass
       untouched
@@ -38,18 +38,18 @@
       barrel), with no static initializer building another module's class at evaluation; verify the
       Server's `BundleRuntime`, the runtime's Vitest and `SharedComponentTranspilationTests` after
       regenerating the pins
-- [ ] 3.2 `SheetController.Entry` (a plain-text `CodeEditorController` with `KeyBindings` giving back
+- [x] 3.2 `SheetController.Entry` (a plain-text `CodeEditorController` with `KeyBindings` giving back
       indent, outdent, line comments, line moves, copies, deletes and inserts, and the completion,
       hover, signature and problem keys), `SheetEditMode`, `EditMode`, `ToggleEditMode()`,
       `BeginEdit(seed, mode)` (history cleared, caret at the seed's end), `CommitEdit` writing
       `Entry.Document.Text` as one `SheetEdit`, `CancelEdit`; `Draft`, `TypeIntoDraft` and
       `EraseFromDraft` removed and every caller moved; verify `SheetControllerTests` for the spec's
       "entry is a text document" scenarios and the moved `SheetEditingTests`
-- [ ] 3.3 `HandleText` and `SetComposition` at rest begin an Enter-mode entry that replaces the value,
+- [x] 3.3 `HandleText` and `SetComposition` at rest begin an Enter-mode entry that replaces the value,
       and while editing go to the entry; `FocusChanged(false)` cancels a composition and keeps the entry;
       `Carets` and `InputBounds` answer from the active view; verify `SheetSurfaceModelTests` for the
       composition, cancellation and emoji scenarios (`👍🏽` typed, one Backspace empties it)
-- [ ] 3.4 The clipboard while editing: `CopyText`, `Cut` and `Paste` act on the entry's selection and
+- [x] 3.4 The clipboard while editing: `CopyText`, `Cut` and `Paste` act on the entry's selection and
       caret (a paste is one step of the entry's undo), at rest on the cells as before; verify the spec's
       copy-while-editing and paste-while-editing scenarios through `HandleKey` with a clipboard and
       through the three methods
@@ -64,23 +64,23 @@
       `FillSelection`), the rest through `Entry.HandleKey`, returning before the sheet's undo; verify a
       table-driven `SheetKeymapTests` per key in both modes and both conventions, including undo while
       editing never reaching the sheet's history
-- [ ] 4.2 At rest: Backspace begins an empty Enter-mode entry over the active cell only, Delete clears
+- [x] 4.2 At rest: Backspace begins an empty Enter-mode entry over the active cell only, Delete clears
       the selection, F2 begins Edit mode with the value; verify the spec's Backspace and Delete scenarios
 - [ ] 4.3 The date and time chords by convention (Ctrl+; and Ctrl+Shift+;, ⌃; and ⌘; under Apple's,
       `;` or `:` as the key), at rest and while editing, writing `SheetController.Now()` with the
       culture's `"d"` and `"t"`; verify the spec's `en-US` and `pt-BR` scenario in .NET and through the
       runtime with the page's culture set, both pinned to the same text
-- [ ] 4.4 Escape releases Tab (`TabReleased`): set by Escape at rest, cleared by any non-modifier key
+- [x] 4.4 Escape releases Tab (`TabReleased`): set by Escape at rest, cleared by any non-modifier key
       before anything else is decided, Tab and Shift+Tab unclaimed while set, Escape while editing
       cancelling and keeping the hold; verify the engine-level scenarios of the requirement
 
 ## 5. A press while editing
 
-- [ ] 5.1 `EditorRange`: the active cell widened in whole columns while the widest line (measured, plus
+- [x] 5.1 `EditorRange`: the active cell widened in whole columns while the widest line (measured, plus
       padding) needs room and in whole rows while the lines do, capped at the last column and row in
       view; the cell view's grid origin slides so the caret stays inside past the view's edge; verify
       the spec's three growth scenarios against the engine with a stub measurer and a viewport
-- [ ] 5.2 `HandlePointer` while editing: inside the editor's bounds the press, its moves and its release
+- [x] 5.2 `HandlePointer` while editing: inside the editor's bounds the press, its moves and its release
       go to the entry (Edit mode, the cell view active), outside it commits and acts at rest; a double
       click at rest begins Edit mode with the caret at the press; `CursorAt` answers the text beam over
       the editor; verify the spec's press-inside, press-outside, double-click and pointer scenarios
@@ -102,11 +102,11 @@
 
 ## 7. The web's door
 
-- [ ] 7.1 Move the door out of `lowerCodeSurface` into one function both lowerings call (the textarea,
+- [x] 7.1 Move the door out of `lowerCodeSurface` into one function both lowerings call (the textarea,
       `keydown` for claimed commands, `beforeinput`, the composition kept per model, the clipboard's
       events, focus and blur, the soft keyboard's input types); verify every existing code surface spec
       (`code-surface*.spec.ts`, the IME and clipboard specs) passes unchanged
-- [ ] 7.2 `lowerSheetSurface` takes the door: the textarea at `InputBounds` carries the `tabindex` and
+- [x] 7.2 `lowerSheetSurface` takes the door: the textarea at `InputBounds` carries the `tabindex` and
       the accessible name, the `div` keeps `role="grid"`, the carets are painted and blink as a code
       surface's, focus requests are honoured per model, the `keydown` fallback that typed `event.key`
       goes, and the browser's reload keys are never handed to the model; the C# twin writes the same
@@ -122,7 +122,7 @@
 - [ ] 8.1 Measure first, before changing anything: drive the macOS shell's text input client
       (`setMarkedText:`, `insertText:`) on a sheet in a real window and record what reaches the model
       and what is drawn; write the measurement into the pull request
-- [ ] 8.2 `SetMarkedText` hands a sheet target its composition; the emit paints and blinks the sheet's
+- [x] 8.2 `SetMarkedText` hands a sheet target its composition; the emit paints and blinks the sheet's
       carets (the code surface's caret emit generalised over both); `CaretInFrame` answers a sheet
       region's `InputBounds`; focus requests are adopted for sheets; verify host tests for the
       composition (shown, committed, cancelled), the emoji, the candidate window's anchor at the caret and
@@ -132,7 +132,7 @@
 
 ## 9. The formula bar
 
-- [ ] 9.1 `SheetController.FormulaBar`, an `ICodeSurfaceModel` over the entry with the bar's geometry:
+- [x] 9.1 `SheetController.FormulaBar`, an `ICodeSurfaceModel` over the entry with the bar's geometry:
       a press or text begins an Edit-mode entry and makes the bar the active view, Enter, Tab and Escape
       act as in the cell and ask for the sheet's keyboard, `Carets` only while the bar is active; the
       controller assigns `Entry.Grid` from the active view; verify engine tests for the spec's three

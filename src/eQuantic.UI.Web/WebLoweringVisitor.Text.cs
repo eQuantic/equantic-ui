@@ -105,7 +105,6 @@ internal sealed partial class WebLoweringVisitor
     {
         var attributes = new Dictionary<string, string>
         {
-            ["tabindex"] = "0",
             ["role"] = "grid",
         };
         if (sheet.Label is { Length: > 0 } label) attributes["aria-label"] = label;
@@ -114,40 +113,86 @@ internal sealed partial class WebLoweringVisitor
         var sheetCap = CapsAt(sheet.Child);
         var element = new RealizedElement("div")
         {
+            ClassName = "eq-sheet-surface",
             Style = new HtmlStyle
             {
                 // FIT-CONTENT, not nothing: this host CARRIES THE ROLE, so its box is the bounds a
-                // reader outlines for touch exploration and the browser draws the focus ring on —
-                // and this one is a tab stop, so that ring is visible. A bare block div stretches to
-                // the container while the sheet keeps its own size, and the two stop describing the
-                // same thing; on Photon `MeasureWrapper` gives the wrapper exactly the child's
-                // bounds. The third instance of #239's rule, and the one that needed the width
-                // contract below before it could be stated at all (#241).
+                // reader outlines for touch exploration. A bare block div stretches to the container
+                // while the sheet keeps its own size, and the two stop describing the same thing; on
+                // Photon `MeasureWrapper` gives the wrapper exactly the child's bounds. The third
+                // instance of #239's rule, and the one that needed the width contract below before it
+                // could be stated at all (#241).
                 Width = sheetFills.Width ? "100%" : "fit-content",
                 // The child's cap comes THROUGH: a wrapper that takes the width and drops the
                 // maximum is the half-contract that made the Link diverge once already.
                 MaxWidth = Size(sheetCap),
                 Height = sheetFills.Height ? "100%" : null,
                 PointerEvents = "auto",
+                // The door and the carets stand at the model's rectangles, in the surface's coordinates.
+                Position = Position.Relative,
                 Outline = "none",
                 UserSelect = "none",
             },
             RawAttributes = attributes,
         };
-        // The keyboard, the pointer and the clipboard, DECLARED here as well as installed by the client
-        // twin, as the Navigable's keyboard is. The server dispatches none of them, so these delegates
-        // never run, but the lowered tree is what the parity net compares, and a fixture that says
-        // "no handler" cannot notice the client losing one.
-        element.OnKeyDown = static _ => { };
+        // The pointer, DECLARED here as well as installed by the client twin, as the Navigable's
+        // keyboard is. The server dispatches none of them, so these delegates never run, but the lowered
+        // tree is what the parity net compares, and a fixture that says "no handler" cannot notice the
+        // client losing one.
         element.OnMouseDown = static _ => { };
-        foreach (var name in (ReadOnlySpan<string>)["pointerdown", "pointermove", "pointerup", "pointercancel", "copy", "cut", "paste"])
-            element.CustomEvents[name] = ClientDispatches;
+        foreach (var pointer in (ReadOnlySpan<string>)["pointerdown", "pointermove", "pointerup", "pointercancel"])
+            element.CustomEvents[pointer] = ClientDispatches;
         // The inherited axis travels THROUGH, as it does in the client twin: a Spacer inside a
         // sheet inside a Row needs to know which way the row runs, and `null` makes it lower to
         // nothing on the server while the browser renders it. Found in review.
         if (Lower(sheet.Child, horizontalAxis) is { } child) element.Children.Add(child);
+
+        // The entry's carets, in the cell text's ink, hidden by the generated sheet until the surface
+        // holds the keyboard; a server never draws a cell being edited, so there are none in practice.
+        var ink = TokenCss.Value(sheet.CaretColor ?? _context.Theme.TextPrimary);
+        foreach (var caret in sheet.Model.Carets)
+            element.Children.Add(CaretMark(caret, ink));
+
+        // THE DOOR (TS twin: lowerSheetSurface and openTextDoor): the textarea the keyboard types
+        // through, at the model's input bounds, holding the sheet's stop of the Tab order and its name.
+        var at = sheet.Model.InputBounds;
+        var door = new Dictionary<string, string>
+        {
+            ["style"] = $"left:{TokenCss.Px(at.X)};top:{TokenCss.Px(at.Y)};height:{TokenCss.Px(at.Height)};",
+            ["tabindex"] = "0",
+            ["autocomplete"] = "off",
+            ["autocorrect"] = "off",
+            ["autocapitalize"] = "off",
+            ["spellcheck"] = "false",
+            ["aria-multiline"] = "true",
+        };
+        if (sheet.Label is { Length: > 0 } named) door["aria-label"] = named;
+        var input = new RealizedElement("textarea")
+        {
+            ClassName = "eq-code-input",
+            RawAttributes = door,
+        };
+        // The door's text and composition, declared as the pointer is. Its keydown, its clipboard trio and
+        // its focus are the client-only handlers of every entry the parity net leaves to the browser.
+        foreach (var text in (ReadOnlySpan<string>)["beforeinput", "compositionupdate", "compositionend"])
+            input.CustomEvents[text] = ClientDispatches;
+        element.Children.Add(input);
         return element;
     }
+
+    /// <summary>A caret the model answers, as an absolutely placed rectangle in the surface's coordinates —
+    /// the one mark a surface paints of its own (TS twin: <c>mark</c>).</summary>
+    private static RealizedElement CaretMark(Rect caret, string ink) =>
+        new("div")
+        {
+            ClassName = "eq-code-caret",
+            RawAttributes = new Dictionary<string, string>
+            {
+                ["style"] = $"position:absolute;left:{TokenCss.Px(caret.X)};top:{TokenCss.Px(caret.Y)};"
+                    + $"width:{TokenCss.Px(caret.Width)};height:{TokenCss.Px(caret.Height)};"
+                    + $"background-color:{ink};pointer-events:none;",
+            },
+        };
 
     /// <summary>
     /// An editable code surface, as the client builds it (lowering.ts, <c>lowerCodeSurface</c>):
@@ -203,18 +248,7 @@ internal sealed partial class WebLoweringVisitor
         var ink = TokenCss.Value(surface.CaretColor ?? _context.Theme.TextPrimary);
         var carets = surface.Model.Carets;
         foreach (var caret in carets)
-        {
-            element.Children.Add(new RealizedElement("div")
-            {
-                ClassName = "eq-code-caret",
-                RawAttributes = new Dictionary<string, string>
-                {
-                    ["style"] = $"position:absolute;left:{TokenCss.Px(caret.X)};top:{TokenCss.Px(caret.Y)};"
-                        + $"width:{TokenCss.Px(caret.Width)};height:{TokenCss.Px(caret.Height)};"
-                        + $"background-color:{ink};pointer-events:none;",
-                },
-            });
-        }
+            element.Children.Add(CaretMark(caret, ink));
 
         // THE INPUT, at the primary caret, so an input method's window opens where the text lands.
         var input = new Dictionary<string, string>

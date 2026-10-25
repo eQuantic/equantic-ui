@@ -370,13 +370,14 @@ public static class ThemeStylesheet
         // its ink rides the node (an inverse slab writes with an ink of its own). What is left is
         // what a window gets from its host — the blink, and the fact that the caret does not show
         // while the surface does not hold the keyboard. The keyboard is held by the surface's
-        // input, INSIDE it, which is why these read :focus-within.
+        // input, INSIDE it, which is why these read :focus-within. A sheet's entry is the code engine's
+        // document, and its caret is the same mark behind the same kind of door.
         css.AppendLine("@keyframes eq-caret-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }");
-        css.AppendLine($".eq-code-surface:focus-within .eq-code-caret {{ animation: eq-caret-blink {CodeSurface.CaretBlinkMs * 2}ms step-end infinite; }}");
-        css.AppendLine(".eq-code-surface:not(:focus-within) .eq-code-caret { opacity: 0; }");
+        css.AppendLine($".eq-code-surface:focus-within .eq-code-caret, .eq-sheet-surface:focus-within .eq-code-caret {{ animation: eq-caret-blink {CodeSurface.CaretBlinkMs * 2}ms step-end infinite; }}");
+        css.AppendLine(".eq-code-surface:not(:focus-within) .eq-code-caret, .eq-sheet-surface:not(:focus-within) .eq-code-caret { opacity: 0; }");
         // A steady caret for anyone who asked the OS to stop things moving — it still says where
         // you are, which is the whole point of it.
-        css.AppendLine("@media (prefers-reduced-motion: reduce) { .eq-code-surface:focus-within .eq-code-caret { animation: none; } }");
+        css.AppendLine("@media (prefers-reduced-motion: reduce) { .eq-code-surface:focus-within .eq-code-caret, .eq-sheet-surface:focus-within .eq-code-caret { animation: none; } }");
         // The input a code surface types through: a real textarea, at the caret — so an input
         // method's candidate window opens where the text goes, and a phone raises its keyboard —
         // that nobody sees and nothing points at. It holds no text: every keystroke that reaches

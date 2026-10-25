@@ -167,6 +167,17 @@ public static class SdkStrings
     /// <summary>The sheet surface's accessible name when the app supplies none.</summary>
     public static string Spreadsheet => SdkResources.Spreadsheet;
 
+    /// <summary>The formula bar's accessible name.</summary>
+    public static string FormulaBar => SdkResources.FormulaBar;
+
+    /// <summary>The name box's accessible name.</summary>
+    public static string NameBox => SdkResources.NameBox;
+
+    /// <summary>The size of the range a drag is drawing, as the name box shows it while it lasts: rows by
+    /// columns, in the letters Excel uses in the app's language ("5R x 3C").</summary>
+    public static string RangeSize(int rows, int columns) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.RangeSize, rows, columns);
+
     // ListDetail's compact pane: going back to the list, and the wide pane with nothing chosen.
     public static string Back => SdkResources.Back;
     public static string NothingSelected => SdkResources.NothingSelected;
