@@ -463,12 +463,27 @@ public class CodeEditorControllerTests
         var afterBreak = start.Replace(broke.Range, broke.InsertedText, out _);
         var typed = new CodeEdit(new CodeRange(broke.InsertedRange.End), "", "x", default, default, Typed: true);
         var afterTyping = afterBreak.Replace(typed.Range, typed.InsertedText, out _);
-        history.Record(broke);
-        history.Record(typed);
+        history.Record([broke]);
+        history.Record([typed]);
 
-        var undone = history.Undo(afterTyping, out _, out _, out _)!;
+        var undone = history.Undo(afterTyping, out _, out _)!;
 
         undone.Text.Should().Be(afterBreak.Text, "one undo takes back the character typed after the break, and only it");
+    }
+
+    /// <summary>Undo places the selection it restores before it raises the replacement it made, as an edit
+    /// does: a listener that reads the caret then reads it in the document undo left (#1031's review).</summary>
+    [Fact]
+    public void Undo_PlacesTheSelectionItRestores_BeforeItRaisesChanged()
+    {
+        var editor = Editor("");
+        foreach (var c in "abc") editor.Type(c);
+        var seen = new List<CodePosition>();
+        editor.Changed += _ => seen.Add(editor.Caret);
+
+        editor.Undo();
+
+        seen.Should().Equal(new CodePosition(0, 0));
     }
 
     [Fact]
@@ -489,14 +504,14 @@ public class CodeEditorControllerTests
     public void EveryChangeRaisesTheEditThatCausedIt()
     {
         var editor = Editor("");
-        var edits = new List<CodeEdit?>();
-        editor.Changed += edits.Add;
+        var changes = new List<CodeChange>();
+        editor.Changed += changes.Add;
 
         editor.Insert("hello");
 
-        edits.Should().HaveCount(1);
-        edits[0]!.InsertedText.Should().Be("hello");
-        edits[0]!.RemovedText.Should().BeEmpty();
+        var edit = changes.Should().ContainSingle().Which.Edits.Should().ContainSingle().Which;
+        edit.InsertedText.Should().Be("hello");
+        edit.RemovedText.Should().BeEmpty();
     }
 
     [Fact]

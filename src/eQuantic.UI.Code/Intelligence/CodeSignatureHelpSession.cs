@@ -154,9 +154,9 @@ public sealed class CodeSignatureHelpSession
     }
 
     /// <summary>A document replaced whole closes the panel: no call in the old one is in the new one.</summary>
-    private void Edited(CodeEdit? edit)
+    private void Edited(CodeChange change)
     {
-        if (edit is null) Dismiss();
+        if (change.Replaced) Dismiss();
     }
 
     /// <summary>What the panel shows, with the signature shown as its active one.</summary>

@@ -90,6 +90,25 @@ function type(lowered: HtmlNode, text: string) {
 }
 
 describe('code surface (web)', () => {
+  it('moves a line on ⌥↑ through its keydown, and ⌘Z takes the move back in one step (#1031)', () => {
+    const { editor, lowered } = surfaceFor('one\ntwo\nthree');
+    editor.selection = new CodeRange(new CodePosition(1, 1));
+    const heard: string[] = [];
+    const listeners = editor.changed;
+    editor.changed = (change) => {
+      listeners?.(change);
+      heard.push(change.edits.map((edit) => `${edit.removedText}>${edit.insertedText}`).join(', '));
+    };
+
+    expect(press(lowered, 'ArrowUp', { alt: true }), 'the editor claims ⌥↑').toBe(true);
+    expect(editor.document.text).toBe('two\none\nthree');
+    expect(press(lowered, 'z', { meta: true })).toBe(true);
+
+    expect(editor.document.text, 'one undo takes the whole move back').toBe('one\ntwo\nthree');
+    expect([editor.caret.line, editor.caret.column]).toEqual([1, 1]);
+    expect(heard, 'the move and its undo, one change of two replacements each').toEqual(['>one\n, one\n>', '>one\n, one\n>']);
+  });
+
   it('types through an input of its own, which says what it is', () => {
     const { lowered } = surfaceFor('var x = 1;');
     const input = inputOf(lowered);

@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeDocument, CodeEdit, CodeEditorController, CodePosition, CodeSignature, CodeSignatureContext, CodeSignatureHelp, ProviderRequest, TimeSpan, UiThread } from "../runtime-exports";
+import { $eq, CancellationToken, CancellationTokenSource, CodeChange, CodeDocument, CodeEditorController, CodePosition, CodeSignature, CodeSignatureContext, CodeSignatureHelp, ProviderRequest, TimeSpan, UiThread } from "../runtime-exports";
 
 export class CodeSignatureHelpSession {
     constructor(editor: CodeEditorController) {
@@ -56,8 +56,8 @@ export class CodeSignatureHelpSession {
 
     invoke() {
         if ($eq.collections.count(this.providers) === 0) return false;
-        let $n35: any; 
-        this.ask(($n35 = new CodeSignatureContext('invoked'), $n35.isRetrigger = this.isOpen, $n35.active = this.shown(), $n35), false);
+        let $n28: any; 
+        this.ask(($n28 = new CodeSignatureContext('invoked'), $n28.isRetrigger = this.isOpen, $n28.active = this.shown(), $n28), false);
         return true;
     }
 
@@ -94,18 +94,18 @@ export class CodeSignatureHelpSession {
             retriggered = $eq.logic.or(retriggered, provider.retriggerCharacters.includes(typed));
         }
         if (!triggered && !(retriggered && this.isOpen)) return;
-        let $n38: any; 
-        this.ask(($n38 = new CodeSignatureContext('character'), $n38.character = typed, $n38.isRetrigger = this.isOpen, $n38.active = this.shown(), $n38), false);
+        let $n31: any; 
+        this.ask(($n31 = new CodeSignatureContext('character'), $n31.character = typed, $n31.isRetrigger = this.isOpen, $n31.active = this.shown(), $n31), false);
     }
 
     moved() {
         if (this._help == null && this._request == null) return;
-        let $n39: any; 
-        this.ask(($n39 = new CodeSignatureContext('contentChange'), $n39.isRetrigger = this.isOpen, $n39.active = this.shown(), $n39), true);
+        let $n32: any; 
+        this.ask(($n32 = new CodeSignatureContext('contentChange'), $n32.isRetrigger = this.isOpen, $n32.active = this.shown(), $n32), true);
     }
 
-    edited(edit: CodeEdit | null) {
-        if (edit == null) this.dismiss();
+    edited(change: CodeChange) {
+        if (change.replaced) this.dismiss();
     }
 
     shown() {

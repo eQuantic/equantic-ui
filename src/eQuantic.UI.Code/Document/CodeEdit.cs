@@ -1,10 +1,11 @@
 namespace eQuantic.UI.Code;
 
 /// <summary>
-/// ONE change to a document, and everything needed to undo it: what was there, what replaced it,
-/// and where the caret stood on each side. It is also the EVENT an editor raises — a host building
-/// an IDE listens to edits, not to keystrokes, because a paste, a refactor and a typed character
-/// are the same thing to everything downstream (a language server, a dirty flag, a diff).
+/// ONE replacement in a document, and everything needed to undo it: what was there, what replaced
+/// it, and where the caret stood on each side. It is also what an editor's event carries, in the
+/// <see cref="CodeChange"/> it raises — a host building an IDE listens to edits, not to keystrokes,
+/// because a paste, a refactor and a typed character are the same thing to everything downstream (a
+/// language server, a dirty flag, a diff).
 /// <para>
 /// <c>Typed</c> says a person TYPED it, a character at a time, which is what a run of undo joins.
 /// A paste, a cut, an indent or a refactor arrives whole and is a step of its own.
