@@ -123,8 +123,8 @@
 
 ## 9. Integration
 
-- [ ] 9.1 The suites after a merge of `main`: Compiler, Conformance, Web (against the wiki branch),
+- [x] 9.1 The suites after a merge of `main`: Compiler, Conformance, Web (against the wiki branch),
       Server (the served runtime's budget recorded with the bytes it bought), Native.Engine, Design, Email,
       the runtime's Vitest, `./scripts/check-openspec.sh`, and the four samples built
-- [ ] 9.2 `/code-review high` on the branch and its findings fixed with a test each before the pull
+- [x] 9.2 `/code-review high` on the branch and its findings fixed with a test each before the pull
       request opens; the change archived (`openspec archive the-grid-selects-as-excel-does --yes`)
