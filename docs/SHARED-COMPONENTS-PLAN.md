@@ -129,7 +129,7 @@ rejected.)
    (Flexible → `flex: n 1 0%` matching native leftover-by-weight; `min-width:0` preserves the
    truncation contract), Text→role-classed span, Pressable→neutralized button; colors lower as
    `light-dark()` values straight from tokens, so the DOM is MODE-FREE like the abstract tree (theme
-   switch = `color-scheme`). `PhotonCssGenerator` emits the NORMATIVE stylesheet (custom properties,
+   switch = `color-scheme`). `ThemeStylesheet` emits the NORMATIVE stylesheet (custom properties,
    type-role classes, elevation shadows, motion vars) — parity with the C# tokens is tested per value.
    Slice 2A ✅ (2026-07-04): the TypeScript-runtime lowering (`src/shared/lowering.ts` over the
    transpiled node shapes in `nodes.ts`) mirrors the WebRealizer rule-for-rule, with a CROSS-PINNED

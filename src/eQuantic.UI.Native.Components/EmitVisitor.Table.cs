@@ -100,11 +100,12 @@ internal sealed partial class EmitVisitor
         return pinnedRow && pinnedColumn ? 3 : pinnedRow ? 2 : pinnedColumn ? 1 : 0;
     }
 
-    /// <summary>A track and its thumb on each axis the grid overflows, in the theme's colours.</summary>
+    /// <summary>A track and its thumb on each axis the grid overflows, in the theme's
+    /// <see cref="IAppTheme.ScrollbarTrack"/> and <see cref="IAppTheme.ScrollbarThumb"/>.</summary>
     private static void EmitScrollbars(ITableScrollModel scroll, EmitState s, Rect bounds)
     {
-        var track = s.Theme.SurfaceSubtle.Resolve(s.Mode);
-        var thumb = s.Theme.TextMuted.Resolve(s.Mode).WithOpacity(0.55f);
+        var track = s.Theme.ScrollbarTrack.Resolve(s.Mode);
+        var thumb = s.Theme.ScrollbarThumb.Resolve(s.Mode);
         foreach (var axis in (ReadOnlySpan<ScrollAxis>)[ScrollAxis.Vertical, ScrollAxis.Horizontal])
         {
             if (scroll.TrackOf(axis) is not { } strip || scroll.ThumbOf(axis) is not { } knob) continue;

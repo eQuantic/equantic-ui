@@ -976,7 +976,7 @@ public sealed class PhotonHost
         var value = entry.Value;
         if (value.Length == 0 || localX <= 0) return 0;
         var measurer = _measurer ?? ApproximateTextMeasurer.Instance;
-        var style = _theme.Type(entry.Role).AtWindow(this.Width);
+        var style = entry.Resolve(_theme).AtWindow(this.Width);
 
         float Width(int count) => count <= 0 ? 0
             : measurer.Measure(Shown(entry, value[..count]), style, _typeScale, float.PositiveInfinity, 1)
@@ -1503,7 +1503,7 @@ public sealed class PhotonHost
             if (!ReferenceEquals(fields[i].Element, _textAt)) continue;
             var bounds = fields[i].Bounds;
             var entry = fields[i].Entry;
-            var style = _theme.Type(entry.Role).AtWindow(this.Width);
+            var style = entry.Resolve(_theme).AtWindow(this.Width);
             var caretInValue = Math.Min(CaretIndex, entry.Value.Length);
             var composed = _marked.Length > 0 ? entry.Value.Insert(caretInValue, _marked) : entry.Value;
             var upTo = Math.Min(caretInValue + _marked.Length, composed.Length);

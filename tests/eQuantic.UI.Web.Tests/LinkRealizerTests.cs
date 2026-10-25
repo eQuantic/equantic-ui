@@ -80,7 +80,7 @@ public class LinkRealizerTests
     [Fact]
     public void Stylesheet_NeutralizesTheAnchorChrome()
     {
-        PhotonCssGenerator.Generate(Theme).Should()
+        ThemeStylesheet.Generate(Theme).Should()
             .Contain(".eq-link { display: block; text-decoration: none; color: inherit; }");
     }
 }

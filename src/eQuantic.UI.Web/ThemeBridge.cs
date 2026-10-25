@@ -98,6 +98,16 @@ public static class ThemeBridge
         // two never meet — the same argument `IAppTheme.MonoFamily` makes for existing at all.
         if (FaceName.Usable(theme.MonoFamily) is { } mono)
             sb.Append(",\"monoFamily\":\"").Append(Escape(mono)).Append('"');
+        // The TEXT face beside it, by the same rule, and the selected text's colour when the theme
+        // names one: the two members of the document that every theme need not answer, so the
+        // surfaces above (every ColorToken of the contract) cannot carry them.
+        if (FaceName.Usable(theme.TextFamily) is { } text)
+            sb.Append(",\"textFamily\":\"").Append(Escape(text)).Append('"');
+        if (theme.OnSelection is { } onSelection)
+        {
+            sb.Append(",\"onSelection\":");
+            Token(sb, onSelection);
+        }
 
         sb.Append(",\"elevations\":[");
         for (var level = 0; level <= 5; level++)

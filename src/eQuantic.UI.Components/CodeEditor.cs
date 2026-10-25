@@ -662,6 +662,7 @@ public sealed class CodeEditor : StatefulComponent
             // ENGINE's measurements, on the grid handed to it above.
             ActiveLine = editor.Caret.Line,
             SelectionBands = editor.SelectionBandsIn(first, last),
+            Selection = editor.Selection,
             WidestLine = editor.WidestLine,
         };
 

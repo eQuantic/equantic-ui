@@ -70,7 +70,7 @@ public class WindowRelativeSizeTests
         // outgrow the window ACROSS — max-width has been there since the start — and this is the
         // same refusal DOWN. Without it a menu taller than the window ran past the bottom of it
         // with its content unreachable, and every dropdown and picker shares the rule.
-        var css = PhotonCssGenerator.Generate(Theme);
+        var css = ThemeStylesheet.Generate(Theme);
 
         css.Should().Contain("max-height: 100vh").And.Contain("overflow-y: auto");
         css.Should().Contain(".eq-anchor-panel { position: absolute; z-index: 1050; "

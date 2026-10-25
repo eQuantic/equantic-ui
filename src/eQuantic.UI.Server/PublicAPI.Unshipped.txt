@@ -1,1 +1,7 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Server.HtmlShellOptions.BaseStyles.get -> string!
+*REMOVED*eQuantic.UI.Server.HtmlShellOptions.BaseStyles.set -> void
+*REMOVED*eQuantic.UI.Server.HtmlShellOptions.SetBaseStyles(string! styles) -> eQuantic.UI.Server.HtmlShellOptions!
+eQuantic.UI.Server.HtmlShellOptions.AddStyles(string! css) -> eQuantic.UI.Server.HtmlShellOptions!
+eQuantic.UI.Server.HtmlShellOptions.Styles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Server.Rendering.ServerRenderResult.Failed.get -> bool

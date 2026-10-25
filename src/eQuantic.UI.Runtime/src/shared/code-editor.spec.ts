@@ -1051,7 +1051,7 @@ describe('the component draws the selection, under the text', () => {
     if (Array.isArray(n.children)) for (const c of n.children) walk(c, context, visit);
   };
 
-  it('washes each band to 28% (CodeBlock.SelectionAlpha), one per line of the selection', async () => {
+  it("washes each band in the theme's Selection (the focus colour at 28%), one per line of the selection", async () => {
     const { materializeTheme } = await import('./theme-bridge');
     const photonData = (await import('./theme-bridge.photon.json')).default;
     const { CodeEditor } = await import('./components/CodeEditor');
@@ -1075,6 +1075,36 @@ describe('the component draws the selection, under the text', () => {
       if (style?.background?.light?.a === 71) bands.push(n);
     });
     expect(bands).toHaveLength(3);
+    setPhotonTheme(photonTheme);
+  });
+
+  // A theme may draw its selection opaque and name the colour selected text takes (#1038): the
+  // selected glyphs take it, or they would vanish into the band; the rest keep their syntax colours.
+  it("sets the selected glyphs in the theme's OnSelection, and only them", async () => {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const magenta: [number, number, number, number] = [255, 0, 255, 255];
+    const theme = materializeTheme({ ...(photonData as never as object), onSelection: [magenta, magenta] } as never);
+    setPhotonTheme(theme);
+    const component = new CodeEditor('one two', 'csharp');
+    const context = {
+      theme,
+      density: 'comfortable',
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    component.build(context as never);
+    component.editor.selection = new CodeRange(new CodePosition(0, 4), new CodePosition(0, 7));
+    const tree = component.build(context as never);
+
+    const inMagenta: string[] = [];
+    walk(tree, context, (n) => {
+      const color = n.color as { light?: { r?: number; g?: number; b?: number } } | null | undefined;
+      if (n instanceof Text && color?.light?.r === 255 && color.light.g === 0 && color.light.b === 255)
+        inMagenta.push((n as unknown as { content: string }).content);
+    });
+    expect(inMagenta.join('')).toBe('two');
     setPhotonTheme(photonTheme);
   });
 

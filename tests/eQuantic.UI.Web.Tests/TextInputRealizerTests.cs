@@ -130,10 +130,11 @@ public class TextInputRealizerTests
     [Fact]
     public void GeneratedStylesheet_CarriesTheEntryMechanics()
     {
-        var css = PhotonCssGenerator.Generate(Theme);
+        var css = ThemeStylesheet.Generate(Theme);
         css.Should().Contain(".eq-entry { outline: none; }",
             "the container shows focus — the input itself is chrome-less");
-        css.Should().Contain(".eq-entry::placeholder { color: var(--eq-color-text-muted); }");
+        css.Should().Contain("::placeholder { color: var(--eq-color-placeholder); opacity: 1; }",
+            "an entry's placeholder is the document's, in the theme's Placeholder (#1038)");
         css.Should().Contain(".eq-desc { position: absolute;",
             "the description twin is clipped, not display:none — hidden targets read for " +
             "describedby but only a rendered one announces as a live region");
