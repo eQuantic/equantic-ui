@@ -7,7 +7,7 @@ namespace eQuantic.UI.Native.Engine.Tests;
 
 /// <summary>
 /// The file of a family every shell sets text in, chosen as a browser chooses among a family's faces
-/// (CSS Fonts §5.2), so a family draws from the same file on the web and on every target (#1082).
+/// (CSS Fonts §5.2), so a family draws from the same file on the web, on Apple and on Android (#1082).
 /// </summary>
 public class ShippedFileChoiceTests
 {
@@ -31,6 +31,17 @@ public class ShippedFileChoiceTests
     [InlineData(FontWeight.Black, 700)]
     public void AWeightNoFileSets_IsSetInTheFileABrowserWouldChoose(FontWeight weight, int file) =>
         ShippedFaces.FileFor(Three, weight, italic: false)!.MinWeight.Should().Be(file);
+
+    /// <summary>From 400 to 500 the three steps keep their order: the heavier files up to 500, then the
+    /// lighter, then the heavier past 500.</summary>
+    [Fact]
+    public void AWeightFrom400To500_LooksUpTo500_ThenLighter_ThenPast500()
+    {
+        ShippedFaces.FileFor(new FontFamily("Face", File(300), File(500), File(700)), FontWeight.Regular, italic: false)!
+            .MinWeight.Should().Be(500, "a heavier file up to 500 comes first");
+        ShippedFaces.FileFor(new FontFamily("Face", File(300), File(600)), FontWeight.Regular, italic: false)!
+            .MinWeight.Should().Be(300, "the lighter files come before the heavier past 500");
+    }
 
     [Fact]
     public void TheSlantComesFirst_AndAFamilyWithNoItalicIsSetUpright()
