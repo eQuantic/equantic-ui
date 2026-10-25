@@ -128,3 +128,9 @@ eQuantic.UI.Sheet.SheetController.Refreshed -> System.Action?
 eQuantic.UI.Sheet.SheetController.Ranges.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Sheet.SheetRange>!
 eQuantic.UI.Sheet.SheetController.AddingRanges.get -> bool
 eQuantic.UI.Sheet.SheetDocument.Version.get -> int
+*REMOVED*eQuantic.UI.Sheet.SheetController.SelectCols(int fromCol, int toCol) -> void
+*REMOVED*eQuantic.UI.Sheet.SheetController.SelectRows(int fromRow, int toRow) -> void
+eQuantic.UI.Sheet.SheetController.SelectCols(int anchor, int focus, bool add) -> void
+eQuantic.UI.Sheet.SheetController.SelectRows(int anchor, int focus, bool add) -> void
+eQuantic.UI.Sheet.SheetGrid.ResizeGrip.get -> float
+eQuantic.UI.Sheet.SheetGrid.ResizeGrip.init -> void

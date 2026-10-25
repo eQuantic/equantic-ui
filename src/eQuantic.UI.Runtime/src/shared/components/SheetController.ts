@@ -24,6 +24,8 @@ export class SheetController {
         this.grid = SheetGrid.default;
         this._selecting = false;
         this._tapped = null;
+        this._tappedHeader = null;
+        this._headerDrag = null;
         this._entryPressed = false;
         this._slide = 0;
         this._rise = 0;
@@ -62,6 +64,8 @@ export class SheetController {
     grid!: SheetGrid;
     _selecting!: boolean;
     _tapped!: CellRef | null;
+    _tappedHeader!: [SheetAxisValue | null, number, boolean] | null;
+    _headerDrag!: SheetAxisValue | null;
     _entryPressed!: boolean;
     _slide!: number;
     _rise!: number;
@@ -282,14 +286,32 @@ export class SheetController {
         this.reveal();
     }
 
-    selectRows(fromRow: number, toRow: number) {
-        this._selection = new SheetRange(new CellRef(fromRow, 0), new CellRef(toRow, this.document.cols - 1));
-        this._active = new CellRef(fromRow, 0);
+    selectRows(anchor: number, focus: number, add: boolean) {
+        let band = this.rowBand(anchor, focus);
+        if (add) this.addRange(band); else this.select(band);
+        this._active = this.document.clamp(new CellRef(anchor, this.firstColumnShown()));
     }
 
-    selectCols(fromCol: number, toCol: number) {
-        this._selection = new SheetRange(new CellRef(0, fromCol), new CellRef(this.document.rows - 1, toCol));
-        this._active = new CellRef(0, fromCol);
+    selectCols(anchor: number, focus: number, add: boolean) {
+        let band = this.columnBand(anchor, focus);
+        if (add) this.addRange(band); else this.select(band);
+        this._active = this.document.clamp(new CellRef(this.firstRowShown(), anchor));
+    }
+
+    rowBand(anchor: number, focus: number) {
+        return new SheetRange(new CellRef(anchor, 0), new CellRef(focus, this.document.cols - 1));
+    }
+
+    columnBand(anchor: number, focus: number) {
+        return new SheetRange(new CellRef(0, anchor), new CellRef(this.document.rows - 1, focus));
+    }
+
+    firstRowShown() {
+        return this.document.rowSpans.indexAt(this.grid.offset.down);
+    }
+
+    firstColumnShown() {
+        return this.document.columnSpans.indexAt(this.grid.offset.across);
     }
 
     selectAll() {
@@ -698,12 +720,25 @@ export class SheetController {
             case 'down':
                 {
                     this._selecting = false;
+                    this._headerDrag = null;
                     this._tapped = null;
+                    this._tappedHeader = null;
                     this._entryPressed = false;
                     if (this.filling) this.cancelFill();
+                    let header = this.headerAt(position);
+                    if (header[3]) return false;
+                    let onHeader = header[2] || !(header[0] == null);
                     if (kind === 'touch') {
-                        this._tapped = this.cellAt(position);
+                        if (onHeader) this._tappedHeader = [header[0], header[1], header[2]]; else this._tapped = this.cellAt(position);
                         return false;
+                    }
+                    if (onHeader) {
+                        if (this.editing) this.commitEdit();
+                        this.pressHeader(header[0], header[1], header[2], modifiers);
+                        this._selecting = !header[2];
+                        this._headerDrag = header[0];
+                        if (this._selecting) this._dragAt = position;
+                        return true;
                     }
                     if (this.inEditor(position)) {
                         this.editMode = 'edit';
@@ -730,6 +765,7 @@ export class SheetController {
                         return this.entry.handlePointer('move', position, modifiers, clicks);
                     }
                     if (!this.filling && !this._selecting) return false;
+                    position = this.alongTheHeaders(position);
                     this._dragAt = position;
                     let past = this.pastTheCells(position);
                     this.grid.scroll?.autoScroll(past ? position : null);
@@ -743,6 +779,13 @@ export class SheetController {
                         this._entryPressed = false;
                         this.useCellView();
                         this.entry.handlePointer('up', position, modifiers, clicks);
+                        return true;
+                    }
+                    let tappedHeader: any; 
+                    if ((tappedHeader = this._tappedHeader) != null) {
+                        this._tappedHeader = null;
+                        if (this.editing) this.commitEdit();
+                        this.pressHeader(tappedHeader[0], tappedHeader[1], tappedHeader[2], modifiers);
                         return true;
                     }
                     let tapped: any; 
@@ -766,6 +809,7 @@ export class SheetController {
                 {
                     this.stopDrag();
                     this._tapped = null;
+                    this._tappedHeader = null;
                     if (this._entryPressed) {
                         this._entryPressed = false;
                         this.entry.handlePointer('cancel', position, modifiers, clicks);
@@ -795,6 +839,15 @@ export class SheetController {
 
     drag(position: Point) {
         let cell = this.cellAt(this.insideTheCells(position));
+        let axis: any; 
+        if ((axis = this._headerDrag) != null) {
+            let active = this._active;
+            let band = axis === 'cols' ? this.columnBand(this._selection.anchor.col, cell.col) : this.rowBand(this._selection.anchor.row, cell.row);
+            if ($eq.equals(band, this._selection)) return false;
+            this.setActiveRange(band);
+            this._active = active;
+            return true;
+        }
         if (this.filling) {
             let before = this.fillTarget;
             this.updateFill(cell);
@@ -803,6 +856,43 @@ export class SheetController {
         if ($eq.equals(cell, this._selection.focus)) return false;
         this.setActiveRange(new SheetRange(this._selection.anchor, cell));
         return true;
+    }
+
+    headerAt(point: Point): [SheetAxisValue | null, number, boolean, boolean] {
+        let overColumns = point.y >= 0 && point.y < this.grid.headerHeight;
+        let overRows = point.x >= 0 && point.x < this.grid.headerWidth;
+        if (!overColumns && !overRows) return [null, 0, false, false];
+        if (overColumns && overRows) return [null, 0, true, false];
+        let offset = this.grid.offset;
+        if (overColumns) {
+            let col = this.document.columnSpans.indexAt(Math.max(0, Math.fround(point.x - this.grid.headerWidth)) + offset.across);
+            col = Math.min(Math.max(col, 0), this.document.cols - 1);
+            let right = this.grid.headerWidth + this.document.columnSpans.offsetOf(col + 1) - offset.across;
+            return ['cols', col, false, this.grid.resizeGrip > 0 && point.x >= right - this.grid.resizeGrip];
+        }
+        let row = this.document.rowSpans.indexAt(Math.max(0, Math.fround(point.y - this.grid.headerHeight)) + offset.down);
+        row = Math.min(Math.max(row, 0), this.document.rows - 1);
+        let bottom = this.grid.headerHeight + this.document.rowSpans.offsetOf(row + 1) - offset.down;
+        return ['rows', row, false, this.grid.resizeGrip > 0 && point.y >= bottom - this.grid.resizeGrip];
+    }
+
+    pressHeader(axis: SheetAxisValue | null, index: number, corner: boolean, modifiers: number) {
+        let along: any; 
+        if (corner || !((along = axis) != null)) {
+            this.selectAll();
+            return;
+        }
+        if ((modifiers & 1) !== 0) {
+            let active = this._active;
+            this.setActiveRange(along === 'cols' ? this.columnBand(this._selection.anchor.col, index) : this.rowBand(this._selection.anchor.row, index));
+            this._active = this._selection.contains(active) ? active : this._selection.anchor;
+            return;
+        }
+        if (along === 'cols') this.selectCols(index, index, this.adds(modifiers)); else this.selectRows(index, index, this.adds(modifiers));
+    }
+
+    alongTheHeaders(position: Point) {
+        return (() => { const $s = this._headerDrag; if ($s === 'cols') return new Point(position.x, Math.max(position.y, this.grid.headerHeight)); if ($s === 'rows') return new Point(Math.max(position.x, this.grid.headerWidth), position.y); return position; })();
     }
 
     pastTheCells(position: Point) {
@@ -818,6 +908,7 @@ export class SheetController {
 
     stopDrag() {
         this._selecting = false;
+        this._headerDrag = null;
         if (this._dragAt == null) return;
         this._dragAt = null;
         this.grid.scroll?.autoScroll(null);

@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, EntryLines, LeadingSpans, Point, Positioned, Pressable, SdkStrings, SheetAxisValue, SheetController, SheetDocument, SheetGrid, SheetPalette, SheetRange, SheetSurface, Size, SizeValue, Stack, StatefulComponent, TableOffset, TableRange, TableScroll, TableScrollRequest, TableView, TableViewCell, Text, TypeRoleValue, UiComponent, VisualNode, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, EntryLines, LeadingSpans, Point, Positioned, SdkStrings, SheetAxisValue, SheetController, SheetDocument, SheetGrid, SheetPalette, SheetRange, SheetSurface, Size, SizeValue, Stack, StatefulComponent, TableOffset, TableRange, TableScroll, TableScrollRequest, TableView, TableViewCell, Text, TypeRoleValue, UiComponent, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class Spreadsheet extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Spreadsheets.Spreadsheet';
@@ -52,7 +52,7 @@ export class Spreadsheet extends StatefulComponent {
         }
         let cellType = theme.type(Spreadsheet.cellType);
         let $n0: any; 
-        this.controller.grid = ($n0 = new SheetGrid(this._scroll, numbers, Spreadsheet.headerHeight), $n0.measure = (text: string) => context.measureText(text, cellType), $n0.lineHeight = cellType.lineHeight, $n0.cellPadding = Spreadsheet.cellPadding, $n0);
+        this.controller.grid = ($n0 = new SheetGrid(this._scroll, numbers, Spreadsheet.headerHeight), $n0.measure = (text: string) => context.measureText(text, cellType), $n0.lineHeight = cellType.lineHeight, $n0.cellPadding = Spreadsheet.cellPadding, $n0.resizeGrip = Spreadsheet.grip, $n0);
         let revealed = this.controller.revealCell;
         let table = new TableView(this._rows, this._columns, (row: number, column: number) => this.cell(row, column, document, palette, numbers), { pinnedRows: 1, pinnedColumns: 1, overscan: this._config.overscan, width: SizeValue.fill, height: SizeValue.fill, scroll: this._scroll, marks: this.marks(palette), request: new TableScrollRequest(this.controller.revealVersion, { reveal: new TableRange(revealed.row + 1, revealed.col + 1) }), onScrolled: this.scrolled.bind(this), onViewportChanged: this.viewportChanged.bind(this), canRequestFocus: false });
         return new Box(new BoxStyle({ width: this._config.width, height: this._config.height, borderColor: palette.gridline, borderWidth: 1, clip: true }), new SheetSurface(new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill }), table), this.controller, { onChanged: () => this.controller.refresh(), label: SdkStrings.spreadsheet, caretColor: palette.cellText }));
@@ -96,18 +96,15 @@ export class Spreadsheet extends StatefulComponent {
     }
 
     cell(row: number, column: number, document: SheetDocument, palette: SheetPalette, numbers: number) {
-        if (row === 0 && column === 0) return Spreadsheet.headerCell('', palette, false, () => {
-            this.controller.selectAll();
-            this.controller.refresh();
-        });
+        if (row === 0 && column === 0) return Spreadsheet.headerCell('', palette);
         if (row === 0) return this.columnHeader(column - 1, palette);
         if (column === 0) return this.rowHeader(row - 1, palette, numbers);
         return Spreadsheet.sheetCell(new CellRef(row - 1, column - 1), document, palette);
     }
 
-    static headerCell(label: string, palette: SheetPalette, selected: boolean = false, onPressed: (() => void) | null = null) {
+    static headerCell(label: string, palette: SheetPalette, selected: boolean = false) {
         let cell = new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, background: selected ? palette.headerSelectedBackground : palette.headerBackground, borderColor: palette.gridline, borderWidth: 0.5 }), label.length === 0 ? null : VisualNodeExtensions.centered(new Text(label, 'caption', selected ? palette.headerSelectedText : palette.headerText, 1)));
-        return onPressed == null ? cell : new Pressable(cell, onPressed, { canRequestFocus: false });
+        return cell;
     }
 
     columnHeader(c: number, palette: SheetPalette) {
@@ -115,10 +112,7 @@ export class Spreadsheet extends StatefulComponent {
         let selection = this.controller.selection;
         let inBand = c >= selection.leftCol && c <= selection.rightCol;
         let stack = new Stack();
-        stack.add(Spreadsheet.headerCell(CellRef.columnName(c), palette, inBand, () => {
-            this.controller.selectCols(col, col);
-            this.controller.refresh();
-        }));
+        stack.add(Spreadsheet.headerCell(CellRef.columnName(c), palette, inBand));
         stack.add(new Positioned(new Draggable(new Box(new BoxStyle({ width: SizeValue.fixed(Spreadsheet.grip), height: SizeValue.fixed(Spreadsheet.headerHeight), cursor: 'colResize' })), null, { axis: 'horizontal', min: -4000, max: 4000, follows: false, onMoved: (delta: number) => this.previewResize('cols', col, delta), onReleased: (delta: number) => this.commitResize('cols', col, delta) }), 0, 0, null, null, { layer: 1 }));
         return stack;
     }
@@ -128,10 +122,7 @@ export class Spreadsheet extends StatefulComponent {
         let selection = this.controller.selection;
         let inBand = r >= selection.topRow && r <= selection.bottomRow;
         let stack = new Stack();
-        stack.add(Spreadsheet.headerCell(`${$eq.text.format(r + 1, null, undefined, undefined, 'int32')}`, palette, inBand, () => {
-            this.controller.selectRows(row, row);
-            this.controller.refresh();
-        }));
+        stack.add(Spreadsheet.headerCell(`${$eq.text.format(r + 1, null, undefined, undefined, 'int32')}`, palette, inBand));
         stack.add(new Positioned(new Draggable(new Box(new BoxStyle({ width: SizeValue.fixed(width), height: SizeValue.fixed(Spreadsheet.grip), cursor: 'rowResize' })), null, { axis: 'vertical', min: -4000, max: 4000, follows: false, onMoved: (delta: number) => this.previewResize('rows', row, delta), onReleased: (delta: number) => this.commitResize('rows', row, delta) }), null, null, 0, 0, { layer: 1 }));
         return stack;
     }

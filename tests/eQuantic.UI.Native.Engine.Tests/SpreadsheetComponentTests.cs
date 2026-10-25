@@ -39,8 +39,9 @@ public class SpreadsheetComponentTests
         // is proven two ways: the row headers OUTSIDE it, and the ListView ruler — a sheet twenty
         // times longer must emit exactly the same draw commands.
         var (host, _) = Open();
-        // Headers are BUTTONS now — clicking one selects its band — so that is their role.
-        var headers = host.Semantics().Where(s => s.Role == SemanticRole.Button).ToList();
+        // Headers are drawn text, and the sheet's engine reads a press on them (#984); slice 2b (#1081) gives
+        // them the grid's own roles.
+        var headers = host.Semantics().Where(s => s.Role == SemanticRole.StaticText).ToList();
         headers.Should().Contain(s => s.Label == "A", "column headers spell A..");
         headers.Should().Contain(s => s.Label == "1", "row headers count from 1");
         headers.Count(s => int.TryParse(s.Label, out _)).Should().BeLessThan(40,
@@ -131,6 +132,7 @@ public class SpreadsheetComponentTests
         host.PressUp(edge - 2f + 40f, y);
 
         sheet.Document.ColWidth(0).Should().Be(136f);
+        sheet.Ranges.Should().Equal([new SheetRange(new CellRef(0, 0))], "the grip resizes, and selects nothing");
         sheet.Undo();
         sheet.Document.ColWidth(0).Should().Be(96f,
             "however many moves previewed, the gesture lands as ONE inverse");
@@ -200,6 +202,43 @@ public class SpreadsheetComponentTests
         host.PressUp(20f, Spreadsheet.HeaderHeight / 2);
         sheet.Selection.BottomRow.Should().Be(sheet.Document.Rows - 1);
         sheet.Selection.RightCol.Should().Be(sheet.Document.Cols - 1);
+    }
+
+    [Fact]
+    public void AHeaderPress_CarriesItsModifiers_ThroughTheHost()
+    {
+        var (host, sheet) = Open();
+        var columnC = (X: Spreadsheet.HeaderWidth + 2 * 96f + 48f, Y: Spreadsheet.HeaderHeight / 2);
+        host.PressDown(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 2 * 28f + 14f);   // B3
+        host.PressUp(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 2 * 28f + 14f);
+
+        // ⌘ (Ctrl elsewhere) on column C's header adds the column as a range of its own.
+        host.PressDown(columnC.X, columnC.Y, modifiers: KeyModifiers.Command);
+        host.PressUp(columnC.X, columnC.Y);
+        sheet.Ranges.Should().Equal(new SheetRange(new CellRef(2, 1)),
+            new SheetRange(new CellRef(0, 2), new CellRef(sheet.Document.Rows - 1, 2)));
+
+        // Shift on row 6's number, from a fresh B3: the rows 3 to 6, whole, with B3 still active.
+        host.PressDown(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 2 * 28f + 14f);
+        host.PressUp(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 2 * 28f + 14f);
+        host.PressDown(20f, Spreadsheet.HeaderHeight + 5 * 28f + 14f, modifiers: KeyModifiers.Shift);
+        host.PressUp(20f, Spreadsheet.HeaderHeight + 5 * 28f + 14f);
+        sheet.Ranges.Should().Equal(new SheetRange(new CellRef(2, 0), new CellRef(5, sheet.Document.Cols - 1)));
+        sheet.ActiveCell.Should().Be(new CellRef(2, 1));
+    }
+
+    [Fact]
+    public void ADragAcrossColumnHeaders_StretchesTheBand_ThroughTheHost()
+    {
+        var (host, sheet) = Open();
+        var y = Spreadsheet.HeaderHeight / 2;
+
+        host.PressDown(Spreadsheet.HeaderWidth + 96f + 48f, y);               // B's header
+        host.PointerMove(Spreadsheet.HeaderWidth + 2 * 96f + 48f, y);
+        host.PointerMove(Spreadsheet.HeaderWidth + 3 * 96f + 48f, y);         // D's header
+        host.PressUp(Spreadsheet.HeaderWidth + 3 * 96f + 48f, y);
+
+        sheet.Ranges.Should().Equal(new SheetRange(new CellRef(0, 1), new CellRef(sheet.Document.Rows - 1, 3)));
     }
 
     [Fact]

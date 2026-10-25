@@ -2524,8 +2524,12 @@ public sealed class PhotonHost
         {
             if (!Covers(sheetRegions, i, sheetRegions[i].Visible ?? sheetRegions[i].Bounds, point)) continue;
             BeginSheetEditing(sheetRegions[i].Element, sheetRegions[i].Surface.Model);
-            sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Down,
+            var claimed = sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Down,
                 ToLocal(sheetRegions, i, sheetRegions[i].Bounds, point), modifiers, clickCount, kind);
+            // A press the sheet declines over a drag surface drawn inside it is the drag's: a header's resize
+            // grip, which the sheet's engine reads as the grip's and leaves alone (#984). Its moves and its
+            // release go to the grip, as on the web, where the sheet steps aside for `[data-eq-drag]`.
+            if (!claimed && _drag is not null) return true;
             _sheetPressed = true;
             // A pen's press on the cells is the sheet's, as a mouse's is: its drag selects, so the
             // table's candidate pan lets go of it. A finger's stays a candidate, a tap or a pan.

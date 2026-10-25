@@ -133,11 +133,11 @@ public class SheetControllerTests
     {
         var sheet = Sheet(rows: 50, cols: 10);
 
-        sheet.SelectRows(2, 4);
+        sheet.SelectRows(2, 4, add: false);
         sheet.Selection.RowCount.Should().Be(3);
         sheet.Selection.ColCount.Should().Be(10);
 
-        sheet.SelectCols(1, 1);
+        sheet.SelectCols(1, 1, add: false);
         sheet.Selection.ColCount.Should().Be(1);
         sheet.Selection.RowCount.Should().Be(50);
     }

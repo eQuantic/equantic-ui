@@ -141,6 +141,7 @@ public sealed class Spreadsheet : StatefulComponent
             Measure = text => context.MeasureText(text, cellType),
             LineHeight = cellType.LineHeight,
             CellPadding = CellPadding,
+            ResizeGrip = Grip,
         };
 
         var revealed = Controller.RevealCell;
@@ -205,19 +206,15 @@ public sealed class Spreadsheet : StatefulComponent
     /// sheet's own cell one up and one to the left.</summary>
     private VisualNode Cell(int row, int column, SheetDocument document, SheetPalette palette, float numbers)
     {
-        if (row == 0 && column == 0)
-            return HeaderCell("", palette, onPressed: () =>
-            {
-                Controller.SelectAll();
-                Controller.Refresh();
-            });
+        // A header is drawn here and READ by the engine: a press on it reaches the sheet's surface with its
+        // modifiers, so Shift and ⌘ or Ctrl on a header, and a drag across headers, mean what they mean on a cell.
+        if (row == 0 && column == 0) return HeaderCell("", palette);
         if (row == 0) return ColumnHeader(column - 1, palette);
         if (column == 0) return RowHeader(row - 1, palette, numbers);
         return SheetCell(new CellRef(row - 1, column - 1), document, palette);
     }
 
-    private static VisualNode HeaderCell(string label, SheetPalette palette, bool selected = false,
-        Action? onPressed = null)
+    private static VisualNode HeaderCell(string label, SheetPalette palette, bool selected = false)
     {
         // A header inside the selection's band shades, exactly as Excel marks it.
         var cell = new Box(new BoxStyle
@@ -229,9 +226,7 @@ public sealed class Spreadsheet : StatefulComponent
             BorderWidth = 0.5f,
         }, label.Length == 0 ? null : new Text(label, TypeRole.Caption,
             selected ? palette.HeaderSelectedText : palette.HeaderText, maxLines: 1).Centered());
-        // A header press leaves the keyboard on the sheet, the one stop of the Tab order, as Excel's
-        // header does: the arrows go on moving the active cell after a column is selected.
-        return onPressed is null ? cell : new Pressable(cell, onPressed) { CanRequestFocus = false };
+        return cell;
     }
 
     // ---- resize grips: an invisible Draggable riding each header's trailing edge ----------------
@@ -245,12 +240,7 @@ public sealed class Spreadsheet : StatefulComponent
         var selection = Controller.Selection;
         var inBand = c >= selection.LeftCol && c <= selection.RightCol;
         var stack = new Stack();
-        stack.Add(HeaderCell(CellRef.ColumnName(c), palette, selected: inBand,
-            onPressed: () =>
-            {
-                Controller.SelectCols(col, col);
-                Controller.Refresh();
-            }));
+        stack.Add(HeaderCell(CellRef.ColumnName(c), palette, selected: inBand));
         stack.Add(new Positioned(new Draggable(new Box(new BoxStyle
         {
             Width = SizeValue.Fixed(Grip),
@@ -274,12 +264,7 @@ public sealed class Spreadsheet : StatefulComponent
         var selection = Controller.Selection;
         var inBand = r >= selection.TopRow && r <= selection.BottomRow;
         var stack = new Stack();
-        stack.Add(HeaderCell($"{r + 1}", palette, selected: inBand,
-            onPressed: () =>
-            {
-                Controller.SelectRows(row, row);
-                Controller.Refresh();
-            }));
+        stack.Add(HeaderCell($"{r + 1}", palette, selected: inBand));
         stack.Add(new Positioned(new Draggable(new Box(new BoxStyle
         {
             Width = SizeValue.Fixed(width),

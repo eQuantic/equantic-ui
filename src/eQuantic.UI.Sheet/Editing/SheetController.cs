@@ -252,18 +252,41 @@ public sealed class SheetController : ISheetSurfaceModel
         Reveal();
     }
 
-    /// <summary>Select the whole row band / column band of the current selection (header clicks).</summary>
-    public void SelectRows(int fromRow, int toRow)
+    /// <summary>
+    /// Whole rows, from the <paramref name="anchor"/> row to the <paramref name="focus"/> row: a press on a row's
+    /// header, and a drag across them. With <paramref name="add"/> the band is added as a range of its own, as
+    /// ⌘ or Ctrl on a header adds it; without, it is the only range. The active cell is the anchor row's first
+    /// cell the grid shows, as Excel leaves it.
+    /// </summary>
+    public void SelectRows(int anchor, int focus, bool add)
     {
-        _selection = new SheetRange(new CellRef(fromRow, 0), new CellRef(toRow, Document.Cols - 1));
-        _active = new CellRef(fromRow, 0);
+        var band = RowBand(anchor, focus);
+        if (add) AddRange(band);
+        else Select(band);
+        _active = Document.Clamp(new CellRef(anchor, FirstColumnShown()));
     }
 
-    public void SelectCols(int fromCol, int toCol)
+    /// <summary>Whole columns, from the <paramref name="anchor"/> column to the <paramref name="focus"/> one, as
+    /// <see cref="SelectRows"/> selects rows; the active cell is the anchor column's first cell the grid shows.</summary>
+    public void SelectCols(int anchor, int focus, bool add)
     {
-        _selection = new SheetRange(new CellRef(0, fromCol), new CellRef(Document.Rows - 1, toCol));
-        _active = new CellRef(0, fromCol);
+        var band = ColumnBand(anchor, focus);
+        if (add) AddRange(band);
+        else Select(band);
+        _active = Document.Clamp(new CellRef(FirstRowShown(), anchor));
     }
+
+    private SheetRange RowBand(int anchor, int focus) =>
+        new(new CellRef(anchor, 0), new CellRef(focus, Document.Cols - 1));
+
+    private SheetRange ColumnBand(int anchor, int focus) =>
+        new(new CellRef(0, anchor), new CellRef(Document.Rows - 1, focus));
+
+    /// <summary>The first row the grid shows under its column headers; the first row when nothing scrolls.</summary>
+    private int FirstRowShown() => Document.RowSpans.IndexAt(Grid.Offset.Down);
+
+    /// <summary>The first column the grid shows beside its row numbers; the first when nothing scrolls.</summary>
+    private int FirstColumnShown() => Document.ColumnSpans.IndexAt(Grid.Offset.Across);
 
     public void SelectAll()
     {
@@ -773,6 +796,13 @@ public sealed class SheetController : ISheetSurfaceModel
     /// <summary>The cell a finger landed on, which its release selects; none once a pan took it.</summary>
     private CellRef? _tapped;
 
+    /// <summary>The header a finger landed on, which its release selects; none once a pan took it.</summary>
+    private (SheetAxis? Axis, int Index, bool Corner)? _tappedHeader;
+
+    /// <summary>The axis of the header band a press in flight is stretching, or null: a drag across column
+    /// headers stretches columns, across row numbers rows.</summary>
+    private SheetAxis? _headerDrag;
+
     /// <summary>Whether the press in flight began inside the cell's editor, whose moves and release are the
     /// entry's: they place its caret and draw its selection.</summary>
     private bool _entryPressed;
@@ -1129,13 +1159,29 @@ public sealed class SheetController : ISheetSurfaceModel
             {
                 // A fill whose release never came is over: this press starts afresh.
                 _selecting = false;
+                _headerDrag = null;
                 _tapped = null;
+                _tappedHeader = null;
                 _entryPressed = false;
                 if (Filling) CancelFill();
+                var header = HeaderAt(position);
+                // The resize grip's press is the grip's: it resizes, and selects nothing.
+                if (header.Grip) return false;
+                var onHeader = header.Corner || header.Axis is not null;
                 if (kind == PointerKind.Touch)
                 {
-                    _tapped = CellAt(position);
+                    if (onHeader) _tappedHeader = (header.Axis, header.Index, header.Corner);
+                    else _tapped = CellAt(position);
                     return false;
+                }
+                if (onHeader)
+                {
+                    if (Editing) CommitEdit();
+                    PressHeader(header.Axis, header.Index, header.Corner, modifiers);
+                    _selecting = !header.Corner;
+                    _headerDrag = header.Axis;
+                    if (_selecting) _dragAt = position;
+                    return true;
                 }
                 // Inside the cell's editor a press is the entry's: it places the caret, a double click
                 // selects a word and a drag selects text, in Edit mode, as a press in Excel's editor does.
@@ -1167,6 +1213,9 @@ public sealed class SheetController : ISheetSurfaceModel
                     return Entry.HandlePointer(PointerPhase.Move, position, modifiers, clicks);
                 }
                 if (!Filling && !_selecting) return false;
+                // A drag along the headers reads only its own axis: the column headers stand over the cells,
+                // and their height would read as a pointer past the cells' top edge.
+                position = AlongTheHeaders(position);
                 _dragAt = position;
                 // Past an edge of the cells the grid scrolls toward the pointer, and the move answers
                 // true whatever cell it reached, so the host asks for the frames that scroll it. Inside
@@ -1185,6 +1234,13 @@ public sealed class SheetController : ISheetSurfaceModel
                     _entryPressed = false;
                     UseCellView();
                     Entry.HandlePointer(PointerPhase.Up, position, modifiers, clicks);
+                    return true;
+                }
+                if (_tappedHeader is { } tappedHeader)
+                {
+                    _tappedHeader = null;
+                    if (Editing) CommitEdit();
+                    PressHeader(tappedHeader.Axis, tappedHeader.Index, tappedHeader.Corner, modifiers);
                     return true;
                 }
                 if (_tapped is { } tapped)
@@ -1212,6 +1268,7 @@ public sealed class SheetController : ISheetSurfaceModel
                 // nothing, and a finger the grid took as a pan selects nothing.
                 StopDrag();
                 _tapped = null;
+                _tappedHeader = null;
                 if (_entryPressed)
                 {
                     _entryPressed = false;
@@ -1255,6 +1312,19 @@ public sealed class SheetController : ISheetSurfaceModel
     private bool Drag(Point position)
     {
         var cell = CellAt(InsideTheCells(position));
+        if (_headerDrag is { } axis)
+        {
+            // The band stretches from the anchor's row or column to the one under the pointer; the active
+            // cell stays where the press left it.
+            var active = _active;
+            var band = axis == SheetAxis.Cols
+                ? ColumnBand(_selection.Anchor.Col, cell.Col)
+                : RowBand(_selection.Anchor.Row, cell.Row);
+            if (band == _selection) return false;
+            SetActiveRange(band);
+            _active = active;
+            return true;
+        }
         if (Filling)
         {
             var before = FillTarget;
@@ -1267,6 +1337,65 @@ public sealed class SheetController : ISheetSurfaceModel
         SetActiveRange(new SheetRange(_selection.Anchor, cell));
         return true;
     }
+
+    /// <summary>
+    /// What a point over the pinned headers names: the corner where they meet, a column's header, a row's
+    /// number, a header's resize grip, or nothing, for a point over the cells. Read from the bands' sizes and
+    /// the grid's offset at this moment, as <see cref="CellAt"/> reads a cell; a grid with no headers has none.
+    /// </summary>
+    private (SheetAxis? Axis, int Index, bool Corner, bool Grip) HeaderAt(Point point)
+    {
+        var overColumns = point.Y >= 0 && point.Y < Grid.HeaderHeight;
+        var overRows = point.X >= 0 && point.X < Grid.HeaderWidth;
+        if (!overColumns && !overRows) return (null, 0, false, false);
+        if (overColumns && overRows) return (null, 0, true, false);
+        var offset = Grid.Offset;
+        if (overColumns)
+        {
+            var col = Document.ColumnSpans.IndexAt(Math.Max(0, point.X - Grid.HeaderWidth) + offset.Across);
+            col = Math.Clamp(col, 0, Document.Cols - 1);
+            var right = Grid.HeaderWidth + Document.ColumnSpans.OffsetOf(col + 1) - offset.Across;
+            return (SheetAxis.Cols, col, false, Grid.ResizeGrip > 0 && point.X >= right - Grid.ResizeGrip);
+        }
+        var row = Document.RowSpans.IndexAt(Math.Max(0, point.Y - Grid.HeaderHeight) + offset.Down);
+        row = Math.Clamp(row, 0, Document.Rows - 1);
+        var bottom = Grid.HeaderHeight + Document.RowSpans.OffsetOf(row + 1) - offset.Down;
+        return (SheetAxis.Rows, row, false, Grid.ResizeGrip > 0 && point.Y >= bottom - Grid.ResizeGrip);
+    }
+
+    /// <summary>
+    /// A press on a header: the corner selects the sheet; a column's header its whole column and a row's
+    /// number its whole row, Shift stretching the active range's band from its anchor to the pressed one with
+    /// the active cell kept, and ⌘ or Ctrl, or add mode, adding the band as a range of its own.
+    /// </summary>
+    private void PressHeader(SheetAxis? axis, int index, bool corner, KeyModifiers modifiers)
+    {
+        if (corner || axis is not { } along)
+        {
+            SelectAll();
+            return;
+        }
+        if ((modifiers & KeyModifiers.Shift) != 0)
+        {
+            var active = _active;
+            SetActiveRange(along == SheetAxis.Cols
+                ? ColumnBand(_selection.Anchor.Col, index)
+                : RowBand(_selection.Anchor.Row, index));
+            _active = _selection.Contains(active) ? active : _selection.Anchor;
+            return;
+        }
+        if (along == SheetAxis.Cols) SelectCols(index, index, Adds(modifiers));
+        else SelectRows(index, index, Adds(modifiers));
+    }
+
+    /// <summary>A drag along the headers held to its own axis: a column-header drag reads only across, as if the
+    /// pointer stood just under the headers, and a row-number drag only down; any other drag as it is.</summary>
+    private Point AlongTheHeaders(Point position) => _headerDrag switch
+    {
+        SheetAxis.Cols => new Point(position.X, Math.Max(position.Y, Grid.HeaderHeight)),
+        SheetAxis.Rows => new Point(Math.Max(position.X, Grid.HeaderWidth), position.Y),
+        _ => position,
+    };
 
     /// <summary>Whether a point lies past an edge of the part of the viewport where the cells scroll:
     /// over a pinned header, or past the window. Without a viewport, nothing is past.</summary>
@@ -1287,6 +1416,7 @@ public sealed class SheetController : ISheetSurfaceModel
     private void StopDrag()
     {
         _selecting = false;
+        _headerDrag = null;
         if (_dragAt is null) return;
         _dragAt = null;
         Grid.Scroll?.AutoScroll(null);

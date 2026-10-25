@@ -93,7 +93,7 @@ public class SpreadsheetGoldenTests
     public void HeaderBands_ShadeWithTheSelection()
     {
         var (host, sheet) = Open();
-        sheet.SelectCols(1, 1);
+        sheet.SelectCols(1, 1, add: false);
         Changed(host);
         host.RenderFrame(new DisplayListBuilder(), 50);
         sheet.Selection.BottomRow.Should().Be(sheet.Document.Rows - 1);

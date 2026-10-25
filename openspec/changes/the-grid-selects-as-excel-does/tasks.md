@@ -20,12 +20,12 @@
 
 ## 2. Headers answer through the engine
 
-- [ ] 2.1 `SheetController.HeaderAt(point)` from the grid's pinned bands and offset (the corner, a
+- [x] 2.1 `SheetController.HeaderAt(point)` from the grid's pinned bands and offset (the corner, a
       column, a row, or none), and the header gestures in `HandlePointer`: select the band, Shift
       stretches from the anchor's band, ⌘/Ctrl adds it, a drag stretches it, a finger selects on lift;
       `SelectRows` and `SelectCols` become `(anchor, focus, add)` and every caller moves; verify the spec's
       header scenarios in `SheetHeaderTests`, scrolled and unscrolled
-- [ ] 2.2 `Spreadsheet` draws headers as plain boxes (no `Pressable`), the corner too, and keeps the
+- [x] 2.2 `Spreadsheet` draws headers as plain boxes (no `Pressable`), the corner too, and keeps the
       resize grips as `Draggable` nodes; verify on Photon (`SpreadsheetComponentTests`: a press on a header
       with Shift and with ⌘ through `PhotonHost`, and a grip drag that resizes and selects nothing) and in
       the runtime (`sheet-surface-web.spec.ts`: the same presses through the lowered surface)
