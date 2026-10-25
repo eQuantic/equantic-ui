@@ -40,13 +40,19 @@ internal static class TestFont
         Macintosh,
     }
 
+    /// <summary>
+    /// One axis value of a STAT table on <c>wght</c>: a single position (format 1), or one written as a
+    /// combination of axis values (format 4), flagged as an older sibling's when it describes another font
+    /// of the family.
+    /// </summary>
+    public readonly record struct StatPosition(int Weight, bool OlderSibling = false, bool Combined = false);
+
     /// <summary>A TrueType file in <paramref name="family"/>, at <paramref name="weight"/>, italic or not,
     /// and flagged OBLIQUE rather than ITALIC when <paramref name="oblique"/> says so, its names written
     /// as <paramref name="names"/> says.</summary>
     public static byte[] Build(string family, int weight = 400, bool italic = false, int advance = 1000,
         (int Min, int Max)? weightAxis = null, bool oblique = false, NameRecords names = NameRecords.Windows,
-        IReadOnlyList<int>? statWeights = null, (int Lightest, int Heaviest)? axisAdvances = null,
-        IReadOnlyList<int>? statSiblingWeights = null)
+        IReadOnlyList<StatPosition>? stat = null, (int Lightest, int Heaviest)? axisAdvances = null)
     {
         var glyphCount = 1 + (Last - First + 1);
         var (glyf, loca) = Glyphs(glyphCount, advance);
@@ -70,8 +76,7 @@ internal static class TestFont
             tables["HVAR"] = Hvar(glyphCount, ends.Lightest - advance, ends.Heaviest - advance);
             tables["gvar"] = Gvar(glyphCount);
         }
-        if (statWeights is not null || statSiblingWeights is not null)
-            tables["STAT"] = Stat([.. (statWeights ?? []).Select(at => (at, false)), .. (statSiblingWeights ?? []).Select(at => (at, true))]);
+        if (stat is { } positions) tables["STAT"] = Stat(positions);
         return Assemble(tables);
     }
 
@@ -358,26 +363,42 @@ internal static class TestFont
     }
 
     /// <summary>
-    /// A STAT table (version 1.1) with one design axis, <c>wght</c>, and one position on it for each of
-    /// <paramref name="weights"/> (axis value format 1): one is a static face's own weight, as Google's
-    /// instances carry it, several describe a family rather than the face. A position flagged as an
-    /// older sibling's describes another font of the family.
+    /// A STAT table (version 1.1) with one design axis, <c>wght</c>, and one axis value for each of
+    /// <paramref name="positions"/>: one is a static face's own weight, as Google's instances carry it,
+    /// several describe a family rather than the face, and one flagged as an older sibling's describes
+    /// another font of the family.
     /// </summary>
-    private static byte[] Stat(IReadOnlyList<(int Weight, bool OlderSibling)> weights)
+    private static byte[] Stat(IReadOnlyList<StatPosition> positions)
     {
         var w = new Writer();
         w.U16(1); w.U16(1);
         w.U16(8); w.U16(1);
         w.U32(20);
-        w.U16(weights.Count);
+        w.U16(positions.Count);
         w.U32(28);
         w.U16(2);
         w.Bytes("wght"u8.ToArray()); w.U16(256); w.U16(0);
-        for (var i = 0; i < weights.Count; i++) w.U16(2 * weights.Count + 12 * i);
-        foreach (var (weight, olderSibling) in weights)
+        // Each value's offset counts from the offsets' array: a single position is 12 bytes, a
+        // combination of one axis value 14.
+        var offset = 2 * positions.Count;
+        foreach (var position in positions)
         {
-            w.U16(1); w.U16(0); w.U16(olderSibling ? 1 : 0); w.U16(256);
-            w.U32((uint)(weight << 16));
+            w.U16(offset);
+            offset += position.Combined ? 14 : 12;
+        }
+        foreach (var (weight, olderSibling, combined) in positions)
+        {
+            var flags = olderSibling ? 1 : 0;
+            if (combined)
+            {
+                w.U16(4); w.U16(1); w.U16(flags); w.U16(256);
+                w.U16(0); w.U32((uint)(weight << 16));
+            }
+            else
+            {
+                w.U16(1); w.U16(0); w.U16(flags); w.U16(256);
+                w.U32((uint)(weight << 16));
+            }
         }
         return w.ToArray();
     }

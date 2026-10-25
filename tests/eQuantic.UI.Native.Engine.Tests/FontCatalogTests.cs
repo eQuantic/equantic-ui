@@ -169,13 +169,17 @@ public sealed class FontCatalogTests : IDisposable
     [Fact]
     public void AStaticFacesStatPosition_IsItsWeight_WhateverItsWeightClassSays()
     {
-        OpenTypeFace.Read(TestFont.Build("Inter", weight: 250, statWeights: [100]))
+        OpenTypeFace.Read(TestFont.Build("Inter", weight: 250, stat: [new(100)]))
             .Should().Be(new OpenTypeFace("Inter", 100, 100, false));
-        OpenTypeFace.Read(TestFont.Build("Inter", weight: 250, statWeights: [100, 200]))
+        OpenTypeFace.Read(TestFont.Build("Inter", weight: 250, stat: [new(100), new(200)]))
             .Should().Be(new OpenTypeFace("Inter", 250, 250, false), "a STAT with several positions describes the family");
-        OpenTypeFace.Read(TestFont.Build("Inter", weight: 250, statWeights: [100], statSiblingWeights: [200]))
+        OpenTypeFace.Read(TestFont.Build("Inter", weight: 250, stat: [new(100), new(200, OlderSibling: true)]))
             .Should().Be(new OpenTypeFace("Inter", 100, 100, false), "an older sibling's position is another font's");
-        OpenTypeFace.Read(TestFont.Build("Inter", weight: 300, statSiblingWeights: [200]))
+        OpenTypeFace.Read(TestFont.Build("Inter", weight: 250, stat: [new(100), new(200, OlderSibling: true, Combined: true)]))
+            .Should().Be(new OpenTypeFace("Inter", 100, 100, false), "so is an older sibling's combination of values, whatever its format");
+        OpenTypeFace.Read(TestFont.Build("Inter", weight: 250, stat: [new(100), new(200, Combined: true)]))
+            .Should().Be(new OpenTypeFace("Inter", 250, 250, false), "a weight combined with other axes describes the family");
+        OpenTypeFace.Read(TestFont.Build("Inter", weight: 300, stat: [new(200, OlderSibling: true)]))
             .Should().Be(new OpenTypeFace("Inter", 300, 300, false), "a STAT that places only a sibling says nothing of this face");
     }
 
@@ -184,8 +188,8 @@ public sealed class FontCatalogTests : IDisposable
     {
         var (families, errors) = FontCatalog.Write(
         [
-            Source("Inter-100.ttf", TestFont.Build("Inter", weight: 250, statWeights: [100])),
-            Source("Inter-200.ttf", TestFont.Build("Inter", weight: 250, statWeights: [200])),
+            Source("Inter-100.ttf", TestFont.Build("Inter", weight: 250, stat: [new(100)])),
+            Source("Inter-200.ttf", TestFont.Build("Inter", weight: 250, stat: [new(200)])),
         ], "Acme.App", Path.Combine(_dir, "Fonts.g.cs"), "Acme.App");
 
         errors.Should().BeEmpty();
