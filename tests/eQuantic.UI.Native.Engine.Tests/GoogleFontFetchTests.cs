@@ -267,6 +267,60 @@ public sealed class GoogleFontFetchTests : IDisposable
         pinned.Of(GoogleFontFetch.Provider, "JetBrains Mono").Keys.Should().Equal(Cut(400));
     }
 
+    /// <summary>Two builds of one project with obj folders of their own share its lock, and take turns over
+    /// it: the turn is the lock's, not a store's (Copilot's third review of #1085).</summary>
+    [Fact]
+    public async Task TwoBuildsWithStoresOfTheirOwn_LoseNoPin()
+    {
+        await Task.WhenAll(
+            GoogleFontFetch.FetchAsync([Declared("Inter", Cut(400))], Lock, Path.Combine(_dir, "obj-a"), Path.Combine(_dir, "obj-a", "fonts"), new GoogleFonts(new HttpClient(_google))),
+            GoogleFontFetch.FetchAsync([Declared("JetBrains Mono", Cut(400))], Lock, Path.Combine(_dir, "obj-b"), Path.Combine(_dir, "obj-b", "fonts"), new GoogleFonts(new HttpClient(_google))));
+
+        var pinned = FontLock.Read(Lock);
+        pinned.Of(GoogleFontFetch.Provider, "Inter").Keys.Should().Equal(Cut(400));
+        pinned.Of(GoogleFontFetch.Provider, "JetBrains Mono").Keys.Should().Equal(Cut(400));
+    }
+
+    /// <summary>A project reached through a symbolic link is one project: its lock is named alike either way,
+    /// so the builds that reach it by the two paths take turns.</summary>
+    [Fact]
+    public void ALockReachedThroughALink_IsTheSameLock()
+    {
+        var link = _dir + "-link";
+        try
+        {
+            Directory.CreateSymbolicLink(link, _dir);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return; // A Windows account without the right to make links: nothing to compare.
+        }
+        try
+        {
+            GoogleFontFetch.Canonical(Path.Combine(link, FontLock.FileName)).Should().Be(GoogleFontFetch.Canonical(Lock));
+            GoogleFontFetch.Canonical(Path.Combine(link, "obj", "..", FontLock.FileName)).Should().Be(GoogleFontFetch.Canonical(Lock));
+        }
+        finally
+        {
+            Directory.Delete(link);
+        }
+    }
+
+    /// <summary>Only a 400 is Google saying it has no such family: a probe answered with 503 is Google failing
+    /// to answer, and the build says so rather than that the family does not exist (Copilot's third review
+    /// of #1085).</summary>
+    [Fact]
+    public async Task AProbeGoogleFailsToAnswer_IsNotAFamilyItDoesNotHave()
+    {
+        _google.ApiAnswersBeforeOutage = 1;
+
+        var errors = await Fetch(Declared("Bebas Neue", Cut(700)));
+
+        errors.Should().ContainSingle().Which.Should()
+            .StartWith($"{Place}: error EQ4008: Google Fonts did not answer what it has of 'Bebas Neue'")
+            .And.Contain("503");
+    }
+
     [Fact]
     public async Task ThePinsOfAnotherProvider_AreKept()
     {
@@ -374,6 +428,11 @@ public sealed class GoogleFontFetchTests : IDisposable
 
         public bool Unreachable { get; set; }
 
+        /// <summary>How many requests the API answers before it answers 503 to every one, or null for never.</summary>
+        public int? ApiAnswersBeforeOutage { get; set; }
+
+        private int _apiAnswered;
+
         public static bool IsApi(Uri uri) => uri.Host == "fonts.googleapis.com";
 
         /// <summary>Google publishes a new version of <paramref name="family"/>, at new URLs, the old ones still served.</summary>
@@ -395,6 +454,8 @@ public sealed class GoogleFontFetchTests : IDisposable
             lock (Asked) Asked.Add(uri);
             await Task.Delay(5, cancellationToken);
             if (Unreachable) throw new HttpRequestException("No such host is known.");
+            if (IsApi(uri) && Interlocked.Increment(ref _apiAnswered) > ApiAnswersBeforeOutage)
+                return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
             return IsApi(uri) ? Css(uri) : File(uri);
         }
 

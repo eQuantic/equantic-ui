@@ -102,14 +102,21 @@ public sealed partial class GoogleFonts(HttpClient http)
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
         {
-            return $"Google Fonts could not be reached to ask what it has of '{family}': {exception.Message}";
+            return $"Google Fonts did not answer what it has of '{family}': {exception.Message}";
         }
     }
 
+    /// <summary>
+    /// Whether Google serves <paramref name="query"/>. A 400 is Google saying it has no such family or cut,
+    /// and only a 400 is: any other failure, a 429 or a 503, is Google failing to answer, which throws rather
+    /// than reads as a family it does not have (Copilot's third review of #1085).
+    /// </summary>
     private async Task<bool> ServesAsync(Uri query)
     {
         using var response = await http.GetAsync(query);
-        return response.IsSuccessStatusCode;
+        if (response.StatusCode == HttpStatusCode.BadRequest) return false;
+        response.EnsureSuccessStatusCode();
+        return true;
     }
 
     /// <summary>

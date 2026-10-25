@@ -76,7 +76,10 @@ and served by it on every target, with no request from a page to the provider.
   pair a list of paths and resource names into items). A build that fails lays out nothing, so what it
   fetched for a family that did succeed waits in the store, embedded nowhere. The builds of a Photon app's
   target frameworks may run at once: they take turns over the store and the lock through a file held open
-  with no sharing, so none writes a lock without the pins another just added. A file is written whole,
+  with no sharing, so none writes a lock without the pins another just added. The file is named after the
+  lock as the file system knows it, every link on its path resolved, and kept in the machine's temporary
+  folder, so two builds of one project take turns whatever their obj folder and whatever path they reached
+  the project by (Copilot's third review of #1085). A file is written whole,
   through a file beside it, renamed over it, and one laid out already with the same bytes is left alone,
   so the compile does not run again for it.
 - **The provider's own API, as a client that is not a browser.** `fonts.googleapis.com/css2` is the API
@@ -84,7 +87,8 @@ and served by it on every target, with no request from a page to the provider.
   and style, a range of weights included, at a versioned URL (`/s/inter/v20/…`). A family, weight or
   italic it does not have is answered with 400 and one sentence for all three ("The requested font
   families are not available."), so on a 400 the build asks again, for the family alone and then for each
-  cut, and names what is missing (EQ4008). A provider that cannot be reached, with a file not fetched yet,
+  cut, and names what is missing (EQ4008). Only a 400 is read as Google not having a family or a cut: any
+  other failure of those questions, a 429 or a 503, is Google failing to answer, and the build says so. A provider that cannot be reached, with a file not fetched yet,
   fails the same way, saying so.
 - **Design-time builds fetch nothing.** An editor's background build embeds what the last build fetched
   and asks nobody, so typing never reaches the network.

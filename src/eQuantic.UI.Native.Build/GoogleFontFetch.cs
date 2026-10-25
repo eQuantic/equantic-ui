@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text;
 
 namespace eQuantic.UI.Build;
 
@@ -48,7 +49,7 @@ public static class GoogleFontFetch
         string lockPath, string store, string directory, GoogleFonts google)
     {
         Directory.CreateDirectory(store);
-        await using var gate = await GateAsync(store);
+        await using var gate = await GateAsync(lockPath);
 
         FontLock pinned;
         try
@@ -201,13 +202,18 @@ public static class GoogleFontFetch
     private static string Stored(string store, string sha256) => Path.Combine(store, $"{sha256}.ttf");
 
     /// <summary>
-    /// The project's turn at the store and the lock: a file held open with no sharing, which the builds of
-    /// the project's other configurations and target frameworks wait for, rather than one of them
-    /// writing a lock that leaves out the pins another just added.
+    /// The project's turn at the lock and the store: a file held open with no sharing, which the builds of
+    /// the project's other configurations and target frameworks wait for, rather than one of them writing a
+    /// lock that leaves out the pins another just added. It is named after the lock as the file system knows
+    /// it, not after a build's obj folder, so two builds of one project take turns whatever their obj folder
+    /// and whatever path they reached the project by (Copilot's third review of #1085). It lives in the
+    /// machine's temporary folder, out of the source tree.
     /// </summary>
-    private static async Task<FileStream> GateAsync(string store)
+    private static async Task<FileStream> GateAsync(string lockPath)
     {
-        var path = Path.Combine(store, ".gate");
+        var gates = Path.Combine(Path.GetTempPath(), "eQuantic.Fonts");
+        Directory.CreateDirectory(gates);
+        var path = Path.Combine(gates, Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(Canonical(lockPath))))[..32] + ".gate");
         var waited = TimeSpan.Zero;
         var pause = TimeSpan.FromMilliseconds(100);
         while (true)
@@ -222,6 +228,37 @@ public static class GoogleFontFetch
                 waited += pause;
             }
         }
+    }
+
+    /// <summary>
+    /// <paramref name="path"/> as the file system knows it: absolute, every symbolic link on the way to it
+    /// resolved, and its case folded where the file system folds it, on Windows and on macOS. Folded on a
+    /// case-sensitive macOS volume too, which only makes two files that differ in case wait for each other.
+    /// </summary>
+    public static string Canonical(string path)
+    {
+        var resolved = Resolved(Path.GetFullPath(path), links: 0);
+        return OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() ? resolved.ToUpperInvariant() : resolved;
+    }
+
+    /// <summary>
+    /// <paramref name="full"/> with every link on it resolved, from its root down, a link's own target
+    /// resolved the same way, since it may run through a link itself (macOS's <c>/tmp</c> is one). Past 40
+    /// links, the limit the operating systems put on a chain, what is left is taken as it is written.
+    /// </summary>
+    private static string Resolved(string full, int links)
+    {
+        var root = Path.GetPathRoot(full)!;
+        var resolved = root;
+        foreach (var part in full[root.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var next = Path.Combine(resolved, part);
+            FileSystemInfo entry = Directory.Exists(next) ? new DirectoryInfo(next) : new FileInfo(next);
+            resolved = entry.LinkTarget is { } target && links < 40
+                ? Resolved(Path.GetFullPath(target, resolved), links + 1)
+                : next;
+        }
+        return resolved;
     }
 
     /// <summary>What fetching a file came to: its bytes, nothing when Google no longer serves it, or why Google could not be reached.</summary>
