@@ -71,7 +71,8 @@ primary, and what it commits is typed at every caret); each can follow on the sa
   replaces around the primary, as VS Code applies one suggestion at every cursor. The word's start and a
   provider's range are carried through every edit made since they were read, at whichever caret: a caret
   before the primary on its line moves the word, and one after it moves the line's end, which the
-  provider's range used to be measured from.
+  provider's range used to be measured from. What is typed at the range's start or end is in it, as it
+  was measured from the line's end, so an arrow after typing cannot leave a character out of it.
 - **Drawing.** `Carets` lists every caret, the primary first. `SelectionsIn` and `CaretLinesIn` answer the
   selections and the carets' lines a view's window reaches, and `SelectionBandsIn` every one's bands; the
   code block takes `ActiveLines` and `Selections`, so every caret's line is washed and every selection's

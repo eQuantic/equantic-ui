@@ -77,6 +77,59 @@ public class CollectionConstructionTests
         Convert("var seen = new HashSet<string?>();").Should().Contain("let seen: Set<string | null> = ");
     }
 
+    /// <summary>
+    /// A type the app does not declare is named as the mapper spells it, in a tuple's slot and as a list's
+    /// item (Copilot on #1068): a Guid crosses as a string, and a list named `Guid` named nothing. A type the
+    /// app declares keeps its name, a `Guid` of its own included.
+    /// </summary>
+    [Fact]
+    public void ATypeTheAppDoesNotDeclare_IsNamedAsItCrosses()
+    {
+        Convert("var ids = new List<(Guid Id, int Index)>();").Should().Contain("let ids: [string, number][] = [];");
+        Convert("var plain = new List<Guid>();").Should().Contain("let plain: string[] = [];");
+
+        var own = TypeScriptOf("""
+            using System.Collections.Generic;
+            public class Guid { public int N = 1; }
+            public class Holder
+            {
+                public int Count()
+                {
+                    var ids = new List<(Guid Id, int Index)>();
+                    return ids.Count;
+                }
+            }
+            """, "Holder");
+        own.Should().Contain("let ids: [Guid, number][] = [];", "the app's own Guid is its class");
+    }
+
+    /// <summary>
+    /// A type parameter is named as its declaration names it (Copilot on #1068): `@class` is declared
+    /// `class$`, and a tuple's slot and a list's item said `class`, which TypeScript cannot parse.
+    /// </summary>
+    [Fact]
+    public void ATypeParameter_IsNamedAsItsDeclarationNamesIt()
+    {
+        var ts = TypeScriptOf("""
+            using System.Collections.Generic;
+            public class Bag
+            {
+                public int Count<@class>(@class value)
+                {
+                    var pairs = new List<(@class Value, int Index)>();
+                    var plain = new List<@class>();
+                    pairs.Add((value, 1));
+                    plain.Add(value);
+                    return pairs.Count + plain.Count;
+                }
+            }
+            """, "Bag");
+        ts.Should().Contain("let pairs: [class$, number][] = [];").And.Contain("let plain: class$[] = [];");
+    }
+
+    private static string TypeScriptOf(string source, string type) =>
+        new ComponentCompiler().CompileSource(source, "Probe.cs").Single(result => result.ComponentName == type).TypeScript;
+
     [Fact]
     public void AndTheOrdinaryShapesAreUnchanged()
     {

@@ -156,7 +156,7 @@ and any other text SHALL go whole to every caret. A cut SHALL take at every care
 An entry accepted with several carets SHALL replace, around every caret, what it replaces around the
 primary, on the caret's own line, as VS Code applies one suggestion at every cursor, as one undo step. The
 word being completed and a provider's range SHALL stand where the edits made since, at every caret, carried
-them.
+them, what is typed at the range's start or end being in it.
 
 #### Scenario: An entry at two carets
 

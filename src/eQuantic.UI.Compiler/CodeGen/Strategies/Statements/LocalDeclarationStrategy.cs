@@ -214,7 +214,14 @@ public class LocalDeclarationStrategy : IStatementStrategy
         // A NESTED class is its twin, named by its owner and imported as any reference to it is: its own
         // name, `Item` for `Cart.Item`, names nothing (Copilot on #1068).
         if (item is INamedTypeSymbol nested && nested.NestedTwinName() is not null) return nested.IntroduceTwin(context);
-        if (item is ITypeParameterSymbol or INamedTypeSymbol { SpecialType: SpecialType.None }) return item.Name;
+        // A type parameter is named as its declaration names it, `class$` for `@class` (Copilot on #1068).
+        if (item is ITypeParameterSymbol) return item.Name.ToJsIdentifier();
+        // A type the app declares is named as it declares it, and one it does not as the mapper spells it:
+        // a Guid crosses as a string, and an item named `Guid` named nothing (Copilot on #1068).
+        if (item is INamedTypeSymbol { SpecialType: SpecialType.None } named)
+            return named.Locations.Any(location => location.IsInSource)
+                ? named.Name
+                : CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(named.Name);
         if (item.SpecialType == SpecialType.None) return null;
         var ts = CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(
             item.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat));

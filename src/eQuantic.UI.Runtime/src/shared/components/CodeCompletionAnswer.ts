@@ -32,7 +32,7 @@ export class CodeCompletionAnswer {
             this._to = range;
             this._through = this.asked;
         }
-        for (; this._through < $eq.collections.count(edits); this._through++) this._to = new CodeRange($eq.collections.item(edits, this._through).carryAnchor(this._to.start), $eq.collections.item(edits, this._through).carryAnchor(this._to.end));
+        for (; this._through < $eq.collections.count(edits); this._through++) this._to = new CodeRange($eq.collections.item(edits, this._through).carryAnchor(this._to.start), $eq.collections.item(edits, this._through).carryReach(this._to.end));
         return this._to;
     }
 

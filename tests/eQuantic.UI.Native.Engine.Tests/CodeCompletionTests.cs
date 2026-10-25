@@ -935,6 +935,30 @@ public class CodeCompletionTests : IDisposable
         editor.Caret.Should().Be(new CodePosition(0, 6));
     }
 
+    /// <summary>
+    /// What is typed at the end of a provider's range is in it, wherever the caret goes next (Copilot on
+    /// #1068): carried as the end of a mark, the range left out a character typed right at its end, and
+    /// after an arrow the entry went in before it, <c>Columnl</c>.
+    /// </summary>
+    [Fact]
+    public void WhatIsTypedAtTheEndOfAProvidersRange_IsReplaced_AfterAnArrow()
+    {
+        var provider = new Provider();
+        provider.Items.Add(new CodeCompletionItem("Column")
+        {
+            Replacing = new CodeRange(new CodePosition(0, 0), new CodePosition(0, 2)),
+        });
+        var editor = Editor("Co", provider);
+        Key(editor, " ", KeyModifiers.Command);
+
+        Type(editor, "l");
+        Key(editor, "ArrowLeft");
+        editor.Completion.IsOpen.Should().BeTrue();
+        Key(editor, "Enter");
+
+        editor.Document.Text.Should().Be("Column");
+    }
+
     [Fact]
     public void TwoProvidersOfferingOneEntry_ListItOnce_AsTheFirstOneSaidIt()
     {

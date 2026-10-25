@@ -35,7 +35,8 @@ internal sealed class CodeCompletionAnswer
 
     /// <summary>
     /// Where <paramref name="range"/>, an item's range, stands once carried through <paramref name="edits"/>,
-    /// the list's edits, from the first one made after the provider was asked. The last range carried is
+    /// the list's edits, from the first one made after the provider was asked: what is typed at its start
+    /// or at its end is in it, as the word typed is what the entry replaces. The last range carried is
     /// kept with the edits it went through: an answer's items mostly share one range, carried once a
     /// keystroke rather than once an item, through the edits that keystroke made.
     /// </summary>
@@ -48,7 +49,7 @@ internal sealed class CodeCompletionAnswer
             _through = Asked;
         }
         for (; _through < edits.Count; _through++)
-            _to = new CodeRange(edits[_through].CarryAnchor(_to.Start), edits[_through].CarryAnchor(_to.End));
+            _to = new CodeRange(edits[_through].CarryAnchor(_to.Start), edits[_through].CarryReach(_to.End));
         return _to;
     }
 
