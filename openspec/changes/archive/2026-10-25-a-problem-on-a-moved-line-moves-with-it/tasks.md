@@ -1,0 +1,31 @@
+# Tasks
+
+## 1. The step
+
+- [x] 1.1 `CodeHistory` records steps of several `CodeEdit`s; a typed step of one edit joins a run as today
+- [x] 1.2 `Undo` and `Redo` answer the document, the selection and the replacements they made, in the order
+      made
+- [x] 1.3 The controller raises `Changed` for each replacement of an undo and a redo, and brings the
+      colours and the widths up to date for each
+- [x] 1.4 Check: the history's tests (a step of two undone and redone, a run of typing, a step never joining
+      a run), and the conformance twins of the code engine executed against .NET
+
+## 2. The outs of a twin
+
+- [x] 2.1 eqc declares a method's outs `any` in TypeScript (#1034), and the out tests say so
+
+## 3. The move
+
+- [x] 3.1 ⌥↑ and ⌥↓ write the passed line on the block's other side and delete it where it was, one step
+- [x] 3.2 Check: a problem on a moved line stays on its text through the move, its undo and its redo, and
+      the replacements a move, its undo and its redo raise, in order (`CodeLinesTests`); the line twins
+      against .NET (`CodeLinesTwinTests`); and the web surface through the real lowering, where ⌥↑ from its
+      keydown moves a line and ⌘Z puts it back in one step, two replacements heard each way
+      (`code-editor.spec.ts`), which fails against main's twins
+
+## 4. Documentation
+
+- [x] 4.1 The wiki's CodeEditor page in every language it is written in: what a move does to problems, and
+      what `CodeHistory` answers
+- [x] 4.2 One ledger entry, a file under docs/ledger/, citing #1031
+- [x] 4.3 Archive this change before the merge
