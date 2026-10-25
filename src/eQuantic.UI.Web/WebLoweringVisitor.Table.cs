@@ -150,7 +150,7 @@ internal sealed partial class WebLoweringVisitor
             {
                 Display = Display.None,
                 Position = Position.Absolute,
-                Background = "var(--eq-color-surface-subtle)",
+                Background = "var(--eq-color-scrollbar-track)",
             },
         };
         track.Children.Add(new RealizedElement("div")
@@ -158,8 +158,7 @@ internal sealed partial class WebLoweringVisitor
             Style = new HtmlStyle
             {
                 Position = Position.Absolute,
-                Background = "var(--eq-color-text-muted)",
-                Opacity = "0.55",
+                Background = "var(--eq-color-scrollbar-thumb)",
                 BorderRadius = "999px",
             },
         });

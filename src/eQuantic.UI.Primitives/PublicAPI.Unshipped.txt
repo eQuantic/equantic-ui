@@ -37,3 +37,12 @@ static eQuantic.UI.Primitives.SheetTheme.operator ==(eQuantic.UI.Primitives.Shee
 eQuantic.UI.Primitives.ISheetSurfaceModel.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks, eQuantic.UI.Primitives.PointerKind kind) -> bool
 *REMOVED*eQuantic.UI.Primitives.ISheetSurfaceModel.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks) -> bool
 eQuantic.UI.Primitives.ISheetSurfaceModel.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
+*REMOVED*static eQuantic.UI.Primitives.EffectiveTypeStyle.WithCodeFace(this eQuantic.UI.Primitives.TypeStyle style, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.TypeStyle
+eQuantic.UI.Primitives.IAppTheme.OnSelection.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.IAppTheme.Placeholder.get -> eQuantic.UI.Primitives.ColorToken
+eQuantic.UI.Primitives.IAppTheme.ScrollbarThumb.get -> eQuantic.UI.Primitives.ColorToken
+eQuantic.UI.Primitives.IAppTheme.ScrollbarTrack.get -> eQuantic.UI.Primitives.ColorToken
+eQuantic.UI.Primitives.IAppTheme.Selection.get -> eQuantic.UI.Primitives.ColorToken
+eQuantic.UI.Primitives.IAppTheme.TextFamily.get -> string?
+static eQuantic.UI.Primitives.EffectiveTypeStyle.WithThemeFace(this eQuantic.UI.Primitives.TypeStyle style, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.TypeStyle
+static eQuantic.UI.Primitives.EffectiveTypeStyle.Resolve(this eQuantic.UI.Primitives.TextEntry! entry, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.TypeStyle

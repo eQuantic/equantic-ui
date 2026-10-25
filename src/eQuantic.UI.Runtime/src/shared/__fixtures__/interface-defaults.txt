@@ -1,7 +1,13 @@
 IAppTheme.code
 IAppTheme.data
 IAppTheme.monoFamily
+IAppTheme.onSelection
+IAppTheme.placeholder
+IAppTheme.scrollbarThumb
+IAppTheme.scrollbarTrack
+IAppTheme.selection
 IAppTheme.sheet
+IAppTheme.textFamily
 ICodeCompletionProvider.resolveAsync
 ICodeCompletionProvider.triggerCharacters
 ICodeLanguage.keywords

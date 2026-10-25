@@ -396,7 +396,7 @@ public static class AdaptiveGates
 
 /// <summary>
 /// Reverse map of the ACTIVE theme's color tokens to their <c>--eq-color-*</c> variables (the names
-/// <see cref="PhotonCssGenerator"/> emits). Values arrive at the atomizer already resolved to
+/// <see cref="ThemeStylesheet"/> emits). Values arrive at the atomizer already resolved to
 /// <c>light-dark()</c> strings; rewriting them to <c>var(--eq-color-x, light-dark(…))</c> makes the
 /// atomic rules THEME-INDEPENDENT (the fallback keeps them correct even with no token stylesheet).
 /// Built once per theme instance; when two roles resolve to the same color the FIRST registration
@@ -461,7 +461,7 @@ public sealed class ThemeVarMap
     private static ThemeVarMap Build(IAppTheme theme)
     {
         var map = new ThemeVarMap();
-        // Surfaces/chrome — the exact names PhotonCssGenerator emits, in its emission order.
+        // Surfaces/chrome — the exact names ThemeStylesheet emits, in its emission order.
         map.Register(theme.Background, "background");
         map.Register(theme.Surface, "surface");
         map.Register(theme.SurfaceSubtle, "surface-subtle");

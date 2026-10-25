@@ -117,7 +117,7 @@ public class S5StateRealizerTests
     [Fact]
     public void TheFocusRing_IsASlotInTheSurfacesShadowList()
     {
-        var css = PhotonCssGenerator.Generate(Theme);
+        var css = ThemeStylesheet.Generate(Theme);
 
         css.Should().Contain("@property --eq-ring { syntax: \"*\"; inherits: false; }",
             "a shadowed box inside the control draws no ring of its own");

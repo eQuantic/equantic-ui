@@ -259,6 +259,12 @@ public static class DesignSystemTsGenerator
         // space and `-_.+` and nothing that means anything to a TypeScript string.
         if (theme.MonoFamily is { Length: > 0 } mono && FaceName.IsWellFormed(mono))
             ts.AppendLine($"  monoFamily: '{mono}',");
+        // The text face by the same rule, and the selected text's colour when the theme names one:
+        // the two members of the document the ColorToken loop above cannot carry.
+        if (theme.TextFamily is { Length: > 0 } text && FaceName.IsWellFormed(text))
+            ts.AppendLine($"  textFamily: '{text}',");
+        if (theme.OnSelection is { } onSelection)
+            ts.AppendLine($"  onSelection: {Token(onSelection)},");
         ts.AppendLine("  colors(variant: string): VariantColors {");
         ts.AppendLine($"    return variantColors[variant] ?? variantColors.{Camel(nameof(Variant.Primary))};");
         ts.AppendLine("  },");

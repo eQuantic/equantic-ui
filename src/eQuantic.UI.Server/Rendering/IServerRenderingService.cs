@@ -104,6 +104,13 @@ public sealed class ServerRenderResult
     public string? Error { get; }
 
     /// <summary>
+    /// Whether the render was attempted and broke, as opposed to not attempted: a page that opted
+    /// out of server rendering (<c>DisableSsr</c>) is not a failure, and must not be answered with
+    /// the app's error page.
+    /// </summary>
+    public bool Failed { get; private init; }
+
+    /// <summary>
     /// Serialized state for client-side hydration (JSON).
     /// </summary>
     public string? SerializedState { get; }
@@ -143,7 +150,7 @@ public sealed class ServerRenderResult
     /// <summary>
     /// Creates a failed render result.
     /// </summary>
-    public static ServerRenderResult Fail(string error) => new(false, null, null, error, null);
+    public static ServerRenderResult Fail(string error) => new(false, null, null, error, null) { Failed = true };
 
     /// <summary>
     /// Creates a result indicating SSR is not available for this page.

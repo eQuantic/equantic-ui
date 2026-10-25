@@ -31,7 +31,7 @@ internal sealed partial class EmitVisitor
     }
 
     // Spec B9 fence: the entry renders the W4 one-line placeholder bar — value in
-    // TextPrimary, empty shows the placeholder in TextMuted. Caret/selection/IME land at M4.
+    // TextPrimary, empty shows the placeholder in the theme's Placeholder. Caret/selection/IME land at M4.
     private void EmitTextEntry(TextEntry entry, EmitState s)
     {
         EmitEntry(s.Node, entry, s.Theme, s.Mode, s.Builder, s.Input, s.Press, s.Motion);
@@ -198,8 +198,8 @@ internal sealed partial class EmitVisitor
         var value = entry.Obscure ? new string('•', composed.Length) : composed;
         var effectiveCaret = Math.Min(caretInValue + marked.Length, value.Length);
         var shown = value.Length > 0 ? value : entry.Placeholder ?? "";
-        var token = value.Length > 0 ? theme.TextPrimary : theme.TextMuted;
-        var style = theme.Type(entry.Role).AtWindow(motion.ViewportW);
+        var token = value.Length > 0 ? theme.TextPrimary : theme.Placeholder;
+        var style = entry.Resolve(theme).AtWindow(motion.ViewportW);
 
         var advance = 0f;
         var shift = 0f;
@@ -305,7 +305,7 @@ internal sealed partial class EmitVisitor
     {
         if (node.Text is not { } measurement || measurement.Lines.Count == 0) return;
         var hasValue = entry.Value.Length > 0;
-        var token = hasValue ? theme.TextPrimary : theme.TextMuted;
+        var token = hasValue ? theme.TextPrimary : theme.Placeholder;
         var color = token.Resolve(mode).WithOpacity(0.30f);
         var line = measurement.Lines[0];
         if (line.Width <= 0) return;

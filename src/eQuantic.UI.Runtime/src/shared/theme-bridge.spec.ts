@@ -96,7 +96,7 @@ describe('theme bridge: a distinct theme materializes to distinct values', () =>
     expect(branded.monoFamily).toBe('JetBrains Mono');
 
     // Photon names none, so the payload has no such key and the client must answer undefined
-    // rather than an empty string — the shape `WithCodeFace` tests for on the other side.
+    // rather than an empty string — the shape `WithThemeFace` tests for on the other side.
     expect(materializeTheme(base).monoFamily).toBeUndefined();
   });
 
@@ -111,6 +111,25 @@ describe('theme bridge: a distinct theme materializes to distinct values', () =>
     expect(slotted.sheet).not.toBeNull();
     expect(slotted.sheet!.gridline!.light).toEqual({ r: 18, g: 52, b: 86, a: 1 });
     expect(slotted.sheet!.headerText).toBeNull();
+  });
+
+  // The document's two members a theme need not answer (#1038): the text face beside the code face,
+  // and the selected text's colour. The four colours every theme has ride the surfaces above.
+  it("carries the theme's text face and its selected text's colour, and omits them when there are none", () => {
+    const base = photonData as unknown as ThemeData;
+    const white: [number, number, number, number] = [255, 255, 255, 255];
+    const branded = materializeTheme({
+      ...base,
+      textFamily: 'Atkinson Hyperlegible Next',
+      onSelection: [white, white],
+    } as ThemeData);
+    expect(branded.textFamily).toBe('Atkinson Hyperlegible Next');
+    expect(branded.onSelection?.light).toEqual({ r: 255, g: 255, b: 255, a: 255 });
+
+    const plain = materializeTheme(base);
+    expect(plain.textFamily).toBeUndefined();
+    expect(plain.onSelection).toBeUndefined();
+    expect(plain.selection).toEqual(photonTheme.selection);
   });
 
   it('materializeTheme returns a structurally valid AppTheme', () => {

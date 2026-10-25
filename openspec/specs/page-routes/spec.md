@@ -115,3 +115,14 @@ request SHALL be the policy's resource, and a page the visitor may not see SHALL
 - **WHEN** the app's 404 page requires a policy that reads the request, and a visitor that policy
   allows asks for a URL that matches nothing
 - **THEN** the answer is 404, with the page drawn
+
+### Requirement: The 500 page answers only a render that broke
+
+The app's 500 page SHALL answer for a page only when the server attempted to render it and the render
+failed. A page that opted out of server rendering (`DisableSsr`) SHALL be answered 200 with its
+placeholder, in every environment.
+
+#### Scenario: A client-only page in an app with a 500 page
+
+- **WHEN** an app in production registers a 500 page, and a visitor asks for a page marked `DisableSsr`
+- **THEN** the answer is 200 with the page's placeholder, and the 500 page is not drawn

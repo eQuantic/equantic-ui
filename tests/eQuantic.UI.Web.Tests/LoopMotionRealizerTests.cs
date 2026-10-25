@@ -56,7 +56,7 @@ public class LoopMotionRealizerTests
     [Fact]
     public void GeneratedStylesheet_CarriesTheKeyframes_AndTheReduceMotionFence()
     {
-        var css = PhotonCssGenerator.Generate(Theme);
+        var css = ThemeStylesheet.Generate(Theme);
 
         css.Should().Contain(
             "@keyframes eq-slide-x { 0% { transform: translateX(var(--eq-loop-from)); } 100% { transform: translateX(var(--eq-loop-to)); } }");

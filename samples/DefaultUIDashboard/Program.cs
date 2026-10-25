@@ -33,18 +33,11 @@ builder.Services.AddUI(options =>
            // What the server publishes, heard by the live screen: the topics a page may subscribe
            // to, each with who may hear it. Anyone may hear the console's quotes.
            .UseServerEvents(events => events.Topic("console:{feed}", rule => rule.AllowAnonymous()))
-           .ConfigureHtmlShell(shell =>
-           {
-               shell.SetTitle("eQuantic Console")
-                    .AddHeadTag("<meta name=\"description\" content=\"Admin console on the eQuantic.UI web layer\">")
-                    // The shell tracks the SELECTED theme: UseTheme emits --eq-color-* as
-                    // light-dark() pairs, so the page follows the OS without a second render.
-                    .SetBaseStyles(@"
-                        html, body { height: 100%; }
-                        body { margin: 0; font-family: system-ui, -apple-system, sans-serif;
-                               background: var(--eq-color-background); color: var(--eq-color-text-primary); }
-                    ");
-           });
+           // The document (its surface, text, face, selection and scrollbars) is the theme's, so
+           // the shell says only what the page is.
+           .ConfigureHtmlShell(shell => shell
+               .SetTitle("eQuantic Console")
+               .AddDescription("Admin console on the eQuantic.UI web layer"));
 
 });
 

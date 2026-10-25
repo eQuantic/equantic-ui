@@ -78,7 +78,7 @@ public class HeadingOutlineTests
     {
         // An h1 arrives with a UA margin and font size. The type role already owns both, so the
         // sheet zeroes them — otherwise marking up the outline would move the page.
-        var css = PhotonCssGenerator.Generate(Theme);
+        var css = ThemeStylesheet.Generate(Theme);
 
         // The WHOLE rule as one substring, selector included. Asserting the properties separately
         // passes on a sheet that lost the heading reset entirely, because `margin: 0` also appears

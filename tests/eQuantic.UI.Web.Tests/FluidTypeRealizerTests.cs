@@ -57,7 +57,7 @@ public class FluidTypeRealizerTests
     [Fact]
     public void ATypeRoleThatFollowsTheWindow_IsAClampInTheSheet()
     {
-        var css = PhotonCssGenerator.Generate(new NamedFaceTests.RoleTheme(Theme, TypeRole.Display,
+        var css = ThemeStylesheet.Generate(new NamedFaceTests.RoleTheme(Theme, TypeRole.Display,
             Theme.Type(TypeRole.Display).WithFluidSize(34, 4.2f, 54)));
 
         css.Should().Contain("font-size: clamp(34px, 4.2vw, 54px);");

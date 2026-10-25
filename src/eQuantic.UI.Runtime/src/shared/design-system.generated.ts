@@ -347,6 +347,10 @@ export const photonTheme: AppTheme = {
   focusRing: t(c(0, 80, 160, 255), c(129, 186, 243, 255)),
   linkColor: t(c(0, 80, 160, 255), c(129, 186, 243, 255)),
   scrim: t(c(11, 14, 18, 102), c(0, 0, 0, 143)),
+  selection: t(c(0, 80, 160, 71), c(129, 186, 243, 71)),
+  placeholder: t(c(95, 107, 122, 255), c(172, 183, 197, 255)),
+  scrollbarThumb: t(c(95, 107, 122, 140), c(172, 183, 197, 140)),
+  scrollbarTrack: t(c(239, 241, 244, 255), c(28, 35, 43, 255)),
   data: defaultData,
   disabledOpacity: 0.38,
   colors(variant: string): VariantColors {

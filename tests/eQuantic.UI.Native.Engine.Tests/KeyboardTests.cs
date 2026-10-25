@@ -649,20 +649,6 @@ public class SelectionTests
         return null;
     }
 
-    /// <summary>8dp per character: with no platform text service the caret has nowhere to be but 0,
-    /// and a test about WHERE it is needs widths that mean something.</summary>
-    private sealed class FixedWidthRasterizer : Framework.ITextRasterizer
-    {
-        public Framework.TextRaster? Rasterize(string content, TypeStyle style, float typeScale,
-            float maxWidth, int maxLines, float scale, TextAlignment align)
-        {
-            if (string.IsNullOrEmpty(content)) return null;
-            var width = Math.Max(1, (int)Math.Min(content.Length * 8 * scale, maxWidth * scale));
-            var height = Math.Max(1, (int)(style.LineHeight * scale));
-            return new Framework.TextRaster(width, height, new byte[width * height]);
-        }
-    }
-
     private static (PhotonHost Host, Rect Bounds) OpenMeasured()
     {
         var host = new PhotonHost(new Field(), PhotonTheme.Instance, ThemeMode.Light, 400, 100)
