@@ -5,6 +5,14 @@ eQuantic.UI.Web.ThemeStylesheet
 static eQuantic.UI.Web.ThemeStylesheet.Generate(eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode? mode = null) -> string!
 const eQuantic.UI.Web.TokenCss.SansFallback = "system-ui, -apple-system, sans-serif" -> string!
 eQuantic.UI.Web.FontFaceRules
-static eQuantic.UI.Web.FontFaceRules.ContentType(eQuantic.UI.Primitives.FontFile! file) -> string!
 static eQuantic.UI.Web.FontFaceRules.Format(eQuantic.UI.Primitives.FontFile! file) -> string!
 static eQuantic.UI.Web.FontFaceRules.Write(System.Collections.Generic.IEnumerable<(eQuantic.UI.Primitives.FontFamily! Family, eQuantic.UI.Primitives.FontFile! File, string! Url)>! faces) -> string!
+const eQuantic.UI.Web.FaceSink.ElementId = "eq-faces" -> string!
+eQuantic.UI.Web.FaceSink
+eQuantic.UI.Web.FaceSink.Add(eQuantic.UI.Primitives.FontFamily! family) -> void
+eQuantic.UI.Web.FaceSink.FaceSink() -> void
+eQuantic.UI.Web.FaceSink.Families.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FontFamily!>!
+eQuantic.UI.Web.FaceSink.IsEmpty.get -> bool
+static eQuantic.UI.Web.FaceSink.Ambient.get -> eQuantic.UI.Web.FaceSink?
+static eQuantic.UI.Web.FaceSink.Ambient.set -> void
+static eQuantic.UI.Web.FontFaceRules.ContentType(string! resource) -> string!

@@ -38,10 +38,11 @@ public static class FontFaceRules
     }
 
     /// <summary>The format a rule names for <paramref name="file"/>: <c>opentype</c> for CFF, <c>truetype</c> otherwise.</summary>
-    public static string Format(FontFile file) => IsOpenTypeCff(file) ? "opentype" : "truetype";
+    public static string Format(FontFile file) => IsOpenTypeCff(file.Resource) ? "opentype" : "truetype";
 
-    /// <summary>The media type <paramref name="file"/> is served as.</summary>
-    public static string ContentType(FontFile file) => IsOpenTypeCff(file) ? "font/otf" : "font/ttf";
+    /// <summary>The media type the font file embedded as <paramref name="resource"/> is served as, read from
+    /// its name, since a file the server serves by its identity has no family to ask.</summary>
+    public static string ContentType(string resource) => IsOpenTypeCff(resource) ? "font/otf" : "font/ttf";
 
-    private static bool IsOpenTypeCff(FontFile file) => file.Resource.EndsWith(".otf", StringComparison.OrdinalIgnoreCase);
+    private static bool IsOpenTypeCff(string resource) => resource.EndsWith(".otf", StringComparison.OrdinalIgnoreCase);
 }

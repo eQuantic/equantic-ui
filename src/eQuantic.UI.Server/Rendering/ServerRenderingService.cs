@@ -224,6 +224,10 @@ public class ServerRenderingService : IServerRenderingService
                         // paints with, declared ONCE for the document instead of once per drawing.
                         var gradients = new Web.GradientSink();
                         Web.GradientSink.Ambient = gradients;
+                        // And the families with files the page's text names (#1056), declared in its
+                        // head beside what the theme's stylesheet declares, as Photon registers them.
+                        var faces = new Web.FaceSink();
+                        Web.FaceSink.Ambient = faces;
                         // Armed the same way and for the same reason: a component that throws is
                         // contained to its own subtree instead of turning this request into a 500.
                         // Development quotes the exception in the panel; production says only that a
@@ -249,7 +253,16 @@ public class ServerRenderingService : IServerRenderingService
                             Web.ComponentExpansionScope.Ambient = null;
                             Web.StyleSink.Ambient = null;
                             Web.GradientSink.Ambient = null;
+                            Web.FaceSink.Ambient = null;
                             Primitives.ComponentBoundary.Report = null;
+                        }
+
+                        // The faces of the families the page named that the theme's stylesheet does not
+                        // declare, ahead of the rules that set text in them.
+                        if (!faces.IsEmpty
+                            && _serviceProvider.GetService<ServedFonts>()?.RulesFor(faces.Families) is { Length: > 0 } faceRules)
+                        {
+                            assets.Add(new InlineStyleAsset(faceRules, Web.FaceSink.ElementId));
                         }
 
                         // Inject exactly the rules this markup references, so hydration matches by class
@@ -535,15 +548,17 @@ public class ServerRenderingService : IServerRenderingService
     }
 
     /// <summary>
-    /// One discovery expansion: builds the tree and throws the result away, with its own style and
-    /// gradient sinks so nothing it collects reaches the page the request actually serves.
+    /// One discovery expansion: builds the tree and throws the result away, with its own style, gradient
+    /// and face sinks so nothing it collects reaches the page the request actually serves.
     /// </summary>
     private static void Expand(IComponent component, Web.ComponentExpansionScope scope)
     {
         var styles = Web.StyleSink.Ambient;
         var gradients = Web.GradientSink.Ambient;
+        var faces = Web.FaceSink.Ambient;
         Web.StyleSink.Ambient = new Web.StyleSink();
         Web.GradientSink.Ambient = new Web.GradientSink();
+        Web.FaceSink.Ambient = new Web.FaceSink();
         Web.ComponentExpansionScope.Ambient = scope;
         try
         {
@@ -554,6 +569,7 @@ public class ServerRenderingService : IServerRenderingService
             Web.ComponentExpansionScope.Ambient = null;
             Web.StyleSink.Ambient = styles;
             Web.GradientSink.Ambient = gradients;
+            Web.FaceSink.Ambient = faces;
         }
     }
 

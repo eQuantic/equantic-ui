@@ -125,6 +125,7 @@ import { declareTableViewport } from './table-viewports';
 import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
 import { localizeDestination } from '../utils/culture-routes';
+import { declareFamily } from './face-declarations';
 
 /** The C# `Anchored.MotionLiftDp` twin — the open/close nudge toward the anchor. */
 const ANCHOR_MOTION_LIFT = 8;
@@ -3126,6 +3127,9 @@ function faceStack(family: string, mono: boolean): string {
 }
 
 function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
+  // A family the node names that ships files is declared in the document the first time text is set
+  // in it (#1056), as the server declares it in the head of a page it renders.
+  if (isWellFormedFace(text.styleOverride?.family?.name)) declareFamily(text.styleOverride!.family);
   const style: StyleEntries = {
     // A BLOCK, wherever it sits (C# twin, #495): a Text is never inline in the vocabulary, and as an
     // inline span inside a block parent it sat on the parent's line box and its body-font strut. The
