@@ -131,7 +131,7 @@ and a tab at the start of one of its lines SHALL be the language's indent step.
 ### Requirement: The session ends
 
 The session SHALL end at its last stop, on Escape, which SHALL leave it before the other carets are taken
-away, and when a selection is heard to stand outside every stop.
+away, on an undo or a redo, and when a selection is heard to stand outside every stop.
 
 #### Scenario: Escape
 
@@ -142,6 +142,11 @@ away, and when a selection is heard to stand outside every stop.
 
 - **WHEN** `(${1:a})` is inserted and End pressed
 - **THEN** the session has ended
+
+#### Scenario: An undo
+
+- **WHEN** `${1:a} ${2:b}` is inserted into an empty editor, undone, and Tab pressed
+- **THEN** the session has ended, and Tab indented
 
 ### Requirement: Named snippets complete
 
