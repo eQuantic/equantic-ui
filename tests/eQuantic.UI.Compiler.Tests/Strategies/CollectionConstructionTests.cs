@@ -48,6 +48,20 @@ public class CollectionConstructionTests
             + "mutate what it was built from — and refuses a null one by its parameter's name (#726)");
     }
 
+    /// <summary>
+    /// An empty list of tuples is annotated with the TS tuple of its elements: a tuple crosses as an array
+    /// literal, and left to inference the list's pushes made it an array of arrays, which the code block's
+    /// stretches, returned as a list of pairs, could not be (#1063).
+    /// </summary>
+    [Fact]
+    public void AnEmptyListOfTuples_IsAnnotatedWithTheTuple()
+    {
+        Convert("var pairs = new List<(int From, int To)>();").Should().Contain("let pairs: [number, number][] = [];");
+        Convert("var named = new List<(string Name, bool On)>();").Should().Contain("let named: [string, boolean][] = [];");
+        Convert("var keyed = new List<(KeyValuePair<string, int> Entry, int At)>();")
+            .Should().Contain("let keyed = [];", "an element with no TS name leaves the list to inference");
+    }
+
     [Fact]
     public void AndTheOrdinaryShapesAreUnchanged()
     {
