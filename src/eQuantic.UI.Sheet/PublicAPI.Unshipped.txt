@@ -123,3 +123,5 @@ eQuantic.UI.Sheet.SheetNameBox.SetComposition(string! text) -> bool
 eQuantic.UI.Sheet.SheetNameBox.Typing.get -> bool
 eQuantic.UI.Sheet.SheetReference
 static eQuantic.UI.Sheet.SheetReference.TryParse(string! text, int rows, int cols, out eQuantic.UI.Sheet.SheetRange range) -> bool
+eQuantic.UI.Sheet.SheetController.Refresh() -> void
+eQuantic.UI.Sheet.SheetController.Refreshed -> System.Action?

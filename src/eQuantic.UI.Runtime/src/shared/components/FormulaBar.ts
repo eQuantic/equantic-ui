@@ -4,6 +4,8 @@ export class FormulaBar extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Spreadsheets.FormulaBar';
     static barType: TypeRoleValue = 'bodyM';
     _config: FormulaBar;
+    _rebuild: () => void;
+    _listening: any = null;
 
     static get padding() {
         return EdgeInsets.symmetric(8, 5);
@@ -18,6 +20,7 @@ export class FormulaBar extends StatefulComponent {
         if (this.width === undefined) this.width = SizeValue.fill;
         this.controller = controller;
         this._config = this;
+        this._rebuild = () => this.setState(() => {});
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
@@ -36,15 +39,31 @@ export class FormulaBar extends StatefulComponent {
         let height = Math.fround(Math.fround(Math.fround(Math.fround(Math.max(1, lines.length)) * type.lineHeight) + padding.top) + padding.bottom);
         let text = editing ? new EntryLines(this.controller.entry, bar.grid, Point.zero, FormulaBar.barType, palette, bar.holdsTheCaret) : FormulaBar.atRest(lines, padding, type, palette);
         let content = new Box(new BoxStyle({ width: SizeValue.fixed(Math.fround(Math.fround(Math.fround(Math.ceil(widest) + padding.start) + padding.end) + 2)), minWidth: 0, height: SizeValue.fixed(height) }), text);
-        let surface = new CodeSurface(content, bar, { onChanged: () => this.setState(() => {}), label: SdkStrings.formulaBar, caretColor: palette.cellText });
+        let surface = new CodeSurface(content, bar, { onChanged: () => this.controller.refresh(), label: SdkStrings.formulaBar, caretColor: palette.cellText });
         return new Box(new BoxStyle({ width: this._config.width, height: SizeValue.fixed(Math.fround(height + 2)), background: palette.cellBackground, borderColor: palette.gridline, borderWidth: 1, clip: true }), new ScrollView(surface, 'horizontal'));
     }
 
     adoptConfig(next: UiComponent) {
         let fresh: any; 
         if (!((next instanceof FormulaBar && (fresh = next, true)))) return;
+        if (!(this._listening == null)) this.listen(fresh.controller);
         this.controller = fresh.controller;
         this._config = fresh;
+    }
+
+    onMount() {
+        return this.listen(this.controller);
+    }
+
+    onUnmount() {
+        return this.listen(null);
+    }
+
+    listen(controller: any) {
+        if ((this._listening === controller)) return;
+        if (!(this._listening == null)) this._listening.refreshed = $eq.delegates.remove(this._listening.refreshed, this._rebuild);
+        this._listening = controller;
+        if (!(controller == null)) controller.refreshed = $eq.delegates.combine(controller.refreshed, this._rebuild);
     }
 
     static lines(document: CodeDocument) {

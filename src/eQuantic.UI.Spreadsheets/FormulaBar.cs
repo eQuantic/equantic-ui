@@ -22,10 +22,15 @@ public sealed class FormulaBar : StatefulComponent
 
     private FormulaBar _config;
 
+    /// <summary>What a refresh of the controller does here: build again, as one delegate.</summary>
+    private readonly Action _rebuild;
+    private SheetController? _listening;
+
     public FormulaBar(SheetController controller)
     {
         Controller = controller;
         _config = this;
+        _rebuild = () => SetState(() => { });
     }
 
     public SheetController Controller { get; private set; }
@@ -36,8 +41,23 @@ public sealed class FormulaBar : StatefulComponent
     public override void AdoptConfig(UiComponent next)
     {
         if (next is not FormulaBar fresh) return;
+        if (_listening is not null) Listen(fresh.Controller);
         Controller = fresh.Controller;
         _config = fresh;
+    }
+
+    protected override void OnMount() => Listen(Controller);
+
+    protected override void OnUnmount() => Listen(null);
+
+    /// <summary>Listens to <paramref name="controller"/>'s refreshes, and to no other: a key in the grid
+    /// changes what the bar shows.</summary>
+    private void Listen(SheetController? controller)
+    {
+        if (ReferenceEquals(_listening, controller)) return;
+        if (_listening is not null) _listening.Refreshed -= _rebuild;
+        _listening = controller;
+        if (controller is not null) controller.Refreshed += _rebuild;
     }
 
     public override VisualNode Build(ComponentContext context)
@@ -72,7 +92,7 @@ public sealed class FormulaBar : StatefulComponent
         }, text);
         var surface = new CodeSurface(content, bar)
         {
-            OnChanged = () => SetState(() => { }),
+            OnChanged = () => Controller.Refresh(),
             Label = SdkStrings.FormulaBar,
             CaretColor = palette.CellText,
         };

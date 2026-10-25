@@ -93,6 +93,29 @@ describe('a spreadsheet of 100 000 × 100 on the web', () => {
     expect(each, 'a keystroke builds a screenful').toBeLessThan(KEYSTROKE_CEILING_MS);
   });
 
+  it('builds the window and its editor again on a character typed into an entry', async () => {
+    const { grid, sheet } = await open();
+    const type = (text: string) =>
+      grid.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: text, bubbles: true, cancelable: true }));
+    for (let i = 0; i < 5; i++) {
+      type('w');
+      await settle();
+    }
+
+    const keys = 40;
+    const started = performance.now();
+    for (let i = 0; i < keys; i++) {
+      type(i % 2 === 0 ? 'a' : 'b');
+      await settle();
+    }
+    const each = (performance.now() - started) / keys;
+
+    console.log(`web: a character into an entry at 100,000 × 100: ${each.toFixed(2)} ms (alarm ${KEYSTROKE_CEILING_MS} ms)`);
+    expect(sheet.editing).toBe(true);
+    expect(sheet.entry.document.text.length).toBe(45);
+    expect(each, 'a character builds a screenful and its editor').toBeLessThan(KEYSTROKE_CEILING_MS);
+  });
+
   it('moves the layers on a step inside the built cells, lowering nothing', async () => {
     const { view } = await open();
     const before = cells(view);

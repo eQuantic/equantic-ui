@@ -43,6 +43,18 @@ public sealed class SheetController : ISheetSurfaceModel
     /// <summary>Raised after any change to data or structure — never for selection moves.</summary>
     public Action<SheetEdit>? Changed { get; set; }
 
+    /// <summary>
+    /// Raised when the views of this sheet should build again: an input changed what the grid, the formula
+    /// bar or the name box shows. The views are separate components the app places, and a keystroke in one
+    /// changes what the others show, so every one of them listens, as a Flutter widget listens to its
+    /// controller's <c>ChangeNotifier</c>.
+    /// </summary>
+    public event Action? Refreshed;
+
+    /// <summary>Tells every view of this sheet to build again: what a view calls after an input it handled,
+    /// and what an app calls after it changed the sheet itself.</summary>
+    public void Refresh() => Refreshed?.Invoke();
+
     /// <summary>The selected rectangle. Setting it puts the active cell at its focus end, and asks the
     /// grid to bring that cell into view (<see cref="RevealVersion"/>), as a command that moves it does.</summary>
     public SheetRange Selection
@@ -1072,6 +1084,8 @@ public sealed class SheetController : ISheetSurfaceModel
             }
             case PointerPhase.Up:
             {
+                // A drag that drew a range ends here, and what shows its size changes with it.
+                var wasSelecting = Selecting;
                 StopDrag();
                 if (_entryPressed)
                 {
@@ -1095,7 +1109,7 @@ public sealed class SheetController : ISheetSurfaceModel
                     Press(tapped, position, modifiers, clicks);
                     return true;
                 }
-                if (!Filling) return false;
+                if (!Filling) return wasSelecting;
                 CommitFill();
                 return true;
             }

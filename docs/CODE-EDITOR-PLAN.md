@@ -252,9 +252,13 @@ closes the stories named beside it above.
 
 ## Fenced, on purpose
 
-- **Proportional fonts.** The grid is monospaced, and that is what makes every caret, selection and
-  decoration arithmetic instead of measurement. A code editor that wants a proportional face is a
-  different component.
+- **Proportional fonts.** The code editor's grid is monospaced, and that is what makes every caret,
+  selection and decoration arithmetic instead of measurement. A component that wants a proportional face
+  is a different component on the same engine: since the spreadsheet's slice 1
+  ([#983](https://github.com/eQuantic/equantic-ui/issues/983)) a `CodeGrid` may carry a measurer, and then
+  a caret, a band, a press and the place a vertical move aims at are read through the measured width of
+  the line's text, which is how the cell's editor, the formula bar and the name box draw an entry in the
+  sheet's own type. The code editor carries none.
 - **Word wrap** is designed into the view model (a document line may become several visual rows)
   and deliberately not built in the first slices: a wrapped line of code has lost what its
   indentation was saying, and every IDE ships it off.

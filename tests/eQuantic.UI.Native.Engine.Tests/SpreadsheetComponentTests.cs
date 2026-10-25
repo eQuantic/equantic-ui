@@ -55,6 +55,28 @@ public class SpreadsheetComponentTests
     }
 
     [Fact]
+    public void ACellOfTwoLines_ShowsThemFromItsTop()
+    {
+        var (host, sheet) = Open();
+        sheet.Document.SetCell(new CellRef(1, 1), "one\ntwo");
+        sheet.Document.SetRowHeight(1, 48);
+        host.Invalidate();
+        var frame = host.RenderFrame(new DisplayListBuilder(), 32);
+
+        static IEnumerable<Framework.LayoutNode> All(Framework.LayoutNode node)
+        {
+            yield return node;
+            foreach (var child in node.Children)
+                foreach (var below in All(child)) yield return below;
+        }
+        var one = All(frame.Root).Single(node => node.Source is Text { Content: "one" }).Bounds;
+        var two = All(frame.Root).Single(node => node.Source is Text { Content: "two" }).Bounds;
+
+        two.X.Should().Be(one.X, "each line starts at the cell's padding");
+        two.Y.Should().BeGreaterThanOrEqualTo(one.Bottom, "the second line stands under the first");
+    }
+
+    [Fact]
     public void ColumnNames_SpellLikeExcel()
     {
         CellRef.ColumnName(0).Should().Be("A");

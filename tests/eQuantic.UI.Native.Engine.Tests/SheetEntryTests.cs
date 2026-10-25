@@ -74,21 +74,24 @@ public class SheetEntryTests
         sheet.Document.GetCell(B2).Should().Be("hello", "the cell changes on commit");
     }
 
-    [Fact]
-    public void HomeAndAWordMove_SelectInsideTheEntry()
+    [Theory]
+    [InlineData(KeyboardConvention.Standard, "Home", KeyModifiers.None, KeyModifiers.Command)]
+    [InlineData(KeyboardConvention.Apple, "ArrowLeft", KeyModifiers.Command, KeyModifiers.Alt)]
+    public void TheLinesStartAndAWordMove_SelectInsideTheEntry(KeyboardConvention convention, string start,
+        KeyModifiers startModifiers, KeyModifiers word)
     {
         var sheet = Sheet();
         sheet.Document.SetCell(B2, "one two three");
-        Key(sheet, "F2");
+        Key(sheet, "F2", convention: convention);
 
-        Key(sheet, "Home");
-        Key(sheet, "ArrowRight", KeyModifiers.Command | KeyModifiers.Shift);
+        Key(sheet, start, startModifiers, convention);
+        Key(sheet, "ArrowRight", word | KeyModifiers.Shift, convention);
 
         sheet.Entry.Selection.Start.Should().Be(CodePosition.Start);
-        var selected = sheet.Entry.Document.TextIn(sheet.Entry.Selection);
-        selected.TrimEnd().Should().Be("one", "a word move with Shift selects the first word");
+        sheet.Entry.Document.TextIn(sheet.Entry.Selection).Should().Be("one ",
+            "a word move with Shift selects the first word and the space after it, the code engine's word move");
         sheet.HandleText("1");
-        Text(sheet).Should().StartWith("1");
+        Text(sheet).Should().Be("1two three");
     }
 
     [Fact]
@@ -259,6 +262,55 @@ public class SheetEntryTests
         sheet.Document.GetCell(B2).Should().Be("x");
         sheet.Editing.Should().BeFalse();
         sheet.History.CanUndo.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Every key of an entry, in both modes and in both keyboard traditions: what it leaves editing, the
+    /// entry's text and caret, the active cell and B2. The entry is `ab`, its caret at the end, B2 active.
+    /// </summary>
+    [Theory]
+    [InlineData(KeyboardConvention.Standard, SheetEditMode.Enter, "Enter", KeyModifiers.None, false, "", 2, 1, "ab")]
+    [InlineData(KeyboardConvention.Apple, SheetEditMode.Edit, "Enter", KeyModifiers.Shift, false, "", 0, 1, "ab")]
+    [InlineData(KeyboardConvention.Standard, SheetEditMode.Edit, "Tab", KeyModifiers.None, false, "", 1, 2, "ab")]
+    [InlineData(KeyboardConvention.Apple, SheetEditMode.Enter, "Tab", KeyModifiers.Shift, false, "", 1, 0, "ab")]
+    [InlineData(KeyboardConvention.Standard, SheetEditMode.Enter, "Escape", KeyModifiers.None, false, "", 1, 1, "")]
+    [InlineData(KeyboardConvention.Apple, SheetEditMode.Edit, "Escape", KeyModifiers.None, false, "", 1, 1, "")]
+    [InlineData(KeyboardConvention.Standard, SheetEditMode.Enter, "ArrowLeft", KeyModifiers.None, false, "", 1, 0, "ab")]
+    [InlineData(KeyboardConvention.Apple, SheetEditMode.Enter, "ArrowDown", KeyModifiers.None, false, "", 2, 1, "ab")]
+    [InlineData(KeyboardConvention.Standard, SheetEditMode.Edit, "ArrowLeft", KeyModifiers.None, true, "ab", 1, 1, "")]
+    [InlineData(KeyboardConvention.Apple, SheetEditMode.Edit, "ArrowLeft", KeyModifiers.None, true, "ab", 1, 1, "")]
+    [InlineData(KeyboardConvention.Standard, SheetEditMode.Enter, "Enter", KeyModifiers.Alt, true, "ab\n", 1, 1, "")]
+    [InlineData(KeyboardConvention.Apple, SheetEditMode.Edit, "Enter", KeyModifiers.Alt, true, "ab\n", 1, 1, "")]
+    [InlineData(KeyboardConvention.Standard, SheetEditMode.Enter, "Enter", KeyModifiers.Command, false, "", 1, 1, "ab")]
+    [InlineData(KeyboardConvention.Apple, SheetEditMode.Edit, "Enter", KeyModifiers.Command, false, "", 1, 1, "ab")]
+    [InlineData(KeyboardConvention.Standard, SheetEditMode.Enter, "Backspace", KeyModifiers.None, true, "a", 1, 1, "")]
+    [InlineData(KeyboardConvention.Apple, SheetEditMode.Edit, "ArrowLeft", KeyModifiers.Command, true, "ab", 1, 1, "")]
+    public void AKeyOfAnEntry(KeyboardConvention convention, SheetEditMode mode, string key, KeyModifiers modifiers,
+        bool editing, string text, int row, int col, string b2)
+    {
+        var sheet = Sheet();
+        sheet.BeginEdit("ab", mode);
+
+        Key(sheet, key, modifiers, convention).Should().BeTrue();
+
+        sheet.Editing.Should().Be(editing);
+        sheet.Entry.Document.Text.Should().Be(editing ? text.Replace("\\n", "\n") : "");
+        sheet.ActiveCell.Should().Be(new CellRef(row, col));
+        sheet.Document.GetCell(B2).Should().Be(b2);
+    }
+
+    [Theory]
+    [InlineData(KeyboardConvention.Standard, KeyModifiers.Command)]
+    [InlineData(KeyboardConvention.Apple, KeyModifiers.Alt)]
+    public void AWordMove_IsTheKeyboardsOwn(KeyboardConvention convention, KeyModifiers word)
+    {
+        var sheet = Sheet();
+        sheet.BeginEdit("one two", SheetEditMode.Edit);
+
+        Key(sheet, "ArrowLeft", word, convention).Should().BeTrue();
+
+        sheet.Entry.Caret.Should().Be(new CodePosition(0, 4), "back to the start of `two`");
+        sheet.Editing.Should().BeTrue();
     }
 
     // ---- Backspace clears and edits; Delete clears ---------------------------------------------------------

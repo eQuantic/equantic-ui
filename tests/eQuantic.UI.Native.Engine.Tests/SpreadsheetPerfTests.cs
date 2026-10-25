@@ -89,6 +89,37 @@ public class SpreadsheetPerfTests
     }
 
     [Fact]
+    public void ACharacterTypedIntoAnEntry_StaysInsideTheAlarm()
+    {
+        var (host, sheet) = Open();
+        var region = host.LastFrame!.TableRegions.Single();
+        var at = region.Bounds.Center;
+        host.PressDown(at.X, at.Y);
+        host.PressUp(at.X, at.Y);
+        var time = 100f;
+        for (var i = 0; i < 5; i++)
+        {
+            host.TextInput("w");
+            host.RenderFrame(new DisplayListBuilder(), time += 16);
+        }
+
+        const int keys = 40;
+        var clock = Stopwatch.StartNew();
+        for (var i = 0; i < keys; i++)
+        {
+            // Each character grows the entry, measures its line and builds the sheet with its editor.
+            host.TextInput(i % 2 == 0 ? "a" : "b").Should().BeTrue();
+            host.RenderFrame(new DisplayListBuilder(), time += 16);
+        }
+        var each = clock.Elapsed.TotalMilliseconds / keys;
+
+        _output.WriteLine($"a character into an entry at 100,000 × 100: {each:F2} ms, {sheet.Entry.Document.Text.Length} characters, the editor over {sheet.EditorRange.ColCount} columns (alarm {KeystrokeCeilingMs} ms)");
+        sheet.Editing.Should().BeTrue();
+        sheet.Entry.Document.Text.Length.Should().Be(45);
+        each.Should().BeLessThan(KeystrokeCeilingMs, "a character builds a screenful and its editor");
+    }
+
+    [Fact]
     public void AScrollStepInsideTheBuiltCells_BuildsNothing_AndStaysInsideTheAlarm()
     {
         var (host, _) = Open();

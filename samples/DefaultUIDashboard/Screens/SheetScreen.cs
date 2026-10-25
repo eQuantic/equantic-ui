@@ -49,14 +49,14 @@ public sealed class SheetScreen : StatefulComponent
         {
             Width = SizeValue.Fill,
             Padding = new EdgeInsets(Space.S4, Space.S4, 0, Space.S4),
-        }, new Text("Click a cell, type, Enter — ⌘C/⌘V speak TSV with Excel, ⌘Z undoes.",
+        }, new Text("Click a cell and type, F2 edits in place, Alt+Enter breaks a line, F5 or Ctrl+G goes to a cell — ⌘C/⌘V speak TSV with Excel, ⌘Z undoes.",
             TypeRole.BodyM, theme.TextSecondary, maxLines: 1)));
         page.Add(new Flexible(new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Height = SizeValue.Fill,
             Padding = EdgeInsets.All(Space.S4),
-        }, Spreadsheet(_sheet, width: SizeValue.Fill, height: SizeValue.Fill)), 1));
+        }, Excel(_sheet)), 1));
 
         return new Box(new BoxStyle
         {
@@ -64,5 +64,18 @@ public sealed class SheetScreen : StatefulComponent
             Height = SizeValue.Fill,
             Background = theme.Background,
         }, page);
+    }
+
+    /// <summary>Excel's layout, composed by the page: the name box and the formula bar over the grid, all
+    /// three views of the one controller.</summary>
+    private static VisualNode Excel(SheetController sheet)
+    {
+        var bars = new Row(gap: Space.S2) { Width = SizeValue.Fill };
+        bars.Add(NameBox(sheet));
+        bars.Add(new Flexible(FormulaBar(sheet), 1));
+        var layout = new Column(gap: Space.S2) { Width = SizeValue.Fill, Height = SizeValue.Fill };
+        layout.Add(bars);
+        layout.Add(new Flexible(Spreadsheet(sheet, width: SizeValue.Fill, height: SizeValue.Fill), 1));
+        return layout;
     }
 }

@@ -13,7 +13,7 @@
       → a desired x), the same number a monospaced grid computed; verify the spec's vertical-move
       scenario measured, and that `CodeEditorController`'s existing ↑/↓ tests and `CodeCellsTests` pass
       untouched
-- [ ] 1.3 Prove the monospaced editor did not move: the transpiled pins regenerated
+- [x] 1.3 Prove the monospaced editor did not move: the transpiled pins regenerated
       (`EQ_UPDATE_TRANSPILED=1`) differ only in the code engine's module, the code editor's goldens and
       `CodeKeymapBehaviourTests` pass unchanged, and a twin test (`CodeMeasuredGridTwinTests`) runs the
       measured scenarios through the runtime and matches .NET
@@ -23,7 +23,7 @@
 
 ## 2. The vocabulary's text door for a sheet
 
-- [ ] 2.1 `ISheetSurfaceModel` takes the code surface's door: `HandleKey` gains the
+- [x] 2.1 `ISheetSurfaceModel` takes the code surface's door: `HandleKey` gains the
       `KeyboardConvention`, and `SetComposition`, `Carets`, `InputBounds`, `FocusVersion` and
       `FocusChanged` join, with doc comments that say who calls each and when; `SheetSurface.CaretColor`;
       `SheetTheme.EntrySelection`; their TypeScript twins (`nodes.ts`, the theme twin); declare the
@@ -33,7 +33,7 @@
 
 ## 3. The entry in the sheet's engine
 
-- [ ] 3.1 `eQuantic.UI.Sheet` references `eQuantic.UI.Code` (the csproj comment says why); the runtime
+- [x] 3.1 `eQuantic.UI.Sheet` references `eQuantic.UI.Code` (the csproj comment says why); the runtime
       bundles the sheet's modules after the code engine's (`RuntimeProvidedTypeScanner`'s order and the
       barrel), with no static initializer building another module's class at evaluation; verify the
       Server's `BundleRuntime`, the runtime's Vitest and `SharedComponentTranspilationTests` after
@@ -53,20 +53,20 @@
       caret (a paste is one step of the entry's undo), at rest on the cells as before; verify the spec's
       copy-while-editing and paste-while-editing scenarios through `HandleKey` with a clipboard and
       through the three methods
-- [ ] 3.5 A twin test drives the same sequence of keys, text and compositions through the transpiled
+- [x] 3.5 A twin test drives the same sequence of keys, text and compositions through the transpiled
       engine and through .NET and compares the entry, the caret and the cells after each step; verify it
       runs in the runtime's Vitest and `SheetTwinTests` (or the suite that hosts the engine's twins)
 
 ## 4. The keymap of an entry
 
-- [ ] 4.1 `SheetKeymap.Handle` takes the convention; while editing, the sheet's keys first (Enter, Tab,
+- [x] 4.1 `SheetKeymap.Handle` takes the convention; while editing, the sheet's keys first (Enter, Tab,
       Escape, F2, the Enter-mode arrows, Alt+Enter's line break, Command+Enter through a new
       `FillSelection`), the rest through `Entry.HandleKey`, returning before the sheet's undo; verify a
       table-driven `SheetKeymapTests` per key in both modes and both conventions, including undo while
       editing never reaching the sheet's history
 - [x] 4.2 At rest: Backspace begins an empty Enter-mode entry over the active cell only, Delete clears
       the selection, F2 begins Edit mode with the value; verify the spec's Backspace and Delete scenarios
-- [ ] 4.3 The date and time chords by convention (Ctrl+; and Ctrl+Shift+;, ⌃; and ⌘; under Apple's,
+- [x] 4.3 The date and time chords by convention (Ctrl+; and Ctrl+Shift+;, ⌃; and ⌘; under Apple's,
       `;` or `:` as the key), at rest and while editing, writing `SheetController.Now()` with the
       culture's `"d"` and `"t"`; verify the spec's `en-US` and `pt-BR` scenario in .NET and through the
       runtime with the page's culture set, both pinned to the same text
@@ -87,17 +87,17 @@
 
 ## 6. The cell editor drawn
 
-- [ ] 6.1 `EntryLines`, a component of the family that draws a code document's lines in a given type,
+- [x] 6.1 `EntryLines`, a component of the family that draws a code document's lines in a given type,
       with the active view's selection bands under them and the composition underlined; verify a
       component test on both targets (a band under `world`, a composition underlined) and the parity
       fixture's new case (`EQ_UPDATE_PARITY_FIXTURE=1`) written the same by C# and the runtime
-- [ ] 6.2 `Spreadsheet` hands the cell view's geometry (origin, line height, the measurer over the
+- [x] 6.2 `Spreadsheet` hands the cell view's geometry (origin, line height, the measurer over the
       cell's type) on every build, adds the editor mark over `EditorRange` (background, outline,
       `EntryLines`) and drops the ring and the handle while editing; `SheetSurface.CaretColor` from the
       palette; a cell's `Text` shows its lines from the top; verify Photon goldens light and dark of an
       entry wider than its cell, of two lines and of a composition, each with an assertion beside it
       (`EQ_UPDATE_GOLDENS=1`), and `SpreadsheetComponentTests` for the multi-line cell
-- [ ] 6.3 The 0b bench with an entry open: a keystroke at 100 000 × 100 on Photon and in the runtime
+- [x] 6.3 The 0b bench with an entry open: a keystroke at 100 000 × 100 on Photon and in the runtime
       under its ceiling; verify `SpreadsheetPerfTests` and `spreadsheet-perf.spec.ts`
 
 ## 7. The web's door
@@ -112,7 +112,7 @@
       goes, and the browser's reload keys are never handed to the model; the C# twin writes the same
       textarea; verify the parity fixture (`EQ_UPDATE_PARITY_FIXTURE=1`), `RoleBearingHostBoundsTests`,
       and the hydration spec over the server's markup
-- [ ] 7.3 Web specs with the events a browser sends: a dead key's composition (`´` then `a` committed
+- [x] 7.3 Web specs with the events a browser sends: a dead key's composition (`´` then `a` committed
       as `á`), a Japanese composition shown then committed, an emoji's `insertText`, an AltGr character,
       a copy and a paste while editing, F5 left to the browser; verify them in
       `spreadsheet-text-door-web.spec.ts`
@@ -137,18 +137,18 @@
       act as in the cell and ask for the sheet's keyboard, `Carets` only while the bar is active; the
       controller assigns `Entry.Grid` from the active view; verify engine tests for the spec's three
       scenarios, the active view switching both ways
-- [ ] 9.2 `FormulaBar(controller)` in `eQuantic.UI.Spreadsheets` with its factory in `SpreadsheetsUI`,
+- [x] 9.2 `FormulaBar(controller)` in `eQuantic.UI.Spreadsheets` with its factory in `SpreadsheetsUI`,
       its accessible name in `SdkStrings` in every language the resources carry; verify on Photon and
       in Chromium that the bar and the cell show the same text after each of `a`, `b`, `c`, that
       editing from the bar commits and returns the keyboard, and `UiFactoryConformanceTests`
 
 ## 10. The name box and Go To
 
-- [ ] 10.1 `SheetReference.TryParse` (a cell, a range, whole rows, whole columns, `$` anchors, either
+- [x] 10.1 `SheetReference.TryParse` (a cell, a range, whole rows, whole columns, `$` anchors, either
       case, out of the grid refused) and `SheetController.GoTo` (select, reveal the first cell, ask for
       the sheet's keyboard); verify table-driven tests including `xfd1048576`, `B:D`, `3:5`, `$B$7`,
       `B0`, `XFE1` and `A1048577`, in .NET and through the twin
-- [ ] 10.2 `SheetNameBox` (its own one-line entry, the address at rest, `nR x mC` while a drag of more
+- [x] 10.2 `SheetNameBox` (its own one-line entry, the address at rest, `nR x mC` while a drag of more
       than one cell is in flight from an `SdkStrings` format, its text selected on focus, Enter going
       to, `Invalid` on a name that names nothing, Escape restoring and returning the keyboard) and
       `NameBox(controller)` with its factory, counting itself on mount and unmount; the Go To chord
@@ -157,14 +157,14 @@
 
 ## 11. The keyboard leaves a sheet
 
-- [ ] 11.1 Escape then Tab, and Escape then Shift+Tab, in a page and at either end of a dialog that
+- [x] 11.1 Escape then Tab, and Escape then Shift+Tab, in a page and at either end of a dialog that
       does not close on Escape, on Photon (host tests over a real frame's focus stops) and in Chromium
       (a web spec with the modal layer's trap); verify the requirement's four scenarios and that #732's
       report no longer reproduces
 
 ## 12. Samples and documentation
 
-- [ ] 12.1 The dashboard's `/sheet` and the PhotonDesktop gallery's Spreadsheet section place the name
+- [x] 12.1 The dashboard's `/sheet` and the PhotonDesktop gallery's Spreadsheet section place the name
       box and the formula bar over the grid, as Excel lays them out; verify `dotnet build` of the four
       samples, and take again any README picture `ReadmeCapturesTests` names, looking at it before
       recording (`EQ_UPDATE_README_CAPTURES=1`)
@@ -173,7 +173,7 @@
       the keys) and the Upgrading page (the migration lines) in English, Portuguese, Spanish, French and
       German, on the wiki branch named like this pull request's; verify the wiki guards with
       `EQ_WIKI_DIR` pointed at it, and `WikiClaimsCompile` for every snippet the pages add
-- [ ] 12.3 One ledger entry for this event citing #983 and #732, as a file under `docs/ledger/`;
+- [x] 12.3 One ledger entry for this event citing #983 and #732, as a file under `docs/ledger/`;
       verify `LedgerTests`
 
 ## 13. Integration

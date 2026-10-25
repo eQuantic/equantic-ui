@@ -115,7 +115,7 @@ public class SheetSurfaceModelTests
     }
 
     [Fact]
-    public void ADrag_FromAPlainPress_MovesTheFarCorner_AndTheReleaseChangesNothing()
+    public void ADrag_FromAPlainPress_MovesTheFarCorner_AndTheReleaseEndsTheRange()
     {
         var sheet = new SheetController(rows: 50, cols: 8);
         var model = Press(sheet, CenterOf(1, 1));
@@ -123,7 +123,10 @@ public class SheetSurfaceModelTests
         model.HandlePointer(PointerPhase.Move, CenterOf(3, 3), KeyModifiers.None, 1, PointerKind.Mouse).Should().BeTrue();
         model.HandlePointer(PointerPhase.Move, CenterOf(3, 3), KeyModifiers.None, 1, PointerKind.Mouse)
             .Should().BeFalse("the same cell again changes nothing");
-        model.HandlePointer(PointerPhase.Up, CenterOf(3, 3), KeyModifiers.None, 1, PointerKind.Mouse).Should().BeFalse();
+        sheet.Selecting.Should().BeTrue();
+        model.HandlePointer(PointerPhase.Up, CenterOf(3, 3), KeyModifiers.None, 1, PointerKind.Mouse)
+            .Should().BeTrue("the range is no longer being drawn, which the name box shows");
+        sheet.Selecting.Should().BeFalse();
 
         sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 1), new CellRef(3, 3)));
         sheet.ActiveCell.Should().Be(new CellRef(3, 3));

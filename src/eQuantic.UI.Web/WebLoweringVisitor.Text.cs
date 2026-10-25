@@ -208,9 +208,10 @@ internal sealed partial class WebLoweringVisitor
     /// JavaScript, where there was a hole.
     /// </para>
     /// <para>
-    /// No events: the client attaches them. The input's own (<c>beforeinput</c>, the composition
-    /// events, the clipboard's) have no property on <c>HtmlElement</c> to declare them by, which is
-    /// why the component parity fixture cannot hold this surface yet.
+    /// The pointer and the input's text and composition are DECLARED here, as the sheet's are, though the
+    /// server dispatches none of them: the lowered tree is what the parity net compares, and a surface that
+    /// said "no handler" could not notice the client losing one. The input's keydown, its clipboard trio and
+    /// its focus are the client-only handlers of every entry the net leaves to the browser.
     /// </para>
     /// </summary>
     private HtmlElement LowerCodeSurface(CodeSurface surface)
@@ -231,6 +232,10 @@ internal sealed partial class WebLoweringVisitor
                 Cursor = "text",
             },
         };
+
+        element.OnMouseDown = static _ => { };
+        foreach (var pointer in (ReadOnlySpan<string>)["pointerdown", "pointermove", "pointerleave", "pointerup"])
+            element.CustomEvents[pointer] = ClientDispatches;
 
         // The child lowers with no inherited axis, as the client lowers it, and keeps its layers
         // (the code's mark layer among them) in a stacking context of its own, so a layer it raised
@@ -295,11 +300,14 @@ internal sealed partial class WebLoweringVisitor
             if (surface.HighlightedOption >= 0) input["aria-activedescendant"] = $"{listId}-{surface.HighlightedOption}";
         }
 
-        element.Children.Add(new RealizedElement("textarea")
+        var door = new RealizedElement("textarea")
         {
             ClassName = "eq-code-input",
             RawAttributes = input,
-        });
+        };
+        foreach (var text in (ReadOnlySpan<string>)["beforeinput", "compositionupdate", "compositionend"])
+            door.CustomEvents[text] = ClientDispatches;
+        element.Children.Add(door);
         // What the surface EXPLAINS (TS twin: lowerCodeSurface): each note over the code and the caret,
         // at its start and top in the surface's coordinates. A card shows as a pointer rests or a key
         // asks, so a page rarely carries one from the server; written when it does, as the list is. Its

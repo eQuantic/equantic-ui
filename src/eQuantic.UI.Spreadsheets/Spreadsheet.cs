@@ -41,10 +41,18 @@ public sealed class Spreadsheet : StatefulComponent
     /// its init-only settings are read from it.</summary>
     private Spreadsheet _config;
 
+    /// <summary>What a refresh of the controller does here: build again. Kept as one delegate, so the
+    /// component unsubscribes exactly what it subscribed.</summary>
+    private readonly Action _rebuild;
+
+    /// <summary>The controller this component listens to while it is mounted, or null.</summary>
+    private SheetController? _listening;
+
     public Spreadsheet(SheetController controller)
     {
         Controller = controller;
         _config = this;
+        _rebuild = () => SetState(() => { });
     }
 
     public SheetController Controller { get; private set; }
@@ -86,8 +94,22 @@ public sealed class Spreadsheet : StatefulComponent
     public override void AdoptConfig(UiComponent next)
     {
         if (next is not Spreadsheet fresh) return;
+        if (_listening is not null) Listen(fresh.Controller);
         Controller = fresh.Controller;
         _config = fresh;
+    }
+
+    protected override void OnMount() => Listen(Controller);
+
+    protected override void OnUnmount() => Listen(null);
+
+    /// <summary>Listens to <paramref name="controller"/>'s refreshes, and to no other.</summary>
+    private void Listen(SheetController? controller)
+    {
+        if (ReferenceEquals(_listening, controller)) return;
+        if (_listening is not null) _listening.Refreshed -= _rebuild;
+        _listening = controller;
+        if (controller is not null) controller.Refreshed += _rebuild;
     }
 
     public override VisualNode Build(ComponentContext context)
@@ -150,7 +172,9 @@ public sealed class Spreadsheet : StatefulComponent
             // says it, so the sheet takes the room the page gives it rather than its table's first guess.
             new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }, table), Controller)
         {
-            OnChanged = () => SetState(() => { }),
+            // Every view of the sheet builds again, this one among them: a key here moves what the formula
+            // bar and the name box show.
+            OnChanged = () => Controller.Refresh(),
             Label = SdkStrings.Spreadsheet,
             CaretColor = palette.CellText,
         });
@@ -168,8 +192,8 @@ public sealed class Spreadsheet : StatefulComponent
     /// gained a digit widens its column.</summary>
     private void Scrolled(TableOffset offset)
     {
-        var followed = Controller.Follow();
-        if (followed || DigitsShown(Controller.Document) != _digits) SetState(() => { });
+        if (Controller.Follow()) Controller.Refresh();
+        else if (DigitsShown(Controller.Document) != _digits) SetState(() => { });
     }
 
     private void ViewportChanged(Size viewport)
@@ -182,7 +206,11 @@ public sealed class Spreadsheet : StatefulComponent
     private VisualNode Cell(int row, int column, SheetDocument document, SheetPalette palette, float numbers)
     {
         if (row == 0 && column == 0)
-            return HeaderCell("", palette, onPressed: () => SetState(Controller.SelectAll));
+            return HeaderCell("", palette, onPressed: () =>
+            {
+                Controller.SelectAll();
+                Controller.Refresh();
+            });
         if (row == 0) return ColumnHeader(column - 1, palette);
         if (column == 0) return RowHeader(row - 1, palette, numbers);
         return SheetCell(new CellRef(row - 1, column - 1), document, palette);
@@ -218,7 +246,11 @@ public sealed class Spreadsheet : StatefulComponent
         var inBand = c >= selection.LeftCol && c <= selection.RightCol;
         var stack = new Stack();
         stack.Add(HeaderCell(CellRef.ColumnName(c), palette, selected: inBand,
-            onPressed: () => SetState(() => Controller.SelectCols(col, col))));
+            onPressed: () =>
+            {
+                Controller.SelectCols(col, col);
+                Controller.Refresh();
+            }));
         stack.Add(new Positioned(new Draggable(new Box(new BoxStyle
         {
             Width = SizeValue.Fixed(Grip),
@@ -243,7 +275,11 @@ public sealed class Spreadsheet : StatefulComponent
         var inBand = r >= selection.TopRow && r <= selection.BottomRow;
         var stack = new Stack();
         stack.Add(HeaderCell($"{r + 1}", palette, selected: inBand,
-            onPressed: () => SetState(() => Controller.SelectRows(row, row))));
+            onPressed: () =>
+            {
+                Controller.SelectRows(row, row);
+                Controller.Refresh();
+            }));
         stack.Add(new Positioned(new Draggable(new Box(new BoxStyle
         {
             Width = SizeValue.Fixed(width),

@@ -185,9 +185,10 @@ step of the sheet's undo, and cancelling SHALL leave the cell as it was and the 
 #### Scenario: Home, End and a word
 
 - **WHEN** B2 is being edited in Edit mode with the entry `one two three` and the caret at its end,
-  and Home, then the word move to the right with Shift, are pressed
-- **THEN** the selection is `one` on Apple's keyboards and `one ` elsewhere, as each platform's own
-  text fields select a word
+  and the move to the line's start (Home, ⌘← on a Mac), then the word move to the right with Shift
+  (Ctrl+Shift+→, ⌥⇧→ on a Mac), are pressed
+- **THEN** the selection is `one `, the word and the space after it, in both traditions: the code
+  engine's word move
 
 #### Scenario: Undo while editing
 
@@ -362,7 +363,7 @@ leaves it by default.
 #### Scenario: The address and the size of a drag
 
 - **WHEN** a press on B2 is dragged to D6 and held
-- **THEN** the name box shows `5R x 3C`, and after the release it shows `B2`
+- **THEN** the name box shows `5R x 3C`, and after the release it shows `D6`, the active cell
 
 #### Scenario: Go to a cell far away
 

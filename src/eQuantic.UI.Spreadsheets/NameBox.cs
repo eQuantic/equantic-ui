@@ -24,12 +24,18 @@ public sealed class NameBox : StatefulComponent
     private const TypeRole BoxType = TypeRole.BodyM;
 
     private NameBox _config;
+
+    /// <summary>The controller this box is placed on and listens to while it is mounted, or null.</summary>
     private SheetController? _counted;
+
+    /// <summary>What a refresh of the controller does here: build again, as one delegate.</summary>
+    private readonly Action _rebuild;
 
     public NameBox(SheetController controller)
     {
         Controller = controller;
         _config = this;
+        _rebuild = () => SetState(() => { });
     }
 
     public SheetController Controller { get; private set; }
@@ -40,26 +46,29 @@ public sealed class NameBox : StatefulComponent
     public override void AdoptConfig(UiComponent next)
     {
         if (next is not NameBox fresh) return;
-        if (!ReferenceEquals(fresh.Controller, Controller) && _counted is not null)
-        {
-            _counted.NameBox.Removed();
-            fresh.Controller.NameBox.Placed();
-            _counted = fresh.Controller;
-        }
+        if (_counted is not null) Place(fresh.Controller);
         Controller = fresh.Controller;
         _config = fresh;
     }
 
-    protected override void OnMount()
-    {
-        Controller.NameBox.Placed();
-        _counted = Controller;
-    }
+    protected override void OnMount() => Place(Controller);
 
-    protected override void OnUnmount()
+    protected override void OnUnmount() => Place(null);
+
+    /// <summary>Counts this box on <paramref name="controller"/>, so its Go To keys come here, and listens to
+    /// its refreshes: a press in the grid changes the address the box shows.</summary>
+    private void Place(SheetController? controller)
     {
-        _counted?.NameBox.Removed();
-        _counted = null;
+        if (ReferenceEquals(_counted, controller)) return;
+        if (_counted is not null)
+        {
+            _counted.NameBox.Removed();
+            _counted.Refreshed -= _rebuild;
+        }
+        _counted = controller;
+        if (controller is null) return;
+        controller.NameBox.Placed();
+        controller.Refreshed += _rebuild;
     }
 
     public override VisualNode Build(ComponentContext context)
@@ -83,7 +92,7 @@ public sealed class NameBox : StatefulComponent
             Height = SizeValue.Fixed(height),
         }, text), box)
         {
-            OnChanged = () => SetState(() => { }),
+            OnChanged = () => Controller.Refresh(),
             Label = SdkStrings.NameBox,
             CaretColor = palette.CellText,
         };
