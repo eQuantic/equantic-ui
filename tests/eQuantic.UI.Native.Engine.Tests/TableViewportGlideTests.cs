@@ -15,6 +15,7 @@ namespace eQuantic.UI.Native.Engine.Tests;
 public class TableViewportGlideTests
 {
     private static readonly Color Ink = Color.FromRgb(0xC0, 0x10, 0x20);
+    private static readonly Color Handle = Color.FromRgb(0x10, 0x80, 0x20);
 
     /// <summary>Linear, so halfway through the glide the mark stands halfway.</summary>
     private static readonly MotionSpec Glide = new(200, new Curve(0f, 0f, 1f, 1f));
@@ -62,6 +63,36 @@ public class TableViewportGlideTests
         host.RenderFrame(builder, timeMs);
         var stroke = builder.Build().Commands.ToArray().Single(command => command.Paint.Color == Ink);
         return stroke.Transform.Transform(new Point(stroke.Shape.Rect.X, stroke.Shape.Rect.Y)).X;
+    }
+
+    /// <summary>A range from row 2 and column 2 across <paramref name="columns"/> columns: an outline with a
+    /// six-point handle inside its corner.</summary>
+    private static TableViewCell Range(int columns, MotionSpec? glide) =>
+        new(2, 2, new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            BorderColor = new ColorToken(Ink, Ink),
+            BorderWidth = 2,
+        }, new Box(new BoxStyle { Width = 6, Height = 6, Background = new ColorToken(Handle, Handle) })), mark: true)
+        {
+            Key = "cursor",
+            Glide = glide,
+            Columns = columns,
+        };
+
+    /// <summary>The rectangle the one command painted in <paramref name="color"/> covers on the screen on the
+    /// frame at <paramref name="timeMs"/>, and how thick its stroke is drawn there.</summary>
+    private static (Rect Rect, float Thickness) Drawn(PhotonHost host, float timeMs, Color color)
+    {
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, timeMs);
+        var command = builder.Build().Commands.ToArray().Single(c => c.Paint.Color == color);
+        var shape = command.Shape.Rect;
+        var from = command.Transform.Transform(new Point(shape.X, shape.Y));
+        var to = command.Transform.Transform(new Point(shape.X + shape.Width, shape.Y + shape.Height));
+        var stroke = command.Transform.Transform(new Point(shape.X + command.StrokeWidth, shape.Y));
+        return (new Rect(from.X, from.Y, to.X - from.X, to.Y - from.Y), stroke.X - from.X);
     }
 
     /// <summary>The table's column <paramref name="column"/>'s left edge, the grid unscrolled: the first
@@ -139,6 +170,28 @@ public class TableViewportGlideTests
         host.Invalidate();
         DrawnX(host, 600).Should().BeApproximately(LeftOf(5), 1, "turned on again, it starts where it stands");
         DrawnX(host, 700).Should().BeApproximately(LeftOf(5), 1);
+    }
+
+    [Fact]
+    public void AMarkThatGrows_IsLaidOutAtEachSizeOnTheWay_NeverScaled()
+    {
+        // Review of #1102: the glide drew the mark laid out over its new range and scaled it back to the old
+        // one, so on the way from one column to three its 2-point outline was two thirds of a point and the
+        // handle inside it a third of its size. Flutter's AnimatedPositioned lays its child out at each size.
+        var (host, marks, _) = Open(reducedMotion: false, Range(columns: 1, Glide));
+        Drawn(host, 100, Ink).Rect.Width.Should().BeApproximately(96, 3);
+
+        marks[0] = Range(columns: 3, Glide);
+        host.Invalidate();
+        Drawn(host, 200, Ink);
+
+        var outline = Drawn(host, 300, Ink);
+        outline.Rect.Width.Should().BeApproximately((96 + 3 * 96) / 2f, 3, "halfway through, halfway as wide");
+        outline.Thickness.Should().BeApproximately(2, 0.01f, "an outline keeps its thickness on the way");
+        var handle = Drawn(host, 300, Handle);
+        handle.Rect.Width.Should().BeApproximately(6, 0.01f, "what the mark holds keeps its own size");
+        handle.Rect.Height.Should().BeApproximately(6, 0.01f);
+        Drawn(host, 400, Ink).Rect.Width.Should().BeApproximately(3 * 96, 3);
     }
 
     [Fact]

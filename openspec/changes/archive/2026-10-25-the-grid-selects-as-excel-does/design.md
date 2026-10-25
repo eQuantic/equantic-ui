@@ -119,10 +119,12 @@ ranges to pick no emphasis, the band's, or the whole row's or column's.
 parameters change, keyed by its place in the tree. A `TableViewCell` gains `Key` (identity across
 builds) and `Glide` (a `MotionSpec?`). The web lowers a keyed mark as the same element across renders
 and gives it a CSS transition on its left, top, width and height from the motion's duration and curve,
-which the stylesheet's `prefers-reduced-motion` rule turns off; Photon's table emit keeps, per key, the
-rectangle the mark stood over and when it began to move, interpolates the frame's rectangle by the
-frame's time along the curve, reports the motion as active so the host asks for frames, and snaps under
-reduced motion. The active ring is keyed `cursor` with `Motion.State`, the theme's base duration on its standard curve; the fill's preview, the ranges and
+which the stylesheet's `prefers-reduced-motion` rule turns off; every mark stands where the cells put it
+and takes the scroll in a transform of its own, gliding or not, so a scroll never glides it and a glide
+turned on finds it where it stands. Photon's table layout glides the mark's four edges through the
+frame's `TransitionClock` and measures it at the rectangle it has reached, as `AnimatedPositioned` lays
+its child out, so an outline keeps its thickness on the way; the clock reports the motion as active so
+the host asks for frames, and snaps under reduced motion. The active ring is keyed `cursor` with `Motion.State`, the theme's base duration on its standard curve; the fill's preview, the ranges and
 the editor do not glide.
 
 *Alternative:* a `Position` channel on `TransitionSpec`. A mark is placed by its table indices, not by

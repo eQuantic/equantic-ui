@@ -1,4 +1,6 @@
 #nullable enable
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Left = 19 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Top = 20 -> eQuantic.UI.Native.Framework.GlideChannel
 [EQX0001]eQuantic.UI.Native.Framework.ShippedFaces
 [EQX0001]eQuantic.UI.Native.Framework.ShippedFaces.IsRegistered(eQuantic.UI.Primitives.FontFile! file) -> bool
 [EQX0001]eQuantic.UI.Native.Framework.ShippedFaces.Register(eQuantic.UI.Primitives.FontFamily? family) -> bool

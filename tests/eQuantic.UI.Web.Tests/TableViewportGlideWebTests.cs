@@ -13,7 +13,7 @@ namespace eQuantic.UI.Web.Tests;
 /// </summary>
 public class TableViewportGlideWebTests
 {
-    private static HtmlNode Lowered(double across)
+    private static HtmlNode Lowered(double across, bool glides = true)
     {
         var rows = new UniformTableSpans(200, 28);
         var columns = new UniformTableSpans(40, 96);
@@ -25,7 +25,7 @@ public class TableViewportGlideWebTests
         viewport.Add(new TableViewCell(2, 2, new Box(new BoxStyle()), mark: true)
         {
             Key = "cursor",
-            Glide = new MotionSpec(200, Curve.Standard),
+            Glide = glides ? new MotionSpec(200, Curve.Standard) : null,
         });
         var root = WebRealizer.Lower(viewport, PhotonTheme.Instance).Render();
         // The bands' marks come after the four bands of cells; the cells' band is the first of them.
@@ -50,6 +50,21 @@ public class TableViewportGlideWebTests
         var mark = Lowered(96);
 
         mark.Attributes["style"].Should().Contain("left: 96px").And.Contain("transform: translate(-96px, 0)");
+    }
+
+    [Fact]
+    public void AMark_StandsAlikeWithAGlideAndWithout_SoTurningItOnInAScrolledGridMovesNothing()
+    {
+        // Review of #1102: a mark with no glide took the scroll in its left and one with a glide in a transform,
+        // so turning the glide on in a grid scrolled a column across glided the mark from a column away.
+        var off = Lowered(96, glides: false);
+        var on = Lowered(96);
+
+        off.Attributes["style"].Should().Contain("left: 96px").And.Contain("transform: translate(-96px, 0)")
+            .And.NotContain("transition");
+        off.Attributes.Should().NotContainKey("class");
+        on.Attributes["style"].Should().Contain("left: 96px").And.Contain("transform: translate(-96px, 0)")
+            .And.Contain("transition: left 200ms");
     }
 
     [Fact]

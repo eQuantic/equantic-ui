@@ -93,23 +93,27 @@ describe('TableViewport on the web', () => {
     window.matchMedia = ((query: string) => ({ matches: query.includes('reduce'), media: query })) as never;
   });
 
+  /** A keyed mark over cell (2, 2) of a grid scrolled `across`, lowered with `glide`: its wrapper and style. */
+  const cursorLowered = (across: number, glide: { durationMs: number; curve: { x1: number; y1: number; x2: number; y2: number } } | null) => {
+    const scroll = new TableScroll();
+    const rows = new UniformTableSpans(200, 28);
+    const columns = new UniformTableSpans(40, 96);
+    scroll.arrange(new Size(900, 600), columns.total, rows.total, 96, 28, true);
+    if (across) scroll.apply(new TableScrollRequest(1, { offset: new TableOffset(across, 0) }), rows, columns, 1, 1);
+    const node = new TableViewport(rows, columns, scroll, { pinnedRows: 1, pinnedColumns: 1 });
+    const cursor = new TableViewCell(2, 2, new Box(new BoxStyle({})), true);
+    cursor.key = 'cursor';
+    cursor.glide = glide;
+    node.add(cursor);
+    const lowered = lowerVisualNode(node as never, context);
+    // The bands' marks come after the four bands of cells; the cells' band is the first of them.
+    const wrapper = (lowered.children[4] as HtmlNode).children[0].children[0] as HtmlNode;
+    return { wrapper, style: effectiveStyle(wrapper) };
+  };
+  const cursorGlide = { durationMs: 200, curve: { x1: 0.2, y1: 0, x2: 0, y2: 1 } };
+
   it('glides a keyed mark where the cells put it, its scroll a transform of its own (#984)', () => {
-    const glided = (across: number) => {
-      const scroll = new TableScroll();
-      const rows = new UniformTableSpans(200, 28);
-      const columns = new UniformTableSpans(40, 96);
-      scroll.arrange(new Size(900, 600), columns.total, rows.total, 96, 28, true);
-      if (across) scroll.apply(new TableScrollRequest(1, { offset: new TableOffset(across, 0) }), rows, columns, 1, 1);
-      const node = new TableViewport(rows, columns, scroll, { pinnedRows: 1, pinnedColumns: 1 });
-      const cursor = new TableViewCell(2, 2, new Box(new BoxStyle({})), true);
-      cursor.key = 'cursor';
-      cursor.glide = { durationMs: 200, curve: { x1: 0.2, y1: 0, x2: 0, y2: 1 } };
-      node.add(cursor);
-      const lowered = lowerVisualNode(node as never, context);
-      // The bands' marks come after the four bands of cells; the cells' band is the first of them.
-      const wrapper = (lowered.children[4] as HtmlNode).children[0].children[0] as HtmlNode;
-      return { wrapper, style: effectiveStyle(wrapper) };
-    };
+    const glided = (across: number) => cursorLowered(across, cursorGlide);
 
     const still = glided(0);
     expect(still.style).toContain('left: 96px');
@@ -121,6 +125,20 @@ describe('TableViewport on the web', () => {
     const scrolled = glided(96);
     expect(scrolled.style).toContain('left: 96px');
     expect(scrolled.style).toContain('transform: translate(-96px, 0)');
+  });
+
+  it('places a mark alike with a glide and without, so a glide turned on in a scrolled grid moves nothing', () => {
+    // Review of #1102: a mark with no glide took the scroll in its left and one with a glide in a transform,
+    // so turning the glide on in a grid scrolled a column across glided the mark from a column away.
+    const off = cursorLowered(96, null);
+    const on = cursorLowered(96, cursorGlide);
+    expect(off.style).toContain('left: 96px');
+    expect(off.style).toContain('transform: translate(-96px, 0)');
+    expect(off.style).not.toContain('transition');
+    expect(off.wrapper.attributes['class'] ?? '').not.toContain('eq-glide');
+    expect(on.style).toContain('left: 96px');
+    expect(on.style).toContain('transform: translate(-96px, 0)');
+    expect(on.style).toContain('transition: left 200ms');
   });
 
   it('is a group of four bands, four bands of marks and two scrollbars, taking every gesture itself', () => {

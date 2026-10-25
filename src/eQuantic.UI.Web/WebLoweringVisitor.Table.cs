@@ -121,14 +121,15 @@ internal sealed partial class WebLoweringVisitor
         var endColumn = Math.Clamp(cell.Column + Math.Max(1, cell.Columns), firstColumn, columns.Count);
         var top = rows.OffsetOf(firstRow);
         var left = columns.OffsetOf(firstColumn);
-        // A gliding mark (TS twin: lowerTableCell) stands where the CELLS put it, and the scroll rides a
-        // transform of its own: a transition on its left and top then glides it when it moves to other cells,
-        // never when the grid scrolls under it, which carries it at once.
-        var glide = cell.Glide;
-        var across = inPinnedColumn ? 0 : offset.Across;
-        var down = inPinnedRow ? 0 : offset.Down;
-        var x = (inPinnedColumn ? left : left - pinnedAcross) - (glide is null ? across : 0);
-        var y = (inPinnedRow ? top : top - pinnedDown) - (glide is null ? down : 0);
+        // A mark (TS twin: lowerTableCell) stands where the CELLS put it, and the scroll rides a transform of
+        // its own, whether it glides or not: a transition on its left and top then glides it when it moves to
+        // other cells, never when the grid scrolls under it, which carries it at once, and a glide turned on or
+        // off finds it where it stands.
+        var glide = cell.Mark ? cell.Glide : null;
+        var across = cell.Mark && !inPinnedColumn ? offset.Across : 0;
+        var down = cell.Mark && !inPinnedRow ? offset.Down : 0;
+        var x = inPinnedColumn ? left : left - pinnedAcross - (cell.Mark ? 0 : offset.Across);
+        var y = inPinnedRow ? top : top - pinnedDown - (cell.Mark ? 0 : offset.Down);
 
         var wrapper = new RealizedElement("div")
         {
@@ -142,12 +143,12 @@ internal sealed partial class WebLoweringVisitor
                 Height = TokenCss.Px((float)(rows.OffsetOf(endRow) - top)),
             },
         };
+        if (across != 0 || down != 0)
+            wrapper.Style.Transform = $"translate({TokenCss.Px((float)-across)}, {TokenCss.Px((float)-down)})";
         if (glide is { } motion)
         {
             var timing = $"{motion.DurationMs}ms {TokenCss.Bezier(motion.Curve)}";
             wrapper.Style.Transition = $"left {timing}, top {timing}, width {timing}, height {timing}";
-            if (across != 0 || down != 0)
-                wrapper.Style.Transform = $"translate({TokenCss.Px((float)-across)}, {TokenCss.Px((float)-down)})";
             // The stylesheet turns the glide off under the platform's reduced-motion setting.
             wrapper.ClassName = "eq-glide";
         }

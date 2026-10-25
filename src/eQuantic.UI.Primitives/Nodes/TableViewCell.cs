@@ -44,10 +44,11 @@ public sealed class TableViewCell : SingleChildNode
     /// <summary>
     /// How a mark moves when a later build places the mark of its key (<see cref="VisualNode.Key"/>) over
     /// another range: from the rectangle it stood over to the new one, over the motion's duration and along
-    /// its curve (#984), as Flutter's <c>AnimatedPositioned</c> moves its child. Null draws it where it stands
-    /// at once, as does a mark the previous build did not hold, and every mark under the platform's
-    /// reduced-motion setting. The glide follows the cells, never the scroll: a grid that scrolls carries the
-    /// mark with it at once.
+    /// its curve (#984), laid out at each rectangle on the way as Flutter's <c>AnimatedPositioned</c> lays out
+    /// its child, so an outline keeps its thickness. Null draws it where it stands at once, as does a mark the
+    /// previous build did not hold, and every mark under the platform's reduced-motion setting; a glide turned
+    /// on or off leaves it where it stands. The glide follows the cells, never the scroll: a grid that scrolls
+    /// carries the mark with it at once.
     /// </summary>
     public MotionSpec? Glide { get; init; }
 

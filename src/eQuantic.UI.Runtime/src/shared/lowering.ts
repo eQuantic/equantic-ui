@@ -1944,14 +1944,16 @@ function lowerTableCell(
   const endColumn = Math.min(Math.max(cell.column + Math.max(1, cell.columns ?? 1), firstColumn), columns.count);
   const top = rows.offsetOf(firstRow);
   const left = columns.offsetOf(firstColumn);
-  // A gliding mark (C# twin: LowerTableCell) stands where the CELLS put it, and the scroll rides a
-  // transform of its own: a transition on its left and top then glides it when it moves to other cells,
-  // never when the grid scrolls under it, which carries it at once.
-  const glide = cell.glide ?? null;
-  const across = inPinnedColumn ? 0 : offset.across;
-  const down = inPinnedRow ? 0 : offset.down;
-  const x = (inPinnedColumn ? left : left - pinnedAcross) - (glide ? 0 : across);
-  const y = (inPinnedRow ? top : top - pinnedDown) - (glide ? 0 : down);
+  // A mark (C# twin: LowerTableCell) stands where the CELLS put it, and the scroll rides a transform of
+  // its own, whether it glides or not: a transition on its left and top then glides it when it moves to
+  // other cells, never when the grid scrolls under it, which carries it at once, and a glide turned on or
+  // off finds it where it stands.
+  const mark = Boolean(cell.mark);
+  const glide = mark ? (cell.glide ?? null) : null;
+  const across = mark && !inPinnedColumn ? offset.across : 0;
+  const down = mark && !inPinnedRow ? offset.down : 0;
+  const x = inPinnedColumn ? left : left - pinnedAcross - (mark ? 0 : offset.across);
+  const y = inPinnedRow ? top : top - pinnedDown - (mark ? 0 : offset.down);
   const child = lowerNode(cell.child, context, null, path + '/0');
   const style: Record<string, string | undefined> = {
     display: 'grid',
@@ -1961,10 +1963,10 @@ function lowerTableCell(
     width: px(Math.fround(columns.offsetOf(endColumn) - left)),
     height: px(Math.fround(rows.offsetOf(endRow) - top)),
   };
+  if (across !== 0 || down !== 0) style.transform = `translate(${px(Math.fround(-across))}, ${px(Math.fround(-down))})`;
   if (glide) {
     const timing = `${glide.durationMs}ms ${bezier(glide.curve)}`;
     style.transition = `left ${timing}, top ${timing}, width ${timing}, height ${timing}`;
-    if (across !== 0 || down !== 0) style.transform = `translate(${px(Math.fround(-across))}, ${px(Math.fround(-down))})`;
   }
   const wrapper = element('div', style, child ? [child] : []);
   // The stylesheet turns the glide off under the platform's reduced-motion setting.

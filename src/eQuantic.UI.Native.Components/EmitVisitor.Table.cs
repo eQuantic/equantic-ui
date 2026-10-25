@@ -86,51 +86,10 @@ internal sealed partial class EmitVisitor
         {
             if (child.Source is not TableViewCell cell || cell.Mark != mark) continue;
             if (BandOf(cell, viewport) != which) continue;
-            if (mark && Glided(child, cell.Glide, viewport, which, s) is { } moved)
-            {
-                s.Builder.PushTransform(moved);
-                Emit(s with { Node = child, Input = input });
-                s.Builder.Pop();
-                continue;
-            }
             Emit(s with { Node = child, Input = input });
         }
         s.Press.Surface = outerSurface;
         s.Builder.PopClip();
-    }
-
-    /// <summary>
-    /// Where a gliding mark is drawn this frame (<see cref="TableViewCell.Glide"/>, web twin: the mark's
-    /// transition in <c>lowerTableCell</c>), as the matrix that takes the rectangle it was laid out over to the
-    /// one it has glided to; null where it stands over its range. Its four edges glide through the frame's
-    /// transition clock in the CELLS' coordinates, the band's scroll added in and taken back out, so a mark
-    /// moved to other cells glides there while a grid that scrolls carries it at once. The clock snaps under
-    /// reduced motion and mounts a mark it never saw where it stands. A mark with no glide goes through the
-    /// same clock with no specification, which snaps it and FORGETS its four tracks: kept, a mark whose glide
-    /// was turned off and on again glided back from the rectangle it stood over when it was turned off.
-    /// </summary>
-    private static Matrix2D? Glided(LayoutNode child, MotionSpec? glide, TableViewport viewport, int band, EmitState s)
-    {
-        if (s.Motion.Transitions is not { } clock || child.Element is not { } at) return null;
-        var offset = viewport.Scroll.Offset;
-        var across = band is 0 or 2 ? (float)offset.Across : 0f;
-        var down = band is 0 or 1 ? (float)offset.Down : 0f;
-        var target = child.Bounds;
-        TransitionSpec? spec = glide is { } motion
-            ? new TransitionSpec(StyleChannels.All, motion.DurationMs) { Easing = motion.Curve }
-            : null;
-        var time = s.Motion.TimeMs;
-        var reduced = s.Motion.Reduced;
-        var x = clock.Resolve(at, GlideChannel.TranslateX, target.X + across, time, spec, reduced) - across;
-        var y = clock.Resolve(at, GlideChannel.TranslateY, target.Y + down, time, spec, reduced) - down;
-        var width = clock.Resolve(at, GlideChannel.Width, target.Width, time, spec, reduced);
-        var height = clock.Resolve(at, GlideChannel.Height, target.Height, time, spec, reduced);
-        // Forgotten, the mark stands where it is laid out, never a float's rounding away from it.
-        if (spec is null) return null;
-        if (x == target.X && y == target.Y && width == target.Width && height == target.Height) return null;
-        var scaleX = target.Width > 0 ? width / target.Width : 1f;
-        var scaleY = target.Height > 0 ? height / target.Height : 1f;
-        return Matrix2D.Translation(-target.X, -target.Y) * Matrix2D.Scale(scaleX, scaleY) * Matrix2D.Translation(x, y);
     }
 
     /// <summary>Which band a cell lies in: its first row and its first column say.</summary>
