@@ -27,7 +27,8 @@ TypeStyle.OfSize(48, FontWeight.Light)
 - **Photon on Apple asks CoreText for the weight itself**, its weight trait, so the system face draws every
   weight, the italic asked with it. A family that ships files is drawn from the file that sets the weight
   and the slant, opened directly, chosen as a browser chooses among a family's faces, and so is it on
-  Android: the match by weight CoreText offers picked a neighbouring file for Thin, Light and Black.
+  Android: the match by weight CoreText offers picked a neighbouring file for Thin, Light and Black. A
+  variable file is opened at the weight on its axis.
 - **Photon on Android asks for the weight** from Android 9 (API 28), where a typeface takes one. Below it
   the shell draws regular and bold, as today. Windows already hands DirectWrite the number.
 - **`GoogleFont` takes all nine**, since it takes `FontWeight`. Measured on the way: Google's static Thin and

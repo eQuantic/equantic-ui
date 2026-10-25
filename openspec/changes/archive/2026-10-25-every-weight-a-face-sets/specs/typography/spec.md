@@ -6,8 +6,9 @@
 `Regular` (400), `Medium` (500), `SemiBold` (600), `Bold` (700), `ExtraBold` (800) and `Black` (900). Text
 set in any of them SHALL be drawn at that weight: on the web, by the server and by the runtime alike, and on
 Photon, by each shell's text engine. A family that ships files SHALL be drawn from the file that sets the
-weight and the slant, or, when none does, from the file a browser would choose (CSS Fonts §5.2), on every
-target. A static face's weight SHALL be the one position its `STAT` table gives it on `wght` when it gives one,
+weight and the slant, or, when none does, from the file a browser would choose (CSS Fonts §5.2), on the web,
+on Apple and on Android, and on Apple a variable file SHALL be set at the weight on its `wght` axis. A static
+face's weight SHALL be the one position its `STAT` table gives it on `wght` when it gives one,
 and its weight class otherwise. On Android below API 28, which cannot be asked for a weight, the shell SHALL
 draw a weight below 600 as regular and the others as bold.
 
@@ -30,12 +31,19 @@ draw a weight below 600 as regular and the others as bold.
 
 - **WHEN** an app declares Inter's `Thin` and `ExtraLight` from Google Fonts, whose files both carry the
   weight class 250 and give 100 and 200 in their `STAT`
-- **THEN** the catalog carries them at 100 and 200, and every target draws each weight from its own file
+- **THEN** the catalog carries them at 100 and 200, and the web, Apple and Android draw each weight from its
+  own file
+
+#### Scenario: A variable file, on Apple
+
+- **WHEN** Photon on Apple measures text set in `Bold` in a family that ships one variable file whose `wght`
+  axis runs from 100 to 900
+- **THEN** it measures as the file's instance at 700 does, not as its default instance
 
 #### Scenario: A weight the family does not ship
 
 - **WHEN** text is set in `SemiBold` in a family that ships files at 300, 400 and 700
-- **THEN** every target draws it from the 700 file, as a browser chooses
+- **THEN** the web, Apple and Android draw it from the 700 file, as a browser chooses
 
 #### Scenario: A provider's weights
 
