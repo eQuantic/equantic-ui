@@ -2130,7 +2130,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     internal bool ReplaceAroundEveryCaret(int before, int after, string text) =>
         AtEveryCaret(() =>
         {
-            var range = AroundCaret(before, after);
+            var range = AroundCaret(Caret, before, after);
             if (_document.TextIn(range) != text) return Edit(range, text, false);
             Select(new CodeRange(range.End), keepCell: false);
             return true;
@@ -2148,19 +2148,18 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// toolbar's "insert a loop". A snippet whose only stop is <c>$0</c>, or with none, leaves a caret at
     /// <c>$0</c>, or at its end, and starts none. False when the editor reads only.
     /// </summary>
-    public bool InsertSnippet(CodeSnippet snippet) => InsertCopies(snippet, () => _selection);
+    public bool InsertSnippet(CodeSnippet snippet) => InsertCopies(snippet, selection => selection);
 
     /// <summary>A snippet accepted from the completion at every caret, as an entry of text is
     /// (<see cref="ReplaceAroundEveryCaret"/>): before each caret as many characters as the entry replaces
     /// before the primary, and after it as many as it replaces after, on the caret's own line.</summary>
     internal bool InsertSnippetAround(CodeSnippet snippet, int before, int after) =>
-        InsertCopies(snippet, () => AroundCaret(before, after));
+        InsertCopies(snippet, selection => AroundCaret(selection.Focus, before, after));
 
-    /// <summary>The range around the caret an accepted entry replaces: <paramref name="before"/> characters
-    /// before it and <paramref name="after"/> after it, on its own line.</summary>
-    private CodeRange AroundCaret(int before, int after)
+    /// <summary>The range around <paramref name="caret"/> an accepted entry replaces: <paramref name="before"/>
+    /// characters before it and <paramref name="after"/> after it, on its own line.</summary>
+    private CodeRange AroundCaret(CodePosition caret, int before, int after)
     {
-        var caret = Caret;
         var line = _document.Line(caret.Line);
         return new CodeRange(caret with { Column = Math.Max(0, caret.Column - before) },
             caret with { Column = Math.Min(line.Length, caret.Column + after) });
@@ -2168,29 +2167,39 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
     /// <summary>
     /// The insertion itself: at every caret, the copy of <paramref name="snippet"/> that caret's variables and
-    /// line make, over the range <paramref name="at"/> answers there, its caret left at the copy's start, which
-    /// the placement of #1012 carries through the copies inserted before it in the document. Each stop is then
-    /// the copy's start and where the stop lies in the copy, which no other copy's edit reaches into. The
-    /// carets go to the first stop inside the step, so redo selects it again, and the session starts once the
-    /// step is heard, so it does not carry its stops through the edits that made them.
+    /// line make, over the range <paramref name="at"/> answers for the caret's selection, its caret left at the
+    /// copy's start, which the placement of #1012 carries through the copies inserted before it in the document.
+    /// Each stop is then the copy's start and where the stop lies in the copy, which no other copy's edit reaches
+    /// into. The carets go to the first stop inside the step, so redo selects it again, and the session starts
+    /// once the step is heard, so it does not carry its stops through the edits that made them.
     /// </summary>
-    private bool InsertCopies(CodeSnippet snippet, Func<CodeRange> at)
+    private bool InsertCopies(CodeSnippet snippet, Func<CodeRange, CodeRange> at)
     {
         if (ReadOnly) return false;
         Snippet.End();
+        // Every copy is made against the document as it stands before any goes in, as VS Code resolves a
+        // snippet's variables: made between the edits, a caret's $TM_CURRENT_LINE read a line a copy at a caret
+        // after it was already in (Copilot on #1079). A caret's selection is the one it had then, since the
+        // copies go in from the last caret to the first.
+        var ranges = new Dictionary<CodeRange, CodeRange>();
+        var planned = new Dictionary<CodeRange, CodeSnippetExpansion>();
+        foreach (var caret in CaretsInOrder(out _))
+        {
+            var selection = caret.Selection;
+            var range = at(selection);
+            ranges[selection] = range;
+            planned[selection] = CodeSnippetExpansion.Of(snippet, name => SnippetVariable(name, selection),
+                _document.IndentOf(_document.Clamp(range.Start).Line), IndentStep);
+        }
         var copies = new List<CodeSnippetExpansion>();
         var stops = new List<CodeSnippetStop>();
         var made = AsOneStep(() =>
         {
             AtEveryCaret(() =>
             {
-                // The selection, which $TM_SELECTED_TEXT is: an entry accepted replaces the word typed, which
-                // nobody selected.
-                var selection = _selection;
-                var range = at();
+                if (!ranges.TryGetValue(_selection, out var range) || !planned.TryGetValue(_selection, out var copy))
+                    return false;
                 var start = _document.Clamp(range.Start);
-                var copy = CodeSnippetExpansion.Of(snippet, name => SnippetVariable(name, selection, range),
-                    _document.IndentOf(start.Line), IndentStep);
                 copies.Add(copy);
                 var edited = Edit(range, copy.Text, false);
                 Select(new CodeRange(start), keepCell: false, moved: true);
@@ -2267,16 +2276,17 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         Merge();
     }
 
-    /// <summary>What a snippet's variable <paramref name="name"/> is for the copy that replaces
-    /// <paramref name="range"/> at a caret selecting <paramref name="selection"/>, or null for a name the editor
-    /// does not know.</summary>
-    private string? SnippetVariable(string name, CodeRange selection, CodeRange range) => name switch
+    /// <summary>What a snippet's variable <paramref name="name"/> is for the copy at a caret selecting
+    /// <paramref name="selection"/>, or null for a name the editor does not know, as VS Code reads them: the
+    /// selection's text, the line the caret is on, and the word at the selection's start, whatever range the copy
+    /// replaces (an entry accepted replaces the word typed, which nobody selected).</summary>
+    private string? SnippetVariable(string name, CodeRange selection) => name switch
     {
         "TM_SELECTED_TEXT" => _document.TextIn(selection),
-        "TM_CURRENT_LINE" => _document.Line(range.Start.Line),
-        "TM_CURRENT_WORD" => _document.TextIn(WordRange(range.Start)),
-        "TM_LINE_INDEX" => range.Start.Line.ToString(),
-        "TM_LINE_NUMBER" => (range.Start.Line + 1).ToString(),
+        "TM_CURRENT_LINE" => _document.Line(selection.Focus.Line),
+        "TM_CURRENT_WORD" => _document.TextIn(WordRange(selection.Start)),
+        "TM_LINE_INDEX" => selection.Focus.Line.ToString(),
+        "TM_LINE_NUMBER" => (selection.Focus.Line + 1).ToString(),
         _ => null,
     };
 

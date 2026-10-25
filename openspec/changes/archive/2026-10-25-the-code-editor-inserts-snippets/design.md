@@ -27,9 +27,10 @@ Each can follow on the same model.
 - **The parser never fails** (`CodeSnippet.Parse`). A construct the grammar does not make is text, from its
   `$` on: `$` alone, `${1`, `${1|a` read as typed. `\` escapes `$`, `}` and `\` in text, and also `,` and
   `|` in a choice. A placeholder's content is parsed as a snippet, so placeholders nest.
-- **Expanded at insertion, per caret.** Each copy resolves its variables at its own caret (the text it
-  replaces, its line, the word at it), gives a mirror its stop's placeholder text (the first placeholder or
-  choice that stop has), and takes its line's indentation: every line after its first starts with the
+- **Expanded at insertion, per caret.** Each copy resolves its variables at its own caret, in the document
+  as it stood before any copy went in (the text selected there, its line, the word at the selection), gives
+  a mirror its stop's placeholder (the first placeholder or choice that stop has, its nested stops
+  included), and takes its line's indentation: every line after its first starts with the
   indentation of the line it is inserted on, and a tab at a line's start is the language's indent step,
   as VS Code adjusts a snippet's whitespace. An unknown variable becomes a placeholder holding its name, at
   a stop after the snippet's own.

@@ -74,10 +74,11 @@ export class CodeSnippetSession {
     }
 
     choose(text: string) {
-        if (this._stops == null) return false;
+        if (this._stops == null || this._editor.readOnly) return false;
         this._placing = true;
         try {
-            return this._editor.replaceEvery($eq.collections.listCopy(this._stops[this._current].ranges), text);
+            this._editor.replaceEvery($eq.collections.listCopy(this._stops[this._current].ranges), text);
+            return true;
         } finally {
             this._placing = false;
         }
@@ -154,26 +155,38 @@ export class CodeSnippetSession {
             this.end();
             return;
         }
+        if ($eq.collections.count(change.edits) === 0) return;
+        let growing = this.growing();
         for (const edit of change.edits) {
             for (let s = 0; s < this._stops.length; s++) {
                 let ranges = this._stops[s].ranges;
                 for (let i = 0; i < ranges.length; i++) {
                     let range = ranges[i];
-                    ranges[i] = s === this._current ? new CodeRange(edit.carryAnchor(range.start), edit.carryReach(range.end)) : edit.carry(range);
+                    ranges[i] = growing[s] ? new CodeRange(edit.carryAnchor(range.start), edit.carryReach(range.end)) : edit.carry(range);
                 }
-                if (s === this._current) CodeSnippetSession.separate(ranges);
             }
         }
+        for (let s = 0; s < this._stops.length; s++) if (growing[s]) CodeSnippetSession.separate(this._stops[s].ranges);
+    }
+
+    growing() {
+        let growing = new Array(this._stops?.length ?? 0).fill(false);
+        if (this._stops == null || this._current < 0) return growing;
+        growing[this._current] = true;
+        let current = this._stops[this._current];
+        for (let s = 0; s < this._stops.length; s++) if (!this._stops[s].final && this.nestedIn(current, this._stops[s].index)) growing[s] = true;
+        return growing;
     }
 
     static separate(ranges: CodeRange[]) {
-        for (let i = 0; i < ranges.length; i++) {
-            for (let j = 0; j < ranges.length; j++) {
-                let range = ranges[i];
-                let before = ranges[j];
-                if (i === j || !(CodePosition.opLessThan(before.start, range.start) && CodePosition.opLessThan(range.start, before.end))) continue;
-                ranges[i] = new CodeRange(CodePosition.opLessThan(before.end, range.end) ? before.end : range.end, range.end);
-            }
+        if (ranges.length < 2) return;
+        let order: number[] = [];
+        for (let i = 0; i < ranges.length; i++) order.push(i);
+        $eq.collections.listSortBy(order, (a: number, b: number) => ranges[a].start.compareTo(ranges[b].start), 'System.Comparison`1[System.Int32]');
+        for (let k = 1; k < order.length; k++) {
+            let before = ranges[order[k - 1]];
+            let range = ranges[order[k]];
+            if (CodePosition.opLessThan(before.start, range.start) && CodePosition.opLessThan(range.start, before.end)) ranges[order[k]] = new CodeRange(CodePosition.opLessThan(before.end, range.end) ? before.end : range.end, range.end);
         }
     }
 

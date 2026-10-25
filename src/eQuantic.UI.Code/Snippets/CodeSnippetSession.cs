@@ -115,11 +115,14 @@ public sealed class CodeSnippetSession
     /// undo step: a choice taken from its list.</summary>
     internal bool Choose(string text)
     {
-        if (_stops is null) return false;
+        if (_stops is null || _editor.ReadOnly) return false;
         _placing = true;
         try
         {
-            return _editor.ReplaceEvery(new List<CodeRange>(_stops[_current].Ranges), text);
+            // Taken even when it writes nothing: an empty option over an empty placeholder is a choice made, and
+            // answered false, the Enter that took it went on to break the line (Copilot on #1079).
+            _editor.ReplaceEvery(new List<CodeRange>(_stops[_current].Ranges), text);
+            return true;
         }
         finally
         {
@@ -213,9 +216,12 @@ public sealed class CodeSnippetSession
     private string TextOf(CodeSnippetStop stop) =>
         stop.Ranges.Count == 0 ? "" : _editor.Document.TextIn(stop.Ranges[0]);
 
-    /// <summary>Carries every stop through <paramref name="change"/>'s edits: the stop the carets stand at
-    /// takes in what is typed at its edges, and every other is carried as a mark. A document replaced whole
-    /// ends the session.</summary>
+    /// <summary>
+    /// Carries every stop through <paramref name="change"/>'s edits: the stop the carets stand at, and every
+    /// placeholder it is nested in, take in what is typed at their edges, as VS Code makes the placeholders around
+    /// the active one grow with it (Copilot on #1079), and every other stop is carried as a mark. Each growing
+    /// stop's places are then kept apart, once for the whole change. A document replaced whole ends the session.
+    /// </summary>
     private void Carry(CodeChange change)
     {
         if (_stops is null) return;
@@ -224,6 +230,8 @@ public sealed class CodeSnippetSession
             End();
             return;
         }
+        if (change.Edits.Count == 0) return;
+        var growing = Growing();
         foreach (var edit in change.Edits)
         {
             for (var s = 0; s < _stops.Count; s++)
@@ -232,31 +240,47 @@ public sealed class CodeSnippetSession
                 for (var i = 0; i < ranges.Count; i++)
                 {
                     var range = ranges[i];
-                    ranges[i] = s == _current
+                    ranges[i] = growing[s]
                         ? new CodeRange(edit.CarryAnchor(range.Start), edit.CarryReach(range.End))
                         : edit.Carry(range);
                 }
-                if (s == _current) Separate(ranges);
             }
         }
+        for (var s = 0; s < _stops.Count; s++)
+            if (growing[s]) Separate(_stops[s].Ranges);
+    }
+
+    /// <summary>Which stops grow at their edges: the one the carets stand at, and the placeholders it is nested
+    /// in.</summary>
+    private bool[] Growing()
+    {
+        var growing = new bool[_stops?.Count ?? 0];
+        if (_stops is null || _current < 0) return growing;
+        growing[_current] = true;
+        var current = _stops[_current];
+        for (var s = 0; s < _stops.Count; s++)
+            if (!_stops[s].Final && NestedIn(current, _stops[s].Index)) growing[s] = true;
+        return growing;
     }
 
     /// <summary>
-    /// Keeps the places of the stop the carets stand at apart, each growing at its edges: what is typed where one
-    /// ends and the next begins is the one's that ends there, whose caret typed it. Both took it in, and two
-    /// mirrors written side by side, <c>${1:a}$1</c>, overlapped and were made one caret (Copilot on #1079).
+    /// Keeps a growing stop's places apart: what is typed where one ends and the next begins is the one's that
+    /// ends there, whose caret typed it. Both took it in, and two mirrors written side by side, <c>${1:a}$1</c>,
+    /// overlapped and were made one caret (Copilot on #1079). Read in document order, each place against the one
+    /// before it, so a snippet at a thousand carets is not compared pair by pair.
     /// </summary>
     private static void Separate(List<CodeRange> ranges)
     {
-        for (var i = 0; i < ranges.Count; i++)
+        if (ranges.Count < 2) return;
+        var order = new List<int>();
+        for (var i = 0; i < ranges.Count; i++) order.Add(i);
+        order.Sort((a, b) => ranges[a].Start.CompareTo(ranges[b].Start));
+        for (var k = 1; k < order.Count; k++)
         {
-            for (var j = 0; j < ranges.Count; j++)
-            {
-                var range = ranges[i];
-                var before = ranges[j];
-                if (i == j || !(before.Start < range.Start && range.Start < before.End)) continue;
-                ranges[i] = new CodeRange(before.End < range.End ? before.End : range.End, range.End);
-            }
+            var before = ranges[order[k - 1]];
+            var range = ranges[order[k]];
+            if (before.Start < range.Start && range.Start < before.End)
+                ranges[order[k]] = new CodeRange(before.End < range.End ? before.End : range.End, range.End);
         }
     }
 

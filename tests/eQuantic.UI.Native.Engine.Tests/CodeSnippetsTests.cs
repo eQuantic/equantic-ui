@@ -242,6 +242,39 @@ public class CodeSnippetsTests : IDisposable
         editor.Document.Text.Should().Be("zz b");
     }
 
+    /// <summary>The placeholders around the stop the carets stand at grow with it, as VS Code's do (Copilot on #1079):
+    /// what was typed at the end of a nested stop was outside its enclosing placeholder, which went back to its
+    /// first character alone.</summary>
+    [Fact]
+    public void ThePlaceholderAroundAStop_GrowsWithIt()
+    {
+        var editor = Inserted("${1:${2:a}}");
+
+        Press(editor, "Tab");
+        editor.HandleText("x");
+        editor.HandleText("y");
+        Press(editor, "Tab", KeyModifiers.Shift).Should().BeTrue();
+
+        editor.Selection.Should().Be(Span(0, 0, 2));
+        editor.HandleText("z");
+        editor.Document.Text.Should().Be("z");
+    }
+
+    /// <summary>A snippet of mirrors side by side at hundreds of carets is typed in as at one (Copilot on #1079):
+    /// keeping its places apart compared every pair after every edit.</summary>
+    [Fact]
+    public void MirrorsAtHundredsOfCarets_AreTypedIn()
+    {
+        const int lines = 300;
+        var carets = Enumerable.Range(0, lines).Select(line => Caret(line, 1)).ToArray();
+        var editor = Inserted("${1:x}$1", string.Join("\n", Enumerable.Repeat("v", lines)), carets);
+
+        editor.HandleText("y");
+        editor.HandleText("z");
+
+        editor.Document.Text.Should().Be(string.Join("\n", Enumerable.Repeat("vyzyz", lines)));
+    }
+
     // ---- choices --------------------------------------------------------------------------------------
 
     [Fact]
@@ -274,6 +307,19 @@ public class CodeSnippetsTests : IDisposable
         editor.Selection.Should().Be(Span(0, 4, 5));
     }
 
+    /// <summary>An empty option is a choice taken (Copilot on #1079): it wrote nothing, so it was answered as not
+    /// taken, and the Enter that took it went on to break the line.</summary>
+    [Fact]
+    public void AnEmptyOption_IsTaken()
+    {
+        var editor = Inserted("${1|,x|};$0");
+
+        Press(editor, "Enter").Should().BeTrue();
+
+        editor.Document.Text.Should().Be(";");
+        editor.Completion.IsOpen.Should().BeFalse();
+    }
+
     [Fact]
     public void AChoice_FiltersByWhatIsTypedInIt()
     {
@@ -292,6 +338,33 @@ public class CodeSnippetsTests : IDisposable
         var editor = Inserted("Log($TM_SELECTED_TEXT);", "value", Span(0, 0, 5));
 
         editor.Document.Text.Should().Be("Log(value);");
+    }
+
+    /// <summary>Every copy reads its variables in the document as it stood before any copy went in (Copilot on
+    /// #1079): the copy at the first caret read a line the copy at the second was already in.</summary>
+    [Fact]
+    public void EveryCopy_ReadsTheDocumentAsItWas()
+    {
+        Inserted("$TM_CURRENT_LINE", "ab", Caret(0, 0), Caret(0, 2)).Document.Text.Should().Be("ababab");
+    }
+
+    /// <summary>The current word is the one at the selection, whatever range the copy replaces (Copilot on
+    /// #1079): an entry that replaced the whole line read the line's first word.</summary>
+    [Fact]
+    public void TheCurrentWord_IsTheOneAtTheSelection()
+    {
+        var editor = Editor("alpha beta");
+        editor.Completion.Providers.Add(new Offers(new CodeCompletionItem("word", CodeCompletionKind.Snippet)
+        {
+            FilterText = "alpha beta",
+            Replacing = new CodeRange(At(0, 0), At(0, 10)),
+            Snippet = CodeSnippet.Parse("$TM_CURRENT_WORD"),
+        }));
+
+        editor.Completion.Invoke().Should().BeTrue();
+        Press(editor, "Enter").Should().BeTrue();
+
+        editor.Document.Text.Should().Be("beta");
     }
 
     [Fact]

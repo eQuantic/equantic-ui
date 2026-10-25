@@ -1407,7 +1407,7 @@ export class CodeEditorController {
 
     replaceAroundEveryCaret(before: number, after: number, text: string) {
         return this.atEveryCaret(() => {
-            let range = this.aroundCaret(before, after);
+            let range = this.aroundCaret(this.caret, before, after);
             if (this._document.textIn(range) !== text) return this.edit(range, text, false);
             this.select(new CodeRange(range.end), false);
             return true;
@@ -1415,30 +1415,36 @@ export class CodeEditorController {
     }
 
     insertSnippet(snippet: CodeSnippet) {
-        return this.insertCopies(snippet, () => this._selection);
+        return this.insertCopies(snippet, (selection) => selection);
     }
 
     insertSnippetAround(snippet: CodeSnippet, before: number, after: number) {
-        return this.insertCopies(snippet, () => this.aroundCaret(before, after));
+        return this.insertCopies(snippet, (selection) => this.aroundCaret(selection.focus, before, after));
     }
 
-    aroundCaret(before: number, after: number) {
-        let caret = this.caret;
+    aroundCaret(caret: CodePosition, before: number, after: number) {
         let line = this._document.line(caret.line);
         return new CodeRange($eq.withPatch(caret, { column: Math.max(0, caret.column - before) }), $eq.withPatch(caret, { column: Math.min(line.length, caret.column + after) }));
     }
 
-    insertCopies(snippet: CodeSnippet, at: () => CodeRange) {
+    insertCopies(snippet: CodeSnippet, at: (value: CodeRange) => CodeRange) {
         if (this.readOnly) return false;
         this.snippet.end();
+        let ranges: any = $eq.collections.dictionary(null, true);
+        let planned: any = $eq.collections.dictionary(null, true);
+        for (const caret of ($o => ($o.$))(this.caretsInOrder())) {
+            let selection = caret.selection;
+            let range = at(selection);
+            $eq.mapSet(ranges, selection, range);
+            $eq.mapSet(planned, selection, CodeSnippetExpansion.of(snippet, (name: string) => this.snippetVariable(name, selection), this._document.indentOf(this._document.clamp(range.start).line), this.indentStep));
+        }
         let copies: CodeSnippetExpansion[] = [];
         let stops: CodeSnippetStop[] = [];
         let made = this.asOneStep(() => {
             this.atEveryCaret(() => {
-                let selection = this._selection;
-                let range = at();
+                let range: any; let copy: any; 
+                if (!(($0, $1) => ($0.has($1) ? ((range = $0.get($1)), true) : ((range = CodeRange.$zero()), false)))(ranges, this._selection) || !(($0, $1) => ($0.has($1) ? ((copy = $0.get($1)), true) : ((copy = null), false)))(planned, this._selection)) return false;
                 let start = this._document.clamp(range.start);
-                let copy = CodeSnippetExpansion.of(snippet, (name: string) => this.snippetVariable(name, selection, range), this._document.indentOf(start.line), this.indentStep);
                 copies.push(copy);
                 let edited = this.edit(range, copy.text, false);
                 this.select(new CodeRange(start), false, true);
@@ -1498,8 +1504,8 @@ export class CodeEditorController {
         this.merge();
     }
 
-    snippetVariable(name: string, selection: CodeRange, range: CodeRange) {
-        return (() => { const $s = name; if ($s === 'TM_SELECTED_TEXT') return this._document.textIn(selection); if ($s === 'TM_CURRENT_LINE') return this._document.line(range.start.line); if ($s === 'TM_CURRENT_WORD') return this._document.textIn(this.wordRange(range.start)); if ($s === 'TM_LINE_INDEX') return $eq.text.format(range.start.line, null, undefined, undefined, 'int32'); if ($s === 'TM_LINE_NUMBER') return $eq.text.format((range.start.line + 1), null, undefined, undefined, 'int32'); return null; })();
+    snippetVariable(name: string, selection: CodeRange) {
+        return (() => { const $s = name; if ($s === 'TM_SELECTED_TEXT') return this._document.textIn(selection); if ($s === 'TM_CURRENT_LINE') return this._document.line(selection.focus.line); if ($s === 'TM_CURRENT_WORD') return this._document.textIn(this.wordRange(selection.start)); if ($s === 'TM_LINE_INDEX') return $eq.text.format(selection.focus.line, null, undefined, undefined, 'int32'); if ($s === 'TM_LINE_NUMBER') return $eq.text.format((selection.focus.line + 1), null, undefined, undefined, 'int32'); return null; })();
     }
 
     replaceEvery(ranges: CodeRange[], text: string) {
@@ -1803,7 +1809,7 @@ export class CodeEditorController {
             }
             let space = length > 0;
             let tail = parts[parts.length - 1];
-            if (space && (($v135605) => ($v135605 === ' ' || $v135605 === '\t'))(tail[tail.length - 1])) {
+            if (space && (($v136520) => ($v136520 === ' ' || $v136520 === '\t'))(tail[tail.length - 1])) {
                 space = false;
                 let kept = $eq.text.trimEnd(tail, [' ', '\t']);
                 parts[parts.length - 1] = kept;

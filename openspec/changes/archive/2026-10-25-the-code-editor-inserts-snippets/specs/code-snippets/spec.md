@@ -78,8 +78,8 @@ is typed at each of them, and two places written side by side SHALL stay apart a
 
 ### Requirement: The active stop grows, the others do not
 
-What is typed at the start or the end of the active stop's text SHALL be in it, and what is typed at the
-edge of any other stop SHALL NOT be.
+What is typed at the start or the end of the active stop's text SHALL be in it, and in every placeholder
+the active stop is nested in, and what is typed at the edge of any other stop SHALL NOT be.
 
 #### Scenario: Typing at the end of a placeholder beside an empty stop
 
@@ -105,7 +105,8 @@ in its placeholder SHALL be gone.
 
 Reaching a stop with choices SHALL show its options in the completion's list at the stop, every option
 while the placeholder is selected and those matching what is typed in it after, and accepting one SHALL
-write it over every place the stop is written, as one undo step. Leaving the stop SHALL drop its list.
+write it over every place the stop is written, as one undo step, an empty option included. Leaving the stop
+SHALL drop its list.
 
 #### Scenario: Choosing the second option
 
@@ -114,9 +115,10 @@ write it over every place the stop is written, as one undo step. Leaving the sto
 
 ### Requirement: Variables
 
-`$TM_SELECTED_TEXT` SHALL be the text the copy replaces, `$TM_CURRENT_LINE` the line it is inserted on,
-`$TM_CURRENT_WORD` the word at its caret, `$TM_LINE_INDEX` the line's index from zero and `$TM_LINE_NUMBER`
-from one; a variable with nothing to give SHALL be its default, or nothing. An unknown variable SHALL be a
+`$TM_SELECTED_TEXT` SHALL be the text selected at the copy's caret, `$TM_CURRENT_LINE` the caret's line,
+`$TM_CURRENT_WORD` the word at the selection's start, `$TM_LINE_INDEX` the line's index from zero and
+`$TM_LINE_NUMBER` from one, every copy reading the document as it stood before any copy went in, whatever
+range the copy replaces; a variable with nothing to give SHALL be its default, or nothing. An unknown variable SHALL be a
 placeholder holding its name, at a stop after the snippet's own.
 
 #### Scenario: The selected text
