@@ -50,6 +50,26 @@ public sealed class FontCatalogSdkTests : IDisposable
             .And.Contain("new FontFile(\"Acme.Probe\", \"eQuantic.UI.Fonts/Probe-Italic.ttf\", 400, 400, Italic: true));");
     }
 
+    /// <summary>
+    /// An intermediate path that is absolute, as .NET's artifacts layout or a shared obj folder makes
+    /// it: the list and the catalog are where MSBuild put them, not under the project. Joined to the
+    /// project unconditionally, eqicon was asked for a file nobody wrote.
+    /// </summary>
+    [Theory]
+    [InlineData("eQuantic.UI.Sdk")]
+    [InlineData("eQuantic.UI.Sdk.Native")]
+    public void TheFontStep_HoldsWithAnAbsoluteIntermediatePath(string sdk)
+    {
+        Font("Probe-Regular.ttf", TestFont.Build("Acme Probe"));
+        var obj = Path.Combine(_dir, "artifacts", "obj") + Path.DirectorySeparatorChar;
+
+        var (exit, output) = RunFontStep(sdk, $"-p:IntermediateOutputPath={obj}");
+
+        exit.Should().Be(0, output);
+        File.ReadAllText(Path.Combine(obj, "generated", "eQuantic.UI.Fonts", "Fonts.g.cs"))
+            .Should().Contain("public static FontFamily AcmeProbe { get; }");
+    }
+
     [Theory]
     [InlineData("eQuantic.UI.Sdk")]
     [InlineData("eQuantic.UI.Sdk.Native")]
@@ -102,7 +122,7 @@ public sealed class FontCatalogSdkTests : IDisposable
     /// tests, as project references, and a path into src/bin is whatever was built there last. Run
     /// from the repository's root, so the global.json it pins picks the SDK.
     /// </summary>
-    private (int Exit, string Output) RunFontStep(string sdk)
+    private (int Exit, string Output) RunFontStep(string sdk, params string[] properties)
     {
         var project = Consumer(sdk, "net10.0");
         var tools = AppContext.BaseDirectory;
@@ -110,6 +130,7 @@ public sealed class FontCatalogSdkTests : IDisposable
         [
             "msbuild", project, "-nologo", "-t:EQuanticFonts", "-getItem:EmbeddedResource",
             $"-p:_EqIconToolDir={tools}", $"-p:_EqTasksAssembly={Path.Combine(tools, "eQuantic.UI.Sdk.Tasks.dll")}",
+            .. properties,
         ], Deadline, RepoRoot());
         return (exit, output + error);
     }

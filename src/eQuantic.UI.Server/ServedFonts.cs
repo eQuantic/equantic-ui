@@ -60,21 +60,29 @@ internal sealed class ServedFonts
             .Distinct()
             .ToList();
         var fonts = new List<ServedFont>();
-        var seen = new HashSet<FontFile>();
+        var read = new Dictionary<FontFile, byte[]?>();
+        var served = new HashSet<FontFile>();
         foreach (var family in families)
-        foreach (var file in family.Files)
         {
-            if (!seen.Add(file)) continue;
-            if (file.Read() is not { } bytes)
+            // WHOLE or not at all, as every shell resolves one: a family missing a file is not served,
+            // and its text falls back on the web as it does on Photon, rather than drawing one cut
+            // from another here and the platform's face there.
+            var files = family.Files.Select(file => (File: file,
+                Bytes: read.TryGetValue(file, out var known) ? known : read[file] = file.Read())).ToList();
+            if (files.FirstOrDefault(entry => entry.Bytes is null).File is { } missing)
             {
                 logger?.LogWarning(
-                    "The face '{Family}' names the resource '{Resource}' in '{Assembly}', and there is no such resource: the file is not served, and text set in it falls back.",
-                    family.Name, file.Resource, file.Assembly);
+                    "The face '{Family}' names the resource '{Resource}' in '{Assembly}', and there is no such resource: the family is not served, and text set in it falls back.",
+                    family.Name, missing.Resource, missing.Assembly);
                 continue;
             }
-            var extension = Path.GetExtension(file.Resource).ToLowerInvariant();
-            fonts.Add(new ServedFont(family, file, Convert.ToHexStringLower(SHA256.HashData(bytes))[..16] + extension,
-                bytes, Compressed(bytes)));
+            foreach (var (file, bytes) in files)
+            {
+                if (!served.Add(file)) continue;
+                var extension = Path.GetExtension(file.Resource).ToLowerInvariant();
+                fonts.Add(new ServedFont(family, file, Convert.ToHexStringLower(SHA256.HashData(bytes!))[..16] + extension,
+                    bytes!, Compressed(bytes!)));
+            }
         }
         return new ServedFonts(fonts, theme.TextFamily);
     }

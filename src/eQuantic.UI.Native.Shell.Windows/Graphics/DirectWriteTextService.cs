@@ -176,12 +176,17 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
         var collection = _collection;
         if (named is { Name.Length: > 0 })
         {
-            // A family that ships files is set from the collection they were registered in; a file
-            // that could not be registered leaves it to the machine, and to the report below.
-            if (_shipped.Register(named) && HasFamily(_shippedCollection, named.Name))
+            // A family that ships files is set from the collection they were registered in, WHOLE or
+            // not at all: one whose files did not all register is reported and falls back, never to
+            // an installed family of the same name, which would hide the packaging error here alone.
+            if (named.Files.Count > 0)
             {
-                family = named.Name;
-                collection = _shippedCollection;
+                if (_shipped.Register(named) && HasFamily(_shippedCollection, named.Name))
+                {
+                    family = named.Name;
+                    collection = _shippedCollection;
+                }
+                else Primitives.FaceResolution.Missing(named.Name);
             }
             else if (HasFamily(_collection, named.Name)) family = named.Name;
             else Primitives.FaceResolution.Missing(named.Name);

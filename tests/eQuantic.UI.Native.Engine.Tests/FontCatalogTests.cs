@@ -25,6 +25,14 @@ public sealed class FontCatalogTests : IDisposable
             .Should().Be(new OpenTypeFace("eQuantic Test Face", 700, 700, true));
     }
 
+    /// <summary>A name the Macintosh platform alone carries is Mac Roman, where an <c>é</c> is
+    /// <c>0x8E</c>: read as Latin-1 it was a control character, and the build refused a valid font.</summary>
+    [Fact]
+    public void AFamilyNamedOnlyForTheMac_IsReadInMacRoman()
+    {
+        OpenTypeFace.Read(TestFont.Build("Café Display", macNames: true)).Family.Should().Be("Café Display");
+    }
+
     [Fact]
     public void AnObliqueFont_IsTheItalicCut()
     {

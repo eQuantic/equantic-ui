@@ -38,19 +38,30 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
         var path = System.IO.Path.Combine(folder,
             Convert.ToHexStringLower(SHA256.HashData(bytes))[..16] + System.IO.Path.GetExtension(file.Resource));
         if (!System.IO.File.Exists(path)) System.IO.File.WriteAllBytes(path, bytes);
-        if (Typeface.CreateFromFile(path) is not { } typeface) return false;
+        Typeface? typeface;
+        try
+        {
+            // A file the platform cannot load THROWS rather than answering null.
+            typeface = Typeface.CreateFromFile(path);
+        }
+        catch (Java.Lang.RuntimeException)
+        {
+            return false;
+        }
+        if (typeface is null) return false;
         lock (ShippedTypefaces) ShippedTypefaces[file] = typeface;
         return true;
     }
 
     /// <summary>
     /// The typeface of a shipped <paramref name="family"/> for a style: the file of its slant whose
-    /// weights hold the one asked for, else any file of its slant, else any file, among those
-    /// registered. Null when none of its files could be.
+    /// weights hold the one asked for, else any file of its slant, else any file. Null when its files
+    /// did not all register: the family resolves from them whole or not at all, so a missing cut is
+    /// reported and falls back rather than being drawn from another.
     /// </summary>
     private static Typeface? ShippedFace(FontFamily family, FontWeight weight, bool italic)
     {
-        Shipped.Register(family);
+        if (!Shipped.Register(family)) return null;
         var asked = (int)weight;
         var file = family.Files.Where(f => f.Italic == italic && asked >= f.MinWeight && asked <= f.MaxWeight)
             .Concat(family.Files.Where(f => f.Italic == italic))

@@ -706,7 +706,7 @@
             <_EqVectorsArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
             <_EqVectorsArgument Include="command" Value="vectors" />
             <_EqVectorsArgument Include="assets" Option="--assets" Value="$(EQuanticAssetsDir)" />
-            <_EqVectorsArgument Include="catalog" Option="--out" Value="$(MSBuildProjectDirectory)/$(EQuanticVectorsFile)" />
+            <_EqVectorsArgument Include="catalog" Option="--out" Value="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(EQuanticVectorsFile)'))" />
             <_EqVectorsArgument Include="namespace" Option="--namespace" Value="$(EQuanticVectorsNamespace)" />
         </ItemGroup>
         <RunProgram Program="dotnet" Arguments="@(_EqVectorsArgument)" StandardOutputImportance="normal" />
@@ -772,9 +772,11 @@
         <ItemGroup>
             <_EqFontsArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
             <_EqFontsArgument Include="command" Value="fonts" />
-            <_EqFontsArgument Include="list" Option="--list" Value="$(MSBuildProjectDirectory)/$(_EqFontInputsFile)" />
+            <!-- Joined to the project only when relative: an artifacts layout or a shared obj makes
+                 the intermediate path absolute, and a prefix would name a file nobody wrote. -->
+            <_EqFontsArgument Include="list" Option="--list" Value="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(_EqFontInputsFile)'))" />
             <_EqFontsArgument Include="assembly" Option="--assembly" Value="$(AssemblyName)" />
-            <_EqFontsArgument Include="catalog" Option="--out" Value="$(MSBuildProjectDirectory)/$(EQuanticFontsFile)" />
+            <_EqFontsArgument Include="catalog" Option="--out" Value="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(EQuanticFontsFile)'))" />
             <_EqFontsArgument Include="namespace" Option="--namespace" Value="$(EQuanticFontsNamespace)" />
         </ItemGroup>
         <RunProgram Program="dotnet" Arguments="@(_EqFontsArgument)" StandardOutputImportance="normal" />

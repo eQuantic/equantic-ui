@@ -64,6 +64,24 @@ public class ShippedFacePhotonTests
         measured.Width.Should().BeLessThan(10 * 17 * 0.8f, "the platform's face is narrower than the shipped one");
     }
 
+    /// <summary>
+    /// A family resolves from its files WHOLE or not at all. Its upright file is the shipped face's,
+    /// registered in this process by the cases above, and its italic one is not there: it is reported
+    /// and set in the platform's face, rather than drawn from the half that registered.
+    /// </summary>
+    [MacFact]
+    public void AFamilyMissingOneOfItsFiles_IsReported_AndTheTextFallsBack()
+    {
+        var half = new FontFamily("eQuantic Test Face",
+            new FontFile(Assembly, "eQuantic.UI.Fonts/TestFace-Regular.ttf", 400, 400),
+            new FontFile(Assembly, "eQuantic.UI.Fonts/TestFace-Missing-Italic.ttf", 400, 400, Italic: true));
+
+        var measured = new CoreTextService().Measure("Handgloves", Body with { Family = half }, 1f, float.PositiveInfinity, 1);
+
+        FaceResolution.Unresolved.Should().Equal(["eQuantic Test Face"]);
+        measured.Width.Should().BeLessThan(10 * 17 * 0.8f, "the platform's face, not the half that registered");
+    }
+
     /// <summary>How many columns of the raster carry any ink.</summary>
     internal static int InkColumns(TextRaster raster) =>
         Enumerable.Range(0, raster.Width).Count(x =>

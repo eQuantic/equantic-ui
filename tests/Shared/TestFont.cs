@@ -28,9 +28,11 @@ internal static class TestFont
     private const char Last = '~';
 
     /// <summary>A TrueType file in <paramref name="family"/>, at <paramref name="weight"/>, italic or not,
-    /// and flagged OBLIQUE rather than ITALIC when <paramref name="oblique"/> says so.</summary>
+    /// and flagged OBLIQUE rather than ITALIC when <paramref name="oblique"/> says so. With
+    /// <paramref name="macNames"/> its names are the Macintosh platform's alone, in Mac Roman, as an
+    /// old Mac font's are.</summary>
     public static byte[] Build(string family, int weight = 400, bool italic = false, int advance = 1000,
-        (int Min, int Max)? weightAxis = null, bool oblique = false)
+        (int Min, int Max)? weightAxis = null, bool oblique = false, bool macNames = false)
     {
         var glyphCount = 1 + (Last - First + 1);
         var (glyf, loca) = Glyphs(glyphCount, advance);
@@ -44,7 +46,7 @@ internal static class TestFont
             ["hmtx"] = Hmtx(glyphCount, advance),
             ["loca"] = loca,
             ["maxp"] = Maxp(glyphCount),
-            ["name"] = Name(family, italic, weight >= 700),
+            ["name"] = Name(family, italic, weight >= 700, macNames),
             ["post"] = Post(italic),
         };
         if (weightAxis is { } axis) tables["fvar"] = Fvar(axis.Min, weight, axis.Max);
@@ -235,8 +237,10 @@ internal static class TestFont
         return (glyf.ToArray(), loca.ToArray());
     }
 
-    private static byte[] Name(string family, bool italic, bool bold)
+    private static byte[] Name(string family, bool italic, bool bold, bool macNames)
     {
+        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+        var macRoman = System.Text.Encoding.GetEncoding(10000);
         var style = (bold, italic) switch
         {
             (true, true) => "Bold Italic",
@@ -250,8 +254,10 @@ internal static class TestFont
         var records = new Writer();
         for (var i = 0; i < names.Length; i++)
         {
-            var text = Encoding.BigEndianUnicode.GetBytes(names[i]);
-            records.U16(3); records.U16(1); records.U16(0x0409); records.U16(i + 1);
+            var text = macNames ? macRoman.GetBytes(names[i]) : Encoding.BigEndianUnicode.GetBytes(names[i]);
+            if (macNames) { records.U16(1); records.U16(0); records.U16(0); }
+            else { records.U16(3); records.U16(1); records.U16(0x0409); }
+            records.U16(i + 1);
             records.U16(text.Length); records.U16(strings.Length);
             strings.Bytes(text);
         }

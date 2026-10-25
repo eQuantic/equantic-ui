@@ -109,7 +109,7 @@ public sealed record OpenTypeFace(string Family, int MinWeight, int MaxWeight, b
                 {
                     (3, 1 or 10) => (Encoding.BigEndianUnicode, language == 0x0409 ? 0 : 1),
                     (0, _) => (Encoding.BigEndianUnicode, 2),
-                    (1, 0) => (Encoding.Latin1, 3),
+                    (1, 0) => (MacRoman, 3),
                     _ => ((Encoding?)null, int.MaxValue),
                 };
                 if (decoder is null || order >= rank || storage + offset + length > table.Length) continue;
@@ -120,6 +120,16 @@ public sealed record OpenTypeFace(string Family, int MinWeight, int MaxWeight, b
             if (best is not null) return best;
         }
         return null;
+    }
+
+    /// <summary>The Macintosh platform's Roman encoding (code page 10000), which is not Latin-1 past
+    /// ASCII: an <c>é</c> is <c>0x8E</c> there and a control character in Latin-1.</summary>
+    private static readonly Encoding MacRoman = MacRomanEncoding();
+
+    private static Encoding MacRomanEncoding()
+    {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        return Encoding.GetEncoding(10000);
     }
 
     /// <summary>The <c>wght</c> axis's range, rounded to whole weights, or null for a font with none.</summary>

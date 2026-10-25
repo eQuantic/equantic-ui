@@ -62,4 +62,35 @@ public class ShippedFaceWindowsTests
         FaceResolution.Unresolved.Should().Equal(["Nowhere Sans"]);
         measured.Width.Should().BeLessThan(10 * 17 * 0.8f, "the platform's face is narrower than the shipped one");
     }
+
+    /// <summary>A family resolves from its files WHOLE or not at all: half of one is reported.</summary>
+    [WindowsFact]
+    public void AFamilyMissingOneOfItsFiles_IsReported_AndTheTextFallsBack()
+    {
+        using var text = new DirectWriteTextService();
+        var half = new FontFamily("eQuantic Test Face",
+            new FontFile(Assembly, "eQuantic.UI.Fonts/TestFace-Regular.ttf", 400, 400),
+            new FontFile(Assembly, "eQuantic.UI.Fonts/TestFace-Missing-Italic.ttf", 400, 400, Italic: true));
+
+        var measured = text.Measure("Handgloves", Body with { Family = half }, 1f, float.PositiveInfinity, 1);
+
+        FaceResolution.Unresolved.Should().Equal(["eQuantic Test Face"]);
+        measured.Width.Should().BeLessThan(10 * 17 * 0.8f, "the platform's face, not the half that registered");
+    }
+
+    /// <summary>
+    /// A shipped family whose file is missing is reported even when the machine has a family of that
+    /// name: resolving the installed Arial would hide, on this machine alone, a packaging error that
+    /// every other machine shows.
+    /// </summary>
+    [WindowsFact]
+    public void AShippedFamilyTheMachineAlsoHas_IsStillReported_WhenItsFileIsMissing()
+    {
+        using var text = new DirectWriteTextService();
+        var arial = new FontFamily("Arial", new FontFile(Assembly, "eQuantic.UI.Fonts/Arial-Missing.ttf", 400, 400));
+
+        text.Measure("Handgloves", Body with { Family = arial }, 1f, float.PositiveInfinity, 1);
+
+        FaceResolution.Unresolved.Should().Equal(["Arial"]);
+    }
 }

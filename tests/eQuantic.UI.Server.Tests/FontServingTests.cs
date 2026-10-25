@@ -117,6 +117,22 @@ public class FontServingTests
         served.Preloads.Should().BeEmpty("only the theme's text face is preloaded");
     }
 
+    /// <summary>A family missing one of its files is not served at all, as no shell draws one: its
+    /// text falls back on the web as it does on Photon, rather than being set in the other cut.</summary>
+    [Fact]
+    public void AFamilyMissingOneOfItsFiles_IsNotServed()
+    {
+        var half = new FontFamily("eQuantic Test Face",
+            new FontFile(Assembly, "eQuantic.UI.Fonts/TestFace-Regular.ttf", 400, 400),
+            new FontFile(Assembly, "eQuantic.UI.Fonts/TestFace-Missing-Italic.ttf", 400, 400, Italic: true));
+
+        var served = ServedFonts.Of(new FacedTheme(PhotonTheme.Instance, half), [], logger: null);
+
+        served.Fonts.Should().BeEmpty();
+        served.Rules.Should().BeEmpty();
+        served.Preloads.Should().BeEmpty();
+    }
+
     [Fact]
     public void AFileItsAssemblyDoesNotHold_IsNotServed()
     {

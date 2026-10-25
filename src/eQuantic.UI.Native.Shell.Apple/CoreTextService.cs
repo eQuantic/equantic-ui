@@ -242,9 +242,15 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     private static IntPtr? Named(FontFamily? family, float size)
     {
         if (family is not { Name.Length: > 0 }) return null;
-        // A family that ships files is registered before it is matched; a file that could not be
-        // read or registered leaves the match to fail, which reports the family below.
-        Shipped.Register(family);
+        // A family that ships files is registered before it is matched, and resolves from them WHOLE
+        // or not at all: a file that could not be read or registered is reported and the text falls
+        // back, rather than matching what part of the family did register, or a family of that name
+        // the machine happens to have, which would hide the packaging error on this machine alone.
+        if (family.Files.Count > 0 && !Shipped.Register(family))
+        {
+            FaceResolution.Missing(family.Name);
+            return null;
+        }
 
         var name = CFStringCreateWithCString(IntPtr.Zero, family.Name, Utf8);
         if (name == IntPtr.Zero) return null;

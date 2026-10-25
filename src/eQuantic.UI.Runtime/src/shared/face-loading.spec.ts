@@ -11,6 +11,7 @@ describe('a page that measured text in a face still loading', () => {
   let loaded: boolean;
   let loads: number;
   let finishLoading: () => void;
+  let failLoading: () => void;
 
   beforeEach(() => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
@@ -25,11 +26,12 @@ describe('a page that measured text in a face still loading', () => {
         check: () => loaded,
         load: () => {
           loads++;
-          return new Promise<void>((resolve) => {
+          return new Promise<void>((resolve, reject) => {
             finishLoading = () => {
               loaded = true;
               resolve();
             };
+            failLoading = () => reject(new Error('the face failed to load'));
           });
         },
       },
@@ -74,6 +76,23 @@ describe('a page that measured text in a face still loading', () => {
 
     expect(loads).toBe(0);
     expect(rebuild).not.toHaveBeenCalled();
+  });
+
+  it('rebuilds nothing when the face fails to load, and asks for it no more', async () => {
+    const { measurePhotonText } = await import('./photon-context');
+    const { setPassInvalidator } = await import('./pass-invalidator');
+    const rebuild = vi.fn();
+    const broken = { ...brand, family: new FontFamily('Broken Sans') };
+
+    setPassInvalidator(rebuild);
+    measurePhotonText('Handgloves', broken);
+    failLoading();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    measurePhotonText('Handgloves', broken);
+    setPassInvalidator(null);
+
+    expect(rebuild).not.toHaveBeenCalled();
+    expect(loads).toBe(1);
   });
 
   it('waits for nothing outside a build', async () => {

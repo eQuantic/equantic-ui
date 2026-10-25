@@ -100,10 +100,18 @@ export function measurePhotonText(text: string, style: TypeStyleValue, typeScale
  */
 const awaitingFace = new Map<string, Set<() => void>>();
 
+/**
+ * The fonts whose face failed to load. Such a face never arrives, so `check` stays false for it and
+ * its text is drawn in the fallback it was measured in: the measurement already agrees with the
+ * drawing, nothing rebuilds, and nothing asks for it again. A rebuild here would measure, ask, fail
+ * and rebuild without end.
+ */
+const failedFaces = new Set<string>();
+
 function rebuildWhenFaceLoads(font: string): void {
   const fonts = typeof document === 'undefined' ? undefined : document.fonts;
   const rebuild = passInvalidator();
-  if (!fonts || !rebuild) return;
+  if (!fonts || !rebuild || failedFaces.has(font)) return;
   let loaded: boolean;
   try {
     // True for a face that has loaded and for one no `@font-face` declares: only a declared face
@@ -119,12 +127,17 @@ function rebuildWhenFaceLoads(font: string): void {
     return;
   }
   awaitingFace.set(font, new Set([rebuild]));
-  const settle = () => {
-    const waiting = awaitingFace.get(font);
-    awaitingFace.delete(font);
-    waiting?.forEach((page) => page());
-  };
-  fonts.load(font).then(settle, settle);
+  fonts.load(font).then(
+    () => {
+      const waiting = awaitingFace.get(font);
+      awaitingFace.delete(font);
+      waiting?.forEach((page) => page());
+    },
+    () => {
+      awaitingFace.delete(font);
+      failedFaces.add(font);
+    },
+  );
 }
 
 export function photonMonoAdvance(style: TypeStyleValue, typeScale = 1): number {
