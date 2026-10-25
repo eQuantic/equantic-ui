@@ -93,6 +93,36 @@ public class EmittedTypeSurfaceTests
         ts.Should().Contain("import { $eq, Decimal } from \"@equantic/runtime\"");
     }
 
+    /// <summary>A StringBuilder a field or a parameter holds is the runtime's builder, imported where a member
+    /// names it (#1013): the annotation named a type no module imported, and the runtime's build refused it.</summary>
+    [Fact]
+    public void AStringBuilderNamedByAMember_ArrivesImported()
+    {
+        var ts = TestHelper.ConvertClass("""
+            private readonly System.Text.StringBuilder _text = new System.Text.StringBuilder();
+            public void Into(System.Text.StringBuilder target) => target.Append(_text.ToString());
+            """);
+
+        ts.Should().Contain("target: StringBuilder");
+        ts.Should().MatchRegex(@"import \{[^}]*\bStringBuilder\b[^}]*\} from ""@equantic/runtime""");
+    }
+
+    /// <summary>A function whose result may be null is no member that may be null (#1013): its zero is the null
+    /// TypeScript is told to take, as any member's, where the <c>| null</c> after its arrow was read as the
+    /// member's own and the zero was a bare <c>null</c> the type check refused. A function that may be null keeps
+    /// its bare one.</summary>
+    [Fact]
+    public void AFunctionWhoseResultMayBeNull_StartsAsTheNullAMemberTakes()
+    {
+        var ts = TestHelper.ConvertClass("""
+            private readonly Func<string, string?> _lookup;
+            private readonly Func<string>? _maybe;
+            public Sample(Func<string, string?> lookup) { _lookup = lookup; }
+            """);
+
+        ts.Should().Contain("this._lookup = null!;").And.Contain("this._maybe = null;");
+    }
+
     [Fact]
     public void ADateTimeIsTheRuntimeTicks_NotTheBrowsersDate()
     {

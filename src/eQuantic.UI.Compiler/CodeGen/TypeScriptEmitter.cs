@@ -286,6 +286,9 @@ public class TypeScriptEmitter
         // The cancellation trio (utils/cancellation.ts): built through `$eq.cancellation`, named by
         // the parameter a provider takes its token in.
         "CancellationToken", "CancellationTokenSource", "CancellationTokenRegistration",
+        // The builder (utils/string-builder.ts): built through `$eq.text.stringBuilder`, and named by a
+        // field or a parameter that holds one, which named a type no module imported (#1013).
+        "StringBuilder",
     };
 
     /// <summary>
