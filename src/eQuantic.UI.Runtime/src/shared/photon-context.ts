@@ -13,6 +13,7 @@ import type { DensityValue } from './enums.generated';
 import { photonTheme } from './design-system.generated';
 import { DENSITY_COOKIE } from './markers';
 import { passInvalidator } from './pass-invalidator';
+import { textElementStarts } from '../utils/text-elements';
 
 /** Mirror of the C# `ComponentContext` — what a shared component's `build()` may read (mode-free). */
 export class ComponentContext {
@@ -91,7 +92,14 @@ export function measurePhotonText(text: string, style: TypeStyleValue, typeScale
   // already there while the italic one was still on its way.
   context.font = `${style.italic ? 'italic ' : ''}${cssFontWeight(style.weight)} ${style.size * typeScale}px ${family}`;
   rebuildWhenFaceLoads(context.font);
-  return context.measureText(text).width;
+  // The TRACKING, which the lowering writes as `letter-spacing` (an em ratio for a fluid size, pixels
+  // otherwise) and the browser adds after every character it draws, as Photon's measurer adds it: a
+  // canvas knows nothing of it, so a tracked face measured short, and a cell's editor cut its own
+  // text with an ellipsis and stood its caret before the character it was after.
+  const tracking = style.tracking ?? 0;
+  if (tracking === 0) return context.measureText(text).width;
+  const spacing = style.fluid && style.size > 0 ? tracking * typeScale : tracking;
+  return context.measureText(text).width + spacing * textElementStarts(text).length;
 }
 
 /**

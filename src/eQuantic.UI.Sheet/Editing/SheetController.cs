@@ -870,10 +870,13 @@ public sealed class SheetController : ISheetSurfaceModel
         {
             var bounds = EditorBounds;
             var padding = Grid.CellPadding;
-            var left = bounds.X + padding.Start;
-            var right = bounds.Right - padding.End - CodeEditorController.CaretWidth;
-            var top = bounds.Y + padding.Top;
-            var bottom = bounds.Bottom - padding.Bottom;
+            // Kept inside the part of the editor that SHOWS: its last column or row may be one the view
+            // shows only some of, and a caret at the editor's own edge stood past the viewport's.
+            var shown = bounds.Intersect(Body());
+            var left = Math.Max(bounds.X + padding.Start, shown.X);
+            var right = Math.Min(bounds.Right - padding.End, shown.Right) - CodeEditorController.CaretWidth;
+            var top = Math.Max(bounds.Y + padding.Top, shown.Y);
+            var bottom = Math.Min(bounds.Bottom - padding.Bottom, shown.Bottom);
             Entry.Grid = CellGrid(bounds, _slide, _rise);
             var caret = Entry.CaretRect(Entry.Caret);
             var slide = _slide;
@@ -882,6 +885,11 @@ public sealed class SheetController : ISheetSurfaceModel
             var rise = _rise;
             if (caret.Bottom > bottom) rise += caret.Bottom - bottom;
             else if (caret.Y < top) rise -= top - caret.Y;
+            // The start wins where what shows is narrower or shorter than the caret (a last row the scroll
+            // bar half covers): never past the slide that stands the caret at the start, or the two rules
+            // undid each other on every call.
+            slide = Math.Min(slide, caret.X + _slide - left);
+            rise = Math.Min(rise, caret.Y + _rise - top);
             // Never further than the text needs: a line that shrank back shows from its start again, and an
             // entry that lost lines shows from its first.
             slide = Math.Clamp(slide, 0, Math.Max(0, WidestEntryLine() - (right - left)));
@@ -972,9 +980,25 @@ public sealed class SheetController : ISheetSurfaceModel
         {
             if (!Editing || EntryView != SheetEntryView.Cell) return [];
             _ = CellEditorGrid;
-            return Entry.Carets;
+            // Clipped to the part of the editor that shows: an editor scrolled partly under the pinned
+            // headers is drawn clipped by the body, and a caret drawn whole stood over the headers.
+            var shown = EditorBounds.Intersect(Body());
+            var carets = new List<Rect>();
+            foreach (var caret in Entry.Carets)
+            {
+                var clipped = caret.Intersect(shown);
+                if (clipped.Width > 0 && clipped.Height > 0) carets.Add(clipped);
+            }
+            return carets;
         }
     }
+
+    /// <summary>The cells' part of the surface, past the pinned headers, as far as the viewport shows; the
+    /// whole editor when nothing scrolls the grid.</summary>
+    private Rect Body() =>
+        Grid.Scroll is { } scroll && scroll.Viewport.Width > 0 && scroll.Viewport.Height > 0
+            ? Rect.FromLTRB(Grid.HeaderWidth, Grid.HeaderHeight, scroll.Viewport.Width, scroll.Viewport.Height)
+            : EditorBounds;
 
     /// <inheritdoc />
     public Rect InputBounds =>

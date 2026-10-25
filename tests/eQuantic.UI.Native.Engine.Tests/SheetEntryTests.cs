@@ -402,9 +402,10 @@ public class SheetEntryTests
         range.LeftCol.Should().Be(1);
         range.RightCol.Should().Be(8, "column I is the last the 900-point view shows any of");
         var bounds = sheet.EditorBounds;
+        bounds.Right.Should().BeGreaterThan(900, "column I runs past the view's edge");
         var caret = sheet.Carets.Should().ContainSingle().Subject;
-        caret.X.Should().BeInRange(bounds.X, bounds.Right, "the text slid so the caret stays inside the editor");
-        caret.X.Should().BeGreaterThan(bounds.Right - 20, "and the caret stands at its right edge");
+        caret.Right.Should().BeLessThanOrEqualTo(900, "the text slid so the caret stays inside the part of the editor that shows");
+        caret.X.Should().BeGreaterThan(900 - 20, "and the caret stands at the view's edge");
     }
 
     [Fact]
@@ -424,7 +425,8 @@ public class SheetEntryTests
     public void LinesPastTheViewsLastRow_SlideUp_ToKeepTheCaretsLine()
     {
         var sheet = Sheet();
-        // The last row the 586-point view shows any of.
+        // The last row the view shows any of, half under the horizontal scroll bar's track: what of the
+        // editor shows there is shorter than a line, so the line stands at the top of it.
         var last = sheet.CellAt(new Point(B2Left, 586 - 0.5f)).Row;
         sheet.Selection = new SheetRange(new CellRef(last, 1));
         Type(sheet, "one");
@@ -435,15 +437,49 @@ public class SheetEntryTests
 
         sheet.EditorRange.BottomRow.Should().Be(last, "the editor grows no row past the view");
         var bounds = sheet.EditorBounds;
+        var top = sheet.CellEditorGrid.Origin.Y + 2 * Line;
+        sheet.CellEditorGrid.Origin.Y.Should().Be(top - 2 * Line, "asked again, the editor stays where it slid");
+        top.Should().Be(bounds.Y + 4, "the lines slid up so the caret's line starts where the editor's text does");
         var caret = sheet.Carets.Should().ContainSingle().Subject;
-        caret.Y.Should().BeGreaterThanOrEqualTo(bounds.Y);
-        caret.Bottom.Should().BeLessThanOrEqualTo(bounds.Bottom, "the lines slid up so the caret's line shows");
+        caret.Y.Should().Be(top);
         sheet.InputBounds.Should().Be(caret, "the input method's window stands at the caret that shows");
 
         // Back to one line, the entry shows from its first line again.
         for (var i = 0; i < "\nthree\ntwo".Length; i++) Key(sheet, "Backspace");
         Text(sheet).Should().Be("one");
         sheet.CellEditorGrid.Origin.Y.Should().Be(bounds.Y + 4, "one line fits, so nothing stays slid away");
+    }
+
+    [Fact]
+    public void Backspace_InLeadingSpaces_TakesOneSpace()
+    {
+        var sheet = Sheet();
+        Type(sheet, "    ");
+
+        Key(sheet, "Backspace");
+
+        Text(sheet).Should().Be("   ", "a space a person typed is a character, never an indent");
+    }
+
+    [Fact]
+    public void ACaretUnderThePinnedHeaders_IsClippedToTheEditorThatShows()
+    {
+        var sheet = new SheetController(200, 30);
+        // Row 1 scrolled half under the column headers.
+        SheetScrolls.Place(sheet, down: 14);
+        sheet.Grid = sheet.Grid with { Measure = Measure, LineHeight = Line, CellPadding = EdgeInsets.Symmetric(6, 4) };
+        sheet.Selection = new SheetRange(new CellRef(0, 1));
+
+        Type(sheet, "a");
+
+        var caret = sheet.Carets.Should().ContainSingle().Subject;
+        caret.Y.Should().Be(SheetScrolls.HeaderHeight, "no part of the caret stands over the pinned headers");
+        caret.Bottom.Should().Be(SheetScrolls.HeaderHeight - 14 + 4 + Line, "the part below them is drawn");
+
+        // Scrolled wholly under them, the editor shows nothing and draws no caret.
+        SheetScrolls.Place(sheet, down: 40);
+        sheet.Grid = sheet.Grid with { Measure = Measure, LineHeight = Line, CellPadding = EdgeInsets.Symmetric(6, 4) };
+        sheet.Carets.Should().BeEmpty();
     }
 
     // ---- a press while editing ------------------------------------------------------------------------------

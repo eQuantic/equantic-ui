@@ -17,6 +17,9 @@ public sealed class SheetEntryLanguage : ICodeLanguage
         Quotes = [],
         IndentAfter = [],
         OutdentOn = [],
+        // Spaces a person typed are characters, never an indent: with spaces for indentation, Backspace
+        // in four leading spaces took all four back to the stop before them.
+        InsertSpaces = false,
     };
 
     public string Name => "Cell";
