@@ -119,7 +119,7 @@
 
 ## 8. Photon's door
 
-- [ ] 8.1 Measure first, before changing anything: drive the macOS shell's text input client
+- [x] 8.1 Measure first, before changing anything: drive the macOS shell's text input client
       (`setMarkedText:`, `insertText:`) on a sheet in a real window and record what reaches the model
       and what is drawn; write the measurement into the pull request
 - [x] 8.2 `SetMarkedText` hands a sheet target its composition; the emit paints and blinks the sheet's
