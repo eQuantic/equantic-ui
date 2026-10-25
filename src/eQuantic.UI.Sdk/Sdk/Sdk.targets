@@ -755,7 +755,9 @@
         pins it in fonts.lock.json beside the project (the SDK writes it and the app commits it, as it
         commits NuGet's packages.lock.json) and keeps it under obj, one file a cut. The files are embedded
         here as the faces under Assets are, so the catalog reads them and nothing after it knows a
-        provider exists.
+        provider exists. The lock and the store of fetched files are the project's, and the folder a build
+        embeds from is its own: the families a build reads depend on its symbols, one set per configuration
+        and target framework, and no build takes out what another one needs.
 
         BEFORE AssignTargetPaths, the first target that reads EmbeddedResource. Measured: a target before
         PrepareResources runs after the resource pipeline has read the items, and the face was not
@@ -765,9 +767,13 @@
     -->
     <PropertyGroup>
         <_EqGoogleFontsLock>$(MSBuildProjectDirectory)/fonts.lock.json</_EqGoogleFontsLock>
-        <_EqGoogleFontsDir>$(BaseIntermediateOutputPath)equantic/fonts/google/</_EqGoogleFontsDir>
+        <_EqGoogleFontsStore>$(BaseIntermediateOutputPath)equantic/fonts/</_EqGoogleFontsStore>
+        <_EqGoogleFontsDir>$(IntermediateOutputPath)equantic/fonts/google/</_EqGoogleFontsDir>
     </PropertyGroup>
-    <Target Name="EQuanticGoogleFonts" BeforeTargets="AssignTargetPaths">
+    <!-- After the .NET SDK's implicit symbols (NET10_0_OR_GREATER, ANDROID…), which the declarations are
+         read with: measured, they are there by AssignTargetPaths on the web and on the desktop, and the
+         dependency holds it for every head. -->
+    <Target Name="EQuanticGoogleFonts" BeforeTargets="AssignTargetPaths" DependsOnTargets="AddImplicitDefineConstants">
         <ItemGroup>
             <_EqGoogleFontCandidate Include="@(Compile)" Condition="Exists('%(Compile.FullPath)')" />
             <_EqGoogleFontSource Include="@(_EqGoogleFontCandidate)"
@@ -789,6 +795,7 @@
             <!-- The compile's symbols, so a declaration under #if is read when the compiler sees it. With
                  commas: a semicolon would cut the value into items. -->
             <_EqGoogleFontsArgument Include="symbols" Option="--symbols" Value="$(DefineConstants.Replace(';', ','))" />
+            <_EqGoogleFontsArgument Include="store" Option="--store" Value="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(_EqGoogleFontsStore)'))" />
             <_EqGoogleFontsArgument Include="dir" Option="--dir" Value="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(_EqGoogleFontsDir)'))" />
         </ItemGroup>
         <RunProgram Program="dotnet" Arguments="@(_EqGoogleFontsArgument)" StandardOutputImportance="normal"

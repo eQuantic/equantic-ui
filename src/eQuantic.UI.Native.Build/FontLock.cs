@@ -49,16 +49,6 @@ public sealed class FontLock
         families[family] = new SortedDictionary<FontCut, Pin>(cuts.ToDictionary());
     }
 
-    /// <summary>A lock with every pin of this one but <paramref name="provider"/>'s, which a build sets again.</summary>
-    public FontLock Without(string provider)
-    {
-        var rest = new FontLock();
-        foreach (var (name, families) in _providers.Where(entry => entry.Key != provider))
-            foreach (var (family, cuts) in families)
-                rest.Set(name, family, cuts);
-        return rest;
-    }
-
     /// <summary>Whether the lock pins nothing at all.</summary>
     public bool IsEmpty => _providers.Values.All(families => families.Count == 0);
 

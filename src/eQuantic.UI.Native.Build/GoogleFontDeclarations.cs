@@ -46,6 +46,13 @@ public static class GoogleFontDeclarations
         foreach (var path in paths)
         {
             var root = CSharpSyntaxTree.ParseText(File.ReadAllText(path), options, path).GetRoot();
+            // An alias is read by the compiler alone: this reader knows the attribute by its own name, so
+            // a declaration spelt through one would be passed over in silence, and its family not fetched.
+            foreach (var alias in root.DescendantNodes().OfType<UsingDirectiveSyntax>()
+                         .Where(directive => directive.Alias is not null && directive.NamespaceOrType is NameSyntax target
+                             && Names.Contains(RightmostName(target))))
+                errors.Add(Error(Place(alias), $"GoogleFont is read before the app compiles, by its own name, so the alias "
+                    + $"'{alias.Alias!.Name.Identifier.ValueText}' is not: write [assembly: GoogleFont(\"Inter\")]"));
             foreach (var attribute in root.DescendantNodes().OfType<AttributeSyntax>())
             {
                 if (attribute.Parent is not AttributeListSyntax { Target.Identifier.RawKind: (int)SyntaxKind.AssemblyKeyword }

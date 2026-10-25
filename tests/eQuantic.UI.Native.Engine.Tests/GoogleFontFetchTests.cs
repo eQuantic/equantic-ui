@@ -22,7 +22,11 @@ public sealed class GoogleFontFetchTests : IDisposable
     private readonly FakeGoogle _google = new();
 
     private string Lock => Path.Combine(_dir, FontLock.FileName);
-    private string Folder => Path.Combine(_dir, "obj", "equantic", "fonts", "google");
+    private string Store => Path.Combine(_dir, "obj", "equantic", "fonts");
+    private string Folder => FolderOf("Debug");
+
+    /// <summary>The folder the build of one configuration embeds from: each build has its own.</summary>
+    private string FolderOf(string configuration) => Path.Combine(_dir, "obj", configuration, "net10.0", "equantic", "fonts", "google");
 
     public void Dispose() => Directory.Delete(_dir, recursive: true);
 
@@ -54,17 +58,24 @@ public sealed class GoogleFontFetchTests : IDisposable
         _google.Asked.Should().BeEmpty();
     }
 
-    /// <summary>A pinned file is never asked of the API again: one gone from the folder comes back from the
-    /// URL it was pinned at, whatever Google serves now.</summary>
+    /// <summary>A pinned file is never asked of the API again: one gone from the store comes back from the
+    /// URL it was pinned at, whatever Google serves now, and one gone from a build's folder alone comes back
+    /// from the store, asking nobody.</summary>
     [Fact]
-    public async Task APinnedFileGoneFromTheFolder_ComesBackFromItsPinnedUrl()
+    public async Task APinnedFileGoneFromTheStore_ComesBackFromItsPinnedUrl()
     {
         var inter = Declared("Inter", Cut(400));
         await Fetch(inter);
         var pinned = File.ReadAllBytes(Path.Combine(Folder, "Inter-400.ttf"));
         File.Delete(Path.Combine(Folder, "Inter-400.ttf"));
-        _google.Replace("Inter");
         _google.Asked.Clear();
+
+        (await Fetch(inter)).Should().BeEmpty();
+        _google.Asked.Should().BeEmpty("the store still holds it");
+
+        ForgetStored("Inter", Cut(400));
+        File.Delete(Path.Combine(Folder, "Inter-400.ttf"));
+        _google.Replace("Inter");
 
         (await Fetch(inter)).Should().BeEmpty();
 
@@ -78,7 +89,7 @@ public sealed class GoogleFontFetchTests : IDisposable
         var inter = Declared("Inter", Cut(400));
         await Fetch(inter);
         var pinnedLock = File.ReadAllText(Lock);
-        File.Delete(Path.Combine(Folder, "Inter-400.ttf"));
+        ForgetStored("Inter", Cut(400));
         var changed = TestFont.Build("Inter", advance: 777);
         _google.Changed[_google.UrlOf("Inter", Cut(400))] = changed;
 
@@ -99,7 +110,7 @@ public sealed class GoogleFontFetchTests : IDisposable
     {
         var inter = Declared("Inter", Cut(400));
         await Fetch(inter);
-        File.Delete(Path.Combine(Folder, "Inter-400.ttf"));
+        ForgetStored("Inter", Cut(400));
         _google.Gone.Add(_google.UrlOf("Inter", Cut(400)));
 
         var errors = await Fetch(inter);
@@ -163,20 +174,22 @@ public sealed class GoogleFontFetchTests : IDisposable
         errors.Should().ContainSingle().Which.Should().StartWith($"{Place}: error EQ4008: Google Fonts could not be reached to ask for 'Inter'");
     }
 
-    /// <summary>A build that fails leaves the lock and the folder as they were: a family whose name was
-    /// mistyped for one build is not taken out of the lock, to be asked of Google again, perhaps at a
-    /// new version, once the name is put right.</summary>
+    /// <summary>A build that fails leaves the lock and its folder as they were, every file of it: what it
+    /// fetched for a family that did not fail waits in the store, where no build embeds it from (Copilot's
+    /// review of #1085). A family whose name was mistyped for one build keeps its pins, rather than being
+    /// asked of Google again, perhaps at a new version, once the name is put right.</summary>
     [Fact]
     public async Task ABuildThatFails_LeavesTheLockAndTheFolderAsTheyWere()
     {
         await Fetch(Declared("Inter", Cut(400)));
         var pinnedLock = File.ReadAllText(Lock);
+        var folder = Contents(Folder);
 
         var errors = await Fetch(Declared("Intr", Cut(400)), Declared("JetBrains Mono", Cut(400)));
 
         errors.Should().ContainSingle().Which.Should().Contain("no family named 'Intr'");
         File.ReadAllText(Lock).Should().Be(pinnedLock);
-        File.Exists(Path.Combine(Folder, "Inter-400.ttf")).Should().BeTrue();
+        Contents(Folder).Should().BeEquivalentTo(folder);
 
         _google.Replace("Inter");
         _google.Asked.Clear();
@@ -184,18 +197,44 @@ public sealed class GoogleFontFetchTests : IDisposable
         _google.Asked.Should().BeEmpty("the family put right is still pinned, and its file still there");
     }
 
+    /// <summary>
+    /// The families a build reads depend on its symbols: a Release build that does not see a family declared
+    /// under <c>#if DEBUG</c> leaves its pins alone, and the next Debug build fetches nothing (Copilot's
+    /// review of #1085). A family stays pinned until the app takes it out of the lock, and a build embeds
+    /// only what it declares.
+    /// </summary>
     [Fact]
-    public async Task AFamilyNoLongerDeclared_LeavesTheLockAndTheFolder()
+    public async Task AFamilyABuildDoesNotDeclare_KeepsItsPins_AndIsNotLaidOut()
     {
         await Fetch(Declared("Inter", Cut(400)), Declared("JetBrains Mono", Cut(400)));
 
-        (await Fetch(Declared("JetBrains Mono", Cut(400)))).Should().BeEmpty();
-        FontLock.Read(Lock).Of(GoogleFontFetch.Provider, "Inter").Should().BeEmpty();
-        Directory.GetFiles(Folder).Select(Path.GetFileName).Should().Equal("JetBrainsMono-400.ttf");
+        (await Fetch(FolderOf("Release"), Declared("JetBrains Mono", Cut(400)))).Should().BeEmpty();
+        FontLock.Read(Lock).Of(GoogleFontFetch.Provider, "Inter").Keys.Should().Equal(Cut(400));
+        Directory.GetFiles(FolderOf("Release")).Select(Path.GetFileName).Should().Equal("JetBrainsMono-400.ttf");
+
+        _google.Replace("Inter");
+        _google.Asked.Clear();
+        (await Fetch(Declared("Inter", Cut(400)), Declared("JetBrains Mono", Cut(400)))).Should().BeEmpty();
+        _google.Asked.Should().BeEmpty();
+        Directory.GetFiles(Folder).Select(Path.GetFileName).Should().BeEquivalentTo("Inter-400.ttf", "JetBrainsMono-400.ttf");
 
         (await Fetch()).Should().BeEmpty();
-        File.Exists(Lock).Should().BeFalse("a lock that pins nothing is no file");
+        File.Exists(Lock).Should().BeTrue("a build that declares nothing takes no pin out");
         Directory.GetFiles(Folder).Should().BeEmpty();
+    }
+
+    /// <summary>The builds of a Photon app's target frameworks may run at once, each with its own
+    /// declarations: they take turns over the lock, and neither writes one without the other's pins.</summary>
+    [Fact]
+    public async Task TwoBuildsAtOnce_LoseNoPin()
+    {
+        await Task.WhenAll(
+            Fetch(FolderOf("Debug"), Declared("Inter", Cut(400))),
+            Fetch(FolderOf("Release"), Declared("JetBrains Mono", Cut(400))));
+
+        var pinned = FontLock.Read(Lock);
+        pinned.Of(GoogleFontFetch.Provider, "Inter").Keys.Should().Equal(Cut(400));
+        pinned.Of(GoogleFontFetch.Provider, "JetBrains Mono").Keys.Should().Equal(Cut(400));
     }
 
     [Fact]
@@ -260,8 +299,18 @@ public sealed class GoogleFontFetchTests : IDisposable
             .Should().Be("https://fonts.googleapis.com/css2?family=Inter:wght@400;700");
     }
 
-    private Task<IReadOnlyList<string>> Fetch(params GoogleFontDeclarations.Declaration[] declarations) =>
-        GoogleFontFetch.FetchAsync(declarations, Lock, Folder, new GoogleFonts(new HttpClient(_google)));
+    private Task<IReadOnlyList<string>> Fetch(params GoogleFontDeclarations.Declaration[] declarations) => Fetch(Folder, declarations);
+
+    private Task<IReadOnlyList<string>> Fetch(string folder, params GoogleFontDeclarations.Declaration[] declarations) =>
+        GoogleFontFetch.FetchAsync(declarations, Lock, Store, folder, new GoogleFonts(new HttpClient(_google)));
+
+    /// <summary>Takes the file a pin names out of the store, as a clone with no obj would not have it.</summary>
+    private void ForgetStored(string family, FontCut cut) =>
+        File.Delete(Path.Combine(Store, $"{FontLock.Read(Lock).Of(GoogleFontFetch.Provider, family)[cut].Sha256}.ttf"));
+
+    /// <summary>Every file of <paramref name="folder"/>, by name, with its bytes.</summary>
+    private static Dictionary<string, string> Contents(string folder) =>
+        Directory.GetFiles(folder).ToDictionary(file => Path.GetFileName(file), file => Sha256(File.ReadAllBytes(file)));
 
     private static GoogleFontDeclarations.Declaration Declared(string family, params FontCut[] cuts) =>
         new(family, [.. cuts.Order()], Place);
@@ -306,12 +355,14 @@ public sealed class GoogleFontFetchTests : IDisposable
         public byte[] FileOf(string family, FontCut cut, int? version = null) =>
             TestFont.Build(family, cut.Weight, cut.Italic, advance: 1000 + (version ?? _families[family].Version));
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        /// <summary>Answers after a real wait, as the network does, so two builds that ask at once interleave.</summary>
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var uri = request.RequestUri!;
-            Asked.Add(uri);
+            lock (Asked) Asked.Add(uri);
+            await Task.Delay(5, cancellationToken);
             if (Unreachable) throw new HttpRequestException("No such host is known.");
-            return Task.FromResult(IsApi(uri) ? Css(uri) : File(uri));
+            return IsApi(uri) ? Css(uri) : File(uri);
         }
 
         private HttpResponseMessage Css(Uri uri)

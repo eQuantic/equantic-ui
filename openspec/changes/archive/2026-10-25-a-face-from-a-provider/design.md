@@ -38,8 +38,10 @@ and served by it on every target, with no request from a page to the provider.
   names it through the catalog, so its declaration has to be read before the compiler runs, which a
   generator cannot do. `[assembly: GoogleFont("Inter", FontWeight.Regular, FontWeight.Bold, Italic = true)]`
   is C#, typed, and constant by construction. MSBuild hands eqicon the files that mention it, and eqicon
-  reads their syntax alone, with the compile's own symbols so a declaration under `#if` is read when the
-  compiler sees it: the family is a string literal, each weight a `FontWeight` member, the italic
+  reads their syntax alone, with the compile's own symbols (after the .NET SDK adds its implicit ones, such
+  as `NET10_0_OR_GREATER`) so a declaration under `#if` is read when the compiler sees it. It knows the
+  attribute by its own name, so an alias of it, local or global, is EQ4007 at the alias rather than a
+  declaration passed over in silence: the family is a string literal, each weight a `FontWeight` member, the italic
   `true` or `false`. Anything else fails the build with EQ4007 at the attribute, as EQ3003 does for a
   capability's reason built at run time: the build reads the declaration before any constant elsewhere in
   the app exists. The compiler still binds the attribute when the app compiles, so a misspelt member
@@ -59,16 +61,22 @@ and served by it on every target, with no request from a page to the provider.
   URL that no longer answers, fail the build with EQ4009, naming the file and the way to renew it, which
   is to take its family out of the lock. A family is pinned whole: a cut added to a family whose pinned
   cuts the provider has since replaced fails the same way, so one family never mixes two of the
-  provider's versions. A declaration that drops a family drops its pins once a build passes. A build that
-  fails leaves the lock and the files as they were: a family whose name is mistyped for one build keeps
-  its pins, rather than being asked of the provider again, perhaps at a new version, once it is put right.
-- **Fetched once, out of the source tree.** Each file is kept under `obj/equantic/fonts/google`, one a
-  cut, named by the family and the cut, and checked against its pin on every build, so a rebuild fetches
-  nothing and an offline build works once the files are there. The folder is what the target embeds, by a
-  glob, as `Assets` is: eqicon leaves nothing in it but what the declarations want, because MSBuild cannot
-  pair a list of paths and resource names into items. A file is written whole or not at all, through a
-  file in the folder above, renamed into it: the folder is shared by the builds of every target framework
-  of a Photon app, which may run at once, and each takes out of it what no declaration wants.
+  provider's versions. No build takes a pin out of the lock: a family stays pinned until the app takes it
+  out, because the families a build reads depend on its symbols, one set per configuration and target
+  framework, and a Release build that does not see a family declared under `#if DEBUG` is no reason to
+  forget it (Copilot's review of #1085). A build that fails leaves the lock and its folder as they were.
+- **Fetched once, out of the source tree, and laid out per build.** The lock and a store of fetched files,
+  `obj/equantic/fonts`, each file named by its SHA-256 and checked against its pin on every build, are the
+  project's, so a rebuild fetches nothing and an offline build works once the files are there. What a build
+  embeds is its own: once every declaration it reads has succeeded, eqicon lays out its files in
+  `$(IntermediateOutputPath)equantic/fonts/google`, one a cut, named by the family and the cut, copied from
+  the store and nothing else, and the target embeds that folder by a glob, as `Assets` is (MSBuild cannot
+  pair a list of paths and resource names into items). A build that fails lays out nothing, so what it
+  fetched for a family that did succeed waits in the store, embedded nowhere. The builds of a Photon app's
+  target frameworks may run at once: they take turns over the store and the lock through a file held open
+  with no sharing, so none writes a lock without the pins another just added. A file is written whole,
+  through a file beside it, renamed over it, and one laid out already with the same bytes is left alone,
+  so the compile does not run again for it.
 - **The provider's own API, as a client that is not a browser.** `fonts.googleapis.com/css2` is the API
   Google documents. Measured, it answers a client that is not a browser with one TrueType file per weight
   and style, a range of weights included, at a versioned URL (`/s/inter/v20/…`). A family, weight or

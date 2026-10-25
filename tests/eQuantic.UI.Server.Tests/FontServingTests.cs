@@ -311,8 +311,10 @@ public class FontServingTests
             .Should().Contain($"EQuanticFont=\"true\"")
             .And.Contain($"LogicalName=\"{ServedFonts.EmbeddedPrefix}%(Filename)%(Extension)\"")
             .And.Contain($"LogicalName=\"{ServedFonts.EmbeddedPrefix}google/%(Filename)%(Extension)\"", "a face fetched from Google Fonts is served as one under Assets is (#1057)")
-            .And.Contain("<Target Name=\"EQuanticGoogleFonts\" BeforeTargets=\"AssignTargetPaths\">",
-                "measured: a target before PrepareResources runs after the resource pipeline has read the items, and the face was not embedded");
+            .And.Contain("<Target Name=\"EQuanticGoogleFonts\" BeforeTargets=\"AssignTargetPaths\" DependsOnTargets=\"AddImplicitDefineConstants\">",
+                "measured: a target before PrepareResources runs after the resource pipeline has read the items, and the face was not embedded")
+            .And.Contain("<_EqGoogleFontsDir>$(IntermediateOutputPath)equantic/fonts/google/</_EqGoogleFontsDir>",
+                "each build embeds from a folder of its own, since the families it reads depend on its symbols (Copilot's review of #1085)");
     }
 
     /// <summary>The style element of <paramref name="head"/> whose id is <paramref name="id"/>, or the empty string.</summary>

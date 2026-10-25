@@ -17,10 +17,11 @@
       fetched from its pinned URL and checked against its SHA-256; a mismatch, a vanished URL or a family
       the provider moved on from fails (EQ4009), naming the way to renew; a family the app stopped
       declaring leaves the lock
-- [x] 2.4 The files kept under `obj/equantic/fonts/google`, one a cut, named by the family and the cut,
-      checked against their pins on every build and written whole or not at all; a build that fails
-      leaves the lock and the folder as they were
-- [x] 2.5 The folder is what MSBuild embeds: nothing but the files the declarations want is left in it
+- [x] 2.4 The files kept in the project's store, `obj/equantic/fonts`, named by their SHA-256 and checked
+      against their pins on every build; no build takes a pin out of the lock, and the builds of one
+      project take turns over the store and the lock
+- [x] 2.5 Each build lays out the files it declares in a folder of its own, under its intermediate output,
+      once every declaration has succeeded, and MSBuild embeds that folder
 - [x] 2.6 Check: eqicon's tests against a provider served from test fixtures, both ways, for every outcome
       above
 

@@ -3,19 +3,25 @@ using System.Security.Cryptography;
 namespace eQuantic.UI.Build;
 
 /// <summary>
-/// The families an app declares from Google Fonts, fetched, pinned and kept in the folder the SDK embeds
-/// them from, one file a cut, named by the family and the cut: <c>Inter-400.ttf</c>, <c>Inter-700-italic.ttf</c>.
+/// The families an app declares from Google Fonts, fetched, pinned and laid out in the folder one build
+/// embeds them from, one file a cut, named by the family and the cut: <c>Inter-400.ttf</c>,
+/// <c>Inter-700-italic.ttf</c>.
 /// <list type="bullet">
 /// <item>A cut the lock does not pin yet is asked of Google with every cut of its family, and fetched. Its
 /// URL and the SHA-256 of its bytes become its pin, in <c>fonts.lock.json</c>.</item>
 /// <item>A pinned cut is never asked of Google again: its file is checked against its pin on every build,
-/// and fetched from its pinned URL when it is not in the folder.</item>
+/// and fetched from its pinned URL when it is not in the store.</item>
 /// <item>Whatever would change the app's text without the app choosing it fails the build, naming the way
 /// to renew: a pinned file whose bytes differ, a pinned URL that no longer answers, and a family Google
 /// has replaced since its cuts were pinned when a cut is added to it, so one family never mixes two of
 /// Google's versions.</item>
-/// <item>A family the app no longer declares leaves the lock and the folder, once a build passes. A build
-/// that fails leaves both as they were: a family whose name was mistyped for one build keeps its pins.</item>
+/// <item>The lock and the store are the PROJECT's, and what a build declares is its own: the families a
+/// build reads depend on its symbols, one per configuration and target framework. So no build takes a pin
+/// out of the lock, a family stays pinned until the app takes it out, and each build lays its files out in
+/// a folder of its own. The builds of one project take turns over the store and the lock, which those of
+/// a Photon app's target frameworks may reach at once.</item>
+/// <item>A build that fails changes neither the lock nor its folder: what it fetched waits in the store,
+/// embedded nowhere.</item>
 /// </list>
 /// </summary>
 public static class GoogleFontFetch
@@ -29,14 +35,21 @@ public static class GoogleFontFetch
     /// <summary>The code a pin that no longer holds fails with.</summary>
     public const string PinCode = "EQ4009";
 
+    /// <summary>How long a build waits for another build of the project to finish with the store and the lock.</summary>
+    private static readonly TimeSpan GateTimeout = TimeSpan.FromMinutes(5);
+
     /// <summary>
-    /// Brings <paramref name="directory"/> to the files of <paramref name="declarations"/> and the lock at
-    /// <paramref name="lockPath"/> to their pins, asking <paramref name="google"/> only for what is not
-    /// pinned or not there. Returns the errors that stop the build, each one line in MSBuild's own form.
+    /// Lays out in <paramref name="directory"/> the files of <paramref name="declarations"/>, kept in
+    /// <paramref name="store"/> by the hash of their bytes, and adds their pins to the lock at
+    /// <paramref name="lockPath"/>, asking <paramref name="google"/> only for what is not pinned or not
+    /// there. Returns the errors that stop the build, each one line in MSBuild's own form.
     /// </summary>
     public static async Task<IReadOnlyList<string>> FetchAsync(IReadOnlyList<GoogleFontDeclarations.Declaration> declarations,
-        string lockPath, string directory, GoogleFonts google)
+        string lockPath, string store, string directory, GoogleFonts google)
     {
+        Directory.CreateDirectory(store);
+        await using var gate = await GateAsync(store);
+
         FontLock pinned;
         try
         {
@@ -48,33 +61,33 @@ public static class GoogleFontFetch
                 + "so delete it, and the next build pins every family it declares again."];
         }
 
-        Directory.CreateDirectory(directory);
         var errors = new List<string>();
-        var next = pinned.Without(Provider);
-        var kept = new HashSet<string>(StringComparer.Ordinal);
+        var laidOut = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var declaration in declarations)
         {
-            if (await FetchAsync(declaration, pinned.Of(Provider, declaration.Family), directory, google, errors) is not { } family)
-                continue;
-            next.Set(Provider, declaration.Family, family);
-            foreach (var cut in family.Keys) kept.Add(FileName(declaration.Family, cut));
+            var pins = pinned.Of(Provider, declaration.Family);
+            if (await FetchAsync(declaration, pins, store, google, errors) is not { } family) continue;
+            // The cuts this build does not declare keep their pins: another build may.
+            pinned.Set(Provider, declaration.Family, pins.Concat(family).GroupBy(entry => entry.Key)
+                .ToDictionary(group => group.Key, group => group.Last().Value));
+            foreach (var (cut, pin) in family) laidOut[FileName(declaration.Family, cut)] = Stored(store, pin.Sha256);
         }
         if (errors.Count > 0) return errors;
-        foreach (var file in Directory.EnumerateFiles(directory).Where(file => !kept.Contains(Path.GetFileName(file))))
-            File.Delete(file);
-        next.Write(lockPath);
+
+        pinned.Write(lockPath);
+        LayOut(directory, laidOut);
         return errors;
     }
 
-    /// <summary>The name a cut's file is kept and embedded under.</summary>
+    /// <summary>The name a cut's file is laid out and embedded under.</summary>
     public static string FileName(string family, FontCut cut) => $"{Stem(family)}-{cut.Weight}{(cut.Italic ? "-italic" : "")}.ttf";
 
     /// <summary>What a family's files are named after: its ASCII letters and digits.</summary>
     public static string Stem(string family) => new(family.Where(char.IsAsciiLetterOrDigit).ToArray());
 
-    /// <summary>One family's pins once its files are in <paramref name="directory"/>, or null once its errors are added.</summary>
+    /// <summary>One family's pins once their files are in <paramref name="store"/>, or null once its errors are added.</summary>
     private static async Task<IReadOnlyDictionary<FontCut, FontLock.Pin>?> FetchAsync(GoogleFontDeclarations.Declaration declaration,
-        IReadOnlyDictionary<FontCut, FontLock.Pin> pins, string directory, GoogleFonts google, List<string> errors)
+        IReadOnlyDictionary<FontCut, FontLock.Pin> pins, string store, GoogleFonts google, List<string> errors)
     {
         var family = new Dictionary<FontCut, FontLock.Pin>();
         var unpinned = declaration.Cuts.Where(cut => !pins.ContainsKey(cut)).ToList();
@@ -117,16 +130,17 @@ public static class GoogleFontFetch
                         + $"from {url} as a file that is not a face the SDK can ship: {exception.Message}"));
                     return null;
                 }
-                WriteWhole(directory, FileName(declaration.Family, cut), bytes);
-                family[cut] = new FontLock.Pin(url, Sha256(bytes));
+                var hash = Sha256(bytes);
+                WriteWhole(Stored(store, hash), bytes);
+                family[cut] = new FontLock.Pin(url, hash);
             }
         }
 
         foreach (var cut in declaration.Cuts.Where(pins.ContainsKey))
         {
             var pin = pins[cut];
-            var path = Path.Combine(directory, FileName(declaration.Family, cut));
-            if (File.Exists(path) && Sha256(File.ReadAllBytes(path)) == pin.Sha256)
+            var stored = Stored(store, pin.Sha256);
+            if (File.Exists(stored) && Sha256(File.ReadAllBytes(stored)) == pin.Sha256)
             {
                 family[cut] = pin;
                 continue;
@@ -150,10 +164,56 @@ public static class GoogleFontFetch
                     + $"'{declaration.Family}' is not the one {FontLock.FileName} pins: its SHA-256 is {hash}, and the pin is {pin.Sha256}"));
                 return null;
             }
-            WriteWhole(directory, Path.GetFileName(path), bytes);
+            WriteWhole(stored, bytes);
             family[cut] = pin;
         }
         return family;
+    }
+
+    /// <summary>
+    /// Brings <paramref name="directory"/>, the folder one build embeds from, to the files it lays out, each
+    /// copied from the store, and nothing else. A file already there with the same bytes is left alone, so
+    /// the compile it feeds does not run again for a file that did not change.
+    /// </summary>
+    private static void LayOut(string directory, IReadOnlyDictionary<string, string> files)
+    {
+        Directory.CreateDirectory(directory);
+        foreach (var file in Directory.EnumerateFiles(directory).Where(file => !files.ContainsKey(Path.GetFileName(file))))
+            File.Delete(file);
+        foreach (var (name, stored) in files)
+        {
+            var path = Path.Combine(directory, name);
+            var bytes = File.ReadAllBytes(stored);
+            if (File.Exists(path) && File.ReadAllBytes(path).AsSpan().SequenceEqual(bytes)) continue;
+            WriteWhole(path, bytes);
+        }
+    }
+
+    /// <summary>Where the store keeps the file whose bytes hash to <paramref name="sha256"/>.</summary>
+    private static string Stored(string store, string sha256) => Path.Combine(store, $"{sha256}.ttf");
+
+    /// <summary>
+    /// The project's turn at the store and the lock: a file held open with no sharing, which the builds of
+    /// the project's other configurations and target frameworks wait for, rather than one of them
+    /// writing a lock that leaves out the pins another just added.
+    /// </summary>
+    private static async Task<FileStream> GateAsync(string store)
+    {
+        var path = Path.Combine(store, ".gate");
+        var waited = TimeSpan.Zero;
+        var pause = TimeSpan.FromMilliseconds(100);
+        while (true)
+        {
+            try
+            {
+                return new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException) when (waited < GateTimeout)
+            {
+                await Task.Delay(pause);
+                waited += pause;
+            }
+        }
     }
 
     /// <summary>What fetching a file came to: its bytes, nothing when Google no longer serves it, or why Google could not be reached.</summary>
@@ -171,18 +231,12 @@ public static class GoogleFontFetch
         }
     }
 
-    /// <summary>
-    /// Writes <paramref name="bytes"/> as <paramref name="name"/> in <paramref name="directory"/> whole: through
-    /// a file in the folder above it, renamed into it. The folder is shared by the builds of every target
-    /// framework, which may run at once, and each takes out of it what no declaration wants: a file being
-    /// written there would be taken out from under the build writing it.
-    /// </summary>
-    private static void WriteWhole(string directory, string name, byte[] bytes)
+    /// <summary>Writes <paramref name="bytes"/> to <paramref name="path"/> whole: through a file beside it, renamed over it.</summary>
+    private static void WriteWhole(string path, byte[] bytes)
     {
-        var temporary = Path.Combine(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(directory))!,
-            $".{name}.{Environment.ProcessId}.tmp");
+        var temporary = Path.Combine(Path.GetDirectoryName(path)!, $".{Path.GetFileName(path)}.{Environment.ProcessId}.tmp");
         File.WriteAllBytes(temporary, bytes);
-        File.Move(temporary, Path.Combine(directory, name), overwrite: true);
+        File.Move(temporary, path, overwrite: true);
     }
 
     private static string Sha256(byte[] bytes) => Convert.ToHexStringLower(SHA256.HashData(bytes));

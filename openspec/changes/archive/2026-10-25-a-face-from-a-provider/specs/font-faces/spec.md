@@ -10,7 +10,9 @@ file once. The SDK SHALL pin each file, the first time it fetches it, in `fonts.
 project, by its URL and the SHA-256 of its bytes, and SHALL fetch a pinned file from its pinned URL only.
 The build SHALL fail when a pinned file's bytes differ from its pin, when its URL no longer answers, and
 when a cut is added to a family whose pinned cuts the provider has since replaced, until the family's pins
-are taken out of the lock, after which the next build SHALL pin the provider's current files. A family,
+are taken out of the lock, after which the next build SHALL pin the provider's current files. No build SHALL
+take a pin out of the lock, since the families a build reads depend on its symbols, and each build SHALL embed
+the files of the families it declares and no others. A family,
 weight or italic the provider does not have SHALL fail the build, naming it, and so SHALL a declaration
 whose family or weights are not literals. No page SHALL ask the provider for anything.
 
@@ -25,6 +27,12 @@ whose family or weights are not literals. No page SHALL ask the provider for any
 
 - **WHEN** the app is built again with its files fetched
 - **THEN** nothing is asked of the provider
+
+#### Scenario: A family another build declares
+
+- **WHEN** a Release build does not see a family declared under `#if DEBUG`
+- **THEN** the family's pins stay in the lock, the Release build embeds none of its files, and the next
+  Debug build asks the provider for nothing
 
 #### Scenario: A provider that changed a pinned file
 

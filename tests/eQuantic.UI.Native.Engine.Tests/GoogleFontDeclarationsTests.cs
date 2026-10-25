@@ -101,6 +101,19 @@ public sealed class GoogleFontDeclarationsTests : IDisposable
         GoogleFontDeclarations.Read([file]).Errors.Should().ContainSingle().Which.Should().Contain("error EQ4007: the families 'Roboto Mono' and 'RobotoMono' would keep their files under one name");
     }
 
+    /// <summary>The reader knows the attribute by its own name, so an alias of it, local or global, would be
+    /// a declaration passed over in silence: it stops the build at the alias (Copilot's review of #1085).</summary>
+    [Theory]
+    [InlineData("using GFont = eQuantic.UI.Primitives.GoogleFontAttribute;", "'GFont'")]
+    [InlineData("global using Face = eQuantic.UI.Primitives.GoogleFont;", "'Face'")]
+    public void AnAliasOfTheAttribute_StopsTheBuildAtTheAlias(string alias, string named)
+    {
+        var file = Source("Usings.cs", alias);
+
+        GoogleFontDeclarations.Read([file]).Errors.Should().ContainSingle().Which.Should()
+            .StartWith($"{file}(1,1): error EQ4007: ").And.Contain($"the alias {named} is not");
+    }
+
     [Theory]
     [InlineData("[assembly: GoogleFont(Brand.Family)]", "written out as a string literal")]
     [InlineData("[assembly: GoogleFont(\"Inter\", (FontWeight)300)]", "written out as a member of FontWeight")]

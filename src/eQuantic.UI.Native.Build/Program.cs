@@ -79,10 +79,11 @@ static async Task<int> FetchFonts(string[] args)
 
     var sources = Arg("--sources");
     var lockPath = Arg("--lock");
+    var store = Arg("--store");
     var directory = Arg("--dir");
-    if (sources is null || lockPath is null || directory is null)
+    if (sources is null || lockPath is null || store is null || directory is null)
     {
-        Console.Error.WriteLine("Usage: eqicon fetch-fonts --sources <the source files that mention GoogleFont, a line each> --lock <fonts.lock.json> --dir <the folder the SDK embeds them from>");
+        Console.Error.WriteLine("Usage: eqicon fetch-fonts --sources <the source files that mention GoogleFont, a line each> --lock <fonts.lock.json> --store <the project's folder of fetched files> --dir <the folder this build embeds them from> [--symbols <a,b>]");
         return 1;
     }
 
@@ -92,7 +93,7 @@ static async Task<int> FetchFonts(string[] args)
     foreach (var error in unreadable) Console.WriteLine(error);
     if (unreadable.Count > 0) return 1;
 
-    var errors = await GoogleFontFetch.FetchAsync(declarations, lockPath, directory, GoogleFonts.OverTheNetwork());
+    var errors = await GoogleFontFetch.FetchAsync(declarations, lockPath, store, directory, GoogleFonts.OverTheNetwork());
     foreach (var error in errors) Console.WriteLine(error);
     if (errors.Count > 0) return 1;
     if (declarations.Count > 0)
