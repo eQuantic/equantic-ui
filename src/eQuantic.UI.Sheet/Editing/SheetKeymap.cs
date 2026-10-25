@@ -155,9 +155,18 @@ public static class SheetKeymap
                 return true;
             case "Delete": sheet.ClearSelection(); return true;
             case "Escape":
-                // Nothing to cancel: Escape releases Tab and is left to whatever is around the sheet.
+                // Add mode ends first, as Excel's does; with nothing to cancel, Escape releases Tab and is left
+                // to whatever is around the sheet.
+                if (sheet.AddingRanges)
+                {
+                    sheet.AddingRanges = false;
+                    return true;
+                }
                 sheet.TabReleased = true;
                 return false;
+            case "F8" when modifiers == KeyModifiers.Shift:
+                sheet.AddingRanges = !sheet.AddingRanges;
+                return true;
         }
 
         if (command && key.Length == 1)

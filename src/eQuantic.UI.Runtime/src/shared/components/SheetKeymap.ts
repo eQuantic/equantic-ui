@@ -117,8 +117,15 @@ export class SheetKeymap {
                 sheet.clearSelection();
                 return true;
             } else if ($s === 'Escape') {
+                if (sheet.addingRanges) {
+                    sheet.addingRanges = false;
+                    return true;
+                }
                 sheet.tabReleased = true;
                 return false;
+            } else if (($s === 'F8' && (modifiers === 1))) {
+                sheet.addingRanges = !sheet.addingRanges;
+                return true;
             }
         }
         if (command && key.length === 1) {

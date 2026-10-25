@@ -8,6 +8,7 @@ export class SheetDocument {
         this.rowSpans = null!;
         this.columnSpans = null!;
         this.sizeVersion = 0;
+        this.version = 0;
         this.rows = 0;
         this.cols = 0;
         this.rows = Math.max(1, rows);
@@ -22,6 +23,7 @@ export class SheetDocument {
     rowSpans!: SheetSpans;
     columnSpans!: SheetSpans;
     sizeVersion!: number;
+    version!: number;
     rows!: number;
     cols!: number;
     static defaultRowHeight: number = 28;
@@ -45,7 +47,9 @@ export class SheetDocument {
     }
 
     setCell(cell: CellRef, value: string) {
+        if (this.getCell(cell) === value) return;
         if (value.length === 0) this._cells.delete(cell.key); else $eq.mapSet(this._cells, cell.key, value);
+        this.version++;
     }
 
     rowHeight(row: number) {
@@ -94,6 +98,7 @@ export class SheetDocument {
         SheetDocument.shiftSizes(this._rowHeights, atRow, delta);
         this.rows = Math.max(1, this.rows + delta);
         this.sizeVersion++;
+        this.version++;
         return removed;
     }
 
@@ -115,6 +120,7 @@ export class SheetDocument {
         SheetDocument.shiftSizes(this._colWidths, atCol, delta);
         this.cols = Math.max(1, Math.min(this.cols + delta, 16384));
         this.sizeVersion++;
+        this.version++;
         return removed;
     }
 

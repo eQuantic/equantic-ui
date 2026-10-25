@@ -23,6 +23,10 @@ public sealed class SheetController : ISheetSurfaceModel
     private SheetRange _selection = new(new CellRef(0, 0));
     private CellRef _active = new(0, 0);
 
+    /// <summary>The ranges selected before the active one, oldest first: what a ⌘ or Ctrl press, and a press
+    /// in add mode, set aside as they add a range. Empty when one range is selected.</summary>
+    private readonly List<SheetRange> _others = new();
+
     public SheetController(int rows = 1000, int cols = 26)
     {
         Document = new SheetDocument(rows, cols);
@@ -55,8 +59,10 @@ public sealed class SheetController : ISheetSurfaceModel
     /// and what an app calls after it changed the sheet itself.</summary>
     public void Refresh() => Refreshed?.Invoke();
 
-    /// <summary>The selected rectangle. Setting it puts the active cell at its focus end, and asks the
-    /// grid to bring that cell into view (<see cref="RevealVersion"/>), as a command that moves it does.</summary>
+    /// <summary>The ACTIVE range: the last one selected, the one that holds the active cell, and the one copy,
+    /// cut, paste and fill act on. Setting it leaves it the only range, puts the active cell at its focus end,
+    /// and asks the grid to bring that cell into view (<see cref="RevealVersion"/>), as a command that moves
+    /// it does.</summary>
     public SheetRange Selection
     {
         get => _selection;
@@ -67,12 +73,48 @@ public sealed class SheetController : ISheetSurfaceModel
         }
     }
 
-    /// <summary>The selection, clamped into the grid, with the active cell at its focus end and nothing
-    /// asked of the grid: a press and a drag land on cells the person can see.</summary>
+    /// <summary>
+    /// Every range selected, the active one (<see cref="Selection"/>) last, as Excel's <c>Selection.Areas</c>
+    /// lists them beside its active cell: one range, unless a ⌘ or Ctrl press, a press in add mode, or a
+    /// header press with one of them, added more. Delete clears all of them and Ctrl+Enter fills all of them.
+    /// </summary>
+    public IReadOnlyList<SheetRange> Ranges
+    {
+        get
+        {
+            var ranges = new List<SheetRange>(_others.Count + 1);
+            ranges.AddRange(_others);
+            ranges.Add(_selection);
+            return ranges;
+        }
+    }
+
+    /// <summary>Whether Excel's add mode is on: Shift+F8 enters and leaves it, Escape leaves it, and while it
+    /// lasts a plain press or drag adds a range as a ⌘ or Ctrl press does.</summary>
+    public bool AddingRanges { get; internal set; }
+
+    /// <summary>The range, clamped into the grid, becomes the only one, with the active cell at its focus end
+    /// and nothing asked of the grid: a press and a drag land on cells the person can see.</summary>
     private void Select(SheetRange range)
+    {
+        _others.Clear();
+        SetActiveRange(range);
+    }
+
+    /// <summary>The active range becomes <paramref name="range"/>, clamped, the others kept: a drag that
+    /// stretches a range it added, and Shift's stretch of the active one.</summary>
+    private void SetActiveRange(SheetRange range)
     {
         _selection = new SheetRange(Document.Clamp(range.Anchor), Document.Clamp(range.Focus));
         _active = _selection.Focus;
+    }
+
+    /// <summary>The active range is set aside and <paramref name="range"/> becomes the active one: a ⌘ or Ctrl
+    /// press, and a press in add mode.</summary>
+    private void AddRange(SheetRange range)
+    {
+        _others.Add(_selection);
+        SetActiveRange(range);
     }
 
     /// <summary>
@@ -101,6 +143,7 @@ public sealed class SheetController : ISheetSurfaceModel
             _ => new CellRef(from.Row + dRow, from.Col + dCol),
         };
         landed = Document.Clamp(landed);
+        if (!extend) _others.Clear();
         _selection = extend ? new SheetRange(_selection.Anchor, landed) : new SheetRange(landed);
         _active = landed;
         Reveal();
@@ -118,6 +161,7 @@ public sealed class SheetController : ISheetSurfaceModel
         var from = Document.RowSpans.OffsetOf(_active.Row);
         var row = Document.RowSpans.IndexAt(from + Math.Sign(direction) * page);
         var landed = Document.Clamp(new CellRef(row, _active.Col));
+        if (!extend) _others.Clear();
         _selection = extend ? new SheetRange(_selection.Anchor, landed) : new SheetRange(landed);
         _active = landed;
         Reveal();
@@ -223,14 +267,19 @@ public sealed class SheetController : ISheetSurfaceModel
 
     public void SelectAll()
     {
+        _others.Clear();
         _selection = new SheetRange(new CellRef(0, 0), new CellRef(Document.Rows - 1, Document.Cols - 1));
         _active = new CellRef(0, 0);
     }
 
-    /// <summary>Shift+click: the selection stretches from its anchor to the clicked cell. The
-    /// active cell stays put — exactly what Excel leaves standing.</summary>
+    /// <summary>Shift+click: the active range stretches from its anchor to the clicked cell, the other ranges
+    /// kept. The active cell stays put — exactly what Excel leaves standing.</summary>
     public void SelectTo(CellRef cell) =>
         _selection = new SheetRange(_selection.Anchor, Document.Clamp(cell));
+
+    /// <summary>Whether a press with <paramref name="modifiers"/> adds a range rather than replacing the
+    /// selection: ⌘ (Ctrl outside Apple's keyboards), or any press in add mode.</summary>
+    private bool Adds(KeyModifiers modifiers) => AddingRanges || (modifiers & KeyModifiers.Command) != 0;
 
     // ---- in-cell editing -------------------------------------------------------------------------
     //
@@ -304,6 +353,7 @@ public sealed class SheetController : ISheetSurfaceModel
     {
         if (!SheetReference.TryParse(reference, Document.Rows, Document.Cols, out var range)) return false;
         if (Editing) CommitEdit();
+        _others.Clear();
         _selection = range;
         _active = range.TopLeft;
         Reveal();
@@ -397,34 +447,15 @@ public sealed class SheetController : ISheetSurfaceModel
         return true;
     }
 
-    /// <summary>Delete over a selection: every populated cell in the rectangle empties.</summary>
-    public bool ClearSelection()
-    {
-        var edit = new SheetEdit
-        {
-            Kind = SheetEditKind.SetCells,
-            SelectionBefore = _selection,
-            SelectionAfter = _selection,
-        };
-        for (var row = _selection.TopRow; row <= _selection.BottomRow; row++)
-        {
-            for (var col = _selection.LeftCol; col <= _selection.RightCol; col++)
-            {
-                var cell = new CellRef(row, col);
-                var old = Document.GetCell(cell);
-                if (old.Length == 0) continue;
-                edit.Before.Add(new SheetCellSnapshot(cell, old));
-                edit.After.Add(new SheetCellSnapshot(cell, ""));
-                Document.SetCell(cell, "");
-            }
-        }
-        if (edit.Before.Count == 0) return false;
-        Commit(edit);
-        return true;
-    }
+    /// <summary>Delete over a selection: every populated cell of every range empties, as one undo step. A
+    /// cell two ranges share empties once: the second finds it empty already.</summary>
+    public bool ClearSelection() => FillRanges("");
 
-    /// <summary>Every cell of the selection gets <paramref name="value"/>, as one undo step.</summary>
-    public bool FillSelection(string value)
+    /// <summary>Every cell of every range gets <paramref name="value"/>, as one undo step: Excel's Ctrl+Enter
+    /// over several ranges.</summary>
+    public bool FillSelection(string value) => FillRanges(value);
+
+    private bool FillRanges(string value)
     {
         var edit = new SheetEdit
         {
@@ -432,16 +463,19 @@ public sealed class SheetController : ISheetSurfaceModel
             SelectionBefore = _selection,
             SelectionAfter = _selection,
         };
-        for (var row = _selection.TopRow; row <= _selection.BottomRow; row++)
+        foreach (var range in Ranges)
         {
-            for (var col = _selection.LeftCol; col <= _selection.RightCol; col++)
+            for (var row = range.TopRow; row <= range.BottomRow; row++)
             {
-                var cell = new CellRef(row, col);
-                var old = Document.GetCell(cell);
-                if (old == value) continue;
-                edit.Before.Add(new SheetCellSnapshot(cell, old));
-                edit.After.Add(new SheetCellSnapshot(cell, value));
-                Document.SetCell(cell, value);
+                for (var col = range.LeftCol; col <= range.RightCol; col++)
+                {
+                    var cell = new CellRef(row, col);
+                    var old = Document.GetCell(cell);
+                    if (old == value) continue;
+                    edit.Before.Add(new SheetCellSnapshot(cell, old));
+                    edit.After.Add(new SheetCellSnapshot(cell, value));
+                    Document.SetCell(cell, value);
+                }
             }
         }
         if (edit.Before.Count == 0) return false;
@@ -472,7 +506,10 @@ public sealed class SheetController : ISheetSurfaceModel
         if (count < 1) return;
         var selectionBefore = _selection;
         var removed = axis == SheetAxis.Rows ? Document.ShiftRows(at, -count) : Document.ShiftCols(at, -count);
-        Select(_selection);   // re-clamp into the smaller grid
+        // Re-clamped into the smaller grid, every range.
+        for (var i = 0; i < _others.Count; i++)
+            _others[i] = new SheetRange(Document.Clamp(_others[i].Anchor), Document.Clamp(_others[i].Focus));
+        SetActiveRange(_selection);
         Commit(new SheetEdit
         {
             Kind = axis == SheetAxis.Rows ? SheetEditKind.DeleteRows : SheetEditKind.DeleteCols,
@@ -555,6 +592,7 @@ public sealed class SheetController : ISheetSurfaceModel
                 Document.SetCell(cell, line[c]);
             }
         }
+        _others.Clear();
         _selection = new SheetRange(origin,
             Document.Clamp(new CellRef(origin.Row + grid.Count - 1, origin.Col + maxCols - 1)));
         Reveal();
@@ -624,6 +662,7 @@ public sealed class SheetController : ISheetSurfaceModel
         FillTarget = null;
         if (source is null || target is null) return false;
         var selectionBefore = _selection;
+        _others.Clear();
         _selection = new SheetRange(
             new CellRef(Math.Min(source.Value.TopRow, target.Value.TopRow),
                 Math.Min(source.Value.LeftCol, target.Value.LeftCol)),
@@ -1196,11 +1235,13 @@ public sealed class SheetController : ISheetSurfaceModel
     /// </summary>
     public bool Follow() => _dragAt is { } at && (Filling || _selecting) && Drag(at);
 
-    /// <summary>A press that selects: the cell, the selection stretched to it with Shift, and the
-    /// second press of a double click editing it in Edit mode, with the caret where it landed.</summary>
+    /// <summary>A press that selects: the cell, the active range stretched to it with Shift, the cell added as a
+    /// range of its own with ⌘ or Ctrl or in add mode, and the second press of a double click editing it in
+    /// Edit mode, with the caret where it landed.</summary>
     private void Press(CellRef cell, Point position, KeyModifiers modifiers, int clicks)
     {
         if ((modifiers & KeyModifiers.Shift) != 0) SelectTo(cell);
+        else if (Adds(modifiers)) AddRange(new SheetRange(cell));
         else Select(new SheetRange(cell));
         if (clicks < 2) return;
         BeginEdit(Document.GetCell(cell), SheetEditMode.Edit);
@@ -1221,7 +1262,9 @@ public sealed class SheetController : ISheetSurfaceModel
             return FillTarget != before;
         }
         if (cell == _selection.Focus) return false;
-        Select(new SheetRange(_selection.Anchor, cell));
+        // The ACTIVE range stretches: a drag from a ⌘ or Ctrl press grows the range it added, and the others
+        // stay.
+        SetActiveRange(new SheetRange(_selection.Anchor, cell));
         return true;
     }
 
@@ -1256,6 +1299,7 @@ public sealed class SheetController : ISheetSurfaceModel
         var edit = History.PopUndo();
         if (edit is null) return false;
         Apply(edit, forward: false);
+        _others.Clear();
         _selection = edit.SelectionBefore;
         _active = _selection.Focus;
         Reveal();
@@ -1268,6 +1312,7 @@ public sealed class SheetController : ISheetSurfaceModel
         var edit = History.PopRedo();
         if (edit is null) return false;
         Apply(edit, forward: true);
+        _others.Clear();
         _selection = edit.SelectionAfter;
         _active = _selection.Focus;
         Reveal();

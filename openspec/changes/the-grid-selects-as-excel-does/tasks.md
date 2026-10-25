@@ -2,19 +2,19 @@
 
 ## 1. The selection holds several ranges
 
-- [ ] 1.1 `SheetController.Ranges` (every range, the active one last) beside `Selection` (the active
+- [x] 1.1 `SheetController.Ranges` (every range, the active one last) beside `Selection` (the active
       range); `Select`, `Move`, `MovePage`, `Step`, `GoTo`, `SelectAll` and a plain press leave one range;
       an internal `AddRange` appends one and makes it active; declare the `PublicAPI` lines; verify new
       `SheetRangesTests` for the spec's "A press with Command adds a cell" and "A drag with Command adds a
       range" through `HandlePointer`
-- [ ] 1.2 `ClearSelection` (Delete) and `FillSelection` (Ctrl+Enter) walk every range in one history
+- [x] 1.2 `ClearSelection` (Delete) and `FillSelection` (Ctrl+Enter) walk every range in one history
       step; `CopyText`, `Cut`, `Paste`, `FillDown`, `FillRight` and the fill handle read the active range;
       verify the spec's Delete, copy and Ctrl+Enter scenarios, each undone in one step
-- [ ] 1.3 Add mode: `AddingRanges`, entered and left by Shift+F8, left by Escape; in it a plain press or
+- [x] 1.3 Add mode: `AddingRanges`, entered and left by Shift+F8, left by Escape; in it a plain press or
       drag adds a range; verify the spec's "Add mode" scenario
-- [ ] 1.4 `SheetDocument.Version`, advanced by `SetCell` and every structural edit; verify a
+- [x] 1.4 `SheetDocument.Version`, advanced by `SetCell` and every structural edit; verify a
       `SheetDocumentTests` case for each mutation, and that undo and redo advance it too
-- [ ] 1.5 Regenerate the twins (`EQ_UPDATE_TRANSPILED=1`) and run `SheetEntryTwinTests` and a new
+- [x] 1.5 Regenerate the twins (`EQ_UPDATE_TRANSPILED=1`) and run `SheetEntryTwinTests` and a new
       `SheetRangesTwinTests` that drives the same presses, keys and Delete through .NET and the runtime
       and compares the ranges
 

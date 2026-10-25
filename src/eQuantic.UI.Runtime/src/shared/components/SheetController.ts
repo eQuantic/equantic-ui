@@ -4,12 +4,14 @@ export class SheetController {
     constructor(rows: number = 1000, cols: number = 26) {
         this._selection = new SheetRange(new CellRef(0, 0));
         this._active = new CellRef(0, 0);
+        this._others = [];
         this.formulaBar = null!;
         this.nameBox = null!;
         this.document = null!;
         this.history = new SheetHistory();
         this.changed = null;
         this.refreshed = null;
+        this.addingRanges = false;
         this.revealVersion = 0;
         this.revealCell = CellRef.$zero();
         this.editing = false;
@@ -40,12 +42,14 @@ export class SheetController {
 
     _selection!: SheetRange;
     _active!: CellRef;
+    _others!: SheetRange[];
     formulaBar!: SheetFormulaBar;
     nameBox!: SheetNameBox;
     document!: SheetDocument;
     history!: SheetHistory;
     changed!: ((sheetEdit: SheetEdit) => void) | null;
     refreshed!: (() => void) | null;
+    addingRanges!: boolean;
     revealVersion!: number;
     revealCell!: CellRef;
     editing!: boolean;
@@ -77,6 +81,13 @@ export class SheetController {
     set selection(value: SheetRange) {
         this.select(value);
         this.reveal();
+    }
+
+    get ranges(): SheetRange[] {
+        let ranges: SheetRange[] = ($eq.collections.listCapacity(this._others.length + 1), []);
+        ranges.push(...this._others);
+        ranges.push(this._selection);
+        return ranges;
     }
 
     get activeCell(): CellRef {
@@ -173,14 +184,25 @@ export class SheetController {
     }
 
     select(range: SheetRange) {
+        this._others.splice(0);
+        this.setActiveRange(range);
+    }
+
+    setActiveRange(range: SheetRange) {
         this._selection = new SheetRange(this.document.clamp(range.anchor), this.document.clamp(range.focus));
         this._active = this._selection.focus;
+    }
+
+    addRange(range: SheetRange) {
+        this._others.push(this._selection);
+        this.setActiveRange(range);
     }
 
     move(dRow: number, dCol: number, motion: SheetMotionValue = 'cell', extend: boolean = false) {
         let from = this.activeCell;
         let landed = (() => { const $s = motion; if ($s === 'dataEdge') return this.dataEdge(from, dRow, dCol); if ($s === 'rowBoundary') return new CellRef(from.row, dCol < 0 ? 0 : this.document.cols - 1); if ($s === 'sheetBoundary') return dRow < 0 || dCol < 0 ? new CellRef(0, 0) : new CellRef(this.document.rows - 1, this.document.cols - 1); return new CellRef(from.row + dRow, from.col + dCol); })();
         landed = this.document.clamp(landed);
+        if (!extend) this._others.splice(0);
         this._selection = extend ? new SheetRange(this._selection.anchor, landed) : new SheetRange(landed);
         this._active = landed;
         this.reveal();
@@ -193,6 +215,7 @@ export class SheetController {
         let from = this.document.rowSpans.offsetOf(this._active.row);
         let row = this.document.rowSpans.indexAt(from + Math.sign(direction) * page);
         let landed = this.document.clamp(new CellRef(row, this._active.col));
+        if (!extend) this._others.splice(0);
         this._selection = extend ? new SheetRange(this._selection.anchor, landed) : new SheetRange(landed);
         this._active = landed;
         this.reveal();
@@ -270,12 +293,17 @@ export class SheetController {
     }
 
     selectAll() {
+        this._others.splice(0);
         this._selection = new SheetRange(new CellRef(0, 0), new CellRef(this.document.rows - 1, this.document.cols - 1));
         this._active = new CellRef(0, 0);
     }
 
     selectTo(cell: CellRef) {
         return this._selection = new SheetRange(this._selection.anchor, this.document.clamp(cell));
+    }
+
+    adds(modifiers: number) {
+        return this.addingRanges || (modifiers & 4) !== 0;
     }
 
     beginEdit(seed: string, mode: SheetEditModeValue) {
@@ -305,6 +333,7 @@ export class SheetController {
         let range: any; 
         if (!($o => (range = $o.range, $o.$))(SheetReference.tryParse(reference, this.document.rows, this.document.cols))) return false;
         if (this.editing) this.commitEdit();
+        this._others.splice(0);
         this._selection = range;
         this._active = range.topLeft;
         this.reveal();
@@ -361,34 +390,26 @@ export class SheetController {
     }
 
     clearSelection() {
-        let $n52: any; 
-        let edit = ($n52 = new SheetEdit(), $n52.kind = 'setCells', $n52.selectionBefore = this._selection, $n52.selectionAfter = this._selection, $n52);
-        for (let row = this._selection.topRow; row <= this._selection.bottomRow; row++) {
-            for (let col = this._selection.leftCol; col <= this._selection.rightCol; col++) {
-                let cell = new CellRef(row, col);
-                let old = this.document.getCell(cell);
-                if (old.length === 0) continue;
-                edit.before.push(new SheetCellSnapshot(cell, old));
-                edit.after.push(new SheetCellSnapshot(cell, ''));
-                this.document.setCell(cell, '');
-            }
-        }
-        if (edit.before.length === 0) return false;
-        this.commit(edit);
-        return true;
+        return this.fillRanges('');
     }
 
     fillSelection(value: string) {
-        let $n53: any; 
-        let edit = ($n53 = new SheetEdit(), $n53.kind = 'setCells', $n53.selectionBefore = this._selection, $n53.selectionAfter = this._selection, $n53);
-        for (let row = this._selection.topRow; row <= this._selection.bottomRow; row++) {
-            for (let col = this._selection.leftCol; col <= this._selection.rightCol; col++) {
-                let cell = new CellRef(row, col);
-                let old = this.document.getCell(cell);
-                if (old === value) continue;
-                edit.before.push(new SheetCellSnapshot(cell, old));
-                edit.after.push(new SheetCellSnapshot(cell, value));
-                this.document.setCell(cell, value);
+        return this.fillRanges(value);
+    }
+
+    fillRanges(value: string) {
+        let $n52: any; 
+        let edit = ($n52 = new SheetEdit(), $n52.kind = 'setCells', $n52.selectionBefore = this._selection, $n52.selectionAfter = this._selection, $n52);
+        for (const range of this.ranges) {
+            for (let row = range.topRow; row <= range.bottomRow; row++) {
+                for (let col = range.leftCol; col <= range.rightCol; col++) {
+                    let cell = new CellRef(row, col);
+                    let old = this.document.getCell(cell);
+                    if (old === value) continue;
+                    edit.before.push(new SheetCellSnapshot(cell, old));
+                    edit.after.push(new SheetCellSnapshot(cell, value));
+                    this.document.setCell(cell, value);
+                }
             }
         }
         if (edit.before.length === 0) return false;
@@ -400,25 +421,26 @@ export class SheetController {
         if (count < 1) return;
         let selectionBefore = this._selection;
         if (axis === 'rows') this.document.shiftRows(at, count); else this.document.shiftCols(at, count);
-        let $n54: any; 
-        this.commit(($n54 = new SheetEdit(), $n54.kind = axis === 'rows' ? 'insertRows' : 'insertCols', $n54.at = at, $n54.count = count, $n54.selectionBefore = selectionBefore, $n54.selectionAfter = this._selection, $n54));
+        let $n53: any; 
+        this.commit(($n53 = new SheetEdit(), $n53.kind = axis === 'rows' ? 'insertRows' : 'insertCols', $n53.at = at, $n53.count = count, $n53.selectionBefore = selectionBefore, $n53.selectionAfter = this._selection, $n53));
     }
 
     delete(axis: SheetAxisValue, at: number, count: number = 1) {
         if (count < 1) return;
         let selectionBefore = this._selection;
         let removed = axis === 'rows' ? this.document.shiftRows(at, -count) : this.document.shiftCols(at, -count);
-        this.select(this._selection);
-        let $n55: any; 
-        this.commit(($n55 = new SheetEdit(), $n55.kind = axis === 'rows' ? 'deleteRows' : 'deleteCols', $n55.at = at, $n55.count = count, $n55.removed = removed, $n55.selectionBefore = selectionBefore, $n55.selectionAfter = this._selection, $n55));
+        for (let i = 0; i < this._others.length; i++) this._others[i] = new SheetRange(this.document.clamp(this._others[i].anchor), this.document.clamp(this._others[i].focus));
+        this.setActiveRange(this._selection);
+        let $n54: any; 
+        this.commit(($n54 = new SheetEdit(), $n54.kind = axis === 'rows' ? 'deleteRows' : 'deleteCols', $n54.at = at, $n54.count = count, $n54.removed = removed, $n54.selectionBefore = selectionBefore, $n54.selectionAfter = this._selection, $n54));
     }
 
     resize(axis: SheetAxisValue, index: number, size: number) {
         let old = axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index);
         if (Math.abs(Math.fround(old - size)) < Math.fround(0.01)) return;
         if (axis === 'rows') this.document.setRowHeight(index, size); else this.document.setColWidth(index, size);
-        let $n56: any; 
-        this.commit(($n56 = new SheetEdit(), $n56.kind = axis === 'rows' ? 'resizeRow' : 'resizeCol', $n56.at = index, $n56.oldSize = old, $n56.newSize = axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index), $n56.selectionBefore = this._selection, $n56.selectionAfter = this._selection, $n56));
+        let $n55: any; 
+        this.commit(($n55 = new SheetEdit(), $n55.kind = axis === 'rows' ? 'resizeRow' : 'resizeCol', $n55.at = index, $n55.oldSize = old, $n55.newSize = axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index), $n55.selectionBefore = this._selection, $n55.selectionAfter = this._selection, $n55));
     }
 
     copyText() {
@@ -441,8 +463,8 @@ export class SheetController {
         for (const line of grid) maxCols = Math.max(maxCols, line.length);
         if (origin.row + grid.length > this.document.rows) this.document.rows = origin.row + grid.length;
         if (origin.col + maxCols > this.document.cols) this.document.cols = Math.min(origin.col + maxCols, 16384);
-        let $n57: any; 
-        let edit = ($n57 = new SheetEdit(), $n57.kind = 'setCells', $n57.selectionBefore = this._selection, $n57);
+        let $n56: any; 
+        let edit = ($n56 = new SheetEdit(), $n56.kind = 'setCells', $n56.selectionBefore = this._selection, $n56);
         for (let r = 0; r < grid.length; r++) {
             let line = grid[r];
             for (let c = 0; c < line.length; c++) {
@@ -455,6 +477,7 @@ export class SheetController {
                 this.document.setCell(cell, line[c]);
             }
         }
+        this._others.splice(0);
         this._selection = new SheetRange(origin, this.document.clamp(new CellRef(origin.row + grid.length - 1, origin.col + maxCols - 1)));
         this.reveal();
         if (edit.before.length === 0) return false;
@@ -488,6 +511,7 @@ export class SheetController {
         this.fillTarget = null;
         if (source == null || target == null) return false;
         let selectionBefore = this._selection;
+        this._others.splice(0);
         this._selection = new SheetRange(new CellRef(Math.min($eq.nullable.value(source).topRow, $eq.nullable.value(target).topRow), Math.min($eq.nullable.value(source).leftCol, $eq.nullable.value(target).leftCol)), new CellRef(Math.max($eq.nullable.value(source).bottomRow, $eq.nullable.value(target).bottomRow), Math.max($eq.nullable.value(source).rightCol, $eq.nullable.value(target).rightCol)));
         this._active = $eq.nullable.value(source).topLeft;
         return this.fill($eq.nullable.value(source), $eq.nullable.value(target), selectionBefore);
@@ -499,8 +523,8 @@ export class SheetController {
     }
 
     fill(source: SheetRange, target: SheetRange, selectionBefore: SheetRange | null = null) {
-        let $n58: any; 
-        let edit = ($n58 = new SheetEdit(), $n58.kind = 'setCells', $n58.selectionBefore = selectionBefore ?? this._selection, $n58);
+        let $n57: any; 
+        let edit = ($n57 = new SheetEdit(), $n57.kind = 'setCells', $n57.selectionBefore = selectionBefore ?? this._selection, $n57);
         let sourceRows = source.bottomRow - source.topRow + 1;
         let sourceCols = source.rightCol - source.leftCol + 1;
         for (let row = target.topRow; row <= target.bottomRow; row++) {
@@ -762,7 +786,7 @@ export class SheetController {
     }
 
     press(cell: CellRef, position: Point, modifiers: number, clicks: number) {
-        if ((modifiers & 1) !== 0) this.selectTo(cell); else this.select(new SheetRange(cell));
+        if ((modifiers & 1) !== 0) this.selectTo(cell); else if (this.adds(modifiers)) this.addRange(new SheetRange(cell)); else this.select(new SheetRange(cell));
         if (clicks < 2) return;
         this.beginEdit(this.document.getCell(cell), 'edit');
         this.useCellView();
@@ -777,7 +801,7 @@ export class SheetController {
             return !$eq.equals(this.fillTarget, before);
         }
         if ($eq.equals(cell, this._selection.focus)) return false;
-        this.select(new SheetRange(this._selection.anchor, cell));
+        this.setActiveRange(new SheetRange(this._selection.anchor, cell));
         return true;
     }
 
@@ -803,6 +827,7 @@ export class SheetController {
         let edit = this.history.popUndo();
         if (edit == null) return false;
         this.apply(edit, false);
+        this._others.splice(0);
         this._selection = edit.selectionBefore;
         this._active = this._selection.focus;
         this.reveal();
@@ -814,6 +839,7 @@ export class SheetController {
         let edit = this.history.popRedo();
         if (edit == null) return false;
         this.apply(edit, true);
+        this._others.splice(0);
         this._selection = edit.selectionAfter;
         this._active = this._selection.focus;
         this.reveal();

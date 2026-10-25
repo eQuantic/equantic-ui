@@ -125,3 +125,6 @@ eQuantic.UI.Sheet.SheetReference
 static eQuantic.UI.Sheet.SheetReference.TryParse(string! text, int rows, int cols, out eQuantic.UI.Sheet.SheetRange range) -> bool
 eQuantic.UI.Sheet.SheetController.Refresh() -> void
 eQuantic.UI.Sheet.SheetController.Refreshed -> System.Action?
+eQuantic.UI.Sheet.SheetController.Ranges.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Sheet.SheetRange>!
+eQuantic.UI.Sheet.SheetController.AddingRanges.get -> bool
+eQuantic.UI.Sheet.SheetDocument.Version.get -> int
