@@ -25,6 +25,7 @@ export class EntryLines extends StatelessComponent {
         let lineHeight = this._grid.cell.height;
         let layers = new Stack();
         layers.add(new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill })));
+        if (this._active) this._entry.grid = this._grid;
         if (this._active) {
             for (const band of this._entry.selectionBandsIn(0, document.lineCount - 1)) layers.add(this.rectangle(band, this._palette.entrySelection));
         }

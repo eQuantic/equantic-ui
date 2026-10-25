@@ -25,6 +25,9 @@ export class SheetController {
         this._entryPressed = false;
         this._slide = 0;
         this._dragAt = null;
+        this._widestOf = null;
+        this._widestBy = null;
+        this._widest = 0;
         this._focusVersion = 0;
         this.tabReleased = false;
         this._entryKeysFor = null;
@@ -57,6 +60,9 @@ export class SheetController {
     _entryPressed!: boolean;
     _slide!: number;
     _dragAt!: Point | null;
+    _widestOf!: CodeDocument | null;
+    _widestBy!: ((value: string) => number) | null;
+    _widest!: number;
     _focusVersion!: number;
     tabReleased!: boolean;
     _entryKeysFor!: KeyboardConventionValue | null;
@@ -91,12 +97,7 @@ export class SheetController {
         let active = this._active;
         if (!this.editing) return new SheetRange(active);
         let padding = this.grid.cellPadding;
-        let widest = 0;
-        let measure: any; 
-        if ((measure = this.grid.measure) != null) {
-            for (let line = 0; line < this.entry.document.lineCount; line++) widest = Math.max(widest, measure(this.entry.document.line(line)));
-        }
-        let wide = Math.fround(Math.fround(Math.fround(widest + padding.start) + padding.end) + 2);
+        let wide = Math.fround(Math.fround(Math.fround(this.widestEntryLine() + padding.start) + padding.end) + 2);
         let tall = Math.fround(Math.fround(Math.fround(Math.fround(this.entry.document.lineCount) * this.lineHeight) + padding.top) + padding.bottom);
         let last = this.lastInView();
         let right = active.col;
@@ -127,7 +128,7 @@ export class SheetController {
         let caret = this.entry.caretRect(this.entry.caret).x;
         let slide = this._slide;
         if (caret > right) slide = Math.fround(slide + Math.fround(caret - right)); else if (caret < left) slide = Math.fround(slide - Math.fround(left - caret));
-        slide = Math.max(0, slide);
+        slide = Math.min(Math.max(slide, 0), Math.max(0, Math.fround(this.widestEntryLine() - Math.fround(right - left))));
         if (slide !== this._slide) {
             this._slide = slide;
             this.entry.grid = this.cellGrid(bounds, slide);
@@ -558,6 +559,19 @@ export class SheetController {
         let across = offset.across + Math.max(0, Math.fround(scroll.viewport.width - this.grid.headerWidth)) - 0.5;
         let down = offset.down + Math.max(0, Math.fround(scroll.viewport.height - this.grid.headerHeight)) - 0.5;
         return this.document.clamp(new CellRef(this.document.rowSpans.indexAt(down), this.document.columnSpans.indexAt(across)));
+    }
+
+    widestEntryLine() {
+        let measure: any; 
+        if (!((measure = this.grid.measure) != null)) return 0;
+        let document = this.entry.document;
+        if ((document === this._widestOf) && (measure === this._widestBy)) return this._widest;
+        let widest = 0;
+        for (let line = 0; line < document.lineCount; line++) widest = Math.max(widest, measure(document.line(line)));
+        this._widestOf = document;
+        this._widestBy = measure;
+        this._widest = widest;
+        return widest;
     }
 
     cellGrid(bounds: Rect, slide: number) {

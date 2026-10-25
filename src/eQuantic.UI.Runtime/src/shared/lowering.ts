@@ -858,8 +858,8 @@ interface TextDoorModel {
  * `clipboard` is what the model's copy keys write through (a code surface's binds Copy and Cut to keys an
  * app may move), or null to leave those keys to the browser's own copy, cut and paste events, as a sheet
  * does. `leftToBrowser` names keys the model is never handed: the browser's own, which a page must not
- * take (a sheet's F5 and reload chords). `modifiers` reads a key's modifiers: the browser's idiom, where
- * ⌃ and ⌘ both stand for Command, or one that tells a Mac's Control apart, as its shell does.
+ * take (a sheet's F5 and reload chords). `modifiers` reads a key's modifiers, a Mac's Control apart from
+ * its Command, as its shell does.
  * </p>
  */
 function openTextDoor(
@@ -868,7 +868,7 @@ function openTextDoor(
   changed: () => void,
   clipboard: CodeSurfaceClipboard | null,
   leftToBrowser: (event: KeyboardEvent) => boolean,
-  modifiers: (event: KeyboardEvent, convention: KeyboardConventionValue) => number = modifiersOf,
+  modifiers: (event: KeyboardEvent, convention: KeyboardConventionValue) => number = doorModifiers,
 ): void {
   const convention = keyboardConvention();
   const ime = compositionOf(model);
@@ -1664,7 +1664,7 @@ function lowerSheetSurface(
   view.children.push(input);
 
   const changed = () => node.onChanged?.();
-  openTextDoor(input, model, changed, null, browserReloads, sheetModifiers);
+  openTextDoor(input, model, changed, null, browserReloads);
 
   // The model ASKED for the keyboard back (C# twin: PhotonHost.AdoptFocusRequests): the formula bar or
   // the name box is done with it. Remembered per model and counted from 0, as a code surface's.
@@ -1790,11 +1790,13 @@ function lowerSheetSurface(
 }
 
 /**
- * A key's modifiers as a sheet reads them: ⌘ is Command and ⌃ is Control on a Mac, as the macOS shell
- * reports them, because Excel for Mac gives the two different chords (⌃; types the date, ⌘; the time, ⌃G
- * goes to a cell); everywhere else Ctrl is Command, the browser's idiom.
+ * A key's modifiers as a text door reads them: ⌘ is Command and ⌃ is Control on a Mac, as the macOS shell
+ * reports them, because a Mac gives the two different chords (Excel for Mac's ⌃; types the date and ⌘; the
+ * time, ⌃G goes to a cell, the code editor's ⌃J joins lines); everywhere else Ctrl is Command, the
+ * browser's idiom. The formula bar and the name box are code surfaces, so the sheet's chords read alike
+ * in the grid and in them.
  */
-function sheetModifiers(event: KeyboardEvent, convention: KeyboardConventionValue): number {
+function doorModifiers(event: KeyboardEvent, convention: KeyboardConventionValue): number {
   if (convention !== 'apple') return modifiersOf(event);
   return (event.shiftKey ? 1 : 0) | (event.altKey ? 2 : 0) | (event.metaKey ? 4 : 0) | (event.ctrlKey ? 8 : 0);
 }

@@ -71,7 +71,8 @@ public sealed class SheetNameBox : ICodeSurfaceModel
         _justFocused = false;
         switch (key)
         {
-            case "Enter" when modifiers == KeyModifiers.None:
+            // Enter with any modifier goes there too: the box is one line, and a break in it names nothing.
+            case "Enter":
                 if (_sheet.GoTo(_box.Document.Text))
                 {
                     Invalid = false;
@@ -137,6 +138,8 @@ public sealed class SheetNameBox : ICodeSurfaceModel
         _box.FocusChanged(focused);
         if (focused == Typing) return;
         Typing = focused;
+        // Leaving puts the address back, and a refused name with it.
+        Invalid = false;
         if (!focused) return;
         // Taking the keyboard selects the address, so what is typed replaces it.
         _box.Document = CodeDocument.FromText(_sheet.ActiveCell.ToA1());

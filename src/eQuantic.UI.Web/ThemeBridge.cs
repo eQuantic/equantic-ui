@@ -179,6 +179,7 @@ public static class ThemeBridge
         ("activeOutline", sheet.ActiveOutline),
         ("fillPreview", sheet.FillPreview),
         ("fillHandle", sheet.FillHandle),
+        ("entrySelection", sheet.EntrySelection),
     ];
 
     private static void Tokens(StringBuilder sb, IReadOnlyList<ColorToken> tokens)

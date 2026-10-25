@@ -177,6 +177,36 @@ public class SheetGoToTests
     }
 
     [Fact]
+    public void LeavingTheBox_ClearsTheInvalidMark()
+    {
+        var (sheet, box) = Boxed();
+        box.FocusChanged(true);
+        box.HandleText("B0");
+        box.HandleKey("Enter", KeyModifiers.None, KeyboardConvention.Standard, null);
+        sheet.NameBox.Invalid.Should().BeTrue();
+
+        box.FocusChanged(false);
+
+        sheet.NameBox.Invalid.Should().BeFalse("at rest the box shows the address, unmarked");
+    }
+
+    [Theory]
+    [InlineData(KeyModifiers.Shift)]
+    [InlineData(KeyModifiers.Alt)]
+    [InlineData(KeyModifiers.Command)]
+    public void EnterWithAModifier_GoesThereToo(KeyModifiers modifiers)
+    {
+        var (sheet, box) = Boxed();
+        box.FocusChanged(true);
+        box.HandleText("D4");
+
+        box.HandleKey("Enter", modifiers, KeyboardConvention.Standard, null).Should().BeTrue();
+
+        sheet.ActiveCell.Should().Be(new CellRef(3, 3));
+        sheet.NameBox.Entry.Document.LineCount.Should().Be(1, "no line break went into the box");
+    }
+
+    [Fact]
     public void Escape_PutsTheAddressBack_AndHandsTheKeyboardBack()
     {
         var (sheet, box) = Boxed();

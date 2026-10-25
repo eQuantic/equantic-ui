@@ -211,6 +211,8 @@ public static class SheetKeymap
         _ => (0, 0),
     };
 
-    private static bool IsModifierKey(string key) =>
+    /// <summary>Whether a key name is a modifier pressed alone: never a command, and never the end of Tab's
+    /// release.</summary>
+    internal static bool IsModifierKey(string key) =>
         key is "Shift" or "Control" or "Alt" or "AltGraph" or "Meta" or "OS" or "CapsLock" or "Fn" or "Hyper" or "Super";
 }

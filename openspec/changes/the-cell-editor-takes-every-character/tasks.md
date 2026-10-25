@@ -17,7 +17,7 @@
       (`EQ_UPDATE_TRANSPILED=1`) differ only in the code engine's module, the code editor's goldens and
       `CodeKeymapBehaviourTests` pass unchanged, and a twin test (`CodeMeasuredGridTwinTests`) runs the
       measured scenarios through the runtime and matches .NET
-- [ ] 1.4 `docs/CODE-EDITOR-PLAN.md`'s proportional fence says what is true now: the engine places a
+- [x] 1.4 `docs/CODE-EDITOR-PLAN.md`'s proportional fence says what is true now: the engine places a
       measured face when its grid carries a measurer (the spreadsheet's editors, #983), and the code
       editor stays monospaced; verify `DocsIndexTests` (repoint any citation the change moved)
 
@@ -168,17 +168,18 @@
       box and the formula bar over the grid, as Excel lays them out; verify `dotnet build` of the four
       samples, and take again any README picture `ReadmeCapturesTests` names, looking at it before
       recording (`EQ_UPDATE_README_CAPTURES=1`)
-- [ ] 12.2 `docs/SPREADSHEET-PLAN.md`: slice 1 delivered in "Where the slices stand", D5, D12 and D15
+- [x] 12.2 `docs/SPREADSHEET-PLAN.md`: slice 1 delivered in "Where the slices stand", D5, D12 and D15
       closed, slice 2 next; the wiki's Components page (the cell editor, the formula bar, the name box,
-      the keys) and the Upgrading page (the migration lines) in English, Portuguese, Spanish, French and
-      German, on the wiki branch named like this pull request's; verify the wiki guards with
-      `EQ_WIKI_DIR` pointed at it, and `WikiClaimsCompile` for every snippet the pages add
+      the keys) in English, Portuguese, Spanish, French and German, on the wiki branch named like this
+      pull request's; verify the wiki guards with `EQ_WIKI_DIR` pointed at it, and `WikiClaimsCompile`
+      for every snippet the pages add. The migration lines go in the pull request's body: the Upgrading
+      page gets its entry per version, when the release is cut from the `*REMOVED*` lines
 - [x] 12.3 One ledger entry for this event citing #983 and #732, as a file under `docs/ledger/`;
       verify `LedgerTests`
 
 ## 13. Integration
 
-- [ ] 13.1 In Chromium on the dashboard's `/sheet` (this worktree's server): `á`, `ã`, `ç` by dead keys,
+- [x] 13.1 In Chromium on the dashboard's `/sheet` (this worktree's server): `á`, `ã`, `ç` by dead keys,
       a composed Japanese word and an emoji land in a cell; F2 then the arrows, Home and End move the
       caret; the formula bar follows keystroke by keystroke; Escape then Tab leaves the sheet; the
       served runtime's budget moves in its commit with the number (`EQ_UPDATE_RUNTIME_BUDGET=1`)

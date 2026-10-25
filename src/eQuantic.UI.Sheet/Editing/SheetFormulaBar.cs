@@ -64,7 +64,7 @@ public sealed class SheetFormulaBar : ICodeSurfaceModel
     {
         // At rest the bar's Tab and Escape are the host's: nothing is being edited from here.
         if (!_sheet.Editing && key is "Tab" or "Escape") return false;
-        if (key is "Shift" or "Control" or "Alt" or "AltGraph" or "Meta" or "OS" or "CapsLock") return false;
+        if (SheetKeymap.IsModifierKey(key)) return false;
         Take();
         var claimed = SheetKeymap.Handle(_sheet, key, modifiers, convention, clipboard);
         // The edit ended here (Enter, Tab, Escape, a fill of the selection): the grid takes the keyboard.

@@ -37,5 +37,5 @@ override eQuantic.UI.Spreadsheets.NameBox.AdoptConfig(eQuantic.UI.Primitives.UiC
 override eQuantic.UI.Spreadsheets.NameBox.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
 static eQuantic.UI.Spreadsheets.FormulaBar.Padding.get -> eQuantic.UI.Primitives.EdgeInsets
 static eQuantic.UI.Spreadsheets.NameBox.Padding.get -> eQuantic.UI.Primitives.EdgeInsets
-static eQuantic.UI.Spreadsheets.SpreadsheetsUI.FormulaBar(eQuantic.UI.Sheet.SheetController! controller, eQuantic.UI.Primitives.SizeValue? width = null) -> eQuantic.UI.Spreadsheets.FormulaBar!
-static eQuantic.UI.Spreadsheets.SpreadsheetsUI.NameBox(eQuantic.UI.Sheet.SheetController! controller, eQuantic.UI.Primitives.SizeValue? width = null) -> eQuantic.UI.Spreadsheets.NameBox!
+static eQuantic.UI.Spreadsheets.SpreadsheetsUI.FormulaBar(eQuantic.UI.Sheet.SheetController! controller) -> eQuantic.UI.Spreadsheets.FormulaBar!
+static eQuantic.UI.Spreadsheets.SpreadsheetsUI.NameBox(eQuantic.UI.Sheet.SheetController! controller) -> eQuantic.UI.Spreadsheets.NameBox!

@@ -5,12 +5,12 @@ export class SpreadsheetsUI {
         return new Spreadsheet(controller, { width: width, height: height, overscan: overscan });
     }
 
-    static formulaBar(controller: SheetController, width: SizeValue | null = null) {
-        return new FormulaBar(controller, { width: width ?? SizeValue.fill });
+    static formulaBar(controller: SheetController) {
+        return new FormulaBar(controller);
     }
 
-    static nameBox(controller: SheetController, width: SizeValue | null = null) {
-        return new NameBox(controller, { width: width ?? SizeValue.fixed(96) });
+    static nameBox(controller: SheetController) {
+        return new NameBox(controller);
     }
 }
 

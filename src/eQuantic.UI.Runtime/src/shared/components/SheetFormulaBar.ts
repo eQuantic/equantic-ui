@@ -44,7 +44,7 @@ export class SheetFormulaBar {
 
     handleKey(key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any) {
         if (!this._sheet.editing && (key === 'Tab' || key === 'Escape')) return false;
-        if (((((((key === 'Shift' || key === 'Control') || key === 'Alt') || key === 'AltGraph') || key === 'Meta') || key === 'OS') || key === 'CapsLock')) return false;
+        if (SheetKeymap.isModifierKey(key)) return false;
         this.take();
         let claimed = SheetKeymap.handle(this._sheet, key, modifiers, convention, clipboard);
         if (!this._sheet.editing) this._sheet.requestFocus();

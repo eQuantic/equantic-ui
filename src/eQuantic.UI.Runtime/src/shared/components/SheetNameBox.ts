@@ -65,22 +65,20 @@ export class SheetNameBox {
     handleKey(key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any) {
         if (!this.typing) return false;
         this._justFocused = false;
-        {
-            const $s = key;
-            if (($s === 'Enter' && (modifiers === 0))) {
+        switch (key) {
+            case 'Enter':
                 if (this._sheet.goTo(this._box.document.text)) {
                     this.invalid = false;
                     this.typing = false;
                 } else this.invalid = true;
                 return true;
-            } else if ($s === 'Escape') {
+            case 'Escape':
                 this.invalid = false;
                 this.typing = false;
                 this._sheet.requestFocus();
                 return true;
-            } else if ($s === 'Tab') {
+            case 'Tab':
                 return false;
-            }
         }
         let claimed = this._box.handleKey(key, modifiers, convention, clipboard);
         if (claimed) this.invalid = false;
@@ -128,6 +126,7 @@ export class SheetNameBox {
         this._box.focusChanged(focused);
         if (focused === this.typing) return;
         this.typing = focused;
+        this.invalid = false;
         if (!focused) return;
         this._box.document = CodeDocument.fromText(this._sheet.activeCell.toA1());
         this._box.selection = new CodeRange(CodePosition.start, this._box.document.end);

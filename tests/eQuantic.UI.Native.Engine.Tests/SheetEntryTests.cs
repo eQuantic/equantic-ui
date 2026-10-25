@@ -407,6 +407,19 @@ public class SheetEntryTests
         caret.X.Should().BeGreaterThan(bounds.Right - 20, "and the caret stands at its right edge");
     }
 
+    [Fact]
+    public void ALineThatShrinksBack_ShowsFromItsStartAgain()
+    {
+        var sheet = Sheet();
+        Type(sheet, new string('w', 200));
+        sheet.CellEditorGrid.Origin.X.Should().BeLessThan(B2Left, "the long line slid left to keep the caret");
+
+        for (var i = 0; i < 180; i++) Key(sheet, "Backspace");
+
+        Text(sheet).Length.Should().Be(20);
+        sheet.CellEditorGrid.Origin.X.Should().Be(B2Left + 6, "twenty characters fit, so nothing stays slid away");
+    }
+
     // ---- a press while editing ------------------------------------------------------------------------------
 
     [Fact]

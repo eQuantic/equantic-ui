@@ -109,6 +109,30 @@ public class SpreadsheetBarsTests
     }
 
     [Fact]
+    public void ASelectionInTheBar_IsDrawnUnderTheBarsText()
+    {
+        var (host, sheet) = Open();
+        sheet.Document.SetCell(B2, "Budget");
+        Click(host, sheet, B2, 32);
+        var bar = Region<SheetFormulaBar>(host);
+        host.PressDown(bar.Right - 4, bar.Y + bar.Height / 2);
+        host.PressUp(bar.Right - 4, bar.Y + bar.Height / 2);
+        Frame(host, 48);
+
+        host.KeyDown("ArrowLeft", KeyModifiers.Shift);
+        host.KeyDown("ArrowLeft", KeyModifiers.Shift);
+        var frame = Frame(host, 64);
+
+        sheet.Entry.Document.TextIn(sheet.Entry.Selection).Should().Be("et");
+        var selection = ((IAppTheme)PhotonTheme.Instance).Selection;
+        var bands = Descendants(frame.Root)
+            .Where(node => node.Source is Box { Style.Background: { } ink } && ink == selection)
+            .Select(node => node.Bounds).ToList();
+        bands.Should().ContainSingle("the bar draws the band, and the cell's editor, which holds no caret, does not");
+        bands[0].Y.Should().BeInRange(bar.Y, bar.Bottom, "the band stands in the bar, on the bar's own grid");
+    }
+
+    [Fact]
     public void TheNameBox_ShowsTheAddress_AndTheSizeOfADrag()
     {
         var (host, sheet) = Open();

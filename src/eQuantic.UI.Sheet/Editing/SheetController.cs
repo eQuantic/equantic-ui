@@ -807,13 +807,7 @@ public sealed class SheetController : ISheetSurfaceModel
             var active = _active;
             if (!Editing) return new SheetRange(active);
             var padding = Grid.CellPadding;
-            var widest = 0f;
-            if (Grid.Measure is { } measure)
-            {
-                for (var line = 0; line < Entry.Document.LineCount; line++)
-                    widest = Math.Max(widest, measure(Entry.Document.Line(line)));
-            }
-            var wide = widest + padding.Start + padding.End + CodeEditorController.CaretWidth;
+            var wide = WidestEntryLine() + padding.Start + padding.End + CodeEditorController.CaretWidth;
             var tall = Entry.Document.LineCount * LineHeight + padding.Top + padding.Bottom;
             var last = LastInView();
             var right = active.Col;
@@ -832,6 +826,27 @@ public sealed class SheetController : ISheetSurfaceModel
             }
             return new SheetRange(active, new CellRef(bottom, right));
         }
+    }
+
+    /// <summary>The document and the measurer the widest line was last measured for, and its width: an entry
+    /// is measured once per edit, not on every pointer move that asks where the editor is.</summary>
+    private CodeDocument? _widestOf;
+    private Func<string, float>? _widestBy;
+    private float _widest;
+
+    /// <summary>How wide the entry's widest line is in the cells' type; 0 where nothing measures.</summary>
+    private float WidestEntryLine()
+    {
+        if (Grid.Measure is not { } measure) return 0;
+        var document = Entry.Document;
+        if (ReferenceEquals(document, _widestOf) && ReferenceEquals(measure, _widestBy)) return _widest;
+        var widest = 0f;
+        for (var line = 0; line < document.LineCount; line++)
+            widest = Math.Max(widest, measure(document.Line(line)));
+        _widestOf = document;
+        _widestBy = measure;
+        _widest = widest;
+        return widest;
     }
 
     /// <summary>The cell's editor as a rectangle in the surface's own coordinates.</summary>
@@ -856,7 +871,8 @@ public sealed class SheetController : ISheetSurfaceModel
             var slide = _slide;
             if (caret > right) slide += caret - right;
             else if (caret < left) slide -= left - caret;
-            slide = Math.Max(0, slide);
+            // Never further than the text needs: a line that shrank back shows from its start again.
+            slide = Math.Clamp(slide, 0, Math.Max(0, WidestEntryLine() - (right - left)));
             if (slide != _slide)
             {
                 _slide = slide;

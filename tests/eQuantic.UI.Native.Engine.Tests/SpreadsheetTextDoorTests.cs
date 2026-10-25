@@ -179,7 +179,7 @@ public class SpreadsheetTextDoorTests
         host.KeyDown("Escape").Should().BeFalse("nothing to cancel and nothing to close: the key is unclaimed");
         host.KeyDown("Tab").Should().BeTrue();
 
-        host.Focused?.Label.Should().Be("After");
+        (host.Focused?.Label).Should().Be("After");
         sheet.ActiveCell.Should().Be(B2, "the Tab moved the keyboard, not the active cell");
     }
 
@@ -215,7 +215,7 @@ public class SpreadsheetTextDoorTests
         host.KeyDown("Escape");
         host.KeyDown("Tab").Should().BeTrue();
 
-        host.Focused?.Label.Should().Be("After");
+        (host.Focused?.Label).Should().Be("After");
         sheet.ActiveCell.Should().Be(active);
     }
 
@@ -228,7 +228,7 @@ public class SpreadsheetTextDoorTests
         host.KeyDown("Escape");
         host.KeyDown("Tab", KeyModifiers.Shift).Should().BeTrue();
 
-        host.Focused?.Label.Should().Be("Before");
+        (host.Focused?.Label).Should().Be("Before");
         sheet.ActiveCell.Should().Be(active);
     }
 

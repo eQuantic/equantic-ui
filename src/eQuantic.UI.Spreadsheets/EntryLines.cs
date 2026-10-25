@@ -39,6 +39,9 @@ internal sealed class EntryLines : StatelessComponent
         var layers = new Stack();
         // The stack takes its size from a box that draws nothing: the room it is given.
         layers.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }));
+        // The view that holds the caret reads the entry on its OWN grid: another view of the same entry
+        // may have put its geometry on the engine since (the cell's editor builds beside the formula bar).
+        if (_active) _entry.Grid = _grid;
         if (_active)
         {
             foreach (var band in _entry.SelectionBandsIn(0, document.LineCount - 1))
