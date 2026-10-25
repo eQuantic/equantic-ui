@@ -32,6 +32,7 @@ public class SdkStringLiteralGuardTests
         var componentsDir = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Components");
         var files = Directory.GetFiles(componentsDir, "*.cs")
             .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Charts"), "*.cs"))
+            .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Spreadsheets"), "*.cs"))
             .Where(f => !f.EndsWith(".Designer.cs", StringComparison.Ordinal))
             .ToList();
         files.Should().HaveCountGreaterThan(30, "the shared component library");
@@ -83,6 +84,7 @@ public class SdkStringLiteralGuardTests
         var componentsDir = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Components");
         var sources = string.Join("\n", Directory.GetFiles(componentsDir, "*.cs")
             .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Charts"), "*.cs"))
+            .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Spreadsheets"), "*.cs"))
             .Where(f => !f.EndsWith("SdkStrings.cs", StringComparison.Ordinal))
             .Select(File.ReadAllText));
 

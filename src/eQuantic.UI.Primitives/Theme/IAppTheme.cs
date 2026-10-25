@@ -121,6 +121,15 @@ public interface IAppTheme
     DataPalette Data => DataPalette.Default;
 
     /// <summary>
+    /// The spreadsheet's slot (<see cref="SheetTheme"/>), the first of the per-component slots of
+    /// <c>docs/ELEMENT-TREE-PLAN.md</c> §3.10 and in their shape: NULL by default, which the spreadsheet
+    /// reads as its own colours derived from this theme's foundation, so every theme an app wrote keeps
+    /// compiling and draws a sheet correctly. A theme that wants its grid in its own colours answers a
+    /// slot naming only those; it crosses to the browser in the theme's JSON as <see cref="Data"/> does.
+    /// </summary>
+    SheetTheme? Sheet => null;
+
+    /// <summary>
     /// The colour of a code token. DEFAULTED from the palette the theme already has — a design
     /// system that ships one set of variants should not have to invent a second one to show code,
     /// and a theme that wants a real syntax palette overrides this and nothing else.

@@ -2,6 +2,7 @@ using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Sheet;
 using FluentAssertions;
+using eQuantic.UI.Spreadsheets;
 
 namespace eQuantic.UI.Web.Tests;
 
@@ -80,16 +81,12 @@ public class RoleBearingHostBoundsTests
     /// <summary>
     /// THE STEP THE OTHER TWO DID NOT NEED. <c>Progress</c> and <c>Adjustable</c> are handed a
     /// FILLING track by every component that uses them, so the rule changed their announcement and
-    /// nothing a user could see. A <see cref="Spreadsheet"/>'s window of cells HUGS, so this one
-    /// moves a real page — which is why #241 asked for it to be measured rather than assumed.
+    /// nothing a user could see. A <see cref="Spreadsheet"/> moved a real page: its window of cells
+    /// hugged, and #241 measured its host going from the container's width to the grid's own box.
     /// <para>
-    /// Measured on the real component, both ways:
-    /// <code>
-    /// before  pointer-events: auto; outline: none; user-select: none
-    /// after   width: fit-content; pointer-events: auto; outline: none; user-select: none
-    /// </code>
-    /// The host stops stretching to its container and becomes the grid's own box — the box a
-    /// reader outlines, and the one the browser draws this tab stop's focus ring on.
+    /// Since #995 the grid is a table viewport that takes the room it is given and scrolls inside it,
+    /// so the grid's own box IS that room, and the host fills it: the box a reader outlines and the one
+    /// the browser draws this tab stop's focus ring on is still the grid's, now on both axes.
     /// </para>
     /// </summary>
     [Fact]
@@ -98,8 +95,9 @@ public class RoleBearingHostBoundsTests
         var grid = Find(Render(new Spreadsheet(new SheetController())), "grid");
 
         grid.Should().NotBeNull("the component announces its window of cells as a grid");
-        grid!.Attributes.GetValueOrDefault("style", "").Should().Contain("width: fit-content",
-            "the cells size themselves, so the host that names them has to size itself the same way");
+        grid!.Attributes.GetValueOrDefault("style", "").Should().Contain("width: 100%")
+            .And.Contain("height: 100%", "the grid takes the room it is given, so the host that names it is that room")
+            .And.NotContain("fit-content");
     }
 
     /// <summary>The first element carrying <paramref name="role"/>, depth first — the page's own

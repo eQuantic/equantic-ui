@@ -29,7 +29,7 @@ public class TableViewportTests
 
     private static TableView Table(Tally tally, int rows = ExcelRows, int columns = ExcelColumns,
         bool pressable = false, TableScrollRequest? request = null, IReadOnlyList<TableViewCell>? marks = null,
-        SizeValue height = default) =>
+        SizeValue height = default, bool canRequestFocus = true) =>
         new(new UniformTableSpans(rows, 28), new UniformTableSpans(columns, 96), (row, column) =>
         {
             tally.Built++;
@@ -42,6 +42,7 @@ public class TableViewportTests
             Request = request,
             Marks = marks,
             Height = height,
+            CanRequestFocus = canRequestFocus,
             OnScrolled = _ => tally.Scrolled++,
         };
 
@@ -396,6 +397,24 @@ public class TableViewportTests
         Region(host).Viewport.Scroll.Offset.Should().Be(TableOffset.Zero, "a mouse's drag is the cells', a finger's pans");
     }
 
+    [Fact]
+    public void ADragHeldBelowTheCells_KeepsTheFramesComingAndScrolls()
+    {
+        var tally = new Tally();
+        var host = Host(Table(tally), 900, 600, tally);
+        var scroll = Region(host).Viewport.Scroll;
+
+        scroll.AutoScroll(new Point(450, scroll.Viewport.Height + 60));
+        host.RenderFrame(new DisplayListBuilder(), _clock += 16);
+        host.NeedsRender.Should().BeTrue("a held drag keeps the clock turning");
+        for (var i = 0; i < 30; i++) host.RenderFrame(new DisplayListBuilder(), _clock += 16);
+
+        scroll.Offset.Down.Should().BeApproximately(30 * 16 * 60 * 0.02, 0.5);
+        scroll.AutoScroll(null);
+        Settle(host);
+        host.NeedsRender.Should().BeFalse();
+    }
+
     // ---- the keyboard ------------------------------------------------------------------------------
 
     [Fact]
@@ -481,6 +500,26 @@ public class TableViewportTests
     }
 
     [Fact]
+    public void ATableThatDeclinesTheFocus_IsNoStop_AndItsCellsStillAre()
+    {
+        var tally = new Tally();
+        var host = Host(Table(tally, rows: 2, columns: 2, pressable: true, canRequestFocus: false), 400, 200, tally);
+
+        var visited = new List<string>();
+        for (var i = 0; i < 4; i++)
+        {
+            host.KeyDown("Tab");
+            var frame = host.RenderFrame(new DisplayListBuilder(), _clock += 16);
+            var stop = frame.FocusStops.First(s => s.Id == host.FocusedId);
+            visited.Add(stop.Table is not null ? "table" : CellText(stop.Element));
+        }
+
+        visited.Should().Equal("0:0", "0:1", "1:0", "1:1");
+        host.KeyDown("ArrowDown").Should().BeFalse("the keys are the composing component's, not the table's");
+        Region(host).Viewport.Scroll.Offset.Should().Be(TableOffset.Zero);
+    }
+
+    [Fact]
     public void AControlInsideAMark_IsNoStopOfTheTabOrder()
     {
         var tally = new Tally();
@@ -515,6 +554,65 @@ public class TableViewportTests
                 PinnedRows = 1,
             };
         }
+    }
+
+    /// <summary>An axis that changes its count in place, as a spreadsheet's document does after a
+    /// delete: the same object, fewer rows.</summary>
+    private sealed class LiveSpans(int count, double extent) : TableSpans
+    {
+        public int Size { get; set; } = count;
+        public override int Count => Size;
+        public override double Total => Size * extent;
+        public override double ExtentOf(int index) => extent;
+        public override double OffsetOf(int index) => Math.Clamp(index, 0, Size) * extent;
+        public override int IndexAt(double offset) => Size == 0 ? 0 : Math.Clamp((int)(offset / extent), 0, Size - 1);
+    }
+
+    /// <summary>A screen whose axes shrink in place: its builder refuses a row or a column they no
+    /// longer have.</summary>
+    private sealed class ShrinkingInPlace(Tally tally) : StatefulComponent
+    {
+        public LiveSpans Rows { get; } = new(11, 28);
+        public LiveSpans Columns { get; } = new(11, 96);
+
+        public void Shrink() => SetState(() =>
+        {
+            Rows.Size = 7;
+            Columns.Size = 7;
+        });
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var rows = Rows;
+            var columns = Columns;
+            return new TableView(rows, columns, (row, column) =>
+            {
+                if (row >= rows.Count || column >= columns.Count)
+                    throw new InvalidOperationException($"cell {row}:{column} asked of a grid of {rows.Count} by {columns.Count}");
+                tally.Built++;
+                return new Text($"{row}:{column}", TypeRole.BodyM);
+            })
+            {
+                PinnedRows = 1,
+                PinnedColumns = 1,
+            };
+        }
+    }
+
+    [Fact]
+    public void AGridWhoseAxesShrinkInPlace_IsAskedOnlyForTheCellsItHas()
+    {
+        var tally = new Tally();
+        var screen = new ShrinkingInPlace(tally);
+        var host = Host(screen, 900, 600, tally);
+        Cells(host).Max(c => c.Cell.Row).Should().Be(10, "the whole grid fits the window and its overscan");
+
+        // The same axis objects, four rows and four columns fewer: AdoptConfig sees the same spans.
+        screen.Shrink();
+        Settle(host);
+
+        Cells(host).Should().OnlyContain(c => c.Cell.Row < 7 && c.Cell.Column < 7);
+        tally.Logged.Should().NotContain(line => line.Contains("asked of a grid"));
     }
 
     [Fact]

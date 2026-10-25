@@ -344,6 +344,12 @@
             <_DevChartsDir>$(MSBuildThisFileDirectory)../../eQuantic.UI.Charts</_DevChartsDir>
             <_ChartsSourceDir Condition="'$(_ChartsSourceDir)' == '' And Exists('$(_DevChartsDir)')">$(_DevChartsDir)</_ChartsSourceDir>
             <_EqcSourceDirs Condition="'$(_ChartsSourceDir)' != '' And Exists('$(_ChartsSourceDir)')">$(_EqcSourceDirs);$(_ChartsSourceDir)</_EqcSourceDirs>
+
+            <!-- The spreadsheet family is a THIRD (docs/SPREADSHEET-PLAN.md), reached the same two ways. -->
+            <_SpreadsheetsSourceDir Condition="'$(PkgeQuantic_UI_Spreadsheets)' != ''">$(PkgeQuantic_UI_Spreadsheets)/tools/source</_SpreadsheetsSourceDir>
+            <_DevSpreadsheetsDir>$(MSBuildThisFileDirectory)../../eQuantic.UI.Spreadsheets</_DevSpreadsheetsDir>
+            <_SpreadsheetsSourceDir Condition="'$(_SpreadsheetsSourceDir)' == '' And Exists('$(_DevSpreadsheetsDir)')">$(_DevSpreadsheetsDir)</_SpreadsheetsSourceDir>
+            <_EqcSourceDirs Condition="'$(_SpreadsheetsSourceDir)' != '' And Exists('$(_SpreadsheetsSourceDir)')">$(_EqcSourceDirs);$(_SpreadsheetsSourceDir)</_EqcSourceDirs>
         </PropertyGroup>
 
         <Error

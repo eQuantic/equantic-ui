@@ -1913,7 +1913,9 @@ public sealed class PhotonHost
             {
                 _pressed = null;
                 _pressedAt = null;
-                _sheetPressed = false;
+                // A sheet's press under the pan is taken away, and told so: a finger's tap selects
+                // nothing once the grid moved under it.
+                CancelSheetPress(kind);
                 table.Active = true;
                 _tablePress = table;
             }
@@ -1935,7 +1937,7 @@ public sealed class PhotonHost
             {
                 if (!ReferenceEquals(sheetRegions[i].Element, _textAt)) continue;
                 if (!sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Move,
-                        ToLocal(sheetRegions, i, sheetRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1)) break;
+                        ToLocal(sheetRegions, i, sheetRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1, kind)) break;
                 SurfaceChanged(sheetRegions[i].Surface.OnChanged);
                 break;
             }
@@ -2218,16 +2220,7 @@ public sealed class PhotonHost
         for (var i = cursors.Count - 1; i >= 0; i--)
         {
             if (!Covers(cursors, i, cursors[i].Bounds, point)) continue;
-            return cursors[i].Cursor switch
-            {
-                PointerCursor.Pointer => CursorShape.Pointer,
-                PointerCursor.Text => CursorShape.Text,
-                PointerCursor.NotAllowed => CursorShape.NotAllowed,
-                PointerCursor.Crosshair => CursorShape.Crosshair,
-                PointerCursor.ColResize => CursorShape.ColResize,
-                PointerCursor.RowResize => CursorShape.RowResize,
-                _ => CursorShape.Default,
-            };
+            return ShapeOf(cursors[i].Cursor);
         }
 
         var fields = _lastFrame.TextRegions;
@@ -2242,6 +2235,12 @@ public sealed class PhotonHost
             if (CoveredByNote(hit, point, out _)) return CursorShape.Default;
             return hits[hit].Node.Disabled ? CursorShape.NotAllowed : CursorShape.Pointer;
         }
+        // Over a sheet the sheet answers, as it answers a press there: a crosshair where a press would
+        // grab the fill handle.
+        var sheets = _lastFrame.SheetRegions;
+        for (var i = sheets.Count - 1; i >= 0; i--)
+            if (Covers(sheets, i, sheets[i].Visible ?? sheets[i].Bounds, point))
+                return ShapeOf(sheets[i].Surface.Model.CursorAt(ToLocal(sheets, i, sheets[i].Bounds, point)));
         for (var i = fields.Count - 1; i >= 0; i--)
             if (Covers(fields, i, fields[i].Visible ?? fields[i].Bounds, point))
                 return fields[i].Entry.Disabled ? CursorShape.NotAllowed : CursorShape.Text;
@@ -2261,6 +2260,17 @@ public sealed class PhotonHost
 
         return CursorShape.Default;
     }
+
+    private static CursorShape ShapeOf(PointerCursor cursor) => cursor switch
+    {
+        PointerCursor.Pointer => CursorShape.Pointer,
+        PointerCursor.Text => CursorShape.Text,
+        PointerCursor.NotAllowed => CursorShape.NotAllowed,
+        PointerCursor.Crosshair => CursorShape.Crosshair,
+        PointerCursor.ColResize => CursorShape.ColResize,
+        PointerCursor.RowResize => CursorShape.RowResize,
+        _ => CursorShape.Default,
+    };
 
     /// <summary>Where the scroll view at <paramref name="at"/> currently sits, read off its position
     /// (a <see cref="ScrollRegion.Element"/>) — the test seam for gesture regressions (a latched pan
@@ -2472,8 +2482,15 @@ public sealed class PhotonHost
             _focused = null;
             ForgetFocus();
             sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Down,
-                ToLocal(sheetRegions, i, sheetRegions[i].Bounds, point), modifiers, clickCount);
+                ToLocal(sheetRegions, i, sheetRegions[i].Bounds, point), modifiers, clickCount, kind);
             _sheetPressed = true;
+            // A pen's press on the cells is the sheet's, as a mouse's is: its drag selects, so the
+            // table's candidate pan lets go of it. A finger's stays a candidate, a tap or a pan.
+            if (kind != PointerKind.Touch && _tablePress is { Active: false } candidate)
+            {
+                _tablePress = null;
+                candidate.Viewport.Scroll.Pointer(PointerPhase.Cancel, Point.Zero, kind, _lastTimeMs);
+            }
             SurfaceChanged(sheetRegions[i].Surface.OnChanged);
             return true;
         }
@@ -2483,6 +2500,22 @@ public sealed class PhotonHost
         EndEditing();
         ClearFocus();
         return _drag is not null || _pan is not null;
+    }
+
+    /// <summary>A press a sheet owned is taken away, by the system or by a table's pan, and its model is
+    /// told: a fill pours nothing, a drag stops where it stood, and a finger's tap selects nothing.</summary>
+    private void CancelSheetPress(PointerKind kind)
+    {
+        if (!_sheetPressed) return;
+        _sheetPressed = false;
+        var sheetRegions = _lastFrame?.SheetRegions ?? Array.Empty<SheetRegion>();
+        for (var i = 0; i < sheetRegions.Count; i++)
+        {
+            if (!ReferenceEquals(sheetRegions[i].Element, _textAt)) continue;
+            if (sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1, kind))
+                SurfaceChanged(sheetRegions[i].Surface.OnChanged);
+            break;
+        }
     }
 
     /// <summary>
@@ -2520,18 +2553,7 @@ public sealed class PhotonHost
             }
         }
         _codeDragging = false;
-        if (_sheetPressed && _lastFrame is not null)
-        {
-            var sheetRegions = _lastFrame.SheetRegions;
-            for (var i = 0; i < sheetRegions.Count; i++)
-            {
-                if (!ReferenceEquals(sheetRegions[i].Element, _textAt)) continue;
-                if (sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Cancel, Point.Zero, KeyModifiers.None, 1))
-                    SurfaceChanged(sheetRegions[i].Surface.OnChanged);
-                break;
-            }
-        }
-        _sheetPressed = false;
+        CancelSheetPress(kind);
 
         if (_drag is { Active: true } drag)
         {
@@ -2625,7 +2647,7 @@ public sealed class PhotonHost
                 // undo step, and the release is the sheet's. A selection drag simply ends, changing
                 // nothing, and the release goes on like any other.
                 if (!sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Up,
-                        ToLocal(sheetRegions, i, sheetRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1)) break;
+                        ToLocal(sheetRegions, i, sheetRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1, kind)) break;
                 SurfaceChanged(sheetRegions[i].Surface.OnChanged);
                 return true;
             }

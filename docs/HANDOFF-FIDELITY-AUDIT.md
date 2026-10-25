@@ -107,7 +107,7 @@ the pill's 40 down.
   MeasureVisitor.Containers.cs:18  var host = ctx.SafeAreaInsets;
   LayoutEngine.cs:128  public EdgeInsets SafeAreaInsets { get; init; }
   WebLoweringVisitor.Containers.cs:428  var env = $"env(safe-area-inset-{name}, 0px)";
-  lowering.ts:4201  const env = `env(safe-area-inset-${name}, 0px)`;
+  lowering.ts:4264  const env = `env(safe-area-inset-${name}, 0px)`;
   ```
 
 ### A5 SafeArea · behaviour · **unverified**
@@ -145,7 +145,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:2491-2502  _pan = null;
+  PhotonHost.cs:2524-2535  _pan = null;
           if (_drag is null)
           {
               var scrollRegions = _lastFrame.ScrollRegions;
@@ -187,11 +187,11 @@ the pill's 40 down.
 
 - **Component**: `MISSING`
 - **Handoff**: new Heading("Portfolio", level: 1) — "Heading — semantic Text. Level 1 → Heading role, 2 → Title, 3 → Label-strong… Announced as 'heading, level N' — VoiceOver rotor / TalkBack heading navigation jump between them. Exactly one level-1 per screen (debug assert)." Semantics: "Web emits real heading levels; native marks the node as a header so readers can jump by heading."
-- **Code**: Half of this has landed since the audit and half has not. The LEVEL exists and is not decoration: `Text.HeadingLevel` is a 1–6 slot refused at every door (src/eQuantic.UI.Primitives/Nodes/Text.cs:65-73 HeadingLevel), the web emits the real element (WebLoweringVisitor.Text.cs:283 LowerText), the semantic node carries it (SemanticsVisitor.Text.cs:16-20 SemanticsVisitor), and `HeadingOutlineTests` / `HeadingSemanticsTests` pin both. What is still missing is (a) a `Heading` COMPONENT — there is no `class Heading`, so an author writes `new Text("Portfolio") { HeadingLevel = 1 }`; (b) the level-1 uniqueness assert, which nothing checks; and (c) two of the four bridges — Android reports the trait (src/eQuantic.UI.Native.Shell.Android/PhotonAccessibility.cs:150), the Apple and Windows shells never read `HeadingLevel`, so the VoiceOver rotor still has nothing to jump between on macOS/iOS.
+- **Code**: Half of this has landed since the audit and half has not. The LEVEL exists and is not decoration: `Text.HeadingLevel` is a 1–6 slot refused at every door (src/eQuantic.UI.Primitives/Nodes/Text.cs:65-73 HeadingLevel), the web emits the real element (WebLoweringVisitor.Text.cs:294 LowerText), the semantic node carries it (SemanticsVisitor.Text.cs:16-20 SemanticsVisitor), and `HeadingOutlineTests` / `HeadingSemanticsTests` pin both. What is still missing is (a) a `Heading` COMPONENT — there is no `class Heading`, so an author writes `new Text("Portfolio") { HeadingLevel = 1 }`; (b) the level-1 uniqueness assert, which nothing checks; and (c) two of the four bridges — Android reports the trait (src/eQuantic.UI.Native.Shell.Android/PhotonAccessibility.cs:150), the Apple and Windows shells never read `HeadingLevel`, so the VoiceOver rotor still has nothing to jump between on macOS/iOS.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Web/WebLoweringVisitor.Text.cs:302  var element = new RealizedElement(text.HeadingLevel > 0 ? $"h{text.HeadingLevel}" : "span")
+  src/eQuantic.UI.Web/WebLoweringVisitor.Text.cs:313  var element = new RealizedElement(text.HeadingLevel > 0 ? $"h{text.HeadingLevel}" : "span")
   src/eQuantic.UI.Native.Shell.Android/PhotonAccessibility.cs:150  info.Heading = node.HeadingLevel > 0;
   ```
 
@@ -229,7 +229,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:78  var inert = Disabled || Loading;  → Button.cs:132 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:510  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:3402  if (disabled && !wrapping) node.attributes['disabled'] = '';
+  Button.cs:78  var inert = Disabled || Loading;  → Button.cs:132 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:510  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:3465  if (disabled && !wrapping) node.attributes['disabled'] = '';
   ```
 
 ### A13 IconButton · semantics · **CONFIRMED**
@@ -362,8 +362,8 @@ the pill's 40 down.
   ```
   Avatar.cs:19  public sealed class Avatar : StatelessComponent
   Avatar.cs:26  public Avatar(string initials, SizeVariant size = SizeVariant.Medium, string? name = null)
-  UI.cs:512  public static Avatar Avatar(string initials, SizeVariant size = SizeVariant.Medium,
-  UI.cs:514      new Avatar(initials, size, name);
+  UI.cs:514  public static Avatar Avatar(string initials, SizeVariant size = SizeVariant.Medium,
+  UI.cs:516      new Avatar(initials, size, name);
   ```
 
 ### B8 Chip · semantics · **CONFIRMED**
@@ -422,7 +422,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/TextInput.cs`
 - **Handoff**: Helper/error below: 12/500, 5dp gap — the line is always reserved so error swaps never shift layout.
-- **Code**: The caption line is a plain Text whose content is "" when there is neither helper nor error (TextInput.cs:91, :136). On the web target that lowers to an EMPTY span (src/eQuantic.UI.Web/WebLoweringVisitor.Text.cs:286 LowerText `InnerHtml = text.Spans is null ? text.Content : null`) which, with maxLines:1 forcing `display:block` (src/eQuantic.UI.Runtime/src/shared/lowering.ts:2387), generates no line box and measures 0dp tall — so a field authored without a helper grows by the Caption line height (16dp) the first time an error is set. The native target does reserve it: the measurer floors at one line (src/eQuantic.UI.Native.Framework/Text/ITextMeasurer.cs:92 `if (lines.Count == 0) lines.Add(new MeasuredLine(0, false));`), so the two targets also disagree with each other on the same tree.
+- **Code**: The caption line is a plain Text whose content is "" when there is neither helper nor error (TextInput.cs:91, :136). On the web target that lowers to an EMPTY span (src/eQuantic.UI.Web/WebLoweringVisitor.Text.cs:297 LowerText `InnerHtml = text.Spans is null ? text.Content : null`) which, with maxLines:1 forcing `display:block` (src/eQuantic.UI.Runtime/src/shared/lowering.ts:2387), generates no line box and measures 0dp tall — so a field authored without a helper grows by the Caption line height (16dp) the first time an error is set. The native target does reserve it: the measurer floors at one line (src/eQuantic.UI.Native.Framework/Text/ITextMeasurer.cs:92 `if (lines.Count == 0) lines.Add(new MeasuredLine(0, false));`), so the two targets also disagree with each other on the same tree.
 - **Evidence**:
 
   ```
@@ -623,7 +623,7 @@ the pill's 40 down.
 
   ```
   Drawer.cs:76  var overlay = new Overlay(layer);
-  lowering.ts:1307  if (node.label) layer.attributes['aria-label'] = node.label;
+  lowering.ts:1309  if (node.label) layer.attributes['aria-label'] = node.label;
   ```
 
 ### C5 Drawer · missing-feature · **unverified**
@@ -714,7 +714,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:3815-3818  const value = role === 'slider' ? node.value : undefined; host.attributes['role'] = role === 'slider' && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
+  lowering.ts:3875-3878  const value = role === 'slider' ? node.value : undefined; host.attributes['role'] = role === 'slider' && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
   WebLoweringVisitor.Interaction.cs:127  var adjustableValue = adjustable.Role == AdjustableRole.Slider ? adjustable.Value : null;
   WebLoweringVisitor.Interaction.cs:288-290  AdjustableRole.Tablist => "tablist", AdjustableRole.Radiogroup => "radiogroup", _ => value is null ? "group" : "slider",
   Slider.cs:163-172              : new Adjustable(box, direction =>
@@ -1182,7 +1182,7 @@ the pill's 40 down.
 
   ```
   Tokens.cs:214  public const float PressCancelSlop = 12;
-  PhotonHost.cs:2031  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
+  PhotonHost.cs:2033  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
   ```
 
 ### A6 ScrollView · missing-feature · **unverified**
@@ -1228,7 +1228,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:2126  public bool ScrollBy(float x, float y, float delta)
+  PhotonHost.cs:2128  public bool ScrollBy(float x, float y, float delta)
   PhotonHost.cs:1611-1614  case "Home" or "ArrowUp":
                   MoveCaret(0, selecting);
                   return true;
@@ -1239,7 +1239,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Divider.cs`
 - **Handoff**: Consumes exactly its thickness — vertical rhythm comes from the parent's gap, never from Divider "spacing" props (it has none).
-- **Code**: True for every horizontal case, but a VERTICAL divider with an inset consumes the parent's whole width instead of its 1dp thickness: the inset wrapper is hardcoded Width = SizeValue.Fill and pads on the horizontal axis regardless of Axis, so Divider(DividerInset.Middle, DividerAxis.Vertical) in a toolbar Row eats all the remaining space and pushes the line off-centre. Reachable straight from the public factory UI.Divider(inset, axis) (UI.cs:602-607 UI.Divider). In-repo callers happen to dodge it — ListDetail.cs:107 uses the vertical divider with the default None inset.
+- **Code**: True for every horizontal case, but a VERTICAL divider with an inset consumes the parent's whole width instead of its 1dp thickness: the inset wrapper is hardcoded Width = SizeValue.Fill and pads on the horizontal axis regardless of Axis, so Divider(DividerInset.Middle, DividerAxis.Vertical) in a toolbar Row eats all the remaining space and pushes the line off-centre. Reachable straight from the public factory UI.Divider(inset, axis) (UI.cs:604-609 UI.Divider). In-repo callers happen to dodge it — ListDetail.cs:107 uses the vertical divider with the default None inset.
 - **Evidence**:
 
   ```
@@ -1304,7 +1304,7 @@ the pill's 40 down.
   src/eQuantic.UI.Web/WebLoweringVisitor.Graphics.cs:300-303 —
           svg.RawAttributes["role"] = "img";
           svg.RawAttributes["aria-label"] = label;
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2295  attributes['role'] = 'img';
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2358  attributes['role'] = 'img';
   ```
 
 ### A11 Image · missing-feature · **REFUTED**
@@ -1371,7 +1371,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/IconButton.cs`
 - **Handoff**: new IconButton(Icons.Heart, label: "Favorite", kind: IconButtonKind.Standard, selected: bool?, onPressed: fn)
-- **Code**: `selected` is not a constructor parameter and is absent from the factory (UI.cs:490-495 UI.Chip), so the handoff's call does not compile; the toggle state is only settable through an object initializer on `new`. It is also `bool`, not `bool?` — the component cannot distinguish "not a toggle at all" from "a toggle currently off", which is precisely the distinction Pressable.Selected (bool?) exists to carry (src/eQuantic.UI.Primitives/Nodes/Pressable.cs).
+- **Code**: `selected` is not a constructor parameter and is absent from the factory (UI.cs:492-497 UI.Chip), so the handoff's call does not compile; the toggle state is only settable through an object initializer on `new`. It is also `bool`, not `bool?` — the component cannot distinguish "not a toggle at all" from "a toggle currently off", which is precisely the distinction Pressable.Selected (bool?) exists to carry (src/eQuantic.UI.Primitives/Nodes/Pressable.cs).
 - **Evidence**:
 
   ```
@@ -1591,7 +1591,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:3838-3855  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:3885-3902  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
   ```
 
 ### B5 Tabs · semantics · **unverified**
@@ -1602,7 +1602,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:3366-3368  node.attributes['role'] = 'tab'; node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false'; node.attributes['tabindex'] = '-1';
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:3428-3430  node.attributes['role'] = 'tab'; node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false'; node.attributes['tabindex'] = '-1';
   ```
 
 ### B5 Tabs · missing-feature · **unverified**
@@ -1674,7 +1674,7 @@ the pill's 40 down.
   Avatar.cs:26  public Avatar(string initials, SizeVariant size = SizeVariant.Medium, string? name = null)
   Avatar.cs:37  public string? ImageSource { get; init; }
   Avatar.cs:46  public PresenceStatus Status { get; init; }
-  UI.cs:512  public static Avatar Avatar(string initials, SizeVariant size = SizeVariant.Medium,
+  UI.cs:514  public static Avatar Avatar(string initials, SizeVariant size = SizeVariant.Medium,
   ```
 
 ### B7 Badge · metric · **CONFIRMED**
@@ -1974,7 +1974,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/EmptyState.cs`
 - **Handoff**: illustration slot is an Image (bitmap atlas), optional.
-- **Code**: There is no illustration slot. The only visual input is `Icons icon`, always rendered as a 32dp glyph inside the 64dp well; the class exposes Icon/Title/Body/Action/SecondaryAction and nothing that accepts an Image. The UI factory (UI.cs:636-640 UI.EmptyState) mirrors the same three parameters.
+- **Code**: There is no illustration slot. The only visual input is `Icons icon`, always rendered as a 32dp glyph inside the 64dp well; the class exposes Icon/Title/Body/Action/SecondaryAction and nothing that accepts an Image. The UI factory (UI.cs:638-642 UI.EmptyState) mirrors the same three parameters.
 - **Evidence**:
 
   ```
@@ -2307,8 +2307,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:3838-3855  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3156  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  lowering.ts:3885-3902  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
+  PhotonHost.cs:3178  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · metric · **CONFIRMED**
@@ -2333,8 +2333,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:3838-3855  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3156  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  lowering.ts:3885-3902  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
+  PhotonHost.cs:3178  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · missing-feature · **unverified**
@@ -2886,7 +2886,7 @@ the pill's 40 down.
 
   ```
   PhotonHost.cs:364  _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, …
-  PhotonHost.cs:2048  if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
+  PhotonHost.cs:2050  if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
                       NeedsRender = true;
   ```
 
@@ -3268,8 +3268,8 @@ the pill's 40 down.
 
   ```
   Switch.cs:12 — `/// Fence: the slide/crossfade motion between the two ends joins the animation system.`
-  WebLoweringVisitor.Interaction.cs:820  var glide = $"translate {Motion.BaseMs}ms";
-  lowering.ts:1246  const glide = `translate ${Motion.baseMs}ms`;
+  WebLoweringVisitor.Interaction.cs:825  var glide = $"translate {Motion.BaseMs}ms";
+  lowering.ts:1248  const glide = `translate ${Motion.baseMs}ms`;
   draggable.ts:136  function handBack(surface: HTMLElement): void {
   ```
 

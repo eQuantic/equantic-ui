@@ -47,10 +47,12 @@ public class AssemblyLayeringTests
         // The spreadsheet engine — what a SheetSurface's realizer drives, on the same terms.
         ["eQuantic.UI.Sheet"] = ["eQuantic.UI.Primitives"],
 
-        // Written once, against the vocabulary and nothing else — plus, for the editing components,
-        // the two engines they are views of.
-        ["eQuantic.UI.Components"] = ["eQuantic.UI.Primitives", "eQuantic.UI.Code", "eQuantic.UI.Sheet"],
+        // Written once, against the vocabulary and nothing else — plus, for the code editor, the
+        // engine it is a view of.
+        ["eQuantic.UI.Components"] = ["eQuantic.UI.Primitives", "eQuantic.UI.Code"],
         ["eQuantic.UI.Charts"] = ["eQuantic.UI.Primitives", "eQuantic.UI.Components"],
+        // The spreadsheet family: the components it composes and the engine it is a view of.
+        ["eQuantic.UI.Spreadsheets"] = ["eQuantic.UI.Primitives", "eQuantic.UI.Components", "eQuantic.UI.Sheet"],
 
         // The realizers. Each lowers VisualNode trees; a component reaches them as the tree its
         // Build produced, so none of them needs the library — and none may reference it, or the

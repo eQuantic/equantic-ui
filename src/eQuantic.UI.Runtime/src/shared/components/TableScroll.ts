@@ -24,6 +24,7 @@ export class TableScroll {
         this._panTime = 0;
         this._velocityAcross = 0;
         this._velocityDown = 0;
+        this._autoScroll = null;
     }
 
     _across!: number;
@@ -48,6 +49,7 @@ export class TableScroll {
     _panTime!: number;
     _velocityAcross!: number;
     _velocityDown!: number;
+    _autoScroll!: Point | null;
     static thickness: number = 12;
     static minThumb: number = 24;
     static smoothingPerMs: number = 0.022;
@@ -55,6 +57,8 @@ export class TableScroll {
     static flingReach: number = 90;
     static flingFloor: number = 0.05;
     static flingWindow: number = 80;
+    static autoScrollRate: number = 0.02;
+    static autoScrollCap: number = 4;
     static arrowStep: number = 40;
 
     get offset(): TableOffset {
@@ -140,13 +144,15 @@ export class TableScroll {
     advance(time: number) {
         let elapsed = Number.isNaN(this._lastTime) ? 0 : Math.max(0, time - this._lastTime);
         this._lastTime = time;
+        let drifting = this.drift(elapsed);
         if (this._targetAcross == null && this._targetDown == null) {
-            this._lastTime = NaN;
-            return false;
+            if (!drifting) this._lastTime = NaN;
+            return drifting;
         }
         if (this._reduceMotion) {
             this.land();
-            return false;
+            if (!drifting) this._lastTime = NaN;
+            return drifting;
         }
         let step = 1 - Math.pow(1 - TableScroll.smoothingPerMs, elapsed);
         let targetAcross: any; 
@@ -165,9 +171,35 @@ export class TableScroll {
                 this._targetDown = null;
             }
         }
-        let moving = !(this._targetAcross == null) || !(this._targetDown == null);
+        let moving = !(this._targetAcross == null) || !(this._targetDown == null) || drifting;
         if (!moving) this._lastTime = NaN;
         return moving;
+    }
+
+    autoScroll(pointer: Point | null) {
+        this._autoScroll = pointer;
+        if (pointer == null) return;
+        this._targetAcross = null;
+        this._targetDown = null;
+    }
+
+    drift(elapsed: number) {
+        let at: any; 
+        if (!((at = this._autoScroll) != null)) return false;
+        let across = TableScroll.speed(at.x, this._pinnedAcross, this._viewport.width);
+        let down = TableScroll.speed(at.y, this._pinnedDown, this._viewport.height);
+        if (across === 0 && down === 0) return false;
+        let toAcross = Math.min(Math.max(this._across + across * elapsed, 0), this.maxAcross);
+        let toDown = Math.min(Math.max(this._down + down * elapsed, 0), this.maxDown);
+        if (toAcross !== this._across || toDown !== this._down) this.letGo();
+        this._across = toAcross;
+        this._down = toDown;
+        return across < 0 && this._across > 0 || across > 0 && this._across < this.maxAcross || down < 0 && this._down > 0 || down > 0 && this._down < this.maxDown;
+    }
+
+    static speed(at: number, from: number, to: number) {
+        let past = at < from ? at - from : at > to ? at - to : 0;
+        return Math.min(Math.max(past * TableScroll.autoScrollRate, -TableScroll.autoScrollCap), TableScroll.autoScrollCap);
     }
 
     trackOf(axis: ScrollAxisValue) {
@@ -346,13 +378,14 @@ export class TableScroll {
     }
 
     land() {
+        if (this._targetAcross == null && this._targetDown == null) return;
         let across: any; 
         if ((across = this._targetAcross) != null) this._across = across;
         let down: any; 
         if ((down = this._targetDown) != null) this._down = down;
         this._targetAcross = null;
         this._targetDown = null;
-        this._lastTime = NaN;
+        if (this._autoScroll == null) this._lastTime = NaN;
     }
 
     static contains(box: Rect, at: Point) {

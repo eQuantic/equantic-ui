@@ -100,6 +100,19 @@ describe('theme bridge: a distinct theme materializes to distinct values', () =>
     expect(materializeTheme(base).monoFamily).toBeUndefined();
   });
 
+  it("carries the sheet's slot with the members it names, and none when the theme answers none", () => {
+    const data = photonData as unknown as ThemeData;
+    expect(materializeTheme(data).sheet).toBeNull();
+    const gridline = [
+      [18, 52, 86, 1],
+      [101, 67, 33, 1],
+    ] as const;
+    const slotted = materializeTheme({ ...data, sheet: { gridline } } as unknown as ThemeData);
+    expect(slotted.sheet).not.toBeNull();
+    expect(slotted.sheet!.gridline!.light).toEqual({ r: 18, g: 52, b: 86, a: 1 });
+    expect(slotted.sheet!.headerText).toBeNull();
+  });
+
   // The document's two members a theme need not answer (#1038): the text face beside the code face,
   // and the selected text's colour. The four colours every theme has ride the surfaces above.
   it("carries the theme's text face and its selected text's colour, and omits them when there are none", () => {

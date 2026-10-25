@@ -859,6 +859,8 @@ export class TableViewport extends VisualNode {
   onScrolled: ((offset: TableOffset) => void) | null = null;
   onViewportChanged: ((viewport: Size) => void) | null = null;
   label: string | null = null;
+  /** False: no Tab stop of its own and no keys, the composing component keeps the keyboard. */
+  canRequestFocus = true;
   readonly cells: TableViewCell[] = [];
 
   constructor(rows: unknown, columns: unknown, scroll: unknown, config?: EqConfig) {

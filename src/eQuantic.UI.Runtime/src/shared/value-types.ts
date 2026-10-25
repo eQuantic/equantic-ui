@@ -9,6 +9,7 @@
 import { round as dotnetRound } from '../utils/dotnet-math';
 import type { ColorValue, SizeKindValue, TypeStyleValue } from './nodes';
 import type { DataPalette } from './data-palette';
+import type { SheetTheme } from './sheet-theme';
 import { hashesByValue } from '../utils/hash';
 
 /**
@@ -544,6 +545,8 @@ export interface AppTheme {
   scrollbarTrack: ColorToken;
   /** The colours a chart draws DATA with (C# `IAppTheme.Data`): series, sequential, diverging, other, status. */
   data: DataPalette;
+  /** The spreadsheet's slot (C# `IAppTheme.Sheet`), absent or null for its own colours. */
+  sheet?: SheetTheme | null;
   disabledOpacity: number;
   /**
    * The face this theme sets CODE in (C# `IAppTheme.MonoFamily`), or undefined for the platform's

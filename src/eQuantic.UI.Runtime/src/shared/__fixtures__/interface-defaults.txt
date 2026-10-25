@@ -6,6 +6,7 @@ IAppTheme.placeholder
 IAppTheme.scrollbarThumb
 IAppTheme.scrollbarTrack
 IAppTheme.selection
+IAppTheme.sheet
 IAppTheme.textFamily
 ICodeCompletionProvider.resolveAsync
 ICodeCompletionProvider.triggerCharacters
