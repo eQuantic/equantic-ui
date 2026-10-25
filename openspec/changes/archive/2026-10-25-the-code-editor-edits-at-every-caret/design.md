@@ -49,7 +49,9 @@ primary, and what it commits is typed at every caret); each can follow on the sa
   travels with its text, and two carets on one line indent it once.
 - **A step restores every selection.** The history keeps a `CodeStep`: its edits, and every selection
   before and after them. Typing at several carets is still one run: a typed step joins the step before
-  when it is one typed character at each caret, the carets where the run left them.
+  when it is one typed character at each caret, each where the run's text ends at its caret. The run
+  joins its steps edit by edit, so it keeps where each edit's text ends, read from the edits as the
+  single-caret run kept its one end, and only a step made from the last caret to the first begins one.
 - **Adding carets.** ⌥⌘↑ ⌥⌘↓ (Ctrl+Alt with the arrows on Windows) add a caret on the line above or below
   each caret at the cell it aims at, as VS Code's `addCursorUp` does for every cursor. ⌥ and a press adds a
   caret, or takes away the caret pressed on while there are others. ⇧⌥ and a press selects the column from
@@ -66,7 +68,10 @@ primary, and what it commits is typed at every caret); each can follow on the sa
   each its own piece, a text with one line for each caret gives each its line, and any other goes whole to
   every caret, as VS Code spreads a paste.
 - **The completion** asks at the primary, and an entry accepted replaces, around every caret, what it
-  replaces around the primary, as VS Code applies one suggestion at every cursor.
+  replaces around the primary, as VS Code applies one suggestion at every cursor. The word's start and a
+  provider's range are carried through every edit made since they were read, at whichever caret: a caret
+  before the primary on its line moves the word, and one after it moves the line's end, which the
+  provider's range used to be measured from.
 - **Drawing.** `Carets` lists every caret, the primary first. `SelectionsIn` and `CaretLinesIn` answer the
   selections and the carets' lines a view's window reaches, and `SelectionBandsIn` every one's bands; the
   code block takes `ActiveLines` and `Selections`, so every caret's line is washed and every selection's

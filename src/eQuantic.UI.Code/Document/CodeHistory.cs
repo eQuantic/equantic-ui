@@ -19,7 +19,10 @@ public sealed class CodeHistory
 {
     private readonly List<CodeStep> _past = [];
     private readonly List<CodeStep> _future = [];
-    private bool _running;
+
+    /// <summary>Where the run of typing left each caret's text, once its last step was made, in the order
+    /// that step made its edits; null when the last step is no run.</summary>
+    private List<CodePosition>? _runEnds;
 
     /// <summary>How many steps deep the history goes before the oldest is dropped.</summary>
     public int Limit { get; init; } = 500;
@@ -35,19 +38,20 @@ public sealed class CodeHistory
         if (step.Edits.Count == 0) return;
         _future.Clear();
 
-        // Coalesce: characters TYPED at the carets, right where the last ones typed left them, continue that
+        // Coalesce: characters TYPED at the carets, right where the run's text ends at each, continue that
         // run, and a run may begin by typing over a selection, the replacement being its first step. What was
         // not typed (a paste, a cut, an indent) never joins one and never starts one, and neither does a
-        // step that is not one typed edit at each caret.
-        if (_running && _past.Count > 0 && Continues(_past[^1], step))
+        // step that is not one typed edit at each caret, made from the last caret to the first.
+        if (_runEnds != null && _past.Count > 0 && Continues(_runEnds, step))
         {
             _past[^1] = Joined(_past[^1], step);
+            _runEnds = Ends(_past[^1]);
             return;
         }
 
         _past.Add(step);
         if (_past.Count > Limit) _past.RemoveAt(0);
-        _running = Runs(step);
+        _runEnds = Runs(step) ? Ends(step) : null;
     }
 
     /// <summary>Whether <paramref name="step"/> may begin a run: one typed edit at each caret, none of them
@@ -61,25 +65,37 @@ public sealed class CodeHistory
     }
 
     /// <summary>
-    /// Whether <paramref name="step"/> goes on with the run <paramref name="previous"/> is: as many carets,
-    /// each where the run left it, and at each one character typed there. The edits of a step at several
-    /// carets are made from the last caret to the first, so the one made k-th is at the caret k-th from
-    /// the end, in coordinates no edit before it moved.
+    /// Where each edit of <paramref name="step"/> left the end of its text once the whole step was made,
+    /// the first edit's first; null unless every edit's text ends before the text of the edit made ahead
+    /// of it, which is the order a step at several carets is made in, from the last caret to the first. A
+    /// run joins its steps edit by edit, so a step made in any other order is no run: its k-th edit and the
+    /// next step's k-th would be at different carets.
     /// </summary>
-    private static bool Continues(CodeStep previous, CodeStep step)
+    private static List<CodePosition>? Ends(CodeStep step)
     {
-        var count = step.Edits.Count;
-        if (count != previous.Edits.Count || count != step.Before.Count || count != previous.After.Count)
-            return false;
-        for (var i = 0; i < count; i++)
-            if (step.Before[i] != previous.After[i] || !step.Before[i].IsEmpty) return false;
-        var carets = new List<CodePosition>();
-        foreach (var caret in step.Before) carets.Add(caret.Focus);
-        carets.Sort();
-        for (var k = 0; k < count; k++)
+        var ends = new List<CodePosition>();
+        for (var k = 0; k < step.Edits.Count; k++)
+        {
+            var end = new CodeRange(step.Edits[k].InsertedRange.End);
+            for (var later = k + 1; later < step.Edits.Count; later++) end = step.Edits[later].Carry(end);
+            if (k > 0 && end.End >= ends[k - 1]) return null;
+            ends.Add(end.End);
+        }
+        return ends;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="step"/> goes on with the run whose text ends at <paramref name="ends"/>: as
+    /// many edits, the k-th one character typed where the run's k-th text ends. Each edit before it in the
+    /// step was made further on, so it stands where the run left it.
+    /// </summary>
+    private static bool Continues(List<CodePosition> ends, CodeStep step)
+    {
+        if (step.Edits.Count != ends.Count) return false;
+        for (var k = 0; k < ends.Count; k++)
         {
             var edit = step.Edits[k];
-            if (!edit.Typed || !edit.IsSimpleInsert || edit.Range.Start != carets[count - 1 - k]) return false;
+            if (!edit.Typed || !edit.IsSimpleInsert || edit.Range.Start != ends[k]) return false;
         }
         return true;
     }
@@ -104,7 +120,7 @@ public sealed class CodeHistory
 
     /// <summary>Ends the current typing run, so the NEXT character starts a new undo step. Called
     /// when the caret moves somewhere else, when the editor loses focus, when a file is saved.</summary>
-    public void Break() => _running = false;
+    public void Break() => _runEnds = null;
 
     /// <summary>
     /// Takes the last step back, applying it to <paramref name="document"/>: its edits last first, each

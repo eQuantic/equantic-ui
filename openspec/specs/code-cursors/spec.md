@@ -154,12 +154,20 @@ and any other text SHALL go whole to every caret. A cut SHALL take at every care
 ### Requirement: A completion accepted at every caret
 
 An entry accepted with several carets SHALL replace, around every caret, what it replaces around the
-primary, on the caret's own line, as VS Code applies one suggestion at every cursor, as one undo step.
+primary, on the caret's own line, as VS Code applies one suggestion at every cursor, as one undo step. The
+word being completed and a provider's range SHALL stand where the edits made since, at every caret, carried
+them.
 
 #### Scenario: An entry at two carets
 
 - **WHEN** there are carets at the end of `x = ` and `y = `, `Co` is typed and the list's `Column` accepted
 - **THEN** the lines read `x = Column` and `y = Column`, and one undo gives back `Co` at both
+
+#### Scenario: A word moved by a caret before it
+
+- **WHEN** there are carets after both words of `Con Con`, the second the primary, the list is asked for,
+  Backspace is pressed and `ConsoleOutput` accepted
+- **THEN** the line reads `ConsoleOutput ConsoleOutput`
 
 ### Requirement: Every caret is drawn
 

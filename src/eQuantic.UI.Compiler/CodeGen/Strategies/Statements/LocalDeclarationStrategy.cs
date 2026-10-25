@@ -97,12 +97,12 @@ public class LocalDeclarationStrategy : IStatementStrategy
                 if (item is INamedTypeSymbol { Name: "List", IsGenericType: true, TypeArguments.Length: 1 } inner
                     && collection.Name == "List"
                     && SimpleItemName(inner.TypeArguments[0], context) is { } innerName)
-                    return $": {innerName}[][]";
+                    return $": {ArrayOf(ArrayOf(innerName))}";
                 // A GENERIC item (KeyValuePair<,>) has no TS name to annotate with — its bare C# name
                 // names nothing over there. Inference from the initializer is right. A tuple has one
                 // (see SimpleItemName).
                 if (SimpleItemName(item, context) is not { } itemName) return "";
-                return collection.Name == "HashSet" ? $": Set<{itemName}>" : $": {itemName}[]";
+                return collection.Name == "HashSet" ? $": Set<{itemName}>" : $": {ArrayOf(itemName)}";
             }
 
             // An empty dictionary is the runtime's class, which TypeScript would infer keyed and
@@ -180,10 +180,21 @@ public class LocalDeclarationStrategy : IStatementStrategy
     /// array are left to inference. A type whose C# name names nothing in TypeScript is its stand-in
     /// (<see cref="TsStandIn"/>), a function parenthesised to be an element: a list of exceptions, of
     /// an interface, of an enum or of Action named a type no module defines (#296). A primitive is the
-    /// mapper's, where this called a long, a decimal, a date and an object all a number.
+    /// mapper's, where this called a long, a decimal, a date and an object all a number. A nested class
+    /// is its twin, and a nullable item holds its null.
     /// </summary>
     private static string? SimpleItemName(ITypeSymbol item, ConversionContext context)
     {
+        // A NULLABLE item holds the null C# lets it hold, `T | null`: written without it, pushing that null
+        // into the list, or a pair with a null in it, failed the type check (Copilot on #1068).
+        if (item is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } wrapper)
+            return SimpleItemName(wrapper.TypeArguments[0], context) is { } value
+                ? CodeGen.TypeScriptEmitter.OrNull(value)
+                : null;
+        if (item is { IsReferenceType: true, NullableAnnotation: NullableAnnotation.Annotated })
+            return SimpleItemName(item.WithNullableAnnotation(NullableAnnotation.NotAnnotated), context) is { } reference
+                ? CodeGen.TypeScriptEmitter.OrNull(reference)
+                : null;
         // A TUPLE crosses as an array literal, so its name is the TS tuple of its elements' names, as a
         // tuple a method returns is written: left to inference, an empty list of pairs pushed array
         // literals and became an array of arrays, which no tuple slot takes (the code block's selected
@@ -200,14 +211,22 @@ public class LocalDeclarationStrategy : IStatementStrategy
         }
         if (item is INamedTypeSymbol { IsGenericType: true }) return null;
         if (TsStandIn.Inside(item, context.UsedRuntimeTypes) is { } standIn) return standIn;
+        // A NESTED class is its twin, named by its owner and imported as any reference to it is: its own
+        // name, `Item` for `Cart.Item`, names nothing (Copilot on #1068).
+        if (item is INamedTypeSymbol nested && nested.NestedTwinName() is not null) return nested.IntroduceTwin(context);
         if (item is ITypeParameterSymbol or INamedTypeSymbol { SpecialType: SpecialType.None }) return item.Name;
         if (item.SpecialType == SpecialType.None) return null;
         var ts = CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(
-            item.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat).TrimEnd('?'));
+            item.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat));
         // A decimal is the runtime's class, which the module imports only when something says so.
         if (ts == "Decimal") context.UsedRuntimeTypes.Add("Decimal");
         return ts;
     }
+
+    /// <summary>An array of <paramref name="item"/>, a union parenthesised: <c>string | null[]</c> is a string
+    /// or an array of nulls.</summary>
+    private static string ArrayOf(string item) =>
+        item.EndsWith(" | null", StringComparison.Ordinal) ? $"({item})[]" : $"{item}[]";
 
     /// <summary>
     /// Takes the initializer's VALUE, not the declarator: `int x;` is legal C# and carries no

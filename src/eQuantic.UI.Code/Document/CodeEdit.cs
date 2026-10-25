@@ -52,6 +52,13 @@ public sealed record CodeEdit(
         return new CodeRange(start, end < start ? start : end);
     }
 
+    /// <summary>
+    /// Where a place something is typed at, which stood at <paramref name="position"/> before this edit,
+    /// stands after it: text inserted right at it goes after it, as the start of a word being completed
+    /// keeps what is typed there, and inside the replaced text it goes to the end of the replacement.
+    /// </summary>
+    internal CodePosition CarryAnchor(CodePosition position) => CarryEnd(position);
+
     /// <summary>Where a range's start goes: past text inserted right at it, and to the start of a
     /// replacement it stood inside.</summary>
     private CodePosition CarryStart(CodePosition position)

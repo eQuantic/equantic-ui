@@ -49,7 +49,8 @@ made on the text the change left, as a step of its own, and every listener SHALL
 and a range a listener reports while it hears one SHALL stand where it was reported. Undo SHALL put back every
 selection the step found and redo every one it left, the primary first (#1012). A step of several edits at
 one caret SHALL never join a run of typing, and a step of one typed character at each of several carets
-SHALL join the run before it while the carets stand where the run left them.
+SHALL join the run before it when each is typed where the run's text ends at its caret. A run joins its
+steps edit by edit, so a step whose edits were not made from the last caret to the first SHALL begin no run.
 
 #### Scenario: A move is one step of two edits
 
@@ -96,3 +97,9 @@ SHALL join the run before it while the carets stand where the run left them.
 - **WHEN** there are carets at the start of three lines, and `x` then `y` are typed
 - **THEN** each line starts with `xy`, one undo takes back all six characters and puts back the three
   carets, the primary first, and one redo types them again and puts back the carets it left
+
+#### Scenario: A step recorded from the first caret on
+
+- **WHEN** a host records `x` typed at columns 1 and 4 of `abcd`, the first caret's first, and then `y`
+  typed after each `x`, the last caret's first
+- **THEN** one undo takes back the two `y` alone, and a second gives back `abcd`

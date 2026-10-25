@@ -471,6 +471,34 @@ public class CodeEditorControllerTests
         undone.Text.Should().Be(afterBreak.Text, "one undo takes back the character typed after the break, and only it");
     }
 
+    /// <summary>
+    /// A run joins its steps edit by edit, so only a step made from the last caret to the first, as the
+    /// editor makes one, begins a run (Copilot on #1068). A step a host recorded the other way began one
+    /// anyway, the next step's edit at the LAST caret was joined to its edit at the first, and one undo of
+    /// both wrote <c>abyd</c> where <c>abcd</c> had been.
+    /// </summary>
+    [Fact]
+    public void AStepMadeFromTheFirstCaretOn_BeginsNoRunOfTyping()
+    {
+        var history = new CodeHistory();
+        var document = CodeDocument.FromText("abcd");
+        CodeEdit Typed(int column, string text)
+        {
+            var edit = new CodeEdit(new CodeRange(new CodePosition(0, column)), "", text, default, default, Typed: true);
+            document = document.Replace(edit.Range, text, out _);
+            return edit;
+        }
+        CodeRange[] Carets(int first, int second) =>
+            [new CodeRange(new CodePosition(0, first)), new CodeRange(new CodePosition(0, second))];
+        history.Record(new CodeStep([Typed(1, "x"), Typed(4, "x")], Carets(1, 3), Carets(2, 5)));
+        var afterX = document.Text;
+        history.Record(new CodeStep([Typed(5, "y"), Typed(2, "y")], Carets(2, 5), Carets(3, 7)));
+
+        var undone = history.Undo(document, out _, out _)!;
+        undone.Text.Should().Be(afterX, "the step made the other way is a step of its own");
+        history.Undo(undone, out _, out _)!.Text.Should().Be("abcd");
+    }
+
     /// <summary>Undo places the selection it restores before it raises the replacement it made, as an edit
     /// does: a listener that reads the caret then reads it in the document undo left (#1031's review).</summary>
     [Fact]

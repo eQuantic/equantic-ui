@@ -407,6 +407,52 @@ public class CodeCursorsTests : IDisposable
         editor.Document.Text.Should().Be("x = Co\ny = Co");
     }
 
+    private sealed class Replacing(string label, CodeRange range) : ICodeCompletionProvider
+    {
+        public Task<CodeCompletionList> CompleteAsync(CodeDocument document, CodePosition position,
+            CodeCompletionContext context, CancellationToken cancellation) =>
+            Task.FromResult(new CodeCompletionList([new CodeCompletionItem(label) { Replacing = range }]));
+
+        public Task<CodeCompletionItem> ResolveAsync(CodeCompletionItem item, CancellationToken cancellation) =>
+            Task.FromResult(item);
+    }
+
+    /// <summary>
+    /// The word being completed is carried through what the other carets do (Copilot on #1068): with a caret
+    /// before the primary on its line, a Backspace there moved the word a column back, the word's start stayed
+    /// where it had been, and the entry accepted replaced one character of the word instead of two.
+    /// </summary>
+    [Fact]
+    public void ACompletion_FollowsTheWord_ThatACaretBeforeItOnItsLineMoved()
+    {
+        var editor = Editor("Con Con", Caret(0, 7), Caret(0, 3));
+        editor.Completion.Providers.Add(new Offers("ConsoleOutput"));
+        editor.Completion.Invoke().Should().BeTrue();
+
+        Press(editor, "Backspace").Should().BeTrue();
+        Press(editor, "Enter").Should().BeTrue();
+
+        editor.Document.Text.Should().Be("ConsoleOutput ConsoleOutput");
+    }
+
+    /// <summary>
+    /// A provider's range is carried through what the other carets do (Copilot on #1068): its end was kept as
+    /// far from the end of the line as when the provider was asked, so a character typed at a caret further
+    /// on the line moved it, and the entry took the space after the word with it.
+    /// </summary>
+    [Fact]
+    public void AProvidersRange_StaysWithItsWord_WhenACaretAfterItOnItsLineTypes()
+    {
+        var editor = Editor("Con Con", Caret(0, 3), Caret(0, 7));
+        editor.Completion.Providers.Add(new Replacing("ConsoleOutput", new CodeRange(At(0, 0), At(0, 3))));
+        editor.Completion.Invoke().Should().BeTrue();
+
+        editor.HandleText("s");
+        Press(editor, "Enter").Should().BeTrue();
+
+        editor.Document.Text.Should().Be("ConsoleOutput ConsoleOutput");
+    }
+
     // ---- from the review ------------------------------------------------------------------------------
 
     private sealed class Late : ICodeCompletionProvider

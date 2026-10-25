@@ -62,6 +62,21 @@ public class CollectionConstructionTests
             .Should().Contain("let keyed = [];", "an element with no TS name leaves the list to inference");
     }
 
+    /// <summary>
+    /// A nullable element holds its null, in a tuple's slot and as a list's item, a union parenthesised as
+    /// an array's element (Copilot on #1068): written without it, pushing the null C# allowed failed the type
+    /// check.
+    /// </summary>
+    [Fact]
+    public void ANullableElement_IsAnnotatedWithItsNull()
+    {
+        Convert("var pairs = new List<(string? Name, int At)>();").Should().Contain("let pairs: [string | null, number][] = [];");
+        Convert("var names = new List<string?>();").Should().Contain("let names: (string | null)[] = [];");
+        Convert("var counts = new List<int?>();").Should().Contain("let counts: (number | null)[] = [];");
+        Convert("var rows = new List<List<int?>>();").Should().Contain("let rows: (number | null)[][] = [];");
+        Convert("var seen = new HashSet<string?>();").Should().Contain("let seen: Set<string | null> = ");
+    }
+
     [Fact]
     public void AndTheOrdinaryShapesAreUnchanged()
     {

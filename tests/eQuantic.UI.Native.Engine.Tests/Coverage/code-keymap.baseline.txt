@@ -646,8 +646,8 @@ Apple list ArrowUp - => claimed list=2
 Apple list ArrowUp Shift => claimed selection=2:15>1:15 list=-
 Apple list ArrowUp Command => claimed selection=0:0>0:0 list=-
 Apple list ArrowUp Shift+Command => claimed selection=2:15>0:0 list=-
-Apple list ArrowUp Alt => claimed text=alpha beta\nepsilon zeta ga\n    gamma delta selection=1:15>1:15 list=-
-Apple list ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\nepsilon zeta ga\nepsilon zeta ga
+Apple list ArrowUp Alt => claimed text=alpha beta\nepsilon zeta ga\n    gamma delta selection=1:15>1:15
+Apple list ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\nepsilon zeta ga\nepsilon zeta ga list=-
 Apple list ArrowUp Command+Alt => claimed selection=1:15>1:15 list=-
 Apple list ArrowDown - => claimed list=1
 Apple list ArrowDown Shift => claimed unchanged
@@ -687,10 +687,10 @@ Apple list c Command => claimed clipboard=epsilon zeta ga
 Apple list x Command => claimed text=alpha beta\n    gamma delta\n selection=2:0>2:0 list=- clipboard=epsilon zeta ga
 
 Apple list v Command => claimed text=alpha beta\n    gamma delta\nepsilon zeta gaPASTED selection=2:21>2:21 list=-
-Apple list / Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18 list=-
-Apple list / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18 list=-
-Apple list Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18 list=-
-Apple list Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18 list=-
+Apple list / Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18
+Apple list / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18
+Apple list Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18
+Apple list Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18
 Apple list k Shift+Command => claimed text=alpha beta\n    gamma delta selection=1:15>1:15 list=-
 Apple card ArrowLeft - => claimed selection=1:5>1:5 card=-
 Apple card ArrowLeft Shift => claimed selection=1:6>1:5 card=-
@@ -1552,8 +1552,8 @@ Standard list ArrowRight Command => claimed unchanged
 Standard list ArrowRight Shift+Command => claimed unchanged
 Standard list ArrowUp - => claimed list=2
 Standard list ArrowUp Shift => claimed selection=2:15>1:15 list=-
-Standard list ArrowUp Alt => claimed text=alpha beta\nepsilon zeta ga\n    gamma delta selection=1:15>1:15 list=-
-Standard list ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\nepsilon zeta ga\nepsilon zeta ga
+Standard list ArrowUp Alt => claimed text=alpha beta\nepsilon zeta ga\n    gamma delta selection=1:15>1:15
+Standard list ArrowUp Shift+Alt => claimed text=alpha beta\n    gamma delta\nepsilon zeta ga\nepsilon zeta ga list=-
 Standard list ArrowUp Command+Alt => claimed selection=1:15>1:15 list=-
 Standard list ArrowDown - => claimed list=1
 Standard list ArrowDown Shift => claimed unchanged
@@ -1590,10 +1590,10 @@ Standard list c Command => claimed clipboard=epsilon zeta ga
 Standard list x Command => claimed text=alpha beta\n    gamma delta\n selection=2:0>2:0 list=- clipboard=epsilon zeta ga
 
 Standard list v Command => claimed text=alpha beta\n    gamma delta\nepsilon zeta gaPASTED selection=2:21>2:21 list=-
-Standard list / Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18 list=-
-Standard list / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18 list=-
-Standard list Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18 list=-
-Standard list Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18 list=-
+Standard list / Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18
+Standard list / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18
+Standard list Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18
+Standard list Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18
 Standard list k Shift+Command => claimed text=alpha beta\n    gamma delta selection=1:15>1:15 list=-
 Standard card ArrowLeft - => claimed selection=1:5>1:5 card=-
 Standard card ArrowLeft Shift => claimed selection=1:6>1:5 card=-

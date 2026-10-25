@@ -4,13 +4,13 @@ export class CodeHistory {
     constructor() {
         this._past = [];
         this._future = [];
-        this._running = false;
+        this._runEnds = null;
         this.limit = 500;
     }
 
     _past!: CodeStep[];
     _future!: CodeStep[];
-    _running!: boolean;
+    _runEnds!: CodePosition[] | null;
     limit!: number;
 
     get canUndo(): boolean {
@@ -24,13 +24,14 @@ export class CodeHistory {
     record(step: CodeStep) {
         if ($eq.collections.count(step.edits) === 0) return;
         this._future.splice(0);
-        if (this._running && this._past.length > 0 && CodeHistory.continues(this._past[this._past.length - 1], step)) {
+        if (this._runEnds != null && this._past.length > 0 && CodeHistory.continues(this._runEnds, step)) {
             this._past[this._past.length - 1] = CodeHistory.joined(this._past[this._past.length - 1], step);
+            this._runEnds = CodeHistory.ends(this._past[this._past.length - 1]);
             return;
         }
         this._past.push(step);
         if (this._past.length > this.limit) this._past.splice(0, 1);
-        this._running = CodeHistory.runs(step);
+        this._runEnds = CodeHistory.runs(step) ? CodeHistory.ends(step) : null;
     }
 
     static runs(step: CodeStep) {
@@ -39,16 +40,22 @@ export class CodeHistory {
         return true;
     }
 
-    static continues(previous: CodeStep, step: CodeStep) {
-        let count = $eq.collections.count(step.edits);
-        if (count !== $eq.collections.count(previous.edits) || count !== $eq.collections.count(step.before) || count !== $eq.collections.count(previous.after)) return false;
-        for (let i = 0; i < count; i++) if (!$eq.equals($eq.collections.item(step.before, i), $eq.collections.item(previous.after, i)) || !$eq.collections.item(step.before, i).isEmpty) return false;
-        let carets: CodePosition[] = [];
-        for (const caret of step.before) carets.push(caret.focus);
-        $eq.collections.listSort(carets, $eq.collections.order('comparable', 'comparable'));
-        for (let k = 0; k < count; k++) {
+    static ends(step: CodeStep) {
+        let ends: CodePosition[] = [];
+        for (let k = 0; k < $eq.collections.count(step.edits); k++) {
+            let end = new CodeRange($eq.collections.item(step.edits, k).insertedRange.end);
+            for (let later = k + 1; later < $eq.collections.count(step.edits); later++) end = $eq.collections.item(step.edits, later).carry(end);
+            if (k > 0 && CodePosition.opGreaterOrEqual(end.end, ends[k - 1])) return null;
+            ends.push(end.end);
+        }
+        return ends;
+    }
+
+    static continues(ends: CodePosition[], step: CodeStep) {
+        if ($eq.collections.count(step.edits) !== ends.length) return false;
+        for (let k = 0; k < ends.length; k++) {
             let edit = $eq.collections.item(step.edits, k);
-            if (!edit.typed || !edit.isSimpleInsert || !$eq.equals(edit.range.start, carets[count - 1 - k])) return false;
+            if (!edit.typed || !edit.isSimpleInsert || !$eq.equals(edit.range.start, ends[k])) return false;
         }
         return true;
     }
@@ -64,7 +71,7 @@ export class CodeHistory {
     }
 
     break() {
-        return this._running = false;
+        return this._runEnds = null;
     }
 
     undo(document: CodeDocument) {
