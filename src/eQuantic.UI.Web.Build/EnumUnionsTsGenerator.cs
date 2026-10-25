@@ -45,7 +45,7 @@ public static class EnumUnionsTsGenerator
         {
             // Distinct: an alias (two names, one value) is one member of the union, named twice.
             var members = Enum.GetNames(type)
-                .Select(name => char.ToLowerInvariant(name[0]) + name[1..])
+                .Select(Emitted)
                 .Distinct(StringComparer.Ordinal);
 
             ts.AppendLine();
@@ -60,10 +60,13 @@ public static class EnumUnionsTsGenerator
         ts.AppendLine("/** Each weight's number, its OpenType weight class, keyed by the name the transpiler emits. */");
         using (ts.BeginBlock("export const FontWeightNumbers: Readonly<Record<FontWeightValue, number>> = {", "};"))
             foreach (var weight in Enum.GetValues<FontWeight>().OrderBy(weight => (int)weight))
-                ts.AppendLine($"{char.ToLowerInvariant(weight.ToString()[0])}{weight.ToString()[1..]}: {(int)weight},");
+                ts.AppendLine($"{Emitted(weight.ToString())}: {(int)weight},");
 
         return ts.ToString();
     }
+
+    /// <summary>A member's name as the transpiler emits it: its first letter lowered.</summary>
+    private static string Emitted(string name) => char.ToLowerInvariant(name[0]) + name[1..];
 
     /// <summary>
     /// Every public non-flags enum of the vocabulary assemblies, in name order so the file is stable
