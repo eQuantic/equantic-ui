@@ -5,6 +5,7 @@ import {
   NumberStyles,
   badFormat,
   readNumber,
+  readingFormat,
   validateRealStyles,
   type NumberText,
 } from './number-grammar';
@@ -86,14 +87,19 @@ export class Decimal {
 
   /**
    * `decimal.Parse`: the number `text` holds under `styles`, `NumberStyles.Number` unless the call
-   * named others, rounded to what a decimal keeps. It throws what .NET throws, with its words, and
-   * in its order: for no text, then for a style a decimal cannot read, then for text that is not a
-   * number (a FormatException) and for one no decimal holds (an OverflowException).
+   * named others, in the page's culture or, where the call names it, the invariant one, rounded to
+   * what a decimal keeps. It throws what .NET throws, with its words, and in its order: for no text,
+   * then for a style a decimal cannot read, then for text that is not a number (a FormatException)
+   * and for one no decimal holds (an OverflowException).
    */
-  static parse(text: string | null | undefined, styles: number = NumberStyles.Number): Decimal {
+  static parse(
+    text: string | null | undefined,
+    styles: number = NumberStyles.Number,
+    invariant = false,
+  ): Decimal {
     if (text == null) throw exception('System.ArgumentNullException', NULL_TEXT);
     validateRealStyles(styles);
-    const number = readNumber(text, styles);
+    const number = readNumber(text, styles, readingFormat(invariant));
     if (number === undefined) throw badFormat(text);
     const value = fromText(number);
     if (value === undefined) throw exception('System.OverflowException', OVERFLOW);
@@ -108,10 +114,11 @@ export class Decimal {
   static tryParse(
     text: string | null | undefined,
     styles: number = NumberStyles.Number,
+    invariant = false,
   ): Decimal | undefined {
     validateRealStyles(styles);
     if (text == null) return undefined;
-    const number = readNumber(text, styles);
+    const number = readNumber(text, styles, readingFormat(invariant));
     return number === undefined ? undefined : fromText(number);
   }
 
@@ -241,7 +248,10 @@ export class Decimal {
    */
   round(digits = 0, mode: MidpointRounding = 'toEven'): Decimal {
     if (!Number.isInteger(digits) || digits < 0 || digits > 28) {
-      throw exception('System.ArgumentOutOfRangeException', 'Rounding digits must be between 0 and 28.');
+      throw exception(
+        'System.ArgumentOutOfRangeException',
+        'Rounding digits must be between 0 and 28.',
+      );
     }
     // The mode is checked whatever the value, as .NET checks it: a value that needs no rounding
     // does not make a mode that is not one valid. Own keys only, or `toString` would read as a rule.
@@ -488,14 +498,22 @@ export function dec(value: string | number | Decimal): Decimal {
   return Decimal.from(value);
 }
 
-/** `decimal.Parse`, for the transpiler. */
-export function decParse(text: string | null | undefined, styles?: number): Decimal {
-  return Decimal.parse(text, styles);
+/** `decimal.Parse`, for the transpiler: in the page's culture unless the call names the invariant one. */
+export function decParse(
+  text: string | null | undefined,
+  styles?: number,
+  invariant?: boolean,
+): Decimal {
+  return Decimal.parse(text, styles, invariant);
 }
 
 /** `decimal.TryParse`, for the transpiler: the value, or `undefined` where the text is not one. */
-export function decTryParse(text: string | null | undefined, styles?: number): Decimal | undefined {
-  return Decimal.tryParse(text, styles);
+export function decTryParse(
+  text: string | null | undefined,
+  styles?: number,
+  invariant?: boolean,
+): Decimal | undefined {
+  return Decimal.tryParse(text, styles, invariant);
 }
 
 /** `(decimal)aDouble` and `Convert.ToDecimal(aDouble)`, for the transpiler. */
@@ -510,14 +528,19 @@ export function decFromSingle(value: number): Decimal {
 
 /**
  * `Convert.ToDecimal` of a value whose type the call site cannot settle, an `object` or a
- * nullable: null is 0, where `decimal.Parse` throws; a string parses as `decimal.Parse` reads it; a
- * Decimal is itself; a boolean is 1 or 0; a BigInt (a long) is exact; and a number is the double,
- * or the single, that the call site says it holds. Anything else has no conversion to a decimal.
+ * nullable: null is 0, where `decimal.Parse` throws; a string parses as `decimal.Parse` reads it, in
+ * the culture the call names; a Decimal is itself; a boolean is 1 or 0; a BigInt (a long) is exact;
+ * and a number is the double, or the single, that the call site says it holds. Anything else has no
+ * conversion to a decimal.
  */
-export function decConvert(value: unknown, numbers: 'double' | 'single' = 'double'): Decimal {
+export function decConvert(
+  value: unknown,
+  numbers: 'double' | 'single' = 'double',
+  invariant = false,
+): Decimal {
   if (value == null) return ZERO;
   if (value instanceof Decimal) return value;
-  if (typeof value === 'string') return Decimal.parse(value);
+  if (typeof value === 'string') return Decimal.parse(value, NumberStyles.Number, invariant);
   if (typeof value === 'boolean') return new Decimal(value ? 1n : 0n, 0);
   if (typeof value === 'bigint') return new Decimal(value, 0);
   if (typeof value === 'number') {

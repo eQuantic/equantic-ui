@@ -53,12 +53,12 @@ public class ConvertStrategy : IExpressionIrStrategy
         var (argExpr, providerExpr) = Arguments(invocation, context);
         if (name == "ToDecimal")
         {
-            // Text is read in a culture, and the browser reads the invariant one (see ParseCulture).
-            // A number converts with no culture involved; a value that may be text when the call
-            // runs (an object holding "1,5") is read in the culture the call names, as text is.
-            if (MayHoldText(context.SemanticHelper.GetType(argExpr), context))
-                ParseCulture.Check(invocation, providerExpr, context);
-            return ToDecimal(argExpr, context);
+            // Text is read in the culture the call names (NumberMethodStrategy). A number converts
+            // with no culture involved; a value that may be text when the call runs (an object
+            // holding "1,5") is read in the culture the call names, as text is.
+            var invariant = MayHoldText(context.SemanticHelper.GetType(argExpr), context)
+                && NamedCulture.ReadsInvariant(invocation, providerExpr, context, NumberMethodStrategy.ReadingANumber);
+            return ToDecimal(argExpr, invariant, context);
         }
         if (name == "ToBoolean")
         {
@@ -68,8 +68,7 @@ public class ConvertStrategy : IExpressionIrStrategy
             // went nowhere (found in review, #421). The invariant and the current culture, and a null,
             // are reads with no effect, left out as ToString leaves them. Any other CultureInfo
             // (GetCultureInfo(name), new CultureInfo(name)) may throw, and CultureInfo has no twin to
-            // evaluate it with, so it is EQ2108 rather than a call dropped in silence. The numeric
-            // readers accept only CultureInfo.InvariantCulture (ParseCulture).
+            // evaluate it with, so it is EQ2108 rather than a call dropped in silence.
             if (providerExpr is not null && !NamedCulture.IsInvariant(providerExpr, context)
                 && !NamedCulture.IsCurrent(providerExpr, context) && BindsToCultureInfo(providerExpr, context))
                 context.Report(invocation, ConversionSeverity.Error, "EQ2108",
@@ -110,12 +109,13 @@ public class ConvertStrategy : IExpressionIrStrategy
             return ToDateTime(invocation, argExpr, providerExpr, context);
         if (ReadsText(invocation, argExpr, context) && TextReader(name) is { } text)
         {
-            // Text is read in a culture, and the browser reads the invariant one (see ParseCulture).
-            // A null literal is never read, so no culture is involved.
-            if (!argExpr.IsKind(SyntaxKind.NullLiteralExpression))
-                ParseCulture.Check(invocation, providerExpr, context);
+            // Text is read in the culture the call names (NumberMethodStrategy). A null literal is
+            // never read, so no culture is involved.
+            var invariant = !argExpr.IsKind(SyntaxKind.NullLiteralExpression)
+                && NamedCulture.ReadsInvariant(invocation, providerExpr, context, NumberMethodStrategy.ReadingANumber);
             context.UsedHelpers.Add(Eq.Import);
-            return JsExpr.Template($"{text.Reader}({{0}}, '{text.Tag}')", [context.Converter.ConvertIr(argExpr)]);
+            return JsExpr.Template($"{text.Reader}({{0}}, '{text.Tag}'{(invariant ? ", true" : "")})",
+                [context.Converter.ConvertIr(argExpr)]);
         }
         return JsExpr.Opaque(Converted(name, argExpr, context));
     }
@@ -324,11 +324,12 @@ public class ConvertStrategy : IExpressionIrStrategy
     /// <c>Convert.ToDecimal</c> by the type of what it converts (#358), which the overload C# chose
     /// is named after: a double or a float by .NET's own conversion, to 15 or 7 digits; an integer
     /// exactly; a bool as 1 or 0; a decimal as itself. A string parses as <c>decimal.Parse</c> reads
-    /// it, except that null is 0; that, and a value whose type the call site cannot settle (an
-    /// object, a nullable), is the runtime's to dispatch. A char and a DateTime have no conversion:
-    /// .NET throws for them after evaluating the argument, and so does this.
+    /// it, in the page's culture or the <paramref name="invariant"/> one, except that null is 0; that,
+    /// and a value whose type the call site cannot settle (an object, a nullable), is the runtime's to
+    /// dispatch. A char and a DateTime have no conversion: .NET throws for them after evaluating the
+    /// argument, and so does this.
     /// </summary>
-    private static JsExpr ToDecimal(ExpressionSyntax argument, ConversionContext context)
+    private static JsExpr ToDecimal(ExpressionSyntax argument, bool invariant, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
         var value = context.Converter.ConvertIr(argument);
@@ -359,7 +360,8 @@ public class ConvertStrategy : IExpressionIrStrategy
                     $"({parameter} => {{ throw {Eq.ExceptionOf}('System.InvalidCastException', \"Invalid cast from '{from}' to 'Decimal'.\"); }})({{0}})",
                     [value]);
         }
-        return type.IsIntegral() ? Call(Eq.Dec) : Call(Eq.DecConvert);
+        if (type.IsIntegral()) return Call(Eq.Dec);
+        return invariant ? Call(Eq.DecConvert, JsExpr.Literal("'double'"), JsExpr.Literal("true")) : Call(Eq.DecConvert);
     }
 
     /// <summary>Whether the provider is a member or a constructor of <c>CultureInfo</c> itself, which

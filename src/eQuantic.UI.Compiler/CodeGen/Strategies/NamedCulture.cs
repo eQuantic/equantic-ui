@@ -5,8 +5,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 
 /// <summary>
 /// Which culture a format provider NAMES, for the policies that read one: formatting
-/// (<c>ToString</c>), reading a number from text (<see cref="ParseCulture"/>), and reading a date and
-/// changing case, which take the page's culture and the invariant one (<see cref="ReadsInvariant"/>).
+/// (<c>ToString</c>), and reading a number or a date from text and changing case, which take the
+/// page's culture and the invariant one (<see cref="ReadsInvariant"/>).
 /// Asked of the bound symbol, so only <c>System.Globalization.CultureInfo</c>'s own properties count:
 /// a member of another type that happens to be called <c>InvariantCulture</c> may return any culture,
 /// and its getter may have an effect that leaving the argument out would lose. Where the model cannot

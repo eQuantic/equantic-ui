@@ -4,18 +4,22 @@ import {
   badFormat,
   isWhite,
   readNumber,
+  readingFormat,
+  readsHyphenAsMinus,
   validateIntegerStyles,
   validateRealStyles,
   type NumberText,
 } from './number-grammar';
+import type { NumberFormatData } from './culture';
 import { exception } from './exceptions';
 import { equals } from './string-statics';
 import { trim } from './white-space';
 
 /**
  * `int.Parse`, `double.Parse` and the other integer and binary floating-point readers, and
- * `Convert.ToInt32` and its siblings over text, as .NET reads text in the invariant culture the twin
- * always reads in (EQ2110 names what a culture changes).
+ * `Convert.ToInt32` and its siblings over text, as .NET reads text in the culture the call names:
+ * the page's unless the compiler passes `invariant` for a call that names the invariant culture
+ * (#1087).
  *
  * `parseInt` and `parseFloat` read the longest prefix that looks like a number and stop there:
  * "12abc" was 12, "1e3" was 1 as an int, "0x1F" was 31 and "1,5" was 1. .NET reads the WHOLE text,
@@ -33,10 +37,10 @@ import { trim } from './white-space';
  * - A float is the single nearest the DIGITS. Through a double it rounds twice, and a value just past
  *   the midpoint between two singles lands ON the midpoint at the first step, so the second goes to
  *   the even neighbour; that one case is settled against the digits themselves.
- * - Text the grammar refuses may still be one of the invariant culture's symbols for a real,
- *   whatever the style: "Infinity", "-Infinity" or "NaN", case-blind as an ordinal comparison is,
- *   after trimming what `char.IsWhiteSpace` calls white (which is not `trim()`'s set), and "+" before
- *   either or "-" before NaN.
+ * - Text the grammar refuses may still be one of the culture's symbols for a real, whatever the
+ *   style: the invariant culture's "Infinity", "-Infinity" and "NaN", pt-BR's "∞", case-blind as an
+ *   ordinal comparison is, after trimming what `char.IsWhiteSpace` calls white (which is not
+ *   `trim()`'s set), and the plus sign before infinity or NaN, or the minus before NaN.
  *
  * Every refusal throws .NET's exception with .NET's words, in .NET's order: Parse refuses a null
  * text before it looks at the style, where TryParse checks the style first.
@@ -81,14 +85,21 @@ const OVERFLOW = 'overflow';
 type Refusal = typeof FORMAT | typeof OVERFLOW;
 
 /**
- * The integer `text` holds under `styles`, or why it holds none. Hex and binary have their own
- * walk (.NET's `TryParseBinaryIntegerHexOrBinaryNumberStyle`); every other style reads the number
- * grammar, whose answer for the `Integer` style is the one .NET's fast path gives.
+ * The integer `text` holds under `styles` in `format`, or why it holds none. Hex and binary have
+ * their own walk (.NET's `TryParseBinaryIntegerHexOrBinaryNumberStyle`); every other style reads the
+ * number grammar, whose answer for the `Integer` style is the one .NET's fast path gives once it is
+ * told that path allows no white space after a sign, in any culture.
  */
-function readInteger(text: string, styles: number, width: Width): bigint | Refusal {
+function readInteger(
+  text: string,
+  styles: number,
+  width: Width,
+  format: NumberFormatData,
+): bigint | Refusal {
   if ((styles & NumberStyles.AllowHexSpecifier) !== 0) return readBits(text, styles, 4, width);
   if ((styles & NumberStyles.AllowBinarySpecifier) !== 0) return readBits(text, styles, 1, width);
-  const number = readNumber(text, styles);
+  const fastPath = (styles & ~NumberStyles.Integer) === 0;
+  const number = readNumber(text, styles, format, fastPath ? false : undefined);
   if (number === undefined) return FORMAT;
   return integerOf(number, width) ?? OVERFLOW;
 }
@@ -168,25 +179,37 @@ function overflow(type: IntegerType): Error {
  * `NumberStyles.Integer`. The null text is refused first, then the style, then the text: a
  * FormatException where it is not a number, an OverflowException where the type cannot hold it.
  */
-export function intParse(text: string | null | undefined, type: LongType, styles?: number): bigint;
+export function intParse(
+  text: string | null | undefined,
+  type: LongType,
+  styles?: number,
+  invariant?: boolean,
+): bigint;
 export function intParse(
   text: string | null | undefined,
   type: Exclude<IntegerType, LongType>,
   styles?: number,
+  invariant?: boolean,
 ): number;
 export function intParse(
   text: string | null | undefined,
   type: IntegerType,
   styles: number = NumberStyles.Integer,
+  invariant = false,
 ): number | bigint {
   if (text == null) throw exception('System.ArgumentNullException', NULL_TEXT);
   validateIntegerStyles(styles);
-  return parsed(text, type, styles);
+  return parsed(text, type, styles, invariant);
 }
 
 /** The text read under a style already checked: the value, or the exception .NET throws. */
-function parsed(text: string, type: IntegerType, styles: number): number | bigint {
-  const value = readInteger(text, styles, WIDTHS[type]);
+function parsed(
+  text: string,
+  type: IntegerType,
+  styles: number,
+  invariant: boolean,
+): number | bigint {
+  const value = readInteger(text, styles, WIDTHS[type], readingFormat(invariant));
   if (value === FORMAT) throw badFormat(text);
   if (value === OVERFLOW) throw overflow(type);
   return held(value, type);
@@ -200,32 +223,44 @@ export function intTryParse(
   text: string | null | undefined,
   type: LongType,
   styles?: number,
+  invariant?: boolean,
 ): bigint | undefined;
 export function intTryParse(
   text: string | null | undefined,
   type: Exclude<IntegerType, LongType>,
   styles?: number,
+  invariant?: boolean,
 ): number | undefined;
 export function intTryParse(
   text: string | null | undefined,
   type: IntegerType,
   styles: number = NumberStyles.Integer,
+  invariant = false,
 ): number | bigint | undefined {
   validateIntegerStyles(styles);
   if (text == null) return undefined;
-  const value = readInteger(text, styles, WIDTHS[type]);
+  const value = readInteger(text, styles, WIDTHS[type], readingFormat(invariant));
   return typeof value === 'bigint' ? held(value, type) : undefined;
 }
 
 /** `Convert.ToInt32(string)` and its siblings: a null text is 0, and any other is Parse's. */
-export function intConvert(text: string | null | undefined, type: LongType): bigint;
+export function intConvert(
+  text: string | null | undefined,
+  type: LongType,
+  invariant?: boolean,
+): bigint;
 export function intConvert(
   text: string | null | undefined,
   type: Exclude<IntegerType, LongType>,
+  invariant?: boolean,
 ): number;
-export function intConvert(text: string | null | undefined, type: IntegerType): number | bigint {
+export function intConvert(
+  text: string | null | undefined,
+  type: IntegerType,
+  invariant = false,
+): number | bigint {
   if (text == null) return held(0n, type);
-  return parsed(text, type, NumberStyles.Integer);
+  return parsed(text, type, NumberStyles.Integer, invariant);
 }
 
 /** The double nearest the digits, a zero keeping its sign. */
@@ -290,25 +325,45 @@ function sameIgnoringCase(text: string, symbol: string): boolean {
   return equals(text, symbol, 'ordinalIgnoreCase');
 }
 
-/** The invariant culture's symbols, where the grammar refused the text (.NET's `TryParseFloat`). */
-function readSymbol(text: string): number | undefined {
+function startsIgnoringCase(text: string, prefix: string): boolean {
+  return sameIgnoringCase(text.slice(0, prefix.length), prefix);
+}
+
+/** The culture's symbols, where the grammar refused the text (.NET's `TryParseFloat`). */
+function readSymbol(text: string, format: NumberFormatData): number | undefined {
   const trimmed = trim(text);
-  if (sameIgnoringCase(trimmed, 'Infinity')) return Infinity;
-  if (sameIgnoringCase(trimmed, '-Infinity')) return -Infinity;
-  if (sameIgnoringCase(trimmed, 'NaN')) return NaN;
-  if (trimmed.startsWith('+')) {
-    const unsigned = trimmed.slice(1);
-    if (sameIgnoringCase(unsigned, 'Infinity')) return Infinity;
-    if (sameIgnoringCase(unsigned, 'NaN')) return NaN;
+  if (sameIgnoringCase(trimmed, format.positiveInfinitySymbol)) return Infinity;
+  if (sameIgnoringCase(trimmed, format.negativeInfinitySymbol)) return -Infinity;
+  if (sameIgnoringCase(trimmed, format.nanSymbol)) return NaN;
+  if (startsIgnoringCase(trimmed, format.positiveSign)) {
+    const unsigned = trimmed.slice(format.positiveSign.length);
+    if (sameIgnoringCase(unsigned, format.positiveInfinitySymbol)) return Infinity;
+    if (sameIgnoringCase(unsigned, format.nanSymbol)) return NaN;
     return undefined;
   }
-  if (trimmed.startsWith('-') && sameIgnoringCase(trimmed.slice(1), 'NaN')) return NaN;
+  if (startsIgnoringCase(trimmed, format.negativeSign)) {
+    if (sameIgnoringCase(trimmed.slice(format.negativeSign.length), format.nanSymbol)) return NaN;
+    // .NET asks this only of a text that began with the culture's own minus, so it never answers.
+    if (
+      readsHyphenAsMinus(format.negativeSign) &&
+      trimmed.startsWith('-') &&
+      sameIgnoringCase(trimmed.slice(1), format.nanSymbol)
+    ) {
+      return NaN;
+    }
+  }
   return undefined;
 }
 
-function readReal(text: string, styles: number, type: RealType): number | undefined {
-  const number = readNumber(text, styles);
-  if (number === undefined) return readSymbol(text);
+function readReal(
+  text: string,
+  styles: number,
+  type: RealType,
+  invariant: boolean,
+): number | undefined {
+  const format = readingFormat(invariant);
+  const number = readNumber(text, styles, format);
+  if (number === undefined) return readSymbol(text, format);
   return type === 'single' ? singleOf(number) : doubleOf(number);
 }
 
@@ -321,10 +376,11 @@ export function realParse(
   text: string | null | undefined,
   type: RealType,
   styles: number = REAL_STYLES,
+  invariant = false,
 ): number {
   if (text == null) throw exception('System.ArgumentNullException', NULL_TEXT);
   validateRealStyles(styles);
-  const value = readReal(text, styles, type);
+  const value = readReal(text, styles, type, invariant);
   if (value === undefined) throw badFormat(text);
   return value;
 }
@@ -337,13 +393,18 @@ export function realTryParse(
   text: string | null | undefined,
   type: RealType,
   styles: number = REAL_STYLES,
+  invariant = false,
 ): number | undefined {
   validateRealStyles(styles);
   if (text == null) return undefined;
-  return readReal(text, styles, type);
+  return readReal(text, styles, type, invariant);
 }
 
 /** `Convert.ToDouble(string)` and `Convert.ToSingle(string)`: a null text is 0, any other Parse's. */
-export function realConvert(text: string | null | undefined, type: RealType): number {
-  return text == null ? 0 : realParse(text, type);
+export function realConvert(
+  text: string | null | undefined,
+  type: RealType,
+  invariant = false,
+): number {
+  return text == null ? 0 : realParse(text, type, REAL_STYLES, invariant);
 }
