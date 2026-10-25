@@ -12,6 +12,7 @@ import type { TypeStyleValue } from './nodes';
 import type { DensityValue } from './enums.generated';
 import { photonTheme } from './design-system.generated';
 import { DENSITY_COOKIE } from './markers';
+import { passInvalidator } from './pass-invalidator';
 
 /** Mirror of the C# `ComponentContext` — what a shared component's `build()` may read (mode-free). */
 export class ComponentContext {
@@ -87,7 +88,43 @@ export function measurePhotonText(text: string, style: TypeStyleValue, typeScale
   // NUMERIC weight: the enum arrives as a member name, and a name makes the whole shorthand
   // invalid — see cssFontWeight for what that cost.
   context.font = `${cssFontWeight(style.weight)} ${style.size * typeScale}px ${family}`;
+  rebuildWhenFaceLoads(context.font);
   return context.measureText(text).width;
+}
+
+/**
+ * The pages that measured text in a face the document declares and has not loaded yet, by the font
+ * they measured: a canvas measures such a face as its fallback, and the text is drawn in the face
+ * once it arrives, so a code editor would place its caret on the fallback's columns. Each page
+ * rebuilds when its face has loaded, once however many times it measured (#1055).
+ */
+const awaitingFace = new Map<string, Set<() => void>>();
+
+function rebuildWhenFaceLoads(font: string): void {
+  const fonts = typeof document === 'undefined' ? undefined : document.fonts;
+  const rebuild = passInvalidator();
+  if (!fonts || !rebuild) return;
+  let loaded: boolean;
+  try {
+    // True for a face that has loaded and for one no `@font-face` declares: only a declared face
+    // still on its way is false.
+    loaded = fonts.check(font);
+  } catch {
+    return;
+  }
+  if (loaded) return;
+  const pages = awaitingFace.get(font);
+  if (pages) {
+    pages.add(rebuild);
+    return;
+  }
+  awaitingFace.set(font, new Set([rebuild]));
+  const settle = () => {
+    const waiting = awaitingFace.get(font);
+    awaitingFace.delete(font);
+    waiting?.forEach((page) => page());
+  };
+  fonts.load(font).then(settle, settle);
 }
 
 export function photonMonoAdvance(style: TypeStyleValue, typeScale = 1): number {

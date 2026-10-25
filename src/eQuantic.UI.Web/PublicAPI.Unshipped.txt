@@ -4,3 +4,7 @@
 eQuantic.UI.Web.ThemeStylesheet
 static eQuantic.UI.Web.ThemeStylesheet.Generate(eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode? mode = null) -> string!
 const eQuantic.UI.Web.TokenCss.SansFallback = "system-ui, -apple-system, sans-serif" -> string!
+eQuantic.UI.Web.FontFaceRules
+static eQuantic.UI.Web.FontFaceRules.ContentType(eQuantic.UI.Primitives.FontFile! file) -> string!
+static eQuantic.UI.Web.FontFaceRules.Format(eQuantic.UI.Primitives.FontFile! file) -> string!
+static eQuantic.UI.Web.FontFaceRules.Write(System.Collections.Generic.IEnumerable<(eQuantic.UI.Primitives.FontFamily! Family, eQuantic.UI.Primitives.FontFile! File, string! Url)>! faces) -> string!

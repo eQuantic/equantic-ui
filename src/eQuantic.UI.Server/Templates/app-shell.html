@@ -5,6 +5,10 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{{Title}}</title>
         {{MetadataTags}}
+        {{?FontPreloads}}
+        <!-- The text face's files, fetched from here rather than when the sheet below asks for them. -->
+        {{FontPreloads}}
+        {{/FontPreloads}}
 
         <!-- Framework invariants (before app styles, so an app CAN deliberately override):
              the app root is the web mirror of the native window — a determinate frame at least

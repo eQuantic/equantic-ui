@@ -26,6 +26,7 @@ import { scheduleInViewCommit } from './in-view';
 import { scheduleCanvasCommit } from './canvas-surface';
 import { scheduleAnchorOffset } from './sticky-offset';
 import { scheduleScrolledSync } from './scrolled-pinned';
+import { setPassInvalidator } from './pass-invalidator';
 
 /** The duck-typed surface of a transpiled shared-stateful instance (marker set by the base class). */
 interface SharedStatefulLike {
@@ -139,6 +140,7 @@ export function enterPass(owner: ComponentInstanceStore, invalidator: (() => voi
   }
   owner.beginPass();
   activePass = { store: owner, invalidator, depth: 1 };
+  setPassInvalidator(invalidator);
 }
 
 export function exitPass(): void {
@@ -175,6 +177,7 @@ export function exitPass(): void {
   // page that is already scrolled is scrolled from its first frame (#506).
   scheduleScrolledSync();
   activePass = null;
+  setPassInvalidator(null);
 }
 
 /**
