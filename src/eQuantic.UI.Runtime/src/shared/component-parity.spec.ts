@@ -84,6 +84,7 @@ import { UniformTableSpans } from './components/UniformTableSpans';
 import { Spreadsheet } from './components/Spreadsheet';
 import { FormulaBar } from './components/FormulaBar';
 import { NameBox } from './components/NameBox';
+import { StatusBar } from './components/StatusBar';
 import { SheetController } from './components/SheetController';
 import { CodeRange } from './components/CodeRange';
 import { CodePosition } from './components/CodePosition';
@@ -129,6 +130,17 @@ function editing(): SheetController {
   sheet.selection = new SheetRange(new CellRef(1, 1));
   sheet.beginEdit('Budget', 'edit');
   sheet.entry.selection = new CodeRange(new CodePosition(0, 2), new CodePosition(0, 5));
+  return sheet;
+}
+
+/** A sheet whose B2:B4 holds two numbers and a word, selected, in add mode. */
+function summing(): SheetController {
+  const sheet = new SheetController(30, 6);
+  sheet.document.setCell(new CellRef(1, 1), '7.01');
+  sheet.document.setCell(new CellRef(2, 1), '14.02');
+  sheet.document.setCell(new CellRef(3, 1), 'text');
+  sheet.selection = new SheetRange(new CellRef(1, 1), new CellRef(3, 1));
+  sheet.handleKey('F8', 1, 'standard', null);
   return sheet;
 }
 
@@ -390,6 +402,7 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'spreadsheet-editing': still(new Spreadsheet(editing(), { width: SizeValue.fill, height: SizeValue.fixed(240) })),
     'formula-bar': still(new FormulaBar(editing())),
     'name-box': still(new NameBox(editing())),
+    'status-bar': still(new StatusBar(summing())),
     'popover-closed': still(
       new Popover(
         new Button('Info'),

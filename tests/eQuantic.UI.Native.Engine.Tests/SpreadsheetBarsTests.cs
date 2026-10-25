@@ -13,7 +13,8 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// The formula bar and the name box as components on Photon (#983), placed over a sheet as Excel lays them
 /// out: the bar shows the cell's entry keystroke by keystroke, edits the cell from there and hands the
 /// keyboard back, the name box shows where the selection is, takes the keyboard on F5 and goes where it is
-/// told.
+/// told. And the status bar under the sheet (#984), which sums what is selected in the page's language
+/// and culture and says when add mode is on.
 /// </summary>
 public class SpreadsheetBarsTests
 {
@@ -28,6 +29,7 @@ public class SpreadsheetBarsTests
         var page = new Column(gap: 4);
         page.Add(bars);
         page.Add(new Flexible(new Spreadsheet(sheet) { Width = SizeValue.Fill, Height = SizeValue.Fill }, 1));
+        page.Add(new StatusBar(sheet));
         var host = new PhotonHost(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }, page),
             PhotonTheme.Instance, ThemeMode.Light, 700, 400)
         {
@@ -257,5 +259,90 @@ public class SpreadsheetBarsTests
         sheet.NameBox.Entry.Document.Text.Should().Be("$A$100000:$CV$100000");
         var caret = host.CaretRect().Should().NotBeNull().And.Subject.As<Rect?>()!.Value;
         caret.X.Should().BeInRange(0, NameBox.DefaultWidth, "the box scrolls its text to keep the caret in it");
+    }
+
+    // ---- the status bar ---------------------------------------------------------------------------------------
+
+    private static T InCulture<T>(string culture, Func<T> run)
+    {
+        var (format, ui) = (System.Globalization.CultureInfo.CurrentCulture, System.Globalization.CultureInfo.CurrentUICulture);
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo(culture);
+            System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo(culture);
+            return run();
+        }
+        finally
+        {
+            (System.Globalization.CultureInfo.CurrentCulture, System.Globalization.CultureInfo.CurrentUICulture) = (format, ui);
+        }
+    }
+
+    [Fact]
+    public void TheStatusBar_SumsADragInThePagesLanguageAndCulture()
+    {
+        var texts = InCulture("pt-BR", () =>
+        {
+            var (host, sheet) = Open();
+            sheet.Document.SetCell(B2, "7,01");
+            sheet.Document.SetCell(new CellRef(2, 1), "14,02");
+            sheet.Document.SetCell(new CellRef(3, 1), "texto");
+            var (x, y) = Center(host, sheet, B2);
+            var (toX, toY) = Center(host, sheet, new CellRef(3, 1));
+            host.PressDown(x, y);
+            host.PointerMove(toX, toY);
+            host.PressUp(toX, toY);
+            return Texts(Frame(host, 32));
+        });
+
+        texts.Should().Contain(["Média: 10,515", "Contagem: 3", "Soma: 21,03"]);
+    }
+
+    [Fact]
+    public void TheStatusBar_SaysNothingOfOneCell_AndFollowsAKey()
+    {
+        var (one, two) = InCulture("en-US", () =>
+        {
+            var (host, sheet) = Open();
+            sheet.Document.SetCell(B2, "7");
+            sheet.Document.SetCell(new CellRef(2, 1), "8");
+            Click(host, sheet, B2, 32);
+            var one = Texts(Frame(host, 40));
+            host.KeyDown("ArrowDown", KeyModifiers.Shift);
+            return (one, Texts(Frame(host, 48)));
+        });
+
+        one.Should().NotContain(text => text.StartsWith("Sum") || text.StartsWith("Count"), "one cell shows nothing");
+        two.Should().Contain(["Average: 7.5", "Count: 2", "Sum: 15"], "a key that stretches the range refreshes the bar");
+    }
+
+    [Fact]
+    public void TheStatusBar_CountsWords_AndSumsNothingOfThem()
+    {
+        var texts = InCulture("en-US", () =>
+        {
+            var (host, sheet) = Open();
+            sheet.Document.SetCell(B2, "a");
+            sheet.Document.SetCell(new CellRef(2, 1), "b");
+            Click(host, sheet, B2, 32);
+            host.KeyDown("ArrowDown", KeyModifiers.Shift);
+            return Texts(Frame(host, 48));
+        });
+
+        texts.Should().Contain("Count: 2");
+        texts.Should().NotContain(text => text.StartsWith("Sum") || text.StartsWith("Average"));
+    }
+
+    [Fact]
+    public void ShiftF8_IsSaidOnTheStatusBar_UntilEscape()
+    {
+        var (host, sheet) = Open();
+        Click(host, sheet, B2, 32);
+
+        host.KeyDown("F8", KeyModifiers.Shift).Should().BeTrue();
+        Texts(Frame(host, 48)).Should().Contain(SdkStrings.AddToSelection);
+
+        host.KeyDown("Escape");
+        Texts(Frame(host, 64)).Should().NotContain(SdkStrings.AddToSelection);
     }
 }

@@ -37,6 +37,8 @@ answers `prefers-reduced-motion` for its other motion.
   Removing the headers' pressables leaves them announced as text until then.
 - Resizing several rows or columns at once, fit to content, reordering by header drag (slice 3).
 - Typed values: the status bar reads numbers from text until slice 5 types them.
+- Reading a number in a culture other than the page's or the invariant one: the browser knows those
+  two, as it does for dates (EQ2108 stays).
 - A refusal dialog for commands over several ranges: the active range answers them (decided with
   Edgar).
 
@@ -131,9 +133,10 @@ a style, and a transition keyed on style would glide a cell that scrolls; the gl
 `SheetController.Summary` answers the count of cells in use, the count of numbers, their sum and their
 average over the union of `Ranges`, computed from the stored cells (each stored cell tested against the
 ranges, so overlapping ranges count a cell once) and cached by the ranges and the document's version.
-A number is read with `decimal.TryParse` in `NumberStyles.Float` and the page's culture, which the
-transpiler already carries (`DecimalConversionConformanceTests`), so `7,01` is a number in `pt-BR` and
-text in `en-US`, until slice 5 types values. The `StatusBar` component listens to `Refreshed` as the
+A number is read with `decimal.TryParse` in `NumberStyles.Float` and the page's culture, so `7,01` is a
+number in `pt-BR` and text in `en-US`, until slice 5 types values. The transpiler did NOT carry that read,
+which this design first assumed: the build refused the current culture for a number (EQ2108), so the
+read is decision 10's. The `StatusBar` component listens to `Refreshed` as the
 bars do and writes `SdkStrings.Sum`, `Average`, `Count` and `AddToSelection` in the page's language.
 
 ### 9. The macOS shell offers a key to the host before the input method while nothing is marked
@@ -143,6 +146,28 @@ the first look, so its candidate window answers its own keys; otherwise the key 
 key the host leaves goes on to the input context as before. Dead keys and input methods still compose,
 since the host claims no printable key without ⌘ or ⌃ in a text target, which Windows, iOS and Android
 already rely on.
+
+### 10. A number is read in the culture the call names (#1087)
+
+The runtime's number grammar is .NET's `Number.TryParseNumber`, ported with the invariant culture's
+symbols written in. It takes the culture's `NumberFormatInfo` instead, which every page already holds for
+formatting (`utils/culture.ts`), and matches it as .NET 10's source does: `MatchChars` reads a no-break
+space or a narrow one in a symbol from a typed space; `MatchNegativeSignChars` reads a hyphen where the
+culture's minus is one of the dashes CLDR names; the currency's separators are read before the number's
+until the symbol is met; white space after a leading sign is allowed where the culture's
+`NumberNegativePattern` is 2, except on .NET's integer fast path, which never allows it; a real's
+infinity and NaN are the culture's words. The readers take an `invariant` flag last and read the page's
+culture by default, as the date readers do (#806).
+
+The compiler asks `NamedCulture.ReadsInvariant`, which the date readers ask: no provider, the current
+culture and a null read the page's culture, which sees through a cast, so #908's
+`(IFormatProvider?)null` reads as a bare null; the invariant culture is the flag; any other is EQ2108.
+`ParseCulture`, which allowed the invariant culture alone and warned for no provider (EQ2110), goes.
+
+*Alternative:* read the number in the engine by hand, replacing the culture's decimal separator before an
+invariant read. It hides the gap from every other app, writes a second grammar beside the runtime's, and
+slice 5 (#987) needs the real one anyway: typed values are read "in the app's culture through .NET's own
+rules, on both targets".
 
 ## Risks / Trade-offs
 
@@ -154,6 +179,12 @@ already rely on.
   after, and by the shells' existing tests.
 - [Headers without a pressable lose their button semantics until 2b] → accepted and named in the
   pull request; 2b gives them the grid's own roles.
+- [A number read with no provider changes meaning in the browser, from the invariant culture to the
+  page's] → that is .NET's meaning, which the server already had, and EQ2110 warned about the difference
+  in every such call; a pinned module that named the invariant culture keeps it through the flag.
+- [The summary's cache does not key on the culture] → the browser cannot read the culture's name
+  (EQ2004), and a page changes culture by reloading; a Photon window that switches culture reads the
+  new one at the next change of the ranges or the values.
 - [A gliding mark on Photon keeps the frame clock running] → only while a glide is in flight, the same
   rule `TransitionClock` follows.
 

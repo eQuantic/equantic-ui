@@ -40,3 +40,7 @@ eQuantic.UI.Components.CodeBlock.ActiveLines.get -> System.Collections.Generic.I
 eQuantic.UI.Components.CodeBlock.ActiveLines.init -> void
 eQuantic.UI.Components.CodeBlock.Selections.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>!
 eQuantic.UI.Components.CodeBlock.Selections.init -> void
+static eQuantic.UI.Components.SdkStrings.Sum(string! value) -> string!
+static eQuantic.UI.Components.SdkStrings.Average(string! value) -> string!
+static eQuantic.UI.Components.SdkStrings.Count(int count) -> string!
+static eQuantic.UI.Components.SdkStrings.AddToSelection.get -> string!

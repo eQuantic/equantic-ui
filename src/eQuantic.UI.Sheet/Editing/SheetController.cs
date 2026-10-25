@@ -329,6 +329,59 @@ public sealed class SheetController : ISheetSurfaceModel
         return false;
     }
 
+    /// <summary>The ranges and the document's version <see cref="Summary"/> was last read at, and what it answered.</summary>
+    private readonly List<SheetRange> _summaryRanges = new();
+    private int _summaryAt = -1;
+    private SheetSummary _summary;
+
+    /// <summary>
+    /// What a status bar shows of the selection: the cells in use the ranges cover, counted once however many
+    /// ranges cover them, and of those the ones whose text reads as a plain number in the page's culture (a
+    /// sign, digits, the culture's decimal separator, an exponent, no thousands separator), with their sum and
+    /// their average. Values are text until slice 5 types them. Read from the stored cells, never the ranges'
+    /// cells, so a whole sheet costs what it holds, and read again only when the ranges or the document change.
+    /// </summary>
+    public SheetSummary Summary
+    {
+        get
+        {
+            var ranges = Ranges;
+            if (_summaryAt == Document.Version && SameRanges(ranges)) return _summary;
+            var count = 0;
+            var numbers = 0;
+            var sum = 0m;
+            foreach (var (key, value) in Document.Cells)
+            {
+                var cell = CellRef.FromKey(key);
+                var covered = false;
+                foreach (var range in ranges)
+                {
+                    if (!range.Contains(cell)) continue;
+                    covered = true;
+                    break;
+                }
+                if (!covered) continue;
+                count++;
+                if (!decimal.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out var number)) continue;
+                numbers++;
+                sum += number;
+            }
+            _summary = new SheetSummary(count, numbers, sum, numbers > 0 ? sum / numbers : null);
+            _summaryAt = Document.Version;
+            _summaryRanges.Clear();
+            _summaryRanges.AddRange(ranges);
+            return _summary;
+        }
+    }
+
+    private bool SameRanges(IReadOnlyList<SheetRange> ranges)
+    {
+        if (ranges.Count != _summaryRanges.Count) return false;
+        for (var i = 0; i < ranges.Count; i++)
+            if (ranges[i] != _summaryRanges[i]) return false;
+        return true;
+    }
+
     /// <summary>The document's version <see cref="LastCellInUse"/> was last read at, and what it answered.</summary>
     private int _lastInUseAt = -1;
     private CellRef _lastInUse;

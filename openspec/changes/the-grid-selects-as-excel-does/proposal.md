@@ -3,7 +3,8 @@
 Closes #984, slice 2a of the spreadsheet plan (`docs/SPREADSHEET-PLAN.md`), a sub-issue of the epic
 #981 (a grid that stands beside Excel and Google Sheets). Slice 2 was split with Edgar on 2026-10-25:
 the grid read aloud (D17), with the accessibility contract #1078 needs for a code surface, is slice
-2b, #1081.
+2b, #1081. Closes #1087 and #908 too, Bugs under #849, which the status bar met: a number read in the
+page's culture failed the build, and Edgar chose to close the gap in this change.
 
 ## Why
 
@@ -45,6 +46,13 @@ selection this slice completes.
 - **A status bar** (`StatusBar(controller)`) joins the formula bar and the name box in
   `eQuantic.UI.Spreadsheets`, placed by the app: the Sum, the Average and the Count of what is selected,
   read in the page's culture until values are typed (slice 5), in English, Portuguese and Spanish.
+- **A number is read in the culture the call names** (#1087). `decimal.TryParse(text,
+  NumberStyles.Float, CultureInfo.CurrentCulture, out var d)`, which the status bar's summary reads,
+  failed the build (EQ2108): the runtime's number grammar knew the invariant culture's symbols alone.
+  It now reads the culture's signs, separators, currency and words for a real as .NET 10 matches them;
+  no provider, the current culture and a null one, a null behind a cast included (#908), read the
+  page's culture, and the invariant culture the invariant one. EQ2110, the warning that a number read
+  with no culture read the invariant one in the browser, is retired.
 - **What changes for a developer**: `SheetController.Ranges` lists every selected range, the active one
   last; `Selection` is the active range, and setting it leaves one range. `SelectRows` and `SelectCols`
   take the band's anchor and focus with an `add` flag; the sheet theme slot names the range's outline,
@@ -63,6 +71,7 @@ selection this slice completes.
   one outlined rectangle with header emphasis and the dimmed selection, the gliding cursor, the status
   bar, and the theme slot's new colours.
 - `table-viewport`: a mark may glide from where it stood to where it moves.
+- `transpiler-bcl`: a number is read in the culture the call names.
 
 ## Impact
 
@@ -78,6 +87,12 @@ selection this slice completes.
   modifiers to the engine.
 - **eQuantic.UI.Components**: `SdkStrings.Sum`, `Average`, `Count` and `AddToSelection` in English,
   Portuguese and Spanish.
+- **eqc and the runtime's number readers**: `ParseCulture` is gone, and the number readers ask
+  `NamedCulture.ReadsInvariant` as the date readers do; the readers in `utils/number-grammar.ts`,
+  `utils/number-parse.ts` and `utils/decimal.ts` take the culture's `NumberFormatInfo` and an
+  `invariant` flag the compiler passes last. A component that reads with the invariant culture gains
+  that flag in its pinned module (`Rules.ts`). EQ2110 leaves `docs/DIAGNOSTICS.md` and the wiki's
+  Diagnostics and SupportedFeatures pages, in five languages.
 - **The public surface moves** (`PublicAPI.Unshipped.txt` of Primitives, Sheet, Spreadsheets and
   Components); **the developer surface does not**. **BREAKING** in preview: `SelectRows(from, to)` and
   `SelectCols(from, to)` become `SelectRows(anchor, focus, add)` and `SelectCols(anchor, focus, add)`;

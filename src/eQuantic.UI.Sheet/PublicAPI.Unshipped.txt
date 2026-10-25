@@ -143,3 +143,22 @@ eQuantic.UI.Sheet.SheetController.SelectRegionThenSheet() -> void
 eQuantic.UI.Sheet.SheetController.CurrentRegion(eQuantic.UI.Sheet.CellRef cell) -> eQuantic.UI.Sheet.SheetRange
 eQuantic.UI.Sheet.SheetController.LastCellInUse() -> eQuantic.UI.Sheet.CellRef
 eQuantic.UI.Sheet.SheetController.HasKeyboard.get -> bool
+eQuantic.UI.Sheet.SheetController.Summary.get -> eQuantic.UI.Sheet.SheetSummary
+eQuantic.UI.Sheet.SheetSummary
+eQuantic.UI.Sheet.SheetSummary.SheetSummary() -> void
+eQuantic.UI.Sheet.SheetSummary.SheetSummary(int Count, int Numbers, decimal Sum, decimal? Average) -> void
+eQuantic.UI.Sheet.SheetSummary.Count.get -> int
+eQuantic.UI.Sheet.SheetSummary.Count.init -> void
+eQuantic.UI.Sheet.SheetSummary.Numbers.get -> int
+eQuantic.UI.Sheet.SheetSummary.Numbers.init -> void
+eQuantic.UI.Sheet.SheetSummary.Sum.get -> decimal
+eQuantic.UI.Sheet.SheetSummary.Sum.init -> void
+eQuantic.UI.Sheet.SheetSummary.Average.get -> decimal?
+eQuantic.UI.Sheet.SheetSummary.Average.init -> void
+eQuantic.UI.Sheet.SheetSummary.Deconstruct(out int Count, out int Numbers, out decimal Sum, out decimal? Average) -> void
+eQuantic.UI.Sheet.SheetSummary.Equals(eQuantic.UI.Sheet.SheetSummary other) -> bool
+override eQuantic.UI.Sheet.SheetSummary.GetHashCode() -> int
+static eQuantic.UI.Sheet.SheetSummary.operator !=(eQuantic.UI.Sheet.SheetSummary left, eQuantic.UI.Sheet.SheetSummary right) -> bool
+static eQuantic.UI.Sheet.SheetSummary.operator ==(eQuantic.UI.Sheet.SheetSummary left, eQuantic.UI.Sheet.SheetSummary right) -> bool
+~override eQuantic.UI.Sheet.SheetSummary.Equals(object obj) -> bool
+~override eQuantic.UI.Sheet.SheetSummary.ToString() -> string

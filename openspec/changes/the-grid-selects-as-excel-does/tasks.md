@@ -81,15 +81,22 @@
 
 ## 7. The status bar
 
-- [ ] 7.1 `SheetController.Summary` (count, numbers, sum, average) over the union of the ranges, cached by
+- [x] 7.0 Read a number in the culture the call names (#1087, #908, decision 10): the runtime's grammar
+      and readers take the culture's `NumberFormatInfo` and an `invariant` flag; eqc asks
+      `NamedCulture.ReadsInvariant` and `ParseCulture` goes; EQ2110 retires from eqc and
+      `docs/DIAGNOSTICS.md`; verify `NumberReadInTheCultureConformanceTests` (eight cases in nine
+      cultures, both sides), `NumberStrategyTests`, #908's case as a comparison, and the diagnostics
+      baseline
+- [x] 7.1 `SheetController.Summary` (count, numbers, sum, average) over the union of the ranges, cached by
       the ranges and the document's version, numbers read with `NumberStyles.Float` in the page's culture;
       verify the spec's three scenarios in .NET and in a twin test in `pt-BR` and `en-US`
-- [ ] 7.2 `SdkStrings.Sum`, `Average`, `Count` and `AddToSelection` in `SdkResources` (en, pt-BR, es) and
+- [x] 7.2 `SdkStrings.Sum`, `Average`, `Count` and `AddToSelection` in `SdkResources` (en, pt-BR, es) and
       their generated twin; the `StatusBar` component and its `StatusBar(controller)` factory in
       `eQuantic.UI.Spreadsheets`, listening to `Refreshed`; verify `SpreadsheetBarsTests` cases on Photon
       and a parity case
-- [ ] 7.3 Bench the summary at 100 000 × 100 with the whole sheet selected, in .NET and the runtime, with a
-      budget the test fails on; and a keystroke that moves nothing recomputes nothing
+- [x] 7.3 Bench the summary on a sheet of 100 000 × 100 with a million cells in use and the whole sheet
+      selected, in .NET and the runtime, with a budget the test fails on; and a keystroke that moves
+      nothing recomputes nothing
 - [ ] 7.4 Prove it in Chromium and in the PhotonDesktop gallery: the Portuguese sums of the spec, two
       overlapping ranges, add mode's notice
 
@@ -100,10 +107,13 @@
       (`ReadmeCapturesTests`)
 - [ ] 8.2 `docs/SPREADSHEET-PLAN.md`: slice 2 split into 2a (#984) and 2b (#1081) in the slices table, 2a
       delivered in "Where the slices stand", D10, D13 and D14 closed; verify `DocsIndexTests`
-- [ ] 8.3 The wiki's Components page (the selection, the chords, the status bar) in English, Portuguese,
-      Spanish, French and German, on the wiki branch named like this pull request's; verify the wiki
-      guards with `EQ_WIKI_DIR` pointed at it and `WikiClaimsCompile` for every snippet the pages add
-- [ ] 8.4 One ledger entry citing #984 as a file under `docs/ledger/`; verify `LedgerTests`
+- [ ] 8.3 The wiki's Components page (the selection, the chords, the status bar), and its Diagnostics and
+      SupportedFeatures pages (EQ2110 retired, a number read in the page's culture), in English,
+      Portuguese, Spanish, French and German, on the wiki branch named like this pull request's; verify
+      the wiki guards with `EQ_WIKI_DIR` pointed at it and `WikiClaimsCompile` for every snippet the
+      pages add
+- [ ] 8.4 Ledger entries as files under `docs/ledger/`, one citing #984 and one citing #1087 and #908;
+      verify `LedgerTests`
 
 ## 9. Integration
 

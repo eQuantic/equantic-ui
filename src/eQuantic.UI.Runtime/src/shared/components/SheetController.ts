@@ -1,4 +1,4 @@
-import { $eq, CellRef, CodeCommandValue, CodeDocument, CodeEditorController, CodeGrid, CodeKeymap, CodeRange, DateTime, KeyboardConventionValue, Point, PointerKindValue, PointerPhaseValue, Rect, SheetAxisValue, SheetCellSnapshot, SheetDocument, SheetEdit, SheetEditModeValue, SheetEntryLanguage, SheetEntryViewValue, SheetFormulaBar, SheetGrid, SheetHistory, SheetKeymap, SheetMotionValue, SheetNameBox, SheetRange, SheetReference, Size, TsvCodec } from "../runtime-exports";
+import { $eq, CellRef, CodeCommandValue, CodeDocument, CodeEditorController, CodeGrid, CodeKeymap, CodeRange, DateTime, KeyboardConventionValue, Point, PointerKindValue, PointerPhaseValue, Rect, SheetAxisValue, SheetCellSnapshot, SheetDocument, SheetEdit, SheetEditModeValue, SheetEntryLanguage, SheetEntryViewValue, SheetFormulaBar, SheetGrid, SheetHistory, SheetKeymap, SheetMotionValue, SheetNameBox, SheetRange, SheetReference, SheetSummary, Size, TsvCodec } from "../runtime-exports";
 
 export class SheetController {
     constructor(rows: number = 1000, cols: number = 26) {
@@ -15,6 +15,9 @@ export class SheetController {
         this.revealVersion = 0;
         this.revealCell = CellRef.$zero();
         this._tabRun = null;
+        this._summaryRanges = [];
+        this._summaryAt = -1;
+        this._summary = SheetSummary.$zero();
         this._lastInUseAt = -1;
         this._lastInUse = CellRef.$zero();
         this.editing = false;
@@ -59,6 +62,9 @@ export class SheetController {
     revealVersion!: number;
     revealCell!: CellRef;
     _tabRun!: [number, CellRef] | null;
+    _summaryRanges!: SheetRange[];
+    _summaryAt!: number;
+    _summary!: SheetSummary;
     _lastInUseAt!: number;
     _lastInUse!: CellRef;
     editing!: boolean;
@@ -104,6 +110,34 @@ export class SheetController {
 
     get activeCell(): CellRef {
         return this._active;
+    }
+
+    get summary(): SheetSummary {
+        let ranges = this.ranges;
+        if (this._summaryAt === this.document.version && this.sameRanges(ranges)) return this._summary;
+        let count = 0;
+        let numbers = 0;
+        let sum = $eq.num.dec("0");
+        for (const [key, value] of this.document.cells) {
+            let cell = CellRef.fromKey(key);
+            let covered = false;
+            for (const range of ranges) {
+                if (!range.contains(cell)) continue;
+                covered = true;
+                break;
+            }
+            if (!covered) continue;
+            count++;
+            let number: any; 
+            if (!((number = $eq.num.decTryParse(value, 167)) !== undefined || ((number = $eq.num.dec(0)), false))) continue;
+            numbers++;
+            sum = sum.add(number);
+        }
+        this._summary = new SheetSummary(count, numbers, sum, numbers > 0 ? sum.div($eq.num.dec(numbers)) : null);
+        this._summaryAt = this.document.version;
+        this._summaryRanges.splice(0);
+        this._summaryRanges.push(...ranges);
+        return this._summary;
     }
 
     get selecting(): boolean {
@@ -342,6 +376,12 @@ export class SheetController {
         right = Math.min(this.document.cols - 1, right);
         for (let row = top; row <= bottom; row++) for (let col = left; col <= right; col++) if (this.document.hasValue(new CellRef(row, col))) return true;
         return false;
+    }
+
+    sameRanges(ranges: SheetRange[]) {
+        if ($eq.collections.count(ranges) !== this._summaryRanges.length) return false;
+        for (let i = 0; i < $eq.collections.count(ranges); i++) if (!$eq.equals($eq.collections.item(ranges, i), this._summaryRanges[i])) return false;
+        return true;
     }
 
     lastCellInUse() {
