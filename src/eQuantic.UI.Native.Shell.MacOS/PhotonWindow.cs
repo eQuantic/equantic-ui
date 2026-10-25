@@ -251,6 +251,14 @@ public sealed class PhotonWindow
             if (handled) Present();
             return handled;
         };
+        // While a field holds the caret and nothing is composed, the key is the app's first: only its name,
+        // so a key the app leaves goes on to the input context, which composes it (#984).
+        PhotonContentView.OnKeyBeforeText = (key, modifiers) =>
+        {
+            var handled = host.KeyDown(key, modifiers);
+            if (handled) Present();
+            return handled;
+        };
         // The IME doors: while a field holds the caret the input context interprets keys, and
         // what it decides comes back through these — composed text, the composition in flight,
         // the ranges it asks about, and the caret rect its candidate window anchors to.

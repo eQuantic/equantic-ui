@@ -46,7 +46,7 @@
 
 ## 4. A key reaches a sheet before the input method on macOS
 
-- [ ] 4.1 The macOS shell offers a key to the host first while nothing is marked, and to the input
+- [x] 4.1 The macOS shell offers a key to the host first while nothing is marked, and to the input
       context first while a composition is in flight; verify the shell's existing tests, and a host test
       that Shift+Space selects a row with a sheet holding the caret
 - [ ] 4.2 Prove it in a real PhotonDesktop window with the CGEvent driver (`.tools/drafts/slice1-issues/ime`):
