@@ -22,6 +22,11 @@ public class FontWeightPhotonTests
         new FontFile(Assembly, "eQuantic.UI.Fonts/weights/WeightFace-400.ttf", 400, 400),
         new FontFile(Assembly, "eQuantic.UI.Fonts/weights/WeightFace-700.ttf", 700, 700));
 
+    /// <summary>One variable file whose weight axis runs from 100 to 900, its glyphs 0.5 of an em wide at
+    /// 100, 1 at its default, 400, and 1.5 at 900, in a straight line on each side.</summary>
+    private static readonly FontFamily VariableFace = new("eQuantic Variable Face",
+        new FontFile(Assembly, "eQuantic.UI.Fonts/weights/WeightFace-Variable.ttf", 100, 900));
+
     private static readonly TypeStyle Body = new(17, 22, FontWeight.Regular, 0, 1.4f);
 
     public FontWeightPhotonTests() => FaceResolution.Clear();
@@ -37,6 +42,24 @@ public class FontWeightPhotonTests
     public void AFamilyThatShipsAFilePerWeight_IsSetInTheFileOfTheWeightAsked(FontWeight weight, float em)
     {
         var measured = new CoreTextService().Measure("Handgloves", Body with { Family = WeightFace, Weight = weight }, 1f,
+            float.PositiveInfinity, 1);
+
+        measured.Width.Should().BeApproximately(10 * 17 * em, 0.5f);
+        FaceResolution.Unresolved.Should().BeEmpty();
+    }
+
+    /// <summary>A variable file is opened at the weight on its axis: opened as it is, it set every weight at
+    /// its default instance, where the bold trait laid over a matched face had reached its Bold.</summary>
+    [MacTheory]
+    [InlineData(FontWeight.Thin, 0.5f)]
+    [InlineData(FontWeight.Light, 0.5f + 0.5f * 2 / 3)]
+    [InlineData(FontWeight.Regular, 1f)]
+    [InlineData(FontWeight.Medium, 1.1f)]
+    [InlineData(FontWeight.Bold, 1.3f)]
+    [InlineData(FontWeight.Black, 1.5f)]
+    public void AVariableFile_IsSetAtTheWeightOnItsAxis(FontWeight weight, float em)
+    {
+        var measured = new CoreTextService().Measure("Handgloves", Body with { Family = VariableFace, Weight = weight }, 1f,
             float.PositiveInfinity, 1);
 
         measured.Width.Should().BeApproximately(10 * 17 * em, 0.5f);

@@ -15,8 +15,10 @@ namespace eQuantic.UI.Tests;
 /// The tables are the ones every engine requires of a TrueType font (<c>OS/2</c>, <c>cmap</c>,
 /// <c>glyf</c>, <c>head</c>, <c>hhea</c>, <c>hmtx</c>, <c>loca</c>, <c>maxp</c>, <c>name</c>,
 /// <c>post</c>), with their checksums and the head's adjustment. <c>fvar</c> is added only when a
-/// weight axis is asked for, and only a reader is ever handed that file: without the variation
-/// tables behind it, it is not a font an engine should be given.
+/// weight axis is asked for, and alone it is a file only a reader is handed: without the variation
+/// tables behind it, it is not a font an engine should be given. Asked for the advances at the axis's
+/// ends as well, the file carries them (<c>HVAR</c>, and a <c>gvar</c> that moves no outline), and an
+/// engine set at a weight on the axis measures the glyphs at the advance of that weight.
 /// </para>
 /// </summary>
 internal static class TestFont
@@ -43,7 +45,8 @@ internal static class TestFont
     /// as <paramref name="names"/> says.</summary>
     public static byte[] Build(string family, int weight = 400, bool italic = false, int advance = 1000,
         (int Min, int Max)? weightAxis = null, bool oblique = false, NameRecords names = NameRecords.Windows,
-        IReadOnlyList<int>? statWeights = null)
+        IReadOnlyList<int>? statWeights = null, (int Lightest, int Heaviest)? axisAdvances = null,
+        IReadOnlyList<int>? statSiblingWeights = null)
     {
         var glyphCount = 1 + (Last - First + 1);
         var (glyf, loca) = Glyphs(glyphCount, advance);
@@ -61,7 +64,14 @@ internal static class TestFont
             ["post"] = Post(italic),
         };
         if (weightAxis is { } axis) tables["fvar"] = Fvar(axis.Min, weight, axis.Max);
-        if (statWeights is { } positions) tables["STAT"] = Stat(positions);
+        if (axisAdvances is { } ends)
+        {
+            if (weightAxis is null) throw new ArgumentException("Advances that vary need a weight axis to vary on.", nameof(axisAdvances));
+            tables["HVAR"] = Hvar(glyphCount, ends.Lightest - advance, ends.Heaviest - advance);
+            tables["gvar"] = Gvar(glyphCount);
+        }
+        if (statWeights is not null || statSiblingWeights is not null)
+            tables["STAT"] = Stat([.. (statWeights ?? []).Select(at => (at, false)), .. (statSiblingWeights ?? []).Select(at => (at, true))]);
         return Assemble(tables);
     }
 
@@ -308,11 +318,52 @@ internal static class TestFont
     }
 
     /// <summary>
+    /// An HVAR table that moves every glyph's advance along the weight axis: by <paramref name="toLightest"/>
+    /// units at the axis's lightest end and <paramref name="toHeaviest"/> at its heaviest, in a straight
+    /// line from the default on each side. One variation region a side, every glyph its own delta set,
+    /// found by its glyph id since no delta-set index map is written.
+    /// </summary>
+    private static byte[] Hvar(int glyphCount, int toLightest, int toHeaviest)
+    {
+        var w = new Writer();
+        w.U16(1); w.U16(0);
+        w.U32(20);                      // the item variation store, after this header
+        w.U32(0); w.U32(0); w.U32(0);   // no advance, left or right side bearing maps
+        w.U16(1);                       // item variation store, format 1
+        w.U32(12);                      // its region list, after the store's header
+        w.U16(1); w.U32(28);            // one item variation data, after the region list
+        w.U16(1); w.U16(2);             // one axis, two regions
+        w.U16(0xC000); w.U16(0xC000); w.U16(0);       // start, peak, end: -1, -1, 0
+        w.U16(0); w.U16(0x4000); w.U16(0x4000);       // 0, 1, 1
+        w.U16(glyphCount);
+        w.U16(2);                       // both deltas of a set are 16-bit
+        w.U16(2); w.U16(0); w.U16(1);   // the two regions, in order
+        for (var i = 0; i < glyphCount; i++) { w.I16((short)toLightest); w.I16((short)toHeaviest); }
+        return w.ToArray();
+    }
+
+    /// <summary>A gvar table that varies no glyph: what marks the file as a TrueType variable font, its
+    /// outlines left where they are.</summary>
+    private static byte[] Gvar(int glyphCount)
+    {
+        var w = new Writer();
+        w.U16(1); w.U16(0);
+        w.U16(1);                       // one axis
+        w.U16(0); w.U32(0);             // no shared tuples
+        w.U16(glyphCount);
+        w.U16(0);                       // 16-bit offsets
+        w.U32(20 + 2 * (glyphCount + 1));
+        for (var i = 0; i <= glyphCount; i++) w.U16(0);
+        return w.ToArray();
+    }
+
+    /// <summary>
     /// A STAT table (version 1.1) with one design axis, <c>wght</c>, and one position on it for each of
     /// <paramref name="weights"/> (axis value format 1): one is a static face's own weight, as Google's
-    /// instances carry it, several describe a family rather than the face.
+    /// instances carry it, several describe a family rather than the face. A position flagged as an
+    /// older sibling's describes another font of the family.
     /// </summary>
-    private static byte[] Stat(IReadOnlyList<int> weights)
+    private static byte[] Stat(IReadOnlyList<(int Weight, bool OlderSibling)> weights)
     {
         var w = new Writer();
         w.U16(1); w.U16(1);
@@ -323,9 +374,9 @@ internal static class TestFont
         w.U16(2);
         w.Bytes("wght"u8.ToArray()); w.U16(256); w.U16(0);
         for (var i = 0; i < weights.Count; i++) w.U16(2 * weights.Count + 12 * i);
-        foreach (var weight in weights)
+        foreach (var (weight, olderSibling) in weights)
         {
-            w.U16(1); w.U16(0); w.U16(0); w.U16(256);
+            w.U16(1); w.U16(0); w.U16(olderSibling ? 1 : 0); w.U16(256);
             w.U32((uint)(weight << 16));
         }
         return w.ToArray();

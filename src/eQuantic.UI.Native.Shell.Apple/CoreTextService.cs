@@ -50,9 +50,6 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     [LibraryImport(CoreTextLib)]
     private static partial IntPtr CTFontCreateUIFontForLanguage(uint uiType, double size, IntPtr language);
 
-    [LibraryImport(CoreTextLib)]
-    private static partial IntPtr CTFontCreateCopyWithSymbolicTraits(IntPtr font, double size, IntPtr matrix, uint traits, uint mask);
-
     /// <summary>A copy of a font with the attributes of a descriptor laid over it: how the platform's own
     /// UI face is asked for a weight and a slant.</summary>
     [LibraryImport(CoreTextLib)]
@@ -63,6 +60,9 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
 
     [LibraryImport(CoreFoundation)]
     private static partial IntPtr CFNumberCreate(IntPtr allocator, nint type, ref uint value);
+
+    [LibraryImport(CoreFoundation)]
+    private static partial IntPtr CFNumberCreate(IntPtr allocator, nint type, ref int value);
 
     // A face by FAMILY, asked as a question rather than a command. CTFontCreateWithName substitutes
     // silently when the name is unknown, and reading the family back does not settle it either:
@@ -78,15 +78,11 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     [LibraryImport(CoreTextLib)]
     private static partial IntPtr CTFontCreateWithFontDescriptor(IntPtr descriptor, double size, IntPtr matrix);
 
-    // A face the app SHIPS (#1055), registered with the font manager for this process from the bytes
-    // its assembly holds, so the family match below finds it as it finds an installed one: the
-    // descriptor, the bold and italic traits and every cache keyed on the family work unchanged. The
-    // same route .NET MAUI's embedded-font loader takes on iOS.
+    // A face the app SHIPS (#1055), read into a graphics font from the bytes its assembly holds and
+    // opened from it directly (#1082): no family match reaches it, so it is never registered with the
+    // font manager, where a name the machine already has could refuse it.
     [LibraryImport(CoreFoundation)]
     private static partial IntPtr CFDataCreate(IntPtr allocator, byte[] bytes, nint length);
-
-    [LibraryImport(CoreFoundation)]
-    private static partial nint CFErrorGetCode(IntPtr error);
 
     [LibraryImport(CoreGraphics)]
     private static partial IntPtr CGDataProviderCreateWithCFData(IntPtr data);
@@ -100,19 +96,12 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     [LibraryImport(CoreGraphics)]
     private static partial void CGFontRelease(IntPtr font);
 
-    [LibraryImport(CoreTextLib)]
-    [return: MarshalAs(UnmanagedType.U1)]
-    private static partial bool CTFontManagerRegisterGraphicsFont(IntPtr font, out IntPtr error);
-
-    /// <summary>kCTFontManagerErrorAlreadyRegistered: the face is in the process all the same.</summary>
-    private const nint AlreadyRegistered = 105;
-
     private static readonly ShippedFaces Shipped = new(Register);
 
     /// <summary>
-    /// The face of each file the shell registered, kept for the process: the font a family's text is set
-    /// in is opened from the FILE that sets its weight and slant (ShippedFaces.FileFor), never matched by
-    /// the weight CoreText reads from the files, which is not every file's weight (#1082).
+    /// The face of each file the shell read, kept for the process: the font a family's text is set in is
+    /// opened from the FILE that sets its weight and slant (ShippedFaces.FileFor), never matched by the
+    /// weight CoreText reads from the files, which is not every file's weight (#1082).
     /// </summary>
     private static readonly Dictionary<FontFile, IntPtr> GraphicsFonts = new();
 
@@ -131,13 +120,6 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
         try
         {
             if (font == IntPtr.Zero) return false;
-            var registered = CTFontManagerRegisterGraphicsFont(font, out var error);
-            if (!registered)
-            {
-                registered = error != IntPtr.Zero && CFErrorGetCode(error) == AlreadyRegistered;
-                if (error != IntPtr.Zero) CFRelease(error);
-            }
-            if (!registered) return false;
             lock (GraphicsFontsGate) kept = GraphicsFonts.TryAdd(file, font);
             return true;
         }
@@ -151,18 +133,54 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
 
     /// <summary>
     /// The font a family that ships files sets text in at <paramref name="weight"/>, upright or
-    /// <paramref name="italic"/>: opened from the one file that sets them, or null when its files did not
-    /// all register, which is reported and falls back, the family resolving from them WHOLE or not at all.
+    /// <paramref name="italic"/>: opened from the one file that sets them, or null when its files could
+    /// not all be read, which is reported and falls back, the family resolving from them WHOLE or not at
+    /// all. A variable file is opened at the weight on its axis: opened as it is, it sets every weight at
+    /// its default instance.
     /// </summary>
     private static IntPtr? Shipping(FontFamily family, float size, FontWeight weight, bool italic)
     {
-        IntPtr graphics = IntPtr.Zero;
-        if (Shipped.Register(family) && ShippedFaces.FileFor(family, weight, italic) is { } file)
-            lock (GraphicsFontsGate) graphics = GraphicsFonts.GetValueOrDefault(file);
-        var font = graphics == IntPtr.Zero ? IntPtr.Zero : CTFontCreateWithGraphicsFont(graphics, size, IntPtr.Zero, IntPtr.Zero);
-        if (font != IntPtr.Zero) return font;
-        FaceResolution.Missing(family.Name);
-        return null;
+        if (!Shipped.Register(family) || ShippedFaces.FileFor(family, weight, italic) is not { } file)
+        {
+            FaceResolution.Missing(family.Name);
+            return null;
+        }
+        IntPtr graphics;
+        lock (GraphicsFontsGate) graphics = GraphicsFonts.GetValueOrDefault(file);
+        var variation = file.MinWeight < file.MaxWeight ? Variation(Math.Clamp((int)weight, file.MinWeight, file.MaxWeight)) : IntPtr.Zero;
+        try
+        {
+            var font = graphics == IntPtr.Zero ? IntPtr.Zero : CTFontCreateWithGraphicsFont(graphics, size, IntPtr.Zero, variation);
+            if (font != IntPtr.Zero) return font;
+            FaceResolution.Missing(family.Name);
+            return null;
+        }
+        finally
+        {
+            if (variation != IntPtr.Zero) CFRelease(variation);
+        }
+    }
+
+    /// <summary>
+    /// A descriptor that sets a variable face's <c>wght</c> axis at <paramref name="weight"/>, the number
+    /// a weight is on an OpenType axis (caller releases).
+    /// </summary>
+    private static IntPtr Variation(int weight)
+    {
+        var axes = CFDictionaryCreateMutable(IntPtr.Zero, 1, KeyCallbacks, ValueCallbacks);
+        var tag = 0x77676874; // 'wght'
+        var axis = CFNumberCreate(IntPtr.Zero, 9 /* kCFNumberIntType */, ref tag);
+        double at = weight;
+        var value = CFNumberCreate(IntPtr.Zero, 13 /* kCFNumberDoubleType */, ref at);
+        CFDictionarySetValue(axes, axis, value);
+        CFRelease(axis);
+        CFRelease(value);
+        var attributes = CFDictionaryCreateMutable(IntPtr.Zero, 1, KeyCallbacks, ValueCallbacks);
+        CFDictionarySetValue(attributes, FontVariationAttribute, axes);
+        CFRelease(axes);
+        var descriptor = CTFontDescriptorCreateWithAttributes(attributes);
+        CFRelease(attributes);
+        return descriptor;
     }
 
     /// <summary>The INK box of a line — what the glyphs actually cover, which is not the font's
@@ -235,6 +253,7 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     private static readonly IntPtr FontTraitsAttribute = LoadGlobal(CoreTextLib, "kCTFontTraitsAttribute");
     private static readonly IntPtr FontWeightTrait = LoadGlobal(CoreTextLib, "kCTFontWeightTrait");
     private static readonly IntPtr FontSymbolicTrait = LoadGlobal(CoreTextLib, "kCTFontSymbolicTrait");
+    private static readonly IntPtr FontVariationAttribute = LoadGlobal(CoreTextLib, "kCTFontVariationAttribute");
     private static readonly IntPtr KeyCallbacks = LoadGlobalAddress(CoreFoundation, "kCFTypeDictionaryKeyCallBacks");
     private static readonly IntPtr ValueCallbacks = LoadGlobalAddress(CoreFoundation, "kCFTypeDictionaryValueCallBacks");
 

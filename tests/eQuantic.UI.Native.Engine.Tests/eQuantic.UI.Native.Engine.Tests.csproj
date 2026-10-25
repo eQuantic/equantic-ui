@@ -98,7 +98,11 @@
          register (the server's tests embed the same two). -->
     <EmbeddedResource Include="..\Shared\Fonts\*.ttf" LogicalName="eQuantic.UI.Fonts/%(Filename)%(Extension)" />
     <!-- One family, a file at 300, 400 and 700, each glyph a width of its own, so the width a text
-         measures says which file set it (#1082). -->
+         measures says which file set it, and one variable file whose glyphs widen along its weight
+         axis (#1082). -->
     <EmbeddedResource Include="..\Shared\Fonts\Weights\*.ttf" LogicalName="eQuantic.UI.Fonts/weights/%(Filename)%(Extension)" />
+    <!-- A face that names itself after a family every Mac has, so a test proves the shell sets text in
+         the file the app ships rather than in the family a match by name finds on the machine (#1082). -->
+    <EmbeddedResource Include="..\Shared\Fonts\Clash\*.ttf" LogicalName="eQuantic.UI.Fonts/clash/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
