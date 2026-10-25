@@ -251,11 +251,11 @@ public sealed class PhotonWindow
             if (handled) Present();
             return handled;
         };
-        // While a field holds the caret and nothing is composed, the key is the app's first: only its name,
-        // so a key the app leaves goes on to the input context, which composes it (#984).
+        // While a field holds the caret and nothing is composed, a sheet hears the key first: only its name, so
+        // a key the sheet leaves goes on to the input context, which composes it (#984).
         PhotonContentView.OnKeyBeforeText = (key, modifiers) =>
         {
-            var handled = host.KeyDown(key, modifiers);
+            var handled = host.KeyBeforeText(key, modifiers);
             if (handled) Present();
             return handled;
         };

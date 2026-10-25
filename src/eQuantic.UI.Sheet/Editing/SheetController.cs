@@ -345,49 +345,86 @@ public sealed class SheetController : ISheetSurfaceModel
         return false;
     }
 
-    /// <summary>The ranges and the document's version <see cref="Summary"/> was last read at, and what it answered.</summary>
+    /// <summary>The ranges, the document's version and the culture's way of writing a number <see cref="Summary"/>
+    /// was last read at, and what it answered.</summary>
     private readonly List<SheetRange> _summaryRanges = new();
     private int _summaryAt = -1;
+    private string _summaryCulture = "";
     private SheetSummary _summary;
 
     /// <summary>
     /// What a status bar shows of the selection: the cells in use the ranges cover, counted once however many
     /// ranges cover them, and of those the ones whose text reads as a plain number in the page's culture (a
     /// sign, digits, the culture's decimal separator, an exponent, no thousands separator), with their sum and
-    /// their average. Values are text until slice 5 types them. Read from the stored cells, never the ranges'
-    /// cells, so a whole sheet costs what it holds, and read again only when the ranges or the document change.
+    /// their average; no sum and no average where the sum passes what a decimal holds. Values are text until
+    /// slice 5 types them. Read from the cells the ranges cover or from the cells in use, whichever are fewer,
+    /// so a whole sheet costs what it holds and a range dragged over a large sheet costs what it covers, and
+    /// read again only when the ranges, the document or the culture change.
     /// </summary>
     public SheetSummary Summary
     {
         get
         {
             var ranges = Ranges;
-            if (_summaryAt == Document.Version && SameRanges(ranges)) return _summary;
+            // What reading a number in the culture depends on, its minus and its decimal separator, as the culture
+            // writes them: a page holds its culture's name nowhere the browser's twin can read it.
+            var culture = (-1.5m).ToString(CultureInfo.CurrentCulture);
+            if (_summaryAt == Document.Version && _summaryCulture == culture && SameRanges(ranges)) return _summary;
             var count = 0;
             var numbers = 0;
             var sum = 0m;
-            foreach (var (key, value) in Document.Cells)
+            var fits = true;
+            void Read(string value)
             {
-                var cell = CellRef.FromKey(key);
-                var covered = false;
-                foreach (var range in ranges)
-                {
-                    if (!range.Contains(cell)) continue;
-                    covered = true;
-                    break;
-                }
-                if (!covered) continue;
                 count++;
-                if (!decimal.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out var number)) continue;
+                if (!decimal.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out var number)) return;
                 numbers++;
-                sum += number;
+                if (!fits) return;
+                if (number > 0 ? sum > decimal.MaxValue - number : sum < decimal.MinValue - number) fits = false;
+                else sum += number;
             }
-            _summary = new SheetSummary(count, numbers, sum, numbers > 0 ? sum / numbers : null);
+            var area = 0d;
+            foreach (var range in ranges) area += (double)range.RowCount * range.ColCount;
+            if (area <= Document.Cells.Count)
+            {
+                for (var i = 0; i < ranges.Count; i++)
+                {
+                    var range = ranges[i];
+                    for (var row = range.TopRow; row <= range.BottomRow; row++)
+                    {
+                        for (var col = range.LeftCol; col <= range.RightCol; col++)
+                        {
+                            var cell = new CellRef(row, col);
+                            if (CoveredBefore(ranges, i, cell)) continue;
+                            var value = Document.GetCell(cell);
+                            if (value.Length > 0) Read(value);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                foreach (var (key, value) in Document.Cells)
+                {
+                    if (CoveredBefore(ranges, ranges.Count, CellRef.FromKey(key))) Read(value);
+                }
+            }
+            decimal? total = fits ? sum : null;
+            _summary = new SheetSummary(count, numbers, total, fits && numbers > 0 ? sum / numbers : null);
             _summaryAt = Document.Version;
+            _summaryCulture = culture;
             _summaryRanges.Clear();
             _summaryRanges.AddRange(ranges);
             return _summary;
         }
+    }
+
+    /// <summary>Whether one of the first <paramref name="before"/> ranges holds <paramref name="cell"/>.</summary>
+    private static bool CoveredBefore(IReadOnlyList<SheetRange> ranges, int before, CellRef cell)
+    {
+        for (var i = 0; i < before; i++)
+            if (ranges[i].Contains(cell)) return true;
+        return false;
     }
 
     private bool SameRanges(IReadOnlyList<SheetRange> ranges)
@@ -540,7 +577,8 @@ public sealed class SheetController : ISheetSurfaceModel
     {
         _others.Clear();
         _selection = new SheetRange(new CellRef(0, 0), new CellRef(Document.Rows - 1, Document.Cols - 1));
-        _active = new CellRef(0, 0);
+        // The active cell stays where it was, as Excel's Ctrl+A and its select-all corner leave it.
+        _active = Document.Clamp(_active);
     }
 
     /// <summary>Shift+click: the active range stretches from its anchor to the clicked cell, the other ranges

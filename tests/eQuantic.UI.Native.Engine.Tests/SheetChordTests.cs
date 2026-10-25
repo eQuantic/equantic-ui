@@ -92,6 +92,7 @@ public class SheetChordTests
         Key(sheet, "a", KeyModifiers.Command, convention);
         sheet.Selection.Should().Be(new SheetRange(new CellRef(0, 0),
             new CellRef(sheet.Document.Rows - 1, sheet.Document.Cols - 1)));
+        sheet.ActiveCell.Should().Be(Cell("C3"), "the whole sheet selected keeps the active cell, as Excel's Ctrl+A does");
     }
 
     [Fact]

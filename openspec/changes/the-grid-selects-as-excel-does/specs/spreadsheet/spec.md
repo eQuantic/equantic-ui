@@ -190,8 +190,10 @@ platform's reduced-motion setting it SHALL jump.
 A status bar the app places beside the grid over the same controller SHALL show, while the selection
 holds two or more cells in use, the Count of the cells in use it covers and, when one or more of them
 hold a number, their Sum and their Average, each counted once however many ranges cover it, written in
-the page's language and culture, the Sum and the Average to ten significant digits as Excel's General
-format writes them. Until values are typed, a cell SHALL count as a number when its text
+the page's language and culture, the Sum and the Average as Excel's General format writes them in its
+status bar: in eleven characters, the places that fit after the whole part, and in scientific notation
+past them; no Sum and no Average where the sum passes what a decimal holds. The summary SHALL read the
+cells the ranges cover or the cells in use, whichever are fewer. Until values are typed, a cell SHALL count as a number when its text
 reads as a plain number in the page's culture: a sign, digits, the culture's decimal separator and an
 exponent, no thousands separator. In add mode the status bar SHALL say so.
 
@@ -205,6 +207,11 @@ exponent, no thousands separator. In add mode the status bar SHALL say so.
 
 - **WHEN** B2 holds `7` and B2 is selected
 - **THEN** the status bar shows nothing
+
+#### Scenario: A sum of eleven digits
+
+- **WHEN** B2 and B3 hold `123456789,12` and `12345678901` in pt-BR, and B2:B3 is selected
+- **THEN** the status bar shows `Soma: 12469135690` and `Média: 6234567845`
 
 #### Scenario: An average that does not end
 

@@ -399,7 +399,7 @@ Each slice proposes, implements and archives its change in its own pull request.
   unfilled, a header is emphasized for its band and strongly for a whole row or column, the selection
   dims while the grid does not hold the keyboard, and the cell cursor glides (`TableViewCell.Key` and
   `Glide`) and jumps under reduced motion. `StatusBar(controller)` joins the formula bar and the name
-  box: the Sum, the Average to ten digits and the Count of the cells in use, in the page's language
+  box: the Sum, the Average and the Count of the cells in use, as Excel's General writes them, in the page's language
   and culture. Found on the way and fixed here: the active cell sat at the end a drag or Shift moved,
   where Excel keeps it at the anchor; and a number could not be read in the page's culture in the
   browser (EQ2108), so `7,01` did not sum on a pt-BR page

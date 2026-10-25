@@ -179,7 +179,11 @@ public sealed class TableView : StatefulComponent
                 {
                     Rows = rowTo - rowFrom,
                     Columns = columnTo - columnFrom,
-                    Key = (mark.Key ?? "mark:" + index) + "/" + piece,
+                    // A keyed mark's piece is named by the band it is drawn in, so the piece that glides is the
+                    // same band's from one build to the next however many bands the mark crosses.
+                    Key = mark.Key is { } key
+                        ? key + "/" + (rowFrom < pinnedRows ? "p" : "b") + (columnFrom < pinnedColumns ? "p" : "b")
+                        : "mark:" + index + "/" + piece,
                     Glide = mark.Glide,
                 });
                 piece++;

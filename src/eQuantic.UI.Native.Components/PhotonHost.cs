@@ -1736,6 +1736,19 @@ public sealed class PhotonHost
     /// sheet for an Escape it does not claim: the model released Tab, and the Tab that follows moves on
     /// from the sheet's own stop, which a dropped keyboard had forgotten (#732).
     /// </summary>
+    /// <summary>
+    /// A key a shell offers BEFORE the platform's text input, while a text target holds the caret and nothing is
+    /// being composed (the macOS shell, #984): only a spreadsheet under the selection may claim it, since its
+    /// keymap reads Shift+Space and its chords at rest. The app's own shortcuts and the focus keys wait for the
+    /// key the input context leaves, so a character typed into a field or a code editor is never a binding's.
+    /// </summary>
+    public bool KeyBeforeText(string key, KeyModifiers modifiers)
+    {
+        if (SheetTarget is not { } sheetSurface || !SheetKey(sheetSurface, key, modifiers)) return false;
+        NeedsRender = true;
+        return true;
+    }
+
     private bool SheetKey(SheetSurface surface, string key, KeyModifiers modifiers)
     {
         if (!surface.Model.HandleKey(key, modifiers, KeyboardConvention, Clipboard)) return false;

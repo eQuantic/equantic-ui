@@ -349,6 +349,49 @@ public class SpreadsheetBarsTests
     }
 
     [Fact]
+    public void TheStatusBar_WritesWhatFitsInElevenCharacters_AsExcelsGeneralDoes()
+    {
+        var texts = InCulture("pt-BR", () =>
+        {
+            var (host, sheet) = Open();
+            sheet.Document.SetCell(B2, "123456789,12");
+            sheet.Document.SetCell(new CellRef(2, 1), "12345678901");
+            sheet.Document.SetCell(new CellRef(3, 1), "111111111111");
+            Click(host, sheet, B2, 32);
+            host.KeyDown("ArrowDown", KeyModifiers.Shift);
+            var two = Texts(Frame(host, 48));
+            host.KeyDown("ArrowDown", KeyModifiers.Shift);
+            return (two, Texts(Frame(host, 64)));
+        });
+
+        texts.two.Should().Contain(["Soma: 12469135690", "Média: 6234567845"], "an eleven-digit sum keeps its digits");
+        texts.Item2.Should().Contain("Soma: 1,2358E+11", "a sum past eleven characters is written in scientific notation");
+    }
+
+    [Fact]
+    public void AKeyBeforeText_IsTheSheetsAlone_NeverAnAppShortcut()
+    {
+        // The macOS shell offers a key to the app before the input method while a text target holds the caret
+        // (#984): a sheet may claim it, an app's shortcut on a plain character may not, or typing that
+        // character into a field would run the shortcut.
+        var log = new List<string>();
+        var field = new TextInput("", _ => { }, "Name");
+        var host = new PhotonHost(new Shortcut(field, new KeyChord("/"), () => log.Add("search")),
+            PhotonTheme.Instance, ThemeMode.Light, 500, 300);
+        var region = host.RenderFrame(new DisplayListBuilder()).TextRegions.Single();
+        host.PressDown(region.Bounds.X + 4, region.Bounds.Y + 4);
+        host.PressUp(region.Bounds.X + 4, region.Bounds.Y + 4);
+
+        host.KeyBeforeText("/", KeyModifiers.None).Should().BeFalse("the input context types it");
+        log.Should().BeEmpty();
+
+        var (sheetHost, sheet) = Open();
+        Click(sheetHost, sheet, B2, 32);
+        sheetHost.KeyBeforeText(" ", KeyModifiers.Shift).Should().BeTrue("Shift+Space is the sheet's");
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 0), new CellRef(1, sheet.Document.Cols - 1)));
+    }
+
+    [Fact]
     public void TheStatusBar_CountsWords_AndSumsNothingOfThem()
     {
         var texts = InCulture("en-US", () =>

@@ -134,11 +134,11 @@ function editing(): SheetController {
 }
 
 /** A sheet whose B2:B4 holds two numbers and a word, selected, in add mode. */
-function summing(): SheetController {
+function summing(first = '7.01', second = '14.02', third = 'text'): SheetController {
   const sheet = new SheetController(30, 6);
-  sheet.document.setCell(new CellRef(1, 1), '7.01');
-  sheet.document.setCell(new CellRef(2, 1), '14.02');
-  sheet.document.setCell(new CellRef(3, 1), 'text');
+  sheet.document.setCell(new CellRef(1, 1), first);
+  sheet.document.setCell(new CellRef(2, 1), second);
+  sheet.document.setCell(new CellRef(3, 1), third);
   sheet.selection = new SheetRange(new CellRef(1, 1), new CellRef(3, 1));
   sheet.handleKey('F8', 1, 'standard', null);
   return sheet;
@@ -403,6 +403,7 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'formula-bar': still(new FormulaBar(editing())),
     'name-box': still(new NameBox(editing())),
     'status-bar': still(new StatusBar(summing())),
+    'status-bar-general': still(new StatusBar(summing('123456789012', '1', '2'))),
     'popover-closed': still(
       new Popover(
         new Button('Info'),

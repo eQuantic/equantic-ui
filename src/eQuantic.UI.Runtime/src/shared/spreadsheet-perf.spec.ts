@@ -155,7 +155,7 @@ describe('a spreadsheet of 100 000 × 100 on the web', () => {
 
     console.log(`web: the summary of a million cells: ${took.toFixed(1)} ms, again ${tookAgain.toFixed(3)} ms (alarm ${SUMMARY_CEILING_MS} ms)`);
     expect(summary.count).toBe(1_000_000);
-    expect(summary.sum.toString()).toBe('1500000.0');
+    expect(summary.sum?.toString()).toBe('1500000.0');
     expect(cached, 'a key that moved nothing answers the summary it kept').toBe(summary);
     expect(took, 'the summary reads the cells in use, never the sheet').toBeLessThan(SUMMARY_CEILING_MS);
     expect(tookAgain, 'nothing moved, so nothing is read again').toBeLessThan(CACHED_CEILING_MS);

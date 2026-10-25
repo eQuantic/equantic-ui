@@ -138,9 +138,13 @@ number in `pt-BR` and text in `en-US`, until slice 5 types values. The transpile
 which this design first assumed: the build refused the current culture for a number (EQ2108), so the
 read is decision 10's. The `StatusBar` component listens to `Refreshed` as the
 bars do and writes `SdkStrings.Sum`, `Average`, `Count` and `AddToSelection` in the page's language, the
-Sum and the Average with `G10`, the ten significant digits Excel's General format writes in its status
-bar: a decimal's own text keeps 28, and the average of `14,02`, `28,04` and `35,05` read
-`25,703333333333333333333333333` in Chromium before it did.
+Sum and the Average as Excel's General format writes them in its status bar, in eleven characters: the
+places that fit after the whole part (`1.666666667`, `123456789.1`, `12345678901`), and scientific
+notation past them (`1.23457E+11`). A decimal's own text keeps 28 digits, and the average of `14,02`,
+`28,04` and `35,05` read `25,703333333333333333333333333` in Chromium before it did; `G10`, tried next,
+wrote an eleven-digit sum as `1.23456789E+10`. The summary reads the cells the ranges cover or the cells in
+use, whichever are fewer, so a drag over a large sheet reads what it covers on every move, and keys its
+cache on the culture's way of writing `-1.5` too, which is what reading a number depends on.
 
 ### 9. The macOS shell offers a key to the host before the input method while nothing is marked
 

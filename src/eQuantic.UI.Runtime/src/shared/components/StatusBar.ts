@@ -1,9 +1,8 @@
-import { $eq, Box, BoxStyle, BuildContext, EdgeInsets, Row, SdkStrings, SheetController, SheetPalette, SizeValue, Spacer, StatefulComponent, Text, TypeRoleValue, UiComponent } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, Decimal, EdgeInsets, Row, SdkStrings, SheetController, SheetPalette, SizeValue, Spacer, StatefulComponent, Text, TypeRoleValue, UiComponent } from "../runtime-exports";
 
 export class StatusBar extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Spreadsheets.StatusBar';
     static barType: TypeRoleValue = 'caption';
-    static summaryFormat: string = 'G10';
     _config: StatusBar;
     _rebuild: () => void;
     _listening: any = null;
@@ -36,9 +35,10 @@ export class StatusBar extends StatefulComponent {
         let summary = this.controller.summary;
         if (summary.count >= 2) {
             let average: any; 
-            if ((average = summary.average) != null) line.add(StatusBar.words(SdkStrings.average($eq.text.format(average, StatusBar.summaryFormat)), palette));
+            if ((average = summary.average) != null) line.add(StatusBar.words(SdkStrings.average(StatusBar.general(average)), palette));
             line.add(StatusBar.words(SdkStrings.count(summary.count), palette));
-            if (summary.numbers > 0) line.add(StatusBar.words(SdkStrings.sum($eq.text.format(summary.sum, StatusBar.summaryFormat)), palette));
+            let sum: any; 
+            if (summary.numbers > 0 && (sum = summary.sum) != null) line.add(StatusBar.words(SdkStrings.sum(StatusBar.general(sum)), palette));
         }
         return new Box(new BoxStyle({ width: this._config.width, height: SizeValue.fixed(Math.fround(Math.fround(Math.fround(type.lineHeight + padding.top) + padding.bottom) + 2)), padding: padding, background: palette.headerBackground, borderColor: palette.gridline, borderWidth: 1 }), line);
     }
@@ -64,6 +64,14 @@ export class StatusBar extends StatefulComponent {
         if (!(this._listening == null)) this._listening.refreshed = $eq.delegates.remove(this._listening.refreshed, this._rebuild);
         this._listening = controller;
         if (!(controller == null)) controller.refreshed = $eq.delegates.combine(controller.refreshed, this._rebuild);
+    }
+
+    static general(value: Decimal) {
+        let whole = $eq.text.format(((value.compareTo($eq.num.dec(0)) < 0) ? value.neg() : value), '0', undefined, true).length;
+        let room = 11 - ((value.compareTo($eq.num.dec(0)) < 0) ? 1 : 0) - whole;
+        if (room < 0) return $eq.text.format(value, '0.#####E+00');
+        let places = Math.max(0, room - 1);
+        return $eq.text.format(value, places === 0 ? '0' : '0.' + '#'.repeat(places));
     }
 
     static words(text: string, palette: SheetPalette) {

@@ -180,6 +180,7 @@ public class ComponentParityFixtureTests
         ("formula-bar", new eQuantic.UI.Spreadsheets.FormulaBar(Editing()), NoPresses),
         ("name-box", new eQuantic.UI.Spreadsheets.NameBox(Editing()), NoPresses),
         ("status-bar", new eQuantic.UI.Spreadsheets.StatusBar(Summing()), NoPresses),
+        ("status-bar-general", new eQuantic.UI.Spreadsheets.StatusBar(Summing("123456789012", "1", "2")), NoPresses),
         ("popover-closed", new Popover(new Button("Info"),
             new Text("the content", TypeRole.BodyM, Theme.TextPrimary), false), NoPresses),
         ("drawer-open", new Drawer(new Text("side", TypeRole.BodyM, Theme.TextPrimary), true), NoPresses),
@@ -368,12 +369,13 @@ public class ComponentParityFixtureTests
 
     /// <summary>A sheet whose B2:B4 holds two numbers and a word, selected, in add mode: the status bar
     /// says add mode is on, and writes the average, the count and the sum.</summary>
-    private static eQuantic.UI.Sheet.SheetController Summing()
+    private static eQuantic.UI.Sheet.SheetController Summing(string first = "7.01", string second = "14.02",
+        string third = "text")
     {
         var sheet = new eQuantic.UI.Sheet.SheetController(rows: 30, cols: 6);
-        sheet.Document.SetCell(new eQuantic.UI.Sheet.CellRef(1, 1), "7.01");
-        sheet.Document.SetCell(new eQuantic.UI.Sheet.CellRef(2, 1), "14.02");
-        sheet.Document.SetCell(new eQuantic.UI.Sheet.CellRef(3, 1), "text");
+        sheet.Document.SetCell(new eQuantic.UI.Sheet.CellRef(1, 1), first);
+        sheet.Document.SetCell(new eQuantic.UI.Sheet.CellRef(2, 1), second);
+        sheet.Document.SetCell(new eQuantic.UI.Sheet.CellRef(3, 1), third);
         sheet.Selection = new eQuantic.UI.Sheet.SheetRange(new eQuantic.UI.Sheet.CellRef(1, 1),
             new eQuantic.UI.Sheet.CellRef(3, 1));
         ((eQuantic.UI.Primitives.ISheetSurfaceModel)sheet).HandleKey("F8", KeyModifiers.Shift,

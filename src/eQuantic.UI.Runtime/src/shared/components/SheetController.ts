@@ -17,6 +17,7 @@ export class SheetController {
         this._tabRun = null;
         this._summaryRanges = [];
         this._summaryAt = -1;
+        this._summaryCulture = '';
         this._summary = SheetSummary.$zero();
         this._lastInUseAt = -1;
         this._lastInUse = CellRef.$zero();
@@ -64,6 +65,7 @@ export class SheetController {
     _tabRun!: [number, CellRef] | null;
     _summaryRanges!: SheetRange[];
     _summaryAt!: number;
+    _summaryCulture!: string;
     _summary!: SheetSummary;
     _lastInUseAt!: number;
     _lastInUse!: CellRef;
@@ -113,28 +115,44 @@ export class SheetController {
     }
 
     get summary(): SheetSummary {
+        const read = (value: string) => {
+            count++;
+            let number: any; 
+            if (!((number = $eq.num.decTryParse(value, 167)) !== undefined || ((number = $eq.num.dec(0)), false))) return;
+            numbers++;
+            if (!fits) return;
+            if ((number.compareTo($eq.num.dec(0)) > 0) ? (sum.compareTo($eq.num.dec("79228162514264337593543950335").sub(number)) > 0) : (sum.compareTo($eq.num.dec("-79228162514264337593543950335").sub(number)) < 0)) fits = false; else sum = sum.add(number);
+        };
         let ranges = this.ranges;
-        if (this._summaryAt === this.document.version && this.sameRanges(ranges)) return this._summary;
+        let culture = $eq.text.format($eq.num.dec("-1.5"), null);
+        if (this._summaryAt === this.document.version && this._summaryCulture === culture && this.sameRanges(ranges)) return this._summary;
         let count = 0;
         let numbers = 0;
         let sum = $eq.num.dec("0");
-        for (const [key, value] of this.document.cells) {
-            let cell = CellRef.fromKey(key);
-            let covered = false;
-            for (const range of ranges) {
-                if (!range.contains(cell)) continue;
-                covered = true;
-                break;
+        let fits = true;
+        let area = 0;
+        for (const range of ranges) area += range.rowCount * range.colCount;
+        if (area <= this.document.cells.size) {
+            for (let i = 0; i < $eq.collections.count(ranges); i++) {
+                let range = $eq.collections.item(ranges, i);
+                for (let row = range.topRow; row <= range.bottomRow; row++) {
+                    for (let col = range.leftCol; col <= range.rightCol; col++) {
+                        let cell = new CellRef(row, col);
+                        if (SheetController.coveredBefore(ranges, i, cell)) continue;
+                        let value = this.document.getCell(cell);
+                        if (value.length > 0) read(value);
+                    }
+                }
             }
-            if (!covered) continue;
-            count++;
-            let number: any; 
-            if (!((number = $eq.num.decTryParse(value, 167)) !== undefined || ((number = $eq.num.dec(0)), false))) continue;
-            numbers++;
-            sum = sum.add(number);
+        } else {
+            for (const [key, value] of this.document.cells) {
+                if (SheetController.coveredBefore(ranges, $eq.collections.count(ranges), CellRef.fromKey(key))) read(value);
+            }
         }
-        this._summary = new SheetSummary(count, numbers, sum, numbers > 0 ? sum.div($eq.num.dec(numbers)) : null);
+        let total = fits ? sum : null;
+        this._summary = new SheetSummary(count, numbers, total, fits && numbers > 0 ? sum.div($eq.num.dec(numbers)) : null);
         this._summaryAt = this.document.version;
+        this._summaryCulture = culture;
         this._summaryRanges.splice(0);
         this._summaryRanges.push(...ranges);
         return this._summary;
@@ -387,6 +405,11 @@ export class SheetController {
         return false;
     }
 
+    static coveredBefore(ranges: SheetRange[], before: number, cell: CellRef) {
+        for (let i = 0; i < before; i++) if ($eq.collections.item(ranges, i).contains(cell)) return true;
+        return false;
+    }
+
     sameRanges(ranges: SheetRange[]) {
         if ($eq.collections.count(ranges) !== this._summaryRanges.length) return false;
         for (let i = 0; i < $eq.collections.count(ranges); i++) if (!$eq.equals($eq.collections.item(ranges, i), this._summaryRanges[i])) return false;
@@ -505,7 +528,7 @@ export class SheetController {
     selectAll() {
         this._others.splice(0);
         this._selection = new SheetRange(new CellRef(0, 0), new CellRef(this.document.rows - 1, this.document.cols - 1));
-        this._active = new CellRef(0, 0);
+        this._active = this.document.clamp(this._active);
     }
 
     selectTo(cell: CellRef) {

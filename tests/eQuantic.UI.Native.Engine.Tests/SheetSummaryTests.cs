@@ -137,4 +137,52 @@ public class SheetSummaryTests
         cached.Should().Be(summary);
         again.Elapsed.TotalMilliseconds.Should().BeLessThan(5, "nothing moved, so nothing is read again");
     }
+
+    [Fact]
+    public void ASumPastWhatADecimalHolds_HasNoSumAndNoAverage_AndThrowsNothing()
+    {
+        var sheet = new SheetController(100, 10);
+        sheet.Document.SetCell(Cell("B2"), "79228162514264337593543950335");
+        sheet.Document.SetCell(Cell("B3"), "79228162514264337593543950335");
+        sheet.Selection = new SheetRange(Cell("B2"), Cell("B3"));
+
+        InCulture("en-US", () => sheet.Summary).Should().Be(new SheetSummary(2, 2, null, null));
+    }
+
+    [Fact]
+    public void ARangeOverALargeSheet_CostsWhatItCovers()
+    {
+        // A drag reaches a new cell on every move, and each move reads the summary again: over a million cells
+        // in use, a range of a few cells reads those cells, never the sheet's (#984).
+        var sheet = new SheetController(100_000, 100);
+        for (var row = 0; row < 100_000; row++)
+            for (var col = 0; col < 10; col++)
+                sheet.Document.SetCell(new CellRef(row, col), "2");
+        sheet.Selection = new SheetRange(Cell("B2"), Cell("D10"));
+        _ = sheet.Summary;
+
+        var clock = Stopwatch.StartNew();
+        for (var row = 10; row < 60; row++)
+        {
+            sheet.Selection = new SheetRange(Cell("B2"), new CellRef(row, 3));
+            _ = sheet.Summary;
+        }
+        clock.Stop();
+
+        sheet.Summary.Should().Be(new SheetSummary(59 * 3, 59 * 3, 59 * 3 * 2, 2));
+        // Fifty moves of a drag; reading the sheet's million cells each time took 1.4 s.
+        clock.Elapsed.TotalMilliseconds.Should().BeLessThan(500);
+    }
+
+    [Fact]
+    public void AChangeOfCulture_ReadsTheNumbersAgain()
+    {
+        var sheet = new SheetController(100, 10);
+        sheet.Document.SetCell(Cell("B2"), "7,01");
+        sheet.Document.SetCell(Cell("B3"), "14,02");
+        sheet.Selection = new SheetRange(Cell("B2"), Cell("B3"));
+
+        InCulture("pt-BR", () => sheet.Summary).Numbers.Should().Be(2);
+        InCulture("en-US", () => sheet.Summary).Numbers.Should().Be(0, "a comma is no decimal point in en-US");
+    }
 }

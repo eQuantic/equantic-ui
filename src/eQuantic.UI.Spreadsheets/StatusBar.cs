@@ -19,9 +19,6 @@ public sealed class StatusBar : StatefulComponent
 
     private const TypeRole BarType = TypeRole.Caption;
 
-    /// <summary>How the Sum and the Average are written: to ten significant digits, as Excel's General
-    /// format writes them in its status bar (`1.666666667`), where a decimal's own text keeps 28.</summary>
-    private const string SummaryFormat = "G10";
 
     private StatusBar _config;
 
@@ -76,11 +73,9 @@ public sealed class StatusBar : StatefulComponent
         var summary = Controller.Summary;
         if (summary.Count >= 2)
         {
-            if (summary.Average is { } average)
-                line.Add(Words(SdkStrings.Average(average.ToString(SummaryFormat, CultureInfo.CurrentCulture)), palette));
+            if (summary.Average is { } average) line.Add(Words(SdkStrings.Average(General(average)), palette));
             line.Add(Words(SdkStrings.Count(summary.Count), palette));
-            if (summary.Numbers > 0)
-                line.Add(Words(SdkStrings.Sum(summary.Sum.ToString(SummaryFormat, CultureInfo.CurrentCulture)), palette));
+            if (summary.Numbers > 0 && summary.Sum is { } sum) line.Add(Words(SdkStrings.Sum(General(sum)), palette));
         }
         return new Box(new BoxStyle
         {
@@ -91,6 +86,21 @@ public sealed class StatusBar : StatefulComponent
             BorderColor = palette.Gridline,
             BorderWidth = 1f,
         }, line);
+    }
+
+    /// <summary>
+    /// A number as Excel's General format writes it in its status bar: in eleven characters, the places
+    /// that fit after the whole part and its sign (`1.666666667`, `123456789.1`, `12345678901`), and in
+    /// scientific notation past them, in the page's culture. A decimal's own text keeps 28 digits.
+    /// </summary>
+    private static string General(decimal value)
+    {
+        // The whole part's digits as General rounds it: 99999999999.6 is twelve digits, and goes scientific.
+        var whole = (value < 0 ? -value : value).ToString("0", CultureInfo.InvariantCulture).Length;
+        var room = 11 - (value < 0 ? 1 : 0) - whole;
+        if (room < 0) return value.ToString("0.#####E+00", CultureInfo.CurrentCulture);
+        var places = Math.Max(0, room - 1);
+        return value.ToString(places == 0 ? "0" : "0." + new string('#', places), CultureInfo.CurrentCulture);
     }
 
     private static Text Words(string text, SheetPalette palette) => new(text, BarType, palette.HeaderText, maxLines: 1);

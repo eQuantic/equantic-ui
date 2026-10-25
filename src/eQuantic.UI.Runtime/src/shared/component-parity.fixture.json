@@ -11556,7 +11556,7 @@
                             },
                             {
                               "tag": "div",
-                              "key": "cursor/0",
+                              "key": "cursor/bb",
                               "attrs": {
                                 "class": "eq-1avhl7d eq-1fo26cq eq-1yxcnfo eq-bdhw0f eq-glide eq-gllhxs eq-mfc69x eq-na4661"
                               },
@@ -18816,6 +18816,99 @@
                 {
                   "tag": "#text",
                   "text": "Sum: 21.03",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "status-bar-general": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-11kg7e8 eq-12ve49g eq-1aoicmy eq-1eb13m5 eq-5ew4ww eq-60rbl8 eq-akjizx eq-bo3n4y eq-g7fowl"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp eq-zfhnbg"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-type-caption"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "Add to Selection",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "attrs": {
+                "aria-hidden": "true",
+                "class": "eq-168ghzj"
+              },
+              "events": [],
+              "children": []
+            },
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-type-caption"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "Average: 41152263005",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-type-caption"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "Count: 3",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-type-caption"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "Sum: 1.23457E\u002B11",
                   "attrs": {},
                   "events": [],
                   "children": []
