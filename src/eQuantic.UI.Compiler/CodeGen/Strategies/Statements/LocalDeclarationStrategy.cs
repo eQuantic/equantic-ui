@@ -112,6 +112,16 @@ public class LocalDeclarationStrategy : IStatementStrategy
             return "";
         }
 
+        // The same empty collection written the newer way: `IReadOnlyList<int> found = []` is an array the
+        // collection expression writes as `[]`, which TypeScript infers as `any[]` and, in strict mode,
+        // refuses once a branch assigns the local (#1086). A set is the runtime's helper, typed already,
+        // and an enumerable may be handed something that is not an array, so neither is annotated.
+        if (variable.Initializer?.Value is CollectionExpressionSyntax started
+            && started.Elements.All(element => element is WithElementSyntax)
+            && ListedItem(context.SemanticHelper.GetConvertedType(started)) is { } listed
+            && SimpleItemName(listed, context) is { } listedName)
+            return $": {ArrayOf(listedName)}";
+
         if (!decl.Declaration.Type.IsVar && StartsNull(decl, variable, context)
             && StartingNullAnnotation(decl, context) is { } startsNull)
             return startsNull;
@@ -120,6 +130,17 @@ public class LocalDeclarationStrategy : IStatementStrategy
 
         return DeclaredTypeAnnotation(decl, variable.Initializer.Value, context);
     }
+
+    /// <summary>The item of a collection an empty <c>[]</c> writes as an array: an array's, or a list's
+    /// (<c>List</c>, <c>IList</c>, <c>IReadOnlyList</c>). Null for any other target.</summary>
+    private static ITypeSymbol? ListedItem(ITypeSymbol? target) => target switch
+    {
+        IArrayTypeSymbol { Rank: 1 } array => array.ElementType,
+        INamedTypeSymbol { TypeArguments: [var item] } named
+            when named.OriginalDefinition.ToString() is "System.Collections.Generic.List<T>"
+                or "System.Collections.Generic.IList<T>" or "System.Collections.Generic.IReadOnlyList<T>" => item,
+        _ => null,
+    };
 
     /// <summary>
     /// Whether the local STARTS as null: initialized with <c>null</c>, or with <c>default</c> of a

@@ -78,6 +78,23 @@ public class CollectionConstructionTests
     }
 
     /// <summary>
+    /// An empty collection expression in a typed local is the same empty list written the newer way, and is
+    /// annotated as <c>new List&lt;T&gt;()</c> is (#1086): written <c>let found = [];</c>, TypeScript inferred
+    /// <c>any[]</c> and, in strict mode, refused it once a branch assigned the local. A set is the runtime's
+    /// typed helper, and an enumerable may be handed something that is not an array.
+    /// </summary>
+    [Fact]
+    public void AnEmptyCollectionExpression_IsAnnotatedWithItsItem()
+    {
+        Convert("IReadOnlyList<int> found = [];").Should().Contain("let found: number[] = [];");
+        Convert("IList<string?> names = [];").Should().Contain("let names: (string | null)[] = [];");
+        Convert("List<bool> flags = [];").Should().Contain("let flags: boolean[] = [];");
+        Convert("int[] none = [];").Should().Contain("let none: number[] = [];");
+        Convert("IReadOnlyList<int> some = [1, 2];").Should().Contain("let some = [1, 2];", "inference reads the items");
+        Convert("IEnumerable<int> sequence = [];").Should().Contain("let sequence = [];");
+    }
+
+    /// <summary>
     /// A type the app does not declare is named as the mapper spells it, in a tuple's slot and as a list's
     /// item (Copilot on #1068): a Guid crosses as a string, and a list named `Guid` named nothing. A type the
     /// app declares keeps its name, a `Guid` of its own included.
