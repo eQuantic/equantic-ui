@@ -251,6 +251,26 @@ public class FontServingTests
         (await client.GetByteArrayAsync(location)).Should().Equal(Resource("eQuantic.UI.Fonts/TestFace-Italic.ttf"));
     }
 
+    /// <summary>
+    /// A file the theme's stylesheet serves may be named by a family of a page's own, and a page the browser
+    /// builds asks for it by its identity like any other, wherever the theme's author embedded it: it is
+    /// served on a page the server renders, so it is on one the browser builds (Copilot's second review of
+    /// #1077).
+    /// </summary>
+    [Fact]
+    public async Task AFileTheThemeServes_IsFoundByItsIdentity_WhereverItIsEmbedded()
+    {
+        var themeFace = new FontFamily("Elsewhere Theme", new FontFile(Assembly, "Elsewhere/TestFace-Elsewhere.ttf", 400, 400));
+        await using var app = await Serve(new FacedTheme(PhotonTheme.Instance, themeFace));
+        var client = app.GetTestClient();
+
+        var response = await client.GetAsync($"/_equantic/fonts/{Assembly}/Elsewhere/TestFace-Elsewhere.ttf");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        (await client.GetByteArrayAsync(response.Headers.Location!.OriginalString))
+            .Should().Equal(Resource("Elsewhere/TestFace-Elsewhere.ttf"));
+    }
+
     [Theory]
     [InlineData("Not.A.Loaded.Assembly/eQuantic.UI.Fonts/TestFace-Regular.ttf")]
     [InlineData(Assembly + "/eQuantic.UI.Fonts/Nowhere.ttf")]

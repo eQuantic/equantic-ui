@@ -91,6 +91,10 @@ export function measurePhotonText(text: string, style: TypeStyleValue, typeScale
   if (isWellFormedFace(style.family?.name)) {
     declareFamily(style.family);
     dependOnFamily(style.family, passInvalidator());
+  } else {
+    // A measure in the theme's own face, through the stack its stylesheet declares, depends on that
+    // family as much: taken back, its text falls back too, and the page measures again.
+    dependOnFamily(style.mono ? activeTheme.monoFamily : activeTheme.textFamily, passInvalidator());
   }
   const family = isWellFormedFace(style.family?.name) ? `"${style.family!.name}", ${base}` : base;
   // NUMERIC weight: the enum arrives as a member name, and a name makes the whole shorthand

@@ -41,7 +41,8 @@ which would declare on every page faces that no page names.
   instance, and the server says so: only the instance that read it could have answered its URL.
 - **The identity route is narrow.** `/_equantic/fonts/<assembly>/<resource>` answers only a face an
   eQuantic build embedded, under `eQuantic.UI.Fonts/`, a `.ttf` or an `.otf`, in one of the app's
-  assemblies, which the deployment names and no request does. An assembly may embed a font for something
+  assemblies, which the deployment names and no request does, and a file the theme's stylesheet serves,
+  which a page may name in a family of its own and every instance read when it started. An assembly may embed a font for something
   else, a PDF writer's, whose licence does not cover the web, and the route must not publish it because a
   browser asked. Its redirect is not cached, so a new build's file is found under its new hash.
 - **Rules, not `FontFace`.** The runtime declares a family as the server does, `@font-face` rules in the
@@ -55,6 +56,7 @@ which would declare on every page faces that no page names.
   face of which failed, the theme's, the server's or the runtime's, and a face that failed before the
   runtime was there is taken back when it starts. The text falls back as a whole, as it does on Photon,
   and the pages that measured text in the family rebuild, holding each page's one invalidator weakly, so
-  a page that left the tree is not kept alive by a font that never failed.
+  a page that left the tree is not kept alive by a font that never failed. A measure that names no family
+  reads the theme's face, its text face or its code face, and depends on that family alike.
 - **The document is asked first.** A family the document already has a face of, from the theme's
   stylesheet or the server's head, is not declared again: the server declared it whole.

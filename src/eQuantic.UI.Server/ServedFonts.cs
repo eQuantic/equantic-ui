@@ -107,13 +107,15 @@ internal sealed class ServedFonts
         .Select(family => _pageRules.GetOrAdd(family, named => new Lazy<string>(() => PageRules(named))).Value));
 
     /// <summary>
-    /// The file a browser asks for by its identity (#1056): the face an eQuantic build embedded as
-    /// <paramref name="resource"/> in the app's assembly named <paramref name="assembly"/>, or null for
+    /// The file a browser asks for by its identity (#1056): a file the theme's stylesheet serves, which a
+    /// page may name in a family of its own, or the face an eQuantic build embedded as
+    /// <paramref name="resource"/> in the app's assembly named <paramref name="assembly"/>, and null for
     /// anything else. An assembly may embed a font for something else, a PDF writer's, whose licence does
     /// not cover the web, and a browser asking is no reason to publish it.
     /// </summary>
     public ServedFont? Locate(string assembly, string resource) =>
-        IsEmbeddedFace(resource) && _embedded.Value.Of(assembly, resource) is { } embedded
+        _sheetFiles.Contains((assembly, resource)) ? Read(assembly, resource, () => null)
+        : IsEmbeddedFace(resource) && _embedded.Value.Of(assembly, resource) is { } embedded
             ? Read(assembly, resource, () => Bytes(embedded.Holder, resource))
             : null;
 

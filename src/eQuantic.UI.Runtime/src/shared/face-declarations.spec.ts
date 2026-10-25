@@ -148,6 +148,30 @@ describe('the faces of a family a page names', () => {
     expect(declaredRules()).toEqual([]);
   });
 
+  /** A measure in the theme's own face, a code block's columns among them, names no family: it reads the
+   * stack the theme's stylesheet declares. Taken back, the theme's family falls back too, and the page
+   * measures again (Copilot's second review of #1077). */
+  it("rebuilds a page that measured in the theme's own face when that family is taken back", async () => {
+    const { watchFaces } = await import('./face-declarations');
+    const { measurePhotonText, setPhotonTheme, getPhotonTheme } = await import('./photon-context');
+    const { setPassInvalidator } = await import('./pass-invalidator');
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      font: '',
+      measureText: (text: string) => ({ width: text.length * 7 }),
+    } as unknown as CanvasRenderingContext2D);
+    setPhotonTheme({ ...getPhotonTheme(), monoFamily: probe('Probe Mono') });
+    watchFaces();
+    const rebuild = vi.fn();
+
+    setPassInvalidator(rebuild);
+    measurePhotonText('let x = 1;', { size: 13, lineHeight: 20, weight: 'regular', tracking: 0, mono: true });
+    setPassInvalidator(null);
+    fonts.fail({ family: 'Probe Mono', style: 'italic', weight: '400', status: 'error' });
+
+    expect(rebuild).toHaveBeenCalledTimes(1);
+  });
+
   // The two places a page meets a family: the text it lowers and the text it measures, each before the
   // other may run, so each declares it.
   it('declares the family a text names when it is lowered, and when it is measured', async () => {
