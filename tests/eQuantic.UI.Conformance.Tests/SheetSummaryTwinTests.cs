@@ -30,7 +30,7 @@ public class SheetSummaryTwinTests
     /// sign, white space, words, and what no culture reads.</summary>
     private static readonly string[] Values =
     [
-        "7,01", "14,02", "texto", "2.5", "-1e2", "1.000", " 3 ", "+4", "(5)", "0x10", "1,000.5", "1e30", "1",
+        "7,01", "14,02", "texto", "2.5", "-1e2", "1.000", " 3 ", "+4", "(5)", "0x10", "1,000.5", "1e30", "1", "2", "2",
     ];
 
     /// <summary>Each selection: the ranges, as rows of column B (0-based, inclusive), the active one last.
@@ -42,6 +42,7 @@ public class SheetSummaryTwinTests
         [1, 2, 2, 3],
         [1, 13],
         [12, 13, 13, 13, 1, 1],
+        [13, 15],
     ];
 
     /// <summary>Over row <paramref name="row"/> of column B, the grid unplaced.</summary>
@@ -49,7 +50,9 @@ public class SheetSummaryTwinTests
 
     private static string Write(SheetSummary summary) =>
         string.Join("|", summary.Count, summary.Numbers, summary.Sum.ToString(CultureInfo.CurrentCulture),
-            summary.Average?.ToString(CultureInfo.CurrentCulture) ?? "none");
+            summary.Average?.ToString(CultureInfo.CurrentCulture) ?? "none",
+            summary.Sum.ToString("G10", CultureInfo.CurrentCulture),
+            summary.Average?.ToString("G10", CultureInfo.CurrentCulture) ?? "none");
 
     [SkippableTheory]
     [InlineData("en-US")]
@@ -98,7 +101,9 @@ public class SheetSummaryTwinTests
                 sheet.handlePointer('up', at(rows[r + 1]), 4, 1, 'mouse');
               }
               const s = sheet.summary;
-              console.log('=' + [s.count, s.numbers, $eq.text.format(s.sum, null), s.average == null ? 'none' : $eq.text.format(s.average, null)].join('|'));
+              const g10 = (v) => (v == null ? 'none' : $eq.text.format(v, 'G10'));
+              console.log('=' + [s.count, s.numbers, $eq.text.format(s.sum, null), s.average == null ? 'none' : $eq.text.format(s.average, null),
+                g10(s.sum), g10(s.average)].join('|'));
             }
             """;
 

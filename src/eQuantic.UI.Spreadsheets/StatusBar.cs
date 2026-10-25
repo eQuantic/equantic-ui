@@ -19,6 +19,10 @@ public sealed class StatusBar : StatefulComponent
 
     private const TypeRole BarType = TypeRole.Caption;
 
+    /// <summary>How the Sum and the Average are written: to ten significant digits, as Excel's General
+    /// format writes them in its status bar (`1.666666667`), where a decimal's own text keeps 28.</summary>
+    private const string SummaryFormat = "G10";
+
     private StatusBar _config;
 
     /// <summary>What a refresh of the controller does here: build again, as one delegate.</summary>
@@ -73,10 +77,10 @@ public sealed class StatusBar : StatefulComponent
         if (summary.Count >= 2)
         {
             if (summary.Average is { } average)
-                line.Add(Words(SdkStrings.Average(average.ToString(CultureInfo.CurrentCulture)), palette));
+                line.Add(Words(SdkStrings.Average(average.ToString(SummaryFormat, CultureInfo.CurrentCulture)), palette));
             line.Add(Words(SdkStrings.Count(summary.Count), palette));
             if (summary.Numbers > 0)
-                line.Add(Words(SdkStrings.Sum(summary.Sum.ToString(CultureInfo.CurrentCulture)), palette));
+                line.Add(Words(SdkStrings.Sum(summary.Sum.ToString(SummaryFormat, CultureInfo.CurrentCulture)), palette));
         }
         return new Box(new BoxStyle
         {

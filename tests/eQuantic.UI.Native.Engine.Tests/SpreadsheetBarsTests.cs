@@ -148,7 +148,21 @@ public class SpreadsheetBarsTests
         Texts(Frame(host, 48)).Should().Contain("5R x 3C");
 
         host.PressUp(toX, toY);
-        Texts(Frame(host, 64)).Should().Contain("D6", "after the release the box shows the active cell, where the drag ended");
+        Texts(Frame(host, 64)).Should().Contain("B2", "after the release the box shows the active cell, where the drag began");
+    }
+
+    [Fact]
+    public void TheNameBox_ShowsTheActiveCell_WhileShiftStretchesTheRange()
+    {
+        var (host, sheet) = Open();
+        Click(host, sheet, B2, 32);
+
+        host.KeyDown("ArrowDown", KeyModifiers.Shift);
+        host.KeyDown("ArrowDown", KeyModifiers.Shift);
+        var texts = Texts(Frame(host, 48));
+
+        sheet.Selection.Should().Be(new SheetRange(B2, new CellRef(3, 1)));
+        texts.Should().Contain("B2", "the active cell stays where the range began");
     }
 
     [Fact]
@@ -314,6 +328,24 @@ public class SpreadsheetBarsTests
 
         one.Should().NotContain(text => text.StartsWith("Sum") || text.StartsWith("Count"), "one cell shows nothing");
         two.Should().Contain(["Average: 7.5", "Count: 2", "Sum: 15"], "a key that stretches the range refreshes the bar");
+    }
+
+    [Fact]
+    public void TheStatusBar_WritesTenDigits_AsExcelsGeneralDoes()
+    {
+        var texts = InCulture("en-US", () =>
+        {
+            var (host, sheet) = Open();
+            sheet.Document.SetCell(B2, "1");
+            sheet.Document.SetCell(new CellRef(2, 1), "2");
+            sheet.Document.SetCell(new CellRef(3, 1), "2");
+            Click(host, sheet, B2, 32);
+            host.KeyDown("ArrowDown", KeyModifiers.Shift);
+            host.KeyDown("ArrowDown", KeyModifiers.Shift);
+            return Texts(Frame(host, 48));
+        });
+
+        texts.Should().Contain(["Average: 1.666666667", "Count: 3", "Sum: 5"], "a decimal's own text keeps 28 digits");
     }
 
     [Fact]

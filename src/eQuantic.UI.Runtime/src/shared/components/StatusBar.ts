@@ -3,6 +3,7 @@ import { $eq, Box, BoxStyle, BuildContext, EdgeInsets, Row, SdkStrings, SheetCon
 export class StatusBar extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Spreadsheets.StatusBar';
     static barType: TypeRoleValue = 'caption';
+    static summaryFormat: string = 'G10';
     _config: StatusBar;
     _rebuild: () => void;
     _listening: any = null;
@@ -35,9 +36,9 @@ export class StatusBar extends StatefulComponent {
         let summary = this.controller.summary;
         if (summary.count >= 2) {
             let average: any; 
-            if ((average = summary.average) != null) line.add(StatusBar.words(SdkStrings.average($eq.text.format(average, null)), palette));
+            if ((average = summary.average) != null) line.add(StatusBar.words(SdkStrings.average($eq.text.format(average, StatusBar.summaryFormat)), palette));
             line.add(StatusBar.words(SdkStrings.count(summary.count), palette));
-            if (summary.numbers > 0) line.add(StatusBar.words(SdkStrings.sum($eq.text.format(summary.sum, null)), palette));
+            if (summary.numbers > 0) line.add(StatusBar.words(SdkStrings.sum($eq.text.format(summary.sum, StatusBar.summaryFormat)), palette));
         }
         return new Box(new BoxStyle({ width: this._config.width, height: SizeValue.fixed(Math.fround(Math.fround(Math.fround(type.lineHeight + padding.top) + padding.bottom) + 2)), padding: padding, background: palette.headerBackground, borderColor: palette.gridline, borderWidth: 1 }), line);
     }
