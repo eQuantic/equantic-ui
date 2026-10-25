@@ -26,6 +26,7 @@ export class SheetEntryLanguage {
         $o.quotes = [];
         $o.indentAfter = [];
         $o.outdentOn = [];
+        $o.insertSpaces = false;
         return $o;
     })();
             } catch ($error) {

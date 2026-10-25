@@ -124,16 +124,19 @@ export class SheetController {
     get cellEditorGrid(): CodeGrid {
         let bounds = this.editorBounds;
         let padding = this.grid.cellPadding;
-        let left = Math.fround(bounds.x + padding.start);
-        let right = Math.fround(Math.fround(bounds.right - padding.end) - 2);
-        let top = Math.fround(bounds.y + padding.top);
-        let bottom = Math.fround(bounds.bottom - padding.bottom);
+        let shown = bounds.intersect(this.body());
+        let left = Math.max(Math.fround(bounds.x + padding.start), shown.x);
+        let right = Math.fround(Math.min(Math.fround(bounds.right - padding.end), shown.right) - 2);
+        let top = Math.max(Math.fround(bounds.y + padding.top), shown.y);
+        let bottom = Math.min(Math.fround(bounds.bottom - padding.bottom), shown.bottom);
         this.entry.grid = this.cellGrid(bounds, this._slide, this._rise);
         let caret = this.entry.caretRect(this.entry.caret);
         let slide = this._slide;
         if (caret.x > right) slide = Math.fround(slide + Math.fround(caret.x - right)); else if (caret.x < left) slide = Math.fround(slide - Math.fround(left - caret.x));
         let rise = this._rise;
         if (caret.bottom > bottom) rise = Math.fround(rise + Math.fround(caret.bottom - bottom)); else if (caret.y < top) rise = Math.fround(rise - Math.fround(top - caret.y));
+        slide = Math.min(slide, Math.fround(Math.fround(caret.x + this._slide) - left));
+        rise = Math.min(rise, Math.fround(Math.fround(caret.y + this._rise) - top));
         slide = Math.min(Math.max(slide, 0), Math.max(0, Math.fround(this.widestEntryLine() - Math.fround(right - left))));
         rise = Math.min(Math.max(rise, 0), Math.max(0, Math.fround(Math.fround(Math.fround(this.entry.document.lineCount) * this.lineHeight) - Math.fround(bottom - top))));
         if (slide !== this._slide || rise !== this._rise) {
@@ -147,7 +150,13 @@ export class SheetController {
     get carets(): Rect[] {
         if (!this.editing || this.entryView !== 'cell') return [];
         this.cellEditorGrid;
-        return this.entry.carets;
+        let shown = this.editorBounds.intersect(this.body());
+        let carets: Rect[] = [];
+        for (const caret of this.entry.carets) {
+            let clipped = caret.intersect(shown);
+            if (clipped.width > 0 && clipped.height > 0) carets.push(clipped);
+        }
+        return carets;
     }
 
     get inputBounds(): Rect {
@@ -629,6 +638,11 @@ export class SheetController {
         }
         this.useCellView();
         return this.entry.setComposition(text);
+    }
+
+    body() {
+        let scroll: any; 
+        return (scroll = this.grid.scroll) != null && scroll.viewport.width > 0 && scroll.viewport.height > 0 ? Rect.fromLTRB(this.grid.headerWidth, this.grid.headerHeight, scroll.viewport.width, scroll.viewport.height) : this.editorBounds;
     }
 
     requestFocus() {
