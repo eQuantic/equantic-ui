@@ -11,7 +11,8 @@ namespace eQuantic.UI.Sheet;
 /// the same arithmetic is how a click lands a cell away from the band the component drew.
 /// <para>
 /// The component that composes the viewport hands it over as it builds, before it reads the
-/// selection, as a code editor hands its grid to its engine.
+/// selection, as a code editor hands its grid to its engine, with the cells' type: the cell's editor is
+/// placed in it.
 /// </para>
 /// </summary>
 public readonly record struct SheetGrid(ITableScrollModel? Scroll, float HeaderWidth, float HeaderHeight)
@@ -26,4 +27,17 @@ public readonly record struct SheetGrid(ITableScrollModel? Scroll, float HeaderW
 
     /// <summary>Where the grid stands under the window: none when nothing scrolls it.</summary>
     public TableOffset Offset => Scroll?.Offset ?? TableOffset.Zero;
+
+    /// <summary>
+    /// How wide a run of text is in the cells' own type: what places the entry's caret, its selection and a
+    /// press inside the cell's editor, and what the editor grows by. Null where nothing measures (a render
+    /// with no measurer), and the editor then places text on a monospaced pitch.
+    /// </summary>
+    public Func<string, float>? Measure { get; init; }
+
+    /// <summary>The height of a line of the cells' type.</summary>
+    public float LineHeight { get; init; }
+
+    /// <summary>What a cell keeps between its gridlines and its text, on each side.</summary>
+    public EdgeInsets CellPadding { get; init; }
 }

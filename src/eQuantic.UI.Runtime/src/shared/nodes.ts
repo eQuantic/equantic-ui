@@ -715,19 +715,31 @@ export interface SheetSurfaceNode extends VisualNodeValue {
   model: SheetSurfaceModelLike;
   onChanged?: (() => void) | null;
   label?: string | null;
+  /** The entry's caret ink (C# `SheetSurface.CaretColor`), the cell text's: the realizer paints the
+   * carets over what the child drew. */
+  caretColor?: ColorTokenValue | null;
 }
 
 /**
  * The spreadsheet's engine as a realizer sees it (the C# `ISheetSurfaceModel`): everything a host may
- * tell it. What a key or a press MEANS is its answer, and the cells, the band and the draft are drawn
- * by the component above the surface, so a realizer paints nothing of its own here.
+ * tell it, and the code surface's text door beside it. What a key or a press MEANS is its answer, and the
+ * cells, the band and the cell's editor are drawn by the component above the surface, so a realizer
+ * paints only the entry's carets, which blink.
  */
 export interface SheetSurfaceModelLike {
-  handleKey(key: string, modifiers: number, clipboard: unknown): boolean;
+  /** The entry's carets while the cell's editor holds them, the primary first; none otherwise. */
+  readonly carets: readonly SurfaceRectLike[];
+  /** Where the platform's text input stands: the primary caret while editing, the active cell before. */
+  readonly inputBounds: SurfaceRectLike;
+  /** Changes whenever the surface should take the keyboard back; remembered per model, from 0. */
+  readonly focusVersion: number;
+  handleKey(key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: unknown): boolean;
   handleText(text: string): boolean;
+  setComposition(text: string): boolean;
   copyText(): string;
   cut(): string;
   paste(text: string): boolean;
+  focusChanged(focused: boolean): void;
   handlePointer(
     phase: PointerPhaseValue,
     position: { x: number; y: number },

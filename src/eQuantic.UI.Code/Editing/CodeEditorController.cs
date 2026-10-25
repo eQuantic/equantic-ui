@@ -117,7 +117,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// </summary>
     private void Select(CodeRange value, bool keepCell, bool moved = false)
     {
-        if (!keepCell) _desiredCell = -1;
+        if (!keepCell) _desiredAdvance = -1;
         var next = OnElementEdges(value);
         if (next == _selection && !moved) return;
         _occurrence = null;
@@ -144,7 +144,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     private void Merge()
     {
         if (_others.Count == 0) return;
-        var carets = new List<CodeCaret>(_others) { new CodeCaret(_selection, _desiredCell) };
+        var carets = new List<CodeCaret>(_others) { new CodeCaret(_selection, _desiredAdvance) };
         var primary = carets.Count - 1;
         var order = new List<int>();
         for (var i = 0; i < carets.Count; i++) order.Add(i);
@@ -167,7 +167,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                     var keeps = i == primary ? next : merged.Count - 1 == primaryAt ? last : next;
                     var backwards = keeps.Focus < keeps.Anchor;
                     var range = backwards ? new CodeRange(end, last.Start) : new CodeRange(last.Start, end);
-                    merged[^1] = new CodeCaret(range, i == primary ? caret.Cell : merged[^1].Cell);
+                    merged[^1] = new CodeCaret(range, i == primary ? caret.Advance : merged[^1].Advance);
                     if (i == primary) primaryAt = merged.Count - 1;
                     continue;
                 }
@@ -182,7 +182,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             if (i == primaryAt)
             {
                 _selection = merged[i].Selection;
-                _desiredCell = merged[i].Cell;
+                _desiredAdvance = merged[i].Advance;
             }
             else _others.Add(merged[i]);
         }
@@ -263,6 +263,19 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     }
 
     /// <summary>
+    /// Whether the document is ONE line, as a single-line field's is (Flutter's <c>maxLines: 1</c>, #983): a
+    /// line break typed, pasted or composed is left out of the text, as Flutter's single-line formatter
+    /// leaves it out, and an edit that would still make a second line, a line copied down or one inserted
+    /// below, is refused at the door every edit goes through. The name box's entry is one; a cell's is not.
+    /// </summary>
+    public bool SingleLine { get; set; }
+
+    /// <summary><paramref name="text"/> as the document takes it from an input: whole, or without its line
+    /// breaks when the document is one line.</summary>
+    private string Admitted(string text) =>
+        SingleLine ? text.Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal) : text;
+
+    /// <summary>
     /// Whether the next Tab LEAVES the editor instead of indenting. Escape sets it — the one way out
     /// a keyboard user has from a surface that takes Tab — and any other key, or coming back into
     /// the editor, clears it (see <see cref="CodeKeymap"/>).
@@ -284,15 +297,20 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     public event Action<CodeRange>? SelectionChanged;
 
     /// <summary>
-    /// The column a vertical move AIMS at. Moving down through a short line and on to a long one
-    /// returns to the column you started from — losing it on the short line is the classic bug,
-    /// and remembering it is why this field exists.
+    /// Where along the line a vertical move AIMS: a count of cells on a monospaced grid, a distance in
+    /// a measured one (<see cref="AdvanceOf"/>), -1 when no move aims. Moving down through a short line
+    /// and on to a long one returns to where you started from — losing it on the short line is the
+    /// classic bug, and remembering it is why this field exists.
     /// </summary>
-    private int _desiredCell = -1;
+    private float _desiredAdvance = -1;
 
     /// <summary>The cells of the lines read lately, by line: the caret, the bands and every click
     /// read them, several times a frame, and a line's cells change only with its text.</summary>
     private readonly Dictionary<int, CodeLineCells> _cells = new();
+
+    /// <summary>The measured advances of the lines read lately, by line, on a grid that measures: kept
+    /// while the line's text and the grid's measurer are the ones they were taken with.</summary>
+    private readonly Dictionary<int, CodeLineAdvances> _advances = new();
 
     /// <summary>
     /// Each line's width in cells, kept beside the document from the first time
@@ -397,6 +415,45 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         _cells[line] = cells;
         return cells;
     }
+
+    /// <summary>Line <paramref name="line"/>'s advances, measured by <paramref name="measure"/>.</summary>
+    private CodeLineAdvances AdvancesOf(int line, Func<string, float> measure)
+    {
+        var cells = CellsOf(line);
+        if (_advances.TryGetValue(line, out var advances) && advances.Text == cells.Text && advances.Measure == measure)
+            return advances;
+        advances = new CodeLineAdvances(cells, measure);
+        _advances[line] = advances;
+        return advances;
+    }
+
+    /// <summary>
+    /// How far along line <paramref name="line"/> a caret before <paramref name="column"/> stands, in the
+    /// grid's own unit: cells on a monospaced grid, the measured width of the text before it on a grid
+    /// that measures. Every placement, every press and the column a vertical move aims at go through this
+    /// and its inverse, <see cref="ColumnAtAdvance"/>, which is what lets one engine place both faces.
+    /// </summary>
+    private float AdvanceOf(int line, int column) =>
+        Grid.Measure is { } measure ? AdvancesOf(line, measure).Of(column) : CellsOf(line).CellOf(column);
+
+    /// <summary>The column nearest to <paramref name="advance"/> on line <paramref name="line"/>, on the
+    /// nearer side of the element there.</summary>
+    private int ColumnAtAdvance(int line, float advance) =>
+        Grid.Measure is { } measure ? AdvancesOf(line, measure).ColumnAt(advance) : CellsOf(line).ColumnAt(advance);
+
+    /// <summary>The point <paramref name="x"/> on the surface as an advance along a line.</summary>
+    private float AdvanceAtX(float x) =>
+        Grid.Measure is null ? (x - Grid.Origin.X) / Grid.Cell.Width : x - Grid.Origin.X;
+
+    /// <summary>An advance along a line as a point across the surface.</summary>
+    private float XAtAdvance(float advance) =>
+        Grid.Measure is null ? Grid.Origin.X + advance * Grid.Cell.Width : Grid.Origin.X + advance;
+
+    /// <summary>How far line <paramref name="line"/> reaches, in the grid's own unit.</summary>
+    private float WidthOf(int line) => AdvanceOf(line, _document.Line(line).Length);
+
+    /// <summary>The top of the row line <paramref name="line"/> is drawn on.</summary>
+    private float TopOf(int line) => Grid.Origin.Y + Grid.RowOf(line) * Grid.Cell.Height;
 
     /// <summary>
     /// The position one character BEFORE this one, which crosses a line break. A character is a
@@ -522,12 +579,15 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             // A line a fold hides has no row of its own to draw a band on: its band would lie over
             // the placeholder that stands for it, once for every line selected under it.
             if (Grid.Rows is { } rows && !rows.IsVisible(line)) continue;
-            var cells = CellsOf(line);
-            var fromCell = cells.CellOf(from);
-            var toCell = line == end.Line ? cells.CellOf(end.Column) : cells.Width + 1;
-            if (toCell <= fromCell) continue;
-            var at = Grid.PointOf(line, fromCell);
-            bands.Add(new Rect(at.X, at.Y, (toCell - fromCell) * Grid.Cell.Width, Grid.Cell.Height));
+            var fromAdvance = AdvanceOf(line, from);
+            // A measured line's break is one cell's width of the grid past its end, as a monospaced
+            // line's is one cell.
+            var toAdvance = line == end.Line ? AdvanceOf(line, end.Column)
+                : Grid.Measure is null ? CellsOf(line).Width + 1
+                : AdvanceOf(line, _document.Line(line).Length) + Grid.Cell.Width;
+            if (toAdvance <= fromAdvance) continue;
+            var width = Grid.Measure is null ? (toAdvance - fromAdvance) * Grid.Cell.Width : toAdvance - fromAdvance;
+            bands.Add(new Rect(XAtAdvance(fromAdvance), TopOf(line), width, Grid.Cell.Height));
         }
     }
 
@@ -562,8 +622,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <summary>Where a caret at <paramref name="position"/> is drawn, in the surface's coordinates.</summary>
     public Rect CaretRect(CodePosition position)
     {
-        var at = Grid.PointOf(position.Line, CellsOf(position.Line).CellOf(position.Column));
-        return new Rect(at.X, at.Y, CaretWidth, Grid.Cell.Height);
+        return new Rect(XAtAdvance(AdvanceOf(position.Line, position.Column)), TopOf(position.Line), CaretWidth,
+            Grid.Cell.Height);
     }
 
     /// <summary>
@@ -580,7 +640,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         var rows = Grid.Rows?.RowCount ?? _document.LineCount;
         if (point.Y >= Grid.Origin.Y + rows * Grid.Cell.Height) return _document.End;
         var target = _document.Clamp(new CodePosition(Math.Max(0, Grid.LineAt(point.Y)), 0)).Line;
-        return new CodePosition(target, CellsOf(target).ColumnAt((point.X - Grid.Origin.X) / Grid.Cell.Width));
+        return new CodePosition(target, ColumnAtAdvance(target, AdvanceAtX(point.X)));
     }
 
     /// <summary>
@@ -598,7 +658,10 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         if (Grid.Rows is { } map && map.RowAt(row).Kind != CodeRowKind.Line) return null;
         var line = Grid.LineAt(point.Y);
         if (line < 0 || line >= _document.LineCount) return null;
-        var column = CellsOf(line).ColumnUnder((point.X - Grid.Origin.X) / Grid.Cell.Width);
+        var advance = AdvanceAtX(point.X);
+        var column = Grid.Measure is { } measure
+            ? AdvancesOf(line, measure).ColumnUnder(advance)
+            : CellsOf(line).ColumnUnder(advance);
         return column < 0 ? null : new CodePosition(line, column);
     }
 
@@ -816,6 +879,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <inheritdoc />
     public bool HandleText(string text)
     {
+        text = Admitted(text);
         if (ReadOnly || text.Length == 0) return false;
         TabMovesFocus = false;
         // An input method's commit REPLACES what it was composing: the composition comes out first,
@@ -876,6 +940,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     public bool SetComposition(string text)
     {
         if (ReadOnly) return false;
+        text = Admitted(text);
         if (_composition is not { } current)
         {
             if (text.Length == 0) return false;
@@ -932,7 +997,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         _document = next;
         _selection = new CodeRange(caret);
         _revealVersion++;
-        _desiredCell = -1;
+        _desiredAdvance = -1;
         var edit = new CodeEdit(ordered, removed, next.TextIn(new CodeRange(ordered.Start, caret)), before,
             _selection, false);
         Took(edit);
@@ -990,8 +1055,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 {
                     // A column from the primary's anchor, as the press found it, to the cell pressed.
                     var anchor = _selection.Anchor;
-                    _column = new CodeCaret(new CodeRange(anchor), CellsOf(anchor.Line).CellOf(anchor.Column));
-                    SelectColumn(at.Line, (position.X - Grid.Origin.X) / Grid.Cell.Width);
+                    _column = new CodeCaret(new CodeRange(anchor), AdvanceOf(anchor.Line, anchor.Column));
+                    SelectColumn(at.Line, AdvanceAtX(position.X));
                     _dragging = true;
                     return true;
                 }
@@ -1004,7 +1069,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 if (alt && clicks == 2)
                 {
                     // ⌥ and a double press adds the word, as VS Code's does, where it left that word alone.
-                    _others.Add(new CodeCaret(_selection, _desiredCell));
+                    _others.Add(new CodeCaret(_selection, _desiredAdvance));
                     Placed(new CodeCaret(WordRange(at), -1));
                     return true;
                 }
@@ -1022,7 +1087,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 var at = PositionAt(position);
                 if (_column is not null)
                 {
-                    SelectColumn(at.Line, (position.X - Grid.Origin.X) / Grid.Cell.Width);
+                    SelectColumn(at.Line, AdvanceAtX(position.X));
                     return true;
                 }
                 if (at == _selection.Focus) return false;
@@ -1072,6 +1137,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     private bool Edit(CodeRange range, string text, bool typed, CodeRange? after = null)
     {
         if (ReadOnly) return false;
+        // What reaches here with a break in it is a command making a line: a one-line document has none.
+        if (SingleLine && (text.Contains('\n') || text.Contains('\r'))) return false;
 
         var ordered = new CodeRange(_document.Clamp(range.Start), _document.Clamp(range.End));
         var removed = _document.TextIn(ordered);
@@ -1090,7 +1157,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         var edit = new CodeEdit(ordered, removed, next.TextIn(new CodeRange(ordered.Start, caret)), before,
             _selection, typed);
         Took(edit);
-        _desiredCell = -1;
+        _desiredAdvance = -1;
         // Inside a command's step, the edit is heard with the others once the step is made.
         if (_step is { } step) step.Add(edit);
         else
@@ -1172,9 +1239,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         return AtEvery(units, primary, 0, unit =>
         {
             _selection = units[unit][0].Selection;
-            _desiredCell = units[unit][0].Cell;
+            _desiredAdvance = units[unit][0].Advance;
             var made = command();
-            return (made, new List<CodeCaret> { new CodeCaret(_selection, _desiredCell) });
+            return (made, new List<CodeCaret> { new CodeCaret(_selection, _desiredAdvance) });
         });
     }
 
@@ -1234,7 +1301,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         var carets = new List<CodeCaret>(_others);
         primary = 0;
         while (primary < carets.Count && carets[primary].Selection.Start < _selection.Start) primary++;
-        carets.Insert(primary, new CodeCaret(_selection, _desiredCell));
+        carets.Insert(primary, new CodeCaret(_selection, _desiredAdvance));
         return carets;
     }
 
@@ -1356,7 +1423,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
         // Held to the document the command left, and to its text elements' edges, as an edit's selection is.
         _selection = OnElementEdges(primary.Selection);
-        _desiredCell = primary.Cell;
+        _desiredAdvance = primary.Advance;
         _others.Clear();
         foreach (var caret in placed) _others.Add(caret with { Selection = OnElementEdges(caret.Selection) });
         Merge();
@@ -1858,36 +1925,37 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         switch (motion)
         {
             case CodeMotion.Character:
-                _desiredCell = -1;
+                _desiredAdvance = -1;
                 return forward ? After(from) : Before(from);
 
             case CodeMotion.Word:
-                _desiredCell = -1;
+                _desiredAdvance = -1;
                 return WordStep(from, forward);
 
             case CodeMotion.Line:
             {
-                // The remembered CELL is what makes a run of ↓ through ragged lines come back to
+                // The remembered ADVANCE is what makes a run of ↓ through ragged lines come back to
                 // where it started instead of collapsing to the shortest one, and what keeps it in
-                // the same place on screen across a line indented with tabs.
-                if (_desiredCell < 0) _desiredCell = CellsOf(from.Line).CellOf(from.Column);
+                // the same place on screen across a line indented with tabs, or written in a face
+                // whose characters are not one width.
+                if (_desiredAdvance < 0) _desiredAdvance = AdvanceOf(from.Line, from.Column);
                 var line = VisibleLineFrom(from.Line, forward ? 1 : -1);
-                return new CodePosition(line, CellsOf(line).ColumnAt(_desiredCell));
+                return new CodePosition(line, ColumnAtAdvance(line, _desiredAdvance));
             }
 
             case CodeMotion.Page:
             {
-                if (_desiredCell < 0) _desiredCell = CellsOf(from.Line).CellOf(from.Column);
+                if (_desiredAdvance < 0) _desiredAdvance = AdvanceOf(from.Line, from.Column);
                 var line = VisibleLineFrom(from.Line, forward ? pageLines : -pageLines);
-                return new CodePosition(line, CellsOf(line).ColumnAt(_desiredCell));
+                return new CodePosition(line, ColumnAtAdvance(line, _desiredAdvance));
             }
 
             case CodeMotion.LineBoundary:
-                _desiredCell = -1;
+                _desiredAdvance = -1;
                 return forward ? _document.LineEnd(from) : _document.LineStart(from);
 
             default:
-                _desiredCell = -1;
+                _desiredAdvance = -1;
                 return forward ? _document.End : CodePosition.Start;
         }
     }
@@ -2056,6 +2124,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// </summary>
     public bool Paste(string text)
     {
+        text = Admitted(text);
         if (ReadOnly || text.Length == 0) return false;
         TabMovesFocus = false;
         EndComposition();
@@ -2115,7 +2184,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         return AtEvery(units, primary, 0, unit =>
         {
             _selection = units[unit][0].Selection;
-            _desiredCell = -1;
+            _desiredAdvance = -1;
             var text = pieces is null ? normalized : pieces[unit];
             return (Edit(_selection, text, false), new List<CodeCaret> { new CodeCaret(_selection, -1) });
         });
@@ -2321,8 +2390,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             var from = caret.Selection.Focus;
             var line = VisibleLineFrom(from.Line, up ? -1 : 1);
             if (line == from.Line) continue;
-            var cell = caret.Cell >= 0 ? caret.Cell : CellsOf(from.Line).CellOf(from.Column);
-            added.Add(new CodeCaret(new CodeRange(new CodePosition(line, CellsOf(line).ColumnAt(cell))), cell));
+            var advance = caret.Advance >= 0 ? caret.Advance : AdvanceOf(from.Line, from.Column);
+            added.Add(new CodeCaret(new CodeRange(new CodePosition(line, ColumnAtAdvance(line, advance))), advance));
         }
         if (added.Count == 0) return false;
         var primary = up ? added[0] : added[^1];
@@ -2384,7 +2453,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             }
         }
         if (next is not { } found) return true;
-        _others.Add(new CodeCaret(_selection, _desiredCell));
+        _others.Add(new CodeCaret(_selection, _desiredAdvance));
         Placed(new CodeCaret(found, -1));
         _occurrence = whole ? needle : null;
         return true;
@@ -2460,7 +2529,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     private void Placed(CodeCaret primary)
     {
         _selection = OnElementEdges(primary.Selection);
-        _desiredCell = primary.Cell;
+        _desiredAdvance = primary.Advance;
         Merge();
         History.Break();
         _revealVersion++;
@@ -2488,7 +2557,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 return;
             }
         }
-        _others.Add(new CodeCaret(_selection, _desiredCell));
+        _others.Add(new CodeCaret(_selection, _desiredAdvance));
         Placed(new CodeCaret(new CodeRange(at), -1));
     }
 
@@ -2498,32 +2567,32 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
     /// <summary>
     /// ⇧⌥ and a press or a drag: one selection on every line from the column's start to the line pressed, each
-    /// from the start's cell to the cell pressed, as VS Code's column selection makes them; a line that ends
-    /// before the box's left edge has none, unless every line does, and then each has a caret at its end. The
-    /// one on the line pressed is the primary.
+    /// from the start's advance to the advance pressed, as VS Code's column selection makes them; a line that
+    /// ends before the box's left edge has none, unless every line does, and then each has a caret at its end.
+    /// The one on the line pressed is the primary. On a monospaced grid the advance pressed is the nearest
+    /// cell's edge; on a grid that measures each line places it on its own text.
     /// </summary>
-    private void SelectColumn(int line, float cell)
+    private void SelectColumn(int line, float advance)
     {
         if (_column is not { } start) return;
         var anchorLine = start.Selection.Anchor.Line;
-        var anchorCell = start.Cell;
-        var focusCell = (int)MathF.Round(cell);
+        var anchor = start.Advance;
+        var focus = Grid.Measure is null ? MathF.Round(advance) : advance;
         var first = Math.Min(anchorLine, line);
         var last = Math.Max(anchorLine, line);
-        var left = Math.Min(anchorCell, focusCell);
+        var left = MathF.Min(anchor, focus);
         var reached = false;
         for (var at = first; at <= last; at++)
-            if ((Grid.Rows is not { } rows || rows.IsVisible(at)) && CellsOf(at).Width >= left) reached = true;
+            if ((Grid.Rows is not { } rows || rows.IsVisible(at)) && WidthOf(at) >= left) reached = true;
         var column = new List<CodeCaret>();
         var primary = -1;
         for (var at = first; at <= last; at++)
         {
             if (Grid.Rows is { } rows && !rows.IsVisible(at)) continue;
-            var cells = CellsOf(at);
-            if (reached && cells.Width < left) continue;
+            if (reached && WidthOf(at) < left) continue;
             if (at == line) primary = column.Count;
-            column.Add(new CodeCaret(new CodeRange(new CodePosition(at, cells.ColumnAt(anchorCell)),
-                new CodePosition(at, cells.ColumnAt(focusCell))), focusCell));
+            column.Add(new CodeCaret(new CodeRange(new CodePosition(at, ColumnAtAdvance(at, anchor)),
+                new CodePosition(at, ColumnAtAdvance(at, focus))), focus));
         }
         // Every line of the box folded away: nothing to select.
         if (column.Count == 0) return;
@@ -2933,7 +3002,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         for (var i = 1; i < selections.Count; i++) _others.Add(new CodeCaret(OnElementEdges(selections[i]), -1));
         Merge();
         _revealVersion++;
-        _desiredCell = -1;
+        _desiredAdvance = -1;
         Raise(new CodeChange(Heard(made, before)));
     }
 

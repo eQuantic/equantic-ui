@@ -82,7 +82,11 @@ import { DataRow } from './components/DataRow';
 import { TableView } from './components/TableView';
 import { UniformTableSpans } from './components/UniformTableSpans';
 import { Spreadsheet } from './components/Spreadsheet';
+import { FormulaBar } from './components/FormulaBar';
+import { NameBox } from './components/NameBox';
 import { SheetController } from './components/SheetController';
+import { CodeRange } from './components/CodeRange';
+import { CodePosition } from './components/CodePosition';
 import { CellRef } from './components/CellRef';
 import { SheetRange } from './components/SheetRange';
 import { Popover } from './components/Popover';
@@ -118,6 +122,16 @@ const lower = (node: unknown): HtmlNode =>
  * and the next: the index means the same control on both sides because both walk the tree the
  * same way. A component with no presses is one frame.
  */
+/** A sheet whose B2 is being edited from its value, with part of the entry selected (C# twin: Editing). */
+function editing(): SheetController {
+  const sheet = new SheetController(30, 6);
+  sheet.document.setCell(new CellRef(1, 1), 'Budget');
+  sheet.selection = new SheetRange(new CellRef(1, 1));
+  sheet.beginEdit('Budget', 'edit');
+  sheet.entry.selection = new CodeRange(new CodePosition(0, 2), new CodePosition(0, 5));
+  return sheet;
+}
+
 function cases(): Record<string, { node: unknown; presses: number[] }> {
   const column = (gap: number, ...children: unknown[]) => {
     const node = new Column(gap);
@@ -373,6 +387,9 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         return new Spreadsheet(sheet, { width: SizeValue.fill, height: SizeValue.fixed(240) });
       })(),
     ),
+    'spreadsheet-editing': still(new Spreadsheet(editing(), { width: SizeValue.fill, height: SizeValue.fixed(240) })),
+    'formula-bar': still(new FormulaBar(editing())),
+    'name-box': still(new NameBox(editing())),
     'popover-closed': still(
       new Popover(
         new Button('Info'),
@@ -586,8 +603,9 @@ function frames(node: unknown, presses: number[]): unknown[] {
  * matching filter on that side — the asymmetry is the point.
  *
  * Scoped to the entry's own tag on purpose. Other components attach the same NAMES for their own
- * reasons — the spreadsheet surface listens for keydown and the clipboard trio — and filtering
- * globally would hide a real regression the day one of those joins the fixture.
+ * reasons — a table viewport listens for keydown — and filtering globally would hide a real
+ * regression the day one of those joins the fixture. The spreadsheet's door is a textarea, an entry
+ * of this kind: its keydown, clipboard trio and focus are the client's alone too.
  */
 const CLIENT_ONLY_EVENTS = new Set(['focus', 'blur', 'input', 'keydown', 'paste', 'cut', 'copy']);
 const ENTRY_TAGS = new Set(['input', 'textarea']);
@@ -600,13 +618,21 @@ function canonical(node: HtmlNode): unknown {
     // the same kind (the C# LowerInView says so): only the client can watch anything. A table
     // viewport's is a third: the client's after-pass finds the element by it to drive its scroll, and
     // its cells by theirs to walk the Tab order row by row.
-    if (key === 'data-eq-scroll' || key === 'data-eq-inview' || key === 'data-eq-table' || key === 'data-eq-cell')
+    // A sheet's and a code surface's are a fourth and a fifth: a focus request and a reveal find the surface
+    // by it after the render.
+    if (key === 'data-eq-scroll' || key === 'data-eq-inview' || key === 'data-eq-table' || key === 'data-eq-cell'
+      || key === 'data-eq-sheet' || key === 'data-eq-code')
       continue;
     const value = node.attributes[key];
     if (value !== undefined && value !== null) attrs[key] = normalize(key, value);
   }
   const result: Record<string, unknown> = { tag: node.tag };
-  if (node.key !== undefined && node.key !== null) result.key = node.key;
+  // A code surface's door is keyed by the surface's PATH (#1012), so the reconciler keeps the one
+  // element the keyboard is in whatever carets and notes stand around it: a path, like the surface's
+  // own data-eq-code above, that only the client has. The server lowers no paths and writes none.
+  const pathKeyedDoor = node.tag === 'textarea' && node.attributes?.['class'] === 'eq-code-input'
+    && typeof node.key === 'string' && node.key.endsWith('/input');
+  if (node.key !== undefined && node.key !== null && !pathKeyedDoor) result.key = node.key;
   if (node.textContent !== undefined && node.textContent !== null) result.text = node.textContent;
   result.attrs = attrs;
   const entry = ENTRY_TAGS.has(node.tag);

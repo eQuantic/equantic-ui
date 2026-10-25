@@ -157,6 +157,10 @@ export type SheetAxisValue = 'rows' | 'cols';
 export type SheetEditKindValue =
   'setCells' | 'insertRows' | 'deleteRows' | 'insertCols' | 'deleteCols' | 'resizeRow' | 'resizeCol';
 
+export type SheetEditModeValue = 'enter' | 'edit';
+
+export type SheetEntryViewValue = 'cell' | 'formulaBar';
+
 export type SheetMotionValue = 'cell' | 'dataEdge' | 'rowBoundary' | 'sheetBoundary';
 
 export type SizeKindValue = 'hug' | 'fill' | 'fixed' | 'windowMinus';

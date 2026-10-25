@@ -202,6 +202,12 @@ eQuantic.UI.Code.CodeChange.Edits.init -> void
 eQuantic.UI.Code.CodeChange.Replaced.get -> bool
 eQuantic.UI.Code.CodeChange.Replaced.init -> void
 eQuantic.UI.Code.CodeEditorController.Changed -> System.Action<eQuantic.UI.Code.CodeChange!>?
+eQuantic.UI.Code.CodeGrid.CodeGrid(eQuantic.UI.Primitives.Point Origin, eQuantic.UI.Primitives.Size Cell, eQuantic.UI.Code.CodeRows? Rows = null, System.Func<string!, float>? Measure = null) -> void
+eQuantic.UI.Code.CodeGrid.Deconstruct(out eQuantic.UI.Primitives.Point Origin, out eQuantic.UI.Primitives.Size Cell, out eQuantic.UI.Code.CodeRows? Rows, out System.Func<string!, float>? Measure) -> void
+eQuantic.UI.Code.CodeGrid.Measure.get -> System.Func<string!, float>?
+eQuantic.UI.Code.CodeGrid.Measure.init -> void
+*REMOVED*eQuantic.UI.Code.CodeGrid.CodeGrid(eQuantic.UI.Primitives.Point Origin, eQuantic.UI.Primitives.Size Cell, eQuantic.UI.Code.CodeRows? Rows = null) -> void
+*REMOVED*eQuantic.UI.Code.CodeGrid.Deconstruct(out eQuantic.UI.Primitives.Point Origin, out eQuantic.UI.Primitives.Size Cell, out eQuantic.UI.Code.CodeRows? Rows) -> void
 eQuantic.UI.Code.CodeHistory.Undo(eQuantic.UI.Code.CodeDocument! document, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>! selections, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeEdit!>! made) -> eQuantic.UI.Code.CodeDocument?
 eQuantic.UI.Code.CodeHistory.Redo(eQuantic.UI.Code.CodeDocument! document, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>! selections, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeEdit!>! made) -> eQuantic.UI.Code.CodeDocument?
 eQuantic.UI.Code.CodeHistory.Record(eQuantic.UI.Code.CodeStep! step) -> void
@@ -272,3 +278,5 @@ eQuantic.UI.Code.CodeSnippetSession.Next() -> bool
 eQuantic.UI.Code.CodeSnippetSession.Previous() -> bool
 eQuantic.UI.Code.CodeSnippetSession.Leave() -> bool
 eQuantic.UI.Code.CodeSnippetSession.PlaceholdersIn(int first, int last) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>!
+eQuantic.UI.Code.CodeEditorController.SingleLine.get -> bool
+eQuantic.UI.Code.CodeEditorController.SingleLine.set -> void

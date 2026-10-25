@@ -19,7 +19,8 @@ internal readonly record struct SheetPalette(
     ColorToken RangeFill,
     ColorToken ActiveOutline,
     ColorToken FillPreview,
-    ColorToken FillHandle)
+    ColorToken FillHandle,
+    ColorToken EntrySelection)
 {
     public static SheetPalette Of(IAppTheme theme)
     {
@@ -36,6 +37,7 @@ internal readonly record struct SheetPalette(
             slot?.RangeFill ?? theme.SurfaceHighlight.WithOpacity(0.5f),
             slot?.ActiveOutline ?? theme.FocusRing,
             slot?.FillPreview ?? theme.FocusRing,
-            slot?.FillHandle ?? theme.FocusRing);
+            slot?.FillHandle ?? theme.FocusRing,
+            slot?.EntrySelection ?? theme.Selection);
     }
 }

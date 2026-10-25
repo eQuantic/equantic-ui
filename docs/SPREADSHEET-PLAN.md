@@ -355,7 +355,34 @@ Each slice proposes, implements and archives its change in its own pull request.
   render's closure and lost its release; the cells' padding was written in the wrong order since the
   first spreadsheet; a `Draggable` on the web added `pointer-events: auto` beside the `none` its child
   said.
-- **1** ([#983](https://github.com/eQuantic/equantic-ui/issues/983)) is next.
+- **1, delivered (2026-10-25, [#983](https://github.com/eQuantic/equantic-ui/issues/983)).** A cell's
+  entry is the code engine's document, `SheetController.Entry`, in a language that pairs nothing: a caret
+  anywhere, a selection by the mouse and by Shift, word moves in the keyboard's tradition, Home and End,
+  undo while editing and the commit as one step of the sheet's undo (D15 closed). The sheet's surface
+  takes the code surface's text door on both targets, one for its whole life because a composition dies
+  when the keyboard moves: on the web a textarea at the active cell or the caret reading `beforeinput`,
+  the composition events and the clipboard's, on Photon the marked text its shells already reported, so
+  a dead key, an input method, an emoji and AltGr reach a cell and a composition shows in it as it grows
+  (D5 closed). Enter and Edit modes as Excel has them, Alt+Enter's line break, Ctrl+Enter filling the
+  selection, the date and time chords in the page's culture (⌃; and ⌘; on a Mac, which the web's door now
+  tells apart), Backspace that clears and edits. The editor is a mark over the cells it covers, growing
+  in whole columns and rows to the edges of the view, its text sliding past them. `FormulaBar` and
+  `NameBox` join the family as components the app places, views of the same controller (they listen to
+  its `Refreshed`): the bar is the entry's second view, the box shows the address or the size of a drag
+  and goes to a cell, a range, rows or columns, on Ctrl+G (⌃G) and, on Photon, F5. Escape releases Tab
+  (D12 and [#732](https://github.com/eQuantic/equantic-ui/issues/732) closed). The code engine places a
+  proportional face when its grid carries a measurer, which the code editor never does. Proved in
+  Chromium on the dashboard's `/sheet`, beside the formula bar and the name box (text typed as input, a
+  composition, F2 with the arrows, Home and End, the bar edited and committed, Go To, the date and the
+  time, Escape then Tab leaving the grid), on Photon through the macOS shell's own text input client,
+  and the twins against .NET over a session of keys, text and compositions. Benched at 100 000 × 100: a
+  character into an open entry costs 3.0 ms on Photon and 9.5 ms in the runtime. Found on the way and
+  filed: a static field typed as an array of an enum is typed by the enum's name in its twin
+  ([#1064](https://github.com/eQuantic/equantic-ui/issues/1064)), a field of a vocabulary struct with no
+  zero is typed without the `undefined` it starts as
+  ([#1065](https://github.com/eQuantic/equantic-ui/issues/1065)), and Photon lets Tab walk out of a
+  modal layer ([#1066](https://github.com/eQuantic/equantic-ui/issues/1066)).
+- **2** ([#984](https://github.com/eQuantic/equantic-ui/issues/984)) is next.
 
 ## Fenced, on purpose
 

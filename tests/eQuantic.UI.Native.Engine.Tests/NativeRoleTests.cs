@@ -307,7 +307,7 @@ public class NativeRoleTests
         host.Activate(frame.SheetRegions[0].Element.Id).Should().BeTrue();
         host.SheetTarget.Should().NotBeNull("activating a SheetSurface makes it the editing target");
         host.TextInput("7").Should().BeTrue();
-        sheet.Draft.Should().Contain("7");
+        sheet.Entry.Document.Text.Should().Contain("7");
     }
 
     /// <summary>

@@ -48,7 +48,7 @@ public class SheetEditingTests
         host.TextInput("2");
 
         sheet.Editing.Should().BeTrue();
-        sheet.Draft.Should().Be("42");
+        sheet.Entry.Document.Text.Should().Be("42");
         sheet.Document.GetCell(new CellRef(0, 0)).Should().Be("old", "the document waits for commit");
 
         host.KeyDown("Enter", KeyModifiers.None);
@@ -80,7 +80,7 @@ public class SheetEditingTests
         host.KeyDown("F2", KeyModifiers.None);
 
         sheet.Editing.Should().BeTrue();
-        sheet.Draft.Should().Be("price", "F2 opens the value, typing appends");
+        sheet.Entry.Document.Text.Should().Be("price", "F2 opens the value, typing appends");
 
         host.TextInput("s");
         host.KeyDown("Enter", KeyModifiers.None);
@@ -108,7 +108,7 @@ public class SheetEditingTests
         host.TextInput("ab");
         host.KeyDown("Backspace", KeyModifiers.None);
 
-        sheet.Draft.Should().Be("a");
+        sheet.Entry.Document.Text.Should().Be("a");
     }
 
     [Fact]
@@ -120,7 +120,7 @@ public class SheetEditingTests
         host.PressDown(48, 14, clickCount: 2);
         host.PressUp(48, 14);
         sheet.Editing.Should().BeTrue();
-        sheet.Draft.Should().Be("here");
+        sheet.Entry.Document.Text.Should().Be("here");
 
         host.TextInput("!");
         host.PressDown(48 + 96, 14);   // click the next cell over

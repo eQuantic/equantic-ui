@@ -103,7 +103,7 @@ public class SheetSurfaceTests
         host.PressUp(x, y);
 
         page.Sheet.Editing.Should().BeTrue();
-        page.Sheet.Draft.Should().Be("42");
+        page.Sheet.Entry.Document.Text.Should().Be("42");
     }
 
     [Fact]

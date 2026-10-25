@@ -45,4 +45,8 @@ public sealed record SheetTheme
 
     /// <summary>The fill handle, the square on the selection's corner.</summary>
     public ColorToken? FillHandle { get; init; }
+
+    /// <summary>The band under the text selected inside an entry: in the cell's editor, the formula bar
+    /// and the name box.</summary>
+    public ColorToken? EntrySelection { get; init; }
 }

@@ -4,6 +4,7 @@ namespace eQuantic.UI.Primitives;
 /// Padding insets (spec §03: Photon has NO margin — outer space belongs to the parent's Gap/Padding).
 /// Start/End instead of Left/Right so RTL mirroring is a realizer concern (v1 maps Start→left).
 /// </summary>
+[ZeroConstructs("value-types.ts: `constructor(start = 0, top = 0, end = 0, bottom = 0)`.")]
 public readonly record struct EdgeInsets(float Start, float Top, float End, float Bottom)
 {
     public static readonly EdgeInsets Zero = default;

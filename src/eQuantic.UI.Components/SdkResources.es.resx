@@ -68,6 +68,15 @@
   <data name="Spreadsheet" xml:space="preserve">
     <value>Hoja de cálculo</value>
   </data>
+  <data name="FormulaBar" xml:space="preserve">
+    <value>Barra de fórmulas</value>
+  </data>
+  <data name="NameBox" xml:space="preserve">
+    <value>Cuadro de nombres</value>
+  </data>
+  <data name="RangeSize" xml:space="preserve">
+    <value>{0}F x {1}C</value>
+  </data>
   <data name="Back" xml:space="preserve">
     <value>Atrás</value>
   </data>
