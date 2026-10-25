@@ -3083,13 +3083,12 @@ function backgroundLayerSizes(style: BoxStyleValue): string | undefined {
 }
 
 /**
- * The monospaced face, with an APP-SETTABLE hook in front of it.
+ * The monospaced face, behind `--eq-font-mono`: the theme's code face (C# `IAppTheme.MonoFamily`),
+ * which the theme's stylesheet declares on `:root` when the theme names one, in front of the stack.
  *
- * A mono Text lands on an atomic class, and an atomic class beats a `body { font-family }` rule —
- * so an app that wanted its own code face had nowhere to put it: the class name is a content hash
- * that moves between builds, which is no hook at all. The variable is the hook. Set
- * `--eq-font-mono` on `:root` and every mono run follows, with this stack as the fallback when
- * nothing does.
+ * A mono Text lands on an atomic class, and an atomic class beats a `body { font-family }` rule, so
+ * the face reaches it through the variable: the class name is a content hash that moves between
+ * builds, which is no hook at all.
  *
  * The measurer reads the SAME variable (see photon-context) — measuring with a different face than
  * the one that draws is how a code editor's caret ends up beside the character it is on.
@@ -3149,8 +3148,8 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     // Only what the NODE named — a ROLE's face rides its `.eq-type-*` class, which this element
     // already carries, so both sides agree by emitting nothing for it. Byte-identical to the C#
     // twin, because the atomic class name is a hash of this string.
-    'font-family': isWellFormedFace(text.styleOverride?.family)
-      ? faceStack(text.styleOverride.family as string, nodeMono(text))
+    'font-family': isWellFormedFace(text.styleOverride?.family?.name)
+      ? faceStack(text.styleOverride.family!.name, nodeMono(text))
       : nodeMono(text)
         ? MONO_STACK
         : undefined,

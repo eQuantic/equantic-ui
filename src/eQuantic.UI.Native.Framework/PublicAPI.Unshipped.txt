@@ -1,1 +1,5 @@
 #nullable enable
+[EQX0001]eQuantic.UI.Native.Framework.ShippedFaces
+[EQX0001]eQuantic.UI.Native.Framework.ShippedFaces.IsRegistered(eQuantic.UI.Primitives.FontFile! file) -> bool
+[EQX0001]eQuantic.UI.Native.Framework.ShippedFaces.Register(eQuantic.UI.Primitives.FontFamily? family) -> bool
+[EQX0001]eQuantic.UI.Native.Framework.ShippedFaces.ShippedFaces(System.Func<eQuantic.UI.Primitives.FontFile!, byte[]!, bool>! register) -> void

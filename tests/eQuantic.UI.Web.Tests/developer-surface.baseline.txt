@@ -1,5 +1,7 @@
 msbuild eQuantic.UI.Sdk EQuanticAppIconSource
 msbuild eQuantic.UI.Sdk EQuanticAssetsDir
+msbuild eQuantic.UI.Sdk EQuanticFontsFile
+msbuild eQuantic.UI.Sdk EQuanticFontsNamespace
 msbuild eQuantic.UI.Sdk EQuanticGenerateFactorySurface
 msbuild eQuantic.UI.Sdk EQuanticImplicitComponentAliases
 msbuild eQuantic.UI.Sdk EQuanticImplicitFactoryUsing
@@ -15,6 +17,8 @@ msbuild eQuantic.UI.Sdk.Native EQuanticAppIconSource
 msbuild eQuantic.UI.Sdk.Native EQuanticAssetsDir
 msbuild eQuantic.UI.Sdk.Native EQuanticBundleId
 msbuild eQuantic.UI.Sdk.Native EQuanticConsole
+msbuild eQuantic.UI.Sdk.Native EQuanticFontsFile
+msbuild eQuantic.UI.Sdk.Native EQuanticFontsNamespace
 msbuild eQuantic.UI.Sdk.Native EQuanticGeneratedAssetsDir
 msbuild eQuantic.UI.Sdk.Native EQuanticHardenedRuntime
 msbuild eQuantic.UI.Sdk.Native EQuanticImplicitComponentAliases

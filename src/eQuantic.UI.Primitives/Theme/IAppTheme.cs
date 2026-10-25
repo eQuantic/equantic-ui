@@ -86,19 +86,25 @@ public interface IAppTheme
     /// Without this a brand code face has to be named at every call site, which is the work a theme
     /// exists to remove.
     /// </para>
+    /// <para>
+    /// A family with files ships them: the web serves and declares them, and Photon registers them
+    /// (<see cref="FontFamily"/>).
+    /// </para>
     /// </summary>
-    string? MonoFamily => null;
+    FontFamily? MonoFamily => null;
 
     /// <summary>
     /// The face this theme sets TEXT in, or null for the platform's own: the face of every text whose
     /// role and call site name none, and the document's face on the web. The proportional twin of
     /// <see cref="MonoFamily"/>, resolved by the same merge (<c>EffectiveTypeStyle.WithThemeFace</c>).
     /// <para>
-    /// Naming a face does not make it available: a face the platform does not have falls back on the
-    /// web, and Photon reports it unresolved, as it does for a role's face.
+    /// A family with files ships them: the web serves and declares them, preloading the upright ones,
+    /// and Photon registers them with its text engine (<see cref="FontFamily"/>). A family with none is
+    /// the platform's: one the machine does not have falls back on the web, and Photon reports it
+    /// unresolved, as it does for a role's face.
     /// </para>
     /// </summary>
-    string? TextFamily => null;
+    FontFamily? TextFamily => null;
 
     /// <summary>Elevation level 0–5 (spec §05). Level 0 is none (+1dp Border); dark E1–E2 ALSO require a 1dp border.</summary>
     ShadowSpec Elevation(int level);

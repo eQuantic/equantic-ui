@@ -368,6 +368,47 @@ export class CornerRadii {
   }
 }
 
+/**
+ * C# `FontFile` twin: one OpenType file of a family, embedded in an assembly. The browser never reads
+ * one: the server serves the files of the families it declares and writes their `@font-face` rules, so
+ * this exists for a transpiled module that builds a family, a catalog's, and it refuses what C# does.
+ */
+export class FontFile {
+  constructor(
+    readonly assembly: string,
+    readonly resource: string,
+    readonly minWeight: number,
+    readonly maxWeight: number,
+    readonly italic = false,
+  ) {
+    if (assembly.length === 0) throw new Error('A face names the assembly it is embedded in.');
+    if (!/\.(ttf|otf)$/i.test(resource)) throw new Error('A face is an OpenType file, a .ttf or an .otf.');
+    if (!(minWeight >= 1 && minWeight <= 1000)) throw new RangeError("A face's weights run from 1 to 1000.");
+    if (!(maxWeight >= 1 && maxWeight <= 1000 && maxWeight >= minWeight))
+      throw new RangeError("A face's weights run from 1 to 1000, the lightest first.");
+  }
+}
+
+/**
+ * C# `FontFamily` twin: a family by name, and the files that ship it. The browser sets text in it by
+ * its NAME, which is all a page needs: a family with files was declared by the server, and one with
+ * none is the platform's. `params` in C#, so the files are a rest parameter, as eqc passes them.
+ */
+export class FontFamily {
+  readonly files: readonly FontFile[];
+
+  constructor(
+    readonly name: string,
+    ...files: FontFile[]
+  ) {
+    this.files = files;
+  }
+
+  toString(): string {
+    return this.name;
+  }
+}
+
 /** Positional mirror of the C# `TypeStyle(Size, LineHeight, Weight, Tracking, MaxScale)` record. */
 export class TypeStyle implements TypeStyleValue {
   constructor(
@@ -380,8 +421,8 @@ export class TypeStyle implements TypeStyleValue {
     readonly mono = false,
     /** The SLANTED cut — an AXIS, so it composes with weight and mono (C# `TypeStyle.Italic`). */
     readonly italic = false,
-    /** The FACE by name (C# `TypeStyle.Family`), or undefined for the platform's own. */
-    readonly family: string | undefined = undefined,
+    /** The FACE (C# `TypeStyle.Family`), or undefined for the platform's own. */
+    readonly family: FontFamily | undefined = undefined,
   ) {}
 
   /**
@@ -554,9 +595,9 @@ export interface AppTheme {
    * property the server answers and the client does not is the hydration hole `[ServerOnly]` and
    * EQ2010 exist to close — and a theme property is better carried than fenced.
    */
-  monoFamily?: string;
+  monoFamily?: FontFamily;
   /** The face this theme sets TEXT in (C# `IAppTheme.TextFamily`), or undefined for the platform's own. */
-  textFamily?: string;
+  textFamily?: FontFamily;
   colors(variant: string): VariantColors;
   type(role: string): TypeStyle;
   elevation(level: number): ShadowSpec;
@@ -732,6 +773,8 @@ hashesByValue(
   CornerRadii,
   TypeStyle,
   FluidSize,
+  FontFile,
+  FontFamily,
   VariantColors,
 );
 

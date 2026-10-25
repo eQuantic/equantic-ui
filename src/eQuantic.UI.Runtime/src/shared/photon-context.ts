@@ -12,6 +12,7 @@ import type { TypeStyleValue } from './nodes';
 import type { DensityValue } from './enums.generated';
 import { photonTheme } from './design-system.generated';
 import { DENSITY_COOKIE } from './markers';
+import { passInvalidator } from './pass-invalidator';
 
 /** Mirror of the C# `ComponentContext` — what a shared component's `build()` may read (mode-free). */
 export class ComponentContext {
@@ -83,11 +84,62 @@ export function measurePhotonText(text: string, style: TypeStyleValue, typeScale
   // comment beside MONO_STACK calls a caret beside the character it is on, and a brand face is
   // exactly the case where the two advance differently.
   const base = style.mono ? monoStack() : sansStack();
-  const family = isWellFormedFace(style.family) ? `"${style.family}", ${base}` : base;
+  const family = isWellFormedFace(style.family?.name) ? `"${style.family!.name}", ${base}` : base;
   // NUMERIC weight: the enum arrives as a member name, and a name makes the whole shorthand
-  // invalid — see cssFontWeight for what that cost.
-  context.font = `${cssFontWeight(style.weight)} ${style.size * typeScale}px ${family}`;
+  // invalid — see cssFontWeight for what that cost. The SLANT names the cut that draws the text:
+  // without it italic text was measured upright, and the load it waits for was the upright file's,
+  // already there while the italic one was still on its way.
+  context.font = `${style.italic ? 'italic ' : ''}${cssFontWeight(style.weight)} ${style.size * typeScale}px ${family}`;
+  rebuildWhenFaceLoads(context.font);
   return context.measureText(text).width;
+}
+
+/**
+ * The pages that measured text in a face the document declares and has not loaded yet, by the font
+ * they measured: a canvas measures such a face as its fallback, and the text is drawn in the face
+ * once it arrives, so a code editor would place its caret on the fallback's columns. Each page
+ * rebuilds when its face has loaded, once however many times it measured (#1055).
+ */
+const awaitingFace = new Map<string, Set<() => void>>();
+
+/**
+ * The fonts whose face failed to load. Such a face never arrives, so `check` stays false for it and
+ * its text is drawn in the fallback it was measured in: the measurement already agrees with the
+ * drawing, nothing rebuilds, and nothing asks for it again. A rebuild here would measure, ask, fail
+ * and rebuild without end.
+ */
+const failedFaces = new Set<string>();
+
+function rebuildWhenFaceLoads(font: string): void {
+  const fonts = typeof document === 'undefined' ? undefined : document.fonts;
+  const rebuild = passInvalidator();
+  if (!fonts || !rebuild || failedFaces.has(font)) return;
+  let loaded: boolean;
+  try {
+    // True for a face that has loaded and for one no `@font-face` declares: only a declared face
+    // still on its way is false.
+    loaded = fonts.check(font);
+  } catch {
+    return;
+  }
+  if (loaded) return;
+  const pages = awaitingFace.get(font);
+  if (pages) {
+    pages.add(rebuild);
+    return;
+  }
+  awaitingFace.set(font, new Set([rebuild]));
+  fonts.load(font).then(
+    () => {
+      const waiting = awaitingFace.get(font);
+      awaitingFace.delete(font);
+      waiting?.forEach((page) => page());
+    },
+    () => {
+      awaitingFace.delete(font);
+      failedFaces.add(font);
+    },
+  );
 }
 
 export function photonMonoAdvance(style: TypeStyleValue, typeScale = 1): number {
@@ -100,26 +152,26 @@ export function photonMonoAdvance(style: TypeStyleValue, typeScale = 1): number 
  * The font stacks the CSS uses — measuring with anything else measures the wrong text.
  *
  * These are the FALLBACKS the lowering declares inside its `var(...)`, character for character. The
- * variables themselves are resolved below, because an app may set either on `:root`, and a constant
- * that ignores the variable measures a stack such a page never draws with. That is what this used to
- * do: it carried a list of its own, two entries longer than any of the three the CSS side declares.
+ * variables themselves are resolved below, because the theme's stylesheet declares them from its
+ * faces, and a constant that ignores the variable measures a stack such a page never draws with. That
+ * is what this used to do: it carried a list of its own, two entries longer than any of the three the
+ * CSS side declares.
  */
 const SANS_FALLBACK = 'system-ui, -apple-system, sans-serif';
-// Character for character the fallback inside the CSS `var(...)`, quotes included. `--eq-font-mono`,
-// like `--eq-font-family`, is a hook an APP sets and the SDK declares nothing, so this literal is what
-// the page normally paints with — a list of this measurer's own would be the common case, not the edge.
+// Character for character the fallback inside the CSS `var(...)`, quotes included: what the page
+// paints with when its theme names no code face, which is the common case, not the edge.
 const MONO_FALLBACK = "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace";
 
 /**
  * The faces as the page will actually DRAW them. The lowering emits `var(--eq-font-family, …)` and
- * `var(--eq-font-mono, …)`, and an app that sets either paints with its own face, so a measurer that
- * reads only the fallback measures a stack that page never paints. A code editor places its caret
- * from a measured column advance: different face, different advance, caret beside the character.
- * (A base stylesheet once declared the first. No page ever linked it, and it is gone: #335.)
+ * `var(--eq-font-mono, …)`, and the theme's stylesheet declares both from the theme's text and code
+ * faces, so a measurer that reads only the fallback measures a stack that page never paints. A code
+ * editor places its caret from a measured column advance: different face, different advance, caret
+ * beside the character.
  *
- * Resolved once and cached, like the canvas: the variable's VALUE is static CSS. (A web font that
- * loads late changes metrics without changing this string, which is the pre-existing hazard for
- * every stack here, not one this introduces.)
+ * Resolved once and cached, like the canvas: the variable's VALUE is static CSS. A face that loads
+ * late changes metrics without changing this string, so a page that measured it still loading
+ * rebuilds when it arrives (rebuildWhenFaceLoads).
  *
  * ONE reader with two callers rather than one per axis — the sans half was missing for as long as
  * the mono half existed, which is what two pieces answering the same question costs.

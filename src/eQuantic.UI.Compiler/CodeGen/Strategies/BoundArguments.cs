@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
@@ -12,8 +13,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// where it is written), and the defaults of the optional parameters left out after them, each with
 /// the parameter it binds and how (an argument, a default, or the elements C# packs into a params
 /// parameter's array). So every argument lands in its parameter's place, every argument is evaluated
-/// in the order it is written, and an array passed whole to a params parameter is spread, named or
-/// not, while an element packed into one is passed as it is.
+/// in the order it is written, and a collection handed whole to a params parameter is spread, named
+/// or not, while an element packed into one is passed as it is.
 /// <para>
 /// Each path wrote its own placement and each lost a case: <c>: base("square", Color: "red")</c>
 /// went to <c>super('square', 'red')</c>, handing Sides the color; a base clause took every bare name
@@ -25,7 +26,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 internal sealed class BoundArguments
 {
     /// <summary>One argument in its parameter's place: the written argument it is (an index into
-    /// <see cref="Written"/>), spread where it is an array passed whole to a params parameter, or
+    /// <see cref="Written"/>), spread where it is a collection handed whole to a params parameter, or
     /// none (<c>-1</c>) for an optional parameter the call leaves out, whose twin takes its own
     /// default for the undefined it is handed.</summary>
     public readonly record struct Slot(int Written, bool Spread);
@@ -53,7 +54,7 @@ internal sealed class BoundArguments
     public IReadOnlyList<Slot> Slots { get; }
 
     /// <summary>What each parameter takes, in parameter order: its argument, the elements packed into a
-    /// params parameter's array (none for an empty one), or null for an optional parameter left out.</summary>
+    /// params parameter's array or collection (none for an empty one), or null for an optional parameter left out.</summary>
     public IReadOnlyList<IReadOnlyList<Slot>?> ByParameter { get; }
 
     /// <summary>Whether passing the arguments in parameter order evaluates them in the order they are
@@ -96,13 +97,11 @@ internal sealed class BoundArguments
                 case ArgumentKind.DefaultValue:
                     placed[parameter.Ordinal] = null;
                     break;
-                case ArgumentKind.ParamArray:
-                    // The array C# packs the elements into: each element written where it stands.
-                    var elements = argument.Value is IArrayCreationOperation { Initializer: { } packed }
-                        ? packed.ElementValues
-                        : default;
+                case ArgumentKind.ParamArray or ArgumentKind.ParamCollection:
+                    // The array or the collection C# packs the elements into: each element written where it stands.
+                    if (PackedElements(argument) is not { } elements) return null;
                     var slots = new List<Slot>();
-                    foreach (var element in elements.IsDefault ? [] : elements)
+                    foreach (var element in elements)
                     {
                         if (element.Syntax is not ExpressionSyntax source) return null;
                         sources.Add(source);
@@ -111,17 +110,58 @@ internal sealed class BoundArguments
                     }
                     placed[parameter.Ordinal] = slots;
                     break;
-                default:
+                case ArgumentKind.Explicit:
                     if (argument.Value.Syntax is not ExpressionSyntax value) return null;
                     sources.Add(value);
                     written.Add(convert(value));
-                    // An array passed whole to a params parameter is spread into the twin's rest parameter.
+                    // A collection handed whole to a params parameter is spread into the twin's rest parameter.
                     placed[parameter.Ordinal] = [new Slot(written.Count - 1, parameter.IsParams)];
                     break;
+                default:
+                    // A kind this does not know is never read as one written argument: the value of a
+                    // packed collection is the whole call, and converting it converted the call again,
+                    // until the stack ran out (Copilot's second review of #1062).
+                    return null;
             }
         }
 
         return new BoundArguments(sources, written, placed);
+    }
+
+    /// <summary>
+    /// The elements C# packs into a params parameter for a call that lists them: the array of a
+    /// <c>params T[]</c>, or the collection of a <c>params IReadOnlyList&lt;T&gt;</c> and the other
+    /// forms C# 13 takes. Null for an argument that is not packed, or packed in a form this does not know.
+    /// </summary>
+    public static ImmutableArray<IOperation>? PackedElements(IArgumentOperation argument) => argument switch
+    {
+        { ArgumentKind: ArgumentKind.ParamArray, Value: IArrayCreationOperation array } =>
+            array.Initializer?.ElementValues ?? ImmutableArray<IOperation>.Empty,
+        { ArgumentKind: ArgumentKind.ParamCollection, Value: ICollectionExpressionOperation collection } => collection.Elements,
+        _ => null,
+    };
+
+    /// <summary>
+    /// Whether <paramref name="argument"/> hands a collection WHOLE to a params parameter, which the rest
+    /// parameter on the other side receives spread, where an element a call lists is passed as it is.
+    /// The bound tree tells the two forms apart, and only it can: an array of ints handed to
+    /// <c>params object[]</c> is ONE element, and a list handed to <c>params IReadOnlyList&lt;int&gt;</c>
+    /// is the collection itself. Read from the argument's type, the array was spread into two elements
+    /// and the list, not being an array, arrived as one (Copilot's second review of #1062).
+    /// </summary>
+    private static bool IsHandedWhole(ArgumentSyntax argument, ConversionContext context) =>
+        context.SemanticHelper.GetOperation(argument) is IArgumentOperation
+        {
+            ArgumentKind: ArgumentKind.Explicit, Parameter.IsParams: true,
+        };
+
+    /// <summary>A call's written argument converted as its parameter takes it, where the call is read
+    /// from its syntax: spread where it hands a collection whole to a params parameter
+    /// (<see cref="IsHandedWhole"/>), and as it is otherwise.</summary>
+    public static JsExpr Convert(ArgumentSyntax argument, ConversionContext context)
+    {
+        var value = context.Converter.ConvertIr(argument.Expression);
+        return IsHandedWhole(argument, context) ? JsExpr.Spread(value) : value;
     }
 
     /// <summary>The arguments in parameter order, each the written argument it is, or what

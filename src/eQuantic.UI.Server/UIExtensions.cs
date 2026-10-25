@@ -361,6 +361,32 @@ public static class UIExtensions
             await context.Response.WriteAsync(document);
         });
 
+        // The faces the app ships (#1055), by the hash of their bytes: immutable, and only what the
+        // theme and the app's catalogs named, since a name is the only way in. Public as the runtime
+        // is: a sign-in page under a fallback policy is set in them too.
+        endpoints.MapGetAndHead("/_equantic/fonts/{name}", async context =>
+        {
+            var options = context.RequestServices.GetRequiredService<UIOptions>();
+            var font = Fonts(options, context.RequestServices).Find((string?)context.GetRouteValue("name") ?? "");
+            if (font is null)
+            {
+                context.Response.StatusCode = 404;
+                return;
+            }
+            // Compressed once when the set was read, and sent so to a browser that takes Brotli, which
+            // every current one does: the app's own response compression is not relied on, since no
+            // middleware of it runs unless the app adds one.
+            var brotli = context.Request.GetTypedHeaders().AcceptEncoding
+                .Any(encoding => encoding.Value.Equals("br", StringComparison.OrdinalIgnoreCase) && encoding.Quality is not 0);
+            var body = brotli ? font.Brotli : font.Bytes;
+            context.Response.ContentType = FontFaceRules.ContentType(font.File);
+            if (brotli) context.Response.Headers.ContentEncoding = "br";
+            context.Response.Headers.Vary = "Accept-Encoding";
+            context.Response.ContentLength = body.Length;
+            context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+            await context.Response.Body.WriteAsync(body);
+        }).AllowAnonymous();
+
         // Map Runtime JS (immutable via BuildId in URL, long cache)
         endpoints.MapGetAndHead("/_equantic/runtime.js", async context =>
         {
@@ -716,6 +742,14 @@ public static class UIExtensions
         return sheets[slot] ??= ThemeStylesheet.Generate(theme, mode);
     }
 
+    /// <summary>The faces the app serves (#1055), read once per app: its theme and the catalogs of the
+    /// assemblies it scans are set at startup, and every page and the font route read the same set.</summary>
+    private static readonly ConditionalWeakTable<UIOptions, ServedFonts> FontSets = new();
+
+    private static ServedFonts Fonts(UIOptions options, IServiceProvider services) =>
+        FontSets.GetValue(options, _ => ServedFonts.Of(options.Theme ?? PhotonTheme.Instance, options.AssembliesToScan,
+            services.GetService<ILoggerFactory>()?.CreateLogger("eQuantic.UI.Fonts")));
+
     private static async Task ServeAppShell(HttpContext context, Type? page, DeclaredPage? declared)
     {
         // A client navigation asks the same route for the page's data instead of a document.
@@ -746,7 +780,9 @@ public static class UIExtensions
         // already carries the right mode, instead of the default arriving and hydration correcting
         // it in front of the reader.
         var requestedMode = ThemeCookie.Resolve(context, options.InitialThemeMode, options.ThemeCookie?.Name);
-        var themeStyles = ThemeStyles(options.Theme ?? PhotonTheme.Instance, requestedMode);
+        // The faces the theme and the app's catalogs ship, declared ahead of the sheet that names them.
+        var fonts = Fonts(options, context.RequestServices);
+        var themeStyles = fonts.Rules + ThemeStyles(options.Theme ?? PhotonTheme.Instance, requestedMode);
 
         // A CHOSEN theme also crosses as data, into window.__EQ_THEME__, so boot can setPhotonTheme
         // before hydration and the client's re-renders resolve the colours and shapes the server
@@ -986,6 +1022,7 @@ public static class UIExtensions
                .Set("HtmlLang", htmlLang)
                .Set("Title", System.Web.HttpUtility.HtmlEncode(metadata.Title ?? string.Empty))
                .Set("MetadataTags", metadata.RenderTags())
+               .SetOrEmpty("FontPreloads", fonts.Preloads)
                .Set("BuildId", BuildId)
                .Set("ThemeStyles", themeStyles)
                // One element per AddStyles call, so a malformed chunk cannot swallow the next one.

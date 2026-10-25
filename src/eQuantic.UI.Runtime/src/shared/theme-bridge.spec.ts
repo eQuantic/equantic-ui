@@ -93,7 +93,7 @@ describe('theme bridge: a distinct theme materializes to distinct values', () =>
   it("carries the theme's code face, and omits it when there is none", () => {
     const base = photonData as unknown as ThemeData;
     const branded = materializeTheme({ ...base, monoFamily: 'JetBrains Mono' } as ThemeData);
-    expect(branded.monoFamily).toBe('JetBrains Mono');
+    expect(branded.monoFamily?.name).toBe('JetBrains Mono');
 
     // Photon names none, so the payload has no such key and the client must answer undefined
     // rather than an empty string — the shape `WithThemeFace` tests for on the other side.
@@ -123,7 +123,7 @@ describe('theme bridge: a distinct theme materializes to distinct values', () =>
       textFamily: 'Atkinson Hyperlegible Next',
       onSelection: [white, white],
     } as ThemeData);
-    expect(branded.textFamily).toBe('Atkinson Hyperlegible Next');
+    expect(branded.textFamily?.name).toBe('Atkinson Hyperlegible Next');
     expect(branded.onSelection?.light).toEqual({ r: 255, g: 255, b: 255, a: 255 });
 
     const plain = materializeTheme(base);

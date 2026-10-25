@@ -37,6 +37,9 @@
     <!-- The build tool, so the entitlements manifest is tested against a REAL assembly: this
          test assembly declares the attributes and the reader reads them back off its own PE file. -->
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj" />
+    <!-- The tasks the SDKs start eqicon with, beside the tests with it, so a case runs the SDK's own
+         font step with this build's tool and tasks rather than whatever src/bin last held. -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Sdk.Tasks\eQuantic.UI.Sdk.Tasks.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Framework\eQuantic.UI.Native.Framework.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Engine.Reference\eQuantic.UI.Native.Engine.Reference.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Engine.Metal\eQuantic.UI.Native.Engine.Metal.csproj" />
@@ -89,5 +92,10 @@
          build that leaves nothing holding its output (#971). -->
     <Compile Include="..\Shared\ChildProcess.cs" Link="Shared\ChildProcess.cs" />
     <Compile Include="..\Shared\SheetSlotTheme.cs" Link="Shared\SheetSlotTheme.cs" />
+    <!-- A TrueType font built in code: a face no machine has installed, with no file to licence. -->
+    <Compile Include="..\Shared\TestFont.cs" Link="Shared\TestFont.cs" />
+    <!-- Two faces written by that builder, embedded as the SDK embeds an app's, for the shells to
+         register (the server's tests embed the same two). -->
+    <EmbeddedResource Include="..\Shared\Fonts\*.ttf" LogicalName="eQuantic.UI.Fonts/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
