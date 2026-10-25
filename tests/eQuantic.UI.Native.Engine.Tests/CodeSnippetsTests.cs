@@ -325,6 +325,39 @@ public class CodeSnippetsTests : IDisposable
         editor.Snippet.IsActive.Should().BeFalse();
     }
 
+    /// <summary>The selected text of a snippet accepted from the completion is the selection, which is nothing:
+    /// the word typed, which the entry replaces, was taken for it (the review of #1013).</summary>
+    [Fact]
+    public void ASnippetFromTheCompletion_SelectsNothing()
+    {
+        var editor = Editor("");
+        editor.Completion.Providers.Add(new Offers(new CodeCompletionItem("Log", CodeCompletionKind.Snippet)
+        {
+            Snippet = CodeSnippet.Parse("Log($TM_SELECTED_TEXT);"),
+        }));
+
+        editor.HandleText("L");
+        editor.HandleText("o");
+        Press(editor, "Enter").Should().BeTrue();
+
+        editor.Document.Text.Should().Be("Log();");
+    }
+
+    /// <summary>An undo ends the snippet, as VS Code's does (the review of #1013): undoing the insertion collapsed
+    /// every stop where the restored caret stood, which still counted as inside one, so Tab walked empty stops
+    /// instead of indenting.</summary>
+    [Fact]
+    public void Undo_EndsTheSnippet()
+    {
+        var editor = Inserted("${1:a} ${2:b}");
+
+        editor.Undo().Should().BeTrue();
+
+        editor.Snippet.IsActive.Should().BeFalse();
+        Press(editor, "Tab").Should().BeTrue();
+        editor.Document.Text.Should().Be("    ");
+    }
+
     [Fact]
     public void NamedSnippets_CompleteByTheirPrefix()
     {

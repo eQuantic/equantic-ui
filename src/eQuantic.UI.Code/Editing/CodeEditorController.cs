@@ -2130,10 +2130,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     internal bool ReplaceAroundEveryCaret(int before, int after, string text) =>
         AtEveryCaret(() =>
         {
-            var caret = Caret;
-            var line = _document.Line(caret.Line);
-            var range = new CodeRange(caret with { Column = Math.Max(0, caret.Column - before) },
-                caret with { Column = Math.Min(line.Length, caret.Column + after) });
+            var range = AroundCaret(before, after);
             if (_document.TextIn(range) != text) return Edit(range, text, false);
             Select(new CodeRange(range.End), keepCell: false);
             return true;
@@ -2157,13 +2154,17 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// (<see cref="ReplaceAroundEveryCaret"/>): before each caret as many characters as the entry replaces
     /// before the primary, and after it as many as it replaces after, on the caret's own line.</summary>
     internal bool InsertSnippetAround(CodeSnippet snippet, int before, int after) =>
-        InsertCopies(snippet, () =>
-        {
-            var caret = Caret;
-            var line = _document.Line(caret.Line);
-            return new CodeRange(caret with { Column = Math.Max(0, caret.Column - before) },
-                caret with { Column = Math.Min(line.Length, caret.Column + after) });
-        });
+        InsertCopies(snippet, () => AroundCaret(before, after));
+
+    /// <summary>The range around the caret an accepted entry replaces: <paramref name="before"/> characters
+    /// before it and <paramref name="after"/> after it, on its own line.</summary>
+    private CodeRange AroundCaret(int before, int after)
+    {
+        var caret = Caret;
+        var line = _document.Line(caret.Line);
+        return new CodeRange(caret with { Column = Math.Max(0, caret.Column - before) },
+            caret with { Column = Math.Min(line.Length, caret.Column + after) });
+    }
 
     /// <summary>
     /// The insertion itself: at every caret, the copy of <paramref name="snippet"/> that caret's variables and
@@ -2183,9 +2184,12 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         {
             AtEveryCaret(() =>
             {
+                // The selection, which $TM_SELECTED_TEXT is: an entry accepted replaces the word typed, which
+                // nobody selected.
+                var selection = _selection;
                 var range = at();
                 var start = _document.Clamp(range.Start);
-                var copy = CodeSnippetExpansion.Of(snippet, name => SnippetVariable(name, range),
+                var copy = CodeSnippetExpansion.Of(snippet, name => SnippetVariable(name, selection, range),
                     _document.IndentOf(start.Line), IndentStep);
                 copies.Add(copy);
                 var edited = Edit(range, copy.Text, false);
@@ -2264,10 +2268,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     }
 
     /// <summary>What a snippet's variable <paramref name="name"/> is for the copy that replaces
-    /// <paramref name="range"/>, or null for a name the editor does not know.</summary>
-    private string? SnippetVariable(string name, CodeRange range) => name switch
+    /// <paramref name="range"/> at a caret selecting <paramref name="selection"/>, or null for a name the editor
+    /// does not know.</summary>
+    private string? SnippetVariable(string name, CodeRange selection, CodeRange range) => name switch
     {
-        "TM_SELECTED_TEXT" => _document.TextIn(range),
+        "TM_SELECTED_TEXT" => _document.TextIn(selection),
         "TM_CURRENT_LINE" => _document.Line(range.Start.Line),
         "TM_CURRENT_WORD" => _document.TextIn(WordRange(range.Start)),
         "TM_LINE_INDEX" => range.Start.Line.ToString(),
@@ -2879,6 +2884,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         if (ReadOnly) return false;
         EndComposition();
         if (History.Undo(_document, out var selections, out var made) is null) return false;
+        // A snippet ends with an undo, as VS Code's does: its stops were placed on text the undo may take
+        // away, and taken away they collapse where a restored caret still counted as inside one (#1013).
+        Snippet.End();
         Replay(made, selections);
         return true;
     }
@@ -2888,6 +2896,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         if (ReadOnly) return false;
         EndComposition();
         if (History.Redo(_document, out var selections, out var made) is null) return false;
+        Snippet.End();
         Replay(made, selections);
         return true;
     }
