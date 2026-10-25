@@ -38,6 +38,13 @@ no listener understands (a language server speaks replacements, as LSP's content
   makes while it hears one waits for it, and every listener hears it after it. The event's shape moves
   from one `CodeEdit` to a `CodeChange`, and a document replaced whole, which was null, is a change with
   no edits, `Replaced`.
+- **The editor's own problems follow each replacement the moment the document takes it**, as the colours
+  and the widths do, and the change, once heard, only says that they moved and asks the providers again.
+  While a change is being heard, a change a listener made is already in the document and waits to be heard
+  after it, so a range read from the document then is ahead of the changes heard so far: carried when its
+  change was heard, a problem reported against that text went through the waiting change a second time
+  (Copilot's third round on #1058). VS Code's markers are the same: decorations the model moves as it
+  applies an edit, never through its content event.
 - **The selection a step leaves** is the last edit's, and the one it found the first edit's, as for one
   edit today.
 - **The typing run coalesces steps of one typed edit**, as today: a step of several edits never joins one.

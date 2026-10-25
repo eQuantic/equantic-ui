@@ -42,9 +42,16 @@
       failing before the fix; the events' tests, and the web surface's move heard as one change of two
       replacements each way (`code-editor.spec.ts`)
 
-## 6. Documentation
+## 6. Copilot's third round
 
-- [x] 6.1 The wiki's CodeEditor page in every language it is written in: what a move does to problems, what
+- [x] 6.1 The problems are carried through each replacement the moment the document takes it, with the
+      colours and the widths; a change heard gathers them and asks again
+- [x] 6.2 Check: a problem reported after a listener's edit while a move is heard, by that listener and by
+      one after it, stands where it was reported (`CodeLinesTests`), failing before the fix
+
+## 7. Documentation
+
+- [x] 7.1 The wiki's CodeEditor page in every language it is written in: what a move does to problems, what
       `CodeHistory` answers, and what `Changed` carries
-- [x] 6.2 One ledger entry, a file under docs/ledger/, citing #1031
-- [x] 6.3 Archive this change before the merge
+- [x] 7.2 One ledger entry, a file under docs/ledger/, citing #1031
+- [x] 7.3 Archive this change before the merge

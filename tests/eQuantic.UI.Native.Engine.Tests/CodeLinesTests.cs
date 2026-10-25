@@ -188,6 +188,47 @@ public class CodeLinesTests : IDisposable
     }
 
     /// <summary>
+    /// A problem reported after a listener edited while a change was heard stands where it was reported, by
+    /// that listener or by one after it: it describes the text as it stands, the listener's edit included, and
+    /// the problems follow every replacement the moment the document takes it, so the edit's own change,
+    /// heard later, carries nothing through it again. Carried when the change was heard, the report went a
+    /// line down, onto the text after it (Copilot, #1058).
+    /// </summary>
+    [Fact]
+    public void AProblemReportedAfterAListenersEdit_StandsWhereItWasReported()
+    {
+        void Holds(bool byTheListenerThatEdited)
+        {
+            var editor = Editor("one\ntwo\nthree", At(1, 1));
+            var problem = new CodeDiagnostic(new CodeRange(At(1, 0), At(1, 3)), "two");
+            var edited = false;
+            editor.Changed += _ =>
+            {
+                if (edited) return;
+                edited = true;
+                editor.Apply(new CodeRange(At(0, 0)), "extra\n");
+                if (byTheListenerThatEdited) editor.Diagnostics.Report([problem]);
+            };
+            var reported = byTheListenerThatEdited;
+            editor.Changed += _ =>
+            {
+                if (reported) return;
+                reported = true;
+                editor.Diagnostics.Report([problem]);
+            };
+
+            Press(editor, "ArrowUp", KeyModifiers.Alt).Should().BeTrue();
+
+            editor.Document.Text.Should().Be("extra\ntwo\none\nthree");
+            editor.Diagnostics.Items.Single().Range.Should().Be(new CodeRange(At(1, 0), At(1, 3)),
+                byTheListenerThatEdited ? "reported by the listener that edited" : "reported by a listener after it");
+        }
+
+        Holds(byTheListenerThatEdited: true);
+        Holds(byTheListenerThatEdited: false);
+    }
+
+    /// <summary>
     /// A problem of no width at a moved line's end, where Roslyn reports a missing semicolon, stays on that
     /// line through the move, its undo and its redo: a move never writes text where the block's lines start
     /// or end. Written after the block's last line, the passed line took the problem with it (Copilot,

@@ -48,3 +48,5 @@ answers" and "a listener of `Changed` reads `change.Edits`, and `change.Replaced
 - `code-lines`: a move is the passed line moving, so the moved lines keep their problems.
 - `code-editor`: `Changed` carries a change, the edits an undo or a redo made, and a document replaced
   whole is a change with no edits.
+- `code-diagnostics`: a problem travels with an edit the moment the document takes it, so one reported at
+  any moment stands where it was reported.

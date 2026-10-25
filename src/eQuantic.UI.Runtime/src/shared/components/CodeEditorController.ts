@@ -87,6 +87,7 @@ export class CodeEditorController {
         this._composition = null;
         this.highlighter.invalidate();
         this.history.clear();
+        this.diagnostics.reset();
         this._revealVersion++;
         this.raise(new CodeChange([], true), false);
     }
@@ -391,7 +392,7 @@ export class CodeEditorController {
                     return true;
                 case 'paste':
                     if (clipboard == null) return false;
-                    if ((($v27230) => (($v27230 != null && $v27230.length > 0) && (pasted = $v27230, true)))(clipboard.read())) this.paste(pasted);
+                    if ((($v27509) => (($v27509 != null && $v27509.length > 0) && (pasted = $v27509, true)))(clipboard.read())) this.paste(pasted);
                     return true;
                 case 'completionShow':
                     return this.completion.invoke();
@@ -516,15 +517,12 @@ export class CodeEditorController {
         let before = this._selection;
         let caret: any; 
         let next = ($o => (caret = $o.caret, $o.$))(this._document.replace(ordered, text));
-        let line = ordered.start.line;
-        let linesRemoved = ordered.end.line - ordered.start.line;
-        let linesInserted = caret.line - ordered.start.line;
         this._document = next;
         this._selection = new CodeRange(caret);
-        this.linesChanged(line, linesInserted, linesRemoved);
         this._revealVersion++;
         this._desiredCell = -1;
         let edit = new CodeEdit(ordered, removed, next.textIn(new CodeRange(ordered.start, caret)), before, this._selection, false);
+        this.took(edit);
         this.raise(new CodeChange([edit]));
         return new CodeRange(ordered.start, caret);
     }
@@ -595,15 +593,12 @@ export class CodeEditorController {
         let before = this._selection;
         let caret: any; 
         let next = ($o => (caret = $o.caret, $o.$))(this._document.replace(ordered, text));
-        let line = ordered.start.line;
-        let linesRemoved = ordered.end.line - ordered.start.line;
-        let linesInserted = caret.line - ordered.start.line;
         this._document = next;
         let left: any; 
         this._selection = (left = after) != null ? this.onElementEdges(left) : new CodeRange(caret);
         this._revealVersion++;
         let edit = new CodeEdit(ordered, removed, next.textIn(new CodeRange(ordered.start, caret)), before, this._selection, typed);
-        this.linesChanged(line, linesInserted, linesRemoved);
+        this.took(edit);
         this._desiredCell = -1;
         let step: any; 
         if ((step = this._step) != null) step.push(edit); else {
@@ -1088,7 +1083,7 @@ export class CodeEditorController {
             }
             let space = length > 0;
             let tail = parts[parts.length - 1];
-            if (space && (($v84256) => ($v84256 === ' ' || $v84256 === '\t'))(tail[tail.length - 1])) {
+            if (space && (($v84129) => ($v84129 === ' ' || $v84129 === '\t'))(tail[tail.length - 1])) {
                 space = false;
                 let kept = $eq.text.trimEnd(tail, [' ', '\t']);
                 parts[parts.length - 1] = kept;
@@ -1188,10 +1183,8 @@ export class CodeEditorController {
     replay(made: CodeEdit[], selection: CodeRange) {
         let before = this._selection;
         for (const edit of made) {
-            let end: any; 
-            this._document = ($o => (end = $o.caret, $o.$))(this._document.replace(edit.range, edit.insertedText));
-            let line = edit.range.start.line;
-            this.linesChanged(line, end.line - line, edit.range.end.line - line);
+            this._document = ($o => ($o.$))(this._document.replace(edit.range, edit.insertedText));
+            this.took(edit);
         }
         this._selection = this.onElementEdges(selection);
         this._revealVersion++;
@@ -1199,9 +1192,13 @@ export class CodeEditorController {
         this.raise(new CodeChange(this.heard(made, before)));
     }
 
-    linesChanged(line: number, linesInserted: number, linesRemoved: number) {
+    took(edit: CodeEdit) {
+        let line = edit.range.start.line;
+        let linesInserted = edit.insertedRange.end.line - line;
+        let linesRemoved = edit.range.end.line - line;
         this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
         this.widthsChanged(line, linesInserted, linesRemoved);
+        this.diagnostics.carry(edit);
     }
 
     findAll(needle: string, matchCase: boolean = false) {
