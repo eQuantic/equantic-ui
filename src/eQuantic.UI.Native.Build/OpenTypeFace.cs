@@ -143,10 +143,12 @@ public sealed record OpenTypeFace(string Family, int MinWeight, int MaxWeight, b
     /// on the <c>wght</c> axis are ONE, a single value (format 1 or 3). Null when it gives none, a range
     /// (format 2), several values, or one shared with other axes (format 4), which describe a family
     /// rather than this face, and null for a table that does not hold, since the weight class is still
-    /// there to read: a <c>STAT</c> only says more than it.
+    /// there to read: a <c>STAT</c> only says more than it. A value flagged as an older sibling's
+    /// (<c>OLDER_SIBLING_FONT_ATTRIBUTE</c>) describes another font of the family, and is passed over.
     /// </summary>
     private static int? StatWeight(ReadOnlySpan<byte> table)
     {
+        const ushort OlderSiblingFontAttribute = 0x0001;
         if (table.Length < 18) return null;
         var axisSize = BinaryPrimitives.ReadUInt16BigEndian(table[4..]);
         var axisCount = BinaryPrimitives.ReadUInt16BigEndian(table[6..]);
@@ -177,6 +179,7 @@ public sealed record OpenTypeFace(string Family, int MinWeight, int MaxWeight, b
                 continue;
             }
             if (BinaryPrimitives.ReadUInt16BigEndian(value[2..]) != weightAxis) continue;
+            if ((BinaryPrimitives.ReadUInt16BigEndian(value[4..]) & OlderSiblingFontAttribute) != 0) continue;
             if (format is not (1 or 3) || placed is not null) return null;
             placed = (int)Math.Round(BinaryPrimitives.ReadInt32BigEndian(value[8..]) / 65536.0);
         }

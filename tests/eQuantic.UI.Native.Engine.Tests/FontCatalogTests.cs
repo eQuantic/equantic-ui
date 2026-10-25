@@ -164,7 +164,7 @@ public sealed class FontCatalogTests : IDisposable
     /// A static face's weight is the one position its STAT table gives it on <c>wght</c>, whatever its
     /// weight class says: Google's Thin and ExtraLight of Inter both carry 250 there, the value Windows's
     /// GDI needs, and 100 and 200 in their STAT (#1082). A STAT that gives several positions describes a
-    /// family, and the weight class stands.
+    /// family, and the weight class stands; a position flagged as an older sibling's is another font's.
     /// </summary>
     [Fact]
     public void AStaticFacesStatPosition_IsItsWeight_WhateverItsWeightClassSays()
@@ -173,6 +173,10 @@ public sealed class FontCatalogTests : IDisposable
             .Should().Be(new OpenTypeFace("Inter", 100, 100, false));
         OpenTypeFace.Read(TestFont.Build("Inter", weight: 250, statWeights: [100, 200]))
             .Should().Be(new OpenTypeFace("Inter", 250, 250, false), "a STAT with several positions describes the family");
+        OpenTypeFace.Read(TestFont.Build("Inter", weight: 250, statWeights: [100], statSiblingWeights: [200]))
+            .Should().Be(new OpenTypeFace("Inter", 100, 100, false), "an older sibling's position is another font's");
+        OpenTypeFace.Read(TestFont.Build("Inter", weight: 300, statSiblingWeights: [200]))
+            .Should().Be(new OpenTypeFace("Inter", 300, 300, false), "a STAT that places only a sibling says nothing of this face");
     }
 
     [Fact]
