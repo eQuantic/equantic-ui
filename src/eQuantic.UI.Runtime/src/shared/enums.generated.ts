@@ -36,7 +36,8 @@ export type CodeCommandValue =
   | 'signatureHelpNext' | 'signatureHelpPrevious' | 'signatureHelpHide' | 'hoverShow' | 'hoverHide'
   | 'problemNext' | 'problemPrevious' | 'releaseKeyboard' | 'moveLinesUp' | 'moveLinesDown'
   | 'copyLinesUp' | 'copyLinesDown' | 'deleteLines' | 'joinLines' | 'sortLinesAscending'
-  | 'sortLinesDescending' | 'insertLineAbove' | 'insertLineBelow';
+  | 'sortLinesDescending' | 'insertLineAbove' | 'insertLineBelow' | 'addCursorAbove'
+  | 'addCursorBelow' | 'addNextOccurrence' | 'selectAllOccurrences' | 'removeSecondaryCursors';
 
 export type CodeCompletionKindValue =
   'text' | 'method' | 'function' | 'constructor' | 'field' | 'variable' | 'class' | 'interface'

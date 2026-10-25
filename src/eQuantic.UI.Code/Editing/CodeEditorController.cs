@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Code;
@@ -49,6 +50,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             _document = value;
             _widths = null;
             _selection = new CodeRange(_document.Clamp(_selection.Focus));
+            // A file opened has one caret.
+            _others.Clear();
             _composition = null;
             Highlighter.Invalidate();
             History.Clear();
@@ -58,30 +61,130 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         }
     }
 
-    /// <summary>Where the caret is, and what it has selected.</summary>
+    /// <summary>Where the caret is, and what it has selected: the primary caret's selection, with several
+    /// (<see cref="Selections"/>). Setting it leaves that one selection, every other caret gone.</summary>
     public CodeRange Selection
     {
         get => _selection;
-        set => Select(value, keepCell: false);
+        set
+        {
+            var had = _others.Count > 0;
+            _others.Clear();
+            Select(value, keepCell: false, moved: had);
+        }
     }
 
     /// <summary>
-    /// Places the selection. Only a run of ↑ and ↓ keeps the cell it aims at
-    /// (<paramref name="keepCell"/>); anything else that places the caret forgets it, a click, an
-    /// undo and the app included, or ↓ after a click went back to the column the run before the
-    /// click had aimed at.
+    /// The carets besides the primary, in document order (#1012). Empty with one caret, which is nearly
+    /// always, and then every command runs as it ran before there were several.
     /// </summary>
-    private void Select(CodeRange value, bool keepCell)
+    private readonly List<CodeCaret> _others = [];
+
+    /// <summary>
+    /// Every selection, the primary first and the others in document order (#1012). Two never overlap, and
+    /// a caret never stands where another selection begins or ends: the carets that meet are made one, as
+    /// VS Code merges its cursors. The primary is the selection placed last, as Rider's primary caret is:
+    /// the one brought into view, the one an input method composes at, and the one the completion list,
+    /// the panel and the card follow. Placing them makes the first the primary.
+    /// </summary>
+    public IReadOnlyList<CodeRange> Selections
+    {
+        get
+        {
+            var all = new List<CodeRange>(_others.Count + 1) { _selection };
+            foreach (var other in _others) all.Add(other.Selection);
+            return all;
+        }
+        set
+        {
+            if (value.Count == 0) return;
+            _others.Clear();
+            for (var i = 1; i < value.Count; i++) _others.Add(new CodeCaret(OnElementEdges(value[i]), -1));
+            // Made one where they meet BEFORE anyone hears of them: heard first, the primary a listener read
+            // was not the one the merge left.
+            _occurrence = null;
+            Placed(new CodeCaret(value[0], -1));
+        }
+    }
+
+    /// <summary>
+    /// Places the primary selection, the others where they are. Only a run of ↑ and ↓ keeps the cell it
+    /// aims at (<paramref name="keepCell"/>); anything else that places the caret forgets it, a click, an
+    /// undo and the app included, or ↓ after a click went back to the column the run before the click
+    /// had aimed at. <paramref name="moved"/> says something else moved with it, the other carets gone,
+    /// and is heard even when the primary stays.
+    /// </summary>
+    private void Select(CodeRange value, bool keepCell, bool moved = false)
     {
         if (!keepCell) _desiredAdvance = -1;
         var next = OnElementEdges(value);
-        if (next == _selection) return;
+        if (next == _selection && !moved) return;
+        _occurrence = null;
         // Moving the caret ENDS the typing run: the next character starts a new undo step,
         // because a person who moved and typed did two things.
-        History.Break();
         _selection = next;
         _revealVersion++;
+        // Inside a command's step, the move is heard once the step is made, with its edits, and it ends the
+        // run once the step is recorded: ended here, the step that moved the caret started a run.
+        if (_step is not null)
+        {
+            _stepMoved = true;
+            return;
+        }
+        History.Break();
         SelectionChanged?.Invoke(next);
+    }
+
+    /// <summary>
+    /// Puts the carets in document order and makes one of any that overlap, or that meet where one of
+    /// them is a caret, as VS Code merges its cursors: two selections that only touch stay two, the text
+    /// between them none. The primary stays the primary, grown by whatever it was merged with.
+    /// </summary>
+    private void Merge()
+    {
+        if (_others.Count == 0) return;
+        var carets = new List<CodeCaret>(_others) { new CodeCaret(_selection, _desiredAdvance) };
+        var primary = carets.Count - 1;
+        var order = new List<int>();
+        for (var i = 0; i < carets.Count; i++) order.Add(i);
+        order.Sort((a, b) => carets[a].Selection.Start.CompareTo(carets[b].Selection.Start));
+
+        var merged = new List<CodeCaret>();
+        var primaryAt = -1;
+        foreach (var i in order)
+        {
+            var caret = carets[i];
+            if (merged.Count > 0)
+            {
+                var last = merged[^1].Selection;
+                var next = caret.Selection;
+                var meets = last.IsEmpty || next.IsEmpty ? next.Start <= last.End : next.Start < last.End;
+                if (meets)
+                {
+                    var end = next.End > last.End ? next.End : last.End;
+                    // The one that keeps its direction is the primary, if either is; the later otherwise.
+                    var keeps = i == primary ? next : merged.Count - 1 == primaryAt ? last : next;
+                    var backwards = keeps.Focus < keeps.Anchor;
+                    var range = backwards ? new CodeRange(end, last.Start) : new CodeRange(last.Start, end);
+                    merged[^1] = new CodeCaret(range, i == primary ? caret.Advance : merged[^1].Advance);
+                    if (i == primary) primaryAt = merged.Count - 1;
+                    continue;
+                }
+            }
+            if (i == primary) primaryAt = merged.Count;
+            merged.Add(caret);
+        }
+
+        _others.Clear();
+        for (var i = 0; i < merged.Count; i++)
+        {
+            if (i == primaryAt)
+            {
+                _selection = merged[i].Selection;
+                _desiredAdvance = merged[i].Advance;
+            }
+            else _others.Add(merged[i]);
+        }
     }
 
     /// <summary>
@@ -328,6 +431,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     private float XAtAdvance(float advance) =>
         Grid.Measure is null ? Grid.Origin.X + advance * Grid.Cell.Width : Grid.Origin.X + advance;
 
+    /// <summary>How far line <paramref name="line"/> reaches, in the grid's own unit.</summary>
+    private float WidthOf(int line) => AdvanceOf(line, _document.Line(line).Length);
+
     /// <summary>The top of the row line <paramref name="line"/> is drawn on.</summary>
     private float TopOf(int line) => Grid.Origin.Y + Grid.RowOf(line) * Grid.Cell.Height;
 
@@ -399,9 +505,53 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     public IReadOnlyList<Rect> SelectionBandsIn(int first, int last)
     {
         var bands = new List<Rect>();
-        if (_selection.IsEmpty) return bands;
-        var start = _selection.Start;
-        var end = _selection.End;
+        foreach (var selection in SelectionsIn(first, last)) BandsOf(selection, first, last, bands);
+        return bands;
+    }
+
+    /// <summary>Every selection that reaches lines <paramref name="first"/> to <paramref name="last"/>, the
+    /// carets included, in document order: what a view builds marks for (#1012).</summary>
+    public IReadOnlyList<CodeRange> SelectionsIn(int first, int last)
+    {
+        var all = new List<CodeRange>();
+        var placed = false;
+        foreach (var other in _others)
+        {
+            if (!placed && _selection.Start < other.Selection.Start)
+            {
+                if (Reaches(_selection, first, last)) all.Add(_selection);
+                placed = true;
+            }
+            if (Reaches(other.Selection, first, last)) all.Add(other.Selection);
+        }
+        if (!placed && Reaches(_selection, first, last)) all.Add(_selection);
+        return all;
+    }
+
+    /// <summary>The lines of lines <paramref name="first"/> to <paramref name="last"/> a caret stands on, each
+    /// once, in order: the lines a view washes (#1012).</summary>
+    public IReadOnlyList<int> CaretLinesIn(int first, int last)
+    {
+        var lines = new List<int>();
+        foreach (var selection in SelectionsIn(first, last))
+        {
+            var line = selection.Focus.Line;
+            if (line < first || line > last || (lines.Count > 0 && lines[^1] == line)) continue;
+            lines.Add(line);
+        }
+        return lines;
+    }
+
+    private static bool Reaches(CodeRange selection, int first, int last) =>
+        selection.End.Line >= first && selection.Start.Line <= last;
+
+    /// <summary>One selection's bands on lines <paramref name="first"/> to <paramref name="last"/>, added to
+    /// <paramref name="bands"/>.</summary>
+    private void BandsOf(CodeRange selection, int first, int last, List<Rect> bands)
+    {
+        if (selection.IsEmpty) return;
+        var start = selection.Start;
+        var end = selection.End;
         for (var line = Math.Max(start.Line, first); line <= Math.Min(end.Line, last); line++)
         {
             var from = line == start.Line ? start.Column : 0;
@@ -421,11 +571,18 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             var width = Grid.Measure is null ? (toAdvance - fromAdvance) * Grid.Cell.Width : toAdvance - fromAdvance;
             bands.Add(new Rect(XAtAdvance(fromAdvance), TopOf(line), width, Grid.Cell.Height));
         }
-        return bands;
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<Rect> Carets => [CaretRect(Caret)];
+    public IReadOnlyList<Rect> Carets
+    {
+        get
+        {
+            var carets = new List<Rect>(_others.Count + 1) { CaretRect(Caret) };
+            foreach (var other in _others) carets.Add(CaretRect(other.Selection.Focus));
+            return carets;
+        }
+    }
 
     private int _revealVersion;
 
@@ -554,6 +711,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             case CodeCommand.SortLinesDescending: return SortLines(descending: true);
             case CodeCommand.InsertLineAbove: return InsertLine(CodeDirection.Backward);
             case CodeCommand.InsertLineBelow: return InsertLine(CodeDirection.Forward);
+            case CodeCommand.AddCursorAbove: return AddCursor(CodeDirection.Backward);
+            case CodeCommand.AddCursorBelow: return AddCursor(CodeDirection.Forward);
+            case CodeCommand.AddNextOccurrence: return AddNextOccurrence();
+            case CodeCommand.SelectAllOccurrences: return SelectAllOccurrences();
+            case CodeCommand.RemoveSecondaryCursors: return DroppingAnUnshownList(RemoveSecondaryCursors());
             case CodeCommand.Copy:
                 if (clipboard is null) return false;
                 clipboard.Write(CopyText());
@@ -624,11 +786,12 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         CodeCommand.None or CodeCommand.ReleaseKeyboard => false,
         CodeCommand.NewLine or CodeCommand.Cut or CodeCommand.Paste => !ReadOnly,
         // A deletion has something to take: a selection, or text on its side of the caret. ⌘⌫ at column
-        // zero of a later line joins it to the line above, as Backspace does.
+        // zero of a later line joins it to the line above, as Backspace does. With several carets, one of
+        // them always has.
         CodeCommand.DeleteLeft or CodeCommand.DeleteWordLeft or CodeCommand.DeleteToLineStart =>
-            !ReadOnly && (!_selection.IsEmpty || Caret != CodePosition.Start),
+            !ReadOnly && (_others.Count > 0 || !_selection.IsEmpty || Caret != CodePosition.Start),
         CodeCommand.DeleteRight or CodeCommand.DeleteWordRight =>
-            !ReadOnly && (!_selection.IsEmpty || Caret != _document.End),
+            !ReadOnly && (_others.Count > 0 || !_selection.IsEmpty || Caret != _document.End),
         // A language with no line comment (JSON, plain text) has nothing to toggle.
         CodeCommand.ToggleLineComment => !ReadOnly && Rules.LineComment is not null,
         CodeCommand.Indent or CodeCommand.Outdent => !ReadOnly && !TabMovesFocus,
@@ -649,17 +812,25 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         CodeCommand.HoverHide => Hover.IsOpen,
         CodeCommand.ProblemNext or CodeCommand.ProblemPrevious => Diagnostics.Items.Count > 0,
         // A move needs a line to pass, a delete something to take, a join a line to join, and a sort
-        // lines out of order.
-        CodeCommand.MoveLinesUp => !ReadOnly && SelectedLines().First > 0,
-        CodeCommand.MoveLinesDown => !ReadOnly && _selection.End.Line < _document.LineCount - 1,
+        // lines out of order: the primary's, which is all a command with several carets is asked about.
+        CodeCommand.MoveLinesUp => !ReadOnly && (_others.Count > 0 || SelectedLines().First > 0),
+        CodeCommand.MoveLinesDown => !ReadOnly && (_others.Count > 0 || _selection.End.Line < _document.LineCount - 1),
         CodeCommand.CopyLinesUp or CodeCommand.CopyLinesDown or CodeCommand.InsertLineAbove
             or CodeCommand.InsertLineBelow => !ReadOnly,
         CodeCommand.DeleteLines => !ReadOnly && (_document.LineCount > 1 || _document.Line(0).Length > 0),
-        CodeCommand.JoinLines => !ReadOnly && CanJoin(),
-        CodeCommand.SortLinesAscending => !ReadOnly && !InOrder(descending: false),
-        CodeCommand.SortLinesDescending => !ReadOnly && !InOrder(descending: true),
+        CodeCommand.JoinLines => !ReadOnly && (_others.Count > 0 || CanJoin()),
+        CodeCommand.RemoveSecondaryCursors => _others.Count > 0,
+        CodeCommand.SortLinesAscending => !ReadOnly && (_others.Count > 0 || Unsorted(descending: false)),
+        CodeCommand.SortLinesDescending => !ReadOnly && (_others.Count > 0 || Unsorted(descending: true)),
         _ => true,
     };
+
+    /// <summary>Whether the primary selection's lines are out of order, for a sort to have something to do.</summary>
+    private bool Unsorted(bool descending)
+    {
+        var (first, last) = SelectedLines();
+        return !LinesInOrder(first, last, descending);
+    }
 
     /// <summary>Whether ⌃J has lines to join: the selection's, or the caret's line and a line after it.</summary>
     private bool CanJoin()
@@ -704,9 +875,10 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         for (var i = 0; i < starts.Length; i++)
         {
             var end = i + 1 < starts.Length ? starts[i + 1] : text.Length;
-            typed |= end - starts[i] == 1
-                ? Type(text[starts[i]])
-                : Edit(_selection, text.Substring(starts[i], end - starts[i]), true);
+            var element = text.Substring(starts[i], end - starts[i]);
+            typed |= element.Length == 1
+                ? Type(element[0])
+                : AtEveryCaret(() => Edit(_selection, element, true));
         }
         // A step of its OWN, after as well as before (SetComposition broke the run it began at):
         // the typing that follows a commit does not join it.
@@ -803,6 +975,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         var edit = new CodeEdit(ordered, removed, next.TextIn(new CodeRange(ordered.Start, caret)), before,
             _selection, false);
         Took(edit);
+        // A composition is made at the primary caret, and the other carets keep their text as it moves.
+        if (_others.Count > 0) CarryOthers(edit);
         Raise(new CodeChange([edit]));
         return new CodeRange(ordered.Start, caret);
     }
@@ -850,6 +1024,29 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 // it slid a diff's side sideways as the run opened.
                 if (OnPlaceholder(position)) return false;
                 var at = PositionAt(position);
+                var alt = (modifiers & KeyModifiers.Alt) != 0;
+                if (alt && clicks < 2 && (modifiers & KeyModifiers.Shift) != 0)
+                {
+                    // A column from the primary's anchor, as the press found it, to the cell pressed.
+                    var anchor = _selection.Anchor;
+                    _column = new CodeCaret(new CodeRange(anchor), AdvanceOf(anchor.Line, anchor.Column));
+                    SelectColumn(at.Line, AdvanceAtX(position.X));
+                    _dragging = true;
+                    return true;
+                }
+                if (alt && clicks < 2)
+                {
+                    ToggleCaret(at);
+                    _dragging = true;
+                    return true;
+                }
+                if (alt && clicks == 2)
+                {
+                    // ⌥ and a double press adds the word, as VS Code's does, where it left that word alone.
+                    _others.Add(new CodeCaret(_selection, _desiredAdvance));
+                    Placed(new CodeCaret(WordRange(at), -1));
+                    return true;
+                }
                 if (clicks >= 3) SelectLine(at.Line);
                 else if (clicks == 2) SelectWord(at);
                 else if ((modifiers & KeyModifiers.Shift) != 0) Selection = new CodeRange(_selection.Anchor, at);
@@ -862,13 +1059,20 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 // A drag that crosses a folded run does not enter it.
                 if (!_dragging || OnPlaceholder(position)) return false;
                 var at = PositionAt(position);
+                if (_column is not null)
+                {
+                    SelectColumn(at.Line, AdvanceAtX(position.X));
+                    return true;
+                }
                 if (at == _selection.Focus) return false;
-                Selection = new CodeRange(_selection.Anchor, at);
+                // The primary's focus follows the pointer, and a caret ⌥ added keeps the others.
+                Select(new CodeRange(_selection.Anchor, at), keepCell: false);
                 return true;
             }
             case PointerPhase.Up:
             case PointerPhase.Cancel:
                 _dragging = false;
+                _column = null;
                 return false;
             // A pointer passing over the code: the hover waits for it to rest on something to explain,
             // and the card it shows arrives through the hover's own event, not as a change of the model.
@@ -913,6 +1117,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         if (removed.Length == 0 && text.Length == 0) return false;
 
         var before = _selection;
+        var found = _step is null ? Selections : [];
         var next = _document.Replace(ordered, text, out var caret);
 
         _document = next;
@@ -929,10 +1134,22 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         if (_step is { } step) step.Add(edit);
         else
         {
-            History.Record([edit]);
+            // An edit made outside a command at every caret (an app's, a language server's) carries the
+            // other carets, as it carries a problem.
+            if (_others.Count > 0) CarryOthers(edit);
+            History.Record(new CodeStep([edit], found, Selections));
             Raise(new CodeChange([edit]));
         }
         return true;
+    }
+
+    /// <summary>The carets besides the primary where they stand once <paramref name="edit"/> is made, made one
+    /// where they meet.</summary>
+    private void CarryOthers(CodeEdit edit)
+    {
+        for (var i = 0; i < _others.Count; i++)
+            _others[i] = _others[i] with { Selection = edit.Carry(_others[i].Selection) };
+        Merge();
     }
 
     /// <summary>The edits of the command being made while it makes several as ONE undo step (#1031); null
@@ -953,7 +1170,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         if (_step is not null) return edits();
         var step = new List<CodeEdit>();
         var before = _selection;
+        var found = Selections;
         _step = step;
+        _stepMoved = false;
         try
         {
             // An edit made is a step made, whatever the edits after it answered: the document changed.
@@ -962,9 +1181,224 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         finally
         {
             _step = null;
-            History.Record(step);
+            History.Record(new CodeStep(step, found, Selections));
+            // A caret the command placed itself ends the run, once the step is recorded (see Select).
+            if (_stepMoved) History.Break();
             if (step.Count > 0) Raise(new CodeChange(Heard(step, before)));
+            else if (_stepMoved) SelectionChanged?.Invoke(_selection);
         }
+    }
+
+    /// <summary>Whether a command placed the primary caret itself while its step was being made.</summary>
+    private bool _stepMoved;
+
+    /// <summary>Where the next caret's text begins while a command runs at every caret, so a command that
+    /// reaches forward, a word deleted to the right, stops short of it; null otherwise.</summary>
+    private CodePosition? _ahead;
+
+    /// <summary>
+    /// Runs <paramref name="command"/>, written for the primary caret, at every caret (#1012): from the last
+    /// to the first, so each runs on text no caret before it in the document has moved yet, and as ONE undo
+    /// step. Each caret stands where its own run left it, carried through the edits the carets before it
+    /// made afterwards. With one caret, it is the command.
+    /// </summary>
+    private bool AtEveryCaret(Func<bool> command)
+    {
+        if (_others.Count == 0) return command();
+        var carets = CaretsInOrder(out var primary);
+        var units = new List<List<CodeCaret>>();
+        foreach (var caret in carets) units.Add(new List<CodeCaret> { caret });
+        return AtEvery(units, primary, 0, unit =>
+        {
+            _selection = units[unit][0].Selection;
+            _desiredAdvance = units[unit][0].Advance;
+            var made = command();
+            return (made, new List<CodeCaret> { new CodeCaret(_selection, _desiredAdvance) });
+        });
+    }
+
+    /// <summary>
+    /// Runs <paramref name="command"/>, a line command, once for each block of carets (#1012): the carets
+    /// whose lines, by <paramref name="lines"/>, share a line make one block, and so do the ones whose lines
+    /// only follow each other when <paramref name="touching"/>, as a line moved past another block's line
+    /// would move that block's text. The command is handed the block's carets, in document order, makes its
+    /// edits, and answers where each caret stands in the document it left, or null when it changed nothing.
+    /// From the last block to the first, as ONE undo step; with one caret, its lines are the one block.
+    /// </summary>
+    private bool AtEveryBlock(Func<CodeRange, (int First, int Last)> lines, bool touching,
+        Func<List<CodeCaret>, List<CodeCaret>?> command)
+    {
+        var carets = CaretsInOrder(out var primary);
+        var units = new List<List<CodeCaret>>();
+        var last = -1;
+        var primaryUnit = 0;
+        var primaryIndex = 0;
+        for (var i = 0; i < carets.Count; i++)
+        {
+            var taken = lines(carets[i].Selection);
+            if (units.Count > 0 && taken.First <= last + (touching ? 1 : 0)) units[^1].Add(carets[i]);
+            else units.Add(new List<CodeCaret> { carets[i] });
+            if (taken.Last > last) last = taken.Last;
+            if (i == primary)
+            {
+                primaryUnit = units.Count - 1;
+                primaryIndex = units[^1].Count - 1;
+            }
+        }
+        return AtEvery(units, primaryUnit, primaryIndex, unit =>
+        {
+            var left = command(units[unit]);
+            return left is null ? (false, units[unit]) : (true, left);
+        });
+    }
+
+    /// <summary>The lines a block of <paramref name="carets"/> takes, from the first caret's first line to the
+    /// furthest last line, as a line operation takes them (<see cref="SelectedLines"/>).</summary>
+    private static (int First, int Last) BlockLines(List<CodeCaret> carets)
+    {
+        var first = int.MaxValue;
+        var last = -1;
+        foreach (var caret in carets)
+        {
+            var taken = SelectedLinesOf(caret.Selection);
+            if (taken.First < first) first = taken.First;
+            if (taken.Last > last) last = taken.Last;
+        }
+        return (first, last);
+    }
+
+    /// <summary>Every caret, the primary among them, in document order, and the primary's place in it.</summary>
+    private List<CodeCaret> CaretsInOrder(out int primary)
+    {
+        var carets = new List<CodeCaret>(_others);
+        primary = 0;
+        while (primary < carets.Count && carets[primary].Selection.Start < _selection.Start) primary++;
+        carets.Insert(primary, new CodeCaret(_selection, _desiredAdvance));
+        return carets;
+    }
+
+    /// <summary>
+    /// Runs <paramref name="run"/> for each unit of carets, a caret or a block, from the last unit to the
+    /// first, as ONE undo step (#1012), and places the carets each run answered (see <see cref="Place"/>).
+    /// A unit whose text a later unit's edit already took is not run: its carets go where that edit left
+    /// their text, and are made one with the caret that took it, where running it again on the text the
+    /// other left took a word too many.
+    /// </summary>
+    private bool AtEvery(List<List<CodeCaret>> units, int primaryUnit, int primaryIndex,
+        Func<int, (bool Made, List<CodeCaret> Left)> run) =>
+        AsOneStep(() =>
+        {
+            // Cleared once the step has taken every caret as the ones it found: each unit runs as the only
+            // one, and an edit it makes carries no other caret.
+            _others.Clear();
+            var step = _step!;
+            var count = units.Count;
+            var left = new List<List<CodeCaret>>();
+            var from = new List<int>();
+            var to = new List<int>();
+            for (var unit = 0; unit < count; unit++)
+            {
+                left.Add(units[unit]);
+                from.Add(0);
+                to.Add(0);
+            }
+            var any = false;
+            var reached = false;
+            var earliest = CodePosition.Start;
+            try
+            {
+                for (var unit = count - 1; unit >= 0; unit--)
+                {
+                    from[unit] = step.Count;
+                    to[unit] = step.Count;
+                    var carets = units[unit];
+                    if (reached && earliest < carets[^1].Selection.End)
+                    {
+                        var carried = new List<CodeCaret>();
+                        foreach (var caret in carets)
+                        {
+                            var range = caret.Selection;
+                            foreach (var edit in step) range = edit.Carry(range);
+                            carried.Add(new CodeCaret(range, -1));
+                        }
+                        left[unit] = carried;
+                        continue;
+                    }
+                    _ahead = unit + 1 < count ? left[unit + 1][0].Selection.Start : null;
+                    var (made, placed) = run(unit);
+                    any = any || made;
+                    left[unit] = placed;
+                    to[unit] = step.Count;
+                    for (var i = from[unit]; i < to[unit]; i++)
+                    {
+                        if (reached && step[i].Range.Start >= earliest) continue;
+                        earliest = step[i].Range.Start;
+                        reached = true;
+                    }
+                }
+            }
+            finally
+            {
+                // Never left behind for a command at one caret, whatever a run threw.
+                _ahead = null;
+            }
+            Place(left, from, to, primaryUnit, primaryIndex);
+            return any;
+        });
+
+    /// <summary>
+    /// Places the carets a command left at every unit, <paramref name="left"/>, each in the document as the
+    /// units after it left it: carried through the edits the units before it made, which all lie before it,
+    /// in one pass. A unit's edits move what follows them by a number of lines, and the rest of their last
+    /// line by a number of columns; composed from the first unit on, that is one line, one line count and
+    /// one column count, so ⇧⌘L over thousands of words places them all in time linear in their number.
+    /// Then the carets that meet are made one.
+    /// </summary>
+    private void Place(List<List<CodeCaret>> left, List<int> from, List<int> to, int primaryUnit, int primaryIndex)
+    {
+        var step = _step!;
+        var placed = new List<CodeCaret>();
+        var primary = default(CodeCaret);
+        // What the units before this one did, as a map from the document this unit left to the one the
+        // command leaves, for whatever follows them: lines move by `lines`, and the rest of line `shifted`
+        // by `columns`.
+        var shifted = -1;
+        var lines = 0;
+        var columns = 0;
+        for (var unit = 0; unit < left.Count; unit++)
+        {
+            var carets = left[unit];
+            for (var i = 0; i < carets.Count; i++)
+            {
+                var anchor = carets[i].Selection.Anchor;
+                var focus = carets[i].Selection.Focus;
+                var caret = carets[i] with
+                {
+                    Selection = new CodeRange(
+                        new CodePosition(anchor.Line + lines, anchor.Column + (anchor.Line == shifted ? columns : 0)),
+                        new CodePosition(focus.Line + lines, focus.Column + (focus.Line == shifted ? columns : 0))),
+                };
+                // A block made one of its carets answers fewer carets than it was handed: the primary is
+                // then the first it answered.
+                if (unit == primaryUnit && i == (primaryIndex < carets.Count ? primaryIndex : 0)) primary = caret;
+                else placed.Add(caret);
+            }
+            if (unit + 1 == left.Count) break;
+            // Where this unit's own edits take the start of the next unit's text.
+            var probe = left[unit + 1][0].Selection.Start;
+            var image = probe;
+            for (var i = from[unit]; i < to[unit]; i++) image = step[i].Carry(new CodeRange(image)).Start;
+            columns = image.Column - probe.Column + (image.Line == shifted ? columns : 0);
+            lines += image.Line - probe.Line;
+            shifted = probe.Line;
+        }
+
+        // Held to the document the command left, and to its text elements' edges, as an edit's selection is.
+        _selection = OnElementEdges(primary.Selection);
+        _desiredAdvance = primary.Advance;
+        _others.Clear();
+        foreach (var caret in placed) _others.Add(caret with { Selection = OnElementEdges(caret.Selection) });
+        Merge();
     }
 
     /// <summary>The changes made and not heard yet, in the order made, while <see cref="Changed"/> is being
@@ -1010,15 +1444,18 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         return heard;
     }
 
-    /// <summary>Types text at the caret, replacing the selection — including a paste.</summary>
-    public bool Insert(string text) => Apply(_selection, text);
+    /// <summary>Types text at every caret, replacing each selection — including a paste.</summary>
+    public bool Insert(string text) => AtEveryCaret(() => Edit(_selection, text, false));
 
     /// <summary>
-    /// Types one character, with the pairing behaviours a code editor is expected to have: an
-    /// opening bracket auto-closes, a closing bracket typed over its own auto-inserted twin steps
+    /// Types one character at every caret, with the pairing behaviours a code editor is expected to have:
+    /// an opening bracket auto-closes, a closing bracket typed over its own auto-inserted twin steps
     /// over it instead of doubling it, and a quote around a selection wraps rather than replaces.
     /// </summary>
-    public bool Type(char c)
+    public bool Type(char c) => AtEveryCaret(() => TypeAtCaret(c));
+
+    /// <summary><see cref="Type"/> at the primary caret alone.</summary>
+    private bool TypeAtCaret(char c)
     {
         if (ReadOnly) return false;
         CodeLanguageRules rules = Rules;
@@ -1048,7 +1485,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         {
             if (c == close && after == close)
             {
-                Selection = new CodeRange(Caret with { Column = Caret.Column + 1 });
+                Select(new CodeRange(Caret with { Column = Caret.Column + 1 }), keepCell: false);
                 return true;
             }
         }
@@ -1056,7 +1493,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         {
             if (c == quote && after == quote)
             {
-                Selection = new CodeRange(Caret with { Column = Caret.Column + 1 });
+                Select(new CodeRange(Caret with { Column = Caret.Column + 1 }), keepCell: false);
                 return true;
             }
         }
@@ -1068,7 +1505,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             if (after == '\0' || char.IsWhiteSpace(after) || rules.Brackets.Any(p => p.Close == after))
             {
                 if (!Edit(_selection, $"{open}{close}", true)) return false;
-                Selection = new CodeRange(Caret with { Column = Caret.Column - 1 });
+                Select(new CodeRange(Caret with { Column = Caret.Column - 1 }), keepCell: false);
                 return true;
             }
         }
@@ -1081,7 +1518,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             if (after == '\0' || char.IsWhiteSpace(after))
             {
                 if (!Edit(_selection, $"{quote}{quote}", true)) return false;
-                Selection = new CodeRange(Caret with { Column = Caret.Column - 1 });
+                Select(new CodeRange(Caret with { Column = Caret.Column - 1 }), keepCell: false);
                 return true;
             }
         }
@@ -1102,11 +1539,14 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     }
 
     /// <summary>
-    /// Enter, with the indentation a reader expects: the new line inherits the current one's, and
-    /// gains a level when the line ends on something that opens one. Between a pair — the caret
-    /// sitting inside <c>{}</c> — it opens the block and puts the closing brace on its own line.
+    /// Enter, at every caret, with the indentation a reader expects: the new line inherits the current
+    /// one's, and gains a level when the line ends on something that opens one. Between a pair — the
+    /// caret sitting inside <c>{}</c> — it opens the block and puts the closing brace on its own line.
     /// </summary>
-    public bool InsertNewLine()
+    public bool InsertNewLine() => AtEveryCaret(NewLineAtCaret);
+
+    /// <summary><see cref="InsertNewLine"/> at the primary caret alone.</summary>
+    private bool NewLineAtCaret()
     {
         if (ReadOnly) return false;
         CodeLanguageRules rules = Rules;
@@ -1122,11 +1562,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         if (opens && closesNext)
         {
             // Between the pair: an empty indented line, and the closer drops below it.
-            if (!Apply(_selection, $"\n{indent}{step}\n{indent}")) return false;
-            Selection = new CodeRange(new CodePosition(Caret.Line - 1, indent.Length + step.Length));
+            if (!Edit(_selection, $"\n{indent}{step}\n{indent}", false)) return false;
+            Select(new CodeRange(new CodePosition(Caret.Line - 1, indent.Length + step.Length)), keepCell: false);
             return true;
         }
-        return Apply(_selection, "\n" + indent + (opens ? step : string.Empty));
+        return Edit(_selection, "\n" + indent + (opens ? step : string.Empty), false);
     }
 
     /// <summary>One step of indentation, as Tab writes it: the language's spaces, or a tab.</summary>
@@ -1140,24 +1580,28 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         return trimmed.Length > 0 && Rules.IndentAfter.Contains(trimmed[^1]);
     }
 
-    /// <summary>Backspace: the selection if there is one, else the character before the caret —
-    /// and a whole indent step when the caret sits in leading whitespace, because that is what put
+    /// <summary>Backspace, at every caret: the selection if there is one, else the character before the
+    /// caret — and a whole indent step when the caret sits in leading whitespace, because that is what put
     /// it there.</summary>
-    public bool DeleteBackward(CodeMotion motion = CodeMotion.Character)
+    public bool DeleteBackward(CodeMotion motion = CodeMotion.Character) =>
+        AtEveryCaret(() => DeleteBackwardAtCaret(motion));
+
+    /// <summary><see cref="DeleteBackward"/> at the primary caret alone.</summary>
+    private bool DeleteBackwardAtCaret(CodeMotion motion)
     {
         if (ReadOnly) return false;
-        if (!_selection.IsEmpty) return Apply(_selection, string.Empty);
+        if (!_selection.IsEmpty) return Edit(_selection, string.Empty, false);
 
         if (motion == CodeMotion.Word)
         {
             var start = MoveTo(Caret, CodeMotion.Word, CodeDirection.Backward);
-            return Apply(new CodeRange(start, Caret), string.Empty);
+            return Edit(new CodeRange(start, Caret), string.Empty, false);
         }
 
         // Everything left of the caret on its line (⌘⌫). At column zero there is nothing to its left
         // on this line, so it joins the line above, as a plain Backspace would.
         if (motion == CodeMotion.LineBoundary && Caret.Column > 0)
-            return Apply(new CodeRange(Caret with { Column = 0 }, Caret), string.Empty);
+            return Edit(new CodeRange(Caret with { Column = 0 }, Caret), string.Empty, false);
 
         var line = _document.Line(Caret.Line);
         var indent = _document.IndentOf(Caret.Line).Length;
@@ -1168,7 +1612,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             var cells = CellsOf(Caret.Line);
             var cell = cells.CellOf(Caret.Column);
             var stop = cell % width == 0 ? cell - width : cell - cell % width;
-            return Apply(new CodeRange(Caret with { Column = cells.ColumnAt(stop) }, Caret), string.Empty);
+            return Edit(new CodeRange(Caret with { Column = cells.ColumnAt(stop) }, Caret), string.Empty, false);
         }
 
         // Deleting the opening half of an auto-inserted pair takes the closing half with it.
@@ -1180,25 +1624,33 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 || (Rules.Quotes.Contains(before) && before == after);
             if (paired)
             {
-                return Apply(new CodeRange(Caret with { Column = Caret.Column - 1 },
-                    Caret with { Column = Caret.Column + 1 }), string.Empty);
+                return Edit(new CodeRange(Caret with { Column = Caret.Column - 1 },
+                    Caret with { Column = Caret.Column + 1 }), string.Empty, false);
             }
         }
 
         var previous = Before(Caret);
-        return previous != Caret && Apply(new CodeRange(previous, Caret), string.Empty);
+        return previous != Caret && Edit(new CodeRange(previous, Caret), string.Empty, false);
     }
 
-    /// <summary>Delete forward — the key labelled Delete on a full keyboard, fn+Backspace on a Mac.</summary>
-    public bool DeleteForward(CodeMotion motion = CodeMotion.Character)
+    /// <summary>Delete forward, at every caret — the key labelled Delete on a full keyboard, fn+Backspace on
+    /// a Mac.</summary>
+    public bool DeleteForward(CodeMotion motion = CodeMotion.Character) =>
+        AtEveryCaret(() => DeleteForwardAtCaret(motion));
+
+    /// <summary><see cref="DeleteForward"/> at the primary caret alone. With several carets it stops where the
+    /// next caret's text begins, as VS Code keeps the first of two deletions that would overlap: a word
+    /// deleted to the right otherwise ran on into the text the next caret's own deletion had joined to it.</summary>
+    private bool DeleteForwardAtCaret(CodeMotion motion)
     {
         if (ReadOnly) return false;
-        if (!_selection.IsEmpty) return Apply(_selection, string.Empty);
+        if (!_selection.IsEmpty) return Edit(_selection, string.Empty, false);
 
         var to = motion == CodeMotion.Word
             ? MoveTo(Caret, CodeMotion.Word, CodeDirection.Forward)
             : After(Caret);
-        return to != Caret && Apply(new CodeRange(Caret, to), string.Empty);
+        if (_ahead is { } ahead && to > ahead) to = ahead < Caret ? Caret : ahead;
+        return to != Caret && Edit(new CodeRange(Caret, to), string.Empty, false);
     }
 
     // ---- indentation and comments -------------------------------------------------------------
@@ -1206,55 +1658,81 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <summary>
     /// Tab. With a selection it indents every line it touches (that is what Tab means in an
     /// editor); with a caret it inserts one step — to the NEXT tab stop, not a fixed number of
-    /// spaces, so a column stays a column.
+    /// spaces, so a column stays a column. With several carets, a step at each while none selects
+    /// anything, and every caret's lines indented once any does.
     /// </summary>
     public bool Indent()
     {
         if (ReadOnly) return false;
-        if (_selection.IsEmpty)
-        {
-            if (!Rules.InsertSpaces) return Apply(_selection, "\t");
-            // The stop is ON SCREEN: counted in columns, a caret after a tab or a wide character
-            // stopped short of it or ran past it.
-            var width = Rules.IndentWidth;
-            var cell = CellsOf(Caret.Line).CellOf(Caret.Column);
-            return Apply(_selection, new string(' ', width - cell % width));
-        }
-        return ShiftLines(add: true);
+        if (!_selection.IsEmpty) return ShiftLines(add: true);
+        foreach (var other in _others)
+            if (!other.Selection.IsEmpty) return ShiftLines(add: true);
+        return AtEveryCaret(IndentAtCaret);
+    }
+
+    /// <summary>One step of indentation typed at the primary caret alone.</summary>
+    private bool IndentAtCaret()
+    {
+        if (!Rules.InsertSpaces) return Edit(_selection, "\t", false);
+        // The stop is ON SCREEN: counted in columns, a caret after a tab or a wide character
+        // stopped short of it or ran past it.
+        var width = Rules.IndentWidth;
+        var cell = CellsOf(Caret.Line).CellOf(Caret.Column);
+        return Edit(_selection, new string(' ', width - cell % width), false);
     }
 
     /// <summary>Shift+Tab: takes one step off every selected line, and off the caret's line when
     /// there is no selection.</summary>
     public bool Outdent() => !ReadOnly && ShiftLines(add: false);
 
+    /// <summary>
+    /// Tab and Shift+Tab over lines: every caret's lines gain or lose one step at column 0, each block of
+    /// lines once, an edit a line, so a problem on a line travels with its text, where one replacement of
+    /// every line took it to the replacement's ends. Claimed whatever it changed, so Shift+Tab with nothing
+    /// to take off stays in the editor.
+    /// </summary>
     private bool ShiftLines(bool add)
     {
-        var step = IndentStep;
-        var (first, last) = SelectedLines();
+        AtEveryBlock(SelectedLinesOf, touching: false, carets => ShiftBlock(carets, add));
+        return true;
+    }
 
-        // What each line gains (Tab) or loses (Shift+Tab), all of it at column 0: the selection's
-        // two ends move by their OWN line's change, which is what keeps it what it was.
-        var lines = new List<string>();
+    /// <summary>One block's lines shifted: what each line gains (Tab) or loses (Shift+Tab), all of it at
+    /// column 0, and each selection's two ends moved by their OWN line's change, which is what keeps it what
+    /// it was. Null when no line changes.</summary>
+    private List<CodeCaret>? ShiftBlock(List<CodeCaret> carets, bool add)
+    {
+        var (first, last) = BlockLines(carets);
+        var step = IndentStep;
         var changes = new List<int>();
+        var changed = false;
         for (var line = first; line <= last; line++)
         {
             var text = _document.Line(line);
             var change = add ? (text.Length == 0 ? 0 : step.Length) : StepOff(text);
-            lines.Add(add ? (change == 0 ? text : step + text) : text[change..]);
             changes.Add(change);
+            changed = changed || change > 0;
         }
-
-        // Read BEFORE the edit: the edit leaves the caret at its end, which is what the selection
-        // used to be rebuilt from.
-        var anchor = _selection.Anchor;
-        var focus = _selection.Focus;
-        var range = new CodeRange(new CodePosition(first, 0),
-            new CodePosition(last, _document.Line(last).Length));
-        if (!Apply(range, string.Join("\n", lines))) return false;
-
-        Selection = new CodeRange(ShiftedBy(anchor, first, last, changes, add),
-            ShiftedBy(focus, first, last, changes, add));
-        return true;
+        if (!changed) return null;
+        // The last line first, so each edit is made on lines no edit before it moved.
+        for (var line = last; line >= first; line--)
+        {
+            var change = changes[line - first];
+            if (change == 0) continue;
+            var start = new CodePosition(line, 0);
+            if (add) Edit(new CodeRange(start), step, false);
+            else Edit(new CodeRange(start, new CodePosition(line, change)), string.Empty, false);
+        }
+        var left = new List<CodeCaret>();
+        foreach (var caret in carets)
+        {
+            left.Add(caret with
+            {
+                Selection = new CodeRange(ShiftedBy(caret.Selection.Anchor, first, last, changes, add),
+                    ShiftedBy(caret.Selection.Focus, first, last, changes, add)),
+            });
+        }
+        return left;
     }
 
     /// <summary>Where a selection's end goes when the lines it may be on gained or lost
@@ -1289,15 +1767,23 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     }
 
     /// <summary>
-    /// ⌘/ — comments the selected lines, or un-comments them when they are ALL commented already.
-    /// A language with no line comment does nothing, which is the only correct answer for JSON.
+    /// ⌘/ — comments every caret's lines, or un-comments them when they are ALL commented already, each
+    /// block of lines deciding for itself, as each of VS Code's cursors does. An edit a line, so a problem
+    /// travels with its text. A language with no line comment does nothing, which is the only correct
+    /// answer for JSON.
     /// </summary>
     public bool ToggleLineComment()
     {
         if (ReadOnly || Rules.LineComment is not { } marker) return false;
+        AtEveryBlock(SelectedLinesOf, touching: false, carets => CommentBlock(carets, marker));
+        return true;
+    }
 
-        var (first, last) = SelectedLines();
-
+    /// <summary>One block's lines commented, or un-commented when every one of them that holds text is.
+    /// Null when no line changes.</summary>
+    private List<CodeCaret>? CommentBlock(List<CodeCaret> carets, string marker)
+    {
+        var (first, last) = BlockLines(carets);
         var allCommented = true;
         for (var line = first; line <= last; line++)
         {
@@ -1306,9 +1792,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             if (!text.StartsWith(marker, StringComparison.Ordinal)) { allCommented = false; break; }
         }
 
-        // Each line's change as (where, how much went, how much came), so the selection's ends can
-        // follow their own line's markers instead of collapsing to the caret the edit leaves.
-        var lines = new List<string>();
+        // Each line's change as (where, how much went, how much came), so the selections' ends can follow
+        // their own line's markers instead of collapsing to the caret an edit leaves.
         var ats = new List<int>();
         var removals = new List<int>();
         var insertions = new List<int>();
@@ -1320,7 +1805,6 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 var at = text.IndexOf(marker, StringComparison.Ordinal);
                 if (at < 0)
                 {
-                    lines.Add(text);
                     ats.Add(0);
                     removals.Add(0);
                     insertions.Add(0);
@@ -1328,30 +1812,40 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 }
                 var after = at + marker.Length;
                 if (after < text.Length && text[after] == ' ') after++;
-                lines.Add(text[..at] + text[after..]);
                 ats.Add(at);
                 removals.Add(after - at);
                 insertions.Add(0);
             }
             else
             {
-                var indent = _document.IndentOf(line);
-                lines.Add(text.Length == 0 ? marker + " " : indent + marker + " " + text[indent.Length..]);
-                ats.Add(text.Length == 0 ? 0 : indent.Length);
+                ats.Add(text.Length == 0 ? 0 : _document.IndentOf(line).Length);
                 removals.Add(0);
                 insertions.Add(marker.Length + 1);
             }
         }
 
-        var anchor = _selection.Anchor;
-        var focus = _selection.Focus;
-        var range = new CodeRange(new CodePosition(first, 0),
-            new CodePosition(last, _document.Line(last).Length));
-        if (!Apply(range, string.Join("\n", lines))) return false;
-
-        Selection = new CodeRange(Commented(anchor, first, last, ats, removals, insertions),
-            Commented(focus, first, last, ats, removals, insertions));
-        return true;
+        var changed = false;
+        // The last line first, so each edit is made on lines no edit before it moved.
+        for (var line = last; line >= first; line--)
+        {
+            var index = line - first;
+            if (removals[index] == 0 && insertions[index] == 0) continue;
+            changed = true;
+            var at = new CodePosition(line, ats[index]);
+            Edit(new CodeRange(at, at with { Column = ats[index] + removals[index] }),
+                insertions[index] > 0 ? marker + " " : string.Empty, false);
+        }
+        if (!changed) return null;
+        var left = new List<CodeCaret>();
+        foreach (var caret in carets)
+        {
+            left.Add(caret with
+            {
+                Selection = new CodeRange(Commented(caret.Selection.Anchor, first, last, ats, removals, insertions),
+                    Commented(caret.Selection.Focus, first, last, ats, removals, insertions)),
+            });
+        }
+        return left;
     }
 
     /// <summary>Where a selection's end goes when the lines it may be on had their markers put in
@@ -1369,15 +1863,24 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
     /// <summary>
     /// Moves the caret, optionally EXTENDING the selection — the one method behind every arrow,
-    /// Home, End, PageUp and their shifted twins.
+    /// Home, End, PageUp and their shifted twins. Every caret moves, each by its own line and the cell it
+    /// aims at, and the carets that meet are made one.
     /// </summary>
-    public void Move(CodeMotion motion, CodeDirection direction, bool extend = false, int pageLines = 20)
+    public void Move(CodeMotion motion, CodeDirection direction, bool extend = false, int pageLines = 20) =>
+        AtEveryCaret(() =>
+        {
+            MoveCaret(motion, direction, extend, pageLines);
+            return true;
+        });
+
+    /// <summary><see cref="Move"/> for the primary caret alone.</summary>
+    private void MoveCaret(CodeMotion motion, CodeDirection direction, bool extend, int pageLines)
     {
         // A plain arrow with a selection collapses to its edge rather than moving from the caret —
         // pressing → with text selected puts you after it, not one character further on.
         if (!extend && !_selection.IsEmpty && motion == CodeMotion.Character)
         {
-            Selection = new CodeRange(direction == CodeDirection.Forward ? _selection.End : _selection.Start);
+            Select(new CodeRange(direction == CodeDirection.Forward ? _selection.End : _selection.Start), keepCell: false);
             return;
         }
 
@@ -1499,16 +2002,15 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// The word at <paramref name="at"/> — a double click — widened to whole text elements, so the
     /// accent written as a mark after the word's last letter is in it.
     /// </summary>
-    public void SelectWord(CodePosition at)
+    public void SelectWord(CodePosition at) => Selection = WordRange(at);
+
+    /// <summary>The word at <paramref name="at"/>, widened to whole text elements; empty on an empty line.</summary>
+    private CodeRange WordRange(CodePosition at)
     {
         var word = _document.WordAt(at);
-        if (word.IsEmpty)
-        {
-            Selection = word;
-            return;
-        }
+        if (word.IsEmpty) return word;
         var cells = CellsOf(word.Start.Line);
-        Selection = new CodeRange(
+        return new CodeRange(
             word.Start with { Column = cells.ElementAt(cells.IndexOf(word.Start.Column)).Start },
             word.End with { Column = cells.Next(word.End.Column - 1) });
     }
@@ -1524,9 +2026,13 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     }
 
     /// <summary>What a copy puts on the clipboard: the selection, or the whole line when there is
-    /// none — copying with nothing selected takes the line, in every editor worth using.</summary>
+    /// none — copying with nothing selected takes the line, in every editor worth using. With several
+    /// carets, every selection's text, a line each, or every caret's line when none selects anything,
+    /// as VS Code copies them (#1012); a paste at as many carets gives each its own again.</summary>
     public string CopyText()
     {
+        if (_others.Count > 0) return CopyEvery();
+        _copied = null;
         if (!_selection.IsEmpty)
         {
             _wholeLineCopy = null;
@@ -1537,12 +2043,41 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         return line;
     }
 
-    /// <summary>Cut is copy, then delete — and with no selection it takes the whole line.</summary>
+    /// <summary>What every caret copies, in document order, remembered for a paste at as many carets.</summary>
+    private string CopyEvery()
+    {
+        var carets = CaretsInOrder(out _);
+        var lines = true;
+        foreach (var caret in carets)
+            if (!caret.Selection.IsEmpty) lines = false;
+        // A piece for every caret, two carets on one line taking it twice, so a paste at as many carets
+        // gives each its own: taken once, the pieces were fewer than the carets, and the lines went in
+        // whole, in the middle of every caret's line.
+        var pieces = new List<string>();
+        foreach (var caret in carets)
+            pieces.Add(lines ? _document.Line(caret.Selection.Focus.Line) : _document.TextIn(caret.Selection));
+        var text = lines ? string.Join("\n", pieces) + "\n" : string.Join("\n", pieces);
+        _copied = pieces;
+        _copiedText = text;
+        _wholeLineCopy = lines ? text : null;
+        return text;
+    }
+
+    /// <summary>The pieces the last copy with several carets took, one for each caret, and the text it put on
+    /// the clipboard; null after any other copy.</summary>
+    private List<string>? _copied;
+    private string _copiedText = "";
+
+    /// <summary>Cut is copy, then delete — and with no selection it takes the whole line. With several carets,
+    /// every caret cuts its own, as one undo step.</summary>
     public string Cut()
     {
         var text = CopyText();
-        if (_selection.IsEmpty) SelectLine(Caret.Line);
-        Apply(_selection, string.Empty);
+        AtEveryCaret(() =>
+        {
+            if (_selection.IsEmpty) SelectLine(Caret.Line);
+            return Edit(_selection, string.Empty, false);
+        });
         return text;
     }
 
@@ -1564,6 +2099,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         if (ReadOnly || text.Length == 0) return false;
         TabMovesFocus = false;
         EndComposition();
+        if (_others.Count > 0) return PasteEvery(text);
         var normalized = CodeDocument.FromText(text).Text;
         if (_selection.IsEmpty && _wholeLineCopy is { } line && normalized == line)
         {
@@ -1576,6 +2112,310 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         return Insert(text);
     }
 
+    /// <summary>
+    /// A paste at several carets, as VS Code spreads one (#1012): what a copy at as many carets took goes back
+    /// a piece to each, and so does a text with a line for each caret, its one last line break aside; any
+    /// other text goes whole to every caret. Whole lines a copy took with nothing selected go in as lines of
+    /// their own, each above its caret's line.
+    /// </summary>
+    private bool PasteEvery(string text)
+    {
+        var carets = CaretsInOrder(out var primary);
+        var normalized = CodeDocument.FromText(text).Text;
+        List<string>? pieces = null;
+        if (_copied is { } copied && normalized == _copiedText && copied.Count == carets.Count) pieces = copied;
+        else
+        {
+            var body = normalized.EndsWith('\n') ? normalized[..^1] : normalized;
+            var lines = CodeDocument.FromText(body).Lines;
+            if (lines.Count == carets.Count)
+            {
+                pieces = [];
+                foreach (var line in lines) pieces.Add(line);
+            }
+        }
+        if (pieces is not null && _wholeLineCopy is { } whole && normalized == whole)
+        {
+            // Whole lines go in above each caret's line, the lines of the carets one line holds in one edit:
+            // made a caret at a time, the first one's line pushed the next caret on that line along, and it
+            // read as a caret whose text was taken.
+            var piece = new Dictionary<CodeRange, string>();
+            for (var i = 0; i < carets.Count; i++) piece[carets[i].Selection] = pieces[i];
+            return AtEveryBlock(SelectedLinesOf, touching: false, block =>
+            {
+                var first = BlockLines(block).First;
+                var text = new StringBuilder();
+                foreach (var caret in block) text.Append(piece[caret.Selection]).Append('\n');
+                Edit(new CodeRange(new CodePosition(first, 0)), text.ToString(), false);
+                return MovedBy(block, block.Count);
+            });
+        }
+        var units = new List<List<CodeCaret>>();
+        foreach (var caret in carets) units.Add(new List<CodeCaret> { caret });
+        return AtEvery(units, primary, 0, unit =>
+        {
+            _selection = units[unit][0].Selection;
+            _desiredAdvance = -1;
+            var text = pieces is null ? normalized : pieces[unit];
+            return (Edit(_selection, text, false), new List<CodeCaret> { new CodeCaret(_selection, -1) });
+        });
+    }
+
+    /// <summary>
+    /// An accepted completion at every caret, as VS Code applies one suggestion at each of its cursors
+    /// (#1012): before each caret, as many characters as the entry replaces before the primary, and after
+    /// it as many as it replaces after, on the caret's own line. A caret that already holds the text only
+    /// steps past it.
+    /// </summary>
+    internal bool ReplaceAroundEveryCaret(int before, int after, string text) =>
+        AtEveryCaret(() =>
+        {
+            var caret = Caret;
+            var line = _document.Line(caret.Line);
+            var range = new CodeRange(caret with { Column = Math.Max(0, caret.Column - before) },
+                caret with { Column = Math.Min(line.Length, caret.Column + after) });
+            if (_document.TextIn(range) != text) return Edit(range, text, false);
+            Select(new CodeRange(range.End), keepCell: false);
+            return true;
+        });
+
+    /// <summary>Whether there are carets besides the primary: what a completion asks before it accepts at
+    /// them all.</summary>
+    internal bool HasOtherCarets => _others.Count > 0;
+
+    // ---- carets (#1012) -------------------------------------------------------------------------
+
+    /// <summary>
+    /// ⌥⌘↑ and ⌥⌘↓: adds a caret on the line above every caret (<see cref="CodeDirection.Backward"/>) or below
+    /// it, at the cell it aims at, as VS Code adds one for each of its cursors; a caret that would stand where
+    /// one is, is made one with it. The caret added furthest that way is the primary, the one brought into
+    /// view and the one the next press goes on from, as Rider's primary caret is the one placed last. False
+    /// when none could be added: every caret on the first line going up, or on the last going down.
+    /// </summary>
+    public bool AddCursor(CodeDirection direction)
+    {
+        var carets = CaretsInOrder(out _);
+        var up = direction == CodeDirection.Backward;
+        var added = new List<CodeCaret>();
+        foreach (var caret in carets)
+        {
+            var from = caret.Selection.Focus;
+            var line = VisibleLineFrom(from.Line, up ? -1 : 1);
+            if (line == from.Line) continue;
+            var advance = caret.Advance >= 0 ? caret.Advance : AdvanceOf(from.Line, from.Column);
+            added.Add(new CodeCaret(new CodeRange(new CodePosition(line, ColumnAtAdvance(line, advance))), advance));
+        }
+        if (added.Count == 0) return false;
+        var primary = up ? added[0] : added[^1];
+        _others.Clear();
+        foreach (var caret in carets) _others.Add(caret);
+        foreach (var caret in added)
+            if (caret != primary) _others.Add(caret);
+        Placed(primary);
+        return true;
+    }
+
+    /// <summary>The text ⌘D found by expanding an empty caret to its word, and so searches whole and by its
+    /// case; null once the primary's selection is anything else.</summary>
+    private string? _occurrence;
+
+    /// <summary>
+    /// ⌘D: with the primary empty, selects the word at every empty caret; then each press adds the next
+    /// occurrence of the primary's text after the primary, wrapping at the document's end, as the new primary.
+    /// A word found from a caret is searched whole and by its case, as VS Code searches it, and a selection
+    /// made otherwise by its text, its case kept. Claimed while there is a word or a selection to search,
+    /// though every occurrence is already selected, so the key never reaches a browser's bookmarks.
+    /// </summary>
+    public bool AddNextOccurrence()
+    {
+        if (_selection.IsEmpty)
+        {
+            var carets = CaretsInOrder(out var at);
+            var words = new List<CodeCaret>();
+            foreach (var caret in carets)
+                words.Add(caret.Selection.IsEmpty ? new CodeCaret(WordRange(caret.Selection.Focus), -1) : caret);
+            var primary = words[at];
+            if (primary.Selection.IsEmpty) return false;
+            _others.Clear();
+            for (var i = 0; i < words.Count; i++)
+                if (i != at) _others.Add(words[i]);
+            Placed(primary);
+            _occurrence = _document.TextIn(primary.Selection);
+            return true;
+        }
+        var needle = _document.TextIn(_selection);
+        var whole = _occurrence == needle;
+        var matches = Occurrences(needle, whole);
+        var taken = new HashSet<CodeRange>();
+        foreach (var selection in Selections) taken.Add(new CodeRange(selection.Start, selection.End));
+        CodeRange? next = null;
+        foreach (var match in matches)
+        {
+            if (match.Start < _selection.End || taken.Contains(match)) continue;
+            next = match;
+            break;
+        }
+        if (next is null)
+        {
+            foreach (var match in matches)
+            {
+                if (taken.Contains(match)) continue;
+                next = match;
+                break;
+            }
+        }
+        if (next is not { } found) return true;
+        _others.Add(new CodeCaret(_selection, _desiredAdvance));
+        Placed(new CodeCaret(found, -1));
+        _occurrence = whole ? needle : null;
+        return true;
+    }
+
+    /// <summary>
+    /// ⇧⌘L: selects every occurrence of the primary's text, or of the word at the primary caret, searched as
+    /// ⌘D searches it, the one the primary stood in the primary. False with no word at the caret.
+    /// </summary>
+    public bool SelectAllOccurrences()
+    {
+        var target = _selection.IsEmpty ? WordRange(Caret) : new CodeRange(_selection.Start, _selection.End);
+        if (target.IsEmpty) return false;
+        var needle = _document.TextIn(target);
+        var whole = _selection.IsEmpty || _occurrence == needle;
+        var matches = Occurrences(needle, whole);
+        if (matches.Count == 0) return false;
+        var primary = 0;
+        for (var i = 0; i < matches.Count; i++)
+        {
+            if (matches[i] != target) continue;
+            primary = i;
+            break;
+        }
+        _others.Clear();
+        for (var i = 0; i < matches.Count; i++)
+            if (i != primary) _others.Add(new CodeCaret(matches[i], -1));
+        Placed(new CodeCaret(matches[primary], -1));
+        _occurrence = whole ? needle : null;
+        return true;
+    }
+
+    /// <summary>Every occurrence of <paramref name="needle"/>, by its case, in document order; when
+    /// <paramref name="whole"/>, only those that cut no word at either edge.</summary>
+    private List<CodeRange> Occurrences(string needle, bool whole)
+    {
+        var occurrences = new List<CodeRange>();
+        foreach (var match in FindAll(needle, matchCase: true))
+            if (!whole || Whole(match)) occurrences.Add(match);
+        return occurrences;
+    }
+
+    /// <summary>Whether <paramref name="match"/>, on one line, cuts no word at either of its edges.</summary>
+    private bool Whole(CodeRange match)
+    {
+        var line = _document.Line(match.Start.Line);
+        var start = match.Start.Column;
+        var end = match.End.Column;
+        var cutsStart = start > 0 && start < line.Length && CodeDocument.IsWordChar(line[start - 1])
+            && CodeDocument.IsWordChar(line[start]);
+        var cutsEnd = end > 0 && end < line.Length && CodeDocument.IsWordChar(line[end - 1])
+            && CodeDocument.IsWordChar(line[end]);
+        return !cutsStart && !cutsEnd;
+    }
+
+    /// <summary>Escape with several carets: every caret but the primary taken away. False with one caret, so
+    /// Escape goes on to what it means next.</summary>
+    public bool RemoveSecondaryCursors()
+    {
+        if (_others.Count == 0) return false;
+        _others.Clear();
+        History.Break();
+        _revealVersion++;
+        SelectionChanged?.Invoke(_selection);
+        return true;
+    }
+
+    /// <summary>
+    /// Makes <paramref name="primary"/> the primary caret, the other carets as <see cref="_others"/> holds them,
+    /// made one where they meet: a caret added, by key, by pointer or by occurrence. It is brought into view,
+    /// it ends the typing run, and the selection is heard to change.
+    /// </summary>
+    private void Placed(CodeCaret primary)
+    {
+        _selection = OnElementEdges(primary.Selection);
+        _desiredAdvance = primary.Advance;
+        Merge();
+        History.Break();
+        _revealVersion++;
+        SelectionChanged?.Invoke(_selection);
+    }
+
+    /// <summary>⌥ and a press: a caret where it lands, the new primary, or, while there are others, the caret it
+    /// lands on taken away.</summary>
+    private void ToggleCaret(CodePosition at)
+    {
+        var carets = CaretsInOrder(out var primary);
+        if (carets.Count > 1)
+        {
+            for (var i = 0; i < carets.Count; i++)
+            {
+                var selection = carets[i].Selection;
+                if (at < selection.Start || selection.End < at) continue;
+                carets.RemoveAt(i);
+                // The primary taken away: the caret before it in the document is the primary now, or the first.
+                var next = i == primary ? (i > 0 ? i - 1 : 0) : (primary > i ? primary - 1 : primary);
+                _others.Clear();
+                for (var k = 0; k < carets.Count; k++)
+                    if (k != next) _others.Add(carets[k]);
+                Placed(carets[next]);
+                return;
+            }
+        }
+        _others.Add(new CodeCaret(_selection, _desiredAdvance));
+        Placed(new CodeCaret(new CodeRange(at), -1));
+    }
+
+    /// <summary>Where a column selection began: the line and the cell of the primary's anchor when ⇧⌥ was
+    /// pressed; null while none is being made.</summary>
+    private CodeCaret? _column;
+
+    /// <summary>
+    /// ⇧⌥ and a press or a drag: one selection on every line from the column's start to the line pressed, each
+    /// from the start's advance to the advance pressed, as VS Code's column selection makes them; a line that
+    /// ends before the box's left edge has none, unless every line does, and then each has a caret at its end.
+    /// The one on the line pressed is the primary. On a monospaced grid the advance pressed is the nearest
+    /// cell's edge; on a grid that measures each line places it on its own text.
+    /// </summary>
+    private void SelectColumn(int line, float advance)
+    {
+        if (_column is not { } start) return;
+        var anchorLine = start.Selection.Anchor.Line;
+        var anchor = start.Advance;
+        var focus = Grid.Measure is null ? MathF.Round(advance) : advance;
+        var first = Math.Min(anchorLine, line);
+        var last = Math.Max(anchorLine, line);
+        var left = MathF.Min(anchor, focus);
+        var reached = false;
+        for (var at = first; at <= last; at++)
+            if ((Grid.Rows is not { } rows || rows.IsVisible(at)) && WidthOf(at) >= left) reached = true;
+        var column = new List<CodeCaret>();
+        var primary = -1;
+        for (var at = first; at <= last; at++)
+        {
+            if (Grid.Rows is { } rows && !rows.IsVisible(at)) continue;
+            if (reached && WidthOf(at) < left) continue;
+            if (at == line) primary = column.Count;
+            column.Add(new CodeCaret(new CodeRange(new CodePosition(at, ColumnAtAdvance(at, anchor)),
+                new CodePosition(at, ColumnAtAdvance(at, focus))), focus));
+        }
+        // Every line of the box folded away: nothing to select.
+        if (column.Count == 0) return;
+        // The line pressed may be one too short to have a selection: the one nearest it is the primary then.
+        if (primary < 0) primary = line >= anchorLine ? column.Count - 1 : 0;
+        _others.Clear();
+        for (var i = 0; i < column.Count; i++)
+            if (i != primary) _others.Add(column[i]);
+        Placed(column[primary]);
+    }
+
     // ---- lines --------------------------------------------------------------------------------
 
     /// <summary>
@@ -1583,11 +2423,14 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// selection that ends at column 0 does not include that line — the same rule every editor uses, and
     /// the reason shift+down then Tab does not indent one line too many.
     /// </summary>
-    private (int First, int Last) SelectedLines()
+    private (int First, int Last) SelectedLines() => SelectedLinesOf(_selection);
+
+    /// <summary>The lines a line operation takes for <paramref name="range"/> (see <see cref="SelectedLines"/>).</summary>
+    private static (int First, int Last) SelectedLinesOf(CodeRange range)
     {
-        var first = _selection.Start.Line;
-        var last = _selection.End.Line;
-        if (last > first && _selection.End.Column == 0) last--;
+        var first = range.Start.Line;
+        var last = range.End.Line;
+        if (last > first && range.End.Column == 0) last--;
         return (first, last);
     }
 
@@ -1611,21 +2454,28 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             _selection.Focus with { Line = _selection.Focus.Line + lines });
 
     /// <summary>
-    /// ⌥↑ and ⌥↓: moves the lines the selection takes one line up (<see cref="CodeDirection.Backward"/>) or
-    /// down, past the line beside them, and the selection with them, as one undo step. False going up from
-    /// the first line, or down from the last.
+    /// ⌥↑ and ⌥↓: moves the lines every caret takes one line up (<see cref="CodeDirection.Backward"/>) or
+    /// down, past the line beside them, and the carets with them, as one undo step. The carets whose lines
+    /// share or follow each other move as one block. False when no block can move: up from the first line,
+    /// or down from the last.
     /// </summary>
     public bool MoveLines(CodeDirection direction)
     {
         if (ReadOnly) return false;
         EndComposition();
-        var (first, last) = SelectedLines();
         var up = direction == CodeDirection.Backward;
+        return AtEveryBlock(SelectedLinesOf, touching: true, carets => MoveBlock(carets, up));
+    }
+
+    /// <summary>One block of lines moved past the line beside it, and its carets with it; null when it cannot
+    /// move.</summary>
+    private List<CodeCaret>? MoveBlock(List<CodeCaret> carets, bool up)
+    {
+        var (first, last) = BlockLines(carets);
         // Down, while the selection reaches the last line, its end at the start of that line included, the
         // move is refused, as VS Code's MoveLinesCommand refuses it: that end would have no line to stand at
         // once the block passed it, and at the start of an empty last line it would leave that line out of
         // the next move.
-        if (up ? first == 0 : _selection.End.Line == _document.LineCount - 1) return false;
         // The line passed is the one written again, on the block's other side, and deleted where it was, as
         // one step: the block's lines are never rewritten, so a problem on them travels with them, where one
         // replacement over both took it to the replacement's ends (#1031). The later edit first, so the
@@ -1634,82 +2484,137 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         // line goes in at the start of the line after the block and comes out from the start of its own,
         // with its line break, where written after the block's last line it took that problem along. Only at
         // the document's end, with no line after the block, is it written there.
-        var after = SelectionMovedBy(up ? -1 : 1);
+        if (up ? first == 0 : carets[^1].Selection.End.Line == _document.LineCount - 1) return null;
         if (up)
         {
             var passed = _document.Line(first - 1);
             var atEnd = last + 1 == _document.LineCount;
             var at = atEnd ? new CodePosition(last, _document.Line(last).Length) : new CodePosition(last + 1, 0);
             var written = atEnd ? "\n" + passed : passed + "\n";
-            return AsOneStep(() =>
-                Edit(new CodeRange(at), written, false, _selection)
-                && Edit(new CodeRange(new CodePosition(first - 1, 0), new CodePosition(first, 0)), string.Empty, false, after));
+            Edit(new CodeRange(at), written, false);
+            Edit(new CodeRange(new CodePosition(first - 1, 0), new CodePosition(first, 0)), string.Empty, false);
         }
-        var below = _document.Line(last + 1);
-        var taken = last + 2 == _document.LineCount
-            ? new CodeRange(new CodePosition(last, _document.Line(last).Length), new CodePosition(last + 1, below.Length))
-            : new CodeRange(new CodePosition(last + 1, 0), new CodePosition(last + 2, 0));
-        return AsOneStep(() =>
-            Edit(taken, string.Empty, false, _selection)
-            && Edit(new CodeRange(new CodePosition(first, 0)), below + "\n", false, after));
+        else
+        {
+            var below = _document.Line(last + 1);
+            var taken = last + 2 == _document.LineCount
+                ? new CodeRange(new CodePosition(last, _document.Line(last).Length), new CodePosition(last + 1, below.Length))
+                : new CodeRange(new CodePosition(last + 1, 0), new CodePosition(last + 2, 0));
+            Edit(taken, string.Empty, false);
+            Edit(new CodeRange(new CodePosition(first, 0)), below + "\n", false);
+        }
+        return MovedBy(carets, up ? -1 : 1);
+    }
+
+    /// <summary><paramref name="carets"/> moved <paramref name="lines"/> lines down, or up when negative, each
+    /// end at its column.</summary>
+    private static List<CodeCaret> MovedBy(List<CodeCaret> carets, int lines)
+    {
+        var moved = new List<CodeCaret>();
+        foreach (var caret in carets)
+        {
+            var selection = caret.Selection;
+            moved.Add(caret with
+            {
+                Selection = new CodeRange(selection.Anchor with { Line = selection.Anchor.Line + lines },
+                    selection.Focus with { Line = selection.Focus.Line + lines }),
+            });
+        }
+        return moved;
     }
 
     /// <summary>
-    /// ⇧⌥↑ and ⇧⌥↓: copies the lines the selection takes above (<see cref="CodeDirection.Backward"/>) or
-    /// below themselves, as one undo step, the selection on the upper copy going up and on the lower one
-    /// going down.
+    /// ⇧⌥↑ and ⇧⌥↓: copies the lines every caret takes above (<see cref="CodeDirection.Backward"/>) or below
+    /// themselves, as one undo step, the carets on the upper copy going up and on the lower one going down.
     /// </summary>
     public bool CopyLines(CodeDirection direction)
     {
         if (ReadOnly) return false;
         EndComposition();
-        var (first, last) = SelectedLines();
-        var block = string.Join("\n", LinesOf(first, last));
-        if (direction == CodeDirection.Backward)
-            return Edit(new CodeRange(new CodePosition(first, 0)), block + "\n", false, _selection);
-        var end = new CodePosition(last, _document.Line(last).Length);
-        return Edit(new CodeRange(end), "\n" + block, false, SelectionMovedBy(last - first + 1));
+        var up = direction == CodeDirection.Backward;
+        return AtEveryBlock(SelectedLinesOf, touching: false, carets =>
+        {
+            var (first, last) = BlockLines(carets);
+            var block = string.Join("\n", LinesOf(first, last));
+            if (up)
+            {
+                Edit(new CodeRange(new CodePosition(first, 0)), block + "\n", false);
+                return carets;
+            }
+            Edit(new CodeRange(new CodePosition(last, _document.Line(last).Length)), "\n" + block, false);
+            return MovedBy(carets, last - first + 1);
+        });
     }
 
     /// <summary>
-    /// ⇧⌘K: deletes the lines the selection takes, a line break with them, as one undo step. The caret goes
-    /// to the line that takes their place, at the column it had, or to the line before when the last lines
-    /// go. False when there is nothing to delete, a document of one empty line.
+    /// ⇧⌘K: deletes the lines every caret takes, a line break with them, as one undo step. A block's caret goes
+    /// to the line that takes their place, at the column its first caret had, or to the line before when the
+    /// last lines go. False when there is nothing to delete, a document of one empty line.
     /// </summary>
     public bool DeleteLines()
     {
         if (ReadOnly) return false;
         EndComposition();
-        var (first, last) = SelectedLines();
-        var column = Caret.Column;
-        if (last < _document.LineCount - 1)
+        return AtEveryBlock(SelectedLinesOf, touching: false, carets =>
         {
-            var next = _document.Line(last + 1);
-            return Edit(new CodeRange(new CodePosition(first, 0), new CodePosition(last + 1, 0)), string.Empty, false,
-                new CodeRange(new CodePosition(first, Math.Min(column, next.Length))));
-        }
-        if (first > 0)
-        {
-            var before = _document.Line(first - 1);
-            return Edit(new CodeRange(new CodePosition(first - 1, before.Length), new CodePosition(last, _document.Line(last).Length)),
-                string.Empty, false, new CodeRange(new CodePosition(first - 1, Math.Min(column, before.Length))));
-        }
-        return Edit(WholeLines(first, last), string.Empty, false, new CodeRange(CodePosition.Start));
+            var (first, last) = BlockLines(carets);
+            var column = carets[0].Selection.Focus.Column;
+            CodeRange left;
+            if (last < _document.LineCount - 1)
+            {
+                var next = _document.Line(last + 1);
+                if (!Edit(new CodeRange(new CodePosition(first, 0), new CodePosition(last + 1, 0)), string.Empty, false))
+                    return null;
+                left = new CodeRange(new CodePosition(first, Math.Min(column, next.Length)));
+            }
+            else if (first > 0)
+            {
+                var before = _document.Line(first - 1);
+                if (!Edit(new CodeRange(new CodePosition(first - 1, before.Length), new CodePosition(last, _document.Line(last).Length)),
+                        string.Empty, false))
+                    return null;
+                left = new CodeRange(new CodePosition(first - 1, Math.Min(column, before.Length)));
+            }
+            else
+            {
+                if (!Edit(WholeLines(first, last), string.Empty, false)) return null;
+                left = new CodeRange(CodePosition.Start);
+            }
+            return new List<CodeCaret> { new CodeCaret(left, -1) };
+        });
     }
 
     /// <summary>
-    /// ⌃J: joins the lines the selection touches into one, or the caret's line with the next when nothing
-    /// spanning lines is selected, as one undo step and as VS Code's <c>JoinLinesAction</c> joins them: each
-    /// next line's leading spaces and tabs go, one space joins the text unless the text before is empty or
-    /// ends with a space or a tab, which collapse to one space, and a next line of spaces and tabs alone
+    /// ⌃J: joins the lines each caret's selection touches into one, or the caret's line with the next when
+    /// nothing spanning lines is selected, as one undo step and as VS Code's <c>JoinLinesAction</c> joins them:
+    /// each next line's leading spaces and tabs go, one space joins the text unless the text before is empty
+    /// or ends with a space or a tab, which collapse to one space, and a next line of spaces and tabs alone
     /// adds nothing. Spaces and tabs alone, as VS Code's: a no-break space is text, in a string literal as
-    /// anywhere. With nothing selected the caret stands where the lines met. False on the last line with
-    /// nothing to join it to.
+    /// anywhere. With nothing selected the caret stands where the lines met. Carets whose joins would share a
+    /// line join as one selection from the first to the last, as VS Code merges them. False on the last line
+    /// with nothing to join it to.
     /// </summary>
     public bool JoinLines()
     {
         if (ReadOnly) return false;
         EndComposition();
+        return AtEveryBlock(JoinedLinesOf, touching: false, carets =>
+        {
+            _selection = carets.Count == 1
+                ? carets[0].Selection
+                : new CodeRange(carets[0].Selection.Start, carets[^1].Selection.End);
+            return JoinSelected() ? new List<CodeCaret> { new CodeCaret(_selection, -1) } : null;
+        });
+    }
+
+    /// <summary>The lines a join of <paramref name="range"/> touches: its own, and the next one when it holds
+    /// one line.</summary>
+    private static (int First, int Last) JoinedLinesOf(CodeRange range) =>
+        (range.Start.Line, range.End.Line > range.Start.Line ? range.End.Line : range.Start.Line + 1);
+
+    /// <summary>⌃J for the primary selection alone.</summary>
+    private bool JoinSelected()
+    {
         var (first, last) = JoinedLines();
         if (last == first)
         {
@@ -1796,37 +2701,33 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     private static int Collapsed(int column, int cut) => cut >= 0 && column > cut ? Math.Min(column, cut + 1) : column;
 
     /// <summary>
-    /// Sorts the lines the selection takes, ordinally and case aside with ties broken ordinally, as one
-    /// undo step, the selection kept: the same order on both targets, where a culture's collation is not
-    /// (VS Code sorts by the locale's). False when there are fewer than two lines, or they are in order.
+    /// Sorts the lines every caret takes, ordinally and case aside with ties broken ordinally, as one undo
+    /// step, the carets kept: the same order on both targets, where a culture's collation is not (VS Code
+    /// sorts by the locale's). Each block of lines is sorted on its own. False when no block has two lines out
+    /// of order.
     /// </summary>
     public bool SortLines(bool descending)
     {
         if (ReadOnly) return false;
         EndComposition();
-        if (Sorted(descending) is not { } sorted) return false;
-        var (first, last) = SelectedLines();
-        return Edit(WholeLines(first, last), sorted, false, _selection);
-    }
-
-    /// <summary>The lines the selection takes in order, or null when sorting them would change nothing.</summary>
-    private string? Sorted(bool descending)
-    {
-        if (InOrder(descending)) return null;
-        var (first, last) = SelectedLines();
-        var sorted = LinesOf(first, last);
-        sorted.Sort((a, b) => descending ? CompareLines(b, a) : CompareLines(a, b));
-        return string.Join("\n", sorted);
+        return AtEveryBlock(SelectedLinesOf, touching: false, carets =>
+        {
+            var (first, last) = BlockLines(carets);
+            if (LinesInOrder(first, last, descending)) return null;
+            var sorted = LinesOf(first, last);
+            sorted.Sort((a, b) => descending ? CompareLines(b, a) : CompareLines(a, b));
+            return Edit(WholeLines(first, last), string.Join("\n", sorted), false) ? carets : null;
+        });
     }
 
     /// <summary>
-    /// Whether the lines the selection takes are already in order, one line or none included: each beside
-    /// the next in the order a sort gives, which is one pass where a sort is several. The order is total, a
-    /// tie being the same line twice, so lines in order are the lines a sort would write.
+    /// Whether lines <paramref name="first"/> to <paramref name="last"/> are already in order, one line or
+    /// none included: each beside the next in the order a sort gives, which is one pass where a sort is
+    /// several. The order is total, a tie being the same line twice, so lines in order are the lines a sort
+    /// would write.
     /// </summary>
-    private bool InOrder(bool descending)
+    private bool LinesInOrder(int first, int last, bool descending)
     {
-        var (first, last) = SelectedLines();
         for (var line = first; line < last; line++)
         {
             var order = CompareLines(_document.Line(line), _document.Line(line + 1));
@@ -1842,7 +2743,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     }
 
     /// <summary>
-    /// ⌘↩ and ⇧⌘↩: opens a line below the caret's, or above it (<see cref="CodeDirection.Backward"/>),
+    /// ⌘↩ and ⇧⌘↩: opens a line below every caret's line, or above it (<see cref="CodeDirection.Backward"/>),
     /// wherever the caret stands on its line, as one undo step. The new line is indented as the caret's, and
     /// below a line that opens a block one step more, as Enter indents; the caret goes to its indent.
     /// </summary>
@@ -1850,6 +2751,12 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     {
         if (ReadOnly) return false;
         EndComposition();
+        return AtEveryCaret(() => InsertLineAtCaret(direction));
+    }
+
+    /// <summary><see cref="InsertLine"/> at the primary caret alone.</summary>
+    private bool InsertLineAtCaret(CodeDirection direction)
+    {
         var line = Caret.Line;
         var indent = _document.IndentOf(line);
         if (direction == CodeDirection.Backward)
@@ -1867,8 +2774,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     {
         if (ReadOnly) return false;
         EndComposition();
-        if (History.Undo(_document, out var selection, out var made) is null) return false;
-        Replay(made, selection);
+        if (History.Undo(_document, out var selections, out var made) is null) return false;
+        Replay(made, selections);
         return true;
     }
 
@@ -1876,8 +2783,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     {
         if (ReadOnly) return false;
         EndComposition();
-        if (History.Redo(_document, out var selection, out var made) is null) return false;
-        Replay(made, selection);
+        if (History.Redo(_document, out var selections, out var made) is null) return false;
+        Replay(made, selections);
         return true;
     }
 
@@ -1889,7 +2796,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// an edit (a problem's squiggle, a language server) hears every replacement, where it could only start
     /// over after every undo, and one that edits as it hears them edits the text the step left.
     /// </summary>
-    private void Replay(IReadOnlyList<CodeEdit> made, CodeRange selection)
+    private void Replay(IReadOnlyList<CodeEdit> made, IReadOnlyList<CodeRange> selections)
     {
         var before = _selection;
         foreach (var edit in made)
@@ -1897,7 +2804,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             _document = _document.Replace(edit.Range, edit.InsertedText, out _);
             Took(edit);
         }
-        _selection = OnElementEdges(selection);
+        // Every caret the step found, or left, the primary first.
+        _selection = OnElementEdges(selections[0]);
+        _others.Clear();
+        for (var i = 1; i < selections.Count; i++) _others.Add(new CodeCaret(OnElementEdges(selections[i]), -1));
+        Merge();
         _revealVersion++;
         _desiredAdvance = -1;
         Raise(new CodeChange(Heard(made, before)));

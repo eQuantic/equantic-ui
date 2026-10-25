@@ -46,6 +46,22 @@ public class CodeMeasuredGridTests
     }
 
     [Fact]
+    public void EveryCaret_AimsAtItsOwnMeasuredWidth_WhenAddedAndMoved()
+    {
+        // `WW` measures 24: the line of `i`s reaches it at column 8, where a count of cells would say 2.
+        var editor = Editor("WWa\niiiiiiiiii\nx\niiiiiiiiii", new StubFace());
+        editor.Selection = new CodeRange(new CodePosition(0, 2));
+
+        editor.Execute(CodeCommand.AddCursorBelow).Should().BeTrue();
+        editor.Selections.Should().BeEquivalentTo([new CodeRange(new CodePosition(0, 2)), new CodeRange(new CodePosition(1, 8))]);
+
+        editor.Execute(CodeCommand.CursorDown).Should().BeTrue();
+        editor.Execute(CodeCommand.CursorDown).Should().BeTrue();
+        editor.Selections.Should().Contain(new CodeRange(new CodePosition(3, 8)),
+            "the caret added below kept 24 through the short line and found it again on the long one");
+    }
+
+    [Fact]
     public void APress_LandsOnTheNearerSideOfTheElementUnderIt()
     {
         var editor = Editor("iiiWi", new StubFace());

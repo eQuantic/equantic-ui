@@ -90,6 +90,31 @@ public class NestedTwinNameTests
             .And.NotMatchRegex(@"[:<,(] ?Inner\b");
     }
 
+    /// <summary>An empty list of a nested class, and of tuples holding one, is annotated by the twin's name and
+    /// imports it, as any reference to it does (Copilot on #1068): the list and the tuple's slot named
+    /// <c>Item</c>, which nothing declares.</summary>
+    [Fact]
+    public void AnEmptyListOfANestedClass_IsAnnotatedByItsTwin_AndImportsIt()
+    {
+        var basket = CompileScanned("""
+            using System.Collections.Generic;
+            public class Cart { public class Item { public int Qty = 9; } }
+            public class Basket
+            {
+                public int Count()
+                {
+                    var entries = new List<(Cart.Item Entry, int Index)>();
+                    var items = new List<Cart.Item>();
+                    return entries.Count + items.Count;
+                }
+            }
+            """, "Basket");
+        basket.Errors.Should().BeEmpty();
+        basket.TypeScript.Should().Contain("let entries: [Cart$Item, number][] = [];")
+            .And.Contain("let items: Cart$Item[] = [];")
+            .And.MatchRegex(@"import \{[^}]*(?<![\w$])Cart\$Item(?![\w$])[^}]*\} from ""\./Cart\$Item""");
+    }
+
     private static string Annotation(string typeScript, string field) =>
         System.Text.RegularExpressions.Regex.Match(typeScript, $@"\b{field}!: (.+);").Groups[1].Value;
 

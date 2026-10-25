@@ -116,7 +116,7 @@ export class TableView extends StatefulComponent {
     }
 
     static cut(from: number, to: number, pinned: number) {
-        let pieces = [];
+        let pieces: [number, number][] = [];
         if (from < pinned) pieces.push([from, Math.min(to, pinned)]);
         if (to > pinned) pieces.push([Math.max(from, pinned), to]);
         return pieces;

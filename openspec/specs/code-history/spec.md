@@ -46,9 +46,11 @@ change, an edit, a step, an undo and a redo alike, once all of its replacements 
 in the order made, each range in the coordinates the replacements before it left, and each with the
 selection the change found and the one it left. An edit a listener makes while it hears a change SHALL be
 made on the text the change left, as a step of its own, and every listener SHALL hear it after that change,
-and a range a listener reports while it hears one SHALL stand where it was reported. The selection a step leaves
-SHALL be its last edit's, and undo SHALL put back the one its first edit found. A step of several edits
-SHALL never join a run of typing.
+and a range a listener reports while it hears one SHALL stand where it was reported. Undo SHALL put back every
+selection the step found and redo every one it left, the primary first (#1012). A step of several edits at
+one caret SHALL never join a run of typing, and a step of one typed character at each of several carets
+SHALL join the run before it when each is typed where the run's text ends at its caret. A run joins its
+steps edit by edit, so a step whose edits were not made from the last caret to the first SHALL begin no run.
 
 #### Scenario: A move is one step of two edits
 
@@ -89,3 +91,15 @@ SHALL never join a run of typing.
 
 - **WHEN** "abc" is typed, a character at a time, then undone
 - **THEN** one undo takes back the three characters
+
+#### Scenario: Typing at three carets
+
+- **WHEN** there are carets at the start of three lines, and `x` then `y` are typed
+- **THEN** each line starts with `xy`, one undo takes back all six characters and puts back the three
+  carets, the primary first, and one redo types them again and puts back the carets it left
+
+#### Scenario: A step recorded from the first caret on
+
+- **WHEN** a host records `x` typed at columns 1 and 4 of `abcd`, the first caret's first, and then `y`
+  typed after each `x`, the last caret's first
+- **THEN** one undo takes back the two `y` alone, and a second gives back `abcd`

@@ -61,6 +61,7 @@
   "CodeSignatureHelp",
   "CodeSignatureHelpSession",
   "CodeSignatureParameter",
+  "CodeStep",
   "CodeSurface",
   "CodeToken",
   "CodeWordCompletionProvider",

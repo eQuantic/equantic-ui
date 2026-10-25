@@ -53,6 +53,20 @@ public class AppValueTypeImportTests
             """,
         // Inner is named by no syntax outside Outer: Outer's zero is built member by member, because
         // its constructor gives K more than its zero, and that zero constructs an Inner.
+        // Entry is named only by a tuple's slot in an empty list's annotation (Copilot on #1068).
+        ["Entry.cs"] = "namespace App; public sealed class Entry { public int N = 1; }",
+        ["Ledger.cs"] = """
+            using System.Collections.Generic;
+            namespace App;
+            public sealed class Ledger
+            {
+                public int Count()
+                {
+                    var rows = new List<(Entry Value, int At)>();
+                    return rows.Count;
+                }
+            }
+            """,
         ["Inner.cs"] = "namespace App; public struct Inner { public int N; }",
         ["Outer.cs"] = "namespace App; public struct Outer { public Inner In; public int K = 1; public Outer() { } }",
         ["Nest.cs"] = """
@@ -202,6 +216,18 @@ public class AppValueTypeImportTests
 
         ts.Should().Contain("Outer.$zero()");
         ts.Should().Contain("import { Outer } from \"./Outer\"");
+    }
+
+    /// <summary>An app class named only by a tuple's slot in an empty list's annotation is imported, as any
+    /// type the emitted text names is (Copilot on #1068): the annotation named <c>Entry</c>, and nothing
+    /// imported it.</summary>
+    [Fact]
+    public void AClassNamedOnlyByAListsTupleAnnotation_IsImported()
+    {
+        var ts = TypeScriptOf("Ledger");
+
+        ts.Should().Contain("let rows: [Entry, number][] = [];");
+        ts.Should().Contain("import { Entry } from \"./Entry\"");
     }
 
     [Fact]

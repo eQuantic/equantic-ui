@@ -209,17 +209,20 @@ public static class CodeKeymap
             Bind("F8", none, CodeCommand.ProblemNext),
             Bind("F8", shift, CodeCommand.ProblemPrevious),
 
-            // ---- Escape closes what is over the code, the list, then a card, then the panel, one at a
-            // time, so the trap on Tab stays armed and a dialog around the editor stays open; with nothing
-            // over the code it releases the trap and claims nothing. A list asked for and not yet showing
-            // goes with whichever of them Escape closes (HoverHide, SignatureHelpHide, ReleaseKeyboard).
+            // ---- Escape closes what is over the code, the list, then a card, then the panel, then takes
+            // away every caret but the primary, one at a time, so the trap on Tab stays armed and a dialog
+            // around the editor stays open; with nothing over the code and one caret it releases the trap and
+            // claims nothing. A list asked for and not yet showing goes with whichever of them Escape closes
+            // (HoverHide, SignatureHelpHide, ReleaseKeyboard).
             Bind("Escape", none, CodeCommand.CompletionHide),
             Bind("Escape", none, CodeCommand.HoverHide),
             Bind("Escape", none, CodeCommand.SignatureHelpHide),
+            Bind("Escape", none, CodeCommand.RemoveSecondaryCursors),
             Bind("Escape", none, CodeCommand.ReleaseKeyboard),
             Bind("Escape", shift, CodeCommand.CompletionHide),
             Bind("Escape", shift, CodeCommand.HoverHide),
             Bind("Escape", shift, CodeCommand.SignatureHelpHide),
+            Bind("Escape", shift, CodeCommand.RemoveSecondaryCursors),
             Bind("Escape", shift, CodeCommand.ReleaseKeyboard),
 
             // ---- the letter chords. ⌘/ arrives as "/" or as "Slash", and with ⇧ on a layout that types
@@ -287,6 +290,13 @@ public static class CodeKeymap
             Bind("k", shift | command, CodeCommand.DeleteLines),
             Bind("Enter", command, CodeCommand.InsertLineBelow),
             Bind("Enter", shift | command, CodeCommand.InsertLineAbove),
+
+            // ---- carets, as VS Code has them (#1012): ⌥⌘↑ ⌥⌘↓ add one above or below every caret (Ctrl+Alt
+            // with the arrows on Windows), ⌘D adds the next occurrence and ⇧⌘L selects every one.
+            Bind("ArrowUp", alt | command, CodeCommand.AddCursorAbove),
+            Bind("ArrowDown", alt | command, CodeCommand.AddCursorBelow),
+            Bind("d", command, CodeCommand.AddNextOccurrence),
+            Bind("l", shift | command, CodeCommand.SelectAllOccurrences),
         };
         if (apple)
         {

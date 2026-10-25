@@ -296,7 +296,7 @@ public sealed class CodeDiff : StatefulComponent
             ViewportHeight = _viewport,
             ViewportWidth = _modifiedWidth,
             SelectionBands = modified.SelectionBandsIn(modifiedLines.First, modifiedLines.Last),
-            Selection = modified.Selection,
+            Selections = modified.SelectionsIn(modifiedLines.First, modifiedLines.Last),
             WidestLine = inline ? Math.Max(modified.WidestLine, original.WidestLine) : modified.WidestLine,
         };
         var ink = CodeBlock.InkFor(Inverse, theme);
@@ -347,7 +347,7 @@ public sealed class CodeDiff : StatefulComponent
                 ViewportHeight = _viewport,
                 ViewportWidth = _originalWidth,
                 SelectionBands = original.SelectionBandsIn(originalLines.First, originalLines.Last),
-                Selection = original.Selection,
+                Selections = original.SelectionsIn(originalLines.First, originalLines.Last),
                 WidestLine = original.WidestLine,
             };
             VisualNode originalSurface = new CodeSurface(originalBlock, original)

@@ -1401,6 +1401,12 @@ public class TypeScriptEmitter
         "object", "symbol", "bigint", "never",
     };
 
+    /// <summary>Whether a module names <paramref name="ts"/> with no module of the app's behind it: a type
+    /// of TypeScript's own, or a .NET-compat value type the runtime exports, which the import scan finds
+    /// wherever the emitted text names it.</summary>
+    internal static bool NamesWithoutAModule(string ts) =>
+        IntrinsicTsTypes.Contains(ts) || RuntimeValueTypes.Contains(ts);
+
     /// <summary>
     /// The TS type for a TYPE-ONLY property declaration. A declaration must never introduce a name the
     /// emitted module cannot resolve — that would just trade a TS2339 for a TS2304 — so the type is kept

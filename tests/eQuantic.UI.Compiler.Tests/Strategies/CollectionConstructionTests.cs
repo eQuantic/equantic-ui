@@ -48,6 +48,127 @@ public class CollectionConstructionTests
             + "mutate what it was built from — and refuses a null one by its parameter's name (#726)");
     }
 
+    /// <summary>
+    /// An empty list of tuples is annotated with the TS tuple of its elements: a tuple crosses as an array
+    /// literal, and left to inference the list's pushes made it an array of arrays, which the code block's
+    /// stretches, returned as a list of pairs, could not be (#1063).
+    /// </summary>
+    [Fact]
+    public void AnEmptyListOfTuples_IsAnnotatedWithTheTuple()
+    {
+        Convert("var pairs = new List<(int From, int To)>();").Should().Contain("let pairs: [number, number][] = [];");
+        Convert("var named = new List<(string Name, bool On)>();").Should().Contain("let named: [string, boolean][] = [];");
+        Convert("var keyed = new List<(KeyValuePair<string, int> Entry, int At)>();")
+            .Should().Contain("let keyed = [];", "an element with no TS name leaves the list to inference");
+    }
+
+    /// <summary>
+    /// A nullable element holds its null, in a tuple's slot and as a list's item, a union parenthesised as
+    /// an array's element (Copilot on #1068): written without it, pushing the null C# allowed failed the type
+    /// check.
+    /// </summary>
+    [Fact]
+    public void ANullableElement_IsAnnotatedWithItsNull()
+    {
+        Convert("var pairs = new List<(string? Name, int At)>();").Should().Contain("let pairs: [string | null, number][] = [];");
+        Convert("var names = new List<string?>();").Should().Contain("let names: (string | null)[] = [];");
+        Convert("var counts = new List<int?>();").Should().Contain("let counts: (number | null)[] = [];");
+        Convert("var rows = new List<List<int?>>();").Should().Contain("let rows: (number | null)[][] = [];");
+        Convert("var seen = new HashSet<string?>();").Should().Contain("let seen: Set<string | null> = ");
+    }
+
+    /// <summary>
+    /// A type the app does not declare is named as the mapper spells it, in a tuple's slot and as a list's
+    /// item (Copilot on #1068): a Guid crosses as a string, and a list named `Guid` named nothing. A type the
+    /// app declares keeps its name, a `Guid` of its own included.
+    /// </summary>
+    [Fact]
+    public void ATypeTheAppDoesNotDeclare_IsNamedAsItCrosses()
+    {
+        Convert("var ids = new List<(Guid Id, int Index)>();").Should().Contain("let ids: [string, number][] = [];");
+        Convert("var plain = new List<Guid>();").Should().Contain("let plain: string[] = [];");
+
+        var own = TypeScriptOf("""
+            using System.Collections.Generic;
+            public class Guid { public int N = 1; }
+            public class Holder
+            {
+                public int Count()
+                {
+                    var ids = new List<(Guid Id, int Index)>();
+                    return ids.Count;
+                }
+            }
+            """, "Holder");
+        own.Should().Contain("let ids: [Guid, number][] = [];", "the app's own Guid is its class");
+    }
+
+    /// <summary>
+    /// A type parameter is named as its declaration names it (Copilot on #1068): `@class` is declared
+    /// `class$`, and a tuple's slot and a list's item said `class`, which TypeScript cannot parse.
+    /// </summary>
+    [Fact]
+    public void ATypeParameter_IsNamedAsItsDeclarationNamesIt()
+    {
+        var ts = TypeScriptOf("""
+            using System.Collections.Generic;
+            public class Bag
+            {
+                public int Count<@class>(@class value)
+                {
+                    var pairs = new List<(@class Value, int Index)>();
+                    var plain = new List<@class>();
+                    pairs.Add((value, 1));
+                    plain.Add(value);
+                    return pairs.Count + plain.Count;
+                }
+            }
+            """, "Bag");
+        ts.Should().Contain("let pairs: [class$, number][] = [];").And.Contain("let plain: class$[] = [];");
+    }
+
+    /// <summary>
+    /// A type parameter declared <c>T?</c> holds its null as a parameter of that type does (Copilot on #1068):
+    /// the slot said <c>T</c>, and adding the parameter, a <c>T | null</c>, failed the type check.
+    /// </summary>
+    [Fact]
+    public void ATypeParameterDeclaredNullable_HoldsItsNull()
+    {
+        var ts = TypeScriptOf("""
+            using System.Collections.Generic;
+            public class Bag
+            {
+                public int Count<T>(T? value)
+                {
+                    var pairs = new List<(T? Value, int Index)>();
+                    var plain = new List<T?>();
+                    pairs.Add((value, 1));
+                    plain.Add(value);
+                    return pairs.Count + plain.Count;
+                }
+            }
+            """, "Bag");
+        ts.Should().Contain("let pairs: [T | null, number][] = [];").And.Contain("let plain: (T | null)[] = [];");
+    }
+
+    /// <summary>
+    /// A task held as a value is a promise (Copilot on #1068): the mapper's <c>void</c> is what a method
+    /// returning one is awaited to, and pushing <c>Promise.resolve()</c> into a <c>void</c> slot failed the
+    /// type check. A name nothing can verify, a StringBuilder's, leaves the list to inference, as a declared
+    /// type degrades to <c>any</c>.
+    /// </summary>
+    [Fact]
+    public void ATaskIsAPromise_AndANameNothingVerifies_IsLeftToInference()
+    {
+        Convert("var jobs = new List<(System.Threading.Tasks.Task Work, int At)>();")
+            .Should().Contain("let jobs: [Promise<void>, number][] = [];");
+        Convert("var tasks = new List<System.Threading.Tasks.Task>();").Should().Contain("let tasks: Promise<void>[] = [];");
+        Convert("var builders = new List<System.Text.StringBuilder>();").Should().Contain("let builders = [];");
+    }
+
+    private static string TypeScriptOf(string source, string type) =>
+        new ComponentCompiler().CompileSource(source, "Probe.cs").Single(result => result.ComponentName == type).TypeScript;
+
     [Fact]
     public void AndTheOrdinaryShapesAreUnchanged()
     {

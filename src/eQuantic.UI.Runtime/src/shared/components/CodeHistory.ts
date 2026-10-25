@@ -1,16 +1,16 @@
-import { $eq, CodeDocument, CodeEdit, CodePosition, CodeRange } from "../runtime-exports";
+import { $eq, CodeDocument, CodeEdit, CodePosition, CodeRange, CodeStep } from "../runtime-exports";
 
 export class CodeHistory {
     constructor() {
         this._past = [];
         this._future = [];
-        this._runEnd = new CodePosition(-1, -1);
+        this._runEnds = null;
         this.limit = 500;
     }
 
-    _past!: CodeEdit[][];
-    _future!: CodeEdit[][];
-    _runEnd!: CodePosition;
+    _past!: CodeStep[];
+    _future!: CodeStep[];
+    _runEnds!: CodePosition[] | null;
     limit!: number;
 
     get canUndo(): boolean {
@@ -21,32 +21,63 @@ export class CodeHistory {
         return this._future.length > 0;
     }
 
-    record(edits: CodeEdit[]) {
-        if ($eq.collections.count(edits) === 0) return;
+    record(step: CodeStep) {
+        if ($eq.collections.count(step.edits) === 0) return;
         this._future.splice(0);
-        let edit = $eq.collections.item(edits, 0);
-        if ($eq.collections.count(edits) === 1 && edit.typed && edit.isSimpleInsert && this._past.length > 0 && $eq.equals(edit.range.start, this._runEnd)) {
-            let step = this._past[this._past.length - 1];
-            let previous: any; 
-            if ($eq.collections.count(step) === 1 && (($v2184) => (($v2184 != null && $v2184.typed === true && $v2184.breaksLine === false) && (previous = $v2184, true)))($eq.collections.item(step, 0))) {
-                this._past[this._past.length - 1] = [$eq.withPatch(previous, { insertedText: previous.insertedText + edit.insertedText, selectionAfter: edit.selectionAfter })];
-                this._runEnd = edit.insertedRange.end;
-                return;
-            }
+        if (this._runEnds != null && this._past.length > 0 && CodeHistory.continues(this._runEnds, step)) {
+            this._past[this._past.length - 1] = CodeHistory.joined(this._past[this._past.length - 1], step);
+            this._runEnds = CodeHistory.ends(this._past[this._past.length - 1]);
+            return;
         }
-        this._past.push(edits);
+        this._past.push(step);
         if (this._past.length > this.limit) this._past.splice(0, 1);
-        this._runEnd = $eq.collections.count(edits) === 1 && edit.typed && !edit.breaksLine ? edit.insertedRange.end : new CodePosition(-1, -1);
+        this._runEnds = CodeHistory.runs(step) ? CodeHistory.ends(step) : null;
+    }
+
+    static runs(step: CodeStep) {
+        if ($eq.collections.count(step.edits) !== $eq.collections.count(step.before)) return false;
+        for (const edit of step.edits) if (!edit.typed || edit.breaksLine) return false;
+        return true;
+    }
+
+    static ends(step: CodeStep) {
+        let ends: CodePosition[] = [];
+        for (let k = 0; k < $eq.collections.count(step.edits); k++) {
+            let end = new CodeRange($eq.collections.item(step.edits, k).insertedRange.end);
+            for (let later = k + 1; later < $eq.collections.count(step.edits); later++) end = $eq.collections.item(step.edits, later).carry(end);
+            if (k > 0 && CodePosition.opGreaterOrEqual(end.end, ends[k - 1])) return null;
+            ends.push(end.end);
+        }
+        return ends;
+    }
+
+    static continues(ends: CodePosition[], step: CodeStep) {
+        if ($eq.collections.count(step.edits) !== ends.length) return false;
+        for (let k = 0; k < ends.length; k++) {
+            let edit = $eq.collections.item(step.edits, k);
+            if (!edit.typed || !edit.isSimpleInsert || !$eq.equals(edit.range.start, ends[k])) return false;
+        }
+        return true;
+    }
+
+    static joined(previous: CodeStep, step: CodeStep) {
+        let edits: CodeEdit[] = [];
+        for (let k = 0; k < $eq.collections.count(step.edits); k++) {
+            let before = $eq.collections.item(previous.edits, k);
+            let edit = $eq.collections.item(step.edits, k);
+            edits.push($eq.withPatch(before, { insertedText: before.insertedText + edit.insertedText, selectionAfter: edit.selectionAfter }));
+        }
+        return new CodeStep(edits, previous.before, step.after);
     }
 
     break() {
-        return this._runEnd = new CodePosition(-1, -1);
+        return this._runEnds = null;
     }
 
     undo(document: CodeDocument) {
-        let selection: any, made: any;
+        let selections: any, made: any;
         const $r = (() => {
-            selection = CodeRange.$zero();
+            selections = [];
             made = [];
             if (this._past.length === 0) return null;
             let step = this._past[this._past.length - 1];
@@ -55,8 +86,8 @@ export class CodeHistory {
             this.break();
             let next = document;
             let undone: CodeEdit[] = [];
-            for (let i = $eq.collections.count(step) - 1; i >= 0; i--) {
-                let edit = $eq.collections.item(step, i);
+            for (let i = $eq.collections.count(step.edits) - 1; i >= 0; i--) {
+                let edit = $eq.collections.item(step.edits, i);
                 let replaced = new CodeRange(next.clamp(edit.insertedRange.start), next.clamp(edit.insertedRange.end));
                 let removed = next.textIn(replaced);
                 let end: any; 
@@ -64,16 +95,16 @@ export class CodeHistory {
                 undone.push(new CodeEdit(replaced, removed, next.textIn(new CodeRange(replaced.start, end)), edit.selectionAfter, edit.selectionBefore, false));
             }
             made = undone;
-            selection = $eq.collections.item(step, 0).selectionBefore;
+            selections = step.before;
             return next;
         })();
-        return { $: $r, selection, made };
+        return { $: $r, selections, made };
     }
 
     redo(document: CodeDocument) {
-        let selection: any, made: any;
+        let selections: any, made: any;
         const $r = (() => {
-            selection = CodeRange.$zero();
+            selections = [];
             made = [];
             if (this._future.length === 0) return null;
             let step = this._future[this._future.length - 1];
@@ -82,7 +113,7 @@ export class CodeHistory {
             this.break();
             let next = document;
             let redone: CodeEdit[] = [];
-            for (const edit of step) {
+            for (const edit of step.edits) {
                 let replaced = new CodeRange(next.clamp(edit.range.start), next.clamp(edit.range.end));
                 let removed = next.textIn(replaced);
                 let end: any; 
@@ -90,10 +121,10 @@ export class CodeHistory {
                 redone.push(new CodeEdit(replaced, removed, next.textIn(new CodeRange(replaced.start, end)), edit.selectionBefore, edit.selectionAfter, false));
             }
             made = redone;
-            selection = $eq.collections.item(step, $eq.collections.count(step) - 1).selectionAfter;
+            selections = step.after;
             return next;
         })();
-        return { $: $r, selection, made };
+        return { $: $r, selections, made };
     }
 
     clear() {

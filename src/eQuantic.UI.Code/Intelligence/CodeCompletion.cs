@@ -38,6 +38,9 @@ public sealed class CodeCompletion
     private bool _active;
     private CodePosition _start;
     private bool _openedEmpty;
+    // Every edit made since the list opened, in the order made: a provider's range is in the document it
+    // was asked about, and stands where the edits made after it carried it (see CodeCompletionAnswer.Asked).
+    private readonly List<CodeEdit> _edits = [];
     // Two lifetimes: a REQUEST, each provider's newest, is cancelled when its provider is asked again (a
     // word's incomplete answer), and the LIST by closing, which is what a resolve of one of its items is
     // waiting on.
@@ -47,6 +50,9 @@ public sealed class CodeCompletion
     internal CodeCompletion(CodeEditorController editor)
     {
         _editor = editor;
+        // An edit is heard before the selection it leaves, so the word's start already stands where the
+        // edit carried it when the word is read again.
+        editor.Changed += Carry;
         // Every edit and every move ends in a selection change, typed or not: the word is read
         // again, and the list follows it or closes.
         editor.SelectionChanged += _ => Follow();
@@ -142,6 +148,7 @@ public sealed class CodeCompletion
     {
         Close(raise: false);
         _active = true;
+        _edits.Clear();
         _start = start;
         _openedEmpty = start == _editor.Caret;
         _list = new CancellationTokenSource();
@@ -165,7 +172,7 @@ public sealed class CodeCompletion
         var document = _editor.Document;
         var position = _editor.Caret;
         var context = new CodeCompletionContext(trigger, _editor.Highlighter.Language) { Character = character };
-        var askedLineLength = document.Line(position.Line).Length;
+        var asked = _edits.Count;
         var word = Word();
 
         var requests = new List<CodeCompletionRequest>();
@@ -183,11 +190,11 @@ public sealed class CodeCompletion
             requests.Add(request);
         }
         if (announce) Changed?.Invoke();
-        foreach (var request in requests) _ = AskOne(request, document, position, context, askedLineLength);
+        foreach (var request in requests) _ = AskOne(request, document, position, context, asked);
     }
 
     private async Task AskOne(CodeCompletionRequest request, CodeDocument document, CodePosition position,
-        CodeCompletionContext context, int askedLineLength)
+        CodeCompletionContext context, int asked)
     {
         var list = CodeCompletionList.Empty;
         Exception? failure = null;
@@ -209,7 +216,7 @@ public sealed class CodeCompletion
         UiThread.Run(() =>
         {
             if (failure is not null) Failed?.Invoke(failure);
-            Deliver(request, new CodeCompletionAnswer(request.Provider, request.Word, askedLineLength, list));
+            Deliver(request, new CodeCompletionAnswer(request.Provider, request.Word, asked, list));
         });
     }
 
@@ -386,9 +393,13 @@ public sealed class CodeCompletion
             var item = offer.Item;
 
             var typed = word;
-            if (item.Replacing is { } replacing && replacing.Start.Line == caret.Line
-                && replacing.Start.Column != _start.Column && replacing.Start.Column <= caret.Column)
-                typed = line.Substring(replacing.Start.Column, caret.Column - replacing.Start.Column);
+            if (item.Replacing is { } asked)
+            {
+                var replacing = offer.Answer.Carried(asked, _edits);
+                if (replacing.Start.Line == caret.Line && replacing.Start.Column != _start.Column
+                    && replacing.Start.Column <= caret.Column)
+                    typed = line.Substring(replacing.Start.Column, caret.Column - replacing.Start.Column);
+            }
 
             var filter = item.FilterText ?? item.Label;
             if (CodeFuzzyMatch.Of(typed, filter) is not { } match) continue;
@@ -486,6 +497,12 @@ public sealed class CodeCompletion
         var text = offer.Item.InsertText ?? offer.Item.Label;
         Close(raise: true);
 
+        // With several carets the entry goes in at each, replacing around each what it replaces around the
+        // primary, as VS Code applies one suggestion at every cursor (#1012).
+        var caret = _editor.Caret;
+        if (_editor.HasOtherCarets && range.Start.Line == caret.Line && range.End.Line == caret.Line)
+            return _editor.ReplaceAroundEveryCaret(caret.Column - range.Start.Column, range.End.Column - caret.Column, text);
+
         // Accepting what is already there is a step that changes nothing, and nothing to undo.
         if (_editor.Document.TextIn(range) == text)
         {
@@ -535,6 +552,7 @@ public sealed class CodeCompletion
         _list = null;
         var was = _active;
         _active = false;
+        _edits.Clear();
         _answers.Clear();
         _candidates = [];
         _groups = 0;
@@ -616,22 +634,39 @@ public sealed class CodeCompletion
 
     /// <summary>
     /// The range accepting <paramref name="offer"/> replaces: the provider's own, or the word typed so
-    /// far. The provider's range ends as far from the END of its line as it did when the provider was
-    /// asked: what was typed or deleted since happened at the caret, before that end, and a move of
-    /// the caret alone moves nothing. Measured from the caret, an arrow moved the end with it, and
-    /// accepting after one left the rest of the word behind.
+    /// far. The provider's range stands where the edits made since it was asked carried it, and reaches
+    /// the caret at least: what was typed at its end is in it, and a move of the caret alone moves
+    /// nothing. Measured from the caret, an arrow moved the end with it, and accepting after one left the
+    /// rest of the word behind; measured from the end of the line, a caret further on the line moved it.
     /// </summary>
     private CodeRange RangeOf(CodeCompletionOffer offer)
     {
         var caret = _editor.Caret;
-        var line = _editor.Document.Line(caret.Line);
-        if (offer.Item.Replacing is { } replacing && replacing.Start.Line == caret.Line
-            && replacing.End.Line == caret.Line && replacing.Start.Column <= caret.Column)
+        if (offer.Item.Replacing is { } asked)
         {
-            var fromLineEnd = Math.Max(0, offer.Answer.AskedLineLength - replacing.End.Column);
-            return new CodeRange(replacing.Start, new CodePosition(caret.Line, Math.Max(caret.Column, line.Length - fromLineEnd)));
+            var replacing = offer.Answer.Carried(asked, _edits);
+            if (replacing.Start.Line == caret.Line && replacing.End.Line == caret.Line
+                && replacing.Start.Column <= caret.Column)
+                return new CodeRange(replacing.Start, replacing.End < caret ? caret : replacing.End);
         }
         return new CodeRange(_start, caret);
+    }
+
+    /// <summary>
+    /// Carries the word's start through <paramref name="change"/>'s edits, and keeps them, for a provider's
+    /// range to be carried through. An edit at another caret moves the word as an edit at the caret does:
+    /// with a caret before it on its line, a character typed or deleted there moved the word, and the
+    /// start, left where the word had been, took a character of it out of what was replaced (#1012's review).
+    /// A document replaced whole is no edit: the editor dismisses the list before it replaces it.
+    /// </summary>
+    private void Carry(CodeChange change)
+    {
+        if (!_active) return;
+        foreach (var edit in change.Edits)
+        {
+            _start = edit.CarryAnchor(_start);
+            _edits.Add(edit);
+        }
     }
 
     /// <summary>Whether the character before <paramref name="caret"/> is in a comment or a string,

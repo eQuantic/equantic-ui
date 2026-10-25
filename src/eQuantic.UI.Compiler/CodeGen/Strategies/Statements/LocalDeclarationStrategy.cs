@@ -97,11 +97,12 @@ public class LocalDeclarationStrategy : IStatementStrategy
                 if (item is INamedTypeSymbol { Name: "List", IsGenericType: true, TypeArguments.Length: 1 } inner
                     && collection.Name == "List"
                     && SimpleItemName(inner.TypeArguments[0], context) is { } innerName)
-                    return $": {innerName}[][]";
-                // A GENERIC item (KeyValuePair<,>, a tuple) has no TS name to annotate with — its
-                // bare C# name names nothing over there. Inference from the initializer is right.
+                    return $": {ArrayOf(ArrayOf(innerName))}";
+                // A GENERIC item (KeyValuePair<,>) has no TS name to annotate with — its bare C# name
+                // names nothing over there. Inference from the initializer is right. A tuple has one
+                // (see SimpleItemName).
                 if (SimpleItemName(item, context) is not { } itemName) return "";
-                return collection.Name == "HashSet" ? $": Set<{itemName}>" : $": {itemName}[]";
+                return collection.Name == "HashSet" ? $": Set<{itemName}>" : $": {ArrayOf(itemName)}";
             }
 
             // An empty dictionary is the runtime's class, which TypeScript would infer keyed and
@@ -179,20 +180,77 @@ public class LocalDeclarationStrategy : IStatementStrategy
     /// array are left to inference. A type whose C# name names nothing in TypeScript is its stand-in
     /// (<see cref="TsStandIn"/>), a function parenthesised to be an element: a list of exceptions, of
     /// an interface, of an enum or of Action named a type no module defines (#296). A primitive is the
-    /// mapper's, where this called a long, a decimal, a date and an object all a number.
+    /// mapper's, where this called a long, a decimal, a date and an object all a number. A nested class
+    /// is its twin, and a nullable item holds its null.
     /// </summary>
     private static string? SimpleItemName(ITypeSymbol item, ConversionContext context)
     {
+        // A NULLABLE item holds the null C# lets it hold, `T | null`: written without it, pushing that null
+        // into the list, or a pair with a null in it, failed the type check (Copilot on #1068).
+        if (item is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } wrapper)
+            return SimpleItemName(wrapper.TypeArguments[0], context) is { } value
+                ? CodeGen.TypeScriptEmitter.OrNull(value)
+                : null;
+        // A nullable reference and a type parameter declared `T?` alike, which crosses as `T | null` as a
+        // parameter of that type does (Copilot on #1068).
+        if (item.NullableAnnotation == NullableAnnotation.Annotated)
+            return SimpleItemName(item.WithNullableAnnotation(NullableAnnotation.NotAnnotated), context) is { } reference
+                ? CodeGen.TypeScriptEmitter.OrNull(reference)
+                : null;
+        // A TUPLE crosses as an array literal, so its name is the TS tuple of its elements' names, as a
+        // tuple a method returns is written: left to inference, an empty list of pairs pushed array
+        // literals and became an array of arrays, which no tuple slot takes (the code block's selected
+        // stretches were the first to hit it, #1012).
+        if (item is INamedTypeSymbol { IsTupleType: true } tuple)
+        {
+            var names = new List<string>();
+            foreach (var element in tuple.TupleElements)
+            {
+                if (SimpleItemName(element.Type, context) is not { } name) return null;
+                names.Add(name);
+            }
+            return $"[{string.Join(", ", names)}]";
+        }
         if (item is INamedTypeSymbol { IsGenericType: true }) return null;
         if (TsStandIn.Inside(item, context.UsedRuntimeTypes) is { } standIn) return standIn;
-        if (item is ITypeParameterSymbol or INamedTypeSymbol { SpecialType: SpecialType.None }) return item.Name;
+        // A NESTED class is its twin, named by its owner and imported as any reference to it is: its own
+        // name, `Item` for `Cart.Item`, names nothing (Copilot on #1068).
+        if (item is INamedTypeSymbol nested && nested.NestedTwinName() is not null) return nested.IntroduceTwin(context);
+        // A type parameter is named as its declaration names it, `class$` for `@class` (Copilot on #1068).
+        if (item is ITypeParameterSymbol) return item.Name.ToJsIdentifier();
+        if (item is INamedTypeSymbol { SpecialType: SpecialType.None } named) return NamedItemName(named, context);
         if (item.SpecialType == SpecialType.None) return null;
         var ts = CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(
-            item.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat).TrimEnd('?'));
+            item.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat));
         // A decimal is the runtime's class, which the module imports only when something says so.
         if (ts == "Decimal") context.UsedRuntimeTypes.Add("Decimal");
         return ts;
     }
+
+    /// <summary>
+    /// The TS spelling of a named item that is neither a primitive nor generic. A type with a twin, the
+    /// app's own or one the runtime provides, is named by its twin and imported as any reference to it is:
+    /// an app class only a tuple's slot named was named and never imported. A task held as a value is a
+    /// promise, where the mapper's <c>void</c> is what a method returning one is awaited to. Any other type
+    /// the app does not declare is named as the mapper spells it where a module names that with no module
+    /// of the app's behind it (a Guid is a string, a TimeSpan the runtime's), and null where nothing can
+    /// verify the name, which leaves the list to inference as a declared type degrades to <c>any</c>
+    /// (Copilot's reviews of #1068 found each).
+    /// </summary>
+    private static string? NamedItemName(INamedTypeSymbol named, ConversionContext context)
+    {
+        if (named.Locations.Any(location => location.IsInSource) || named.IsRuntimeProvided())
+            return named.IntroduceTwin(context);
+        if (named is { Name: "Task", Arity: 0 } && named.ContainingNamespace?.ToDisplayString() == "System.Threading.Tasks")
+            return "Promise<void>";
+        var ts = CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(named.Name);
+        return CodeGen.TypeScriptEmitter.NamesWithoutAModule(ts) ? ts : null;
+    }
+
+    /// <summary>An array of <paramref name="item"/>, a union parenthesised: <c>string | null[]</c> is a string
+    /// or an array of nulls.</summary>
+    private static string ArrayOf(string item) =>
+        item.EndsWith(" | null", StringComparison.Ordinal) ? $"({item})[]" : $"{item}[]";
 
     /// <summary>
     /// Takes the initializer's VALUE, not the declarator: `int x;` is legal C# and carries no

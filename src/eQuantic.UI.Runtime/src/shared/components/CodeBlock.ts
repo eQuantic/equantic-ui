@@ -24,9 +24,9 @@ export class CodeBlock extends StatelessComponent {
     declare inverse: boolean;
     declare gutterMarkers: CodeGutterMarker[];
     declare decorations: CodeDecoration[];
-    declare activeLine: any;
+    declare activeLines: number[];
     declare selectionBands: Rect[];
-    declare selection: CodeRange;
+    declare selections: CodeRange[];
     declare widestLine: any;
     declare rows: any;
     declare fillerDocument: any;
@@ -127,8 +127,9 @@ export class CodeBlock extends StatelessComponent {
         if (this.inverse === undefined) this.inverse = false;
         if (this.gutterMarkers === undefined) this.gutterMarkers = [];
         if (this.decorations === undefined) this.decorations = [];
+        if (this.activeLines === undefined) this.activeLines = [];
         if (this.selectionBands === undefined) this.selectionBands = [];
-        if (this.selection === undefined) this.selection = CodeRange.$zero();
+        if (this.selections === undefined) this.selections = [];
         if (this.fillerDecorations === undefined) this.fillerDecorations = [];
         if (this.viewportOffset === undefined) this.viewportOffset = 0;
         if (this.viewportHeight === undefined) this.viewportHeight = 0;
@@ -167,8 +168,8 @@ export class CodeBlock extends StatelessComponent {
         let width = Math.max(codeWidth, this.viewportWidth);
         let marks = new Stack('topStart', { width: SizeValue.fill });
         this.addMarks(marks, CodeBlock.linePass, metrics, theme, first, last, firstLine, lastLine, width);
-        let activeLine: any; 
-        if ((activeLine = this.activeLine) != null && activeLine >= 0 && activeLine < this.document.lineCount && this.shows(activeLine)) {
+        for (const activeLine of this.activeLines) {
+            if (activeLine < 0 || activeLine >= this.document.lineCount || !this.shows(activeLine)) continue;
             marks.add(new Positioned(new Box(new BoxStyle({ width: width, height: lineHeight, background: this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle })), Math.fround(metrics.contentTop + Math.fround(Math.fround(this.rowOf(activeLine)) * lineHeight)), null, null, 0));
         }
         this.addMarks(marks, CodeBlock.highlightPass, metrics, theme, first, last, firstLine, lastLine, width);
@@ -260,7 +261,7 @@ export class CodeBlock extends StatelessComponent {
         if ((text = label) != null) {
             numbers.add(new Text(text, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, 0, { mono: true, tabular: true, styleOverride: $eq.withPatch(metrics.style, { weight: 'regular' }) }));
         }
-        let cell = new Box(new BoxStyle({ width: SizeValue.fixed(metrics.gutterWidth), height: SizeValue.fixed(metrics.lineHeight), padding: new EdgeInsets(0, 0, 12, 0), background: !isLine ? this.fillerColor : this.activeLine === index ? this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle : null }), numbers);
+        let cell = new Box(new BoxStyle({ width: SizeValue.fixed(metrics.gutterWidth), height: SizeValue.fixed(metrics.lineHeight), padding: new EdgeInsets(0, 0, 12, 0), background: !isLine ? this.fillerColor : this.activeLines.includes(index) ? this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle : null }), numbers);
         let pressed: any; 
         return isLine && (pressed = this.onGutterPressed) != null ? new Pressable(cell, () => pressed(index), { label: SdkStrings.lineNumbered(this.firstLineNumber + index) }) : cell;
     }
@@ -301,16 +302,16 @@ export class CodeBlock extends StatelessComponent {
         let code = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, cross: 'center' });
         let text = document.line(index);
         let tokens = highlighter.tokensFor(document, index);
-        let [selectedFrom, selectedTo, selectedInk] = this.selectedOn(selectable, index, text.length, ink, theme);
+        let [selected, selectedInk] = this.selectedOn(selectable, index, text.length, ink, theme);
         let at = 0;
         for (const token of tokens) {
             let start = Math.min(Math.max(token.start, at), text.length);
             let end = Math.min(Math.max(token.end, start), text.length);
-            if (start > at) CodeBlock.addSpans(code, cells, at, start, ink, style, columnWidth, selectedFrom, selectedTo, selectedInk);
-            CodeBlock.addSpans(code, cells, start, end, this.inverse ? CodeBlock.inverseCode(token.kind, theme) : theme.code(token.kind), style, columnWidth, selectedFrom, selectedTo, selectedInk);
+            if (start > at) CodeBlock.addSpans(code, cells, at, start, ink, style, columnWidth, selected, selectedInk);
+            CodeBlock.addSpans(code, cells, start, end, this.inverse ? CodeBlock.inverseCode(token.kind, theme) : theme.code(token.kind), style, columnWidth, selected, selectedInk);
             at = end;
         }
-        if (at < text.length) CodeBlock.addSpans(code, cells, at, text.length, ink, style, columnWidth, selectedFrom, selectedTo, selectedInk);
+        if (at < text.length) CodeBlock.addSpans(code, cells, at, text.length, ink, style, columnWidth, selected, selectedInk);
         if (text.length === 0) code.add(CodeBlock.run(' ', ink, style));
         row.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(12, 0) }), code));
         return row;
@@ -454,21 +455,31 @@ export class CodeBlock extends StatelessComponent {
         if (run.length > 0) code.add(CodeBlock.run(run, color, style));
     }
 
-    selectedOn(selectable: boolean, line: number, length: number, ink: ColorToken, theme: any): [number, number, ColorToken] {
+    selectedOn(selectable: boolean, line: number, length: number, ink: ColorToken, theme: any): [[number, number][], ColorToken] {
+        let stretches: [number, number][] = [];
         let on: any; 
-        if (!selectable || !((on = theme.onSelection) != null) || this.selection.isEmpty) return [0, 0, ink];
-        let start = this.selection.start;
-        let end = this.selection.end;
-        if (line < start.line || line > end.line) return [0, 0, ink];
-        return [line === start.line ? start.column : 0, line === end.line ? end.column : length, this.inverse ? new ColorToken(on.dark, on.dark) : on];
+        if (!selectable || !((on = theme.onSelection) != null)) return [stretches, ink];
+        for (const selection of this.selections) {
+            if (selection.isEmpty) continue;
+            let start = selection.start;
+            let end = selection.end;
+            if (line < start.line || line > end.line) continue;
+            stretches.push([line === start.line ? start.column : 0, line === end.line ? end.column : length]);
+        }
+        return [stretches, this.inverse ? new ColorToken(on.dark, on.dark) : on];
     }
 
-    static addSpans(code: Row, cells: CodeLineCells, from: number, to: number, color: ColorToken, style: TypeStyle, columnWidth: number, selectedFrom: number, selectedTo: number, selectedInk: ColorToken) {
-        let inFrom = Math.min(Math.max(selectedFrom, from), to);
-        let inTo = Math.min(Math.max(selectedTo, inFrom), to);
-        CodeBlock.addSpan(code, cells, from, inFrom, color, style, columnWidth);
-        CodeBlock.addSpan(code, cells, inFrom, inTo, selectedInk, style, columnWidth);
-        CodeBlock.addSpan(code, cells, inTo, to, color, style, columnWidth);
+    static addSpans(code: Row, cells: CodeLineCells, from: number, to: number, color: ColorToken, style: TypeStyle, columnWidth: number, selected: any[], selectedInk: ColorToken) {
+        let at = from;
+        for (const stretch of selected) {
+            let inFrom = Math.min(Math.max(stretch[0], at), to);
+            let inTo = Math.min(Math.max(stretch[1], inFrom), to);
+            if (inTo <= inFrom) continue;
+            CodeBlock.addSpan(code, cells, at, inFrom, color, style, columnWidth);
+            CodeBlock.addSpan(code, cells, inFrom, inTo, selectedInk, style, columnWidth);
+            at = inTo;
+        }
+        CodeBlock.addSpan(code, cells, at, to, color, style, columnWidth);
     }
 
     static run(content: string, color: ColorToken, style: TypeStyle) {
