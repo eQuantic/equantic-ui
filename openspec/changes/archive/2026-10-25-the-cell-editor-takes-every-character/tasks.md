@@ -127,7 +127,7 @@
       region's `InputBounds`; focus requests are adopted for sheets; verify host tests for the
       composition (shown, committed, cancelled), the emoji, the candidate window's anchor at the caret and
       at the active cell, and the blink restarting on a key
-- [ ] 8.3 Prove it in a real Metal window through the shell's own input client: a dead-key sequence, a
+- [x] 8.3 Prove it in a real Metal window through the shell's own input client: a dead-key sequence, a
       Japanese composition and an emoji land in a cell, drawn; capture the window
 
 ## 9. The formula bar
@@ -183,7 +183,7 @@
       a composed Japanese word and an emoji land in a cell; F2 then the arrows, Home and End move the
       caret; the formula bar follows keystroke by keystroke; Escape then Tab leaves the sheet; the
       served runtime's budget moves in its commit with the number (`EQ_UPDATE_RUNTIME_BUDGET=1`)
-- [ ] 13.2 The suites after a merge of `main`: Compiler, Conformance, Web (against the wiki branch),
+- [x] 13.2 The suites after a merge of `main`: Compiler, Conformance, Web (against the wiki branch),
       Server, Native.Engine, Design, Email, the runtime's Vitest, `./scripts/check-openspec.sh`, and the
       four samples built; `/code-review high` on the branch and its findings fixed before the pull
       request opens; the change archived (`openspec archive the-cell-editor-takes-every-character --yes`)
