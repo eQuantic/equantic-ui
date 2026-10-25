@@ -2353,6 +2353,10 @@ public class TypeScriptEmitter
         // reduced `Outer.Inner[]` to `Inner[]`, which names nothing (#584).
         if (resolved is IArrayTypeSymbol or INamedTypeSymbol { TypeArguments.Length: > 0 })
             mapped = NestedTwinsInside(mapped, resolved, Annotated);
+        // The runtime's builder inside an array or a generic, `StringBuilder[]` or `List<StringBuilder>`, is imported
+        // as a bare one is, asked of the symbol too (Copilot on #1079).
+        if (resolved is IArrayTypeSymbol or INamedTypeSymbol { TypeArguments.Length: > 0 } && NamesABuilder(resolved))
+            _converter.UsedRuntimeTypes.Add("StringBuilder");
 
         var core = (echoed ? resolved : null) switch
         {
@@ -2362,6 +2366,11 @@ public class TypeScriptEmitter
             { TypeKind: TypeKind.TypeParameter } => resolved!.Name,
             // A nested type is its twin, named by its owner (#584).
             INamedTypeSymbol nested when nested.NestedTwinName() is { } twin => Annotated(nested, twin),
+            // .NET's builder (utils/string-builder.ts), built through `$eq.text.stringBuilder` and named by a field
+            // or a parameter that holds one: imported where a member names it (#1074). Asked of the symbol, so an
+            // app's own `StringBuilder` stays the app's (Copilot on #1079).
+            INamedTypeSymbol { Name: "StringBuilder" } builder
+                when builder.ContainingNamespace?.ToDisplayString() == "System.Text" => RuntimeBuilder(),
             // A name nothing here can VERIFY is a name the module may not resolve. Annotating with
             // it trades a missing type for a broken one, so it stays open.
             null when echoed && !Resolvable(mapped) => "any",
@@ -2369,6 +2378,23 @@ public class TypeScriptEmitter
         };
         if (!nullable || core == "any") return core;
         return OrNull(core);
+    }
+
+    /// <summary>Whether <paramref name="type"/> is .NET's builder, or holds one as an array's element or a
+    /// generic's argument, at any depth.</summary>
+    private static bool NamesABuilder(ITypeSymbol? type) => type switch
+    {
+        IArrayTypeSymbol array => NamesABuilder(array.ElementType),
+        INamedTypeSymbol { Name: "StringBuilder" } builder when builder.ContainingNamespace?.ToDisplayString() == "System.Text" => true,
+        INamedTypeSymbol generic => generic.TypeArguments.Any(NamesABuilder),
+        _ => false,
+    };
+
+    /// <summary>The runtime's builder named in an annotation, which the module imports from the runtime.</summary>
+    private string RuntimeBuilder()
+    {
+        _converter.UsedRuntimeTypes.Add("StringBuilder");
+        return "StringBuilder";
     }
 
     /// <summary>

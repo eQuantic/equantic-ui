@@ -162,6 +162,8 @@ export {
   CancellationTokenRegistration,
   CancellationTokenSource,
 } from '../utils/cancellation';
+// The builder, built through `$eq.text.stringBuilder` and NAMED by a field or a parameter that holds one.
+export { StringBuilder } from '../utils/string-builder';
 export { CalendarNames } from './calendar-names';
 // The vocabulary's interface defaults (#414): a twin that relies on one delegates to it by the
 // interface's name, and an embedded twin imports from this barrel, not from index (found in review,

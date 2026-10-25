@@ -192,4 +192,13 @@ public enum CodeCommand
     SelectAllOccurrences,
     /// <summary>Every caret but the primary taken away. Claims nothing with one caret, so Escape goes on.</summary>
     RemoveSecondaryCursors,
+
+    // ---- snippets (#1013) -------------------------------------------------------------------------------
+
+    /// <summary>The snippet's next stop, every place it is written selected; the last one ends the snippet.</summary>
+    NextTabStop,
+    /// <summary>The snippet's stop before. Claims nothing at its first stop, so ⇧Tab outdents there.</summary>
+    PreviousTabStop,
+    /// <summary>The snippet ended, the carets where they are. Claims nothing with no snippet, so Escape goes on.</summary>
+    LeaveSnippet,
 }

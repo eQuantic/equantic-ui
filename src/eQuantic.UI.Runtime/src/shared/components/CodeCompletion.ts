@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeChange, CodeCompletionAnswer, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeCompletionMatch, CodeCompletionOffer, CodeCompletionRequest, CodeCompletionTriggerValue, CodeDocument, CodeEdit, CodeEditorController, CodeFuzzyMatch, CodePosition, CodeRange, ProviderRequest, UiThread } from "../runtime-exports";
+import { $eq, CancellationToken, CancellationTokenSource, CodeChange, CodeChoiceProvider, CodeCompletionAnswer, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeCompletionMatch, CodeCompletionOffer, CodeCompletionRequest, CodeCompletionTriggerValue, CodeDocument, CodeEdit, CodeEditorController, CodeFuzzyMatch, CodePosition, CodeRange, ProviderRequest, UiThread } from "../runtime-exports";
 
 export class CodeCompletion {
     constructor(editor: CodeEditorController) {
@@ -12,6 +12,7 @@ export class CodeCompletion {
         this._active = false;
         this._start = CodePosition.$zero();
         this._openedEmpty = false;
+        this._choosing = false;
         this._edits = [];
         this._requests = [];
         this._list = null;
@@ -35,6 +36,7 @@ export class CodeCompletion {
     _active!: boolean;
     _start!: CodePosition;
     _openedEmpty!: boolean;
+    _choosing!: boolean;
     _edits!: CodeEdit[];
     _requests!: CodeCompletionRequest[];
     _list!: CancellationTokenSource | null;
@@ -67,6 +69,7 @@ export class CodeCompletion {
     get acceptChangesText(): boolean {
         if (!this.isOpen || this._selected < 0) return false;
         let offer = this._shown[this._selected];
+        if (this._choosing || !(offer.item.snippet == null)) return true;
         return this._editor.document.textIn(this.rangeOf(offer)) !== (offer.item.insertText ?? offer.item.label);
     }
 
@@ -95,21 +98,31 @@ export class CodeCompletion {
         this.open(start, 'typing', typed, this.providers.slice());
     }
 
-    open(start: CodePosition, trigger: CodeCompletionTriggerValue, character: string | null, providers: any[]) {
+    open(start: CodePosition, trigger: CodeCompletionTriggerValue, character: string | null, providers: any[], choosing: boolean = false) {
         this.close(false);
         this._active = true;
+        this._choosing = choosing;
         this._edits.splice(0);
         this._start = start;
-        this._openedEmpty = $eq.equals(start, this._editor.caret);
+        this._openedEmpty = choosing || $eq.equals(start, this._editor.caret);
         this._list = $eq.cancellation.source();
         this.ask(trigger, character, providers, true);
+    }
+
+    offerChoices(at: CodeRange, options: string[]) {
+        if (this._editor.readOnly) return;
+        this.open(at.start, 'invoked', null, [new CodeChoiceProvider(options)], true);
+    }
+
+    dropChoices() {
+        if (this._choosing) this.close(true);
     }
 
     ask(trigger: CodeCompletionTriggerValue, character: string | null, providers: any[], announce: boolean) {
         let document = this._editor.document;
         let position = this._editor.caret;
-        let $n12: any; 
-        let context = ($n12 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n12.character = character, $n12);
+        let $n13: any; 
+        let context = ($n13 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n13.character = character, $n13);
         let asked = this._edits.length;
         let word = this.word();
         let requests: CodeCompletionRequest[] = [];
@@ -181,7 +194,7 @@ export class CodeCompletion {
     follow() {
         if (!this._active) return;
         let caret = this._editor.caret;
-        if (!this._editor.selection.isEmpty || caret.line !== this._start.line || caret.column < this._start.column || caret.column === this._start.column && !this._openedEmpty) {
+        if (!this._editor.selection.isEmpty && !this._choosing || caret.line !== this._start.line || caret.column < this._start.column || caret.column === this._start.column && !this._openedEmpty) {
             this.close(true);
             return;
         }
@@ -282,7 +295,8 @@ export class CodeCompletion {
     }
 
     static entryOf(item: CodeCompletionItem) {
-        return $eq.text.format(item.label.length, null, undefined, undefined, 'int32') + ':' + item.label + (item.insertText ?? item.label);
+        let snippet: any; 
+        return $eq.text.format(item.label.length, null, undefined, undefined, 'int32') + ':' + item.label + ((snippet = item.snippet) != null ? 's' + snippet.body : 't' + (item.insertText ?? item.label));
     }
 
     move(delta: number) {
@@ -313,10 +327,17 @@ export class CodeCompletion {
     accept() {
         if (!this.isOpen || this._selected < 0) return false;
         let offer = this._shown[this._selected];
+        if (this._choosing) {
+            let option = offer.item.label;
+            this.close(true);
+            return this._editor.snippet.choose(option);
+        }
         let range = this.rangeOf(offer);
         let text = offer.item.insertText ?? offer.item.label;
         this.close(true);
         let caret = this._editor.caret;
+        let snippet: any; 
+        if ((snippet = offer.item.snippet) != null && range.start.line === caret.line && range.end.line === caret.line) return this._editor.insertSnippetAround(snippet, caret.column - range.start.column, range.end.column - caret.column);
         if (this._editor.hasOtherCarets && range.start.line === caret.line && range.end.line === caret.line) return this._editor.replaceAroundEveryCaret(caret.column - range.start.column, range.end.column - caret.column, text);
         if (this._editor.document.textIn(range) === text) {
             this._editor.selection = new CodeRange(range.end);
@@ -344,6 +365,7 @@ export class CodeCompletion {
         this._list = null;
         let was = this._active;
         this._active = false;
+        this._choosing = false;
         this._edits.splice(0);
         this._answers.splice(0);
         this._candidates = [];
@@ -392,6 +414,7 @@ export class CodeCompletion {
     }
 
     word() {
+        if (this._choosing && !this._editor.selection.isEmpty) return '';
         let caret = this._editor.caret;
         if (caret.line !== this._start.line || caret.column < this._start.column) return '';
         return $eq.text.substring(this._editor.document.line(caret.line), this._start.column, caret.column - this._start.column);
