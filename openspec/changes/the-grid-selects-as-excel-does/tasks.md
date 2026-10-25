@@ -35,7 +35,7 @@
       resize grips as `Draggable` nodes; verify on Photon (`SpreadsheetComponentTests`: a press on a header
       with Shift and with ⌘ through `PhotonHost`, and a grip drag that resizes and selects nothing) and in
       the runtime (`sheet-surface-web.spec.ts`: the same presses through the lowered surface)
-- [ ] 2.3 Prove it in Chromium on the dashboard's `/sheet`: a drag across column headers, Shift+click on a
+- [x] 2.3 Prove it in Chromium on the dashboard's `/sheet`: a drag across column headers, Shift+click on a
       row header, ⌘/Ctrl+click on a column header, and a grip drag
 
 ## 3. Excel's chords
@@ -55,7 +55,7 @@
 - [x] 4.1 The macOS shell offers a key to the host first while nothing is marked, and to the input
       context first while a composition is in flight; verify the shell's existing tests, and a host test
       that Shift+Space selects a row with a sheet holding the caret
-- [ ] 4.2 Prove it in a real PhotonDesktop window with the CGEvent driver (`.tools/drafts/slice1-issues/ime`):
+- [x] 4.2 Prove it in a real PhotonDesktop window with the CGEvent driver (`.tools/drafts/slice1-issues/ime`):
       Shift+Space selects the row and types nothing; the dead acute then `a` still types `á` in a cell, in
       the code editor and in a text field; a Japanese Romaji composition still shows and commits in a cell
       (ask Edgar before taking the window's focus, and to enable the input source)
@@ -70,7 +70,7 @@
       (design §6), the headers' band and whole emphasis from the ranges, and the dimmed colours while the
       model has not the keyboard; verify goldens (`sheet-range`, `sheet-ranges`, `sheet-unfocused`,
       `sheet-whole-column`) each with an assertion on the marks' rectangles beside it
-- [ ] 5.3 Prove it in Chromium: a range, two ranges, a whole column, and the grid unfocused by Tab
+- [x] 5.3 Prove it in Chromium: a range, two ranges, a whole column, and the grid unfocused by Tab
 
 ## 6. The cursor glides
 
@@ -82,7 +82,7 @@
 - [x] 6.3 Photon's table emit interpolates a keyed gliding mark by the frame's time and reports active
       motion while it glides, snapping under reduced motion; verify `TableViewportGlideTests` for the spec's
       three scenarios at 0, 100 and 200 milliseconds
-- [ ] 6.4 The active ring is keyed `cursor` with `Motion.State` (the base duration); verify a Photon frame mid-glide and the
+- [x] 6.4 The active ring is keyed `cursor` with `Motion.State` (the base duration); verify a Photon frame mid-glide and the
       spec's two cursor scenarios, and in Chromium that → glides and the reduced-motion emulation jumps
 
 ## 7. The status bar
@@ -103,22 +103,22 @@
 - [x] 7.3 Bench the summary on a sheet of 100 000 × 100 with a million cells in use and the whole sheet
       selected, in .NET and the runtime, with a budget the test fails on; and a keystroke that moves
       nothing recomputes nothing
-- [ ] 7.4 Prove it in Chromium and in the PhotonDesktop gallery: the Portuguese sums of the spec, two
+- [x] 7.4 Prove it in Chromium and in the PhotonDesktop gallery: the Portuguese sums of the spec, two
       overlapping ranges, add mode's notice
 
 ## 8. Samples and documentation
 
-- [ ] 8.1 The dashboard's `SheetScreen` and the PhotonDesktop gallery place the status bar under the grid;
+- [x] 8.1 The dashboard's `SheetScreen` and the PhotonDesktop gallery place the status bar under the grid;
       take the README's pictures again where a sample's screen changed and record them
       (`ReadmeCapturesTests`)
-- [ ] 8.2 `docs/SPREADSHEET-PLAN.md`: slice 2 split into 2a (#984) and 2b (#1081) in the slices table, 2a
+- [x] 8.2 `docs/SPREADSHEET-PLAN.md`: slice 2 split into 2a (#984) and 2b (#1081) in the slices table, 2a
       delivered in "Where the slices stand", D10, D13 and D14 closed; verify `DocsIndexTests`
-- [ ] 8.3 The wiki's Components page (the selection, the chords, the status bar), and its Diagnostics and
+- [x] 8.3 The wiki's Components page (the selection, the chords, the status bar), and its Diagnostics and
       SupportedFeatures pages (EQ2110 retired, a number read in the page's culture), in English,
       Portuguese, Spanish, French and German, on the wiki branch named like this pull request's; verify
       the wiki guards with `EQ_WIKI_DIR` pointed at it and `WikiClaimsCompile` for every snippet the
       pages add
-- [ ] 8.4 Ledger entries as files under `docs/ledger/`, one citing #984 and one citing #1087 and #908;
+- [x] 8.4 Ledger entries as files under `docs/ledger/`, one citing #984 and one citing #1087 and #908;
       verify `LedgerTests`
 
 ## 9. Integration
