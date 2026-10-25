@@ -106,7 +106,7 @@ describe('code surface (web)', () => {
 
     expect(editor.document.text, 'one undo takes the whole move back').toBe('one\ntwo\nthree');
     expect([editor.caret.line, editor.caret.column]).toEqual([1, 1]);
-    expect(heard, 'the move and its undo, two replacements each').toEqual(['>\none', 'one\n>', '>one\n', '\none>']);
+    expect(heard, 'the move and its undo, two replacements each').toEqual(['>one\n', 'one\n>', '>one\n', 'one\n>']);
   });
 
   it('types through an input of its own, which says what it is', () => {

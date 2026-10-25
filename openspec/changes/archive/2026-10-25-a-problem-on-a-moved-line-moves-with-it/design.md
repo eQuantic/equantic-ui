@@ -24,12 +24,17 @@ no listener understands (a language server speaks replacements, as LSP's content
   or kept apart. A command that edits several places in one pass makes them from the document's end to
   its start, so each is made on text no earlier edit moved.
 - **A command makes a step in a scope**, `AsOneStep`, as VS Code's commands push one undo element: its
-  edits go through the one door, `Edit`, one after another, each raising `Changed` with the document it
-  made and the selection it left, and the scope records what they made as one step. An edit outside a
-  scope is a step of its own, as today.
-- **`Changed` is raised for each replacement**, through an edit, an undo and a redo, in the order they
-  happen, the document being the one that replacement made. A listener already handles one replacement
-  at a time; it hears more of them, never a new shape.
+  edits go through the one door, `Edit`, one after another, each bringing the colours and the widths up to
+  date as it is made, and the scope records what they made as one step, then raises them. An edit outside
+  a scope is a step of its own, as today.
+- **`Changed` is raised for each replacement**, through an edit, an undo and a redo, and for a step's once
+  all are made, in the order made, each with the selection the step found and the one it left, as VS Code
+  raises one content change for all of an operation's changes once the model holds them. Raised as each
+  was made, a listener that edited in between moved the text the next replacement's range had been taken
+  from, and that replacement deleted the wrong line (Copilot's first round on #1058). An edit a listener
+  makes while it hears them waits for them, and every listener hears it after them, so a listener that
+  carries ranges never hears an edit before the replacements made ahead of it. A listener already handles
+  one replacement at a time; it hears more of them, never a new shape.
 - **The selection a step leaves** is the last edit's, and the one it found the first edit's, as for one
   edit today.
 - **The typing run coalesces steps of one typed edit**, as today: a step of several edits never joins one.
@@ -37,9 +42,13 @@ no listener understands (a language server speaks replacements, as LSP's content
   above; ⌥↓ the line below, the other way round. The block is the selection's, which a person is working
   on, so its problems travel with it; the passed line is written anew, and its problems are left empty
   where its text was until a provider answers, as any deleted text's are. It is the smaller side too: one
-  line, where the block may be many.
-- **The history's shape:** `Record(IReadOnlyList<CodeEdit>)` records a step, `Record(CodeEdit)` a step of
-  one; `Undo` and `Redo` answer the new document, the selection, and the replacements they made as
+  line, where the block may be many. The passed line goes in at the start of the line after the block and
+  comes out from the start of its own, with its line break, so neither replacement writes where the
+  block's lines start or end, and a problem of no width there (a missing semicolon at a line's end) stays
+  on them: written after the block's last line, the passed line took that problem along (Copilot's first
+  round on #1058).
+- **The history's shape:** `Record(IReadOnlyList<CodeEdit>)` records a step, a step of one edit included,
+  since no overload crosses to the twin; `Undo` and `Redo` answer the new document, the selection, and the replacements they made as
   `CodeEdit`s in the order made, which is what the controller raises and what keeps the colours and the
   widths up to date line by line.
 
@@ -55,3 +64,7 @@ Monaco's undo elements are.
   a provider answers after the pause, and a problem the app reports itself is the app's to report again.
 - More `Changed` events per command. → Two for a move, one for everything else; the listeners' work is
   per replacement already.
+- At the document's end no line follows the block, and the passed line is written after its last line,
+  where `CodeEdit.Carry` pushes a problem of no width past the insertion: it goes with the passed line.
+  → The carry rule decides it, not the move, and typing meets the same rule, so it is a change of its own
+  (#1059).

@@ -77,7 +77,7 @@ public class CodeLinesTests : IDisposable
     /// <summary>
     /// A move is the line it passes written on the block's other side and deleted where it was: two
     /// replacements, one undo step, and every replacement heard, through the move, its undo and its redo,
-    /// in the document it was made on (#1031).
+    /// in the order made, once the step is made (#1031).
     /// </summary>
     [Fact]
     public void AMove_IsTwoReplacementsInOneStep_EachOneHeard()
@@ -96,12 +96,123 @@ public class CodeLinesTests : IDisposable
         editor.Selection.Should().Be(new CodeRange(At(0, 1)));
 
         heard.Should().Equal(
-            "1:3-1:3 >|one one|two|one|three",
+            "2:0-2:0 >one| two|one|three",
             "0:0-1:0 one|> two|one|three",
-            "0:0-0:0 >one| one|two|one|three",
-            "1:3-2:3 |one> one|two|three",
-            "1:3-1:3 >|one one|two|one|three",
+            "0:0-0:0 >one| one|two|three",
+            "2:0-3:0 one|> one|two|three",
+            "2:0-2:0 >one| two|one|three",
             "0:0-1:0 one|> two|one|three");
+    }
+
+    /// <summary>
+    /// A listener that edits while it hears a step's replacements corrupts none of them: the step is made
+    /// whole before any is raised, so the listener's edit lands on the step's result and is a step of its
+    /// own. Raised between them, an insertion at the top made the move's next replacement delete the
+    /// listener's text, and the undo's next one delete the moved line (Copilot, #1058).
+    /// </summary>
+    [Fact]
+    public void AListenerThatEditsWhileAStepIsHeard_CorruptsNoReplacement()
+    {
+        static void InsertOnce(CodeEditorController editor)
+        {
+            var done = false;
+            editor.Changed += _ =>
+            {
+                if (done) return;
+                done = true;
+                editor.Apply(new CodeRange(At(0, 0)), "extra\n");
+            };
+        }
+
+        var moved = Editor("one\ntwo\nthree", At(1, 1));
+        InsertOnce(moved);
+        Press(moved, "ArrowUp", KeyModifiers.Alt).Should().BeTrue();
+        moved.Document.Text.Should().Be("extra\ntwo\none\nthree");
+
+        var undone = Editor("one\ntwo\nthree", At(1, 1));
+        Press(undone, "ArrowUp", KeyModifiers.Alt).Should().BeTrue();
+        InsertOnce(undone);
+        undone.Undo().Should().BeTrue();
+        undone.Document.Text.Should().Be("extra\none\ntwo\nthree");
+        undone.Undo().Should().BeTrue();
+        undone.Document.Text.Should().Be("one\ntwo\nthree", "the listener's insertion is an undo step of its own");
+    }
+
+    /// <summary>
+    /// Every listener hears the replacements in the order they were made, even when another one edits as it
+    /// hears them: a problem, carried by the editor's own first listener, stays on its text. Raised at once,
+    /// the insertion reached the problem before the move's second replacement, whose range was taken before
+    /// it, and the problem went onto the inserted line (Copilot, #1058).
+    /// </summary>
+    [Fact]
+    public void AListenerThatEdits_LeavesTheOthersHearingEveryReplacementInOrder()
+    {
+        var editor = Editor("one\ntwo\nthree", At(1, 1));
+        editor.Diagnostics.Report([new CodeDiagnostic(new CodeRange(At(1, 0), At(1, 3)), "two")]);
+        var done = false;
+        editor.Changed += _ =>
+        {
+            if (done) return;
+            done = true;
+            editor.Apply(new CodeRange(At(1, 0)), "extra\n");
+        };
+
+        Press(editor, "ArrowUp", KeyModifiers.Alt).Should().BeTrue();
+
+        editor.Document.Text.Should().Be("two\nextra\none\nthree");
+        editor.Diagnostics.Items.Single().Range.Should().Be(new CodeRange(At(0, 0), At(0, 3)));
+    }
+
+    /// <summary>
+    /// A problem of no width at a moved line's end, where Roslyn reports a missing semicolon, stays on that
+    /// line through the move, its undo and its redo: a move never writes text where the block's lines start
+    /// or end. Written after the block's last line, the passed line took the problem with it (Copilot,
+    /// #1058).
+    /// </summary>
+    [Fact]
+    public void AProblemOfNoWidth_AtAMovedLinesEdge_StaysOnIt()
+    {
+        void Holds(string text, CodePosition caret, CodePosition problem, string key, CodePosition moved)
+        {
+            var editor = Editor(text, caret);
+            editor.Diagnostics.Report([new CodeDiagnostic(new CodeRange(problem), "; expected")]);
+
+            Press(editor, key, KeyModifiers.Alt).Should().BeTrue();
+            editor.Diagnostics.Items.Single().Range.Should().Be(new CodeRange(moved), $"{key} over {text}");
+            editor.Undo().Should().BeTrue();
+            editor.Diagnostics.Items.Single().Range.Should().Be(new CodeRange(problem), $"undo of {key} over {text}");
+            editor.Redo().Should().BeTrue();
+            editor.Diagnostics.Items.Single().Range.Should().Be(new CodeRange(moved), $"redo of {key} over {text}");
+        }
+
+        Holds("alpha\nbeta\ngamma", At(1, 0), At(1, 4), "ArrowUp", At(0, 4));
+        Holds("alpha\nbeta\ngamma\ndelta", At(1, 0), At(1, 4), "ArrowDown", At(2, 4));
+        Holds("alpha\nbeta\ngamma", At(1, 0), At(1, 0), "ArrowUp", At(0, 0));
+        Holds("alpha\n\ngamma", At(1, 0), At(1, 0), "ArrowUp", At(0, 0));
+        Holds("alpha\n\ngamma\ndelta", At(1, 0), At(1, 0), "ArrowDown", At(2, 0));
+    }
+
+    /// <summary>
+    /// The replacements an undo and a redo raise carry the selection as it was before them and as they left
+    /// it, the live one: a caret moved after the edit is the undo's selection before, and the restored one is
+    /// every replacement's selection after (Copilot, #1058).
+    /// </summary>
+    [Fact]
+    public void TheReplacementsHeard_CarryTheLiveSelectionOnEachSide()
+    {
+        var editor = Editor("one\ntwo\nthree", At(1, 1));
+        Press(editor, "ArrowUp", KeyModifiers.Alt).Should().BeTrue();
+        editor.Selection = new CodeRange(At(2, 3));
+        var heard = new List<CodeEdit>();
+        editor.Changed += edit => heard.Add(edit!);
+
+        editor.Undo().Should().BeTrue();
+        heard.Should().OnlyContain(edit => edit.SelectionBefore == new CodeRange(At(2, 3)) && edit.SelectionAfter == new CodeRange(At(1, 1)));
+
+        heard.Clear();
+        editor.Redo().Should().BeTrue();
+        heard.Should().OnlyContain(edit => edit.SelectionBefore == new CodeRange(At(1, 1)) && edit.SelectionAfter == editor.Selection);
+        editor.Selection.Should().Be(new CodeRange(At(0, 1)));
     }
 
     /// <summary>A problem on a moved line stays on its text, through the move, its undo and its redo, and

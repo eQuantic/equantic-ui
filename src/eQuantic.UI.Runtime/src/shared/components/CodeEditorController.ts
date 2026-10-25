@@ -29,6 +29,9 @@ export class CodeEditorController {
         this._compositionReplaced = '';
         this._compositionSelection = CodeRange.$zero();
         this._step = null;
+        this._unheard = [];
+        this._raising = false;
+        this._unheardMoved = false;
         this._wholeLineCopy = null;
         this._document = CodeDocument.fromText(text);
         this._selection = new CodeRange(CodePosition.start);
@@ -66,6 +69,9 @@ export class CodeEditorController {
     _compositionReplaced!: string;
     _compositionSelection!: CodeRange;
     _step!: CodeEdit[] | null;
+    _unheard!: (CodeEdit | null)[];
+    _raising!: boolean;
+    _unheardMoved!: boolean;
     _wholeLineCopy!: string | null;
     static caretWidth: number = 2;
 
@@ -82,7 +88,7 @@ export class CodeEditorController {
         this.highlighter.invalidate();
         this.history.clear();
         this._revealVersion++;
-        this.changed?.(null);
+        this.raise([null], false);
     }
 
     get selection(): CodeRange {
@@ -385,7 +391,7 @@ export class CodeEditorController {
                     return true;
                 case 'paste':
                     if (clipboard == null) return false;
-                    if ((($v26867) => (($v26867 != null && $v26867.length > 0) && (pasted = $v26867, true)))(clipboard.read())) this.paste(pasted);
+                    if ((($v27310) => (($v27310 != null && $v27310.length > 0) && (pasted = $v27310, true)))(clipboard.read())) this.paste(pasted);
                     return true;
                 case 'completionShow':
                     return this.completion.invoke();
@@ -519,8 +525,7 @@ export class CodeEditorController {
         this._revealVersion++;
         this._desiredCell = -1;
         let edit = new CodeEdit(ordered, removed, next.textIn(new CodeRange(ordered.start, caret)), before, this._selection, false);
-        this.changed?.(edit);
-        this.selectionChanged?.(this._selection);
+        this.raise([edit]);
         return new CodeRange(ordered.start, caret);
     }
 
@@ -598,25 +603,51 @@ export class CodeEditorController {
         this._selection = (left = after) != null ? this.onElementEdges(left) : new CodeRange(caret);
         this._revealVersion++;
         let edit = new CodeEdit(ordered, removed, next.textIn(new CodeRange(ordered.start, caret)), before, this._selection, typed);
-        let step: any; 
-        if ((step = this._step) != null) step.push(edit); else this.history.record([edit]);
         this.linesChanged(line, linesInserted, linesRemoved);
-        this.changed?.(edit);
-        this.selectionChanged?.(this._selection);
         this._desiredCell = -1;
+        let step: any; 
+        if ((step = this._step) != null) step.push(edit); else {
+            this.history.record([edit]);
+            this.raise([edit]);
+        }
         return true;
     }
 
     asOneStep(edits: () => boolean) {
         if (!(this._step == null)) return edits();
         let step: CodeEdit[] = [];
+        let before = this._selection;
         this._step = step;
         try {
             return edits() || step.length > 0;
         } finally {
             this._step = null;
             this.history.record(step);
+            this.raise(this.heard(step, before));
         }
+    }
+
+    raise(edits: (CodeEdit | null)[], moved: boolean = true) {
+        if ($eq.collections.count(edits) === 0) return;
+        this._unheard.push(...edits);
+        this._unheardMoved = this._unheardMoved || moved;
+        if (this._raising) return;
+        this._raising = true;
+        try {
+            for (let i = 0; i < this._unheard.length; i++) this.changed?.(this._unheard[i]);
+        } finally {
+            this._unheard.splice(0);
+            this._raising = false;
+        }
+        if (!this._unheardMoved) return;
+        this._unheardMoved = false;
+        this.selectionChanged?.(this._selection);
+    }
+
+    heard(made: CodeEdit[], before: CodeRange) {
+        let heard: CodeEdit[] = [];
+        for (const edit of made) heard.push($eq.withPatch(edit, { selectionBefore: before, selectionAfter: this._selection }));
+        return heard;
     }
 
     insert(text: string) {
@@ -997,13 +1028,16 @@ export class CodeEditorController {
         let up = direction === 'backward';
         if (up ? first === 0 : this._selection.end.line === this._document.lineCount - 1) return false;
         let after = this.selectionMovedBy(up ? -1 : 1);
-        let end = new CodePosition(last, this._document.line(last).length);
         if (up) {
             let passed = this._document.line(first - 1);
-            return this.asOneStep(() => this.edit(new CodeRange(end), '\n' + passed, false, this._selection) && this.edit(new CodeRange(new CodePosition(first - 1, 0), new CodePosition(first, 0)), '', false, after));
+            let atEnd = last + 1 === this._document.lineCount;
+            let at = atEnd ? new CodePosition(last, this._document.line(last).length) : new CodePosition(last + 1, 0);
+            let written = atEnd ? '\n' + passed : passed + '\n';
+            return this.asOneStep(() => this.edit(new CodeRange(at), written, false, this._selection) && this.edit(new CodeRange(new CodePosition(first - 1, 0), new CodePosition(first, 0)), '', false, after));
         }
         let below = this._document.line(last + 1);
-        return this.asOneStep(() => this.edit(new CodeRange(end, new CodePosition(last + 1, below.length)), '', false, this._selection) && this.edit(new CodeRange(new CodePosition(first, 0)), below + '\n', false, after));
+        let taken = last + 2 === this._document.lineCount ? new CodeRange(new CodePosition(last, this._document.line(last).length), new CodePosition(last + 1, below.length)) : new CodeRange(new CodePosition(last + 1, 0), new CodePosition(last + 2, 0));
+        return this.asOneStep(() => this.edit(taken, '', false, this._selection) && this.edit(new CodeRange(new CodePosition(first, 0)), below + '\n', false, after));
     }
 
     copyLines(direction: CodeDirectionValue) {
@@ -1055,7 +1089,7 @@ export class CodeEditorController {
             }
             let space = length > 0;
             let tail = parts[parts.length - 1];
-            if (space && (($v81022) => ($v81022 === ' ' || $v81022 === '\t'))(tail[tail.length - 1])) {
+            if (space && (($v84368) => ($v84368 === ' ' || $v84368 === '\t'))(tail[tail.length - 1])) {
                 space = false;
                 let kept = $eq.text.trimEnd(tail, [' ', '\t']);
                 parts[parts.length - 1] = kept;
@@ -1153,19 +1187,17 @@ export class CodeEditorController {
     }
 
     replay(made: CodeEdit[], selection: CodeRange) {
+        let before = this._selection;
         for (const edit of made) {
             let end: any; 
             this._document = ($o => (end = $o.caret, $o.$))(this._document.replace(edit.range, edit.insertedText));
             let line = edit.range.start.line;
-            let linesInserted = end.line - line;
-            let linesRemoved = edit.range.end.line - line;
-            this.linesChanged(line, linesInserted, linesRemoved);
-            this._selection = this.onElementEdges(selection);
-            this.changed?.(edit);
+            this.linesChanged(line, end.line - line, edit.range.end.line - line);
         }
+        this._selection = this.onElementEdges(selection);
         this._revealVersion++;
         this._desiredCell = -1;
-        this.selectionChanged?.(this._selection);
+        this.raise(this.heard(made, before));
     }
 
     linesChanged(line: number, linesInserted: number, linesRemoved: number) {
