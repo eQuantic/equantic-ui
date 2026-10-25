@@ -3,7 +3,11 @@ import { CodeDocument, CodeEditorController, CodeGrid, CodePosition, CodeRange, 
 export class SheetNameBox {
     constructor(sheet: SheetController) {
         this._sheet = null!;
-        this._box = new CodeEditorController('', new SheetEntryLanguage());
+        this._box = (() => {
+        const $o = new CodeEditorController('', new SheetEntryLanguage());
+        $o.singleLine = true;
+        return $o;
+    })();
         this._focusVersion = 0;
         this._placed = 0;
         this._focusingPress = false;

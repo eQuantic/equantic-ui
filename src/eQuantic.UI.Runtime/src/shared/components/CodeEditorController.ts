@@ -14,6 +14,7 @@ export class CodeEditorController {
         this.signatureHelp = null!;
         this.pendingChord = null;
         this.keyBindings = [];
+        this.singleLine = false;
         this.tabMovesFocus = false;
         this.changed = null;
         this.selectionChanged = null;
@@ -62,6 +63,7 @@ export class CodeEditorController {
     signatureHelp!: CodeSignatureHelpSession;
     pendingChord!: KeyChord | null;
     keyBindings!: CodeKeyBinding[];
+    singleLine!: boolean;
     tabMovesFocus!: boolean;
     changed!: ((codeChange: CodeChange) => void) | null;
     selectionChanged!: ((codeRange: CodeRange) => void) | null;
@@ -244,6 +246,10 @@ export class CodeEditorController {
         let focus = this._document.clamp(value.focus);
         let backwards = !$eq.equals(new CodeRange(anchor, focus).start, anchor);
         return $eq.equals(anchor, focus) ? new CodeRange(this.boundary(anchor, false)) : new CodeRange(this.boundary(anchor, backwards), this.boundary(focus, !backwards));
+    }
+
+    admitted(text: string) {
+        return this.singleLine ? $eq.text.replace($eq.text.replace(text, '\r', '', 'ordinal'), '\n', '', 'ordinal') : text;
     }
 
     widthsChanged(line: number, linesInserted: number, linesRemoved: number) {
@@ -550,7 +556,7 @@ export class CodeEditorController {
                     return true;
                 case 'paste':
                     if (clipboard == null) return false;
-                    if ((($v37776) => (($v37776 != null && $v37776.length > 0) && (pasted = $v37776, true)))(clipboard.read())) this.paste(pasted);
+                    if ((($v38617) => (($v38617 != null && $v38617.length > 0) && (pasted = $v38617, true)))(clipboard.read())) this.paste(pasted);
                     return true;
                 case 'completionShow':
                     return this.completion.invoke();
@@ -623,6 +629,7 @@ export class CodeEditorController {
     }
 
     handleText(text: string) {
+        text = this.admitted(text);
         if (this.readOnly || text.length === 0) return false;
         this.tabMovesFocus = false;
         let committing = !(this._composition == null);
@@ -645,6 +652,7 @@ export class CodeEditorController {
 
     setComposition(text: string) {
         if (this.readOnly) return false;
+        text = this.admitted(text);
         let current: any; 
         if (!((current = this._composition) != null)) {
             if (text.length === 0) return false;
@@ -775,6 +783,7 @@ export class CodeEditorController {
 
     edit(range: CodeRange, text: string, typed: boolean, after: CodeRange | null = null) {
         if (this.readOnly) return false;
+        if (this.singleLine && (text.includes('\n') || text.includes('\r'))) return false;
         let ordered = new CodeRange(this._document.clamp(range.start), this._document.clamp(range.end));
         let removed = this._document.textIn(ordered);
         if (removed.length === 0 && text.length === 0) return false;
@@ -1381,6 +1390,7 @@ export class CodeEditorController {
     }
 
     paste(text: string) {
+        text = this.admitted(text);
         if (this.readOnly || text.length === 0) return false;
         this.tabMovesFocus = false;
         this.endComposition();
@@ -1736,7 +1746,7 @@ export class CodeEditorController {
             }
             let space = length > 0;
             let tail = parts[parts.length - 1];
-            if (space && (($v130683) => ($v130683 === ' ' || $v130683 === '\t'))(tail[tail.length - 1])) {
+            if (space && (($v131809) => ($v131809 === ' ' || $v131809 === '\t'))(tail[tail.length - 1])) {
                 space = false;
                 let kept = $eq.text.trimEnd(tail, [' ', '\t']);
                 parts[parts.length - 1] = kept;

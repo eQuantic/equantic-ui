@@ -24,6 +24,7 @@ export class SheetController {
         this._tapped = null;
         this._entryPressed = false;
         this._slide = 0;
+        this._rise = 0;
         this._dragAt = null;
         this._widestOf = null;
         this._widestBy = null;
@@ -59,6 +60,7 @@ export class SheetController {
     _tapped!: CellRef | null;
     _entryPressed!: boolean;
     _slide!: number;
+    _rise!: number;
     _dragAt!: Point | null;
     _widestOf!: CodeDocument | null;
     _widestBy!: ((value: string) => number) | null;
@@ -124,14 +126,20 @@ export class SheetController {
         let padding = this.grid.cellPadding;
         let left = Math.fround(bounds.x + padding.start);
         let right = Math.fround(Math.fround(bounds.right - padding.end) - 2);
-        this.entry.grid = this.cellGrid(bounds, this._slide);
-        let caret = this.entry.caretRect(this.entry.caret).x;
+        let top = Math.fround(bounds.y + padding.top);
+        let bottom = Math.fround(bounds.bottom - padding.bottom);
+        this.entry.grid = this.cellGrid(bounds, this._slide, this._rise);
+        let caret = this.entry.caretRect(this.entry.caret);
         let slide = this._slide;
-        if (caret > right) slide = Math.fround(slide + Math.fround(caret - right)); else if (caret < left) slide = Math.fround(slide - Math.fround(left - caret));
+        if (caret.x > right) slide = Math.fround(slide + Math.fround(caret.x - right)); else if (caret.x < left) slide = Math.fround(slide - Math.fround(left - caret.x));
+        let rise = this._rise;
+        if (caret.bottom > bottom) rise = Math.fround(rise + Math.fround(caret.bottom - bottom)); else if (caret.y < top) rise = Math.fround(rise - Math.fround(top - caret.y));
         slide = Math.min(Math.max(slide, 0), Math.max(0, Math.fround(this.widestEntryLine() - Math.fround(right - left))));
-        if (slide !== this._slide) {
+        rise = Math.min(Math.max(rise, 0), Math.max(0, Math.fround(Math.fround(Math.fround(this.entry.document.lineCount) * this.lineHeight) - Math.fround(bottom - top))));
+        if (slide !== this._slide || rise !== this._rise) {
             this._slide = slide;
-            this.entry.grid = this.cellGrid(bounds, slide);
+            this._rise = rise;
+            this.entry.grid = this.cellGrid(bounds, slide, rise);
         }
         return this.entry.grid;
     }
@@ -266,6 +274,7 @@ export class SheetController {
         this.editMode = mode;
         this.entryView = 'cell';
         this._slide = 0;
+        this._rise = 0;
         this.entry.document = CodeDocument.fromText(seed);
         this.entry.selection = new CodeRange(this.entry.document.end);
     }
@@ -574,9 +583,9 @@ export class SheetController {
         return widest;
     }
 
-    cellGrid(bounds: Rect, slide: number) {
+    cellGrid(bounds: Rect, slide: number, rise: number) {
         let padding = this.grid.cellPadding;
-        let origin = new Point(Math.fround(Math.fround(bounds.x + padding.start) - slide), Math.fround(bounds.y + padding.top));
+        let origin = new Point(Math.fround(Math.fround(bounds.x + padding.start) - slide), Math.fround(Math.fround(bounds.y + padding.top) - rise));
         let measure: any; 
         return (measure = this.grid.measure) != null ? new CodeGrid(origin, new Size(Math.max(measure(' '), 4), this.lineHeight), undefined, measure) : new CodeGrid(origin, new Size(8, this.lineHeight));
     }
