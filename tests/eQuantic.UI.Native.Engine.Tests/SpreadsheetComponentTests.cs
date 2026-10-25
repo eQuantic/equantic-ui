@@ -281,6 +281,78 @@ public class SpreadsheetComponentTests
         host.KeyDown(".", control).Should().BeTrue();
     }
 
+    /// <summary>Where the active cell's ring is drawn across on the frame at <paramref name="timeMs"/>: the
+    /// two-point stroke in the theme's focus ring.</summary>
+    private static float RingX(PhotonHost host, float timeMs)
+    {
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, timeMs);
+        var ring = ((IAppTheme)PhotonTheme.Instance).FocusRing.Resolve(ThemeMode.Light);
+        var stroke = builder.Build().Commands.ToArray()
+            .Single(command => command.Paint.Color == ring && command.StrokeWidth == 2f);
+        return stroke.Transform.Transform(new Point(stroke.Shape.Rect.X, stroke.Shape.Rect.Y)).X;
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TheCellCursor_GlidesToItsNextCell_AndJumpsUnderReducedMotion(bool reducedMotion)
+    {
+        var sheet = new SheetController(100, 8);
+        var host = new PhotonHost(new Spreadsheet(sheet) { Width = SizeValue.Fill, Height = SizeValue.Fill },
+            PhotonTheme.Instance, ThemeMode.Light, 700, 400)
+        {
+            SmoothScroll = false,
+            ReducedMotion = reducedMotion,
+        };
+        host.RenderFrame(new DisplayListBuilder());
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        host.PressDown(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);   // B2
+        host.PressUp(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);
+        // The press moved the ring from A1 too; it has stood at B2 once that glide is over.
+        RingX(host, 100);
+        var b2 = RingX(host, 600);
+        RingX(host, 700).Should().Be(b2);
+
+        host.KeyDown("ArrowRight");
+        var c2 = b2 + 96f;
+
+        if (reducedMotion)
+        {
+            RingX(host, 800).Should().BeApproximately(c2, 0.5f, "under reduced motion the ring jumps");
+            return;
+        }
+        RingX(host, 800).Should().BeApproximately(b2, 0.5f, "the glide starts where the ring stood");
+        RingX(host, 900).Should().BeInRange(b2 + 1, c2 - 1, "halfway through the base motion it stands between them");
+        RingX(host, 1050).Should().BeApproximately(c2, 0.5f);
+    }
+
+    [Fact]
+    public void TheCellCursor_GlidesToo_WhenARangeIsAddedBeforeIt()
+    {
+        var sheet = new SheetController(100, 8);
+        var host = new PhotonHost(new Spreadsheet(sheet) { Width = SizeValue.Fill, Height = SizeValue.Fill },
+            PhotonTheme.Instance, ThemeMode.Light, 700, 400)
+        {
+            SmoothScroll = false,
+        };
+        host.RenderFrame(new DisplayListBuilder());
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        host.PressDown(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);   // B2
+        host.PressUp(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);
+        RingX(host, 100);
+        var b2 = RingX(host, 600);
+
+        // ⌘ adds D2 as a range of its own: the marks before the ring now include B2's, and the ring is the
+        // same mark by its key, so it glides rather than appearing at D2.
+        host.PressDown(Spreadsheet.HeaderWidth + 3 * 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f,
+            modifiers: KeyModifiers.Command);
+        host.PressUp(Spreadsheet.HeaderWidth + 3 * 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);
+
+        RingX(host, 700).Should().BeApproximately(b2, 0.5f);
+        RingX(host, 950).Should().BeApproximately(b2 + 2 * 96f, 0.5f);
+    }
+
     [Fact]
     public void ShiftClick_StretchesTheSelection_FromItsAnchor()
     {

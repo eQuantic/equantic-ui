@@ -1264,11 +1264,16 @@ public sealed class SheetController : ISheetSurfaceModel
     /// <inheritdoc />
     public void FocusChanged(bool focused)
     {
+        HasKeyboard = focused;
         // Coming back takes Tab again, as a code editor's does; leaving cancels a composition and keeps the
         // entry open, as Excel keeps it while another window has the keyboard.
         if (focused) TabReleased = false;
         else if (Editing && EntryView == SheetEntryView.Cell) Entry.FocusChanged(false);
     }
+
+    /// <summary>Whether the sheet holds the keyboard, as its host last said (<see cref="FocusChanged"/>): the
+    /// selection is drawn dimmed while it does not, as Excel draws it while another window has the keys.</summary>
+    public bool HasKeyboard { get; private set; }
 
     /// <summary>
     /// Whether the next Tab LEAVES the sheet instead of moving the active cell: Escape at rest sets it, the

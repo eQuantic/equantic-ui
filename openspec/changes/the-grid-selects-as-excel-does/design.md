@@ -120,7 +120,7 @@ and gives it a CSS transition on its left, top, width and height from the motion
 which the stylesheet's `prefers-reduced-motion` rule turns off; Photon's table emit keeps, per key, the
 rectangle the mark stood over and when it began to move, interpolates the frame's rectangle by the
 frame's time along the curve, reports the motion as active so the host asks for frames, and snaps under
-reduced motion. The active ring is keyed `cursor` with `Motion.Base`; the fill's preview, the ranges and
+reduced motion. The active ring is keyed `cursor` with `Motion.State`, the theme's base duration on its standard curve; the fill's preview, the ranges and
 the editor do not glide.
 
 *Alternative:* a `Position` channel on `TransitionSpec`. A mark is placed by its table indices, not by

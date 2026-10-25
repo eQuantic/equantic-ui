@@ -12,6 +12,7 @@ import { commitTableViewports, scheduleTableViewportCommit } from './table-viewp
 import { TableScroll } from './components/TableScroll';
 import { UniformTableSpans } from './components/UniformTableSpans';
 import { Point, TableRange, TableScrollRequest } from './value-types';
+import { Size, TableOffset } from './runtime-exports';
 import { Box, BoxStyle, Pressable, TableViewCell, TableViewport, Text } from './vocabulary';
 import { TableView } from './components/TableView';
 import fixture from './component-parity.fixture.json';
@@ -90,6 +91,36 @@ describe('TableViewport on the web', () => {
     // Reduced motion, so a wheel's notch lands at once instead of gliding over frames the spec does
     // not run: the glide itself is the model's, pinned in table-scroll.spec.ts.
     window.matchMedia = ((query: string) => ({ matches: query.includes('reduce'), media: query })) as never;
+  });
+
+  it('glides a keyed mark where the cells put it, its scroll a transform of its own (#984)', () => {
+    const glided = (across: number) => {
+      const scroll = new TableScroll();
+      const rows = new UniformTableSpans(200, 28);
+      const columns = new UniformTableSpans(40, 96);
+      scroll.arrange(new Size(900, 600), columns.total, rows.total, 96, 28, true);
+      if (across) scroll.apply(new TableScrollRequest(1, { offset: new TableOffset(across, 0) }), rows, columns, 1, 1);
+      const node = new TableViewport(rows, columns, scroll, { pinnedRows: 1, pinnedColumns: 1 });
+      const cursor = new TableViewCell(2, 2, new Box(new BoxStyle({})), true);
+      cursor.key = 'cursor';
+      cursor.glide = { durationMs: 200, curve: { x1: 0.2, y1: 0, x2: 0, y2: 1 } };
+      node.add(cursor);
+      const lowered = lowerVisualNode(node as never, context);
+      // The bands' marks come after the four bands of cells; the cells' band is the first of them.
+      const wrapper = (lowered.children[4] as HtmlNode).children[0].children[0] as HtmlNode;
+      return { wrapper, style: effectiveStyle(wrapper) };
+    };
+
+    const still = glided(0);
+    expect(still.style).toContain('left: 96px');
+    expect(still.style).toContain('transition: left 200ms cubic-bezier(0.2, 0, 0, 1), top 200ms');
+    expect(still.wrapper.attributes['class']).toContain('eq-glide');
+    expect(still.style).not.toContain('transform');
+
+    // Scrolled a column across: the mark stands where the cells put it, and the scroll is its transform.
+    const scrolled = glided(96);
+    expect(scrolled.style).toContain('left: 96px');
+    expect(scrolled.style).toContain('transform: translate(-96px, 0)');
   });
 
   it('is a group of four bands, four bands of marks and two scrollbars, taking every gesture itself', () => {

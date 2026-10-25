@@ -142,3 +142,4 @@ eQuantic.UI.Sheet.SheetController.SelectActiveColumns() -> void
 eQuantic.UI.Sheet.SheetController.SelectRegionThenSheet() -> void
 eQuantic.UI.Sheet.SheetController.CurrentRegion(eQuantic.UI.Sheet.CellRef cell) -> eQuantic.UI.Sheet.SheetRange
 eQuantic.UI.Sheet.SheetController.LastCellInUse() -> eQuantic.UI.Sheet.CellRef
+eQuantic.UI.Sheet.SheetController.HasKeyboard.get -> bool

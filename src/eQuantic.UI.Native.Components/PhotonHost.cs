@@ -1131,15 +1131,20 @@ public sealed class PhotonHost
     }
 
     /// <summary>Gives a sheet the keyboard, by the same doors as <see cref="BeginCodeEditing(Element,
-    /// ICodeSurfaceModel)"/>, and restarts its caret's blink.</summary>
-    private void BeginSheetEditing(Element element, ISheetSurfaceModel model)
+    /// ICodeSurfaceModel)"/>, and restarts its caret's blink. The sheet builds again when it gains the keys,
+    /// as when it loses them: its selection is drawn dimmed without them.</summary>
+    private void BeginSheetEditing(Element element, SheetSurface surface)
     {
         var changed = !ReferenceEquals(_textAt, element);
         if (changed) EndEditing();
         _textAt = element;
         _focused = null;
         ForgetFocus();
-        if (changed) model.FocusChanged(true);
+        if (changed)
+        {
+            surface.Model.FocusChanged(true);
+            SurfaceChanged(surface.OnChanged);
+        }
         RestartBlink();
         NeedsRender = true;
     }
@@ -1275,7 +1280,7 @@ public sealed class PhotonHost
             if (version == seen) continue;
             if (box is null) _sheetFocusRequests.Add(model, new System.Runtime.CompilerServices.StrongBox<int>(version));
             else box.Value = version;
-            BeginSheetEditing(region.Element, model);
+            BeginSheetEditing(region.Element, region.Surface);
         }
     }
 
@@ -1880,7 +1885,7 @@ public sealed class PhotonHost
             // target null and killed the arrows the composite exists for. A stop that is none of
             // these ARRIVES and nothing more, which is the right default for whatever comes next.
             if (stops[i].Code is { } code) BeginCodeEditing(stops[i].Element, code.Model);
-            else if (stops[i].Sheet is { } sheet) BeginSheetEditing(stops[i].Element, sheet.Model);
+            else if (stops[i].Sheet is { } sheet) BeginSheetEditing(stops[i].Element, sheet);
             return true;
         }
         return false;
@@ -2523,7 +2528,7 @@ public sealed class PhotonHost
         for (var i = sheetRegions.Count - 1; i >= 0; i--)
         {
             if (!Covers(sheetRegions, i, sheetRegions[i].Visible ?? sheetRegions[i].Bounds, point)) continue;
-            BeginSheetEditing(sheetRegions[i].Element, sheetRegions[i].Surface.Model);
+            BeginSheetEditing(sheetRegions[i].Element, sheetRegions[i].Surface);
             var claimed = sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Down,
                 ToLocal(sheetRegions, i, sheetRegions[i].Bounds, point), modifiers, clickCount, kind);
             // A press the sheet declines over a drag surface drawn inside it is the drag's: a header's resize

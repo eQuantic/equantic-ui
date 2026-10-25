@@ -56,11 +56,11 @@
 
 ## 5. The range drawn as one rectangle
 
-- [ ] 5.1 The sheet slot gains `RangeOutline`, `HeaderWholeBackground`, `HeaderWholeText`,
+- [x] 5.1 The sheet slot gains `RangeOutline`, `HeaderWholeBackground`, `HeaderWholeText`,
       `DimmedRangeFill` and `DimmedOutline`, with foundation defaults in `SheetPalette`, crossing the theme
       bridge (`ThemeBridge`, `sheet-theme.ts`); verify `ThemeBridgeTests.EveryMemberOfTheSheetSlot_Crosses`
       and the spec's theme scenarios
-- [ ] 5.2 `Spreadsheet.Marks` draws each range as an outline mark and fill marks around the active cell
+- [x] 5.2 `Spreadsheet.Marks` draws each range as an outline mark and fill marks around the active cell
       (design §6), the headers' band and whole emphasis from the ranges, and the dimmed colours while the
       model has not the keyboard; verify goldens (`sheet-range`, `sheet-ranges`, `sheet-unfocused`,
       `sheet-whole-column`) each with an assertion on the marks' rectangles beside it
@@ -68,15 +68,15 @@
 
 ## 6. The cursor glides
 
-- [ ] 6.1 `TableViewCell.Key` and `TableViewCell.Glide` (`MotionSpec?`) in the vocabulary and the
+- [x] 6.1 `TableViewCell.Key` and `TableViewCell.Glide` (`MotionSpec?`) in the vocabulary and the
       runtime's node twin, with doc comments; declare the `PublicAPI` lines; verify the primitives fixture
-- [ ] 6.2 The web lowers a keyed gliding mark as one element across renders with a transition on its
+- [x] 6.2 The web lowers a keyed gliding mark as one element across renders with a transition on its
       left, top, width and height, off under `prefers-reduced-motion`; verify `table-viewport-web.spec.ts`
       cases for a glide, a new mark and reduced motion, and the C# lowering's parity case
-- [ ] 6.3 Photon's table emit interpolates a keyed gliding mark by the frame's time and reports active
+- [x] 6.3 Photon's table emit interpolates a keyed gliding mark by the frame's time and reports active
       motion while it glides, snapping under reduced motion; verify `TableViewportGlideTests` for the spec's
       three scenarios at 0, 100 and 200 milliseconds
-- [ ] 6.4 The active ring is keyed `cursor` with `Motion.Base`; verify a Photon frame mid-glide and the
+- [ ] 6.4 The active ring is keyed `cursor` with `Motion.State` (the base duration); verify a Photon frame mid-glide and the
       spec's two cursor scenarios, and in Chromium that → glides and the reduced-motion emulation jumps
 
 ## 7. The status bar

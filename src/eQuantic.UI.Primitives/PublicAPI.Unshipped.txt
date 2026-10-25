@@ -103,3 +103,15 @@ static eQuantic.UI.Primitives.FontFamily.operator ==(eQuantic.UI.Primitives.Font
 static eQuantic.UI.Primitives.FontFile.operator !=(eQuantic.UI.Primitives.FontFile? left, eQuantic.UI.Primitives.FontFile? right) -> bool
 static eQuantic.UI.Primitives.FontFile.operator ==(eQuantic.UI.Primitives.FontFile? left, eQuantic.UI.Primitives.FontFile? right) -> bool
 eQuantic.UI.Primitives.FontFile.Read() -> byte[]?
+eQuantic.UI.Primitives.SheetTheme.RangeOutline.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.RangeOutline.init -> void
+eQuantic.UI.Primitives.SheetTheme.HeaderWholeBackground.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.HeaderWholeBackground.init -> void
+eQuantic.UI.Primitives.SheetTheme.HeaderWholeText.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.HeaderWholeText.init -> void
+eQuantic.UI.Primitives.SheetTheme.DimmedRangeFill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.DimmedRangeFill.init -> void
+eQuantic.UI.Primitives.SheetTheme.DimmedOutline.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.DimmedOutline.init -> void
+eQuantic.UI.Primitives.TableViewCell.Glide.get -> eQuantic.UI.Primitives.MotionSpec?
+eQuantic.UI.Primitives.TableViewCell.Glide.init -> void

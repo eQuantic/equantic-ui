@@ -214,18 +214,21 @@ public sealed class Spreadsheet : StatefulComponent
         return SheetCell(new CellRef(row - 1, column - 1), document, palette);
     }
 
-    private static VisualNode HeaderCell(string label, SheetPalette palette, bool selected = false)
+    private static VisualNode HeaderCell(string label, SheetPalette palette, bool selected = false, bool whole = false)
     {
-        // A header inside the selection's band shades, exactly as Excel marks it.
+        // A header inside a range's band shades, exactly as Excel marks it, and strongly when a range covers
+        // its whole column or row.
+        var background = whole ? palette.HeaderWholeBackground
+            : selected ? palette.HeaderSelectedBackground : palette.HeaderBackground;
+        var ink = whole ? palette.HeaderWholeText : selected ? palette.HeaderSelectedText : palette.HeaderText;
         var cell = new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Height = SizeValue.Fill,
-            Background = selected ? palette.HeaderSelectedBackground : palette.HeaderBackground,
+            Background = background,
             BorderColor = palette.Gridline,
             BorderWidth = 0.5f,
-        }, label.Length == 0 ? null : new Text(label, TypeRole.Caption,
-            selected ? palette.HeaderSelectedText : palette.HeaderText, maxLines: 1).Centered());
+        }, label.Length == 0 ? null : new Text(label, TypeRole.Caption, ink, maxLines: 1).Centered());
         return cell;
     }
 
@@ -237,10 +240,9 @@ public sealed class Spreadsheet : StatefulComponent
     private VisualNode ColumnHeader(int c, SheetPalette palette)
     {
         var col = c;   // the loop variable would be shared by every closure
-        var selection = Controller.Selection;
-        var inBand = c >= selection.LeftCol && c <= selection.RightCol;
+        var (inBand, whole) = ColumnEmphasis(c);
         var stack = new Stack();
-        stack.Add(HeaderCell(CellRef.ColumnName(c), palette, selected: inBand));
+        stack.Add(HeaderCell(CellRef.ColumnName(c), palette, selected: inBand, whole: whole));
         stack.Add(new Positioned(new Draggable(new Box(new BoxStyle
         {
             Width = SizeValue.Fixed(Grip),
@@ -261,10 +263,9 @@ public sealed class Spreadsheet : StatefulComponent
     private VisualNode RowHeader(int r, SheetPalette palette, float width)
     {
         var row = r;
-        var selection = Controller.Selection;
-        var inBand = r >= selection.TopRow && r <= selection.BottomRow;
+        var (inBand, whole) = RowEmphasis(r);
         var stack = new Stack();
-        stack.Add(HeaderCell($"{r + 1}", palette, selected: inBand));
+        stack.Add(HeaderCell($"{r + 1}", palette, selected: inBand, whole: whole));
         stack.Add(new Positioned(new Draggable(new Box(new BoxStyle
         {
             Width = SizeValue.Fixed(width),
@@ -280,6 +281,36 @@ public sealed class Spreadsheet : StatefulComponent
             OnReleased = delta => CommitResize(SheetAxis.Rows, row, delta),
         }, bottom: 0, start: 0) { Layer = 1 });
         return stack;
+    }
+
+    /// <summary>Whether a range crosses column <paramref name="col"/>, and whether one covers it whole, top to
+    /// bottom.</summary>
+    private (bool InBand, bool Whole) ColumnEmphasis(int col)
+    {
+        var inBand = false;
+        var lastRow = Controller.Document.Rows - 1;
+        foreach (var range in Controller.Ranges)
+        {
+            if (col < range.LeftCol || col > range.RightCol) continue;
+            if (range.TopRow == 0 && range.BottomRow == lastRow) return (true, true);
+            inBand = true;
+        }
+        return (inBand, false);
+    }
+
+    /// <summary>Whether a range crosses row <paramref name="row"/>, and whether one covers it whole, edge to
+    /// edge.</summary>
+    private (bool InBand, bool Whole) RowEmphasis(int row)
+    {
+        var inBand = false;
+        var lastCol = Controller.Document.Cols - 1;
+        foreach (var range in Controller.Ranges)
+        {
+            if (row < range.TopRow || row > range.BottomRow) continue;
+            if (range.LeftCol == 0 && range.RightCol == lastCol) return (true, true);
+            inBand = true;
+        }
+        return (inBand, false);
     }
 
     private void PreviewResize(SheetAxis axis, int index, float delta)
@@ -344,21 +375,38 @@ public sealed class Spreadsheet : StatefulComponent
     }
 
     /// <summary>
-    /// What the selection draws above the cells, from the engine's rectangles in the table's indices: the
-    /// band over a range of more than one cell, the fill's preview, the active cell's ring, and the fill
-    /// handle on the selection's bottom-right corner.
+    /// What the selection draws above the cells, from the engine's rectangles in the table's indices: every
+    /// range as one rectangle (a translucent fill, the active cell left unfilled, under one outline), the
+    /// fill's preview, the active cell's ring, and the fill handle on the active range's bottom-right corner;
+    /// in the dimmed colours while the sheet does not hold the keyboard.
     /// </summary>
     private List<TableViewCell> Marks(SheetPalette palette)
     {
         var marks = new List<TableViewCell>();
         var selection = Controller.Selection;
-        if (!selection.IsSingleCell)
+        var focused = Controller.HasKeyboard;
+        var fill = focused ? palette.RangeFill : palette.DimmedRangeFill;
+        var outline = focused ? palette.RangeOutline : palette.DimmedOutline;
+        var ranges = Controller.Ranges;
+        for (var i = 0; i < ranges.Count; i++)
         {
-            marks.Add(Mark(selection, new Box(new BoxStyle
+            var range = ranges[i];
+            var active = i == ranges.Count - 1;
+            // A lone active cell is the ring's alone.
+            if (active && range.IsSingleCell) continue;
+            foreach (var piece in Around(range, active ? Controller.ActiveCell : null))
+                marks.Add(Mark(piece, new Box(new BoxStyle
+                {
+                    Width = SizeValue.Fill,
+                    Height = SizeValue.Fill,
+                    Background = fill,
+                })));
+            marks.Add(Mark(range, new Box(new BoxStyle
             {
                 Width = SizeValue.Fill,
                 Height = SizeValue.Fill,
-                Background = palette.RangeFill,
+                BorderColor = outline,
+                BorderWidth = 1.5f,
             })));
         }
         if (Controller.FillTarget is { } preview)
@@ -376,13 +424,15 @@ public sealed class Spreadsheet : StatefulComponent
             marks.Add(Mark(Controller.EditorRange, Editor(palette)));
             return marks;
         }
+        // The cell cursor GLIDES to where a key or a press moves it, over the theme's base motion, and jumps
+        // under reduced motion: its key keeps it the same mark from one build to the next.
         marks.Add(Mark(new SheetRange(Controller.ActiveCell), new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Height = SizeValue.Fill,
-            BorderColor = palette.ActiveOutline,
+            BorderColor = focused ? palette.ActiveOutline : palette.DimmedOutline,
             BorderWidth = 2f,
-        })));
+        }), CursorKey, Motion.State));
         // Excel's little square on the selection's corner. Grabbing it, and the crosshair over it, are
         // the engine's answers; this is only the pixels.
         // The Stack takes the cell's size from a box that draws nothing, and the handle sits on its
@@ -393,7 +443,7 @@ public sealed class Spreadsheet : StatefulComponent
         {
             Width = SizeValue.Fixed(FillHandle),
             Height = SizeValue.Fixed(FillHandle),
-            Background = palette.FillHandle,
+            Background = focused ? palette.FillHandle : palette.DimmedOutline,
             BorderColor = palette.CellBackground,
             BorderWidth = 1f,
         }), bottom: -1, end: -1));
@@ -423,11 +473,37 @@ public sealed class Spreadsheet : StatefulComponent
             active: Controller.EntryView == SheetEntryView.Cell));
     }
 
-    /// <summary>A mark over a range of the sheet, in the table's indices (one past the headers).</summary>
-    private static TableViewCell Mark(SheetRange range, VisualNode child) =>
+    /// <summary>
+    /// <paramref name="range"/> as the rectangles its fill is drawn in: the whole range, or, around the active
+    /// cell it holds, the rows above and below it and the cells beside it on its row, so the active cell stays
+    /// unfilled without a mark covering its value.
+    /// </summary>
+    private static List<SheetRange> Around(SheetRange range, CellRef? hole)
+    {
+        if (hole is not { } cell || !range.Contains(cell)) return [range];
+        var pieces = new List<SheetRange>();
+        if (cell.Row > range.TopRow)
+            pieces.Add(new SheetRange(new CellRef(range.TopRow, range.LeftCol), new CellRef(cell.Row - 1, range.RightCol)));
+        if (cell.Row < range.BottomRow)
+            pieces.Add(new SheetRange(new CellRef(cell.Row + 1, range.LeftCol), new CellRef(range.BottomRow, range.RightCol)));
+        if (cell.Col > range.LeftCol)
+            pieces.Add(new SheetRange(new CellRef(cell.Row, range.LeftCol), new CellRef(cell.Row, cell.Col - 1)));
+        if (cell.Col < range.RightCol)
+            pieces.Add(new SheetRange(new CellRef(cell.Row, cell.Col + 1), new CellRef(cell.Row, range.RightCol)));
+        return pieces;
+    }
+
+    /// <summary>The key of the cell cursor's mark, which keeps it one mark from build to build so it glides.</summary>
+    private const string CursorKey = "cursor";
+
+    /// <summary>A mark over a range of the sheet, in the table's indices (one past the headers), keyed and gliding
+    /// when <paramref name="glide"/> is given.</summary>
+    private static TableViewCell Mark(SheetRange range, VisualNode child, string? key = null, MotionSpec? glide = null) =>
         new(range.TopRow + 1, range.LeftCol + 1, child, mark: true)
         {
             Rows = range.BottomRow - range.TopRow + 1,
             Columns = range.RightCol - range.LeftCol + 1,
+            Key = key,
+            Glide = glide,
         };
 }

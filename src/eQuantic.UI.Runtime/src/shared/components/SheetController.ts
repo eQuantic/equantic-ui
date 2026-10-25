@@ -37,6 +37,7 @@ export class SheetController {
         this._widestBy = null;
         this._widest = 0;
         this._focusVersion = 0;
+        this.hasKeyboard = false;
         this.tabReleased = false;
         this._entryKeysFor = null;
         this.document = new SheetDocument(rows, cols);
@@ -80,6 +81,7 @@ export class SheetController {
     _widestBy!: ((value: string) => number) | null;
     _widest!: number;
     _focusVersion!: number;
+    hasKeyboard!: boolean;
     tabReleased!: boolean;
     _entryKeysFor!: KeyboardConventionValue | null;
     static fillHandleGrab: number = 8;
@@ -833,6 +835,7 @@ export class SheetController {
     }
 
     focusChanged(focused: boolean) {
+        this.hasKeyboard = focused;
         if (focused) this.tabReleased = false; else if (this.editing && this.entryView === 'cell') this.entry.focusChanged(false);
     }
 

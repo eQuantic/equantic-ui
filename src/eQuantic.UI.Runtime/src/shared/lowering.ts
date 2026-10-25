@@ -1944,21 +1944,31 @@ function lowerTableCell(
   const endColumn = Math.min(Math.max(cell.column + Math.max(1, cell.columns ?? 1), firstColumn), columns.count);
   const top = rows.offsetOf(firstRow);
   const left = columns.offsetOf(firstColumn);
-  const x = inPinnedColumn ? left : left - pinnedAcross - offset.across;
-  const y = inPinnedRow ? top : top - pinnedDown - offset.down;
+  // A gliding mark (C# twin: LowerTableCell) stands where the CELLS put it, and the scroll rides a
+  // transform of its own: a transition on its left and top then glides it when it moves to other cells,
+  // never when the grid scrolls under it, which carries it at once.
+  const glide = cell.glide ?? null;
+  const across = inPinnedColumn ? 0 : offset.across;
+  const down = inPinnedRow ? 0 : offset.down;
+  const x = (inPinnedColumn ? left : left - pinnedAcross) - (glide ? 0 : across);
+  const y = (inPinnedRow ? top : top - pinnedDown) - (glide ? 0 : down);
   const child = lowerNode(cell.child, context, null, path + '/0');
-  const wrapper = element(
-    'div',
-    {
-      display: 'grid',
-      position: 'absolute',
-      left: px(Math.fround(x)),
-      top: px(Math.fround(y)),
-      width: px(Math.fround(columns.offsetOf(endColumn) - left)),
-      height: px(Math.fround(rows.offsetOf(endRow) - top)),
-    },
-    child ? [child] : [],
-  );
+  const style: Record<string, string | undefined> = {
+    display: 'grid',
+    position: 'absolute',
+    left: px(Math.fround(x)),
+    top: px(Math.fround(y)),
+    width: px(Math.fround(columns.offsetOf(endColumn) - left)),
+    height: px(Math.fround(rows.offsetOf(endRow) - top)),
+  };
+  if (glide) {
+    const timing = `${glide.durationMs}ms ${bezier(glide.curve)}`;
+    style.transition = `left ${timing}, top ${timing}, width ${timing}, height ${timing}`;
+    if (across !== 0 || down !== 0) style.transform = `translate(${px(Math.fround(-across))}, ${px(Math.fround(-down))})`;
+  }
+  const wrapper = element('div', style, child ? [child] : []);
+  // The stylesheet turns the glide off under the platform's reduced-motion setting.
+  if (glide) prependClass(wrapper, 'eq-glide');
   // Where the cell is, for the after-pass that walks the Tab order row by row across the bands it is
   // painted in. Client-only, as the table's own key is.
   wrapper.attributes['data-eq-cell'] = `${cell.row}:${cell.column}`;
