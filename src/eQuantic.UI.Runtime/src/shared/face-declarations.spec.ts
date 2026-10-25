@@ -46,18 +46,26 @@ function declaredRules(): string[][] {
  */
 describe('the faces of a family a page names', () => {
   let fonts: FakeFonts;
+  /** The files the server has no file for: a HEAD to one answers 404. */
+  let missing: Set<string>;
 
   beforeEach(() => {
     vi.resetModules();
     fonts = new FakeFonts();
+    missing = new Set();
     Object.defineProperty(document, 'fonts', { configurable: true, value: fonts });
+    vi.stubGlobal('fetch', (url: string) => Promise.resolve({ ok: !missing.has(url) }));
   });
 
   afterEach(() => {
     delete (document as { fonts?: unknown }).fonts;
     document.querySelectorAll('style').forEach((element) => element.remove());
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
+
+  /** Lets the HEADs a declaration asks first settle. */
+  const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
 
   const probe = (name: string) =>
     new FontFamily(
@@ -81,6 +89,7 @@ describe('the faces of a family a page names', () => {
 
     declareFamily(probe('Probe A'));
     declareFamily(probe('Probe A'));
+    await settled();
 
     expect(declaredRules()).toEqual([
       ['Probe A', 'url("/_equantic/fonts/Acme.App/eQuantic.UI.Fonts/Probe%20Sans.ttf") format("truetype")'],
@@ -95,6 +104,7 @@ describe('the faces of a family a page names', () => {
     const inserted = vi.spyOn(CSSStyleSheet.prototype, 'insertRule');
 
     declareFamily(new FontFamily('Roboto+Mono', new FontFile('Acme.App', 'eQuantic.UI.Fonts/RobotoMono.ttf', 400, 400)));
+    await settled();
 
     expect(inserted.mock.calls[0][0]).toContain('font-family: "Roboto+Mono";');
   });
@@ -139,6 +149,7 @@ describe('the faces of a family a page names', () => {
     const rebuild = vi.fn();
     const family = probe('Probe E');
     declareFamily(family);
+    await settled();
     dependOnFamily(family, rebuild);
     dependOnFamily(family, rebuild);
 
@@ -191,8 +202,82 @@ describe('the faces of a family a page names', () => {
 
     lowerVisualNode(text, { textPrimary: { light: white, dark: white } } as never);
     measurePhotonText('Handgloves', { size: 17, lineHeight: 22, weight: 'regular', tracking: 0, family: probe('Probe G') });
+    await settled();
 
     expect(new Set(declaredRules().map(([family]) => family))).toEqual(new Set(['Probe F', 'Probe G']));
+  });
+
+  /** The server declares a family only when it can read every file of it, and a browser asks for a cut
+   * only when text is set in it: a missing italic on a page of upright text would never fail, so every
+   * file is asked for first (Copilot's third review of #1077). */
+  it('declares a family only when every file of it is there, an unused italic included', async () => {
+    const { declareFamily } = await import('./face-declarations');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    missing.add('/_equantic/fonts/Acme.App/eQuantic.UI.Fonts/Probe-Italic.otf');
+
+    declareFamily(probe('Probe H'));
+    await settled();
+
+    expect(declaredRules()).toEqual([]);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('eQuantic.UI.Fonts/Probe-Italic.otf'));
+  });
+
+  it('rebuilds a page that measured before the family was declared, once it is', async () => {
+    const { declareFamily, dependOnFamily } = await import('./face-declarations');
+    const rebuild = vi.fn();
+    const family = probe('Probe I');
+
+    dependOnFamily(family, rebuild);
+    declareFamily(family);
+    await settled();
+
+    expect(rebuild).toHaveBeenCalledTimes(1);
+  });
+
+  /** A family named without files may still set text in a face the document declared for another
+   * reference of it, and a family is taken back by name (Copilot's third review of #1077). */
+  it('rebuilds a page that measured in a family named without files when the face of it is taken back', async () => {
+    const { watchFaces } = await import('./face-declarations');
+    const { measurePhotonText } = await import('./photon-context');
+    const { setPassInvalidator } = await import('./pass-invalidator');
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      font: '',
+      measureText: (text: string) => ({ width: text.length * 7 }),
+    } as unknown as CanvasRenderingContext2D);
+    serverDeclares('Brand Sans');
+    watchFaces();
+    const rebuild = vi.fn();
+
+    setPassInvalidator(rebuild);
+    measurePhotonText('Handgloves', { size: 17, lineHeight: 22, weight: 'regular', tracking: 0, family: new FontFamily('Brand Sans') });
+    setPassInvalidator(null);
+    fonts.fail({ family: 'Brand Sans', style: 'italic', weight: '400', status: 'error' });
+
+    expect(rebuild).toHaveBeenCalledTimes(1);
+  });
+
+  /** A named family the machine does not have leaves the text to the theme's face behind it in the stack,
+   * so the measure depends on the theme's family too (Copilot's third review of #1077). */
+  it("rebuilds a page whose named family is not installed when the theme's family is taken back", async () => {
+    const { watchFaces } = await import('./face-declarations');
+    const { measurePhotonText, setPhotonTheme, getPhotonTheme } = await import('./photon-context');
+    const { setPassInvalidator } = await import('./pass-invalidator');
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      font: '',
+      measureText: (text: string) => ({ width: text.length * 7 }),
+    } as unknown as CanvasRenderingContext2D);
+    setPhotonTheme({ ...getPhotonTheme(), textFamily: probe('Probe Theme') });
+    watchFaces();
+    const rebuild = vi.fn();
+
+    setPassInvalidator(rebuild);
+    measurePhotonText('Handgloves', { size: 17, lineHeight: 22, weight: 'regular', tracking: 0, family: new FontFamily('Nowhere Sans') });
+    setPassInvalidator(null);
+    fonts.fail({ family: 'Probe Theme', style: 'italic', weight: '400', status: 'error' });
+
+    expect(rebuild).toHaveBeenCalledTimes(1);
   });
 
   it('declares nothing for a family that ships no file', async () => {

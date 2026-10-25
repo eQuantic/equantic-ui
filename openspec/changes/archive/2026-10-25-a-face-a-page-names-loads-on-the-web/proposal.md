@@ -15,10 +15,11 @@ in that family on the web, wherever the family comes from, as it is on Photon.
 - **A page the server renders** declares, in its head, the faces of every family its text names that
   the theme's stylesheet does not, and the server serves their files at the content-addressed URLs the
   theme's faces use, on every instance of the app alike. The web serves a face an eQuantic build embedded
-  in the app's assemblies, or one the theme names: a family over a font a library embedded another way is
+  in an assembly the app's deployment carries, or one the theme names: a family over a font a library embedded another way is
   declared on no page and logged, as is one missing a file.
 - **A page the browser builds** declares a family the first time the runtime sets or measures text in
-  it, unless the document already has it, from the server's head or an earlier page. Each file is asked
+  it, once every file of it is there, unless the document already has it, from the server's head or an
+  earlier page. Each file is asked
   for at its own address, `/_equantic/fonts/<assembly>/<resource>`, which the server answers with a
   redirect to the file's content-addressed URL, for a face an eQuantic build embedded and nothing else.
   A family one of whose files fails to load is taken back whole, whoever declared it, so its text falls

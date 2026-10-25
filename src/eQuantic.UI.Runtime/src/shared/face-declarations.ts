@@ -18,6 +18,11 @@ import type { FontFamily, FontFile } from './value-types';
 /** The element the document's faces are declared in: the server's head element (C# `FaceSink.ElementId`), or one added here. */
 const ELEMENT_ID = 'eq-faces';
 
+/** What the console adds when a family falls back: where the web takes its faces from. */
+const WHERE_FACES_COME_FROM =
+  'The web serves a face the theme names, or one an eQuantic build embedded: a font file under the ' +
+  'Assets folder of the app or of a library it references.';
+
 /** The families declared, by identity: a family named twice is declared once. */
 const declared = new Set<string>();
 
@@ -36,6 +41,12 @@ const dependents = new Map<string, { pages: Set<WeakRef<() => void>>; known: Wea
 /**
  * Declares `family`'s faces in the document, unless it ships no file, has been declared or taken back,
  * or the document already has a face of it.
+ *
+ * WHOLE before it is used, as the server declares a family only when it can read every file of it: each
+ * file is asked for first, a HEAD that carries no bytes, and the family is declared only when every one is
+ * there. A browser asks for a cut only when text is set in it, so a missing italic on a page of upright
+ * text would never fail, and the page the browser builds would draw a family the page the server rendered
+ * refused. Once declared, the pages that measured text in it before it was there measure again.
  */
 export function declareFamily(family: FontFamily | undefined): void {
   if (!family || family.files.length === 0 || seen.has(family)) return;
@@ -48,9 +59,35 @@ export function declareFamily(family: FontFamily | undefined): void {
   if (declared.has(key) || withdrawn.has(family.name)) return;
   declared.add(key);
   if (documentHas(family.name)) return;
-  const sheet = facesSheet();
-  if (!sheet) return;
-  for (const file of family.files) sheet.insertRule(faceRule(family.name, file), sheet.cssRules.length);
+  const declare = (): void => {
+    const sheet = withdrawn.has(family.name) || documentHas(family.name) ? null : facesSheet();
+    if (!sheet) return;
+    for (const file of family.files) sheet.insertRule(faceRule(family.name, file), sheet.cssRules.length);
+    rebuildDependents(family.name);
+  };
+  if (typeof fetch !== 'function') {
+    declare();
+    return;
+  }
+  void Promise.all(
+    family.files.map((file) =>
+      fetch(fileUrl(file), { method: 'HEAD' }).then(
+        (answer) => answer.ok,
+        () => false,
+      ),
+    ),
+  ).then((present) => {
+    const missing = family.files.find((_, index) => !present[index]);
+    if (!missing) {
+      declare();
+      return;
+    }
+    withdrawn.add(family.name);
+    console.warn(
+      `The face "${family.name}" has no ${missing.resource} in ${missing.assembly} (${fileUrl(missing)}), ` +
+        `so the family falls back whole. ${WHERE_FACES_COME_FROM}`,
+    );
+  });
 }
 
 /**
@@ -59,7 +96,9 @@ export function declareFamily(family: FontFamily | undefined): void {
  * caret beside the character it is on.
  */
 export function dependOnFamily(family: FontFamily | undefined, rebuild: (() => void) | null): void {
-  if (!family || family.files.length === 0 || !rebuild || typeof WeakRef === 'undefined') return;
+  // A family named without files counts too: by name it may set text in a face the document declared for
+  // another reference, and a family is taken back by name.
+  if (!family || !rebuild || typeof WeakRef === 'undefined') return;
   let entry = dependents.get(family.name);
   if (!entry) dependents.set(family.name, (entry = { pages: new Set(), known: new WeakSet() }));
   if (entry.known.has(rebuild)) return;
@@ -118,12 +157,15 @@ function withdraw(name: string, failed: FontFace): void {
   }
   console.warn(
     `The face "${name}" could not load ${source || 'one of its files'}, so the family falls back whole. ` +
-      'The web serves a face the theme names, or one an eQuantic build embedded: a font file under the ' +
-      'Assets folder of the app or of a library it references.',
+      WHERE_FACES_COME_FROM,
   );
-  const entry = dependents.get(name);
+  rebuildDependents(name);
   dependents.delete(name);
-  entry?.pages.forEach((page) => page.deref()?.());
+}
+
+/** Rebuilds every page still in the tree that measured text in `name`. */
+function rebuildDependents(name: string): void {
+  dependents.get(name)?.pages.forEach((page) => page.deref()?.());
 }
 
 /** Whether the document has a face of `name`, from a stylesheet or declared before. */

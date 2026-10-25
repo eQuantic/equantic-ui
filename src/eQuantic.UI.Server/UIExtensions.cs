@@ -394,7 +394,7 @@ public static class UIExtensions
         // A face a page the browser builds names (#1056), asked for by its identity, an assembly and a
         // resource, since the browser does not know the bytes' hash: sent on to the content-addressed URL,
         // so every page shares one cached copy of a file. Only a face an eQuantic build embedded, in an
-        // assembly the app has loaded (ServedFonts.Locate). The redirect itself is asked again every
+        // assembly the app's deployment carries, or a file the theme serves (ServedFonts.Locate). The redirect itself is asked again every
         // time, so a new build's file is found under its new hash.
         endpoints.MapGetAndHead("/_equantic/fonts/{assembly}/{**resource}", context =>
         {

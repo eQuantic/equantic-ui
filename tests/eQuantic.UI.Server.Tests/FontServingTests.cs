@@ -213,6 +213,20 @@ public class FontServingTests
         identity.Headers.Location!.OriginalString.Should().Be(url);
     }
 
+    /// <summary>
+    /// A family may name its assembly only as text, which leaves no reference to it in any assembly's
+    /// metadata: the face is still served, since the deployment carries the assembly and the face is read
+    /// from it (Copilot's third review of #1077). Here nothing the app scans references this assembly.
+    /// </summary>
+    [Fact]
+    public void AFaceInAnAssemblyTheDeploymentCarries_IsServed_ThoughNothingReferencesIt()
+    {
+        var served = ServedFonts.Of(PhotonTheme.Instance, [], logger: null);
+
+        served.Locate(Assembly, "eQuantic.UI.Fonts/TestFace-Regular.ttf")!.Bytes
+            .Should().Equal(Resource("eQuantic.UI.Fonts/TestFace-Regular.ttf"));
+    }
+
     /// <summary>A family built by hand over a font no eQuantic build embedded as a face, and the theme does
     /// not name, is declared on no page: no instance but the one that read it could serve its URL.</summary>
     [Fact]
@@ -234,7 +248,8 @@ public class FontServingTests
     /// <summary>
     /// A page the browser builds asks for a face's file by its identity, since it does not know the hash
     /// of its bytes, and is sent on to the content-addressed URL (#1056). Only a face an eQuantic build
-    /// embedded, in an assembly the app has loaded: anything else is a file the app never chose to publish.
+    /// embedded, in an assembly the app's deployment carries: anything else is a file the app never chose to
+    /// publish.
     /// </summary>
     [Fact]
     public async Task AFaceAskedForByItsIdentity_IsSentToItsContentAddressedUrl()

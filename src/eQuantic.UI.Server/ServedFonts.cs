@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using System.IO.Compression;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Web;
@@ -18,7 +20,8 @@ namespace eQuantic.UI.Server;
 /// every role's face) and every family in the catalogs of the assemblies the app scans (#1055). Naming a
 /// family is what ships it, so nothing lists them twice.</item>
 /// <item>A page declares in its head every other family its text names (#1056), when every file of it is
-/// a face an eQuantic build embedded in the app's assemblies, or a file the theme's stylesheet serves.</item>
+/// a face an eQuantic build embedded in an assembly the app's deployment carries, or a file the theme's
+/// stylesheet serves.</item>
 /// <item>A browser building a page asks for a file by its identity, an assembly and a resource, and is
 /// sent to the file's content-addressed URL (<see cref="Locate"/>).</item>
 /// </list>
@@ -74,8 +77,8 @@ internal sealed class ServedFonts
 
     /// <summary>
     /// The file served under <paramref name="name"/>, or null for a name nothing is served under: one the
-    /// theme's stylesheet serves, or a face an eQuantic build embedded in the app's assemblies, which any
-    /// instance answers whether or not it rendered the page that named it.
+    /// theme's stylesheet serves, or a face an eQuantic build embedded in an assembly the app's deployment
+    /// carries, which any instance answers whether or not it rendered the page that named it.
     /// </summary>
     public ServedFont? Find(string name) =>
         _byName.TryGetValue(name, out var font) ? font
@@ -84,8 +87,8 @@ internal sealed class ServedFonts
 
     /// <summary>
     /// The faces <paramref name="theme"/> and the catalogs of <paramref name="assemblies"/> ship, which the
-    /// theme's stylesheet declares, with the app's assemblies the faces outside it are read from. A family
-    /// one of whose files is not there is left out, and said once to <paramref name="logger"/>.
+    /// theme's stylesheet declares, with the app's assemblies the walk for the faces outside it starts from.
+    /// A family one of whose files is not there is left out, and said once to <paramref name="logger"/>.
     /// </summary>
     public static ServedFonts Of(IAppTheme theme, IEnumerable<Assembly> assemblies, ILogger? logger)
     {
@@ -109,9 +112,9 @@ internal sealed class ServedFonts
     /// <summary>
     /// The file a browser asks for by its identity (#1056): a file the theme's stylesheet serves, which a
     /// page may name in a family of its own, or the face an eQuantic build embedded as
-    /// <paramref name="resource"/> in the app's assembly named <paramref name="assembly"/>, and null for
-    /// anything else. An assembly may embed a font for something else, a PDF writer's, whose licence does
-    /// not cover the web, and a browser asking is no reason to publish it.
+    /// <paramref name="resource"/> in the assembly named <paramref name="assembly"/> the app's deployment
+    /// carries, and null for anything else. An assembly may embed a font for something else, a PDF
+    /// writer's, whose licence does not cover the web, and a browser asking is no reason to publish it.
     /// </summary>
     public ServedFont? Locate(string assembly, string resource) =>
         _sheetFiles.Contains((assembly, resource)) ? Read(assembly, resource, () => null)
@@ -121,9 +124,9 @@ internal sealed class ServedFonts
 
     /// <summary>
     /// The rules of a family a page names, when the web serves every file of it: one the theme's
-    /// stylesheet serves, or a face an eQuantic build embedded in the app's assemblies, which every
-    /// instance of the app serves alike. A file only the instance that read it would serve is a URL
-    /// another instance answers with 404.
+    /// stylesheet serves, or a face an eQuantic build embedded in an assembly the app's deployment carries,
+    /// which every instance of the app serves alike. A file only the instance that read it would serve is
+    /// a URL another instance answers with 404.
     /// </summary>
     private string PageRules(FontFamily family)
     {
@@ -216,10 +219,11 @@ internal sealed class ServedFonts
         .OfType<FontFamily>();
 
     /// <summary>
-    /// Every face an eQuantic build embedded in the app's own assemblies: the ones it scans, the entry
-    /// assembly, and every assembly they reference outside the platform, each read once. Taken from the
-    /// app's deployment alone, the first time a face outside the theme's stylesheet is asked for, so every
-    /// instance of the app knows the same faces whatever it has served.
+    /// Every face an eQuantic build embedded in an assembly the app's deployment carries: the assemblies
+    /// the host lists for it, the ones the app scans, the entry assembly, and every assembly they reference
+    /// outside the platform, each read once. Taken from the app's deployment alone, the first time a face
+    /// outside the theme's stylesheet is asked for, so every instance of the app knows the same faces
+    /// whatever it has served.
     /// </summary>
     private sealed class EmbeddedFaces
     {
@@ -238,7 +242,7 @@ internal sealed class ServedFonts
         {
             var faces = new EmbeddedFaces();
             var visited = new HashSet<string>(StringComparer.Ordinal);
-            var pending = new Queue<Assembly>(roots.Where(root => !root.IsDynamic));
+            var pending = new Queue<Assembly>(roots.Where(root => !root.IsDynamic).Concat(Deployed()));
             while (pending.TryDequeue(out var assembly))
             {
                 if (assembly.GetName().Name is not { } name || !visited.Add(name)) continue;
@@ -265,8 +269,58 @@ internal sealed class ServedFonts
             return faces;
         }
 
-        /// <summary>The platform's own assemblies embed no face an app ships, and walking them would load
-        /// the whole framework.</summary>
+        /// <summary>
+        /// The assemblies the host lists for the app's deployment that embed a face, the list a name is
+        /// loaded from, so a family that names its assembly only as text is served as it is read: such a
+        /// family leaves no reference to that assembly in any assembly's metadata, and no walk finds it
+        /// (Copilot's third review of #1077). An assembly's metadata is read without loading it, and only
+        /// one that embeds a face is loaded. A single-file app lists none of the assemblies its bundle
+        /// carries here, and the walk from the roots finds the ones they reference.
+        /// </summary>
+        private static IEnumerable<Assembly> Deployed() =>
+            ((AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string)?.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries) ?? [])
+                .Where(path => !IsPlatform(Path.GetFileNameWithoutExtension(path)))
+                .Select(EmbeddingAFace)
+                .OfType<AssemblyName>()
+                .Select(Load)
+                .OfType<Assembly>();
+
+        /// <summary>
+        /// The simple name of the assembly at <paramref name="path"/> when it embeds a face, or null: the name
+        /// <see cref="FontFile.Read"/> loads an assembly by, so the web serves a face as it is read.
+        /// </summary>
+        private static AssemblyName? EmbeddingAFace(string path)
+        {
+            try
+            {
+                using var reader = new PEReader(File.OpenRead(path));
+                if (!reader.HasMetadata) return null;
+                var metadata = reader.GetMetadataReader();
+                return metadata.IsAssembly && metadata.ManifestResources
+                    .Any(handle => IsEmbeddedFace(metadata.GetString(metadata.GetManifestResource(handle).Name)))
+                    ? new AssemblyName(metadata.GetString(metadata.GetAssemblyDefinition().Name))
+                    : null;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or BadImageFormatException)
+            {
+                return null;
+            }
+        }
+
+        private static Assembly? Load(AssemblyName name)
+        {
+            try
+            {
+                return Assembly.Load(name);
+            }
+            catch (Exception exception) when (exception is FileNotFoundException or FileLoadException or BadImageFormatException)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The platform's own assemblies embed no face an app ships, and walking or reading them
+        /// would open the whole framework.</summary>
         private static bool IsPlatform(string name) =>
             name is "netstandard" or "mscorlib" or "System"
             || name.StartsWith("System.", StringComparison.Ordinal)

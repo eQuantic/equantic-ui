@@ -34,14 +34,19 @@ which would declare on every page faces that no page names.
   the routes share, in place of a table beside the routes. What it serves is decided by the app's
   deployment and never by the requests an instance has answered: an app behind a load balancer renders a
   page on one instance and is asked for its font by another. Beside the theme's stylesheet it reads, once,
-  every face an eQuantic build embedded in the app's own assemblies, the ones it scans, the entry assembly
-  and every assembly they reference outside the platform, so any instance answers any of their URLs.
+  every face an eQuantic build embedded in an assembly the app's deployment carries, so any instance
+  answers any of their URLs: every assembly the host lists for the deployment, the list a name is loaded
+  from, whose metadata is read without loading one that embeds no face, and the ones the app scans, the
+  entry assembly and every assembly they reference outside the platform. The host's list is there because
+  a family may name its assembly only as text, which leaves no reference to it in any metadata, and the
+  walk because a single-file app lists none of the assemblies its bundle carries there (measured: 173
+  entries for a single-file app, 175 for the same app on disk).
   A family a page names is served when every file of it is one of those, or a file the theme's stylesheet
   serves. One over a font a library embedded another way, which the theme does not name, is served by no
   instance, and the server says so: only the instance that read it could have answered its URL.
 - **The identity route is narrow.** `/_equantic/fonts/<assembly>/<resource>` answers only a face an
-  eQuantic build embedded, under `eQuantic.UI.Fonts/`, a `.ttf` or an `.otf`, in one of the app's
-  assemblies, which the deployment names and no request does, and a file the theme's stylesheet serves,
+  eQuantic build embedded, under `eQuantic.UI.Fonts/`, a `.ttf` or an `.otf`, in an assembly the app's
+  deployment carries, which the deployment names and no request does, and a file the theme's stylesheet serves,
   which a page may name in a family of its own and every instance read when it started. An assembly may embed a font for something
   else, a PDF writer's, whose licence does not cover the web, and the route must not publish it because a
   browser asked. Its redirect is not cached, so a new build's file is found under its new hash.
@@ -50,13 +55,18 @@ which would declare on every page faces that no page names.
   family argument as the name itself, quotes included, where the specification parses it as a CSS family
   name, so a quoted name was another family there and `Roboto+Mono` was invalid under the specification. A
   CSS string reads alike in every engine, and a rule is withdrawn by deleting it.
-- **Whole or nothing in the browser, whoever declared the face.** The runtime adds a family's rules to
-  the document at once, so a page that measured text in them rebuilds when they load (#1055's tracker).
+- **Whole or nothing in the browser, whoever declared the face.** The runtime asks for every file of a
+  family first, a HEAD that carries no bytes, and adds its rules only when every one is there, as the
+  server declares only a family it can read whole: a browser asks for a cut only when text is set in it,
+  so a missing italic on a page of upright text would never fail. Once they are added, a page that
+  measured text in the family before measures again, and again when its faces load (#1055's tracker).
   One listener for the document's `loadingerror`, set by the boot, takes back every rule of a family a
   face of which failed, the theme's, the server's or the runtime's, and a face that failed before the
   runtime was there is taken back when it starts. The text falls back as a whole, as it does on Photon,
   and the pages that measured text in the family rebuild, holding each page's one invalidator weakly, so
-  a page that left the tree is not kept alive by a font that never failed. A measure that names no family
-  reads the theme's face, its text face or its code face, and depends on that family alike.
+  a page that left the tree is not kept alive by a font that never failed. Every measure depends on the
+  theme's face, its text face or its code face, which closes every stack and sets whatever a named family
+  does not, a family the machine lacks included, and a family named without files counts as one with
+  them, since a family is taken back by name.
 - **The document is asked first.** A family the document already has a face of, from the theme's
   stylesheet or the server's head, is not declared again: the server declared it whole.

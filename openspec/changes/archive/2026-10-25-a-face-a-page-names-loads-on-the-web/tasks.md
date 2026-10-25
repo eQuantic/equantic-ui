@@ -9,7 +9,7 @@
 - [x] 1.3 A rendered page writes the rules of the families it named that the theme's stylesheet does not
       declare into an `eq-faces` style element in its head, once each
 - [x] 1.4 `/_equantic/fonts/<assembly>/<resource>` redirects to the file's content-addressed URL, for a
-      face an eQuantic build embedded in an assembly the app has loaded, and for nothing else
+      face an eQuantic build embedded in an assembly the app's deployment carries, and for nothing else
 - [x] 1.5 Check: a page that names a family outside the theme declares it once and its URLs answer the
       files; a family the theme declares is not repeated; the identity route redirects, and refuses an
       assembly that is not loaded and a resource no eQuantic build embedded as a face; the prefix it takes
@@ -19,6 +19,11 @@
       instance answers every URL; a family over a font no eQuantic build embedded as a face is not served
 - [x] 1.7 Check: a second instance, which never rendered the page, answers its URL and the identity; a
       family over a font a library embedded another way is declared on no page (`FontServingTests`)
+- [x] 1.8 The faces outside the theme's stylesheet are read from every assembly the host lists for the
+      deployment too, so a family that names its assembly only as text is served
+- [x] 1.9 Check: a face in an assembly the deployment carries, which nothing the app scans references, is
+      served (`FontServingTests`); and a probe app over a library it names only as text, whose page
+      declares the face and whose identity redirects, where it was refused and logged before
 
 ## 2. The browser
 
@@ -30,6 +35,13 @@
 - [x] 2.3 Check: the declarations' tests (declared once, a CSS string, left to the server's head, a family
       the server declared taken back whole, one that failed before the runtime, the pages that measured in
       it rebuilt); and a probe app in a browser, on a page the server rendered and on one the browser built
+- [x] 2.4 The runtime asks for every file of a family before it declares it, and rebuilds the pages that
+      measured in it once it does; a family named without files, and the theme's face that closes every
+      stack, count among what a measure depends on
+- [x] 2.5 Check: a missing italic no text uses keeps the family undeclared; a page that measured before
+      the declaration rebuilds after it; a page that measured in a family named without files, or in one
+      the machine lacks, rebuilds when the face behind it is taken back; and the probe app's upright page
+      in a browser, which asks for both files and declares neither
 
 ## 3. Documentation
 
