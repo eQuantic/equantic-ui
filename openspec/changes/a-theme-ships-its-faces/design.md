@@ -27,7 +27,7 @@ Every declared file is bundled with the app and registered with the engine at st
 - Flutter's list and its family string are two statements that must agree, and a mistyped string falls back in silence.
 - Here the theme names a `FontFamily` object. The object is the name and the files, so there is nothing to keep in step.
 - What is shipped is derived from what the theme names, not listed beside it: its text face, its code face and the face of every role.
-- A family with no files is the one the machine has. A name converts to it, so every family named by a string keeps compiling and keeps resolving as before.
+- A family with no files is the one the machine has, written `new("Georgia")`. There is no conversion from a string: the string was the old shape, and the compiler points at every family named by one.
 - `TypeStyle.Family` takes the type as well, because a role's face is set there, and a role's face is one a theme ships.
 
 **The files travel inside an assembly, as embedded resources.**

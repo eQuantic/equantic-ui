@@ -84,6 +84,8 @@
   "FileFilter",
   "Flexible",
   "FluidSize",
+  "FontFamily",
+  "FontFile",
   "FormController",
   "FormField",
   "FrameTick",

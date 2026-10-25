@@ -196,7 +196,7 @@ public class WikiClaimsCompile
         _ = new Text("git log", TypeRole.Caption) { Mono = true };
         _ = new Text("git log", TypeRole.Caption)
         {
-            StyleOverride = brand.Type(TypeRole.Caption) with { Family = "Fira Code", Mono = true },
+            StyleOverride = brand.Type(TypeRole.Caption) with { Family = new("Fira Code"), Mono = true },
         };
 
         // Styling, "A state changes any member of the style" (preview.60): the card that lifts and
@@ -296,8 +296,8 @@ public class WikiClaimsCompile
     /// delegates to inner" — written out here so the two lines that are NOT elided compile.</summary>
     private sealed class BrandTheme(IAppTheme inner) : IAppTheme
     {
-        public TypeStyle Type(TypeRole role) => inner.Type(role) with { Family = "IBM Plex Sans" };
-        public string? MonoFamily => "JetBrains Mono";
+        public TypeStyle Type(TypeRole role) => inner.Type(role) with { Family = new("IBM Plex Sans") };
+        public FontFamily? MonoFamily => new("JetBrains Mono");
 
         public ColorToken Background => inner.Background;
         public ColorToken Surface => inner.Surface;

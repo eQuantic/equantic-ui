@@ -21,7 +21,7 @@ namespace eQuantic.UI.Native.Shell.Android;
 /// </summary>
 public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
 {
-    private readonly Dictionary<(float Size, FontWeight Weight, bool Mono, bool Italic, string? Family), TextPaint> _paints = new();
+    private readonly Dictionary<(float Size, FontWeight Weight, bool Mono, bool Italic, FontFamily? Family), TextPaint> _paints = new();
 
     public TextMeasurement Measure(string content, TypeStyle style, float typeScale, float maxWidth, int maxLines)
     {
@@ -134,7 +134,7 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
         return lines;
     }
 
-    private TextPaint PaintFor(float size, FontWeight weight, bool mono, bool italic, string? family = null)
+    private TextPaint PaintFor(float size, FontWeight weight, bool mono, bool italic, FontFamily? family = null)
     {
         if (_paints.TryGetValue((size, weight, mono, italic, family), out var cached)) return cached;
 
@@ -163,15 +163,15 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
         // missing — and an instrument that cries wolf on a correct value is one nobody reads by the
         // end of the week. What is left is a brand face, which is the case this exists for.
         var baseFace = mono ? Typeface.Monospace : Typeface.Default;
-        if (family is { Length: > 0 })
+        if (family is { Name.Length: > 0 })
         {
-            var named = Typeface.Create(family, style);
+            var named = Typeface.Create(family.Name, style);
             if (named is null)
-                eQuantic.UI.Primitives.FaceResolution.Missing(family);
-            else if (IsSystemAlias(family) || !named.Equals(Typeface.Create(Typeface.Default, style)))
+                eQuantic.UI.Primitives.FaceResolution.Missing(family.Name);
+            else if (IsSystemAlias(family.Name) || !named.Equals(Typeface.Create(Typeface.Default, style)))
                 baseFace = named;
             else
-                eQuantic.UI.Primitives.FaceResolution.Missing(family);
+                eQuantic.UI.Primitives.FaceResolution.Missing(family.Name);
         }
         paint.SetTypeface(Typeface.Create(baseFace, style));
         _paints[(size, weight, mono, italic, family)] = paint;

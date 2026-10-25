@@ -13,7 +13,7 @@
 import { CodeLanguageRules } from './components/CodeLanguageRules';
 import { DataPalette } from './data-palette';
 import type { SheetTheme } from './sheet-theme';
-import { codeTokenColor, type AppTheme, type ColorToken } from './value-types';
+import { codeTokenColor, type AppTheme, type ColorToken, type FontFamily } from './value-types';
 
 /** `IAppTheme`'s defaults. */
 export const IAppTheme = {
@@ -27,10 +27,10 @@ export const IAppTheme = {
   scrollbarThumb: (theme: AppTheme): ColorToken => theme.textMuted.withOpacity(0.55),
   /** `ColorToken ScrollbarTrack => SurfaceSubtle;` */
   scrollbarTrack: (theme: AppTheme): ColorToken => theme.surfaceSubtle,
-  /** `string? TextFamily => null;` — no text face of its own. */
-  textFamily: (_theme: AppTheme): string | null => null,
-  /** `string? MonoFamily => null;` — no code face of its own. */
-  monoFamily: (_theme: AppTheme): string | null => null,
+  /** `FontFamily? TextFamily => null;` — no text face of its own. */
+  textFamily: (_theme: AppTheme): FontFamily | null => null,
+  /** `FontFamily? MonoFamily => null;` — no code face of its own. */
+  monoFamily: (_theme: AppTheme): FontFamily | null => null,
   /** `DataPalette Data => DataPalette.Default;` — the validated reference palette. */
   data: (_theme: AppTheme): DataPalette => DataPalette.default,
   /** `SheetTheme? Sheet => null;` — the spreadsheet's own colours, from the foundation. */

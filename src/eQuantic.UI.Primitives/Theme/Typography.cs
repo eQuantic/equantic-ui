@@ -57,11 +57,11 @@ public enum TypeRole : byte
 /// drift between what was measured and what was drawn.
 /// </para>
 /// <para>
-/// Naming a face the machine does not have is the failure worth knowing about, and it is silent by
-/// nature — every text engine falls back rather than refusing. The platform services report an
-/// unresolved family rather than quietly drawing something else. What this does NOT do is make a
-/// face available: registering one the system has never seen is a separate piece, and until it
-/// exists a family only resolves if it is installed.
+/// A family with files is one the app ships (<see cref="FontFamily"/>): the web serves and declares
+/// its files, and Photon registers them with its text engine the first time text asks for it. A
+/// family with none is the platform's, and naming one the machine does not have is the failure worth
+/// knowing about, silent by nature: every text engine falls back rather than refusing, so the
+/// platform services report an unresolved family rather than quietly drawing something else.
 /// </para>
 /// </param>
 /// <param name="Italic">
@@ -75,7 +75,7 @@ public enum TypeRole : byte
 /// own rather than a value in the weight enum.
 /// </para>
 /// </param>
-public readonly record struct TypeStyle(float Size, float LineHeight, FontWeight Weight, float Tracking, float MaxScale, bool Mono = false, bool Italic = false, string? Family = null)
+public readonly record struct TypeStyle(float Size, float LineHeight, FontWeight Weight, float Tracking, float MaxScale, bool Mono = false, bool Italic = false, FontFamily? Family = null)
 {
     /// <summary>
     /// The effective size under an OS Dynamic Type factor: <c>Size × min(factor, MaxScale)</c>, snapped

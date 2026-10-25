@@ -23,7 +23,7 @@ public class DocumentSlotsTests
 
     private static readonly IAppTheme Brand = new SlottedTheme(PhotonTheme.Instance)
     {
-        Text = "Atkinson Hyperlegible Next",
+        Text = new("Atkinson Hyperlegible Next"),
         Wash = Forest.WithOpacity(0.4f),
         Hint = Gold,
         Thumb = Forest,
@@ -46,7 +46,7 @@ public class DocumentSlotsTests
     [Fact]
     public void AFieldsText_IsSetInTheThemesTextFace()
     {
-        new TextEntry("ana").Resolve(Brand).Family.Should().Be("Atkinson Hyperlegible Next");
+        new TextEntry("ana").Resolve(Brand).Family.Should().Be(new FontFamily("Atkinson Hyperlegible Next"));
         new TextEntry("ana").Resolve(PhotonTheme.Instance).Family.Should().BeNull("Photon keeps the platform's own face");
     }
 
@@ -124,14 +124,14 @@ public class DocumentSlotsTests
     /// <summary>Photon's theme with the document's slots it is given.</summary>
     private sealed class SlottedTheme(IAppTheme inner) : IAppTheme
     {
-        public string? Text { get; init; }
+        public FontFamily? Text { get; init; }
         public ColorToken? Wash { get; init; }
         public ColorToken? SelectedText { get; init; }
         public ColorToken? Hint { get; init; }
         public ColorToken? Thumb { get; init; }
         public ColorToken? Track { get; init; }
 
-        public string? TextFamily => Text;
+        public FontFamily? TextFamily => Text;
         public ColorToken Selection => Wash ?? inner.Selection;
         public ColorToken? OnSelection => SelectedText ?? inner.OnSelection;
         public ColorToken Placeholder => Hint ?? inner.Placeholder;

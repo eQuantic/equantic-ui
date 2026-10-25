@@ -38,7 +38,7 @@ public class NamedFacePhotonTests
     [MacFact]
     public void AFaceTheMachineDoesNotHave_IsNamed()
     {
-        new CoreTextService().Measure("Handgloves", Body with { Family = "No Such Face Anywhere" },
+        new CoreTextService().Measure("Handgloves", Body with { Family = new("No Such Face Anywhere") },
             1f, float.PositiveInfinity, 1);
 
         FaceResolution.Unresolved.Should().Equal(["No Such Face Anywhere"]);
@@ -59,7 +59,7 @@ public class NamedFacePhotonTests
     [MacFontFact(NerdFontCanonical)]
     public void AFaceUnderADifferentCanonicalName_IsStillFound()
     {
-        new CoreTextService().Measure("Handgloves", Body with { Family = NerdFontAlias },
+        new CoreTextService().Measure("Handgloves", Body with { Family = new(NerdFontAlias) },
             1f, float.PositiveInfinity, 1);
 
         FaceResolution.Unresolved.Should().BeEmpty(
@@ -77,7 +77,7 @@ public class NamedFacePhotonTests
     {
         var service = new CoreTextService();
         var system = service.Measure("Handgloves 0123", Body, 1f, float.PositiveInfinity, 1);
-        var named = service.Measure("Handgloves 0123", Body with { Family = "Menlo" },
+        var named = service.Measure("Handgloves 0123", Body with { Family = new("Menlo") },
             1f, float.PositiveInfinity, 1);
 
         FaceResolution.Unresolved.Should().BeEmpty("Menlo ships with macOS");

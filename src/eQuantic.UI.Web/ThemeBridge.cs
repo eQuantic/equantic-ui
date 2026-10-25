@@ -72,11 +72,11 @@ public static class ThemeBridge
             // whose roles are all proportional, upright and unnamed — which every shipped one is —
             // and lossy for the first branded theme, which is the whole point of a face. Appended
             // rather than always emitted so the common payload stays byte-identical.
-            if (s.Mono || s.Italic || s.Family is { Length: > 0 } || s.Fluid is not null)
+            if (s.Mono || s.Italic || s.Family is { Name.Length: > 0 } || s.Fluid is not null)
             {
                 sb.Append(',').Append(s.Mono ? "true" : "false")
                   .Append(',').Append(s.Italic ? "true" : "false");
-                var face = FaceName.Usable(s.Family);
+                var face = FaceName.Usable(s.Family?.Name);
                 if (face is not null) sb.Append(",\"").Append(Escape(face)).Append('"');
                 // A size that follows the window rides last, after a family slot it may have to
                 // hold open: without it the browser's role is the ceiling while the server's is the
@@ -96,12 +96,12 @@ public static class ThemeBridge
         // a theme with no opinion sends the payload it always sent. It rides beside the roles rather
         // than inside one because Mono is a per-NODE property and no shipped role sets it, so the
         // two never meet — the same argument `IAppTheme.MonoFamily` makes for existing at all.
-        if (FaceName.Usable(theme.MonoFamily) is { } mono)
+        if (FaceName.Usable(theme.MonoFamily?.Name) is { } mono)
             sb.Append(",\"monoFamily\":\"").Append(Escape(mono)).Append('"');
         // The TEXT face beside it, by the same rule, and the selected text's colour when the theme
         // names one: the two members of the document that every theme need not answer, so the
         // surfaces above (every ColorToken of the contract) cannot carry them.
-        if (FaceName.Usable(theme.TextFamily) is { } text)
+        if (FaceName.Usable(theme.TextFamily?.Name) is { } text)
             sb.Append(",\"textFamily\":\"").Append(Escape(text)).Append('"');
         if (theme.OnSelection is { } onSelection)
         {

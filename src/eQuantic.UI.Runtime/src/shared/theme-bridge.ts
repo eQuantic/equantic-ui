@@ -6,7 +6,7 @@
  * markup. The wire shape mirrors the generated `photonTheme`; the round-trip is pinned in vitest.
  */
 
-import { ColorToken, FluidSize, TypeStyle, VariantColors, codeTokenColor } from './value-types';
+import { ColorToken, FluidSize, FontFamily, TypeStyle, VariantColors, codeTokenColor } from './value-types';
 import type { AppTheme, ShadowSpec } from './value-types';
 import type { ColorValue } from './nodes';
 import { DataPalette, DivergingScale, StatusScale } from './data-palette';
@@ -96,7 +96,7 @@ export function materializeTheme(data: ThemeData): AppTheme {
       maxScale,
       mono ?? false,
       italic ?? false,
-      family ?? undefined,
+      family ? new FontFamily(family) : undefined,
     );
     // A role whose size follows the window (C# ThemeBridge): the clamp rides last.
     typeScale[key] = fluid ? Object.assign(style, { fluid: new FluidSize(fluid[0], fluid[1], fluid[2]) }) : style;
@@ -137,8 +137,8 @@ export function materializeTheme(data: ThemeData): AppTheme {
     data: palette,
     sheet,
     disabledOpacity: data.disabledOpacity,
-    monoFamily: data.monoFamily,
-    textFamily: data.textFamily,
+    monoFamily: data.monoFamily ? new FontFamily(data.monoFamily) : undefined,
+    textFamily: data.textFamily ? new FontFamily(data.textFamily) : undefined,
     onSelection: data.onSelection ? token(data.onSelection) : undefined,
     colors(variant: string): VariantColors {
       return variants[variant] ?? variants.primary;

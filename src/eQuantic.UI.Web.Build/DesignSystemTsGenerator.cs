@@ -26,7 +26,12 @@ public static class DesignSystemTsGenerator
         ts.AppendLine(" * (DesignSystemTsGeneratorTests pins this file byte-for-byte against the generator).");
         ts.AppendLine(" */");
         ts.AppendLine();
-        ts.AppendLine("import { ColorToken, TypeStyle, VariantColors, codeTokenColor } from './value-types';");
+        // A face is named as a family the browser materializes by its name alone: the server declares
+        // its files in the theme's stylesheet, so the twin needs nothing more. Imported only when the
+        // theme names one, which Photon's does not.
+        ts.AppendLine(theme.MonoFamily is { Name.Length: > 0 } || theme.TextFamily is { Name.Length: > 0 }
+            ? "import { ColorToken, FontFamily, TypeStyle, VariantColors, codeTokenColor } from './value-types';"
+            : "import { ColorToken, TypeStyle, VariantColors, codeTokenColor } from './value-types';");
         ts.AppendLine("import type { AppTheme, ShadowSpec } from './value-types';");
         ts.AppendLine("import type { ColorValue } from './nodes';");
         ts.AppendLine("import { DataPalette, DivergingScale, StatusScale } from './data-palette';");
@@ -257,12 +262,12 @@ public static class DesignSystemTsGenerator
         // this runs at CODEGEN time, where there is no frame and no run tally to record a miss into.
         // The predicate is also what makes the single quotes below safe — it admits letters, digits,
         // space and `-_.+` and nothing that means anything to a TypeScript string.
-        if (theme.MonoFamily is { Length: > 0 } mono && FaceName.IsWellFormed(mono))
-            ts.AppendLine($"  monoFamily: '{mono}',");
+        if (theme.MonoFamily is { Name.Length: > 0 } mono && FaceName.IsWellFormed(mono.Name))
+            ts.AppendLine($"  monoFamily: new FontFamily('{mono.Name}'),");
         // The text face by the same rule, and the selected text's colour when the theme names one:
         // the two members of the document the ColorToken loop above cannot carry.
-        if (theme.TextFamily is { Length: > 0 } text && FaceName.IsWellFormed(text))
-            ts.AppendLine($"  textFamily: '{text}',");
+        if (theme.TextFamily is { Name.Length: > 0 } text && FaceName.IsWellFormed(text.Name))
+            ts.AppendLine($"  textFamily: new FontFamily('{text.Name}'),");
         if (theme.OnSelection is { } onSelection)
             ts.AppendLine($"  onSelection: {Token(onSelection)},");
         ts.AppendLine("  colors(variant: string): VariantColors {");

@@ -146,9 +146,9 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     private static IntPtr LoadGlobalAddress(string library, string symbol) =>
         dlsym(dlopen(library, 2), symbol);
 
-    private readonly Dictionary<(float Size, bool Bold, bool Mono, bool Italic, string? Family), IntPtr> _fonts = new();
+    private readonly Dictionary<(float Size, bool Bold, bool Mono, bool Italic, FontFamily? Family), IntPtr> _fonts = new();
 
-    private IntPtr FontFor(float size, FontWeight weight, bool mono, bool italic, string? family = null)
+    private IntPtr FontFor(float size, FontWeight weight, bool mono, bool italic, FontFamily? family = null)
     {
         var bold = weight >= FontWeight.SemiBold;
         if (_fonts.TryGetValue((size, bold, mono, italic, family), out var cached)) return cached;
@@ -186,18 +186,18 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     /// substitute rather than nothing when the family is unknown, so the family is read back and
     /// compared: a non-null return proves a font, not the right one.
     /// </summary>
-    private static IntPtr? Named(string? family, float size)
+    private static IntPtr? Named(FontFamily? family, float size)
     {
-        if (string.IsNullOrEmpty(family)) return null;
+        if (family is not { Name.Length: > 0 }) return null;
 
-        var name = CFStringCreateWithCString(IntPtr.Zero, family, Utf8);
+        var name = CFStringCreateWithCString(IntPtr.Zero, family.Name, Utf8);
         if (name == IntPtr.Zero) return null;
         var attributes = CFDictionaryCreateMutable(IntPtr.Zero, 1, KeyCallbacks, ValueCallbacks);
         try
         {
             CFDictionarySetValue(attributes, FontFamilyNameAttribute, name);
             var wanted = CTFontDescriptorCreateWithAttributes(attributes);
-            if (wanted == IntPtr.Zero) { FaceResolution.Missing(family); return null; }
+            if (wanted == IntPtr.Zero) { FaceResolution.Missing(family.Name); return null; }
             try
             {
                 // No mandatory-attribute set, and that is measured rather than assumed: the matcher
@@ -205,7 +205,7 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
                 // descriptor for one it does, including when the canonical name differs from the one
                 // asked for ("JetBrainsMono NF" matches "JetBrainsMono Nerd Font").
                 var matched = CTFontDescriptorCreateMatchingFontDescriptor(wanted, IntPtr.Zero);
-                if (matched == IntPtr.Zero) { FaceResolution.Missing(family); return null; }
+                if (matched == IntPtr.Zero) { FaceResolution.Missing(family.Name); return null; }
                 try
                 {
                     return CTFontCreateWithFontDescriptor(matched, size, IntPtr.Zero);
@@ -230,7 +230,7 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     /// <summary>The framesetter + laid-out frame for a block (caller releases all three handles).</summary>
     private (IntPtr Framesetter, IntPtr Frame, IntPtr Path, IntPtr Attributed, IntPtr CfText, IntPtr Dict)
         Layout(string content, float fontSize, FontWeight weight, float maxWidth, bool mono, bool italic,
-            string? family)
+            FontFamily? family)
     {
         var cfText = CFStringCreateWithCString(IntPtr.Zero, content.Length == 0 ? " " : content, Utf8);
         var dict = CFDictionaryCreateMutable(IntPtr.Zero, 1, KeyCallbacks, ValueCallbacks);

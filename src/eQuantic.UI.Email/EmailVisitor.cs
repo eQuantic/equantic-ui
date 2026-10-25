@@ -129,7 +129,7 @@ internal sealed class EmailVisitor(ComponentContext context, StringBuilder html)
             html.Append("font-style: italic; ");
         if (node.Tabular)
             html.Append("font-variant-numeric: tabular-nums; ");
-        html.Append($"font-family: {Family(style.Family, style.Mono)}; ")
+        html.Append($"font-family: {Family(style.Family?.Name, style.Mono)}; ")
             .Append($"color: {ink}\">");
 
         if (node.Spans is { Count: > 0 } spans)
@@ -286,7 +286,7 @@ internal sealed class EmailVisitor(ComponentContext context, StringBuilder html)
         // family is right, and it does not follow that the run gets no family at all. The web picks
         // this up for free because its mono stack is `var(--eq-font-mono, …)` and the sheet declares
         // that from the theme; email has no variable to read, so it asks.
-        if (run.Mono) overrides.Append($"font-family: {Family(theme.MonoFamily, mono: true)}; ");
+        if (run.Mono) overrides.Append($"font-family: {Family(theme.MonoFamily?.Name, mono: true)}; ");
         // The run-level escape hatch — inline code at 13.5 inside a 16 paragraph — carries its own
         // size and line, exactly as Text.StyleOverride does at paragraph level.
         if (run.StyleOverride is { } runStyle)

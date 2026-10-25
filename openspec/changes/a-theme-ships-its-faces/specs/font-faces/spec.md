@@ -4,11 +4,11 @@
 
 ### Requirement: A family carries the files it ships
 
-`FontFamily` SHALL name a family and carry its files, each a `FontFile` that names the assembly it is embedded in, its resource, its weight range and whether it is italic. A family with no files SHALL be one the platform supplies, and a name SHALL convert to it. Two families SHALL be equal when their names and their files are.
+`FontFamily` SHALL name a family and carry its files, each a `FontFile` that names the assembly it is embedded in, its resource, its weight range and whether it is italic. A family with no files SHALL be one the platform supplies. Two families SHALL be equal when their names and their files are.
 
-#### Scenario: A family named by a string
+#### Scenario: A family the platform supplies
 
-- **WHEN** a theme answers `TextFamily` with "Georgia"
+- **WHEN** a theme answers `TextFamily` with `new FontFamily("Georgia")`
 - **THEN** it is a family with no files, and every target resolves it from the machine as it did before
 
 #### Scenario: A family a library declares

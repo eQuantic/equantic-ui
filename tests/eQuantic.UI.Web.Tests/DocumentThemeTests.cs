@@ -46,7 +46,7 @@ public class DocumentThemeTests
     {
         var theme = new DocumentTheme(Photon)
         {
-            Text = "Atkinson Hyperlegible Next",
+            Text = new("Atkinson Hyperlegible Next"),
             SelectedText = new ColorToken(Color.White),
         };
 
@@ -60,14 +60,14 @@ public class DocumentThemeTests
     [Fact]
     public void AStyleThatNamesNoFace_TakesTheThemesTextFace()
     {
-        var theme = new DocumentTheme(Photon) { Text = "Atkinson Hyperlegible Next", Code = "JetBrains Mono" };
+        var theme = new DocumentTheme(Photon) { Text = new("Atkinson Hyperlegible Next"), Code = new("JetBrains Mono") };
 
-        Photon.Type(TypeRole.BodyM).WithThemeFace(theme).Family.Should().Be("Atkinson Hyperlegible Next");
+        Photon.Type(TypeRole.BodyM).WithThemeFace(theme).Family.Should().Be(new FontFamily("Atkinson Hyperlegible Next"));
         (Photon.Type(TypeRole.BodyM) with { Mono = true }).WithThemeFace(theme).Family
-            .Should().Be("JetBrains Mono", "monospaced text takes the code face, never the text face");
-        (Photon.Type(TypeRole.Heading) with { Family = "Newsreader" }).WithThemeFace(theme).Family
-            .Should().Be("Newsreader", "a role's own face stays");
-        new Text("Cura", TypeRole.BodyL).Resolve(theme).Family.Should().Be("Atkinson Hyperlegible Next");
+            .Should().Be(new FontFamily("JetBrains Mono"), "monospaced text takes the code face, never the text face");
+        (Photon.Type(TypeRole.Heading) with { Family = new("Newsreader") }).WithThemeFace(theme).Family
+            .Should().Be(new FontFamily("Newsreader"), "a role's own face stays");
+        new Text("Cura", TypeRole.BodyL).Resolve(theme).Family.Should().Be(new FontFamily("Atkinson Hyperlegible Next"));
     }
 
     /// <summary>
@@ -77,11 +77,11 @@ public class DocumentThemeTests
     [Fact]
     public void ARunOfCode_InsideAParagraphInTheTextFace_TakesTheCodeFace()
     {
-        var theme = new DocumentTheme(Photon) { Text = "Atkinson Hyperlegible Next", Code = "JetBrains Mono" };
+        var theme = new DocumentTheme(Photon) { Text = new("Atkinson Hyperlegible Next"), Code = new("JetBrains Mono") };
         var paragraph = new Text("run it", TypeRole.BodyM).Resolve(theme);
 
-        new TextRun("dotnet build") { Mono = true }.Resolve(paragraph, theme).Family.Should().Be("JetBrains Mono");
-        new TextRun("then").Resolve(paragraph, theme).Family.Should().Be("Atkinson Hyperlegible Next");
+        new TextRun("dotnet build") { Mono = true }.Resolve(paragraph, theme).Family.Should().Be(new FontFamily("JetBrains Mono"));
+        new TextRun("then").Resolve(paragraph, theme).Family.Should().Be(new FontFamily("Atkinson Hyperlegible Next"));
     }
 
     /// <summary>
@@ -121,7 +121,7 @@ public class DocumentThemeTests
     [Fact]
     public void AThemesTextFace_IsTheDocumentsFace()
     {
-        var css = ThemeStylesheet.Generate(new DocumentTheme(Photon) { Text = "Atkinson Hyperlegible Next" });
+        var css = ThemeStylesheet.Generate(new DocumentTheme(Photon) { Text = new("Atkinson Hyperlegible Next") });
 
         css.Should().Contain("--eq-font-family: \"Atkinson Hyperlegible Next\", system-ui, -apple-system, sans-serif;",
             "the face is declared in front of the platform's own, which a browser without it falls back to");
@@ -171,16 +171,16 @@ public class DocumentThemeTests
     /// inner theme does.</summary>
     internal sealed class DocumentTheme(IAppTheme inner) : IAppTheme
     {
-        public string? Text { get; init; }
-        public string? Code { get; init; }
+        public FontFamily? Text { get; init; }
+        public FontFamily? Code { get; init; }
         public ColorToken? Wash { get; init; }
         public ColorToken? SelectedText { get; init; }
         public ColorToken? Hint { get; init; }
         public ColorToken? Thumb { get; init; }
         public ColorToken? Track { get; init; }
 
-        public string? TextFamily => Text ?? inner.TextFamily;
-        public string? MonoFamily => Code ?? inner.MonoFamily;
+        public FontFamily? TextFamily => Text ?? inner.TextFamily;
+        public FontFamily? MonoFamily => Code ?? inner.MonoFamily;
         public ColorToken Selection => Wash ?? inner.Selection;
         public ColorToken? OnSelection => SelectedText ?? inner.OnSelection;
         public ColorToken Placeholder => Hint ?? inner.Placeholder;

@@ -45,8 +45,8 @@ public class MonoRunFaceTests
     {
         private static readonly IAppTheme Base = PhotonTheme.Instance;
 
-        public string? MonoFamily => CodeFace;
-        public TypeStyle Type(TypeRole role) => Base.Type(role) with { Family = BodyFace };
+        public FontFamily? MonoFamily => new(CodeFace);
+        public TypeStyle Type(TypeRole role) => Base.Type(role) with { Family = new(BodyFace) };
 
         public ColorToken Background => Base.Background;
         public ColorToken Surface => Base.Surface;
@@ -99,7 +99,7 @@ public class MonoRunFaceTests
     {
         var fragments = Fragments(Sentence(), Branded);
 
-        StyleOf(fragments, "dotnet").Family.Should().Be(CodeFace,
+        StyleOf(fragments, "dotnet").Family.Should().Be(new FontFamily(CodeFace),
             "every shell resolves `family ?? the OS fixed-pitch face`, so an inherited proportional "
             + "family wins over the Mono flag and the span draws as prose");
     }
@@ -110,8 +110,8 @@ public class MonoRunFaceTests
     {
         var fragments = Fragments(Sentence(), Branded);
 
-        StyleOf(fragments, "run").Family.Should().Be(BodyFace);
-        StyleOf(fragments, "first").Family.Should().Be(BodyFace);
+        StyleOf(fragments, "run").Family.Should().Be(new FontFamily(BodyFace));
+        StyleOf(fragments, "first").Family.Should().Be(new FontFamily(BodyFace));
     }
 
     /// <summary>
@@ -124,10 +124,10 @@ public class MonoRunFaceTests
     {
         var chosen = new Text("cargo run", TypeRole.BodyM)
         {
-            StyleOverride = Branded.Type(TypeRole.BodyM) with { Family = "Fira Code", Mono = true },
+            StyleOverride = Branded.Type(TypeRole.BodyM) with { Family = new("Fira Code"), Mono = true },
         };
 
-        chosen.Resolve(Branded).Family.Should().Be("Fira Code",
+        chosen.Resolve(Branded).Family.Should().Be(new FontFamily("Fira Code"),
             "the call site was specific; only an INHERITED family is the theme's to replace");
     }
 
@@ -166,7 +166,7 @@ public class MonoRunFaceTests
         style.Weight.Should().Be(FontWeight.Bold);
         style.Italic.Should().BeTrue();
         style.Size.Should().Be(13.5f);
-        style.Family.Should().Be(BodyFace, "a run that is not mono inherits the role's face");
+        style.Family.Should().Be(new FontFamily(BodyFace), "a run that is not mono inherits the role's face");
     }
 
     /// <summary>

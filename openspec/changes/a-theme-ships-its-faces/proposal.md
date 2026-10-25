@@ -15,7 +15,7 @@ So a brand face is CSS on the web and the system face on Photon, on every machin
 
 **A family is a type.**
 - `FontFamily` names a family and carries the files it ships.
-- A family with no files is one the machine has, and a name converts to it, so `TextFamily => "Georgia"` keeps compiling.
+- A family with no files is one the machine has: `TextFamily => new("Georgia")`.
 - `IAppTheme.TextFamily`, `IAppTheme.MonoFamily` and `TypeStyle.Family` take a `FontFamily`. Naming a family that ships files is all it takes to ship them.
 
 **A file is declared in C#.** `FontFile` names one file of a family:
@@ -68,7 +68,9 @@ public static FontFamily Roboto { get; } = new("Roboto",
 
 The public surface moves in Primitives, Web, Server and the native shells. `TypeStyle.Family`, `IAppTheme.TextFamily` and `IAppTheme.MonoFamily` change type. The developer surface gains the catalog's file and namespace properties, as the vectors have.
 
-The migration line is: a family named by a string still compiles. One the app shipped by CSS moves its files to `Assets/Fonts/` and is named by its catalog member.
+The migration line is: a theme declares `TextFamily` and `MonoFamily` as `FontFamily?`, and a family named by a string is written `new("Georgia")`. A face the app loaded with CSS moves its files to `Assets/Fonts/` and is named by its catalog member.
+
+A theme that keeps `string? TextFamily` still compiles, because the interface answers the slot itself, and its face is ignored. So an upgrade searches its themes for `string? TextFamily` and `string? MonoFamily`.
 
 ## Not in this slice
 

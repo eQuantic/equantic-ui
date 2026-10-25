@@ -40,7 +40,7 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
     private readonly Dictionary<FormatKey, Format> _formats = new();
     private bool _disposed;
 
-    private readonly record struct FormatKey(float Size, float LineHeight, FontWeight Weight, bool Mono, bool Italic, string? Family);
+    private readonly record struct FormatKey(float Size, float LineHeight, FontWeight Weight, bool Mono, bool Italic, FontFamily? Family);
 
     /// <summary>A text format and the metrics of the face it resolved to, in dp at its size.</summary>
     private sealed unsafe class Format
@@ -101,7 +101,7 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
     }
 
     private Format FormatFor(float size, float lineHeight, FontWeight weight, bool mono, bool italic,
-        string? named = null)
+        FontFamily? named = null)
     {
         var key = new FormatKey(size, lineHeight, weight, mono, italic, named);
         if (_formats.TryGetValue(key, out var cached)) return cached;
@@ -111,10 +111,10 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
         // family is checked BEFORE it is asked for, and an absent one falls back to the system face
         // rather than to whatever DirectWrite chooses.
         var family = mono ? _monoFamily : _textFamily;
-        if (named is { Length: > 0 })
+        if (named is { Name.Length: > 0 })
         {
-            if (HasFamily(named)) family = named;
-            else Primitives.FaceResolution.Missing(named);
+            if (HasFamily(named.Name)) family = named.Name;
+            else Primitives.FaceResolution.Missing(named.Name);
         }
         var style = italic ? DWrite.StyleItalic : DWrite.StyleNormal;
         void* format;
