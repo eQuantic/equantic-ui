@@ -134,3 +134,11 @@ eQuantic.UI.Sheet.SheetController.SelectCols(int anchor, int focus, bool add) ->
 eQuantic.UI.Sheet.SheetController.SelectRows(int anchor, int focus, bool add) -> void
 eQuantic.UI.Sheet.SheetGrid.ResizeGrip.get -> float
 eQuantic.UI.Sheet.SheetGrid.ResizeGrip.init -> void
+eQuantic.UI.Sheet.SheetController.ShowActiveCell() -> void
+eQuantic.UI.Sheet.SheetController.NextCorner() -> void
+eQuantic.UI.Sheet.SheetController.MovePageAcross(int direction, bool extend = false) -> bool
+eQuantic.UI.Sheet.SheetController.SelectActiveRows() -> void
+eQuantic.UI.Sheet.SheetController.SelectActiveColumns() -> void
+eQuantic.UI.Sheet.SheetController.SelectRegionThenSheet() -> void
+eQuantic.UI.Sheet.SheetController.CurrentRegion(eQuantic.UI.Sheet.CellRef cell) -> eQuantic.UI.Sheet.SheetRange
+eQuantic.UI.Sheet.SheetController.LastCellInUse() -> eQuantic.UI.Sheet.CellRef

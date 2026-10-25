@@ -14,6 +14,9 @@ export class SheetController {
         this.addingRanges = false;
         this.revealVersion = 0;
         this.revealCell = CellRef.$zero();
+        this._tabRun = null;
+        this._lastInUseAt = -1;
+        this._lastInUse = CellRef.$zero();
         this.editing = false;
         this.entry = null!;
         this.editMode = 'enter';
@@ -54,6 +57,9 @@ export class SheetController {
     addingRanges!: boolean;
     revealVersion!: number;
     revealCell!: CellRef;
+    _tabRun!: [number, CellRef] | null;
+    _lastInUseAt!: number;
+    _lastInUse!: CellRef;
     editing!: boolean;
     entry!: CodeEditorController;
     editMode!: SheetEditModeValue;
@@ -189,6 +195,7 @@ export class SheetController {
 
     select(range: SheetRange) {
         this._others.splice(0);
+        this._tabRun = null;
         this.setActiveRange(range);
     }
 
@@ -204,11 +211,12 @@ export class SheetController {
 
     move(dRow: number, dCol: number, motion: SheetMotionValue = 'cell', extend: boolean = false) {
         let from = this.activeCell;
-        let landed = (() => { const $s = motion; if ($s === 'dataEdge') return this.dataEdge(from, dRow, dCol); if ($s === 'rowBoundary') return new CellRef(from.row, dCol < 0 ? 0 : this.document.cols - 1); if ($s === 'sheetBoundary') return dRow < 0 || dCol < 0 ? new CellRef(0, 0) : new CellRef(this.document.rows - 1, this.document.cols - 1); return new CellRef(from.row + dRow, from.col + dCol); })();
+        let landed = (() => { const $s = motion; if ($s === 'dataEdge') return this.dataEdge(from, dRow, dCol); if ($s === 'rowBoundary') return new CellRef(from.row, dCol < 0 ? 0 : this.document.cols - 1); if ($s === 'sheetBoundary') return dRow < 0 || dCol < 0 ? new CellRef(0, 0) : this.lastCellInUse(); return new CellRef(from.row + dRow, from.col + dCol); })();
         landed = this.document.clamp(landed);
         if (!extend) this._others.splice(0);
         this._selection = extend ? new SheetRange(this._selection.anchor, landed) : new SheetRange(landed);
         this._active = landed;
+        this._tabRun = null;
         this.reveal();
     }
 
@@ -229,6 +237,123 @@ export class SheetController {
     reveal() {
         this.revealVersion++;
         this.revealCell = this._active;
+    }
+
+    moveTo(cell: CellRef) {
+        let landed = this.document.clamp(cell);
+        this._others.splice(0);
+        this._selection = new SheetRange(landed);
+        this._active = landed;
+        this._tabRun = null;
+        this.reveal();
+    }
+
+    showActiveCell() {
+        return this.reveal();
+    }
+
+    nextCorner() {
+        let range = this._selection;
+        let corners = [new CellRef(range.topRow, range.leftCol), new CellRef(range.topRow, range.rightCol), new CellRef(range.bottomRow, range.rightCol), new CellRef(range.bottomRow, range.leftCol)];
+        let at = $eq.collections.arrayIndexOf(corners, this._active, true);
+        let next = corners[0];
+        if (at >= 0) {
+            for (let step = 1; step <= 4; step++) {
+                next = corners[(at + step) % 4];
+                if (!$eq.equals(next, this._active)) break;
+            }
+        }
+        this._active = next;
+        this.reveal();
+    }
+
+    movePageAcross(direction: number, extend: boolean = false) {
+        let scroll: any; 
+        if (!((scroll = this.grid.scroll) != null)) return false;
+        let page = Math.max(this.document.columnSpans.extentOf(this._active.col), Math.fround(scroll.viewport.width - this.grid.headerWidth));
+        let from = this.document.columnSpans.offsetOf(this._active.col);
+        let col = this.document.columnSpans.indexAt(from + Math.sign(direction) * page);
+        let landed = this.document.clamp(new CellRef(this._active.row, col));
+        if (!extend) this._others.splice(0);
+        this._selection = extend ? new SheetRange(this._selection.anchor, landed) : new SheetRange(landed);
+        this._active = landed;
+        this._tabRun = null;
+        this.reveal();
+        return true;
+    }
+
+    selectActiveRows() {
+        let active = this._active;
+        this.setActiveRange(this.rowBand(this._selection.anchor.row, this._selection.focus.row));
+        this._active = active;
+    }
+
+    selectActiveColumns() {
+        let active = this._active;
+        this.setActiveRange(this.columnBand(this._selection.anchor.col, this._selection.focus.col));
+        this._active = active;
+    }
+
+    selectRegionThenSheet() {
+        let region = this.currentRegion(this._active);
+        if ($eq.equals(region, this._selection) || region.isSingleCell && !this.document.hasValue(this._active)) {
+            this.selectAll();
+            return;
+        }
+        let active = this._active;
+        this.select(region);
+        this._active = active;
+    }
+
+    currentRegion(cell: CellRef) {
+        let top = cell.row;
+        let bottom = cell.row;
+        let left = cell.col;
+        let right = cell.col;
+        let grew = null;
+        do {
+            grew = false;
+            while (top > 0 && this.anyInUse(top - 1, left - 1, top - 1, right + 1)) {
+                top--;
+                grew = true;
+            }
+            while (bottom < this.document.rows - 1 && this.anyInUse(bottom + 1, left - 1, bottom + 1, right + 1)) {
+                bottom++;
+                grew = true;
+            }
+            while (left > 0 && this.anyInUse(top - 1, left - 1, bottom + 1, left - 1)) {
+                left--;
+                grew = true;
+            }
+            while (right < this.document.cols - 1 && this.anyInUse(top - 1, right + 1, bottom + 1, right + 1)) {
+                right++;
+                grew = true;
+            }
+        } while (grew);
+        return new SheetRange(new CellRef(top, left), new CellRef(bottom, right));
+    }
+
+    anyInUse(top: number, left: number, bottom: number, right: number) {
+        top = Math.max(0, top);
+        left = Math.max(0, left);
+        bottom = Math.min(this.document.rows - 1, bottom);
+        right = Math.min(this.document.cols - 1, right);
+        for (let row = top; row <= bottom; row++) for (let col = left; col <= right; col++) if (this.document.hasValue(new CellRef(row, col))) return true;
+        return false;
+    }
+
+    lastCellInUse() {
+        if (this._lastInUseAt === this.document.version) return this._lastInUse;
+        let row = 0;
+        let col = 0;
+        for (const key of this.document.cells.keys()) {
+            let cell = CellRef.fromKey(key);
+            row = Math.max(row, cell.row);
+            col = Math.max(col, cell.col);
+        }
+        this._lastInUse = new CellRef(row, col);
+        this._lastInUseAt = this.document.version;
+        return this._lastInUse;
     }
 
     dataEdge(from: CellRef, dRow: number, dCol: number) {
@@ -257,6 +382,18 @@ export class SheetController {
 
     step(dRow: number, dCol: number) {
         if (this._selection.isSingleCell) {
+            if (dRow === 0 && dCol > 0) {
+                let run: any; 
+                let start = (run = this._tabRun) != null && $eq.equals(run[1], this._active) ? run[0] : this._active.col;
+                this.move(0, dCol);
+                this._tabRun = [start, this._active];
+                return;
+            }
+            let ended: any; 
+            if (dRow > 0 && dCol === 0 && (ended = this._tabRun) != null && $eq.equals(ended[1], this._active)) {
+                this.moveTo(new CellRef(this._active.row + dRow, ended[0]));
+                return;
+            }
             this.move(dRow, dCol);
             return;
         }

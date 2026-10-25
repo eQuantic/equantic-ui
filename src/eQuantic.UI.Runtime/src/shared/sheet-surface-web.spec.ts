@@ -245,6 +245,37 @@ describe('SheetSurface on the web', () => {
     expect(sheet.ranges).toEqual([new SheetRange(new CellRef(0, 1), new CellRef(lastRow, 3))]);
   });
 
+  it("answers Excel's chords through its door, and Shift+Space types nothing (#984)", () => {
+    const sheet = new SheetController(1000, 26);
+    const scroll = new TableScroll();
+    scroll.arrange(new Size(900, 600), 44 + sheet.document.columnSpans.total, 26 + sheet.document.rowSpans.total, 44, 26, true);
+    sheet.grid = new SheetGrid(scroll, 44, 26);
+    for (const [row, col] of [[1, 1], [1, 2], [2, 1], [2, 2], [6, 4]]) sheet.document.setCell(new CellRef(row, col), 'x');
+    sheet.selection = new SheetRange(new CellRef(1, 1), new CellRef(1, 1));
+    const node = surfaceFor(sheet);
+
+    const shiftSpace = new KeyboardEvent('keydown', { key: ' ', shiftKey: true, cancelable: true });
+    doorEvents(node)['keydown'](shiftSpace);
+    expect(shiftSpace.defaultPrevented).toBe(true);
+    expect(sheet.selection).toEqual(new SheetRange(new CellRef(1, 0), new CellRef(1, 25)));
+
+    // From B2 again: after Shift+Space the active range is the whole row, whose columns are all of them.
+    sheet.selection = new SheetRange(new CellRef(1, 1), new CellRef(1, 1));
+    key(node, ' ', { ctrlKey: true });
+    expect(sheet.selection).toEqual(new SheetRange(new CellRef(0, 1), new CellRef(999, 1)));
+
+    key(node, 'ArrowDown');
+    key(node, 'a', { ctrlKey: true });
+    expect(sheet.selection).toEqual(new SheetRange(new CellRef(1, 1), new CellRef(2, 2)));
+
+    key(node, 'End', { ctrlKey: true });
+    expect(sheet.activeCell).toEqual(new CellRef(6, 4));
+
+    key(node, 'Home', { ctrlKey: true });
+    key(node, 'PageDown', { altKey: true });
+    expect(sheet.activeCell).toEqual(new CellRef(0, 8));
+  });
+
   it('reads the press where it landed, before the keyboard moves the page', () => {
     const sheet = new SheetController(50, 8);
     const node = surfaceFor(sheet);

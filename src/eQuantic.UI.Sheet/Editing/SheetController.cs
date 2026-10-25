@@ -98,6 +98,7 @@ public sealed class SheetController : ISheetSurfaceModel
     private void Select(SheetRange range)
     {
         _others.Clear();
+        _tabRun = null;
         SetActiveRange(range);
     }
 
@@ -139,13 +140,15 @@ public sealed class SheetController : ISheetSurfaceModel
         {
             SheetMotion.DataEdge => DataEdge(from, dRow, dCol),
             SheetMotion.RowBoundary => new CellRef(from.Row, dCol < 0 ? 0 : Document.Cols - 1),
-            SheetMotion.SheetBoundary => dRow < 0 || dCol < 0 ? new CellRef(0, 0) : new CellRef(Document.Rows - 1, Document.Cols - 1),
+            // ⌘End is Excel's last cell IN USE, never the grid's last cell (D10).
+            SheetMotion.SheetBoundary => dRow < 0 || dCol < 0 ? new CellRef(0, 0) : LastCellInUse(),
             _ => new CellRef(from.Row + dRow, from.Col + dCol),
         };
         landed = Document.Clamp(landed);
         if (!extend) _others.Clear();
         _selection = extend ? new SheetRange(_selection.Anchor, landed) : new SheetRange(landed);
         _active = landed;
+        _tabRun = null;
         Reveal();
     }
 
@@ -189,6 +192,168 @@ public sealed class SheetController : ISheetSurfaceModel
         RevealCell = _active;
     }
 
+    /// <summary>The run of Tabs in flight: the column it began in and the cell its last Tab left active, or
+    /// null. Every other move forgets it.</summary>
+    private (int StartColumn, CellRef At)? _tabRun;
+
+    /// <summary>The active cell moves to <paramref name="cell"/>, alone, and is brought into view.</summary>
+    private void MoveTo(CellRef cell)
+    {
+        var landed = Document.Clamp(cell);
+        _others.Clear();
+        _selection = new SheetRange(landed);
+        _active = landed;
+        _tabRun = null;
+        Reveal();
+    }
+
+    /// <summary>Ctrl+Backspace (⌃Delete on a Mac): the active cell brought into view, nothing moved.</summary>
+    public void ShowActiveCell() => Reveal();
+
+    /// <summary>
+    /// Ctrl+. (⌃. on a Mac): the active cell moves to the active range's next corner, clockwise from the
+    /// top-left (top-left, top-right, bottom-right, bottom-left), the range unchanged. From a cell on no corner
+    /// it goes to the top-left.
+    /// </summary>
+    public void NextCorner()
+    {
+        var range = _selection;
+        var corners = new[]
+        {
+            new CellRef(range.TopRow, range.LeftCol), new CellRef(range.TopRow, range.RightCol),
+            new CellRef(range.BottomRow, range.RightCol), new CellRef(range.BottomRow, range.LeftCol),
+        };
+        var at = Array.IndexOf(corners, _active);
+        // A range of one row or one column repeats corners: the next one is the next that moves the cell.
+        var next = corners[0];
+        if (at >= 0)
+        {
+            for (var step = 1; step <= 4; step++)
+            {
+                next = corners[(at + step) % 4];
+                if (next != _active) break;
+            }
+        }
+        _active = next;
+        Reveal();
+    }
+
+    /// <summary>
+    /// Alt+PageDown and Alt+PageUp: the active cell by the columns the grid shows beside its row numbers, the
+    /// selection with it (extend keeps the anchor, Shift's way), as <see cref="MovePage"/> moves by rows.
+    /// Without a viewport to measure there is no page, and the key is not taken.
+    /// </summary>
+    public bool MovePageAcross(int direction, bool extend = false)
+    {
+        if (Grid.Scroll is not { } scroll) return false;
+        var page = Math.Max(Document.ColumnSpans.ExtentOf(_active.Col), scroll.Viewport.Width - Grid.HeaderWidth);
+        var from = Document.ColumnSpans.OffsetOf(_active.Col);
+        var col = Document.ColumnSpans.IndexAt(from + Math.Sign(direction) * page);
+        var landed = Document.Clamp(new CellRef(_active.Row, col));
+        if (!extend) _others.Clear();
+        _selection = extend ? new SheetRange(_selection.Anchor, landed) : new SheetRange(landed);
+        _active = landed;
+        _tabRun = null;
+        Reveal();
+        return true;
+    }
+
+    /// <summary>Shift+Space: the whole rows of the active range, the active cell kept, the other ranges too.</summary>
+    public void SelectActiveRows()
+    {
+        var active = _active;
+        SetActiveRange(RowBand(_selection.Anchor.Row, _selection.Focus.Row));
+        _active = active;
+    }
+
+    /// <summary>Ctrl+Space (⌃Space on a Mac): the whole columns of the active range, the active cell kept.</summary>
+    public void SelectActiveColumns()
+    {
+        var active = _active;
+        SetActiveRange(ColumnBand(_selection.Anchor.Col, _selection.Focus.Col));
+        _active = active;
+    }
+
+    /// <summary>
+    /// ⌘A (Ctrl+A): the current region around the active cell, the block of cells in use joined to it through
+    /// cells in use along its rows, its columns and its diagonals, as Excel's <c>CurrentRegion</c> reads it;
+    /// pressed again, or with nothing in use around the active cell, the whole sheet.
+    /// </summary>
+    public void SelectRegionThenSheet()
+    {
+        var region = CurrentRegion(_active);
+        if (region == _selection || (region.IsSingleCell && !Document.HasValue(_active)))
+        {
+            SelectAll();
+            return;
+        }
+        var active = _active;
+        Select(region);
+        _active = active;
+    }
+
+    /// <summary>
+    /// The current region around <paramref name="cell"/>: a rectangle grown from the cell, one row or column at a
+    /// time, while a cell in use touches it on a side or a corner. Each step reads only the line along the side it
+    /// grows, so a block costs its perimeter for every row and column it spans.
+    /// </summary>
+    public SheetRange CurrentRegion(CellRef cell)
+    {
+        var top = cell.Row;
+        var bottom = cell.Row;
+        var left = cell.Col;
+        var right = cell.Col;
+        bool grew;
+        do
+        {
+            grew = false;
+            while (top > 0 && AnyInUse(top - 1, left - 1, top - 1, right + 1)) { top--; grew = true; }
+            while (bottom < Document.Rows - 1 && AnyInUse(bottom + 1, left - 1, bottom + 1, right + 1)) { bottom++; grew = true; }
+            while (left > 0 && AnyInUse(top - 1, left - 1, bottom + 1, left - 1)) { left--; grew = true; }
+            while (right < Document.Cols - 1 && AnyInUse(top - 1, right + 1, bottom + 1, right + 1)) { right++; grew = true; }
+        }
+        while (grew);
+        return new SheetRange(new CellRef(top, left), new CellRef(bottom, right));
+    }
+
+    /// <summary>Whether any cell of the rectangle, held to the grid, is in use.</summary>
+    private bool AnyInUse(int top, int left, int bottom, int right)
+    {
+        top = Math.Max(0, top);
+        left = Math.Max(0, left);
+        bottom = Math.Min(Document.Rows - 1, bottom);
+        right = Math.Min(Document.Cols - 1, right);
+        for (var row = top; row <= bottom; row++)
+            for (var col = left; col <= right; col++)
+                if (Document.HasValue(new CellRef(row, col))) return true;
+        return false;
+    }
+
+    /// <summary>The document's version <see cref="LastCellInUse"/> was last read at, and what it answered.</summary>
+    private int _lastInUseAt = -1;
+    private CellRef _lastInUse;
+
+    /// <summary>
+    /// The cell at the last row and the last column that hold a value, Excel's last cell, which ⌘End
+    /// (Ctrl+End) goes to: the first cell when nothing is in use. Read from the stored cells once per version
+    /// of the document.
+    /// </summary>
+    public CellRef LastCellInUse()
+    {
+        if (_lastInUseAt == Document.Version) return _lastInUse;
+        var row = 0;
+        var col = 0;
+        foreach (var key in Document.Cells.Keys)
+        {
+            var cell = CellRef.FromKey(key);
+            row = Math.Max(row, cell.Row);
+            col = Math.Max(col, cell.Col);
+        }
+        _lastInUse = new CellRef(row, col);
+        _lastInUseAt = Document.Version;
+        return _lastInUse;
+    }
+
     private CellRef DataEdge(CellRef from, int dRow, int dCol)
     {
         var cell = from;
@@ -229,6 +394,20 @@ public sealed class SheetController : ISheetSurfaceModel
     {
         if (_selection.IsSingleCell)
         {
+            // Excel's Tab-Enter column: Tab to the right remembers the column its run began in, and the Enter
+            // that ends the run goes down to the next row in that column.
+            if (dRow == 0 && dCol > 0)
+            {
+                var start = _tabRun is { } run && run.At == _active ? run.StartColumn : _active.Col;
+                Move(0, dCol);
+                _tabRun = (start, _active);
+                return;
+            }
+            if (dRow > 0 && dCol == 0 && _tabRun is { } ended && ended.At == _active)
+            {
+                MoveTo(new CellRef(_active.Row + dRow, ended.StartColumn));
+                return;
+            }
             Move(dRow, dCol);
             return;
         }

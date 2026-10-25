@@ -34,13 +34,13 @@
 
 ## 3. Excel's chords
 
-- [ ] 3.1 `SheetKeymap` answers the design's table: Shift+Space, Ctrl+Space (⌃Space on Apple), ⌘A twice,
+- [x] 3.1 `SheetKeymap` answers the design's table: Shift+Space, Ctrl+Space (⌃Space on Apple), ⌘A twice,
       ⌘End and ⌘⇧End, Alt+PageDown and Alt+PageUp, Ctrl+Backspace (⌃Backspace on Apple), Ctrl+. (⌃. on
       Apple), ⌘Y, Shift+F8; verify a table test (`SheetChordTests`) over both conventions for every row
-- [ ] 3.2 The current region and the last cell in use (design §4); verify the spec's region, empty-cell and
+- [x] 3.2 The current region and the last cell in use (design §4); verify the spec's region, empty-cell and
       Ctrl+End scenarios, and that a dense 1000 × 100 block answers ⌘A in under 5 ms in a bench
-- [ ] 3.3 The Tab-Enter column (design §5), at rest and through a commit; verify the spec's two scenarios
-- [ ] 3.4 A protocol test per chord that drives the same key through `PhotonHost` and the runtime's
+- [x] 3.3 The Tab-Enter column (design §5), at rest and through a commit; verify the spec's two scenarios
+- [x] 3.4 A protocol test per chord that drives the same key through `PhotonHost` and the runtime's
       lowered surface and compares the selection and the active cell (`SheetChordParityTests` and its
       runtime twin spec)
 

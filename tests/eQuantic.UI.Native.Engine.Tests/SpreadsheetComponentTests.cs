@@ -241,6 +241,46 @@ public class SpreadsheetComponentTests
         sheet.Ranges.Should().Equal(new SheetRange(new CellRef(0, 1), new CellRef(sheet.Document.Rows - 1, 3)));
     }
 
+    [Theory]
+    [InlineData(KeyboardConvention.Standard)]
+    [InlineData(KeyboardConvention.Apple)]
+    public void ExcelsChords_ReachTheSheet_ThroughTheHost(KeyboardConvention convention)
+    {
+        var sheet = new SheetController(1000, 26);
+        foreach (var (row, col) in new[] { (1, 1), (1, 2), (2, 1), (2, 2), (6, 4) })
+            sheet.Document.SetCell(new CellRef(row, col), "x");
+        var host = new PhotonHost(new Spreadsheet(sheet) { Width = SizeValue.Fill, Height = SizeValue.Fill },
+            PhotonTheme.Instance, ThemeMode.Light, 700, 400)
+        {
+            SmoothScroll = false,
+            KeyboardConvention = convention,
+        };
+        host.RenderFrame(new DisplayListBuilder());
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        var control = convention == KeyboardConvention.Apple ? KeyModifiers.Control : KeyModifiers.Command;
+        host.PressDown(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);   // B2
+        host.PressUp(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);
+
+        host.KeyDown(" ", KeyModifiers.Shift).Should().BeTrue();
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 0), new CellRef(1, 25)));
+
+        // From B2 again: after Shift+Space the active range is the whole row, whose columns are all of them.
+        host.PressDown(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);
+        host.PressUp(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);
+        host.KeyDown(" ", control).Should().BeTrue();
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(0, 1), new CellRef(999, 1)));
+
+        host.KeyDown("ArrowDown");
+        host.KeyDown("a", KeyModifiers.Command);
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 1), new CellRef(2, 2)), "the current region");
+
+        host.KeyDown("End", KeyModifiers.Command);
+        sheet.ActiveCell.Should().Be(new CellRef(6, 4), "the last cell in use");
+
+        host.KeyDown("y", KeyModifiers.Command).Should().BeTrue("Ctrl+Y is the sheet's, with nothing to redo too");
+        host.KeyDown(".", control).Should().BeTrue();
+    }
+
     [Fact]
     public void ShiftClick_StretchesTheSelection_FromItsAnchor()
     {
