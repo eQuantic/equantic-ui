@@ -3704,6 +3704,8 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
       keyed.attributes['aria-haspopup'] =
         panelRole === 'listbox' ? 'listbox' : panelRole === 'dialog' ? 'dialog' : 'menu';
       if (panelRole === 'listbox') keyed.attributes['role'] = 'combobox';
+      // A text control has no Pressable to say whether its list shows, so it says so here (C# twin).
+      if (panelRole === 'listbox' && keyed !== anchor) keyed.attributes['aria-expanded'] = node.open === true ? 'true' : 'false';
       if (node.open === true) {
         keyed.attributes['aria-controls'] = panelId;
         const active = node.activeIndex ?? -1;

@@ -75,4 +75,24 @@ public class ScrollRequestTests
         host.ScrollBy(Width / 2, Height / 2, 0, -100).Should().BeTrue();
         ScrolledBy(host.RenderFrame(new DisplayListBuilder())).Should().Be(500, "the wheel moves from the end it stands at");
     }
+
+    /// <summary>A wheel that glides after a request past the end glides from the end (Copilot on #1091): the
+    /// glide started from the offset as asked, and the view stayed at the end until it had crossed the
+    /// excess.</summary>
+    [Fact]
+    public void AGlideAfterARequestPastTheEnd_StartsFromTheEnd()
+    {
+        var asked = new Asked();
+        var host = new PhotonHost(asked, PhotonTheme.Instance, ThemeMode.Light, Width, Height) { SmoothScroll = true };
+        var now = 1000f;
+        host.RenderFrame(new DisplayListBuilder(), now);
+        asked.Ask(new ScrollRequest(1) { Offset = 5000 });
+        ScrolledBy(host.RenderFrame(new DisplayListBuilder(), now += 16)).Should().Be(600);
+
+        host.ScrollBy(Width / 2, Height / 2, 0, -100).Should().BeTrue();
+        ScrolledBy(host.RenderFrame(new DisplayListBuilder(), now += 16))
+            .Should().BeLessThan(600, "the glide leaves the end on its first frame");
+        for (var i = 0; i < 60; i++) host.RenderFrame(new DisplayListBuilder(), now += 16);
+        ScrolledBy(host.RenderFrame(new DisplayListBuilder(), now += 16)).Should().BeApproximately(500, 1);
+    }
 }

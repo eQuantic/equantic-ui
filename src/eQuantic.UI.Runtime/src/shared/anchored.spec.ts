@@ -164,7 +164,16 @@ describe('a listbox anchored to a field (C# cross-pin)', () => {
     expect(input.attributes['aria-haspopup']).toBe('listbox');
     expect(input.attributes['aria-controls']).toMatch(/^eq-panel-/);
     expect(input.attributes['aria-activedescendant']).toBe(`${input.attributes['aria-controls']}-1`);
+    expect(input.attributes['aria-expanded']).toBe('true');
     expect(nodes.filter((node) => node.attributes['role'] === 'combobox')).toHaveLength(1);
+
+    const closed = all(
+      lowerVisualNode(
+        anchored({ anchor: field as unknown as VisualNodeValue, open: false, panelRole: 'listbox' }),
+        ctx,
+      ) as unknown as Lowered,
+    ).find((node) => node.tag === 'input')!;
+    expect(closed.attributes['aria-expanded']).toBe('false');
   });
 });
 

@@ -242,6 +242,10 @@ internal sealed partial class WebLoweringVisitor
                 };
                 // A Select's FIELD is the combobox — the role rides the trigger, not the panel.
                 if (anchored.PanelRole == AnchorPanelRole.Listbox) keyed.Role = "combobox";
+                // A text control has no Pressable to say whether its list shows, so it says so here; a trigger
+                // says it itself (Pressable.Expanded).
+                if (anchored.PanelRole == AnchorPanelRole.Listbox && !ReferenceEquals(keyed, anchor))
+                    keyed.AriaExpanded = anchored.Open;
                 if (anchored.Open)
                 {
                     keyed.AriaControls = panelId;

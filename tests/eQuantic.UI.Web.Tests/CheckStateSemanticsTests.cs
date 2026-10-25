@@ -251,6 +251,10 @@ public class CheckStateSemanticsTests
         combobox.Attributes["aria-haspopup"].Should().Be("listbox");
         combobox.Attributes["aria-controls"].Should().Be(listbox.Attributes["id"]);
         combobox.Attributes["aria-activedescendant"].Should().Be($"{listbox.Attributes["id"]}-1");
+        combobox.Attributes["aria-expanded"].Should().Be("true", "a combobox says whether its list shows (Copilot on #1091)");
+        Walk(Render(new Anchored(field, panel) { PanelRole = AnchorPanelRole.Listbox }))
+            .Single(node => node.Attributes.GetValueOrDefault("role") == "combobox")
+            .Attributes["aria-expanded"].Should().Be("false");
     }
 
     /// <summary>The menu half: role=menu with numbered menuitems (the DISABLED one included — a

@@ -49,25 +49,32 @@ public sealed class LedgerSymbols : ICodeSymbolProvider
     /// <summary>A member a line of a class declares, by the shape the file writes it in.</summary>
     private static (string Name, CodeSymbolKind Kind)? Member(string line, string type)
     {
+        // A field is named before its initializer, or before the `;` that ends it when it has none.
         if (line.StartsWith("private readonly ", StringComparison.Ordinal))
-            return (NameBefore(line, " = "), CodeSymbolKind.Field);
+            return NameBefore(line, line.Contains(" = ", StringComparison.Ordinal) ? " = " : ";") is { } field
+                ? (field, CodeSymbolKind.Field)
+                : null;
         if (!line.StartsWith("public ", StringComparison.Ordinal)) return null;
         if (line.StartsWith($"public {type}(", StringComparison.Ordinal)) return (type, CodeSymbolKind.Constructor);
         var call = line.IndexOf('(');
         var get = line.IndexOf(" { get", StringComparison.Ordinal);
         var arrow = line.IndexOf(" =>", StringComparison.Ordinal);
-        if (get > 0) return (NameBefore(line, " { get"), CodeSymbolKind.Property);
-        if (call > 0 && (arrow < 0 || call < arrow)) return (NameBefore(line, "("), CodeSymbolKind.Method);
-        if (arrow > 0) return (NameBefore(line, " =>"), CodeSymbolKind.Property);
-        return null;
+        var kind = get > 0 ? CodeSymbolKind.Property
+            : call > 0 && (arrow < 0 || call < arrow) ? CodeSymbolKind.Method
+            : arrow > 0 ? CodeSymbolKind.Property
+            : (CodeSymbolKind?)null;
+        var mark = get > 0 ? " { get" : kind == CodeSymbolKind.Method ? "(" : " =>";
+        return kind is { } found && NameBefore(line, mark) is { } name ? (name, found) : null;
     }
 
-    /// <summary>The word that ends right before <paramref name="mark"/>.</summary>
-    private static string NameBefore(string line, string mark)
+    /// <summary>The word that ends right before <paramref name="mark"/>, or null when the line has no such
+    /// word: the file is the person's to edit, and a line half typed is no declaration.</summary>
+    private static string? NameBefore(string line, string mark)
     {
         var end = line.IndexOf(mark, StringComparison.Ordinal);
+        if (end <= 0) return null;
         var start = line.LastIndexOf(' ', end - 1) + 1;
-        return line.Substring(start, end - start);
+        return end > start ? line.Substring(start, end - start) : null;
     }
 
     /// <summary>A symbol over lines <paramref name="from"/> to <paramref name="to"/>, named where its name is
