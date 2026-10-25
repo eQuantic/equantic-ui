@@ -692,29 +692,21 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
 
         if (symbol is not { } ctor) return converted;
 
-        var slots = new JsExpr?[ctor.Parameters.Length];
-        for (var i = 0; i < args.Count; i++)
-        {
-            var name = args[i].NameColon?.Name.Identifier.ValueText;
-            // A positional argument's slot is its LIST position — C# only allows positionals after
-            // a named argument when the named one sits IN its own position, so the list index IS
-            // the parameter index (an independent counter clobbered slot 0 in that mixed form).
-            var ordinal = name == null
-                ? i
-                : ctor.Parameters.FirstOrDefault(p => p.Name == name)?.Ordinal ?? -1;
-            if (ordinal >= 0 && ordinal < slots.Length) slots[ordinal] = converted[i];
-        }
+        var places = BoundArguments.InPlaces(args, converted, ctor);
 
         // A dependency slot is not filled with a default — it is REMOVED, because the parameter
         // it stood in front of is gone from the emitted signature too.
-        var keep = Enumerable.Range(0, slots.Length)
+        var keep = Enumerable.Range(0, places.Length)
             .Where(i => !(dropping && CapabilityRule.IsDependency(ctor.Parameters[i].Type)))
             .ToList();
 
-        var lastSet = keep.FindLastIndex(i => slots[i] != null);
+        var lastSet = keep.FindLastIndex(i => places[i] != null);
         var ordered = new List<JsExpr>();
         for (var k = 0; k <= lastSet; k++)
-            ordered.Add(slots[keep[k]] ?? DefaultOf(ctor.Parameters[keep[k]], context));
+        {
+            if (places[keep[k]] is { } supplied) ordered.AddRange(supplied);
+            else ordered.Add(DefaultOf(ctor.Parameters[keep[k]], context));
+        }
         return ordered;
     }
 
@@ -942,18 +934,9 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         var converted = list.Arguments.Select(argument => BoundArguments.Convert(argument, context)).ToList();
         if (ctor is null || !list.Arguments.Any(argument => argument.NameColon != null)) return converted;
 
-        var slots = new JsExpr?[ctor.Parameters.Length];
-        for (var i = 0; i < list.Arguments.Count; i++)
-        {
-            // A positional argument's slot is its list position: C# allows one after a named argument
-            // only when that one sits in its own position.
-            var ordinal = list.Arguments[i].NameColon is { } named
-                ? ctor.Parameters.FirstOrDefault(parameter => parameter.Name == named.Name.Identifier.ValueText)?.Ordinal ?? -1
-                : i;
-            if (ordinal >= 0 && ordinal < slots.Length) slots[ordinal] = converted[i];
-        }
-        var last = Array.FindLastIndex(slots, slot => slot != null);
-        return slots.Take(last + 1).Select(slot => slot ?? Undefined).ToList();
+        var places = BoundArguments.InPlaces(list.Arguments, converted, ctor);
+        var last = Array.FindLastIndex(places, place => place != null);
+        return places.Take(last + 1).SelectMany(place => place ?? [Undefined]).ToList();
     }
 
     private JsExpr ConvertImplicit(ImplicitObjectCreationExpressionSyntax creation, ConversionContext context)

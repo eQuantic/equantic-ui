@@ -30,8 +30,15 @@ public class ParamsArgumentConformanceTests
             public ArrayBag(params int[] xs) { foreach (var x in xs) Text += x; Text += "#" + xs.Length; }
         }
 
+        public class TaggedBag
+        {
+            public string Text;
+            public TaggedBag(string tag, params int[] xs) { Text = tag + ":"; foreach (var x in xs) Text += x; Text += "#" + xs.Length; }
+        }
+
         public static class Tally
         {
+            public static string Tagged(string tag, params int[] xs) { var text = tag + ":"; foreach (var x in xs) text += x; return text + "#" + xs.Length; }
             public static string Of(params IReadOnlyList<int> xs) { var text = ""; foreach (var x in xs) text += x; return text + "#" + xs.Count; }
             public static string OfArray(params int[] xs) { var text = ""; foreach (var x in xs) text += x; return text + "#" + xs.Length; }
             public static int Objects(params object[] xs) => xs.Length;
@@ -55,6 +62,7 @@ public class ParamsArgumentConformanceTests
         ("no argument for a params parameter", "return new Bag().Text + \"|\" + new ArrayBag().Text + \"|\" + Tally.Of() + \"|\" + Tally.OfArray();"),
         ("an array of ints is one element of a params object[]", "int[] xs = [1, 2]; return Tally.Objects(xs);"),
         ("an array of strings is a params object[] itself", "string[] xs = [\"a\", \"b\"]; return Tally.Objects(xs);"),
+        ("a named argument before the elements a call lists", "return Tally.Tagged(tag: \"t\", 1, 2, 3) + \"|\" + new TaggedBag(tag: \"b\", 4, 5).Text;"),
     ];
 
     /// <summary>A vocabulary type's twin is written by hand, and its constructor's rest parameter is
@@ -66,6 +74,7 @@ public class ParamsArgumentConformanceTests
         ("a family built from another's files", "var family = new FontFamily(\"Brand\", Faces.Regular, Faces.Italic); var copy = new FontFamily(\"Copy\", family.Files); return copy.Files.Count + \"|\" + copy.Files[0].Resource;"),
         ("a family built where its type is the target", "FontFamily family = new(\"Brand\", [Faces.Regular, Faces.Italic]); return family.Files.Count + \"|\" + family.Files[0].Italic + family.Files[1].Italic;"),
         ("a family the machine has", "var family = new FontFamily(\"Georgia\"); return family.Files.Count + \"|\" + family.Name;"),
+        ("a family's name by name, its files listed", "var family = new FontFamily(Name: \"Brand\", Faces.Regular, Faces.Italic); return family.Files.Count + \"|\" + family.Files[1].Resource;"),
     ];
 
     [SkippableTheory]
