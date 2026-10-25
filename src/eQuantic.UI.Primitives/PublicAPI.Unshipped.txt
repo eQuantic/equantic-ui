@@ -103,3 +103,9 @@ static eQuantic.UI.Primitives.FontFamily.operator ==(eQuantic.UI.Primitives.Font
 static eQuantic.UI.Primitives.FontFile.operator !=(eQuantic.UI.Primitives.FontFile? left, eQuantic.UI.Primitives.FontFile? right) -> bool
 static eQuantic.UI.Primitives.FontFile.operator ==(eQuantic.UI.Primitives.FontFile? left, eQuantic.UI.Primitives.FontFile? right) -> bool
 eQuantic.UI.Primitives.FontFile.Read() -> byte[]?
+eQuantic.UI.Primitives.GoogleFontAttribute
+eQuantic.UI.Primitives.GoogleFontAttribute.Family.get -> string!
+eQuantic.UI.Primitives.GoogleFontAttribute.GoogleFontAttribute(string! family, params eQuantic.UI.Primitives.FontWeight[]! weights) -> void
+eQuantic.UI.Primitives.GoogleFontAttribute.Italic.get -> bool
+eQuantic.UI.Primitives.GoogleFontAttribute.Italic.set -> void
+eQuantic.UI.Primitives.GoogleFontAttribute.Weights.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FontWeight>!

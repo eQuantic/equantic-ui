@@ -749,6 +749,64 @@
             LogicalName="eQuantic.UI.Fonts/%(Filename)%(Extension)" />
     </ItemGroup>
 
+    <!--
+        A family from GOOGLE FONTS (#1057): `[assembly: GoogleFont("Inter", FontWeight.Bold)]` anywhere in
+        the app's C#. eqicon reads the files that mention it, fetches the file of each cut they declare,
+        pins it in fonts.lock.json beside the project (the SDK writes it and the app commits it, as it
+        commits NuGet's packages.lock.json) and keeps it under obj, one file a cut. The files are embedded
+        here as the faces under Assets are, so the catalog reads them and nothing after it knows a
+        provider exists. The lock and the store of fetched files are the project's, and the folder a build
+        embeds from is its own: the families a build reads depend on its symbols, one set per configuration
+        and target framework, and no build takes out what another one needs.
+
+        BEFORE AssignTargetPaths, the first target that reads EmbeddedResource. Measured: a target before
+        PrepareResources runs after the resource pipeline has read the items, and the face was not
+        embedded. Which files mention the attribute is read here, in MSBuild, so an app that declares no
+        family starts no program: the tool runs when a file does, or when a lock is left to bring in step.
+        A design-time build asks nobody, and embeds what the last build fetched.
+    -->
+    <PropertyGroup>
+        <_EqGoogleFontsLock>$(MSBuildProjectDirectory)/fonts.lock.json</_EqGoogleFontsLock>
+        <_EqGoogleFontsStore>$(BaseIntermediateOutputPath)equantic/fonts/</_EqGoogleFontsStore>
+        <_EqGoogleFontsDir>$(IntermediateOutputPath)equantic/fonts/google/</_EqGoogleFontsDir>
+    </PropertyGroup>
+    <!-- After the .NET SDK's implicit symbols (NET10_0_OR_GREATER, ANDROID…), which the declarations are
+         read with: measured, they are there by AssignTargetPaths on the web and on the desktop, and the
+         dependency holds it for every head. -->
+    <Target Name="EQuanticGoogleFonts" BeforeTargets="AssignTargetPaths" DependsOnTargets="AddImplicitDefineConstants">
+        <ItemGroup>
+            <_EqGoogleFontCandidate Include="@(Compile)" Condition="Exists('%(Compile.FullPath)')" />
+            <_EqGoogleFontSource Include="@(_EqGoogleFontCandidate)"
+                Condition="$([System.IO.File]::ReadAllText('%(_EqGoogleFontCandidate.FullPath)').Contains('GoogleFont'))" />
+        </ItemGroup>
+        <PropertyGroup>
+            <_EqGoogleFontSourcesFile>$(IntermediateOutputPath)equantic.google-fonts.txt</_EqGoogleFontSourcesFile>
+            <_EqFetchGoogleFonts Condition="'$(DesignTimeBuild)' != 'true' AND ('@(_EqGoogleFontSource)' != '' OR Exists('$(_EqGoogleFontsLock)'))">true</_EqFetchGoogleFonts>
+        </PropertyGroup>
+        <Error Code="EQ4001" Condition="'$(_EqFetchGoogleFonts)' == 'true' AND !Exists('$(_EqIconToolDir)eqicon.dll')"
+            Text="This project declares families from Google Fonts, which the eQuantic icon tool fetches, and the tool is missing at '$(_EqIconToolDir)eqicon.dll'. In a source-tree build this is a broken build graph (eQuantic.UI.Native.Build did not build first); from a package it is a broken SDK package. Neither is fixed by building twice." />
+        <WriteLinesToFile File="$(_EqGoogleFontSourcesFile)" Condition="'$(_EqFetchGoogleFonts)' == 'true'"
+            Lines="@(_EqGoogleFontSource->'%(FullPath)')" Overwrite="true" />
+        <ItemGroup Condition="'$(_EqFetchGoogleFonts)' == 'true'">
+            <_EqGoogleFontsArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
+            <_EqGoogleFontsArgument Include="command" Value="fetch-fonts" />
+            <_EqGoogleFontsArgument Include="sources" Option="--sources" Value="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(_EqGoogleFontSourcesFile)'))" />
+            <_EqGoogleFontsArgument Include="lock" Option="--lock" Value="$(_EqGoogleFontsLock)" />
+            <!-- The compile's symbols, so a declaration under #if is read when the compiler sees it. With
+                 commas: a semicolon would cut the value into items. -->
+            <_EqGoogleFontsArgument Include="symbols" Option="--symbols" Value="$(DefineConstants.Replace(';', ','))" />
+            <_EqGoogleFontsArgument Include="store" Option="--store" Value="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(_EqGoogleFontsStore)'))" />
+            <_EqGoogleFontsArgument Include="dir" Option="--dir" Value="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(_EqGoogleFontsDir)'))" />
+        </ItemGroup>
+        <RunProgram Program="dotnet" Arguments="@(_EqGoogleFontsArgument)" StandardOutputImportance="normal"
+            Condition="'$(_EqFetchGoogleFonts)' == 'true'" />
+        <ItemGroup Condition="Exists('$(_EqGoogleFontsLock)')">
+            <_EqGoogleFontFile Include="$(_EqGoogleFontsDir)*.ttf" />
+            <EmbeddedResource Include="@(_EqGoogleFontFile)" EQuanticFont="true"
+                LogicalName="eQuantic.UI.Fonts/google/%(Filename)%(Extension)" />
+        </ItemGroup>
+    </Target>
+
     <!-- What eqicon is handed, two lines a file: its path, then the resource name it is embedded under.
          One line a file, `path|resource`, was cut at the first bar, which a path may hold on macOS and
          Linux, and the record was passed over: a catalog with no face, and a theme that named one did
