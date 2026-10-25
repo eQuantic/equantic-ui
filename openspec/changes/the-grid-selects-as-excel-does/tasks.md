@@ -18,6 +18,12 @@
       `SheetRangesTwinTests` that drives the same presses, keys and Delete through .NET and the runtime
       and compares the ranges
 
+- [x] 1.6 The active cell stays where the selection began (decision 11): setting a range makes its anchor
+      active, Shift's stretches from the keyboard move the focus and keep the active cell, a plain move
+      goes from the active cell, an undo and a redo leave the anchor active; verify the spec's scenarios
+      in .NET (A/B against the old behaviour), the name box on Photon, the twins, and the goldens whose
+      active cell moved (`sheet-ranges`, reviewed)
+
 ## 2. Headers answer through the engine
 
 - [x] 2.1 `SheetController.HeaderAt(point)` from the grid's pinned bands and offset (the corner, a

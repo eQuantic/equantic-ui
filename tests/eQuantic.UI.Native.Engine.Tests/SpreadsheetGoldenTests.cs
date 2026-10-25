@@ -68,7 +68,8 @@ public class SpreadsheetGoldenTests
     {
         var (host, sheet) = Open();
         PressCell(host, sheet, new CellRef(0, 0));
-        sheet.Selection = new SheetRange(new CellRef(1, 0), new CellRef(3, 1));
+        // A2:B4 drawn up from B4, which is active, beside the fill handle.
+        sheet.Selection = new SheetRange(new CellRef(3, 1), new CellRef(1, 0));
         Changed(host);
         host.RenderFrame(new DisplayListBuilder(), 50);
 
@@ -217,7 +218,8 @@ public class SpreadsheetGoldenTests
     {
         var (host, sheet) = Open(ThemeMode.Dark);
         PressCell(host, sheet, new CellRef(0, 0));
-        sheet.Selection = new SheetRange(new CellRef(1, 0), new CellRef(3, 1));
+        // A2:B4 drawn up from B4, which is active, beside the fill handle.
+        sheet.Selection = new SheetRange(new CellRef(3, 1), new CellRef(1, 0));
         Changed(host);
         host.RenderFrame(new DisplayListBuilder(), 50);
 
@@ -232,7 +234,7 @@ public class SpreadsheetGoldenTests
     {
         var (host, sheet) = Open();
         PressCell(host, sheet, new CellRef(0, 0));
-        sheet.Selection = new SheetRange(new CellRef(1, 0), new CellRef(5, 1));
+        sheet.Selection = new SheetRange(new CellRef(5, 1), new CellRef(1, 0));
         Changed(host);
         host.RenderFrame(new DisplayListBuilder(), 50);
         var region = host.LastFrame!.TableRegions.Single();
@@ -270,8 +272,8 @@ public class SpreadsheetGoldenTests
     {
         var (host, sheet) = Open();
         PressCell(host, sheet, new CellRef(0, 0));
-        // B2:C4 with B2 active: the focus is the end the active cell stands at.
-        sheet.Selection = new SheetRange(new CellRef(3, 2), new CellRef(1, 1));
+        // B2:C4 with B2 active: the anchor is the end the active cell stands at.
+        sheet.Selection = new SheetRange(new CellRef(1, 1), new CellRef(3, 2));
         Changed(host);
         host.RenderFrame(new DisplayListBuilder(), 50);
 
@@ -304,6 +306,7 @@ public class SpreadsheetGoldenTests
 
         sheet.Ranges.Should().Equal(new SheetRange(new CellRef(1, 0), new CellRef(2, 0)),
             new SheetRange(new CellRef(4, 2), new CellRef(6, 2)));
+        sheet.ActiveCell.Should().Be(new CellRef(4, 2), "the cell the ⌘ drag began on, C5, is active");
         MarkBoxes(host).Count(mark => mark.Style.BorderWidth == 1.5f).Should().Be(2, "one outline a range");
 
         Render(host, "sheet-ranges");
@@ -313,7 +316,7 @@ public class SpreadsheetGoldenTests
     public void TheSelection_IsDimmed_WhileTheGridHasNotTheKeyboard()
     {
         var (host, sheet) = Open();
-        sheet.Selection = new SheetRange(new CellRef(3, 2), new CellRef(1, 1));
+        sheet.Selection = new SheetRange(new CellRef(1, 1), new CellRef(3, 2));
         Changed(host);
         host.RenderFrame(new DisplayListBuilder(), 50);
 

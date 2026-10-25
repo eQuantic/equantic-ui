@@ -95,7 +95,8 @@ describe('SheetSurface on the web', () => {
     key(node, 'ArrowDown');
     key(node, 'ArrowRight', { shiftKey: true });
 
-    expect(sheet.activeCell).toEqual(new CellRef(1, 1));
+    expect(sheet.activeCell, 'Shift stretches the range and keeps the active cell').toEqual(new CellRef(1, 0));
+    expect(sheet.selection.focus).toEqual(new CellRef(1, 1));
     expect(sheet.selection.colCount).toBe(2);
   });
 

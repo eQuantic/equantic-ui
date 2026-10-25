@@ -62,7 +62,7 @@ public class SheetRangesTests
         model.HandlePointer(PointerPhase.Up, CenterOf(5, 4), KeyModifiers.Command, 1, PointerKind.Mouse);
 
         sheet.Ranges.Should().Equal(Range("B2"), Range("D4", "E6"));
-        sheet.ActiveCell.Should().Be(Cell("E6"));
+        sheet.ActiveCell.Should().Be(Cell("D4"), "the cell the drag began on stays active, as in Excel and Sheets");
     }
 
     [Fact]
@@ -101,9 +101,10 @@ public class SheetRangesTests
 
         Key(sheet, "ArrowDown", KeyModifiers.Shift);
         sheet.Ranges.Should().Equal(Range("B2"), Range("D4", "D5"));
+        sheet.ActiveCell.Should().Be(Cell("D4"), "Shift stretches the range, and the cell it began on stays active");
 
         Key(sheet, "ArrowDown");
-        sheet.Ranges.Should().Equal(Range("D6"));
+        sheet.Ranges.Should().Equal([Range("D5")], "a plain arrow moves from the active cell, as Excel's does");
     }
 
     [Fact]
@@ -211,5 +212,41 @@ public class SheetRangesTests
 
         sheet.Undo();
         sheet.Document.Version.Should().BeGreaterThan(set, "an undo changes a value too");
+    }
+
+    // ---- the active cell stays where the selection began ---------------------------------------------------
+
+    [Fact]
+    public void ShiftAndAnArrow_StretchFromTheFarEnd_AndKeepTheActiveCell()
+    {
+        var sheet = new SheetController { Selection = Range("B2") };
+
+        Key(sheet, "ArrowDown", KeyModifiers.Shift);
+        Key(sheet, "ArrowDown", KeyModifiers.Shift);
+        sheet.Selection.Should().Be(Range("B2", "B4"));
+        sheet.ActiveCell.Should().Be(Cell("B2"));
+
+        Key(sheet, "ArrowUp", KeyModifiers.Shift);
+        sheet.Selection.Should().Be(Range("B2", "B3"), "Shift moves the far end back");
+
+        Key(sheet, "ArrowRight", KeyModifiers.Shift | KeyModifiers.Command);
+        sheet.Selection.Focus.Should().Be(new CellRef(2, sheet.Document.Cols - 1), "a data-edge jump stretches from the far end too");
+        sheet.ActiveCell.Should().Be(Cell("B2"));
+
+        Key(sheet, "ArrowDown");
+        sheet.Selection.Should().Be(Range("B3"), "a plain arrow moves from the active cell");
+        sheet.ActiveCell.Should().Be(Cell("B3"));
+    }
+
+    [Fact]
+    public void UndoAndRedo_LeaveTheActiveCellAtTheAnchor()
+    {
+        var sheet = new SheetController { Selection = Range("B2") };
+        Key(sheet, "ArrowDown", KeyModifiers.Shift);
+        Key(sheet, "Delete");
+        Key(sheet, "z", KeyModifiers.Command);
+
+        sheet.Selection.Should().Be(Range("B2", "B3"));
+        sheet.ActiveCell.Should().Be(Cell("B2"));
     }
 }

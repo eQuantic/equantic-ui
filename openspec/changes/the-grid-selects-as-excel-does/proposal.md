@@ -46,6 +46,10 @@ selection this slice completes.
 - **A status bar** (`StatusBar(controller)`) joins the formula bar and the name box in
   `eQuantic.UI.Spreadsheets`, placed by the app: the Sum, the Average and the Count of what is selected,
   read in the page's culture until values are typed (slice 5), in English, Portuguese and Spanish.
+- **The active cell stays where the selection began**, as in Excel and Sheets: a drag, a press with
+  Shift and Shift with an arrow or a page key stretch the range from its far end and keep the active
+  cell, where the engine had moved it to the far end since the first spreadsheet (a drag from B4 to B6
+  left B6 active and the name box said `B6`).
 - **A number is read in the culture the call names** (#1087). `decimal.TryParse(text,
   NumberStyles.Float, CultureInfo.CurrentCulture, out var d)`, which the status bar's summary reads,
   failed the build (EQ2108): the runtime's number grammar knew the invariant culture's symbols alone.
@@ -96,7 +100,8 @@ selection this slice completes.
 - **The public surface moves** (`PublicAPI.Unshipped.txt` of Primitives, Sheet, Spreadsheets and
   Components); **the developer surface does not**. **BREAKING** in preview: `SelectRows(from, to)` and
   `SelectCols(from, to)` become `SelectRows(anchor, focus, add)` and `SelectCols(anchor, focus, add)`;
-  migration: `controller.SelectRows(r, r)` is `controller.SelectRows(r, r, add: false)`. The headers
+  migration: `controller.SelectRows(r, r)` is `controller.SelectRows(r, r, add: false)`. Setting
+  `Selection` makes the range's anchor the active cell, where it made its focus active. The headers
   are no longer `Pressable` nodes, so a test that found a header by its pressable finds it by the
   sheet's own hit-testing.
 - **Docs**: `docs/SPREADSHEET-PLAN.md` (slice 2 split into 2a and 2b, 2a delivered), the wiki's

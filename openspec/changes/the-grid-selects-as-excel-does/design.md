@@ -137,7 +137,10 @@ A number is read with `decimal.TryParse` in `NumberStyles.Float` and the page's 
 number in `pt-BR` and text in `en-US`, until slice 5 types values. The transpiler did NOT carry that read,
 which this design first assumed: the build refused the current culture for a number (EQ2108), so the
 read is decision 10's. The `StatusBar` component listens to `Refreshed` as the
-bars do and writes `SdkStrings.Sum`, `Average`, `Count` and `AddToSelection` in the page's language.
+bars do and writes `SdkStrings.Sum`, `Average`, `Count` and `AddToSelection` in the page's language, the
+Sum and the Average with `G10`, the ten significant digits Excel's General format writes in its status
+bar: a decimal's own text keeps 28, and the average of `14,02`, `28,04` and `35,05` read
+`25,703333333333333333333333333` in Chromium before it did.
 
 ### 9. The macOS shell offers a key to the host before the input method while nothing is marked
 
@@ -169,6 +172,17 @@ invariant read. It hides the gap from every other app, writes a second grammar b
 slice 5 (#987) needs the real one anyway: typed values are read "in the app's culture through .NET's own
 rules, on both targets".
 
+### 11. The active cell stays where the selection began
+
+The engine put the active cell at the selection's focus, the end that moves, since the first spreadsheet:
+a drag from B4 to B6 left B6 active and the name box said `B6`, and Shift+↓ from B2 moved the cell typing
+lands on. Excel and Sheets keep it where the range began. Found in Chromium while proving the status bar,
+and decided with Edgar to fix here, since this slice completes the selection. Setting a range makes its
+anchor the active cell; Shift with an arrow, a data-edge jump, Home, End, Ctrl+End or a page key stretches
+from the focus and keeps the active cell, falling back to the anchor only if the range no longer holds it
+(a Tab run inside a range that shrank); a plain arrow or page key moves from the active cell; an undo and
+a redo restore the selection with its anchor active.
+
 ## Risks / Trade-offs
 
 - [A summary over a whole-sheet selection walks every stored cell] → cached per document version and
@@ -189,6 +203,10 @@ rules, on both targets".
   rule `TransitionClock` follows.
 
 ## Migration Plan
+
+Behaviour change: `Selection = new SheetRange(anchor, focus)` makes the anchor active, where it made the
+focus active; code that set a range to land the active cell at its far end writes the range the other way
+round (`new SheetRange(focus, anchor)`).
 
 Preview break: `SelectRows(from, to)` and `SelectCols(from, to)` become `SelectRows(anchor, focus,
 add)` and `SelectCols(anchor, focus, add)`; `controller.SelectRows(r, r)` is

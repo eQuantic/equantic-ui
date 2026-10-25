@@ -49,7 +49,7 @@ public class SheetChordTests
         Key(sheet, " ", KeyModifiers.Shift, convention).Should().BeTrue("the key is the sheet's, so no space is typed");
 
         sheet.Selection.Should().Be(new SheetRange(new CellRef(2, 0), new CellRef(3, sheet.Document.Cols - 1)));
-        sheet.ActiveCell.Should().Be(Cell("C4"));
+        sheet.ActiveCell.Should().Be(Cell("B3"), "the active cell, the range's anchor, stays");
         sheet.Editing.Should().BeFalse();
     }
 
@@ -195,8 +195,8 @@ public class SheetChordTests
     public void CtrlPeriod_WalksTheCornersClockwise(KeyboardConvention convention)
     {
         var sheet = Sheet();
-        sheet.Selection = Range("D5", "B2");
-        // The selection's focus is B2, so B2 is active.
+        sheet.Selection = Range("B2", "D5");
+        // The selection's anchor is B2, so B2 is active.
         sheet.ActiveCell.Should().Be(Cell("B2"));
 
         Key(sheet, ".", ControlOf(convention), convention);
@@ -205,7 +205,7 @@ public class SheetChordTests
         sheet.ActiveCell.Should().Be(Cell("D5"));
         Key(sheet, ".", ControlOf(convention), convention);
         sheet.ActiveCell.Should().Be(Cell("B5"));
-        sheet.Selection.Should().Be(Range("D5", "B2"));
+        sheet.Selection.Should().Be(Range("B2", "D5"));
     }
 
     [Theory]

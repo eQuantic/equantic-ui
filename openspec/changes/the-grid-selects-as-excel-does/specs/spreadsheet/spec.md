@@ -19,7 +19,7 @@ and Ctrl+Enter (⌘↩) SHALL fill every range with the entry, as one step undo 
 #### Scenario: A drag with Command adds a range
 
 - **WHEN** B2 is selected and a press with ⌘ on D4 is dragged to E6 and released
-- **THEN** the selection is B2 and D4:E6, and E6 is the active cell
+- **THEN** the selection is B2 and D4:E6, and D4 is the active cell
 
 #### Scenario: Add mode
 
@@ -190,7 +190,8 @@ platform's reduced-motion setting it SHALL jump.
 A status bar the app places beside the grid over the same controller SHALL show, while the selection
 holds two or more cells in use, the Count of the cells in use it covers and, when one or more of them
 hold a number, their Sum and their Average, each counted once however many ranges cover it, written in
-the page's language and culture. Until values are typed, a cell SHALL count as a number when its text
+the page's language and culture, the Sum and the Average to ten significant digits as Excel's General
+format writes them. Until values are typed, a cell SHALL count as a number when its text
 reads as a plain number in the page's culture: a sign, digits, the culture's decimal separator and an
 exponent, no thousands separator. In add mode the status bar SHALL say so.
 
@@ -205,10 +206,39 @@ exponent, no thousands separator. In add mode the status bar SHALL say so.
 - **WHEN** B2 holds `7` and B2 is selected
 - **THEN** the status bar shows nothing
 
+#### Scenario: An average that does not end
+
+- **WHEN** B2 to B4 hold `1`, `2` and `2`, and B2:B4 is selected
+- **THEN** the status bar shows `Average: 1.666666667`, where a decimal's own text has 28 digits
+
 #### Scenario: Ranges that overlap
 
 - **WHEN** B2 and B3 hold `1` and `2`, and B2:B3 and B3:B4 are selected
 - **THEN** the status bar shows `Sum: 3`, `Average: 1.5` and `Count: 2`
+
+### Requirement: The active cell stays where the selection began
+
+A drag, a press with Shift, and Shift with an arrow, a data-edge jump, Home, End, Ctrl+End or a page key
+SHALL stretch the active range from the end it last stretched, its anchor and the active cell kept where
+the range began, as Excel and Sheets keep them; a plain arrow or page key SHALL then move from the active
+cell. Setting the selection from code SHALL make its anchor the active cell. An undo or a redo SHALL leave
+the active cell at the anchor of the selection it restores.
+
+#### Scenario: Shift and an arrow
+
+- **WHEN** B2 is selected and Shift+↓ is pressed twice
+- **THEN** the selection runs from B2 to B4, B2 is the active cell, and the name box shows `B2`, on the web
+  as on Photon
+
+#### Scenario: A plain arrow after a stretch
+
+- **WHEN** B2:B4 was stretched from B2 with Shift+↓ and ↓ is pressed
+- **THEN** B3 alone is selected and active
+
+#### Scenario: Shift and a page key twice
+
+- **WHEN** A21 is selected and Shift+PageDown is pressed twice in a grid that shows 20 rows
+- **THEN** the selection runs from A21 to A61 and A21 is the active cell
 
 ## MODIFIED Requirements
 
@@ -260,3 +290,138 @@ and from the theme's foundation colours where it does not, on every target.
 
 - **WHEN** an app's theme names the sheet's range outline
 - **THEN** every selected range is outlined in it, on the web as on Photon
+
+### Requirement: A press on a sheet means the same on every target
+
+The spreadsheet SHALL decide what a pointer means in its engine, from the point in the surface's own
+coordinates and the grid's offset at that moment, so the web and Photon answer the same press the same
+way. A press of a mouse or a stylus SHALL select the cell under it, a press with Shift SHALL stretch the
+selection from its anchor to that cell, the second press of a double click SHALL begin editing the cell
+with its value in Edit mode with the caret where the press landed, a press within 8 points of the
+selection's bottom-right corner SHALL begin a fill, a plain press that is dragged SHALL move the
+selection's far corner with the pointer, the cell it began on staying active, and the release of a fill SHALL land it as one step that undo
+takes back. While a cell is being edited, a press inside the editor's bounds SHALL place the entry's
+caret there and switch the entry to Edit mode, a drag from it SHALL select the entry's text, and a
+double click on a word SHALL select that word; a press outside the editor SHALL commit the edit first
+and then act as it would on a sheet at rest. A finger's press SHALL select the cell it began on when it
+lifts, and SHALL select nothing when the grid takes it as a pan. A press the system cancels SHALL land
+nothing: a fill pours nothing, and a drag stops where it stood.
+
+#### Scenario: A press in a scrolled window
+
+- **WHEN** a sheet scrolled down by 40 rows and across by one column is pressed in the second column
+  and the third row it shows under its headers
+- **THEN** the selection is that one cell, row 42 counted from 0, column C, on the web as on Photon
+
+#### Scenario: The first press on a sheet taller than its view
+
+- **WHEN** a page whose sheet is taller than the scroller around it takes its first press, on B3
+- **THEN** B3 is selected, and the scroller has not moved
+
+#### Scenario: A drag from a plain press
+
+- **WHEN** a press on B2 is dragged to D4 and released
+- **THEN** the selection runs from B2 to D4 and the active cell is B2, where the drag began, as in Excel
+  and Sheets
+
+#### Scenario: A fill the system takes away
+
+- **WHEN** B2 holds `7`, its fill handle is dragged to B4, and the system cancels the press before it
+  lifts
+- **THEN** B3 and B4 stay empty, and undo has nothing to take back
+
+#### Scenario: A press with Shift
+
+- **WHEN** B2 is selected and a press with Shift lands on D5
+- **THEN** the selection runs from B2 to D5, and B2 is still the active cell
+
+#### Scenario: A double click
+
+- **WHEN** the second press of a double click lands on a cell holding `4200`, between its `2` and its
+  first `0`
+- **THEN** that cell is being edited in Edit mode, its entry is `4200`, and the caret stands after the
+  `2`, on the web as on Photon
+
+#### Scenario: A press inside the editor
+
+- **WHEN** B2 is being edited with the entry `hello world` and the caret at its end, and a press lands
+  in the editor between `hello` and its space
+- **THEN** B2 is still being edited, in Edit mode, its entry is still `hello world`, and the caret
+  stands after `hello`
+
+#### Scenario: A press outside the editor
+
+- **WHEN** B2 is being edited with the entry `7` and a press lands on D5
+- **THEN** B2 holds `7` and D5 is selected
+
+#### Scenario: The fill handle
+
+- **WHEN** B2 holds `7`, B2 is selected, and a press on its bottom-right corner is dragged to B4 and
+  released
+- **THEN** B3 and B4 hold `7`, and one undo empties both
+
+#### Scenario: The fill handle's pointer
+
+- **WHEN** B2 is selected and the pointer rests on its bottom-right corner
+- **THEN** the pointer is a crosshair, on the web as on Photon, and over the middle of B2 it is not
+
+#### Scenario: The pointer over the editor
+
+- **WHEN** B2 is being edited and the pointer rests inside the editor
+- **THEN** the pointer is a text beam, on the web as on Photon
+
+#### Scenario: A finger's tap
+
+- **WHEN** B2 is selected and a finger lands on D5 and lifts without moving
+- **THEN** the selection is D5
+
+#### Scenario: A finger's pan
+
+- **WHEN** B2 is selected and a finger lands on D5 and drags upward by 200 points before it lifts
+- **THEN** the grid has scrolled down and the selection is still B2, on the web as on Photon
+
+### Requirement: The name box shows where the selection is and goes where it is told
+
+The spreadsheet family SHALL offer a name box the app places beside the grid, over the same
+controller. At rest it SHALL show the active cell's address; while a drag draws a range of more than
+one cell it SHALL show the range's size as rows by columns, in the app's language. A press in it SHALL
+select its text for typing; Enter SHALL go to what was typed, a cell (`B7`, `$B$7`), a range (`B7:D9`),
+whole rows (`3:5`) or whole columns (`B:D`), in either case, selecting it, revealing its first cell and
+returning the keyboard to the grid; text that names nothing in the grid SHALL leave the selection as
+it was and mark the name box as invalid with its text kept; Escape SHALL restore the address and return
+the keyboard to the grid. The Go To chord (Ctrl+G, ⌃G on a Mac) at rest SHALL give the keyboard to
+the name box when one is drawn, and SHALL be left unclaimed when none is; F5 SHALL do the same on
+Photon, and in a browser SHALL stay the browser's own key, which reloads the page, as Excel for the web
+leaves it by default.
+
+#### Scenario: The address and the size of a drag
+
+- **WHEN** a press on B2 is dragged to D6 and held
+- **THEN** the name box shows `5R x 3C`, and after the release it shows `B2`, the active cell, where the
+  drag began
+
+#### Scenario: Go to a cell far away
+
+- **WHEN** `xfd1048576` is typed into the name box and Enter is pressed
+- **THEN** XFD1048576 is selected and in view, and the grid has the keyboard
+
+#### Scenario: Go to columns
+
+- **WHEN** `B:D` is typed into the name box and Enter is pressed
+- **THEN** columns B to D are selected, with B1 active
+
+#### Scenario: A name that names nothing
+
+- **WHEN** `B0` is typed into the name box and Enter is pressed
+- **THEN** the selection is as it was, the name box is marked invalid and still holds `B0`
+
+#### Scenario: Go To with a name box
+
+- **WHEN** a sheet and its name box are drawn, the grid has the keyboard and the Go To chord is
+  pressed, in Chromium and on Photon, and then F5 on Photon
+- **THEN** each time the name box has the keyboard with its text selected
+
+#### Scenario: F5 in a browser
+
+- **WHEN** a sheet and its name box are drawn in Chromium, the grid has the keyboard and F5 is pressed
+- **THEN** the sheet does not claim the key, and the browser's own default for it is not prevented

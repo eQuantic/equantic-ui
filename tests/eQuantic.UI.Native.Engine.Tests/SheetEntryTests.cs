@@ -197,7 +197,7 @@ public class SheetEntryTests
     public void CommandEnter_FillsTheSelectionWithTheEntry_AsOneStep()
     {
         var sheet = Sheet();
-        sheet.Selection = new SheetRange(new CellRef(3, 2), B2);
+        sheet.Selection = new SheetRange(B2, new CellRef(3, 2));
         sheet.ActiveCell.Should().Be(B2);
 
         Type(sheet, "x");
@@ -206,7 +206,7 @@ public class SheetEntryTests
         for (var row = 1; row <= 3; row++)
             for (var col = 1; col <= 2; col++)
                 sheet.Document.GetCell(new CellRef(row, col)).Should().Be("x");
-        sheet.Selection.Should().Be(new SheetRange(new CellRef(3, 2), B2));
+        sheet.Selection.Should().Be(new SheetRange(B2, new CellRef(3, 2)));
         sheet.ActiveCell.Should().Be(B2);
         sheet.Editing.Should().BeFalse();
 
@@ -321,7 +321,7 @@ public class SheetEntryTests
         var sheet = Sheet();
         foreach (var cell in new[] { B2, new CellRef(1, 2), new CellRef(2, 1), new CellRef(2, 2) })
             sheet.Document.SetCell(cell, "old");
-        sheet.Selection = new SheetRange(new CellRef(2, 2), B2);
+        sheet.Selection = new SheetRange(B2, new CellRef(2, 2));
 
         Key(sheet, "Backspace").Should().BeTrue();
         sheet.Editing.Should().BeTrue();

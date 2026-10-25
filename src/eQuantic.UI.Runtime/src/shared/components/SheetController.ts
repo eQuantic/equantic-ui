@@ -237,7 +237,11 @@ export class SheetController {
 
     setActiveRange(range: SheetRange) {
         this._selection = new SheetRange(this.document.clamp(range.anchor), this.document.clamp(range.focus));
-        this._active = this._selection.focus;
+        this._active = this._selection.anchor;
+    }
+
+    keepActiveInRange() {
+        return this._active = this._selection.contains(this._active) ? this._active : this._selection.anchor;
     }
 
     addRange(range: SheetRange) {
@@ -246,26 +250,33 @@ export class SheetController {
     }
 
     move(dRow: number, dCol: number, motion: SheetMotionValue = 'cell', extend: boolean = false) {
-        let from = this.activeCell;
+        let from = extend ? this._selection.focus : this.activeCell;
         let landed = (() => { const $s = motion; if ($s === 'dataEdge') return this.dataEdge(from, dRow, dCol); if ($s === 'rowBoundary') return new CellRef(from.row, dCol < 0 ? 0 : this.document.cols - 1); if ($s === 'sheetBoundary') return dRow < 0 || dCol < 0 ? new CellRef(0, 0) : this.lastCellInUse(); return new CellRef(from.row + dRow, from.col + dCol); })();
         landed = this.document.clamp(landed);
-        if (!extend) this._others.splice(0);
-        this._selection = extend ? new SheetRange(this._selection.anchor, landed) : new SheetRange(landed);
-        this._active = landed;
+        this.land(landed, extend);
         this._tabRun = null;
         this.reveal();
+    }
+
+    land(landed: CellRef, extend: boolean) {
+        if (!extend) {
+            this._others.splice(0);
+            this._selection = new SheetRange(landed);
+            this._active = landed;
+            return;
+        }
+        this._selection = new SheetRange(this._selection.anchor, landed);
+        this.keepActiveInRange();
     }
 
     movePage(direction: number, extend: boolean = false) {
         let scroll: any; 
         if (!((scroll = this.grid.scroll) != null)) return false;
-        let page = Math.max(this.document.rowSpans.extentOf(this._active.row), Math.fround(scroll.viewport.height - this.grid.headerHeight));
-        let from = this.document.rowSpans.offsetOf(this._active.row);
+        let at = extend ? this._selection.focus : this._active;
+        let page = Math.max(this.document.rowSpans.extentOf(at.row), Math.fround(scroll.viewport.height - this.grid.headerHeight));
+        let from = this.document.rowSpans.offsetOf(at.row);
         let row = this.document.rowSpans.indexAt(from + Math.sign(direction) * page);
-        let landed = this.document.clamp(new CellRef(row, this._active.col));
-        if (!extend) this._others.splice(0);
-        this._selection = extend ? new SheetRange(this._selection.anchor, landed) : new SheetRange(landed);
-        this._active = landed;
+        this.land(this.document.clamp(new CellRef(row, at.col)), extend);
         this.reveal();
         return true;
     }
@@ -306,13 +317,11 @@ export class SheetController {
     movePageAcross(direction: number, extend: boolean = false) {
         let scroll: any; 
         if (!((scroll = this.grid.scroll) != null)) return false;
-        let page = Math.max(this.document.columnSpans.extentOf(this._active.col), Math.fround(scroll.viewport.width - this.grid.headerWidth));
-        let from = this.document.columnSpans.offsetOf(this._active.col);
+        let at = extend ? this._selection.focus : this._active;
+        let page = Math.max(this.document.columnSpans.extentOf(at.col), Math.fround(scroll.viewport.width - this.grid.headerWidth));
+        let from = this.document.columnSpans.offsetOf(at.col);
         let col = this.document.columnSpans.indexAt(from + Math.sign(direction) * page);
-        let landed = this.document.clamp(new CellRef(this._active.row, col));
-        if (!extend) this._others.splice(0);
-        this._selection = extend ? new SheetRange(this._selection.anchor, landed) : new SheetRange(landed);
-        this._active = landed;
+        this.land(this.document.clamp(new CellRef(at.row, col)), extend);
         this._tabRun = null;
         this.reveal();
         return true;
@@ -1100,7 +1109,7 @@ export class SheetController {
         this.apply(edit, false);
         this._others.splice(0);
         this._selection = edit.selectionBefore;
-        this._active = this._selection.focus;
+        this._active = this._selection.anchor;
         this.reveal();
         this.changed?.(edit);
         return true;
@@ -1112,7 +1121,7 @@ export class SheetController {
         this.apply(edit, true);
         this._others.splice(0);
         this._selection = edit.selectionAfter;
-        this._active = this._selection.focus;
+        this._active = this._selection.anchor;
         this.reveal();
         this.changed?.(edit);
         return true;

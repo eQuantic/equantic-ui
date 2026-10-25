@@ -60,8 +60,8 @@ public sealed class SheetController : ISheetSurfaceModel
     public void Refresh() => Refreshed?.Invoke();
 
     /// <summary>The ACTIVE range: the last one selected, the one that holds the active cell, and the one copy,
-    /// cut, paste and fill act on. Setting it leaves it the only range, puts the active cell at its focus end,
-    /// and asks the grid to bring that cell into view (<see cref="RevealVersion"/>), as a command that moves
+    /// cut, paste and fill act on. Setting it leaves it the only range, puts the active cell at its anchor,
+    /// where Excel keeps it while a drag or Shift stretches the range, and asks the grid to bring that cell into view (<see cref="RevealVersion"/>), as a command that moves
     /// it does.</summary>
     public SheetRange Selection
     {
@@ -93,7 +93,7 @@ public sealed class SheetController : ISheetSurfaceModel
     /// lasts a plain press or drag adds a range as a ⌘ or Ctrl press does.</summary>
     public bool AddingRanges { get; internal set; }
 
-    /// <summary>The range, clamped into the grid, becomes the only one, with the active cell at its focus end
+    /// <summary>The range, clamped into the grid, becomes the only one, with the active cell at its anchor
     /// and nothing asked of the grid: a press and a drag land on cells the person can see.</summary>
     private void Select(SheetRange range)
     {
@@ -102,13 +102,18 @@ public sealed class SheetController : ISheetSurfaceModel
         SetActiveRange(range);
     }
 
-    /// <summary>The active range becomes <paramref name="range"/>, clamped, the others kept: a drag that
-    /// stretches a range it added, and Shift's stretch of the active one.</summary>
+    /// <summary>The active range becomes <paramref name="range"/>, clamped, the others kept, with the active
+    /// cell at its anchor: a drag stretches the range from the cell it began on, which stays active, as in
+    /// Excel and Sheets.</summary>
     private void SetActiveRange(SheetRange range)
     {
         _selection = new SheetRange(Document.Clamp(range.Anchor), Document.Clamp(range.Focus));
-        _active = _selection.Focus;
+        _active = _selection.Anchor;
     }
+
+    /// <summary>After Shift stretched the active range, the active cell stays where it was if the range still
+    /// holds it, and goes to the anchor if not (a Tab run inside a range that shrank past it).</summary>
+    private void KeepActiveInRange() => _active = _selection.Contains(_active) ? _active : _selection.Anchor;
 
     /// <summary>The active range is set aside and <paramref name="range"/> becomes the active one: a ⌘ or Ctrl
     /// press, and a press in add mode.</summary>
@@ -128,14 +133,16 @@ public sealed class SheetController : ISheetSurfaceModel
     // ---- navigation -----------------------------------------------------------------------------
 
     /// <summary>
-    /// Moves the focus (extend = false collapses the selection to the landing cell; true drags the
-    /// focus and keeps the anchor — Shift+arrow). Motions mirror Excel: a CELL step, a DATA-EDGE
-    /// jump (Ctrl+arrow: last populated cell of the run, or the next populated cell across a gap,
-    /// or the sheet edge), row and sheet boundaries (Home/End, Ctrl+Home/End).
+    /// Moves the active cell (extend = false collapses the selection to the landing cell), or, with
+    /// extend, the selection's moving end, the focus, with the anchor and the active cell kept: Shift+arrow
+    /// stretches the range from the end it last stretched, as Excel's does, and the cell typing lands on
+    /// stays where the range began. Motions mirror Excel: a CELL step, a DATA-EDGE jump (Ctrl+arrow: last
+    /// populated cell of the run, or the next populated cell across a gap, or the sheet edge), row and
+    /// sheet boundaries (Home/End, Ctrl+Home/End).
     /// </summary>
     public void Move(int dRow, int dCol, SheetMotion motion = SheetMotion.Cell, bool extend = false)
     {
-        var from = ActiveCell;
+        var from = extend ? _selection.Focus : ActiveCell;
         var landed = motion switch
         {
             SheetMotion.DataEdge => DataEdge(from, dRow, dCol),
@@ -145,28 +152,39 @@ public sealed class SheetController : ISheetSurfaceModel
             _ => new CellRef(from.Row + dRow, from.Col + dCol),
         };
         landed = Document.Clamp(landed);
-        if (!extend) _others.Clear();
-        _selection = extend ? new SheetRange(_selection.Anchor, landed) : new SheetRange(landed);
-        _active = landed;
+        Land(landed, extend);
         _tabRun = null;
         Reveal();
     }
 
+    /// <summary>A move lands on <paramref name="landed"/>: alone, the active cell there; with extend, as the
+    /// active range's focus, the active cell kept.</summary>
+    private void Land(CellRef landed, bool extend)
+    {
+        if (!extend)
+        {
+            _others.Clear();
+            _selection = new SheetRange(landed);
+            _active = landed;
+            return;
+        }
+        _selection = new SheetRange(_selection.Anchor, landed);
+        KeepActiveInRange();
+    }
+
     /// <summary>
     /// PageDown and PageUp: the active cell by the rows the grid shows under its headers, the selection
-    /// with it (extend keeps the anchor, Shift's way). Without a viewport to measure there is no page, and
-    /// the key is not taken.
+    /// with it, or with extend the selection's focus, the anchor and the active cell kept, Shift's way.
+    /// Without a viewport to measure there is no page, and the key is not taken.
     /// </summary>
     public bool MovePage(int direction, bool extend = false)
     {
         if (Grid.Scroll is not { } scroll) return false;
-        var page = Math.Max(Document.RowSpans.ExtentOf(_active.Row), scroll.Viewport.Height - Grid.HeaderHeight);
-        var from = Document.RowSpans.OffsetOf(_active.Row);
+        var at = extend ? _selection.Focus : _active;
+        var page = Math.Max(Document.RowSpans.ExtentOf(at.Row), scroll.Viewport.Height - Grid.HeaderHeight);
+        var from = Document.RowSpans.OffsetOf(at.Row);
         var row = Document.RowSpans.IndexAt(from + Math.Sign(direction) * page);
-        var landed = Document.Clamp(new CellRef(row, _active.Col));
-        if (!extend) _others.Clear();
-        _selection = extend ? new SheetRange(_selection.Anchor, landed) : new SheetRange(landed);
-        _active = landed;
+        Land(Document.Clamp(new CellRef(row, at.Col)), extend);
         Reveal();
         return true;
     }
@@ -240,19 +258,17 @@ public sealed class SheetController : ISheetSurfaceModel
 
     /// <summary>
     /// Alt+PageDown and Alt+PageUp: the active cell by the columns the grid shows beside its row numbers, the
-    /// selection with it (extend keeps the anchor, Shift's way), as <see cref="MovePage"/> moves by rows.
-    /// Without a viewport to measure there is no page, and the key is not taken.
+    /// selection with it, or with extend the selection's focus, Shift's way, as <see cref="MovePage"/> moves
+    /// by rows. Without a viewport to measure there is no page, and the key is not taken.
     /// </summary>
     public bool MovePageAcross(int direction, bool extend = false)
     {
         if (Grid.Scroll is not { } scroll) return false;
-        var page = Math.Max(Document.ColumnSpans.ExtentOf(_active.Col), scroll.Viewport.Width - Grid.HeaderWidth);
-        var from = Document.ColumnSpans.OffsetOf(_active.Col);
+        var at = extend ? _selection.Focus : _active;
+        var page = Math.Max(Document.ColumnSpans.ExtentOf(at.Col), scroll.Viewport.Width - Grid.HeaderWidth);
+        var from = Document.ColumnSpans.OffsetOf(at.Col);
         var col = Document.ColumnSpans.IndexAt(from + Math.Sign(direction) * page);
-        var landed = Document.Clamp(new CellRef(_active.Row, col));
-        if (!extend) _others.Clear();
-        _selection = extend ? new SheetRange(_selection.Anchor, landed) : new SheetRange(landed);
-        _active = landed;
+        Land(Document.Clamp(new CellRef(at.Row, col)), extend);
         _tabRun = null;
         Reveal();
         return true;
@@ -1668,7 +1684,7 @@ public sealed class SheetController : ISheetSurfaceModel
         Apply(edit, forward: false);
         _others.Clear();
         _selection = edit.SelectionBefore;
-        _active = _selection.Focus;
+        _active = _selection.Anchor;
         Reveal();
         Changed?.Invoke(edit);
         return true;
@@ -1681,7 +1697,7 @@ public sealed class SheetController : ISheetSurfaceModel
         Apply(edit, forward: true);
         _others.Clear();
         _selection = edit.SelectionAfter;
-        _active = _selection.Focus;
+        _active = _selection.Anchor;
         Reveal();
         Changed?.Invoke(edit);
         return true;
