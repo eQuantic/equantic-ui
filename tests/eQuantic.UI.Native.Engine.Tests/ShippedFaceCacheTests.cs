@@ -45,6 +45,21 @@ public sealed class ShippedFaceCacheTests : IDisposable
         File.GetLastWriteTimeUtc(path).Should().Be(written.AddDays(-1), "the file is not written again");
     }
 
+    /// <summary>A file cut short under the face's name, as one written in place could be left, is written
+    /// again whole rather than opened, failed and fallen back on at every launch (Copilot's review of #1070).</summary>
+    [Fact]
+    public void AFaceCutShortUnderItsName_IsWrittenAgainWhole()
+    {
+        var folder = Path.Combine(_dir, "eq-fonts");
+        var path = Path.Combine(folder, Convert.ToHexStringLower(SHA256.HashData(Bytes))[..16] + ".ttf");
+        Directory.CreateDirectory(folder);
+        File.WriteAllBytes(path, Bytes[..(Bytes.Length / 2)]);
+
+        ShippedFaces.CacheFile(folder, Face, Bytes).Should().Be(path);
+        File.ReadAllBytes(path).Should().Equal(Bytes);
+        Directory.GetFileSystemEntries(folder).Should().Equal([path]);
+    }
+
     [Fact]
     public void ACacheThatCannotTakeAFace_IsAFaceThatDidNotRegister()
     {

@@ -58,7 +58,9 @@ public sealed class ShippedFaces(Func<FontFile, byte[], bool> register)
     public static string? CacheFile(string folder, FontFile file, byte[] bytes)
     {
         var path = Path.Combine(folder, Convert.ToHexStringLower(SHA256.HashData(bytes))[..16] + Path.GetExtension(file.Resource));
-        if (File.Exists(path)) return path;
+        // A file under the face's name is the face when it is as long as the face. One cut short, by a
+        // build that wrote in place or by the storage under it, is written again rather than trusted.
+        if (new FileInfo(path) is { Exists: true, Length: var length } && length == bytes.LongLength) return path;
         var partial = path + "." + Path.GetRandomFileName();
         try
         {
