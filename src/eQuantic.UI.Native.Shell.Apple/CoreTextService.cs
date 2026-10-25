@@ -67,6 +67,59 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     [LibraryImport(CoreTextLib)]
     private static partial IntPtr CTFontCreateWithFontDescriptor(IntPtr descriptor, double size, IntPtr matrix);
 
+    // A face the app SHIPS (#1055), registered with the font manager for this process from the bytes
+    // its assembly holds, so the family match below finds it as it finds an installed one: the
+    // descriptor, the bold and italic traits and every cache keyed on the family work unchanged. The
+    // same route .NET MAUI's embedded-font loader takes on iOS.
+    [LibraryImport(CoreFoundation)]
+    private static partial IntPtr CFDataCreate(IntPtr allocator, byte[] bytes, nint length);
+
+    [LibraryImport(CoreFoundation)]
+    private static partial nint CFErrorGetCode(IntPtr error);
+
+    [LibraryImport(CoreGraphics)]
+    private static partial IntPtr CGDataProviderCreateWithCFData(IntPtr data);
+
+    [LibraryImport(CoreGraphics)]
+    private static partial void CGDataProviderRelease(IntPtr provider);
+
+    [LibraryImport(CoreGraphics)]
+    private static partial IntPtr CGFontCreateWithDataProvider(IntPtr provider);
+
+    [LibraryImport(CoreGraphics)]
+    private static partial void CGFontRelease(IntPtr font);
+
+    [LibraryImport(CoreTextLib)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    private static partial bool CTFontManagerRegisterGraphicsFont(IntPtr font, out IntPtr error);
+
+    /// <summary>kCTFontManagerErrorAlreadyRegistered: the face is in the process all the same.</summary>
+    private const nint AlreadyRegistered = 105;
+
+    private static readonly ShippedFaces Shipped = new(Register);
+
+    private static bool Register(FontFile file, byte[] bytes)
+    {
+        var data = CFDataCreate(IntPtr.Zero, bytes, bytes.Length);
+        if (data == IntPtr.Zero) return false;
+        var provider = CGDataProviderCreateWithCFData(data);
+        var font = provider == IntPtr.Zero ? IntPtr.Zero : CGFontCreateWithDataProvider(provider);
+        try
+        {
+            if (font == IntPtr.Zero) return false;
+            if (CTFontManagerRegisterGraphicsFont(font, out var error)) return true;
+            var already = error != IntPtr.Zero && CFErrorGetCode(error) == AlreadyRegistered;
+            if (error != IntPtr.Zero) CFRelease(error);
+            return already;
+        }
+        finally
+        {
+            if (font != IntPtr.Zero) CGFontRelease(font);
+            if (provider != IntPtr.Zero) CGDataProviderRelease(provider);
+            CFRelease(data);
+        }
+    }
+
     /// <summary>The INK box of a line — what the glyphs actually cover, which is not the font's
     /// declared ascent/descent: a deep 'g' tail, an accent or a swash all pass beyond it. A null
     /// context is legal and gives the default text matrix, which is what we draw with.</summary>
@@ -189,6 +242,9 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     private static IntPtr? Named(FontFamily? family, float size)
     {
         if (family is not { Name.Length: > 0 }) return null;
+        // A family that ships files is registered before it is matched; a file that could not be
+        // read or registered leaves the match to fail, which reports the family below.
+        Shipped.Register(family);
 
         var name = CFStringCreateWithCString(IntPtr.Zero, family.Name, Utf8);
         if (name == IntPtr.Zero) return null;

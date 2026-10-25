@@ -91,3 +91,4 @@ static eQuantic.UI.Primitives.FontFamily.operator !=(eQuantic.UI.Primitives.Font
 static eQuantic.UI.Primitives.FontFamily.operator ==(eQuantic.UI.Primitives.FontFamily? left, eQuantic.UI.Primitives.FontFamily? right) -> bool
 static eQuantic.UI.Primitives.FontFile.operator !=(eQuantic.UI.Primitives.FontFile? left, eQuantic.UI.Primitives.FontFile? right) -> bool
 static eQuantic.UI.Primitives.FontFile.operator ==(eQuantic.UI.Primitives.FontFile? left, eQuantic.UI.Primitives.FontFile? right) -> bool
+eQuantic.UI.Primitives.FontFile.Read() -> byte[]?

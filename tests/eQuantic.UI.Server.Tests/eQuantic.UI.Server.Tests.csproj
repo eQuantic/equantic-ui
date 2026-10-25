@@ -33,7 +33,7 @@
   <ItemGroup>
     <!-- Two faces written by the tests' own builder (tests/Shared/TestFont.cs), embedded as the SDK
          embeds an app's: a family no machine has, and no third-party file to licence. -->
-    <EmbeddedResource Include="Fonts\*.ttf" LogicalName="eQuantic.UI.Fonts/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\Shared\Fonts\*.ttf" LogicalName="eQuantic.UI.Fonts/%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

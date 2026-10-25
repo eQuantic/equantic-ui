@@ -64,7 +64,7 @@ internal sealed class ServedFonts
         foreach (var file in family.Files)
         {
             if (!seen.Add(file)) continue;
-            if (Read(file) is not { } bytes)
+            if (file.Read() is not { } bytes)
             {
                 logger?.LogWarning(
                     "The face '{Family}' names the resource '{Resource}' in '{Assembly}', and there is no such resource: the file is not served, and text set in it falls back.",
@@ -92,23 +92,4 @@ internal sealed class ServedFonts
         .Where(property => property.PropertyType == typeof(FontFamily))
         .Select(property => property.GetValue(null))
         .OfType<FontFamily>();
-
-    /// <summary>The file's bytes from the assembly it is embedded in, or null when either is not there.</summary>
-    private static byte[]? Read(FontFile file)
-    {
-        Assembly assembly;
-        try
-        {
-            assembly = Assembly.Load(new AssemblyName(file.Assembly));
-        }
-        catch (Exception exception) when (exception is FileNotFoundException or FileLoadException or BadImageFormatException)
-        {
-            return null;
-        }
-        using var stream = assembly.GetManifestResourceStream(file.Resource);
-        if (stream is null) return null;
-        using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
-        return buffer.ToArray();
-    }
 }

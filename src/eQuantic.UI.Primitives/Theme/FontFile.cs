@@ -42,4 +42,28 @@ public sealed record FontFile(string Assembly, string Resource, int MinWeight, i
     public int MaxWeight { get; init; } = MaxWeight is >= 1 and <= 1000 && MaxWeight >= MinWeight
         ? MaxWeight
         : throw new ArgumentOutOfRangeException(nameof(MaxWeight), "A face's weights run from 1 to 1000, the lightest first.");
+
+    /// <summary>
+    /// The file's bytes, read from the assembly it is embedded in, or null when the assembly or the
+    /// resource is not there. HOST ONLY: the server serves them and a native shell registers them with
+    /// its text engine, and a page never reads a file.
+    /// </summary>
+    [ServerOnly]
+    public byte[]? Read()
+    {
+        System.Reflection.Assembly assembly;
+        try
+        {
+            assembly = System.Reflection.Assembly.Load(new System.Reflection.AssemblyName(Assembly));
+        }
+        catch (Exception exception) when (exception is FileNotFoundException or FileLoadException or BadImageFormatException)
+        {
+            return null;
+        }
+        using var stream = assembly.GetManifestResourceStream(Resource);
+        if (stream is null) return null;
+        using var buffer = new MemoryStream();
+        stream.CopyTo(buffer);
+        return buffer.ToArray();
+    }
 }

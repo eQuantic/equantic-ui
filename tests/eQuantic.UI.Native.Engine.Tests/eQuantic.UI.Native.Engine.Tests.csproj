@@ -94,5 +94,8 @@
     <Compile Include="..\Shared\SheetSlotTheme.cs" Link="Shared\SheetSlotTheme.cs" />
     <!-- A TrueType font built in code: a face no machine has installed, with no file to licence. -->
     <Compile Include="..\Shared\TestFont.cs" Link="Shared\TestFont.cs" />
+    <!-- Two faces written by that builder, embedded as the SDK embeds an app's, for the shells to
+         register (the server's tests embed the same two). -->
+    <EmbeddedResource Include="..\Shared\Fonts\*.ttf" LogicalName="eQuantic.UI.Fonts/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
