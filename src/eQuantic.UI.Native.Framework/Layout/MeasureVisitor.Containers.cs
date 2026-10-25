@@ -210,6 +210,17 @@ internal sealed partial class MeasureVisitor
         // scroller measured again (a wrapping line that resolved, a Flexible's ceiling) once kept the
         // range of its first measure, so a viewport capped to 300 around 800 of content stopped
         // scrolling at 400 instead of 500.
+        // A request the app made since honoured once per version, as the table's is
+        // (MeasureVisitor.Table): the offset is the view's from here on, and the glide toward a
+        // wheel's target stops, as a finger stops it.
+        if (scroll.Request is { } request
+            && NodeStates.For<ScrollState>(at) is { } state
+            && state.Requested != request.Version)
+        {
+            state.Requested = request.Version;
+            state.Offset = Math.Clamp(request.Offset, 0, maxOffset);
+            state.Target = null;
+        }
         var offset = Math.Clamp(ScrollClock.OffsetOf(at) ?? scroll.Offset, 0, maxOffset);
         result.ScrollRange = maxOffset;
         child.Bounds = child.Bounds with

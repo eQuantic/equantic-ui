@@ -21,8 +21,16 @@ public sealed class ScrollView : SingleChildNode
     public SizeValue Width { get; init; }
     public SizeValue Height { get; init; }
 
-    /// <summary>Programmatic scroll position in dp (≥ 0, toward the content end).</summary>
+    /// <summary>Where the view starts, in dp (≥ 0, toward the content end): read when it is first drawn,
+    /// and never again. A component that moves its view later asks with <see cref="Request"/>.</summary>
     public float Offset { get; init; }
+
+    /// <summary>
+    /// Where the view is asked to go, honoured once per version (Flutter's <c>ScrollController.jumpTo</c>):
+    /// an editor bringing a line to the middle of its view, a list going back to its top. Null asks for
+    /// nothing, and a version already honoured moves nothing, so the reader's own scrolling stays.
+    /// </summary>
+    public ScrollRequest? Request { get; init; }
 
     /// <summary>
     /// Where it IS, whenever that changes — the out channel to the in channel above. A component

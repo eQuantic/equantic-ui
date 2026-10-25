@@ -631,6 +631,8 @@ export interface ScrollViewNode extends VisualNodeValue {
   height?: SizeValueValue;
   /** Programmatic scroll position in dp (applied once, on adoption — the browser owns it after). */
   offset?: number;
+  /** Where it is asked to go after that, honoured once per version (C# `ScrollRequest`). */
+  request?: { readonly version: number; readonly offset: number } | null;
   /** Where it IS, whenever that changes — what a windowed list reads to know what to build. */
   onScrolled?: ((offset: number) => void) | null;
   /** How tall the viewport turned out to be, reported after the pass mounts it. */

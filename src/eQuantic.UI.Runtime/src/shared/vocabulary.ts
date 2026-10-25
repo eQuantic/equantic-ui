@@ -32,6 +32,7 @@ import {
   CornerRadii,
   EdgeInsets,
   Point,
+  ScrollRequest,
   Size,
   SizeValue,
   StyleChannels,
@@ -1284,6 +1285,8 @@ export class ScrollView extends VisualNode {
   width?: SizeValue;
   height?: SizeValue;
   offset: number;
+  /** Where it is asked to go, honoured once per version (C# `ScrollView.Request`). */
+  request: ScrollRequest | null = null;
   /** Where it IS, whenever that changes — what a windowed list reads to know what to build. */
   onScrolled: ((offset: number) => void) | null = null;
   /** How tall the viewport turned out to be, once layout knows. */
@@ -1296,6 +1299,7 @@ export class ScrollView extends VisualNode {
       width?: SizeValue | number;
       height?: SizeValue | number;
       offset?: number;
+      request?: ScrollRequest | null;
       onScrolled?: ((offset: number) => void) | null;
       onViewportChanged?: ((height: number) => void) | null;
     },

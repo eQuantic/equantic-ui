@@ -103,3 +103,19 @@ static eQuantic.UI.Primitives.FontFamily.operator ==(eQuantic.UI.Primitives.Font
 static eQuantic.UI.Primitives.FontFile.operator !=(eQuantic.UI.Primitives.FontFile? left, eQuantic.UI.Primitives.FontFile? right) -> bool
 static eQuantic.UI.Primitives.FontFile.operator ==(eQuantic.UI.Primitives.FontFile? left, eQuantic.UI.Primitives.FontFile? right) -> bool
 eQuantic.UI.Primitives.FontFile.Read() -> byte[]?
+eQuantic.UI.Primitives.ScrollRequest
+eQuantic.UI.Primitives.ScrollRequest.<Clone>$() -> eQuantic.UI.Primitives.ScrollRequest!
+eQuantic.UI.Primitives.ScrollRequest.Deconstruct(out int Version) -> void
+eQuantic.UI.Primitives.ScrollRequest.Equals(eQuantic.UI.Primitives.ScrollRequest? other) -> bool
+eQuantic.UI.Primitives.ScrollRequest.ScrollRequest(int Version) -> void
+override eQuantic.UI.Primitives.ScrollRequest.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.ScrollRequest.GetHashCode() -> int
+override eQuantic.UI.Primitives.ScrollRequest.ToString() -> string!
+static eQuantic.UI.Primitives.ScrollRequest.operator !=(eQuantic.UI.Primitives.ScrollRequest? left, eQuantic.UI.Primitives.ScrollRequest? right) -> bool
+static eQuantic.UI.Primitives.ScrollRequest.operator ==(eQuantic.UI.Primitives.ScrollRequest? left, eQuantic.UI.Primitives.ScrollRequest? right) -> bool
+eQuantic.UI.Primitives.ScrollRequest.Version.get -> int
+eQuantic.UI.Primitives.ScrollRequest.Version.init -> void
+eQuantic.UI.Primitives.ScrollRequest.Offset.get -> float
+eQuantic.UI.Primitives.ScrollRequest.Offset.init -> void
+eQuantic.UI.Primitives.ScrollView.Request.get -> eQuantic.UI.Primitives.ScrollRequest?
+eQuantic.UI.Primitives.ScrollView.Request.init -> void
