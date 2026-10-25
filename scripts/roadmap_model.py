@@ -74,6 +74,9 @@ class Issue:
     closed_on: dt.date | None = None
     status: str | None = None
     status_on: dt.date | None = None
+    # The first day the board moved it to In progress or In review: the status's own date is its
+    # latest change, so a move from In progress to In review would date the start again.
+    moved: dt.date | None = None
     milestone: str | None = None
     priority: str | None = None
     points: float | None = None
@@ -198,6 +201,15 @@ def samples(issues: dict) -> dict:
     return found
 
 
+def pool(found: dict, type_: str) -> list:
+    """The delivered costs an issue of a type is drawn from: its type's, an epic's falling back to a
+    feature's as `estimates` does, and every type's when there is no history closer than that."""
+    every = [cost for costs in found.values() for cost in costs] or [3.0]
+    if type_ == "Epic":
+        return found.get("Epic") or found.get("Feature") or every
+    return found.get(type_) or every
+
+
 def estimates(found: dict) -> dict:
     """The mean points of each type, for an open issue nobody pointed yet. A type with no history
     costs what an issue costs on average, and an epic with none what a feature does."""
@@ -219,10 +231,12 @@ def remaining(issue: Issue, cost: dict) -> float:
 
 # ── What happened ────────────────────────────────────────────────────────────────────────────────────
 def started_on(issue: Issue) -> dt.date | None:
-    """When work on an issue visibly began: its first pull request, else the day it closed, else the
-    day the board moved it to In progress."""
-    if issue.pulls:
-        return min(pull.opened for pull in issue.pulls)
+    """When work on an issue visibly began: the earlier of its first pull request and the first day
+    the board moved it to In progress, else the day it closed. A parent's own moves are not evidence,
+    since this script sets them."""
+    evidence = [pull.opened for pull in issue.pulls] + ([issue.moved] if issue.moved and not issue.children else [])
+    if evidence:
+        return min(evidence)
     if issue.closed and issue.completed:
         return issue.closed_on
     if issue.status in STARTED and not issue.children:
@@ -453,7 +467,7 @@ def changes(issues: dict, dates: dict) -> list:
         if issue.type in ROLLED_UP and issue.children and not issue.closed and issue.status not in STARTED \
                 and progressing(issue):
             found.append(Change(issue, "status", issue.status, "In progress", f"work began on {real_start(issue)}"))
-        if issue.closed and issue.completed and issue.item and issue.status != "Done":
+        if issue.closed and issue.item and issue.status != "Done":
             found.append(Change(issue, "status", issue.status, "Done", "it is closed"))
         if issue.number in dates:
             for name, (value, why), held in zip(("Start date", "Target date"), dates[issue.number],
@@ -498,14 +512,13 @@ def monte_carlo(issues: dict, fc: Forecast, groups: dict, runs: int, seed: int) 
     {group: sorted finishing days}, None for a run past the horizon."""
     rng = random.Random(seed)
     measured = samples(issues)
-    every = [c for costs in measured.values() for c in costs] or [3.0]
     queued = [w for q in fc.lanes.values() for w in q]
-    pool = {w.type: measured.get(w.type) or every for w in queued}
+    draws = {w.type: pool(measured, w.type) for w in queued}
     results = {name: [] for name in groups}
     for _ in range(runs):
         costs = {}
         for w in queued:
-            draw = rng.choice(pool[w.type])
+            draw = rng.choice(draws[w.type])
             costs[w.number] = draw if w.points is None else w.points * draw / fc.cost[w.type]
         span = simulate(fc.lanes, costs, fc.pace.shares, fc.order, lambda _: rng.choice(fc.pace.daily))
         for name, ahead in groups.items():

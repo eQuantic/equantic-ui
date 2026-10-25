@@ -69,8 +69,9 @@ Each epic is a lane, and the issues no epic holds share a lane of their own.
 - Inside a lane the work goes depth first, one issue at a time: among siblings, what has started,
   then what carries the earliest milestone, then priority, then the issue number.
 
-Epics and features get dates. What started has its real start: the first commit or the opening of
-the first pull request, else the day it closed, else the day it moved to In progress. What was
+Epics and features get dates. What started has its real start: the earlier of its first pull
+request (its first commit, or its opening) and the first day the board moved it to In progress, read
+from the issue's history so a later move to In review does not date it again, else the day it closed. What was
 delivered has its real target, the day it or its last sub-issue closed. The rest takes the plan's
 dates. An epic, a feature or a user story shows In progress once a sub-issue is in progress, or once
 some of its work is done and some is open, and a closed issue shows Done.

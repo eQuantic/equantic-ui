@@ -17,7 +17,7 @@ import sys
 
 from dataclasses import replace
 
-from roadmap_model import Issue, PullRequest, link, unread, written
+from roadmap_model import STARTED, Issue, PullRequest, link, unread, written
 
 OWNER, REPO, PROJECT = "eQuantic", "equantic-ui", 11
 
@@ -62,6 +62,8 @@ ITEMS = """query($owner: String!, $number: Int!, $cursor: String) { organization
       issueFieldValues(first: 10) { nodes {
         ... on IssueFieldDateValue { value field { ... on IssueFieldDate { name } } }
         ... on IssueFieldSingleSelectValue { name field { ... on IssueFieldSingleSelect { name } } } } }
+      timelineItems(first: 30, itemTypes: [PROJECT_V2_ITEM_STATUS_CHANGED_EVENT]) { nodes {
+        ... on ProjectV2ItemStatusChangedEvent { createdAt status project { number } } } }
       closedByPullRequestsReferences(first: 25, includeClosedPrs: true) { nodes { number createdAt mergedAt
         closingIssuesReferences { totalCount } commits(first: 1) { nodes { commit { authoredDate } } } } } } } } } } } }"""
 
@@ -81,6 +83,8 @@ def load():
             values = {v["field"]["name"]: v.get("value") or v.get("name")
                       for v in content["issueFieldValues"]["nodes"] if v and v.get("field")}
             status = node["fieldValueByName"] or {}
+            moves = [day(e["createdAt"]) for e in content["timelineItems"]["nodes"]
+                     if e and (e.get("project") or {}).get("number") == PROJECT and e.get("status") in STARTED]
             parent = content["parent"] or {}
             pulls = []
             for pr in content["closedByPullRequestsReferences"]["nodes"]:
@@ -93,6 +97,7 @@ def load():
                 opened=day(content["createdAt"]),
                 closed=content["state"] == "CLOSED", completed=content["stateReason"] == "COMPLETED",
                 closed_on=day(content["closedAt"]), status=status.get("name"), status_on=day(status.get("updatedAt")),
+                moved=min(moves) if moves else None,
                 milestone=(content["milestone"] or {}).get("title"), priority=values.get("Priority"),
                 points=(node["estimate"] or {}).get("number"),
                 start=day(values.get("Start date")), target=day(values.get("Target date")),

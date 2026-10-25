@@ -5,7 +5,7 @@
 import datetime as dt
 import unittest
 
-from roadmap_model import (NO_EPIC, Forecast, Issue, PullRequest, changes, unread, delivered_points, done_below, forecast, link,
+from roadmap_model import (NO_EPIC, Forecast, Issue, PullRequest, changes, pool, real_start, unread, delivered_points, done_below, forecast, link,
                            monte_carlo, pace, plan, points_for, progressing, queues, scope, simulate, size, work,
                            written)
 
@@ -85,6 +85,20 @@ class WorkTests(unittest.TestCase):
     def test_a_closed_parent_still_hands_on_an_open_sub_issue(self):
         issues = board(done(1, "Feature"), todo(2, parent=1))
         self.assertEqual([w.number for w in work(issues[1])], [2])
+
+
+class StartTests(unittest.TestCase):
+    def test_a_move_to_in_review_does_not_date_the_start_again(self):
+        # Moved to In progress on day 5, to In review on day 1: the status's own date is day 1.
+        child = todo(2, parent=1, status="In review")
+        child.status_on, child.moved = day(1), day(5)
+        issues = board(todo(1, "Feature"), child)
+        self.assertEqual(real_start(issues[1]), day(5))
+
+    def test_a_pull_request_opened_before_the_move_starts_it(self):
+        child = todo(2, parent=1, status="In progress")
+        child.moved, child.pulls = day(2), [pull(10, opened=4)]
+        self.assertEqual(real_start(board(todo(1, "Feature"), child)[1]), day(4))
 
 
 class PaceTests(unittest.TestCase):
@@ -251,6 +265,15 @@ class ChangeTests(unittest.TestCase):
         issues = board(todo(1, "Feature", points=8))
         issues[1].target = day(-9)
         self.assertEqual(changes(issues, plan(issues, None)), [])
+
+    def test_an_issue_closed_as_not_planned_is_shown_done_too(self):
+        issue = done(1)
+        issue.completed, issue.status = False, "In progress"
+        self.assertEqual([(c.kind, c.new) for c in changes(board(issue), {})], [("status", "Done")])
+
+    def test_an_epic_with_no_history_is_drawn_from_the_features(self):
+        self.assertEqual(pool({"Feature": [13], "Bug": [1]}, "Epic"), [13])
+        self.assertEqual(pool({"Bug": [1]}, "Epic"), [1])
 
     def test_an_issue_no_epic_holds_works_in_a_lane_of_its_own(self):
         issues = board(todo(1, points=3), done(2, closed=1, points=3))
