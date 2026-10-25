@@ -54,3 +54,5 @@ EQ4001 eQuantic.UI.Sdk.Native/Sdk/Sdk.targets eQuantic.UI.Sdk/Sdk/Sdk.targets
 EQ4002 eQuantic.UI.Sdk/Sdk/Sdk.targets
 EQ4003 eQuantic.UI.Native.Build/Program.cs
 EQ4004 eQuantic.UI.Sdk.Tasks/RunProgram.cs
+EQ4005 eQuantic.UI.Native.Build/FontCatalog.cs
+EQ4006 eQuantic.UI.Native.Build/FontCatalog.cs

@@ -186,6 +186,39 @@ if (args.Length > 0 && args[0] == "vectors")
     return 0;
 }
 
+// `fonts` — the app's font files, as one C# class with a FontFamily per family. The SDK embeds the
+// files and hands over each one's path and resource name, one `path|resource` line each, and every
+// other fact a family needs is read from the files here.
+if (args.Length > 0 && args[0] == "fonts")
+{
+    string? Arg(string flag)
+    {
+        var index = Array.IndexOf(args, flag);
+        return index >= 0 && args.Length > index + 1 ? args[index + 1].Trim() : null;
+    }
+
+    var list = Arg("--list");
+    var fontAssembly = Arg("--assembly");
+    var output = Arg("--out");
+    var ns = Arg("--namespace");
+    if (list is null || fontAssembly is null || output is null || ns is null)
+    {
+        Console.Error.WriteLine("Usage: eqicon fonts --list <path|resource lines> --assembly <name> --out <file.g.cs> --namespace <ns>");
+        return 1;
+    }
+
+    var files = File.ReadAllLines(list)
+        .Select(line => line.Split('|'))
+        .Where(parts => parts.Length == 2)
+        .Select(parts => new FontCatalog.Source(parts[0], parts[1]))
+        .ToList();
+    var (families, errors) = FontCatalog.Write(files, fontAssembly, output, ns);
+    foreach (var error in errors) Console.WriteLine(error);
+    if (errors.Count > 0) return 1;
+    if (families > 0) Console.WriteLine($"eqicon: {families} font famil{(families == 1 ? "y" : "ies")} → {output}");
+    return 0;
+}
+
 // `bundle` — the macOS .app around a built head. A separate verb because it is a different job
 // from deriving artwork, and the SDK calls it with what the project already knows.
 if (args.Length > 0 && args[0] == "bundle")
