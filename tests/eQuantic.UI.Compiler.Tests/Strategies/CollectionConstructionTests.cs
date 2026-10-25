@@ -92,6 +92,9 @@ public class CollectionConstructionTests
         Convert("int[] none = [];").Should().Contain("let none: number[] = [];");
         Convert("IReadOnlyList<int> some = [1, 2];").Should().Contain("let some = [1, 2];", "inference reads the items");
         Convert("IEnumerable<int> sequence = [];").Should().Contain("let sequence = [];");
+        // A collection declared nullable keeps its null (Copilot on #1091): `items = null` was refused.
+        Convert("int[]? items = []; items = null;").Should().Contain("let items: number[] | null = [];");
+        Convert("IReadOnlyList<string?>? names = [];").Should().Contain("let names: (string | null)[] | null = [];");
     }
 
     /// <summary>

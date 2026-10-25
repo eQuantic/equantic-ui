@@ -21,14 +21,17 @@ public class ScrollRequestTests
     private sealed class Asked : StatefulComponent
     {
         private ScrollRequest? _request;
+        private int _rows = 40;
         public float Reported = -1;
 
         public void Ask(ScrollRequest? request) => SetState(() => _request = request);
 
+        public void Grow(int rows) => SetState(() => _rows = rows);
+
         public override VisualNode Build(ComponentContext context)
         {
             var rows = new Column(gap: 0) { Width = SizeValue.Fill };
-            for (var i = 0; i < 40; i++) rows.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 }));
+            for (var i = 0; i < _rows; i++) rows.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 }));
             return new ScrollView(rows)
             {
                 Height = SizeValue.Fill,
@@ -74,6 +77,24 @@ public class ScrollRequestTests
         asked.Reported.Should().Be(600, "and says where it went");
         host.ScrollBy(Width / 2, Height / 2, 0, -100).Should().BeTrue();
         ScrolledBy(host.RenderFrame(new DisplayListBuilder())).Should().Be(500, "the wheel moves from the end it stands at");
+    }
+
+    /// <summary>A request past the end settles at the end the frame's layout gives it (Copilot on #1091): kept
+    /// as asked, it moved the view again when the content grew, with no request and no hand on it.</summary>
+    [Fact]
+    public void ARequestPastTheEnd_StaysAtTheEndWhenTheContentGrows()
+    {
+        var asked = new Asked();
+        var host = new PhotonHost(asked, PhotonTheme.Instance, ThemeMode.Light, Width, Height) { SmoothScroll = false };
+        host.RenderFrame(new DisplayListBuilder());
+        asked.Ask(new ScrollRequest(1) { Offset = 5000 });
+        ScrolledBy(host.RenderFrame(new DisplayListBuilder())).Should().Be(600);
+
+        asked.Grow(80);
+
+        ScrolledBy(host.RenderFrame(new DisplayListBuilder())).Should().Be(600, "the view stays where it stood");
+        host.Resize(Width, Height - 100);
+        ScrolledBy(host.RenderFrame(new DisplayListBuilder())).Should().Be(600, "and a resize does not move it either");
     }
 
     /// <summary>A wheel that glides after a request past the end glides from the end (Copilot on #1091): the

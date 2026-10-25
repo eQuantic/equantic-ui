@@ -740,7 +740,7 @@ export class CodeEditorController {
     }
 
     setComposition(text: string) {
-        if (this.readOnly || this.goTo.isOpen) return false;
+        if (this.readOnly || this.goTo.isOpen && text.length > 0) return false;
         text = this.admitted(text);
         let current: any; 
         if (!((current = this._composition) != null)) {
@@ -1937,7 +1937,7 @@ export class CodeEditorController {
             }
             let space = length > 0;
             let tail = parts[parts.length - 1];
-            if (space && (($v146498) => ($v146498 === ' ' || $v146498 === '\t'))(tail[tail.length - 1])) {
+            if (space && (($v146694) => ($v146694 === ' ' || $v146694 === '\t'))(tail[tail.length - 1])) {
                 space = false;
                 let kept = $eq.text.trimEnd(tail, [' ', '\t']);
                 parts[parts.length - 1] = kept;

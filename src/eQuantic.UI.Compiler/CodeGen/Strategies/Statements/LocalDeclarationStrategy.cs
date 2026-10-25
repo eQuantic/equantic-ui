@@ -120,7 +120,13 @@ public class LocalDeclarationStrategy : IStatementStrategy
             && started.Elements.All(element => element is WithElementSyntax)
             && ListedItem(context.SemanticHelper.GetConvertedType(started)) is { } listed
             && SimpleItemName(listed, context) is { } listedName)
-            return $": {ArrayOf(listedName)}";
+        {
+            // A collection declared nullable holds its null too: `int[]? items = []` may be handed null later.
+            var array = ArrayOf(listedName);
+            return decl.Declaration.Type is NullableTypeSyntax
+                ? $": {CodeGen.TypeScriptEmitter.OrNull(array)}"
+                : $": {array}";
+        }
 
         if (!decl.Declaration.Type.IsVar && StartsNull(decl, variable, context)
             && StartingNullAnnotation(decl, context) is { } startsNull)

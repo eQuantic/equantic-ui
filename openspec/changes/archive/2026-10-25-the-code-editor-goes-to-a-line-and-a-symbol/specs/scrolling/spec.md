@@ -21,4 +21,4 @@ so a reader's own scrolling after it stays.
 #### Scenario: Past the end
 
 - **WHEN** it is built with a request of version 2 for offset 5000
-- **THEN** it shows the content from 1700, the end
+- **THEN** it shows the content from 1700, the end, and stays there when its content grows

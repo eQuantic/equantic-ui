@@ -1951,7 +1951,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/EmptyState.cs`
 - **Handoff**: All shapes share one 1.4s phase (single global clock — no sparkle chaos).
-- **Code**: Native does share a global clock (EmitVisitor.Containers.cs:231, `motion.TimeMs % loop.DurationMs / loop.DurationMs`). Web does not: LowerLoopMotion emits a plain CSS animation with no animation-delay, so each element's phase starts at its own mount time. Skeletons for a region that begins loading later shimmer out of phase with the ones already on screen — the sparkle chaos the rule forbids — and web disagrees with native.
+- **Code**: Native does share a global clock (EmitVisitor.Containers.cs:233, `motion.TimeMs % loop.DurationMs / loop.DurationMs`). Web does not: LowerLoopMotion emits a plain CSS animation with no animation-delay, so each element's phase starts at its own mount time. Skeletons for a region that begins loading later shimmer out of phase with the ones already on screen — the sparkle chaos the rule forbids — and web disagrees with native.
 - **Evidence**:
 
   ```
@@ -2853,7 +2853,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Framework/NodeState/ScrollClock.cs`
 - **Handoff**: Platform-native curves. iOS: exponential decay (normal rate 0.998) + rubber-band overscroll. Android: fling friction + stretch overscroll (scale transform — inside the fence; no glow arc).
-- **Code**: One platform-agnostic curve, no overscroll of either kind: the glide is a fixed 0.022-per-ms chase of a target with a flat FlingReach of 90, clamped hard to [0, maxOffset] (ScrollClock.cs:50 ScrollTo, ScrollClock.cs:65 Fling) so there is nothing to rubber-band or stretch. The ScrollView node names the fence and the reason — the platform physics wait for the native interaction system. Worth reviewing because the same fence still claims "today the scroll position is the programmatic Offset", which the ScrollStore compositor has since overtaken.
+- **Code**: One platform-agnostic curve, no overscroll of either kind: the glide is a fixed 0.022-per-ms chase of a target with a flat FlingReach of 90, clamped hard to [0, maxOffset] (ScrollClock.cs:62 ScrollTo, ScrollClock.cs:77 Fling) so there is nothing to rubber-band or stretch. The ScrollView node names the fence and the reason — the platform physics wait for the native interaction system. Worth reviewing because the same fence still claims "today the scroll position is the programmatic Offset", which the ScrollStore compositor has since overtaken.
 - **Evidence**:
 
   ```

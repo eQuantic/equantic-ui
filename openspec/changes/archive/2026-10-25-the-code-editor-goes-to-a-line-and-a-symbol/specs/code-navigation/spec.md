@@ -119,8 +119,9 @@ and PageDown a page away, Enter SHALL accept and Escape SHALL close it.
 
 While the go-to field shows, text that reaches the code, typed or pasted, SHALL go on the field's text, and
 Enter, Escape, the arrows, the page keys and Backspace that reach the code SHALL act on the field, so
-nothing typed before the field takes the keyboard edits the code. A composition SHALL NOT start in the code,
-a cut SHALL take nothing, and a chord with ⌘, ⌃ or ⌥ SHALL be left to the host.
+nothing typed before the field takes the keyboard edits the code. A composition in flight SHALL be cancelled
+as the field opens, none SHALL start in the code while it shows, a cut SHALL take nothing, and a chord with ⌘,
+⌃ or ⌥ SHALL be left to the host.
 
 #### Scenario: A line number typed at once
 

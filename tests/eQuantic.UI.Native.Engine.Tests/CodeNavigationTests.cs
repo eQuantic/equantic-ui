@@ -386,6 +386,36 @@ public class CodeNavigationTests : IDisposable
         editor.GoTo.IsOpen.Should().BeFalse();
     }
 
+    /// <summary>A composition in flight is cancelled as the field opens, and one cancelled later still is
+    /// (Copilot on #1091): the field refused the empty composition the keyboard leaving cancels with, and the
+    /// uncommitted text stayed in the code.</summary>
+    [Fact]
+    public void AComposition_IsCancelledAsTheFieldOpens()
+    {
+        var editor = Editor();
+        var text = editor.Document.Text;
+        editor.SetComposition("か").Should().BeTrue();
+
+        editor.Execute(CodeCommand.GoToLine).Should().BeTrue();
+
+        editor.Composition.Should().BeNull();
+        editor.Document.Text.Should().Be(text);
+        editor.SetComposition("く").Should().BeFalse("no composition starts in the code while the field shows");
+        editor.FocusChanged(false);
+        editor.Document.Text.Should().Be(text);
+    }
+
+    [Fact]
+    public void AnEmptyComposition_StillCancelsWhileTheFieldShows()
+    {
+        var editor = Editor();
+        var text = editor.Document.Text;
+        editor.SetComposition("か");
+        editor.GoTo.Open(CodeGoToMode.Line);
+        editor.SetComposition("").Should().BeFalse("nothing is left to cancel");
+        editor.Document.Text.Should().Be(text);
+    }
+
     [Fact]
     public void TheFieldsKeys_ReachItThroughTheCodeToo()
     {

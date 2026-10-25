@@ -1045,7 +1045,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// </summary>
     public bool SetComposition(string text)
     {
-        if (ReadOnly || GoTo.IsOpen) return false;
+        // While the go-to field shows a composition starts nowhere in the code, and one in flight can still be
+        // cancelled: the keyboard leaving cancels it with "".
+        if (ReadOnly || (GoTo.IsOpen && text.Length > 0)) return false;
         text = Admitted(text);
         if (_composition is not { } current)
         {

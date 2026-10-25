@@ -88,6 +88,7 @@ export class CodeGoTo {
             this._editor.completion.dismiss();
             this._editor.hover.dismiss();
             this._editor.signatureHelp.dismiss();
+            if (!(this._editor.composition == null)) this._editor.setComposition('');
         }
         this.read((() => { const $s = mode; if ($s === 'line') return ':'; if ($s === 'symbol') return '@'; return ''; })(), true);
     }

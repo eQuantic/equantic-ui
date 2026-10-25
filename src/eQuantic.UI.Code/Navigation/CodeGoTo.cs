@@ -108,6 +108,8 @@ public sealed class CodeGoTo
             _editor.Completion.Dismiss();
             _editor.Hover.Dismiss();
             _editor.SignatureHelp.Dismiss();
+            // A composition in flight goes with the keyboard: its text is not the code's yet.
+            if (_editor.Composition is not null) _editor.SetComposition("");
         }
         Read(mode switch { CodeGoToMode.Line => ":", CodeGoToMode.Symbol => "@", _ => "" }, opening: true);
     }

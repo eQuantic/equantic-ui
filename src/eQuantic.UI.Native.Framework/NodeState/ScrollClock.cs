@@ -43,6 +43,18 @@ public sealed class ScrollClock
     public static float? OffsetOf(Element? at) => NodeStates.Find<ScrollState>(at)?.Offset;
 
     /// <summary>
+    /// Writes back where the view at <paramref name="at"/> stands once its frame is laid out, which is where the
+    /// realizer paints it: an offset an app asked for past the end (ScrollView.Request) is kept as asked through
+    /// the frame's measures, any of which may be provisional, and settles at the end the final layout gives it.
+    /// Left as asked, a range that grew later (content added, the window taller) moved the view again with no
+    /// request and no hand on it.
+    /// </summary>
+    public static void Settle(Element? at, float standing)
+    {
+        if (NodeStates.Find<ScrollState>(at) is { Offset: { } asked } view && asked != standing) view.Offset = standing;
+    }
+
+    /// <summary>
     /// Puts an offset exactly where the caller says, now. This is what a FINGER does: the content
     /// is under it and follows it, with nothing to smooth — smoothing a direct manipulation is how
     /// a surface stops feeling attached to the hand.
