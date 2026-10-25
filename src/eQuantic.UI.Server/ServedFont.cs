@@ -11,7 +11,9 @@ namespace eQuantic.UI.Server;
 /// <param name="File">The file as the family declares it.</param>
 /// <param name="Name">The name it is served under: a hash of its bytes and its extension.</param>
 /// <param name="Bytes">The file's bytes.</param>
-internal sealed record ServedFont(FontFamily Family, FontFile File, string Name, byte[] Bytes)
+/// <param name="Brotli">The same bytes compressed with Brotli, once: an OpenType file is served raw, and
+/// it compresses to about half, which is most of what WOFF2 would have saved.</param>
+internal sealed record ServedFont(FontFamily Family, FontFile File, string Name, byte[] Bytes, byte[] Brotli)
 {
     /// <summary>Where a page fetches it.</summary>
     public string Url => "/_equantic/fonts/" + Name;

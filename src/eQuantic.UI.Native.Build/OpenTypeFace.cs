@@ -12,7 +12,7 @@ namespace eQuantic.UI.Build;
 /// when it has none. A variable font names the whole family in ID 16 and only a style group in ID 1.</item>
 /// <item>The weight is <c>OS/2</c>'s <c>usWeightClass</c>, or the range of the <c>fvar</c> table's
 /// <c>wght</c> axis for a variable font.</item>
-/// <item>The italic is <c>OS/2</c>'s ITALIC bit, or the <c>head</c> table's when there is no <c>OS/2</c>.</item>
+/// <item>The italic is <c>OS/2</c>'s ITALIC or OBLIQUE bit, or the <c>head</c> table's when there is no <c>OS/2</c>.</item>
 /// </list>
 /// </summary>
 /// <param name="Family">The family the file belongs to.</param>
@@ -50,8 +50,9 @@ public sealed record OpenTypeFace(string Family, int MinWeight, int MaxWeight, b
         var os2 = tables.TryGetValue("OS/2", out var os2Table) ? Slice(font, os2Table) : default;
         var weight = os2.Length >= 6 ? BinaryPrimitives.ReadUInt16BigEndian(os2[4..]) : 400;
         if (weight is < 1 or > 1000) throw new FormatException($"its weight class, {weight}, is not a weight");
+        // ITALIC (bit 0) or OBLIQUE (bit 9): a slanted roman is the cut italic text is set in too.
         var italic = os2.Length >= 64
-            ? (BinaryPrimitives.ReadUInt16BigEndian(os2[62..]) & 1) != 0
+            ? (BinaryPrimitives.ReadUInt16BigEndian(os2[62..]) & (1 | 1 << 9)) != 0
             : tables.TryGetValue("head", out var head) && Slice(font, head) is { Length: >= 46 } headBytes
                 && (BinaryPrimitives.ReadUInt16BigEndian(headBytes[44..]) & 2) != 0;
 

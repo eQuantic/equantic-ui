@@ -63,6 +63,34 @@ public sealed class FontCatalogSdkTests : IDisposable
         output.Should().Contain("error EQ4005").And.Contain("Broken.ttf is not a face the SDK can ship");
     }
 
+    /// <summary>
+    /// Android packs every file under <c>Assets/</c> into the package's assets by default, and the
+    /// fonts leave that set, since the assembly carries them already. A text file beside them stays,
+    /// which is what shows the defaults ran at all: without the workload there are no assets to ask.
+    /// </summary>
+    [SkippableFact]
+    public void OnAndroid_AFontIsNotPackedASecondTime()
+    {
+        Font("Probe-Regular.ttf", TestFont.Build("Acme Probe"));
+        File.WriteAllText(Path.Combine(_dir, "Assets", "Fonts", "notes.txt"), "beside the font");
+        var project = Consumer("eQuantic.UI.Sdk.Native", "net10.0-android");
+
+        var (exit, output, error) = ChildProcess.Dotnet(
+            ["msbuild", project, "-nologo", "-getItem:AndroidAsset", "-getItem:EmbeddedResource"], Deadline, RepoRoot());
+
+        exit.Should().Be(0, output + error);
+        using var json = JsonDocument.Parse(output[output.IndexOf('{')..]);
+        var items = json.RootElement.GetProperty("Items");
+        var assets = items.TryGetProperty("AndroidAsset", out var found)
+            ? found.EnumerateArray().Select(item => item.GetProperty("Identity").GetString()!).ToList()
+            : [];
+        Skip.If(assets.Count == 0, "the Android workload is not installed here, so no default asset is packed to ask about");
+        assets.Should().Contain(asset => asset.EndsWith("notes.txt"), "the defaults ran")
+            .And.NotContain(asset => asset.EndsWith(".ttf"), "the font is in the assembly already");
+        items.GetProperty("EmbeddedResource").EnumerateArray()
+            .Should().Contain(item => item.GetProperty("Identity").GetString()!.EndsWith("Probe-Regular.ttf"));
+    }
+
     private void Font(string name, byte[] bytes)
     {
         Directory.CreateDirectory(Path.Combine(_dir, "Assets", "Fonts"));
@@ -76,19 +104,7 @@ public sealed class FontCatalogSdkTests : IDisposable
     /// </summary>
     private (int Exit, string Output) RunFontStep(string sdk)
     {
-        var sdkDir = Path.Combine(RepoRoot(), "src", sdk, "Sdk");
-        var project = Path.Combine(_dir, "Acme.Probe.csproj");
-        File.WriteAllText(project, $"""
-            <Project>
-                <Import Project="{Path.Combine(sdkDir, "Sdk.props")}" />
-                <PropertyGroup>
-                    <TargetFramework>net10.0</TargetFramework>
-                    <OutputType>Exe</OutputType>
-                    <Configuration>Debug</Configuration>
-                </PropertyGroup>
-                <Import Project="{Path.Combine(sdkDir, "Sdk.targets")}" />
-            </Project>
-            """);
+        var project = Consumer(sdk, "net10.0");
         var tools = AppContext.BaseDirectory;
         var (exit, output, error) = ChildProcess.Dotnet(
         [
@@ -96,5 +112,26 @@ public sealed class FontCatalogSdkTests : IDisposable
             $"-p:_EqIconToolDir={tools}", $"-p:_EqTasksAssembly={Path.Combine(tools, "eQuantic.UI.Sdk.Tasks.dll")}",
         ], Deadline, RepoRoot());
         return (exit, output + error);
+    }
+
+    /// <summary>A consumer of <paramref name="sdk"/> in the test's folder, for <paramref name="targetFramework"/>.</summary>
+    private string Consumer(string sdk, string targetFramework)
+    {
+        var sdkDir = Path.Combine(RepoRoot(), "src", sdk, "Sdk");
+        var project = Path.Combine(_dir, "Acme.Probe.csproj");
+        File.WriteAllText(project, $"""
+            <Project>
+                <Import Project="{Path.Combine(sdkDir, "Sdk.props")}" />
+                <PropertyGroup>
+                    <TargetFramework>{targetFramework}</TargetFramework>
+                    <OutputType>Exe</OutputType>
+                    <Configuration>Debug</Configuration>
+                    <ApplicationId>tech.equantic.probe</ApplicationId>
+                    <ApplicationTitle>Probe</ApplicationTitle>
+                </PropertyGroup>
+                <Import Project="{Path.Combine(sdkDir, "Sdk.targets")}" />
+            </Project>
+            """);
+        return project;
     }
 }

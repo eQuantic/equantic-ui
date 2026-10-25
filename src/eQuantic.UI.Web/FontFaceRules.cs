@@ -17,15 +17,16 @@ public static class FontFaceRules
 {
     /// <summary>
     /// The rules for <paramref name="faces"/>, each file at the URL given beside it. A family no page
-    /// can be set in (<see cref="FaceName.IsWellFormed"/>) is left out and reported.
+    /// can be set in (<see cref="FaceName.IsWellFormed"/>) is left out: the build refuses one in an app's
+    /// catalog (EQ4005), and the theme's stylesheet reports one the theme names.
     /// </summary>
     public static string Write(IEnumerable<(FontFamily Family, FontFile File, string Url)> faces)
     {
         var css = new StringBuilder();
         foreach (var (family, file, url) in faces)
         {
-            if (FaceName.Usable(family.Name) is not { } name) continue;
-            css.Append("@font-face { font-family: \"").Append(name)
+            if (!FaceName.IsWellFormed(family.Name)) continue;
+            css.Append("@font-face { font-family: \"").Append(family.Name)
                 .Append("\"; src: url(\"").Append(url).Append("\") format(\"").Append(Format(file))
                 .Append("\"); font-weight: ").Append(file.MinWeight == file.MaxWeight
                     ? $"{file.MinWeight}"

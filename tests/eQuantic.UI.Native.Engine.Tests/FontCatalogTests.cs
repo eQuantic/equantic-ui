@@ -26,6 +26,13 @@ public sealed class FontCatalogTests : IDisposable
     }
 
     [Fact]
+    public void AnObliqueFont_IsTheItalicCut()
+    {
+        OpenTypeFace.Read(TestFont.Build("eQuantic Test Face", oblique: true)).Italic
+            .Should().BeTrue("a slanted roman is the cut italic text is set in");
+    }
+
+    [Fact]
     public void AVariableFont_SaysTheRangeOfItsWeightAxis()
     {
         OpenTypeFace.Read(TestFont.Build("eQuantic Test Face", weightAxis: (200, 800)))

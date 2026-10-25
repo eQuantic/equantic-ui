@@ -27,15 +27,16 @@ internal static class TestFont
     private const char First = ' ';
     private const char Last = '~';
 
-    /// <summary>A TrueType file in <paramref name="family"/>, at <paramref name="weight"/>, italic or not.</summary>
+    /// <summary>A TrueType file in <paramref name="family"/>, at <paramref name="weight"/>, italic or not,
+    /// and flagged OBLIQUE rather than ITALIC when <paramref name="oblique"/> says so.</summary>
     public static byte[] Build(string family, int weight = 400, bool italic = false, int advance = 1000,
-        (int Min, int Max)? weightAxis = null)
+        (int Min, int Max)? weightAxis = null, bool oblique = false)
     {
         var glyphCount = 1 + (Last - First + 1);
         var (glyf, loca) = Glyphs(glyphCount, advance);
         var tables = new SortedDictionary<string, byte[]>(StringComparer.Ordinal)
         {
-            ["OS/2"] = Os2(weight, italic, advance),
+            ["OS/2"] = Os2(weight, italic, advance, oblique),
             ["cmap"] = Cmap(),
             ["glyf"] = glyf,
             ["head"] = Head(italic, weight >= 700, advance),
@@ -149,7 +150,7 @@ internal static class TestFont
         return w.ToArray();
     }
 
-    private static byte[] Os2(int weight, bool italic, int advance)
+    private static byte[] Os2(int weight, bool italic, int advance, bool oblique)
     {
         var bold = weight >= 700;
         var w = new Writer();
@@ -165,7 +166,7 @@ internal static class TestFont
         w.Bytes(new byte[10]);          // panose
         w.U32(1); w.U32(0); w.U32(0); w.U32(0);
         w.Bytes("EQTF"u8.ToArray());
-        w.U16((italic ? 1 : 0) | (bold ? 1 << 5 : 0) | (!italic && !bold ? 1 << 6 : 0) | 1 << 7);
+        w.U16((italic ? 1 : 0) | (bold ? 1 << 5 : 0) | (!italic && !bold && !oblique ? 1 << 6 : 0) | 1 << 7 | (oblique ? 1 << 9 : 0));
         w.U16(First); w.U16(Last);
         w.I16(Ascender); w.I16(Descender); w.I16(0);
         w.U16(Ascender); w.U16(-Descender);

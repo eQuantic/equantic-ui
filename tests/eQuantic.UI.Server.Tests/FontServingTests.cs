@@ -63,6 +63,28 @@ public class FontServingTests
         }
     }
 
+    /// <summary>Served compressed to a browser that takes Brotli, as every current one does, and whole
+    /// to one that does not: an OpenType file is served raw, and compresses to about half.</summary>
+    [Fact]
+    public async Task AFaceIsServedCompressed_ToABrowserThatTakesBrotli()
+    {
+        await using var app = await Serve(new FacedTheme(PhotonTheme.Instance, TestFace));
+        var font = ServedFonts.Of(new FacedTheme(PhotonTheme.Instance, TestFace), [], logger: null).Fonts[0];
+        var request = new HttpRequestMessage(HttpMethod.Get, font.Url);
+        request.Headers.AcceptEncoding.ParseAdd("gzip, br");
+
+        var response = await app.GetTestClient().SendAsync(request);
+
+        response.Content.Headers.ContentEncoding.Should().Equal(["br"]);
+        response.Headers.Vary.Should().Contain("Accept-Encoding");
+        var compressed = await response.Content.ReadAsByteArrayAsync();
+        compressed.Length.Should().BeLessThan(font.Bytes.Length);
+        using var brotli = new System.IO.Compression.BrotliStream(new MemoryStream(compressed), System.IO.Compression.CompressionMode.Decompress);
+        using var decompressed = new MemoryStream();
+        brotli.CopyTo(decompressed);
+        decompressed.ToArray().Should().Equal(Resource(font.File.Resource));
+    }
+
     [Fact]
     public async Task AFontNothingNames_IsNotFound()
     {

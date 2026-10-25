@@ -373,10 +373,18 @@ public static class UIExtensions
                 context.Response.StatusCode = 404;
                 return;
             }
+            // Compressed once when the set was read, and sent so to a browser that takes Brotli, which
+            // every current one does: the app's own response compression is not relied on, since no
+            // middleware of it runs unless the app adds one.
+            var brotli = context.Request.GetTypedHeaders().AcceptEncoding
+                .Any(encoding => encoding.Value.Equals("br", StringComparison.OrdinalIgnoreCase) && encoding.Quality is not 0);
+            var body = brotli ? font.Brotli : font.Bytes;
             context.Response.ContentType = FontFaceRules.ContentType(font.File);
-            context.Response.ContentLength = font.Bytes.Length;
+            if (brotli) context.Response.Headers.ContentEncoding = "br";
+            context.Response.Headers.Vary = "Accept-Encoding";
+            context.Response.ContentLength = body.Length;
             context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
-            await context.Response.Body.WriteAsync(font.Bytes);
+            await context.Response.Body.WriteAsync(body);
         }).AllowAnonymous();
 
         // Map Runtime JS (immutable via BuildId in URL, long cache)

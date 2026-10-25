@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Reflection;
 using System.Security.Cryptography;
 using eQuantic.UI.Primitives;
@@ -72,9 +73,18 @@ internal sealed class ServedFonts
                 continue;
             }
             var extension = Path.GetExtension(file.Resource).ToLowerInvariant();
-            fonts.Add(new ServedFont(family, file, Convert.ToHexStringLower(SHA256.HashData(bytes))[..16] + extension, bytes));
+            fonts.Add(new ServedFont(family, file, Convert.ToHexStringLower(SHA256.HashData(bytes))[..16] + extension,
+                bytes, Compressed(bytes)));
         }
         return new ServedFonts(fonts, theme.TextFamily);
+    }
+
+    private static byte[] Compressed(byte[] bytes)
+    {
+        using var buffer = new MemoryStream();
+        using (var brotli = new BrotliStream(buffer, CompressionLevel.Optimal, leaveOpen: true))
+            brotli.Write(bytes);
+        return buffer.ToArray();
     }
 
     private static IEnumerable<FontFamily> ThemeFamilies(IAppTheme theme)
