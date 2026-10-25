@@ -4,11 +4,17 @@ export class CodeSnippetParser {
     constructor(source: string) {
         this._source = null!;
         this._at = 0;
+        this._read = $eq.collections.dictionary();
+        this._readTo = $eq.collections.dictionary();
+        this._failed = $eq.collections.hashSet();
         this._source = source;
     }
 
     _source!: string;
     _at!: number;
+    _read!: any;
+    _readTo!: any;
+    _failed!: Set<number>;
 
     parse() {
         this._at = 0;
@@ -50,6 +56,22 @@ export class CodeSnippetParser {
     }
 
     construct() {
+        let start = this._at;
+        let known: any; 
+        if ((($0) => ($0.has(start) ? ((known = $0.get(start)), true) : ((known = null), false)))(this._read)) {
+            this._at = $eq.mapGet(this._readTo, start);
+            return known;
+        }
+        if (this._failed.has(start)) return null;
+        let part = this.read();
+        if (part == null) $eq.collections.setAdd(this._failed, start); else {
+            $eq.mapSet(this._read, start, part);
+            $eq.mapSet(this._readTo, start, this._at);
+        }
+        return part;
+    }
+
+    read() {
         let start = this._at;
         this._at++;
         if (this._at < this._source.length && CodeSnippetParser.isDigit(this._source[this._at])) return CodeSnippetParser.stop(this.number(), null, null);

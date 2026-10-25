@@ -156,6 +156,9 @@ public sealed class CodeSnippetSession
         var stop = _stops[index];
         _current = index;
         _reached = TextOf(stop);
+        // The list of the stop the carets leave is that stop's: left showing, a choice taken from it was written
+        // over the stop reached (Copilot on #1079).
+        _editor.Completion.DropChoices();
         _placing = true;
         try
         {
@@ -233,6 +236,26 @@ public sealed class CodeSnippetSession
                         ? new CodeRange(edit.CarryAnchor(range.Start), edit.CarryReach(range.End))
                         : edit.Carry(range);
                 }
+                if (s == _current) Separate(ranges);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Keeps the places of the stop the carets stand at apart, each growing at its edges: what is typed where one
+    /// ends and the next begins is the one's that ends there, whose caret typed it. Both took it in, and two
+    /// mirrors written side by side, <c>${1:a}$1</c>, overlapped and were made one caret (Copilot on #1079).
+    /// </summary>
+    private static void Separate(List<CodeRange> ranges)
+    {
+        for (var i = 0; i < ranges.Count; i++)
+        {
+            for (var j = 0; j < ranges.Count; j++)
+            {
+                var range = ranges[i];
+                var before = ranges[j];
+                if (i == j || !(before.Start < range.Start && range.Start < before.End)) continue;
+                ranges[i] = new CodeRange(before.End < range.End ? before.End : range.End, range.End);
             }
         }
     }

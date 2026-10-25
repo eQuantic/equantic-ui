@@ -74,6 +74,9 @@ public class CodeSnippetsTests : IDisposable
     [InlineData("${1|a,b", "${1|a,b")]
     [InlineData("${2:x} and $2", "x and x")]
     [InlineData("$2 before ${2:y}", "y before y")]
+    // A default that names a stop defined after it (Copilot on #1079), and one that names itself.
+    [InlineData("${1:$2} ${2:x} $1", "x x x")]
+    [InlineData("${1:a $1} $1", "a a  a a ")]
     [InlineData("${1/(.*)/${1:/upcase}/g}!", "!")]
     [InlineData("${TM_LINE_NUMBER}:${TM_LINE_INDEX}", "1:0")]
     [InlineData("${TM_SELECTED_TEXT:none}", "none")]
@@ -198,6 +201,47 @@ public class CodeSnippetsTests : IDisposable
         editor.Snippet.IsActive.Should().BeFalse();
     }
 
+    /// <summary>A mirror of a placeholder holds its nested stops, as VS Code clones a placeholder into its mirrors
+    /// (Copilot on #1079): typing at the nested stop changed the placeholder and left the mirror as it was.</summary>
+    [Fact]
+    public void AMirrorOfAPlaceholder_HoldsItsNestedStops()
+    {
+        var editor = Inserted("${1:new ${2:Thing}()} = $1");
+
+        Press(editor, "Tab");
+        editor.HandleText("X");
+
+        editor.Document.Text.Should().Be("new X() = new X()");
+    }
+
+    /// <summary>A malformed snippet is read in time linear in its length (Copilot on #1079): every enclosing
+    /// construct that failed read again what its nested one had read, sixteen unterminated openers 65,535 times.</summary>
+    [Fact]
+    public void UnterminatedPlaceholders_AreReadOnce()
+    {
+        var body = string.Concat(Enumerable.Repeat("${1:", 200)) + "x";
+
+        Inserted(body).Document.Text.Should().Be(body);
+    }
+
+    /// <summary>Two mirrors side by side stay two as they are typed in (Copilot on #1079): what was typed where the
+    /// first ends grew the second too, they overlapped, and going back to them made them one caret.</summary>
+    [Fact]
+    public void MirrorsSideBySide_StayApart()
+    {
+        var editor = Inserted("${1:a}$1 ${2:b}");
+
+        editor.HandleText("x");
+        editor.HandleText("y");
+        Press(editor, "Tab");
+        Press(editor, "Tab", KeyModifiers.Shift);
+
+        editor.Document.Text.Should().Be("xyxy b");
+        editor.Selections.Should().Equal(Span(0, 0, 2), Span(0, 2, 4));
+        editor.HandleText("z");
+        editor.Document.Text.Should().Be("zz b");
+    }
+
     // ---- choices --------------------------------------------------------------------------------------
 
     [Fact]
@@ -213,6 +257,21 @@ public class CodeSnippetsTests : IDisposable
         editor.Completion.IsOpen.Should().BeFalse();
         editor.Undo().Should().BeTrue();
         editor.Document.Text.Should().Be("one = one");
+    }
+
+    /// <summary>The list of the stop the carets leave goes with it (Copilot on #1079): ⇧Tab from a choice left its
+    /// list showing, and Enter wrote one of its options over the stop reached.</summary>
+    [Fact]
+    public void LeavingAChoice_DropsItsList()
+    {
+        var editor = Inserted("${2|one,two|} ${1:b}");
+
+        Press(editor, "Tab");
+        editor.Completion.IsOpen.Should().BeTrue();
+        Press(editor, "Tab", KeyModifiers.Shift).Should().BeTrue();
+
+        editor.Completion.IsOpen.Should().BeFalse();
+        editor.Selection.Should().Be(Span(0, 4, 5));
     }
 
     [Fact]

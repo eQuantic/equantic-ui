@@ -5,7 +5,8 @@
 `CodeSnippet.Parse` SHALL read the Language Server Protocol's snippet syntax: `$1` and `${1}` a tab stop,
 `${1:text}` a placeholder whose text may hold further stops, `${1|one,two|}` a choice whose first option is
 its text, `$0` the final stop, and `$NAME`, `${NAME}` and `${NAME:default}` a variable. A stop written more
-than once SHALL be one stop, every place holding the text of its first placeholder or choice. A backslash
+than once SHALL be one stop, every place holding its first placeholder or choice, the stops nested in that
+placeholder included, whichever order they are written in. A backslash
 SHALL escape `$`, `}` and `\` in text, and also `,` and `|` in a choice's options. Whatever the syntax does
 not make SHALL be text, as typed, and parsing SHALL never fail.
 
@@ -19,6 +20,16 @@ not make SHALL be text, as typed, and parsing SHALL never fail.
 
 - **WHEN** `cost: $, ${1 and \$2` is inserted
 - **THEN** the text reads `cost: $, ${1 and $2`, and no session starts
+
+#### Scenario: A mirror of a placeholder with a stop in it
+
+- **WHEN** `${1:new ${2:Thing}()} = $1` is inserted, Tab pressed and `X` typed
+- **THEN** the text reads `new X() = new X()`
+
+#### Scenario: A default that names a later stop
+
+- **WHEN** `${1:$2} ${2:x} $1` is inserted
+- **THEN** the text reads `x x x`
 
 #### Scenario: A choice's text
 
@@ -58,7 +69,7 @@ reached, and an empty stop SHALL be a caret.
 ### Requirement: Mirrors are typed with their stop
 
 Every place a stop is written SHALL be selected with it, the others as carets, so what is typed at the stop
-is typed at each of them.
+is typed at each of them, and two places written side by side SHALL stay apart as they are typed in.
 
 #### Scenario: A mirror
 
@@ -94,7 +105,7 @@ in its placeholder SHALL be gone.
 
 Reaching a stop with choices SHALL show its options in the completion's list at the stop, every option
 while the placeholder is selected and those matching what is typed in it after, and accepting one SHALL
-write it over every place the stop is written, as one undo step.
+write it over every place the stop is written, as one undo step. Leaving the stop SHALL drop its list.
 
 #### Scenario: Choosing the second option
 

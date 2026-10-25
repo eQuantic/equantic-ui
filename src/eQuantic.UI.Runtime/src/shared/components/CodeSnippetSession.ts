@@ -106,6 +106,7 @@ export class CodeSnippetSession {
         let stop = this._stops[index];
         this._current = index;
         this._reached = this.textOf(stop);
+        this._editor.completion.dropChoices();
         this._placing = true;
         try {
             this._editor.selections = stop.ranges;
@@ -160,6 +161,18 @@ export class CodeSnippetSession {
                     let range = ranges[i];
                     ranges[i] = s === this._current ? new CodeRange(edit.carryAnchor(range.start), edit.carryReach(range.end)) : edit.carry(range);
                 }
+                if (s === this._current) CodeSnippetSession.separate(ranges);
+            }
+        }
+    }
+
+    static separate(ranges: CodeRange[]) {
+        for (let i = 0; i < ranges.length; i++) {
+            for (let j = 0; j < ranges.length; j++) {
+                let range = ranges[i];
+                let before = ranges[j];
+                if (i === j || !(CodePosition.opLessThan(before.start, range.start) && CodePosition.opLessThan(range.start, before.end))) continue;
+                ranges[i] = new CodeRange(CodePosition.opLessThan(before.end, range.end) ? before.end : range.end, range.end);
             }
         }
     }

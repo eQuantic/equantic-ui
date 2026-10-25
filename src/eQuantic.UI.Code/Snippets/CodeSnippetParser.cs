@@ -12,6 +12,12 @@ internal sealed class CodeSnippetParser
 {
     private readonly string _source;
     private int _at;
+    // What a construct read from a position is, once read: it depends on nothing before it, so a failed one
+    // read again inside an enclosing one that failed too would be read again for every level (Copilot on
+    // #1079): sixteen unterminated `${1:` read the rest 65,535 times.
+    private readonly Dictionary<int, CodeSnippetPart> _read = new();
+    private readonly Dictionary<int, int> _readTo = new();
+    private readonly HashSet<int> _failed = new();
 
     public CodeSnippetParser(string source) => _source = source;
 
@@ -63,8 +69,29 @@ internal sealed class CodeSnippetParser
         text.Clear();
     }
 
-    /// <summary>The construct the <c>$</c> here starts, consumed, or null with nothing consumed.</summary>
+    /// <summary>The construct the <c>$</c> here starts, consumed, or null with nothing consumed, each position
+    /// read once.</summary>
     private CodeSnippetPart? Construct()
+    {
+        var start = _at;
+        if (_read.TryGetValue(start, out var known))
+        {
+            _at = _readTo[start];
+            return known;
+        }
+        if (_failed.Contains(start)) return null;
+        var part = Read();
+        if (part is null) _failed.Add(start);
+        else
+        {
+            _read[start] = part;
+            _readTo[start] = _at;
+        }
+        return part;
+    }
+
+    /// <summary>The construct the <c>$</c> here starts, read for the first time.</summary>
+    private CodeSnippetPart? Read()
     {
         var start = _at;
         _at++;
