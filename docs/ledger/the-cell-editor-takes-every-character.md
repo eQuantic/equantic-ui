@@ -5,7 +5,10 @@
   Backspace that edits and an editor that grows over its neighbours came with it, and the formula bar and
   the name box joined the family as components the app places beside the grid, views of one controller.
   Escape releases Tab, so a keyboard can leave a sheet ([#732](https://github.com/eQuantic/equantic-ui/issues/732)).
-  Proved in Chromium on the dashboard's `/sheet` and through the macOS shell's text input client, and
+  On the way a single line of text began keeping its spaces on the web, as Photon and Flutter keep them,
+  and the code engine learned to hold one line. Proved in Chromium on the dashboard's `/sheet` and in a
+  real PhotonDesktop window through the macOS shell's text input client (dead keys and a Japanese
+  composition), and
   benched at 100 000 × 100: a character into an open entry 3.0 ms on Photon and 9.5 ms in the runtime
   ([#983](https://github.com/eQuantic/equantic-ui/issues/983)). Proposed and archived through OpenSpec
   (`openspec/specs/spreadsheet`, `openspec/specs/code-editor`).
