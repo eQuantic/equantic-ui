@@ -34,7 +34,7 @@ public class CodeKeymapBehaviourTests : IDisposable
     [
         "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown",
         "Enter", "Backspace", "Delete", "Tab", "Escape", " ", "a", "z", "y", "c", "x", "v", "/", "Slash",
-        "k", "i", "F8", "q", "Shift",
+        "k", "i", "j", "F8", "q", "Shift",
     ];
 
     private sealed class Clipboard(string? text) : ITextClipboard

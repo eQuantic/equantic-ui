@@ -155,4 +155,27 @@ public enum CodeCommand
     /// goes on meaning what Escape means around the editor.
     /// </summary>
     ReleaseKeyboard,
+
+    // ---- lines (#1011): appended, as every member after the first is ----------------------------------
+
+    /// <summary>The lines the selection takes, one line up, past the line above them, the selection with them.</summary>
+    MoveLinesUp,
+    /// <summary>The lines the selection takes, one line down, past the line below them.</summary>
+    MoveLinesDown,
+    /// <summary>The lines copied above themselves, the selection on the upper copy.</summary>
+    CopyLinesUp,
+    /// <summary>The lines copied below themselves, the selection on the lower copy.</summary>
+    CopyLinesDown,
+    /// <summary>The lines deleted, a line break with them.</summary>
+    DeleteLines,
+    /// <summary>The lines joined into one, or the caret's line with the next, as VS Code joins them.</summary>
+    JoinLines,
+    /// <summary>The lines sorted, ordinally and case aside.</summary>
+    SortLinesAscending,
+    /// <summary>The lines sorted the other way.</summary>
+    SortLinesDescending,
+    /// <summary>A line opened above the caret's, indented as it is.</summary>
+    InsertLineAbove,
+    /// <summary>A line opened below the caret's, indented as Enter indents.</summary>
+    InsertLineBelow,
 }

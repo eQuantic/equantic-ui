@@ -81,8 +81,9 @@ again rather than close.
 
 With more than one signature, ↑ and ↓ SHALL show the previous and the next signature, round from the last
 to the first, while no completion list of more than one entry shows and no hover card hides the panel, as
-VS Code's keybindings have it, and ⌥↑ and ⌥↓ (Alt+↑, Alt+↓) SHALL do so beside a list too; with one, or under a card, they SHALL move the caret. A later answer
-that holds as many signatures SHALL keep the signature chosen.
+VS Code's keybindings have it, and ⌥↑ and ⌥↓ (Alt+↑, Alt+↓) SHALL do so beside a list too; with one, or
+under a card, ↑ and ↓ SHALL move the caret and ⌥↑ and ⌥↓ the lines (`code-lines`). A later answer that
+holds as many signatures SHALL keep the signature chosen.
 
 #### Scenario: Three overloads
 
