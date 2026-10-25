@@ -100,7 +100,7 @@
       their generated twin; the `StatusBar` component and its `StatusBar(controller)` factory in
       `eQuantic.UI.Spreadsheets`, listening to `Refreshed`; verify `SpreadsheetBarsTests` cases on Photon
       and a parity case
-- [x] 7.3 Bench the summary on a sheet of 100 000 × 100 with a million cells in use and the whole sheet
+- [x] 7.3 Bench the summary on Excel's 1 048 576 rows by 100 columns with a hundred thousand cells in use and the whole sheet
       selected, in .NET and the runtime, with a budget the test fails on; and a keystroke that moves
       nothing recomputes nothing
 - [x] 7.4 Prove it in Chromium and in the PhotonDesktop gallery: the Portuguese sums of the spec, two

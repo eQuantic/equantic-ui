@@ -108,26 +108,27 @@ public class SheetSummaryTests
     }
 
     /// <summary>
-    /// The bench (#984): a sheet of 100 000 rows by 100 columns, a million cells in use (every row's
-    /// first ten), and the whole sheet selected. The summary reads the stored cells, never the sheet's ten
-    /// million, and a key that moves nothing reads it from the cache. The ceilings are an order of
+    /// The bench (#984): Excel's 1 048 576 rows by 100 columns, a hundred thousand cells in use (the first of
+    /// the first rows), and the whole sheet selected. The summary reads the stored cells, never the sheet's
+    /// hundred million, and a key that moves nothing reads it from the cache. The ceilings are an order of
     /// magnitude above what was measured, as the other sheet benches keep theirs, because CI machines are
     /// shared: what they catch is a summary that walks the sheet, or reads again on every key.
     /// </summary>
     [Fact]
     public void AWholeSheetSelected_CostsWhatItHolds_AndAKeyThatMovesNothingReadsNothing()
     {
-        var sheet = new SheetController(100_000, 100);
+        var sheet = new SheetController(1_048_576, 100);
         for (var row = 0; row < 100_000; row++)
-            for (var col = 0; col < 10; col++)
-                sheet.Document.SetCell(new CellRef(row, col), "1,5");
+            sheet.Document.SetCell(new CellRef(row, 0), "1,5");
         sheet.SelectAll();
 
         var clock = Stopwatch.StartNew();
         var summary = InCulture("pt-BR", () => sheet.Summary);
         clock.Stop();
-        summary.Should().Be(new SheetSummary(1_000_000, 1_000_000, 1_500_000m, 1.5m));
-        // Measured at 99 ms on an M-series Mac, and 262 ms for the twin (spreadsheet-perf.spec.ts).
+        summary.Should().Be(new SheetSummary(100_000, 100_000, 150_000m, 1.5m));
+        // Measured at 13 ms on an M-series Mac, and 83 ms for the twin (spreadsheet-perf.spec.ts); a summary
+        // walking the selection took 2.6 s, and 10.8 s in the twin. A million cells in use took the twin 262 ms
+        // there and 4.2 s on a shared CI runner, whose heap the cells filled.
         clock.Elapsed.TotalMilliseconds.Should().BeLessThan(1000);
 
         ((ISheetSurfaceModel)sheet).HandleKey("Backspace", KeyModifiers.Command, KeyboardConvention.Standard, null);

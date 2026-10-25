@@ -408,8 +408,10 @@ Each slice proposes, implements and archives its change in its own pull request.
   `/sheet` (headers, two ranges, the dimming, the glide and its reduced-motion jump, the Portuguese
   sums) and in a PhotonDesktop window driven through the macOS shell's input client (Shift+Space, a
   dead key and a Japanese composition in the sheet, a text field and the code editor, the status bar).
-  Benched over a million cells in use with the whole sheet selected: the summary costs 99 ms in .NET and
-  262 ms in the runtime, and a key that moves nothing reads it from the cache. Found and filed: a resize
+  Benched over Excel's 1 048 576 rows by 100 columns, the whole sheet selected and a hundred thousand cells
+  in use: the summary costs 13 ms in .NET and 83 ms in the runtime (2.6 s and 10.8 s when it walked the
+  selection), a key that moves nothing reads it from the cache, and a drag over a million cells in use
+  reads what the range covers. Found and filed: a resize
   grip on the web takes the keyboard from the sheet
   ([#1092](https://github.com/eQuantic/equantic-ui/issues/1092)), and in the dashboard a status bar
   under the grid sits below the fold because the grid takes the scroller's whole extent

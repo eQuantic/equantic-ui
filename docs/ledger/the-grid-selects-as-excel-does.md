@@ -8,7 +8,8 @@
   page's language and culture. The macOS shell offers a key to the app before the input method while
   nothing is composed, so Shift+Space selects there as on every other shell; a dead key and a Japanese
   composition were proved through the shell's input client in the sheet, a text field and the code
-  editor. Benched over a million cells in use: the summary costs 99 ms in .NET and 262 ms in the runtime,
-  and a key that moves nothing reads it from the cache
+  editor. Benched over Excel's 1 048 576 rows by 100 columns, all selected, with a hundred thousand cells
+  in use: the summary costs 13 ms in .NET and 83 ms in the runtime, and a key that moves nothing reads it
+  from the cache
   ([#984](https://github.com/eQuantic/equantic-ui/issues/984)). Proposed and archived through OpenSpec
   (`openspec/specs/spreadsheet`, `openspec/specs/table-viewport`).
