@@ -33,9 +33,18 @@
       the live selections, and a problem of no width at both ends of a moved line and on an empty one
       (`CodeLinesTests`), each failing before its fix
 
-## 5. Documentation
+## 5. Copilot's second round
 
-- [x] 5.1 The wiki's CodeEditor page in every language it is written in: what a move does to problems, and
-      what `CodeHistory` answers
-- [x] 5.2 One ledger entry, a file under docs/ledger/, citing #1031
-- [x] 5.3 Archive this change before the merge
+- [x] 5.1 `Changed` carries a `CodeChange`, every edit of one change, raised once the change is made; a
+      document replaced whole is a change with no edits
+- [x] 5.2 The problems carry their ranges through every edit of a change, then gather once
+- [x] 5.3 Check: a problem reported while a move is heard stands where it was reported (`CodeLinesTests`),
+      failing before the fix; the events' tests, and the web surface's move heard as one change of two
+      replacements each way (`code-editor.spec.ts`)
+
+## 6. Documentation
+
+- [x] 6.1 The wiki's CodeEditor page in every language it is written in: what a move does to problems, what
+      `CodeHistory` answers, and what `Changed` carries
+- [x] 6.2 One ledger entry, a file under docs/ledger/, citing #1031
+- [x] 6.3 Archive this change before the merge

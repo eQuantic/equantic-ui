@@ -504,14 +504,14 @@ public class CodeEditorControllerTests
     public void EveryChangeRaisesTheEditThatCausedIt()
     {
         var editor = Editor("");
-        var edits = new List<CodeEdit?>();
-        editor.Changed += edits.Add;
+        var changes = new List<CodeChange>();
+        editor.Changed += changes.Add;
 
         editor.Insert("hello");
 
-        edits.Should().HaveCount(1);
-        edits[0]!.InsertedText.Should().Be("hello");
-        edits[0]!.RemovedText.Should().BeEmpty();
+        var edit = changes.Should().ContainSingle().Which.Edits.Should().ContainSingle().Which;
+        edit.InsertedText.Should().Be("hello");
+        edit.RemovedText.Should().BeEmpty();
     }
 
     [Fact]

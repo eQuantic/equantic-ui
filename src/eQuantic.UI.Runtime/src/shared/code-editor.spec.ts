@@ -95,9 +95,9 @@ describe('code surface (web)', () => {
     editor.selection = new CodeRange(new CodePosition(1, 1));
     const heard: string[] = [];
     const listeners = editor.changed;
-    editor.changed = (edit) => {
-      listeners?.(edit);
-      heard.push(`${edit!.removedText}>${edit!.insertedText}`);
+    editor.changed = (change) => {
+      listeners?.(change);
+      heard.push(change.edits.map((edit) => `${edit.removedText}>${edit.insertedText}`).join(', '));
     };
 
     expect(press(lowered, 'ArrowUp', { alt: true }), 'the editor claims ⌥↑').toBe(true);
@@ -106,7 +106,7 @@ describe('code surface (web)', () => {
 
     expect(editor.document.text, 'one undo takes the whole move back').toBe('one\ntwo\nthree');
     expect([editor.caret.line, editor.caret.column]).toEqual([1, 1]);
-    expect(heard, 'the move and its undo, two replacements each').toEqual(['>one\n', 'one\n>', '>one\n', 'one\n>']);
+    expect(heard, 'the move and its undo, one change of two replacements each').toEqual(['>one\n, one\n>', '>one\n, one\n>']);
   });
 
   it('types through an input of its own, which says what it is', () => {

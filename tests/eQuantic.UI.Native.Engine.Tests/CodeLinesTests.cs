@@ -76,15 +76,17 @@ public class CodeLinesTests : IDisposable
 
     /// <summary>
     /// A move is the line it passes written on the block's other side and deleted where it was: two
-    /// replacements, one undo step, and every replacement heard, through the move, its undo and its redo,
-    /// in the order made, once the step is made (#1031).
+    /// replacements, one undo step, and every replacement heard, through the move, its undo and its redo, in
+    /// the order made, in one change once the step is made (#1031).
     /// </summary>
     [Fact]
-    public void AMove_IsTwoReplacementsInOneStep_EachOneHeard()
+    public void AMove_IsTwoReplacementsInOneStep_HeardAsOneChange()
     {
         var editor = Editor("one\ntwo\nthree", At(1, 1));
         var heard = new List<string>();
-        editor.Changed += edit => heard.Add($"{edit!.Range.Start}-{edit.Range.End} {edit.RemovedText.Replace("\n", "|")}>{edit.InsertedText.Replace("\n", "|")} {editor.Document.Text.Replace("\n", "|")}");
+        editor.Changed += change => heard.Add(
+            string.Join(", ", change.Edits.Select(edit => $"{edit.Range.Start}-{edit.Range.End} {edit.RemovedText.Replace("\n", "|")}>{edit.InsertedText.Replace("\n", "|")}"))
+            + $" {editor.Document.Text.Replace("\n", "|")}");
 
         Press(editor, "ArrowUp", KeyModifiers.Alt).Should().BeTrue();
         editor.Document.Text.Should().Be("two\none\nthree");
@@ -96,12 +98,9 @@ public class CodeLinesTests : IDisposable
         editor.Selection.Should().Be(new CodeRange(At(0, 1)));
 
         heard.Should().Equal(
-            "2:0-2:0 >one| two|one|three",
-            "0:0-1:0 one|> two|one|three",
-            "0:0-0:0 >one| one|two|three",
-            "2:0-3:0 one|> one|two|three",
-            "2:0-2:0 >one| two|one|three",
-            "0:0-1:0 one|> two|one|three");
+            "2:0-2:0 >one|, 0:0-1:0 one|> two|one|three",
+            "0:0-0:0 >one|, 2:0-3:0 one|> one|two|three",
+            "2:0-2:0 >one|, 0:0-1:0 one|> two|one|three");
     }
 
     /// <summary>
@@ -164,6 +163,31 @@ public class CodeLinesTests : IDisposable
     }
 
     /// <summary>
+    /// A problem reported while a step is heard, as a listener that checks the text on every change reports
+    /// one, stands where it was reported: the step is heard as one change once it is made, so nothing of it
+    /// is left to carry the report through. Heard a replacement at a time, the move's second replacement
+    /// took a problem reported over the moved line during the first, against the text the move left, to the
+    /// line's start (Copilot, #1058).
+    /// </summary>
+    [Fact]
+    public void AProblemReportedWhileAStepIsHeard_StandsWhereItWasReported()
+    {
+        var editor = Editor("one\ntwo\nthree", At(1, 1));
+        var reported = false;
+        editor.Changed += _ =>
+        {
+            if (reported) return;
+            reported = true;
+            editor.Diagnostics.Report([new CodeDiagnostic(new CodeRange(At(0, 0), At(0, 3)), "two")]);
+        };
+
+        Press(editor, "ArrowUp", KeyModifiers.Alt).Should().BeTrue();
+
+        editor.Document.Text.Should().Be("two\none\nthree");
+        editor.Diagnostics.Items.Single().Range.Should().Be(new CodeRange(At(0, 0), At(0, 3)));
+    }
+
+    /// <summary>
     /// A problem of no width at a moved line's end, where Roslyn reports a missing semicolon, stays on that
     /// line through the move, its undo and its redo: a move never writes text where the block's lines start
     /// or end. Written after the block's last line, the passed line took the problem with it (Copilot,
@@ -204,7 +228,7 @@ public class CodeLinesTests : IDisposable
         Press(editor, "ArrowUp", KeyModifiers.Alt).Should().BeTrue();
         editor.Selection = new CodeRange(At(2, 3));
         var heard = new List<CodeEdit>();
-        editor.Changed += edit => heard.Add(edit!);
+        editor.Changed += change => heard.AddRange(change.Edits);
 
         editor.Undo().Should().BeTrue();
         heard.Should().OnlyContain(edit => edit.SelectionBefore == new CodeRange(At(2, 3)) && edit.SelectionAfter == new CodeRange(At(1, 1)));

@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeDocument, CodeEdit, CodeEditorController, CodePosition, CodeSignature, CodeSignatureContext, CodeSignatureHelp, ProviderRequest, TimeSpan, UiThread } from "../runtime-exports";
+import { $eq, CancellationToken, CancellationTokenSource, CodeChange, CodeDocument, CodeEditorController, CodePosition, CodeSignature, CodeSignatureContext, CodeSignatureHelp, ProviderRequest, TimeSpan, UiThread } from "../runtime-exports";
 
 export class CodeSignatureHelpSession {
     constructor(editor: CodeEditorController) {
@@ -104,8 +104,8 @@ export class CodeSignatureHelpSession {
         this.ask(($n32 = new CodeSignatureContext('contentChange'), $n32.isRetrigger = this.isOpen, $n32.active = this.shown(), $n32), true);
     }
 
-    edited(edit: CodeEdit | null) {
-        if (edit == null) this.dismiss();
+    edited(change: CodeChange) {
+        if (change.replaced) this.dismiss();
     }
 
     shown() {

@@ -112,9 +112,9 @@ public sealed class CodeDiagnostics
 
     /// <summary>An edit carries every problem through it and asks again once typing pauses; a document
     /// replaced whole drops them and asks at once.</summary>
-    private void Edited(CodeEdit? edit)
+    private void Edited(CodeChange change)
     {
-        if (edit is null)
+        if (change.Replaced)
         {
             _reported = [];
             _answered.Clear();
@@ -122,14 +122,24 @@ public sealed class CodeDiagnostics
             _ = Ask(wait: false);
             return;
         }
-        _reported = _reported.Select(problem => problem with { Range = edit.Carry(problem.Range) }).ToList();
+        _reported = Carried(_reported, change);
         for (var i = 0; i < _answered.Count; i++)
         {
             var (provider, problems) = _answered[i];
-            _answered[i] = (provider, problems.Select(problem => problem with { Range = edit.Carry(problem.Range) }).ToList());
+            _answered[i] = (provider, Carried(problems, change));
         }
         Gather();
         _ = Ask(wait: true);
+    }
+
+    /// <summary><paramref name="problems"/> where they stand once <paramref name="change"/> is made: through
+    /// each of its edits, in the order made.</summary>
+    private static List<CodeDiagnostic> Carried(List<CodeDiagnostic> problems, CodeChange change)
+    {
+        var carried = problems;
+        foreach (var edit in change.Edits)
+            carried = carried.Select(problem => problem with { Range = edit.Carry(problem.Range) }).ToList();
+        return carried;
     }
 
     // ---- asking -----------------------------------------------------------------------------------

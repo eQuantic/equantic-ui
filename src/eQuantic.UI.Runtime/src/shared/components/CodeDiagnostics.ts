@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeDiagnostic, CodeDocument, CodeEdit, CodeEditorController, CodePosition, CodeRange, ProviderRequest, TimeSpan, UiThread } from "../runtime-exports";
+import { $eq, CancellationToken, CancellationTokenSource, CodeChange, CodeDiagnostic, CodeDocument, CodeEditorController, CodePosition, CodeRange, ProviderRequest, TimeSpan, UiThread } from "../runtime-exports";
 
 export class CodeDiagnostics {
     constructor(editor: CodeEditorController) {
@@ -59,21 +59,27 @@ export class CodeDiagnostics {
         return next;
     }
 
-    edited(edit: CodeEdit | null) {
-        if (edit == null) {
+    edited(change: CodeChange) {
+        if (change.replaced) {
             this._reported = [];
             this._answered.splice(0);
             this.gather();
             this.ask(false);
             return;
         }
-        this._reported = this._reported.map((problem) => $eq.withPatch(problem, { range: edit.carry(problem.range) })).slice();
+        this._reported = CodeDiagnostics.carried(this._reported, change);
         for (let i = 0; i < this._answered.length; i++) {
             let [provider, problems] = this._answered[i];
-            this._answered[i] = [provider, problems.map((problem) => $eq.withPatch(problem, { range: edit.carry(problem.range) })).slice()];
+            this._answered[i] = [provider, CodeDiagnostics.carried(problems, change)];
         }
         this.gather();
         this.ask(true);
+    }
+
+    static carried(problems: CodeDiagnostic[], change: CodeChange) {
+        let carried = problems;
+        for (const edit of change.edits) carried = carried.map((problem) => $eq.withPatch(problem, { range: edit.carry(problem.range) })).slice();
+        return carried;
     }
 
     async ask(wait: boolean) {

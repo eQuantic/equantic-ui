@@ -126,7 +126,7 @@ public class CodeClipboardTests
     {
         var editor = At("abc", 0, 1);
         CodeEdit? heard = null;
-        editor.Changed += edit => heard = edit;
+        editor.Changed += change => heard = change.Edits.Single();
 
         editor.Paste("x\r\ny\rz");
 

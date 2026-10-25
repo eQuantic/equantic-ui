@@ -20,9 +20,9 @@ For a developer using the SDK, and for the person typing in the editor it gives 
   text's problem is, until a provider answers again: of the two sides one is written anew, and it is the
   side the selection is not on.
 - An undo step is the edits a command made, in the order it made them. Undo takes them back last first,
-  redo makes them again first first, and the editor raises `Changed` for each replacement either way, so
-  a listener that carries ranges through edits (the problems, a language server) sees what happened, one
-  replacement at a time, as it already does for a single edit.
+  redo makes them again first first, and the editor raises `Changed` once for the step either way, with
+  every replacement in the order made, so a listener that carries ranges through edits (the problems, a
+  language server) sees what happened once it has happened, as a language server's `didChange` does.
 - `CodeHistory.Record` takes the edits of one step, and `CodeHistory.Undo` and `Redo` answer the
   replacements they made, where they answered one range replaced and one written. A typed character still
   joins the run of typing before it, a step of one edit, as today.
@@ -34,8 +34,10 @@ For a developer using the SDK, and for the person typing in the editor it gives 
 
 The parts it reaches: the engine (`eQuantic.UI.Code`: `CodeHistory`, the controller's undo and redo, the
 move), eqc (`OutParameters`), and through the twins both realizers. The public surface moves: `CodeHistory.Undo` and `Redo`
-change their shape, and `CodeHistory.Record` takes a list. No app in this repository calls them; the
-migration line is "an app that drove `CodeHistory` itself reads the replacements `Undo` answers".
+change their shape, `CodeHistory.Record` takes a list, and `CodeEditorController.Changed` carries a
+`CodeChange`, the edits of one change, where it carried one `CodeEdit` or null. No app in this repository
+calls them; the migration lines are "an app that drove `CodeHistory` itself reads the replacements `Undo`
+answers" and "a listener of `Changed` reads `change.Edits`, and `change.Replaced` where it read null".
 
 ## Capabilities
 
@@ -44,3 +46,5 @@ migration line is "an app that drove `CodeHistory` itself reads the replacements
 - `code-history`: an undo step holds the edits a command made, undo and redo raise each, and a typed
   character joins a run as before.
 - `code-lines`: a move is the passed line moving, so the moved lines keep their problems.
+- `code-editor`: `Changed` carries a change, the edits an undo or a redo made, and a document replaced
+  whole is a change with no edits.

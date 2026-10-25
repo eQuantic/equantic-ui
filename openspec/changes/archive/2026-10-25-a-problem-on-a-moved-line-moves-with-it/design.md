@@ -27,14 +27,17 @@ no listener understands (a language server speaks replacements, as LSP's content
   edits go through the one door, `Edit`, one after another, each bringing the colours and the widths up to
   date as it is made, and the scope records what they made as one step, then raises them. An edit outside
   a scope is a step of its own, as today.
-- **`Changed` is raised for each replacement**, through an edit, an undo and a redo, and for a step's once
-  all are made, in the order made, each with the selection the step found and the one it left, as VS Code
-  raises one content change for all of an operation's changes once the model holds them. Raised as each
-  was made, a listener that edited in between moved the text the next replacement's range had been taken
-  from, and that replacement deleted the wrong line (Copilot's first round on #1058). An edit a listener
-  makes while it hears them waits for them, and every listener hears it after them, so a listener that
-  carries ranges never hears an edit before the replacements made ahead of it. A listener already handles
-  one replacement at a time; it hears more of them, never a new shape.
+- **`Changed` is raised once per change, with its replacements** (`CodeChange`), through an edit, a step,
+  an undo and a redo, once all are made, in the order made, each with the selection the change found and
+  the one it left, as VS Code raises one content change event with all of an operation's changes once the
+  model holds them, and as a language server's `didChange` carries an array. Raised as each was made, a
+  listener that edited in between moved the text the next replacement's range had been taken from, and
+  that replacement deleted the wrong line (Copilot's first round on #1058). Raised one at a time once the
+  step was made, a listener that read the text while it heard the first reported a problem against the
+  step's result, which the rest of the step then carried off it (the second round). A change a listener
+  makes while it hears one waits for it, and every listener hears it after it. The event's shape moves
+  from one `CodeEdit` to a `CodeChange`, and a document replaced whole, which was null, is a change with
+  no edits, `Replaced`.
 - **The selection a step leaves** is the last edit's, and the one it found the first edit's, as for one
   edit today.
 - **The typing run coalesces steps of one typed edit**, as today: a step of several edits never joins one.

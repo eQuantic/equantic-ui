@@ -12,8 +12,8 @@ namespace eQuantic.UI.Code;
 /// that wants to drive the editor from its own menu, its own key map or its own language server.
 /// </para>
 /// <para>
-/// The app owns an instance. Every mutation raises <see cref="Changed"/> with the <see cref="CodeEdit"/>
-/// that caused it, which is what a dirty flag, a language server and a diff all subscribe to —
+/// The app owns an instance. Every mutation raises <see cref="Changed"/> with the <see cref="CodeChange"/>
+/// that made it, which is what a dirty flag, a language server and a diff all subscribe to —
 /// never to keystrokes, because a paste and a refactor are edits nobody typed.
 /// </para>
 /// <para>
@@ -53,7 +53,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             Highlighter.Invalidate();
             History.Clear();
             _revealVersion++;
-            Raise([null], moved: false);
+            Raise(new CodeChange([], Replaced: true), moved: false);
         }
     }
 
@@ -161,14 +161,13 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     public bool TabMovesFocus { get; set; }
 
     /// <summary>
-    /// Raised after every change, with the edit that caused it — null when the whole document was
-    /// replaced. THE event an IDE builds on. A command that makes several replacements, a line moved or
-    /// the undo of one, raises one for each once all are made, in the order made, each range where the
-    /// replacements before it left the text, as a language server's content changes are, and each with
-    /// the selection the command found and the one it left. An edit a listener makes while it hears one
-    /// is heard after the ones already made, by every listener.
+    /// Raised after every change, once, with the edits that made it (<see cref="CodeChange"/>): one for
+    /// a character typed, two for a line moved, and as many as it took back for an undo, in the order
+    /// made, each with the selection the change found and the one it left. THE event an IDE builds on.
+    /// The document is the change's result by the time it is raised. A change a listener makes while it
+    /// hears one is heard after it, by every listener.
     /// </summary>
-    public event Action<CodeEdit?>? Changed;
+    public event Action<CodeChange>? Changed;
 
     /// <summary>Raised when the caret or selection moved, however it moved.</summary>
     public event Action<CodeRange>? SelectionChanged;
@@ -757,7 +756,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         _desiredCell = -1;
         var edit = new CodeEdit(ordered, removed, next.TextIn(new CodeRange(ordered.Start, caret)), before,
             _selection, false);
-        Raise([edit]);
+        Raise(new CodeChange([edit]));
         return new CodeRange(ordered.Start, caret);
     }
 
@@ -887,7 +886,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         else
         {
             History.Record([edit]);
-            Raise([edit]);
+            Raise(new CodeChange([edit]));
         }
         return true;
     }
@@ -899,12 +898,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <summary>
     /// Runs <paramref name="edits"/>, which make their edits through <see cref="Edit"/> one after another,
     /// and records what they made as one undo step, which undo takes back last first. Each edit brings the
-    /// colours and the widths up to date as it is made, and <see cref="Changed"/> is raised for each once
-    /// all are made, in the order made: a listener that edits while it hears one makes its edit on the text
-    /// the step left, as a step of its own, where, raised in between, its edit moved the text the next
-    /// edit's range was taken from, and that edit deleted the wrong line. Answers what
-    /// <paramref name="edits"/> answers, or true once any edit is made; inside another step, it is part of
-    /// that one.
+    /// colours and the widths up to date as it is made, and <see cref="Changed"/> is raised once all are
+    /// made, with all of them: a listener that edits while it hears them makes its edit on the text the
+    /// step left, as a step of its own, where, raised in between, its edit moved the text the next edit's
+    /// range was taken from, and that edit deleted the wrong line. Answers what <paramref name="edits"/>
+    /// answers, or true once any edit is made; inside another step, it is part of that one.
     /// </summary>
     private bool AsOneStep(Func<bool> edits)
     {
@@ -921,27 +919,26 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         {
             _step = null;
             History.Record(step);
-            Raise(Heard(step, before));
+            if (step.Count > 0) Raise(new CodeChange(Heard(step, before)));
         }
     }
 
-    /// <summary>The replacements made and not heard yet, in the order made, while <see cref="Changed"/> is
-    /// being raised, and whether any of them moved the selection.</summary>
-    private readonly List<CodeEdit?> _unheard = [];
+    /// <summary>The changes made and not heard yet, in the order made, while <see cref="Changed"/> is being
+    /// raised, and whether any of them moved the selection.</summary>
+    private readonly List<CodeChange> _unheard = [];
     private bool _raising;
     private bool _unheardMoved;
 
     /// <summary>
-    /// Raises <see cref="Changed"/> for <paramref name="edits"/>, in order, and then, when
-    /// <paramref name="moved"/>, <see cref="SelectionChanged"/> once, with the selection as it stands. An
-    /// edit a listener makes while it hears them waits for them, and every listener hears it after them:
-    /// raised at once, the listeners after that one heard it before the replacement it answered, and
-    /// carried a range through the two in the wrong order.
+    /// Raises <see cref="Changed"/> with <paramref name="change"/>, and then, when <paramref name="moved"/>,
+    /// <see cref="SelectionChanged"/>, with the selection as it stands. A change a listener makes while it
+    /// hears one waits for it, and every listener hears it after it: raised at once, the listeners after
+    /// that one heard it before the change it answered, and carried a range through the two in the wrong
+    /// order.
     /// </summary>
-    private void Raise(IReadOnlyList<CodeEdit?> edits, bool moved = true)
+    private void Raise(CodeChange change, bool moved = true)
     {
-        if (edits.Count == 0) return;
-        _unheard.AddRange(edits);
+        _unheard.Add(change);
         _unheardMoved = _unheardMoved || moved;
         if (_raising) return;
         _raising = true;
@@ -962,9 +959,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <summary><paramref name="made"/> as a listener hears them: each with the selection the command found,
     /// <paramref name="before"/>, and the one it left, where each held the selection of the moment it was
     /// made, which no listener saw, or the selection the history recorded for it, long gone.</summary>
-    private List<CodeEdit?> Heard(IReadOnlyList<CodeEdit> made, CodeRange before)
+    private List<CodeEdit> Heard(IReadOnlyList<CodeEdit> made, CodeRange before)
     {
-        var heard = new List<CodeEdit?>();
+        var heard = new List<CodeEdit>();
         foreach (var edit in made) heard.Add(edit with { SelectionBefore = before, SelectionAfter = _selection });
         return heard;
     }
@@ -1843,9 +1840,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// Makes the replacements an undo or a redo made, one after another as the history made them, each
     /// bringing the colours and the widths up to date for the lines it touched, where both were thrown away
     /// and measured again over the whole file. Once all are made and the selection the step restores is in
-    /// place, each is raised as a step's edits are, so a listener that carries a range through an edit (a
-    /// problem's squiggle, a language server) hears every replacement, where it could only start over after
-    /// every undo, and one that edits as it hears them edits the text the step left.
+    /// place, they are raised as a step's edits are, one change, so a listener that carries a range through
+    /// an edit (a problem's squiggle, a language server) hears every replacement, where it could only start
+    /// over after every undo, and one that edits as it hears them edits the text the step left.
     /// </summary>
     private void Replay(IReadOnlyList<CodeEdit> made, CodeRange selection)
     {
@@ -1859,7 +1856,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         _selection = OnElementEdges(selection);
         _revealVersion++;
         _desiredCell = -1;
-        Raise(Heard(made, before));
+        Raise(new CodeChange(Heard(made, before)));
     }
 
     /// <summary>What every replacement brings up to date, an edit, a composition's step, an undo and a redo
