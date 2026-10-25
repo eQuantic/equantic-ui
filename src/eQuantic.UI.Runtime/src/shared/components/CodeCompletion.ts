@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeCompletionAnswer, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeCompletionMatch, CodeCompletionOffer, CodeCompletionRequest, CodeCompletionTriggerValue, CodeDocument, CodeEditorController, CodeFuzzyMatch, CodePosition, CodeRange, ProviderRequest, UiThread } from "../runtime-exports";
+import { $eq, CancellationToken, CancellationTokenSource, CodeChange, CodeCompletionAnswer, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeCompletionMatch, CodeCompletionOffer, CodeCompletionRequest, CodeCompletionTriggerValue, CodeDocument, CodeEdit, CodeEditorController, CodeFuzzyMatch, CodePosition, CodeRange, ProviderRequest, UiThread } from "../runtime-exports";
 
 export class CodeCompletion {
     constructor(editor: CodeEditorController) {
@@ -12,6 +12,7 @@ export class CodeCompletion {
         this._active = false;
         this._start = CodePosition.$zero();
         this._openedEmpty = false;
+        this._edits = [];
         this._requests = [];
         this._list = null;
         this.providers = [];
@@ -20,6 +21,7 @@ export class CodeCompletion {
         this.changed = null;
         this.failed = null;
         this._editor = editor;
+        editor.changed = $eq.delegates.combine(editor.changed, this.carry.bind(this));
         editor.selectionChanged = $eq.delegates.combine(editor.selectionChanged, (_) => this.follow());
     }
 
@@ -33,6 +35,7 @@ export class CodeCompletion {
     _active!: boolean;
     _start!: CodePosition;
     _openedEmpty!: boolean;
+    _edits!: CodeEdit[];
     _requests!: CodeCompletionRequest[];
     _list!: CancellationTokenSource | null;
     providers!: any[];
@@ -95,6 +98,7 @@ export class CodeCompletion {
     open(start: CodePosition, trigger: CodeCompletionTriggerValue, character: string | null, providers: any[]) {
         this.close(false);
         this._active = true;
+        this._edits.splice(0);
         this._start = start;
         this._openedEmpty = $eq.equals(start, this._editor.caret);
         this._list = $eq.cancellation.source();
@@ -104,9 +108,9 @@ export class CodeCompletion {
     ask(trigger: CodeCompletionTriggerValue, character: string | null, providers: any[], announce: boolean) {
         let document = this._editor.document;
         let position = this._editor.caret;
-        let $n9: any; 
-        let context = ($n9 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n9.character = character, $n9);
-        let askedLineLength = document.line(position.line).length;
+        let $n12: any; 
+        let context = ($n12 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n12.character = character, $n12);
+        let asked = this._edits.length;
         let word = this.word();
         let requests: CodeCompletionRequest[] = [];
         for (const provider of providers) {
@@ -121,10 +125,10 @@ export class CodeCompletion {
             requests.push(request);
         }
         if (announce) this.changed?.();
-        for (const request of requests) this.askOne(request, document, position, context, askedLineLength);
+        for (const request of requests) this.askOne(request, document, position, context, asked);
     }
 
-    async askOne(request: CodeCompletionRequest, document: CodeDocument, position: CodePosition, context: CodeCompletionContext, askedLineLength: number) {
+    async askOne(request: CodeCompletionRequest, document: CodeDocument, position: CodePosition, context: CodeCompletionContext, asked: number) {
         let list = CodeCompletionList.empty;
         let failure: Error | null = null;
         try {
@@ -137,7 +141,7 @@ export class CodeCompletion {
         }
         UiThread.run(() => {
             if (!(failure == null)) this.failed?.(failure);
-            this.deliver(request, new CodeCompletionAnswer(request.provider, request.word, askedLineLength, list));
+            this.deliver(request, new CodeCompletionAnswer(request.provider, request.word, asked, list));
         });
     }
 
@@ -241,8 +245,11 @@ export class CodeCompletion {
             if (listed[offer.group]) continue;
             let item = offer.item;
             let typed = word;
-            let replacing: any; 
-            if ((replacing = item.replacing) != null && replacing.start.line === caret.line && replacing.start.column !== this._start.column && replacing.start.column <= caret.column) typed = $eq.text.substring(line, replacing.start.column, caret.column - replacing.start.column);
+            let asked: any; 
+            if ((asked = item.replacing) != null) {
+                let replacing = offer.answer.carried(asked, this._edits);
+                if (replacing.start.line === caret.line && replacing.start.column !== this._start.column && replacing.start.column <= caret.column) typed = $eq.text.substring(line, replacing.start.column, caret.column - replacing.start.column);
+            }
             let filter = item.filterText ?? item.label;
             let match: any; 
             if (!((match = CodeFuzzyMatch.of(typed, filter)) != null)) continue;
@@ -309,6 +316,8 @@ export class CodeCompletion {
         let range = this.rangeOf(offer);
         let text = offer.item.insertText ?? offer.item.label;
         this.close(true);
+        let caret = this._editor.caret;
+        if (this._editor.hasOtherCarets && range.start.line === caret.line && range.end.line === caret.line) return this._editor.replaceAroundEveryCaret(caret.column - range.start.column, range.end.column - caret.column, text);
         if (this._editor.document.textIn(range) === text) {
             this._editor.selection = new CodeRange(range.end);
             return true;
@@ -335,6 +344,7 @@ export class CodeCompletion {
         this._list = null;
         let was = this._active;
         this._active = false;
+        this._edits.splice(0);
         this._answers.splice(0);
         this._candidates = [];
         this._groups = 0;
@@ -396,13 +406,20 @@ export class CodeCompletion {
 
     rangeOf(offer: CodeCompletionOffer) {
         let caret = this._editor.caret;
-        let line = this._editor.document.line(caret.line);
-        let replacing: any; 
-        if ((replacing = offer.item.replacing) != null && replacing.start.line === caret.line && replacing.end.line === caret.line && replacing.start.column <= caret.column) {
-            let fromLineEnd = Math.max(0, offer.answer.askedLineLength - replacing.end.column);
-            return new CodeRange(replacing.start, new CodePosition(caret.line, Math.max(caret.column, line.length - fromLineEnd)));
+        let asked: any; 
+        if ((asked = offer.item.replacing) != null) {
+            let replacing = offer.answer.carried(asked, this._edits);
+            if (replacing.start.line === caret.line && replacing.end.line === caret.line && replacing.start.column <= caret.column) return new CodeRange(replacing.start, CodePosition.opLessThan(replacing.end, caret) ? caret : replacing.end);
         }
         return new CodeRange(this._start, caret);
+    }
+
+    carry(change: CodeChange) {
+        if (!this._active) return;
+        for (const edit of change.edits) {
+            this._start = edit.carryAnchor(this._start);
+            this._edits.push(edit);
+        }
     }
 
     inCommentOrString(caret: CodePosition) {

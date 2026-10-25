@@ -657,12 +657,12 @@ public sealed class CodeEditor : StatefulComponent
             // hugging editor's viewport is its code, and taking its height as a floor would keep it
             // from ever shrinking.
             MinHeight = bounded ? _viewport : 0,
-            // The caret's line is washed while the editor holds it, and the selection is drawn under
-            // the text — the two pieces of state the read-only block cannot know about. Both are the
-            // ENGINE's measurements, on the grid handed to it above.
-            ActiveLine = editor.Caret.Line,
+            // Every caret's line is washed, and the selections are drawn under the text — the pieces of
+            // state the read-only block cannot know about. All are the ENGINE's measurements, on the grid
+            // handed to it above, and only for the lines the window builds.
+            ActiveLines = editor.CaretLinesIn(first, last),
             SelectionBands = editor.SelectionBandsIn(first, last),
-            Selection = editor.Selection,
+            Selections = editor.SelectionsIn(first, last),
             WidestLine = editor.WidestLine,
         };
 

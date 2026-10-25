@@ -178,4 +178,18 @@ public enum CodeCommand
     InsertLineAbove,
     /// <summary>A line opened below the caret's, indented as Enter indents.</summary>
     InsertLineBelow,
+
+    // ---- carets (#1012) ---------------------------------------------------------------------------------
+
+    /// <summary>A caret added on the line above every caret, at the cell it aims at.</summary>
+    AddCursorAbove,
+    /// <summary>A caret added on the line below every caret.</summary>
+    AddCursorBelow,
+    /// <summary>The word at every caret selected, and then the next occurrence of the primary's text added as
+    /// the primary, as ⌘D does.</summary>
+    AddNextOccurrence,
+    /// <summary>Every occurrence of the primary's text, or of the word at the caret, selected.</summary>
+    SelectAllOccurrences,
+    /// <summary>Every caret but the primary taken away. Claims nothing with one caret, so Escape goes on.</summary>
+    RemoveSecondaryCursors,
 }
