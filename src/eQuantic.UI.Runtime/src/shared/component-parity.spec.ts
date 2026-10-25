@@ -404,6 +404,7 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'name-box': still(new NameBox(editing())),
     'status-bar': still(new StatusBar(summing())),
     'status-bar-general': still(new StatusBar(summing('123456789012', '1', '2'))),
+    'status-bar-small': still(new StatusBar(summing('0.0000000001', '-0.0000000003', 'text'))),
     'popover-closed': still(
       new Popover(
         new Button('Info'),

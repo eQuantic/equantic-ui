@@ -181,6 +181,7 @@ public class ComponentParityFixtureTests
         ("name-box", new eQuantic.UI.Spreadsheets.NameBox(Editing()), NoPresses),
         ("status-bar", new eQuantic.UI.Spreadsheets.StatusBar(Summing()), NoPresses),
         ("status-bar-general", new eQuantic.UI.Spreadsheets.StatusBar(Summing("123456789012", "1", "2")), NoPresses),
+        ("status-bar-small", new eQuantic.UI.Spreadsheets.StatusBar(Summing("0.0000000001", "-0.0000000003", "text")), NoPresses),
         ("popover-closed", new Popover(new Button("Info"),
             new Text("the content", TypeRole.BodyM, Theme.TextPrimary), false), NoPresses),
         ("drawer-open", new Drawer(new Text("side", TypeRole.BodyM, Theme.TextPrimary), true), NoPresses),

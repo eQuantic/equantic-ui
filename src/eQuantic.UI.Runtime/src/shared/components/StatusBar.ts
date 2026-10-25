@@ -67,11 +67,21 @@ export class StatusBar extends StatefulComponent {
     }
 
     static general(value: Decimal) {
-        let whole = $eq.text.format(((value.compareTo($eq.num.dec(0)) < 0) ? value.neg() : value), '0', undefined, true).length;
-        let room = 11 - ((value.compareTo($eq.num.dec(0)) < 0) ? 1 : 0) - whole;
-        if (room < 0) return $eq.text.format(value, '0.#####E+00');
+        let negative = (value.compareTo($eq.num.dec(0)) < 0);
+        let scientific = negative ? '0.####E+00' : '0.#####E+00';
+        let whole = $eq.text.format((negative ? value.neg() : value), '0', undefined, true).length;
+        let room = 11 - (negative ? 1 : 0) - whole;
+        if (room < 0) return $eq.text.format(value, scientific);
         let places = Math.max(0, room - 1);
-        return $eq.text.format(value, places === 0 ? '0' : '0.' + '#'.repeat(places));
+        let fixedText = $eq.text.format(value, places === 0 ? '0' : '0.' + '#'.repeat(places));
+        if (value.equals($eq.num.dec(0))) return fixedText;
+        let scientificText = $eq.text.format(value, scientific);
+        return (StatusBar.lost(value, scientificText).compareTo(StatusBar.lost(value, fixedText)) < 0) ? scientificText : fixedText;
+    }
+
+    static lost(value: Decimal, text: string) {
+        let lost = value.sub($eq.num.decParse(text, 167));
+        return (lost.compareTo($eq.num.dec(0)) < 0) ? lost.neg() : lost;
     }
 
     static words(text: string, palette: SheetPalette) {

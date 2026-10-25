@@ -120,6 +120,28 @@ public class TableViewportGlideTests
     }
 
     [Fact]
+    public void AGlideTurnedOffAndOnAgain_StartsWhereTheMarkStands()
+    {
+        // Review of #1102: frames with no glide left the mark's tracks where the last glide ended, so turned on
+        // again it glided back from that old rectangle.
+        var (host, marks, _) = Open(reducedMotion: false, Cursor(2, 2, Glide));
+        DrawnX(host, 100);
+        marks[0] = Cursor(2, 3, Glide);
+        host.Invalidate();
+        DrawnX(host, 200);
+        DrawnX(host, 450).Should().BeApproximately(LeftOf(3), 1);
+
+        marks[0] = Cursor(2, 5, glide: null);
+        host.Invalidate();
+        DrawnX(host, 500).Should().BeApproximately(LeftOf(5), 1, "with no glide it jumps");
+
+        marks[0] = Cursor(2, 5, Glide);
+        host.Invalidate();
+        DrawnX(host, 600).Should().BeApproximately(LeftOf(5), 1, "turned on again, it starts where it stands");
+        DrawnX(host, 700).Should().BeApproximately(LeftOf(5), 1);
+    }
+
+    [Fact]
     public void AGridThatScrolls_CarriesAGlidingMarkAtOnce()
     {
         var (host, _, scroll) = Open(reducedMotion: false, Cursor(2, 4, Glide));

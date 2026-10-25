@@ -368,6 +368,29 @@ public class SpreadsheetBarsTests
         texts.Item2.Should().Contain("Soma: 1,2358E+11", "a sum past eleven characters is written in scientific notation");
     }
 
+    /// <summary>Review of #1102: the places wrote a sum of two ten-billionths as `0`. General writes the form
+    /// that keeps more of the value, and a minus takes a digit from the mantissa.</summary>
+    [Theory]
+    [InlineData("0.0000000001", "0.0000000001", "Sum: 2E-10", "Average: 1E-10")]
+    [InlineData("-0.0000000001", "-0.0000000003", "Sum: -4E-10", "Average: -2E-10")]
+    [InlineData("-123456789012", "-1", "Sum: -1.2346E+11", "Average: -6.1728E+10")]
+    [InlineData("0.0001234", "0", "Sum: 0.0001234", "Average: 0.0000617")]
+    public void TheStatusBar_WritesASmallOrNegativeNumber_AsExcelsGeneralDoes(string first, string second,
+        string sum, string average)
+    {
+        var texts = InCulture("en-US", () =>
+        {
+            var (host, sheet) = Open();
+            sheet.Document.SetCell(B2, first);
+            sheet.Document.SetCell(new CellRef(2, 1), second);
+            Click(host, sheet, B2, 32);
+            host.KeyDown("ArrowDown", KeyModifiers.Shift);
+            return Texts(Frame(host, 48));
+        });
+
+        texts.Should().Contain([sum, average]);
+    }
+
     [Fact]
     public void AKeyBeforeText_IsTheSheetsAlone_NeverAnAppShortcut()
     {
