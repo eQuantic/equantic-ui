@@ -293,31 +293,35 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
     private void Center(CodePosition position, bool onlyOutside)
     {
-        if (_view.Height <= 0) return;
         var caret = CaretRect(_document.Clamp(position));
-        var inView = caret.Y >= _view.Y && caret.Y + caret.Height <= _view.Y + _view.Height;
-        if (onlyOutside && inView) return;
+        // Down only in a view that scrolls down: an editor as tall as its code is all on screen, its page
+        // scrolling instead. Across in any view whose width is known.
+        float? top = null;
+        if (_view.Height > 0)
+        {
+            var inView = caret.Y >= _view.Y && caret.Y + caret.Height <= _view.Y + _view.Height;
+            if (onlyOutside && inView) return;
+            top = MathF.Max(0, caret.Y + caret.Height / 2 - _view.Height / 2);
+        }
         float? left = null;
         if (_view.Width > 0)
         {
             if (caret.X < _view.X) left = caret.X;
             else if (caret.X + caret.Width > _view.X + _view.Width) left = caret.X + caret.Width - _view.Width;
         }
-        Scroll(MathF.Max(0, caret.Y + caret.Height / 2 - _view.Height / 2), left);
+        Scroll(top, left);
     }
 
     /// <summary>Asks the view to stand where <paramref name="view"/> stood: what closing the go-to field gives
-    /// back. An empty one, a view never known, asks nothing.</summary>
-    internal void ScrollTo(Rect view)
-    {
-        if (view.Height <= 0) return;
-        Scroll(view.Y, view.X);
-    }
+    /// back, down where it scrolls down and across where its width is known. A view never known asks nothing.</summary>
+    internal void ScrollTo(Rect view) =>
+        Scroll(view.Height > 0 ? view.Y : null, view.Width > 0 ? view.X : null);
 
-    private void Scroll(float top, float? left)
+    private void Scroll(float? top, float? left)
     {
+        if (top is null && left is null) return;
         _scrollVersion++;
-        VerticalScroll = new ScrollRequest(_scrollVersion) { Offset = top };
+        if (top is { } down) VerticalScroll = new ScrollRequest(_scrollVersion) { Offset = down };
         if (left is { } across) HorizontalScroll = new ScrollRequest(_scrollVersion) { Offset = across };
         ScrollRequested?.Invoke();
     }
@@ -1143,6 +1147,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         {
             case PointerPhase.Down:
             {
+                // A press in the code while the go-to field shows closes it where the view stands, and lands
+                // where the person pointed (#1083).
+                GoTo.Dismiss();
                 // A press closes a card, as it does in every editor, even one that leaves the caret
                 // where it was, and ends a chord half typed.
                 Hover.Dismiss();

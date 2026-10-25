@@ -202,7 +202,7 @@ export class CodeEditor extends StatefulComponent {
             let centred = new Row(0, 'center', 'center', false, null, null, { width: SizeValue.fill });
             centred.add(CodeGoToView.build(context, editor, metrics, width, this._goToTop, (typed: string) => this.setState(() => goTo.query = typed), () => this.setState(() => {
                 if (goTo.accept()) this.notify(editor);
-            }), () => this.setState(() => goTo.close()), (index: number) => this.setState(() => {
+            }), () => this.setState(() => goTo.dismiss()), (index: number) => this.setState(() => {
                 goTo.select(index);
                 if (goTo.accept()) this.notify(editor);
             })));

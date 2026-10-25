@@ -404,6 +404,60 @@ public class CodeNavigationTests : IDisposable
         editor.Selection.Should().Be(Caret(21, 0));
     }
 
+    /// <summary>
+    /// A press in the code while the field shows closes it where the view stands and lands where the person
+    /// pointed, as a click in VS Code's editor hides its quick input: the field's scrim took the press, gave
+    /// the view back and left the caret where it was.
+    /// </summary>
+    [Fact]
+    public void APressInTheCode_ClosesTheFieldWhereTheViewStands_AndLandsWherePointed()
+    {
+        var editor = Editor(lines: 200);
+        editor.GoTo.Open(CodeGoToMode.Line);
+        editor.GoTo.Query = ":120";
+        var centred = editor.VerticalScroll;
+        editor.View = new Rect(0, centred!.Offset, 400, 300);
+
+        editor.HandlePointer(PointerPhase.Down, new Point(4, 125 * 20 + 5), KeyModifiers.None, 1).Should().BeTrue();
+        editor.HandlePointer(PointerPhase.Up, new Point(4, 125 * 20 + 5), KeyModifiers.None, 1);
+
+        editor.GoTo.IsOpen.Should().BeFalse();
+        editor.VerticalScroll.Should().Be(centred, "no view is given back");
+        editor.Selection.Should().Be(Caret(125, 0));
+    }
+
+    [Fact]
+    public void Dismissing_LeavesTheViewAndTheCaret()
+    {
+        var editor = Editor();
+        editor.GoTo.Open(CodeGoToMode.Line);
+        editor.GoTo.Query = ":80";
+        var centred = editor.VerticalScroll;
+
+        editor.GoTo.Dismiss().Should().BeTrue();
+
+        editor.GoTo.IsOpen.Should().BeFalse();
+        editor.VerticalScroll.Should().Be(centred);
+        editor.Selection.Should().Be(Caret(2, 0));
+        editor.GoTo.Dismiss().Should().BeFalse();
+    }
+
+    /// <summary>An editor as tall as its code scrolls only across, and Escape gives that back too.</summary>
+    [Fact]
+    public void AViewThatScrollsOnlyAcross_IsGivenBackAcross()
+    {
+        var editor = Editor();
+        editor.View = new Rect(64, 0, 400, 0);
+        editor.GoTo.Open(CodeGoToMode.Line);
+        editor.GoTo.Query = ":40";
+
+        editor.HorizontalScroll!.Offset.Should().Be(0, "line 40's start is left of the view");
+        editor.GoTo.Close();
+
+        editor.HorizontalScroll!.Offset.Should().Be(64);
+        editor.VerticalScroll.Should().BeNull("the view does not scroll down");
+    }
+
     [Fact]
     public void OpeningTheField_ClosesWhatWasOverTheCode()
     {

@@ -51,6 +51,6 @@
 
 ## 9. Proof and documentation
 
-- [ ] 9.1 The dashboard sample's code screen offers its symbols, and the field is driven in a browser
+- [x] 9.1 The dashboard sample's code screen offers its symbols, and the field is driven in a browser
 - [x] 9.2 The wiki's CodeEditor page in its five languages, docs/CODE-EDITOR-PLAN.md, and a ledger entry citing #1083
 - [ ] 9.3 The change archived before the merge

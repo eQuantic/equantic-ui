@@ -4,14 +4,16 @@ export class CodeGoToView {
     static maxWidth: number = 560;
     static pageRows: number = 10;
 
-    static build(context: BuildContext, editor: CodeEditorController, metrics: CodeBlock$CodeMetrics, width: number, top: number, typed: (string: string) => void, accept: () => void, close: () => void, pick: (int: number) => void) {
+    static build(context: BuildContext, editor: CodeEditorController, metrics: CodeBlock$CodeMetrics, width: number, top: number, typed: (string: string) => void, accept: () => void, dismiss: () => void, pick: (int: number) => void) {
         let goTo = editor.goTo;
         let theme = context.theme;
         let listed = goTo.mode === 'symbol' && $eq.collections.count(goTo.entries) > 0;
-        let field = new TextEntry(goTo.query, typed, { label: SdkStrings.goTo, placeholder: SdkStrings.goToStart, autofocus: true, onSubmit: accept });
+        let field = new TextEntry(goTo.query, typed, { label: SdkStrings.goTo, placeholder: SdkStrings.goToStart, autofocus: true, onSubmit: accept, onFocusChanged: (focused: boolean) => {
+            if (!focused) dismiss();
+        } });
         let panel = listed ? CodeGoToView.list(theme, metrics, goTo, width, top, pick) : CodeGoToView.said(theme, metrics, CodeGoToView.saying(editor));
         let coated = new Box(new BoxStyle({ width: SizeValue.fill, background: theme.surface, borderWidth: 1, borderColor: theme.border, cornerRadius: new CornerRadii(theme.shape('medium')), padding: EdgeInsets.symmetric(8, 4), shadow: theme.elevation(2) }), field);
-        return new Box(new BoxStyle({ width: width }), new Anchored(coated, panel, { open: true, panelRole: listed ? 'listbox' : 'none', activeIndex: listed ? goTo.selected - top : -1, matchAnchorWidth: true, onDismiss: close }));
+        return new Box(new BoxStyle({ width: width }), new Anchored(coated, panel, { open: true, panelRole: listed ? 'listbox' : 'none', activeIndex: listed ? goTo.selected - top : -1, matchAnchorWidth: true }));
     }
 
     static saying(editor: CodeEditorController) {

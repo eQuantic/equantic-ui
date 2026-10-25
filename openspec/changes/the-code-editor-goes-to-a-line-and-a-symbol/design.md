@@ -110,5 +110,11 @@ after the first frame), so no component can scroll its own view again.
   brings the target into view.
 - Two scrolls on an accept: the component's centring and the host's reveal of the caret. → The host's
   reveal is by the least movement, so after the centring it finds the caret in view and moves nothing.
+- On the web a caret moved in the frames before a request (a press, then ⌃G and a digit within about 50 ms)
+  is revealed after it: the reveal is scheduled two frames and 48 ms after its render, and the request is
+  applied as its own render is written, so the view goes back to the caret. → Out of a person's reach,
+  since the field is not drawn before the frame after ⌃G; a script typing at machine speed meets it.
+  Cancelling a reveal from an earlier render when a request lands would need render passes the lowering
+  does not number today.
 - A symbol list of thousands of entries. → It is filtered in memory on each keystroke by a matcher that
   allocates nothing per entry, and only a page of it is built.

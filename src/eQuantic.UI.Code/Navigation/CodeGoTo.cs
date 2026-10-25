@@ -159,7 +159,7 @@ public sealed class CodeGoTo
     }
 
     /// <summary>Closes the field, gives back the view it opened over and the keyboard to the code, and leaves
-    /// the selection where it was. Answers whether it was open.</summary>
+    /// the selection where it was: Escape. Answers whether it was open.</summary>
     public bool Close()
     {
         if (!_open) return false;
@@ -211,6 +211,19 @@ public sealed class CodeGoTo
     /// <summary>Text that reaches the code while the field shows, typed or pasted before the field had the
     /// keyboard: it goes on the field's text, its line breaks left out.</summary>
     internal void Type(string text) => Query = _query + text.Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal);
+
+    /// <summary>
+    /// Closes the field where the view stands, the selection and the keyboard wherever they are: what a press
+    /// elsewhere does, the code included, as VS Code's quick input hides when it loses the keyboard. A press in
+    /// the code lands where the person pointed, on the code the preview showed. Answers whether it was open.
+    /// </summary>
+    public bool Dismiss()
+    {
+        if (!_open) return false;
+        End();
+        Changed?.Invoke();
+        return true;
+    }
 
     /// <summary>A new document: the field closes, with nothing to give back.</summary>
     internal void Reset()

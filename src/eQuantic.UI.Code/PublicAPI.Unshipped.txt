@@ -429,3 +429,4 @@ eQuantic.UI.Code.CodeJumpList.CanGoBack.get -> bool
 eQuantic.UI.Code.CodeJumpList.CanGoForward.get -> bool
 eQuantic.UI.Code.CodeJumpList.Back() -> bool
 eQuantic.UI.Code.CodeJumpList.Forward() -> bool
+eQuantic.UI.Code.CodeGoTo.Dismiss() -> bool

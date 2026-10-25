@@ -71,5 +71,8 @@ public class ScrollRequestTests
 
         asked.Ask(new ScrollRequest(2) { Offset = 5000 });
         ScrolledBy(host.RenderFrame(new DisplayListBuilder())).Should().Be(600, "a request past the end goes to the end");
+        asked.Reported.Should().Be(600, "and says where it went");
+        host.ScrollBy(Width / 2, Height / 2, 0, -100).Should().BeTrue();
+        ScrolledBy(host.RenderFrame(new DisplayListBuilder())).Should().Be(500, "the wheel moves from the end it stands at");
     }
 }

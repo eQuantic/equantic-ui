@@ -66,7 +66,7 @@ public sealed class ScrollClock
     {
         if (!Smooth || MathF.Abs(velocity) < 0.05f) return false;
         if (NodeStates.For<ScrollState>(at) is not { } view) return false;
-        var current = view.Offset ?? 0;
+        var current = Math.Clamp(view.Offset ?? 0, 0, MathF.Max(0, maxOffset));
         var target = Math.Clamp(current + velocity * FlingReach, 0, MathF.Max(0, maxOffset));
         if (target == current) return false;
         Glide(view, target);
@@ -78,7 +78,9 @@ public sealed class ScrollClock
     public bool ScrollBy(Element at, float delta, float maxOffset, float fallback = 0)
     {
         if (NodeStates.For<ScrollState>(at) is not { } view) return false;
-        var current = view.Offset ?? fallback;
+        // Where the view stands: an offset an app asked for past the end (ScrollView.Request) is kept as asked
+        // and stands at the end, and the wheel moves from there.
+        var current = Math.Clamp(view.Offset ?? fallback, 0, MathF.Max(0, maxOffset));
         var from = Smooth && view.Target is { } pending ? pending : current;
         var next = Math.Clamp(from + delta, 0, MathF.Max(0, maxOffset));
 

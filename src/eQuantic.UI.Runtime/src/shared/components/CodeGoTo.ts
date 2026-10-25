@@ -173,6 +173,13 @@ export class CodeGoTo {
         return this.query = this._query + $eq.text.replace($eq.text.replace(text, '\r', '', 'ordinal'), '\n', '', 'ordinal');
     }
 
+    dismiss() {
+        if (!this._open) return false;
+        this.end();
+        this.changed?.();
+        return true;
+    }
+
     reset() {
         if (!this._open) return;
         this.end();
@@ -371,8 +378,8 @@ export class CodeGoTo {
                     }
                 }
             }
-            let $n48: any; 
-            found.push(($n48 = new CodeGoToEntry(name, symbol.kind, symbol.range, symbol.selectionRange.start), $n48.container = container, $n48.deprecated = symbol.deprecated, $n48.matches = matches, $n48.containerMatches = containerMatches, $n48));
+            let $n49: any; 
+            found.push(($n49 = new CodeGoToEntry(name, symbol.kind, symbol.range, symbol.selectionRange.start), $n49.container = container, $n49.deprecated = symbol.deprecated, $n49.matches = matches, $n49.containerMatches = containerMatches, $n49));
             scores.push(score);
         }
         let order: number[] = [];

@@ -54,7 +54,13 @@ the selection unmoved, and Enter SHALL select the start of its `SelectionRange`.
 
 Escape in the go-to field SHALL close it, scroll the view back to where it stood when the field opened,
 leave the selection as it was and give the code the keyboard. Accepting SHALL close it too, and with no
-entry to go to SHALL do nothing.
+entry to go to SHALL do nothing. A press in the code, and the field losing the keyboard, SHALL close it where
+the view stands, the press landing where the person pointed.
+
+#### Scenario: A press in the code
+
+- **WHEN** the view shows lines 1 to 30, ⌃G is pressed, `120` typed and line 125 pressed
+- **THEN** the field is closed, the view still shows line 120 in its middle, and the caret is on line 125
 
 #### Scenario: A preview abandoned
 

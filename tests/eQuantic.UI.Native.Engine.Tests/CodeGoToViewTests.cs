@@ -108,6 +108,22 @@ public class CodeGoToViewTests : IDisposable
         All<Text>(anchored.Panel).Select(text => text.Content).Should().Contain(SdkStrings.SymbolsCount(3));
     }
 
+    /// <summary>The field closes as it loses the keyboard, where the view stands, as VS Code's quick input
+    /// hides; its list hangs with no scrim to swallow a press elsewhere.</summary>
+    [Fact]
+    public void TheField_ClosesAsItLosesTheKeyboard_AndHangsNoScrim()
+    {
+        var context = new ComponentContext(PhotonTheme.Instance);
+        var editor = new CodeEditor(Text, "csharp");
+        editor.Editor.GoTo.Open(CodeGoToMode.Line);
+        var drawn = editor.Build(context);
+        All<Anchored>(drawn).Single().OnDismiss.Should().BeNull();
+
+        All<TextEntry>(drawn).Single().OnFocusChanged!(false);
+
+        editor.Editor.GoTo.IsOpen.Should().BeFalse();
+    }
+
     [Fact]
     public void AnEditorWithNoSymbolProvider_SaysSo()
     {

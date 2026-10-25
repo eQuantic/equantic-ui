@@ -933,7 +933,7 @@ public sealed class CodeEditor : StatefulComponent
                 {
                     if (goTo.Accept()) Notify(editor);
                 }),
-                () => SetState(() => goTo.Close()),
+                () => SetState(() => goTo.Dismiss()),
                 index => SetState(() =>
                 {
                     goTo.Select(index);
@@ -943,7 +943,8 @@ public sealed class CodeEditor : StatefulComponent
         }
         else _goToTop = 0;
         // The field's keys, wherever the keyboard is in this editor and only while it shows: the arrows and the
-        // page keys walk its list and Escape closes it, giving the view back. Enter is the field's own. Chords
+        // page keys walk its list and Escape closes it, giving the view back; the list hangs with no scrim, so
+        // no panel's Escape stands in for it. Enter is the field's own. Chords
         // of the editor's own, as the find bar's Escape is, and inside it, so Escape closes the field first;
         // and mounted whether it shows or not, so nothing under them moves in the tree.
         VisualNode keyed = layers;

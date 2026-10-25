@@ -289,25 +289,29 @@ export class CodeEditorController {
     }
 
     center(position: CodePosition, onlyOutside: boolean) {
-        if (this._view.height <= 0) return;
         let caret = this.caretRect(this._document.clamp(position));
-        let inView = caret.y >= this._view.y && Math.fround(caret.y + caret.height) <= Math.fround(this._view.y + this._view.height);
-        if (onlyOutside && inView) return;
+        let top: number | null = null;
+        if (this._view.height > 0) {
+            let inView = caret.y >= this._view.y && Math.fround(caret.y + caret.height) <= Math.fround(this._view.y + this._view.height);
+            if (onlyOutside && inView) return;
+            top = Math.max(0, Math.fround(Math.fround(caret.y + Math.fround(caret.height / 2)) - Math.fround(this._view.height / 2)));
+        }
         let left: number | null = null;
         if (this._view.width > 0) {
             if (caret.x < this._view.x) left = caret.x; else if (Math.fround(caret.x + caret.width) > Math.fround(this._view.x + this._view.width)) left = Math.fround(Math.fround(caret.x + caret.width) - this._view.width);
         }
-        this.scroll(Math.max(0, Math.fround(Math.fround(caret.y + Math.fround(caret.height / 2)) - Math.fround(this._view.height / 2))), left);
+        this.scroll(top, left);
     }
 
     scrollTo(view: Rect) {
-        if (view.height <= 0) return;
-        this.scroll(view.y, view.x);
+        return this.scroll(view.height > 0 ? view.y : null, view.width > 0 ? view.x : null);
     }
 
-    scroll(top: number, left: number | null) {
+    scroll(top: number | null, left: number | null) {
+        if (top == null && left == null) return;
         this._scrollVersion++;
-        this.verticalScroll = new ScrollRequest(this._scrollVersion, { offset: top });
+        let down: any; 
+        if ((down = top) != null) this.verticalScroll = new ScrollRequest(this._scrollVersion, { offset: down });
         let across: any; 
         if ((across = left) != null) this.horizontalScroll = new ScrollRequest(this._scrollVersion, { offset: across });
         this.scrollRequested?.();
@@ -637,7 +641,7 @@ export class CodeEditorController {
                     return true;
                 case 'paste':
                     if (clipboard == null) return false;
-                    if ((($v43643) => (($v43643 != null && $v43643.length > 0) && (pasted = $v43643, true)))(clipboard.read())) this.paste(pasted);
+                    if ((($v44013) => (($v44013 != null && $v44013.length > 0) && (pasted = $v44013, true)))(clipboard.read())) this.paste(pasted);
                     return true;
                 case 'completionShow':
                     return this.completion.invoke();
@@ -801,6 +805,7 @@ export class CodeEditorController {
         switch (phase) {
             case 'down':
                 {
+                    this.goTo.dismiss();
                     this.hover.dismiss();
                     this.pendingChord = null;
                     if (this.onPlaceholder(position)) return false;
@@ -1932,7 +1937,7 @@ export class CodeEditorController {
             }
             let space = length > 0;
             let tail = parts[parts.length - 1];
-            if (space && (($v145933) => ($v145933 === ' ' || $v145933 === '\t'))(tail[tail.length - 1])) {
+            if (space && (($v146498) => ($v146498 === ' ' || $v146498 === '\t'))(tail[tail.length - 1])) {
                 space = false;
                 let kept = $eq.text.trimEnd(tail, [' ', '\t']);
                 parts[parts.length - 1] = kept;

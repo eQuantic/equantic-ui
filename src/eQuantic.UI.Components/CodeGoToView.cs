@@ -30,10 +30,12 @@ internal static class CodeGoToView
     /// <summary>
     /// The field, <paramref name="width"/> wide, and under it the page of symbols from <paramref name="top"/>
     /// or what it says. What is typed goes to <paramref name="typed"/>, Enter to <paramref name="accept"/>, a
-    /// press outside to <paramref name="close"/> and a press on a row to <paramref name="pick"/>.
+    /// field losing the keyboard to <paramref name="dismiss"/> and a press on a row to <paramref name="pick"/>.
+    /// The list hangs with no scrim: a press in the code lands where the person pointed, and the field closes
+    /// as it loses the keyboard, as VS Code's quick input hides.
     /// </summary>
     internal static VisualNode Build(ComponentContext context, CodeEditorController editor, CodeBlock.CodeMetrics metrics,
-        float width, int top, Action<string> typed, Action accept, Action close, Action<int> pick)
+        float width, int top, Action<string> typed, Action accept, Action dismiss, Action<int> pick)
     {
         var goTo = editor.GoTo;
         var theme = context.Theme;
@@ -44,6 +46,10 @@ internal static class CodeGoToView
             Placeholder = SdkStrings.GoToStart,
             Autofocus = true,
             OnSubmit = accept,
+            OnFocusChanged = focused =>
+            {
+                if (!focused) dismiss();
+            },
         };
         var panel = listed
             ? List(theme, metrics, goTo, width, top, pick)
@@ -66,7 +72,6 @@ internal static class CodeGoToView
             PanelRole = listed ? AnchorPanelRole.Listbox : AnchorPanelRole.None,
             ActiveIndex = listed ? goTo.Selected - top : -1,
             MatchAnchorWidth = true,
-            OnDismiss = close,
         });
     }
 
