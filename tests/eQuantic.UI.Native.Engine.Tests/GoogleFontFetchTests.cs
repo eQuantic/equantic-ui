@@ -1,0 +1,349 @@
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
+using eQuantic.UI.Build;
+using eQuantic.UI.Tests;
+using FluentAssertions;
+using Xunit;
+
+namespace eQuantic.UI.Native.Engine.Tests;
+
+/// <summary>
+/// A family from Google Fonts is fetched by the build, pinned in <c>fonts.lock.json</c> by its URL and the
+/// hash of its bytes, and kept out of the source tree (#1057). Whatever would change the app's text without
+/// the app choosing it fails the build, naming the way to renew. Google is played by a handler that answers
+/// as the real API was measured to answer.
+/// </summary>
+public sealed class GoogleFontFetchTests : IDisposable
+{
+    private const string Place = "/app/Program.cs(3,12)";
+
+    private readonly string _dir = Directory.CreateTempSubdirectory("eq-google-fetch-").FullName;
+    private readonly FakeGoogle _google = new();
+
+    private string Lock => Path.Combine(_dir, FontLock.FileName);
+    private string Folder => Path.Combine(_dir, "obj", "equantic", "fonts", "google");
+
+    public void Dispose() => Directory.Delete(_dir, recursive: true);
+
+    [Fact]
+    public async Task AFamily_IsFetchedPinnedAndKeptOutOfTheSourceTree()
+    {
+        var errors = await Fetch(Declared("Inter", Cut(400), Cut(700), Cut(400, italic: true)));
+
+        errors.Should().BeEmpty();
+        Directory.GetFiles(Folder).Select(Path.GetFileName).Should().BeEquivalentTo("Inter-400.ttf", "Inter-700.ttf", "Inter-400-italic.ttf");
+        var bold = File.ReadAllBytes(Path.Combine(Folder, "Inter-700.ttf"));
+        bold.Should().Equal(_google.FileOf("Inter", Cut(700)));
+        OpenTypeFace.Read(bold).Should().Be(new OpenTypeFace("Inter", 700, 700, false), "the catalog reads the family from the file");
+        var pins = FontLock.Read(Lock).Of(GoogleFontFetch.Provider, "Inter");
+        pins.Keys.Should().BeEquivalentTo(new[] { Cut(400), Cut(700), Cut(400, italic: true) });
+        pins[Cut(700)].Should().Be(new FontLock.Pin(_google.UrlOf("Inter", Cut(700)), Sha256(bold)));
+        _google.Asked.Count(FakeGoogle.IsApi).Should().Be(1, "a family is asked for once, every cut together");
+    }
+
+    [Fact]
+    public async Task ARebuild_AsksGoogleForNothing()
+    {
+        var inter = Declared("Inter", Cut(400), Cut(700));
+        await Fetch(inter);
+        _google.Asked.Clear();
+
+        (await Fetch(inter)).Should().BeEmpty();
+
+        _google.Asked.Should().BeEmpty();
+    }
+
+    /// <summary>A pinned file is never asked of the API again: one gone from the folder comes back from the
+    /// URL it was pinned at, whatever Google serves now.</summary>
+    [Fact]
+    public async Task APinnedFileGoneFromTheFolder_ComesBackFromItsPinnedUrl()
+    {
+        var inter = Declared("Inter", Cut(400));
+        await Fetch(inter);
+        var pinned = File.ReadAllBytes(Path.Combine(Folder, "Inter-400.ttf"));
+        File.Delete(Path.Combine(Folder, "Inter-400.ttf"));
+        _google.Replace("Inter");
+        _google.Asked.Clear();
+
+        (await Fetch(inter)).Should().BeEmpty();
+
+        _google.Asked.Should().Equal(_google.UrlOf("Inter", Cut(400), version: 1));
+        File.ReadAllBytes(Path.Combine(Folder, "Inter-400.ttf")).Should().Equal(pinned);
+    }
+
+    [Fact]
+    public async Task AFileThatChangedAtItsPinnedUrl_FailsTheBuild_UntilItsFamilyIsRenewed()
+    {
+        var inter = Declared("Inter", Cut(400));
+        await Fetch(inter);
+        var pinnedLock = File.ReadAllText(Lock);
+        File.Delete(Path.Combine(Folder, "Inter-400.ttf"));
+        var changed = TestFont.Build("Inter", advance: 777);
+        _google.Changed[_google.UrlOf("Inter", Cut(400))] = changed;
+
+        var errors = await Fetch(inter);
+
+        errors.Should().ContainSingle().Which.Should().StartWith($"{Place}: error EQ4009: ")
+            .And.Contain($"is not the one {FontLock.FileName} pins: its SHA-256 is {Sha256(changed)}")
+            .And.Contain($"Take 'Inter' out of {FontLock.FileName}");
+        File.ReadAllText(Lock).Should().Be(pinnedLock, "a family that fails keeps the pins it had");
+
+        File.Delete(Lock);
+        (await Fetch(inter)).Should().BeEmpty();
+        FontLock.Read(Lock).Of(GoogleFontFetch.Provider, "Inter")[Cut(400)].Sha256.Should().Be(Sha256(changed));
+    }
+
+    [Fact]
+    public async Task APinnedUrlGoogleNoLongerServes_FailsTheBuild()
+    {
+        var inter = Declared("Inter", Cut(400));
+        await Fetch(inter);
+        File.Delete(Path.Combine(Folder, "Inter-400.ttf"));
+        _google.Gone.Add(_google.UrlOf("Inter", Cut(400)));
+
+        var errors = await Fetch(inter);
+
+        errors.Should().ContainSingle().Which.Should().StartWith($"{Place}: error EQ4009: Google Fonts no longer serves {_google.UrlOf("Inter", Cut(400))}");
+    }
+
+    /// <summary>One family never mixes two of Google's versions: a cut added to a family Google has
+    /// replaced since its cuts were pinned waits for the family to be renewed whole.</summary>
+    [Fact]
+    public async Task ACutAddedToAFamilyGoogleReplaced_FailsTheBuild_AndTheFamilyKeepsItsPins()
+    {
+        await Fetch(Declared("Inter", Cut(400)));
+        var pinnedLock = File.ReadAllText(Lock);
+        _google.Replace("Inter");
+
+        var errors = await Fetch(Declared("Inter", Cut(400), Cut(700)));
+
+        errors.Should().ContainSingle().Which.Should().StartWith($"{Place}: error EQ4009: Google Fonts has replaced 'Inter' since its cuts were pinned");
+        File.ReadAllText(Lock).Should().Be(pinnedLock);
+        File.Exists(Path.Combine(Folder, "Inter-400.ttf")).Should().BeTrue("the pinned file stays where the build embeds it from");
+    }
+
+    [Fact]
+    public async Task AFamilyGoogleDoesNotHave_FailsNamingIt()
+    {
+        var errors = await Fetch(Declared("Intr", Cut(400)));
+
+        errors.Should().Equal($"{Place}: error EQ4008: Google Fonts has no family named 'Intr'.");
+    }
+
+    [Fact]
+    public async Task ACutGoogleDoesNotHave_FailsNamingIt()
+    {
+        var errors = await Fetch(Declared("Bebas Neue", Cut(400), Cut(700), Cut(400, italic: true)));
+
+        errors.Should().Equal($"{Place}: error EQ4008: Google Fonts has no Bold, Regular italic of 'Bebas Neue'.");
+    }
+
+    /// <summary>A file is checked before it is pinned: a pin made of a web font would fail every build
+    /// after it, far from its cause, and is never written.</summary>
+    [Fact]
+    public async Task AFileThatIsNotAFace_IsNeverPinned()
+    {
+        _google.Changed[_google.UrlOf("Inter", Cut(400))] = [.. "wOF2"u8, .. new byte[64]];
+
+        var errors = await Fetch(Declared("Inter", Cut(400)));
+
+        errors.Should().ContainSingle().Which.Should().StartWith($"{Place}: error EQ4008: Google Fonts served the Regular of 'Inter'")
+            .And.Contain("it is a web font");
+        File.Exists(Lock).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GoogleOutOfReach_FailsSayingSo()
+    {
+        _google.Unreachable = true;
+
+        var errors = await Fetch(Declared("Inter", Cut(400)));
+
+        errors.Should().ContainSingle().Which.Should().StartWith($"{Place}: error EQ4008: Google Fonts could not be reached to ask for 'Inter'");
+    }
+
+    /// <summary>A build that fails leaves the lock and the folder as they were: a family whose name was
+    /// mistyped for one build is not taken out of the lock, to be asked of Google again, perhaps at a
+    /// new version, once the name is put right.</summary>
+    [Fact]
+    public async Task ABuildThatFails_LeavesTheLockAndTheFolderAsTheyWere()
+    {
+        await Fetch(Declared("Inter", Cut(400)));
+        var pinnedLock = File.ReadAllText(Lock);
+
+        var errors = await Fetch(Declared("Intr", Cut(400)), Declared("JetBrains Mono", Cut(400)));
+
+        errors.Should().ContainSingle().Which.Should().Contain("no family named 'Intr'");
+        File.ReadAllText(Lock).Should().Be(pinnedLock);
+        File.Exists(Path.Combine(Folder, "Inter-400.ttf")).Should().BeTrue();
+
+        _google.Replace("Inter");
+        _google.Asked.Clear();
+        (await Fetch(Declared("Inter", Cut(400)))).Should().BeEmpty();
+        _google.Asked.Should().BeEmpty("the family put right is still pinned, and its file still there");
+    }
+
+    [Fact]
+    public async Task AFamilyNoLongerDeclared_LeavesTheLockAndTheFolder()
+    {
+        await Fetch(Declared("Inter", Cut(400)), Declared("JetBrains Mono", Cut(400)));
+
+        (await Fetch(Declared("JetBrains Mono", Cut(400)))).Should().BeEmpty();
+        FontLock.Read(Lock).Of(GoogleFontFetch.Provider, "Inter").Should().BeEmpty();
+        Directory.GetFiles(Folder).Select(Path.GetFileName).Should().Equal("JetBrainsMono-400.ttf");
+
+        (await Fetch()).Should().BeEmpty();
+        File.Exists(Lock).Should().BeFalse("a lock that pins nothing is no file");
+        Directory.GetFiles(Folder).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ALockThatDoesNotHold_FailsTheBuild_AndIsNeverReadAsFewerPins()
+    {
+        File.WriteAllText(Lock, "{ \"version\": 1, \"google\": { \"Inter\": { \"400\": { \"url\": \"https://fonts.gstatic.com/x.ttf\" } } } }");
+
+        var errors = await Fetch(Declared("Inter", Cut(400)));
+
+        errors.Should().ContainSingle().Which.Should().StartWith($"{Lock} : error EQ4009: {FontLock.FileName} does not hold: '400' of 'Inter' has no URL and SHA-256 that hold");
+        _google.Asked.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void TheLock_IsWrittenInOrder_SoADiffShowsThePinThatMoved()
+    {
+        var pins = new FontLock();
+        pins.Set("google", "Inter", new Dictionary<FontCut, FontLock.Pin>
+        {
+            [Cut(700, italic: true)] = new(new Uri("https://fonts.gstatic.com/s/inter/v20/b.ttf"), new string('b', 64)),
+            [Cut(400)] = new(new Uri("https://fonts.gstatic.com/s/inter/v20/a.ttf"), new string('a', 64)),
+        });
+
+        pins.Text().Should().Be("""
+            {
+              "version": 1,
+              "google": {
+                "Inter": {
+                  "400": {
+                    "url": "https://fonts.gstatic.com/s/inter/v20/a.ttf",
+                    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                  },
+                  "700 italic": {
+                    "url": "https://fonts.gstatic.com/s/inter/v20/b.ttf",
+                    "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                  }
+                }
+              }
+            }
+
+            """.ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
+    public void TheQuery_AsksEveryCutInTheOrderTheApiRequires()
+    {
+        GoogleFonts.Query("JetBrains Mono", [Cut(700, italic: true), Cut(400), Cut(700)]).AbsoluteUri
+            .Should().Be("https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,700");
+        GoogleFonts.Query("Inter", [Cut(700), Cut(400)]).AbsoluteUri
+            .Should().Be("https://fonts.googleapis.com/css2?family=Inter:wght@400;700");
+    }
+
+    private Task<IReadOnlyList<string>> Fetch(params GoogleFontDeclarations.Declaration[] declarations) =>
+        GoogleFontFetch.FetchAsync(declarations, Lock, Folder, new GoogleFonts(new HttpClient(_google)));
+
+    private static GoogleFontDeclarations.Declaration Declared(string family, params FontCut[] cuts) =>
+        new(family, [.. cuts.Order()], Place);
+
+    private static FontCut Cut(int weight, bool italic = false) => new(weight, italic);
+
+    private static string Sha256(byte[] bytes) => Convert.ToHexStringLower(SHA256.HashData(bytes));
+
+    /// <summary>
+    /// Google as the tests see it: families with the cuts they have, at a version, each file a font built
+    /// for its family, weight, italic and version, and every request it was asked. Its API answers in the
+    /// format the real one was measured to answer a client that is not a browser, and with 400 and the
+    /// same sentence for a family, a weight or an italic it does not have.
+    /// </summary>
+    private sealed class FakeGoogle : HttpMessageHandler
+    {
+        private readonly Dictionary<string, (int Version, FontCut[] Cuts)> _families = new()
+        {
+            ["Inter"] = (1, [new(400, false), new(700, false), new(400, true), new(700, true)]),
+            ["JetBrains Mono"] = (1, [new(400, false), new(400, true)]),
+            ["Bebas Neue"] = (1, [new(400, false)]),
+        };
+
+        public List<Uri> Asked { get; } = [];
+
+        /// <summary>Files that changed in place, at the URL they always had.</summary>
+        public Dictionary<Uri, byte[]> Changed { get; } = [];
+
+        /// <summary>URLs Google no longer serves.</summary>
+        public HashSet<Uri> Gone { get; } = [];
+
+        public bool Unreachable { get; set; }
+
+        public static bool IsApi(Uri uri) => uri.Host == "fonts.googleapis.com";
+
+        /// <summary>Google publishes a new version of <paramref name="family"/>, at new URLs, the old ones still served.</summary>
+        public void Replace(string family) => _families[family] = (_families[family].Version + 1, _families[family].Cuts);
+
+        public Uri UrlOf(string family, FontCut cut, int? version = null) =>
+            new($"https://fonts.gstatic.com/s/{Slug(family)}/v{version ?? _families[family].Version}/{cut.Weight}{(cut.Italic ? "i" : "")}.ttf");
+
+        public byte[] FileOf(string family, FontCut cut, int? version = null) =>
+            TestFont.Build(family, cut.Weight, cut.Italic, advance: 1000 + (version ?? _families[family].Version));
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var uri = request.RequestUri!;
+            Asked.Add(uri);
+            if (Unreachable) throw new HttpRequestException("No such host is known.");
+            return Task.FromResult(IsApi(uri) ? Css(uri) : File(uri));
+        }
+
+        private HttpResponseMessage Css(Uri uri)
+        {
+            var query = Uri.UnescapeDataString(uri.Query.TrimStart('?')["family=".Length..].Replace('+', ' '));
+            var family = query.Split(':')[0];
+            if (!_families.TryGetValue(family, out var known)) return NotAvailable();
+            var asked = query.Contains(':') ? Cuts(query.Split(':')[1]) : [known.Cuts[0]];
+            if (asked.Any(cut => !known.Cuts.Contains(cut))) return NotAvailable();
+            var css = new StringBuilder();
+            foreach (var cut in asked.OrderByDescending(cut => cut.Italic).ThenBy(cut => cut.Weight))
+                css.Append($"@font-face {{\n  font-family: '{family}';\n  font-style: {(cut.Italic ? "italic" : "normal")};\n"
+                    + $"  font-weight: {cut.Weight};\n  src: url({UrlOf(family, cut)}) format('truetype');\n}}\n");
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(css.ToString(), Encoding.UTF8, "text/css") };
+        }
+
+        private HttpResponseMessage File(Uri uri)
+        {
+            if (Gone.Contains(uri)) return new HttpResponseMessage(HttpStatusCode.NotFound);
+            if (Changed.TryGetValue(uri, out var changed)) return Bytes(changed);
+            var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var family = _families.Keys.SingleOrDefault(name => Slug(name) == segments[1]);
+            if (family is null || !int.TryParse(segments[2].TrimStart('v'), out var version) || version > _families[family].Version)
+                return new HttpResponseMessage(HttpStatusCode.NotFound);
+            var name = Path.GetFileNameWithoutExtension(segments[3]);
+            var cut = new FontCut(int.Parse(name.TrimEnd('i')), name.EndsWith('i'));
+            return Bytes(FileOf(family, cut, version));
+        }
+
+        private static FontCut[] Cuts(string axes)
+        {
+            var (names, tuples) = (axes.Split('@')[0].Split(','), axes.Split('@')[1].Split(';'));
+            return tuples.Select(tuple => tuple.Split(','))
+                .Select(values => names.Length == 2
+                    ? new FontCut(int.Parse(values[1]), values[0] == "1")
+                    : new FontCut(int.Parse(values[0]), false))
+                .ToArray();
+        }
+
+        private static HttpResponseMessage NotAvailable() =>
+            new(HttpStatusCode.BadRequest) { Content = new StringContent("<p>The requested font families are not available.</p>") };
+
+        private static HttpResponseMessage Bytes(byte[] bytes) => new(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) };
+
+        private static string Slug(string family) => family.Replace(" ", "").ToLowerInvariant();
+    }
+}

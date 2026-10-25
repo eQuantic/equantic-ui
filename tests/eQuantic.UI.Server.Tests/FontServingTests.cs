@@ -309,7 +309,8 @@ public class FontServingTests
     {
         File.ReadAllText(Path.Combine(Repository.Root(), "src", sdk, "Sdk", "Sdk.targets"))
             .Should().Contain($"EQuanticFont=\"true\"")
-            .And.Contain($"LogicalName=\"{ServedFonts.EmbeddedPrefix}%(Filename)%(Extension)\"");
+            .And.Contain($"LogicalName=\"{ServedFonts.EmbeddedPrefix}%(Filename)%(Extension)\"")
+            .And.Contain($"LogicalName=\"{ServedFonts.EmbeddedPrefix}google/%(Filename)%(Extension)\"", "a face fetched from Google Fonts is served as one under Assets is (#1057)");
     }
 
     /// <summary>The style element of <paramref name="head"/> whose id is <paramref name="id"/>, or the empty string.</summary>

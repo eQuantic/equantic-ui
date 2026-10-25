@@ -56,3 +56,6 @@ EQ4003 eQuantic.UI.Native.Build/Program.cs
 EQ4004 eQuantic.UI.Sdk.Tasks/RunProgram.cs
 EQ4005 eQuantic.UI.Native.Build/FontCatalog.cs
 EQ4006 eQuantic.UI.Native.Build/FontCatalog.cs
+EQ4007 eQuantic.UI.Native.Build/GoogleFontDeclarations.cs
+EQ4008 eQuantic.UI.Native.Build/GoogleFontFetch.cs
+EQ4009 eQuantic.UI.Native.Build/GoogleFontFetch.cs
