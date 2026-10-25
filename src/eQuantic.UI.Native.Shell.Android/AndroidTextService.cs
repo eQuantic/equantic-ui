@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using Android.Graphics;
 using Android.Text;
 using eQuantic.UI.Native.Framework;
@@ -25,19 +24,15 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
     private readonly Dictionary<(float Size, FontWeight Weight, bool Mono, bool Italic, FontFamily? Family), TextPaint> _paints = new();
 
     // A face the app SHIPS (#1055). Android opens a typeface from a FILE, so each one is written once
-    // to the app's cache, named by the hash of its bytes, and opened there: one typeface per file,
-    // the one a style asks for chosen by its slant and its weight (ShippedFace).
+    // to the app's cache, whole or not at all (ShippedFaces.CacheFile), and opened there: one typeface
+    // per file, the one a style asks for chosen by its slant and its weight (ShippedFace).
     private static readonly ShippedFaces Shipped = new(Register);
     private static readonly Dictionary<FontFile, Typeface> ShippedTypefaces = new();
 
     private static bool Register(FontFile file, byte[] bytes)
     {
-        if (global::Android.App.Application.Context.CacheDir?.AbsolutePath is not { } cache) return false;
-        var folder = System.IO.Path.Combine(cache, "eq-fonts");
-        Directory.CreateDirectory(folder);
-        var path = System.IO.Path.Combine(folder,
-            Convert.ToHexStringLower(SHA256.HashData(bytes))[..16] + System.IO.Path.GetExtension(file.Resource));
-        if (!System.IO.File.Exists(path)) System.IO.File.WriteAllBytes(path, bytes);
+        if (global::Android.App.Application.Context.CacheDir?.AbsolutePath is not { } cache
+            || ShippedFaces.CacheFile(System.IO.Path.Combine(cache, "eq-fonts"), file, bytes) is not { } path) return false;
         Typeface? typeface;
         try
         {
