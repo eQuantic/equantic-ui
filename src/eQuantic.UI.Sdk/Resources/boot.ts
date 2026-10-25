@@ -22,6 +22,7 @@ import {
   settleDensity,
   setPhotonTheme,
   materializeTheme,
+  watchFaces,
   type EqConfig,
   type HtmlNode,
   type NavigationGuard,
@@ -187,6 +188,9 @@ export async function boot(): Promise<void> {
       }
       setPhotonTheme(materializeTheme(themeData));
     }
+    // The faces the document declares, the theme's and the page's: one that fails to load takes its
+    // family back whole, as every shell resolves a family (#1056).
+    watchFaces();
 
     // Track L D4: install the request's culture BEFORE hydration — the client must resolve exactly
     // the strings the server rendered and write every number and date as it wrote them, or the

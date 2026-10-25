@@ -1,50 +1,61 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FontFamily, FontFile } from './value-types';
-import { declareFamily } from './face-declarations';
-import { lowerVisualNode } from './lowering';
-import { measurePhotonText } from './photon-context';
 import type { VisualNodeValue } from './nodes';
 
-/** A face as the document holds one: its family, its source and its descriptors, and a load that can fail. */
-class FakeFace {
-  readonly loaded: Promise<FakeFace>;
-  fail: () => void = () => {};
+/** A face the document holds, as the font set reports it. */
+interface Face {
+  family: string;
+  style: string;
+  weight: string;
+  status: string;
+}
 
-  constructor(
-    readonly family: string,
-    readonly source: string,
-    readonly descriptors: FontFaceDescriptors = {},
-  ) {
-    this.loaded = new Promise<FakeFace>((_, reject) => {
-      this.fail = () => reject(new Error('the face failed to load'));
-    });
+/** The document's font set, which a test fills and fails: the engine's own reads `@font-face` rules. */
+class FakeFonts {
+  readonly faces = new Set<Face>();
+  private readonly failures: ((event: { fontfaces: Face[] }) => void)[] = [];
+
+  forEach(visit: (face: Face) => void): void {
+    this.faces.forEach((face) => visit(face));
   }
+
+  addEventListener(type: string, listener: (event: { fontfaces: Face[] }) => void): void {
+    if (type === 'loadingerror') this.failures.push(listener);
+  }
+
+  fail(face: Face): void {
+    this.failures.forEach((listener) => listener({ fontfaces: [face] }));
+  }
+}
+
+/** The `@font-face` rules of the document, by the family they declare and the file they ask for. */
+function declaredRules(): string[][] {
+  const rules: string[][] = [];
+  for (const sheet of Array.from(document.styleSheets))
+    for (const rule of Array.from(sheet.cssRules) as CSSFontFaceRule[])
+      if (rule.cssText.startsWith('@font-face'))
+        rules.push([rule.style.getPropertyValue('font-family').replace(/"/g, ''), rule.style.getPropertyValue('src')]);
+  return rules;
 }
 
 /**
  * A family a page names outside the theme is declared in the document the first time the runtime sets or
  * measures text in it (#1056), as the server declares it in the head of a page it renders: once, left to
- * the server when the document has it, and taken back whole when a file fails to load.
+ * the server when the document has it, and taken back whole when a file fails to load, whoever declared
+ * it, with the pages that measured in it rebuilt.
  */
 describe('the faces of a family a page names', () => {
-  let faces: Set<FakeFace>;
+  let fonts: FakeFonts;
 
   beforeEach(() => {
-    faces = new Set();
-    vi.stubGlobal('FontFace', FakeFace);
-    Object.defineProperty(document, 'fonts', {
-      configurable: true,
-      value: {
-        add: (face: FakeFace) => faces.add(face),
-        delete: (face: FakeFace) => faces.delete(face),
-        forEach: (visit: (face: FakeFace) => void) => faces.forEach((face) => visit(face)),
-      },
-    });
+    vi.resetModules();
+    fonts = new FakeFonts();
+    Object.defineProperty(document, 'fonts', { configurable: true, value: fonts });
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
     delete (document as { fonts?: unknown }).fonts;
+    document.querySelectorAll('style').forEach((element) => element.remove());
     vi.restoreAllMocks();
   });
 
@@ -55,47 +66,93 @@ describe('the faces of a family a page names', () => {
       new FontFile('Acme.App', 'eQuantic.UI.Fonts/Probe-Italic.otf', 400, 400, true),
     );
 
-  it('declares each file once, asked for by its identity', () => {
+  /** A style element as the server writes the page's faces in its head. */
+  const serverDeclares = (name: string) => {
+    const element = document.createElement('style');
+    element.id = 'eq-faces';
+    element.textContent =
+      `@font-face { font-family: "${name}"; src: url("/_equantic/fonts/0123456789abcdef.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }\n` +
+      `@font-face { font-family: "${name}"; src: url("/_equantic/fonts/fedcba9876543210.ttf") format("truetype"); font-weight: 400; font-style: italic; font-display: swap; }`;
+    document.head.appendChild(element);
+  };
+
+  it('declares each file once, as the server writes it, asked for by its identity', async () => {
+    const { declareFamily } = await import('./face-declarations');
+
     declareFamily(probe('Probe A'));
     declareFamily(probe('Probe A'));
 
-    expect([...faces].map((face) => [face.family, face.source, face.descriptors])).toEqual([
-      [
-        'Probe A',
-        'url("/_equantic/fonts/Acme.App/eQuantic.UI.Fonts/Probe%20Sans.ttf") format("truetype")',
-        { weight: '200 800', style: 'normal', display: 'swap' },
-      ],
-      [
-        'Probe A',
-        'url("/_equantic/fonts/Acme.App/eQuantic.UI.Fonts/Probe-Italic.otf") format("opentype")',
-        { weight: '400', style: 'italic', display: 'swap' },
-      ],
+    expect(declaredRules()).toEqual([
+      ['Probe A', 'url("/_equantic/fonts/Acme.App/eQuantic.UI.Fonts/Probe%20Sans.ttf") format("truetype")'],
+      ['Probe A', 'url("/_equantic/fonts/Acme.App/eQuantic.UI.Fonts/Probe-Italic.otf") format("opentype")'],
     ]);
   });
 
-  it('leaves a family the document has to the declaration the server wrote', () => {
-    faces.add(new FakeFace('"Probe B"', 'url("/_equantic/fonts/0123456789abcdef.ttf")'));
+  /** The family is a CSS string, as in the server's rules: `new FontFace` reads its family argument as a
+   * CSS name in one engine and as the name itself in another, so `Roboto+Mono` was two families. */
+  it('writes the family as a CSS string, so a name such as Roboto+Mono is the one the server declares', async () => {
+    const { declareFamily } = await import('./face-declarations');
+    const inserted = vi.spyOn(CSSStyleSheet.prototype, 'insertRule');
+
+    declareFamily(new FontFamily('Roboto+Mono', new FontFile('Acme.App', 'eQuantic.UI.Fonts/RobotoMono.ttf', 400, 400)));
+
+    expect(inserted.mock.calls[0][0]).toContain('font-family: "Roboto+Mono";');
+  });
+
+  it('leaves a family the document has to the declaration the server wrote', async () => {
+    const { declareFamily } = await import('./face-declarations');
+    fonts.faces.add({ family: '"Probe B"', style: 'normal', weight: '400', status: 'unloaded' });
 
     declareFamily(probe('Probe B'));
 
-    expect(faces.size).toBe(1);
+    expect(declaredRules()).toEqual([]);
   });
 
-  it('takes a family back whole when one of its files fails to load, naming the file', async () => {
+  it('takes a family the server declared back whole when one of its files fails, naming the file', async () => {
+    const { watchFaces } = await import('./face-declarations');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    declareFamily(probe('Probe C'));
-    const [, italic] = [...faces];
+    serverDeclares('Probe C');
+    watchFaces();
 
-    italic.fail();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    fonts.fail({ family: 'Probe C', style: 'italic', weight: '400', status: 'error' });
 
-    expect(faces.size).toBe(0);
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('eQuantic.UI.Fonts/Probe-Italic.otf'));
+    expect(declaredRules()).toEqual([]);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('/_equantic/fonts/fedcba9876543210.ttf'));
+  });
+
+  it('takes back a family whose file failed before the runtime was there to hear it', async () => {
+    const { watchFaces } = await import('./face-declarations');
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    serverDeclares('Probe D');
+    fonts.faces.add({ family: 'Probe D', style: 'normal', weight: '400', status: 'error' });
+
+    watchFaces();
+
+    expect(declaredRules()).toEqual([]);
+  });
+
+  /** A page that measured text in a face that loaded, the upright, measures the fallback again when the
+   * family is taken back over its italic: the text falls back, and a caret would sit on the face's columns. */
+  it('rebuilds each page that measured in a family it takes back, once', async () => {
+    const { declareFamily, dependOnFamily } = await import('./face-declarations');
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const rebuild = vi.fn();
+    const family = probe('Probe E');
+    declareFamily(family);
+    dependOnFamily(family, rebuild);
+    dependOnFamily(family, rebuild);
+
+    fonts.fail({ family: 'Probe E', style: 'italic', weight: '400', status: 'error' });
+
+    expect(rebuild).toHaveBeenCalledTimes(1);
+    expect(declaredRules()).toEqual([]);
   });
 
   // The two places a page meets a family: the text it lowers and the text it measures, each before the
   // other may run, so each declares it.
-  it('declares the family a text names when it is lowered, and when it is measured', () => {
+  it('declares the family a text names when it is lowered, and when it is measured', async () => {
+    const { lowerVisualNode } = await import('./lowering');
+    const { measurePhotonText } = await import('./photon-context');
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       font: '',
       measureText: (text: string) => ({ width: text.length * 7 }),
@@ -105,18 +162,20 @@ describe('the faces of a family a page names', () => {
       nodeKind: 'text',
       content: 'Handgloves',
       role: 'bodyM',
-      styleOverride: { size: 17, lineHeight: 22, weight: 'regular', tracking: 0, family: probe('Probe D') },
+      styleOverride: { size: 17, lineHeight: 22, weight: 'regular', tracking: 0, family: probe('Probe F') },
     } as unknown as VisualNodeValue;
 
     lowerVisualNode(text, { textPrimary: { light: white, dark: white } } as never);
-    measurePhotonText('Handgloves', { size: 17, lineHeight: 22, weight: 'regular', tracking: 0, family: probe('Probe E') });
+    measurePhotonText('Handgloves', { size: 17, lineHeight: 22, weight: 'regular', tracking: 0, family: probe('Probe G') });
 
-    expect(new Set([...faces].map((face) => face.family))).toEqual(new Set(['Probe D', 'Probe E']));
+    expect(new Set(declaredRules().map(([family]) => family))).toEqual(new Set(['Probe F', 'Probe G']));
   });
 
-  it('declares nothing for a family that ships no file', () => {
+  it('declares nothing for a family that ships no file', async () => {
+    const { declareFamily } = await import('./face-declarations');
+
     declareFamily(new FontFamily('Georgia'));
 
-    expect(faces.size).toBe(0);
+    expect(declaredRules()).toEqual([]);
   });
 });

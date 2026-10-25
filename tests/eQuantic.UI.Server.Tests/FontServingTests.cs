@@ -31,6 +31,17 @@ public class FontServingTests
     private static readonly FontFamily HandBuilt = new("Probe Sans",
         new FontFile(Assembly, "eQuantic.UI.Fonts/TestFace-Regular.ttf", 400, 400));
 
+    /// <summary>A family built by hand over a font no eQuantic build embedded as a face, which the theme does not name.</summary>
+    private static readonly FontFamily Elsewhere = new("Elsewhere Sans",
+        new FontFile(Assembly, "Elsewhere/TestFace-Elsewhere.ttf", 400, 400));
+
+    [Page("/elsewhere-face-page")]
+    public sealed class ElsewhereFacePage : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            new Text("Handgloves", TypeRole.BodyM) { StyleOverride = context.Theme.Type(TypeRole.BodyM) with { Family = Elsewhere } };
+    }
+
     /// <summary>A page whose text names the hand-built family twice, and the theme's own text face once.</summary>
     [Page("/named-face-page")]
     public sealed class NamedFacePage : StatelessComponent
@@ -178,6 +189,38 @@ public class FontServingTests
         var url = System.Text.RegularExpressions.Regex.Match(faces, "url\\(\"(?<url>[^\"]+)\"\\)").Groups["url"].Value;
         url.Should().MatchRegex("^/_equantic/fonts/[0-9a-f]{16}\\.ttf$");
         (await client.GetByteArrayAsync(url)).Should().Equal(Resource("eQuantic.UI.Fonts/TestFace-Regular.ttf"));
+    }
+
+    /// <summary>
+    /// What a page declares is served by every instance of the app, not only the one that rendered it: a
+    /// second instance, which never rendered the page, answers its URL and the identity a browser asks
+    /// for (Copilot's review of #1077). The set is the app's deployment, never the requests it served.
+    /// </summary>
+    [Fact]
+    public async Task APageOneInstanceRendered_IsServedByAnotherThatNeverRenderedIt()
+    {
+        // Photon's theme, which ships no face: the file is the page's alone, and no stylesheet serves it.
+        await using var rendering = await Serve(PhotonTheme.Instance);
+        var page = await rendering.GetTestClient().GetStringAsync("/named-face-page");
+        var url = System.Text.RegularExpressions.Regex.Match(Element(page, "eq-faces"), "url\\(\"(?<url>[^\"]+)\"\\)").Groups["url"].Value;
+        url.Should().NotBeEmpty();
+
+        await using var fresh = await Serve(PhotonTheme.Instance);
+        var client = fresh.GetTestClient();
+
+        (await client.GetByteArrayAsync(url)).Should().Equal(Resource("eQuantic.UI.Fonts/TestFace-Regular.ttf"));
+        var identity = await client.GetAsync($"/_equantic/fonts/{Assembly}/eQuantic.UI.Fonts/TestFace-Regular.ttf");
+        identity.Headers.Location!.OriginalString.Should().Be(url);
+    }
+
+    /// <summary>A family built by hand over a font no eQuantic build embedded as a face, and the theme does
+    /// not name, is declared on no page: no instance but the one that read it could serve its URL.</summary>
+    [Fact]
+    public async Task AFamilyOverAFontNoBuildEmbeddedAsAFace_IsNotDeclared()
+    {
+        await using var app = await Serve(PhotonTheme.Instance);
+
+        (await app.GetTestClient().GetStringAsync("/elsewhere-face-page")).Should().NotContain("Elsewhere Sans\"; src");
     }
 
     [Fact]

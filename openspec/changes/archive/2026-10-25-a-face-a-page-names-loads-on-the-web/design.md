@@ -30,19 +30,31 @@ which would declare on every page faces that no page names.
   text's lowering adds the family it names. The server writes the rules of what the page collected into
   an `eq-faces` style element in the head, after the families the theme's stylesheet declares are left
   out. A discovery expansion keeps its own sink, so nothing it collects reaches the page.
-- **One set of faces, a service.** `ServedFonts` becomes a singleton the render and the routes share, in
-  place of a table beside the routes. It learns a file the first time a page or the runtime names it, and
-  keeps it, so the route serves what has been named and nothing else.
-- **The identity route is narrow.** `/_equantic/fonts/<assembly>/<resource>` reads only an assembly the
-  app has loaded, never one it would have to load, and only a resource an eQuantic build embedded as a
-  face, under `eQuantic.UI.Fonts/`, a `.ttf` or an `.otf`. An assembly may embed a font for something
+- **One set of faces, a service, from the deployment.** `ServedFonts` becomes a singleton the render and
+  the routes share, in place of a table beside the routes. What it serves is decided by the app's
+  deployment and never by the requests an instance has answered: an app behind a load balancer renders a
+  page on one instance and is asked for its font by another. Beside the theme's stylesheet it reads, once,
+  every face an eQuantic build embedded in the app's own assemblies, the ones it scans, the entry assembly
+  and every assembly they reference outside the platform, so any instance answers any of their URLs.
+  A family a page names is served when every file of it is one of those, or a file the theme's stylesheet
+  serves. One over a font a library embedded another way, which the theme does not name, is served by no
+  instance, and the server says so: only the instance that read it could have answered its URL.
+- **The identity route is narrow.** `/_equantic/fonts/<assembly>/<resource>` answers only a face an
+  eQuantic build embedded, under `eQuantic.UI.Fonts/`, a `.ttf` or an `.otf`, in one of the app's
+  assemblies, which the deployment names and no request does. An assembly may embed a font for something
   else, a PDF writer's, whose licence does not cover the web, and the route must not publish it because a
-  browser asked. A family built by hand over another resource still loads on a page the server renders,
-  where its author named the resource, and on Photon, and a page the browser builds says on the console
-  why it fell back. Its redirect is not cached, so a new build's file is found under its new hash.
-- **Whole or nothing in the browser.** The runtime adds a family's faces to the document at once, so a
-  page that measured text in them rebuilds when they load (#1055's tracker), and when one fails to load it
-  removes them all: the text falls back as a whole, as it does on Photon, rather than mixing a cut of the
-  family with the platform's face.
+  browser asked. Its redirect is not cached, so a new build's file is found under its new hash.
+- **Rules, not `FontFace`.** The runtime declares a family as the server does, `@font-face` rules in the
+  `eq-faces` element with the family's name as a CSS string. Measured in Chromium, `new FontFace` takes its
+  family argument as the name itself, quotes included, where the specification parses it as a CSS family
+  name, so a quoted name was another family there and `Roboto+Mono` was invalid under the specification. A
+  CSS string reads alike in every engine, and a rule is withdrawn by deleting it.
+- **Whole or nothing in the browser, whoever declared the face.** The runtime adds a family's rules to
+  the document at once, so a page that measured text in them rebuilds when they load (#1055's tracker).
+  One listener for the document's `loadingerror`, set by the boot, takes back every rule of a family a
+  face of which failed, the theme's, the server's or the runtime's, and a face that failed before the
+  runtime was there is taken back when it starts. The text falls back as a whole, as it does on Photon,
+  and the pages that measured text in the family rebuild, holding each page's one invalidator weakly, so
+  a page that left the tree is not kept alive by a font that never failed.
 - **The document is asked first.** A family the document already has a face of, from the theme's
   stylesheet or the server's head, is not declared again: the server declared it whole.

@@ -14,14 +14,16 @@ in that family on the web, wherever the family comes from, as it is on Photon.
 
 - **A page the server renders** declares, in its head, the faces of every family its text names that
   the theme's stylesheet does not, and the server serves their files at the content-addressed URLs the
-  theme's faces use. A family missing one of its files is declared on no page, as the theme's are not,
-  and is logged once.
+  theme's faces use, on every instance of the app alike. The web serves a face an eQuantic build embedded
+  in the app's assemblies, or one the theme names: a family over a font a library embedded another way is
+  declared on no page and logged, as is one missing a file.
 - **A page the browser builds** declares a family the first time the runtime sets or measures text in
   it, unless the document already has it, from the server's head or an earlier page. Each file is asked
   for at its own address, `/_equantic/fonts/<assembly>/<resource>`, which the server answers with a
   redirect to the file's content-addressed URL, for a face an eQuantic build embedded and nothing else.
-  A family one of whose files fails to load is taken back whole, so its text falls back as a whole, as
-  on Photon, and the console names the file.
+  A family one of whose files fails to load is taken back whole, whoever declared it, so its text falls
+  back as a whole, as on Photon, the console names the file, and a page that measured text in it measures
+  again.
 - **Once.** A family named twice is declared once: on a page the server writes, and in the document the
   browser keeps.
 

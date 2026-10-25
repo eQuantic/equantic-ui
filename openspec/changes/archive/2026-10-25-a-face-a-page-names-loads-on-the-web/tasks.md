@@ -15,12 +15,21 @@
       assembly that is not loaded and a resource no eQuantic build embedded as a face; the prefix it takes
       is the one both SDKs embed under (`FontServingTests`)
 
+- [x] 1.6 The faces outside the theme's stylesheet read once from the app's deployment, so every
+      instance answers every URL; a family over a font no eQuantic build embedded as a face is not served
+- [x] 1.7 Check: a second instance, which never rendered the page, answers its URL and the identity; a
+      family over a font a library embedded another way is declared on no page (`FontServingTests`)
+
 ## 2. The browser
 
 - [x] 2.1 The runtime declares a family the first time it sets or measures text in it, unless the
       document has a face of it, and takes the family back whole when a file fails to load
-- [x] 2.2 Check: the declarations' tests (declared once, left to the server's head, taken back whole); and
-      a probe app in a browser, on a page the server rendered and on one the browser built
+- [x] 2.2 The declarations are `@font-face` rules with the family as a CSS string; one listener the boot
+      sets takes back any family a face of which fails, whoever declared it, and rebuilds the pages that
+      measured in it
+- [x] 2.3 Check: the declarations' tests (declared once, a CSS string, left to the server's head, a family
+      the server declared taken back whole, one that failed before the runtime, the pages that measured in
+      it rebuilt); and a probe app in a browser, on a page the server rendered and on one the browser built
 
 ## 3. Documentation
 
