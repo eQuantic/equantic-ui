@@ -33,6 +33,9 @@ public class HydrationCrossingTests(CrossingTwins twins) : IClassFixture<Crossin
 {
     private const string Authority = "https://login.example.test/crossing-tenant";
     private const string ApiKey = "sk-crossing-0123456789";
+    // A value only the leak could write, as the key is: every page carries the theme's stylesheet,
+    // whose own CSS says "hidden".
+    private const string HiddenTitle = "crossing-hidden-title";
 
     [Fact]
     public async Task APrefetchedPropertyAndACapturedParameter_DrawWhatTheServerDrew()
@@ -94,7 +97,7 @@ public class HydrationCrossingTests(CrossingTwins twins) : IClassFixture<Crossin
         // own Title hides it, and which the page never reads.
         var (html, drawn) = await CrossAsync("/crossing-branded", nameof(CrossingBrandedPage));
 
-        html.Should().Contain("brand bound").And.NotContain("hidden");
+        html.Should().Contain("brand bound").And.NotContain(HiddenTitle);
         drawn[0].Should().Be("brand bound");
         drawn[1].Should().Be(drawn[0]);
     }
@@ -165,7 +168,7 @@ public class HydrationCrossingTests(CrossingTwins twins) : IClassFixture<Crossin
         builder.WebHost.UseTestServer();
         builder.Services.AddSingleton(new CrossingIdentity { Authority = Authority, DisplayName = "Ada" });
         builder.Services.AddSingleton(new CrossingOptions { Title = "The Docs", ApiKey = ApiKey });
-        var branded = new CrossingBrandedOptions { Title = "hidden" };
+        var branded = new CrossingBrandedOptions { Title = HiddenTitle };
         ((CrossingBaseOptions)branded).Title = "bound";
         builder.Services.AddSingleton<CrossingBaseOptions>(branded);
         builder.Services.AddSingleton(new CrossingReport

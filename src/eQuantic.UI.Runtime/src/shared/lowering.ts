@@ -1225,8 +1225,10 @@ function lowerDraggable(
   const horizontal = node.axis === 'horizontal';
   const rest = node.restOffset ?? 0;
   // The surface the gesture starts on declares itself a target — the C# twin, same reason as the
-  // scroller: `none` inherits, and a surface that is not a target never sees the pointerdown.
-  mergeAtomicDeclaration(child, 'pointer-events', 'auto');
+  // scroller: `none` inherits, and a surface that is not a target never sees the pointerdown. It
+  // REPLACES what the child said: a box that paints nothing said `none`, and with both classes on it
+  // the stylesheet's order decided whether a resize grip could be grabbed at all.
+  replaceAtomicDeclaration(child, 'pointer-events', 'auto');
   child.attributes['data-eq-drag'] = horizontal ? 'x' : 'y';
   child.attributes['data-eq-drag-min'] = String(node.min ?? 0);
   child.attributes['data-eq-drag-max'] = String(node.max ?? 0);
@@ -1275,7 +1277,7 @@ function lowerDragDismiss(
   const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
   if (!child) return null;
   // Same rule as Draggable: the surface the gesture starts on declares itself a target.
-  mergeAtomicDeclaration(child, 'pointer-events', 'auto');
+  replaceAtomicDeclaration(child, 'pointer-events', 'auto');
   child.attributes['data-eq-drag-dismiss'] = '96'; // DragDismiss.ThresholdDp — cross-pinned
   if (node.onDismiss) {
     child.events['eq-drag-dismiss'] = node.onDismiss as EventHandler;
@@ -1597,56 +1599,113 @@ function lowerSheetSurface(
     }
   }) as EventHandler;
 
-  view.events['mousedown'] = ((event: MouseEvent) => {
+  // A press is the sheet's unless something drawn inside the surface takes it, as on Photon, where a
+  // press goes to what is drawn on top: a header's pressable, a resize grip (`[data-eq-drag]`), or the
+  // table's scrollbar, which cancels the pointerdown it takes.
+  const notTheSheets = (event: Event) => {
+    if (event.defaultPrevented) return true;
+    const surfaceElement = event.currentTarget as HTMLElement | null;
+    const owner = (event.target as Element | null)?.closest?.('button, [role="button"], [data-eq-drag]');
+    return owner != null && owner !== surfaceElement && surfaceElement?.contains?.(owner) === true;
+  };
+  const kindOf = (event: PointerEvent) =>
+    event.pointerType === 'touch' ? 'touch' : event.pointerType === 'pen' ? 'stylus' : 'mouse';
+
+  // The press in flight is kept by MODEL (sheetPresses): a sheet that follows a held drag renders on
+  // every frame of it, and a press kept in this render's closure was gone by the time it lifted.
+  const settle = () => {
+    const press = sheetPresses.get(model);
+    if (!press) return undefined;
+    sheetPresses.delete(model);
+    window.removeEventListener('blur', press.blur);
+    try {
+      press.target.releasePointerCapture?.(press.id);
+    } catch {
+      // The pointer is gone, and its capture with it.
+    }
+    return press;
+  };
+  const cancel = () => {
+    const ended = settle();
+    if (ended && model.handlePointer('cancel', { x: 0, y: 0 }, 0, 1, ended.kind)) changed();
+  };
+  // Where the press landed is read BEFORE the keyboard moves. The keyboard follows the press, focused
+  // explicitly (relying on the browser's focus-on-click left the keydown handler deaf on some engines),
+  // and without the scroll `focus()` does by default: a surface taller than its viewport had the
+  // browser scroll the scroller around it, measured at 127px on the first press of the dashboard's
+  // sheet, and a point read after it landed five rows below the one pressed.
+  const begin = (event: MouseEvent, kind: string, clicks: number) => {
     const target = event.currentTarget as HTMLElement;
-    // Where the press landed is read BEFORE the keyboard moves. The keyboard follows the click,
-    // focused explicitly (relying on the browser's focus-on-click left the keydown handler deaf on
-    // some engines), and without the scroll `focus()` does by default: the surface is taller than its
-    // viewport, so the browser scrolled the scroller around it to bring its top into view, measured
-    // at 127px on the first press of the dashboard's sheet, and a point read after it landed five
-    // rows below the one pressed.
     const at = local(target, event.clientX, event.clientY);
     target.focus({ preventScroll: true });
-    // The platform counts the clicks — its double-click interval is a system setting, never ours.
-    model.handlePointer('down', at, modifiersOf(event), event.detail > 0 ? event.detail : 1);
-    // The press is the sheet's until it lifts: its moves and its release go to the model through
-    // document-level listeners, so a sweep survives leaving the grid. The model knows whether the
-    // press is growing the selection or dragging a fill, and answers whether a move changed it.
-    // A press can also end where this page never hears it lift (released outside the window, or
-    // after the window lost focus): the window's blur, or a move with no button held, says so,
-    // and the model is told the press was taken away, so a fill nobody let go of pours nothing.
-    const end = () => {
-      document.removeEventListener('mousemove', move);
-      document.removeEventListener('mouseup', up);
-      window.removeEventListener('blur', cancel);
-    };
-    const cancel = () => {
-      end();
-      if (model.handlePointer('cancel', { x: 0, y: 0 }, 0, 1)) changed();
-    };
-    const move = (ev: MouseEvent) => {
-      if (ev.buttons === 0) {
-        cancel();
-        return;
-      }
-      if (model.handlePointer('move', local(target, ev.clientX, ev.clientY), modifiersOf(ev), 1)) {
-        changed();
-      }
-    };
-    const up = (ev: MouseEvent) => {
-      end();
-      if (model.handlePointer('up', local(target, ev.clientX, ev.clientY), modifiersOf(ev), 1)) {
-        changed();
-      }
-    };
-    document.addEventListener('mousemove', move);
-    document.addEventListener('mouseup', up);
-    window.addEventListener('blur', cancel);
-    // The press is the surface's, as on a code surface: the browser's own reaction to it (a text
-    // sweep, a drag of what is under it) would fight the band and the fill the model draws.
-    event.preventDefault();
+    model.handlePointer('down', at, modifiersOf(event), clicks, kind);
     changed();
-  }) as EventHandler;
+  };
+
+  view.events['pointerdown'] = ((event: PointerEvent) => {
+    if (sheetPresses.has(model)) cancel();
+    if (notTheSheets(event)) return;
+    const target = event.currentTarget as HTMLElement;
+    const press = { id: event.pointerId, kind: kindOf(event), target, blur: cancel };
+    sheetPresses.set(model, press);
+    window.addEventListener('blur', press.blur);
+    if (press.kind !== 'touch') {
+      try {
+        target.setPointerCapture?.(event.pointerId);
+      } catch {
+        // A script's event names no pointer to capture.
+      }
+    }
+    // A mouse's press waits for its `mousedown`, the one event that carries the platform's click count
+    // (Chrome reports `detail: 0` on every `pointerdown`, measured: lowerCodeSurface), whose double-click
+    // interval is a system setting, never ours. A finger's and a pen's compatibility `mousedown` arrives
+    // only after they lifted, so for those the press is the `pointerdown`.
+    if (press.kind !== 'mouse') begin(event, press.kind, 1);
+  }) as unknown as EventHandler;
+
+  view.events['mousedown'] = ((event: MouseEvent) => {
+    if (sheetPresses.get(model)?.kind !== 'mouse') return;
+    // The browser's own reaction to a press (a text sweep, a drag of what is under it, the focus moved
+    // to whatever was pressed) would fight the band, the fill and the keyboard the sheet keeps.
+    event.preventDefault();
+    begin(event, 'mouse', event.detail > 0 ? event.detail : 1);
+  }) as unknown as EventHandler;
+
+  view.events['pointermove'] = ((event: PointerEvent) => {
+    const target = event.currentTarget as HTMLElement;
+    const press = sheetPresses.get(model);
+    if (!press || press.id !== event.pointerId) {
+      // A pointer resting on the sheet, no button held, looks as the engine answers: a crosshair where a
+      // press would grab the fill handle. A finger has no hover.
+      if (event.buttons === 0 && event.pointerType !== 'touch') {
+        const cursor = notTheSheets(event) ? 'default' : model.cursorAt(local(target, event.clientX, event.clientY));
+        target.style.cursor = cursor === 'default' ? '' : cssCursor(cursor);
+      }
+      return;
+    }
+    // A finger never drags a selection: the table around the cells may be panning it.
+    if (press.kind === 'touch') return;
+    if (event.buttons === 0) {
+      cancel();
+      return;
+    }
+    if (model.handlePointer('move', local(target, event.clientX, event.clientY), modifiersOf(event), 1, press.kind)) {
+      changed();
+    }
+  }) as unknown as EventHandler;
+
+  view.events['pointerup'] = ((event: PointerEvent) => {
+    if (sheetPresses.get(model)?.id !== event.pointerId) return;
+    const ended = settle()!;
+    // The release of a finger's pan, which the table marked handled, is no tap.
+    const phase = ended.kind === 'touch' && event.defaultPrevented ? 'cancel' : 'up';
+    const at = local(ended.target, event.clientX, event.clientY);
+    if (model.handlePointer(phase, at, modifiersOf(event), 1, ended.kind)) changed();
+  }) as unknown as EventHandler;
+
+  view.events['pointercancel'] = ((event: PointerEvent) => {
+    if (sheetPresses.get(model)?.id === event.pointerId) cancel();
+  }) as unknown as EventHandler;
 
   view.events['copy'] = ((event: ClipboardEvent) => {
     event.clipboardData?.setData('text/plain', model.copyText());
@@ -1674,6 +1733,9 @@ function lowerSheetSurface(
 
   return view;
 }
+
+/** The press in flight on each sheet surface, by MODEL — see lowerSheetSurface. */
+const sheetPresses = new WeakMap<object, { id: number; kind: string; target: HTMLElement; blur: () => void }>();
 
 /**
  * The table viewport on the web, at the offset its model holds as the pass runs (C# twin:
@@ -1718,8 +1780,9 @@ function lowerTableViewport(node: TableViewportNode, context: LoweringContext, p
   );
   view.attributes['role'] = 'group';
   // A stop of the Tab order itself, before its cells': the keys it takes scroll it (table-viewports.ts),
-  // and a scroller a keyboard cannot reach scrolls for nobody who only has a keyboard.
-  view.attributes['tabindex'] = '0';
+  // and a scroller a keyboard cannot reach scrolls for nobody who only has a keyboard. Unless it
+  // declines, for a component that composes it and keeps the keyboard.
+  if (node.canRequestFocus !== false) view.attributes['tabindex'] = '0';
   if (node.label) view.attributes['aria-label'] = node.label;
   view.attributes['data-eq-table'] = path;
   declareTableViewport(path, {
@@ -1828,13 +1891,12 @@ function lowerTableCell(
 function lowerTableScrollbar(): HtmlNode {
   const thumb = element('div', {
     position: 'absolute',
-    background: 'var(--eq-color-text-muted)',
-    opacity: '0.55',
+    background: 'var(--eq-color-scrollbar-thumb)',
     'border-radius': '999px',
   });
   return element(
     'div',
-    { display: 'none', position: 'absolute', background: 'var(--eq-color-surface-subtle)' },
+    { display: 'none', position: 'absolute', background: 'var(--eq-color-scrollbar-track)' },
     [thumb],
   );
 }

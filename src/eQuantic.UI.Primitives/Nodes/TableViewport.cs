@@ -60,6 +60,14 @@ public sealed class TableViewport : VisualNode
     /// <summary>Accessible name.</summary>
     public string? Label { get; init; }
 
+    /// <summary>
+    /// Whether the viewport is a stop of the Tab order itself and takes the keys that scroll it (the
+    /// arrows, the pages, the ends). False leaves the keyboard to the component that composes it, as a
+    /// spreadsheet keeps it for its own cells (Flutter's <c>canRequestFocus</c>); the controls in its
+    /// cells stay stops of the Tab order either way.
+    /// </summary>
+    public bool CanRequestFocus { get; init; } = true;
+
     /// <summary>The cells to place, and the marks to draw above them.</summary>
     public List<TableViewCell> Cells { get; } = new();
 

@@ -48,8 +48,10 @@ internal sealed partial class WebLoweringVisitor
             },
         };
         // A stop of the Tab order itself, before its cells': the keys it takes scroll it, and a scroller
-        // a keyboard cannot reach scrolls for nobody who only has a keyboard.
-        element.RawAttributes = new Dictionary<string, string> { ["role"] = "group", ["tabindex"] = "0" };
+        // a keyboard cannot reach scrolls for nobody who only has a keyboard. Unless it declines, for a
+        // component that composes it and keeps the keyboard.
+        element.RawAttributes = new Dictionary<string, string> { ["role"] = "group" };
+        if (viewport.CanRequestFocus) element.RawAttributes["tabindex"] = "0";
         if (viewport.Label is { Length: > 0 } label) element.RawAttributes["aria-label"] = label;
 
         for (var marks = 0; marks < 2; marks++)
@@ -148,7 +150,7 @@ internal sealed partial class WebLoweringVisitor
             {
                 Display = Display.None,
                 Position = Position.Absolute,
-                Background = "var(--eq-color-surface-subtle)",
+                Background = "var(--eq-color-scrollbar-track)",
             },
         };
         track.Children.Add(new RealizedElement("div")
@@ -156,8 +158,7 @@ internal sealed partial class WebLoweringVisitor
             Style = new HtmlStyle
             {
                 Position = Position.Absolute,
-                Background = "var(--eq-color-text-muted)",
-                Opacity = "0.55",
+                Background = "var(--eq-color-scrollbar-thumb)",
                 BorderRadius = "999px",
             },
         });

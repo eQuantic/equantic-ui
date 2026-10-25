@@ -56,7 +56,7 @@ public sealed class SheetScreen : StatefulComponent
             Width = SizeValue.Fill,
             Height = SizeValue.Fill,
             Padding = EdgeInsets.All(Space.S4),
-        }, new Spreadsheet(_sheet) { Width = SizeValue.Fill, Height = SizeValue.Fill }), 1));
+        }, Spreadsheet(_sheet, width: SizeValue.Fill, height: SizeValue.Fill)), 1));
 
         return new Box(new BoxStyle
         {

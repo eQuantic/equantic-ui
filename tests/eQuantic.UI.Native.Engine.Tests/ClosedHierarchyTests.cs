@@ -164,7 +164,8 @@ public class ClosedHierarchyTests
         // failed and named the type — so the names below are the ones that A/B depends on.
         var scanned = Scanned.Select(a => a.GetName().Name).ToList();
         scanned.Should().Contain(
-            ["eQuantic.UI.Web", "eQuantic.UI.Email", "eQuantic.UI.Components", "eQuantic.UI.Charts"],
+            ["eQuantic.UI.Web", "eQuantic.UI.Email", "eQuantic.UI.Components", "eQuantic.UI.Charts",
+                "eQuantic.UI.Spreadsheets"],
             "both graphs are the point: a node born in a realizer is exactly the case a scan of the "
             + "native side alone would report nothing about");
         scanned.Should().HaveCountGreaterThan(8,

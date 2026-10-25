@@ -48,13 +48,14 @@ public static class RuntimeProvidedTypeScanner
 
     /// <summary>
     /// The assemblies whose types the runtime provides: the visual vocabulary, the two engines, the
-    /// component library and the charts. A namespace says where a type is declared, and any assembly
+    /// component library, the charts and the spreadsheet family. A namespace says where a type is declared, and any assembly
     /// can declare a type in one of these; what the runtime HAS is these assemblies' types, so a
     /// question about what it carries asks the assembly too (found in review, #418).
     /// <c>VocabularyInterfaceDefaultsTests</c> holds this list to the assemblies it reads.
     /// </summary>
     public static readonly IReadOnlyList<string> RuntimeAssemblies =
-        ["eQuantic.UI.Primitives", "eQuantic.UI.Code", "eQuantic.UI.Sheet", "eQuantic.UI.Components", "eQuantic.UI.Charts"];
+        ["eQuantic.UI.Primitives", "eQuantic.UI.Code", "eQuantic.UI.Sheet", "eQuantic.UI.Components", "eQuantic.UI.Charts",
+            "eQuantic.UI.Spreadsheets"];
 
     /// <summary>Whether <paramref name="ns"/> is one of the <see cref="VocabularyNamespaces"/> or
     /// nested inside one — never merely a longer name that starts the same way.</summary>
@@ -87,7 +88,10 @@ public static class RuntimeProvidedTypeScanner
         // The chart library: a second shared component library, embedded in the runtime the same way
         // (docs/CHARTS-PLAN.md) — a page that names BarChart imports it from the runtime.
         || ns == "eQuantic.UI.Charts"
-        || ns.StartsWith("eQuantic.UI.Charts.");
+        || ns.StartsWith("eQuantic.UI.Charts.")
+        // The spreadsheet family: a third, embedded the same way (docs/SPREADSHEET-PLAN.md).
+        || ns == "eQuantic.UI.Spreadsheets"
+        || ns.StartsWith("eQuantic.UI.Spreadsheets.");
 
     /// <summary>
     /// The name the runtime exports <paramref name="type"/> under, which is what a module imports.

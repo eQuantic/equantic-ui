@@ -9,6 +9,7 @@
 import { round as dotnetRound } from '../utils/dotnet-math';
 import type { ColorValue, SizeKindValue, TypeStyleValue } from './nodes';
 import type { DataPalette } from './data-palette';
+import type { SheetTheme } from './sheet-theme';
 import { hashesByValue } from '../utils/hash';
 
 /**
@@ -532,8 +533,20 @@ export interface AppTheme {
   focusRing: ColorToken;
   linkColor: ColorToken;
   scrim: ColorToken;
+  /** The wash behind selected text (C# `IAppTheme.Selection`). */
+  selection: ColorToken;
+  /** The selected text's colour (C# `IAppTheme.OnSelection`), or undefined for its own. */
+  onSelection?: ColorToken | null;
+  /** An empty field's placeholder (C# `IAppTheme.Placeholder`). */
+  placeholder: ColorToken;
+  /** A scrollbar's thumb (C# `IAppTheme.ScrollbarThumb`). */
+  scrollbarThumb: ColorToken;
+  /** A scrollbar's track (C# `IAppTheme.ScrollbarTrack`). */
+  scrollbarTrack: ColorToken;
   /** The colours a chart draws DATA with (C# `IAppTheme.Data`): series, sequential, diverging, other, status. */
   data: DataPalette;
+  /** The spreadsheet's slot (C# `IAppTheme.Sheet`), absent or null for its own colours. */
+  sheet?: SheetTheme | null;
   disabledOpacity: number;
   /**
    * The face this theme sets CODE in (C# `IAppTheme.MonoFamily`), or undefined for the platform's
@@ -542,6 +555,8 @@ export interface AppTheme {
    * EQ2010 exist to close — and a theme property is better carried than fenced.
    */
   monoFamily?: string;
+  /** The face this theme sets TEXT in (C# `IAppTheme.TextFamily`), or undefined for the platform's own. */
+  textFamily?: string;
   colors(variant: string): VariantColors;
   type(role: string): TypeStyle;
   elevation(level: number): ShadowSpec;

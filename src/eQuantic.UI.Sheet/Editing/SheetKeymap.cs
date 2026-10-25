@@ -77,6 +77,8 @@ public static class SheetKeymap
             case "Enter": sheet.Step(shift ? -1 : 1, 0); return true;
             case "Home": sheet.Move(0, -1, command ? SheetMotion.SheetBoundary : SheetMotion.RowBoundary, shift); return true;
             case "End": sheet.Move(0, 1, command ? SheetMotion.SheetBoundary : SheetMotion.RowBoundary, shift); return true;
+            case "PageUp" when !command: return sheet.MovePage(-1, shift);
+            case "PageDown" when !command: return sheet.MovePage(1, shift);
             case "Backspace":
             case "Delete": sheet.ClearSelection(); return true;
         }

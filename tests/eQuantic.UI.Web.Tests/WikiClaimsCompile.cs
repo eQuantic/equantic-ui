@@ -2,6 +2,7 @@ using eQuantic.UI.Web;
 using eQuantic.UI.Primitives;
 using Microsoft.Extensions.DependencyInjection;
 using static eQuantic.UI.Components.UI;
+using static eQuantic.UI.Spreadsheets.SpreadsheetsUI;
 
 namespace eQuantic.UI.Web.Tests;
 
@@ -129,6 +130,25 @@ public class WikiClaimsCompile
                 mark: true, rows: 3, columns: 2)],
             request: new TableScrollRequest(version) { Reveal = new TableRange(1_048_575, 0) },
             label: "Sheet");
+    }
+
+    /// <summary>Spreadsheet (#995): a sheet the viewport builds lazily on both axes, and the theme's
+    /// sheet slot naming two of its colours.</summary>
+    [Fact]
+    public void TheSpreadsheet_Compiles()
+    {
+        var ledger = new eQuantic.UI.Sheet.SheetController(rows: 100_000, cols: 100);
+        ledger.Document.SetCell(new eQuantic.UI.Sheet.CellRef(0, 0), "Ledger");
+
+        _ = Spreadsheet(ledger, height: SizeValue.Fill);
+        _ = Ledger(PhotonTheme.Instance);
+
+        // In an app's theme: `public SheetTheme? Sheet => Ledger(this);`
+        static SheetTheme Ledger(IAppTheme theme) => new()
+        {
+            Gridline = theme.BorderStrong,
+            RangeFill = theme.FocusRing.WithOpacity(0.12f),
+        };
     }
 
     [Fact]

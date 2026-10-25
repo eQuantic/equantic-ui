@@ -16,7 +16,24 @@ public sealed class SheetDocument
     {
         Rows = Math.Max(1, rows);
         Cols = Math.Max(1, Math.Min(cols, CellRef.MaxCols));
+        RowSpans = new SheetSpans(this, SheetAxis.Rows);
+        ColumnSpans = new SheetSpans(this, SheetAxis.Cols);
     }
+
+    /// <summary>The rows as a table viewport reads them: where each starts and which one an offset
+    /// falls in, a binary search over the rows sized differently.</summary>
+    public SheetSpans RowSpans { get; }
+
+    /// <summary>The columns, the same way.</summary>
+    public SheetSpans ColumnSpans { get; }
+
+    /// <summary>Counts every change of a size, or of the rows and columns that carry them, so the
+    /// spans read the overrides again only when one happened.</summary>
+    internal int SizeVersion { get; private set; }
+
+    internal IReadOnlyDictionary<int, float> RowHeights => _rowHeights;
+
+    internal IReadOnlyDictionary<int, float> ColWidths => _colWidths;
 
     /// <summary>The grid's LOGICAL extent — what scrolling and headers show. Cells outside it hold
     /// nothing; growing it is free (the map is sparse).</summary>
@@ -58,6 +75,7 @@ public sealed class SheetDocument
     {
         if (Math.Abs(height - DefaultRowHeight) < 0.01f) _rowHeights.Remove(row);
         else _rowHeights[row] = Math.Max(12f, height);
+        SizeVersion++;
     }
 
     /// <summary>Column twin of <see cref="SetRowHeight"/> — preview/load, not undoable.</summary>
@@ -65,6 +83,7 @@ public sealed class SheetDocument
     {
         if (Math.Abs(width - DefaultColWidth) < 0.01f) _colWidths.Remove(col);
         else _colWidths[col] = Math.Max(24f, width);
+        SizeVersion++;
     }
 
     public CellRef Clamp(CellRef cell) => new(
@@ -104,6 +123,7 @@ public sealed class SheetDocument
 
         ShiftSizes(_rowHeights, atRow, delta);
         Rows = Math.Max(1, Rows + delta);
+        SizeVersion++;
         return removed;
     }
 
@@ -133,6 +153,7 @@ public sealed class SheetDocument
 
         ShiftSizes(_colWidths, atCol, delta);
         Cols = Math.Max(1, Math.Min(Cols + delta, CellRef.MaxCols));
+        SizeVersion++;
         return removed;
     }
 

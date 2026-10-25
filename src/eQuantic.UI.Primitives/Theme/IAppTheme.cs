@@ -1,56 +1,12 @@
 namespace eQuantic.UI.Primitives;
 
-/// <summary>Interactive variants — conceptual parity with the web SDK's Variant set (spec §01/§09).</summary>
-public enum Variant : byte
-{
-    Primary = 0,
-    Secondary = 1,
-    Destructive = 2,
-    Outline = 3,
-    Ghost = 4,
-    Link = 5,
-    Success = 6,
-    Warning = 7,
-    Info = 8,
-    /// <summary>The M3 tertiary role — a contrasting accent for balance. Photon tones it from Info.</summary>
-    Tertiary = 9,
-}
-
 /// <summary>
-/// Corner-shape scale — a semantic ladder (M3's shape scale) themes resolve to concrete radii, so
-/// SHAPE is theme-driven: Photon returns its own radii, Material returns the M3 shape values, a brand
-/// theme returns whatever it likes. Components request a role, never a hardcoded dp.
-/// </summary>
-public enum ShapeScale : byte
-{
-    None = 0,
-    ExtraSmall = 1,
-    Small = 2,
-    Medium = 3,
-    Large = 4,
-    ExtraLarge = 5,
-    /// <summary>Fully rounded (pills, avatars) — engine-clamped to min(w,h)/2.</summary>
-    Full = 6,
-}
-
-/// <summary>
-/// Control size tiers — heights 32 · 40 · 48 · 56 dp (spec §09). Named <c>SizeVariant</c> (not the
-/// design sketch's <c>Size</c>) for parity with the web SDK and because <c>Size</c> is the engine's
-/// geometry struct.
-/// </summary>
-public enum SizeVariant : byte
-{
-    Small = 0,
-    Medium = 1,
-    Large = 2,
-    XLarge = 3,
-}
-
-/// <summary>
-/// The Photon theme contract (spec §09 — conceptual parity with the web <c>IAppTheme</c>): every color
-/// is a light/dark <see cref="ColorToken"/>, resolution happens once per build pass, and resolved styles
-/// are plain structs on the primitive tree (zero allocation in steady state, plan D9). No CSS anywhere
-/// (plan D11) — <c>StyleBuilder</c>/class-strings remain web-only.
+/// The theme every target draws with (spec §09): the web writes it into the page's stylesheet, Photon
+/// resolves it once per build pass into plain structs on the primitive tree (zero allocation in
+/// steady state, plan D9), and an email inlines it. Every colour is a light/dark
+/// <see cref="ColorToken"/>. It says the document as well as the components (the surface, the text,
+/// the faces, the selection, the placeholder and the scrollbars), so an app writes no CSS for any of
+/// them.
 /// </summary>
 public interface IAppTheme
 {
@@ -74,6 +30,34 @@ public interface IAppTheme
     ColorToken FocusRing { get; }
     ColorToken LinkColor { get; }
     ColorToken Scrim { get; }
+
+    // The document's chrome: what a page or a window draws around the components. Each defaults to
+    // the value the SDK drew with before it was the theme's, so a theme that sets none draws as it did.
+
+    /// <summary>
+    /// The wash behind selected text: the document's selection on the web, and the code editor's on
+    /// every target. Defaults to <see cref="FocusRing"/> at 28%, translucent so the text keeps its
+    /// colour through it.
+    /// </summary>
+    ColorToken Selection => FocusRing.WithOpacity(0.28f);
+
+    /// <summary>
+    /// The colour selected text takes, or null for its own. A theme whose <see cref="Selection"/> is
+    /// opaque names one, so the selected text stays readable on it.
+    /// </summary>
+    ColorToken? OnSelection => null;
+
+    /// <summary>The placeholder an empty field shows. Defaults to <see cref="TextMuted"/>.</summary>
+    ColorToken Placeholder => TextMuted;
+
+    /// <summary>
+    /// A scrollbar's thumb: the page's on the web, and a table's on every target. Defaults to
+    /// <see cref="TextMuted"/> at 55%.
+    /// </summary>
+    ColorToken ScrollbarThumb => TextMuted.WithOpacity(0.55f);
+
+    /// <summary>A scrollbar's track. Defaults to <see cref="SurfaceSubtle"/>.</summary>
+    ColorToken ScrollbarTrack => SurfaceSubtle;
 
     /// <summary>
     /// The five sub-tokens for a variant. Filled variants come from the palette; Outline / Ghost / Link
@@ -105,6 +89,17 @@ public interface IAppTheme
     /// </summary>
     string? MonoFamily => null;
 
+    /// <summary>
+    /// The face this theme sets TEXT in, or null for the platform's own: the face of every text whose
+    /// role and call site name none, and the document's face on the web. The proportional twin of
+    /// <see cref="MonoFamily"/>, resolved by the same merge (<c>EffectiveTypeStyle.WithThemeFace</c>).
+    /// <para>
+    /// Naming a face does not make it available: a face the platform does not have falls back on the
+    /// web, and Photon reports it unresolved, as it does for a role's face.
+    /// </para>
+    /// </summary>
+    string? TextFamily => null;
+
     /// <summary>Elevation level 0–5 (spec §05). Level 0 is none (+1dp Border); dark E1–E2 ALSO require a 1dp border.</summary>
     ShadowSpec Elevation(int level);
 
@@ -124,6 +119,15 @@ public interface IAppTheme
     /// contract it takes on.
     /// </summary>
     DataPalette Data => DataPalette.Default;
+
+    /// <summary>
+    /// The spreadsheet's slot (<see cref="SheetTheme"/>), the first of the per-component slots of
+    /// <c>docs/ELEMENT-TREE-PLAN.md</c> §3.10 and in their shape: NULL by default, which the spreadsheet
+    /// reads as its own colours derived from this theme's foundation, so every theme an app wrote keeps
+    /// compiling and draws a sheet correctly. A theme that wants its grid in its own colours answers a
+    /// slot naming only those; it crosses to the browser in the theme's JSON as <see cref="Data"/> does.
+    /// </summary>
+    SheetTheme? Sheet => null;
 
     /// <summary>
     /// The colour of a code token. DEFAULTED from the palette the theme already has — a design

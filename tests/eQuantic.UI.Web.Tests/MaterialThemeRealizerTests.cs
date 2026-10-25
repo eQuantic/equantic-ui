@@ -56,7 +56,7 @@ public class MaterialThemeRealizerTests
     [Fact]
     public void GeneratedStylesheet_CarriesM3TokensAndShapeScale()
     {
-        var css = PhotonCssGenerator.Generate(Material);
+        var css = ThemeStylesheet.Generate(Material);
 
         css.Should().Contain("--eq-color-primary-base: light-dark(#6750a4, #d0bcff);");
         css.Should().Contain("--eq-color-tertiary-base: light-dark(#7d5260, #efb8c8);");

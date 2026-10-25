@@ -24,7 +24,7 @@ namespace eQuantic.UI.Web.Tests;
 /// </summary>
 public class EntryAlignmentTests
 {
-    private static string Sheet() => PhotonCssGenerator.Generate(PhotonTheme.Instance);
+    private static string Sheet() => ThemeStylesheet.Generate(PhotonTheme.Instance);
 
     [Fact]
     public void TheFieldShellFillsItsBoxAndCentresTheEntry()

@@ -1,5 +1,35 @@
 #nullable enable
+*REMOVED*const eQuantic.UI.Components.Spreadsheet.FillHandle = 7 -> float
+*REMOVED*const eQuantic.UI.Components.Spreadsheet.Grip = 6 -> float
+*REMOVED*const eQuantic.UI.Components.Spreadsheet.HeaderHeight = 26 -> float
+*REMOVED*const eQuantic.UI.Components.Spreadsheet.HeaderWidth = 44 -> float
+*REMOVED*const eQuantic.UI.Components.Spreadsheet.MinColWidth = 24 -> float
+*REMOVED*const eQuantic.UI.Components.Spreadsheet.MinRowHeight = 14 -> float
+*REMOVED*eQuantic.UI.Components.Spreadsheet
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Controller.get -> eQuantic.UI.Sheet.SheetController!
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Height.get -> eQuantic.UI.Primitives.SizeValue
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Height.init -> void
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Overscan.get -> int
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Overscan.init -> void
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Spreadsheet(eQuantic.UI.Sheet.SheetController! controller) -> void
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Width.get -> eQuantic.UI.Primitives.SizeValue
+*REMOVED*eQuantic.UI.Components.Spreadsheet.Width.init -> void
+*REMOVED*override eQuantic.UI.Components.Spreadsheet.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+*REMOVED*override eQuantic.UI.Components.Spreadsheet.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+*REMOVED*static eQuantic.UI.Components.Spreadsheet.ColumnName(int col) -> string!
+eQuantic.UI.Components.TableView.CanRequestFocus.get -> bool
+eQuantic.UI.Components.TableView.CanRequestFocus.init -> void
+static eQuantic.UI.Components.UI.TableViewport(eQuantic.UI.Primitives.TableSpans! rows, eQuantic.UI.Primitives.TableSpans! columns, eQuantic.UI.Primitives.ITableScrollModel! scroll, int pinnedRows = 0, int pinnedColumns = 0, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.TableScrollRequest? request = null, System.Action<eQuantic.UI.Primitives.TableOffset>? onScrolled = null, System.Action<eQuantic.UI.Primitives.Size>? onViewportChanged = null, string? label = null, bool canRequestFocus = true, eQuantic.UI.Primitives.VisualNode![]? children = null) -> eQuantic.UI.Primitives.TableViewport!
+*REMOVED*static eQuantic.UI.Components.UI.TableView(eQuantic.UI.Primitives.TableSpans! rows, eQuantic.UI.Primitives.TableSpans! columns, System.Func<int, int, eQuantic.UI.Primitives.VisualNode?>! cellBuilder, int pinnedRows = 0, int pinnedColumns = 0, int overscan = 3, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue), System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.TableViewCell!>? marks = null, eQuantic.UI.Primitives.TableScrollRequest? request = null, System.Action<eQuantic.UI.Primitives.TableOffset>? onScrolled = null, System.Action<eQuantic.UI.Primitives.Size>? onViewportChanged = null, string? label = null) -> eQuantic.UI.Components.TableView!
+*REMOVED*static eQuantic.UI.Components.UI.TableViewport(eQuantic.UI.Primitives.TableSpans! rows, eQuantic.UI.Primitives.TableSpans! columns, eQuantic.UI.Primitives.ITableScrollModel! scroll, int pinnedRows = 0, int pinnedColumns = 0, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.TableScrollRequest? request = null, System.Action<eQuantic.UI.Primitives.TableOffset>? onScrolled = null, System.Action<eQuantic.UI.Primitives.Size>? onViewportChanged = null, string? label = null, eQuantic.UI.Primitives.VisualNode![]? children = null) -> eQuantic.UI.Primitives.TableViewport!
+eQuantic.UI.Components.TableScroll.AutoScroll(eQuantic.UI.Primitives.Point? pointer) -> void
+eQuantic.UI.Components.TableView.Scroll.get -> eQuantic.UI.Components.TableScroll?
+eQuantic.UI.Components.TableView.Scroll.init -> void
+static eQuantic.UI.Components.UI.TableView(eQuantic.UI.Primitives.TableSpans! rows, eQuantic.UI.Primitives.TableSpans! columns, System.Func<int, int, eQuantic.UI.Primitives.VisualNode?>! cellBuilder, int pinnedRows = 0, int pinnedColumns = 0, int overscan = 3, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue), System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.TableViewCell!>? marks = null, eQuantic.UI.Primitives.TableScrollRequest? request = null, System.Action<eQuantic.UI.Primitives.TableOffset>? onScrolled = null, System.Action<eQuantic.UI.Primitives.Size>? onViewportChanged = null, string? label = null, bool canRequestFocus = true, eQuantic.UI.Components.TableScroll? scroll = null) -> eQuantic.UI.Components.TableView!
 eQuantic.UI.Components.CodeEditor.SignatureProviders.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.ICodeSignatureProvider!>!
 eQuantic.UI.Components.CodeEditor.SignatureProviders.set -> void
 eQuantic.UI.Components.CodeEditor.KeyBindings.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeKeyBinding>!
 eQuantic.UI.Components.CodeEditor.KeyBindings.set -> void
+*REMOVED*const eQuantic.UI.Components.CodeBlock.SelectionAlpha = 0.28 -> float
+eQuantic.UI.Components.CodeBlock.Selection.get -> eQuantic.UI.Code.CodeRange
+eQuantic.UI.Components.CodeBlock.Selection.init -> void

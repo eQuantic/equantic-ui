@@ -197,7 +197,7 @@ public class HostOnlyFrameworkTypeTests
     [InlineData("var eased = ((Curve?)Curve.Standard)?.Ease(0.5f);")]
     [InlineData("var eased = CurveEvaluator.Ease(Curve.Standard, 0.5f);")]
     [InlineData("Func<Curve, float, float> ease = CurveEvaluator.Ease;")]
-    [InlineData("var face = ((IAppTheme)null!).Type(TypeRole.BodyM).WithCodeFace((IAppTheme)null!);")]
+    [InlineData("var face = ((IAppTheme)null!).Type(TypeRole.BodyM).WithThemeFace((IAppTheme)null!);")]
     [InlineData("var style = new Text(\"hi\").Resolve((IAppTheme)null!);")]
     [InlineData("Func<IAppTheme, TypeStyle> resolve = new Text(\"hi\").Resolve;")]
     public void AnExtensionOnAHostOnlyHome_IsNamingTheHome(string statement)

@@ -17,18 +17,6 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// </summary>
 public class CodeDiffComponentTests
 {
-    private sealed class FixedWidthRasterizer : Framework.ITextRasterizer
-    {
-        public Framework.TextRaster? Rasterize(string content, TypeStyle style, float typeScale,
-            float maxWidth, int maxLines, float scale, TextAlignment align)
-        {
-            if (string.IsNullOrEmpty(content)) return null;
-            var width = Math.Max(1, (int)Math.Min(content.Length * 8 * scale, maxWidth * scale));
-            var height = Math.Max(1, (int)(style.LineHeight * scale));
-            return new Framework.TextRaster(width, height, new byte[width * height]);
-        }
-    }
-
     private static PhotonHost Host(VisualNode root, float width = 900, float height = 700) =>
         new(root, PhotonTheme.Instance, ThemeMode.Light, width, height) { TextRasterizer = new FixedWidthRasterizer() };
 

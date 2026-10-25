@@ -32,19 +32,6 @@ public class TransformedSurfaceTests
                 [new Framework.MeasuredLine(text.Length * 8f, false)]);
     }
 
-    /// <inheritdoc cref="FixedWidthMeasurer"/>
-    private sealed class FixedWidthRasterizer : Framework.ITextRasterizer
-    {
-        public Framework.TextRaster? Rasterize(string content, TypeStyle style, float typeScale,
-            float maxWidth, int maxLines, float scale, TextAlignment align)
-        {
-            if (string.IsNullOrEmpty(content)) return null;
-            var width = Math.Max(1, (int)Math.Min(content.Length * 8 * scale, maxWidth * scale));
-            var height = Math.Max(1, (int)(style.LineHeight * scale));
-            return new Framework.TextRaster(width, height, new byte[width * height]);
-        }
-    }
-
     /// <summary><paramref name="surface"/> in a box of <paramref name="width"/> by
     /// <paramref name="height"/> at 200, 200, drawn under <paramref name="transform"/>.</summary>
     private static PhotonHost Mount(VisualNode surface, Transform2D transform, float width = 200, float height = 100)

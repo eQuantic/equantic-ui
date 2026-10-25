@@ -31,7 +31,7 @@ public class PresenceRealizerTests
     [Fact]
     public void Stylesheet_CarriesTheEnterMechanics()
     {
-        var css = PhotonCssGenerator.Generate(Theme);
+        var css = ThemeStylesheet.Generate(Theme);
 
         css.Should().Contain("@keyframes eq-presence-fade { from { opacity: 0; } }");
         css.Should().Contain("@keyframes eq-presence-slideup { from { opacity: 0; transform: translateY(16px); } }");

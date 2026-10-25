@@ -13,7 +13,8 @@ import { SheetController } from './components/SheetController';
 import { CellRef } from './components/CellRef';
 import { SheetRange } from './components/SheetRange';
 import { SheetGrid } from './components/SheetGrid';
-import { Point } from './runtime-exports';
+import { TableScroll } from './components/TableScroll';
+import { Size, TableOffset, TableScrollRequest } from './runtime-exports';
 import type { HtmlNode } from '../core/types';
 
 type Handler = (event: Event) => void;
@@ -41,6 +42,29 @@ function makeTarget(): HTMLElement {
 
 function key(node: HtmlNode, keyName: string, init: KeyboardEventInit = {}): void {
   events(node)['keydown'](new KeyboardEvent('keydown', { key: keyName, ...init }));
+}
+
+type PointerInit = MouseEventInit & { pointerType?: string };
+
+function on<T extends Event>(event: T, target: HTMLElement): T {
+  Object.defineProperty(event, 'currentTarget', { value: target });
+  return event;
+}
+
+/** A press as a browser sends it to the surface: the pointerdown, then a mouse's mousedown, which
+ * carries the platform's click count. */
+function press(node: HtmlNode, target: HTMLElement, init: PointerInit = {}): void {
+  const pointerType = init.pointerType ?? 'mouse';
+  events(node)['pointerdown'](on(new PointerEvent('pointerdown', { pointerId: 1, cancelable: true, buttons: 1, ...init, pointerType }), target));
+  if (pointerType === 'mouse') events(node)['mousedown'](on(new MouseEvent('mousedown', { cancelable: true, ...init }), target));
+}
+
+function move(node: HtmlNode, target: HTMLElement, init: PointerInit = {}): void {
+  events(node)['pointermove'](on(new PointerEvent('pointermove', { pointerId: 1, buttons: 1, pointerType: 'mouse', ...init }), target));
+}
+
+function lift(node: HtmlNode, target: HTMLElement, init: PointerInit = {}): void {
+  events(node)['pointerup'](on(new PointerEvent('pointerup', { pointerId: 1, cancelable: true, pointerType: 'mouse', ...init }), target));
 }
 
 describe('SheetSurface on the web', () => {
@@ -93,26 +117,24 @@ describe('SheetSurface on the web', () => {
   it('shift+click stretches from the anchor; a plain drag sweeps a range', () => {
     const sheet = new SheetController(50, 8);
     const node = surfaceFor(sheet);
-    const mousedown = (init: MouseEventInit) => {
-      const event = new MouseEvent('mousedown', init);
-      Object.defineProperty(event, 'currentTarget', { value: makeTarget() });
-      events(node)['mousedown'](event);
-    };
+    const target = makeTarget();
 
-    // jsdom's getBoundingClientRect is all zeros, so clientX/Y ARE grid coordinates.
-    mousedown({ clientX: 48, clientY: 14 }); // A1
-    mousedown({ clientX: 96 * 2 + 48, clientY: 28 * 2 + 14, shiftKey: true }); // shift+click C3
+    // happy-dom's getBoundingClientRect is all zeros, so clientX/Y ARE grid coordinates.
+    press(node, target, { clientX: 48, clientY: 14 }); // A1
+    lift(node, target, { clientX: 48, clientY: 14 });
+    press(node, target, { clientX: 96 * 2 + 48, clientY: 28 * 2 + 14, shiftKey: true }); // shift+click C3
+    lift(node, target, { clientX: 96 * 2 + 48, clientY: 28 * 2 + 14 });
     expect(sheet.selection.topRow).toBe(0);
     expect(sheet.selection.bottomRow).toBe(2);
     expect(sheet.selection.rightCol).toBe(2);
     expect(sheet.activeCell).toEqual(new CellRef(0, 0));
 
-    // Plain drag: mousedown A1, document-level mousemove to B2 — the anchor stands.
-    mousedown({ clientX: 48, clientY: 14 });
-    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 96 + 48, clientY: 28 + 14, buttons: 1 }));
+    // Plain drag: a press on A1, the captured pointer moving to B2 — the anchor stands.
+    press(node, target, { clientX: 48, clientY: 14 });
+    move(node, target, { clientX: 96 + 48, clientY: 28 + 14 });
     expect(sheet.selection.bottomRow).toBe(1);
     expect(sheet.selection.rightCol).toBe(1);
-    document.dispatchEvent(new MouseEvent('mouseup', {}));
+    lift(node, target, { clientX: 96 + 48, clientY: 28 + 14 });
   });
 
   it('grabbing the fill handle pours the source, one undo for the whole drag', () => {
@@ -121,14 +143,13 @@ describe('SheetSurface on the web', () => {
     const node = surfaceFor(sheet);
 
     // A1 selected by default; its bottom-right corner is at (96, 28).
-    const grab = new MouseEvent('mousedown', { clientX: 95, clientY: 27 });
-    Object.defineProperty(grab, 'currentTarget', { value: makeTarget() });
-    events(node)['mousedown'](grab);
+    const target = makeTarget();
+    press(node, target, { clientX: 95, clientY: 27 });
     expect(sheet.filling).toBe(true);
 
-    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 2 + 14, buttons: 1 }));
+    move(node, target, { clientX: 95, clientY: 28 * 2 + 14 });
     expect(sheet.fillTarget).not.toBeNull();
-    document.dispatchEvent(new MouseEvent('mouseup', {}));
+    lift(node, target, { clientX: 95, clientY: 28 * 2 + 14 });
 
     expect(sheet.document.getCell(new CellRef(1, 0))).toBe('seed');
     expect(sheet.document.getCell(new CellRef(2, 0))).toBe('seed');
@@ -140,16 +161,16 @@ describe('SheetSurface on the web', () => {
     const sheet = new SheetController(50, 8);
     sheet.document.setCell(new CellRef(1, 1), '42');
     const node = surfaceFor(sheet);
-    // The platform's click count rides the press: the second press of a double click says 2.
-    const press = (detail: number) => {
-      const event = new MouseEvent('mousedown', { clientX: 96 + 48, clientY: 28 + 14, detail });
-      Object.defineProperty(event, 'currentTarget', { value: makeTarget() });
-      events(node)['mousedown'](event);
-      document.dispatchEvent(new MouseEvent('mouseup', { clientX: 96 + 48, clientY: 28 + 14 }));
+    // The platform's click count rides the mousedown: the second press of a double click says 2,
+    // where its pointerdown says 0 in Chrome, measured.
+    const target = makeTarget();
+    const click = (detail: number) => {
+      press(node, target, { clientX: 96 + 48, clientY: 28 + 14, detail });
+      lift(node, target, { clientX: 96 + 48, clientY: 28 + 14 });
     };
 
-    press(1);
-    press(2);
+    click(1);
+    click(2);
 
     expect(sheet.activeCell).toEqual(new CellRef(1, 1));
     expect(sheet.editing).toBe(true);
@@ -158,14 +179,17 @@ describe('SheetSurface on the web', () => {
 
   it('reads a press against the window the engine was handed', () => {
     const sheet = new SheetController(200, 8);
-    // A scrolled window: the surface's first row draws the sheet's row 40.
-    sheet.grid = new SheetGrid(Point.zero, 40, 0);
+    // A scrolled window: the grid stands 40 rows down, so the surface's first row draws row 40.
+    const scroll = new TableScroll();
+    scroll.arrange(new Size(900, 600), sheet.document.columnSpans.total, sheet.document.rowSpans.total, 0, 0, true);
+    scroll.apply(new TableScrollRequest(1, { offset: new TableOffset(0, 40 * 28) }), sheet.document.rowSpans,
+      sheet.document.columnSpans, 0, 0);
+    sheet.grid = new SheetGrid(scroll, 0, 0);
     const node = surfaceFor(sheet);
 
-    const event = new MouseEvent('mousedown', { clientX: 96 + 48, clientY: 28 * 2 + 14 });
-    Object.defineProperty(event, 'currentTarget', { value: makeTarget() });
-    events(node)['mousedown'](event);
-    document.dispatchEvent(new MouseEvent('mouseup', {}));
+    const target = makeTarget();
+    press(node, target, { clientX: 96 + 48, clientY: 28 * 2 + 14 });
+    lift(node, target, { clientX: 96 + 48, clientY: 28 * 2 + 14 });
 
     expect(sheet.activeCell).toEqual(new CellRef(42, 1));
   });
@@ -184,10 +208,8 @@ describe('SheetSurface on the web', () => {
       if (!options?.preventScroll) top -= 127;
     };
 
-    const event = new MouseEvent('mousedown', { clientX: 96 + 48, clientY: 28 * 2 + 14 });
-    Object.defineProperty(event, 'currentTarget', { value: target });
-    events(node)['mousedown'](event);
-    document.dispatchEvent(new MouseEvent('mouseup', {}));
+    press(node, target, { clientX: 96 + 48, clientY: 28 * 2 + 14 });
+    lift(node, target, { clientX: 96 + 48, clientY: 28 * 2 + 14 });
 
     expect(sheet.activeCell).toEqual(new CellRef(2, 1));
     expect(focusOptions).toEqual([{ preventScroll: true }]);
@@ -208,15 +230,14 @@ describe('SheetSurface on the web', () => {
     const sheet = new SheetController(50, 8);
     sheet.document.setCell(new CellRef(0, 0), 'seed');
     const node = surfaceFor(sheet);
-    const grab = new MouseEvent('mousedown', { clientX: 95, clientY: 27 });
-    Object.defineProperty(grab, 'currentTarget', { value: makeTarget() });
-    events(node)['mousedown'](grab);
-    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 2 + 14, buttons: 1 }));
+    const target = makeTarget();
+    press(node, target, { clientX: 95, clientY: 27 });
+    move(node, target, { clientX: 95, clientY: 28 * 2 + 14 });
     expect(sheet.fillTarget).not.toBeNull();
 
     window.dispatchEvent(new Event('blur'));
-    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 4 + 14, buttons: 1 }));
-    document.dispatchEvent(new MouseEvent('mouseup', {}));
+    move(node, target, { clientX: 95, clientY: 28 * 4 + 14 });
+    lift(node, target, { clientX: 95, clientY: 28 * 4 + 14 });
 
     expect(sheet.filling).toBe(false);
     expect(sheet.fillTarget).toBeNull();
@@ -224,18 +245,34 @@ describe('SheetSurface on the web', () => {
     expect(sheet.history.canUndo).toBe(false);
   });
 
+  it('keeps a press across the renders its own drag causes', () => {
+    // A sheet that follows a held drag renders on every frame of it: the release arrives at the
+    // handlers of a render that never saw the press.
+    const sheet = new SheetController(50, 8);
+    sheet.document.setCell(new CellRef(0, 0), 'seed');
+    const target = makeTarget();
+    press(surfaceFor(sheet), target, { clientX: 95, clientY: 27 });
+    expect(sheet.filling).toBe(true);
+
+    const rendered = surfaceFor(sheet);
+    move(rendered, target, { clientX: 95, clientY: 28 * 2 + 14 });
+    lift(rendered, target, { clientX: 95, clientY: 28 * 2 + 14 });
+
+    expect(sheet.filling).toBe(false);
+    expect(sheet.document.getCell(new CellRef(2, 0))).toBe('seed');
+  });
+
   it('a move with no button held ends the press its release never reached', () => {
     const sheet = new SheetController(50, 8);
     sheet.document.setCell(new CellRef(0, 0), 'seed');
     const node = surfaceFor(sheet);
-    const grab = new MouseEvent('mousedown', { clientX: 95, clientY: 27 });
-    Object.defineProperty(grab, 'currentTarget', { value: makeTarget() });
-    events(node)['mousedown'](grab);
-    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 2 + 14, buttons: 1 }));
+    const target = makeTarget();
+    press(node, target, { clientX: 95, clientY: 27 });
+    move(node, target, { clientX: 95, clientY: 28 * 2 + 14 });
 
-    // Released outside the window: the page hears no mouseup, only moves with nothing held.
-    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 3 + 14, buttons: 0 }));
-    document.dispatchEvent(new MouseEvent('mouseup', {}));
+    // Released where the page never heard it: only moves with nothing held.
+    move(node, target, { clientX: 95, clientY: 28 * 3 + 14, buttons: 0 });
+    lift(node, target, { clientX: 95, clientY: 28 * 3 + 14 });
 
     expect(sheet.filling).toBe(false);
     expect(sheet.document.getCell(new CellRef(1, 0))).toBe('');

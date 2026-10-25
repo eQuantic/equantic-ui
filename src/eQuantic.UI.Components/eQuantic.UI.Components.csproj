@@ -15,12 +15,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The vocabulary, and the two engines the editing components are views of (the code
-         editor's and the spreadsheet's) — nothing platform-specific: a shared component that
-         needed anything of a host would be a bug. -->
+    <!-- The vocabulary, and the engine the code editor is a view of — nothing platform-specific: a
+         shared component that needed anything of a host would be a bug. The spreadsheet, the view of
+         the other engine, is a family of its own (eQuantic.UI.Spreadsheets). -->
     <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
     <ProjectReference Include="..\eQuantic.UI.Code\eQuantic.UI.Code.csproj" />
-    <ProjectReference Include="..\eQuantic.UI.Sheet\eQuantic.UI.Sheet.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -98,6 +98,16 @@ public static class ThemeBridge
         // two never meet — the same argument `IAppTheme.MonoFamily` makes for existing at all.
         if (FaceName.Usable(theme.MonoFamily) is { } mono)
             sb.Append(",\"monoFamily\":\"").Append(Escape(mono)).Append('"');
+        // The TEXT face beside it, by the same rule, and the selected text's colour when the theme
+        // names one: the two members of the document that every theme need not answer, so the
+        // surfaces above (every ColorToken of the contract) cannot carry them.
+        if (FaceName.Usable(theme.TextFamily) is { } text)
+            sb.Append(",\"textFamily\":\"").Append(Escape(text)).Append('"');
+        if (theme.OnSelection is { } onSelection)
+        {
+            sb.Append(",\"onSelection\":");
+            Token(sb, onSelection);
+        }
 
         sb.Append(",\"elevations\":[");
         for (var level = 0; level <= 5; level++)
@@ -134,9 +144,42 @@ public static class ThemeBridge
         sb.Append(",\"status\":");
         Tokens(sb, [data.Status.Good, data.Status.Warning, data.Status.Serious, data.Status.Critical]);
         sb.Append('}');
+
+        // The spreadsheet's slot, when the theme answers one, with the members it names: a member
+        // left out is the spreadsheet's own colour on the client as on the server.
+        if (theme.Sheet is { } sheet)
+        {
+            sb.Append(",\"sheet\":{");
+            first = true;
+            foreach (var (name, value) in SheetMembers(sheet))
+            {
+                if (value is not { } named) continue;
+                Comma(sb, ref first);
+                Key(sb, name);
+                Token(sb, named);
+            }
+            sb.Append('}');
+        }
         sb.Append('}');
         return sb.ToString();
     }
+
+    /// <summary>Every member of the spreadsheet's slot by the name the browser reads it under.
+    /// <c>ThemeBridgeTests</c> holds it to every property the record has.</summary>
+    internal static IEnumerable<(string Name, ColorToken? Value)> SheetMembers(SheetTheme sheet) =>
+    [
+        ("gridline", sheet.Gridline),
+        ("headerBackground", sheet.HeaderBackground),
+        ("headerText", sheet.HeaderText),
+        ("headerSelectedBackground", sheet.HeaderSelectedBackground),
+        ("headerSelectedText", sheet.HeaderSelectedText),
+        ("cellBackground", sheet.CellBackground),
+        ("cellText", sheet.CellText),
+        ("rangeFill", sheet.RangeFill),
+        ("activeOutline", sheet.ActiveOutline),
+        ("fillPreview", sheet.FillPreview),
+        ("fillHandle", sheet.FillHandle),
+    ];
 
     private static void Tokens(StringBuilder sb, IReadOnlyList<ColorToken> tokens)
     {

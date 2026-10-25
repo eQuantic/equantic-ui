@@ -97,6 +97,9 @@ internal sealed partial class WebLoweringVisitor
     /// browser's native text sweep would paint over the band the component draws.
     /// </para>
     /// </summary>
+    /// <summary>What the server declares for an event only the browser dispatches: nothing to run.</summary>
+    private static readonly Action ClientDispatches = static () => { };
+
     private HtmlElement LowerSheetSurface(
         SheetSurface sheet, bool? horizontalAxis)
     {
@@ -131,6 +134,14 @@ internal sealed partial class WebLoweringVisitor
             },
             RawAttributes = attributes,
         };
+        // The keyboard, the pointer and the clipboard, DECLARED here as well as installed by the client
+        // twin, as the Navigable's keyboard is. The server dispatches none of them, so these delegates
+        // never run, but the lowered tree is what the parity net compares, and a fixture that says
+        // "no handler" cannot notice the client losing one.
+        element.OnKeyDown = static _ => { };
+        element.OnMouseDown = static _ => { };
+        foreach (var name in (ReadOnlySpan<string>)["pointerdown", "pointermove", "pointerup", "pointercancel", "copy", "cut", "paste"])
+            element.CustomEvents[name] = ClientDispatches;
         // The inherited axis travels THROUGH, as it does in the client twin: a Spacer inside a
         // sheet inside a Row needs to know which way the row runs, and `null` makes it lower to
         // nothing on the server while the browser renders it. Found in review.

@@ -11,7 +11,7 @@ import { photonTheme } from './design-system.generated';
 import { commitTableViewports, scheduleTableViewportCommit } from './table-viewports';
 import { TableScroll } from './components/TableScroll';
 import { UniformTableSpans } from './components/UniformTableSpans';
-import { TableRange, TableScrollRequest } from './value-types';
+import { Point, TableRange, TableScrollRequest } from './value-types';
 import { Box, BoxStyle, Pressable, TableViewCell, TableViewport, Text } from './vocabulary';
 import { TableView } from './components/TableView';
 import fixture from './component-parity.fixture.json';
@@ -363,5 +363,49 @@ describe('TableViewport on the web', () => {
     const leaving = tab();
     expect(leaving.defaultPrevented).toBe(false);
     expect(cellOf()).toBe('0:0');
+  });
+
+  it('leaves the keyboard to what composes it when it declines the focus', () => {
+    const node = new TableViewport(new UniformTableSpans(2, 28), new UniformTableSpans(2, 96), new TableScroll(), {
+      pinnedRows: 1,
+      pinnedColumns: 1,
+      canRequestFocus: false,
+    });
+    for (let row = 0; row < 2; row++)
+      for (let column = 0; column < 2; column++)
+        node.add(new TableViewCell(row, column, new Pressable(new Text(`${row}:${column}`), () => {}, { label: `${row}:${column}` })));
+    const view = toDom(lowerVisualNode(node as never, context)) as HTMLElement;
+    Object.defineProperty(view, 'clientWidth', { value: 400, configurable: true });
+    Object.defineProperty(view, 'clientHeight', { value: 200, configurable: true });
+    document.body.appendChild(view);
+    commitTableViewports();
+
+    expect(view.hasAttribute('tabindex')).toBe(false);
+    const tab = (shiftKey = false) => {
+      const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey, bubbles: true, cancelable: true });
+      (document.activeElement ?? view).dispatchEvent(event);
+      return event;
+    };
+    const cellOf = () => (document.activeElement as HTMLElement).closest('[data-eq-cell]')?.getAttribute('data-eq-cell');
+
+    // Into the cells from the corner, still in reading order; back past the first, out of the table.
+    (view.querySelector('[data-eq-cell="0:0"] [tabindex], [data-eq-cell="0:0"] button') as HTMLElement).focus();
+    expect(tab().defaultPrevented).toBe(true);
+    expect(cellOf()).toBe('0:1');
+    tab(true);
+    expect(cellOf()).toBe('0:0');
+    expect(tab(true).defaultPrevented).toBe(false);
+  });
+
+  it('keeps scrolling while a drag the composing component holds is past the cells', async () => {
+    const { scroll, view } = build();
+    scroll.autoScroll(new Point(400, scroll.viewport.height + 60));
+    // A pass, as the composing component's rebuild brings, starts the clock.
+    commitTableViewports();
+    await new Promise((resolve) => setTimeout(resolve, 120));
+
+    expect(scroll.offset.down).toBeGreaterThan(0);
+    expect(layer(view, 0).style.transform).toContain(`-${scroll.offset.down}px`);
+    scroll.autoScroll(null);
   });
 });

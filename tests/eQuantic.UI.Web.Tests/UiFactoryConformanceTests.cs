@@ -30,7 +30,7 @@ public class UiFactoryConformanceTests
     /// the next is a convention, not a contract.
     /// </summary>
     private static readonly Type[] Surfaces =
-        [typeof(FactorySurface), typeof(eQuantic.UI.Charts.ChartsUI)];
+        [typeof(FactorySurface), typeof(eQuantic.UI.Charts.ChartsUI), typeof(eQuantic.UI.Spreadsheets.SpreadsheetsUI)];
 
     private static MethodInfo[] AllFactoriesOf(Type surface) =>
         surface.GetMethods(BindingFlags.Public | BindingFlags.Static);

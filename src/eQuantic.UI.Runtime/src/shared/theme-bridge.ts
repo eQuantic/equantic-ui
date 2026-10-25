@@ -10,6 +10,7 @@ import { ColorToken, FluidSize, TypeStyle, VariantColors, codeTokenColor } from 
 import type { AppTheme, ShadowSpec } from './value-types';
 import type { ColorValue } from './nodes';
 import { DataPalette, DivergingScale, StatusScale } from './data-palette';
+import { SheetTheme } from './sheet-theme';
 
 type RgbaTuple = readonly [number, number, number, number];
 type TokenTuple = readonly [RgbaTuple, RgbaTuple];
@@ -37,6 +38,10 @@ export interface ThemeData {
   >;
   /** The theme's code face, present only when it names one — same rule as the type tail. */
   monoFamily?: string;
+  /** The theme's text face, by the same rule. */
+  textFamily?: string;
+  /** The selected text's colour, present only when the theme names one. */
+  onSelection?: TokenTuple;
   elevations: ReadonlyArray<readonly [number, number, number, TokenTuple]>;
   shape: Record<string, number>;
   /** The data palette: series and sequential as token lists, diverging as [negative, midpoint,
@@ -48,6 +53,8 @@ export interface ThemeData {
     other: TokenTuple;
     status: readonly [TokenTuple, TokenTuple, TokenTuple, TokenTuple];
   };
+  /** The spreadsheet's slot, present only when the theme answers one, with the members it names. */
+  sheet?: Partial<Record<keyof SheetTheme, TokenTuple>>;
 }
 
 const color = (t: RgbaTuple): ColorValue => ({ r: t[0], g: t[1], b: t[2], a: t[3] });
@@ -118,11 +125,21 @@ export function materializeTheme(data: ThemeData): AppTheme {
       token(data.data.status[3]),
     ),
   );
+  let sheet: SheetTheme | null = null;
+  if (data.sheet) {
+    sheet = new SheetTheme();
+    for (const [name, value] of Object.entries(data.sheet)) {
+      if (value) (sheet as unknown as Record<string, ColorToken>)[name] = token(value);
+    }
+  }
   return {
     ...(surfaces as unknown as Pick<AppTheme, never>),
     data: palette,
+    sheet,
     disabledOpacity: data.disabledOpacity,
     monoFamily: data.monoFamily,
+    textFamily: data.textFamily,
+    onSelection: data.onSelection ? token(data.onSelection) : undefined,
     colors(variant: string): VariantColors {
       return variants[variant] ?? variants.primary;
     },
