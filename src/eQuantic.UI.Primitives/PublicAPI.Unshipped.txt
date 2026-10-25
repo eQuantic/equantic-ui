@@ -119,3 +119,9 @@ eQuantic.UI.Primitives.ScrollRequest.Offset.get -> float
 eQuantic.UI.Primitives.ScrollRequest.Offset.init -> void
 eQuantic.UI.Primitives.ScrollView.Request.get -> eQuantic.UI.Primitives.ScrollRequest?
 eQuantic.UI.Primitives.ScrollView.Request.init -> void
+eQuantic.UI.Primitives.GoogleFontAttribute
+eQuantic.UI.Primitives.GoogleFontAttribute.Family.get -> string!
+eQuantic.UI.Primitives.GoogleFontAttribute.GoogleFontAttribute(string! family, params eQuantic.UI.Primitives.FontWeight[]! weights) -> void
+eQuantic.UI.Primitives.GoogleFontAttribute.Italic.get -> bool
+eQuantic.UI.Primitives.GoogleFontAttribute.Italic.set -> void
+eQuantic.UI.Primitives.GoogleFontAttribute.Weights.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FontWeight>!
