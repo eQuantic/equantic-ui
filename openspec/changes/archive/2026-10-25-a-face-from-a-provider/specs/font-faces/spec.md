@@ -9,7 +9,8 @@ target loads it from the app. The build SHALL keep the files out of the source t
 file once. The SDK SHALL pin each file, the first time it fetches it, in `fonts.lock.json` beside the
 project, by its URL and the SHA-256 of its bytes, and SHALL fetch a pinned file from its pinned URL only.
 The build SHALL fail when a pinned file's bytes differ from its pin, when its URL no longer answers, and
-when a cut is added to a family whose pinned cuts the provider has since replaced, until the family's pins
+when a cut is added to a family whose pinned cuts, whichever build declared them, the provider has since
+replaced or no longer has, until the family's pins
 are taken out of the lock, after which the next build SHALL pin the provider's current files. No build SHALL
 take a pin out of the lock, since the families a build reads depend on its symbols, and each build SHALL embed
 the files of the families it declares and no others. A family,

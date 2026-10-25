@@ -61,7 +61,9 @@ and served by it on every target, with no request from a page to the provider.
   URL that no longer answers, fail the build with EQ4009, naming the file and the way to renew it, which
   is to take its family out of the lock. A family is pinned whole: a cut added to a family whose pinned
   cuts the provider has since replaced fails the same way, so one family never mixes two of the
-  provider's versions. No build takes a pin out of the lock: a family stays pinned until the app takes it
+  provider's versions: a cut added by one build is checked against every pin of its family, those another
+  build declared included, and a pinned cut the provider no longer has is a replaced family too (Copilot's
+  second review of #1085). No build takes a pin out of the lock: a family stays pinned until the app takes it
   out, because the families a build reads depend on its symbols, one set per configuration and target
   framework, and a Release build that does not see a family declared under `#if DEBUG` is no reason to
   forget it (Copilot's review of #1085). A build that fails leaves the lock and its folder as they were.

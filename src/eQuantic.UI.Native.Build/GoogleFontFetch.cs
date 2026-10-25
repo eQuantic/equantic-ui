@@ -93,13 +93,21 @@ public static class GoogleFontFetch
         var unpinned = declaration.Cuts.Where(cut => !pins.ContainsKey(cut)).ToList();
         if (unpinned.Count > 0)
         {
-            var answer = await google.FilesAsync(declaration.Family, declaration.Cuts);
+            // Asked with every cut the lock pins of the family, declared here or by another build: a cut
+            // added here is checked against them all, so two builds that declare different cuts never pin
+            // the family at two of Google's versions (Copilot's second review of #1085).
+            var asked = declaration.Cuts.Union(pins.Keys).Order().ToList();
+            var answer = await google.FilesAsync(declaration.Family, asked);
             if (answer.Files is null)
             {
-                errors.Add(Error(declaration, ProviderCode, answer.Failure!));
+                // Google no longer has a cut the lock pins, while it has every one declared here: the family
+                // has been replaced since it was pinned.
+                errors.Add(asked.Count > declaration.Cuts.Count && (await google.FilesAsync(declaration.Family, declaration.Cuts)).Files is not null
+                    ? Renew(declaration, $"Google Fonts has replaced '{declaration.Family}' since its cuts were pinned: {answer.Failure}")
+                    : Error(declaration, ProviderCode, answer.Failure!));
                 return null;
             }
-            var moved = declaration.Cuts.Where(cut => pins.TryGetValue(cut, out var pin) && pin.Url != answer.Files[cut]).ToList();
+            var moved = pins.Keys.Where(cut => pins[cut].Url != answer.Files[cut]).Order().ToList();
             if (moved.Count > 0)
             {
                 errors.Add(Renew(declaration, $"Google Fonts has replaced '{declaration.Family}' since its cuts were pinned, and one family "

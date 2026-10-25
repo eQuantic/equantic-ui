@@ -134,6 +134,36 @@ public sealed class GoogleFontFetchTests : IDisposable
         File.Exists(Path.Combine(Folder, "Inter-400.ttf")).Should().BeTrue("the pinned file stays where the build embeds it from");
     }
 
+    /// <summary>A cut added by one build is checked against every pin of its family, those another build
+    /// declared included: a Release build that declares only Bold after Google replaced a family whose
+    /// Regular a Debug build pinned would otherwise pin one family at two of Google's versions (Copilot's
+    /// second review of #1085).</summary>
+    [Fact]
+    public async Task CutsTwoBuildsDeclareApart_NeverPinTwoVersionsOfAFamily()
+    {
+        await Fetch(FolderOf("Debug"), Declared("Inter", Cut(400)));
+        var pinnedLock = File.ReadAllText(Lock);
+        _google.Replace("Inter");
+
+        var errors = await Fetch(FolderOf("Release"), Declared("Inter", Cut(700)));
+
+        errors.Should().ContainSingle().Which.Should().StartWith($"{Place}: error EQ4009: Google Fonts has replaced 'Inter' since its cuts were pinned");
+        File.ReadAllText(Lock).Should().Be(pinnedLock);
+    }
+
+    [Fact]
+    public async Task ACutTheLockPinsThatGoogleNoLongerHas_FailsAsAReplacedFamily()
+    {
+        await Fetch(Declared("Inter", Cut(400), Cut(700)));
+        _google.Drop("Inter", Cut(700));
+
+        var errors = await Fetch(Declared("Inter", Cut(400), Cut(400, italic: true)));
+
+        errors.Should().ContainSingle().Which.Should()
+            .StartWith($"{Place}: error EQ4009: Google Fonts has replaced 'Inter' since its cuts were pinned: Google Fonts has no Bold of 'Inter'")
+            .And.Contain($"Take 'Inter' out of {FontLock.FileName}");
+    }
+
     [Fact]
     public async Task AFamilyGoogleDoesNotHave_FailsNamingIt()
     {
@@ -348,6 +378,9 @@ public sealed class GoogleFontFetchTests : IDisposable
 
         /// <summary>Google publishes a new version of <paramref name="family"/>, at new URLs, the old ones still served.</summary>
         public void Replace(string family) => _families[family] = (_families[family].Version + 1, _families[family].Cuts);
+
+        /// <summary>Google stops offering <paramref name="cut"/> of <paramref name="family"/>; its files stay served.</summary>
+        public void Drop(string family, FontCut cut) => _families[family] = (_families[family].Version, _families[family].Cuts.Where(kept => kept != cut).ToArray());
 
         public Uri UrlOf(string family, FontCut cut, int? version = null) =>
             new($"https://fonts.gstatic.com/s/{Slug(family)}/v{version ?? _families[family].Version}/{cut.Weight}{(cut.Italic ? "i" : "")}.ttf");
