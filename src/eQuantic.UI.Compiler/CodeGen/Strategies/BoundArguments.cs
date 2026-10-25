@@ -155,6 +155,33 @@ internal sealed class BoundArguments
             ArgumentKind: ArgumentKind.Explicit, Parameter.IsParams: true,
         };
 
+    /// <summary>
+    /// A call's written arguments, read from its syntax, in its parameters' places: a named one in the
+    /// place it names, a positional one in its position, and from the params parameter's position on,
+    /// every positional one an element of that parameter, in the order written. Null where a parameter
+    /// takes nothing. A place kept one argument, so the elements a call lists past the parameter count
+    /// were dropped: <c>new FontFamily(Name: "Brand", regular, italic)</c> lost its italic file in the
+    /// browser (Copilot's third review of #1062).
+    /// </summary>
+    public static IReadOnlyList<JsExpr>?[] InPlaces(SeparatedSyntaxList<ArgumentSyntax> arguments,
+        IReadOnlyList<JsExpr> converted, IMethodSymbol method)
+    {
+        var places = new List<JsExpr>?[method.Parameters.Length];
+        var rest = method.Parameters is [.., { IsParams: true } last] ? last.Ordinal : -1;
+        for (var i = 0; i < arguments.Count && i < converted.Count; i++)
+        {
+            // A positional argument's place is its LIST position: C# allows one after a named argument
+            // only when that one sits in its own position, so the list index IS the parameter's (an
+            // independent counter clobbered place 0 in that mixed form).
+            var named = arguments[i].NameColon?.Name.Identifier.ValueText;
+            var ordinal = named is null
+                ? rest >= 0 && i >= rest ? rest : i
+                : method.Parameters.FirstOrDefault(parameter => parameter.Name == named)?.Ordinal ?? -1;
+            if (ordinal >= 0 && ordinal < places.Length) (places[ordinal] ??= []).Add(converted[i]);
+        }
+        return places;
+    }
+
     /// <summary>A call's written argument converted as its parameter takes it, where the call is read
     /// from its syntax: spread where it hands a collection whole to a params parameter
     /// (<see cref="IsHandedWhole"/>), and as it is otherwise.</summary>

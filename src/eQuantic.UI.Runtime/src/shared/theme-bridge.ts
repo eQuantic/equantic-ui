@@ -6,7 +6,7 @@
  * markup. The wire shape mirrors the generated `photonTheme`; the round-trip is pinned in vitest.
  */
 
-import { ColorToken, FluidSize, FontFamily, TypeStyle, VariantColors, codeTokenColor } from './value-types';
+import { ColorToken, FluidSize, FontFamily, FontFile, TypeStyle, VariantColors, codeTokenColor } from './value-types';
 import type { AppTheme, ShadowSpec } from './value-types';
 import type { ColorValue } from './nodes';
 import { DataPalette, DivergingScale, StatusScale } from './data-palette';
@@ -14,6 +14,10 @@ import { SheetTheme } from './sheet-theme';
 
 type RgbaTuple = readonly [number, number, number, number];
 type TokenTuple = readonly [RgbaTuple, RgbaTuple];
+/** A face file on the wire: `[assembly, resource, minWeight, maxWeight, italic]`. */
+type FontFileData = readonly [string, string, number, number, boolean];
+/** A family on the wire: its name where it ships no file, else its name and each of its files. */
+type FontFamilyData = string | readonly [string, ...FontFileData[]];
 
 /** The exact JSON `ThemeBridge.SerializeJson` emits into `window.__EQ_THEME__`. */
 export interface ThemeData {
@@ -32,14 +36,14 @@ export interface ThemeData {
       number,
       boolean?,
       boolean?,
-      (string | null)?,
+      (FontFamilyData | null)?,
       (readonly [number, number, number])?,
     ]
   >;
   /** The theme's code face, present only when it names one — same rule as the type tail. */
-  monoFamily?: string;
+  monoFamily?: FontFamilyData;
   /** The theme's text face, by the same rule. */
-  textFamily?: string;
+  textFamily?: FontFamilyData;
   /** The selected text's colour, present only when the theme names one. */
   onSelection?: TokenTuple;
   elevations: ReadonlyArray<readonly [number, number, number, TokenTuple]>;
@@ -59,6 +63,19 @@ export interface ThemeData {
 
 const color = (t: RgbaTuple): ColorValue => ({ r: t[0], g: t[1], b: t[2], a: t[3] });
 const token = (t: TokenTuple): ColorToken => new ColorToken(color(t[0]), color(t[1]));
+
+/**
+ * The family `data` names, with its files when it ships them (C# `ThemeBridge.Family`): the family a
+ * component reads after hydration is the one it read on the server, its files and its equality too.
+ */
+function fontFamily(data: FontFamilyData): FontFamily {
+  if (typeof data === 'string') return new FontFamily(data);
+  const [name, ...files] = data;
+  return new FontFamily(
+    name,
+    ...files.map(([assembly, resource, minWeight, maxWeight, italic]) => new FontFile(assembly, resource, minWeight, maxWeight, italic)),
+  );
+}
 
 /**
  * Rebuild an `AppTheme` from the serialized blob — the mirror of the generated `photonTheme` object:
@@ -96,7 +113,7 @@ export function materializeTheme(data: ThemeData): AppTheme {
       maxScale,
       mono ?? false,
       italic ?? false,
-      family ? new FontFamily(family) : undefined,
+      family ? fontFamily(family) : undefined,
     );
     // A role whose size follows the window (C# ThemeBridge): the clamp rides last.
     typeScale[key] = fluid ? Object.assign(style, { fluid: new FluidSize(fluid[0], fluid[1], fluid[2]) }) : style;
@@ -137,8 +154,8 @@ export function materializeTheme(data: ThemeData): AppTheme {
     data: palette,
     sheet,
     disabledOpacity: data.disabledOpacity,
-    monoFamily: data.monoFamily ? new FontFamily(data.monoFamily) : undefined,
-    textFamily: data.textFamily ? new FontFamily(data.textFamily) : undefined,
+    monoFamily: data.monoFamily ? fontFamily(data.monoFamily) : undefined,
+    textFamily: data.textFamily ? fontFamily(data.textFamily) : undefined,
     onSelection: data.onSelection ? token(data.onSelection) : undefined,
     colors(variant: string): VariantColors {
       return variants[variant] ?? variants.primary;

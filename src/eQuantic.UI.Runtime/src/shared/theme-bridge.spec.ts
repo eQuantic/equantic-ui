@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { materializeTheme, type ThemeData } from './theme-bridge';
 import { photonTheme } from './design-system.generated';
-import type { AppTheme } from './value-types';
+import { FontFile, type AppTheme } from './value-types';
 // The SAME fixture the C# ThemeBridgeTests pins (ThemeBridge.SerializeJson(PhotonTheme.Instance)).
 // Round-tripping it back to the generated photonTheme proves the C# serializer and the TS materializer
 // agree byte-for-byte — the guarantee that a client hydrates the exact theme the server rendered.
@@ -130,6 +130,35 @@ describe('theme bridge: a distinct theme materializes to distinct values', () =>
     expect(plain.textFamily).toBeUndefined();
     expect(plain.onSelection).toBeUndefined();
     expect(plain.selection).toEqual(photonTheme.selection);
+  });
+
+  // A family the theme ships crosses with its files (Copilot's third review of #1062): rebuilt from
+  // its name alone, a component read two files on the server and none after hydration.
+  it('rebuilds a shipped family with its files, for the text and code faces and for a role', () => {
+    const base = photonData as unknown as ThemeData;
+    const brand = [
+      'Brand Sans',
+      ['Acme.App', 'eQuantic.UI.Fonts/Brand.ttf', 200, 800, false],
+      ['Acme.App', 'eQuantic.UI.Fonts/Brand-Italic.ttf', 200, 800, true],
+    ] as const;
+    const heading = base.type['heading'];
+    const shipped = materializeTheme({
+      ...base,
+      textFamily: brand,
+      monoFamily: ['Brand Mono', ['Acme.App', 'eQuantic.UI.Fonts/BrandMono.ttf', 400, 400, false]],
+      type: { ...base.type, heading: [...heading.slice(0, 5), false, false, brand] },
+    } as unknown as ThemeData);
+
+    for (const family of [shipped.textFamily!, shipped.type('heading').family!]) {
+      expect(family.name).toBe('Brand Sans');
+      expect(family.files).toEqual([
+        new FontFile('Acme.App', 'eQuantic.UI.Fonts/Brand.ttf', 200, 800, false),
+        new FontFile('Acme.App', 'eQuantic.UI.Fonts/Brand-Italic.ttf', 200, 800, true),
+      ]);
+      expect(family.files[1]).toBeInstanceOf(FontFile);
+    }
+    expect(shipped.monoFamily!.files).toEqual([new FontFile('Acme.App', 'eQuantic.UI.Fonts/BrandMono.ttf', 400, 400, false)]);
+    expect(materializeTheme({ ...base, textFamily: 'Georgia' } as ThemeData).textFamily!.files).toEqual([]);
   });
 
   it('materializeTheme returns a structurally valid AppTheme', () => {

@@ -77,7 +77,11 @@ public static class ThemeBridge
                 sb.Append(',').Append(s.Mono ? "true" : "false")
                   .Append(',').Append(s.Italic ? "true" : "false");
                 var face = FaceName.Usable(s.Family?.Name);
-                if (face is not null) sb.Append(",\"").Append(Escape(face)).Append('"');
+                if (face is not null)
+                {
+                    sb.Append(',');
+                    Family(sb, face, s.Family!);
+                }
                 // A size that follows the window rides last, after a family slot it may have to
                 // hold open: without it the browser's role is the ceiling while the server's is the
                 // clamp, and a component that sets a role as its override hydrates to another size.
@@ -97,12 +101,18 @@ public static class ThemeBridge
         // than inside one because Mono is a per-NODE property and no shipped role sets it, so the
         // two never meet — the same argument `IAppTheme.MonoFamily` makes for existing at all.
         if (FaceName.Usable(theme.MonoFamily?.Name) is { } mono)
-            sb.Append(",\"monoFamily\":\"").Append(Escape(mono)).Append('"');
+        {
+            sb.Append(",\"monoFamily\":");
+            Family(sb, mono, theme.MonoFamily!);
+        }
         // The TEXT face beside it, by the same rule, and the selected text's colour when the theme
         // names one: the two members of the document that every theme need not answer, so the
         // surfaces above (every ColorToken of the contract) cannot carry them.
         if (FaceName.Usable(theme.TextFamily?.Name) is { } text)
-            sb.Append(",\"textFamily\":\"").Append(Escape(text)).Append('"');
+        {
+            sb.Append(",\"textFamily\":");
+            Family(sb, text, theme.TextFamily!);
+        }
         if (theme.OnSelection is { } onSelection)
         {
             sb.Append(",\"onSelection\":");
@@ -227,6 +237,48 @@ public static class ThemeBridge
     /// makes the requirement sufficient.</summary>
     private static string Escape(string value) =>
         value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+
+    /// <summary>
+    /// A family as the browser rebuilds it: its <paramref name="name"/> alone where it ships no file,
+    /// the payload a theme of platform faces always sent, and otherwise its name and each of its files,
+    /// <c>[assembly, resource, minWeight, maxWeight, italic]</c>. The family a component reads after
+    /// hydration is then the one it read on the server, its files and its equality included: from its
+    /// name alone, <c>TextFamily.Files</c> held two files on the server and none in the browser
+    /// (Copilot's third review of #1062).
+    /// </summary>
+    private static void Family(StringBuilder sb, string name, FontFamily family)
+    {
+        if (family.Files.Count == 0)
+        {
+            sb.Append('"').Append(Escape(name)).Append('"');
+            return;
+        }
+        sb.Append("[\"").Append(Escape(name)).Append('"');
+        foreach (var file in family.Files)
+            sb.Append(",[\"").Append(Text(file.Assembly)).Append("\",\"").Append(Text(file.Resource)).Append("\",")
+              .Append(file.MinWeight.ToString(CultureInfo.InvariantCulture)).Append(',')
+              .Append(file.MaxWeight.ToString(CultureInfo.InvariantCulture)).Append(',')
+              .Append(file.Italic ? "true" : "false").Append(']');
+        sb.Append(']');
+    }
+
+    /// <summary>
+    /// A JSON string body for text no rule has vetted: a face file's assembly and resource, which a
+    /// theme may write by hand. Beside what JSON requires, a <c>&lt;</c> is its escape, so nothing a
+    /// name holds can close the <c>&lt;script&gt;</c> element the payload is written into, and a control
+    /// character is its escape, so nothing can end the string.
+    /// </summary>
+    private static string Text(string value)
+    {
+        var text = new StringBuilder(value.Length);
+        foreach (var c in value)
+        {
+            if (c is '"' or '\\') text.Append('\\').Append(c);
+            else if (c == '<' || c < ' ') text.Append("\\u").Append(((int)c).ToString("x4", CultureInfo.InvariantCulture));
+            else text.Append(c);
+        }
+        return text.ToString();
+    }
 
     private static string Camel(string name) =>
         string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
