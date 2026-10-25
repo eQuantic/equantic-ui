@@ -13,6 +13,7 @@ import type { DensityValue } from './enums.generated';
 import { photonTheme } from './design-system.generated';
 import { DENSITY_COOKIE } from './markers';
 import { passInvalidator } from './pass-invalidator';
+import { declareFamily, dependOnFamily } from './face-declarations';
 import { textElementStarts } from '../utils/text-elements';
 
 /** Mirror of the C# `ComponentContext` — what a shared component's `build()` may read (mode-free). */
@@ -85,6 +86,19 @@ export function measurePhotonText(text: string, style: TypeStyleValue, typeScale
   // comment beside MONO_STACK calls a caret beside the character it is on, and a brand face is
   // exactly the case where the two advance differently.
   const base = style.mono ? monoStack() : sansStack();
+  // A family that ships files is declared before it is measured (#1056), so a face still on its way
+  // is one the tracker below waits for, rather than one no rule declared yet, and the page that measured
+  // it rebuilds should the family be taken back after it loaded.
+  const rebuild = passInvalidator();
+  if (isWellFormedFace(style.family?.name)) {
+    declareFamily(style.family);
+    dependOnFamily(style.family, rebuild);
+  }
+  // The theme's own face closes the stack, through the variable its stylesheet declares, and sets
+  // whatever the named family does not: all of it when none is named, and when the named one is not
+  // installed. The measure depends on it in every case: taken back, its text falls back, and the page
+  // measures again.
+  dependOnFamily(style.mono ? activeTheme.monoFamily : activeTheme.textFamily, rebuild);
   const family = isWellFormedFace(style.family?.name) ? `"${style.family!.name}", ${base}` : base;
   // NUMERIC weight: the enum arrives as a member name, and a name makes the whole shorthand
   // invalid — see cssFontWeight for what that cost. The SLANT names the cut that draws the text:

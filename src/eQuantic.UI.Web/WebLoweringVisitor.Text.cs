@@ -347,6 +347,9 @@ internal sealed partial class WebLoweringVisitor
         // would be dropped on the first client re-render — SSR showing the brand and hydration
         // showing the system font is the hydration mismatch, not a cosmetic difference.
         var face = FaceName.Usable(text.StyleOverride?.Family?.Name);
+        // A family that ships files is declared in the head of the page the server renders (#1056), as
+        // Photon registers it the first time text asks: the server leaves out what the theme declares.
+        if (face is not null && text.StyleOverride?.Family is { Files.Count: > 0 } shipped) FaceSink.Ambient?.Add(shipped);
         // The OUTLINE, not the type scale: `h1`–`h6` when the author placed this text in the
         // document's structure, and a span when they did not. The heading's own UA margin and
         // size are cancelled in the token sheet (`.eq-type-*` owns the size), so choosing a level

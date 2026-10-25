@@ -34,6 +34,9 @@
     <!-- Two faces written by the tests' own builder (tests/Shared/TestFont.cs), embedded as the SDK
          embeds an app's: a family no machine has, and no third-party file to licence. -->
     <EmbeddedResource Include="..\Shared\Fonts\*.ttf" LogicalName="eQuantic.UI.Fonts/%(Filename)%(Extension)" />
+    <!-- The same face embedded another way, as a library embeds a font for something else: no eQuantic
+         build embedded it as a face, so the web serves it only when the theme names it (#1056). -->
+    <EmbeddedResource Include="..\Shared\Fonts\Elsewhere\*.ttf" LogicalName="Elsewhere/%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

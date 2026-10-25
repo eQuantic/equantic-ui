@@ -218,6 +218,10 @@ function applyServerFields(target: object, payload: Record<string, unknown>): bo
 export abstract class StatelessComponent extends Component {
   private _renderManager: RenderManager = new RenderManager();
   private _instances = new ComponentInstanceStore();
+  /** The page's own invalidator, ONE for its life: what a measure in a shipped face holds on to, weakly,
+   *  to rebuild the page should the face be taken back (#1056). A function made per pass is a new one
+   *  every render, so nothing could hold it without holding every render. */
+  private readonly _invalidate = (): void => this._scheduleRender();
   private _mounted = false;
   private _renderScheduled = false;
 
@@ -259,7 +263,7 @@ export abstract class StatelessComponent extends Component {
       // re-rendering this page, exactly like a stateful host. (The old "no invalidator" fence made
       // every stateful child of a stateless page render-once: the site's mega menu opened its state
       // and nothing on screen ever changed.)
-      enterPass(this._instances, () => this._scheduleRender());
+      enterPass(this._instances, this._invalidate);
       try {
         const component = reconcileBuildRoot(this.build(context)) as Component;
         return component.render();
@@ -392,6 +396,10 @@ export abstract class StatefulComponent extends Component {
   private _mounted = false;
   private _renderScheduled = false;
   private _instances = new ComponentInstanceStore();
+  /** The page's own invalidator, ONE for its life: what a measure in a shipped face holds on to, weakly,
+   *  to rebuild the page should the face be taken back (#1056). A function made per pass is a new one
+   *  every render, so nothing could hold it without holding every render. */
+  private readonly _invalidate = (): void => this._scheduleRender();
 
   /**
    * The shared-vocabulary discriminator: nested inside an abstract tree this IS a component node —
@@ -491,7 +499,7 @@ export abstract class StatefulComponent extends Component {
       // Reconciler pass (W6 slice 2): as a page root this component persists by itself; its store
       // retains the nested shared stateful its build creates. When hosted inside another page's
       // render this JOINS the outer pass instead (the host page owns retention).
-      enterPass(this._instances, () => this._scheduleRender());
+      enterPass(this._instances, this._invalidate);
       try {
         return (reconcileBuildRoot(this.build(context)) as Component).render();
       } catch (error) {
