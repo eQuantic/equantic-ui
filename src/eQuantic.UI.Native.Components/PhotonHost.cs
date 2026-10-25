@@ -1114,14 +1114,33 @@ public sealed class PhotonHost
     /// a fill, as a code surface's does.</summary>
     private bool _sheetPressed;
 
-    private void BeginCodeEditing(CodeRegion region)
+    private void BeginCodeEditing(CodeRegion region) => BeginCodeEditing(region.Element, region.Surface.Model);
+
+    /// <summary>Gives a code surface the keyboard, by whatever door it came: a press, its own request, or
+    /// activating its stop. The model hears that it has it, which is what lets the name box take what is
+    /// typed.</summary>
+    private void BeginCodeEditing(Element element, ICodeSurfaceModel model)
     {
-        var changed = !ReferenceEquals(_textAt, region.Element);
+        var changed = !ReferenceEquals(_textAt, element);
         if (changed) EndEditing();
-        _textAt = region.Element;
+        _textAt = element;
         _focused = null;
         ForgetFocus();
-        if (changed) region.Surface.Model.FocusChanged(true);
+        if (changed) model.FocusChanged(true);
+        NeedsRender = true;
+    }
+
+    /// <summary>Gives a sheet the keyboard, by the same doors as <see cref="BeginCodeEditing(Element,
+    /// ICodeSurfaceModel)"/>, and restarts its caret's blink.</summary>
+    private void BeginSheetEditing(Element element, ISheetSurfaceModel model)
+    {
+        var changed = !ReferenceEquals(_textAt, element);
+        if (changed) EndEditing();
+        _textAt = element;
+        _focused = null;
+        ForgetFocus();
+        if (changed) model.FocusChanged(true);
+        RestartBlink();
         NeedsRender = true;
     }
 
@@ -1256,14 +1275,7 @@ public sealed class PhotonHost
             if (version == seen) continue;
             if (box is null) _sheetFocusRequests.Add(model, new System.Runtime.CompilerServices.StrongBox<int>(version));
             else box.Value = version;
-            var changed = !ReferenceEquals(_textAt, region.Element);
-            if (changed) EndEditing();
-            _textAt = region.Element;
-            _focused = null;
-            ForgetFocus();
-            if (changed) model.FocusChanged(true);
-            RestartBlink();
-            NeedsRender = true;
+            BeginSheetEditing(region.Element, model);
         }
     }
 
@@ -1855,7 +1867,8 @@ public sealed class PhotonHost
             // answer. Tab ARRIVES: the ring shows and the next Tab travels on. Activating ENTERS,
             // which is what a pointer press does (BeginCodeEditing) and what a reader's double tap
             // means — CodeTarget and SheetTarget both resolve from _textAt, so entering IS
-            // setting it.
+            // setting it, through the same door a press takes, so the model hears it has the keyboard:
+            // set bare, the name box was entered and refused every character it was given.
             //
             // Telling them apart was not a preference. Making the Tab walk enter put the caret in a
             // code editor, and the editor then ate the next Tab through CodeKeymap — the Studio's
@@ -1866,13 +1879,8 @@ public sealed class PhotonHost
             // carried neither, so activating a calendar put itself in the field being edited, left every
             // target null and killed the arrows the composite exists for. A stop that is none of
             // these ARRIVES and nothing more, which is the right default for whatever comes next.
-            if (stops[i] is { Code: not null } or { Sheet: not null })
-            {
-                _textAt = stops[i].Element;
-                _focused = null;
-                ForgetFocus();
-                NeedsRender = true;
-            }
+            if (stops[i].Code is { } code) BeginCodeEditing(stops[i].Element, code.Model);
+            else if (stops[i].Sheet is { } sheet) BeginSheetEditing(stops[i].Element, sheet.Model);
             return true;
         }
         return false;
@@ -2515,13 +2523,7 @@ public sealed class PhotonHost
         for (var i = sheetRegions.Count - 1; i >= 0; i--)
         {
             if (!Covers(sheetRegions, i, sheetRegions[i].Visible ?? sheetRegions[i].Bounds, point)) continue;
-            var changed = !ReferenceEquals(_textAt, sheetRegions[i].Element);
-            if (changed) EndEditing();
-            _textAt = sheetRegions[i].Element;
-            _focused = null;
-            ForgetFocus();
-            if (changed) sheetRegions[i].Surface.Model.FocusChanged(true);
-            RestartBlink();
+            BeginSheetEditing(sheetRegions[i].Element, sheetRegions[i].Surface.Model);
             sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Down,
                 ToLocal(sheetRegions, i, sheetRegions[i].Bounds, point), modifiers, clickCount, kind);
             _sheetPressed = true;

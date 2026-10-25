@@ -187,4 +187,75 @@ public class SpreadsheetBarsTests
         host.CodeTarget.Should().NotBeNull("the box keeps the keyboard");
         sheet.ActiveCell.Should().Be(B2);
     }
+
+    private static int NameBoxStop(PhotonHost host) =>
+        host.Semantics().Single(node => node.Label == SdkStrings.NameBox).Id;
+
+    [Fact]
+    public void TabThenEnter_GivesTheNameBoxTheKeyboard_AndItGoesWhereItIsTold()
+    {
+        var (host, sheet) = Open();
+        var box = NameBoxStop(host);
+        for (var i = 0; i < 4 && host.FocusedId != box; i++) host.KeyDown("Tab");
+        host.FocusedId.Should().Be(box, "Tab arrives at the name box");
+
+        host.KeyDown("Enter").Should().BeTrue();
+        Frame(host, 32);
+        sheet.NameBox.Typing.Should().BeTrue("Enter enters the box, and the box heard it");
+        host.TextInput("D4");
+        host.KeyDown("Enter").Should().BeTrue();
+        Frame(host, 48);
+        Frame(host, 64);
+
+        sheet.ActiveCell.Should().Be(new CellRef(3, 3));
+    }
+
+    [Fact]
+    public void AReadersActivation_GivesTheNameBoxTheKeyboard()
+    {
+        var (host, sheet) = Open();
+
+        host.Activate(NameBoxStop(host)).Should().BeTrue();
+        Frame(host, 32);
+
+        sheet.NameBox.Typing.Should().BeTrue("activating is entering, as a press is");
+        host.TextInput("C3");
+        sheet.NameBox.Entry.Document.Text.Should().Be("C3");
+    }
+
+    [Fact]
+    public void APressInTheBlankOfAnEmptyBar_EditsTheCell()
+    {
+        var (host, sheet) = Open();
+        Click(host, sheet, B2, 32);
+        Frame(host, 48);
+
+        // The bar runs from beside the name box to the page's edge; its text is empty.
+        var bar = Region<SheetFormulaBar>(host);
+        host.PressDown(650, bar.Y + bar.Height / 2);
+        host.PressUp(650, bar.Y + bar.Height / 2);
+        Frame(host, 64);
+
+        host.CodeTarget.Should().NotBeNull("a press anywhere in the bar lands in it");
+        sheet.EntryView.Should().Be(SheetEntryView.FormulaBar);
+    }
+
+    [Fact]
+    public void AReferenceWiderThanTheNameBox_ScrollsToKeepTheCaretInView()
+    {
+        var (host, sheet) = Open();
+        host.Activate(NameBoxStop(host)).Should().BeTrue();
+        var time = 32f;
+        Frame(host, time);
+
+        foreach (var typed in "$A$100000:$CV$100000")
+        {
+            host.TextInput(typed.ToString());
+            Frame(host, time += 16);
+        }
+
+        sheet.NameBox.Entry.Document.Text.Should().Be("$A$100000:$CV$100000");
+        var caret = host.CaretRect().Should().NotBeNull().And.Subject.As<Rect?>()!.Value;
+        caret.X.Should().BeInRange(0, NameBox.DefaultWidth, "the box scrolls its text to keep the caret in it");
+    }
 }

@@ -26,6 +26,10 @@ public sealed class FormulaBar : StatefulComponent
     private readonly Action _rebuild;
     private SheetController? _listening;
 
+    /// <summary>How wide the bar's viewport turned out to be, handed back by its scroll view: the text is
+    /// never narrower than the room you can click in.</summary>
+    private float _viewportWidth;
+
     public FormulaBar(SheetController controller)
     {
         Controller = controller;
@@ -85,8 +89,10 @@ public sealed class FormulaBar : StatefulComponent
             : AtRest(lines, padding, type, palette);
         var content = new Box(new BoxStyle
         {
-            // As wide as the text and the room past it, so a long line scrolls and a short one fills.
-            Width = SizeValue.Fixed(MathF.Ceiling(widest) + padding.Start + padding.End + CodeEditorController.CaretWidth),
+            // As wide as the text and the room past it, so a long line scrolls, and never narrower than the
+            // viewport, so a press anywhere in the bar lands in it, an empty one's included.
+            Width = SizeValue.Fixed(MathF.Max(_viewportWidth,
+                MathF.Ceiling(widest) + padding.Start + padding.End + CodeEditorController.CaretWidth)),
             MinWidth = 0,
             Height = SizeValue.Fixed(height),
         }, text);
@@ -104,7 +110,15 @@ public sealed class FormulaBar : StatefulComponent
             BorderColor = palette.Gridline,
             BorderWidth = 1f,
             Clip = true,
-        }, new ScrollView(surface, ScrollAxis.Horizontal));
+        }, new ScrollView(surface, ScrollAxis.Horizontal)
+        {
+            Width = SizeValue.Fill,
+            OnViewportChanged = width =>
+            {
+                if (MathF.Abs(width - _viewportWidth) < 1) return;
+                SetState(() => _viewportWidth = width);
+            },
+        });
     }
 
     private static List<string> Lines(CodeDocument document)

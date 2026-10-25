@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeGrid, CodeSurface, EdgeInsets, EntryLines, Point, SdkStrings, SheetController, SheetPalette, Size, SizeValue, StatefulComponent, Text, TypeRoleValue, UiComponent } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeGrid, CodeSurface, EdgeInsets, EntryLines, Point, ScrollView, SdkStrings, SheetController, SheetPalette, Size, SizeValue, StatefulComponent, Text, TypeRoleValue, UiComponent } from "../runtime-exports";
 
 export class NameBox extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Spreadsheets.NameBox';
@@ -7,6 +7,7 @@ export class NameBox extends StatefulComponent {
     _config: NameBox;
     _counted: any = null;
     _rebuild: () => void;
+    _viewportWidth: number = 0;
 
     static get padding() {
         return EdgeInsets.symmetric(8, 5);
@@ -31,11 +32,16 @@ export class NameBox extends StatefulComponent {
         let type = theme.type(NameBox.boxType);
         let padding = NameBox.padding;
         let box = this.controller.nameBox;
-        box.grid = new CodeGrid(new Point(padding.start, padding.top), new Size(4, type.lineHeight), undefined, (text: string) => context.measureText(text, type));
-        let text = box.typing ? new EntryLines(box.entry, box.grid, Point.zero, NameBox.boxType, palette, true) : new Box(new BoxStyle({ padding: padding }), new Text(this.label(), NameBox.boxType, palette.cellText, 1));
+        let measure = (text: string) => context.measureText(text, type);
+        box.grid = new CodeGrid(new Point(padding.start, padding.top), new Size(4, type.lineHeight), undefined, measure);
+        let shown = box.typing ? box.entry.document.line(0) : this.label();
+        let text = box.typing ? new EntryLines(box.entry, box.grid, Point.zero, NameBox.boxType, palette, true) : new Box(new BoxStyle({ padding: padding }), new Text(shown, NameBox.boxType, palette.cellText, 1));
         let height = Math.fround(Math.fround(type.lineHeight + padding.top) + padding.bottom);
-        let surface = new CodeSurface(new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fixed(height) }), text), box, { onChanged: () => this.controller.refresh(), label: SdkStrings.nameBox, caretColor: palette.cellText });
-        return new Box(new BoxStyle({ width: this._config.width, height: SizeValue.fixed(Math.fround(height + 2)), background: palette.cellBackground, borderColor: box.invalid ? theme.colors('destructive').base : palette.gridline, borderWidth: box.invalid ? 2 : 1, clip: true }), surface);
+        let surface = new CodeSurface(new Box(new BoxStyle({ width: SizeValue.fixed(Math.max(this._viewportWidth, Math.fround(Math.fround(Math.fround(Math.ceil(measure(shown)) + padding.start) + padding.end) + 2))), height: SizeValue.fixed(height) }), text), box, { onChanged: () => this.controller.refresh(), label: SdkStrings.nameBox, caretColor: palette.cellText });
+        return new Box(new BoxStyle({ width: this._config.width, height: SizeValue.fixed(Math.fround(height + 2)), background: palette.cellBackground, borderColor: box.invalid ? theme.colors('destructive').base : palette.gridline, borderWidth: box.invalid ? 2 : 1, clip: true }), new ScrollView(surface, 'horizontal', { width: SizeValue.fill, onViewportChanged: (width: number) => {
+            if (Math.abs(Math.fround(width - this._viewportWidth)) < 1) return;
+            this.setState(() => this._viewportWidth = width);
+        } }));
     }
 
     adoptConfig(next: UiComponent) {

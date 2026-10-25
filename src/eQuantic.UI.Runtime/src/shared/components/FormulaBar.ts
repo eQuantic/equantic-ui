@@ -6,6 +6,7 @@ export class FormulaBar extends StatefulComponent {
     _config: FormulaBar;
     _rebuild: () => void;
     _listening: any = null;
+    _viewportWidth: number = 0;
 
     static get padding() {
         return EdgeInsets.symmetric(8, 5);
@@ -38,9 +39,12 @@ export class FormulaBar extends StatefulComponent {
         for (const line of lines) widest = Math.max(widest, measure(line));
         let height = Math.fround(Math.fround(Math.fround(Math.fround(Math.max(1, lines.length)) * type.lineHeight) + padding.top) + padding.bottom);
         let text = editing ? new EntryLines(this.controller.entry, bar.grid, Point.zero, FormulaBar.barType, palette, bar.holdsTheCaret) : FormulaBar.atRest(lines, padding, type, palette);
-        let content = new Box(new BoxStyle({ width: SizeValue.fixed(Math.fround(Math.fround(Math.fround(Math.ceil(widest) + padding.start) + padding.end) + 2)), minWidth: 0, height: SizeValue.fixed(height) }), text);
+        let content = new Box(new BoxStyle({ width: SizeValue.fixed(Math.max(this._viewportWidth, Math.fround(Math.fround(Math.fround(Math.ceil(widest) + padding.start) + padding.end) + 2))), minWidth: 0, height: SizeValue.fixed(height) }), text);
         let surface = new CodeSurface(content, bar, { onChanged: () => this.controller.refresh(), label: SdkStrings.formulaBar, caretColor: palette.cellText });
-        return new Box(new BoxStyle({ width: this._config.width, height: SizeValue.fixed(Math.fround(height + 2)), background: palette.cellBackground, borderColor: palette.gridline, borderWidth: 1, clip: true }), new ScrollView(surface, 'horizontal'));
+        return new Box(new BoxStyle({ width: this._config.width, height: SizeValue.fixed(Math.fround(height + 2)), background: palette.cellBackground, borderColor: palette.gridline, borderWidth: 1, clip: true }), new ScrollView(surface, 'horizontal', { width: SizeValue.fill, onViewportChanged: (width: number) => {
+            if (Math.abs(Math.fround(width - this._viewportWidth)) < 1) return;
+            this.setState(() => this._viewportWidth = width);
+        } }));
     }
 
     adoptConfig(next: UiComponent) {
