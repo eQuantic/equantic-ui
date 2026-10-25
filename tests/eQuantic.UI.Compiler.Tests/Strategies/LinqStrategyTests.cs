@@ -379,10 +379,12 @@ public class LinqStrategyTests
             .Should().Contain("$eq.linq.toDictionary(").And.NotContain("true)");
     }
 
+    /// <summary>A list's own Reverse reverses it in place, and answers nothing (#1076): it was LINQ's reversed
+    /// copy, thrown away, so the list stayed as it was.</summary>
     [Fact]
-    public void Reverse_MapsToSpreadReverse()
+    public void AListsReverse_ReversesItInPlace()
     {
-        var result = TestHelper.ConvertExpression("list.Reverse()");
-        result.Should().Be("[...this.list].reverse()");
+        TestHelper.ConvertExpression("list.Reverse()").Should().Be("$eq.collections.listReverse(this.list)");
+        TestHelper.ConvertExpression("list.Reverse(1, 2)").Should().Be("$eq.collections.listReverse(this.list, 1, 2)");
     }
 }

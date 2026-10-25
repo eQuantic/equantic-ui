@@ -1,0 +1,220 @@
+import { $eq, CodeChange, CodeEditorController, CodePosition, CodeRange, CodeSnippetStop } from "../runtime-exports";
+
+export class CodeSnippetSession {
+    constructor(editor: CodeEditorController) {
+        this._editor = null!;
+        this._stops = null;
+        this._current = -1;
+        this._reached = '';
+        this._placing = false;
+        this.changed = null;
+        this._editor = editor;
+        editor.changed = $eq.delegates.combine(editor.changed, this.carry.bind(this));
+        editor.selectionChanged = $eq.delegates.combine(editor.selectionChanged, (_) => this.followed());
+    }
+
+    _editor!: CodeEditorController;
+    _stops!: CodeSnippetStop[] | null;
+    _current!: number;
+    _reached!: string;
+    _placing!: boolean;
+    changed!: (() => void) | null;
+
+    get isActive(): boolean {
+        return !(this._stops == null);
+    }
+
+    get hasPrevious(): boolean {
+        return !(this._stops == null) && this.previousOf(this._current) >= 0;
+    }
+
+    next() {
+        if (this._stops == null) return false;
+        this.leaving();
+        let next = this._current + 1;
+        while (next < this._stops.length - 1 && CodeSnippetSession.skipped(this._stops[next])) next++;
+        this.reach(next);
+        return true;
+    }
+
+    previous() {
+        if (this._stops == null || this.previousOf(this._current) < 0) return false;
+        this.leaving();
+        let previous = this.previousOf(this._current);
+        if (previous >= 0) this.reach(previous);
+        return true;
+    }
+
+    leave() {
+        if (this._stops == null) return false;
+        this.end();
+        return true;
+    }
+
+    placeholdersIn(first: number, last: number) {
+        let placeholders: CodeRange[] = [];
+        if (this._stops == null) return placeholders;
+        for (const stop of this._stops) {
+            if (stop.final || stop.dropped) continue;
+            for (const range of stop.ranges) {
+                if (range.isEmpty || range.end.line < first || range.start.line > last) continue;
+                placeholders.push(range);
+            }
+        }
+        return placeholders;
+    }
+
+    start(stops: CodeSnippetStop[]) {
+        this.end();
+        this._stops = stops;
+        this._current = 0;
+        this._reached = this.textOf(stops[0]);
+        this.changed?.();
+        this.offerChoices(stops[0]);
+    }
+
+    choose(text: string) {
+        if (this._stops == null || this._editor.readOnly) return false;
+        this._placing = true;
+        try {
+            this._editor.replaceEvery($eq.collections.listCopy(this._stops[this._current].ranges), text);
+            return true;
+        } finally {
+            this._placing = false;
+        }
+    }
+
+    end() {
+        if (this._stops == null) return;
+        this._stops = null;
+        this._current = -1;
+        this._editor.completion.dropChoices();
+        this.changed?.();
+    }
+
+    previousOf(index: number) {
+        if (this._stops == null) return -1;
+        for (let i = index - 1; i >= 0; i--) if (!CodeSnippetSession.skipped(this._stops[i])) return i;
+        return -1;
+    }
+
+    static skipped(stop: CodeSnippetStop) {
+        return stop.dropped || stop.ranges.length === 0;
+    }
+
+    reach(index: number) {
+        if (this._stops == null) return;
+        let stop = this._stops[index];
+        this._current = index;
+        this._reached = this.textOf(stop);
+        this._editor.completion.dropChoices();
+        this._placing = true;
+        try {
+            this._editor.selections = stop.ranges;
+        } finally {
+            this._placing = false;
+        }
+        if (stop.final) {
+            this.end();
+            return;
+        }
+        this.changed?.();
+        this.offerChoices(stop);
+    }
+
+    offerChoices(stop: CodeSnippetStop) {
+        let options: any; 
+        if (((stop.choices != null && $eq.collections.count(stop.choices) > 0) && (options = stop.choices, true))) this._editor.completion.offerChoices(stop.ranges[0], options);
+    }
+
+    leaving() {
+        if (this._stops == null) return;
+        let leaving = this._stops[this._current];
+        if (this.textOf(leaving) === this._reached) return;
+        for (const stop of this._stops) {
+            if (stop.final || (stop === leaving)) continue;
+            for (let i = stop.ranges.length - 1; i >= 0; i--) if (stop.enclosing[i].includes(leaving.index)) stop.removeAt(i);
+            if (stop.ranges.length === 0) stop.dropped = true;
+        }
+    }
+
+    textOf(stop: CodeSnippetStop) {
+        return stop.ranges.length === 0 ? '' : this._editor.document.textIn(stop.ranges[0]);
+    }
+
+    carry(change: CodeChange) {
+        if (this._stops == null) return;
+        if (change.replaced) {
+            this.end();
+            return;
+        }
+        if ($eq.collections.count(change.edits) === 0) return;
+        let growing = this.growing();
+        for (const edit of change.edits) {
+            for (let s = 0; s < this._stops.length; s++) {
+                let ranges = this._stops[s].ranges;
+                for (let i = 0; i < ranges.length; i++) {
+                    let range = ranges[i];
+                    ranges[i] = growing[s] ? new CodeRange(edit.carryAnchor(range.start), edit.carryReach(range.end)) : edit.carry(range);
+                }
+            }
+        }
+        for (let s = 0; s < this._stops.length; s++) if (growing[s]) CodeSnippetSession.separate(this._stops[s].ranges);
+    }
+
+    growing() {
+        let growing = new Array(this._stops?.length ?? 0).fill(false);
+        if (this._stops == null || this._current < 0) return growing;
+        growing[this._current] = true;
+        let current = this._stops[this._current];
+        for (let s = 0; s < this._stops.length; s++) if (!this._stops[s].final && current.nestedIn(this._stops[s].index)) growing[s] = true;
+        return growing;
+    }
+
+    static separate(ranges: CodeRange[]) {
+        if (ranges.length < 2) return;
+        let order: number[] = [];
+        for (let i = 0; i < ranges.length; i++) order.push(i);
+        $eq.collections.listSortBy(order, (a: number, b: number) => ranges[a].start.compareTo(ranges[b].start), 'System.Comparison`1[System.Int32]');
+        for (let k = 1; k < order.length; k++) {
+            let before = ranges[order[k - 1]];
+            let range = ranges[order[k]];
+            if (CodePosition.opLessThan(before.start, range.start) && CodePosition.opLessThan(range.start, before.end)) ranges[order[k]] = new CodeRange(CodePosition.opLessThan(before.end, range.end) ? before.end : range.end, range.end);
+        }
+    }
+
+    followed() {
+        if (this._stops == null || this._placing) return;
+        let within = this.stopWithin();
+        if (within < 0) {
+            this.end();
+            return;
+        }
+        if (within === this._current) return;
+        this._current = within;
+        this._reached = this.textOf(this._stops[within]);
+        this.changed?.();
+    }
+
+    stopWithin() {
+        if (this._stops == null) return -1;
+        if (this.holds(this._stops[this._current])) return this._current;
+        for (let s = 0; s < this._stops.length; s++) if (this.holds(this._stops[s])) return s;
+        return -1;
+    }
+
+    holds(stop: CodeSnippetStop) {
+        if (stop.final || stop.dropped) return false;
+        for (const selection of this._editor.selections) {
+            let inside = false;
+            for (const range of stop.ranges) if (CodePosition.opGreaterOrEqual(selection.start, range.start) && CodePosition.opLessOrEqual(selection.end, range.end)) inside = true;
+            if (!inside) return false;
+        }
+        return true;
+    }
+
+    toString(): string {
+        return 'eQuantic.UI.Code.CodeSnippetSession';
+    }
+}
+

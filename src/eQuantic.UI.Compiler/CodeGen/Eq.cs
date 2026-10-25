@@ -491,6 +491,10 @@ public static class Eq
     public const string ArraySort = "$eq.collections.arraySort";
     /// <summary><c>Array.Sort(array, Comparison)</c>.</summary>
     public const string ArraySortBy = "$eq.collections.arraySortBy";
+    /// <summary><c>List&lt;T&gt;.Reverse()</c> and <c>Reverse(index, count)</c>: in place, the range checked (#1076).</summary>
+    public const string ListReverse = "$eq.collections.listReverse";
+    /// <summary><c>Array.Reverse(array)</c> and <c>Reverse(array, index, length)</c>: in place, a null array refused.</summary>
+    public const string ArrayReverse = "$eq.collections.arrayReverse";
     /// <summary><c>List&lt;T&gt;.BinarySearch</c>: .NET's midpoint, the complement of the insertion point for a miss.</summary>
     public const string ListBinarySearch = "$eq.collections.binarySearch";
 

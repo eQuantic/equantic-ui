@@ -172,6 +172,8 @@ public sealed class CodeEditor : StatefulComponent
         editor.Diagnostics.Changed += () => SetState(() => { });
         editor.Hover.Changed += () => SetState(() => { });
         editor.SignatureHelp.Changed += () => SetState(() => { });
+        // And a snippet's session, whose end on Escape moves neither the text nor the carets (#1013).
+        editor.Snippet.Changed += () => SetState(() => { });
         return editor;
     }
 
@@ -434,8 +436,8 @@ public sealed class CodeEditor : StatefulComponent
 
     /// <summary>
     /// Everything the block should mark: what the app handed in, the search matches on the lines from
-    /// <paramref name="first"/> to <paramref name="last"/>, the bracket pair under the caret, and the
-    /// problems on those lines, in the colours of <paramref name="theme"/>. Computed per frame from the
+    /// <paramref name="first"/> to <paramref name="last"/>, the bracket pair under the caret, the problems
+    /// on those lines, and a snippet's placeholders, in the colours of <paramref name="theme"/>. Computed per frame from the
     /// model rather than stored, because the first three are functions of where the caret is — and a
     /// stored copy would be one keystroke behind.
     /// <para>
@@ -448,9 +450,14 @@ public sealed class CodeEditor : StatefulComponent
         int first, int last, IAppTheme theme)
     {
         var problems = editor.Diagnostics.Items;
-        if (matches.Count == 0 && !MatchBrackets && editor.Composition is null && problems.Count == 0) return Decorations;
+        if (matches.Count == 0 && !MatchBrackets && editor.Composition is null && problems.Count == 0
+            && !editor.Snippet.IsActive) return Decorations;
 
         var marks = new List<CodeDecoration>(Decorations);
+        // A snippet's placeholders in view are washed while it is being filled in, the one the carets stand at
+        // too, as VS Code washes every tab stop (#1013).
+        foreach (var placeholder in editor.Snippet.PlaceholdersIn(first, last))
+            marks.Add(new CodeDecoration(placeholder, CodeDecorationKind.Highlight) { Color = theme.Colors(Variant.Info).Subtle });
         // Each problem in view under its range, as a wave in its severity's colour, or three dots for a
         // hint; the block draws one of no width under the cell where it stands.
         foreach (var problem in problems)

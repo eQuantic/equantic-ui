@@ -37,7 +37,8 @@ export type CodeCommandValue =
   | 'problemNext' | 'problemPrevious' | 'releaseKeyboard' | 'moveLinesUp' | 'moveLinesDown'
   | 'copyLinesUp' | 'copyLinesDown' | 'deleteLines' | 'joinLines' | 'sortLinesAscending'
   | 'sortLinesDescending' | 'insertLineAbove' | 'insertLineBelow' | 'addCursorAbove'
-  | 'addCursorBelow' | 'addNextOccurrence' | 'selectAllOccurrences' | 'removeSecondaryCursors';
+  | 'addCursorBelow' | 'addNextOccurrence' | 'selectAllOccurrences' | 'removeSecondaryCursors'
+  | 'nextTabStop' | 'previousTabStop' | 'leaveSnippet';
 
 export type CodeCompletionKindValue =
   'text' | 'method' | 'function' | 'constructor' | 'field' | 'variable' | 'class' | 'interface'

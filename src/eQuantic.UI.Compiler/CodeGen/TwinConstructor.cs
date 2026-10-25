@@ -753,8 +753,38 @@ internal sealed class TwinConstructor
         constructors.Roots.Select((candidate, i) => (candidate, i)).First(pair => pair.candidate == root).i;
 
     /// <summary>Whether TypeScript reads a member's type as one that may hold null.</summary>
-    private static bool Nullable(string tsType) =>
-        tsType == "any" || tsType.Split('|').Any(part => part.Trim() is "null" or "undefined");
+    /// <summary>
+    /// Whether TypeScript reads <paramref name="tsType"/> as holding a null: <c>any</c>, or a union with null or
+    /// undefined at its top level. A function's <c>| null</c> after its arrow is its result's, and a function
+    /// that may be null is parenthesised before its union (<c>((e: Edit) => void) | null</c>): split anywhere, a
+    /// field of <c>(name: string) => string | null</c> was taken for one that may be null, started as a bare
+    /// <c>null</c>, and the type check refused it (#1013).
+    /// </summary>
+    private static bool Nullable(string tsType)
+    {
+        if (tsType == "any") return true;
+        var depth = 0;
+        var start = 0;
+        for (var i = 0; i < tsType.Length; i++)
+        {
+            var c = tsType[i];
+            if (c == '=' && i + 1 < tsType.Length && tsType[i + 1] == '>')
+            {
+                // An arrow at the top level makes the whole a function, which no union around it reaches.
+                if (depth == 0) return false;
+                i++;
+                continue;
+            }
+            if (c is '(' or '[' or '<' or '{') depth++;
+            else if (c is ')' or ']' or '>' or '}') depth--;
+            else if (c == '|' && depth == 0)
+            {
+                if (tsType[start..i].Trim() is "null" or "undefined") return true;
+                start = i + 1;
+            }
+        }
+        return tsType[start..].Trim() is "null" or "undefined";
+    }
 
     private string Annotation => _annotations ? ": any" : "";
 

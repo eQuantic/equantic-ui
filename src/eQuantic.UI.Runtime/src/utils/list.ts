@@ -179,6 +179,45 @@ export function arraySortBy<T>(array: T[] | null, comparison: ((a: T, b: T) => n
   introSort(array, 0, array.length, { compare: comparison, kind: 'comparer', name });
 }
 
+// ---- Reverse -------------------------------------------------------------------------------------
+
+/**
+ * `List<T>.Reverse()` and `Reverse(int index, int count)`: the list, or the range of it, reversed IN PLACE,
+ * as .NET reverses it. A list's own `Reverse` was LINQ's, a reversed copy thrown away, so the list stayed as
+ * it was, and the range was not read at all (#1076).
+ */
+export function listReverse<T>(list: T[], index?: number, count?: number): void {
+  if (index === undefined || count === undefined) {
+    list.reverse();
+    return;
+  }
+  if (index < 0) throw outOfRange('index', NON_NEGATIVE);
+  if (count < 0) throw outOfRange('count', NON_NEGATIVE);
+  if (list.length - index < count) throw exception('System.ArgumentException', INVALID_OFF_LEN);
+  reverseRange(list, index, count);
+}
+
+/** `Array.Reverse(array)` and `Reverse(array, int index, int length)`, in place, a null array refused. */
+export function arrayReverse<T>(array: T[] | null, index?: number, length?: number): void {
+  if (array == null) throw argumentNull('array');
+  if (index === undefined || length === undefined) {
+    array.reverse();
+    return;
+  }
+  if (index < 0) throw outOfRange('index', NON_NEGATIVE);
+  if (length < 0) throw outOfRange('length', NON_NEGATIVE);
+  if (array.length - index < length) throw exception('System.ArgumentException', INVALID_OFF_LEN);
+  reverseRange(array, index, length);
+}
+
+function reverseRange<T>(items: T[], index: number, count: number): void {
+  for (let i = index, j = index + count - 1; i < j; i++, j--) {
+    const item = items[i];
+    items[i] = items[j];
+    items[j] = item;
+  }
+}
+
 // ---- BinarySearch --------------------------------------------------------------------------------
 
 /** `List<T>.BinarySearch(item)`, `(item, IComparer<T>)` and `(index, count, item, IComparer<T>)`. */

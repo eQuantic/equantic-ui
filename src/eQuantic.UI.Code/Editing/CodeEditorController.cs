@@ -38,6 +38,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         Diagnostics = new CodeDiagnostics(this);
         Hover = new CodeHoverSession(this);
         SignatureHelp = new CodeSignatureHelpSession(this);
+        Snippet = new CodeSnippetSession(this);
     }
 
     /// <summary>The text, as lines. Replacing it is a full reset — a file was opened.</summary>
@@ -230,6 +231,10 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <summary>The panel that explains the call being written: its signatures and the argument the caret is
     /// on. An IDE adds its language service to <see cref="CodeSignatureHelpSession.Providers"/>.</summary>
     public CodeSignatureHelpSession SignatureHelp { get; }
+
+    /// <summary>The snippet being filled in, and the stop the carets stand at: what Tab, ⇧Tab and Escape walk
+    /// and end (#1013). A snippet starts one through <see cref="InsertSnippet"/>.</summary>
+    public CodeSnippetSession Snippet { get; }
 
     /// <summary>The first key of a chord the keymap is waiting for the second of (⌘K, for ⌘K ⌘I), or
     /// null. Any key that is not a modifier ends the wait.</summary>
@@ -729,6 +734,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             case CodeCommand.AddNextOccurrence: return AddNextOccurrence();
             case CodeCommand.SelectAllOccurrences: return SelectAllOccurrences();
             case CodeCommand.RemoveSecondaryCursors: return DroppingAnUnshownList(RemoveSecondaryCursors());
+            case CodeCommand.NextTabStop: return !ReadOnly && !TabMovesFocus && Snippet.Next();
+            case CodeCommand.PreviousTabStop: return !ReadOnly && !TabMovesFocus && Snippet.Previous();
+            case CodeCommand.LeaveSnippet: return DroppingAnUnshownList(Snippet.Leave());
             case CodeCommand.Copy:
                 if (clipboard is null) return false;
                 clipboard.Write(CopyText());
@@ -833,6 +841,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         CodeCommand.DeleteLines => !ReadOnly && (_document.LineCount > 1 || _document.Line(0).Length > 0),
         CodeCommand.JoinLines => !ReadOnly && (_others.Count > 0 || CanJoin()),
         CodeCommand.RemoveSecondaryCursors => _others.Count > 0,
+        CodeCommand.NextTabStop => !ReadOnly && !TabMovesFocus && Snippet.IsActive,
+        CodeCommand.PreviousTabStop => !ReadOnly && !TabMovesFocus && Snippet.HasPrevious,
+        CodeCommand.LeaveSnippet => Snippet.IsActive,
         CodeCommand.SortLinesAscending => !ReadOnly && (_others.Count > 0 || Unsorted(descending: false)),
         CodeCommand.SortLinesDescending => !ReadOnly && (_others.Count > 0 || Unsorted(descending: true)),
         _ => true,
@@ -2188,10 +2199,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     internal bool ReplaceAroundEveryCaret(int before, int after, string text) =>
         AtEveryCaret(() =>
         {
-            var caret = Caret;
-            var line = _document.Line(caret.Line);
-            var range = new CodeRange(caret with { Column = Math.Max(0, caret.Column - before) },
-                caret with { Column = Math.Min(line.Length, caret.Column + after) });
+            var range = AroundCaret(Caret, before, after);
             if (_document.TextIn(range) != text) return Edit(range, text, false);
             Select(new CodeRange(range.End), keepCell: false);
             return true;
@@ -2200,6 +2208,164 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <summary>Whether there are carets besides the primary: what a completion asks before it accepts at
     /// them all.</summary>
     internal bool HasOtherCarets => _others.Count > 0;
+
+    // ---- snippets (#1013) -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Inserts <paramref name="snippet"/> in place of every selection, a copy at each caret, as one undo step,
+    /// and starts its session at its first stop (<see cref="Snippet"/>): what an app's own command calls, a
+    /// toolbar's "insert a loop". A snippet whose only stop is <c>$0</c>, or with none, leaves a caret at
+    /// <c>$0</c>, or at its end, and starts none. False when the editor reads only.
+    /// </summary>
+    public bool InsertSnippet(CodeSnippet snippet) => InsertCopies(snippet, selection => selection);
+
+    /// <summary>A snippet accepted from the completion at every caret, as an entry of text is
+    /// (<see cref="ReplaceAroundEveryCaret"/>): before each caret as many characters as the entry replaces
+    /// before the primary, and after it as many as it replaces after, on the caret's own line.</summary>
+    internal bool InsertSnippetAround(CodeSnippet snippet, int before, int after) =>
+        InsertCopies(snippet, selection => AroundCaret(selection.Focus, before, after));
+
+    /// <summary>The range around <paramref name="caret"/> an accepted entry replaces: <paramref name="before"/>
+    /// characters before it and <paramref name="after"/> after it, on its own line.</summary>
+    private CodeRange AroundCaret(CodePosition caret, int before, int after)
+    {
+        var line = _document.Line(caret.Line);
+        return new CodeRange(caret with { Column = Math.Max(0, caret.Column - before) },
+            caret with { Column = Math.Min(line.Length, caret.Column + after) });
+    }
+
+    /// <summary>
+    /// The insertion itself: at every caret, the copy of <paramref name="snippet"/> that caret's variables and
+    /// line make, over the range <paramref name="at"/> answers for the caret's selection, its caret left at the
+    /// copy's start, which the placement of #1012 carries through the copies inserted before it in the document.
+    /// Each stop is then the copy's start and where the stop lies in the copy, which no other copy's edit reaches
+    /// into. The carets go to the first stop inside the step, so redo selects it again, and the session starts
+    /// once the step is heard, so it does not carry its stops through the edits that made them.
+    /// </summary>
+    private bool InsertCopies(CodeSnippet snippet, Func<CodeRange, CodeRange> at)
+    {
+        if (ReadOnly) return false;
+        // Every copy is made against the document as it stands before any goes in, as VS Code resolves a
+        // snippet's variables: made between the edits, a caret's $TM_CURRENT_LINE read a line a copy at a caret
+        // after it was already in (Copilot on #1079). A caret's selection is the one it had then, since the
+        // copies go in from the last caret to the first.
+        var ranges = new Dictionary<CodeRange, CodeRange>();
+        var planned = new Dictionary<CodeRange, CodeSnippetExpansion>();
+        foreach (var caret in CaretsInOrder(out _))
+        {
+            var selection = caret.Selection;
+            var range = at(selection);
+            ranges[selection] = range;
+            var copy = CodeSnippetExpansion.Of(snippet, name => SnippetVariable(name, selection),
+                _document.IndentOf(_document.Clamp(range.Start).Line), IndentStep);
+            // An editor of one line takes no copy that breaks one, and then nothing changes, the session
+            // before it included: refused copy by copy, the stops were placed on text never written (Copilot
+            // on #1079).
+            if (SingleLine && (copy.Text.Contains('\n') || copy.Text.Contains('\r'))) return false;
+            planned[selection] = copy;
+        }
+        Snippet.End();
+        var copies = new List<CodeSnippetExpansion>();
+        var stops = new List<CodeSnippetStop>();
+        var made = AsOneStep(() =>
+        {
+            AtEveryCaret(() =>
+            {
+                if (!ranges.TryGetValue(_selection, out var range) || !planned.TryGetValue(_selection, out var copy))
+                    return false;
+                var start = _document.Clamp(range.Start);
+                copies.Add(copy);
+                var edited = Edit(range, copy.Text, false);
+                Select(new CodeRange(start), keepCell: false, moved: true);
+                return edited;
+            });
+            // The copies were made from the last caret to the first; the carets stand at their starts.
+            copies.Reverse();
+            var carets = CaretsInOrder(out var primary);
+            if (carets.Count != copies.Count) return false;
+            stops.AddRange(StopsOf(copies, carets, primary));
+            PlaceSelections(stops[0].Ranges);
+            return true;
+        });
+        if (stops.Count > 0 && !stops[0].Final) Snippet.Start(stops);
+        return made;
+    }
+
+    /// <summary>
+    /// The stops of the copies of a snippet that start where <paramref name="carets"/> stand, in the order Tab
+    /// walks them: their numbers ascending, then <c>$0</c>, or the end of every copy when the snippet has none.
+    /// Each stop's places are every place it is written in every copy, its first place in the primary caret's
+    /// copy first.
+    /// </summary>
+    private static List<CodeSnippetStop> StopsOf(List<CodeSnippetExpansion> copies, List<CodeCaret> carets, int primary)
+    {
+        var byIndex = new Dictionary<int, CodeSnippetStop>();
+        for (var k = 0; k < copies.Count; k++)
+        {
+            var start = carets[k].Selection.Start;
+            foreach (var place in copies[k].Places)
+            {
+                if (!byIndex.TryGetValue(place.Stop, out var stop))
+                {
+                    stop = new CodeSnippetStop(place.Stop, place.Stop == 0);
+                    byIndex[place.Stop] = stop;
+                }
+                if (stop.Choices is null && place.Choices is not null) stop.Choices = place.Choices;
+                var range = new CodeRange(CodeSnippetPlace.At(start, place.Start), CodeSnippetPlace.At(start, place.End));
+                stop.Add(range, place.Enclosing, k == primary && !stop.HasPrimary);
+            }
+        }
+        var order = new List<int>(byIndex.Keys);
+        order.Remove(0);
+        order.Sort();
+        var stops = new List<CodeSnippetStop>();
+        foreach (var index in order) stops.Add(byIndex[index]);
+        if (byIndex.TryGetValue(0, out var final)) stops.Add(final);
+        else
+        {
+            var end = new CodeSnippetStop(0, final: true);
+            for (var k = 0; k < copies.Count; k++)
+                end.Add(new CodeRange(CodeSnippetPlace.At(carets[k].Selection.Start, copies[k].End)), [], k == primary);
+            stops.Add(end);
+        }
+        return stops;
+    }
+
+    /// <summary>The selections <paramref name="ranges"/> make, the first the primary, placed inside a step:
+    /// heard with its edits once it is made.</summary>
+    private void PlaceSelections(IReadOnlyList<CodeRange> ranges)
+    {
+        _others.Clear();
+        for (var i = 1; i < ranges.Count; i++) _others.Add(new CodeCaret(OnElementEdges(ranges[i]), -1));
+        Select(ranges[0], keepCell: false, moved: true);
+        Merge();
+    }
+
+    /// <summary>What a snippet's variable <paramref name="name"/> is for the copy at a caret selecting
+    /// <paramref name="selection"/>, or null for a name the editor does not know, as VS Code reads them: the
+    /// selection's text, the line the caret is on, and the word at the selection's start, whatever range the copy
+    /// replaces (an entry accepted replaces the word typed, which nobody selected).</summary>
+    private string? SnippetVariable(string name, CodeRange selection) => name switch
+    {
+        "TM_SELECTED_TEXT" => _document.TextIn(selection),
+        "TM_CURRENT_LINE" => _document.Line(selection.Focus.Line),
+        "TM_CURRENT_WORD" => _document.TextIn(WordRange(selection.Start)),
+        "TM_LINE_INDEX" => selection.Focus.Line.ToString(),
+        "TM_LINE_NUMBER" => (selection.Focus.Line + 1).ToString(),
+        _ => null,
+    };
+
+    /// <summary>Writes <paramref name="text"/> over every one of <paramref name="ranges"/>, as one undo step,
+    /// a caret after each: a snippet's choice taken.</summary>
+    internal bool ReplaceEvery(IReadOnlyList<CodeRange> ranges, string text)
+    {
+        if (ReadOnly || ranges.Count == 0) return false;
+        return AsOneStep(() =>
+        {
+            PlaceSelections(ranges);
+            return AtEveryCaret(() => Edit(_selection, text, false));
+        });
+    }
 
     // ---- carets (#1012) -------------------------------------------------------------------------
 
@@ -2793,6 +2959,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         if (ReadOnly) return false;
         EndComposition();
         if (History.Undo(_document, out var selections, out var made) is null) return false;
+        // A snippet ends with an undo, as VS Code's does: its stops were placed on text the undo may take
+        // away, and taken away they collapse where a restored caret still counted as inside one (#1013).
+        Snippet.End();
         Replay(made, selections);
         return true;
     }
@@ -2802,6 +2971,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         if (ReadOnly) return false;
         EndComposition();
         if (History.Redo(_document, out var selections, out var made) is null) return false;
+        Snippet.End();
         Replay(made, selections);
         return true;
     }
