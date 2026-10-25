@@ -191,7 +191,9 @@ public class LocalDeclarationStrategy : IStatementStrategy
             return SimpleItemName(wrapper.TypeArguments[0], context) is { } value
                 ? CodeGen.TypeScriptEmitter.OrNull(value)
                 : null;
-        if (item is { IsReferenceType: true, NullableAnnotation: NullableAnnotation.Annotated })
+        // A nullable reference and a type parameter declared `T?` alike, which crosses as `T | null` as a
+        // parameter of that type does (Copilot on #1068).
+        if (item.NullableAnnotation == NullableAnnotation.Annotated)
             return SimpleItemName(item.WithNullableAnnotation(NullableAnnotation.NotAnnotated), context) is { } reference
                 ? CodeGen.TypeScriptEmitter.OrNull(reference)
                 : null;
@@ -216,18 +218,33 @@ public class LocalDeclarationStrategy : IStatementStrategy
         if (item is INamedTypeSymbol nested && nested.NestedTwinName() is not null) return nested.IntroduceTwin(context);
         // A type parameter is named as its declaration names it, `class$` for `@class` (Copilot on #1068).
         if (item is ITypeParameterSymbol) return item.Name.ToJsIdentifier();
-        // A type the app declares is named as it declares it, and one it does not as the mapper spells it:
-        // a Guid crosses as a string, and an item named `Guid` named nothing (Copilot on #1068).
-        if (item is INamedTypeSymbol { SpecialType: SpecialType.None } named)
-            return named.Locations.Any(location => location.IsInSource)
-                ? named.Name
-                : CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(named.Name);
+        if (item is INamedTypeSymbol { SpecialType: SpecialType.None } named) return NamedItemName(named, context);
         if (item.SpecialType == SpecialType.None) return null;
         var ts = CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(
             item.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat));
         // A decimal is the runtime's class, which the module imports only when something says so.
         if (ts == "Decimal") context.UsedRuntimeTypes.Add("Decimal");
         return ts;
+    }
+
+    /// <summary>
+    /// The TS spelling of a named item that is neither a primitive nor generic. A type with a twin, the
+    /// app's own or one the runtime provides, is named by its twin and imported as any reference to it is:
+    /// an app class only a tuple's slot named was named and never imported. A task held as a value is a
+    /// promise, where the mapper's <c>void</c> is what a method returning one is awaited to. Any other type
+    /// the app does not declare is named as the mapper spells it where a module names that with no module
+    /// of the app's behind it (a Guid is a string, a TimeSpan the runtime's), and null where nothing can
+    /// verify the name, which leaves the list to inference as a declared type degrades to <c>any</c>
+    /// (Copilot's reviews of #1068 found each).
+    /// </summary>
+    private static string? NamedItemName(INamedTypeSymbol named, ConversionContext context)
+    {
+        if (named.Locations.Any(location => location.IsInSource) || named.IsRuntimeProvided())
+            return named.IntroduceTwin(context);
+        if (named is { Name: "Task", Arity: 0 } && named.ContainingNamespace?.ToDisplayString() == "System.Threading.Tasks")
+            return "Promise<void>";
+        var ts = CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(named.Name);
+        return CodeGen.TypeScriptEmitter.NamesWithoutAModule(ts) ? ts : null;
     }
 
     /// <summary>An array of <paramref name="item"/>, a union parenthesised: <c>string | null[]</c> is a string

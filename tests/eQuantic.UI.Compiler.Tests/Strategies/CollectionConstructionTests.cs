@@ -127,6 +127,45 @@ public class CollectionConstructionTests
         ts.Should().Contain("let pairs: [class$, number][] = [];").And.Contain("let plain: class$[] = [];");
     }
 
+    /// <summary>
+    /// A type parameter declared <c>T?</c> holds its null as a parameter of that type does (Copilot on #1068):
+    /// the slot said <c>T</c>, and adding the parameter, a <c>T | null</c>, failed the type check.
+    /// </summary>
+    [Fact]
+    public void ATypeParameterDeclaredNullable_HoldsItsNull()
+    {
+        var ts = TypeScriptOf("""
+            using System.Collections.Generic;
+            public class Bag
+            {
+                public int Count<T>(T? value)
+                {
+                    var pairs = new List<(T? Value, int Index)>();
+                    var plain = new List<T?>();
+                    pairs.Add((value, 1));
+                    plain.Add(value);
+                    return pairs.Count + plain.Count;
+                }
+            }
+            """, "Bag");
+        ts.Should().Contain("let pairs: [T | null, number][] = [];").And.Contain("let plain: (T | null)[] = [];");
+    }
+
+    /// <summary>
+    /// A task held as a value is a promise (Copilot on #1068): the mapper's <c>void</c> is what a method
+    /// returning one is awaited to, and pushing <c>Promise.resolve()</c> into a <c>void</c> slot failed the
+    /// type check. A name nothing can verify, a StringBuilder's, leaves the list to inference, as a declared
+    /// type degrades to <c>any</c>.
+    /// </summary>
+    [Fact]
+    public void ATaskIsAPromise_AndANameNothingVerifies_IsLeftToInference()
+    {
+        Convert("var jobs = new List<(System.Threading.Tasks.Task Work, int At)>();")
+            .Should().Contain("let jobs: [Promise<void>, number][] = [];");
+        Convert("var tasks = new List<System.Threading.Tasks.Task>();").Should().Contain("let tasks: Promise<void>[] = [];");
+        Convert("var builders = new List<System.Text.StringBuilder>();").Should().Contain("let builders = [];");
+    }
+
     private static string TypeScriptOf(string source, string type) =>
         new ComponentCompiler().CompileSource(source, "Probe.cs").Single(result => result.ComponentName == type).TypeScript;
 
