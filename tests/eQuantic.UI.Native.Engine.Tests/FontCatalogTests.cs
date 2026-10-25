@@ -160,6 +160,36 @@ public sealed class FontCatalogTests : IDisposable
         File.Exists(Path.Combine(_dir, "Fonts.g.cs")).Should().BeFalse("a catalog that leaves a file out is a face that falls back in silence");
     }
 
+    /// <summary>
+    /// A static face's weight is the one position its STAT table gives it on <c>wght</c>, whatever its
+    /// weight class says: Google's Thin and ExtraLight of Inter both carry 250 there, the value Windows's
+    /// GDI needs, and 100 and 200 in their STAT (#1082). A STAT that gives several positions describes a
+    /// family, and the weight class stands.
+    /// </summary>
+    [Fact]
+    public void AStaticFacesStatPosition_IsItsWeight_WhateverItsWeightClassSays()
+    {
+        OpenTypeFace.Read(TestFont.Build("Inter", weight: 250, statWeights: [100]))
+            .Should().Be(new OpenTypeFace("Inter", 100, 100, false));
+        OpenTypeFace.Read(TestFont.Build("Inter", weight: 250, statWeights: [100, 200]))
+            .Should().Be(new OpenTypeFace("Inter", 250, 250, false), "a STAT with several positions describes the family");
+    }
+
+    [Fact]
+    public void AThinAndAnExtraLightThatShareAWeightClass_AreTwoFacesOfTheCatalog()
+    {
+        var (families, errors) = FontCatalog.Write(
+        [
+            Source("Inter-100.ttf", TestFont.Build("Inter", weight: 250, statWeights: [100])),
+            Source("Inter-200.ttf", TestFont.Build("Inter", weight: 250, statWeights: [200])),
+        ], "Acme.App", Path.Combine(_dir, "Fonts.g.cs"), "Acme.App");
+
+        errors.Should().BeEmpty();
+        families.Should().Be(1);
+        File.ReadAllText(Path.Combine(_dir, "Fonts.g.cs"))
+            .Should().Contain("\"eQuantic.UI.Fonts/Inter-100.ttf\", 100, 100)").And.Contain("\"eQuantic.UI.Fonts/Inter-200.ttf\", 200, 200)");
+    }
+
     [Fact]
     public void TwoFilesThatClaimOneFace_StopTheBuild()
     {

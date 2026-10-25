@@ -57,14 +57,22 @@ describe('the measuring canvas is given a font it can parse', () => {
     expect(measurePhotonText('ab', { ...bodyM, tracking: 0 })).toBe(14);
   });
 
-  it('maps every weight the type scale uses', () => {
+  // The nine weights OpenType defines, by the names the transpiler emits: the four appended to the
+  // vocabulary fell to 400 through the switch this mapping used to be (#1082).
+  it('maps each of the nine weights to its number', () => {
+    expect(cssFontWeight('thin')).toBe(100);
+    expect(cssFontWeight('extraLight')).toBe(200);
+    expect(cssFontWeight('light')).toBe(300);
     expect(cssFontWeight('regular')).toBe(400);
     expect(cssFontWeight('medium')).toBe(500);
     expect(cssFontWeight('semiBold')).toBe(600);
     expect(cssFontWeight('bold')).toBe(700);
     expect(cssFontWeight('extraBold')).toBe(800);
+    expect(cssFontWeight('black')).toBe(900);
     // A twin that already lowered it stays lowered.
     expect(cssFontWeight(600)).toBe(600);
     expect(cssFontWeight(undefined)).toBe(400);
+    // A name that is no weight is the regular weight, a key of the object's prototype included.
+    expect(cssFontWeight('toString')).toBe(400);
   });
 });

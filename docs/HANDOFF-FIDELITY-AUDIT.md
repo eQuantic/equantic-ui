@@ -1257,8 +1257,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Primitives/Theme/Typography.cs:86  var scaled = Size * MathF.Min(MathF.Max(osFactor, 0.5f), MaxScale);
-  src/eQuantic.UI.Primitives/Theme/Typography.cs:162  var scaled = LineHeight * MathF.Min(MathF.Max(osFactor, 0.5f), MaxScale);
+  src/eQuantic.UI.Primitives/Theme/Typography.cs:95  var scaled = Size * MathF.Min(MathF.Max(osFactor, 0.5f), MaxScale);
+  src/eQuantic.UI.Primitives/Theme/Typography.cs:171  var scaled = LineHeight * MathF.Min(MathF.Max(osFactor, 0.5f), MaxScale);
   ```
 
 ### A8 Text · behaviour · **unverified**

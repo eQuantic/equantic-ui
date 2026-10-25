@@ -49,20 +49,14 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
     }
 
     /// <summary>
-    /// The typeface of a shipped <paramref name="family"/> for a style: the file of its slant whose
-    /// weights hold the one asked for, else any file of its slant, else any file. Null when its files
-    /// did not all register: the family resolves from them whole or not at all, so a missing cut is
+    /// The typeface of a shipped <paramref name="family"/> for a style: its file that sets the weight and
+    /// the slant, chosen as every shell chooses it (ShippedFaces.FileFor, a browser's rule). Null when its
+    /// files did not all register: the family resolves from them whole or not at all, so a missing cut is
     /// reported and falls back rather than being drawn from another.
     /// </summary>
     private static Typeface? ShippedFace(FontFamily family, FontWeight weight, bool italic)
     {
-        if (!Shipped.Register(family)) return null;
-        var asked = (int)weight;
-        var file = family.Files.Where(f => f.Italic == italic && asked >= f.MinWeight && asked <= f.MaxWeight)
-            .Concat(family.Files.Where(f => f.Italic == italic))
-            .Concat(family.Files)
-            .FirstOrDefault(Shipped.IsRegistered);
-        if (file is null) return null;
+        if (!Shipped.Register(family) || ShippedFaces.FileFor(family, weight, italic) is not { } file) return null;
         lock (ShippedTypefaces) return ShippedTypefaces.GetValueOrDefault(file);
     }
 
@@ -188,7 +182,9 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
         };
         // The FAMILY carries the face (the platform's own monospace), the STYLE carries the two
         // axes — and they are asked for together, because Android has one enum for the pair:
-        // BoldItalic is not Bold applied twice, it is a fourth value.
+        // BoldItalic is not Bold applied twice, it is a fourth value. The style is what a version
+        // below Android 9 can be asked for, and what tells a family the machine has from one it does
+        // not; the weight itself is asked for where it can be, below.
         var bold = weight >= FontWeight.SemiBold;
         var style = (bold, italic) switch
         {
@@ -221,7 +217,12 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
             else
                 eQuantic.UI.Primitives.FaceResolution.Missing(family.Name);
         }
-        paint.SetTypeface(Typeface.Create(baseFace, style));
+        // From Android 9 (API 28) a typeface is asked for the weight itself, so every one of the nine
+        // draws as named and a family that ships a file per weight draws from the file of the weight
+        // (#1082). Below it the shell has regular and bold, which is all those versions take.
+        paint.SetTypeface(OperatingSystem.IsAndroidVersionAtLeast(28)
+            ? Typeface.Create(baseFace, (int)weight, italic)
+            : Typeface.Create(baseFace, style));
         _paints[(size, weight, mono, italic, family)] = paint;
         return paint;
     }

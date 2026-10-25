@@ -37,6 +37,8 @@ public static class EnumUnionsTsGenerator
         ts.AppendLine(" * (EnumUnionsTsGeneratorTests pins this file byte-for-byte against the generator).");
         ts.AppendLine(" *");
         ts.AppendLine(" * A [Flags] enum is absent by design: its members combine, so it crosses as a number.");
+        ts.AppendLine(" *");
+        ts.AppendLine(" * One table follows the unions: each FontWeight's number, which the runtime asks for by name.");
         ts.AppendLine(" */");
 
         foreach (var type in Unions())
@@ -49,6 +51,16 @@ public static class EnumUnionsTsGenerator
             ts.AppendLine();
             TsUnion.Write(ts, $"{type.Name}Value", members);
         }
+
+        // A weight is the one vocabulary enum whose VALUE is its meaning, the weight class CSS, CoreText,
+        // DirectWrite and Android are all asked for, while the transpiler emits a member as its name. So
+        // the runtime reads the number here, written from the enum: the switch it read it from was written
+        // by hand, and the four weights appended to the enum fell to its default, 400 (#1082).
+        ts.AppendLine();
+        ts.AppendLine("/** Each weight's number, its OpenType weight class, keyed by the name the transpiler emits. */");
+        using (ts.BeginBlock("export const FontWeightNumbers: Readonly<Record<FontWeightValue, number>> = {", "};"))
+            foreach (var weight in Enum.GetValues<FontWeight>().OrderBy(weight => (int)weight))
+                ts.AppendLine($"{char.ToLowerInvariant(weight.ToString()[0])}{weight.ToString()[1..]}: {(int)weight},");
 
         return ts.ToString();
     }

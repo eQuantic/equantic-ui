@@ -42,7 +42,8 @@ internal static class TestFont
     /// and flagged OBLIQUE rather than ITALIC when <paramref name="oblique"/> says so, its names written
     /// as <paramref name="names"/> says.</summary>
     public static byte[] Build(string family, int weight = 400, bool italic = false, int advance = 1000,
-        (int Min, int Max)? weightAxis = null, bool oblique = false, NameRecords names = NameRecords.Windows)
+        (int Min, int Max)? weightAxis = null, bool oblique = false, NameRecords names = NameRecords.Windows,
+        IReadOnlyList<int>? statWeights = null)
     {
         var glyphCount = 1 + (Last - First + 1);
         var (glyf, loca) = Glyphs(glyphCount, advance);
@@ -60,6 +61,7 @@ internal static class TestFont
             ["post"] = Post(italic),
         };
         if (weightAxis is { } axis) tables["fvar"] = Fvar(axis.Min, weight, axis.Max);
+        if (statWeights is { } positions) tables["STAT"] = Stat(positions);
         return Assemble(tables);
     }
 
@@ -302,6 +304,30 @@ internal static class TestFont
         w.Bytes("wght"u8.ToArray());
         w.U32((uint)(min << 16)); w.U32((uint)(value << 16)); w.U32((uint)(max << 16));
         w.U16(0); w.U16(256);
+        return w.ToArray();
+    }
+
+    /// <summary>
+    /// A STAT table (version 1.1) with one design axis, <c>wght</c>, and one position on it for each of
+    /// <paramref name="weights"/> (axis value format 1): one is a static face's own weight, as Google's
+    /// instances carry it, several describe a family rather than the face.
+    /// </summary>
+    private static byte[] Stat(IReadOnlyList<int> weights)
+    {
+        var w = new Writer();
+        w.U16(1); w.U16(1);
+        w.U16(8); w.U16(1);
+        w.U32(20);
+        w.U16(weights.Count);
+        w.U32(28);
+        w.U16(2);
+        w.Bytes("wght"u8.ToArray()); w.U16(256); w.U16(0);
+        for (var i = 0; i < weights.Count; i++) w.U16(2 * weights.Count + 12 * i);
+        foreach (var weight in weights)
+        {
+            w.U16(1); w.U16(0); w.U16(0); w.U16(256);
+            w.U32((uint)(weight << 16));
+        }
         return w.ToArray();
     }
 

@@ -11,7 +11,10 @@ namespace eQuantic.UI.Build;
 /// <item>The family is the <c>name</c> table's typographic family (ID 16), or its family (ID 1)
 /// when it has none. A variable font names the whole family in ID 16 and only a style group in ID 1.</item>
 /// <item>The weight is <c>OS/2</c>'s <c>usWeightClass</c>, or the range of the <c>fvar</c> table's
-/// <c>wght</c> axis for a variable font.</item>
+/// <c>wght</c> axis for a variable font, or the one position a static face's <c>STAT</c> table gives it
+/// on <c>wght</c> when it gives it one. The weight class is not always the face's weight: Google's
+/// static Thin and ExtraLight of Inter both say 250, the value Windows's GDI needs not to embolden a
+/// thin face, while their <c>STAT</c> says 100 and 200 (#1082).</item>
 /// <item>The italic is <c>OS/2</c>'s ITALIC or OBLIQUE bit, or the <c>head</c> table's when there is no <c>OS/2</c>.</item>
 /// </list>
 /// </summary>
@@ -58,6 +61,7 @@ public sealed record OpenTypeFace(string Family, int MinWeight, int MaxWeight, b
 
         var (min, max) = (weight, weight);
         if (tables.TryGetValue("fvar", out var fvar) && WeightAxis(Slice(font, fvar)) is { } axis) (min, max) = axis;
+        else if (tables.TryGetValue("STAT", out var stat) && StatWeight(Slice(font, stat)) is { } placed) (min, max) = (placed, placed);
         return new OpenTypeFace(family, min, max, italic);
     }
 
@@ -132,6 +136,51 @@ public sealed record OpenTypeFace(string Family, int MinWeight, int MaxWeight, b
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         return Encoding.GetEncoding(10000);
+    }
+
+    /// <summary>
+    /// The weight a static face's <c>STAT</c> table places it at, rounded to a whole weight: its positions
+    /// on the <c>wght</c> axis are ONE, a single value (format 1 or 3). Null when it gives none, a range
+    /// (format 2), several values, or one shared with other axes (format 4), which describe a family
+    /// rather than this face, and null for a table that does not hold, since the weight class is still
+    /// there to read: a <c>STAT</c> only says more than it.
+    /// </summary>
+    private static int? StatWeight(ReadOnlySpan<byte> table)
+    {
+        if (table.Length < 18) return null;
+        var axisSize = BinaryPrimitives.ReadUInt16BigEndian(table[4..]);
+        var axisCount = BinaryPrimitives.ReadUInt16BigEndian(table[6..]);
+        var axes = BinaryPrimitives.ReadUInt32BigEndian(table[8..]);
+        var valueCount = BinaryPrimitives.ReadUInt16BigEndian(table[12..]);
+        var values = BinaryPrimitives.ReadUInt32BigEndian(table[14..]);
+        if (axisSize < 4 || axes + (ulong)axisCount * axisSize > (ulong)table.Length || values + 2UL * valueCount > (ulong)table.Length)
+            return null;
+
+        int? weightAxis = null;
+        for (var i = 0; i < axisCount; i++)
+            if (Encoding.ASCII.GetString(table.Slice((int)axes + i * axisSize, 4)) == "wght") weightAxis = i;
+        if (weightAxis is null) return null;
+
+        int? placed = null;
+        for (var i = 0; i < valueCount; i++)
+        {
+            var offset = (int)values + BinaryPrimitives.ReadUInt16BigEndian(table[((int)values + 2 * i)..]);
+            if (offset + 12 > table.Length) return null;
+            var value = table[offset..];
+            var format = BinaryPrimitives.ReadUInt16BigEndian(value);
+            if (format == 4)
+            {
+                var count = BinaryPrimitives.ReadUInt16BigEndian(value[2..]);
+                if (offset + 8 + 6 * count > table.Length) return null;
+                for (var j = 0; j < count; j++)
+                    if (BinaryPrimitives.ReadUInt16BigEndian(value[(8 + 6 * j)..]) == weightAxis) return null;
+                continue;
+            }
+            if (BinaryPrimitives.ReadUInt16BigEndian(value[2..]) != weightAxis) continue;
+            if (format is not (1 or 3) || placed is not null) return null;
+            placed = (int)Math.Round(BinaryPrimitives.ReadInt32BigEndian(value[8..]) / 65536.0);
+        }
+        return placed is >= 1 and <= 1000 ? placed : null;
     }
 
     /// <summary>The <c>wght</c> axis's range, rounded to whole weights, or null for a font with none.</summary>

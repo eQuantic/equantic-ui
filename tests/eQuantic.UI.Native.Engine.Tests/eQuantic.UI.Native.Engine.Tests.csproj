@@ -97,5 +97,8 @@
     <!-- Two faces written by that builder, embedded as the SDK embeds an app's, for the shells to
          register (the server's tests embed the same two). -->
     <EmbeddedResource Include="..\Shared\Fonts\*.ttf" LogicalName="eQuantic.UI.Fonts/%(Filename)%(Extension)" />
+    <!-- One family, a file at 300, 400 and 700, each glyph a width of its own, so the width a text
+         measures says which file set it (#1082). -->
+    <EmbeddedResource Include="..\Shared\Fonts\Weights\*.ttf" LogicalName="eQuantic.UI.Fonts/weights/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
