@@ -81,6 +81,11 @@ public static class UIExtensions
             services.AddTransient<Microsoft.AspNetCore.Hosting.IStartupFilter, PoweredByHeader>();
 
         services.AddSingleton(options);
+        // The faces the app serves (#1055, #1056), one set the render and the font routes share: read at
+        // the first request from the theme the app chose and the catalogs of the assemblies it scans, and
+        // added to as pages name other families.
+        services.TryAddSingleton(provider => ServedFonts.Of(options.Theme ?? PhotonTheme.Instance, options.AssembliesToScan,
+            provider.GetService<ILoggerFactory>()?.CreateLogger("eQuantic.UI.Fonts")));
         // The origins whose pages may call the app's actions besides its own host (#678): read from
         // configuration, added to in Program.cs, and checked at start, so a malformed one stops the app
         // instead of refusing the page it was written for.
@@ -362,12 +367,11 @@ public static class UIExtensions
         });
 
         // The faces the app ships (#1055), by the hash of their bytes: immutable, and only what the
-        // theme and the app's catalogs named, since a name is the only way in. Public as the runtime
-        // is: a sign-in page under a fallback policy is set in them too.
+        // theme, the app's catalogs and its pages named, since a name is the only way in. Public as the
+        // runtime is: a sign-in page under a fallback policy is set in them too.
         endpoints.MapGetAndHead("/_equantic/fonts/{name}", async context =>
         {
-            var options = context.RequestServices.GetRequiredService<UIOptions>();
-            var font = Fonts(options, context.RequestServices).Find((string?)context.GetRouteValue("name") ?? "");
+            var font = context.RequestServices.GetRequiredService<ServedFonts>().Find((string?)context.GetRouteValue("name") ?? "");
             if (font is null)
             {
                 context.Response.StatusCode = 404;
@@ -379,12 +383,31 @@ public static class UIExtensions
             var brotli = context.Request.GetTypedHeaders().AcceptEncoding
                 .Any(encoding => encoding.Value.Equals("br", StringComparison.OrdinalIgnoreCase) && encoding.Quality is not 0);
             var body = brotli ? font.Brotli : font.Bytes;
-            context.Response.ContentType = FontFaceRules.ContentType(font.File);
+            context.Response.ContentType = font.ContentType;
             if (brotli) context.Response.Headers.ContentEncoding = "br";
             context.Response.Headers.Vary = "Accept-Encoding";
             context.Response.ContentLength = body.Length;
             context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
             await context.Response.Body.WriteAsync(body);
+        }).AllowAnonymous();
+
+        // A face a page the browser builds names (#1056), asked for by its identity, an assembly and a
+        // resource, since the browser does not know the bytes' hash: sent on to the content-addressed URL,
+        // so every page shares one cached copy of a file. Only a face an eQuantic build embedded, in an
+        // assembly the app's deployment carries, or a file the theme serves (ServedFonts.Locate). The redirect itself is asked again every
+        // time, so a new build's file is found under its new hash.
+        endpoints.MapGetAndHead("/_equantic/fonts/{assembly}/{**resource}", context =>
+        {
+            var font = context.RequestServices.GetRequiredService<ServedFonts>().Locate(
+                (string?)context.GetRouteValue("assembly") ?? "", (string?)context.GetRouteValue("resource") ?? "");
+            if (font is null)
+            {
+                context.Response.StatusCode = 404;
+                return Task.CompletedTask;
+            }
+            context.Response.Headers["Cache-Control"] = "no-cache";
+            context.Response.Redirect(font.Url);
+            return Task.CompletedTask;
         }).AllowAnonymous();
 
         // Map Runtime JS (immutable via BuildId in URL, long cache)
@@ -742,14 +765,6 @@ public static class UIExtensions
         return sheets[slot] ??= ThemeStylesheet.Generate(theme, mode);
     }
 
-    /// <summary>The faces the app serves (#1055), read once per app: its theme and the catalogs of the
-    /// assemblies it scans are set at startup, and every page and the font route read the same set.</summary>
-    private static readonly ConditionalWeakTable<UIOptions, ServedFonts> FontSets = new();
-
-    private static ServedFonts Fonts(UIOptions options, IServiceProvider services) =>
-        FontSets.GetValue(options, _ => ServedFonts.Of(options.Theme ?? PhotonTheme.Instance, options.AssembliesToScan,
-            services.GetService<ILoggerFactory>()?.CreateLogger("eQuantic.UI.Fonts")));
-
     private static async Task ServeAppShell(HttpContext context, Type? page, DeclaredPage? declared)
     {
         // A client navigation asks the same route for the page's data instead of a document.
@@ -781,7 +796,7 @@ public static class UIExtensions
         // it in front of the reader.
         var requestedMode = ThemeCookie.Resolve(context, options.InitialThemeMode, options.ThemeCookie?.Name);
         // The faces the theme and the app's catalogs ship, declared ahead of the sheet that names them.
-        var fonts = Fonts(options, context.RequestServices);
+        var fonts = context.RequestServices.GetRequiredService<ServedFonts>();
         var themeStyles = fonts.Rules + ThemeStyles(options.Theme ?? PhotonTheme.Instance, requestedMode);
 
         // A CHOSEN theme also crosses as data, into window.__EQ_THEME__, so boot can setPhotonTheme

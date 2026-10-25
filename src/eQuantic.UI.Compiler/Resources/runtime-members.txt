@@ -8,6 +8,7 @@ HtmlElement	constructor
 HtmlElement	htmlNode
 HtmlElement	render
 StatelessComponent	_instances
+StatelessComponent	_invalidate
 StatelessComponent	_mounted
 StatelessComponent	_renderManager
 StatelessComponent	_renderScheduled
@@ -24,6 +25,7 @@ StatelessComponent	mountReconcile
 StatelessComponent	render
 StatelessComponent	serviceProvider
 StatefulComponent	_instances
+StatefulComponent	_invalidate
 StatefulComponent	_invalidationHook
 StatefulComponent	_lifecycleMounted
 StatefulComponent	_mounted
