@@ -98,6 +98,12 @@ class PaceTests(unittest.TestCase):
         self.assertAlmostEqual(p.rate, 10 / 28)
         self.assertEqual(p.shares, {1: 0.8, 2: 0.2})
 
+    def test_a_split_parent_delivers_its_sub_issues_points_not_its_own_again(self):
+        # Pointed 21 before it was split into two slices of 13: delivered, it is 26 points, not 47.
+        issues = board(done(1, "User Story", closed=1, points=21),
+                       done(2, parent=1, closed=2, points=13), done(3, parent=1, closed=1, points=13))
+        self.assertEqual(pace(issues, TODAY).delivered, 26)
+
     def test_a_young_board_is_never_divided_by_fewer_than_seven_days(self):
         p = pace(board(done(1, closed=0, points=7)), TODAY)
         self.assertEqual((p.days, len(p.daily)), (1, 7))
@@ -124,6 +130,12 @@ class SimulationTests(unittest.TestCase):
     def test_a_lane_with_a_share_and_no_work_gives_its_place_away_at_once(self):
         span = simulate({9: [todo(1)]}, {1: 1.0}, {7: 1.0}, [9], lambda _: 1.0)
         self.assertEqual(span[1], (0, 0))
+
+    def test_what_a_lane_leaves_of_its_day_goes_to_the_lanes_still_working(self):
+        quick, long_ = todo(1), todo(2)
+        span = simulate({7: [quick], 8: [long_]}, {1: 0.5, 2: 3.4}, {7: 0.5, 8: 0.5}, [7, 8], lambda _: 2.0)
+        # Day 0: lane 7 needs 0.5 of its 1.0, so lane 8 takes 1.5; day 1 lane 8 takes all 2.0: 3.5 >= 3.4.
+        self.assertEqual(span[2], (0, 1))
 
     def test_what_the_horizon_does_not_reach_has_no_end(self):
         span = simulate({7: [todo(1)]}, {1: 10.0}, {7: 1.0}, [7], lambda _: 0.0)

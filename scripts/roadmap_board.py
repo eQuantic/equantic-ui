@@ -62,7 +62,7 @@ ITEMS = """query($owner: String!, $number: Int!, $cursor: String) { organization
       issueFieldValues(first: 10) { nodes {
         ... on IssueFieldDateValue { value field { ... on IssueFieldDate { name } } }
         ... on IssueFieldSingleSelectValue { name field { ... on IssueFieldSingleSelect { name } } } } }
-      closedByPullRequestsReferences(first: 10, includeClosedPrs: true) { nodes { number createdAt mergedAt
+      closedByPullRequestsReferences(first: 25, includeClosedPrs: true) { nodes { number createdAt mergedAt
         closingIssuesReferences { totalCount } commits(first: 1) { nodes { commit { authoredDate } } } } } } } } } } } }"""
 
 

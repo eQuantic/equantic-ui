@@ -167,10 +167,12 @@ def size(issue: Issue) -> float | None:
 
 
 def delivered_points(issue: Issue) -> float | None:
-    """A delivered issue's own points: the ones it was given, else the ones its size says."""
+    """A delivered issue's own points: the ones it was given, else the ones its size says. A parent's
+    are its sub-issues', so the points a person gave it before it was split are not counted again: it
+    delivers only what its own pull requests wrote."""
     if not (issue.closed and issue.completed):
         return None
-    if issue.points is not None:
+    if issue.points is not None and not issue.children:
         return issue.points
     lines = size(issue)
     return points_for(lines) if lines else None
@@ -302,10 +304,13 @@ def queues(issues: dict, milestones: dict) -> dict:
     has started is read from the work itself, never from a parent's status, which this script sets:
     the plan must not reorder itself on the board it was written to."""
     rank = milestone_rank(milestones)
+    ahead = {}
 
     def key(issue: Issue):
-        started = any(w.status in STARTED for w in work(issue))
-        first = min((rank(milestone_of(issues, w)) for w in work(issue)), default=rank(None))
+        if issue.number not in ahead:
+            ahead[issue.number] = work(issue)
+        started = any(w.status in STARTED for w in ahead[issue.number])
+        first = min((rank(milestone_of(issues, w)) for w in ahead[issue.number]), default=rank(None))
         return (not started, first, priority_rank(issue), issue.number)
 
     def walk(issue: Issue) -> list:
@@ -352,18 +357,26 @@ def simulate(lanes: dict, costs: dict, shares: dict, order: list, capacity) -> d
                 places[waiting.pop(0)] = share
         if not places:
             break
-        budget, total = capacity(day), sum(places.values())
-        for lane, share in places.items():
-            part = budget * share / total
-            while part > 1e-12 and queue[lane]:
-                issue = queue[lane][0]
-                span.setdefault(issue.number, (day, None))
-                used = min(part, left[issue.number])
-                left[issue.number] -= used
-                part -= used
-                if left[issue.number] <= 1e-9:
-                    span[issue.number] = (span[issue.number][0], day)
-                    queue[lane].pop(0)
+        budget = capacity(day)
+        # What a lane that runs dry today leaves of its part goes to the lanes still working today.
+        while budget > 1e-9:
+            working = {lane: share for lane, share in places.items() if queue.get(lane)}
+            if not working:
+                break
+            total, spare = sum(working.values()), 0.0
+            for lane, share in working.items():
+                part = budget * share / total
+                while part > 1e-12 and queue[lane]:
+                    issue = queue[lane][0]
+                    span.setdefault(issue.number, (day, None))
+                    used = min(part, left[issue.number])
+                    left[issue.number] -= used
+                    part -= used
+                    if left[issue.number] <= 1e-9:
+                        span[issue.number] = (span[issue.number][0], day)
+                        queue[lane].pop(0)
+                spare += part
+            budget = spare
     for issues in queue.values():
         for issue in issues:
             span.setdefault(issue.number, (None, None))

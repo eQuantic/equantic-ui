@@ -86,7 +86,7 @@ def report(issues: dict, milestones: dict, fc, runs: int, seed: int) -> list:
     groups[None] = ahead
     ranges = monte_carlo(issues, fc, groups, runs, seed)
     print(f"\nMilestones: the plan's date, a range from {runs} runs (half of them done by the first date, 85% by the "
-          "second), and the date it would land with all the pace.")
+          "second), and the date it would land with all the pace, the order between its issues aside.")
     for name, work in groups.items():
         label = name or "all open work"
         if not work:

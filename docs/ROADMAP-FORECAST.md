@@ -40,7 +40,8 @@ variable (`*.fixture.json`, `*.baseline.txt`, `__transpiled__/`, `Goldens/`), `d
 the release folds, the imported design handoff and the lockfiles. The scale doubles at each step, as
 Fibonacci roughly does, and its middle is where the median delivered issue fell: that is how the
 board's first six weeks were pointed on 2026-10-25, and how an issue delivered without points is
-pointed since. Past 6,400 lines history says 21, which a new issue is never given.
+pointed since. Past 6,400 lines history says 21. On an open issue, 21 says it is too big for one
+pull request and is split before it starts; the report lists it until it is.
 
 ## The pace
 
@@ -82,7 +83,8 @@ A milestone waits for its open issues and their sub-issues, and the report gives
 - **a range**, from a thousand runs of the same plan with what is uncertain drawn from the board:
   each day's capacity from the days of the window, and each issue's cost from what its type cost
   when delivered, scaled to its points when a person gave it some. Half the runs finish by the first date, 85% by the second;
-- **focused**, the day it would land with all the pace and nothing else.
+- **focused**, the day it would land with all the pace and nothing else. It sets aside the order
+  between its issues, a slice that needs the one before it included, so it is a bound, never a plan.
 
 When the milestone has a due date, the report says whether the plan passes it.
 

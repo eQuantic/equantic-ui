@@ -4,7 +4,7 @@
   Estimate field, and a delivered issue nobody pointed gets the points of the lines a person wrote in
   the pull requests that closed it, the files a tool writes left out: the board's 361 delivered
   issues were pointed that way, and its 273 open ones by hand against them. `scripts/roadmap.py`
-  measures the pace in points over 28 calendar days (1,141 points, 40.8 a day, on the day it
+  measures the pace in points over 28 calendar days (1,133 points, 40.5 a day, on the day it
   landed), plans the open work with a lane per epic at the share each had, writes the real dates of
   what happened and the forecast of the rest on epics and features, and gives each milestone a plan
   date, a range from a thousand runs and the date it would land with all the pace. It never closes an
