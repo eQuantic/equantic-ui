@@ -84,7 +84,9 @@ public sealed record OpenTypeFace(string Family, int MinWeight, int MaxWeight, b
 
     /// <summary>
     /// The typographic family (ID 16) when the table has one, the family (ID 1) otherwise; in each,
-    /// the Windows English record first, then any Unicode one, then a Macintosh Roman one.
+    /// the Windows English record first, then any Unicode one, then a Macintosh Roman one. A Windows
+    /// record is UTF-16BE whatever its encoding says of the font's characters: Unicode (1), the full
+    /// repertoire (10) or Symbol (0), the one record a symbol font carries.
     /// </summary>
     private static string? FamilyName(ReadOnlySpan<byte> table)
     {
@@ -107,7 +109,7 @@ public sealed record OpenTypeFace(string Family, int MinWeight, int MaxWeight, b
                 var offset = BinaryPrimitives.ReadUInt16BigEndian(record[10..]);
                 var (decoder, order) = (platform, encoding) switch
                 {
-                    (3, 1 or 10) => (Encoding.BigEndianUnicode, language == 0x0409 ? 0 : 1),
+                    (3, 0 or 1 or 10) => (Encoding.BigEndianUnicode, language == 0x0409 ? 0 : 1),
                     (0, _) => (Encoding.BigEndianUnicode, 2),
                     (1, 0) => (MacRoman, 3),
                     _ => ((Encoding?)null, int.MaxValue),

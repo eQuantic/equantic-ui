@@ -27,12 +27,22 @@ internal static class TestFont
     private const char First = ' ';
     private const char Last = '~';
 
+    /// <summary>The platform and the encoding a font's name records are written for.</summary>
+    public enum NameRecords
+    {
+        /// <summary>Windows, Unicode (3, 1), in UTF-16BE: what nearly every font carries.</summary>
+        Windows,
+        /// <summary>Windows, Symbol (3, 0), in UTF-16BE: the only records a symbol font carries.</summary>
+        WindowsSymbol,
+        /// <summary>Macintosh, Roman (1, 0), in Mac Roman: the only records an old Mac font carries.</summary>
+        Macintosh,
+    }
+
     /// <summary>A TrueType file in <paramref name="family"/>, at <paramref name="weight"/>, italic or not,
-    /// and flagged OBLIQUE rather than ITALIC when <paramref name="oblique"/> says so. With
-    /// <paramref name="macNames"/> its names are the Macintosh platform's alone, in Mac Roman, as an
-    /// old Mac font's are.</summary>
+    /// and flagged OBLIQUE rather than ITALIC when <paramref name="oblique"/> says so, its names written
+    /// as <paramref name="names"/> says.</summary>
     public static byte[] Build(string family, int weight = 400, bool italic = false, int advance = 1000,
-        (int Min, int Max)? weightAxis = null, bool oblique = false, bool macNames = false)
+        (int Min, int Max)? weightAxis = null, bool oblique = false, NameRecords names = NameRecords.Windows)
     {
         var glyphCount = 1 + (Last - First + 1);
         var (glyf, loca) = Glyphs(glyphCount, advance);
@@ -46,7 +56,7 @@ internal static class TestFont
             ["hmtx"] = Hmtx(glyphCount, advance),
             ["loca"] = loca,
             ["maxp"] = Maxp(glyphCount),
-            ["name"] = Name(family, italic, weight >= 700, macNames),
+            ["name"] = Name(family, italic, weight >= 700, names),
             ["post"] = Post(italic),
         };
         if (weightAxis is { } axis) tables["fvar"] = Fvar(axis.Min, weight, axis.Max);
@@ -237,7 +247,7 @@ internal static class TestFont
         return (glyf.ToArray(), loca.ToArray());
     }
 
-    private static byte[] Name(string family, bool italic, bool bold, bool macNames)
+    private static byte[] Name(string family, bool italic, bool bold, NameRecords platform)
     {
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
         var macRoman = System.Text.Encoding.GetEncoding(10000);
@@ -250,13 +260,14 @@ internal static class TestFont
         };
         var postScript = family.Replace(" ", "") + "-" + style.Replace(" ", "");
         string[] names = [family, style, postScript, family + " " + style, "Version 1.000", postScript];
+        var mac = platform == NameRecords.Macintosh;
         var strings = new Writer();
         var records = new Writer();
         for (var i = 0; i < names.Length; i++)
         {
-            var text = macNames ? macRoman.GetBytes(names[i]) : Encoding.BigEndianUnicode.GetBytes(names[i]);
-            if (macNames) { records.U16(1); records.U16(0); records.U16(0); }
-            else { records.U16(3); records.U16(1); records.U16(0x0409); }
+            var text = mac ? macRoman.GetBytes(names[i]) : Encoding.BigEndianUnicode.GetBytes(names[i]);
+            if (mac) { records.U16(1); records.U16(0); records.U16(0); }
+            else { records.U16(3); records.U16(platform == NameRecords.WindowsSymbol ? 0 : 1); records.U16(0x0409); }
             records.U16(i + 1);
             records.U16(text.Length); records.U16(strings.Length);
             strings.Bytes(text);

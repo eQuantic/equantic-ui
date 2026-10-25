@@ -206,9 +206,10 @@ internal sealed class Place
                 continue;
             }
             keys[parameter.Ordinal] = Hole(parts.Count);
-            parts.Add(argument.ArgumentKind == ArgumentKind.ParamArray
-                ? JsExpr.Array([.. ((argument.Value as IArrayCreationOperation)?.Initializer?.ElementValues ?? [])
-                    .Select(element => written.Convert(element.Syntax))])
+            // The elements a call lists are packed into the array the twin takes: a params collection's
+            // as an array's, whose value is the whole access and would be converted again.
+            parts.Add(BoundArguments.PackedElements(argument) is { } packed
+                ? JsExpr.Array([.. packed.Select(element => written.Convert(element.Syntax))])
                 : written.Convert(argument.Syntax));
         }
         var evaluated = parts.Count;

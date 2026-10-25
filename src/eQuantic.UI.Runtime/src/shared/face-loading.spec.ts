@@ -8,8 +8,9 @@ import { FontFamily } from './value-types';
  * measure again: it rebuilds when the face has loaded.
  */
 describe('a page that measured text in a face still loading', () => {
-  let loaded: boolean;
+  let loaded: (font: string) => boolean;
   let loads: number;
+  let asked: string[];
   let finishLoading: () => void;
   let failLoading: () => void;
 
@@ -18,17 +19,19 @@ describe('a page that measured text in a face still loading', () => {
       font: '',
       measureText: (text: string) => ({ width: text.length * 7 }),
     } as unknown as CanvasRenderingContext2D);
-    loaded = false;
+    loaded = () => false;
     loads = 0;
+    asked = [];
     Object.defineProperty(document, 'fonts', {
       configurable: true,
       value: {
-        check: () => loaded,
-        load: () => {
+        check: (font: string) => loaded(font),
+        load: (font: string) => {
           loads++;
+          asked.push(font);
           return new Promise<void>((resolve, reject) => {
             finishLoading = () => {
-              loaded = true;
+              loaded = () => true;
               resolve();
             };
             failLoading = () => reject(new Error('the face failed to load'));
@@ -67,7 +70,7 @@ describe('a page that measured text in a face still loading', () => {
     const { measurePhotonText } = await import('./photon-context');
     const { setPassInvalidator } = await import('./pass-invalidator');
     const rebuild = vi.fn();
-    loaded = true;
+    loaded = () => true;
 
     setPassInvalidator(rebuild);
     measurePhotonText('Handgloves', brand);
@@ -93,6 +96,24 @@ describe('a page that measured text in a face still loading', () => {
 
     expect(rebuild).not.toHaveBeenCalled();
     expect(loads).toBe(1);
+  });
+
+  /** The italic cut is a file of its own, and the upright one being there says nothing of it: the
+   * font asked for names the slant, or a page measuring italic text never rebuilt. */
+  it('waits for the italic cut when the upright one is there already', async () => {
+    const { measurePhotonText } = await import('./photon-context');
+    const { setPassInvalidator } = await import('./pass-invalidator');
+    const rebuild = vi.fn();
+    loaded = (font) => !font.startsWith('italic ');
+
+    setPassInvalidator(rebuild);
+    measurePhotonText('Handgloves', { ...brand, italic: true });
+    setPassInvalidator(null);
+
+    expect(asked).toEqual([expect.stringMatching(/^italic 400 17px "Brand Sans", /)]);
+    finishLoading();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(rebuild).toHaveBeenCalledTimes(1);
   });
 
   it('waits for nothing outside a build', async () => {

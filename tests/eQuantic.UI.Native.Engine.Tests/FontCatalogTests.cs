@@ -1,6 +1,8 @@
 using eQuantic.UI.Build;
 using eQuantic.UI.Tests;
 using FluentAssertions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
 namespace eQuantic.UI.Native.Engine.Tests;
@@ -30,7 +32,16 @@ public sealed class FontCatalogTests : IDisposable
     [Fact]
     public void AFamilyNamedOnlyForTheMac_IsReadInMacRoman()
     {
-        OpenTypeFace.Read(TestFont.Build("Café Display", macNames: true)).Family.Should().Be("Café Display");
+        OpenTypeFace.Read(TestFont.Build("Café Display", names: TestFont.NameRecords.Macintosh)).Family.Should().Be("Café Display");
+    }
+
+    /// <summary>A symbol font names itself in Windows Symbol records alone, UTF-16BE as every Windows
+    /// record is: skipped, its family read as none and the build refused a valid font.</summary>
+    [Fact]
+    public void AFamilyNamedOnlyForWindowsSymbol_IsRead()
+    {
+        OpenTypeFace.Read(TestFont.Build("Brand Glyphs", names: TestFont.NameRecords.WindowsSymbol)).Family
+            .Should().Be("Brand Glyphs");
     }
 
     [Fact]
@@ -90,6 +101,45 @@ public sealed class FontCatalogTests : IDisposable
             .BeLessThan(code.IndexOf("Atkinson-Italic.ttf", StringComparison.Ordinal), "the upright file comes first");
     }
 
+    /// <summary>
+    /// A family named like the class, or like a member every class inherits, takes <c>Family</c> after
+    /// it, and the catalog compiles as the app's build compiles it: <c>Fonts.Fonts</c> was CS0542, and a
+    /// <c>ToString</c> property hid object's.
+    /// </summary>
+    [Fact]
+    public void AFamilyNamedLikeTheClassOrAnInheritedMember_TakesFamilyAfterIt()
+    {
+        var output = Path.Combine(_dir, "Fonts.g.cs");
+        var (families, errors) = FontCatalog.Write(
+        [
+            Source("Fonts.ttf", TestFont.Build("Fonts")),
+            Source("ToString.ttf", TestFont.Build("To String")),
+            Source("Brand.ttf", TestFont.Build("Brand Sans")),
+        ], "Acme.App", output, "Acme.App");
+
+        (families, errors.Count).Should().Be((3, 0));
+        var code = File.ReadAllText(output);
+        code.Should().Contain("public static FontFamily FontsFamily { get; } = new(\"Fonts\",")
+            .And.Contain("public static FontFamily ToStringFamily { get; } = new(\"To String\",")
+            .And.Contain("public static FontFamily BrandSans { get; } = new(\"Brand Sans\",");
+        Compiled(code).Should().BeEmpty("the catalog is compiled with the app, warnings as errors where the app says so");
+        Compiled(code.Replace("FontsFamily", "Fonts")).Should().Contain(diagnostic => diagnostic.Contains("CS0542"),
+            "the compile above would have said so");
+    }
+
+    /// <summary>A family with no letter or digit has no member to give, and stops the build naming its
+    /// file: it wrote a member with no name, and the app's compile failed in a file it never wrote.</summary>
+    [Fact]
+    public void AFamilyWithNoLetterOrDigit_StopsTheBuildNamingIt()
+    {
+        var symbols = Source("Plus.ttf", TestFont.Build("++"));
+
+        var (_, errors) = FontCatalog.Write([symbols], "Acme.App", Path.Combine(_dir, "Fonts.g.cs"), "Acme.App");
+
+        errors.Should().ContainSingle().Which.Should().StartWith($"{symbols.Path} : error EQ4005: Plus.ttf is not a face")
+            .And.Contain("'++', has no letter or digit");
+    }
+
     [Fact]
     public void NoFonts_WriteNoCatalog()
     {
@@ -123,6 +173,58 @@ public sealed class FontCatalogTests : IDisposable
         errors.Should().ContainSingle().Which.Should().Contain("error EQ4006").And.Contain("'Brand Sans'")
             .And.Contain("Regular.ttf").And.Contain("Variable.ttf");
     }
+
+    /// <summary>
+    /// The SDK hands each file as two lines, its path and its resource name, and a path is a line whole:
+    /// one line a file was cut at its first bar, which a folder on macOS and Linux may hold, and the
+    /// file was passed over in silence.
+    /// </summary>
+    [SkippableFact]
+    public void TheList_IsTwoLinesAFile_AndAPathKeepsItsBar()
+    {
+        Skip.If(OperatingSystem.IsWindows(), "a bar is not a character of a Windows path");
+        var folder = Directory.CreateDirectory(Path.Combine(_dir, "brand|probe")).FullName;
+        var font = Path.Combine(folder, "Probe.ttf");
+        File.WriteAllBytes(font, TestFont.Build("Acme Probe"));
+
+        FontCatalog.ReadList(List(font, "eQuantic.UI.Fonts/Probe.ttf", ""))
+            .Should().Equal(new FontCatalog.Source(font, "eQuantic.UI.Fonts/Probe.ttf"));
+    }
+
+    /// <summary>A list that does not hold stops the build, never read as fewer files: a blank line inside
+    /// it, a path with no resource name after it, and a path to nothing.</summary>
+    [Fact]
+    public void AListThatDoesNotHold_IsRefusedSayingWhere()
+    {
+        var font = Path.Combine(_dir, "Probe.ttf");
+        File.WriteAllBytes(font, TestFont.Build("Acme Probe"));
+
+        new Action(() => FontCatalog.ReadList(List(font, "", "eQuantic.UI.Fonts/Probe.ttf")))
+            .Should().Throw<InvalidDataException>().WithMessage("line 2 of the list of fonts is blank*");
+        new Action(() => FontCatalog.ReadList(List(font, "eQuantic.UI.Fonts/Probe.ttf", font)))
+            .Should().Throw<InvalidDataException>().WithMessage("line 3 of the list of fonts is a file with no resource name after it*");
+        new Action(() => FontCatalog.ReadList(List(Path.Combine(_dir, "Gone.ttf"), "eQuantic.UI.Fonts/Gone.ttf")))
+            .Should().Throw<FileNotFoundException>().WithMessage("the font line 1 of the list names is not there*");
+    }
+
+    /// <summary>A list file holding <paramref name="lines"/>, one a line.</summary>
+    private string List(params string[] lines)
+    {
+        var list = Path.Combine(_dir, "fonts.txt");
+        File.WriteAllLines(list, lines);
+        return list;
+    }
+
+    /// <summary>The warnings and errors of <paramref name="code"/> compiled against the vocabulary, as
+    /// the app's build compiles the catalog.</summary>
+    private static IEnumerable<string> Compiled(string code) =>
+        CSharpCompilation.Create("Acme.App", [CSharpSyntaxTree.ParseText(code)],
+                ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator)
+                    .Select(path => TestReferences.Of(path)),
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
+            .GetDiagnostics()
+            .Where(diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning)
+            .Select(diagnostic => diagnostic.ToString());
 
     private FontCatalog.Source Source(string name, byte[] bytes)
     {

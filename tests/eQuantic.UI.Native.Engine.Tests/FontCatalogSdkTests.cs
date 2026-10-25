@@ -70,6 +70,27 @@ public sealed class FontCatalogSdkTests : IDisposable
             .Should().Contain("public static FontFamily AcmeProbe { get; }");
     }
 
+    /// <summary>
+    /// A project in a folder whose name has a bar, which macOS and Linux allow: the step handed each file
+    /// as one line, <c>path|resource</c>, the reader passed over every line that did not split in two, and
+    /// the app got no catalog, so a theme that named its face did not compile.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("eQuantic.UI.Sdk")]
+    [InlineData("eQuantic.UI.Sdk.Native")]
+    public void TheFontStep_HoldsInAFolderWhoseNameHasABar(string sdk)
+    {
+        Skip.If(OperatingSystem.IsWindows(), "a bar is not a character of a Windows path");
+        var folder = Path.Combine(_dir, "brand|probe");
+        Font("Probe-Regular.ttf", TestFont.Build("Acme Probe"), folder);
+
+        var (exit, output) = RunFontStepIn(folder, sdk);
+
+        exit.Should().Be(0, output);
+        File.ReadAllText(Path.Combine(folder, "obj", "Debug", "net10.0", "generated", "eQuantic.UI.Fonts", "Fonts.g.cs"))
+            .Should().Contain("public static FontFamily AcmeProbe { get; }");
+    }
+
     [Theory]
     [InlineData("eQuantic.UI.Sdk")]
     [InlineData("eQuantic.UI.Sdk.Native")]
@@ -111,10 +132,11 @@ public sealed class FontCatalogSdkTests : IDisposable
             .Should().Contain(item => item.GetProperty("Identity").GetString()!.EndsWith("Probe-Regular.ttf"));
     }
 
-    private void Font(string name, byte[] bytes)
+    /// <summary>A font file under the Assets of the project in <paramref name="folder"/>, the test's own by default.</summary>
+    private void Font(string name, byte[] bytes, string? folder = null)
     {
-        Directory.CreateDirectory(Path.Combine(_dir, "Assets", "Fonts"));
-        File.WriteAllBytes(Path.Combine(_dir, "Assets", "Fonts", name), bytes);
+        var fonts = Directory.CreateDirectory(Path.Combine(folder ?? _dir, "Assets", "Fonts")).FullName;
+        File.WriteAllBytes(Path.Combine(fonts, name), bytes);
     }
 
     /// <summary>
@@ -122,9 +144,12 @@ public sealed class FontCatalogSdkTests : IDisposable
     /// tests, as project references, and a path into src/bin is whatever was built there last. Run
     /// from the repository's root, so the global.json it pins picks the SDK.
     /// </summary>
-    private (int Exit, string Output) RunFontStep(string sdk, params string[] properties)
+    private (int Exit, string Output) RunFontStep(string sdk, params string[] properties) => RunFontStepIn(_dir, sdk, properties);
+
+    /// <summary>As <see cref="RunFontStep"/>, for the project in <paramref name="folder"/>.</summary>
+    private (int Exit, string Output) RunFontStepIn(string folder, string sdk, params string[] properties)
     {
-        var project = Consumer(sdk, "net10.0");
+        var project = Consumer(sdk, "net10.0", folder);
         var tools = AppContext.BaseDirectory;
         var (exit, output, error) = ChildProcess.Dotnet(
         [
@@ -135,11 +160,12 @@ public sealed class FontCatalogSdkTests : IDisposable
         return (exit, output + error);
     }
 
-    /// <summary>A consumer of <paramref name="sdk"/> in the test's folder, for <paramref name="targetFramework"/>.</summary>
-    private string Consumer(string sdk, string targetFramework)
+    /// <summary>A consumer of <paramref name="sdk"/> in <paramref name="folder"/>, the test's own by default,
+    /// for <paramref name="targetFramework"/>.</summary>
+    private string Consumer(string sdk, string targetFramework, string? folder = null)
     {
         var sdkDir = Path.Combine(RepoRoot(), "src", sdk, "Sdk");
-        var project = Path.Combine(_dir, "Acme.Probe.csproj");
+        var project = Path.Combine(folder ?? _dir, "Acme.Probe.csproj");
         File.WriteAllText(project, $"""
             <Project>
                 <Import Project="{Path.Combine(sdkDir, "Sdk.props")}" />

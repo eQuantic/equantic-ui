@@ -13,3 +13,6 @@
   on Android ([#1055](https://github.com/eQuantic/equantic-ui/issues/1055)). A family a page names
   outside the theme and the catalog loads on the web in #1056, and a face from a provider in #1057.
   Proposed and archived through OpenSpec (`openspec/specs/font-faces`, a new spec, and `typography`).
+  Its review found eqc deciding a params argument by its type, so a collection that was not an array
+  arrived as one element, and recursing until the stack overflowed on a C# 13 params collection listed
+  at a call: both are read from the bound tree now.

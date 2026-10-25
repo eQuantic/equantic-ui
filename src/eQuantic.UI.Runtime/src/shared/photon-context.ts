@@ -86,8 +86,10 @@ export function measurePhotonText(text: string, style: TypeStyleValue, typeScale
   const base = style.mono ? monoStack() : sansStack();
   const family = isWellFormedFace(style.family?.name) ? `"${style.family!.name}", ${base}` : base;
   // NUMERIC weight: the enum arrives as a member name, and a name makes the whole shorthand
-  // invalid — see cssFontWeight for what that cost.
-  context.font = `${cssFontWeight(style.weight)} ${style.size * typeScale}px ${family}`;
+  // invalid — see cssFontWeight for what that cost. The SLANT names the cut that draws the text:
+  // without it italic text was measured upright, and the load it waits for was the upright file's,
+  // already there while the italic one was still on its way.
+  context.font = `${style.italic ? 'italic ' : ''}${cssFontWeight(style.weight)} ${style.size * typeScale}px ${family}`;
   rebuildWhenFaceLoads(context.font);
   return context.measureText(text).width;
 }
@@ -167,9 +169,9 @@ const MONO_FALLBACK = "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospac
  * editor places its caret from a measured column advance: different face, different advance, caret
  * beside the character.
  *
- * Resolved once and cached, like the canvas: the variable's VALUE is static CSS. (A web font that
- * loads late changes metrics without changing this string, which is the pre-existing hazard for
- * every stack here, not one this introduces.)
+ * Resolved once and cached, like the canvas: the variable's VALUE is static CSS. A face that loads
+ * late changes metrics without changing this string, so a page that measured it still loading
+ * rebuilds when it arrives (rebuildWhenFaceLoads).
  *
  * ONE reader with two callers rather than one per axis — the sans half was missing for as long as
  * the mono half existed, which is what two pieces answering the same question costs.

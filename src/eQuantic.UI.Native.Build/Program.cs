@@ -187,8 +187,8 @@ if (args.Length > 0 && args[0] == "vectors")
 }
 
 // `fonts` — the app's font files, as one C# class with a FontFamily per family. The SDK embeds the
-// files and hands over each one's path and resource name, one `path|resource` line each, and every
-// other fact a family needs is read from the files here.
+// files and hands over each one's path and resource name, two lines a file (FontCatalog.ReadList), and
+// every other fact a family needs is read from the files here.
 if (args.Length > 0 && args[0] == "fonts")
 {
     string? Arg(string flag)
@@ -203,15 +203,20 @@ if (args.Length > 0 && args[0] == "fonts")
     var ns = Arg("--namespace");
     if (list is null || fontAssembly is null || output is null || ns is null)
     {
-        Console.Error.WriteLine("Usage: eqicon fonts --list <path|resource lines> --assembly <name> --out <file.g.cs> --namespace <ns>");
+        Console.Error.WriteLine("Usage: eqicon fonts --list <a path and a resource name, a line each> --assembly <name> --out <file.g.cs> --namespace <ns>");
         return 1;
     }
 
-    var files = File.ReadAllLines(list)
-        .Select(line => line.Split('|'))
-        .Where(parts => parts.Length == 2)
-        .Select(parts => new FontCatalog.Source(parts[0], parts[1]))
-        .ToList();
+    IReadOnlyList<FontCatalog.Source> files;
+    try
+    {
+        files = FontCatalog.ReadList(list);
+    }
+    catch (Exception exception) when (exception is IOException or InvalidDataException)
+    {
+        Console.Error.WriteLine($"eqicon: {exception.Message}.");
+        return 1;
+    }
     var (families, errors) = FontCatalog.Write(files, fontAssembly, output, ns);
     foreach (var error in errors) Console.WriteLine(error);
     if (errors.Count > 0) return 1;

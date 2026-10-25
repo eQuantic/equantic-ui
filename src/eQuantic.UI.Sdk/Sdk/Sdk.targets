@@ -749,32 +749,38 @@
             LogicalName="eQuantic.UI.Fonts/%(Filename)%(Extension)" />
     </ItemGroup>
 
-    <!-- The record of the SET, as the vectors keep one: a removed font changes no remaining file. The
-         assembly and the namespace change the catalog too, so they are in it, on lines the catalog's
-         reader skips. -->
+    <!-- What eqicon is handed, two lines a file: its path, then the resource name it is embedded under.
+         One line a file, `path|resource`, was cut at the first bar, which a path may hold on macOS and
+         Linux, and the record was passed over: a catalog with no face, and a theme that named one did
+         not compile. Beside it, the record of the SET, as the vectors keep one: a removed font changes
+         no remaining file, and the assembly and the namespace change the catalog too. -->
     <Target Name="_EQuanticFontInputs">
         <ItemGroup>
             <_EqFontSource Include="@(EmbeddedResource->WithMetadataValue('EQuanticFont', 'true'))" />
         </ItemGroup>
         <PropertyGroup>
+            <_EqFontListFile>$(IntermediateOutputPath)equantic.fonts.txt</_EqFontListFile>
             <_EqFontInputsFile>$(IntermediateOutputPath)equantic.fonts.inputs</_EqFontInputsFile>
         </PropertyGroup>
+        <WriteLinesToFile File="$(_EqFontListFile)" Condition="'@(_EqFontSource)' != ''"
+            Lines="@(_EqFontSource->'%(FullPath)%0A%(LogicalName)')"
+            Overwrite="true" WriteOnlyWhenDifferent="true" />
         <WriteLinesToFile File="$(_EqFontInputsFile)" Condition="'@(_EqFontSource)' != ''"
-            Lines="@(_EqFontSource->'%(FullPath)|%(LogicalName)');assembly=$(AssemblyName);namespace=$(EQuanticFontsNamespace)"
+            Lines="assembly=$(AssemblyName);namespace=$(EQuanticFontsNamespace)"
             Overwrite="true" WriteOnlyWhenDifferent="true" />
     </Target>
 
     <Target Name="EQuanticFonts" BeforeTargets="BeforeCompile;CompileEQuanticUI"
         DependsOnTargets="_EQuanticFontInputs"
         Condition="'@(EmbeddedResource->WithMetadataValue('EQuanticFont', 'true'))' != ''"
-        Inputs="@(_EqFontSource);$(_EqFontInputsFile);$(_EqIconToolDir)eqicon.dll"
+        Inputs="@(_EqFontSource);$(_EqFontListFile);$(_EqFontInputsFile);$(_EqIconToolDir)eqicon.dll"
         Outputs="$(EQuanticFontsFile)">
         <ItemGroup>
             <_EqFontsArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
             <_EqFontsArgument Include="command" Value="fonts" />
             <!-- Joined to the project only when relative: an artifacts layout or a shared obj makes
                  the intermediate path absolute, and a prefix would name a file nobody wrote. -->
-            <_EqFontsArgument Include="list" Option="--list" Value="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(_EqFontInputsFile)'))" />
+            <_EqFontsArgument Include="list" Option="--list" Value="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(_EqFontListFile)'))" />
             <_EqFontsArgument Include="assembly" Option="--assembly" Value="$(AssemblyName)" />
             <_EqFontsArgument Include="catalog" Option="--out" Value="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(EQuanticFontsFile)'))" />
             <_EqFontsArgument Include="namespace" Option="--namespace" Value="$(EQuanticFontsNamespace)" />
