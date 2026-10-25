@@ -515,8 +515,7 @@ export class CodeEditorController {
         let linesInserted = caret.line - ordered.start.line;
         this._document = next;
         this._selection = new CodeRange(caret);
-        this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
-        this.widthsChanged(line, linesInserted, linesRemoved);
+        this.linesChanged(line, linesInserted, linesRemoved);
         this._revealVersion++;
         this._desiredCell = -1;
         let edit = new CodeEdit(ordered, removed, next.textIn(new CodeRange(ordered.start, caret)), before, this._selection, false);
@@ -601,8 +600,7 @@ export class CodeEditorController {
         let edit = new CodeEdit(ordered, removed, next.textIn(new CodeRange(ordered.start, caret)), before, this._selection, typed);
         let step: any; 
         if ((step = this._step) != null) step.push(edit); else this.history.record([edit]);
-        this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
-        this.widthsChanged(line, linesInserted, linesRemoved);
+        this.linesChanged(line, linesInserted, linesRemoved);
         this.changed?.(edit);
         this.selectionChanged?.(this._selection);
         this._desiredCell = -1;
@@ -611,11 +609,11 @@ export class CodeEditorController {
 
     asOneStep(edits: () => boolean) {
         if (!(this._step == null)) return edits();
-        this._step = [];
+        let step: CodeEdit[] = [];
+        this._step = step;
         try {
-            return edits();
+            return edits() || step.length > 0;
         } finally {
-            let step = this._step;
             this._step = null;
             this.history.record(step);
         }
@@ -1057,7 +1055,7 @@ export class CodeEditorController {
             }
             let space = length > 0;
             let tail = parts[parts.length - 1];
-            if (space && (($v80791) => ($v80791 === ' ' || $v80791 === '\t'))(tail[tail.length - 1])) {
+            if (space && (($v81022) => ($v81022 === ' ' || $v81022 === '\t'))(tail[tail.length - 1])) {
                 space = false;
                 let kept = $eq.text.trimEnd(tail, [' ', '\t']);
                 parts[parts.length - 1] = kept;
@@ -1161,14 +1159,18 @@ export class CodeEditorController {
             let line = edit.range.start.line;
             let linesInserted = end.line - line;
             let linesRemoved = edit.range.end.line - line;
-            this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
-            this.widthsChanged(line, linesInserted, linesRemoved);
+            this.linesChanged(line, linesInserted, linesRemoved);
+            this._selection = this.onElementEdges(selection);
             this.changed?.(edit);
         }
         this._revealVersion++;
-        this._selection = this.onElementEdges(selection);
         this._desiredCell = -1;
         this.selectionChanged?.(this._selection);
+    }
+
+    linesChanged(line: number, linesInserted: number, linesRemoved: number) {
+        this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
+        this.widthsChanged(line, linesInserted, linesRemoved);
     }
 
     findAll(needle: string, matchCase: boolean = false) {

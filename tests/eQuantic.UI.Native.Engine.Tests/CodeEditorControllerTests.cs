@@ -471,6 +471,21 @@ public class CodeEditorControllerTests
         undone.Text.Should().Be(afterBreak.Text, "one undo takes back the character typed after the break, and only it");
     }
 
+    /// <summary>Undo places the selection it restores before it raises the replacement it made, as an edit
+    /// does: a listener that reads the caret then reads it in the document undo left (#1031's review).</summary>
+    [Fact]
+    public void Undo_PlacesTheSelectionItRestores_BeforeItRaisesChanged()
+    {
+        var editor = Editor("");
+        foreach (var c in "abc") editor.Type(c);
+        var seen = new List<CodePosition>();
+        editor.Changed += _ => seen.Add(editor.Caret);
+
+        editor.Undo();
+
+        seen.Should().Equal(new CodePosition(0, 0));
+    }
+
     [Fact]
     public void RedoPutsItBack_AndTypingKillsTheBranch()
     {

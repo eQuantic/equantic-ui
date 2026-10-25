@@ -748,8 +748,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
         _document = next;
         _selection = new CodeRange(caret);
-        Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
-        WidthsChanged(line, linesInserted, linesRemoved);
+        LinesChanged(line, linesInserted, linesRemoved);
         _revealVersion++;
         _desiredCell = -1;
         var edit = new CodeEdit(ordered, removed, next.TextIn(new CodeRange(ordered.Start, caret)), before,
@@ -880,8 +879,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             _selection, typed);
         if (_step is { } step) step.Add(edit);
         else History.Record([edit]);
-        Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
-        WidthsChanged(line, linesInserted, linesRemoved);
+        LinesChanged(line, linesInserted, linesRemoved);
 
         Changed?.Invoke(edit);
         SelectionChanged?.Invoke(_selection);
@@ -898,19 +896,23 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// and records what they made as one undo step, which undo takes back last first. Each edit is the
     /// door's as any other: the colours, the widths, <see cref="Changed"/> and the selection each leaves,
     /// so a listener hears every replacement in the document it was made on. Answers what
-    /// <paramref name="edits"/> answers; inside another step, it is part of that one.
+    /// <paramref name="edits"/> answers, or true once any edit is made; inside another step, it is part of
+    /// that one. An edit a listener makes while it hears one of them joins the step too, so undo takes the
+    /// replacements back in the exact reverse of the order they were made, which is what keeps each one's
+    /// range true.
     /// </summary>
     private bool AsOneStep(Func<bool> edits)
     {
         if (_step is not null) return edits();
-        _step = [];
+        var step = new List<CodeEdit>();
+        _step = step;
         try
         {
-            return edits();
+            // An edit made is a step made, whatever the edits after it answered: the document changed.
+            return edits() || step.Count > 0;
         }
         finally
         {
-            var step = _step;
             _step = null;
             History.Record(step);
         }
@@ -1782,7 +1784,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// raised as any edit is: the colours and the widths follow the lines it touched, where both were
     /// thrown away and measured again over the whole file, and a listener that carries a range through an
     /// edit (a problem's squiggle, a language server) hears every replacement in the document it was made
-    /// on, where it could only start over after every undo. Then the selection the step restores.
+    /// on, where it could only start over after every undo. The selection the step restores is in place
+    /// before each is raised, as an edit's is, held to the document each made.
     /// </summary>
     private void Replay(IReadOnlyList<CodeEdit> made, CodeRange selection)
     {
@@ -1792,14 +1795,21 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             var line = edit.Range.Start.Line;
             var linesInserted = end.Line - line;
             var linesRemoved = edit.Range.End.Line - line;
-            Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
-            WidthsChanged(line, linesInserted, linesRemoved);
+            LinesChanged(line, linesInserted, linesRemoved);
+            _selection = OnElementEdges(selection);
             Changed?.Invoke(edit);
         }
         _revealVersion++;
-        _selection = OnElementEdges(selection);
         _desiredCell = -1;
         SelectionChanged?.Invoke(_selection);
+    }
+
+    /// <summary>What every replacement brings up to date, an edit, a composition's step, an undo and a redo
+    /// alike: the colours and the widths of the lines it touched, from <paramref name="line"/> on.</summary>
+    private void LinesChanged(int line, int linesInserted, int linesRemoved)
+    {
+        Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
+        WidthsChanged(line, linesInserted, linesRemoved);
     }
 
     // ---- finding ------------------------------------------------------------------------------
