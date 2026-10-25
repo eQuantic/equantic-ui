@@ -18,10 +18,6 @@ Array.Exists(T[],Predicate<T>) array  type  lowered to the array's own method, w
 Array.Exists(T[],Predicate<T>) match  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Array.FindAll(T[],Predicate<T>) array  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Array.FindAll(T[],Predicate<T>) match  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Array.Reverse(Array) array  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Array.Reverse(Array,Int32,Int32) array  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Array.Reverse(T[]) array  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Array.Reverse(T[],Int32,Int32) array  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Array.TrueForAll(T[],Predicate<T>) array  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Array.TrueForAll(T[],Predicate<T>) match  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Char.IsControl(String,Int32) s  type  the (string, index) overloads read the code point inline, through null: refusing it by name is a guard at every call, which is a design decision
