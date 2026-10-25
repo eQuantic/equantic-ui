@@ -41,7 +41,8 @@ not make SHALL be text, as typed, and parsing SHALL never fail.
 `InsertSnippet` SHALL replace every selection with the snippet, a copy at each caret, as one undo step, and
 an entry accepted with a snippet SHALL insert it over what it replaces around every caret. A snippet with a
 stop other than `$0` SHALL start a session at its first stop; one with `$0` alone, or with no stop, SHALL
-leave a caret at `$0`, or at its end, and start none.
+leave a caret at `$0`, or at its end, and start none. An editor of one line SHALL NOT insert a snippet whose
+text at any caret holds a line break, and SHALL leave its text and its selection as they were.
 
 #### Scenario: A snippet at two carets
 
@@ -53,18 +54,29 @@ leave a caret at `$0`, or at its end, and start none.
 - **WHEN** `Run($0);` is inserted and Tab pressed
 - **THEN** the caret stood between the parentheses, and Tab indented there
 
+#### Scenario: A line break in an editor of one line
+
+- **WHEN** an editor of one line reads `abc` and `x\n${1:y}` is inserted at its end
+- **THEN** the insertion is refused, the text reads `abc` and no session has started
+
 ### Requirement: Tab walks the stops
 
 Tab SHALL select the next stop, in the order of their numbers and then `$0`, or the end of each copy when
 the snippet has no `$0`, and reaching that last stop SHALL end the session. ⇧Tab SHALL select the stop
 before, and at the first stop SHALL NOT be claimed. A placeholder SHALL be selected when its stop is
-reached, and an empty stop SHALL be a caret.
+reached, and an empty stop SHALL be a caret. A selection heard inside the places of another stop SHALL make
+that stop the one Tab and ⇧Tab walk from.
 
 #### Scenario: Three stops and back
 
 - **WHEN** `${1:a} ${2:b} $0.` is inserted, Tab pressed, ⇧Tab pressed, then Tab twice
 - **THEN** `b` was selected, then `a`, then `b`, and then a caret stands before the `.` and the session has
   ended
+
+#### Scenario: A press into another placeholder
+
+- **WHEN** `${1:a} ${2:b} ${3:c}` is inserted, a caret placed at the end of `b`, and Tab pressed
+- **THEN** `c` is selected
 
 ### Requirement: Mirrors are typed with their stop
 
@@ -79,12 +91,17 @@ is typed at each of them, and two places written side by side SHALL stay apart a
 ### Requirement: The active stop grows, the others do not
 
 What is typed at the start or the end of the active stop's text SHALL be in it, and in every placeholder
-the active stop is nested in, and what is typed at the edge of any other stop SHALL NOT be.
+that place of the stop is nested in, and what is typed at the edge of any other stop SHALL NOT be.
 
 #### Scenario: Typing at the end of a placeholder beside an empty stop
 
 - **WHEN** `${1:a}$2;` is inserted, `x` typed, then `y`, and Tab pressed
 - **THEN** the text reads `xy;` and a caret stands after `xy`
+
+#### Scenario: A stop nested in a placeholder at one of its places
+
+- **WHEN** `${2:a} ${1:$2}` is inserted, Tab pressed, `x` and `y` typed, and ⇧Tab pressed
+- **THEN** the text reads `xy xy` and the second `xy` is selected
 
 ### Requirement: A placeholder typed over takes its nested stops
 

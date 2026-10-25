@@ -28,6 +28,8 @@ internal sealed class CodeSnippetExpansion
     // stops there.
     private readonly List<int> _resolving = [];
     private readonly List<int> _writing = [];
+    // The placeholders around what is being written, outermost first: every place records them.
+    private readonly List<int> _enclosing = [];
     private int _line;
     private int _column;
     private bool _lineStart;
@@ -53,7 +55,7 @@ internal sealed class CodeSnippetExpansion
         var expansion = new CodeSnippetExpansion(variable, indent, step);
         expansion.Number(snippet.Parts, 1 + MaxStop(snippet.Parts));
         expansion.Define(snippet.Parts);
-        expansion.Write(snippet.Parts, -1);
+        expansion.Write(snippet.Parts);
         return expansion;
     }
 
@@ -156,13 +158,13 @@ internal sealed class CodeSnippetExpansion
     }
 
     /// <summary>
-    /// Writes <paramref name="parts"/>, every stop's place recorded under the placeholder it is nested in. Every
+    /// Writes <paramref name="parts"/>, every stop's place recorded with the placeholders it is nested in. Every
     /// place a stop is written holds its defining placeholder's parts, its nested stops among them, as VS Code
     /// clones a placeholder into its mirrors: a mirror of <c>${1:new ${2:Thing}()}</c> holds stop 2 too, and
     /// typing at stop 2 types in both (Copilot on #1079). A placeholder already being written inside itself is
     /// written as its text.
     /// </summary>
-    private void Write(IReadOnlyList<CodeSnippetPart> parts, int parent)
+    private void Write(IReadOnlyList<CodeSnippetPart> parts)
     {
         foreach (var part in parts)
         {
@@ -175,7 +177,7 @@ internal sealed class CodeSnippetExpansion
             if (index < 0)
             {
                 if (VariableText(part, out var nested) is { } value) Append(value);
-                else if (nested is not null) Write(nested, parent);
+                else if (nested is not null) Write(nested);
                 continue;
             }
             var start = End;
@@ -183,11 +185,13 @@ internal sealed class CodeSnippetExpansion
                 && defining.Children is { } children && !_writing.Contains(index))
             {
                 _writing.Add(index);
-                Write(children, index);
+                _enclosing.Add(index);
+                Write(children);
+                _enclosing.RemoveAt(_enclosing.Count - 1);
                 _writing.Remove(index);
             }
             else Append(DefaultOf(index));
-            _places.Add(new CodeSnippetPlace(index, start, End, parent, part.Choices));
+            _places.Add(new CodeSnippetPlace(index, start, End, new List<int>(_enclosing), part.Choices));
         }
     }
 

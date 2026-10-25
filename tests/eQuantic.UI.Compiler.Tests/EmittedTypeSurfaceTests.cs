@@ -107,6 +107,19 @@ public class EmittedTypeSurfaceTests
         ts.Should().MatchRegex(@"import \{[^}]*\bStringBuilder\b[^}]*\} from ""@equantic/runtime""");
     }
 
+    /// <summary>A StringBuilder inside an array or a list is imported as a bare one is (Copilot on #1079): only the
+    /// outer type was asked, so `StringBuilder[]` named a type its module never imported.</summary>
+    [Theory]
+    [InlineData("public void Into(System.Text.StringBuilder[] targets) { }", "targets: StringBuilder[]")]
+    [InlineData("public void Into(List<System.Text.StringBuilder> targets) { }", "targets: StringBuilder[]")]
+    public void AStringBuilderInsideAnArrayOrAList_ArrivesImported(string member, string annotation)
+    {
+        var ts = TestHelper.ConvertClass(member);
+
+        ts.Should().Contain(annotation);
+        ts.Should().MatchRegex(@"import \{[^}]*\bStringBuilder\b[^}]*\} from ""@equantic/runtime""");
+    }
+
     /// <summary>A function whose result may be null is no member that may be null (#1013): its zero is the null
     /// TypeScript is told to take, as any member's, where the <c>| null</c> after its arrow was read as the
     /// member's own and the zero was a bare <c>null</c> the type check refused. A function that may be null keeps

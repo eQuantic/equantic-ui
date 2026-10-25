@@ -108,6 +108,23 @@ public class CodeSnippetsTests : IDisposable
         editor.Document.Text.Should().Be("a\nb");
     }
 
+    /// <summary>An editor of one line takes no snippet that breaks one, and nothing changes (Copilot on #1079): the
+    /// copy was refused but its stops were placed on text never written.</summary>
+    [Theory]
+    [InlineData("x\n${1:y}")]
+    [InlineData("${1:x\ny}")]
+    public void AnEditorOfOneLine_RefusesASnippetThatBreaksOne(string body)
+    {
+        var editor = Editor("abc");
+        editor.SingleLine = true;
+
+        editor.InsertSnippet(CodeSnippet.Parse(body)).Should().BeFalse();
+
+        editor.Document.Text.Should().Be("abc");
+        editor.Selection.Should().Be(Caret(0, 3));
+        editor.Snippet.IsActive.Should().BeFalse();
+    }
+
     [Fact]
     public void TheFinalStopAlone_LeavesACaret_AndStartsNoSession()
     {
@@ -258,6 +275,42 @@ public class CodeSnippetsTests : IDisposable
         editor.Selection.Should().Be(Span(0, 0, 2));
         editor.HandleText("z");
         editor.Document.Text.Should().Be("z");
+    }
+
+    /// <summary>A stop written both alone and in another's placeholder grows that placeholder where it is nested in
+    /// it (Copilot on #1079): its first place, outside every placeholder, stood for all of them.</summary>
+    [Fact]
+    public void AStopNestedAtOnePlace_GrowsThePlaceholderThere()
+    {
+        var editor = Inserted("${2:a} ${1:$2}");
+
+        Press(editor, "Tab");
+        editor.HandleText("x");
+        editor.HandleText("y");
+        Press(editor, "Tab", KeyModifiers.Shift).Should().BeTrue();
+
+        editor.Document.Text.Should().Be("xy xy");
+        editor.Selection.Should().Be(Span(0, 3, 5));
+        editor.HandleText("z");
+        editor.Document.Text.Should().Be("xy z");
+    }
+
+    /// <summary>A press into another placeholder makes it the stop the carets stand at (Copilot on #1079): the
+    /// session stayed on the first stop, so typing there ended it and Tab went back to it.</summary>
+    [Fact]
+    public void APressIntoAnotherPlaceholder_MakesItTheStop()
+    {
+        var typed = Inserted("${1:a} ${2:b} ${3:c}");
+        typed.Selection = Caret(0, 3);
+        typed.HandleText("x");
+        typed.Snippet.IsActive.Should().BeTrue();
+        Press(typed, "Tab");
+        typed.Selection.Should().Be(Span(0, 5, 6));
+
+        var walked = Inserted("${1:a} ${2:b} ${3:c}");
+        walked.Selection = Caret(0, 3);
+        Press(walked, "Tab");
+        walked.Selection.Should().Be(Span(0, 4, 5));
     }
 
     /// <summary>A snippet of mirrors side by side at hundreds of carets is typed in as at one (Copilot on #1079):

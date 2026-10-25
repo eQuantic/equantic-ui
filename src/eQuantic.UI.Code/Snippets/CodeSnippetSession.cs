@@ -185,32 +185,21 @@ public sealed class CodeSnippetSession
         if (stop.Choices is { Count: > 0 } options) _editor.Completion.OfferChoices(stop.Ranges[0], options);
     }
 
-    /// <summary>Drops the stops nested in the placeholder the carets are leaving, when its text is not what it
-    /// was when they reached it, as VS Code drops them.</summary>
+    /// <summary>Takes away the places nested in the placeholder the carets are leaving, when its text is not what
+    /// it was when they reached it, as VS Code drops them: a stop also written outside it keeps that place, and
+    /// one with no place left is dropped.</summary>
     private void Leaving()
     {
         if (_stops is null) return;
         var leaving = _stops[_current];
         if (TextOf(leaving) == _reached) return;
         foreach (var stop in _stops)
-            if (!stop.Final && NestedIn(stop, leaving.Index)) stop.Dropped = true;
-    }
-
-    /// <summary>Whether <paramref name="stop"/> is nested, at any depth, in the placeholder of stop
-    /// <paramref name="index"/>.</summary>
-    private bool NestedIn(CodeSnippetStop stop, int index)
-    {
-        var parent = stop.Parent;
-        // A walk up the placeholders, never longer than there are stops.
-        for (var depth = 0; parent >= 0 && _stops is not null && depth < _stops.Count; depth++)
         {
-            if (parent == index) return true;
-            var next = -1;
-            foreach (var other in _stops)
-                if (other.Index == parent) next = other.Parent;
-            parent = next;
+            if (stop.Final || ReferenceEquals(stop, leaving)) continue;
+            for (var i = stop.Ranges.Count - 1; i >= 0; i--)
+                if (stop.Enclosing[i].Contains(leaving.Index)) stop.RemoveAt(i);
+            if (stop.Ranges.Count == 0) stop.Dropped = true;
         }
-        return false;
     }
 
     private string TextOf(CodeSnippetStop stop) =>
@@ -259,7 +248,7 @@ public sealed class CodeSnippetSession
         growing[_current] = true;
         var current = _stops[_current];
         for (var s = 0; s < _stops.Count; s++)
-            if (!_stops[s].Final && NestedIn(current, _stops[s].Index)) growing[s] = true;
+            if (!_stops[s].Final && current.NestedIn(_stops[s].Index)) growing[s] = true;
         return growing;
     }
 
@@ -289,32 +278,43 @@ public sealed class CodeSnippetSession
     private void Followed()
     {
         if (_stops is null || _placing) return;
-        if (!WithinAStop()) End();
+        var within = StopWithin();
+        if (within < 0)
+        {
+            End();
+            return;
+        }
+        // A press or an arrow into another placeholder makes it the stop the carets stand at: it grows as it is
+        // typed in, and Tab goes on from it (Copilot on #1079).
+        if (within == _current) return;
+        _current = within;
+        _reached = TextOf(_stops[within]);
+        Changed?.Invoke();
     }
 
-    /// <summary>Whether every selection stands inside a place of one stop, as VS Code asks it of a stop's
-    /// group: the final stop aside, since a caret that reaches it is done.</summary>
-    private bool WithinAStop()
+    /// <summary>The stop every selection stands inside a place of, as VS Code asks it of a stop's group, the one
+    /// the carets stand at first; -1 when there is none. The final stop is aside, since a caret that reaches it
+    /// is done.</summary>
+    private int StopWithin()
     {
-        if (_stops is null) return false;
-        var selections = _editor.Selections;
-        foreach (var stop in _stops)
+        if (_stops is null) return -1;
+        if (Holds(_stops[_current])) return _current;
+        for (var s = 0; s < _stops.Count; s++)
+            if (Holds(_stops[s])) return s;
+        return -1;
+    }
+
+    /// <summary>Whether every selection stands inside a place of <paramref name="stop"/>.</summary>
+    private bool Holds(CodeSnippetStop stop)
+    {
+        if (stop.Final || stop.Dropped) return false;
+        foreach (var selection in _editor.Selections)
         {
-            if (stop.Final || stop.Dropped) continue;
-            var all = true;
-            foreach (var selection in selections)
-            {
-                var inside = false;
-                foreach (var range in stop.Ranges)
-                    if (selection.Start >= range.Start && selection.End <= range.End) inside = true;
-                if (!inside)
-                {
-                    all = false;
-                    break;
-                }
-            }
-            if (all) return true;
+            var inside = false;
+            foreach (var range in stop.Ranges)
+                if (selection.Start >= range.Start && selection.End <= range.End) inside = true;
+            if (!inside) return false;
         }
-        return false;
+        return true;
     }
 }

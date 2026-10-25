@@ -2353,6 +2353,10 @@ public class TypeScriptEmitter
         // reduced `Outer.Inner[]` to `Inner[]`, which names nothing (#584).
         if (resolved is IArrayTypeSymbol or INamedTypeSymbol { TypeArguments.Length: > 0 })
             mapped = NestedTwinsInside(mapped, resolved, Annotated);
+        // The runtime's builder inside an array or a generic, `StringBuilder[]` or `List<StringBuilder>`, is imported
+        // as a bare one is, asked of the symbol too (Copilot on #1079).
+        if (resolved is IArrayTypeSymbol or INamedTypeSymbol { TypeArguments.Length: > 0 } && NamesABuilder(resolved))
+            _converter.UsedRuntimeTypes.Add("StringBuilder");
 
         var core = (echoed ? resolved : null) switch
         {
@@ -2375,6 +2379,16 @@ public class TypeScriptEmitter
         if (!nullable || core == "any") return core;
         return OrNull(core);
     }
+
+    /// <summary>Whether <paramref name="type"/> is .NET's builder, or holds one as an array's element or a
+    /// generic's argument, at any depth.</summary>
+    private static bool NamesABuilder(ITypeSymbol? type) => type switch
+    {
+        IArrayTypeSymbol array => NamesABuilder(array.ElementType),
+        INamedTypeSymbol { Name: "StringBuilder" } builder when builder.ContainingNamespace?.ToDisplayString() == "System.Text" => true,
+        INamedTypeSymbol generic => generic.TypeArguments.Any(NamesABuilder),
+        _ => false,
+    };
 
     /// <summary>The runtime's builder named in an annotation, which the module imports from the runtime.</summary>
     private string RuntimeBuilder()

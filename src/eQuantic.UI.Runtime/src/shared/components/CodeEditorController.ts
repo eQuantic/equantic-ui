@@ -1476,15 +1476,17 @@ export class CodeEditorController {
 
     insertCopies(snippet: CodeSnippet, at: (value: CodeRange) => CodeRange) {
         if (this.readOnly) return false;
-        this.snippet.end();
         let ranges: any = $eq.collections.dictionary(null, true);
         let planned: any = $eq.collections.dictionary(null, true);
         for (const caret of ($o => ($o.$))(this.caretsInOrder())) {
             let selection = caret.selection;
             let range = at(selection);
             $eq.mapSet(ranges, selection, range);
-            $eq.mapSet(planned, selection, CodeSnippetExpansion.of(snippet, (name: string) => this.snippetVariable(name, selection), this._document.indentOf(this._document.clamp(range.start).line), this.indentStep));
+            let copy = CodeSnippetExpansion.of(snippet, (name: string) => this.snippetVariable(name, selection), this._document.indentOf(this._document.clamp(range.start).line), this.indentStep);
+            if (this.singleLine && (copy.text.includes('\n') || copy.text.includes('\r'))) return false;
+            $eq.mapSet(planned, selection, copy);
         }
+        this.snippet.end();
         let copies: CodeSnippetExpansion[] = [];
         let stops: CodeSnippetStop[] = [];
         let made = this.asOneStep(() => {
@@ -1516,15 +1518,12 @@ export class CodeEditorController {
             for (const place of copies[k].places) {
                 let stop: any; 
                 if (!(($0, $1) => ($0.has($1) ? ((stop = $0.get($1)), true) : ((stop = null), false)))(byIndex, place.stop)) {
-                    stop = new CodeSnippetStop(place.stop, place.parent, place.stop === 0);
+                    stop = new CodeSnippetStop(place.stop, place.stop === 0);
                     $eq.mapSet(byIndex, place.stop, stop);
                 }
                 if (stop.choices == null && !(place.choices == null)) stop.choices = place.choices;
                 let range = new CodeRange(CodeSnippetPlace.at(start, place.start), CodeSnippetPlace.at(start, place.end));
-                if (k === primary && !stop.hasPrimary) {
-                    stop.ranges.splice(0, 0, range);
-                    stop.hasPrimary = true;
-                } else stop.ranges.push(range);
+                stop.add(range, place.enclosing, k === primary && !stop.hasPrimary);
             }
         }
         let order: number[] = $eq.collections.listCopy(byIndex.keys());
@@ -1534,11 +1533,8 @@ export class CodeEditorController {
         for (const index of order) stops.push($eq.mapGet(byIndex, index));
         let final: any; 
         if ((byIndex.has(0) ? ((final = byIndex.get(0)), true) : ((final = null), false))) stops.push(final); else {
-            let end = new CodeSnippetStop(0, -1, true);
-            for (let k = 0; k < copies.length; k++) {
-                let range = new CodeRange(CodeSnippetPlace.at(carets[k].selection.start, copies[k].end));
-                if (k === primary) end.ranges.splice(0, 0, range); else end.ranges.push(range);
-            }
+            let end = new CodeSnippetStop(0, true);
+            for (let k = 0; k < copies.length; k++) end.add(new CodeRange(CodeSnippetPlace.at(carets[k].selection.start, copies[k].end)), [], k === primary);
             stops.push(end);
         }
         return stops;
@@ -1855,7 +1851,7 @@ export class CodeEditorController {
             }
             let space = length > 0;
             let tail = parts[parts.length - 1];
-            if (space && (($v140946) => ($v140946 === ' ' || $v140946 === '\t'))(tail[tail.length - 1])) {
+            if (space && (($v141034) => ($v141034 === ' ' || $v141034 === '\t'))(tail[tail.length - 1])) {
                 space = false;
                 let kept = $eq.text.trimEnd(tail, [' ', '\t']);
                 parts[parts.length - 1] = kept;

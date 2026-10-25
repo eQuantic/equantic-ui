@@ -12,6 +12,7 @@ export class CodeSnippetExpansion {
         this._unknown = $eq.collections.dictionary();
         this._resolving = [];
         this._writing = [];
+        this._enclosing = [];
         this._line = 0;
         this._column = 0;
         this._lineStart = false;
@@ -30,6 +31,7 @@ export class CodeSnippetExpansion {
     _unknown!: any;
     _resolving!: number[];
     _writing!: number[];
+    _enclosing!: number[];
     _line!: number;
     _column!: number;
     _lineStart!: boolean;
@@ -50,7 +52,7 @@ export class CodeSnippetExpansion {
         let expansion = new CodeSnippetExpansion(variable, indent, step);
         expansion.number(snippet.parts, 1 + CodeSnippetExpansion.maxStop(snippet.parts));
         expansion.define(snippet.parts);
-        expansion.write(snippet.parts, -1);
+        expansion.write(snippet.parts);
         return expansion;
     }
 
@@ -128,7 +130,7 @@ export class CodeSnippetExpansion {
         return { $: $r, nested };
     }
 
-    write(parts: CodeSnippetPart[], parent: number) {
+    write(parts: CodeSnippetPart[]) {
         for (const part of parts) {
             if (!part.isStop && !part.variable) {
                 this.append(part.text);
@@ -137,17 +139,19 @@ export class CodeSnippetExpansion {
             let index = this.indexOf(part);
             if (index < 0) {
                 let value: any; let nested: any; 
-                if ((value = ($o => (nested = $o.nested, $o.$))(this.variableText(part))) != null) this.append(value); else if (!(nested == null)) this.write(nested, parent);
+                if ((value = ($o => (nested = $o.nested, $o.$))(this.variableText(part))) != null) this.append(value); else if (!(nested == null)) this.write(nested);
                 continue;
             }
             let start = this.end;
             let defining: any; let children: any; 
             if ((($0) => ($0.has(index) ? ((defining = $0.get(index)), true) : ((defining = null), false)))(this._defining) && defining.choices == null && (children = defining.children) != null && !this._writing.includes(index)) {
                 this._writing.push(index);
-                this.write(children, index);
+                this._enclosing.push(index);
+                this.write(children);
+                this._enclosing.splice(this._enclosing.length - 1, 1);
                 $eq.collections.remove(this._writing, index);
             } else this.append(this.defaultOf(index));
-            this._places.push(new CodeSnippetPlace(index, start, this.end, parent, part.choices));
+            this._places.push(new CodeSnippetPlace(index, start, this.end, $eq.collections.listCopy(this._enclosing), part.choices));
         }
     }
 

@@ -44,7 +44,9 @@ Each can follow on the same model.
 - **The active stop grows, the others do not**, as VS Code switches a placeholder's stickiness when it
   becomes active: the active stop's ranges take in what is typed at their start or end (`CarryAnchor`,
   `CarryReach`), and every other stop is carried as a mark (`Carry`), so `${1:a}${2:b}` typed at the end of
-  `a` lengthens 1 and leaves 2 alone, and an empty `$2` right after it stays after the typing.
+  `a` lengthens 1 and leaves 2 alone, and an empty `$2` right after it stays after the typing. The
+  placeholders that grow with it are the ones each PLACE is nested in, recorded per place at expansion:
+  in `${2:a} ${1:$2}` only the second place of 2 sits inside 1, so only there does 1 take the typing.
 - **A placeholder typed over takes its nested stops with it**: when Tab or ⇧Tab leaves a stop whose text is
   not what it was when it was reached, every stop nested in it is dropped, as VS Code drops them.
 - **The order of stops** is their numbers ascending, then `$0`, or the end of each copy when the snippet has
@@ -53,6 +55,11 @@ Each can follow on the same model.
 - **The session ends** at the final stop, on Escape, and when a selection is heard to stand outside every
   stop: a click elsewhere, an arrow out of the placeholder. Escape's order is the list, the card, the panel,
   the snippet, the other carets, then the trap on Tab, as VS Code leaves a snippet before it drops cursors.
+  A selection heard inside another stop's places makes that stop the current one, so Tab walks on from where
+  the caret stands.
+- **An editor of one line refuses a snippet that breaks one**, before the session ends or anything is
+  written, as the door every edit goes through refuses an edit that would make a second line: the copies
+  at the other carets would go in without it, and its stops would stand on text that was never inserted.
 - **A choice is a list**: reaching a stop with choices opens the completion's list at it with its options,
   every one shown while the placeholder is selected and filtered by what is typed in it; accepting writes
   the option over every place the stop is written, as one undo step.

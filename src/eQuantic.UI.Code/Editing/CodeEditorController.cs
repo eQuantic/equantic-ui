@@ -2245,7 +2245,6 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     private bool InsertCopies(CodeSnippet snippet, Func<CodeRange, CodeRange> at)
     {
         if (ReadOnly) return false;
-        Snippet.End();
         // Every copy is made against the document as it stands before any goes in, as VS Code resolves a
         // snippet's variables: made between the edits, a caret's $TM_CURRENT_LINE read a line a copy at a caret
         // after it was already in (Copilot on #1079). A caret's selection is the one it had then, since the
@@ -2257,9 +2256,15 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             var selection = caret.Selection;
             var range = at(selection);
             ranges[selection] = range;
-            planned[selection] = CodeSnippetExpansion.Of(snippet, name => SnippetVariable(name, selection),
+            var copy = CodeSnippetExpansion.Of(snippet, name => SnippetVariable(name, selection),
                 _document.IndentOf(_document.Clamp(range.Start).Line), IndentStep);
+            // An editor of one line takes no copy that breaks one, and then nothing changes, the session
+            // before it included: refused copy by copy, the stops were placed on text never written (Copilot
+            // on #1079).
+            if (SingleLine && (copy.Text.Contains('\n') || copy.Text.Contains('\r'))) return false;
+            planned[selection] = copy;
         }
+        Snippet.End();
         var copies = new List<CodeSnippetExpansion>();
         var stops = new List<CodeSnippetStop>();
         var made = AsOneStep(() =>
@@ -2302,17 +2307,12 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             {
                 if (!byIndex.TryGetValue(place.Stop, out var stop))
                 {
-                    stop = new CodeSnippetStop(place.Stop, place.Parent, place.Stop == 0);
+                    stop = new CodeSnippetStop(place.Stop, place.Stop == 0);
                     byIndex[place.Stop] = stop;
                 }
                 if (stop.Choices is null && place.Choices is not null) stop.Choices = place.Choices;
                 var range = new CodeRange(CodeSnippetPlace.At(start, place.Start), CodeSnippetPlace.At(start, place.End));
-                if (k == primary && !stop.HasPrimary)
-                {
-                    stop.Ranges.Insert(0, range);
-                    stop.HasPrimary = true;
-                }
-                else stop.Ranges.Add(range);
+                stop.Add(range, place.Enclosing, k == primary && !stop.HasPrimary);
             }
         }
         var order = new List<int>(byIndex.Keys);
@@ -2323,13 +2323,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         if (byIndex.TryGetValue(0, out var final)) stops.Add(final);
         else
         {
-            var end = new CodeSnippetStop(0, -1, final: true);
+            var end = new CodeSnippetStop(0, final: true);
             for (var k = 0; k < copies.Count; k++)
-            {
-                var range = new CodeRange(CodeSnippetPlace.At(carets[k].Selection.Start, copies[k].End));
-                if (k == primary) end.Ranges.Insert(0, range);
-                else end.Ranges.Add(range);
-            }
+                end.Add(new CodeRange(CodeSnippetPlace.At(carets[k].Selection.Start, copies[k].End)), [], k == primary);
             stops.Add(end);
         }
         return stops;

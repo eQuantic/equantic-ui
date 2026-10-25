@@ -131,18 +131,11 @@ export class CodeSnippetSession {
         if (this._stops == null) return;
         let leaving = this._stops[this._current];
         if (this.textOf(leaving) === this._reached) return;
-        for (const stop of this._stops) if (!stop.final && this.nestedIn(stop, leaving.index)) stop.dropped = true;
-    }
-
-    nestedIn(stop: CodeSnippetStop, index: number) {
-        let parent = stop.parent;
-        for (let depth = 0; parent >= 0 && !(this._stops == null) && depth < this._stops.length; depth++) {
-            if (parent === index) return true;
-            let next = -1;
-            for (const other of this._stops) if (other.index === parent) next = other.parent;
-            parent = next;
+        for (const stop of this._stops) {
+            if (stop.final || (stop === leaving)) continue;
+            for (let i = stop.ranges.length - 1; i >= 0; i--) if (stop.enclosing[i].includes(leaving.index)) stop.removeAt(i);
+            if (stop.ranges.length === 0) stop.dropped = true;
         }
-        return false;
     }
 
     textOf(stop: CodeSnippetStop) {
@@ -174,7 +167,7 @@ export class CodeSnippetSession {
         if (this._stops == null || this._current < 0) return growing;
         growing[this._current] = true;
         let current = this._stops[this._current];
-        for (let s = 0; s < this._stops.length; s++) if (!this._stops[s].final && this.nestedIn(current, this._stops[s].index)) growing[s] = true;
+        for (let s = 0; s < this._stops.length; s++) if (!this._stops[s].final && current.nestedIn(this._stops[s].index)) growing[s] = true;
         return growing;
     }
 
@@ -192,26 +185,32 @@ export class CodeSnippetSession {
 
     followed() {
         if (this._stops == null || this._placing) return;
-        if (!this.withinAStop()) this.end();
+        let within = this.stopWithin();
+        if (within < 0) {
+            this.end();
+            return;
+        }
+        if (within === this._current) return;
+        this._current = within;
+        this._reached = this.textOf(this._stops[within]);
+        this.changed?.();
     }
 
-    withinAStop() {
-        if (this._stops == null) return false;
-        let selections = this._editor.selections;
-        for (const stop of this._stops) {
-            if (stop.final || stop.dropped) continue;
-            let all = true;
-            for (const selection of selections) {
-                let inside = false;
-                for (const range of stop.ranges) if (CodePosition.opGreaterOrEqual(selection.start, range.start) && CodePosition.opLessOrEqual(selection.end, range.end)) inside = true;
-                if (!inside) {
-                    all = false;
-                    break;
-                }
-            }
-            if (all) return true;
+    stopWithin() {
+        if (this._stops == null) return -1;
+        if (this.holds(this._stops[this._current])) return this._current;
+        for (let s = 0; s < this._stops.length; s++) if (this.holds(this._stops[s])) return s;
+        return -1;
+    }
+
+    holds(stop: CodeSnippetStop) {
+        if (stop.final || stop.dropped) return false;
+        for (const selection of this._editor.selections) {
+            let inside = false;
+            for (const range of stop.ranges) if (CodePosition.opGreaterOrEqual(selection.start, range.start) && CodePosition.opLessOrEqual(selection.end, range.end)) inside = true;
+            if (!inside) return false;
         }
-        return false;
+        return true;
     }
 
     toString(): string {
