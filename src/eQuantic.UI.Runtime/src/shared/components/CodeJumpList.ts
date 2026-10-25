@@ -1,4 +1,4 @@
-import { $eq, CodeChange, CodeEditorController, CodeRange } from "../runtime-exports";
+import { $eq, CodeChange, CodeEdit, CodeEditorController, CodeRange } from "../runtime-exports";
 
 export class CodeJumpList {
     constructor(editor: CodeEditorController) {
@@ -98,9 +98,14 @@ export class CodeJumpList {
     carry(change: CodeChange) {
         if (change.replaced) return;
         for (const edit of change.edits) {
-            for (let i = 0; i < this._places.length; i++) this._places[i] = edit.carry(this._places[i]);
-            this._heard = edit.carry(this._heard);
+            for (let i = 0; i < this._places.length; i++) this._places[i] = CodeJumpList.carried(edit, this._places[i]);
+            this._heard = CodeJumpList.carried(edit, this._heard);
         }
+    }
+
+    static carried(edit: CodeEdit, place: CodeRange) {
+        let carried = edit.carry(place);
+        return place.anchor.compareTo(place.focus) > 0 ? new CodeRange(carried.end, carried.start) : carried;
     }
 
     toString(): string {

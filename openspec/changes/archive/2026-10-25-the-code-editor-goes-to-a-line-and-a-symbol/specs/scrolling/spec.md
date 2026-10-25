@@ -5,7 +5,7 @@
 A `ScrollView` whose `Request` carries a version it has not honoured SHALL scroll to the request's offset,
 clamped to what its content can scroll, on the web and on Photon, and SHALL report the offset it went to
 through `OnScrolled`. A request it has honoured SHALL move nothing, however often the tree is built again,
-so a reader's own scrolling after it stays.
+so a reader's own scrolling after it stays. A glide whose range shrinks under it SHALL land at the new end.
 
 #### Scenario: A request after the first frame
 

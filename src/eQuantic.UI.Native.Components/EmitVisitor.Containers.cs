@@ -29,7 +29,7 @@ internal sealed partial class EmitVisitor
             // Reported where the view IS: an offset asked past the end stands at the end, and settles there now
             // that the layout is the one the frame keeps.
             offset = Math.Clamp(ScrollClock.OffsetOf(at) ?? scrollView.Offset, 0, range);
-            ScrollClock.Settle(at, offset);
+            ScrollClock.Settle(at, offset, range);
             scrollView.OnScrolled?.Invoke(offset);
         }
         // The surface a pinned header in here pins to: scrolled past the threshold on the axis a

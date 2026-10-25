@@ -132,8 +132,17 @@ public sealed class CodeJumpList
         if (change.Replaced) return;
         foreach (var edit in change.Edits)
         {
-            for (var i = 0; i < _places.Count; i++) _places[i] = edit.Carry(_places[i]);
-            _heard = edit.Carry(_heard);
+            for (var i = 0; i < _places.Count; i++) _places[i] = Carried(edit, _places[i]);
+            _heard = Carried(edit, _heard);
         }
+    }
+
+    /// <summary><paramref name="place"/> carried through <paramref name="edit"/> in the direction it was selected
+    /// in: a selection made upward goes back with its caret at its top, where the edit's carry orders a range's
+    /// ends.</summary>
+    private static CodeRange Carried(CodeEdit edit, CodeRange place)
+    {
+        var carried = edit.Carry(place);
+        return place.Anchor.CompareTo(place.Focus) > 0 ? new CodeRange(carried.End, carried.Start) : carried;
     }
 }

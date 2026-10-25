@@ -97,6 +97,26 @@ public class ScrollRequestTests
         ScrolledBy(host.RenderFrame(new DisplayListBuilder())).Should().Be(600, "and a resize does not move it either");
     }
 
+    /// <summary>A glide whose range shrinks under it lands at the new end (Copilot on #1091): its target stayed
+    /// out of reach while the offset settled at the end each frame, so it never landed and the host asked for
+    /// frames for ever.</summary>
+    [Fact]
+    public void AGlideWhoseRangeShrinks_LandsAtTheNewEnd()
+    {
+        var asked = new Asked();
+        var host = new PhotonHost(asked, PhotonTheme.Instance, ThemeMode.Light, Width, Height) { SmoothScroll = true };
+        var now = 1000f;
+        host.RenderFrame(new DisplayListBuilder(), now);
+        host.ScrollBy(Width / 2, Height / 2, 0, 600).Should().BeTrue();
+        host.RenderFrame(new DisplayListBuilder(), now += 16);
+
+        asked.Grow(15);
+        for (var i = 0; i < 60; i++) host.RenderFrame(new DisplayListBuilder(), now += 16);
+
+        ScrolledBy(host.RenderFrame(new DisplayListBuilder(), now += 16)).Should().Be(100, "fifteen rows of 20 in 200");
+        host.NeedsRender.Should().BeFalse("the glide landed");
+    }
+
     /// <summary>A wheel that glides after a request past the end glides from the end (Copilot on #1091): the
     /// glide started from the offset as asked, and the view stayed at the end until it had crossed the
     /// excess.</summary>

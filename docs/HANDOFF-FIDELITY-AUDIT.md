@@ -2853,7 +2853,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Framework/NodeState/ScrollClock.cs`
 - **Handoff**: Platform-native curves. iOS: exponential decay (normal rate 0.998) + rubber-band overscroll. Android: fling friction + stretch overscroll (scale transform — inside the fence; no glow arc).
-- **Code**: One platform-agnostic curve, no overscroll of either kind: the glide is a fixed 0.022-per-ms chase of a target with a flat FlingReach of 90, clamped hard to [0, maxOffset] (ScrollClock.cs:62 ScrollTo, ScrollClock.cs:77 Fling) so there is nothing to rubber-band or stretch. The ScrollView node names the fence and the reason — the platform physics wait for the native interaction system. Worth reviewing because the same fence still claims "today the scroll position is the programmatic Offset", which the ScrollStore compositor has since overtaken.
+- **Code**: One platform-agnostic curve, no overscroll of either kind: the glide is a fixed 0.022-per-ms chase of a target with a flat FlingReach of 90, clamped hard to [0, maxOffset] (ScrollClock.cs:67 ScrollTo, ScrollClock.cs:82 Fling) so there is nothing to rubber-band or stretch. The ScrollView node names the fence and the reason — the platform physics wait for the native interaction system. Worth reviewing because the same fence still claims "today the scroll position is the programmatic Offset", which the ScrollStore compositor has since overtaken.
 - **Evidence**:
 
   ```

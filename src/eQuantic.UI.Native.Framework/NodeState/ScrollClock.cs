@@ -47,11 +47,16 @@ public sealed class ScrollClock
     /// realizer paints it: an offset an app asked for past the end (ScrollView.Request) is kept as asked through
     /// the frame's measures, any of which may be provisional, and settles at the end the final layout gives it.
     /// Left as asked, a range that grew later (content added, the window taller) moved the view again with no
-    /// request and no hand on it.
+    /// request and no hand on it. A glide's target settles inside <paramref name="range"/> too: a range that
+    /// shrank under a glide left it out of reach, and the glide chased it, never landing and asking for frames
+    /// for ever.
     /// </summary>
-    public static void Settle(Element? at, float standing)
+    public static void Settle(Element? at, float standing, float range)
     {
-        if (NodeStates.Find<ScrollState>(at) is { Offset: { } asked } view && asked != standing) view.Offset = standing;
+        if (NodeStates.Find<ScrollState>(at) is not { } view) return;
+        if (view.Offset is { } asked && asked != standing) view.Offset = standing;
+        var end = MathF.Max(0, range);
+        if (view.Target is { } target && (target < 0 || target > end)) view.Target = Math.Clamp(target, 0, end);
     }
 
     /// <summary>

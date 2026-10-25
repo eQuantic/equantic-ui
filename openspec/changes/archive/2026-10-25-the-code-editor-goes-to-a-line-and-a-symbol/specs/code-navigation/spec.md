@@ -73,7 +73,8 @@ Every move of the primary caret SHALL be heard: a place whose top line is ten li
 current entry's SHALL be a new entry, a nearer one SHALL replace the current entry, and a jump SHALL always
 be a new entry, after the place it left. `NavigateBack` and `NavigateForward` SHALL select the entry before
 and after, record nothing, and centre it when it is out of view. A new entry after going back SHALL drop
-the entries ahead, at most fifty SHALL be kept, and every entry SHALL be carried through every edit.
+the entries ahead, at most fifty SHALL be kept, and every entry SHALL be carried through every edit in the
+direction it was selected in.
 
 #### Scenario: Back from a jump
 

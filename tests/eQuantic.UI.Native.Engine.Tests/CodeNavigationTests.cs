@@ -610,6 +610,24 @@ public class CodeNavigationTests : IDisposable
         editor.Selection.Should().Be(Caret(81, 0), "line 82 is the line that was 80");
     }
 
+    /// <summary>A place selected upward goes back selected upward after an edit (Copilot on #1091): the carry
+    /// ordered its ends, and the walk back put the caret at the bottom of the selection.</summary>
+    [Fact]
+    public void APlaceSelectedUpward_KeepsItsDirectionThroughAnEdit()
+    {
+        var editor = Editor();
+        editor.Selection = new CodeRange(At(19, 0), At(9, 0));
+        editor.GoTo.Open(CodeGoToMode.Line);
+        editor.GoTo.Query = ":80";
+        editor.GoTo.Accept();
+        editor.HandleText("x");
+
+        editor.JumpList.Back().Should().BeTrue();
+
+        editor.Selection.Should().Be(new CodeRange(At(19, 0), At(9, 0)));
+        editor.Caret.Should().Be(At(9, 0));
+    }
+
     [Fact]
     public void ANewDocument_StartsANewList()
     {
