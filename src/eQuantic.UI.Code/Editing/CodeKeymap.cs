@@ -303,9 +303,21 @@ public static class CodeKeymap
             Bind("ArrowDown", alt | command, CodeCommand.AddCursorBelow),
             Bind("d", command, CodeCommand.AddNextOccurrence),
             Bind("l", shift | command, CodeCommand.SelectAllOccurrences),
+
+            // ---- navigation, as VS Code has it (#1083): ⇧⌘O goes to a symbol everywhere.
+            Bind("o", shift | command, CodeCommand.GoToSymbol),
         };
         if (apple)
         {
+            // ⌃G goes to a line, and ⌃- and ⌃⇧- walk the jump list: the CONTROL key, which a Mac reports
+            // apart from ⌘ (the web's text door included), so ⌘G stays the browser's next match and ⌘- its
+            // zoom. ⌃⇧- arrives as "_" on a layout that types it with ⇧, and a host may name the key itself.
+            bindings.Add(Bind("g", control, CodeCommand.GoToLine));
+            bindings.Add(Bind("-", control, CodeCommand.NavigateBack));
+            bindings.Add(Bind("Minus", control, CodeCommand.NavigateBack));
+            bindings.Add(Bind("-", shift | control, CodeCommand.NavigateForward));
+            bindings.Add(Bind("_", shift | control, CodeCommand.NavigateForward));
+            bindings.Add(Bind("Minus", shift | control, CodeCommand.NavigateForward));
             // ⌘← and ⌘→ reach the line's ends, ⌘↑ and ⌘↓ the document's, and ⌘⌫ takes everything left of
             // the caret on its line.
             bindings.Add(Bind("ArrowLeft", command, CodeCommand.CursorLineStart));
@@ -322,6 +334,14 @@ public static class CodeKeymap
             // stays the browser's.
             bindings.Add(Bind("j", control, CodeCommand.JoinLines));
             bindings.Add(Bind("j", command, CodeCommand.JoinLines));
+        }
+        else
+        {
+            // Ctrl+G goes to a line, and Alt+← and Alt+→ walk the jump list, as VS Code binds them on
+            // Windows. A walk with nowhere to go claims nothing, so the key is the browser's again.
+            bindings.Add(Bind("g", command, CodeCommand.GoToLine));
+            bindings.Add(Bind("ArrowLeft", alt, CodeCommand.NavigateBack));
+            bindings.Add(Bind("ArrowRight", alt, CodeCommand.NavigateForward));
         }
         // Ctrl+↑ scrolls the view in every Standard editor; there is no view to scroll from here, so it
         // is left to the host rather than guessed at.

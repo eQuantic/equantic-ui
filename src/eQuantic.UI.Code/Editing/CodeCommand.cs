@@ -201,4 +201,15 @@ public enum CodeCommand
     PreviousTabStop,
     /// <summary>The snippet ended, the carets where they are. Claims nothing with no snippet, so Escape goes on.</summary>
     LeaveSnippet,
+
+    // ---- navigation (#1083) -----------------------------------------------------------------------------
+
+    /// <summary>The go-to field opened on a line (<c>:</c>).</summary>
+    GoToLine,
+    /// <summary>The go-to field opened on the document's symbols (<c>@</c>).</summary>
+    GoToSymbol,
+    /// <summary>The place before in the jump list. Claims nothing at the first place.</summary>
+    NavigateBack,
+    /// <summary>The place after in the jump list. Claims nothing at the last place.</summary>
+    NavigateForward,
 }

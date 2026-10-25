@@ -280,3 +280,152 @@ eQuantic.UI.Code.CodeSnippetSession.Leave() -> bool
 eQuantic.UI.Code.CodeSnippetSession.PlaceholdersIn(int first, int last) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>!
 eQuantic.UI.Code.CodeEditorController.SingleLine.get -> bool
 eQuantic.UI.Code.CodeEditorController.SingleLine.set -> void
+eQuantic.UI.Code.CodeCommand.GoToLine = 75 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.GoToSymbol = 76 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.NavigateBack = 77 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.NavigateForward = 78 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeEditorController.Symbols.get -> eQuantic.UI.Code.CodeSymbols!
+eQuantic.UI.Code.CodeEditorController.GoTo.get -> eQuantic.UI.Code.CodeGoTo!
+eQuantic.UI.Code.CodeEditorController.JumpList.get -> eQuantic.UI.Code.CodeJumpList!
+eQuantic.UI.Code.CodeEditorController.View.get -> eQuantic.UI.Primitives.Rect
+eQuantic.UI.Code.CodeEditorController.View.set -> void
+eQuantic.UI.Code.CodeEditorController.VerticalScroll.get -> eQuantic.UI.Primitives.ScrollRequest?
+eQuantic.UI.Code.CodeEditorController.HorizontalScroll.get -> eQuantic.UI.Primitives.ScrollRequest?
+eQuantic.UI.Code.CodeEditorController.ScrollRequested -> System.Action?
+eQuantic.UI.Code.CodeEditorController.RevealInCenter(eQuantic.UI.Code.CodePosition position) -> void
+eQuantic.UI.Code.CodeEditorController.RevealInCenterIfOutsideView(eQuantic.UI.Code.CodePosition position) -> void
+eQuantic.UI.Code.CodeSymbol
+eQuantic.UI.Code.CodeSymbol.<Clone>$() -> eQuantic.UI.Code.CodeSymbol!
+eQuantic.UI.Code.CodeSymbol.CodeSymbol(string! Name, eQuantic.UI.Code.CodeSymbolKind Kind, eQuantic.UI.Code.CodeRange Range, eQuantic.UI.Code.CodeRange SelectionRange) -> void
+eQuantic.UI.Code.CodeSymbol.Deconstruct(out string! Name, out eQuantic.UI.Code.CodeSymbolKind Kind, out eQuantic.UI.Code.CodeRange Range, out eQuantic.UI.Code.CodeRange SelectionRange) -> void
+eQuantic.UI.Code.CodeSymbol.Equals(eQuantic.UI.Code.CodeSymbol? other) -> bool
+override eQuantic.UI.Code.CodeSymbol.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeSymbol.GetHashCode() -> int
+override eQuantic.UI.Code.CodeSymbol.ToString() -> string!
+static eQuantic.UI.Code.CodeSymbol.operator !=(eQuantic.UI.Code.CodeSymbol? left, eQuantic.UI.Code.CodeSymbol? right) -> bool
+static eQuantic.UI.Code.CodeSymbol.operator ==(eQuantic.UI.Code.CodeSymbol? left, eQuantic.UI.Code.CodeSymbol? right) -> bool
+eQuantic.UI.Code.CodeSymbol.Name.get -> string!
+eQuantic.UI.Code.CodeSymbol.Name.init -> void
+eQuantic.UI.Code.CodeSymbol.Kind.get -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbol.Kind.init -> void
+eQuantic.UI.Code.CodeSymbol.Range.get -> eQuantic.UI.Code.CodeRange
+eQuantic.UI.Code.CodeSymbol.Range.init -> void
+eQuantic.UI.Code.CodeSymbol.SelectionRange.get -> eQuantic.UI.Code.CodeRange
+eQuantic.UI.Code.CodeSymbol.SelectionRange.init -> void
+eQuantic.UI.Code.CodeSymbol.Detail.get -> string?
+eQuantic.UI.Code.CodeSymbol.Detail.init -> void
+eQuantic.UI.Code.CodeSymbol.Deprecated.get -> bool
+eQuantic.UI.Code.CodeSymbol.Deprecated.init -> void
+eQuantic.UI.Code.CodeSymbol.Children.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeSymbol!>!
+eQuantic.UI.Code.CodeSymbol.Children.init -> void
+eQuantic.UI.Code.CodeSymbolKind.Module = 1 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Namespace = 2 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Package = 3 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.File = 0 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Class = 4 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Method = 5 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Property = 6 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Field = 7 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Enum = 9 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Interface = 10 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Function = 11 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Constructor = 8 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Variable = 12 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Constant = 13 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.String = 14 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Boolean = 16 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Array = 17 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Object = 18 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Number = 15 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Key = 19 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Null = 20 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.EnumMember = 21 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Struct = 22 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Operator = 24 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.TypeParameter = 25 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind.Event = 23 -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeSymbols.Providers.get -> System.Collections.Generic.IList<eQuantic.UI.Code.ICodeSymbolProvider!>!
+eQuantic.UI.Code.CodeSymbols.Failed -> System.Action<System.Exception!>?
+eQuantic.UI.Code.CodeSymbols.RequestAsync(System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeSymbol!>!>!
+eQuantic.UI.Code.CodeSymbols
+eQuantic.UI.Code.ICodeSymbolProvider.SymbolsAsync(eQuantic.UI.Code.CodeDocument! document, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeSymbol!>!>!
+eQuantic.UI.Code.ICodeSymbolProvider
+eQuantic.UI.Code.CodeGoTo.Open(eQuantic.UI.Code.CodeGoToMode mode) -> void
+eQuantic.UI.Code.CodeGoTo.Select(int index) -> bool
+eQuantic.UI.Code.CodeGoTo.SelectNext() -> bool
+eQuantic.UI.Code.CodeGoTo.SelectPrevious() -> bool
+eQuantic.UI.Code.CodeGoTo.SelectNextPage() -> bool
+eQuantic.UI.Code.CodeGoTo.SelectPreviousPage() -> bool
+eQuantic.UI.Code.CodeGoTo.Accept() -> bool
+eQuantic.UI.Code.CodeGoTo.Close() -> bool
+eQuantic.UI.Code.CodeGoTo
+eQuantic.UI.Code.CodeGoTo.IsOpen.get -> bool
+eQuantic.UI.Code.CodeGoTo.Query.get -> string!
+eQuantic.UI.Code.CodeGoTo.Query.set -> void
+eQuantic.UI.Code.CodeGoTo.Mode.get -> eQuantic.UI.Code.CodeGoToMode
+eQuantic.UI.Code.CodeGoTo.Line.get -> eQuantic.UI.Code.CodeGoToLine?
+eQuantic.UI.Code.CodeGoTo.Entries.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeGoToEntry!>!
+eQuantic.UI.Code.CodeGoTo.Selected.get -> int
+eQuantic.UI.Code.CodeGoTo.IsAsking.get -> bool
+eQuantic.UI.Code.CodeGoTo.Preview.get -> eQuantic.UI.Code.CodeRange?
+eQuantic.UI.Code.CodeGoTo.PageSize.get -> int
+eQuantic.UI.Code.CodeGoTo.PageSize.set -> void
+eQuantic.UI.Code.CodeGoTo.Changed -> System.Action?
+eQuantic.UI.Code.CodeGoToEntry.Container.get -> string?
+eQuantic.UI.Code.CodeGoToEntry.Container.init -> void
+eQuantic.UI.Code.CodeGoToEntry.Deprecated.get -> bool
+eQuantic.UI.Code.CodeGoToEntry.Deprecated.init -> void
+eQuantic.UI.Code.CodeGoToEntry.Matches.get -> System.Collections.Generic.IReadOnlyList<int>!
+eQuantic.UI.Code.CodeGoToEntry.Matches.init -> void
+eQuantic.UI.Code.CodeGoToEntry.ContainerMatches.get -> System.Collections.Generic.IReadOnlyList<int>!
+eQuantic.UI.Code.CodeGoToEntry.ContainerMatches.init -> void
+eQuantic.UI.Code.CodeGoToEntry.Target.get -> eQuantic.UI.Code.CodePosition
+eQuantic.UI.Code.CodeGoToEntry.Target.init -> void
+eQuantic.UI.Code.CodeGoToEntry
+eQuantic.UI.Code.CodeGoToEntry.<Clone>$() -> eQuantic.UI.Code.CodeGoToEntry!
+eQuantic.UI.Code.CodeGoToEntry.CodeGoToEntry(string! Name, eQuantic.UI.Code.CodeSymbolKind Kind, eQuantic.UI.Code.CodeRange Range, eQuantic.UI.Code.CodePosition Target) -> void
+eQuantic.UI.Code.CodeGoToEntry.Deconstruct(out string! Name, out eQuantic.UI.Code.CodeSymbolKind Kind, out eQuantic.UI.Code.CodeRange Range, out eQuantic.UI.Code.CodePosition Target) -> void
+eQuantic.UI.Code.CodeGoToEntry.Equals(eQuantic.UI.Code.CodeGoToEntry? other) -> bool
+override eQuantic.UI.Code.CodeGoToEntry.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeGoToEntry.GetHashCode() -> int
+override eQuantic.UI.Code.CodeGoToEntry.ToString() -> string!
+static eQuantic.UI.Code.CodeGoToEntry.operator !=(eQuantic.UI.Code.CodeGoToEntry? left, eQuantic.UI.Code.CodeGoToEntry? right) -> bool
+static eQuantic.UI.Code.CodeGoToEntry.operator ==(eQuantic.UI.Code.CodeGoToEntry? left, eQuantic.UI.Code.CodeGoToEntry? right) -> bool
+eQuantic.UI.Code.CodeGoToEntry.Name.get -> string!
+eQuantic.UI.Code.CodeGoToEntry.Name.init -> void
+eQuantic.UI.Code.CodeGoToEntry.Kind.get -> eQuantic.UI.Code.CodeSymbolKind
+eQuantic.UI.Code.CodeGoToEntry.Kind.init -> void
+eQuantic.UI.Code.CodeGoToEntry.Range.get -> eQuantic.UI.Code.CodeRange
+eQuantic.UI.Code.CodeGoToEntry.Range.init -> void
+eQuantic.UI.Code.CodeGoToLine
+eQuantic.UI.Code.CodeGoToLine.<Clone>$() -> eQuantic.UI.Code.CodeGoToLine!
+eQuantic.UI.Code.CodeGoToLine.CodeGoToLine(int Line, int? Column, bool ColumnStarted, int Columns) -> void
+eQuantic.UI.Code.CodeGoToLine.Deconstruct(out int Line, out int? Column, out bool ColumnStarted, out int Columns) -> void
+eQuantic.UI.Code.CodeGoToLine.Equals(eQuantic.UI.Code.CodeGoToLine? other) -> bool
+override eQuantic.UI.Code.CodeGoToLine.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeGoToLine.GetHashCode() -> int
+override eQuantic.UI.Code.CodeGoToLine.ToString() -> string!
+static eQuantic.UI.Code.CodeGoToLine.operator !=(eQuantic.UI.Code.CodeGoToLine? left, eQuantic.UI.Code.CodeGoToLine? right) -> bool
+static eQuantic.UI.Code.CodeGoToLine.operator ==(eQuantic.UI.Code.CodeGoToLine? left, eQuantic.UI.Code.CodeGoToLine? right) -> bool
+eQuantic.UI.Code.CodeGoToLine.Line.get -> int
+eQuantic.UI.Code.CodeGoToLine.Line.init -> void
+eQuantic.UI.Code.CodeGoToLine.Column.get -> int?
+eQuantic.UI.Code.CodeGoToLine.Column.init -> void
+eQuantic.UI.Code.CodeGoToLine.ColumnStarted.get -> bool
+eQuantic.UI.Code.CodeGoToLine.ColumnStarted.init -> void
+eQuantic.UI.Code.CodeGoToLine.Columns.get -> int
+eQuantic.UI.Code.CodeGoToLine.Columns.init -> void
+eQuantic.UI.Code.CodeGoToMode
+eQuantic.UI.Code.CodeGoToMode.None = 0 -> eQuantic.UI.Code.CodeGoToMode
+eQuantic.UI.Code.CodeGoToMode.Line = 1 -> eQuantic.UI.Code.CodeGoToMode
+eQuantic.UI.Code.CodeGoToMode.Symbol = 2 -> eQuantic.UI.Code.CodeGoToMode
+eQuantic.UI.Code.CodeJumpList
+const eQuantic.UI.Code.CodeJumpList.Distance = 10 -> int
+const eQuantic.UI.Code.CodeJumpList.Capacity = 50 -> int
+eQuantic.UI.Code.CodeJumpList.Places.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>!
+eQuantic.UI.Code.CodeJumpList.Index.get -> int
+eQuantic.UI.Code.CodeJumpList.CanGoBack.get -> bool
+eQuantic.UI.Code.CodeJumpList.CanGoForward.get -> bool
+eQuantic.UI.Code.CodeJumpList.Back() -> bool
+eQuantic.UI.Code.CodeJumpList.Forward() -> bool

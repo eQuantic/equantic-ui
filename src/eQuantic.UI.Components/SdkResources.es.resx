@@ -122,4 +122,37 @@
   <data name="ShowAsChart" xml:space="preserve">
     <value>Ver como gráfico</value>
   </data>
+  <data name="GoTo" xml:space="preserve">
+    <value>Ir a</value>
+  </data>
+  <data name="GoToStart" xml:space="preserve">
+    <value>Escriba : para ir a una línea, o @ para ir a un símbolo.</value>
+  </data>
+  <data name="GoToLinePrompt" xml:space="preserve">
+    <value>Escriba el número de línea al que ir (de 1 a {0}).</value>
+  </data>
+  <data name="GoToLineOrColumn" xml:space="preserve">
+    <value>Presione Entrar para ir a la línea {0}, o escriba dos puntos para añadir una columna.</value>
+  </data>
+  <data name="GoToColumnPrompt" xml:space="preserve">
+    <value>Presione Entrar para ir a la línea {0}, o escriba una columna (de 1 a {1}).</value>
+  </data>
+  <data name="GoToPosition" xml:space="preserve">
+    <value>Presione Entrar para ir a la línea {0}, columna {1}.</value>
+  </data>
+  <data name="SymbolsCount" xml:space="preserve">
+    <value>Símbolos ({0})</value>
+  </data>
+  <data name="NoSymbols" xml:space="preserve">
+    <value>No hay símbolos en este documento.</value>
+  </data>
+  <data name="NoMatchingSymbols" xml:space="preserve">
+    <value>Ningún símbolo coincide.</value>
+  </data>
+  <data name="NoSymbolProvider" xml:space="preserve">
+    <value>Este editor no tiene información de símbolos.</value>
+  </data>
+  <data name="ReadingSymbols" xml:space="preserve">
+    <value>Leyendo los símbolos…</value>
+  </data>
 </root>

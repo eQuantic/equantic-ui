@@ -40,3 +40,16 @@ eQuantic.UI.Components.CodeBlock.ActiveLines.get -> System.Collections.Generic.I
 eQuantic.UI.Components.CodeBlock.ActiveLines.init -> void
 eQuantic.UI.Components.CodeBlock.Selections.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>!
 eQuantic.UI.Components.CodeBlock.Selections.init -> void
+eQuantic.UI.Components.CodeEditor.SymbolProviders.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.ICodeSymbolProvider!>!
+eQuantic.UI.Components.CodeEditor.SymbolProviders.set -> void
+static eQuantic.UI.Components.SdkStrings.GoToPosition(int line, int column) -> string!
+static eQuantic.UI.Components.SdkStrings.SymbolsCount(int count) -> string!
+static eQuantic.UI.Components.SdkStrings.NoSymbols.get -> string!
+static eQuantic.UI.Components.SdkStrings.NoMatchingSymbols.get -> string!
+static eQuantic.UI.Components.SdkStrings.NoSymbolProvider.get -> string!
+static eQuantic.UI.Components.SdkStrings.ReadingSymbols.get -> string!
+static eQuantic.UI.Components.SdkStrings.GoTo.get -> string!
+static eQuantic.UI.Components.SdkStrings.GoToStart.get -> string!
+static eQuantic.UI.Components.SdkStrings.GoToLinePrompt(int lines) -> string!
+static eQuantic.UI.Components.SdkStrings.GoToLineOrColumn(int line) -> string!
+static eQuantic.UI.Components.SdkStrings.GoToColumnPrompt(int line, int columns) -> string!

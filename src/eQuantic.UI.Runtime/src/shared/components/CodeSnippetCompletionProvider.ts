@@ -4,8 +4,8 @@ export class CodeSnippetCompletionProvider {
     constructor(snippets: CodeSnippetDefinition[]) {
         this._items = [];
         for (const snippet of snippets) {
-            let $n40: any; 
-            this._items.push(($n40 = new CodeCompletionItem(snippet.prefix, 'snippet'), $n40.detail = snippet.description, $n40.snippet = CodeSnippet.parse(snippet.body), $n40));
+            let $n41: any; 
+            this._items.push(($n41 = new CodeCompletionItem(snippet.prefix, 'snippet'), $n41.detail = snippet.description, $n41.snippet = CodeSnippet.parse(snippet.body), $n41));
         }
     }
 

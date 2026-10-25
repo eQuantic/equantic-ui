@@ -296,7 +296,7 @@ internal static class CodeCompletionView
     }
 
     /// <summary>The entry's kind, as its letter in its colour, centred in a square cell a line tall.</summary>
-    private static VisualNode Glyph(IAppTheme theme, CodeBlock.CodeMetrics metrics, CodeCompletionKind kind)
+    internal static VisualNode Glyph(IAppTheme theme, CodeBlock.CodeMetrics metrics, CodeCompletionKind kind)
     {
         var cell = new Row(main: MainAlign.Center)
         {
