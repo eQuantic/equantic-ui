@@ -2547,7 +2547,17 @@ public sealed class PhotonHost
             // A press the sheet declines over a drag surface drawn inside it is the drag's: a header's resize
             // grip, which the sheet's engine reads as the grip's and leaves alone (#984). Its moves and its
             // release go to the grip, as on the web, where the sheet steps aside for `[data-eq-drag]`.
-            if (!claimed && _drag is not null) return true;
+            // The table's candidate pan, which a finger's or a pen's press armed, lets go of it, or its pan
+            // would take the drag past the slop before the grip.
+            if (!claimed && _drag is not null)
+            {
+                if (_tablePress is { Active: false } pending)
+                {
+                    _tablePress = null;
+                    pending.Viewport.Scroll.Pointer(PointerPhase.Cancel, Point.Zero, kind, _lastTimeMs);
+                }
+                return true;
+            }
             _sheetPressed = true;
             // A pen's press on the cells is the sheet's, as a mouse's is: its drag selects, so the
             // table's candidate pan lets go of it. A finger's stays a candidate, a tap or a pan.

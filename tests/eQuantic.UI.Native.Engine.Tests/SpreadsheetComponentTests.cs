@@ -140,6 +140,26 @@ public class SpreadsheetComponentTests
         sheet.Document.ColWidth(0).Should().Be(136f);
     }
 
+    /// <summary>A finger or a pen on a column's grip resizes, as a mouse does: the table's candidate pan, armed by
+    /// the press, lets go of it, or the drag past the slop scrolled the grid instead (#984, review of #1102).</summary>
+    [Theory]
+    [InlineData(PointerKind.Touch)]
+    [InlineData(PointerKind.Stylus)]
+    public void AFingerOrAPenOnAColumnGrip_Resizes_AndScrollsNothing(PointerKind kind)
+    {
+        var (host, sheet) = Open();
+        var edge = Spreadsheet.HeaderWidth + sheet.Document.ColWidth(0);
+        var y = Spreadsheet.HeaderHeight / 2;
+
+        host.PressDown(edge - 2f, y, kind: kind);
+        host.PointerMove(edge - 2f + 40f, y, kind);
+        host.PressUp(edge - 2f + 40f, y, kind);
+        host.RenderFrame(new DisplayListBuilder(), 100);
+
+        sheet.Document.ColWidth(0).Should().Be(136f);
+        sheet.Grid.Offset.Across.Should().Be(0, "the grip's drag is no pan");
+    }
+
     [Fact]
     public void DraggingARowSeparator_InsideTheScroll_ResizesInsteadOfScrolling()
     {
