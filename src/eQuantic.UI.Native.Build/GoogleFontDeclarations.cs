@@ -33,13 +33,16 @@ public static class GoogleFontDeclarations
 
     /// <summary>
     /// Every family the files at <paramref name="paths"/> declare, the cuts of a family declared twice
-    /// together, or the errors that stop the build, each one line in MSBuild's own form.
+    /// together, or the errors that stop the build, each one line in MSBuild's own form. The files are
+    /// read with the compile's own <paramref name="symbols"/>, so a declaration under <c>#if</c> is read
+    /// exactly when the compiler will see it.
     /// </summary>
-    public static (IReadOnlyList<Declaration> Declarations, IReadOnlyList<string> Errors) Read(IEnumerable<string> paths)
+    public static (IReadOnlyList<Declaration> Declarations, IReadOnlyList<string> Errors) Read(IEnumerable<string> paths,
+        IEnumerable<string>? symbols = null)
     {
         var errors = new List<string>();
         var families = new List<(string Family, SortedSet<FontCut> Cuts, string Place)>();
-        var options = new CSharpParseOptions(LanguageVersion.Preview);
+        var options = new CSharpParseOptions(LanguageVersion.Preview, preprocessorSymbols: symbols);
         foreach (var path in paths)
         {
             var root = CSharpSyntaxTree.ParseText(File.ReadAllText(path), options, path).GetRoot();
@@ -57,6 +60,11 @@ public static class GoogleFontDeclarations
                     families[family].Cuts.UnionWith(declared.Cuts);
             }
         }
+        // Each cut is kept and embedded under a name made of the family's letters and digits, so two
+        // families that share them would write over each other's files.
+        foreach (var clash in families.GroupBy(entry => GoogleFontFetch.Stem(entry.Family)).Where(group => group.Count() > 1))
+            errors.Add(Error(clash.Last().Place, $"the families {string.Join(" and ", clash.Select(entry => $"'{entry.Family}'"))} "
+                + "would keep their files under one name; declare one of them"));
         return (families.Select(entry => new Declaration(entry.Family, [.. entry.Cuts], entry.Place)).ToList(), errors);
     }
 

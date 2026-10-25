@@ -87,7 +87,8 @@ static async Task<int> FetchFonts(string[] args)
     }
 
     var paths = File.Exists(sources) ? File.ReadAllLines(sources).Where(line => line.Length > 0).ToList() : [];
-    var (declarations, unreadable) = GoogleFontDeclarations.Read(paths);
+    var symbols = Arg("--symbols")?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
+    var (declarations, unreadable) = GoogleFontDeclarations.Read(paths, symbols);
     foreach (var error in unreadable) Console.WriteLine(error);
     if (unreadable.Count > 0) return 1;
 

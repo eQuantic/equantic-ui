@@ -50,7 +50,7 @@ public static class GoogleFontFetch
 
         Directory.CreateDirectory(directory);
         var errors = new List<string>();
-        var next = new FontLock();
+        var next = pinned.Without(Provider);
         var kept = new HashSet<string>(StringComparer.Ordinal);
         foreach (var declaration in declarations)
         {
@@ -67,8 +67,10 @@ public static class GoogleFontFetch
     }
 
     /// <summary>The name a cut's file is kept and embedded under.</summary>
-    public static string FileName(string family, FontCut cut) =>
-        $"{new string(family.Where(char.IsAsciiLetterOrDigit).ToArray())}-{cut.Weight}{(cut.Italic ? "-italic" : "")}.ttf";
+    public static string FileName(string family, FontCut cut) => $"{Stem(family)}-{cut.Weight}{(cut.Italic ? "-italic" : "")}.ttf";
+
+    /// <summary>What a family's files are named after: its ASCII letters and digits.</summary>
+    public static string Stem(string family) => new(family.Where(char.IsAsciiLetterOrDigit).ToArray());
 
     /// <summary>One family's pins once its files are in <paramref name="directory"/>, or null once its errors are added.</summary>
     private static async Task<IReadOnlyDictionary<FontCut, FontLock.Pin>?> FetchAsync(GoogleFontDeclarations.Declaration declaration,

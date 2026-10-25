@@ -38,7 +38,8 @@ and served by it on every target, with no request from a page to the provider.
   names it through the catalog, so its declaration has to be read before the compiler runs, which a
   generator cannot do. `[assembly: GoogleFont("Inter", FontWeight.Regular, FontWeight.Bold, Italic = true)]`
   is C#, typed, and constant by construction. MSBuild hands eqicon the files that mention it, and eqicon
-  reads their syntax alone: the family is a string literal, each weight a `FontWeight` member, the italic
+  reads their syntax alone, with the compile's own symbols so a declaration under `#if` is read when the
+  compiler sees it: the family is a string literal, each weight a `FontWeight` member, the italic
   `true` or `false`. Anything else fails the build with EQ4007 at the attribute, as EQ3003 does for a
   capability's reason built at run time: the build reads the declaration before any constant elsewhere in
   the app exists. The compiler still binds the attribute when the app compiles, so a misspelt member

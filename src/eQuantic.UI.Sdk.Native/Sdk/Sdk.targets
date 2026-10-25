@@ -792,6 +792,9 @@
             <_EqGoogleFontsArgument Include="command" Value="fetch-fonts" />
             <_EqGoogleFontsArgument Include="sources" Option="--sources" Value="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(_EqGoogleFontSourcesFile)'))" />
             <_EqGoogleFontsArgument Include="lock" Option="--lock" Value="$(_EqGoogleFontsLock)" />
+            <!-- The compile's symbols, so a declaration under #if is read when the compiler sees it. With
+                 commas: a semicolon would cut the value into items. -->
+            <_EqGoogleFontsArgument Include="symbols" Option="--symbols" Value="$(DefineConstants.Replace(';', ','))" />
             <_EqGoogleFontsArgument Include="dir" Option="--dir" Value="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(_EqGoogleFontsDir)'))" />
         </ItemGroup>
         <RunProgram Program="dotnet" Arguments="@(_EqGoogleFontsArgument)" StandardOutputImportance="normal"

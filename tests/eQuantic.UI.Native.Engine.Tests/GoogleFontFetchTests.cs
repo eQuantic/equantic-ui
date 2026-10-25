@@ -199,6 +199,18 @@ public sealed class GoogleFontFetchTests : IDisposable
     }
 
     [Fact]
+    public async Task ThePinsOfAnotherProvider_AreKept()
+    {
+        var other = new FontLock();
+        other.Set("bunny", "Inter", new Dictionary<FontCut, FontLock.Pin> { [Cut(400)] = new(new Uri("https://fonts.bunny.net/inter-400.ttf"), new string('c', 64)) });
+        other.Write(Lock);
+
+        (await Fetch(Declared("Inter", Cut(400)))).Should().BeEmpty();
+
+        FontLock.Read(Lock).Of("bunny", "Inter").Should().ContainKey(Cut(400));
+    }
+
+    [Fact]
     public async Task ALockThatDoesNotHold_FailsTheBuild_AndIsNeverReadAsFewerPins()
     {
         File.WriteAllText(Lock, "{ \"version\": 1, \"google\": { \"Inter\": { \"400\": { \"url\": \"https://fonts.gstatic.com/x.ttf\" } } } }");

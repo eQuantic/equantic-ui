@@ -75,6 +75,32 @@ public sealed class GoogleFontDeclarationsTests : IDisposable
         GoogleFontDeclarations.Read([file]).Declarations.Should().BeEmpty();
     }
 
+    /// <summary>A declaration under <c>#if</c> is read when the compile's symbols say the compiler sees it,
+    /// and only then: read without them, the build fetched nothing for a family the app then named.</summary>
+    [Fact]
+    public void ADeclarationUnderIf_IsReadWithTheCompilesSymbols()
+    {
+        var file = Source("Fonts.cs", """
+            #if BRAND
+            [assembly: GoogleFont("Inter")]
+            #endif
+            """);
+
+        GoogleFontDeclarations.Read([file], ["DEBUG", "BRAND"]).Declarations.Should().ContainSingle();
+        GoogleFontDeclarations.Read([file], ["DEBUG"]).Declarations.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void TwoFamiliesKeptUnderOneName_StopTheBuild()
+    {
+        var file = Source("Fonts.cs", """
+            [assembly: GoogleFont("Roboto Mono")]
+            [assembly: GoogleFont("RobotoMono")]
+            """);
+
+        GoogleFontDeclarations.Read([file]).Errors.Should().ContainSingle().Which.Should().Contain("error EQ4007: the families 'Roboto Mono' and 'RobotoMono' would keep their files under one name");
+    }
+
     [Theory]
     [InlineData("[assembly: GoogleFont(Brand.Family)]", "written out as a string literal")]
     [InlineData("[assembly: GoogleFont(\"Inter\", (FontWeight)300)]", "written out as a member of FontWeight")]
