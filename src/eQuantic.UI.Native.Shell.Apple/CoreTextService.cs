@@ -67,6 +67,59 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     [LibraryImport(CoreTextLib)]
     private static partial IntPtr CTFontCreateWithFontDescriptor(IntPtr descriptor, double size, IntPtr matrix);
 
+    // A face the app SHIPS (#1055), registered with the font manager for this process from the bytes
+    // its assembly holds, so the family match below finds it as it finds an installed one: the
+    // descriptor, the bold and italic traits and every cache keyed on the family work unchanged. The
+    // same route .NET MAUI's embedded-font loader takes on iOS.
+    [LibraryImport(CoreFoundation)]
+    private static partial IntPtr CFDataCreate(IntPtr allocator, byte[] bytes, nint length);
+
+    [LibraryImport(CoreFoundation)]
+    private static partial nint CFErrorGetCode(IntPtr error);
+
+    [LibraryImport(CoreGraphics)]
+    private static partial IntPtr CGDataProviderCreateWithCFData(IntPtr data);
+
+    [LibraryImport(CoreGraphics)]
+    private static partial void CGDataProviderRelease(IntPtr provider);
+
+    [LibraryImport(CoreGraphics)]
+    private static partial IntPtr CGFontCreateWithDataProvider(IntPtr provider);
+
+    [LibraryImport(CoreGraphics)]
+    private static partial void CGFontRelease(IntPtr font);
+
+    [LibraryImport(CoreTextLib)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    private static partial bool CTFontManagerRegisterGraphicsFont(IntPtr font, out IntPtr error);
+
+    /// <summary>kCTFontManagerErrorAlreadyRegistered: the face is in the process all the same.</summary>
+    private const nint AlreadyRegistered = 105;
+
+    private static readonly ShippedFaces Shipped = new(Register);
+
+    private static bool Register(FontFile file, byte[] bytes)
+    {
+        var data = CFDataCreate(IntPtr.Zero, bytes, bytes.Length);
+        if (data == IntPtr.Zero) return false;
+        var provider = CGDataProviderCreateWithCFData(data);
+        var font = provider == IntPtr.Zero ? IntPtr.Zero : CGFontCreateWithDataProvider(provider);
+        try
+        {
+            if (font == IntPtr.Zero) return false;
+            if (CTFontManagerRegisterGraphicsFont(font, out var error)) return true;
+            var already = error != IntPtr.Zero && CFErrorGetCode(error) == AlreadyRegistered;
+            if (error != IntPtr.Zero) CFRelease(error);
+            return already;
+        }
+        finally
+        {
+            if (font != IntPtr.Zero) CGFontRelease(font);
+            if (provider != IntPtr.Zero) CGDataProviderRelease(provider);
+            CFRelease(data);
+        }
+    }
+
     /// <summary>The INK box of a line — what the glyphs actually cover, which is not the font's
     /// declared ascent/descent: a deep 'g' tail, an accent or a swash all pass beyond it. A null
     /// context is legal and gives the default text matrix, which is what we draw with.</summary>
@@ -146,9 +199,9 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     private static IntPtr LoadGlobalAddress(string library, string symbol) =>
         dlsym(dlopen(library, 2), symbol);
 
-    private readonly Dictionary<(float Size, bool Bold, bool Mono, bool Italic, string? Family), IntPtr> _fonts = new();
+    private readonly Dictionary<(float Size, bool Bold, bool Mono, bool Italic, FontFamily? Family), IntPtr> _fonts = new();
 
-    private IntPtr FontFor(float size, FontWeight weight, bool mono, bool italic, string? family = null)
+    private IntPtr FontFor(float size, FontWeight weight, bool mono, bool italic, FontFamily? family = null)
     {
         var bold = weight >= FontWeight.SemiBold;
         if (_fonts.TryGetValue((size, bold, mono, italic, family), out var cached)) return cached;
@@ -186,18 +239,27 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     /// substitute rather than nothing when the family is unknown, so the family is read back and
     /// compared: a non-null return proves a font, not the right one.
     /// </summary>
-    private static IntPtr? Named(string? family, float size)
+    private static IntPtr? Named(FontFamily? family, float size)
     {
-        if (string.IsNullOrEmpty(family)) return null;
+        if (family is not { Name.Length: > 0 }) return null;
+        // A family that ships files is registered before it is matched, and resolves from them WHOLE
+        // or not at all: a file that could not be read or registered is reported and the text falls
+        // back, rather than matching what part of the family did register, or a family of that name
+        // the machine happens to have, which would hide the packaging error on this machine alone.
+        if (family.Files.Count > 0 && !Shipped.Register(family))
+        {
+            FaceResolution.Missing(family.Name);
+            return null;
+        }
 
-        var name = CFStringCreateWithCString(IntPtr.Zero, family, Utf8);
+        var name = CFStringCreateWithCString(IntPtr.Zero, family.Name, Utf8);
         if (name == IntPtr.Zero) return null;
         var attributes = CFDictionaryCreateMutable(IntPtr.Zero, 1, KeyCallbacks, ValueCallbacks);
         try
         {
             CFDictionarySetValue(attributes, FontFamilyNameAttribute, name);
             var wanted = CTFontDescriptorCreateWithAttributes(attributes);
-            if (wanted == IntPtr.Zero) { FaceResolution.Missing(family); return null; }
+            if (wanted == IntPtr.Zero) { FaceResolution.Missing(family.Name); return null; }
             try
             {
                 // No mandatory-attribute set, and that is measured rather than assumed: the matcher
@@ -205,7 +267,7 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
                 // descriptor for one it does, including when the canonical name differs from the one
                 // asked for ("JetBrainsMono NF" matches "JetBrainsMono Nerd Font").
                 var matched = CTFontDescriptorCreateMatchingFontDescriptor(wanted, IntPtr.Zero);
-                if (matched == IntPtr.Zero) { FaceResolution.Missing(family); return null; }
+                if (matched == IntPtr.Zero) { FaceResolution.Missing(family.Name); return null; }
                 try
                 {
                     return CTFontCreateWithFontDescriptor(matched, size, IntPtr.Zero);
@@ -230,7 +292,7 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     /// <summary>The framesetter + laid-out frame for a block (caller releases all three handles).</summary>
     private (IntPtr Framesetter, IntPtr Frame, IntPtr Path, IntPtr Attributed, IntPtr CfText, IntPtr Dict)
         Layout(string content, float fontSize, FontWeight weight, float maxWidth, bool mono, bool italic,
-            string? family)
+            FontFamily? family)
     {
         var cfText = CFStringCreateWithCString(IntPtr.Zero, content.Length == 0 ? " " : content, Utf8);
         var dict = CFDictionaryCreateMutable(IntPtr.Zero, 1, KeyCallbacks, ValueCallbacks);

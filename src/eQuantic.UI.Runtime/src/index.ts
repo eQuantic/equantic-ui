@@ -192,6 +192,8 @@ export {
   CornerRadii,
   FaceName,
   FluidSize,
+  FontFamily,
+  FontFile,
   Point,
   Rect,
   Size,

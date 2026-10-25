@@ -43,7 +43,6 @@ eQuantic.UI.Primitives.IAppTheme.Placeholder.get -> eQuantic.UI.Primitives.Color
 eQuantic.UI.Primitives.IAppTheme.ScrollbarThumb.get -> eQuantic.UI.Primitives.ColorToken
 eQuantic.UI.Primitives.IAppTheme.ScrollbarTrack.get -> eQuantic.UI.Primitives.ColorToken
 eQuantic.UI.Primitives.IAppTheme.Selection.get -> eQuantic.UI.Primitives.ColorToken
-eQuantic.UI.Primitives.IAppTheme.TextFamily.get -> string?
 static eQuantic.UI.Primitives.EffectiveTypeStyle.WithThemeFace(this eQuantic.UI.Primitives.TypeStyle style, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.TypeStyle
 static eQuantic.UI.Primitives.EffectiveTypeStyle.Resolve(this eQuantic.UI.Primitives.TextEntry! entry, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.TypeStyle
 eQuantic.UI.Primitives.ISheetSurfaceModel.Carets.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
@@ -57,3 +56,50 @@ eQuantic.UI.Primitives.SheetSurface.CaretColor.init -> void
 eQuantic.UI.Primitives.SheetTheme.EntrySelection.get -> eQuantic.UI.Primitives.ColorToken?
 eQuantic.UI.Primitives.SheetTheme.EntrySelection.init -> void
 *REMOVED*eQuantic.UI.Primitives.ISheetSurfaceModel.HandleKey(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.ITextClipboard? clipboard) -> bool
+*REMOVED*eQuantic.UI.Primitives.IAppTheme.MonoFamily.get -> string?
+*REMOVED*eQuantic.UI.Primitives.TypeStyle.Deconstruct(out float Size, out float LineHeight, out eQuantic.UI.Primitives.FontWeight Weight, out float Tracking, out float MaxScale, out bool Mono, out bool Italic, out string? Family) -> void
+*REMOVED*eQuantic.UI.Primitives.TypeStyle.Family.get -> string?
+*REMOVED*eQuantic.UI.Primitives.TypeStyle.TypeStyle(float Size, float LineHeight, eQuantic.UI.Primitives.FontWeight Weight, float Tracking, float MaxScale, bool Mono = false, bool Italic = false, string? Family = null) -> void
+eQuantic.UI.Primitives.FontCatalogAttribute
+eQuantic.UI.Primitives.FontCatalogAttribute.Catalog.get -> System.Type!
+eQuantic.UI.Primitives.FontCatalogAttribute.FontCatalogAttribute(System.Type! catalog) -> void
+eQuantic.UI.Primitives.FontFamily
+eQuantic.UI.Primitives.FontFamily.<Clone>$() -> eQuantic.UI.Primitives.FontFamily!
+eQuantic.UI.Primitives.FontFamily.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FontFile!>! Files) -> void
+eQuantic.UI.Primitives.FontFamily.Equals(eQuantic.UI.Primitives.FontFamily? other) -> bool
+eQuantic.UI.Primitives.FontFamily.Files.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FontFile!>!
+eQuantic.UI.Primitives.FontFamily.Files.init -> void
+eQuantic.UI.Primitives.FontFamily.FontFamily(string! Name, params System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FontFile!>! Files) -> void
+eQuantic.UI.Primitives.FontFamily.Name.get -> string!
+eQuantic.UI.Primitives.FontFamily.Name.init -> void
+eQuantic.UI.Primitives.FontFile
+eQuantic.UI.Primitives.FontFile.<Clone>$() -> eQuantic.UI.Primitives.FontFile!
+eQuantic.UI.Primitives.FontFile.Assembly.get -> string!
+eQuantic.UI.Primitives.FontFile.Assembly.init -> void
+eQuantic.UI.Primitives.FontFile.Deconstruct(out string! Assembly, out string! Resource, out int MinWeight, out int MaxWeight, out bool Italic) -> void
+eQuantic.UI.Primitives.FontFile.Equals(eQuantic.UI.Primitives.FontFile? other) -> bool
+eQuantic.UI.Primitives.FontFile.FontFile(string! Assembly, string! Resource, int MinWeight, int MaxWeight, bool Italic = false) -> void
+eQuantic.UI.Primitives.FontFile.Italic.get -> bool
+eQuantic.UI.Primitives.FontFile.Italic.init -> void
+eQuantic.UI.Primitives.FontFile.MaxWeight.get -> int
+eQuantic.UI.Primitives.FontFile.MaxWeight.init -> void
+eQuantic.UI.Primitives.FontFile.MinWeight.get -> int
+eQuantic.UI.Primitives.FontFile.MinWeight.init -> void
+eQuantic.UI.Primitives.FontFile.Resource.get -> string!
+eQuantic.UI.Primitives.FontFile.Resource.init -> void
+eQuantic.UI.Primitives.IAppTheme.MonoFamily.get -> eQuantic.UI.Primitives.FontFamily?
+eQuantic.UI.Primitives.IAppTheme.TextFamily.get -> eQuantic.UI.Primitives.FontFamily?
+eQuantic.UI.Primitives.TypeStyle.Deconstruct(out float Size, out float LineHeight, out eQuantic.UI.Primitives.FontWeight Weight, out float Tracking, out float MaxScale, out bool Mono, out bool Italic, out eQuantic.UI.Primitives.FontFamily? Family) -> void
+eQuantic.UI.Primitives.TypeStyle.Family.get -> eQuantic.UI.Primitives.FontFamily?
+eQuantic.UI.Primitives.TypeStyle.TypeStyle(float Size, float LineHeight, eQuantic.UI.Primitives.FontWeight Weight, float Tracking, float MaxScale, bool Mono = false, bool Italic = false, eQuantic.UI.Primitives.FontFamily? Family = null) -> void
+override eQuantic.UI.Primitives.FontFamily.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.FontFamily.GetHashCode() -> int
+override eQuantic.UI.Primitives.FontFamily.ToString() -> string!
+override eQuantic.UI.Primitives.FontFile.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.FontFile.GetHashCode() -> int
+override eQuantic.UI.Primitives.FontFile.ToString() -> string!
+static eQuantic.UI.Primitives.FontFamily.operator !=(eQuantic.UI.Primitives.FontFamily? left, eQuantic.UI.Primitives.FontFamily? right) -> bool
+static eQuantic.UI.Primitives.FontFamily.operator ==(eQuantic.UI.Primitives.FontFamily? left, eQuantic.UI.Primitives.FontFamily? right) -> bool
+static eQuantic.UI.Primitives.FontFile.operator !=(eQuantic.UI.Primitives.FontFile? left, eQuantic.UI.Primitives.FontFile? right) -> bool
+static eQuantic.UI.Primitives.FontFile.operator ==(eQuantic.UI.Primitives.FontFile? left, eQuantic.UI.Primitives.FontFile? right) -> bool
+eQuantic.UI.Primitives.FontFile.Read() -> byte[]?

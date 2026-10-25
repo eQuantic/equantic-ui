@@ -1,4 +1,4 @@
-import type { Point, Rect, Size } from './value-types';
+import type { FontFamily, Point, Rect, Size } from './value-types';
 /**
  * The SHARED abstract vocabulary on the client (docs/SHARED-COMPONENTS-PLAN.md) — the JS shapes of
  * `eQuantic.UI.Primitives` nodes as the transpiler emits them (camelCase properties, enums as
@@ -83,8 +83,8 @@ export interface TypeStyleValue {
   mono?: boolean;
   /** The SLANTED cut (C# `TypeStyle.Italic`) — an axis, so it composes with weight and mono. */
   italic?: boolean;
-  /** The FACE by name (C# `TypeStyle.Family`), or absent for the platform's own. */
-  family?: string;
+  /** The FACE (C# `TypeStyle.Family`), or absent for the platform's own. */
+  family?: FontFamily;
   /** A size that follows the window (C# `TypeStyle.Fluid`): `clamp(min, Nvw, max)`. */
   fluid?: { min: number; percentOfWindow: number; max: number } | null;
 }

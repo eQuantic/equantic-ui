@@ -90,6 +90,8 @@ export {
   EdgeInsets,
   CornerRadii,
   FluidSize,
+  FontFamily,
+  FontFile,
   TypeStyle,
   VariantColors,
 } from './value-types';

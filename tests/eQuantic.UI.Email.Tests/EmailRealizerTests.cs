@@ -676,7 +676,7 @@ public class EmailRendererThirdWaveTests
         public ColorToken Scrim => inner.Scrim;
         public float DisabledOpacity => inner.DisabledOpacity;
         public VariantColors Colors(Variant variant) => inner.Colors(variant);
-        public TypeStyle Type(TypeRole role) => inner.Type(role) with { Family = family };
+        public TypeStyle Type(TypeRole role) => inner.Type(role) with { Family = new(family) };
         public ShadowSpec Elevation(int level) => inner.Elevation(level);
         public float Shape(ShapeScale scale) => inner.Shape(scale);
     }

@@ -107,11 +107,11 @@ public static class ThemeStylesheet
         // says mono, the client's own lowering and the canvas measurer at once — without the
         // lowering having to learn about a theme it cannot see. The app keeps the last word: this
         // sheet comes before the app's own CSS, so an app's own `:root` rule wins.
-        if (FaceName.Usable(theme.MonoFamily) is { } code)
+        if (FaceName.Usable(theme.MonoFamily?.Name) is { } code)
             css.AppendLine($"  --eq-font-mono: \"{code}\", {TokenCss.MonoFallback};");
         // And its TEXT FACE, by the same rule: `SansStack` is `var(--eq-font-family, …)`, and the
         // document below and every role with no face of its own are set in it.
-        if (FaceName.Usable(theme.TextFamily) is { } text)
+        if (FaceName.Usable(theme.TextFamily?.Name) is { } text)
             css.AppendLine($"  --eq-font-family: \"{text}\", {TokenCss.SansFallback};");
 
         // Motion (§06).
@@ -168,7 +168,7 @@ public static class ThemeStylesheet
             // element, and the stack is the answer. Its white-space belongs here too — a role that
             // is CODE keeps its indentation wherever it is used, and a rule the client cannot see
             // is a rule SSR must not emit inline either.
-            var roleFace = FaceName.Usable(style.Family);
+            var roleFace = FaceName.Usable(style.Family?.Name);
             if (roleFace is { } face) css.AppendLine($"  font-family: {TokenCss.Face(face, style.Mono)};");
             else if (style.Mono) css.AppendLine($"  font-family: {TokenCss.MonoStack};");
             if (style.Mono) css.AppendLine("  white-space: pre-wrap;");

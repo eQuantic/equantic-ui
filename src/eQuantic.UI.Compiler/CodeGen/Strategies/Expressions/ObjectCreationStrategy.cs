@@ -674,7 +674,9 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     private static IReadOnlyList<JsExpr> OrderedArguments(BaseObjectCreationExpressionSyntax creation, ConversionContext context)
     {
         var args = creation.ArgumentList!.Arguments;
-        var converted = args.Select(a => context.Converter.ConvertIr(a.Expression)).ToList();
+        // A collection handed whole to a params parameter is spread into the twin's rest parameter:
+        // `new FontFamily("Brand", [regular, italic])` held one file, an array, where C# holds two.
+        var converted = args.Select(a => BoundArguments.Convert(a, context)).ToList();
         var symbol = context.SemanticHelper.GetSymbol(creation) as IMethodSymbol;
 
         // A COMPONENT's constructor loses its dependencies on the way out — the emitted one resolves
@@ -929,7 +931,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// align slot of `new DataColumn("Customer", track, Sortable: true)`: the column stopped being
     /// sortable on the client only, and hydration failed on the header it rendered.
     /// <para>
-    /// A <c>params</c> parameter is a rest parameter on the twin, so an array passed whole, which C#
+    /// A <c>params</c> parameter is a rest parameter on the twin, so a collection handed whole, which C#
     /// also allows, is spread, or it would arrive as one element (an invocation does the same).
     /// </para>
     /// </summary>
@@ -937,11 +939,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         ConversionContext context)
     {
         if (creation.ArgumentList is not { Arguments.Count: > 0 } list) return [];
-        var converted = list.Arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToList();
-        if (ctor is { Parameters.Length: > 0 } && ctor.Parameters[^1].IsParams
-            && list.Arguments.Count == ctor.Parameters.Length && list.Arguments[^1].NameColon is null
-            && context.SemanticHelper.GetType(list.Arguments[^1].Expression) is IArrayTypeSymbol)
-            converted[^1] = JsExpr.Spread(converted[^1]);
+        var converted = list.Arguments.Select(argument => BoundArguments.Convert(argument, context)).ToList();
         if (ctor is null || !list.Arguments.Any(argument => argument.NameColon != null)) return converted;
 
         var slots = new JsExpr?[ctor.Parameters.Length];

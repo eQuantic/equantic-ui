@@ -112,7 +112,7 @@ public static class EffectiveTypeStyle
     /// </para>
     /// </summary>
     public static TypeStyle WithThemeFace(this TypeStyle style, IAppTheme theme) =>
-        style.Family is null && (style.Mono ? theme.MonoFamily : theme.TextFamily) is { Length: > 0 } face
+        style.Family is null && (style.Mono ? theme.MonoFamily : theme.TextFamily) is { Name.Length: > 0 } face
             ? style with { Family = face }
             : style;
 }
