@@ -1,3 +1,4 @@
+using eQuantic.UI.Code;
 using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
 
@@ -10,8 +11,9 @@ namespace DefaultUIDashboard.Screens;
 /// in both directions. The SAME component, controller and keymap run natively on Photon (the
 /// Studio's gallery), so what this screen shows is what an IDE built on the SDK gets: the problems a
 /// provider finds as the text changes (<see cref="LedgerLint"/>), the card that explains a name
-/// (<see cref="LedgerHover"/>), and the panel that explains a call being written
-/// (<see cref="LedgerSignatures"/>).
+/// (<see cref="LedgerHover"/>), the panel that explains a call being written
+/// (<see cref="LedgerSignatures"/>), and the snippets it completes, walked with Tab
+/// (<see cref="CodeSnippetCompletionProvider"/>).
 /// </summary>
 [Page("/code", Title = "Code editor — eQuantic Console")]
 public sealed class CodeScreen : StatefulComponent
@@ -26,6 +28,20 @@ public sealed class CodeScreen : StatefulComponent
     private readonly LedgerLint _lint = new();
     private readonly LedgerHover _hover = new();
     private readonly LedgerSignatures _signatures = new();
+
+    /// <summary>Before the language's words and the file's, so a prefix that is also a keyword offers its
+    /// snippet first: a loop, a walk over a collection, and a property whose access is a choice.</summary>
+    private readonly IReadOnlyList<ICodeCompletionProvider> _completions =
+    [
+        new CodeSnippetCompletionProvider(
+        [
+            new CodeSnippetDefinition("for", "for (var ${1:i} = 0; $1 < ${2:count}; $1++)\n{\n\t$0\n}", "A for loop"),
+            new CodeSnippetDefinition("foreach", "foreach (var ${1:item} in ${2:items})\n{\n\t$0\n}", "A walk over a collection"),
+            new CodeSnippetDefinition("prop", "${1|public,internal,private|} ${2:decimal} ${3:Name} { get; set; }$0", "A property"),
+        ]),
+        new CodeKeywordCompletionProvider(),
+        new CodeWordCompletionProvider(),
+    ];
 
     private static readonly string Source = BuildSource();
 
@@ -91,7 +107,7 @@ public sealed class CodeScreen : StatefulComponent
         {
             Width = SizeValue.Fill,
             Padding = new EdgeInsets(Space.S4, Space.S4, 0, Space.S4),
-        }, new Text(_status.Length == 0 ? "Rest the pointer on a name, type a call such as Add(, or click into the code and press F8." : _status,
+        }, new Text(_status.Length == 0 ? "Rest the pointer on a name, type a call such as Add(, type prop and press Enter, or click into the code and press F8." : _status,
             TypeRole.BodyM, theme.TextSecondary, maxLines: 1)));
         page.Add(new Box(new BoxStyle
         {
@@ -103,6 +119,7 @@ public sealed class CodeScreen : StatefulComponent
             Caption = "Ledger.cs",
             OnSelectionChanged = range => SetState(() =>
                 _status = $"Ln {range.Focus.Line + 1}, Col {range.Focus.Column + 1}"),
+            Completions = _completions,
             DiagnosticProviders = [_lint],
             HoverProviders = [_hover],
             SignatureProviders = [_signatures],

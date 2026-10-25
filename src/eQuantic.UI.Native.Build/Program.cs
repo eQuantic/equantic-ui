@@ -38,6 +38,11 @@ if (args.Length > 0 && args[0] == "entitlements") return Entitlements(args);
 // opened with builder.Workspace.Opens…, as the manifest fragment the Android build merges.
 if (args.Length > 0 && args[0] == "queries") return Queries(args);
 
+// `fetch-fonts` — the families the app declares from Google Fonts with `[assembly: GoogleFont(…)]`,
+// fetched, pinned in fonts.lock.json and kept in the folder the SDK embeds them from, BEFORE the app
+// compiles, so the catalog `fonts` writes next carries them as it carries a face under Assets.
+if (args.Length > 0 && args[0] == "fetch-fonts") return await FetchFonts(args);
+
 if (args.Length > 0 && args[0] == "capabilities")
 {
     string? Arg(string flag)
@@ -59,6 +64,40 @@ if (args.Length > 0 && args[0] == "capabilities")
     Console.WriteLine(wrote
         ? $"eqicon: wrote {plist}"
         : "eqicon: no device capabilities or URL schemes declared");
+    return 0;
+}
+
+// The families an app declares from Google Fonts: read from the files that mention them, then fetched,
+// pinned and kept (GoogleFontFetch). Every error is one MSBuild line, against the declaration or the lock.
+static async Task<int> FetchFonts(string[] args)
+{
+    string? Arg(string flag)
+    {
+        var index = Array.IndexOf(args, flag);
+        return index >= 0 && args.Length > index + 1 ? args[index + 1].Trim() : null;
+    }
+
+    var sources = Arg("--sources");
+    var lockPath = Arg("--lock");
+    var store = Arg("--store");
+    var directory = Arg("--dir");
+    if (sources is null || lockPath is null || store is null || directory is null)
+    {
+        Console.Error.WriteLine("Usage: eqicon fetch-fonts --sources <the source files that mention GoogleFont, a line each> --lock <fonts.lock.json> --store <the project's folder of fetched files> --dir <the folder this build embeds them from> [--symbols <a,b>]");
+        return 1;
+    }
+
+    var paths = File.Exists(sources) ? File.ReadAllLines(sources).Where(line => line.Length > 0).ToList() : [];
+    var symbols = Arg("--symbols")?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
+    var (declarations, unreadable) = GoogleFontDeclarations.Read(paths, symbols);
+    foreach (var error in unreadable) Console.WriteLine(error);
+    if (unreadable.Count > 0) return 1;
+
+    var errors = await GoogleFontFetch.FetchAsync(declarations, lockPath, store, directory, GoogleFonts.OverTheNetwork());
+    foreach (var error in errors) Console.WriteLine(error);
+    if (errors.Count > 0) return 1;
+    if (declarations.Count > 0)
+        Console.WriteLine($"eqicon: {declarations.Count} famil{(declarations.Count == 1 ? "y" : "ies")} from Google Fonts → {directory}");
     return 0;
 }
 

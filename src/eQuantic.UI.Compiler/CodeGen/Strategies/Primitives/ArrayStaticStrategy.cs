@@ -170,6 +170,12 @@ public class ArrayStaticStrategy : IConversionStrategy
         var count = method.Parameters.Length;
         switch (name)
         {
+            // In place, as .NET reverses an array, its range read and a null array refused (#1076): the range
+            // was not read at all, and the whole array reversed.
+            case "Reverse":
+                context.UsedHelpers.Add(Eq.Import);
+                return ParameterTemplate.Call(count == 3 ? $"{Eq.ArrayReverse}({{0}}, {{1}}, {{2}})" : $"{Eq.ArrayReverse}({{0}})",
+                    null, invocation, method, context);
             case "Sort":
             {
                 context.UsedHelpers.Add(Eq.Import);

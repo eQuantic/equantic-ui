@@ -4,9 +4,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
 /// <summary>
-/// Converts LINQ .Reverse() to JavaScript [...array].reverse().
-/// Note: We use spread to avoid mutating the original array.
-/// - Reverse() -> [...array].reverse()
+/// Converts LINQ's <c>Reverse()</c>, a reversed COPY of the sequence, to <c>[...source].reverse()</c>, which
+/// leaves the source as it was. <c>List&lt;T&gt;.Reverse()</c> is not this: it reverses the list in place and
+/// answers nothing, and it is <see cref="Primitives.ListMethodStrategy"/>'s (#1076).
 /// </summary>
 public class ReverseStrategy : IConversionStrategy
 {
@@ -28,10 +28,6 @@ public class ReverseStrategy : IConversionStrategy
             if (context.SemanticHelper.IsLinqExtension(ms.ContainingType))
                 return true;
 
-            // Handle List<T>.Reverse() instance method
-            var containingType = ms.ContainingType.ToDisplayString();
-            if (containingType.StartsWith("System.Collections.Generic.List<"))
-                return true;
         }
 
         // Name decides ONLY where guessing is honest — see ConversionContext.CanGuess. Under an

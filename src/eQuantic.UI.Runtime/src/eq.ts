@@ -166,6 +166,7 @@ import {
   arrayFindLastIndex,
   arrayIndexOf,
   arrayLastIndexOf,
+  arrayReverse,
   arraySort,
   arraySortBy,
   binarySearch,
@@ -180,6 +181,7 @@ import {
   lastIndexOf as listLastIndexOf,
   listCapacity,
   listCopy,
+  listReverse,
   listSort,
   listSortBy,
   order,
@@ -566,6 +568,9 @@ export const $eq = {
     listSortBy,
     arraySort,
     arraySortBy,
+    /** `List<T>.Reverse` and `Array.Reverse`, in place, a range of them too (#1076). */
+    listReverse,
+    arrayReverse,
     binarySearch,
     /** `new List<T>(collection)`'s copy, and its refusal of a null collection (#726). */
     listCopy,

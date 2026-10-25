@@ -53,6 +53,16 @@ public class AppValueTypeImportTests
             """,
         // Inner is named by no syntax outside Outer: Outer's zero is built member by member, because
         // its constructor gives K more than its zero, and that zero constructs an Inner.
+        // An app's own StringBuilder, which the runtime's builder must not stand in for (Copilot on #1079).
+        ["StringBuilder.cs"] = "namespace App; public sealed class StringBuilder { public int N = 1; }",
+        ["Notes.cs"] = """
+            namespace App;
+            public sealed class Notes
+            {
+                public StringBuilder Draft = new StringBuilder();
+                public int Count() => Draft.N;
+            }
+            """,
         // Entry is named only by a tuple's slot in an empty list's annotation (Copilot on #1068).
         ["Entry.cs"] = "namespace App; public sealed class Entry { public int N = 1; }",
         ["Ledger.cs"] = """
@@ -228,6 +238,20 @@ public class AppValueTypeImportTests
 
         ts.Should().Contain("let rows: [Entry, number][] = [];");
         ts.Should().Contain("import { Entry } from \"./Entry\"");
+    }
+
+    /// <summary>An app's own class named StringBuilder is the app's (Copilot on #1079): the runtime's builder was
+    /// imported by its simple name, so a class that held the app's one imported the runtime's, and the app's own
+    /// module imported a binding that clashed with its declaration.</summary>
+    [Fact]
+    public void AnAppsOwnStringBuilder_IsTheApps()
+    {
+        var notes = TypeScriptOf("Notes");
+        var own = TypeScriptOf("StringBuilder");
+
+        notes.Should().Contain("import { StringBuilder } from \"./StringBuilder\"");
+        notes.Should().NotMatchRegex(@"import \{[^}]*\bStringBuilder\b[^}]*\} from ""@equantic/runtime""");
+        own.Should().NotMatchRegex(@"import \{[^}]*\bStringBuilder\b[^}]*\}");
     }
 
     [Fact]

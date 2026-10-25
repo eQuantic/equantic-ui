@@ -1,1 +1,3 @@
 #nullable enable
+const eQuantic.UI.Compiler.CodeGen.Eq.ListReverse = "$eq.collections.listReverse" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ArrayReverse = "$eq.collections.arrayReverse" -> string!

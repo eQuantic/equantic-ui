@@ -115,3 +115,9 @@ eQuantic.UI.Primitives.SheetTheme.DimmedOutline.get -> eQuantic.UI.Primitives.Co
 eQuantic.UI.Primitives.SheetTheme.DimmedOutline.init -> void
 eQuantic.UI.Primitives.TableViewCell.Glide.get -> eQuantic.UI.Primitives.MotionSpec?
 eQuantic.UI.Primitives.TableViewCell.Glide.init -> void
+eQuantic.UI.Primitives.GoogleFontAttribute
+eQuantic.UI.Primitives.GoogleFontAttribute.Family.get -> string!
+eQuantic.UI.Primitives.GoogleFontAttribute.GoogleFontAttribute(string! family, params eQuantic.UI.Primitives.FontWeight[]! weights) -> void
+eQuantic.UI.Primitives.GoogleFontAttribute.Italic.get -> bool
+eQuantic.UI.Primitives.GoogleFontAttribute.Italic.set -> void
+eQuantic.UI.Primitives.GoogleFontAttribute.Weights.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FontWeight>!

@@ -40,7 +40,7 @@ public class ListMethodStrategy : IExpressionIrStrategy
         "Add", "AddRange", "Insert", "InsertRange",
         "Remove", "RemoveAt", "RemoveRange", "RemoveAll", "Clear",
         "IndexOf", "LastIndexOf", "Find", "FindIndex", "FindLast", "FindLastIndex", "FindAll",
-        "Exists", "TrueForAll", "Sort", "ForEach", "GetRange", "CopyTo", "BinarySearch"
+        "Exists", "TrueForAll", "Sort", "ForEach", "GetRange", "CopyTo", "BinarySearch", "Reverse"
     };
 
     public bool CanConvert(SyntaxNode node, ConversionContext context)
@@ -59,6 +59,10 @@ public class ListMethodStrategy : IExpressionIrStrategy
         var symbol = context.SemanticHelper.GetSymbol(invocation);
         if (symbol is IMethodSymbol { ContainingType: { } declaring } && OfAList(declaring))
             return true;
+
+        // A Reverse no model binds is LINQ's, a reversed copy, as ReverseStrategy guesses it: a list's own,
+        // in place, is only ever the one the model says it is.
+        if (methodName == "Reverse") return false;
 
         // Name decides ONLY where guessing is honest — see ConversionContext.CanGuess. Under an
         // AUTHORITATIVE model, in-tree-but-unbindable is reported (EQ2006), never guessed.
@@ -216,6 +220,11 @@ public class ListMethodStrategy : IExpressionIrStrategy
                 }, list, invocation, method, context);
             case "Sort":
                 return Sort(invocation, method, list, element, context);
+            // In place, as .NET reverses a list, where it was LINQ's reversed copy, thrown away (#1076).
+            case "Reverse":
+                context.UsedHelpers.Add(Eq.Import);
+                return ParameterTemplate.Call(count == 2 ? $"{Eq.ListReverse}({{0}}, {{1}}, {{2}})" : $"{Eq.ListReverse}({{0}})",
+                    list, invocation, method, context);
             case "BinarySearch":
                 return BinarySearch(invocation, method, list, element, context);
         }

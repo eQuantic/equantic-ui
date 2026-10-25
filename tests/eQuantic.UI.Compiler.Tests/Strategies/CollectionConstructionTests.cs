@@ -154,8 +154,8 @@ public class CollectionConstructionTests
     /// <summary>
     /// A task held as a value is a promise (Copilot on #1068): the mapper's <c>void</c> is what a method
     /// returning one is awaited to, and pushing <c>Promise.resolve()</c> into a <c>void</c> slot failed the
-    /// type check. A name nothing can verify, a StringBuilder's, leaves the list to inference, as a declared
-    /// type degrades to <c>any</c>.
+    /// type check. A name nothing can verify, a Version's, leaves the list to inference, as a declared type
+    /// degrades to <c>any</c>.
     /// </summary>
     [Fact]
     public void ATaskIsAPromise_AndANameNothingVerifies_IsLeftToInference()
@@ -163,7 +163,7 @@ public class CollectionConstructionTests
         Convert("var jobs = new List<(System.Threading.Tasks.Task Work, int At)>();")
             .Should().Contain("let jobs: [Promise<void>, number][] = [];");
         Convert("var tasks = new List<System.Threading.Tasks.Task>();").Should().Contain("let tasks: Promise<void>[] = [];");
-        Convert("var builders = new List<System.Text.StringBuilder>();").Should().Contain("let builders = [];");
+        Convert("var versions = new List<System.Version>();").Should().Contain("let versions = [];");
     }
 
     private static string TypeScriptOf(string source, string type) =>
