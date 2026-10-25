@@ -84,8 +84,13 @@ internal static class OutParameters
                 : JsStatement.Block([]));
         var run = JsExpr.Call(JsExpr.ArrowBlock("", body with { Origin = owner }, converter.Layout, depth));
 
+        // The outs are assigned inside the arrow, which TypeScript cannot follow, so in TypeScript they are
+        // declared any, as every variable an arrow binds is (ExpressionVariableScanner): untyped, an out
+        // assigned an empty list read as an implicit any[] and failed the type check (TS7005, #1034).
         return JsStatement.Block([
-            .. declared.Length > 0 ? [JsStatement.Raw($"let {string.Join(", ", declared)};")] : Array.Empty<JsStatement>(),
+            .. declared.Length > 0
+                ? [JsStatement.Raw($"let {ExpressionVariableScanner.List(declared, converter.TypeAnnotations)};")]
+                : Array.Empty<JsStatement>(),
             JsStatement.Const("$r", run),
             JsStatement.Return(JsExpr.Opaque($"{{ $: $r, {string.Join(", ", carried)} }}")),
         ]) with { Origin = owner };

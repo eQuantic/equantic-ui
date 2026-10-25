@@ -13,6 +13,7 @@
   "CapabilityScope",
   "CellRef",
   "CodeCell",
+  "CodeChange",
   "CodeCollapse",
   "CodeCompletion",
   "CodeCompletionContext",

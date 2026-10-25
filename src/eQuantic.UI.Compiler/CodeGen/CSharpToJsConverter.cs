@@ -277,6 +277,9 @@ public class CSharpToJsConverter
     /// <summary>Turns TypeScript annotations on — see <see cref="ConversionContext.TypeAnnotations"/>.</summary>
     public void EmitTypeAnnotations(bool enabled) => _context.TypeAnnotations = enabled;
 
+    /// <summary>Whether the output is TypeScript — see <see cref="ConversionContext.TypeAnnotations"/>.</summary>
+    internal bool TypeAnnotations => _context.TypeAnnotations;
+
     /// <summary>See <see cref="ConversionContext.DesignMode"/> — off in every build that ships.</summary>
     public void EmitDesignOrigins(bool enabled) => _context.DesignMode = enabled;
 

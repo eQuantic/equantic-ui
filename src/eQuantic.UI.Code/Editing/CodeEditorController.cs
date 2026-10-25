@@ -12,8 +12,8 @@ namespace eQuantic.UI.Code;
 /// that wants to drive the editor from its own menu, its own key map or its own language server.
 /// </para>
 /// <para>
-/// The app owns an instance. Every mutation raises <see cref="Changed"/> with the <see cref="CodeEdit"/>
-/// that caused it, which is what a dirty flag, a language server and a diff all subscribe to —
+/// The app owns an instance. Every mutation raises <see cref="Changed"/> with the <see cref="CodeChange"/>
+/// that made it, which is what a dirty flag, a language server and a diff all subscribe to —
 /// never to keystrokes, because a paste and a refactor are edits nobody typed.
 /// </para>
 /// <para>
@@ -52,8 +52,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             _composition = null;
             Highlighter.Invalidate();
             History.Clear();
+            Diagnostics.Reset();
             _revealVersion++;
-            Changed?.Invoke(null);
+            Raise(new CodeChange([], Replaced: true), moved: false);
         }
     }
 
@@ -161,10 +162,15 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     public bool TabMovesFocus { get; set; }
 
     /// <summary>
-    /// Raised after every change, with the edit that caused it — null when the whole document was
-    /// replaced. THE event an IDE builds on.
+    /// Raised after every change, once, with the edits that made it (<see cref="CodeChange"/>): one for
+    /// a character typed, two for a line moved, and as many as it took back for an undo, in the order
+    /// made, each with the selection the change found and the one it left. THE event an IDE builds on.
+    /// The document is the change's result by the time it is raised. A change a listener makes while it
+    /// hears one is already in the document and is heard after it, by every listener, so a range read
+    /// from the document while a change is heard is ahead of the changes heard so far: the editor's own
+    /// problems follow each replacement the moment the document takes it, as its colours do.
     /// </summary>
-    public event Action<CodeEdit?>? Changed;
+    public event Action<CodeChange>? Changed;
 
     /// <summary>Raised when the caret or selection moved, however it moved.</summary>
     public event Action<CodeRange>? SelectionChanged;
@@ -742,20 +748,15 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         var removed = _document.TextIn(ordered);
         var before = _selection;
         var next = _document.Replace(ordered, text, out var caret);
-        var line = ordered.Start.Line;
-        var linesRemoved = ordered.End.Line - ordered.Start.Line;
-        var linesInserted = caret.Line - ordered.Start.Line;
 
         _document = next;
         _selection = new CodeRange(caret);
-        Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
-        WidthsChanged(line, linesInserted, linesRemoved);
         _revealVersion++;
         _desiredCell = -1;
         var edit = new CodeEdit(ordered, removed, next.TextIn(new CodeRange(ordered.Start, caret)), before,
             _selection, false);
-        Changed?.Invoke(edit);
-        SelectionChanged?.Invoke(_selection);
+        Took(edit);
+        Raise(new CodeChange([edit]));
         return new CodeRange(ordered.Start, caret);
     }
 
@@ -866,9 +867,6 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
         var before = _selection;
         var next = _document.Replace(ordered, text, out var caret);
-        var line = ordered.Start.Line;
-        var linesRemoved = ordered.End.Line - ordered.Start.Line;
-        var linesInserted = caret.Line - ordered.Start.Line;
 
         _document = next;
         _selection = after is { } left ? OnElementEdges(left) : new CodeRange(caret);
@@ -878,14 +876,91 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         // undo after pasting "x\ry" into "abc" left "a" and "ybc" (#600).
         var edit = new CodeEdit(ordered, removed, next.TextIn(new CodeRange(ordered.Start, caret)), before,
             _selection, typed);
-        History.Record(edit);
-        Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
-        WidthsChanged(line, linesInserted, linesRemoved);
-
-        Changed?.Invoke(edit);
-        SelectionChanged?.Invoke(_selection);
+        Took(edit);
         _desiredCell = -1;
+        // Inside a command's step, the edit is heard with the others once the step is made.
+        if (_step is { } step) step.Add(edit);
+        else
+        {
+            History.Record([edit]);
+            Raise(new CodeChange([edit]));
+        }
         return true;
+    }
+
+    /// <summary>The edits of the command being made while it makes several as ONE undo step (#1031); null
+    /// otherwise, when every edit is a step of its own.</summary>
+    private List<CodeEdit>? _step;
+
+    /// <summary>
+    /// Runs <paramref name="edits"/>, which make their edits through <see cref="Edit"/> one after another,
+    /// and records what they made as one undo step, which undo takes back last first. Each edit brings the
+    /// colours and the widths up to date as it is made, and <see cref="Changed"/> is raised once all are
+    /// made, with all of them: a listener that edits while it hears them makes its edit on the text the
+    /// step left, as a step of its own, where, raised in between, its edit moved the text the next edit's
+    /// range was taken from, and that edit deleted the wrong line. Answers what <paramref name="edits"/>
+    /// answers, or true once any edit is made; inside another step, it is part of that one.
+    /// </summary>
+    private bool AsOneStep(Func<bool> edits)
+    {
+        if (_step is not null) return edits();
+        var step = new List<CodeEdit>();
+        var before = _selection;
+        _step = step;
+        try
+        {
+            // An edit made is a step made, whatever the edits after it answered: the document changed.
+            return edits() || step.Count > 0;
+        }
+        finally
+        {
+            _step = null;
+            History.Record(step);
+            if (step.Count > 0) Raise(new CodeChange(Heard(step, before)));
+        }
+    }
+
+    /// <summary>The changes made and not heard yet, in the order made, while <see cref="Changed"/> is being
+    /// raised, and whether any of them moved the selection.</summary>
+    private readonly List<CodeChange> _unheard = [];
+    private bool _raising;
+    private bool _unheardMoved;
+
+    /// <summary>
+    /// Raises <see cref="Changed"/> with <paramref name="change"/>, and then, when <paramref name="moved"/>,
+    /// <see cref="SelectionChanged"/>, with the selection as it stands. A change a listener makes while it
+    /// hears one waits for it, and every listener hears it after it: raised at once, the listeners after
+    /// that one heard it before the change it answered, and carried a range through the two in the wrong
+    /// order.
+    /// </summary>
+    private void Raise(CodeChange change, bool moved = true)
+    {
+        _unheard.Add(change);
+        _unheardMoved = _unheardMoved || moved;
+        if (_raising) return;
+        _raising = true;
+        try
+        {
+            for (var i = 0; i < _unheard.Count; i++) Changed?.Invoke(_unheard[i]);
+        }
+        finally
+        {
+            _unheard.Clear();
+            _raising = false;
+        }
+        if (!_unheardMoved) return;
+        _unheardMoved = false;
+        SelectionChanged?.Invoke(_selection);
+    }
+
+    /// <summary><paramref name="made"/> as a listener hears them: each with the selection the command found,
+    /// <paramref name="before"/>, and the one it left, where each held the selection of the moment it was
+    /// made, which no listener saw, or the selection the history recorded for it, long gone.</summary>
+    private List<CodeEdit> Heard(IReadOnlyList<CodeEdit> made, CodeRange before)
+    {
+        var heard = new List<CodeEdit>();
+        foreach (var edit in made) heard.Add(edit with { SelectionBefore = before, SelectionAfter = _selection });
+        return heard;
     }
 
     /// <summary>Types text at the caret, replacing the selection — including a paste.</summary>
@@ -1503,10 +1578,32 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         // once the block passed it, and at the start of an empty last line it would leave that line out of
         // the next move.
         if (up ? first == 0 : _selection.End.Line == _document.LineCount - 1) return false;
-        var block = string.Join("\n", LinesOf(first, last));
-        return up
-            ? Edit(WholeLines(first - 1, last), block + "\n" + _document.Line(first - 1), false, SelectionMovedBy(-1))
-            : Edit(WholeLines(first, last + 1), _document.Line(last + 1) + "\n" + block, false, SelectionMovedBy(1));
+        // The line passed is the one written again, on the block's other side, and deleted where it was, as
+        // one step: the block's lines are never rewritten, so a problem on them travels with them, where one
+        // replacement over both took it to the replacement's ends (#1031). The later edit first, so the
+        // earlier one is made on text it did not move. Neither writes where the block's lines start or end,
+        // so a problem of no width there, a missing semicolon at a line's end, stays on them too: the passed
+        // line goes in at the start of the line after the block and comes out from the start of its own,
+        // with its line break, where written after the block's last line it took that problem along. Only at
+        // the document's end, with no line after the block, is it written there.
+        var after = SelectionMovedBy(up ? -1 : 1);
+        if (up)
+        {
+            var passed = _document.Line(first - 1);
+            var atEnd = last + 1 == _document.LineCount;
+            var at = atEnd ? new CodePosition(last, _document.Line(last).Length) : new CodePosition(last + 1, 0);
+            var written = atEnd ? "\n" + passed : passed + "\n";
+            return AsOneStep(() =>
+                Edit(new CodeRange(at), written, false, _selection)
+                && Edit(new CodeRange(new CodePosition(first - 1, 0), new CodePosition(first, 0)), string.Empty, false, after));
+        }
+        var below = _document.Line(last + 1);
+        var taken = last + 2 == _document.LineCount
+            ? new CodeRange(new CodePosition(last, _document.Line(last).Length), new CodePosition(last + 1, below.Length))
+            : new CodeRange(new CodePosition(last + 1, 0), new CodePosition(last + 2, 0));
+        return AsOneStep(() =>
+            Edit(taken, string.Empty, false, _selection)
+            && Edit(new CodeRange(new CodePosition(first, 0)), below + "\n", false, after));
     }
 
     /// <summary>
@@ -1722,27 +1819,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     {
         if (ReadOnly) return false;
         EndComposition();
-        var before = _selection;
-        var previous = _document;
-        var next = History.Undo(_document, out var selection, out var replaced, out var written);
-        if (next is null) return false;
-        _document = next;
-        _revealVersion++;
-        _selection = new CodeRange(next.Clamp(selection.Anchor), next.Clamp(selection.Focus));
-        _desiredCell = -1;
-        // One replacement, as an edit is: the colours and the widths follow the lines it touched,
-        // where both were thrown away and measured again over the whole file.
-        var line = replaced.Start.Line;
-        var linesInserted = written.End.Line - written.Start.Line;
-        var linesRemoved = replaced.End.Line - replaced.Start.Line;
-        Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
-        WidthsChanged(line, linesInserted, linesRemoved);
-        // The replacement it made, as any edit raises one: null is a document replaced whole, and a
-        // listener that carries a range through an edit (a problem's squiggle, a language server)
-        // could only start over after every undo.
-        Changed?.Invoke(new CodeEdit(replaced, previous.TextIn(replaced), next.TextIn(written), before,
-            _selection, false));
-        SelectionChanged?.Invoke(_selection);
+        if (History.Undo(_document, out var selection, out var made) is null) return false;
+        Replay(made, selection);
         return true;
     }
 
@@ -1750,28 +1828,48 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     {
         if (ReadOnly) return false;
         EndComposition();
+        if (History.Redo(_document, out var selection, out var made) is null) return false;
+        Replay(made, selection);
+        return true;
+    }
+
+    /// <summary>
+    /// Makes the replacements an undo or a redo made, one after another as the history made them, each
+    /// bringing the colours, the widths and the problems up to date (<see cref="Took"/>), where the colours
+    /// and the widths were thrown away and measured again over the whole file. Once all are made and the selection the step restores is in
+    /// place, they are raised as a step's edits are, one change, so a listener that carries a range through
+    /// an edit (a problem's squiggle, a language server) hears every replacement, where it could only start
+    /// over after every undo, and one that edits as it hears them edits the text the step left.
+    /// </summary>
+    private void Replay(IReadOnlyList<CodeEdit> made, CodeRange selection)
+    {
         var before = _selection;
-        var previous = _document;
-        var next = History.Redo(_document, out var selection, out var replaced, out var written);
-        if (next is null) return false;
-        _document = next;
+        foreach (var edit in made)
+        {
+            _document = _document.Replace(edit.Range, edit.InsertedText, out _);
+            Took(edit);
+        }
+        _selection = OnElementEdges(selection);
         _revealVersion++;
-        _selection = new CodeRange(next.Clamp(selection.Anchor), next.Clamp(selection.Focus));
         _desiredCell = -1;
-        // One replacement, as an edit is: the colours and the widths follow the lines it touched,
-        // where both were thrown away and measured again over the whole file.
-        var line = replaced.Start.Line;
-        var linesInserted = written.End.Line - written.Start.Line;
-        var linesRemoved = replaced.End.Line - replaced.Start.Line;
+        Raise(new CodeChange(Heard(made, before)));
+    }
+
+    /// <summary>
+    /// What every replacement brings up to date the moment the document takes it, an edit, a composition's
+    /// step, an undo and a redo alike: the colours and the widths of the lines it touched, and the problems,
+    /// which so describe the text as it stands at every moment, as the colours do (#1058). Carried only when
+    /// the change was heard, a problem a listener reported while one was being heard, against the text every
+    /// change so far had made, went through the changes still waiting to be heard a second time.
+    /// </summary>
+    private void Took(CodeEdit edit)
+    {
+        var line = edit.Range.Start.Line;
+        var linesInserted = edit.InsertedRange.End.Line - line;
+        var linesRemoved = edit.Range.End.Line - line;
         Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
         WidthsChanged(line, linesInserted, linesRemoved);
-        // The replacement it made, as any edit raises one: null is a document replaced whole, and a
-        // listener that carries a range through an edit (a problem's squiggle, a language server)
-        // could only start over after every undo.
-        Changed?.Invoke(new CodeEdit(replaced, previous.TextIn(replaced), next.TextIn(written), before,
-            _selection, false));
-        SelectionChanged?.Invoke(_selection);
-        return true;
+        Diagnostics.Carry(edit);
     }
 
     // ---- finding ------------------------------------------------------------------------------

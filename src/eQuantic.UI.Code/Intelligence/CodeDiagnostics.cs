@@ -110,27 +110,51 @@ public sealed class CodeDiagnostics
 
     // ---- what the editor did ----------------------------------------------------------------------
 
-    /// <summary>An edit carries every problem through it and asks again once typing pauses; a document
-    /// replaced whole drops them and asks at once.</summary>
-    private void Edited(CodeEdit? edit)
+    /// <summary>
+    /// Carries every problem through <paramref name="edit"/> the moment the document takes it, as the editor
+    /// brings its colours up to date (#1058): a problem reported or answered at any moment describes the text
+    /// as it stands then, and is never carried through an edit that text already holds. The problems shown
+    /// are carried too, and the change is heard (<see cref="Edited"/>) before <see cref="Changed"/> says so.
+    /// </summary>
+    internal void Carry(CodeEdit edit)
     {
-        if (edit is null)
-        {
-            _reported = [];
-            _answered.Clear();
-            Gather();
-            _ = Ask(wait: false);
-            return;
-        }
-        _reported = _reported.Select(problem => problem with { Range = edit.Carry(problem.Range) }).ToList();
+        _reported = Carried(_reported, edit);
         for (var i = 0; i < _answered.Count; i++)
         {
             var (provider, problems) = _answered[i];
-            _answered[i] = (provider, problems.Select(problem => problem with { Range = edit.Carry(problem.Range) }).ToList());
+            _answered[i] = (provider, Carried(problems, edit));
         }
-        Gather();
-        _ = Ask(wait: true);
+        var items = Carried(_items, edit);
+        if (Same(items, _items)) return;
+        _items = items;
+        _moved = true;
     }
+
+    /// <summary>Drops every problem the moment the document is replaced whole, a file opened.</summary>
+    internal void Reset()
+    {
+        _reported = [];
+        _answered.Clear();
+        if (_items.Count == 0) return;
+        _items = [];
+        _moved = true;
+    }
+
+    /// <summary>A change heard says what its edits did to the problems, which the edits carried as they were
+    /// made, and asks again once typing pauses; a document replaced whole asks at once.</summary>
+    private void Edited(CodeChange change)
+    {
+        Gather();
+        _ = Ask(wait: !change.Replaced);
+    }
+
+    /// <summary>Whether an edit moved the problems shown since <see cref="Changed"/> was last raised, which the
+    /// change that made it says once it is heard.</summary>
+    private bool _moved;
+
+    /// <summary><paramref name="problems"/> where they stand once <paramref name="edit"/> is made.</summary>
+    private static List<CodeDiagnostic> Carried(List<CodeDiagnostic> problems, CodeEdit edit) =>
+        problems.Select(problem => problem with { Range = edit.Carry(problem.Range) }).ToList();
 
     // ---- asking -----------------------------------------------------------------------------------
 
@@ -267,8 +291,9 @@ public sealed class CodeDiagnostics
         // of what was reported, a keystroke that moved none of them. A component builds again on this
         // event, so one raised for nothing costs a build per key, and a provider handed anew on every
         // build would be asked again by the build its own answer caused, without end.
-        if (Same(items, _items)) return;
+        if (Same(items, _items) && !_moved) return;
         _items = items;
+        _moved = false;
         Changed?.Invoke();
     }
 

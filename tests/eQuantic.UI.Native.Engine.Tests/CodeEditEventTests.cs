@@ -6,8 +6,8 @@ namespace eQuantic.UI.Native.Engine.Tests;
 
 /// <summary>
 /// What an edit tells the things that follow the text (a problem's squiggle, a language server): the
-/// edit every change raises, undo and redo included, and where a range stands after it
-/// (<see cref="CodeEdit.Carry"/>). Undo and redo raised null, which the event keeps for a document
+/// edits every change raises, undo and redo included, and where a range stands after one
+/// (<see cref="CodeEdit.Carry"/>). Undo and redo raised no edit, which a change keeps for a document
 /// replaced whole, so nothing could carry a range through them (#299).
 /// </summary>
 public class CodeEditEventTests
@@ -22,14 +22,13 @@ public class CodeEditEventTests
         var editor = new CodeEditorController("");
         editor.HandleText("a");
         editor.HandleText("b");
-        var raised = new List<CodeEdit?>();
+        var raised = new List<CodeChange>();
         editor.Changed += raised.Add;
 
         editor.Undo().Should().BeTrue();
 
-        var edit = raised.Should().ContainSingle().Which;
-        edit.Should().NotBeNull();
-        edit!.Range.Should().Be(R(0, 0, 2));
+        var edit = raised.Should().ContainSingle().Which.Edits.Should().ContainSingle().Which;
+        edit.Range.Should().Be(R(0, 0, 2));
         edit.RemovedText.Should().Be("ab");
         edit.InsertedText.Should().BeEmpty();
     }
@@ -41,28 +40,30 @@ public class CodeEditEventTests
         editor.HandleText("a");
         editor.HandleText("b");
         editor.Undo();
-        var raised = new List<CodeEdit?>();
+        var raised = new List<CodeChange>();
         editor.Changed += raised.Add;
 
         editor.Redo().Should().BeTrue();
 
-        var edit = raised.Should().ContainSingle().Which;
-        edit!.Range.Should().Be(new CodeRange(P(0, 0)));
+        var edit = raised.Should().ContainSingle().Which.Edits.Should().ContainSingle().Which;
+        edit.Range.Should().Be(new CodeRange(P(0, 0)));
         edit.RemovedText.Should().BeEmpty();
         edit.InsertedText.Should().Be("ab");
         edit.InsertedRange.Should().Be(R(0, 0, 2));
     }
 
     [Fact]
-    public void ADocumentReplacedWhole_StillRaisesNull()
+    public void ADocumentReplacedWhole_IsAChangeOfNoEdits()
     {
         var editor = new CodeEditorController("one");
-        var raised = new List<CodeEdit?>();
+        var raised = new List<CodeChange>();
         editor.Changed += raised.Add;
 
         editor.Document = CodeDocument.FromText("two");
 
-        raised.Should().ContainSingle().Which.Should().BeNull();
+        var change = raised.Should().ContainSingle().Which;
+        change.Replaced.Should().BeTrue();
+        change.Edits.Should().BeEmpty();
     }
 
     // ---- carrying a range -------------------------------------------------------------------------

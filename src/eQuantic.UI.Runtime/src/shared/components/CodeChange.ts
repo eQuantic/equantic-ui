@@ -1,0 +1,3 @@
+import { $eq, CodeEdit } from "../runtime-exports";
+
+export class CodeChange { declare edits: CodeEdit[]; declare replaced: boolean; constructor(edits: any = null, replaced: any = false) {this.edits = edits;this.replaced = replaced;} equals(o: unknown) { return o instanceof CodeChange && o.constructor === this.constructor && $eq.collections.sameItem(this.edits, o.edits) && $eq.equals(this.replaced, o.replaced); } with(patch: any): CodeChange { return $eq.withPatch(this, patch); } static $record = true; getHashCode(): number { return $eq.hash.combine(this.edits, this.replaced); } static get $hydration() { return { edits: [CodeEdit] }; } toString() { return $eq.text.record(this, 'CodeChange', ['Edits', 'Replaced']); } }

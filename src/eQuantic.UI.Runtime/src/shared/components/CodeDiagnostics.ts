@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeDiagnostic, CodeDocument, CodeEdit, CodeEditorController, CodePosition, CodeRange, ProviderRequest, TimeSpan, UiThread } from "../runtime-exports";
+import { $eq, CancellationToken, CancellationTokenSource, CodeChange, CodeDiagnostic, CodeDocument, CodeEdit, CodeEditorController, CodePosition, CodeRange, ProviderRequest, TimeSpan, UiThread } from "../runtime-exports";
 
 export class CodeDiagnostics {
     constructor(editor: CodeEditorController) {
@@ -13,6 +13,7 @@ export class CodeDiagnostics {
         this.delay = $eq.time.timeSpan.fromMilliseconds(500n);
         this.changed = null;
         this.failed = null;
+        this._moved = false;
         this._editor = editor;
         editor.changed = $eq.delegates.combine(editor.changed, this.edited.bind(this));
     }
@@ -28,6 +29,7 @@ export class CodeDiagnostics {
     delay!: TimeSpan;
     changed!: (() => void) | null;
     failed!: ((exception: Error) => void) | null;
+    _moved!: boolean;
 
     get items(): CodeDiagnostic[] {
         return this._items;
@@ -59,21 +61,33 @@ export class CodeDiagnostics {
         return next;
     }
 
-    edited(edit: CodeEdit | null) {
-        if (edit == null) {
-            this._reported = [];
-            this._answered.splice(0);
-            this.gather();
-            this.ask(false);
-            return;
-        }
-        this._reported = this._reported.map((problem) => $eq.withPatch(problem, { range: edit.carry(problem.range) })).slice();
+    carry(edit: CodeEdit) {
+        this._reported = CodeDiagnostics.carried(this._reported, edit);
         for (let i = 0; i < this._answered.length; i++) {
             let [provider, problems] = this._answered[i];
-            this._answered[i] = [provider, problems.map((problem) => $eq.withPatch(problem, { range: edit.carry(problem.range) })).slice()];
+            this._answered[i] = [provider, CodeDiagnostics.carried(problems, edit)];
         }
+        let items = CodeDiagnostics.carried(this._items, edit);
+        if (CodeDiagnostics.same(items, this._items)) return;
+        this._items = items;
+        this._moved = true;
+    }
+
+    reset() {
+        this._reported = [];
+        this._answered.splice(0);
+        if (this._items.length === 0) return;
+        this._items = [];
+        this._moved = true;
+    }
+
+    edited(change: CodeChange) {
         this.gather();
-        this.ask(true);
+        this.ask(!change.replaced);
+    }
+
+    static carried(problems: CodeDiagnostic[], edit: CodeEdit) {
+        return problems.map((problem) => $eq.withPatch(problem, { range: edit.carry(problem.range) })).slice();
     }
 
     async ask(wait: boolean) {
@@ -150,8 +164,9 @@ export class CodeDiagnostics {
             if (!this.providers.some((held) => (held === provider))) this._answered.splice(i, 1);
         }
         let items = [...[...this._reported, ...this._answered.flatMap((entry) => entry[1])]].sort(($a, $b) => { { const $k: ($element: typeof $a) => any = ((problem) => problem.range.start.line); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.start.column); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } { const $k: ($element: typeof $a) => any = ((problem) => (($0) => (({ 'hint': 0, 'information': 1, 'warning': 2, 'error': 3 })[$0] ?? $0))(problem.severity)); const $x = $k($a), $y = $k($b); if ($x < $y) return 1; if ($x > $y) return -1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.end.line); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.end.column); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } return 0; }).slice();
-        if (CodeDiagnostics.same(items, this._items)) return;
+        if (CodeDiagnostics.same(items, this._items) && !this._moved) return;
         this._items = items;
+        this._moved = false;
         this.changed?.();
     }
 
