@@ -108,8 +108,11 @@ internal sealed partial class WebLoweringVisitor
         return box;
     }
 
-    /// <summary>A cell, placed in its band's layer over the rows and columns it covers: from the band's
-    /// corner, less the scroll on each axis the band moves along.</summary>
+    /// <summary>A cell, or a mark, placed in its band's layer over the rows and columns it covers: from the
+    /// band's corner, less the scroll on each axis the band moves along, in double until it is written. The
+    /// grid's far rows are past what a float holds, their distance from the window's corner never is, so a
+    /// mark and its cell round alike. A mark's glide is the runtime's after-pass (TS twin: lowerTableCell,
+    /// and <c>table-viewports.ts</c>): the server's first pass has nothing to glide from.</summary>
     private HtmlElement LowerTableCell(TableViewport viewport, TableViewCell cell, bool inPinnedRow,
         bool inPinnedColumn, float pinnedAcross, float pinnedDown, TableOffset offset)
     {
@@ -121,15 +124,8 @@ internal sealed partial class WebLoweringVisitor
         var endColumn = Math.Clamp(cell.Column + Math.Max(1, cell.Columns), firstColumn, columns.Count);
         var top = rows.OffsetOf(firstRow);
         var left = columns.OffsetOf(firstColumn);
-        // A mark (TS twin: lowerTableCell) stands where the CELLS put it, and the scroll rides a transform of
-        // its own, whether it glides or not: a transition on its left and top then glides it when it moves to
-        // other cells, never when the grid scrolls under it, which carries it at once, and a glide turned on or
-        // off finds it where it stands.
-        var glide = cell.Mark ? cell.Glide : null;
-        var across = cell.Mark && !inPinnedColumn ? offset.Across : 0;
-        var down = cell.Mark && !inPinnedRow ? offset.Down : 0;
-        var x = inPinnedColumn ? left : left - pinnedAcross - (cell.Mark ? 0 : offset.Across);
-        var y = inPinnedRow ? top : top - pinnedDown - (cell.Mark ? 0 : offset.Down);
+        var x = inPinnedColumn ? left : left - pinnedAcross - offset.Across;
+        var y = inPinnedRow ? top : top - pinnedDown - offset.Down;
 
         var wrapper = new RealizedElement("div")
         {
@@ -143,15 +139,6 @@ internal sealed partial class WebLoweringVisitor
                 Height = TokenCss.Px((float)(rows.OffsetOf(endRow) - top)),
             },
         };
-        if (across != 0 || down != 0)
-            wrapper.Style.Transform = $"translate({TokenCss.Px((float)-across)}, {TokenCss.Px((float)-down)})";
-        if (glide is { } motion)
-        {
-            var timing = $"{motion.DurationMs}ms {TokenCss.Bezier(motion.Curve)}";
-            wrapper.Style.Transition = $"left {timing}, top {timing}, width {timing}, height {timing}";
-            // The stylesheet turns the glide off under the platform's reduced-motion setting.
-            wrapper.ClassName = "eq-glide";
-        }
         if (Lower(cell.Child, horizontalAxis: null) is { } child) wrapper.Children.Add(child);
         return Decorate(cell, wrapper)!;
     }

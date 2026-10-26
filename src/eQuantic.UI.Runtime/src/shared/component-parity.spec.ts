@@ -634,9 +634,10 @@ function canonical(node: HtmlNode): unknown {
     // viewport's is a third: the client's after-pass finds the element by it to drive its scroll, and
     // its cells by theirs to walk the Tab order row by row.
     // A sheet's and a code surface's are a fourth and a fifth: a focus request and a reveal find the surface
-    // by it after the render.
+    // by it after the render. A gliding mark's is a sixth: the table's after-pass finds the mark it glides
+    // by it, and the server's first pass has nothing to glide from.
     if (key === 'data-eq-scroll' || key === 'data-eq-inview' || key === 'data-eq-table' || key === 'data-eq-cell'
-      || key === 'data-eq-sheet' || key === 'data-eq-code')
+      || key === 'data-eq-sheet' || key === 'data-eq-code' || key === 'data-eq-glide')
       continue;
     const value = node.attributes[key];
     if (value !== undefined && value !== null) attrs[key] = normalize(key, value);

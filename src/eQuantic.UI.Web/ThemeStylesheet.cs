@@ -378,8 +378,6 @@ public static class ThemeStylesheet
         // A steady caret for anyone who asked the OS to stop things moving — it still says where
         // you are, which is the whole point of it.
         css.AppendLine("@media (prefers-reduced-motion: reduce) { .eq-code-surface:focus-within .eq-code-caret, .eq-sheet-surface:focus-within .eq-code-caret { animation: none; } }");
-        // A table's gliding mark (TableViewCell.Glide) jumps under reduced motion, its transition written inline.
-        css.AppendLine("@media (prefers-reduced-motion: reduce) { .eq-glide { transition: none !important; } }");
         // The input a code surface types through: a real textarea, at the caret — so an input
         // method's candidate window opens where the text goes, and a phone raises its keyboard —
         // that nobody sees and nothing points at. It holds no text: every keystroke that reaches

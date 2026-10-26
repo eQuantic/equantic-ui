@@ -266,6 +266,12 @@ the mark where it stands. A gliding mark SHALL be clipped and hidden by the pinn
   the same cell
 - **THEN** the mark is drawn over that cell, and nothing glides
 
+#### Scenario: A mark at a far row
+
+- **WHEN** the grid of 28-point rows is scrolled 28 000 001 points down and a gliding mark covers the
+  cell of row 1 000 001
+- **THEN** the mark is drawn over the very pixels of that cell, on the web as on Photon
+
 #### Scenario: Reduced motion
 
 - **WHEN** the platform asks for reduced motion and the same mark moves from (2, 2) to (2, 3)

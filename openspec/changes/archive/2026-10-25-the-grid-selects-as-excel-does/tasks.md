@@ -76,12 +76,14 @@
 
 - [x] 6.1 `TableViewCell.Key` and `TableViewCell.Glide` (`MotionSpec?`) in the vocabulary and the
       runtime's node twin, with doc comments; declare the `PublicAPI` lines; verify the primitives fixture
-- [x] 6.2 The web lowers a keyed gliding mark as one element across renders with a transition on its
-      left, top, width and height, off under `prefers-reduced-motion`; verify `table-viewport-web.spec.ts`
-      cases for a glide, a new mark and reduced motion, and the C# lowering's parity case
-- [x] 6.3 Photon's table emit interpolates a keyed gliding mark by the frame's time and reports active
-      motion while it glides, snapping under reduced motion; verify `TableViewportGlideTests` for the spec's
-      three scenarios at 0, 100 and 200 milliseconds
+- [x] 6.2 The web places a mark as a cell, the scroll in its left and top, and the table's after-pass
+      glides a keyed mark moved to other cells by its distance in the grid and its size, at once under
+      `prefers-reduced-motion`; verify `table-viewport-web.spec.ts` cases for a glide, a scroll, a new mark,
+      reduced motion, a glide turned off and on, a retarget in flight and a far row, and the C# lowering's
+      parity case
+- [x] 6.3 Photon's table layout glides a keyed mark's edges by the frame's time, measures it at the size it
+      has reached, and reports active motion while it glides, snapping under reduced motion; verify
+      `TableViewportGlideTests` for the spec's scenarios at 0, 100 and 200 milliseconds
 - [x] 6.4 The active ring is keyed `cursor` with `Motion.State` (the base duration); verify a Photon frame mid-glide and the
       spec's two cursor scenarios, and in Chromium that → glides and the reduced-motion emulation jumps
 
