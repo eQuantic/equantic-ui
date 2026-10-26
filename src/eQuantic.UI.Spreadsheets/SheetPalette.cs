@@ -20,7 +20,12 @@ internal readonly record struct SheetPalette(
     ColorToken ActiveOutline,
     ColorToken FillPreview,
     ColorToken FillHandle,
-    ColorToken EntrySelection)
+    ColorToken EntrySelection,
+    ColorToken RangeOutline,
+    ColorToken HeaderWholeBackground,
+    ColorToken HeaderWholeText,
+    ColorToken DimmedRangeFill,
+    ColorToken DimmedOutline)
 {
     public static SheetPalette Of(IAppTheme theme)
     {
@@ -38,6 +43,11 @@ internal readonly record struct SheetPalette(
             slot?.ActiveOutline ?? theme.FocusRing,
             slot?.FillPreview ?? theme.FocusRing,
             slot?.FillHandle ?? theme.FocusRing,
-            slot?.EntrySelection ?? theme.Selection);
+            slot?.EntrySelection ?? theme.Selection,
+            slot?.RangeOutline ?? theme.FocusRing,
+            slot?.HeaderWholeBackground ?? theme.FocusRing,
+            slot?.HeaderWholeText ?? theme.TextInverse,
+            slot?.DimmedRangeFill ?? theme.SurfaceHighlight.WithOpacity(0.3f),
+            slot?.DimmedOutline ?? theme.BorderStrong);
     }
 }

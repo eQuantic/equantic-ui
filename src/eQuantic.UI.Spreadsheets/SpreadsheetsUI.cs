@@ -28,4 +28,6 @@ public static class SpreadsheetsUI
     public static Spreadsheets.FormulaBar FormulaBar(SheetController controller) => new(controller);
 
     public static Spreadsheets.NameBox NameBox(SheetController controller) => new(controller);
+
+    public static Spreadsheets.StatusBar StatusBar(SheetController controller) => new(controller);
 }

@@ -34,6 +34,12 @@ export interface CurveValue {
   y2: number;
 }
 
+/** The C# `MotionSpec` as it crosses in a node: a duration and the curve it runs on. */
+export interface MotionSpecValue {
+  durationMs: number;
+  curve: CurveValue;
+}
+
 /** `SizeKind` transpiles to camelCase member strings. */
 // Re-exported so every importer of './nodes' keeps the name it always had, and IMPORTED because a
 // re-export alone does not bring a name into this module's own scope.
@@ -688,6 +694,8 @@ export interface TableViewCellNode extends VisualNodeValue {
   rows: number;
   columns: number;
   mark: boolean;
+  /** How a keyed mark moves to another range (C# `TableViewCell.Glide`), or null to stand at once. */
+  glide?: MotionSpecValue | null;
 }
 
 export interface TableViewportNode extends VisualNodeValue {

@@ -345,6 +345,24 @@ public class TableViewportTests
     }
 
     [Fact]
+    public void AKeyedMark_NamesEachPieceByItsBand()
+    {
+        // A gliding mark keeps the same band's piece from build to build however many bands it crosses, so
+        // a piece never glides from another band's rectangle (#984).
+        var tally = new Tally();
+        var cursor = new TableViewCell(0, 1, new Box(new BoxStyle { BorderWidth = 2 }), mark: true)
+        {
+            Rows = 6,
+            Key = "cursor",
+        };
+        var host = Host(Table(tally, marks: [cursor]), 900, 600, tally);
+        host.ScrollBy(450, 300, 0, 84, stepped: false);
+        Settle(host);
+
+        Cells(host, marks: true).Select(p => p.Cell.Key).Should().BeEquivalentTo("cursor/pb", "cursor/bb");
+    }
+
+    [Fact]
     public void ARevealInARowThatGivesTheTableLessThanItFirstMeasured_StillShowsTheCell()
     {
         var tally = new Tally();

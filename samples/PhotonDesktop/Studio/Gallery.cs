@@ -753,13 +753,15 @@ public static class Gallery
             + "Click a cell and type (Excel's replace-and-go), F2 edits in place, ⌥↩ breaks a line, Enter "
             + "commits stepping down, F5 goes to a cell, drag past an edge to scroll, drag a header separator "
             + "to resize, ⌘C/⌘V speak TSV, ⌘Z undoes."));
-        // Excel's layout: the name box and the formula bar over the grid, three views of one controller.
+        // Excel's layout: the name box and the formula bar over the grid and the status bar under it, four
+        // views of one controller.
         var bars = Row(Space.S2);
         bars.Add(NameBox(sheet));
         bars.Add(new Flexible(FormulaBar(sheet), 1));
         column.Add(bars);
         column.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fixed(420) },
             Spreadsheet(sheet, width: SizeValue.Fill, height: SizeValue.Fill)));
+        column.Add(StatusBar(sheet));
         return Section(theme, "Spreadsheet", column);
     }
 

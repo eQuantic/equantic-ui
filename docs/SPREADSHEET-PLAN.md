@@ -67,16 +67,16 @@ both, not merely equal.
 | capability | Excel | Sheets | now | slice | further |
 |---|---|---|---|---|---|
 | Click, drag, Shift+click, Shift+arrows, ⌘/Ctrl+Shift+arrows | ✓ | ✓ | ✓ | — | |
-| Header click, header drag, Shift+click on headers | ✓ | ✓ | click only | 2 | |
-| ⌘/Ctrl+click: several ranges at once | ✓ | ✓ | ✗ | 2 | |
-| Shift+Space row, Ctrl+Space column; ⌘A current region, then the sheet | ✓ | ✓ | ⌘A sheet only | 2 | |
-| PageUp/PageDown, Alt+PageUp/PageDown, Ctrl+Backspace (show the active cell) | ✓ | ✓ | ✗ | 2 | |
-| Ctrl+End goes to the last USED cell | ✓ | ✓ | ✗ D10 | 2 | |
-| Enter after a Tab run returns to the column the run began in | ✓ | ✓ | ✗ | 2 | |
+| Header click, header drag, Shift+click on headers | ✓ | ✓ | click only | 2a | |
+| ⌘/Ctrl+click: several ranges at once | ✓ | ✓ | ✗ | 2a | |
+| Shift+Space row, Ctrl+Space column; ⌘A current region, then the sheet | ✓ | ✓ | ⌘A sheet only | 2a | |
+| PageUp/PageDown, Alt+PageUp/PageDown, Ctrl+Backspace (show the active cell) | ✓ | ✓ | ✗ | 2a | |
+| Ctrl+End goes to the last USED cell | ✓ | ✓ | ✗ D10 | 2a | |
+| Enter after a Tab run returns to the column the run began in | ✓ | ✓ | ✗ | 2a | |
 | Go To (F5, Ctrl+G) and the name box | ✓ | ✓ | ✗ | 1 | |
-| A range drawn as one outlined rectangle; header emphasis; dimmed when unfocused | ✓ | ✓ | per-cell fill | 2 | |
-| The cell cursor glides between cells | ✓ (365) | — | ✗ | 2 | the theme's motion tokens, off under reduced motion |
-| Status bar: Sum, Average, Count of the selection | ✓ | ✓ | ✗ | 2 | a component of its own, placed by the app |
+| A range drawn as one outlined rectangle; header emphasis; dimmed when unfocused | ✓ | ✓ | per-cell fill | 2a | |
+| The cell cursor glides between cells | ✓ (365) | — | ✗ | 2a | the theme's motion tokens, off under reduced motion |
+| Status bar: Sum, Average, Count of the selection | ✓ | ✓ | ✗ | 2a | a component of its own, placed by the app |
 
 ### Editing a cell
 
@@ -147,7 +147,7 @@ both, not merely equal.
 | capability | Excel | Sheets | now | slice | further |
 |---|---|---|---|---|---|
 | Touch: tap selects, a drag scrolls, a long press selects, handles stretch the range, double tap edits | ✓ | ✓ | ✗ D6 | 0–3 | |
-| Screen readers: grid, rows, cells, the active cell and its value announced | ✓ | ✓ | ✗ D17 | 2 | |
+| Screen readers: grid, rows, cells, the active cell and its value announced | ✓ | ✓ | ✗ D17 | 2b | |
 | The keyboard can leave the grid (WCAG 2.1.2) | ✓ | ✓ | ✗ #732 | 1 | |
 | One grid on the web and in a native window | — | — | ✓ | all | write-once: the same engine and the same tests on both |
 
@@ -296,7 +296,8 @@ adds: accessibility and touch are not a slice at the end.
 | 0a | [#982](https://github.com/eQuantic/equantic-ui/issues/982) | The two-dimensional viewport with pinned bands in the vocabulary, on both realizers: lazy on both axes, offsets out, a rectangle revealed in, the unbounded-axis rule; the cell key a `long` | D1 (the rule), D18 |
 | 0b | [#995](https://github.com/eQuantic/equantic-ui/issues/995) | `Spreadsheet` rebuilt on it, in the family's own assembly: pinned headers, reveal and autoscroll, the overlay layer, the widening row numbers, its theme slot, touch scrolling on the web | D1–D4, D6 (scroll by touch) |
 | 1 | [#983](https://github.com/eQuantic/equantic-ui/issues/983) | The text door and the cell editor: the code surface's input door, caret and selection in the cell, Enter and Edit modes, line breaks, the editor growing over its neighbours, the formula bar and the name box as components of their own, Go To, Ctrl+Enter, the date and time chords, Backspace that clears and edits, Tab released by Escape | D5, D12, D15 |
-| 2 | [#984](https://github.com/eQuantic/equantic-ui/issues/984) | Selection and navigation complete: several ranges, header drags and Shift+clicks, row and column chords, the page chords, Ctrl+End, the Tab-Enter column; the range as one outlined rectangle, header emphasis, unfocused dimming, the gliding cursor; the status bar component; grid semantics and announcements | D10, D13, D14, D17 |
+| 2a | [#984](https://github.com/eQuantic/equantic-ui/issues/984) | Selection and navigation complete: several ranges, header drags and Shift+clicks, row and column chords, the page chords, Ctrl+End, the Tab-Enter column; the range as one outlined rectangle, header emphasis, unfocused dimming, the gliding cursor; the status bar component | D10, D13, D14 |
+| 2b | [#1081](https://github.com/eQuantic/equantic-ui/issues/1081) | The grid read aloud: grid semantics and announcements, with the accessibility contract a code surface needs (#1078) | D17 |
 | 3 | [#985](https://github.com/eQuantic/equantic-ui/issues/985) | Commands and structure: the command registry and the keymap as data; context menus; insert and delete; hide and unhide; resize several at once, the guide line and its tooltip, fit to content; reorder by header drag; long press on touch | D11, D16 (fit) |
 | 4 | [#986](https://github.com/eQuantic/equantic-ui/issues/986) | Clipboard and moving cells: HTML in and out, marching ants, cut that moves on paste, a paste that fills the selection, paste values and transposed, dragging a selection's border to move, copy or insert | D9 |
 | 5 | [#987](https://github.com/eQuantic/equantic-ui/issues/987) | Typed values: the value model, parsing in the app's culture, alignment, spilling text, `###`; fill series, the double-clicked fill handle, the fill dragged back; AutoComplete | D7, D8, D16 (fill) |
@@ -382,7 +383,40 @@ Each slice proposes, implements and archives its change in its own pull request.
   zero is typed without the `undefined` it starts as
   ([#1065](https://github.com/eQuantic/equantic-ui/issues/1065)), and Photon lets Tab walk out of a
   modal layer ([#1066](https://github.com/eQuantic/equantic-ui/issues/1066)).
-- **2** ([#984](https://github.com/eQuantic/equantic-ui/issues/984)) is next.
+- **2a, delivered (2026-10-25, [#984](https://github.com/eQuantic/equantic-ui/issues/984)).** Slice 2
+  was split with Edgar: the grid read aloud (D17) is 2b,
+  [#1081](https://github.com/eQuantic/equantic-ui/issues/1081). The selection is a list of ranges
+  (`SheetController.Ranges`, the active one last, which `Selection` is): a ⌘/Ctrl press or drag adds
+  one, Shift+F8's add mode adds without the modifier, copy, cut, paste, the fill chords and the fill
+  handle act on the active range and Delete and Ctrl+Enter on every range. The headers are plain boxes
+  the engine reads with their modifiers (`SheetController.HeaderAt`): a press selects the band, a drag
+  stretches it, Shift stretches from the anchor's band, ⌘/Ctrl adds it, and the resize grips stay
+  draggable (D14 closed). Excel's chords in both keyboard traditions: Shift+Space, Ctrl+Space (⌃Space),
+  ⌘A to the current region then the sheet, Ctrl+End to the last cell in use (D10 closed), Alt+PageDown
+  and PageUp, Ctrl+Backspace, Ctrl+., Ctrl+Y (D13 closed), and the Tab-Enter column; the macOS shell
+  now offers a key to the app before the input method while nothing is marked, as every other shell
+  did, so Shift+Space selects there. Each range is drawn as one outlined rectangle with the active cell
+  unfilled, a header is emphasized for its band and strongly for a whole row or column, the selection
+  dims while the grid does not hold the keyboard, and the cell cursor glides (`TableViewCell.Key` and
+  `Glide`) and jumps under reduced motion. `StatusBar(controller)` joins the formula bar and the name
+  box: the Sum, the Average and the Count of the cells in use, as Excel's General writes them, in the page's language
+  and culture. Found on the way and fixed here: the active cell sat at the end a drag or Shift moved,
+  where Excel keeps it at the anchor; and a number could not be read in the page's culture in the
+  browser (EQ2108), so `7,01` did not sum on a pt-BR page
+  ([#1087](https://github.com/eQuantic/equantic-ui/issues/1087), with
+  [#908](https://github.com/eQuantic/equantic-ui/issues/908)). Proved in Chromium on the dashboard's
+  `/sheet` (headers, two ranges, the dimming, the glide and its reduced-motion jump, the Portuguese
+  sums) and in a PhotonDesktop window driven through the macOS shell's input client (Shift+Space, a
+  dead key and a Japanese composition in the sheet, a text field and the code editor, the status bar).
+  Benched over Excel's 1 048 576 rows by 100 columns, the whole sheet selected and a hundred thousand cells
+  in use: the summary costs 13 ms in .NET and 83 ms in the runtime (2.6 s and 10.8 s when it walked the
+  selection), a key that moves nothing reads it from the cache, and a drag over a million cells in use
+  reads what the range covers. Found and filed: a resize
+  grip on the web takes the keyboard from the sheet
+  ([#1092](https://github.com/eQuantic/equantic-ui/issues/1092)), and in the dashboard a status bar
+  under the grid sits below the fold because the grid takes the scroller's whole extent
+  ([#1006](https://github.com/eQuantic/equantic-ui/issues/1006)).
+- **2b** ([#1081](https://github.com/eQuantic/equantic-ui/issues/1081)) is next.
 
 ## Fenced, on purpose
 

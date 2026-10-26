@@ -129,7 +129,7 @@ public class SheetSurfaceModelTests
         sheet.Selecting.Should().BeFalse();
 
         sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 1), new CellRef(3, 3)));
-        sheet.ActiveCell.Should().Be(new CellRef(3, 3));
+        sheet.ActiveCell.Should().Be(new CellRef(1, 1), "the cell the drag began on stays active");
         model.HandlePointer(PointerPhase.Move, CenterOf(5, 5), KeyModifiers.None, 1, PointerKind.Mouse)
             .Should().BeFalse("once the press lifts, a move is a hover");
     }

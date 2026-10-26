@@ -31,6 +31,11 @@ public sealed class SheetDocument
     /// spans read the overrides again only when one happened.</summary>
     internal int SizeVersion { get; private set; }
 
+    /// <summary>Counts every change of a cell's value and every insert or delete that moves values, so what is
+    /// read from the values (the last cell in use, the status bar's sums) is read again only when one
+    /// happened. A write that leaves the value as it was counts nothing.</summary>
+    public int Version { get; private set; }
+
     internal IReadOnlyDictionary<int, float> RowHeights => _rowHeights;
 
     internal IReadOnlyDictionary<int, float> ColWidths => _colWidths;
@@ -56,8 +61,10 @@ public sealed class SheetDocument
     /// </summary>
     public void SetCell(CellRef cell, string value)
     {
+        if (GetCell(cell) == value) return;
         if (value.Length == 0) _cells.Remove(cell.Key);
         else _cells[cell.Key] = value;
+        Version++;
     }
 
     public float RowHeight(int row) =>
@@ -124,6 +131,7 @@ public sealed class SheetDocument
         ShiftSizes(_rowHeights, atRow, delta);
         Rows = Math.Max(1, Rows + delta);
         SizeVersion++;
+        Version++;
         return removed;
     }
 
@@ -154,6 +162,7 @@ public sealed class SheetDocument
         ShiftSizes(_colWidths, atCol, delta);
         Cols = Math.Max(1, Math.Min(Cols + delta, CellRef.MaxCols));
         SizeVersion++;
+        Version++;
         return removed;
     }
 

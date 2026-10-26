@@ -49,4 +49,19 @@ public sealed record SheetTheme
     /// <summary>The band under the text selected inside an entry: in the cell's editor, the formula bar
     /// and the name box.</summary>
     public ColorToken? EntrySelection { get; init; }
+
+    /// <summary>The outline around each selected range.</summary>
+    public ColorToken? RangeOutline { get; init; }
+
+    /// <summary>A header's background when a range covers its whole column or row: the strong emphasis.</summary>
+    public ColorToken? HeaderWholeBackground { get; init; }
+
+    /// <summary>A header's text when a range covers its whole column or row.</summary>
+    public ColorToken? HeaderWholeText { get; init; }
+
+    /// <summary>The ranges' fill while the grid does not hold the keyboard.</summary>
+    public ColorToken? DimmedRangeFill { get; init; }
+
+    /// <summary>The ranges' outline and the active cell's while the grid does not hold the keyboard.</summary>
+    public ColorToken? DimmedOutline { get; init; }
 }

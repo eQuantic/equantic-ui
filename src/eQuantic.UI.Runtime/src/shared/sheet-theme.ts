@@ -21,6 +21,11 @@ export class SheetTheme {
   fillPreview: ColorToken | null = null;
   fillHandle: ColorToken | null = null;
   entrySelection: ColorToken | null = null;
+  rangeOutline: ColorToken | null = null;
+  headerWholeBackground: ColorToken | null = null;
+  headerWholeText: ColorToken | null = null;
+  dimmedRangeFill: ColorToken | null = null;
+  dimmedOutline: ColorToken | null = null;
 
   constructor(config?: Partial<SheetTheme>) {
     if (config) Object.assign(this, config);

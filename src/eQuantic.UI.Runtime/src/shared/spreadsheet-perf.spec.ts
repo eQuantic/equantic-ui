@@ -1,7 +1,9 @@
 /**
  * What a spreadsheet of 100 000 rows by 100 columns costs on the web: a keystroke, which builds the
- * sheet again, lowers it and reconciles the window, and a scroll step inside the cells already built,
- * which moves the bands' layers and lowers nothing. The ceilings are an order of magnitude loose, as
+ * sheet again, lowers it and reconciles the window, a scroll step inside the cells already built,
+ * which moves the bands' layers and lowers nothing, and the status bar's summary of the whole sheet
+ * selected, Excel's 1 048 576 rows by 100 columns over a hundred thousand cells in use, which a key that
+ * moves nothing reads from the cache. The ceilings are an order of magnitude loose, as
  * Photon's harness keeps its own (SpreadsheetPerfTests), because CI machines are shared; what they catch
  * is a sheet that lowers on every step, or builds what it does not show.
  */
@@ -14,6 +16,8 @@ import { SizeValue } from './value-types';
 
 const KEYSTROKE_CEILING_MS = 150;
 const STEP_CEILING_MS = 5;
+const SUMMARY_CEILING_MS = 3000;
+const CACHED_CEILING_MS = 5;
 
 /** The frames the runtime asks for, run when the spec says: a flush timed by itself, with no wait. */
 const frames: FrameRequestCallback[] = [];
@@ -134,5 +138,28 @@ describe('a spreadsheet of 100 000 × 100 on the web', () => {
     expect(after.length).toBe(before.length);
     expect(after.every((cell, index) => cell === before[index]), 'a step inside the built cells lowers none').toBe(true);
     expect(each, 'a step inside the window only moves layers').toBeLessThan(STEP_CEILING_MS);
+  });
+
+  it('sums the cells in use with the whole sheet selected, and reads the sum again from the cache', () => {
+    // A hundred thousand cells in use under Excel's rows: the summary reads them, never the sheet's hundred
+    // million, which a summary walking the selection read in 10.8 s here.
+    const sheet = new SheetController(1_048_576, 100);
+    for (let row = 0; row < 100_000; row++) sheet.document.setCell(new CellRef(row, 0), '1.5');
+    sheet.selectAll();
+
+    const started = performance.now();
+    const summary = sheet.summary;
+    const took = performance.now() - started;
+    sheet.handleKey('Backspace', 4, 'standard', null);
+    const again = performance.now();
+    const cached = sheet.summary;
+    const tookAgain = performance.now() - again;
+
+    console.log(`web: the summary of the whole sheet over 100,000 cells in use: ${took.toFixed(1)} ms, again ${tookAgain.toFixed(3)} ms (alarm ${SUMMARY_CEILING_MS} ms)`);
+    expect(summary.count).toBe(100_000);
+    expect(summary.sum?.toString()).toBe('150000.0');
+    expect(cached, 'a key that moved nothing answers the summary it kept').toBe(summary);
+    expect(took, 'the summary reads the cells in use, never the sheet').toBeLessThan(SUMMARY_CEILING_MS);
+    expect(tookAgain, 'nothing moved, so nothing is read again').toBeLessThan(CACHED_CEILING_MS);
   });
 });

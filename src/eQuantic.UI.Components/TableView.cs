@@ -162,8 +162,9 @@ public sealed class TableView : StatefulComponent
 
     /// <summary>A mark, one piece per band it reaches: the viewport draws a cell in the band of its first
     /// row and column, so a range that crosses a band's edge is cut there. Each piece is keyed by the
-    /// mark's place in <see cref="Marks"/> and its own, so it keeps its element while the window, and
-    /// with it the number of cells before it, changes.</summary>
+    /// mark's own key, or its place in <see cref="Marks"/> when it has none, and its own, so it keeps its
+    /// element while the window, and with it the number of cells before it, changes; a keyed mark keeps it
+    /// however many marks come before it, which is what lets it glide (<see cref="TableViewCell.Glide"/>).</summary>
     private static void AddMark(TableViewport viewport, TableViewCell mark, int index, int pinnedRows,
         int pinnedColumns)
     {
@@ -178,7 +179,12 @@ public sealed class TableView : StatefulComponent
                 {
                     Rows = rowTo - rowFrom,
                     Columns = columnTo - columnFrom,
-                    Key = "mark:" + index + "/" + piece,
+                    // A keyed mark's piece is named by the band it is drawn in, so the piece that glides is the
+                    // same band's from one build to the next however many bands the mark crosses.
+                    Key = mark.Key is { } key
+                        ? key + "/" + (rowFrom < pinnedRows ? "p" : "b") + (columnFrom < pinnedColumns ? "p" : "b")
+                        : "mark:" + index + "/" + piece,
+                    Glide = mark.Glide,
                 });
                 piece++;
             }

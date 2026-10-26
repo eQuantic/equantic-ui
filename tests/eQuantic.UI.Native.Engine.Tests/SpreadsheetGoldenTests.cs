@@ -37,6 +37,9 @@ public class SpreadsheetGoldenTests
             PhotonTheme.Instance, mode, 460, 260)
         {
             SmoothScroll = false,
+            // A golden is the resting picture: the cell cursor's glide is pinned frame by frame elsewhere
+            // (SpreadsheetComponentTests, TableViewportGlideTests).
+            ReducedMotion = true,
         };
         host.RenderFrame(new DisplayListBuilder());
         host.RenderFrame(new DisplayListBuilder(), 16);
@@ -64,7 +67,9 @@ public class SpreadsheetGoldenTests
     public void SelectionBand_Ring_AndFillHandle()
     {
         var (host, sheet) = Open();
-        sheet.Selection = new SheetRange(new CellRef(1, 0), new CellRef(3, 1));
+        PressCell(host, sheet, new CellRef(0, 0));
+        // A2:B4 drawn up from B4, which is active, beside the fill handle.
+        sheet.Selection = new SheetRange(new CellRef(3, 1), new CellRef(1, 0));
         Changed(host);
         host.RenderFrame(new DisplayListBuilder(), 50);
 
@@ -93,7 +98,8 @@ public class SpreadsheetGoldenTests
     public void HeaderBands_ShadeWithTheSelection()
     {
         var (host, sheet) = Open();
-        sheet.SelectCols(1, 1);
+        PressCell(host, sheet, new CellRef(0, 0));
+        sheet.SelectCols(1, 1, add: false);
         Changed(host);
         host.RenderFrame(new DisplayListBuilder(), 50);
         sheet.Selection.BottomRow.Should().Be(sheet.Document.Rows - 1);
@@ -211,7 +217,9 @@ public class SpreadsheetGoldenTests
     public void SelectionBand_Ring_AndFillHandle_InTheDark()
     {
         var (host, sheet) = Open(ThemeMode.Dark);
-        sheet.Selection = new SheetRange(new CellRef(1, 0), new CellRef(3, 1));
+        PressCell(host, sheet, new CellRef(0, 0));
+        // A2:B4 drawn up from B4, which is active, beside the fill handle.
+        sheet.Selection = new SheetRange(new CellRef(3, 1), new CellRef(1, 0));
         Changed(host);
         host.RenderFrame(new DisplayListBuilder(), 50);
 
@@ -225,7 +233,8 @@ public class SpreadsheetGoldenTests
     public void ARangeScrolledUnderTheHeaderRow_IsCutThere()
     {
         var (host, sheet) = Open();
-        sheet.Selection = new SheetRange(new CellRef(1, 0), new CellRef(5, 1));
+        PressCell(host, sheet, new CellRef(0, 0));
+        sheet.Selection = new SheetRange(new CellRef(5, 1), new CellRef(1, 0));
         Changed(host);
         host.RenderFrame(new DisplayListBuilder(), 50);
         var region = host.LastFrame!.TableRegions.Single();
@@ -238,5 +247,112 @@ public class SpreadsheetGoldenTests
         sheet.CellAt(new Point(Spreadsheet.HeaderWidth + 10, Spreadsheet.HeaderHeight + 1)).Should().Be(new CellRef(3, 0));
 
         Render(host, "sheet-band-under-header", 82);
+    }
+
+    /// <summary>The boxes the table's marks draw, with where they stand: the fills, the outlines and the ring.</summary>
+    private static List<(Rect Bounds, BoxStyle Style)> MarkBoxes(PhotonHost host)
+    {
+        var boxes = new List<(Rect, BoxStyle)>();
+        void Walk(Framework.LayoutNode node)
+        {
+            if (node.Source is TableViewCell { Mark: true } && node.Children.Count > 0 && node.Children[0].Source is Box box)
+                boxes.Add((node.Children[0].Bounds, box.Style));
+            foreach (var child in node.Children) Walk(child);
+        }
+        Walk(host.LastFrame!.Root);
+        return boxes;
+    }
+
+    /// <summary>A cell's rectangle on the surface, the grid unscrolled.</summary>
+    private static Rect CellBounds(SheetController sheet, int row, int col) =>
+        new(1 + sheet.Grid.HeaderWidth + col * 96f, 1 + sheet.Grid.HeaderHeight + row * 28f, 96f, 28f);
+
+    [Fact]
+    public void ARange_IsOneOutlinedRectangle_WithTheActiveCellUnfilled()
+    {
+        var (host, sheet) = Open();
+        PressCell(host, sheet, new CellRef(0, 0));
+        // B2:C4 with B2 active: the anchor is the end the active cell stands at.
+        sheet.Selection = new SheetRange(new CellRef(1, 1), new CellRef(3, 2));
+        Changed(host);
+        host.RenderFrame(new DisplayListBuilder(), 50);
+
+        // The assertion beside the image: two fills (the rows under B2, and C2 beside it), none over B2, and one
+        // outline around the whole range.
+        var marks = MarkBoxes(host);
+        var fills = marks.Where(mark => mark.Style.Background is not null).ToList();
+        fills.Should().HaveCount(2);
+        var b2 = CellBounds(sheet, 1, 1);
+        fills.Should().NotContain(fill => fill.Bounds.Contains(b2.Center), "the active cell is left unfilled");
+        marks.Should().ContainSingle(mark => mark.Style.BorderWidth == 1.5f)
+            .Which.Bounds.Should().Be(new Rect(b2.X, b2.Y, 2 * 96f, 3 * 28f));
+
+        Render(host, "sheet-range");
+    }
+
+    [Fact]
+    public void SeveralRanges_EachAnOutlinedRectangle()
+    {
+        var (host, sheet) = Open();
+        PressCell(host, sheet, new CellRef(1, 0));
+        var shift = 1 + sheet.Grid.HeaderWidth + 0 * 96f + 48f;
+        host.PressDown(shift, 1 + sheet.Grid.HeaderHeight + 2 * 28f + 14f, modifiers: KeyModifiers.Shift);   // A2:A3
+        host.PressUp(shift, 1 + sheet.Grid.HeaderHeight + 2 * 28f + 14f);
+        var c = 1 + sheet.Grid.HeaderWidth + 2 * 96f + 48f;
+        host.PressDown(c, 1 + sheet.Grid.HeaderHeight + 4 * 28f + 14f, modifiers: KeyModifiers.Command);    // C5
+        host.PointerMove(c, 1 + sheet.Grid.HeaderHeight + 6 * 28f + 14f);                                  // to C7
+        host.PressUp(c, 1 + sheet.Grid.HeaderHeight + 6 * 28f + 14f);
+        host.RenderFrame(new DisplayListBuilder(), 50);
+
+        sheet.Ranges.Should().Equal(new SheetRange(new CellRef(1, 0), new CellRef(2, 0)),
+            new SheetRange(new CellRef(4, 2), new CellRef(6, 2)));
+        sheet.ActiveCell.Should().Be(new CellRef(4, 2), "the cell the ⌘ drag began on, C5, is active");
+        MarkBoxes(host).Count(mark => mark.Style.BorderWidth == 1.5f).Should().Be(2, "one outline a range");
+
+        Render(host, "sheet-ranges");
+    }
+
+    [Fact]
+    public void TheSelection_IsDimmed_WhileTheGridHasNotTheKeyboard()
+    {
+        var (host, sheet) = Open();
+        sheet.Selection = new SheetRange(new CellRef(1, 1), new CellRef(3, 2));
+        Changed(host);
+        host.RenderFrame(new DisplayListBuilder(), 50);
+
+        // The assertion beside the image: nothing gave the sheet the keyboard, and its outline and ring are in
+        // the theme's strong border, not its focus ring.
+        sheet.HasKeyboard.Should().BeFalse();
+        var dimmed = ((IAppTheme)PhotonTheme.Instance).BorderStrong;
+        MarkBoxes(host).Where(mark => mark.Style.BorderWidth > 0).Should()
+            .OnlyContain(mark => mark.Style.BorderColor == dimmed);
+
+        Render(host, "sheet-unfocused");
+    }
+
+    [Fact]
+    public void AWholeColumn_EmphasizesItsHeaderStrongly()
+    {
+        var (host, sheet) = Open();
+        PressCell(host, sheet, new CellRef(0, 0));
+        sheet.SelectCols(2, 2, add: false);
+        Changed(host);
+        var frame = host.RenderFrame(new DisplayListBuilder(), 50);
+
+        // The assertion beside the image: C's header is drawn in the focus ring, B's in the plain header's colour.
+        static IEnumerable<Framework.LayoutNode> All(Framework.LayoutNode node)
+        {
+            yield return node;
+            foreach (var child in node.Children)
+                foreach (var below in All(child)) yield return below;
+        }
+        // A header is a hairline-bordered box whose centred label is the column's name.
+        Framework.LayoutNode HeaderOf(string name) => All(frame.Root)
+            .Single(node => node.Source is Box { Style.BorderWidth: 0.5f }
+                && All(node).Any(below => below.Source is Text { Content: var label } && label == name));
+        ((Box)HeaderOf("C").Source!).Style.Background.Should().Be(((IAppTheme)PhotonTheme.Instance).FocusRing);
+        ((Box)HeaderOf("B").Source!).Style.Background.Should().Be(((IAppTheme)PhotonTheme.Instance).SurfaceSubtle);
+
+        Render(host, "sheet-whole-column");
     }
 }

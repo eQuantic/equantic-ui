@@ -178,6 +178,19 @@ public static class SdkStrings
     public static string RangeSize(int rows, int columns) =>
         string.Format(CultureInfo.CurrentCulture, SdkResources.RangeSize, rows, columns);
 
+    /// <summary>The status bar's sum of the numbers selected, already written in the page's culture.</summary>
+    public static string Sum(string value) => string.Format(CultureInfo.CurrentCulture, SdkResources.StatusSum, value);
+
+    /// <summary>The status bar's average of the numbers selected, already written in the page's culture.</summary>
+    public static string Average(string value) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.StatusAverage, value);
+
+    /// <summary>The status bar's count of the cells in use selected.</summary>
+    public static string Count(int count) => string.Format(CultureInfo.CurrentCulture, SdkResources.StatusCount, count);
+
+    /// <summary>What the status bar says while Excel's add mode (Shift+F8) is on.</summary>
+    public static string AddToSelection => SdkResources.AddToSelection;
+
     // ListDetail's compact pane: going back to the list, and the wide pane with nothing chosen.
     public static string Back => SdkResources.Back;
     public static string NothingSelected => SdkResources.NothingSelected;

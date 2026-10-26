@@ -63,6 +63,13 @@ internal static class PhotonContentView
     /// event go back to AppKit, which is what makes ⌘Q still quit.</summary>
     internal static Func<string, Primitives.KeyModifiers, string, bool>? OnKey { get; set; }
 
+    /// <summary>A key offered to the app BEFORE the input context while a text target holds the caret and
+    /// nothing is being composed, as a browser's <c>keydown</c> precedes its text and as the Windows, iOS and
+    /// Android shells already offer it: the key's name and modifiers, never its text. Answering true keeps it
+    /// from the input context, which is how a sheet's Shift+Space selects a row rather than typing a space
+    /// (#984); answering false hands it on, and a dead key or an input method composes as before.</summary>
+    internal static Func<string, Primitives.KeyModifiers, bool>? OnKeyBeforeText { get; set; }
+
     // ---- NSTextInputClient doors ---------------------------------------------------------------
     // While a field holds the caret, key events go to the PLATFORM'S input context and come back
     // through these: composed text, the composition in flight, and editing keys as selectors.
@@ -232,6 +239,9 @@ internal static class PhotonContentView
             && !MacKeys.IsFunctionKey(keyCode);
         if (composing)
         {
+            // The app hears the key first while nothing is marked; a composition in flight keeps the input
+            // context first, so its candidate window answers its own arrows, Space and Return.
+            if (HasMarked?.Invoke() != true && OnKeyBeforeText?.Invoke(name, modifiers) == true) return;
             var context = Send(self, Sel("inputContext"));
             if (context != IntPtr.Zero && SendBool(context, Sel("handleEvent:"), @event)) return;
         }

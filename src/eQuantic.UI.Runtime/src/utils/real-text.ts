@@ -1,6 +1,6 @@
 /**
- * A floating-point number's text as .NET writes it with no format string, in the invariant culture
- * the twin always writes in (EQ2110 names what a culture changes).
+ * A floating-point number's text as .NET writes it with no format string, in the invariant
+ * culture's symbols.
  *
  * .NET writes the SHORTEST digits that read back as the value, and picks the notation from the
  * decimal exponent of the first of them: fixed from -4 up to 16 for a double and up to 8 for a

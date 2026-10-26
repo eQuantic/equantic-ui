@@ -39,8 +39,9 @@ public class SpreadsheetComponentTests
         // is proven two ways: the row headers OUTSIDE it, and the ListView ruler — a sheet twenty
         // times longer must emit exactly the same draw commands.
         var (host, _) = Open();
-        // Headers are BUTTONS now — clicking one selects its band — so that is their role.
-        var headers = host.Semantics().Where(s => s.Role == SemanticRole.Button).ToList();
+        // Headers are drawn text, and the sheet's engine reads a press on them (#984); slice 2b (#1081) gives
+        // them the grid's own roles.
+        var headers = host.Semantics().Where(s => s.Role == SemanticRole.StaticText).ToList();
         headers.Should().Contain(s => s.Label == "A", "column headers spell A..");
         headers.Should().Contain(s => s.Label == "1", "row headers count from 1");
         headers.Count(s => int.TryParse(s.Label, out _)).Should().BeLessThan(40,
@@ -131,11 +132,32 @@ public class SpreadsheetComponentTests
         host.PressUp(edge - 2f + 40f, y);
 
         sheet.Document.ColWidth(0).Should().Be(136f);
+        sheet.Ranges.Should().Equal([new SheetRange(new CellRef(0, 0))], "the grip resizes, and selects nothing");
         sheet.Undo();
         sheet.Document.ColWidth(0).Should().Be(96f,
             "however many moves previewed, the gesture lands as ONE inverse");
         sheet.Redo();
         sheet.Document.ColWidth(0).Should().Be(136f);
+    }
+
+    /// <summary>A finger or a pen on a column's grip resizes, as a mouse does: the table's candidate pan, armed by
+    /// the press, lets go of it, or the drag past the slop scrolled the grid instead (#984, review of #1102).</summary>
+    [Theory]
+    [InlineData(PointerKind.Touch)]
+    [InlineData(PointerKind.Stylus)]
+    public void AFingerOrAPenOnAColumnGrip_Resizes_AndScrollsNothing(PointerKind kind)
+    {
+        var (host, sheet) = Open();
+        var edge = Spreadsheet.HeaderWidth + sheet.Document.ColWidth(0);
+        var y = Spreadsheet.HeaderHeight / 2;
+
+        host.PressDown(edge - 2f, y, kind: kind);
+        host.PointerMove(edge - 2f + 40f, y, kind);
+        host.PressUp(edge - 2f + 40f, y, kind);
+        host.RenderFrame(new DisplayListBuilder(), 100);
+
+        sheet.Document.ColWidth(0).Should().Be(136f);
+        sheet.Grid.Offset.Across.Should().Be(0, "the grip's drag is no pan");
     }
 
     [Fact]
@@ -200,6 +222,155 @@ public class SpreadsheetComponentTests
         host.PressUp(20f, Spreadsheet.HeaderHeight / 2);
         sheet.Selection.BottomRow.Should().Be(sheet.Document.Rows - 1);
         sheet.Selection.RightCol.Should().Be(sheet.Document.Cols - 1);
+    }
+
+    [Fact]
+    public void AHeaderPress_CarriesItsModifiers_ThroughTheHost()
+    {
+        var (host, sheet) = Open();
+        var columnC = (X: Spreadsheet.HeaderWidth + 2 * 96f + 48f, Y: Spreadsheet.HeaderHeight / 2);
+        host.PressDown(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 2 * 28f + 14f);   // B3
+        host.PressUp(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 2 * 28f + 14f);
+
+        // ⌘ (Ctrl elsewhere) on column C's header adds the column as a range of its own.
+        host.PressDown(columnC.X, columnC.Y, modifiers: KeyModifiers.Command);
+        host.PressUp(columnC.X, columnC.Y);
+        sheet.Ranges.Should().Equal(new SheetRange(new CellRef(2, 1)),
+            new SheetRange(new CellRef(0, 2), new CellRef(sheet.Document.Rows - 1, 2)));
+
+        // Shift on row 6's number, from a fresh B3: the rows 3 to 6, whole, with B3 still active.
+        host.PressDown(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 2 * 28f + 14f);
+        host.PressUp(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 2 * 28f + 14f);
+        host.PressDown(20f, Spreadsheet.HeaderHeight + 5 * 28f + 14f, modifiers: KeyModifiers.Shift);
+        host.PressUp(20f, Spreadsheet.HeaderHeight + 5 * 28f + 14f);
+        sheet.Ranges.Should().Equal(new SheetRange(new CellRef(2, 0), new CellRef(5, sheet.Document.Cols - 1)));
+        sheet.ActiveCell.Should().Be(new CellRef(2, 1));
+    }
+
+    [Fact]
+    public void ADragAcrossColumnHeaders_StretchesTheBand_ThroughTheHost()
+    {
+        var (host, sheet) = Open();
+        var y = Spreadsheet.HeaderHeight / 2;
+
+        host.PressDown(Spreadsheet.HeaderWidth + 96f + 48f, y);               // B's header
+        host.PointerMove(Spreadsheet.HeaderWidth + 2 * 96f + 48f, y);
+        host.PointerMove(Spreadsheet.HeaderWidth + 3 * 96f + 48f, y);         // D's header
+        host.PressUp(Spreadsheet.HeaderWidth + 3 * 96f + 48f, y);
+
+        sheet.Ranges.Should().Equal(new SheetRange(new CellRef(0, 1), new CellRef(sheet.Document.Rows - 1, 3)));
+    }
+
+    [Theory]
+    [InlineData(KeyboardConvention.Standard)]
+    [InlineData(KeyboardConvention.Apple)]
+    public void ExcelsChords_ReachTheSheet_ThroughTheHost(KeyboardConvention convention)
+    {
+        var sheet = new SheetController(1000, 26);
+        foreach (var (row, col) in new[] { (1, 1), (1, 2), (2, 1), (2, 2), (6, 4) })
+            sheet.Document.SetCell(new CellRef(row, col), "x");
+        var host = new PhotonHost(new Spreadsheet(sheet) { Width = SizeValue.Fill, Height = SizeValue.Fill },
+            PhotonTheme.Instance, ThemeMode.Light, 700, 400)
+        {
+            SmoothScroll = false,
+            KeyboardConvention = convention,
+        };
+        host.RenderFrame(new DisplayListBuilder());
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        var control = convention == KeyboardConvention.Apple ? KeyModifiers.Control : KeyModifiers.Command;
+        host.PressDown(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);   // B2
+        host.PressUp(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);
+
+        host.KeyDown(" ", KeyModifiers.Shift).Should().BeTrue();
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 0), new CellRef(1, 25)));
+
+        // From B2 again: after Shift+Space the active range is the whole row, whose columns are all of them.
+        host.PressDown(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);
+        host.PressUp(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);
+        host.KeyDown(" ", control).Should().BeTrue();
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(0, 1), new CellRef(999, 1)));
+
+        host.KeyDown("ArrowDown");
+        host.KeyDown("a", KeyModifiers.Command);
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 1), new CellRef(2, 2)), "the current region");
+
+        host.KeyDown("End", KeyModifiers.Command);
+        sheet.ActiveCell.Should().Be(new CellRef(6, 4), "the last cell in use");
+
+        host.KeyDown("y", KeyModifiers.Command).Should().BeTrue("Ctrl+Y is the sheet's, with nothing to redo too");
+        host.KeyDown(".", control).Should().BeTrue();
+    }
+
+    /// <summary>Where the active cell's ring is drawn across on the frame at <paramref name="timeMs"/>: the
+    /// two-point stroke in the theme's focus ring.</summary>
+    private static float RingX(PhotonHost host, float timeMs)
+    {
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, timeMs);
+        var ring = ((IAppTheme)PhotonTheme.Instance).FocusRing.Resolve(ThemeMode.Light);
+        var stroke = builder.Build().Commands.ToArray()
+            .Single(command => command.Paint.Color == ring && command.StrokeWidth == 2f);
+        return stroke.Transform.Transform(new Point(stroke.Shape.Rect.X, stroke.Shape.Rect.Y)).X;
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TheCellCursor_GlidesToItsNextCell_AndJumpsUnderReducedMotion(bool reducedMotion)
+    {
+        var sheet = new SheetController(100, 8);
+        var host = new PhotonHost(new Spreadsheet(sheet) { Width = SizeValue.Fill, Height = SizeValue.Fill },
+            PhotonTheme.Instance, ThemeMode.Light, 700, 400)
+        {
+            SmoothScroll = false,
+            ReducedMotion = reducedMotion,
+        };
+        host.RenderFrame(new DisplayListBuilder());
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        host.PressDown(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);   // B2
+        host.PressUp(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);
+        // The press moved the ring from A1 too; it has stood at B2 once that glide is over.
+        RingX(host, 100);
+        var b2 = RingX(host, 600);
+        RingX(host, 700).Should().Be(b2);
+
+        host.KeyDown("ArrowRight");
+        var c2 = b2 + 96f;
+
+        if (reducedMotion)
+        {
+            RingX(host, 800).Should().BeApproximately(c2, 0.5f, "under reduced motion the ring jumps");
+            return;
+        }
+        RingX(host, 800).Should().BeApproximately(b2, 0.5f, "the glide starts where the ring stood");
+        RingX(host, 900).Should().BeInRange(b2 + 1, c2 - 1, "halfway through the base motion it stands between them");
+        RingX(host, 1050).Should().BeApproximately(c2, 0.5f);
+    }
+
+    [Fact]
+    public void TheCellCursor_GlidesToo_WhenARangeIsAddedBeforeIt()
+    {
+        var sheet = new SheetController(100, 8);
+        var host = new PhotonHost(new Spreadsheet(sheet) { Width = SizeValue.Fill, Height = SizeValue.Fill },
+            PhotonTheme.Instance, ThemeMode.Light, 700, 400)
+        {
+            SmoothScroll = false,
+        };
+        host.RenderFrame(new DisplayListBuilder());
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        host.PressDown(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);   // B2
+        host.PressUp(Spreadsheet.HeaderWidth + 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);
+        RingX(host, 100);
+        var b2 = RingX(host, 600);
+
+        // ⌘ adds D2 as a range of its own: the marks before the ring now include B2's, and the ring is the
+        // same mark by its key, so it glides rather than appearing at D2.
+        host.PressDown(Spreadsheet.HeaderWidth + 3 * 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f,
+            modifiers: KeyModifiers.Command);
+        host.PressUp(Spreadsheet.HeaderWidth + 3 * 96f + 48f, Spreadsheet.HeaderHeight + 28f + 14f);
+
+        RingX(host, 700).Should().BeApproximately(b2, 0.5f);
+        RingX(host, 950).Should().BeApproximately(b2 + 2 * 96f, 0.5f);
     }
 
     [Fact]

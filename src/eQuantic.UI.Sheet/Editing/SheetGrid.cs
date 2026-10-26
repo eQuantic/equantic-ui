@@ -40,4 +40,8 @@ public readonly record struct SheetGrid(ITableScrollModel? Scroll, float HeaderW
 
     /// <summary>What a cell keeps between its gridlines and its text, on each side.</summary>
     public EdgeInsets CellPadding { get; init; }
+
+    /// <summary>How wide the resize grip on a header's trailing edge is: a press there is the grip's, which
+    /// resizes the column or the row, and selects nothing. 0 where the headers draw no grip.</summary>
+    public float ResizeGrip { get; init; }
 }

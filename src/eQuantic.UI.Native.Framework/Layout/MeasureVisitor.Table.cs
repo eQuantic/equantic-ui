@@ -52,33 +52,64 @@ internal sealed partial class MeasureVisitor
         for (var i = 0; i < viewport.Cells.Count; i++)
         {
             var cell = viewport.Cells[i];
-            var laid = MeasureTableCell(cell, rows, columns, at?.ChildAt(i));
+            var element = at?.ChildAt(i);
+            var place = PlaceOf(cell, rows, columns);
+            if (cell.Mark) place = Glided(place, cell.Glide, element);
+            var laid = Measure(cell, LayoutConstraints.Of(place.Width, place.Height), _ctx, element);
             // Where it stands relative to the window, computed in double: the grid's far end is past
             // what a float holds exactly, the distance from the window's corner never is.
-            var top = rows.OffsetOf(Math.Clamp(cell.Row, 0, rows.Count));
-            var left = columns.OffsetOf(Math.Clamp(cell.Column, 0, columns.Count));
             laid.Bounds = laid.Bounds with
             {
-                X = (float)(cell.Column < pinnedColumns ? left : left - offset.Across),
-                Y = (float)(cell.Row < pinnedRows ? top : top - offset.Down),
+                X = (float)(cell.Column < pinnedColumns ? place.Left : place.Left - offset.Across),
+                Y = (float)(cell.Row < pinnedRows ? place.Top : place.Top - offset.Down),
             };
             result.Adopt(laid);
         }
         return result;
     }
 
-    /// <summary>A cell laid out over the rows and columns it covers, held inside the grid.</summary>
-    private LayoutNode MeasureTableCell(TableViewCell cell, TableSpans rows, TableSpans columns, Element? at)
+    /// <summary>The rectangle a cell covers in its grid, the rows and columns it spans held inside it.</summary>
+    private static TablePlace PlaceOf(TableViewCell cell, TableSpans rows, TableSpans columns)
     {
         var firstRow = Math.Clamp(cell.Row, 0, rows.Count);
         var firstColumn = Math.Clamp(cell.Column, 0, columns.Count);
         var endRow = Math.Clamp(cell.Row + Math.Max(1, cell.Rows), firstRow, rows.Count);
         var endColumn = Math.Clamp(cell.Column + Math.Max(1, cell.Columns), firstColumn, columns.Count);
-        var box = LayoutConstraints.Of(
-            (float)(columns.OffsetOf(endColumn) - columns.OffsetOf(firstColumn)),
-            (float)(rows.OffsetOf(endRow) - rows.OffsetOf(firstRow)));
-        return Measure(cell, box, _ctx, at);
+        var left = columns.OffsetOf(firstColumn);
+        var top = rows.OffsetOf(firstRow);
+        return new TablePlace(left, top, (float)(columns.OffsetOf(endColumn) - left),
+            (float)(rows.OffsetOf(endRow) - top));
     }
+
+    /// <summary>
+    /// Where a gliding mark is laid out this frame (<see cref="TableViewCell.Glide"/>, web twin: the mark's
+    /// transition in <c>lowerTableCell</c>): its four edges glide through the frame's transition clock in the
+    /// grid's coordinates, and it is measured at the size it has reached, as Flutter's
+    /// <c>AnimatedPositioned</c> lays its child out, so an outline keeps its thickness and what the mark holds
+    /// keeps its own size on the way. The scroll is never glided: it is taken out after, so a grid that scrolls
+    /// carries the mark at once. The clock snaps under reduced motion and mounts a mark it never saw where it
+    /// stands. A mark with no glide goes through the same clock with no specification, which snaps it and
+    /// FORGETS its tracks: kept, a mark whose glide was turned off and on again glided back from the rectangle
+    /// it stood over when it was turned off.
+    /// </summary>
+    private TablePlace Glided(TablePlace place, MotionSpec? glide, Element? at)
+    {
+        if (_ctx.Transitions is not { } clock) return place;
+        TransitionSpec? spec = glide is { } motion
+            ? new TransitionSpec(StyleChannels.All, motion.DurationMs) { Easing = motion.Curve }
+            : null;
+        var (time, reduced) = (_ctx.TimeMs, _ctx.ReducedMotion);
+        var left = clock.Resolve(at, GlideChannel.Left, (float)place.Left, time, spec, reduced);
+        var top = clock.Resolve(at, GlideChannel.Top, (float)place.Top, time, spec, reduced);
+        var width = clock.Resolve(at, GlideChannel.Width, place.Width, time, spec, reduced);
+        var height = clock.Resolve(at, GlideChannel.Height, place.Height, time, spec, reduced);
+        // Standing where it is laid out, the mark keeps the grid's double: a float holds no far row exactly.
+        return new TablePlace(left == (float)place.Left ? place.Left : left, top == (float)place.Top ? place.Top : top,
+            width, height);
+    }
+
+    /// <summary>A rectangle of the grid: where it starts, in double as the grid's extents are, and its size.</summary>
+    private readonly record struct TablePlace(double Left, double Top, float Width, float Height);
 
     /// <summary>
     /// How far the viewport reaches on one axis. A fixed size is its own and a window-relative one is

@@ -95,7 +95,8 @@ describe('SheetSurface on the web', () => {
     key(node, 'ArrowDown');
     key(node, 'ArrowRight', { shiftKey: true });
 
-    expect(sheet.activeCell).toEqual(new CellRef(1, 1));
+    expect(sheet.activeCell, 'Shift stretches the range and keeps the active cell').toEqual(new CellRef(1, 0));
+    expect(sheet.selection.focus).toEqual(new CellRef(1, 1));
     expect(sheet.selection.colCount).toBe(2);
   });
 
@@ -207,6 +208,73 @@ describe('SheetSurface on the web', () => {
     lift(node, target, { clientX: 96 + 48, clientY: 28 * 2 + 14 });
 
     expect(sheet.activeCell).toEqual(new CellRef(42, 1));
+  });
+
+  it('reads a press on the headers with its modifiers, as Photon does (#984)', () => {
+    const sheet = new SheetController(200, 8);
+    // The table's pinned bands: row numbers 44 wide, column headers 26 tall.
+    const scroll = new TableScroll();
+    scroll.arrange(new Size(900, 600), 44 + sheet.document.columnSpans.total, 26 + sheet.document.rowSpans.total, 44, 26, true);
+    sheet.grid = new SheetGrid(scroll, 44, 26);
+    const node = surfaceFor(sheet);
+    const target = makeTarget();
+    const columnHeader = (col: number) => ({ clientX: 44 + col * 96 + 48, clientY: 13 });
+    const rowNumber = (row: number) => ({ clientX: 22, clientY: 26 + row * 28 + 14 });
+    const lastRow = sheet.document.rows - 1;
+    const lastCol = sheet.document.cols - 1;
+
+    // B3, then ⌘ (Ctrl elsewhere) on column E's header adds the column.
+    press(node, target, { clientX: 44 + 96 + 48, clientY: 26 + 2 * 28 + 14 });
+    lift(node, target, { clientX: 44 + 96 + 48, clientY: 26 + 2 * 28 + 14 });
+    press(node, target, { ...columnHeader(4), metaKey: true, ctrlKey: true });
+    lift(node, target, { ...columnHeader(4), metaKey: true, ctrlKey: true });
+    expect(sheet.ranges).toEqual([new SheetRange(new CellRef(2, 1), new CellRef(2, 1)),
+      new SheetRange(new CellRef(0, 4), new CellRef(lastRow, 4))]);
+
+    // Shift on row 6's number from B3: rows 3 to 6, whole, B3 still active.
+    press(node, target, { clientX: 44 + 96 + 48, clientY: 26 + 2 * 28 + 14 });
+    lift(node, target, { clientX: 44 + 96 + 48, clientY: 26 + 2 * 28 + 14 });
+    press(node, target, { ...rowNumber(5), shiftKey: true });
+    lift(node, target, { ...rowNumber(5), shiftKey: true });
+    expect(sheet.ranges).toEqual([new SheetRange(new CellRef(2, 0), new CellRef(5, lastCol))]);
+    expect(sheet.activeCell).toEqual(new CellRef(2, 1));
+
+    // A drag across column headers, from B's to D's.
+    press(node, target, columnHeader(1));
+    move(node, target, columnHeader(3));
+    lift(node, target, columnHeader(3));
+    expect(sheet.ranges).toEqual([new SheetRange(new CellRef(0, 1), new CellRef(lastRow, 3))]);
+  });
+
+  it("answers Excel's chords through its door, and Shift+Space types nothing (#984)", () => {
+    const sheet = new SheetController(1000, 26);
+    const scroll = new TableScroll();
+    scroll.arrange(new Size(900, 600), 44 + sheet.document.columnSpans.total, 26 + sheet.document.rowSpans.total, 44, 26, true);
+    sheet.grid = new SheetGrid(scroll, 44, 26);
+    for (const [row, col] of [[1, 1], [1, 2], [2, 1], [2, 2], [6, 4]]) sheet.document.setCell(new CellRef(row, col), 'x');
+    sheet.selection = new SheetRange(new CellRef(1, 1), new CellRef(1, 1));
+    const node = surfaceFor(sheet);
+
+    const shiftSpace = new KeyboardEvent('keydown', { key: ' ', shiftKey: true, cancelable: true });
+    doorEvents(node)['keydown'](shiftSpace);
+    expect(shiftSpace.defaultPrevented).toBe(true);
+    expect(sheet.selection).toEqual(new SheetRange(new CellRef(1, 0), new CellRef(1, 25)));
+
+    // From B2 again: after Shift+Space the active range is the whole row, whose columns are all of them.
+    sheet.selection = new SheetRange(new CellRef(1, 1), new CellRef(1, 1));
+    key(node, ' ', { ctrlKey: true });
+    expect(sheet.selection).toEqual(new SheetRange(new CellRef(0, 1), new CellRef(999, 1)));
+
+    key(node, 'ArrowDown');
+    key(node, 'a', { ctrlKey: true });
+    expect(sheet.selection).toEqual(new SheetRange(new CellRef(1, 1), new CellRef(2, 2)));
+
+    key(node, 'End', { ctrlKey: true });
+    expect(sheet.activeCell).toEqual(new CellRef(6, 4));
+
+    key(node, 'Home', { ctrlKey: true });
+    key(node, 'PageDown', { altKey: true });
+    expect(sheet.activeCell).toEqual(new CellRef(0, 8));
   });
 
   it('reads the press where it landed, before the keyboard moves the page', () => {

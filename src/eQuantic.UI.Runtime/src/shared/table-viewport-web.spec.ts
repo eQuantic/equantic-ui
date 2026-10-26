@@ -4,7 +4,7 @@
  * moves each band's layer by transform, and reports what it found. Real DOM events, a real model.
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { lowerVisualNode, type LoweringContext } from './lowering';
 import { effectiveStyle } from './style-atomizer';
 import { photonTheme } from './design-system.generated';
@@ -12,6 +12,7 @@ import { commitTableViewports, scheduleTableViewportCommit } from './table-viewp
 import { TableScroll } from './components/TableScroll';
 import { UniformTableSpans } from './components/UniformTableSpans';
 import { Point, TableRange, TableScrollRequest } from './value-types';
+import { Size, TableOffset } from './runtime-exports';
 import { Box, BoxStyle, Pressable, TableViewCell, TableViewport, Text } from './vocabulary';
 import { TableView } from './components/TableView';
 import fixture from './component-parity.fixture.json';
@@ -90,6 +91,47 @@ describe('TableViewport on the web', () => {
     // Reduced motion, so a wheel's notch lands at once instead of gliding over frames the spec does
     // not run: the glide itself is the model's, pinned in table-scroll.spec.ts.
     window.matchMedia = ((query: string) => ({ matches: query.includes('reduce'), media: query })) as never;
+  });
+
+  /** A grid of 28-point rows and 96-point columns, one of each pinned, scrolled to (`across`, `down`), with a
+   * cell and a mark keyed `cursor` over (`row`, 2): the two wrappers' styles, and the mark's wrapper. */
+  const cursorLowered = (row: number, across: number, down: number, glide: typeof cursorGlide | null) => {
+    const scroll = new TableScroll();
+    const rows = new UniformTableSpans(1_048_576, 28);
+    const columns = new UniformTableSpans(40, 96);
+    scroll.arrange(new Size(900, 600), columns.total, rows.total, 96, 28, true);
+    if (across || down) scroll.apply(new TableScrollRequest(1, { offset: new TableOffset(across, down) }), rows, columns, 1, 1);
+    const node = new TableViewport(rows, columns, scroll, { pinnedRows: 1, pinnedColumns: 1 });
+    node.add(new TableViewCell(row, 2, new Box(new BoxStyle({}))));
+    const cursor = new TableViewCell(row, 2, new Box(new BoxStyle({})), true);
+    cursor.key = 'cursor';
+    cursor.glide = glide;
+    node.add(cursor);
+    const lowered = lowerVisualNode(node as never, context);
+    // The cells' band is the first, and the bands' marks come after the four bands of cells.
+    const cell = (lowered.children[0] as HtmlNode).children[0].children[0] as HtmlNode;
+    const mark = (lowered.children[4] as HtmlNode).children[0].children[0] as HtmlNode;
+    return { cell: effectiveStyle(cell), mark: effectiveStyle(mark), wrapper: mark };
+  };
+  const cursorGlide = { durationMs: 200, curve: { x1: 0.2, y1: 0, x2: 0, y2: 1 } };
+
+  it('places a mark over its cell\'s very pixels, the scroll in its left and top, at the far rows too', () => {
+    // Review of #1102: a mark took the scroll in a transform of its own, rounded apart from its place, so at
+    // row 1 000 001 scrolled 28 000 001 points down its cell stood at -1px and the mark at 0.
+    const near = cursorLowered(2, 96, 0, cursorGlide);
+    expect(near.mark).toBe(near.cell);
+    expect(near.cell).toContain('left: 0;');
+    expect(near.mark).not.toContain('transform');
+    expect(near.mark).not.toContain('transition');
+
+    const far = cursorLowered(1_000_001, 0, 28_000_001, cursorGlide);
+    expect(far.cell).toContain('top: -1px');
+    expect(far.mark).toBe(far.cell);
+  });
+
+  it('names a gliding mark\'s key for the after-pass, and only a gliding one\'s (#984)', () => {
+    expect(cursorLowered(2, 0, 0, cursorGlide).wrapper.attributes['data-eq-glide']).toBe('cursor');
+    expect(cursorLowered(2, 0, 0, null).wrapper.attributes['data-eq-glide']).toBeUndefined();
   });
 
   it('is a group of four bands, four bands of marks and two scrollbars, taking every gesture itself', () => {
@@ -407,5 +449,137 @@ describe('TableViewport on the web', () => {
     expect(scroll.offset.down).toBeGreaterThan(0);
     expect(layer(view, 0).style.transform).toContain(`-${scroll.offset.down}px`);
     scroll.autoScroll(null);
+  });
+});
+
+/** What the spec's `animate` hands back: what it was asked, and the progress a test sets. */
+interface FakeMotion {
+  keyframes: Keyframe[];
+  options: KeyframeAnimationOptions;
+  playState: string;
+  progress: number;
+  cancel: ReturnType<typeof vi.fn>;
+  effect: { getComputedTiming(): { progress: number } };
+}
+
+describe('A gliding mark on the web, glided by the after-pass (#984)', () => {
+  const glide = { durationMs: 200, curve: { x1: 0.2, y1: 0, x2: 0, y2: 1 } };
+  const prototype = HTMLElement.prototype as { animate?: unknown };
+  const original = prototype.animate;
+  let motions: FakeMotion[];
+  let reduce: boolean;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    motions = [];
+    reduce = false;
+    window.matchMedia = ((query: string) => ({ matches: reduce && query.includes('reduce'), media: query })) as never;
+    prototype.animate = function (keyframes: Keyframe[], options: KeyframeAnimationOptions) {
+      const motion: FakeMotion = {
+        keyframes,
+        options,
+        playState: 'running',
+        progress: 0,
+        cancel: vi.fn(() => {
+          motion.playState = 'idle';
+        }),
+        effect: { getComputedTiming: () => ({ progress: motion.progress }) },
+      };
+      motions.push(motion);
+      return motion;
+    };
+  });
+
+  afterEach(() => {
+    prototype.animate = original;
+  });
+
+  /** A grid whose passes each hold a mark keyed `cursor`: a pass lowers it, writes the mark's glide attribute
+   * onto the element the first pass mounted, as the reconciler keeps a keyed element and patches it, and
+   * commits. */
+  function grid() {
+    const scroll = new TableScroll();
+    const rows = new UniformTableSpans(200, 28);
+    const columns = new UniformTableSpans(40, 96);
+    let view: HTMLElement | null = null;
+    const mark = () => view!.children[4].firstElementChild!.firstElementChild as HTMLElement;
+    const pass = (row: number, column: number, options: { columns?: number; glide?: typeof glide | null } = {}) => {
+      const node = new TableViewport(rows, columns, scroll, { pinnedRows: 1, pinnedColumns: 1 });
+      const cursor = new TableViewCell(row, column, new Box(new BoxStyle({})), true);
+      cursor.key = 'cursor';
+      cursor.columns = options.columns ?? 1;
+      cursor.glide = options.glide === undefined ? glide : options.glide;
+      node.add(cursor);
+      const lowered = lowerVisualNode(node as never, context);
+      if (!view) {
+        view = toDom(lowered) as HTMLElement;
+        Object.defineProperty(view, 'clientWidth', { value: 900, configurable: true });
+        Object.defineProperty(view, 'clientHeight', { value: 600, configurable: true });
+        document.body.appendChild(view);
+      } else {
+        const written = ((lowered.children[4] as HtmlNode).children[0].children[0] as HtmlNode).attributes['data-eq-glide'];
+        if (written) mark().setAttribute('data-eq-glide', String(written));
+        else mark().removeAttribute('data-eq-glide');
+      }
+      commitTableViewports();
+    };
+    return { pass, scroll, rows, columns };
+  }
+
+  it('glides a mark moved to other cells from where it stood, its size laid out on the way', () => {
+    const { pass } = grid();
+    pass(2, 2);
+    expect(motions).toHaveLength(0);
+
+    pass(3, 4, { columns: 2 });
+    expect(motions).toHaveLength(1);
+    expect(motions[0].keyframes).toEqual([
+      { translate: '-192px -28px', width: '96px', height: '28px' },
+      { translate: '0px 0px', width: '192px', height: '28px' },
+    ]);
+    expect(motions[0].options).toEqual({ duration: 200, easing: 'cubic-bezier(0.2, 0, 0, 1)' });
+  });
+
+  it('never glides a mark the grid scrolls under, though the scroll rebuilt the cells', () => {
+    const { pass, scroll, rows, columns } = grid();
+    pass(2, 4);
+    scroll.apply(new TableScrollRequest(1, { offset: new TableOffset(96, 28) }), rows, columns, 1, 1);
+    pass(2, 4);
+    expect(motions).toHaveLength(0);
+  });
+
+  it('stands a mark where it is at once under reduced motion', () => {
+    const { pass } = grid();
+    pass(2, 2);
+    reduce = true;
+    pass(2, 3);
+    expect(motions).toHaveLength(0);
+  });
+
+  it('stops a glide turned off, and turned on again starts it where the mark stands', () => {
+    const { pass } = grid();
+    pass(2, 2);
+    pass(2, 3);
+    expect(motions).toHaveLength(1);
+
+    pass(2, 5, { glide: null });
+    expect(motions[0].cancel).toHaveBeenCalled();
+    pass(2, 5);
+    expect(motions).toHaveLength(1);
+
+    pass(2, 6);
+    expect(motions).toHaveLength(2);
+    expect(motions[1].keyframes[0].translate).toBe('-96px 0px');
+  });
+
+  it('retargeted in flight, glides on from where the glide had carried it', () => {
+    const { pass } = grid();
+    pass(2, 2);
+    pass(2, 3);
+    motions[0].progress = 0.5;
+
+    pass(2, 5);
+    expect(motions[0].cancel).toHaveBeenCalled();
+    expect(motions[1].keyframes[0].translate).toBe('-240px 0px');
   });
 });

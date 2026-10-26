@@ -66,8 +66,8 @@ public sealed class SheetScreen : StatefulComponent
         }, page);
     }
 
-    /// <summary>Excel's layout, composed by the page: the name box and the formula bar over the grid, all
-    /// three views of the one controller.</summary>
+    /// <summary>Excel's layout, composed by the page: the name box and the formula bar over the grid and the
+    /// status bar under it, all four views of the one controller.</summary>
     private static VisualNode Excel(SheetController sheet)
     {
         var bars = new Row(gap: Space.S2) { Width = SizeValue.Fill };
@@ -76,6 +76,7 @@ public sealed class SheetScreen : StatefulComponent
         var layout = new Column(gap: Space.S2) { Width = SizeValue.Fill, Height = SizeValue.Fill };
         layout.Add(bars);
         layout.Add(new Flexible(Spreadsheet(sheet, width: SizeValue.Fill, height: SizeValue.Fill), 1));
+        layout.Add(StatusBar(sheet));
         return layout;
     }
 }

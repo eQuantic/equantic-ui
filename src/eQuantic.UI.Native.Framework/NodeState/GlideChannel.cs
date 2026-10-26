@@ -8,10 +8,10 @@ namespace eQuantic.UI.Native.Framework;
 /// </summary>
 public enum GlideChannel
 {
-    /// <summary>A box's fixed width, glided in layout.</summary>
+    /// <summary>A box's fixed width, or a table mark's, glided in layout.</summary>
     Width,
 
-    /// <summary>A box's fixed height, glided in layout.</summary>
+    /// <summary>A box's fixed height, or a table mark's, glided in layout.</summary>
     Height,
 
     /// <summary>A <see cref="Primitives.Flexible"/>'s or a <see cref="Primitives.Spacer"/>'s weight.</summary>
@@ -50,4 +50,10 @@ public enum GlideChannel
     Background,
 
     Border,
+
+    /// <summary>Where a table's mark stands in its grid across, glided in layout.</summary>
+    Left,
+
+    /// <summary>Where a table's mark stands in its grid down, glided in layout.</summary>
+    Top,
 }

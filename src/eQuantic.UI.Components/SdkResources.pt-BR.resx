@@ -77,6 +77,18 @@
   <data name="RangeSize" xml:space="preserve">
     <value>{0}L x {1}C</value>
   </data>
+  <data name="StatusSum" xml:space="preserve">
+    <value>Soma: {0}</value>
+  </data>
+  <data name="StatusAverage" xml:space="preserve">
+    <value>Média: {0}</value>
+  </data>
+  <data name="StatusCount" xml:space="preserve">
+    <value>Contagem: {0}</value>
+  </data>
+  <data name="AddToSelection" xml:space="preserve">
+    <value>Adicionar à seleção</value>
+  </data>
   <data name="Back" xml:space="preserve">
     <value>Voltar</value>
   </data>
