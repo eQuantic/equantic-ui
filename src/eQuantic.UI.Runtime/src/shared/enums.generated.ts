@@ -6,6 +6,8 @@
  * (EnumUnionsTsGeneratorTests pins this file byte-for-byte against the generator).
  *
  * A [Flags] enum is absent by design: its members combine, so it crosses as a number.
+ *
+ * One table follows the unions: each FontWeight's number, which the runtime asks for by name.
  */
 
 export type AdjustableRoleValue = 'slider' | 'tablist' | 'radiogroup';
@@ -93,7 +95,9 @@ export type DeviceCapabilityValue =
 
 export type DragAxisValue = 'vertical' | 'horizontal';
 
-export type FontWeightValue = 'regular' | 'medium' | 'semiBold' | 'bold' | 'extraBold';
+export type FontWeightValue =
+  'thin' | 'extraLight' | 'light' | 'regular' | 'medium' | 'semiBold' | 'bold' | 'extraBold'
+  | 'black';
 
 export type GradientDirectionValue = 'toRight' | 'toBottom' | 'toBottomRight' | 'toBottomLeft';
 
@@ -196,3 +200,16 @@ export type VectorVerbValue = 'move' | 'line' | 'cubic' | 'close';
 export type WindowChromeValue = 'standard' | 'unified';
 
 export type WindowSizeClassValue = 'compact' | 'medium' | 'expanded';
+
+/** Each weight's number, its OpenType weight class, keyed by the name the transpiler emits. */
+export const FontWeightNumbers: Readonly<Record<FontWeightValue, number>> = {
+    thin: 100,
+    extraLight: 200,
+    light: 300,
+    regular: 400,
+    medium: 500,
+    semiBold: 600,
+    bold: 700,
+    extraBold: 800,
+    black: 900,
+};

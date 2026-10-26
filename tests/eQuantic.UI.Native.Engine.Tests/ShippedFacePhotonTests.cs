@@ -33,6 +33,22 @@ public class ShippedFacePhotonTests
         FaceResolution.Unresolved.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// A face the app ships that names itself after a family the machine has is set in the app's file: the
+    /// shell opens the file, where a match by the family's name found the installed Helvetica, measured, and
+    /// drew the text in it (#1082).
+    /// </summary>
+    [MacFact]
+    public void AFaceNamedLikeOneTheMachineHas_IsSetInTheFileTheAppShips()
+    {
+        var clash = new FontFamily("Helvetica", new FontFile(Assembly, "eQuantic.UI.Fonts/clash/Helvetica.ttf", 400, 400));
+
+        var measured = new CoreTextService().Measure("Handgloves", Body with { Family = clash }, 1f, float.PositiveInfinity, 1);
+
+        measured.Width.Should().BeApproximately(10 * 17, 0.5f, "every glyph of the shipped face is one em wide, and Helvetica's are not");
+        FaceResolution.Unresolved.Should().BeEmpty();
+    }
+
     /// <summary>Drawn in it too, not only measured: ten boxes, each nine tenths of an em, are ink
     /// no installed face puts on "Handgloves".</summary>
     [MacFact]
