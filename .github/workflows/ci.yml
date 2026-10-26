@@ -65,6 +65,20 @@ jobs:
       - name: Validate every change and spec, strictly
         run: ./scripts/check-openspec.sh
 
+  # The roadmap's arithmetic (scripts/roadmap_model.py) against the cases docs/ROADMAP-FORECAST.md
+  # describes: the points a delivered issue's size says, the pace, the lanes, and that the script never
+  # closes an issue. It needs no board and no network; the script that reads the board is run by a
+  # person whenever the work moves.
+  roadmap:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The forecast's arithmetic holds
+        run: python3 -m unittest discover -s scripts -p 'roadmap_*_test.py' -v
+
   # The SessionStart hook acts only in a cloud container, a path no laptop takes, so nothing else
   # would notice the day it stopped working. This runs it the way a fresh container would (a hostile
   # global git config, no dotnet on PATH) and asserts every promise, with two controls: a commit
