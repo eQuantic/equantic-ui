@@ -25,7 +25,9 @@ survives to keep an old shape alive"), each break listed in the release's notes 
 Upgrading page. The next milestone is **1.0, the web SDK stable with the native track experimental**
 ([#898](https://github.com/eQuantic/equantic-ui/issues/898)). What 1.0 promises is a contract rather
 than features: an app written against it keeps compiling and keeps answering the same through the
-1.x line. Its exit criteria, and the measurements they start from, live in the epic's body.
+1.x line. Its exit criteria, and the measurements they start from, live in the epic's body. When it is likely
+to land is the board's Roadmap view, which `scripts/roadmap.py` forecasts from the pace the board
+measures ([docs/ROADMAP-FORECAST.md](docs/ROADMAP-FORECAST.md)).
 
 What exists, held by suites that fail rather than warn:
 
