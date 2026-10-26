@@ -247,5 +247,59 @@ namespace eQuantic.UI.Components
         {
             get { return ResourceManager.GetString("DateFormatLetters", Culture)!; }
         }
+        internal static string GoTo
+        {
+            get { return ResourceManager.GetString("GoTo", Culture)!; }
+        }
+
+        internal static string GoToStart
+        {
+            get { return ResourceManager.GetString("GoToStart", Culture)!; }
+        }
+
+        internal static string GoToLinePrompt
+        {
+            get { return ResourceManager.GetString("GoToLinePrompt", Culture)!; }
+        }
+
+        internal static string GoToLineOrColumn
+        {
+            get { return ResourceManager.GetString("GoToLineOrColumn", Culture)!; }
+        }
+
+        internal static string GoToColumnPrompt
+        {
+            get { return ResourceManager.GetString("GoToColumnPrompt", Culture)!; }
+        }
+
+        internal static string GoToPosition
+        {
+            get { return ResourceManager.GetString("GoToPosition", Culture)!; }
+        }
+
+        internal static string SymbolsCount
+        {
+            get { return ResourceManager.GetString("SymbolsCount", Culture)!; }
+        }
+
+        internal static string NoSymbols
+        {
+            get { return ResourceManager.GetString("NoSymbols", Culture)!; }
+        }
+
+        internal static string NoMatchingSymbols
+        {
+            get { return ResourceManager.GetString("NoMatchingSymbols", Culture)!; }
+        }
+
+        internal static string NoSymbolProvider
+        {
+            get { return ResourceManager.GetString("NoSymbolProvider", Culture)!; }
+        }
+
+        internal static string ReadingSymbols
+        {
+            get { return ResourceManager.GetString("ReadingSymbols", Culture)!; }
+        }
 }
 }

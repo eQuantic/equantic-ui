@@ -3,7 +3,8 @@
  * DECLARES what each scroll view wants — its initial offset, its viewport callback — keyed by the
  * stable path stamped on the element as `data-eq-scroll`; `commitScrollViewports()` runs once the
  * pass has been WRITTEN, finds the real elements, applies the offset ONCE (the browser owns the
- * position after adoption — re-applying every pass would fight the user's own scrolling), and
+ * position after adoption — re-applying every pass would fight the user's own scrolling) and each
+ * request the app made since once per version, and
  * reports the measured viewport whenever it changed. A windowed list is (offset, viewport) and
  * neither is knowable before layout — this is where layout has happened.
  *
@@ -22,6 +23,8 @@ export interface ScrollViewportDeclaration {
   horizontal: boolean;
   /** Programmatic position to apply on ADOPTION only. */
   offset?: number;
+  /** Where the app asks it to go after that: applied once per version (C# `ScrollRequest`). */
+  request?: { readonly version: number; readonly offset: number };
   onViewportChanged?: (extent: number) => void;
 }
 
@@ -30,6 +33,8 @@ const declared = new Map<string, ScrollViewportDeclaration>();
 /** Marker properties live on the ELEMENT — the reconciler reuses it, so adoption survives passes. */
 interface AdoptedScrollElement extends HTMLElement {
   __eqScrollAdopted?: boolean;
+  /** The version of the last request honoured: the same request built again moves nothing. */
+  __eqRequested?: number;
   __eqViewport?: number;
   /** The callback and the axis of the latest pass: a rebuilt tree hands over a new closure over new
    * state every pass, and the observer below reads whichever is current when the size changes. */
@@ -107,6 +112,15 @@ export function commitScrollViewports(): void {
         if (declaration.horizontal) view.scrollLeft = declaration.offset;
         else view.scrollTop = declaration.offset;
       }
+    }
+    // A request the app made since: honoured once per version, after the write, so the content it
+    // scrolls over is there. The browser clamps the position to what the content can scroll, and the
+    // scroll event it raises reports where the view went, as a reader's scroll does.
+    const request = declaration.request;
+    if (request && request.version !== view.__eqRequested) {
+      view.__eqRequested = request.version;
+      if (declaration.horizontal) view.scrollLeft = request.offset;
+      else view.scrollTop = request.offset;
     }
 
     view.__eqHorizontal = declaration.horizontal;

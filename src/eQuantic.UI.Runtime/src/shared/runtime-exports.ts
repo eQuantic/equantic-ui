@@ -107,6 +107,7 @@ export {
   FaceName,
   Point,
   Rect,
+  ScrollRequest,
   Size,
   TableOffset,
   TableRange,

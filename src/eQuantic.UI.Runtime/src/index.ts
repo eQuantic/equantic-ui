@@ -196,6 +196,7 @@ export {
   FontFile,
   Point,
   Rect,
+  ScrollRequest,
   Size,
   TableOffset,
   TableRange,

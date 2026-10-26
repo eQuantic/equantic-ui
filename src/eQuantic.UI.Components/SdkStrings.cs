@@ -81,6 +81,36 @@ public static class SdkStrings
     public static string NextMatch => SdkResources.NextMatch;
     public static string CloseFind => SdkResources.CloseFind;
 
+    // The code editor's go-to field (#1083): its name, how to start, what a line it reads says, and what its
+    // symbols say when there are none to list.
+    public static string GoTo => SdkResources.GoTo;
+    public static string GoToStart => SdkResources.GoToStart;
+
+    /// <summary>What the field says before a line is typed: the lines there are.</summary>
+    public static string GoToLinePrompt(int lines) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.GoToLinePrompt, lines);
+
+    /// <summary>What the field says of a line read with no column after it.</summary>
+    public static string GoToLineOrColumn(int line) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.GoToLineOrColumn, line);
+
+    /// <summary>What the field says of a line read with a column asked for and not typed yet.</summary>
+    public static string GoToColumnPrompt(int line, int columns) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.GoToColumnPrompt, line, columns);
+
+    /// <summary>What the field says of a line and a column read.</summary>
+    public static string GoToPosition(int line, int column) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.GoToPosition, line, column);
+
+    /// <summary>The heading over the symbols listed: how many.</summary>
+    public static string SymbolsCount(int count) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.SymbolsCount, count);
+
+    public static string NoSymbols => SdkResources.NoSymbols;
+    public static string NoMatchingSymbols => SdkResources.NoMatchingSymbols;
+    public static string NoSymbolProvider => SdkResources.NoSymbolProvider;
+    public static string ReadingSymbols => SdkResources.ReadingSymbols;
+
     /// <summary>A code block's copy button.</summary>
     public static string CopyCode => SdkResources.CopyCode;
 

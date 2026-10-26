@@ -1410,8 +1410,12 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
   // never gets the browser's parse-time autofocus.
   if (node.autofocus === true) {
     input.attributes['autofocus'] = '';
-    input.events['eq:mounted'] = ((element: HTMLElement) =>
-      element.focus()) as unknown as EventHandler;
+    // …with the caret at the end of what it holds, where Flutter's autofocused TextField and Photon's put
+    // it: the code editor's go-to field opens holding ":" and what is typed goes after it (#1083).
+    input.events['eq:mounted'] = ((element: HTMLInputElement) => {
+      element.focus();
+      caretAtEnd(element);
+    }) as unknown as EventHandler;
   }
   if (node.disabled === true) {
     input.attributes['disabled'] = '';
@@ -2020,11 +2024,12 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
       onScrolled(Math.fround(horizontal ? target.scrollLeft : target.scrollTop));
     }) as EventHandler;
   }
-  if (node.onViewportChanged || node.offset) {
+  if (node.onViewportChanged || node.offset || node.request) {
     view.attributes['data-eq-scroll'] = path;
     declareScrollViewport(path, {
       horizontal,
       offset: node.offset,
+      request: node.request ?? undefined,
       onViewportChanged: node.onViewportChanged ?? undefined,
     });
   }
@@ -3686,15 +3691,21 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
     if (node.scrimStyle && node.onDismiss && (node.open === true || node.motion))
       prependClass(anchor, 'eq-anchor-above');
     if (describedBy) anchor.attributes['aria-describedby'] = describedBy;
-    // The anchor's half of the menu/listbox pattern (C# twin) — on its root, the trigger button.
+    // The anchor's half of the menu/listbox pattern (C# twin), on the element the keyboard is in while
+    // the panel shows: the trigger button at the anchor's root, or the text control of a field the anchor
+    // holds, which keeps the focus while the arrows walk the list (#1083). A screen reader follows an
+    // aria-activedescendant only on the focused element, and the field's shell is not it.
     if (panelId) {
-      anchor.attributes['aria-haspopup'] =
+      const keyed = textControlOf(anchor) ?? anchor;
+      keyed.attributes['aria-haspopup'] =
         panelRole === 'listbox' ? 'listbox' : panelRole === 'dialog' ? 'dialog' : 'menu';
-      if (panelRole === 'listbox') anchor.attributes['role'] = 'combobox';
+      if (panelRole === 'listbox') keyed.attributes['role'] = 'combobox';
+      // A text control has no Pressable to say whether its list shows, so it says so here (C# twin).
+      if (panelRole === 'listbox' && keyed !== anchor) keyed.attributes['aria-expanded'] = node.open === true ? 'true' : 'false';
       if (node.open === true) {
-        anchor.attributes['aria-controls'] = panelId;
+        keyed.attributes['aria-controls'] = panelId;
         const active = node.activeIndex ?? -1;
-        if (active >= 0) anchor.attributes['aria-activedescendant'] = `${panelId}-${active}`;
+        if (active >= 0) keyed.attributes['aria-activedescendant'] = `${panelId}-${active}`;
       }
     }
     host.children.push(anchor);
@@ -4551,3 +4562,23 @@ function isZeroRadii(radii: CornerRadiiValue): boolean {
 // runtime exports → component base = a cycle, and a cycle means an undefined base class). So the
 // lowering hands its renderer DOWN to the leaf module instead. See component-boundary.ts.
 setFailureRenderer(renderContainedFailure);
+
+/** The text control `node` holds, an `input` or a `textarea`, or null (C# twin: `TextControlIn`). */
+function textControlOf(node: HtmlNode): HtmlNode | null {
+  if (node.tag === 'input' || node.tag === 'textarea') return node;
+  for (const child of node.children) {
+    const found = textControlOf(child);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** Puts the caret of a text control at the end of its text; a control with no selection keeps none. */
+function caretAtEnd(element: HTMLInputElement | HTMLTextAreaElement): void {
+  const end = element.value.length;
+  try {
+    element.setSelectionRange(end, end);
+  } catch {
+    // An input whose type has no selection (a number, an email) throws, and has no caret to place.
+  }
+}

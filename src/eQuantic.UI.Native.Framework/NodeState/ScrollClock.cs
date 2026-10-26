@@ -43,6 +43,23 @@ public sealed class ScrollClock
     public static float? OffsetOf(Element? at) => NodeStates.Find<ScrollState>(at)?.Offset;
 
     /// <summary>
+    /// Writes back where the view at <paramref name="at"/> stands once its frame is laid out, which is where the
+    /// realizer paints it: an offset an app asked for past the end (ScrollView.Request) is kept as asked through
+    /// the frame's measures, any of which may be provisional, and settles at the end the final layout gives it.
+    /// Left as asked, a range that grew later (content added, the window taller) moved the view again with no
+    /// request and no hand on it. A glide's target settles inside <paramref name="range"/> too: a range that
+    /// shrank under a glide left it out of reach, and the glide chased it, never landing and asking for frames
+    /// for ever.
+    /// </summary>
+    public static void Settle(Element? at, float standing, float range)
+    {
+        if (NodeStates.Find<ScrollState>(at) is not { } view) return;
+        if (view.Offset is { } asked && asked != standing) view.Offset = standing;
+        var end = MathF.Max(0, range);
+        if (view.Target is { } target && (target < 0 || target > end)) view.Target = Math.Clamp(target, 0, end);
+    }
+
+    /// <summary>
     /// Puts an offset exactly where the caller says, now. This is what a FINGER does: the content
     /// is under it and follows it, with nothing to smooth — smoothing a direct manipulation is how
     /// a surface stops feeling attached to the hand.
@@ -66,7 +83,7 @@ public sealed class ScrollClock
     {
         if (!Smooth || MathF.Abs(velocity) < 0.05f) return false;
         if (NodeStates.For<ScrollState>(at) is not { } view) return false;
-        var current = view.Offset ?? 0;
+        var current = StandingAt(view, 0, maxOffset);
         var target = Math.Clamp(current + velocity * FlingReach, 0, MathF.Max(0, maxOffset));
         if (target == current) return false;
         Glide(view, target);
@@ -78,7 +95,7 @@ public sealed class ScrollClock
     public bool ScrollBy(Element at, float delta, float maxOffset, float fallback = 0)
     {
         if (NodeStates.For<ScrollState>(at) is not { } view) return false;
-        var current = view.Offset ?? fallback;
+        var current = StandingAt(view, fallback, maxOffset);
         var from = Smooth && view.Target is { } pending ? pending : current;
         var next = Math.Clamp(from + delta, 0, MathF.Max(0, maxOffset));
 
@@ -92,6 +109,19 @@ public sealed class ScrollClock
         if (next == from && MathF.Abs(next - current) < RestingDp) return false;
         Glide(view, next);
         return true;
+    }
+
+    /// <summary>
+    /// Where <paramref name="view"/> stands in a range of <paramref name="maxOffset"/>, written back to it: an
+    /// offset an app asked for past the end (ScrollView.Request) is kept as asked until the view is moved, and
+    /// stands at the end, so a wheel or a fling starts from there. Left as asked, a glide would have started
+    /// from the hidden excess, and the view stayed at the end until the glide had crossed it.
+    /// </summary>
+    private static float StandingAt(ScrollState view, float fallback, float maxOffset)
+    {
+        var standing = Math.Clamp(view.Offset ?? fallback, 0, MathF.Max(0, maxOffset));
+        if (view.Offset is { } asked && asked != standing) view.Offset = standing;
+        return standing;
     }
 
     private void Glide(ScrollState view, float target)

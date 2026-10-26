@@ -227,24 +227,32 @@ internal sealed partial class WebLoweringVisitor
             // IconButton) IS the focusable button.
             if (describedBy is not null) anchor.AriaDescribedBy = describedBy;
 
-            // The anchor's half of the menu/listbox pattern, on its root — the trigger button.
+            // The anchor's half of the menu/listbox pattern, on the element the keyboard is in while
+            // the panel shows: the trigger button at the anchor's root, or the text control of a field
+            // the anchor holds, which keeps the focus while the arrows walk the list (#1083). A screen
+            // reader follows an aria-activedescendant only on the focused element.
             if (panelId is not null)
             {
-                anchor.AriaHasPopup = anchored.PanelRole switch
+                var keyed = TextControlIn(anchor) ?? anchor;
+                keyed.AriaHasPopup = anchored.PanelRole switch
                 {
                     AnchorPanelRole.Listbox => "listbox",
                     AnchorPanelRole.Dialog => "dialog",
                     _ => "menu",
                 };
                 // A Select's FIELD is the combobox — the role rides the trigger, not the panel.
-                if (anchored.PanelRole == AnchorPanelRole.Listbox) anchor.Role = "combobox";
+                if (anchored.PanelRole == AnchorPanelRole.Listbox) keyed.Role = "combobox";
+                // A text control has no Pressable to say whether its list shows, so it says so here; a trigger
+                // says it itself (Pressable.Expanded).
+                if (anchored.PanelRole == AnchorPanelRole.Listbox && !ReferenceEquals(keyed, anchor))
+                    keyed.AriaExpanded = anchored.Open;
                 if (anchored.Open)
                 {
-                    anchor.AriaControls = panelId;
+                    keyed.AriaControls = panelId;
                     // The highlight the arrows move, stated — otherwise it is only paint, and a
                     // screen reader following the keyboard hears nothing move.
                     if (anchored.ActiveIndex >= 0)
-                        anchor.AriaActiveDescendant = $"{panelId}-{anchored.ActiveIndex}";
+                        keyed.AriaActiveDescendant = $"{panelId}-{anchored.ActiveIndex}";
                 }
             }
             // A painted scrim dims the PAGE, never its own anchor — the anchor lifts above it.
@@ -1231,4 +1239,14 @@ internal sealed partial class WebLoweringVisitor
     /// </summary>
     private string? Rigid(SizeValue width, SizeValue height) =>
         width.Kind == SizeKind.Fixed || height.Kind == SizeKind.Fixed ? "0" : null;
+
+    /// <summary>The text control <paramref name="element"/> holds, an <c>input</c> or a <c>textarea</c>, or
+    /// null (TS twin: <c>textControlOf</c>).</summary>
+    private static HtmlElement? TextControlIn(HtmlElement element)
+    {
+        if (element is RealizedElement { Tag: "input" or "textarea" }) return element;
+        foreach (var child in element.Children)
+            if (child is HtmlElement inner && TextControlIn(inner) is { } found) return found;
+        return null;
+    }
 }

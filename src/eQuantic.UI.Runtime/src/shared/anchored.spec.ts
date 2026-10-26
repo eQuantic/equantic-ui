@@ -140,3 +140,66 @@ describe('anchored dismissal by keyboard', () => {
     expect(activeShortcuts().filter((b) => b.chord === 'escape')).toHaveLength(0);
   });
 });
+
+describe('a listbox anchored to a field (C# cross-pin)', () => {
+  type Lowered = { tag: string; attributes: Record<string, string | undefined>; children: Lowered[] };
+  const all = (node: Lowered): Lowered[] => [node, ...node.children.flatMap(all)];
+
+  /**
+   * The combobox half rides the element the keyboard is in. A field that anchors a listbox (the code
+   * editor's go-to field, #1083) keeps the focus in its text control while the arrows walk the list, and a
+   * screen reader follows an aria-activedescendant only on the focused element: on the field's shell it
+   * heard nothing move.
+   */
+  it('makes the text control the combobox, not the field around it', () => {
+    const field = { nodeKind: 'textEntry', value: '@', label: 'Go to', role: 'bodyL', lines: 1 };
+    const host = lowerVisualNode(
+      anchored({ anchor: field as unknown as VisualNodeValue, open: true, panelRole: 'listbox', activeIndex: 1 }),
+      ctx,
+    ) as unknown as Lowered;
+
+    const nodes = all(host);
+    const input = nodes.find((node) => node.tag === 'input')!;
+    expect(input.attributes['role']).toBe('combobox');
+    expect(input.attributes['aria-haspopup']).toBe('listbox');
+    expect(input.attributes['aria-controls']).toMatch(/^eq-panel-/);
+    expect(input.attributes['aria-activedescendant']).toBe(`${input.attributes['aria-controls']}-1`);
+    expect(input.attributes['aria-expanded']).toBe('true');
+    expect(nodes.filter((node) => node.attributes['role'] === 'combobox')).toHaveLength(1);
+
+    const closed = all(
+      lowerVisualNode(
+        anchored({ anchor: field as unknown as VisualNodeValue, open: false, panelRole: 'listbox' }),
+        ctx,
+      ) as unknown as Lowered,
+    ).find((node) => node.tag === 'input')!;
+    expect(closed.attributes['aria-expanded']).toBe('false');
+  });
+});
+
+describe('an autofocused field', () => {
+  /**
+   * Its caret goes to the end of what it holds, where Flutter's autofocused TextField and Photon's put it:
+   * the code editor's go-to field opens holding ":", and what is typed went BEFORE it on the web, the
+   * browser's focus leaving the caret at the start (#1083).
+   */
+  it('puts the caret at the end of its text', () => {
+    const field = { nodeKind: 'textEntry', value: ':', label: 'Go to', role: 'bodyL', lines: 1, autofocus: true };
+    type Lowered = { tag: string; events: Record<string, (element: HTMLElement) => void>; children: Lowered[] };
+    const all = (node: Lowered): Lowered[] => [node, ...node.children.flatMap(all)];
+    const lowered = lowerVisualNode(field as unknown as VisualNodeValue, ctx) as unknown as Lowered;
+    const input = all(lowered).find((node) => node.tag === 'input')!;
+
+    const element = document.createElement('input');
+    element.value = ':';
+    document.body.append(element);
+    // Where a browser's focus left it: at the start.
+    element.setSelectionRange(0, 0);
+    input.events['eq:mounted'](element);
+
+    expect(document.activeElement).toBe(element);
+    expect(element.selectionStart).toBe(1);
+    expect(element.selectionEnd).toBe(1);
+    element.remove();
+  });
+});

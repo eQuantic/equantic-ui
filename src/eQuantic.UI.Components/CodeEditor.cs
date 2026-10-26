@@ -34,6 +34,8 @@ public sealed class CodeEditor : StatefulComponent
     private int _listTop;
     private int _listColumns;
     private IReadOnlyList<CodeCompletionMatch>? _measured;
+    // The go-to field's first row in view (#1083).
+    private int _goToTop;
 
     public CodeEditor(string code = "", string? language = null)
     {
@@ -145,6 +147,13 @@ public sealed class CodeEditor : StatefulComponent
     public IReadOnlyList<ICodeSignatureProvider> SignatureProviders { get; set; } = [];
 
     /// <summary>
+    /// What declares the document's symbols (<see cref="ICodeSymbolProvider"/>), which ⇧⌘O lists and goes to
+    /// (#1083). Put in and taken out as <see cref="DiagnosticProviders"/> are, and known by reference as they
+    /// are.
+    /// </summary>
+    public IReadOnlyList<ICodeSymbolProvider> SymbolProviders { get; set; } = [];
+
+    /// <summary>
     /// An app's own key bindings over the editor's defaults (<see cref="CodeKeymap.Defaults"/>): a chord
     /// bound here is the app's alone, and one bound to <see cref="CodeCommand.None"/> is given back to the
     /// host. Handed to <see cref="CodeEditorController.KeyBindings"/>, and taken out again when a later
@@ -174,6 +183,10 @@ public sealed class CodeEditor : StatefulComponent
         editor.SignatureHelp.Changed += () => SetState(() => { });
         // And a snippet's session, whose end on Escape moves neither the text nor the carets (#1013).
         editor.Snippet.Changed += () => SetState(() => { });
+        // And the go-to field, and a scroll the editor asks of its view, which an app may ask for with no key
+        // (#1083).
+        editor.GoTo.Changed += () => SetState(() => { });
+        editor.ScrollRequested += () => SetState(() => { });
         return editor;
     }
 
@@ -189,6 +202,7 @@ public sealed class CodeEditor : StatefulComponent
     private List<ICodeDiagnosticProvider> _diagnosers = [];
     private List<ICodeHoverProvider> _explainers = [];
     private List<ICodeSignatureProvider> _signers = [];
+    private List<ICodeSymbolProvider> _declarers = [];
 
     /// <summary>
     /// Reports <see cref="Diagnostics"/> when they are other problems than the last ones, and hands the
@@ -237,6 +251,16 @@ public sealed class CodeEditor : StatefulComponent
             foreach (var provider in _signers) editor.SignatureHelp.Providers.Add(provider);
             // What the panel shows, and the requests still out for it, came from the providers before.
             editor.SignatureHelp.Dismiss();
+        }
+        if (!SameProviders(SymbolProviders, _declarers))
+        {
+            foreach (var provider in _declarers)
+            {
+                var at = IndexOfInstance(editor.Symbols.Providers, provider);
+                if (at >= 0) editor.Symbols.Providers.RemoveAt(at);
+            }
+            _declarers = [.. SymbolProviders];
+            foreach (var provider in _declarers) editor.Symbols.Providers.Add(provider);
         }
     }
 
@@ -451,9 +475,13 @@ public sealed class CodeEditor : StatefulComponent
     {
         var problems = editor.Diagnostics.Items;
         if (matches.Count == 0 && !MatchBrackets && editor.Composition is null && problems.Count == 0
-            && !editor.Snippet.IsActive) return Decorations;
+            && !editor.Snippet.IsActive && editor.GoTo.Preview is null) return Decorations;
 
         var marks = new List<CodeDecoration>(Decorations);
+        // What the go-to field reads, its lines washed whole under every other mark, as VS Code washes the
+        // range it previews (#1083).
+        if (editor.GoTo.Preview is { } previewed && previewed.End.Line >= first && previewed.Start.Line <= last)
+            marks.Add(new CodeDecoration(previewed, CodeDecorationKind.Line) { Color = theme.Colors(Variant.Info).Subtle });
         // A snippet's placeholders in view are washed while it is being filled in, the one the carets stand at
         // too, as VS Code washes every tab stop (#1013).
         foreach (var placeholder in editor.Snippet.PlaceholdersIn(first, last))
@@ -542,6 +570,7 @@ public sealed class CodeEditor : StatefulComponent
         DiagnosticProviders = fresh.DiagnosticProviders;
         HoverProviders = fresh.HoverProviders;
         SignatureProviders = fresh.SignatureProviders;
+        SymbolProviders = fresh.SymbolProviders;
         KeyBindings = fresh.KeyBindings;
     }
 
@@ -687,6 +716,7 @@ public sealed class CodeEditor : StatefulComponent
         var surfaceHeight = bounded ? MathF.Max(codeHeight, _viewport) : codeHeight;
         var viewTop = windowed ? _offset : 0;
         var viewBottom = windowed && _viewport > 0 ? MathF.Min(_offset + _viewport, surfaceHeight) : surfaceHeight;
+        ReportView(editor, windowed);
         if (completion.IsOpen && completion.Selected >= 0)
         {
             var items = completion.Items;
@@ -799,7 +829,10 @@ public sealed class CodeEditor : StatefulComponent
                 if (editor.Completion.IsOpen || editor.Hover.IsOpen || editor.SignatureHelp.IsOpen)
                     SetState(() => _scrollX = offset);
                 else _scrollX = offset;
+                ReportView(editor, windowed);
             },
+            // Where the editor asks the code to slide to: a position brought into view across (#1083).
+            Request = editor.HorizontalScroll,
         };
 
         // THE GUTTER, beside the sideways scroll and inside the vertical one below: the numbers
@@ -832,7 +865,10 @@ public sealed class CodeEditor : StatefulComponent
                 {
                     if (MathF.Abs(offset - _offset) < 1) return;
                     SetState(() => _offset = offset);
+                    ReportView(editor, windowed);
                 },
+                // Where the editor asks the code to scroll to: a line centred, the view given back (#1083).
+                Request = editor.VerticalScroll,
                 OnViewportChanged = height =>
                 {
                     if (MathF.Abs(height - _viewport) < 1) return;
@@ -874,12 +910,55 @@ public sealed class CodeEditor : StatefulComponent
             IReadOnlyList<CodeRange> found = _findText.Length > 0 ? matches : [];
             layers.Add(new Positioned(FindBar(context, editor, found), top: Space.S2, end: Space.S2));
         }
+        // The go-to field over the top of the code, centred, as VS Code's quick input stands over its editor
+        // (#1083), over the find bar when both show.
+        var goTo = editor.GoTo;
+        if (goTo.IsOpen)
+        {
+            var width = _viewportWidth > 0
+                ? MathF.Min(CodeGoToView.MaxWidth, MathF.Max(Space.S4 * 12, _viewportWidth - 2 * Space.S4))
+                : CodeGoToView.MaxWidth;
+            // The page follows the selection past either end, and PageUp and PageDown step by it.
+            if (goTo.Selected >= 0)
+            {
+                if (goTo.Selected < _goToTop) _goToTop = goTo.Selected;
+                if (goTo.Selected >= _goToTop + CodeGoToView.PageRows) _goToTop = goTo.Selected - CodeGoToView.PageRows + 1;
+            }
+            _goToTop = Math.Max(0, Math.Min(_goToTop, goTo.Entries.Count - CodeGoToView.PageRows));
+            goTo.PageSize = CodeGoToView.PageRows;
+            var centred = new Row(main: MainAlign.Center) { Width = SizeValue.Fill };
+            centred.Add(CodeGoToView.Build(context, editor, metrics, width, _goToTop,
+                typed => SetState(() => goTo.Query = typed),
+                () => SetState(() =>
+                {
+                    if (goTo.Accept()) Notify(editor);
+                }),
+                () => SetState(() => goTo.Dismiss()),
+                index => SetState(() =>
+                {
+                    goTo.Select(index);
+                    if (goTo.Accept()) Notify(editor);
+                })));
+            layers.Add(new Positioned(centred, top: Space.S2, start: 0, end: 0));
+        }
+        else _goToTop = 0;
+        // The field's keys, wherever the keyboard is in this editor and only while it shows: the arrows and the
+        // page keys walk its list and Escape closes it, giving the view back; the list hangs with no scrim, so
+        // no panel's Escape stands in for it. Enter is the field's own. Chords
+        // of the editor's own, as the find bar's Escape is, and inside it, so Escape closes the field first;
+        // and mounted whether it shows or not, so nothing under them moves in the tree.
+        VisualNode keyed = layers;
+        keyed = GoToKey(keyed, "ArrowDown", goTo.IsOpen, () => goTo.SelectNext());
+        keyed = GoToKey(keyed, "ArrowUp", goTo.IsOpen, () => goTo.SelectPrevious());
+        keyed = GoToKey(keyed, "PageDown", goTo.IsOpen, () => goTo.SelectNextPage());
+        keyed = GoToKey(keyed, "PageUp", goTo.IsOpen, () => goTo.SelectPreviousPage());
+        keyed = GoToKey(keyed, "Escape", goTo.IsOpen, () => goTo.Close());
         // Escape closes the bar wherever the keyboard is in this editor, the bar or the code, and only
         // while the bar is open: a chord of the editor's own, so that of two editors on one page the
         // one in use closes its bar, and one that binds nothing while the bar is closed, so a dialog
         // around the editor keeps its Escape (#457). Page-wide, the last bar mounted closed wherever
         // the keyboard was.
-        var closable = new Shortcut(layers, KeyChord.Escape, () => CloseFind(editor))
+        var closable = new Shortcut(keyed, KeyChord.Escape, () => CloseFind(editor))
         {
             FocusScoped = true,
             Enabled = _findOpen,
@@ -898,6 +977,17 @@ public sealed class CodeEditor : StatefulComponent
             MaxHeight = capped ? SizeValue.Fixed(MaxHeight) : SizeValue.Hug,
         }, findable);
     }
+
+    /// <summary>One key of the go-to field, answered while the keyboard is in this editor and only while the
+    /// field shows.</summary>
+    private Shortcut GoToKey(VisualNode child, string key, bool open, Func<bool> act) =>
+        new(child, new KeyChord(key, KeyModifiers.None), () => SetState(() => act())) { FocusScoped = true, Enabled = open };
+
+    /// <summary>Tells the editor the part of its code on screen, in the surface's coordinates (#1083): the two
+    /// scroll views' offsets and sizes. Only a windowed editor scrolls its code; an uncapped Hug one is all on
+    /// screen, its page scrolling instead, and has no height to centre in.</summary>
+    private void ReportView(CodeEditorController editor, bool windowed) =>
+        editor.View = new Rect(_scrollX, windowed ? _offset : 0, _viewportWidth, windowed ? _viewport : 0);
 
     /// <summary>Closes the bar and gives the code the keyboard back, which is where it came from
     /// or where it is anyway.</summary>
