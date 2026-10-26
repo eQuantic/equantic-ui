@@ -277,6 +277,12 @@ class SprintTests(unittest.TestCase):
         self.assertEqual([(c.kind, c.new) for c in sprint_changes(board(issue), fc, sprints)], [("Sprint", None)])
         self.assertEqual(sprint_changes(board(issue), None, sprints), [])
 
+    def test_renaming_the_calendar_moves_no_issue(self):
+        issue = done(1, closed=2, points=3)
+        issue.sprint, issue.sprint_id = "Iteration 1", "a"
+        sprints = [Sprint("Sprint 18", day(13), id="a")]
+        self.assertEqual(sprint_changes(board(issue), None, sprints), [])
+
     def test_each_sprint_says_what_it_delivered_and_what_it_is_planned_to_hold(self):
         issues = board(done(1, closed=2, points=5), done(2, closed=3, points=3), todo(3, points=8))
         fc = Forecast(None, {}, {}, [], {3: (0, 20)}, TODAY)

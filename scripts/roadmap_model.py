@@ -83,6 +83,7 @@ class Issue:
     priority: str | None = None
     points: float | None = None
     sprint: str | None = None
+    sprint_id: str | None = None
     start: dt.date | None = None
     target: dt.date | None = None
     parent: int | None = None
@@ -614,7 +615,9 @@ def sprint_changes(issues: dict, fc: Forecast | None, sprints: list) -> list:
         if not issue.item:
             continue
         held, why = sprint_of(issue, fc, sprints)
-        if held and held.title != issue.sprint:
+        # By the board's id where the sprint has one: renaming the calendar moves no issue.
+        same = held and ((held.id and held.id == issue.sprint_id) or held.title == issue.sprint)
+        if held and not same:
             found.append(Change(issue, "Sprint", issue.sprint, held.title, why))
         elif held is None and issue.sprint and why != "no pace":
             found.append(Change(issue, "Sprint", issue.sprint, None, why))

@@ -59,7 +59,7 @@ ITEMS = """query($owner: String!, $number: Int!, $cursor: String) { organization
   items(first: 40, after: $cursor) { pageInfo { hasNextPage endCursor } nodes { id
     fieldValueByName(name: "Status") { ... on ProjectV2ItemFieldSingleSelectValue { name updatedAt } }
     estimate: fieldValueByName(name: "Estimate") { ... on ProjectV2ItemFieldNumberValue { number } }
-    sprint: fieldValueByName(name: "Iteration") { ... on ProjectV2ItemFieldIterationValue { title } }
+    sprint: fieldValueByName(name: "Iteration") { ... on ProjectV2ItemFieldIterationValue { title iterationId } }
     content { ... on Issue { id number title state stateReason createdAt closedAt repository { nameWithOwner }
       issueType { name } milestone { title } parent { number repository { nameWithOwner } }
       issueFieldValues(first: 10) { nodes {
@@ -110,6 +110,7 @@ def load():
                 moved=min(moves) if moves else None,
                 milestone=(content["milestone"] or {}).get("title"), priority=values.get("Priority"),
                 points=(node["estimate"] or {}).get("number"), sprint=(node["sprint"] or {}).get("title"),
+                sprint_id=(node["sprint"] or {}).get("iterationId"),
                 start=day(values.get("Start date")), target=day(values.get("Target date")),
                 parent=parent.get("number") if parent.get("repository", {}).get("nameWithOwner") == f"{OWNER}/{REPO}" else None,
                 pulls=pulls, id=content["id"], item=node["id"])
@@ -159,8 +160,12 @@ def lines_on_main(ref: str = "origin/main") -> dict:
     out. The clone's main is fetched first, so the history is the repository's."""
     subprocess.run(["git", "fetch", "--quiet", "origin", "main"], capture_output=True)
     log = subprocess.run(["git", "log", "--first-parent", "--diff-merges=first-parent", "--numstat",
-                          "--format=@%cd", "--date=short", ref], capture_output=True, text=True, check=True).stdout
-    return lines_by_day(log)
+                          "--format=@%cd", "--date=short", ref], capture_output=True, text=True)
+    if log.returncode:
+        # Outside a clone of the repository the history is not here: the report goes on without it.
+        print(f"The lines on main are left out: git could not read {ref} ({log.stderr.strip()[:80]}).")
+        return {}
+    return lines_by_day(log.stdout)
 
 
 def set_status(meta: dict, issue: Issue, status: str):
