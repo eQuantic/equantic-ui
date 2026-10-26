@@ -146,6 +146,12 @@ starts, In review when the pull request opens, Done when it merges. A sub-issue 
 through GraphQL (`addSubIssue`, `updateIssueIssueType`), and the board status through
 `updateProjectV2ItemFieldValue`.
 
+A new issue carries its points in the board's Estimate field: 1, 2, 3, 5, 8 or 13, given against
+what was delivered before it, and an issue bigger than 13 is a parent split into slices. Whenever the
+work moves (an issue starts, a pull request merges), `python3 scripts/roadmap.py` reports the board's
+real dates and the forecast of the rest, each milestone's included, and `--apply` writes them to the
+board; `docs/ROADMAP-FORECAST.md` is the method.
+
 ### Branches
 
 `<type>/<slug>`: the type is one of `feat/`, `fix/`, `chore/`, `refactor/`, `docs/`, `test/`,

@@ -37,6 +37,12 @@ Plans for work that is still landing. Each names its slices and which are done.
 | [BOUND-TREE-PLAN.md](BOUND-TREE-PLAN.md) | Compiler phase 5 — translating from the bound tree. |
 | [COVERAGE-PLAN.md](COVERAGE-PLAN.md) | Compiler phase 6 — deriving the BCL mapping, with baselines that may only shrink. |
 
+## The board's dates
+
+| Document | What it answers |
+|---|---|
+| [ROADMAP-FORECAST.md](ROADMAP-FORECAST.md) | *When does a milestone land?* — the points an issue carries, the pace measured on the board, the plan across the epics, and what the forecast cannot see. `scripts/roadmap.py` computes it and writes the board's Roadmap view; its arithmetic is held by `scripts/roadmap_model_test.py`, which CI runs. |
+
 ## History
 
 What happened and when, and the one finished plan still kept for the reasoning it records. A plan
