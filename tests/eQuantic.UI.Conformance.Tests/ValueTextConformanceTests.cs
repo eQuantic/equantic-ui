@@ -92,18 +92,21 @@ public class ValueTextConformanceTests
     }
 
     /// <summary>
-    /// A null provider behind a cast is refused where a bare null is not. A number read with no
-    /// culture is a warning (EQ2110), and a null literal counts as none, but the build takes
-    /// <c>(IFormatProvider?)null</c> for a culture it cannot name and refuses it (EQ2108), where
-    /// <c>ToString</c> and <c>string.Format</c> read the same cast as the null it is. This case ran the
-    /// parse's text and matched .NET until the runner read the build's refusals (#907); it pins the
-    /// refusal until the build reads the cast's null as a null (#908).
+    /// A null provider behind a cast reads as a bare null does (#908): the page's culture, as .NET
+    /// reads the current one with a null provider. The build took <c>(IFormatProvider?)null</c> for a
+    /// culture it could not name and refused it (EQ2108), where <c>ToString</c> and
+    /// <c>string.Format</c> read the same cast as the null it is.
     /// </summary>
-    [Fact]
-    public void ANullProviderBehindACast_IsRefusedForAParse_WhereABareNullIsNot() =>
-        ConformanceRunner.AssertStatementsRefusedByTheBuild(
-            "return double.Parse(\"2.5\", (IFormatProvider?)null).ToString(System.Globalization.CultureInfo.InvariantCulture);",
-            "EQ2108");
+    [SkippableTheory]
+    [InlineData("return double.Parse(\"2.5\", (IFormatProvider?)null).ToString(System.Globalization.CultureInfo.InvariantCulture);")]
+    [InlineData("return int.Parse(\"-7\", ((IFormatProvider?)null)).ToString(System.Globalization.CultureInfo.InvariantCulture);")]
+    [InlineData("return decimal.Parse(\"1.5\", (IFormatProvider)null!).ToString(System.Globalization.CultureInfo.InvariantCulture);")]
+    [InlineData("return (int.TryParse(\" 12 \", System.Globalization.NumberStyles.Integer, (IFormatProvider?)null, out var n) ? n : -1).ToString(System.Globalization.CultureInfo.InvariantCulture);")]
+    public void ANullProviderBehindACast_ReadsAsABareNullDoes(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 
     /// <summary>A bool's provider named by a bare identifier that binds to a PROPERTY: its getter
     /// runs, after the receiver, as C# runs it.</summary>

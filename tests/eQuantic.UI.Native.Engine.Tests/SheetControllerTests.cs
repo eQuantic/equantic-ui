@@ -113,14 +113,17 @@ public class SheetControllerTests
     public void TabAndEnter_WalkAndWrapTheSelection()
     {
         var sheet = Sheet();
-        sheet.Selection = new SheetRange(new CellRef(0, 0), new CellRef(1, 1));   // A1:B2, focus B2
+        sheet.Selection = new SheetRange(new CellRef(0, 0), new CellRef(1, 1));   // A1:B2, A1 active
 
-        sheet.Step(0, 1);   // Tab from B2 wraps to A1... focus was B2 → right wraps to left, next row wraps to top
-        sheet.ActiveCell.Should().Be(new CellRef(0, 0));
+        sheet.Step(0, 1);   // Tab from A1 goes right to B1
+        sheet.ActiveCell.Should().Be(new CellRef(0, 1));
         sheet.Selection.RowCount.Should().Be(2, "the rectangle survives the walk");
 
+        sheet.Step(0, 1);   // right of B1 wraps to the next row's left, A2
+        sheet.ActiveCell.Should().Be(new CellRef(1, 0));
         sheet.Step(0, 1);
-        sheet.ActiveCell.Should().Be(new CellRef(0, 1));
+        sheet.Step(0, 1);   // B2, then past the last cell back to the top, A1
+        sheet.ActiveCell.Should().Be(new CellRef(0, 0));
 
         // Single cell: Enter just moves down.
         sheet.Selection = new SheetRange(new CellRef(3, 3));
@@ -133,11 +136,11 @@ public class SheetControllerTests
     {
         var sheet = Sheet(rows: 50, cols: 10);
 
-        sheet.SelectRows(2, 4);
+        sheet.SelectRows(2, 4, add: false);
         sheet.Selection.RowCount.Should().Be(3);
         sheet.Selection.ColCount.Should().Be(10);
 
-        sheet.SelectCols(1, 1);
+        sheet.SelectCols(1, 1, add: false);
         sheet.Selection.ColCount.Should().Be(1);
         sheet.Selection.RowCount.Should().Be(50);
     }
@@ -476,7 +479,8 @@ public class SheetControllerTests
         model.HandlePointer(PointerPhase.Down, new Point(96 + 48, 28 * 3 + 14), KeyModifiers.None, 1, PointerKind.Mouse);
         model.HandlePointer(PointerPhase.Move, new Point(96 * 3 + 48, 28 * 9 + 14), KeyModifiers.None, 1, PointerKind.Mouse);
 
-        sheet.ActiveCell.Should().Be(new CellRef(9, 3));
+        sheet.Selection.Focus.Should().Be(new CellRef(9, 3));
+        sheet.ActiveCell.Should().Be(new CellRef(3, 1), "the cell the drag began on stays active");
         sheet.RevealCell.Should().Be(new CellRef(1, 0), "the version the key raised still asks for the cell it left");
     }
 
@@ -495,10 +499,12 @@ public class SheetControllerTests
 
         model.HandleKey("PageDown", KeyModifiers.Shift, KeyboardConvention.Standard, null).Should().BeTrue();
         sheet.Selection.Should().Be(new SheetRange(new CellRef(20, 0), new CellRef(40, 0)), "Shift keeps the anchor");
+        sheet.ActiveCell.Should().Be(new CellRef(20, 0), "and the active cell");
+        model.HandleKey("PageDown", KeyModifiers.Shift, KeyboardConvention.Standard, null);
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(20, 0), new CellRef(60, 0)), "Shift stretches from the far end");
 
         model.HandleKey("PageUp", KeyModifiers.None, KeyboardConvention.Standard, null).Should().BeTrue();
-        sheet.ActiveCell.Should().Be(new CellRef(20, 0));
-        model.HandleKey("PageUp", KeyModifiers.None, KeyboardConvention.Standard, null);
+        sheet.ActiveCell.Should().Be(new CellRef(0, 0), "a plain PageUp moves from the active cell, A21");
         model.HandleKey("PageUp", KeyModifiers.None, KeyboardConvention.Standard, null);
         sheet.ActiveCell.Should().Be(new CellRef(0, 0), "the first row holds");
     }

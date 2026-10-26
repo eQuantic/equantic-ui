@@ -84,6 +84,18 @@
   <data name="RangeSize" xml:space="preserve">
     <value>{0}R x {1}C</value>
   </data>
+  <data name="StatusSum" xml:space="preserve">
+    <value>Sum: {0}</value>
+  </data>
+  <data name="StatusAverage" xml:space="preserve">
+    <value>Average: {0}</value>
+  </data>
+  <data name="StatusCount" xml:space="preserve">
+    <value>Count: {0}</value>
+  </data>
+  <data name="AddToSelection" xml:space="preserve">
+    <value>Add to Selection</value>
+  </data>
   <data name="Back" xml:space="preserve">
     <value>Back</value>
   </data>
@@ -129,5 +141,38 @@
   </data>
   <data name="ShowAsChart" xml:space="preserve">
     <value>Show as chart</value>
+  </data>
+  <data name="GoTo" xml:space="preserve">
+    <value>Go to</value>
+  </data>
+  <data name="GoToStart" xml:space="preserve">
+    <value>Type : to go to a line, or @ to go to a symbol.</value>
+  </data>
+  <data name="GoToLinePrompt" xml:space="preserve">
+    <value>Type a line number to go to (from 1 to {0}).</value>
+  </data>
+  <data name="GoToLineOrColumn" xml:space="preserve">
+    <value>Press Enter to go to line {0}, or type a colon to add a column.</value>
+  </data>
+  <data name="GoToColumnPrompt" xml:space="preserve">
+    <value>Press Enter to go to line {0}, or type a column (from 1 to {1}).</value>
+  </data>
+  <data name="GoToPosition" xml:space="preserve">
+    <value>Press Enter to go to line {0} at column {1}.</value>
+  </data>
+  <data name="SymbolsCount" xml:space="preserve">
+    <value>Symbols ({0})</value>
+  </data>
+  <data name="NoSymbols" xml:space="preserve">
+    <value>No symbols in this document.</value>
+  </data>
+  <data name="NoMatchingSymbols" xml:space="preserve">
+    <value>No matching symbols.</value>
+  </data>
+  <data name="NoSymbolProvider" xml:space="preserve">
+    <value>This editor has no symbol information.</value>
+  </data>
+  <data name="ReadingSymbols" xml:space="preserve">
+    <value>Reading the symbols…</value>
   </data>
 </root>

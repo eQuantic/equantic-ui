@@ -25,7 +25,7 @@ public class NumberStrategyTests
     // A float read from text is a single, rounded once from the digits by the runtime.
     [InlineData("float.Parse(str)", "$eq.num.realParse(this.str, 'single')")]
     [InlineData("int.Parse(str, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture)",
-        "$eq.num.intParse(this.str, 'int', 515)")]
+        "$eq.num.intParse(this.str, 'int', 515, true)")]
     // A named style written before the text is evaluated first, as C# evaluates every argument.
     [InlineData("double.Parse(style: System.Globalization.NumberStyles.Float, s: str)",
         "(($0, $1) => $eq.num.realParse($1, 'double', $0))(167, this.str)")]
@@ -51,29 +51,43 @@ public class NumberStrategyTests
     }
 
     /// <summary>
-    /// The browser reads a number in the invariant culture and no other. A provider that names it
-    /// is left out without a word; no provider is EQ2110, because C# then reads in the request's
-    /// culture ("1,5" is 1.5 in pt) and the browser reads 15; any other provider is EQ2108.
+    /// The browser reads a number in the culture the call names, as .NET does (#1087): the page's,
+    /// which the reader reads by default, for no provider, the current culture and a null one, a null
+    /// behind a cast included (#908); the invariant one, which the call asks for with a last
+    /// <c>true</c>, after an <c>undefined</c> where the reader takes a style the call did not name.
     /// </summary>
     [Theory]
-    [InlineData("decimal.Parse(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.decParse(this.str)")]
-    [InlineData("Convert.ToDecimal(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.decConvert(this.str)")]
-    [InlineData("Convert.ToDecimal((object)str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.decConvert(this.str)")]
-    [InlineData("Convert.ToDecimal(provider: System.Globalization.CultureInfo.InvariantCulture, value: str)", "$eq.num.decConvert(this.str)")]
-    public void ADecimalReadInTheInvariantCulture_LeavesTheProviderOut(string call, string expected)
+    [InlineData("decimal.Parse(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.decParse(this.str, undefined, true)")]
+    [InlineData("decimal.Parse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.decParse(this.str, 167, true)")]
+    [InlineData("Convert.ToDecimal(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.decConvert(this.str, 'double', true)")]
+    [InlineData("Convert.ToDecimal((object)str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.decConvert(this.str, 'double', true)")]
+    [InlineData("Convert.ToDecimal(provider: System.Globalization.CultureInfo.InvariantCulture, value: str)", "$eq.num.decConvert(this.str, 'double', true)")]
+    public void ADecimalReadInTheInvariantCulture_SaysSo(string call, string expected)
     {
         TestHelper.ConvertExpression(call).Should().Be(expected);
-        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code == "EQ2108" || d.Code == "EQ2110" || d.Code == "EQ1004");
+        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code.StartsWith("EQ2") || d.Code == "EQ1004");
     }
 
     [Theory]
-    [InlineData("decimal.Parse(str, System.Globalization.CultureInfo.CurrentCulture)")]
+    [InlineData("decimal.Parse(str)", "$eq.num.decParse(this.str)")]
+    [InlineData("decimal.Parse(str, null)", "$eq.num.decParse(this.str)")]
+    [InlineData("decimal.Parse(str, (IFormatProvider?)null)", "$eq.num.decParse(this.str)")]
+    [InlineData("decimal.Parse(str, System.Globalization.CultureInfo.CurrentCulture)", "$eq.num.decParse(this.str)")]
+    [InlineData("decimal.TryParse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.CurrentCulture, out _)", "($eq.num.decTryParse(this.str, 167) !== undefined)")]
+    [InlineData("Convert.ToDecimal(str)", "$eq.num.decConvert(this.str)")]
+    [InlineData("Convert.ToDecimal((object)str, System.Globalization.CultureInfo.CurrentCulture)", "$eq.num.decConvert(this.str)")]
+    public void ADecimalReadInThePagesCulture_IsTheReadersDefault(string call, string expected)
+    {
+        TestHelper.ConvertExpression(call).Should().Be(expected);
+        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code.StartsWith("EQ2") || d.Code == "EQ1004");
+    }
+
+    [Theory]
     [InlineData("decimal.Parse(str, System.Globalization.CultureInfo.GetCultureInfo(\"pt-BR\"))")]
     [InlineData("decimal.TryParse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.GetCultureInfo(\"pt-BR\"), out var v)")]
-    [InlineData("Convert.ToDecimal(str, System.Globalization.CultureInfo.CurrentCulture)")]
     // A value that may be text when the call runs is read in the culture the call names.
-    [InlineData("Convert.ToDecimal((object)str, System.Globalization.CultureInfo.CurrentCulture)")]
-    [InlineData("Convert.ToDecimal((IConvertible)str, System.Globalization.CultureInfo.CurrentCulture)")]
+    [InlineData("Convert.ToDecimal((object)str, new System.Globalization.CultureInfo(\"pt-BR\"))")]
+    [InlineData("Convert.ToDecimal((IConvertible)str, System.Globalization.CultureInfo.GetCultureInfo(\"pt-BR\"))")]
     public void ADecimalReadInAnotherCulture_IsABuildError(string call)
     {
         TestHelper.DiagnosticsFor(call).Should().Contain(d => d.Code == "EQ2108");
@@ -104,17 +118,6 @@ public class NumberStrategyTests
         TestHelper.DiagnosticsFor(call).Should().Contain(d => d.Code == "EQ2108");
     }
 
-    [Theory]
-    [InlineData("decimal.Parse(str)")]
-    [InlineData("decimal.Parse(str, null)")]
-    [InlineData("decimal.TryParse(str, out var v)")]
-    [InlineData("Convert.ToDecimal(str)")]
-    [InlineData("Convert.ToDecimal((object)str)")]
-    public void ADecimalReadWithNoCulture_IsWarnedAbout(string call)
-    {
-        TestHelper.DiagnosticsFor(call).Should().Contain(d => d.Code == "EQ2110" && d.Severity == ConversionSeverity.Warning);
-    }
-
     /// <summary>A number converts into a decimal with no culture involved, so it is not asked for one.</summary>
     [Theory]
     [InlineData("Convert.ToDecimal(Value)")]
@@ -122,7 +125,7 @@ public class NumberStrategyTests
     [InlineData("Convert.ToDecimal(Active)")]
     public void ANumberConvertedToDecimal_NeedsNoCulture(string call)
     {
-        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code == "EQ2108" || d.Code == "EQ2110");
+        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code == "EQ2108");
     }
 
     [Fact]
@@ -144,47 +147,47 @@ public class NumberStrategyTests
     [InlineData("double.TryParse(str, out var result)",
         "((result = $eq.num.realTryParse(this.str, 'double')) !== undefined || ((result = 0), false))")]
     [InlineData("float.TryParse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var result)",
-        "((result = $eq.num.realTryParse(this.str, 'single', 167)) !== undefined || ((result = 0), false))")]
+        "((result = $eq.num.realTryParse(this.str, 'single', 167, true)) !== undefined || ((result = 0), false))")]
     public void ANumberTryParsedFromText_LeavesZeroInTheOutWhenItFails(string call, string expected)
     {
         TestHelper.ConvertExpression(call).Should().Be(expected);
     }
 
     /// <summary>
-    /// Every numeric type reads text in a culture, so the policy decimal set holds for all of them
-    /// (#376): no provider is EQ2110, the invariant culture is left out without a word, and any
-    /// other is EQ2108. An integer's default style reads only the signs in a culture, and that is
-    /// enough to differ: a culture whose minus sign is U+2212 reads "−5" where the browser cannot.
+    /// Every numeric type reads text in a culture, so the policy decimal follows holds for all of them
+    /// (#376, #1087). An integer's default style reads only the signs in a culture, and that is enough
+    /// to differ: sv-SE's minus sign is U+2212.
     /// </summary>
     [Theory]
-    [InlineData("int.Parse(str)")]
-    [InlineData("long.TryParse(str, out var v)")]
-    [InlineData("double.Parse(str)")]
-    [InlineData("float.TryParse(str, out var v)")]
-    [InlineData("byte.Parse(str, System.Globalization.NumberStyles.HexNumber)")]
-    [InlineData("Convert.ToInt32(str)")]
-    [InlineData("Convert.ToDouble(str)")]
-    public void ANumberReadWithNoCulture_IsWarnedAbout(string call)
-    {
-        TestHelper.DiagnosticsFor(call).Should().Contain(d => d.Code == "EQ2110" && d.Severity == ConversionSeverity.Warning);
-    }
-
-    [Theory]
-    [InlineData("int.Parse(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.intParse(this.str, 'int')")]
-    [InlineData("ulong.TryParse(str, System.Globalization.CultureInfo.InvariantCulture, out _)", "($eq.num.intTryParse(this.str, 'ulong') !== undefined)")]
-    [InlineData("double.Parse(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.realParse(this.str, 'double')")]
-    [InlineData("Convert.ToInt64(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.intConvert(this.str, 'long')")]
-    [InlineData("Convert.ToSingle(provider: System.Globalization.CultureInfo.InvariantCulture, value: str)", "$eq.num.realConvert(this.str, 'single')")]
-    public void ANumberReadInTheInvariantCulture_LeavesTheProviderOut(string call, string expected)
+    [InlineData("int.Parse(str)", "$eq.num.intParse(this.str, 'int')")]
+    [InlineData("long.TryParse(str, out _)", "($eq.num.intTryParse(this.str, 'long') !== undefined)")]
+    [InlineData("double.Parse(str, System.Globalization.CultureInfo.CurrentCulture)", "$eq.num.realParse(this.str, 'double')")]
+    [InlineData("int.Parse(str, (IFormatProvider)null)", "$eq.num.intParse(this.str, 'int')")]
+    [InlineData("byte.Parse(str, System.Globalization.NumberStyles.HexNumber)", "$eq.num.intParse(this.str, 'byte', 515)")]
+    [InlineData("Convert.ToInt32(str)", "$eq.num.intConvert(this.str, 'int')")]
+    [InlineData("Convert.ToDouble(str, System.Globalization.CultureInfo.CurrentCulture)", "$eq.num.realConvert(this.str, 'double')")]
+    public void ANumberReadInThePagesCulture_IsTheReadersDefault(string call, string expected)
     {
         TestHelper.ConvertExpression(call).Should().Be(expected);
-        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code == "EQ2108" || d.Code == "EQ2110" || d.Code == "EQ1004");
+        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code.StartsWith("EQ2") || d.Code == "EQ1004");
     }
 
     [Theory]
-    [InlineData("int.Parse(str, System.Globalization.CultureInfo.CurrentCulture)")]
+    [InlineData("int.Parse(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.intParse(this.str, 'int', undefined, true)")]
+    [InlineData("ulong.TryParse(str, System.Globalization.CultureInfo.InvariantCulture, out _)", "($eq.num.intTryParse(this.str, 'ulong', undefined, true) !== undefined)")]
+    [InlineData("double.Parse(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.realParse(this.str, 'double', undefined, true)")]
+    [InlineData("Convert.ToInt64(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.intConvert(this.str, 'long', true)")]
+    [InlineData("Convert.ToSingle(provider: System.Globalization.CultureInfo.InvariantCulture, value: str)", "$eq.num.realConvert(this.str, 'single', true)")]
+    public void ANumberReadInTheInvariantCulture_SaysSo(string call, string expected)
+    {
+        TestHelper.ConvertExpression(call).Should().Be(expected);
+        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code.StartsWith("EQ2") || d.Code == "EQ1004");
+    }
+
+    [Theory]
+    [InlineData("int.Parse(str, System.Globalization.CultureInfo.GetCultureInfo(\"pt-BR\"))")]
     [InlineData("double.TryParse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.GetCultureInfo(\"pt-BR\"), out var v)")]
-    [InlineData("Convert.ToDouble(str, System.Globalization.CultureInfo.CurrentCulture)")]
+    [InlineData("Convert.ToDouble(str, new System.Globalization.CultureInfo(\"pt-BR\"))")]
     public void ANumberReadInAnotherCulture_IsABuildError(string call)
     {
         TestHelper.DiagnosticsFor(call).Should().Contain(d => d.Code == "EQ2108");
@@ -196,7 +199,7 @@ public class NumberStrategyTests
     [InlineData("Convert.ToDouble(Value)")]
     public void ANumberConvertedToAnotherNumber_NeedsNoCulture(string call)
     {
-        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code == "EQ2108" || d.Code == "EQ2110");
+        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code == "EQ2108");
     }
 
     /// <summary>A bare null binds to the string overload, so it reads as text does, and is 0: the
@@ -209,7 +212,7 @@ public class NumberStrategyTests
     public void ABareNullConverted_ReadsAsText(string call, string expected)
     {
         TestHelper.ConvertExpression(call).Should().Be(expected);
-        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code == "EQ2108" || d.Code == "EQ2110");
+        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code == "EQ2108");
     }
 
     /// <summary>A span of UTF-8 bytes has no twin to read, and a call that names one says so.</summary>

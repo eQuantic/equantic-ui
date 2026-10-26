@@ -34,6 +34,12 @@ export interface CurveValue {
   y2: number;
 }
 
+/** The C# `MotionSpec` as it crosses in a node: a duration and the curve it runs on. */
+export interface MotionSpecValue {
+  durationMs: number;
+  curve: CurveValue;
+}
+
 /** `SizeKind` transpiles to camelCase member strings. */
 // Re-exported so every importer of './nodes' keeps the name it always had, and IMPORTED because a
 // re-export alone does not bring a name into this module's own scope.
@@ -631,6 +637,8 @@ export interface ScrollViewNode extends VisualNodeValue {
   height?: SizeValueValue;
   /** Programmatic scroll position in dp (applied once, on adoption — the browser owns it after). */
   offset?: number;
+  /** Where it is asked to go after that, honoured once per version (C# `ScrollRequest`). */
+  request?: { readonly version: number; readonly offset: number } | null;
   /** Where it IS, whenever that changes — what a windowed list reads to know what to build. */
   onScrolled?: ((offset: number) => void) | null;
   /** How tall the viewport turned out to be, reported after the pass mounts it. */
@@ -688,6 +696,8 @@ export interface TableViewCellNode extends VisualNodeValue {
   rows: number;
   columns: number;
   mark: boolean;
+  /** How a keyed mark moves to another range (C# `TableViewCell.Glide`), or null to stand at once. */
+  glide?: MotionSpecValue | null;
 }
 
 export interface TableViewportNode extends VisualNodeValue {

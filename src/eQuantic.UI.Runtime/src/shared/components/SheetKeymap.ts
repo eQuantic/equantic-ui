@@ -75,10 +75,33 @@ export class SheetKeymap {
             sheet.nameBox.requestFocus();
             return true;
         }
+        let control = convention === 'apple' ? 8 : 4;
+        if (modifiers === control) {
+            {
+                const $s = key;
+                if (($s === ' ' || $s === 'Space')) {
+                    sheet.selectActiveColumns();
+                    return true;
+                } else if ($s === 'Backspace') {
+                    sheet.showActiveCell();
+                    return true;
+                } else if ($s === '.') {
+                    sheet.nextCorner();
+                    return true;
+                }
+            }
+        }
         let motion: SheetMotionValue = command ? 'dataEdge' : 'cell';
         {
             const $s = key;
-            if ($s === 'F2') {
+            if ((($s === ' ' || $s === 'Space') && (modifiers === 1))) {
+                sheet.selectActiveRows();
+                return true;
+            } else if (($s === 'PageUp' && ((modifiers & 2) !== 0 && !command))) {
+                return sheet.movePageAcross(-1, shift);
+            } else if (($s === 'PageDown' && ((modifiers & 2) !== 0 && !command))) {
+                return sheet.movePageAcross(1, shift);
+            } else if ($s === 'F2') {
                 sheet.beginEdit(sheet.document.getCell(sheet.activeCell), 'edit');
                 return true;
             } else if ($s === 'ArrowUp') {
@@ -117,19 +140,30 @@ export class SheetKeymap {
                 sheet.clearSelection();
                 return true;
             } else if ($s === 'Escape') {
+                if (sheet.addingRanges) {
+                    sheet.addingRanges = false;
+                    return true;
+                }
                 sheet.tabReleased = true;
                 return false;
+            } else if (($s === 'F8' && (modifiers === 1))) {
+                sheet.addingRanges = !sheet.addingRanges;
+                return true;
             }
         }
         if (command && key.length === 1) {
             switch (key) {
                 case 'a':
                 case 'A':
-                    sheet.selectAll();
+                    sheet.selectRegionThenSheet();
                     return true;
                 case 'z':
                 case 'Z':
                     if (shift) sheet.redo(); else sheet.undo();
+                    return true;
+                case 'y':
+                case 'Y':
+                    sheet.redo();
                     return true;
                 case 'd':
                 case 'D':

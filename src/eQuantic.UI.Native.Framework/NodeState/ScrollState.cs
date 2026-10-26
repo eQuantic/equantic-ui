@@ -14,6 +14,10 @@ internal sealed class ScrollState : IDisposable
     /// <summary>Where the view glides to, or null when it does not.</summary>
     public float? Target;
 
+    /// <summary>The version of the last <see cref="Primitives.ScrollRequest"/> the view went to, or null
+    /// while it has honoured none: the same request built again moves nothing.</summary>
+    public int? Requested;
+
     /// <summary>Whether the clock holds it among the gliding views, so it is listed once.</summary>
     public bool Listed;
 

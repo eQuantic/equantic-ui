@@ -335,6 +335,36 @@ describe('ScrollView web out-channels', () => {
     expect(el.scrollTop).toBe(120);
   });
 
+  /**
+   * A request the app makes after adoption (C# `ScrollView.Request`, Flutter's `jumpTo`): honoured once
+   * per version, so the reader's own scroll after it stays, and a new version moves the view again. The
+   * offset alone was read on adoption and never after, so no component could scroll its view again.
+   */
+  it('goes where a request asks, once per version', () => {
+    const declare = (request?: { version: number; offset: number }) =>
+      (lowerVisualNode(scrollNode({ request }), context()) as { attributes: Record<string, string> })
+        .attributes['data-eq-scroll'];
+    // A view with nothing asked of it carries no marker.
+    expect(declare()).toBeUndefined();
+
+    const el = document.createElement('div');
+    el.setAttribute('data-eq-scroll', declare({ version: 1, offset: 900 }));
+    document.body.append(el);
+    commitScrollViewports();
+    expect(el.scrollTop).toBe(900);
+
+    // The reader scrolled; the same request built again moves nothing.
+    el.scrollTop = 400;
+    declare({ version: 1, offset: 900 });
+    commitScrollViewports();
+    expect(el.scrollTop).toBe(400);
+
+    // A new version goes again.
+    declare({ version: 2, offset: 60 });
+    commitScrollViewports();
+    expect(el.scrollTop).toBe(60);
+  });
+
   it('a plain scroll view declares nothing and carries no marker', () => {
     const lowered = lowerVisualNode(scrollNode({}), context());
     const attrs = (lowered as { attributes: Record<string, string> }).attributes;

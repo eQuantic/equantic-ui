@@ -751,6 +751,17 @@ export class TableScrollRequest {
   }
 }
 
+/** Mirror of the C# `ScrollRequest`: an offset a scroll view is asked to go to, honoured once per version. */
+export class ScrollRequest {
+  readonly version: number;
+  readonly offset: number = 0;
+
+  constructor(version = 0, config?: { offset?: number }) {
+    this.version = version;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** The twins of the vocabulary's records and structs: each hashes by its members, as `equals`
  * compares it (`ValueTwinHashTests` holds this list to the C#). */
 hashesByValue(
@@ -758,6 +769,7 @@ hashesByValue(
   TableOffset,
   TableRange,
   TableScrollRequest,
+  ScrollRequest,
   SizeValue,
   WebContent,
   EdgeInsets,

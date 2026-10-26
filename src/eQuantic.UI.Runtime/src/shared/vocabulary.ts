@@ -32,6 +32,7 @@ import {
   CornerRadii,
   EdgeInsets,
   Point,
+  ScrollRequest,
   Size,
   SizeValue,
   StyleChannels,
@@ -819,7 +820,8 @@ export abstract class TableSpans {
 /**
  * Mirror of the C# `TableViewCell`: what its child draws, over the rows and columns it covers. Its key
  * is its position (`row:column`), so a cell that stays in view keeps its element while the window
- * moves; a mark carries none, because two of them can start at one cell.
+ * moves; a mark carries none of its own, because two of them can start at one cell, and one that glides
+ * (`glide`, C# `TableViewCell.Glide`) is given one.
  */
 export class TableViewCell extends VisualNode {
   readonly nodeKind = 'tableViewCell';
@@ -829,6 +831,8 @@ export class TableViewCell extends VisualNode {
   readonly mark: boolean;
   rows = 1;
   columns = 1;
+  /** How a keyed mark moves to another range, or null to stand where it is at once. */
+  glide: { durationMs: number; curve: { x1: number; y1: number; x2: number; y2: number } } | null = null;
 
   constructor(row: number, column: number, child: VisualChild, mark = false, config?: EqConfig) {
     super();
@@ -1284,6 +1288,8 @@ export class ScrollView extends VisualNode {
   width?: SizeValue;
   height?: SizeValue;
   offset: number;
+  /** Where it is asked to go, honoured once per version (C# `ScrollView.Request`). */
+  request: ScrollRequest | null = null;
   /** Where it IS, whenever that changes — what a windowed list reads to know what to build. */
   onScrolled: ((offset: number) => void) | null = null;
   /** How tall the viewport turned out to be, once layout knows. */
@@ -1296,6 +1302,7 @@ export class ScrollView extends VisualNode {
       width?: SizeValue | number;
       height?: SizeValue | number;
       offset?: number;
+      request?: ScrollRequest | null;
       onScrolled?: ((offset: number) => void) | null;
       onViewportChanged?: ((height: number) => void) | null;
     },

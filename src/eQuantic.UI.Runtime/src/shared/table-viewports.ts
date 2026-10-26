@@ -8,14 +8,15 @@
  * which a million rows pass). So this half reads the window's size, hands the model the wheel, the
  * pointer and the clock, and paints what it answers: each band's layer moved by the distance scrolled
  * since its cells were placed (a scroll step inside the built cells rewrites no cell), the scrollbars
- * where the model puts them, and the bands short of them. It tells the owner where the grid stands and
- * how large the window is, each once per change, and gives a viewport asked to fill an axis with no
- * bound the visible extent of the scroller around it.
+ * where the model puts them, and the bands short of them. It glides a keyed mark a pass placed over
+ * other cells. It tells the owner where the grid stands and how large the window is, each once per
+ * change, and gives a viewport asked to fill an axis with no bound the visible extent of the scroller
+ * around it.
  */
 
 import { logger } from '../utils/logger';
 import { modifiersOf } from './css-values';
-import type { TableScrollModelLike, TableViewportNode } from './nodes';
+import type { TableScrollModelLike, TableViewCellNode, TableViewportNode } from './nodes';
 
 /** What the latest pass said about one viewport. */
 export interface TableViewportDeclaration {
@@ -101,6 +102,7 @@ export function commitTableViewports(): void {
       arrange(view, false);
     }
     paint(view);
+    glideMarks(view);
     report(view);
     // A drag the composing component holds past the edge scrolls on the clock, which a pass can start
     // without any event of this viewport's own; with nothing moving, the first frame ends it.
@@ -123,6 +125,95 @@ export function commitTableViewports(): void {
   }
   for (const view of [...watched]) if (!view.isConnected) stopWatching(view);
   declared.clear();
+}
+
+/** A rectangle of the grid, in double as the grid's extents are. */
+export interface GridRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** The rectangle of the grid a cell covers, the rows and columns it spans held inside the grid (C# twin:
+ * Photon's `MeasureVisitor.PlaceOf`). */
+export function tableCellPlace(node: TableViewportNode, cell: TableViewCellNode): GridRect {
+  const rows = node.rows;
+  const columns = node.columns;
+  const firstRow = Math.min(Math.max(cell.row, 0), rows.count);
+  const firstColumn = Math.min(Math.max(cell.column, 0), columns.count);
+  const endRow = Math.min(Math.max(cell.row + Math.max(1, cell.rows ?? 1), firstRow), rows.count);
+  const endColumn = Math.min(Math.max(cell.column + Math.max(1, cell.columns ?? 1), firstColumn), columns.count);
+  const x = columns.offsetOf(firstColumn);
+  const y = rows.offsetOf(firstRow);
+  return { x, y, width: columns.offsetOf(endColumn) - x, height: rows.offsetOf(endRow) - y };
+}
+
+/** A gliding mark's state on its element, which the reconciler keeps by the mark's key: the rectangle of
+ * the grid the last pass placed it over and, while it glides, where it set out from and what carries it. */
+interface GlidingMark extends HTMLElement {
+  __eqGlide?: { at: GridRect; from?: GridRect; motion?: Animation };
+}
+
+/**
+ * Glides each keyed mark a pass placed over other cells than the pass before (`TableViewCell.Glide`; C#
+ * twin: Photon's table layout, `MeasureVisitor.Glided`). The lowering places a mark as it places a cell,
+ * the scroll in its left and top, so a far row's mark and its cell round alike; a transition there would
+ * glide the mark each time a scroll rebuilt the cells. The glide is the distance in the GRID from where the
+ * mark stood, or from where a glide in flight had carried it, animated away together with its size: a
+ * scroll never moves a mark in the grid, so it never glides one, and the size is laid out at each step, so
+ * an outline keeps its thickness. A mark the last pass did not hold, and every mark under reduced motion,
+ * stands where it is at once; a mark whose glide was turned off forgets where it stood, so turned on again
+ * it starts where it stands.
+ */
+function glideMarks(view: TableElement): void {
+  const declaration = view.__eqTable;
+  if (!declaration) return;
+  const { node } = declaration;
+  const reduceMotion =
+    typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const bands = view.children;
+  for (let i = 4; i < 8 && i < bands.length; i++) {
+    const layer = bands[i].firstElementChild;
+    if (!layer) continue;
+    for (const element of Array.from(layer.children)) {
+      const mark = element as GlidingMark;
+      const key = mark.getAttribute('data-eq-glide');
+      const cell = key === null
+        ? undefined
+        : (node.cells ?? []).find((each) => each.mark && (each as { key?: string | null }).key === key);
+      const glide = cell?.glide;
+      if (!cell || !glide) {
+        mark.__eqGlide?.motion?.cancel();
+        mark.__eqGlide = undefined;
+        continue;
+      }
+      const to = tableCellPlace(node, cell);
+      const was = mark.__eqGlide;
+      if (was && was.at.x === to.x && was.at.y === to.y && was.at.width === to.width && was.at.height === to.height)
+        continue;
+      const from = was?.motion?.playState === 'running' && was.from ? reached(was.from, was.at, was.motion) : was?.at;
+      was?.motion?.cancel();
+      mark.__eqGlide = { at: to };
+      if (!from || reduceMotion || typeof mark.animate !== 'function') continue;
+      const curve = glide.curve;
+      const motion = mark.animate(
+        [
+          { translate: `${from.x - to.x}px ${from.y - to.y}px`, width: `${from.width}px`, height: `${from.height}px` },
+          { translate: '0px 0px', width: `${to.width}px`, height: `${to.height}px` },
+        ],
+        { duration: glide.durationMs, easing: `cubic-bezier(${curve.x1}, ${curve.y1}, ${curve.x2}, ${curve.y2})` },
+      );
+      mark.__eqGlide = { at: to, from, motion };
+    }
+  }
+}
+
+/** Where a glide in flight from `from` to `to` has carried a mark: the motion's progress is its curve's. */
+function reached(from: GridRect, to: GridRect, motion: Animation): GridRect {
+  const progress = Number(motion.effect?.getComputedTiming().progress ?? 1);
+  const at = (a: number, b: number) => a + (b - a) * progress;
+  return { x: at(from.x, to.x), y: at(from.y, to.y), width: at(from.width, to.width), height: at(from.height, to.height) };
 }
 
 function pinnedRowsOf(node: TableViewportNode): number {

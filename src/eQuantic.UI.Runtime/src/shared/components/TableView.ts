@@ -109,7 +109,8 @@ export class TableView extends StatefulComponent {
         let piece = 0;
         for (const [rowFrom, rowTo] of TableView.cut(mark.row, lastRow, pinnedRows)) {
             for (const [columnFrom, columnTo] of TableView.cut(mark.column, lastColumn, pinnedColumns)) {
-                viewport.add(new TableViewCell(rowFrom, columnFrom, mark.child, true, { rows: rowTo - rowFrom, columns: columnTo - columnFrom, key: 'mark:' + $eq.text.format(index, null, undefined, undefined, 'int32') + '/' + $eq.text.format(piece, null, undefined, undefined, 'int32') }));
+                let key: any; 
+                viewport.add(new TableViewCell(rowFrom, columnFrom, mark.child, true, { rows: rowTo - rowFrom, columns: columnTo - columnFrom, key: (key = mark.key) != null ? key + '/' + (rowFrom < pinnedRows ? 'p' : 'b') + (columnFrom < pinnedColumns ? 'p' : 'b') : 'mark:' + $eq.text.format(index, null, undefined, undefined, 'int32') + '/' + $eq.text.format(piece, null, undefined, undefined, 'int32'), glide: mark.glide }));
                 piece++;
             }
         }

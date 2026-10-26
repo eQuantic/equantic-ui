@@ -122,7 +122,7 @@ import type { KeyboardConventionValue } from './enums.generated';
 import { declareShortcut, shortcutMark } from '../dom/shortcuts';
 import { installScrolledController } from './scrolled-pinned';
 import { declareScrollViewport } from './scroll-viewports';
-import { declareTableViewport } from './table-viewports';
+import { declareTableViewport, tableCellPlace } from './table-viewports';
 import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
 import { localizeDestination } from '../utils/culture-routes';
@@ -1410,8 +1410,12 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
   // never gets the browser's parse-time autofocus.
   if (node.autofocus === true) {
     input.attributes['autofocus'] = '';
-    input.events['eq:mounted'] = ((element: HTMLElement) =>
-      element.focus()) as unknown as EventHandler;
+    // …with the caret at the end of what it holds, where Flutter's autofocused TextField and Photon's put
+    // it: the code editor's go-to field opens holding ":" and what is typed goes after it (#1083).
+    input.events['eq:mounted'] = ((element: HTMLInputElement) => {
+      element.focus();
+      caretAtEnd(element);
+    }) as unknown as EventHandler;
   }
   if (node.disabled === true) {
     input.attributes['disabled'] = '';
@@ -1923,8 +1927,10 @@ function lowerTableBand(
   return box;
 }
 
-/** A cell placed in its band's layer over the rows and columns it covers, from the band's corner less
- * the scroll on each axis the band moves along. */
+/** A cell, or a mark, placed in its band's layer over the rows and columns it covers, from the band's
+ * corner less the scroll on each axis the band moves along, in double until it is written: the grid's far
+ * rows are past what a float holds, their distance from the window's corner never is, so a mark and its
+ * cell round alike. */
 function lowerTableCell(
   node: TableViewportNode,
   cell: TableViewCellNode,
@@ -1936,32 +1942,26 @@ function lowerTableCell(
   pinnedDown: number,
   offset: { across: number; down: number },
 ): HtmlNode | null {
-  const rows = node.rows;
-  const columns = node.columns;
-  const firstRow = Math.min(Math.max(cell.row, 0), rows.count);
-  const firstColumn = Math.min(Math.max(cell.column, 0), columns.count);
-  const endRow = Math.min(Math.max(cell.row + Math.max(1, cell.rows ?? 1), firstRow), rows.count);
-  const endColumn = Math.min(Math.max(cell.column + Math.max(1, cell.columns ?? 1), firstColumn), columns.count);
-  const top = rows.offsetOf(firstRow);
-  const left = columns.offsetOf(firstColumn);
-  const x = inPinnedColumn ? left : left - pinnedAcross - offset.across;
-  const y = inPinnedRow ? top : top - pinnedDown - offset.down;
+  const place = tableCellPlace(node, cell);
+  const x = inPinnedColumn ? place.x : place.x - pinnedAcross - offset.across;
+  const y = inPinnedRow ? place.y : place.y - pinnedDown - offset.down;
   const child = lowerNode(cell.child, context, null, path + '/0');
-  const wrapper = element(
-    'div',
-    {
-      display: 'grid',
-      position: 'absolute',
-      left: px(Math.fround(x)),
-      top: px(Math.fround(y)),
-      width: px(Math.fround(columns.offsetOf(endColumn) - left)),
-      height: px(Math.fround(rows.offsetOf(endRow) - top)),
-    },
-    child ? [child] : [],
-  );
+  const wrapper = element('div', {
+    display: 'grid',
+    position: 'absolute',
+    left: px(Math.fround(x)),
+    top: px(Math.fround(y)),
+    width: px(Math.fround(place.width)),
+    height: px(Math.fround(place.height)),
+  }, child ? [child] : []);
   // Where the cell is, for the after-pass that walks the Tab order row by row across the bands it is
   // painted in. Client-only, as the table's own key is.
   wrapper.attributes['data-eq-cell'] = `${cell.row}:${cell.column}`;
+  // A keyed mark that glides names its key for the after-pass, which glides it in the grid
+  // (table-viewports.ts): a transition on its left and top would glide it each time a scroll rebuilt
+  // the cells. Client-only too: the server's first pass has nothing to glide from.
+  const key = (cell as { key?: string | null }).key;
+  if (cell.mark && cell.glide && key) wrapper.attributes['data-eq-glide'] = key;
   return decorate(cell as unknown as VisualNodeValue, wrapper);
 }
 
@@ -2024,11 +2024,12 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
       onScrolled(Math.fround(horizontal ? target.scrollLeft : target.scrollTop));
     }) as EventHandler;
   }
-  if (node.onViewportChanged || node.offset) {
+  if (node.onViewportChanged || node.offset || node.request) {
     view.attributes['data-eq-scroll'] = path;
     declareScrollViewport(path, {
       horizontal,
       offset: node.offset,
+      request: node.request ?? undefined,
       onViewportChanged: node.onViewportChanged ?? undefined,
     });
   }
@@ -3690,15 +3691,21 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
     if (node.scrimStyle && node.onDismiss && (node.open === true || node.motion))
       prependClass(anchor, 'eq-anchor-above');
     if (describedBy) anchor.attributes['aria-describedby'] = describedBy;
-    // The anchor's half of the menu/listbox pattern (C# twin) — on its root, the trigger button.
+    // The anchor's half of the menu/listbox pattern (C# twin), on the element the keyboard is in while
+    // the panel shows: the trigger button at the anchor's root, or the text control of a field the anchor
+    // holds, which keeps the focus while the arrows walk the list (#1083). A screen reader follows an
+    // aria-activedescendant only on the focused element, and the field's shell is not it.
     if (panelId) {
-      anchor.attributes['aria-haspopup'] =
+      const keyed = textControlOf(anchor) ?? anchor;
+      keyed.attributes['aria-haspopup'] =
         panelRole === 'listbox' ? 'listbox' : panelRole === 'dialog' ? 'dialog' : 'menu';
-      if (panelRole === 'listbox') anchor.attributes['role'] = 'combobox';
+      if (panelRole === 'listbox') keyed.attributes['role'] = 'combobox';
+      // A text control has no Pressable to say whether its list shows, so it says so here (C# twin).
+      if (panelRole === 'listbox' && keyed !== anchor) keyed.attributes['aria-expanded'] = node.open === true ? 'true' : 'false';
       if (node.open === true) {
-        anchor.attributes['aria-controls'] = panelId;
+        keyed.attributes['aria-controls'] = panelId;
         const active = node.activeIndex ?? -1;
-        if (active >= 0) anchor.attributes['aria-activedescendant'] = `${panelId}-${active}`;
+        if (active >= 0) keyed.attributes['aria-activedescendant'] = `${panelId}-${active}`;
       }
     }
     host.children.push(anchor);
@@ -4555,3 +4562,23 @@ function isZeroRadii(radii: CornerRadiiValue): boolean {
 // runtime exports → component base = a cycle, and a cycle means an undefined base class). So the
 // lowering hands its renderer DOWN to the leaf module instead. See component-boundary.ts.
 setFailureRenderer(renderContainedFailure);
+
+/** The text control `node` holds, an `input` or a `textarea`, or null (C# twin: `TextControlIn`). */
+function textControlOf(node: HtmlNode): HtmlNode | null {
+  if (node.tag === 'input' || node.tag === 'textarea') return node;
+  for (const child of node.children) {
+    const found = textControlOf(child);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** Puts the caret of a text control at the end of its text; a control with no selection keeps none. */
+function caretAtEnd(element: HTMLInputElement | HTMLTextAreaElement): void {
+  const end = element.value.length;
+  try {
+    element.setSelectionRange(end, end);
+  } catch {
+    // An input whose type has no selection (a number, an email) throws, and has no caret to place.
+  }
+}

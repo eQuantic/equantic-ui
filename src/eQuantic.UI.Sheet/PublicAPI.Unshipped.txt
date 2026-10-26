@@ -125,3 +125,40 @@ eQuantic.UI.Sheet.SheetReference
 static eQuantic.UI.Sheet.SheetReference.TryParse(string! text, int rows, int cols, out eQuantic.UI.Sheet.SheetRange range) -> bool
 eQuantic.UI.Sheet.SheetController.Refresh() -> void
 eQuantic.UI.Sheet.SheetController.Refreshed -> System.Action?
+eQuantic.UI.Sheet.SheetController.Ranges.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Sheet.SheetRange>!
+eQuantic.UI.Sheet.SheetController.AddingRanges.get -> bool
+eQuantic.UI.Sheet.SheetDocument.Version.get -> int
+*REMOVED*eQuantic.UI.Sheet.SheetController.SelectCols(int fromCol, int toCol) -> void
+*REMOVED*eQuantic.UI.Sheet.SheetController.SelectRows(int fromRow, int toRow) -> void
+eQuantic.UI.Sheet.SheetController.SelectCols(int anchor, int focus, bool add) -> void
+eQuantic.UI.Sheet.SheetController.SelectRows(int anchor, int focus, bool add) -> void
+eQuantic.UI.Sheet.SheetGrid.ResizeGrip.get -> float
+eQuantic.UI.Sheet.SheetGrid.ResizeGrip.init -> void
+eQuantic.UI.Sheet.SheetController.ShowActiveCell() -> void
+eQuantic.UI.Sheet.SheetController.NextCorner() -> void
+eQuantic.UI.Sheet.SheetController.MovePageAcross(int direction, bool extend = false) -> bool
+eQuantic.UI.Sheet.SheetController.SelectActiveRows() -> void
+eQuantic.UI.Sheet.SheetController.SelectActiveColumns() -> void
+eQuantic.UI.Sheet.SheetController.SelectRegionThenSheet() -> void
+eQuantic.UI.Sheet.SheetController.CurrentRegion(eQuantic.UI.Sheet.CellRef cell) -> eQuantic.UI.Sheet.SheetRange
+eQuantic.UI.Sheet.SheetController.LastCellInUse() -> eQuantic.UI.Sheet.CellRef
+eQuantic.UI.Sheet.SheetController.HasKeyboard.get -> bool
+eQuantic.UI.Sheet.SheetController.Summary.get -> eQuantic.UI.Sheet.SheetSummary
+eQuantic.UI.Sheet.SheetSummary
+eQuantic.UI.Sheet.SheetSummary.SheetSummary() -> void
+eQuantic.UI.Sheet.SheetSummary.SheetSummary(int Count, int Numbers, decimal? Sum, decimal? Average) -> void
+eQuantic.UI.Sheet.SheetSummary.Count.get -> int
+eQuantic.UI.Sheet.SheetSummary.Count.init -> void
+eQuantic.UI.Sheet.SheetSummary.Numbers.get -> int
+eQuantic.UI.Sheet.SheetSummary.Numbers.init -> void
+eQuantic.UI.Sheet.SheetSummary.Sum.get -> decimal?
+eQuantic.UI.Sheet.SheetSummary.Sum.init -> void
+eQuantic.UI.Sheet.SheetSummary.Average.get -> decimal?
+eQuantic.UI.Sheet.SheetSummary.Average.init -> void
+eQuantic.UI.Sheet.SheetSummary.Deconstruct(out int Count, out int Numbers, out decimal? Sum, out decimal? Average) -> void
+eQuantic.UI.Sheet.SheetSummary.Equals(eQuantic.UI.Sheet.SheetSummary other) -> bool
+override eQuantic.UI.Sheet.SheetSummary.GetHashCode() -> int
+static eQuantic.UI.Sheet.SheetSummary.operator !=(eQuantic.UI.Sheet.SheetSummary left, eQuantic.UI.Sheet.SheetSummary right) -> bool
+static eQuantic.UI.Sheet.SheetSummary.operator ==(eQuantic.UI.Sheet.SheetSummary left, eQuantic.UI.Sheet.SheetSummary right) -> bool
+~override eQuantic.UI.Sheet.SheetSummary.Equals(object obj) -> bool
+~override eQuantic.UI.Sheet.SheetSummary.ToString() -> string

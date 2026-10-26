@@ -108,8 +108,11 @@ internal sealed partial class WebLoweringVisitor
         return box;
     }
 
-    /// <summary>A cell, placed in its band's layer over the rows and columns it covers: from the band's
-    /// corner, less the scroll on each axis the band moves along.</summary>
+    /// <summary>A cell, or a mark, placed in its band's layer over the rows and columns it covers: from the
+    /// band's corner, less the scroll on each axis the band moves along, in double until it is written. The
+    /// grid's far rows are past what a float holds, their distance from the window's corner never is, so a
+    /// mark and its cell round alike. A mark's glide is the runtime's after-pass (TS twin: lowerTableCell,
+    /// and <c>table-viewports.ts</c>): the server's first pass has nothing to glide from.</summary>
     private HtmlElement LowerTableCell(TableViewport viewport, TableViewCell cell, bool inPinnedRow,
         bool inPinnedColumn, float pinnedAcross, float pinnedDown, TableOffset offset)
     {

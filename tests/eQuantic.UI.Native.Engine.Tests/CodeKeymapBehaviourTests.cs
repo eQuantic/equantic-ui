@@ -34,7 +34,7 @@ public class CodeKeymapBehaviourTests : IDisposable
     [
         "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown",
         "Enter", "Backspace", "Delete", "Tab", "Escape", " ", "a", "z", "y", "c", "x", "v", "/", "Slash",
-        "k", "i", "j", "F8", "q", "Shift",
+        "k", "i", "j", "F8", "q", "Shift", "g", "o", "-", "_", "Minus",
     ];
 
     private sealed class Clipboard(string? text) : ITextClipboard
@@ -131,6 +131,24 @@ public class CodeKeymapBehaviourTests : IDisposable
             ]);
             return (editor, new Clipboard("PASTED"));
         });
+        // A jump made, so the walk back has a place to go to; and walked back, so the walk forward has one.
+        yield return new State("jumped", () =>
+        {
+            var editor = Editor(new CodePosition(0, 0));
+            editor.GoTo.Open(CodeGoToMode.Line);
+            editor.GoTo.Query = ":3";
+            editor.GoTo.Accept();
+            return (editor, new Clipboard("PASTED"));
+        });
+        yield return new State("walked-back", () =>
+        {
+            var editor = Editor(new CodePosition(0, 0));
+            editor.GoTo.Open(CodeGoToMode.Line);
+            editor.GoTo.Query = ":3";
+            editor.GoTo.Accept();
+            editor.JumpList.Back();
+            return (editor, new Clipboard("PASTED"));
+        });
         yield return new State("chord", () =>
         {
             var editor = Editor(new CodePosition(1, 6));
@@ -153,6 +171,7 @@ public class CodeKeymapBehaviourTests : IDisposable
         ("panel", editor.SignatureHelp.IsOpen ? $"{editor.SignatureHelp.ActiveSignature}" : "-"),
         ("trap", editor.TabMovesFocus ? "released" : "armed"),
         ("clipboard", clipboard?.Text ?? "-"),
+        ("goto", editor.GoTo.IsOpen ? editor.GoTo.Query : "-"),
     ];
 
     /// <summary>The fields that differ, as "name=value" pairs, or "unchanged".</summary>

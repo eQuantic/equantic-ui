@@ -225,6 +225,38 @@ public class CheckStateSemanticsTests
             "the highlight opens on the committed choice");
     }
 
+    /// <summary>
+    /// A field that anchors a listbox, the code editor's go-to field (#1083): its TEXT CONTROL is the
+    /// combobox, since the keyboard stays there while the arrows walk the list, and a screen reader follows
+    /// an aria-activedescendant only on the focused element. On the field's shell it heard nothing move.
+    /// </summary>
+    [Fact]
+    public void AFieldThatAnchorsAListbox_IsTheComboboxInItsTextControl()
+    {
+        var panel = new Column(gap: 0);
+        panel.Add(new Pressable(new Text("Ledger", TypeRole.Label), () => { }) { Role = PressableRole.Option });
+        panel.Add(new Pressable(new Text("Balance", TypeRole.Label), () => { }) { Role = PressableRole.Option, Selected = true });
+        var field = new Box(new BoxStyle { Width = SizeValue.Fill }, new TextEntry("@") { Label = "Go to" });
+
+        var nodes = Walk(Render(new Anchored(field, panel)
+        {
+            Open = true,
+            PanelRole = AnchorPanelRole.Listbox,
+            ActiveIndex = 1,
+        })).ToList();
+
+        var combobox = nodes.Single(node => node.Attributes.GetValueOrDefault("role") == "combobox");
+        var listbox = nodes.Single(node => node.Attributes.GetValueOrDefault("role") == "listbox");
+        combobox.Tag.Should().Be("input");
+        combobox.Attributes["aria-haspopup"].Should().Be("listbox");
+        combobox.Attributes["aria-controls"].Should().Be(listbox.Attributes["id"]);
+        combobox.Attributes["aria-activedescendant"].Should().Be($"{listbox.Attributes["id"]}-1");
+        combobox.Attributes["aria-expanded"].Should().Be("true", "a combobox says whether its list shows (Copilot on #1091)");
+        Walk(Render(new Anchored(field, panel) { PanelRole = AnchorPanelRole.Listbox }))
+            .Single(node => node.Attributes.GetValueOrDefault("role") == "combobox")
+            .Attributes["aria-expanded"].Should().Be("false");
+    }
+
     /// <summary>The menu half: role=menu with numbered menuitems (the DISABLED one included — a
     /// bare box would make the menu read as having fewer commands than the screen shows), and
     /// haspopup=menu on a trigger that stays a plain button.</summary>

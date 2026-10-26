@@ -85,9 +85,11 @@ describe('SheetController (transpiled twin)', () => {
   it('Tab walks a multi-cell selection without collapsing it', () => {
     const sheet = new SheetController(100, 26);
     sheet.selection = new SheetRange(new CellRef(0, 0), new CellRef(1, 1));
+    // The anchor, A1, is active, as the cell a drag or Shift began on is in Excel.
+    expect(sheet.activeCell).toEqual(new CellRef(0, 0));
 
     sheet.step(0, 1);
-    expect(sheet.activeCell).toEqual(new CellRef(0, 0));
+    expect(sheet.activeCell).toEqual(new CellRef(0, 1));
     expect(sheet.selection.rowCount).toBe(2);
   });
 
@@ -226,7 +228,8 @@ describe('SheetController (transpiled twin)', () => {
     sheet.handlePointer('down', new Point(96 + 48, 28 * 3 + 14), 0, 1, 'mouse');
     sheet.handlePointer('move', new Point(96 * 3 + 48, 28 * 9 + 14), 0, 1, 'mouse');
 
-    expect(sheet.activeCell).toEqual(new CellRef(9, 3));
+    expect(sheet.selection.focus).toEqual(new CellRef(9, 3));
+    expect(sheet.activeCell, 'the cell the drag began on stays active').toEqual(new CellRef(3, 1));
     expect(sheet.revealCell).toEqual(new CellRef(1, 0));
   });
 
@@ -257,8 +260,9 @@ describe('SheetController (transpiled twin)', () => {
     expect(sheet.activeCell).toEqual(new CellRef(20, 0));
     expect(sheet.handleKey('PageDown', 1, 'standard', null)).toBe(true);
     expect(sheet.selection).toEqual(new SheetRange(new CellRef(20, 0), new CellRef(40, 0)));
+    expect(sheet.activeCell, 'Shift keeps the active cell').toEqual(new CellRef(20, 0));
     sheet.handleKey('PageUp', 0, 'standard', null);
-    expect(sheet.activeCell).toEqual(new CellRef(20, 0));
+    expect(sheet.activeCell, 'a plain PageUp moves from the active cell').toEqual(new CellRef(0, 0));
   });
 
   it("selects on a finger's release, and nothing when the grid takes it as a pan", () => {

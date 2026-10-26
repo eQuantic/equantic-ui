@@ -21,6 +21,9 @@ public class NumberMethodStrategy : IExpressionIrStrategy
     /// a failed TryParse leaves in its <c>out</c>.</summary>
     private sealed record Reader(string Parse, string TryParse, string? Tag, string Zero);
 
+    /// <summary>What a refused culture is refused for, in EQ2108's words.</summary>
+    internal const string ReadingANumber = "reading a number";
+
     private static readonly Dictionary<SpecialType, Reader> Readers = new()
     {
         [SpecialType.System_Decimal] = new(Eq.DecParse, Eq.DecTryParse, null, $"{Eq.Dec}(0)"),
@@ -86,12 +89,14 @@ public class NumberMethodStrategy : IExpressionIrStrategy
     }
 
     /// <summary>
-    /// The call, read by the runtime. The style reaches it as the number a NumberStyles holds; the
-    /// provider does not, since the twin reads the invariant culture (EQ2110), and the culture it
-    /// names decides whether that is faithful (see <see cref="ParseCulture"/>). The bound method says
-    /// which argument fills which parameter, so a named one lands in its own slot, and the template
-    /// keeps them in the order C# evaluates them. A TryParse that fails leaves 0 in its <c>out</c>,
-    /// as .NET does.
+    /// The call, read by the runtime. The style reaches it as the number a NumberStyles holds, and the
+    /// culture as what it names (#1087): with no provider, the current culture or a null one, the
+    /// page's culture, which the reader reads by default, as .NET reads the current one; with the
+    /// invariant culture, the invariant one, which the call asks for with a last <c>true</c>. Any other
+    /// provider fails the build (EQ2108, <see cref="NamedCulture.ReadsInvariant"/>). The bound method
+    /// says which argument fills which parameter, so a named one lands in its own slot, and the
+    /// template keeps them in the order C# evaluates them. A TryParse that fails leaves 0 in its
+    /// <c>out</c>, as .NET does.
     /// </summary>
     private static JsExpr Text(InvocationExpressionSyntax invocation, string name, IMethodSymbol? method,
         Reader reader, ConversionContext context)
@@ -134,11 +139,15 @@ public class NumberMethodStrategy : IExpressionIrStrategy
         }
         if (text is not { } at || (name == "TryParse") != result.HasValue)
             return JsExpr.Opaque(context.Unhandled(invocation, "numeric Parse/TryParse"));
-        ParseCulture.Check(invocation, provider is { } culture ? arguments[culture].Expression : null, context);
+        var invariant = NamedCulture.ReadsInvariant(invocation,
+            provider is { } culture ? arguments[culture].Expression : null, context, ReadingANumber);
 
         context.UsedHelpers.Add(Eq.Import);
+        // The invariant culture is the reader's last argument, after the style, which is the
+        // reader's own default where the call named none.
         string Call(string function, string textHole, string? styleHole) =>
-            $"{function}({textHole}{(reader.Tag is { } tag ? $", '{tag}'" : "")}{(styleHole is null ? "" : $", {styleHole}")})";
+            $"{function}({textHole}{(reader.Tag is { } tag ? $", '{tag}'" : "")}"
+            + $"{(styleHole is not null ? $", {styleHole}" : invariant ? ", undefined" : "")}{(invariant ? ", true" : "")})";
 
         // The parts in the order they were written; each hole names its part by that order.
         var read = new[] { text, style }.OfType<int>().Order().ToList();

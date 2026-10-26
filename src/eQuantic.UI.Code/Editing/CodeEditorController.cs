@@ -39,6 +39,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         Hover = new CodeHoverSession(this);
         SignatureHelp = new CodeSignatureHelpSession(this);
         Snippet = new CodeSnippetSession(this);
+        Symbols = new CodeSymbols(this);
+        GoTo = new CodeGoTo(this);
+        JumpList = new CodeJumpList(this);
     }
 
     /// <summary>The text, as lines. Replacing it is a full reset — a file was opened.</summary>
@@ -57,8 +60,10 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             Highlighter.Invalidate();
             History.Clear();
             Diagnostics.Reset();
+            GoTo.Reset();
             _revealVersion++;
             Raise(new CodeChange([], Replaced: true), moved: false);
+            JumpList.Reset();
         }
     }
 
@@ -235,6 +240,91 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <summary>The snippet being filled in, and the stop the carets stand at: what Tab, ⇧Tab and Escape walk
     /// and end (#1013). A snippet starts one through <see cref="InsertSnippet"/>.</summary>
     public CodeSnippetSession Snippet { get; }
+
+    /// <summary>What the document declares, as its language services answer it. An IDE adds its language
+    /// service to <see cref="CodeSymbols.Providers"/>.</summary>
+    public CodeSymbols Symbols { get; }
+
+    /// <summary>The go-to field: ⌃G to a line, ⇧⌘O to a symbol (#1083).</summary>
+    public CodeGoTo GoTo { get; }
+
+    /// <summary>The places the caret has been, which ⌃- and ⌃⇧- walk (#1083).</summary>
+    public CodeJumpList JumpList { get; }
+
+    // ---- the view ---------------------------------------------------------------------------------------
+
+    private Rect _view;
+    private int _scrollVersion;
+
+    /// <summary>
+    /// The part of the code on screen, in the surface's own coordinates: where the view's left and top edges
+    /// stand, and how wide and tall it is. Reported by whatever draws the editor (the <c>CodeEditor</c>, from
+    /// the scroll views it draws the code in), and empty until it does. With it the editor knows whether a
+    /// position is in view and what scroll centres it, which <see cref="RevealInCenter"/> asks for.
+    /// </summary>
+    public Rect View
+    {
+        get => _view;
+        set => _view = value;
+    }
+
+    /// <summary>Where the editor asks its view to scroll down to, in the surface's coordinates: a request
+    /// honoured once per version (<see cref="ScrollRequest"/>), or null before the first.</summary>
+    public ScrollRequest? VerticalScroll { get; private set; }
+
+    /// <summary>Where the editor asks its view to scroll across to, in the surface's coordinates, or null
+    /// when it has not asked.</summary>
+    public ScrollRequest? HorizontalScroll { get; private set; }
+
+    /// <summary>Raised when the editor asks its view to scroll (<see cref="VerticalScroll"/>,
+    /// <see cref="HorizontalScroll"/>), for whatever draws it to hand the request on.</summary>
+    public event Action? ScrollRequested;
+
+    /// <summary>
+    /// Brings <paramref name="position"/>'s line to the middle of the view, and the position across into it
+    /// by the least movement, as Monaco's <c>revealPositionInCenter</c> does. The caret does not move. Before
+    /// the view is known it asks nothing.
+    /// </summary>
+    public void RevealInCenter(CodePosition position) => Center(position, onlyOutside: false);
+
+    /// <summary>Brings <paramref name="position"/> to the middle of the view only when its line is not in
+    /// view, as Monaco's <c>revealPositionInCenterIfOutsideViewport</c> does.</summary>
+    public void RevealInCenterIfOutsideView(CodePosition position) => Center(position, onlyOutside: true);
+
+    private void Center(CodePosition position, bool onlyOutside)
+    {
+        var caret = CaretRect(_document.Clamp(position));
+        // Down only in a view that scrolls down: an editor as tall as its code is all on screen, its page
+        // scrolling instead. Across in any view whose width is known.
+        float? top = null;
+        if (_view.Height > 0)
+        {
+            var inView = caret.Y >= _view.Y && caret.Y + caret.Height <= _view.Y + _view.Height;
+            if (onlyOutside && inView) return;
+            top = MathF.Max(0, caret.Y + caret.Height / 2 - _view.Height / 2);
+        }
+        float? left = null;
+        if (_view.Width > 0)
+        {
+            if (caret.X < _view.X) left = caret.X;
+            else if (caret.X + caret.Width > _view.X + _view.Width) left = caret.X + caret.Width - _view.Width;
+        }
+        Scroll(top, left);
+    }
+
+    /// <summary>Asks the view to stand where <paramref name="view"/> stood: what closing the go-to field gives
+    /// back, down where it scrolls down and across where its width is known. A view never known asks nothing.</summary>
+    internal void ScrollTo(Rect view) =>
+        Scroll(view.Height > 0 ? view.Y : null, view.Width > 0 ? view.X : null);
+
+    private void Scroll(float? top, float? left)
+    {
+        if (top is null && left is null) return;
+        _scrollVersion++;
+        if (top is { } down) VerticalScroll = new ScrollRequest(_scrollVersion) { Offset = down };
+        if (left is { } across) HorizontalScroll = new ScrollRequest(_scrollVersion) { Offset = across };
+        ScrollRequested?.Invoke();
+    }
 
     /// <summary>The first key of a chord the keymap is waiting for the second of (⌘K, for ⌘K ⌘I), or
     /// null. Any key that is not a modifier ends the wait.</summary>
@@ -668,7 +758,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <inheritdoc />
     public bool HandleKey(string key, KeyModifiers modifiers, KeyboardConvention convention,
         ITextClipboard? clipboard) =>
-        CodeKeymap.Handle(this, key, modifiers, convention, clipboard);
+        GoTo.IsOpen ? GoTo.Key(key, modifiers) : CodeKeymap.Handle(this, key, modifiers, convention, clipboard);
 
     /// <summary>
     /// Runs <paramref name="command"/> as its key would, with no key: what a menu, a command palette or an
@@ -737,6 +827,14 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             case CodeCommand.NextTabStop: return !ReadOnly && !TabMovesFocus && Snippet.Next();
             case CodeCommand.PreviousTabStop: return !ReadOnly && !TabMovesFocus && Snippet.Previous();
             case CodeCommand.LeaveSnippet: return DroppingAnUnshownList(Snippet.Leave());
+            case CodeCommand.GoToLine:
+                GoTo.Open(CodeGoToMode.Line);
+                return true;
+            case CodeCommand.GoToSymbol:
+                GoTo.Open(CodeGoToMode.Symbol);
+                return true;
+            case CodeCommand.NavigateBack: return JumpList.Back();
+            case CodeCommand.NavigateForward: return JumpList.Forward();
             case CodeCommand.Copy:
                 if (clipboard is null) return false;
                 clipboard.Write(CopyText());
@@ -844,6 +942,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         CodeCommand.NextTabStop => !ReadOnly && !TabMovesFocus && Snippet.IsActive,
         CodeCommand.PreviousTabStop => !ReadOnly && !TabMovesFocus && Snippet.HasPrevious,
         CodeCommand.LeaveSnippet => Snippet.IsActive,
+        CodeCommand.NavigateBack => JumpList.CanGoBack,
+        CodeCommand.NavigateForward => JumpList.CanGoForward,
         CodeCommand.SortLinesAscending => !ReadOnly && (_others.Count > 0 || Unsorted(descending: false)),
         CodeCommand.SortLinesDescending => !ReadOnly && (_others.Count > 0 || Unsorted(descending: true)),
         _ => true,
@@ -879,6 +979,12 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <inheritdoc />
     public bool HandleText(string text)
     {
+        // The go-to field's, while it shows: typed before the field took the keyboard (#1083).
+        if (GoTo.IsOpen)
+        {
+            GoTo.Type(text);
+            return true;
+        }
         text = Admitted(text);
         if (ReadOnly || text.Length == 0) return false;
         TabMovesFocus = false;
@@ -939,7 +1045,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// </summary>
     public bool SetComposition(string text)
     {
-        if (ReadOnly) return false;
+        // While the go-to field shows a composition starts nowhere in the code, and one in flight can still be
+        // cancelled: the keyboard leaving cancels it with "".
+        if (ReadOnly || (GoTo.IsOpen && text.Length > 0)) return false;
         text = Admitted(text);
         if (_composition is not { } current)
         {
@@ -1041,6 +1149,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         {
             case PointerPhase.Down:
             {
+                // A press in the code while the go-to field shows closes it where the view stands, and lands
+                // where the person pointed (#1083).
+                GoTo.Dismiss();
                 // A press closes a card, as it does in every editor, even one that leaves the caret
                 // where it was, and ends a chord half typed.
                 Hover.Dismiss();
@@ -2100,6 +2211,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// every caret cuts its own, as one undo step.</summary>
     public string Cut()
     {
+        if (GoTo.IsOpen) return "";
         var text = CopyText();
         AtEveryCaret(() =>
         {
@@ -2124,6 +2236,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// </summary>
     public bool Paste(string text)
     {
+        if (GoTo.IsOpen)
+        {
+            GoTo.Type(text);
+            return true;
+        }
         text = Admitted(text);
         if (ReadOnly || text.Length == 0) return false;
         TabMovesFocus = false;

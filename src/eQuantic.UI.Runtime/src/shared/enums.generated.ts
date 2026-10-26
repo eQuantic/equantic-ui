@@ -40,7 +40,8 @@ export type CodeCommandValue =
   | 'copyLinesUp' | 'copyLinesDown' | 'deleteLines' | 'joinLines' | 'sortLinesAscending'
   | 'sortLinesDescending' | 'insertLineAbove' | 'insertLineBelow' | 'addCursorAbove'
   | 'addCursorBelow' | 'addNextOccurrence' | 'selectAllOccurrences' | 'removeSecondaryCursors'
-  | 'nextTabStop' | 'previousTabStop' | 'leaveSnippet';
+  | 'nextTabStop' | 'previousTabStop' | 'leaveSnippet' | 'goToLine' | 'goToSymbol' | 'navigateBack'
+  | 'navigateForward';
 
 export type CodeCompletionKindValue =
   'text' | 'method' | 'function' | 'constructor' | 'field' | 'variable' | 'class' | 'interface'
@@ -57,6 +58,8 @@ export type CodeDiagnosticSeverityValue = 'hint' | 'information' | 'warning' | '
 
 export type CodeDirectionValue = 'backward' | 'forward';
 
+export type CodeGoToModeValue = 'none' | 'line' | 'symbol';
+
 export type CodeGutterKindValue =
   'none' | 'breakpoint' | 'breakpointDisabled' | 'error' | 'warning' | 'added' | 'modified'
   | 'removed' | 'currentStatement';
@@ -69,6 +72,12 @@ export type CodePatchLineKindValue = 'context' | 'removed' | 'added';
 export type CodeRowKindValue = 'line' | 'filler' | 'placeholder';
 
 export type CodeSignatureTriggerValue = 'invoked' | 'character' | 'contentChange';
+
+export type CodeSymbolKindValue =
+  'file' | 'module' | 'namespace' | 'package' | 'class' | 'method' | 'property' | 'field'
+  | 'constructor' | 'enum' | 'interface' | 'function' | 'variable' | 'constant' | 'string'
+  | 'number' | 'boolean' | 'array' | 'object' | 'key' | 'null' | 'enumMember' | 'struct' | 'event'
+  | 'operator' | 'typeParameter';
 
 export type CodeTokenKindValue =
   'plain' | 'keyword' | 'type' | 'string' | 'number' | 'comment' | 'operator' | 'punctuation'

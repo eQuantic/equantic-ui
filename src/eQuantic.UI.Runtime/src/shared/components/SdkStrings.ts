@@ -81,6 +81,30 @@ export class SdkStrings {
         return $eq.str('SdkResources', 'CloseFind');
     }
 
+    static get goTo(): string {
+        return $eq.str('SdkResources', 'GoTo');
+    }
+
+    static get goToStart(): string {
+        return $eq.str('SdkResources', 'GoToStart');
+    }
+
+    static get noSymbols(): string {
+        return $eq.str('SdkResources', 'NoSymbols');
+    }
+
+    static get noMatchingSymbols(): string {
+        return $eq.str('SdkResources', 'NoMatchingSymbols');
+    }
+
+    static get noSymbolProvider(): string {
+        return $eq.str('SdkResources', 'NoSymbolProvider');
+    }
+
+    static get readingSymbols(): string {
+        return $eq.str('SdkResources', 'ReadingSymbols');
+    }
+
     static get copyCode(): string {
         return $eq.str('SdkResources', 'CopyCode');
     }
@@ -125,6 +149,10 @@ export class SdkStrings {
         return $eq.str('SdkResources', 'NameBox');
     }
 
+    static get addToSelection(): string {
+        return $eq.str('SdkResources', 'AddToSelection');
+    }
+
     static get back(): string {
         return $eq.str('SdkResources', 'Back');
     }
@@ -151,6 +179,26 @@ export class SdkStrings {
 
     static hiddenLines(count: number) {
         return count === 1 ? $eq.str('SdkResources', 'HiddenLine') : $eq.text.stringFormat($eq.str('SdkResources', 'HiddenLines'), $eq.text.asNumber(count, 'int32'));
+    }
+
+    static goToLinePrompt(lines: number) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'GoToLinePrompt'), $eq.text.asNumber(lines, 'int32'));
+    }
+
+    static goToLineOrColumn(line: number) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'GoToLineOrColumn'), $eq.text.asNumber(line, 'int32'));
+    }
+
+    static goToColumnPrompt(line: number, columns: number) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'GoToColumnPrompt'), $eq.text.asNumber(line, 'int32'), $eq.text.asNumber(columns, 'int32'));
+    }
+
+    static goToPosition(line: number, column: number) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'GoToPosition'), $eq.text.asNumber(line, 'int32'), $eq.text.asNumber(column, 'int32'));
+    }
+
+    static symbolsCount(count: number) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'SymbolsCount'), $eq.text.asNumber(count, 'int32'));
     }
 
     static hint(pattern: string, letters: string) {
@@ -181,6 +229,18 @@ export class SdkStrings {
 
     static rangeSize(rows: number, columns: number) {
         return $eq.text.stringFormat($eq.str('SdkResources', 'RangeSize'), $eq.text.asNumber(rows, 'int32'), $eq.text.asNumber(columns, 'int32'));
+    }
+
+    static sum(value: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'StatusSum'), value);
+    }
+
+    static average(value: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'StatusAverage'), value);
+    }
+
+    static count(count: number) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'StatusCount'), $eq.text.asNumber(count, 'int32'));
     }
 }
 

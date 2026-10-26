@@ -26,9 +26,11 @@ internal sealed partial class EmitVisitor
             // first moment either is true.
             scrollView.OnViewportChanged?.Invoke(
                 scrollView.Axis == ScrollAxis.Horizontal ? s.Node.Bounds.Width : s.Node.Bounds.Height);
-            var requested = ScrollClock.OffsetOf(at) ?? scrollView.Offset;
-            scrollView.OnScrolled?.Invoke(requested);
-            offset = Math.Clamp(requested, 0, range);
+            // Reported where the view IS: an offset asked past the end stands at the end, and settles there now
+            // that the layout is the one the frame keeps.
+            offset = Math.Clamp(ScrollClock.OffsetOf(at) ?? scrollView.Offset, 0, range);
+            ScrollClock.Settle(at, offset, range);
+            scrollView.OnScrolled?.Invoke(offset);
         }
         // The surface a pinned header in here pins to: scrolled past the threshold on the axis a
         // header pins along, it draws its ScrolledStyle (#506). The nearest scroll view decides.

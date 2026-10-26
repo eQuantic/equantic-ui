@@ -331,6 +331,28 @@ public class SpreadsheetViewportTests
     }
 
     [Fact]
+    public void ATheme_ThatNamesTheRangeOutline_OutlinesEveryRangeInIt()
+    {
+        var outline = new ColorToken(Color.FromRgb(0x12, 0x80, 0x34), Color.FromRgb(0x34, 0x80, 0x12));
+        var (host, sheet) = Open(50, 8, theme: new SheetSlotTheme(PhotonTheme.Instance, new SheetTheme { RangeOutline = outline }));
+        // The keyboard on the sheet, B2 to C3 selected, then D5:D6 added: two ranges, each outlined.
+        var origin = (X: sheet.Grid.HeaderWidth, Y: sheet.Grid.HeaderHeight);
+        host.PressDown(origin.X + 96 + 48, origin.Y + 28 + 14);
+        host.PressUp(origin.X + 96 + 48, origin.Y + 28 + 14);
+        host.PressDown(origin.X + 2 * 96 + 48, origin.Y + 2 * 28 + 14, modifiers: KeyModifiers.Shift);
+        host.PressUp(origin.X + 2 * 96 + 48, origin.Y + 2 * 28 + 14);
+        host.PressDown(origin.X + 3 * 96 + 48, origin.Y + 4 * 28 + 14, modifiers: KeyModifiers.Command);
+        host.PointerMove(origin.X + 3 * 96 + 48, origin.Y + 5 * 28 + 14);
+        host.PressUp(origin.X + 3 * 96 + 48, origin.Y + 5 * 28 + 14);
+        Settle(host);
+
+        sheet.Ranges.Should().HaveCount(2);
+        Walk(host.LastFrame!.Root).Select(n => n.Source).OfType<Box>()
+            .Count(box => box.Style.BorderWidth == 1.5f && box.Style.BorderColor == outline)
+            .Should().Be(2, "every range is outlined in the colour the theme names");
+    }
+
+    [Fact]
     public void ATheme_ThatNamesNothingForSheets_DrawsInItsFoundationColours()
     {
         var (host, _) = Open(50, 8);

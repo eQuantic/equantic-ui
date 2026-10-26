@@ -12,8 +12,9 @@ namespace DefaultUIDashboard.Screens;
 /// Studio's gallery), so what this screen shows is what an IDE built on the SDK gets: the problems a
 /// provider finds as the text changes (<see cref="LedgerLint"/>), the card that explains a name
 /// (<see cref="LedgerHover"/>), the panel that explains a call being written
-/// (<see cref="LedgerSignatures"/>), and the snippets it completes, walked with Tab
-/// (<see cref="CodeSnippetCompletionProvider"/>).
+/// (<see cref="LedgerSignatures"/>), the snippets it completes, walked with Tab
+/// (<see cref="CodeSnippetCompletionProvider"/>), and what the file declares, for ⇧⌘O to go to
+/// (<see cref="LedgerSymbols"/>).
 /// </summary>
 [Page("/code", Title = "Code editor — eQuantic Console")]
 public sealed class CodeScreen : StatefulComponent
@@ -28,6 +29,7 @@ public sealed class CodeScreen : StatefulComponent
     private readonly LedgerLint _lint = new();
     private readonly LedgerHover _hover = new();
     private readonly LedgerSignatures _signatures = new();
+    private readonly LedgerSymbols _symbols = new();
 
     /// <summary>Before the language's words and the file's, so a prefix that is also a keyword offers its
     /// snippet first: a loop, a walk over a collection, and a property whose access is a choice.</summary>
@@ -107,7 +109,7 @@ public sealed class CodeScreen : StatefulComponent
         {
             Width = SizeValue.Fill,
             Padding = new EdgeInsets(Space.S4, Space.S4, 0, Space.S4),
-        }, new Text(_status.Length == 0 ? "Rest the pointer on a name, type a call such as Add(, type prop and press Enter, or click into the code and press F8." : _status,
+        }, new Text(_status.Length == 0 ? "Rest the pointer on a name, type a call such as Add(, type prop and press Enter, press ⌃G or ⇧⌘O to go to a line or a symbol, or press F8." : _status,
             TypeRole.BodyM, theme.TextSecondary, maxLines: 1)));
         page.Add(new Box(new BoxStyle
         {
@@ -123,6 +125,7 @@ public sealed class CodeScreen : StatefulComponent
             DiagnosticProviders = [_lint],
             HoverProviders = [_hover],
             SignatureProviders = [_signatures],
+            SymbolProviders = [_symbols],
         }));
 
         return new Box(new BoxStyle

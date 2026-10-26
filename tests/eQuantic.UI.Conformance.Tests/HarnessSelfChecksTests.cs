@@ -38,14 +38,14 @@ public class HarnessSelfChecksTests
     }
 
     /// <summary>
-    /// What refuses is the build's error, never its warning: a number read with no culture is warned
-    /// about (EQ2110) and built, so the case runs.
+    /// What refuses is the build's error, never its warning: a warning is built, so the case runs. No
+    /// code eqc reports is a warning since EQ2110 left (#1087), so the warning here is made up.
     /// </summary>
     [Fact]
     public void AWarning_RefusesNothing()
     {
         Refusal.Of([
-                new ConversionDiagnostic(ConversionSeverity.Warning, "EQ2110", "a warning", 1, 1),
+                new ConversionDiagnostic(ConversionSeverity.Warning, "EQ9999", "a warning", 1, 1),
                 new ConversionDiagnostic(ConversionSeverity.Error, "EQ2008", "an error", 1, 1),
             ])
             .Select(refusal => refusal.Id).Should().Equal("EQ2008");
