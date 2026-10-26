@@ -84,6 +84,18 @@
   <data name="RangeSize" xml:space="preserve">
     <value>{0}R x {1}C</value>
   </data>
+  <data name="StatusSum" xml:space="preserve">
+    <value>Sum: {0}</value>
+  </data>
+  <data name="StatusAverage" xml:space="preserve">
+    <value>Average: {0}</value>
+  </data>
+  <data name="StatusCount" xml:space="preserve">
+    <value>Count: {0}</value>
+  </data>
+  <data name="AddToSelection" xml:space="preserve">
+    <value>Add to Selection</value>
+  </data>
   <data name="Back" xml:space="preserve">
     <value>Back</value>
   </data>

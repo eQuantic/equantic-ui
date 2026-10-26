@@ -119,6 +119,18 @@ eQuantic.UI.Primitives.ScrollRequest.Offset.get -> float
 eQuantic.UI.Primitives.ScrollRequest.Offset.init -> void
 eQuantic.UI.Primitives.ScrollView.Request.get -> eQuantic.UI.Primitives.ScrollRequest?
 eQuantic.UI.Primitives.ScrollView.Request.init -> void
+eQuantic.UI.Primitives.SheetTheme.RangeOutline.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.RangeOutline.init -> void
+eQuantic.UI.Primitives.SheetTheme.HeaderWholeBackground.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.HeaderWholeBackground.init -> void
+eQuantic.UI.Primitives.SheetTheme.HeaderWholeText.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.HeaderWholeText.init -> void
+eQuantic.UI.Primitives.SheetTheme.DimmedRangeFill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.DimmedRangeFill.init -> void
+eQuantic.UI.Primitives.SheetTheme.DimmedOutline.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SheetTheme.DimmedOutline.init -> void
+eQuantic.UI.Primitives.TableViewCell.Glide.get -> eQuantic.UI.Primitives.MotionSpec?
+eQuantic.UI.Primitives.TableViewCell.Glide.init -> void
 eQuantic.UI.Primitives.GoogleFontAttribute
 eQuantic.UI.Primitives.GoogleFontAttribute.Family.get -> string!
 eQuantic.UI.Primitives.GoogleFontAttribute.GoogleFontAttribute(string! family, params eQuantic.UI.Primitives.FontWeight[]! weights) -> void

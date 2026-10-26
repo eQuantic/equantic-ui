@@ -39,3 +39,12 @@ static eQuantic.UI.Spreadsheets.FormulaBar.Padding.get -> eQuantic.UI.Primitives
 static eQuantic.UI.Spreadsheets.NameBox.Padding.get -> eQuantic.UI.Primitives.EdgeInsets
 static eQuantic.UI.Spreadsheets.SpreadsheetsUI.FormulaBar(eQuantic.UI.Sheet.SheetController! controller) -> eQuantic.UI.Spreadsheets.FormulaBar!
 static eQuantic.UI.Spreadsheets.SpreadsheetsUI.NameBox(eQuantic.UI.Sheet.SheetController! controller) -> eQuantic.UI.Spreadsheets.NameBox!
+eQuantic.UI.Spreadsheets.StatusBar
+eQuantic.UI.Spreadsheets.StatusBar.StatusBar(eQuantic.UI.Sheet.SheetController! controller) -> void
+eQuantic.UI.Spreadsheets.StatusBar.Controller.get -> eQuantic.UI.Sheet.SheetController!
+eQuantic.UI.Spreadsheets.StatusBar.Width.get -> eQuantic.UI.Primitives.SizeValue
+eQuantic.UI.Spreadsheets.StatusBar.Width.init -> void
+override eQuantic.UI.Spreadsheets.StatusBar.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Spreadsheets.StatusBar.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+static eQuantic.UI.Spreadsheets.StatusBar.Padding.get -> eQuantic.UI.Primitives.EdgeInsets
+static eQuantic.UI.Spreadsheets.SpreadsheetsUI.StatusBar(eQuantic.UI.Sheet.SheetController! controller) -> eQuantic.UI.Spreadsheets.StatusBar!

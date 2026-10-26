@@ -1,4 +1,4 @@
-import { FormulaBar, NameBox, SheetController, SizeValue, Spreadsheet } from "../runtime-exports";
+import { FormulaBar, NameBox, SheetController, SizeValue, Spreadsheet, StatusBar } from "../runtime-exports";
 
 export class SpreadsheetsUI {
     static spreadsheet(controller: SheetController, width?: SizeValue, height?: SizeValue, overscan: number = 3) {
@@ -11,6 +11,10 @@ export class SpreadsheetsUI {
 
     static nameBox(controller: SheetController) {
         return new NameBox(controller);
+    }
+
+    static statusBar(controller: SheetController) {
+        return new StatusBar(controller);
     }
 }
 

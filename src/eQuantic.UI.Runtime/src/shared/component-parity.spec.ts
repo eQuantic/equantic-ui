@@ -84,6 +84,7 @@ import { UniformTableSpans } from './components/UniformTableSpans';
 import { Spreadsheet } from './components/Spreadsheet';
 import { FormulaBar } from './components/FormulaBar';
 import { NameBox } from './components/NameBox';
+import { StatusBar } from './components/StatusBar';
 import { SheetController } from './components/SheetController';
 import { CodeRange } from './components/CodeRange';
 import { CodePosition } from './components/CodePosition';
@@ -129,6 +130,17 @@ function editing(): SheetController {
   sheet.selection = new SheetRange(new CellRef(1, 1));
   sheet.beginEdit('Budget', 'edit');
   sheet.entry.selection = new CodeRange(new CodePosition(0, 2), new CodePosition(0, 5));
+  return sheet;
+}
+
+/** A sheet whose B2:B4 holds two numbers and a word, selected, in add mode. */
+function summing(first = '7.01', second = '14.02', third = 'text'): SheetController {
+  const sheet = new SheetController(30, 6);
+  sheet.document.setCell(new CellRef(1, 1), first);
+  sheet.document.setCell(new CellRef(2, 1), second);
+  sheet.document.setCell(new CellRef(3, 1), third);
+  sheet.selection = new SheetRange(new CellRef(1, 1), new CellRef(3, 1));
+  sheet.handleKey('F8', 1, 'standard', null);
   return sheet;
 }
 
@@ -390,6 +402,9 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'spreadsheet-editing': still(new Spreadsheet(editing(), { width: SizeValue.fill, height: SizeValue.fixed(240) })),
     'formula-bar': still(new FormulaBar(editing())),
     'name-box': still(new NameBox(editing())),
+    'status-bar': still(new StatusBar(summing())),
+    'status-bar-general': still(new StatusBar(summing('123456789012', '1', '2'))),
+    'status-bar-small': still(new StatusBar(summing('0.0000000001', '-0.0000000003', 'text'))),
     'popover-closed': still(
       new Popover(
         new Button('Info'),
@@ -619,9 +634,10 @@ function canonical(node: HtmlNode): unknown {
     // viewport's is a third: the client's after-pass finds the element by it to drive its scroll, and
     // its cells by theirs to walk the Tab order row by row.
     // A sheet's and a code surface's are a fourth and a fifth: a focus request and a reveal find the surface
-    // by it after the render.
+    // by it after the render. A gliding mark's is a sixth: the table's after-pass finds the mark it glides
+    // by it, and the server's first pass has nothing to glide from.
     if (key === 'data-eq-scroll' || key === 'data-eq-inview' || key === 'data-eq-table' || key === 'data-eq-cell'
-      || key === 'data-eq-sheet' || key === 'data-eq-code')
+      || key === 'data-eq-sheet' || key === 'data-eq-code' || key === 'data-eq-glide')
       continue;
     const value = node.attributes[key];
     if (value !== undefined && value !== null) attrs[key] = normalize(key, value);

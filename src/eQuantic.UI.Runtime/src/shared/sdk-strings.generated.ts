@@ -9,6 +9,7 @@
 
 export const sdkNeutralStrings: Record<string, string> = {
   'AcceptCookies': "Accept",
+  'AddToSelection': "Add to Selection",
   'Back': "Back",
   'ChooseDate': "Choose a date",
   'ChooseTime': "Choose a time",
@@ -55,6 +56,9 @@ export const sdkNeutralStrings: Record<string, string> = {
   'ShowInline': "Show inline",
   'ShowSideBySide': "Show side by side",
   'Spreadsheet': "Spreadsheet",
+  'StatusAverage': "Average: {0}",
+  'StatusCount': "Count: {0}",
+  'StatusSum': "Sum: {0}",
   'SymbolsCount': "Symbols ({0})",
   'Today': "Today",
   'UnchangedLine': "1 unchanged line",

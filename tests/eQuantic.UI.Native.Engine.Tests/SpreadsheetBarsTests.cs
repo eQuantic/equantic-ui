@@ -13,7 +13,8 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// The formula bar and the name box as components on Photon (#983), placed over a sheet as Excel lays them
 /// out: the bar shows the cell's entry keystroke by keystroke, edits the cell from there and hands the
 /// keyboard back, the name box shows where the selection is, takes the keyboard on F5 and goes where it is
-/// told.
+/// told. And the status bar under the sheet (#984), which sums what is selected in the page's language
+/// and culture and says when add mode is on.
 /// </summary>
 public class SpreadsheetBarsTests
 {
@@ -28,6 +29,7 @@ public class SpreadsheetBarsTests
         var page = new Column(gap: 4);
         page.Add(bars);
         page.Add(new Flexible(new Spreadsheet(sheet) { Width = SizeValue.Fill, Height = SizeValue.Fill }, 1));
+        page.Add(new StatusBar(sheet));
         var host = new PhotonHost(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }, page),
             PhotonTheme.Instance, ThemeMode.Light, 700, 400)
         {
@@ -146,7 +148,21 @@ public class SpreadsheetBarsTests
         Texts(Frame(host, 48)).Should().Contain("5R x 3C");
 
         host.PressUp(toX, toY);
-        Texts(Frame(host, 64)).Should().Contain("D6", "after the release the box shows the active cell, where the drag ended");
+        Texts(Frame(host, 64)).Should().Contain("B2", "after the release the box shows the active cell, where the drag began");
+    }
+
+    [Fact]
+    public void TheNameBox_ShowsTheActiveCell_WhileShiftStretchesTheRange()
+    {
+        var (host, sheet) = Open();
+        Click(host, sheet, B2, 32);
+
+        host.KeyDown("ArrowDown", KeyModifiers.Shift);
+        host.KeyDown("ArrowDown", KeyModifiers.Shift);
+        var texts = Texts(Frame(host, 48));
+
+        sheet.Selection.Should().Be(new SheetRange(B2, new CellRef(3, 1)));
+        texts.Should().Contain("B2", "the active cell stays where the range began");
     }
 
     [Fact]
@@ -257,5 +273,174 @@ public class SpreadsheetBarsTests
         sheet.NameBox.Entry.Document.Text.Should().Be("$A$100000:$CV$100000");
         var caret = host.CaretRect().Should().NotBeNull().And.Subject.As<Rect?>()!.Value;
         caret.X.Should().BeInRange(0, NameBox.DefaultWidth, "the box scrolls its text to keep the caret in it");
+    }
+
+    // ---- the status bar ---------------------------------------------------------------------------------------
+
+    private static T InCulture<T>(string culture, Func<T> run)
+    {
+        var (format, ui) = (System.Globalization.CultureInfo.CurrentCulture, System.Globalization.CultureInfo.CurrentUICulture);
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo(culture);
+            System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo(culture);
+            return run();
+        }
+        finally
+        {
+            (System.Globalization.CultureInfo.CurrentCulture, System.Globalization.CultureInfo.CurrentUICulture) = (format, ui);
+        }
+    }
+
+    [Fact]
+    public void TheStatusBar_SumsADragInThePagesLanguageAndCulture()
+    {
+        var texts = InCulture("pt-BR", () =>
+        {
+            var (host, sheet) = Open();
+            sheet.Document.SetCell(B2, "7,01");
+            sheet.Document.SetCell(new CellRef(2, 1), "14,02");
+            sheet.Document.SetCell(new CellRef(3, 1), "texto");
+            var (x, y) = Center(host, sheet, B2);
+            var (toX, toY) = Center(host, sheet, new CellRef(3, 1));
+            host.PressDown(x, y);
+            host.PointerMove(toX, toY);
+            host.PressUp(toX, toY);
+            return Texts(Frame(host, 32));
+        });
+
+        texts.Should().Contain(["Média: 10,515", "Contagem: 3", "Soma: 21,03"]);
+    }
+
+    [Fact]
+    public void TheStatusBar_SaysNothingOfOneCell_AndFollowsAKey()
+    {
+        var (one, two) = InCulture("en-US", () =>
+        {
+            var (host, sheet) = Open();
+            sheet.Document.SetCell(B2, "7");
+            sheet.Document.SetCell(new CellRef(2, 1), "8");
+            Click(host, sheet, B2, 32);
+            var one = Texts(Frame(host, 40));
+            host.KeyDown("ArrowDown", KeyModifiers.Shift);
+            return (one, Texts(Frame(host, 48)));
+        });
+
+        one.Should().NotContain(text => text.StartsWith("Sum") || text.StartsWith("Count"), "one cell shows nothing");
+        two.Should().Contain(["Average: 7.5", "Count: 2", "Sum: 15"], "a key that stretches the range refreshes the bar");
+    }
+
+    [Fact]
+    public void TheStatusBar_WritesTenDigits_AsExcelsGeneralDoes()
+    {
+        var texts = InCulture("en-US", () =>
+        {
+            var (host, sheet) = Open();
+            sheet.Document.SetCell(B2, "1");
+            sheet.Document.SetCell(new CellRef(2, 1), "2");
+            sheet.Document.SetCell(new CellRef(3, 1), "2");
+            Click(host, sheet, B2, 32);
+            host.KeyDown("ArrowDown", KeyModifiers.Shift);
+            host.KeyDown("ArrowDown", KeyModifiers.Shift);
+            return Texts(Frame(host, 48));
+        });
+
+        texts.Should().Contain(["Average: 1.666666667", "Count: 3", "Sum: 5"], "a decimal's own text keeps 28 digits");
+    }
+
+    [Fact]
+    public void TheStatusBar_WritesWhatFitsInElevenCharacters_AsExcelsGeneralDoes()
+    {
+        var texts = InCulture("pt-BR", () =>
+        {
+            var (host, sheet) = Open();
+            sheet.Document.SetCell(B2, "123456789,12");
+            sheet.Document.SetCell(new CellRef(2, 1), "12345678901");
+            sheet.Document.SetCell(new CellRef(3, 1), "111111111111");
+            Click(host, sheet, B2, 32);
+            host.KeyDown("ArrowDown", KeyModifiers.Shift);
+            var two = Texts(Frame(host, 48));
+            host.KeyDown("ArrowDown", KeyModifiers.Shift);
+            return (two, Texts(Frame(host, 64)));
+        });
+
+        texts.two.Should().Contain(["Soma: 12469135690", "Média: 6234567845"], "an eleven-digit sum keeps its digits");
+        texts.Item2.Should().Contain("Soma: 1,2358E+11", "a sum past eleven characters is written in scientific notation");
+    }
+
+    /// <summary>Review of #1102: the places wrote a sum of two ten-billionths as `0`. General writes the form
+    /// that keeps more of the value, and a minus takes a digit from the mantissa.</summary>
+    [Theory]
+    [InlineData("0.0000000001", "0.0000000001", "Sum: 2E-10", "Average: 1E-10")]
+    [InlineData("-0.0000000001", "-0.0000000003", "Sum: -4E-10", "Average: -2E-10")]
+    [InlineData("-123456789012", "-1", "Sum: -1.2346E+11", "Average: -6.1728E+10")]
+    [InlineData("0.0001234", "0", "Sum: 0.0001234", "Average: 0.0000617")]
+    public void TheStatusBar_WritesASmallOrNegativeNumber_AsExcelsGeneralDoes(string first, string second,
+        string sum, string average)
+    {
+        var texts = InCulture("en-US", () =>
+        {
+            var (host, sheet) = Open();
+            sheet.Document.SetCell(B2, first);
+            sheet.Document.SetCell(new CellRef(2, 1), second);
+            Click(host, sheet, B2, 32);
+            host.KeyDown("ArrowDown", KeyModifiers.Shift);
+            return Texts(Frame(host, 48));
+        });
+
+        texts.Should().Contain([sum, average]);
+    }
+
+    [Fact]
+    public void AKeyBeforeText_IsTheSheetsAlone_NeverAnAppShortcut()
+    {
+        // The macOS shell offers a key to the app before the input method while a text target holds the caret
+        // (#984): a sheet may claim it, an app's shortcut on a plain character may not, or typing that
+        // character into a field would run the shortcut.
+        var log = new List<string>();
+        var field = new TextInput("", _ => { }, "Name");
+        var host = new PhotonHost(new Shortcut(field, new KeyChord("/"), () => log.Add("search")),
+            PhotonTheme.Instance, ThemeMode.Light, 500, 300);
+        var region = host.RenderFrame(new DisplayListBuilder()).TextRegions.Single();
+        host.PressDown(region.Bounds.X + 4, region.Bounds.Y + 4);
+        host.PressUp(region.Bounds.X + 4, region.Bounds.Y + 4);
+
+        host.KeyBeforeText("/", KeyModifiers.None).Should().BeFalse("the input context types it");
+        log.Should().BeEmpty();
+
+        var (sheetHost, sheet) = Open();
+        Click(sheetHost, sheet, B2, 32);
+        sheetHost.KeyBeforeText(" ", KeyModifiers.Shift).Should().BeTrue("Shift+Space is the sheet's");
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(1, 0), new CellRef(1, sheet.Document.Cols - 1)));
+    }
+
+    [Fact]
+    public void TheStatusBar_CountsWords_AndSumsNothingOfThem()
+    {
+        var texts = InCulture("en-US", () =>
+        {
+            var (host, sheet) = Open();
+            sheet.Document.SetCell(B2, "a");
+            sheet.Document.SetCell(new CellRef(2, 1), "b");
+            Click(host, sheet, B2, 32);
+            host.KeyDown("ArrowDown", KeyModifiers.Shift);
+            return Texts(Frame(host, 48));
+        });
+
+        texts.Should().Contain("Count: 2");
+        texts.Should().NotContain(text => text.StartsWith("Sum") || text.StartsWith("Average"));
+    }
+
+    [Fact]
+    public void ShiftF8_IsSaidOnTheStatusBar_UntilEscape()
+    {
+        var (host, sheet) = Open();
+        Click(host, sheet, B2, 32);
+
+        host.KeyDown("F8", KeyModifiers.Shift).Should().BeTrue();
+        Texts(Frame(host, 48)).Should().Contain(SdkStrings.AddToSelection);
+
+        host.KeyDown("Escape");
+        Texts(Frame(host, 64)).Should().NotContain(SdkStrings.AddToSelection);
     }
 }

@@ -1131,15 +1131,20 @@ public sealed class PhotonHost
     }
 
     /// <summary>Gives a sheet the keyboard, by the same doors as <see cref="BeginCodeEditing(Element,
-    /// ICodeSurfaceModel)"/>, and restarts its caret's blink.</summary>
-    private void BeginSheetEditing(Element element, ISheetSurfaceModel model)
+    /// ICodeSurfaceModel)"/>, and restarts its caret's blink. The sheet builds again when it gains the keys,
+    /// as when it loses them: its selection is drawn dimmed without them.</summary>
+    private void BeginSheetEditing(Element element, SheetSurface surface)
     {
         var changed = !ReferenceEquals(_textAt, element);
         if (changed) EndEditing();
         _textAt = element;
         _focused = null;
         ForgetFocus();
-        if (changed) model.FocusChanged(true);
+        if (changed)
+        {
+            surface.Model.FocusChanged(true);
+            SurfaceChanged(surface.OnChanged);
+        }
         RestartBlink();
         NeedsRender = true;
     }
@@ -1275,7 +1280,7 @@ public sealed class PhotonHost
             if (version == seen) continue;
             if (box is null) _sheetFocusRequests.Add(model, new System.Runtime.CompilerServices.StrongBox<int>(version));
             else box.Value = version;
-            BeginSheetEditing(region.Element, model);
+            BeginSheetEditing(region.Element, region.Surface);
         }
     }
 
@@ -1731,6 +1736,19 @@ public sealed class PhotonHost
     /// sheet for an Escape it does not claim: the model released Tab, and the Tab that follows moves on
     /// from the sheet's own stop, which a dropped keyboard had forgotten (#732).
     /// </summary>
+    /// <summary>
+    /// A key a shell offers BEFORE the platform's text input, while a text target holds the caret and nothing is
+    /// being composed (the macOS shell, #984): only a spreadsheet under the selection may claim it, since its
+    /// keymap reads Shift+Space and its chords at rest. The app's own shortcuts and the focus keys wait for the
+    /// key the input context leaves, so a character typed into a field or a code editor is never a binding's.
+    /// </summary>
+    public bool KeyBeforeText(string key, KeyModifiers modifiers)
+    {
+        if (SheetTarget is not { } sheetSurface || !SheetKey(sheetSurface, key, modifiers)) return false;
+        NeedsRender = true;
+        return true;
+    }
+
     private bool SheetKey(SheetSurface surface, string key, KeyModifiers modifiers)
     {
         if (!surface.Model.HandleKey(key, modifiers, KeyboardConvention, Clipboard)) return false;
@@ -1880,7 +1898,7 @@ public sealed class PhotonHost
             // target null and killed the arrows the composite exists for. A stop that is none of
             // these ARRIVES and nothing more, which is the right default for whatever comes next.
             if (stops[i].Code is { } code) BeginCodeEditing(stops[i].Element, code.Model);
-            else if (stops[i].Sheet is { } sheet) BeginSheetEditing(stops[i].Element, sheet.Model);
+            else if (stops[i].Sheet is { } sheet) BeginSheetEditing(stops[i].Element, sheet);
             return true;
         }
         return false;
@@ -2523,9 +2541,23 @@ public sealed class PhotonHost
         for (var i = sheetRegions.Count - 1; i >= 0; i--)
         {
             if (!Covers(sheetRegions, i, sheetRegions[i].Visible ?? sheetRegions[i].Bounds, point)) continue;
-            BeginSheetEditing(sheetRegions[i].Element, sheetRegions[i].Surface.Model);
-            sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Down,
+            BeginSheetEditing(sheetRegions[i].Element, sheetRegions[i].Surface);
+            var claimed = sheetRegions[i].Surface.Model.HandlePointer(PointerPhase.Down,
                 ToLocal(sheetRegions, i, sheetRegions[i].Bounds, point), modifiers, clickCount, kind);
+            // A press the sheet declines over a drag surface drawn inside it is the drag's: a header's resize
+            // grip, which the sheet's engine reads as the grip's and leaves alone (#984). Its moves and its
+            // release go to the grip, as on the web, where the sheet steps aside for `[data-eq-drag]`.
+            // The table's candidate pan, which a finger's or a pen's press armed, lets go of it, or its pan
+            // would take the drag past the slop before the grip.
+            if (!claimed && _drag is not null)
+            {
+                if (_tablePress is { Active: false } pending)
+                {
+                    _tablePress = null;
+                    pending.Viewport.Scroll.Pointer(PointerPhase.Cancel, Point.Zero, kind, _lastTimeMs);
+                }
+                return true;
+            }
             _sheetPressed = true;
             // A pen's press on the cells is the sheet's, as a mouse's is: its drag selects, so the
             // table's candidate pan lets go of it. A finger's stays a candidate, a tap or a pan.

@@ -130,9 +130,29 @@ public static class SheetKeymap
             return true;
         }
 
+        // The chords whose modifier a Mac moves from ⌘ to ⌃ (Excel for Mac's own): the columns of the
+        // selection, showing the active cell, and the selection's next corner.
+        var control = convention == KeyboardConvention.Apple ? KeyModifiers.Control : KeyModifiers.Command;
+        if (modifiers == control)
+        {
+            switch (key)
+            {
+                case " " or "Space": sheet.SelectActiveColumns(); return true;
+                case "Backspace": sheet.ShowActiveCell(); return true;
+                case ".": sheet.NextCorner(); return true;
+            }
+        }
+
         var motion = command ? SheetMotion.DataEdge : SheetMotion.Cell;
         switch (key)
         {
+            case " " or "Space" when modifiers == KeyModifiers.Shift:
+                sheet.SelectActiveRows();
+                return true;
+            case "PageUp" when (modifiers & KeyModifiers.Alt) != 0 && !command:
+                return sheet.MovePageAcross(-1, shift);
+            case "PageDown" when (modifiers & KeyModifiers.Alt) != 0 && !command:
+                return sheet.MovePageAcross(1, shift);
             case "F2": sheet.BeginEdit(sheet.Document.GetCell(sheet.ActiveCell), SheetEditMode.Edit); return true;
             case "ArrowUp": sheet.Move(-1, 0, motion, shift); return true;
             case "ArrowDown": sheet.Move(1, 0, motion, shift); return true;
@@ -155,17 +175,27 @@ public static class SheetKeymap
                 return true;
             case "Delete": sheet.ClearSelection(); return true;
             case "Escape":
-                // Nothing to cancel: Escape releases Tab and is left to whatever is around the sheet.
+                // Add mode ends first, as Excel's does; with nothing to cancel, Escape releases Tab and is left
+                // to whatever is around the sheet.
+                if (sheet.AddingRanges)
+                {
+                    sheet.AddingRanges = false;
+                    return true;
+                }
                 sheet.TabReleased = true;
                 return false;
+            case "F8" when modifiers == KeyModifiers.Shift:
+                sheet.AddingRanges = !sheet.AddingRanges;
+                return true;
         }
 
         if (command && key.Length == 1)
         {
             switch (key)
             {
-                case "a": case "A": sheet.SelectAll(); return true;
+                case "a": case "A": sheet.SelectRegionThenSheet(); return true;
                 case "z": case "Z": if (shift) sheet.Redo(); else sheet.Undo(); return true;
+                case "y": case "Y": sheet.Redo(); return true;
                 case "d": case "D": sheet.FillDown(); return true;
                 case "r": case "R": sheet.FillRight(); return true;
             }

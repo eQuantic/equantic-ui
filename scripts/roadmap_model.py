@@ -14,7 +14,7 @@ import datetime as dt
 import random
 import re
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 # The pace is what the last four weeks delivered, in calendar days, since the weekend is when most
 # pull requests merge here, and it is never divided by fewer than seven: a burst in the first days of
@@ -31,6 +31,8 @@ DATED = ("Epic", "Feature")
 ROLLED_UP = ("Epic", "Feature", "User Story")
 # The lane of the issues no epic holds.
 NO_EPIC = 0
+# A sprint's length, as the board's Iteration field has had it since its first sprint.
+SPRINT_DAYS = 14
 # The points a person may give an issue. Bigger than the last is a parent, split into slices.
 POINTS = (1, 2, 3, 5, 8, 13)
 # The size of delivered work, in lines a person wrote, below which each point applies: the scale
@@ -80,6 +82,8 @@ class Issue:
     milestone: str | None = None
     priority: str | None = None
     points: float | None = None
+    sprint: str | None = None
+    sprint_id: str | None = None
     start: dt.date | None = None
     target: dt.date | None = None
     parent: int | None = None
@@ -151,6 +155,23 @@ def milestone_of(issues: dict, issue: Issue) -> str | None:
 def written(files: list) -> int:
     """The lines a person wrote among a pull request's changed files: `files` is [(path, lines)]."""
     return sum(lines for path, lines in files if not any(p.search(path) for p in GENERATED))
+
+
+def lines_by_day(log: str) -> dict:
+    """{day: lines a person wrote} from `git log --numstat --format=@%cd --date=short`: each commit's
+    changed files under the day it landed, a binary file (its counts are "-") and the files a tool
+    writes left out."""
+    found, landed, files = defaultdict(int), None, []
+    for line in log.splitlines() + ["@"]:
+        if line.startswith("@"):
+            if landed:
+                found[landed] += written(files)
+            landed, files = (dt.date.fromisoformat(line[1:]) if len(line) > 1 else None), []
+        elif line.count("\t") >= 2:
+            added, deleted, path = line.split("\t", 2)
+            if added != "-":
+                files.append((path, int(added) + int(deleted)))
+    return dict(found)
 
 
 def points_for(lines: float) -> int:
@@ -531,3 +552,94 @@ def percentile(days: list, p: float):
     if not days:
         return None
     return days[min(len(days) - 1, int(round(p * (len(days) - 1))))]
+
+
+# ── Sprints ──────────────────────────────────────────────────────────────────────────────────────────
+@dataclass(frozen=True)
+class Sprint:
+    title: str
+    start: dt.date
+    days: int = SPRINT_DAYS
+    # The board's iteration id; None for a sprint the board does not have yet.
+    id: str | None = None
+
+    @property
+    def end(self) -> dt.date:
+        return self.start + dt.timedelta(days=self.days - 1)
+
+    def holds(self, day: dt.date) -> bool:
+        return self.start <= day <= self.end
+
+
+def calendar(existing: list, until: dt.date, since: dt.date | None = None) -> list:
+    """The board's sprints in order, with sprints of SPRINT_DAYS added on the same grid before them until
+    the first holds `since`, the project's first day, and after them until the last holds `until`, all
+    named Sprint N from the first. The project is older than its board: Sprint 1 is the project's."""
+    found = sorted(existing, key=lambda s: s.start)
+    if not found:
+        return found
+    while since and found[0].start > since:
+        found.insert(0, Sprint("", found[0].start - dt.timedelta(days=SPRINT_DAYS)))
+    while found[-1].end < until:
+        found.append(Sprint("", found[-1].end + dt.timedelta(days=1)))
+    return [replace(s, title=f"Sprint {k + 1}") for k, s in enumerate(found)]
+
+
+def sprinted(issues: dict) -> list:
+    """The issues a sprint holds: a delivered one with no sub-issue, and every piece of open work. A
+    parent whose work is open below it spans sprints, and a sprint holds its pieces instead."""
+    return sorted((i for i in issues.values()
+                   if (i.closed and i.completed and not i.children) or (not i.closed and work(i) == [i])),
+                  key=lambda i: i.number)
+
+
+def sprint_of(issue: Issue, fc: Forecast | None, sprints: list) -> tuple:
+    """The sprint an issue belongs in, and why: the one it closed in, or the one the plan finishes it
+    in. With no forecast an open issue's sprint is not known, which says nothing about the one it has."""
+    if issue.closed:
+        day, why = issue.closed_on, "closed then"
+    elif fc is None:
+        return None, "no pace"
+    else:
+        end = fc.span.get(issue.number, (None, None))[1]
+        if end is None:
+            return None, "beyond the horizon"
+        day, why = fc.day(end), "planned to end then"
+    held = next((s for s in sprints if day and s.holds(day)), None)
+    return held, why if held else "before the first sprint"
+
+
+def sprint_changes(issues: dict, fc: Forecast | None, sprints: list) -> list:
+    found = []
+    for issue in sprinted(issues):
+        if not issue.item:
+            continue
+        held, why = sprint_of(issue, fc, sprints)
+        # By the board's id where the sprint has one: renaming the calendar moves no issue.
+        same = held and ((held.id and held.id == issue.sprint_id) or held.title == issue.sprint)
+        if held and not same:
+            found.append(Change(issue, "Sprint", issue.sprint, held.title, why))
+        elif held is None and issue.sprint and why != "no pace":
+            found.append(Change(issue, "Sprint", issue.sprint, None, why))
+    return found
+
+
+def sprint_load(issues: dict, fc: Forecast | None, sprints: list, lines: dict = None) -> dict:
+    """What each sprint delivered and is planned to hold: {title: (points its board issues delivered,
+    lines a person wrote on main, points planned)}. `lines` is {day: lines written on main that day}:
+    until mid-August 2026 the work went to main without pull requests or issues, so the lines are the
+    one measure every sprint of the project has."""
+    found = {s.title: [0.0, 0.0, 0.0] for s in sprints}
+    for day, count in (lines or {}).items():
+        held = next((s for s in sprints if s.holds(day)), None)
+        if held:
+            found[held.title][1] += count
+    for issue in sprinted(issues):
+        held, _ = sprint_of(issue, fc, sprints)
+        if held is None:
+            continue
+        if issue.closed:
+            found[held.title][0] += delivered_points(issue) or 0
+        else:
+            found[held.title][2] += cost_of(issue, fc.cost)
+    return {title: tuple(load) for title, load in found.items()}

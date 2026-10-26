@@ -149,6 +149,10 @@ export class SdkStrings {
         return $eq.str('SdkResources', 'NameBox');
     }
 
+    static get addToSelection(): string {
+        return $eq.str('SdkResources', 'AddToSelection');
+    }
+
     static get back(): string {
         return $eq.str('SdkResources', 'Back');
     }
@@ -225,6 +229,18 @@ export class SdkStrings {
 
     static rangeSize(rows: number, columns: number) {
         return $eq.text.stringFormat($eq.str('SdkResources', 'RangeSize'), $eq.text.asNumber(rows, 'int32'), $eq.text.asNumber(columns, 'int32'));
+    }
+
+    static sum(value: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'StatusSum'), value);
+    }
+
+    static average(value: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'StatusAverage'), value);
+    }
+
+    static count(count: number) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'StatusCount'), $eq.text.asNumber(count, 'int32'));
     }
 }
 

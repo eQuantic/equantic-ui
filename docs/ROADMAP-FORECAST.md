@@ -76,6 +76,21 @@ delivered has its real target, the day it or its last sub-issue closed. The rest
 dates. An epic, a feature or a user story shows In progress once a sub-issue is in progress, or once
 some of its work is done and some is open, and a closed issue shows Done.
 
+## Sprints
+
+The board's Iteration field holds the sprints: two weeks each, every other Tuesday, on the grid of
+the board's first iteration (2026-09-15). The project is older than its board, so the grid reaches back
+to the sprint holding the repository's first day, 2026-01-22, which is Sprint 1, and forward as far as
+the plan reaches. The script names them Sprint N in that order.
+They are buckets the plan fills, not commitments. A delivered issue sits in the sprint it closed in,
+an open one in the sprint the plan finishes it in, and it moves when the plan moves. A parent whose
+work is open below it spans sprints, so its pieces are what a sprint holds. The report says what each
+past sprint delivered and what each coming one is planned to hold, in points. Until mid-August 2026
+the work went to main as commits, with no pull request and no issue, so points cannot measure it: the
+report also gives each sprint the lines a person wrote on main, from the repository's history with
+the files a tool writes left out, which every sprint of the project has. The pace the forecast divides
+by is the board's issues alone.
+
 ## Milestones
 
 A milestone waits for its open issues and their sub-issues, and the report gives it three dates:

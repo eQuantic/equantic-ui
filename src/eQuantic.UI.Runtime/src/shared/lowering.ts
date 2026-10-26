@@ -122,7 +122,7 @@ import type { KeyboardConventionValue } from './enums.generated';
 import { declareShortcut, shortcutMark } from '../dom/shortcuts';
 import { installScrolledController } from './scrolled-pinned';
 import { declareScrollViewport } from './scroll-viewports';
-import { declareTableViewport } from './table-viewports';
+import { declareTableViewport, tableCellPlace } from './table-viewports';
 import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
 import { localizeDestination } from '../utils/culture-routes';
@@ -1927,8 +1927,10 @@ function lowerTableBand(
   return box;
 }
 
-/** A cell placed in its band's layer over the rows and columns it covers, from the band's corner less
- * the scroll on each axis the band moves along. */
+/** A cell, or a mark, placed in its band's layer over the rows and columns it covers, from the band's
+ * corner less the scroll on each axis the band moves along, in double until it is written: the grid's far
+ * rows are past what a float holds, their distance from the window's corner never is, so a mark and its
+ * cell round alike. */
 function lowerTableCell(
   node: TableViewportNode,
   cell: TableViewCellNode,
@@ -1940,32 +1942,26 @@ function lowerTableCell(
   pinnedDown: number,
   offset: { across: number; down: number },
 ): HtmlNode | null {
-  const rows = node.rows;
-  const columns = node.columns;
-  const firstRow = Math.min(Math.max(cell.row, 0), rows.count);
-  const firstColumn = Math.min(Math.max(cell.column, 0), columns.count);
-  const endRow = Math.min(Math.max(cell.row + Math.max(1, cell.rows ?? 1), firstRow), rows.count);
-  const endColumn = Math.min(Math.max(cell.column + Math.max(1, cell.columns ?? 1), firstColumn), columns.count);
-  const top = rows.offsetOf(firstRow);
-  const left = columns.offsetOf(firstColumn);
-  const x = inPinnedColumn ? left : left - pinnedAcross - offset.across;
-  const y = inPinnedRow ? top : top - pinnedDown - offset.down;
+  const place = tableCellPlace(node, cell);
+  const x = inPinnedColumn ? place.x : place.x - pinnedAcross - offset.across;
+  const y = inPinnedRow ? place.y : place.y - pinnedDown - offset.down;
   const child = lowerNode(cell.child, context, null, path + '/0');
-  const wrapper = element(
-    'div',
-    {
-      display: 'grid',
-      position: 'absolute',
-      left: px(Math.fround(x)),
-      top: px(Math.fround(y)),
-      width: px(Math.fround(columns.offsetOf(endColumn) - left)),
-      height: px(Math.fround(rows.offsetOf(endRow) - top)),
-    },
-    child ? [child] : [],
-  );
+  const wrapper = element('div', {
+    display: 'grid',
+    position: 'absolute',
+    left: px(Math.fround(x)),
+    top: px(Math.fround(y)),
+    width: px(Math.fround(place.width)),
+    height: px(Math.fround(place.height)),
+  }, child ? [child] : []);
   // Where the cell is, for the after-pass that walks the Tab order row by row across the bands it is
   // painted in. Client-only, as the table's own key is.
   wrapper.attributes['data-eq-cell'] = `${cell.row}:${cell.column}`;
+  // A keyed mark that glides names its key for the after-pass, which glides it in the grid
+  // (table-viewports.ts): a transition on its left and top would glide it each time a scroll rebuilt
+  // the cells. Client-only too: the server's first pass has nothing to glide from.
+  const key = (cell as { key?: string | null }).key;
+  if (cell.mark && cell.glide && key) wrapper.attributes['data-eq-glide'] = key;
   return decorate(cell as unknown as VisualNodeValue, wrapper);
 }
 

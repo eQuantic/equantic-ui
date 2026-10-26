@@ -23,6 +23,10 @@ public sealed class SheetController : ISheetSurfaceModel
     private SheetRange _selection = new(new CellRef(0, 0));
     private CellRef _active = new(0, 0);
 
+    /// <summary>The ranges selected before the active one, oldest first: what a ⌘ or Ctrl press, and a press
+    /// in add mode, set aside as they add a range. Empty when one range is selected.</summary>
+    private readonly List<SheetRange> _others = new();
+
     public SheetController(int rows = 1000, int cols = 26)
     {
         Document = new SheetDocument(rows, cols);
@@ -55,8 +59,10 @@ public sealed class SheetController : ISheetSurfaceModel
     /// and what an app calls after it changed the sheet itself.</summary>
     public void Refresh() => Refreshed?.Invoke();
 
-    /// <summary>The selected rectangle. Setting it puts the active cell at its focus end, and asks the
-    /// grid to bring that cell into view (<see cref="RevealVersion"/>), as a command that moves it does.</summary>
+    /// <summary>The ACTIVE range: the last one selected, the one that holds the active cell, and the one copy,
+    /// cut, paste and fill act on. Setting it leaves it the only range, puts the active cell at its anchor,
+    /// where Excel keeps it while a drag or Shift stretches the range, and asks the grid to bring that cell into view (<see cref="RevealVersion"/>), as a command that moves
+    /// it does.</summary>
     public SheetRange Selection
     {
         get => _selection;
@@ -67,12 +73,54 @@ public sealed class SheetController : ISheetSurfaceModel
         }
     }
 
-    /// <summary>The selection, clamped into the grid, with the active cell at its focus end and nothing
-    /// asked of the grid: a press and a drag land on cells the person can see.</summary>
+    /// <summary>
+    /// Every range selected, the active one (<see cref="Selection"/>) last, as Excel's <c>Selection.Areas</c>
+    /// lists them beside its active cell: one range, unless a ⌘ or Ctrl press, a press in add mode, or a
+    /// header press with one of them, added more. Delete clears all of them and Ctrl+Enter fills all of them.
+    /// </summary>
+    public IReadOnlyList<SheetRange> Ranges
+    {
+        get
+        {
+            var ranges = new List<SheetRange>(_others.Count + 1);
+            ranges.AddRange(_others);
+            ranges.Add(_selection);
+            return ranges;
+        }
+    }
+
+    /// <summary>Whether Excel's add mode is on: Shift+F8 enters and leaves it, Escape leaves it, and while it
+    /// lasts a plain press or drag adds a range as a ⌘ or Ctrl press does.</summary>
+    public bool AddingRanges { get; internal set; }
+
+    /// <summary>The range, clamped into the grid, becomes the only one, with the active cell at its anchor
+    /// and nothing asked of the grid: a press and a drag land on cells the person can see.</summary>
     private void Select(SheetRange range)
     {
+        _others.Clear();
+        _tabRun = null;
+        SetActiveRange(range);
+    }
+
+    /// <summary>The active range becomes <paramref name="range"/>, clamped, the others kept, with the active
+    /// cell at its anchor: a drag stretches the range from the cell it began on, which stays active, as in
+    /// Excel and Sheets.</summary>
+    private void SetActiveRange(SheetRange range)
+    {
         _selection = new SheetRange(Document.Clamp(range.Anchor), Document.Clamp(range.Focus));
-        _active = _selection.Focus;
+        _active = _selection.Anchor;
+    }
+
+    /// <summary>After Shift stretched the active range, the active cell stays where it was if the range still
+    /// holds it, and goes to the anchor if not (a Tab run inside a range that shrank past it).</summary>
+    private void KeepActiveInRange() => _active = _selection.Contains(_active) ? _active : _selection.Anchor;
+
+    /// <summary>The active range is set aside and <paramref name="range"/> becomes the active one: a ⌘ or Ctrl
+    /// press, and a press in add mode.</summary>
+    private void AddRange(SheetRange range)
+    {
+        _others.Add(_selection);
+        SetActiveRange(range);
     }
 
     /// <summary>
@@ -85,41 +133,58 @@ public sealed class SheetController : ISheetSurfaceModel
     // ---- navigation -----------------------------------------------------------------------------
 
     /// <summary>
-    /// Moves the focus (extend = false collapses the selection to the landing cell; true drags the
-    /// focus and keeps the anchor — Shift+arrow). Motions mirror Excel: a CELL step, a DATA-EDGE
-    /// jump (Ctrl+arrow: last populated cell of the run, or the next populated cell across a gap,
-    /// or the sheet edge), row and sheet boundaries (Home/End, Ctrl+Home/End).
+    /// Moves the active cell (extend = false collapses the selection to the landing cell), or, with
+    /// extend, the selection's moving end, the focus, with the anchor and the active cell kept: Shift+arrow
+    /// stretches the range from the end it last stretched, as Excel's does, and the cell typing lands on
+    /// stays where the range began. Motions mirror Excel: a CELL step, a DATA-EDGE jump (Ctrl+arrow: last
+    /// populated cell of the run, or the next populated cell across a gap, or the sheet edge), row and
+    /// sheet boundaries (Home/End, Ctrl+Home/End).
     /// </summary>
     public void Move(int dRow, int dCol, SheetMotion motion = SheetMotion.Cell, bool extend = false)
     {
-        var from = ActiveCell;
+        var from = extend ? _selection.Focus : ActiveCell;
         var landed = motion switch
         {
             SheetMotion.DataEdge => DataEdge(from, dRow, dCol),
             SheetMotion.RowBoundary => new CellRef(from.Row, dCol < 0 ? 0 : Document.Cols - 1),
-            SheetMotion.SheetBoundary => dRow < 0 || dCol < 0 ? new CellRef(0, 0) : new CellRef(Document.Rows - 1, Document.Cols - 1),
+            // ⌘End is Excel's last cell IN USE, never the grid's last cell (D10).
+            SheetMotion.SheetBoundary => dRow < 0 || dCol < 0 ? new CellRef(0, 0) : LastCellInUse(),
             _ => new CellRef(from.Row + dRow, from.Col + dCol),
         };
         landed = Document.Clamp(landed);
-        _selection = extend ? new SheetRange(_selection.Anchor, landed) : new SheetRange(landed);
-        _active = landed;
+        Land(landed, extend);
+        _tabRun = null;
         Reveal();
+    }
+
+    /// <summary>A move lands on <paramref name="landed"/>: alone, the active cell there; with extend, as the
+    /// active range's focus, the active cell kept.</summary>
+    private void Land(CellRef landed, bool extend)
+    {
+        if (!extend)
+        {
+            _others.Clear();
+            _selection = new SheetRange(landed);
+            _active = landed;
+            return;
+        }
+        _selection = new SheetRange(_selection.Anchor, landed);
+        KeepActiveInRange();
     }
 
     /// <summary>
     /// PageDown and PageUp: the active cell by the rows the grid shows under its headers, the selection
-    /// with it (extend keeps the anchor, Shift's way). Without a viewport to measure there is no page, and
-    /// the key is not taken.
+    /// with it, or with extend the selection's focus, the anchor and the active cell kept, Shift's way.
+    /// Without a viewport to measure there is no page, and the key is not taken.
     /// </summary>
     public bool MovePage(int direction, bool extend = false)
     {
         if (Grid.Scroll is not { } scroll) return false;
-        var page = Math.Max(Document.RowSpans.ExtentOf(_active.Row), scroll.Viewport.Height - Grid.HeaderHeight);
-        var from = Document.RowSpans.OffsetOf(_active.Row);
+        var at = extend ? _selection.Focus : _active;
+        var page = Math.Max(Document.RowSpans.ExtentOf(at.Row), scroll.Viewport.Height - Grid.HeaderHeight);
+        var from = Document.RowSpans.OffsetOf(at.Row);
         var row = Document.RowSpans.IndexAt(from + Math.Sign(direction) * page);
-        var landed = Document.Clamp(new CellRef(row, _active.Col));
-        _selection = extend ? new SheetRange(_selection.Anchor, landed) : new SheetRange(landed);
-        _active = landed;
+        Land(Document.Clamp(new CellRef(row, at.Col)), extend);
         Reveal();
         return true;
     }
@@ -143,6 +208,256 @@ public sealed class SheetController : ISheetSurfaceModel
     {
         RevealVersion++;
         RevealCell = _active;
+    }
+
+    /// <summary>The run of Tabs in flight: the column it began in and the cell its last Tab left active, or
+    /// null. Every other move forgets it.</summary>
+    private (int StartColumn, CellRef At)? _tabRun;
+
+    /// <summary>The active cell moves to <paramref name="cell"/>, alone, and is brought into view.</summary>
+    private void MoveTo(CellRef cell)
+    {
+        var landed = Document.Clamp(cell);
+        _others.Clear();
+        _selection = new SheetRange(landed);
+        _active = landed;
+        _tabRun = null;
+        Reveal();
+    }
+
+    /// <summary>Ctrl+Backspace (⌃Delete on a Mac): the active cell brought into view, nothing moved.</summary>
+    public void ShowActiveCell() => Reveal();
+
+    /// <summary>
+    /// Ctrl+. (⌃. on a Mac): the active cell moves to the active range's next corner, clockwise from the
+    /// top-left (top-left, top-right, bottom-right, bottom-left), the range unchanged. From a cell on no corner
+    /// it goes to the top-left.
+    /// </summary>
+    public void NextCorner()
+    {
+        var range = _selection;
+        var corners = new[]
+        {
+            new CellRef(range.TopRow, range.LeftCol), new CellRef(range.TopRow, range.RightCol),
+            new CellRef(range.BottomRow, range.RightCol), new CellRef(range.BottomRow, range.LeftCol),
+        };
+        var at = Array.IndexOf(corners, _active);
+        // A range of one row or one column repeats corners: the next one is the next that moves the cell.
+        var next = corners[0];
+        if (at >= 0)
+        {
+            for (var step = 1; step <= 4; step++)
+            {
+                next = corners[(at + step) % 4];
+                if (next != _active) break;
+            }
+        }
+        _active = next;
+        Reveal();
+    }
+
+    /// <summary>
+    /// Alt+PageDown and Alt+PageUp: the active cell by the columns the grid shows beside its row numbers, the
+    /// selection with it, or with extend the selection's focus, Shift's way, as <see cref="MovePage"/> moves
+    /// by rows. Without a viewport to measure there is no page, and the key is not taken.
+    /// </summary>
+    public bool MovePageAcross(int direction, bool extend = false)
+    {
+        if (Grid.Scroll is not { } scroll) return false;
+        var at = extend ? _selection.Focus : _active;
+        var page = Math.Max(Document.ColumnSpans.ExtentOf(at.Col), scroll.Viewport.Width - Grid.HeaderWidth);
+        var from = Document.ColumnSpans.OffsetOf(at.Col);
+        var col = Document.ColumnSpans.IndexAt(from + Math.Sign(direction) * page);
+        Land(Document.Clamp(new CellRef(at.Row, col)), extend);
+        _tabRun = null;
+        Reveal();
+        return true;
+    }
+
+    /// <summary>Shift+Space: the whole rows of the active range, the active cell kept, the other ranges too.</summary>
+    public void SelectActiveRows()
+    {
+        var active = _active;
+        SetActiveRange(RowBand(_selection.Anchor.Row, _selection.Focus.Row));
+        _active = active;
+    }
+
+    /// <summary>Ctrl+Space (⌃Space on a Mac): the whole columns of the active range, the active cell kept.</summary>
+    public void SelectActiveColumns()
+    {
+        var active = _active;
+        SetActiveRange(ColumnBand(_selection.Anchor.Col, _selection.Focus.Col));
+        _active = active;
+    }
+
+    /// <summary>
+    /// ⌘A (Ctrl+A): the current region around the active cell, the block of cells in use joined to it through
+    /// cells in use along its rows, its columns and its diagonals, as Excel's <c>CurrentRegion</c> reads it;
+    /// pressed again, or with nothing in use around the active cell, the whole sheet.
+    /// </summary>
+    public void SelectRegionThenSheet()
+    {
+        var region = CurrentRegion(_active);
+        if (region == _selection || (region.IsSingleCell && !Document.HasValue(_active)))
+        {
+            SelectAll();
+            return;
+        }
+        var active = _active;
+        Select(region);
+        _active = active;
+    }
+
+    /// <summary>
+    /// The current region around <paramref name="cell"/>: a rectangle grown from the cell, one row or column at a
+    /// time, while a cell in use touches it on a side or a corner. Each step reads only the line along the side it
+    /// grows, so a block costs its perimeter for every row and column it spans.
+    /// </summary>
+    public SheetRange CurrentRegion(CellRef cell)
+    {
+        var top = cell.Row;
+        var bottom = cell.Row;
+        var left = cell.Col;
+        var right = cell.Col;
+        bool grew;
+        do
+        {
+            grew = false;
+            while (top > 0 && AnyInUse(top - 1, left - 1, top - 1, right + 1)) { top--; grew = true; }
+            while (bottom < Document.Rows - 1 && AnyInUse(bottom + 1, left - 1, bottom + 1, right + 1)) { bottom++; grew = true; }
+            while (left > 0 && AnyInUse(top - 1, left - 1, bottom + 1, left - 1)) { left--; grew = true; }
+            while (right < Document.Cols - 1 && AnyInUse(top - 1, right + 1, bottom + 1, right + 1)) { right++; grew = true; }
+        }
+        while (grew);
+        return new SheetRange(new CellRef(top, left), new CellRef(bottom, right));
+    }
+
+    /// <summary>Whether any cell of the rectangle, held to the grid, is in use.</summary>
+    private bool AnyInUse(int top, int left, int bottom, int right)
+    {
+        top = Math.Max(0, top);
+        left = Math.Max(0, left);
+        bottom = Math.Min(Document.Rows - 1, bottom);
+        right = Math.Min(Document.Cols - 1, right);
+        for (var row = top; row <= bottom; row++)
+            for (var col = left; col <= right; col++)
+                if (Document.HasValue(new CellRef(row, col))) return true;
+        return false;
+    }
+
+    /// <summary>The ranges, the document's version and the culture's way of writing a number <see cref="Summary"/>
+    /// was last read at, and what it answered.</summary>
+    private readonly List<SheetRange> _summaryRanges = new();
+    private int _summaryAt = -1;
+    private string _summaryCulture = "";
+    private SheetSummary _summary;
+
+    /// <summary>
+    /// What a status bar shows of the selection: the cells in use the ranges cover, counted once however many
+    /// ranges cover them, and of those the ones whose text reads as a plain number in the page's culture (a
+    /// sign, digits, the culture's decimal separator, an exponent, no thousands separator), with their sum and
+    /// their average; no sum and no average where the sum passes what a decimal holds. Values are text until
+    /// slice 5 types them. Read from the cells the ranges cover or from the cells in use, whichever are fewer,
+    /// so a whole sheet costs what it holds and a range dragged over a large sheet costs what it covers, and
+    /// read again only when the ranges, the document or the culture change.
+    /// </summary>
+    public SheetSummary Summary
+    {
+        get
+        {
+            var ranges = Ranges;
+            // What reading a number in the culture depends on, its minus and its decimal separator, as the culture
+            // writes them: a page holds its culture's name nowhere the browser's twin can read it.
+            var culture = (-1.5m).ToString(CultureInfo.CurrentCulture);
+            if (_summaryAt == Document.Version && _summaryCulture == culture && SameRanges(ranges)) return _summary;
+            var count = 0;
+            var numbers = 0;
+            var sum = 0m;
+            var fits = true;
+            void Read(string value)
+            {
+                count++;
+                if (!decimal.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out var number)) return;
+                numbers++;
+                if (!fits) return;
+                if (number > 0 ? sum > decimal.MaxValue - number : sum < decimal.MinValue - number) fits = false;
+                else sum += number;
+            }
+            var area = 0d;
+            foreach (var range in ranges) area += (double)range.RowCount * range.ColCount;
+            if (area <= Document.Cells.Count)
+            {
+                for (var i = 0; i < ranges.Count; i++)
+                {
+                    var range = ranges[i];
+                    for (var row = range.TopRow; row <= range.BottomRow; row++)
+                    {
+                        for (var col = range.LeftCol; col <= range.RightCol; col++)
+                        {
+                            var cell = new CellRef(row, col);
+                            if (CoveredBefore(ranges, i, cell)) continue;
+                            var value = Document.GetCell(cell);
+                            if (value.Length > 0) Read(value);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                foreach (var (key, value) in Document.Cells)
+                {
+                    if (CoveredBefore(ranges, ranges.Count, CellRef.FromKey(key))) Read(value);
+                }
+            }
+            decimal? total = fits ? sum : null;
+            _summary = new SheetSummary(count, numbers, total, fits && numbers > 0 ? sum / numbers : null);
+            _summaryAt = Document.Version;
+            _summaryCulture = culture;
+            _summaryRanges.Clear();
+            _summaryRanges.AddRange(ranges);
+            return _summary;
+        }
+    }
+
+    /// <summary>Whether one of the first <paramref name="before"/> ranges holds <paramref name="cell"/>.</summary>
+    private static bool CoveredBefore(IReadOnlyList<SheetRange> ranges, int before, CellRef cell)
+    {
+        for (var i = 0; i < before; i++)
+            if (ranges[i].Contains(cell)) return true;
+        return false;
+    }
+
+    private bool SameRanges(IReadOnlyList<SheetRange> ranges)
+    {
+        if (ranges.Count != _summaryRanges.Count) return false;
+        for (var i = 0; i < ranges.Count; i++)
+            if (ranges[i] != _summaryRanges[i]) return false;
+        return true;
+    }
+
+    /// <summary>The document's version <see cref="LastCellInUse"/> was last read at, and what it answered.</summary>
+    private int _lastInUseAt = -1;
+    private CellRef _lastInUse;
+
+    /// <summary>
+    /// The cell at the last row and the last column that hold a value, Excel's last cell, which ⌘End
+    /// (Ctrl+End) goes to: the first cell when nothing is in use. Read from the stored cells once per version
+    /// of the document.
+    /// </summary>
+    public CellRef LastCellInUse()
+    {
+        if (_lastInUseAt == Document.Version) return _lastInUse;
+        var row = 0;
+        var col = 0;
+        foreach (var key in Document.Cells.Keys)
+        {
+            var cell = CellRef.FromKey(key);
+            row = Math.Max(row, cell.Row);
+            col = Math.Max(col, cell.Col);
+        }
+        _lastInUse = new CellRef(row, col);
+        _lastInUseAt = Document.Version;
+        return _lastInUse;
     }
 
     private CellRef DataEdge(CellRef from, int dRow, int dCol)
@@ -185,6 +500,20 @@ public sealed class SheetController : ISheetSurfaceModel
     {
         if (_selection.IsSingleCell)
         {
+            // Excel's Tab-Enter column: Tab to the right remembers the column its run began in, and the Enter
+            // that ends the run goes down to the next row in that column.
+            if (dRow == 0 && dCol > 0)
+            {
+                var start = _tabRun is { } run && run.At == _active ? run.StartColumn : _active.Col;
+                Move(0, dCol);
+                _tabRun = (start, _active);
+                return;
+            }
+            if (dRow > 0 && dCol == 0 && _tabRun is { } ended && ended.At == _active)
+            {
+                MoveTo(new CellRef(_active.Row + dRow, ended.StartColumn));
+                return;
+            }
             Move(dRow, dCol);
             return;
         }
@@ -208,29 +537,58 @@ public sealed class SheetController : ISheetSurfaceModel
         Reveal();
     }
 
-    /// <summary>Select the whole row band / column band of the current selection (header clicks).</summary>
-    public void SelectRows(int fromRow, int toRow)
+    /// <summary>
+    /// Whole rows, from the <paramref name="anchor"/> row to the <paramref name="focus"/> row: a press on a row's
+    /// header, and a drag across them. With <paramref name="add"/> the band is added as a range of its own, as
+    /// ⌘ or Ctrl on a header adds it; without, it is the only range. The active cell is the anchor row's first
+    /// cell the grid shows, as Excel leaves it.
+    /// </summary>
+    public void SelectRows(int anchor, int focus, bool add)
     {
-        _selection = new SheetRange(new CellRef(fromRow, 0), new CellRef(toRow, Document.Cols - 1));
-        _active = new CellRef(fromRow, 0);
+        var band = RowBand(anchor, focus);
+        if (add) AddRange(band);
+        else Select(band);
+        _active = Document.Clamp(new CellRef(anchor, FirstColumnShown()));
     }
 
-    public void SelectCols(int fromCol, int toCol)
+    /// <summary>Whole columns, from the <paramref name="anchor"/> column to the <paramref name="focus"/> one, as
+    /// <see cref="SelectRows"/> selects rows; the active cell is the anchor column's first cell the grid shows.</summary>
+    public void SelectCols(int anchor, int focus, bool add)
     {
-        _selection = new SheetRange(new CellRef(0, fromCol), new CellRef(Document.Rows - 1, toCol));
-        _active = new CellRef(0, fromCol);
+        var band = ColumnBand(anchor, focus);
+        if (add) AddRange(band);
+        else Select(band);
+        _active = Document.Clamp(new CellRef(FirstRowShown(), anchor));
     }
+
+    private SheetRange RowBand(int anchor, int focus) =>
+        new(new CellRef(anchor, 0), new CellRef(focus, Document.Cols - 1));
+
+    private SheetRange ColumnBand(int anchor, int focus) =>
+        new(new CellRef(0, anchor), new CellRef(Document.Rows - 1, focus));
+
+    /// <summary>The first row the grid shows under its column headers; the first row when nothing scrolls.</summary>
+    private int FirstRowShown() => Document.RowSpans.IndexAt(Grid.Offset.Down);
+
+    /// <summary>The first column the grid shows beside its row numbers; the first when nothing scrolls.</summary>
+    private int FirstColumnShown() => Document.ColumnSpans.IndexAt(Grid.Offset.Across);
 
     public void SelectAll()
     {
+        _others.Clear();
         _selection = new SheetRange(new CellRef(0, 0), new CellRef(Document.Rows - 1, Document.Cols - 1));
-        _active = new CellRef(0, 0);
+        // The active cell stays where it was, as Excel's Ctrl+A and its select-all corner leave it.
+        _active = Document.Clamp(_active);
     }
 
-    /// <summary>Shift+click: the selection stretches from its anchor to the clicked cell. The
-    /// active cell stays put — exactly what Excel leaves standing.</summary>
+    /// <summary>Shift+click: the active range stretches from its anchor to the clicked cell, the other ranges
+    /// kept. The active cell stays put — exactly what Excel leaves standing.</summary>
     public void SelectTo(CellRef cell) =>
         _selection = new SheetRange(_selection.Anchor, Document.Clamp(cell));
+
+    /// <summary>Whether a press with <paramref name="modifiers"/> adds a range rather than replacing the
+    /// selection: ⌘ (Ctrl outside Apple's keyboards), or any press in add mode.</summary>
+    private bool Adds(KeyModifiers modifiers) => AddingRanges || (modifiers & KeyModifiers.Command) != 0;
 
     // ---- in-cell editing -------------------------------------------------------------------------
     //
@@ -304,6 +662,7 @@ public sealed class SheetController : ISheetSurfaceModel
     {
         if (!SheetReference.TryParse(reference, Document.Rows, Document.Cols, out var range)) return false;
         if (Editing) CommitEdit();
+        _others.Clear();
         _selection = range;
         _active = range.TopLeft;
         Reveal();
@@ -397,34 +756,15 @@ public sealed class SheetController : ISheetSurfaceModel
         return true;
     }
 
-    /// <summary>Delete over a selection: every populated cell in the rectangle empties.</summary>
-    public bool ClearSelection()
-    {
-        var edit = new SheetEdit
-        {
-            Kind = SheetEditKind.SetCells,
-            SelectionBefore = _selection,
-            SelectionAfter = _selection,
-        };
-        for (var row = _selection.TopRow; row <= _selection.BottomRow; row++)
-        {
-            for (var col = _selection.LeftCol; col <= _selection.RightCol; col++)
-            {
-                var cell = new CellRef(row, col);
-                var old = Document.GetCell(cell);
-                if (old.Length == 0) continue;
-                edit.Before.Add(new SheetCellSnapshot(cell, old));
-                edit.After.Add(new SheetCellSnapshot(cell, ""));
-                Document.SetCell(cell, "");
-            }
-        }
-        if (edit.Before.Count == 0) return false;
-        Commit(edit);
-        return true;
-    }
+    /// <summary>Delete over a selection: every populated cell of every range empties, as one undo step. A
+    /// cell two ranges share empties once: the second finds it empty already.</summary>
+    public bool ClearSelection() => FillRanges("");
 
-    /// <summary>Every cell of the selection gets <paramref name="value"/>, as one undo step.</summary>
-    public bool FillSelection(string value)
+    /// <summary>Every cell of every range gets <paramref name="value"/>, as one undo step: Excel's Ctrl+Enter
+    /// over several ranges.</summary>
+    public bool FillSelection(string value) => FillRanges(value);
+
+    private bool FillRanges(string value)
     {
         var edit = new SheetEdit
         {
@@ -432,16 +772,19 @@ public sealed class SheetController : ISheetSurfaceModel
             SelectionBefore = _selection,
             SelectionAfter = _selection,
         };
-        for (var row = _selection.TopRow; row <= _selection.BottomRow; row++)
+        foreach (var range in Ranges)
         {
-            for (var col = _selection.LeftCol; col <= _selection.RightCol; col++)
+            for (var row = range.TopRow; row <= range.BottomRow; row++)
             {
-                var cell = new CellRef(row, col);
-                var old = Document.GetCell(cell);
-                if (old == value) continue;
-                edit.Before.Add(new SheetCellSnapshot(cell, old));
-                edit.After.Add(new SheetCellSnapshot(cell, value));
-                Document.SetCell(cell, value);
+                for (var col = range.LeftCol; col <= range.RightCol; col++)
+                {
+                    var cell = new CellRef(row, col);
+                    var old = Document.GetCell(cell);
+                    if (old == value) continue;
+                    edit.Before.Add(new SheetCellSnapshot(cell, old));
+                    edit.After.Add(new SheetCellSnapshot(cell, value));
+                    Document.SetCell(cell, value);
+                }
             }
         }
         if (edit.Before.Count == 0) return false;
@@ -472,7 +815,10 @@ public sealed class SheetController : ISheetSurfaceModel
         if (count < 1) return;
         var selectionBefore = _selection;
         var removed = axis == SheetAxis.Rows ? Document.ShiftRows(at, -count) : Document.ShiftCols(at, -count);
-        Select(_selection);   // re-clamp into the smaller grid
+        // Re-clamped into the smaller grid, every range.
+        for (var i = 0; i < _others.Count; i++)
+            _others[i] = new SheetRange(Document.Clamp(_others[i].Anchor), Document.Clamp(_others[i].Focus));
+        SetActiveRange(_selection);
         Commit(new SheetEdit
         {
             Kind = axis == SheetAxis.Rows ? SheetEditKind.DeleteRows : SheetEditKind.DeleteCols,
@@ -555,6 +901,7 @@ public sealed class SheetController : ISheetSurfaceModel
                 Document.SetCell(cell, line[c]);
             }
         }
+        _others.Clear();
         _selection = new SheetRange(origin,
             Document.Clamp(new CellRef(origin.Row + grid.Count - 1, origin.Col + maxCols - 1)));
         Reveal();
@@ -624,6 +971,7 @@ public sealed class SheetController : ISheetSurfaceModel
         FillTarget = null;
         if (source is null || target is null) return false;
         var selectionBefore = _selection;
+        _others.Clear();
         _selection = new SheetRange(
             new CellRef(Math.Min(source.Value.TopRow, target.Value.TopRow),
                 Math.Min(source.Value.LeftCol, target.Value.LeftCol)),
@@ -733,6 +1081,13 @@ public sealed class SheetController : ISheetSurfaceModel
 
     /// <summary>The cell a finger landed on, which its release selects; none once a pan took it.</summary>
     private CellRef? _tapped;
+
+    /// <summary>The header a finger landed on, which its release selects; none once a pan took it.</summary>
+    private (SheetAxis? Axis, int Index, bool Corner)? _tappedHeader;
+
+    /// <summary>The axis of the header band a press in flight is stretching, or null: a drag across column
+    /// headers stretches columns, across row numbers rows.</summary>
+    private SheetAxis? _headerDrag;
 
     /// <summary>Whether the press in flight began inside the cell's editor, whose moves and release are the
     /// entry's: they place its caret and draw its selection.</summary>
@@ -1016,11 +1371,16 @@ public sealed class SheetController : ISheetSurfaceModel
     /// <inheritdoc />
     public void FocusChanged(bool focused)
     {
+        HasKeyboard = focused;
         // Coming back takes Tab again, as a code editor's does; leaving cancels a composition and keeps the
         // entry open, as Excel keeps it while another window has the keyboard.
         if (focused) TabReleased = false;
         else if (Editing && EntryView == SheetEntryView.Cell) Entry.FocusChanged(false);
     }
+
+    /// <summary>Whether the sheet holds the keyboard, as its host last said (<see cref="FocusChanged"/>): the
+    /// selection is drawn dimmed while it does not, as Excel draws it while another window has the keys.</summary>
+    public bool HasKeyboard { get; private set; }
 
     /// <summary>
     /// Whether the next Tab LEAVES the sheet instead of moving the active cell: Escape at rest sets it, the
@@ -1090,13 +1450,29 @@ public sealed class SheetController : ISheetSurfaceModel
             {
                 // A fill whose release never came is over: this press starts afresh.
                 _selecting = false;
+                _headerDrag = null;
                 _tapped = null;
+                _tappedHeader = null;
                 _entryPressed = false;
                 if (Filling) CancelFill();
+                var header = HeaderAt(position);
+                // The resize grip's press is the grip's: it resizes, and selects nothing.
+                if (header.Grip) return false;
+                var onHeader = header.Corner || header.Axis is not null;
                 if (kind == PointerKind.Touch)
                 {
-                    _tapped = CellAt(position);
+                    if (onHeader) _tappedHeader = (header.Axis, header.Index, header.Corner);
+                    else _tapped = CellAt(position);
                     return false;
+                }
+                if (onHeader)
+                {
+                    if (Editing) CommitEdit();
+                    PressHeader(header.Axis, header.Index, header.Corner, modifiers);
+                    _selecting = !header.Corner;
+                    _headerDrag = header.Axis;
+                    if (_selecting) _dragAt = position;
+                    return true;
                 }
                 // Inside the cell's editor a press is the entry's: it places the caret, a double click
                 // selects a word and a drag selects text, in Edit mode, as a press in Excel's editor does.
@@ -1128,6 +1504,9 @@ public sealed class SheetController : ISheetSurfaceModel
                     return Entry.HandlePointer(PointerPhase.Move, position, modifiers, clicks);
                 }
                 if (!Filling && !_selecting) return false;
+                // A drag along the headers reads only its own axis: the column headers stand over the cells,
+                // and their height would read as a pointer past the cells' top edge.
+                position = AlongTheHeaders(position);
                 _dragAt = position;
                 // Past an edge of the cells the grid scrolls toward the pointer, and the move answers
                 // true whatever cell it reached, so the host asks for the frames that scroll it. Inside
@@ -1146,6 +1525,13 @@ public sealed class SheetController : ISheetSurfaceModel
                     _entryPressed = false;
                     UseCellView();
                     Entry.HandlePointer(PointerPhase.Up, position, modifiers, clicks);
+                    return true;
+                }
+                if (_tappedHeader is { } tappedHeader)
+                {
+                    _tappedHeader = null;
+                    if (Editing) CommitEdit();
+                    PressHeader(tappedHeader.Axis, tappedHeader.Index, tappedHeader.Corner, modifiers);
                     return true;
                 }
                 if (_tapped is { } tapped)
@@ -1173,6 +1559,7 @@ public sealed class SheetController : ISheetSurfaceModel
                 // nothing, and a finger the grid took as a pan selects nothing.
                 StopDrag();
                 _tapped = null;
+                _tappedHeader = null;
                 if (_entryPressed)
                 {
                     _entryPressed = false;
@@ -1196,11 +1583,13 @@ public sealed class SheetController : ISheetSurfaceModel
     /// </summary>
     public bool Follow() => _dragAt is { } at && (Filling || _selecting) && Drag(at);
 
-    /// <summary>A press that selects: the cell, the selection stretched to it with Shift, and the
-    /// second press of a double click editing it in Edit mode, with the caret where it landed.</summary>
+    /// <summary>A press that selects: the cell, the active range stretched to it with Shift, the cell added as a
+    /// range of its own with ⌘ or Ctrl or in add mode, and the second press of a double click editing it in
+    /// Edit mode, with the caret where it landed.</summary>
     private void Press(CellRef cell, Point position, KeyModifiers modifiers, int clicks)
     {
         if ((modifiers & KeyModifiers.Shift) != 0) SelectTo(cell);
+        else if (Adds(modifiers)) AddRange(new SheetRange(cell));
         else Select(new SheetRange(cell));
         if (clicks < 2) return;
         BeginEdit(Document.GetCell(cell), SheetEditMode.Edit);
@@ -1214,6 +1603,19 @@ public sealed class SheetController : ISheetSurfaceModel
     private bool Drag(Point position)
     {
         var cell = CellAt(InsideTheCells(position));
+        if (_headerDrag is { } axis)
+        {
+            // The band stretches from the anchor's row or column to the one under the pointer; the active
+            // cell stays where the press left it.
+            var active = _active;
+            var band = axis == SheetAxis.Cols
+                ? ColumnBand(_selection.Anchor.Col, cell.Col)
+                : RowBand(_selection.Anchor.Row, cell.Row);
+            if (band == _selection) return false;
+            SetActiveRange(band);
+            _active = active;
+            return true;
+        }
         if (Filling)
         {
             var before = FillTarget;
@@ -1221,9 +1623,70 @@ public sealed class SheetController : ISheetSurfaceModel
             return FillTarget != before;
         }
         if (cell == _selection.Focus) return false;
-        Select(new SheetRange(_selection.Anchor, cell));
+        // The ACTIVE range stretches: a drag from a ⌘ or Ctrl press grows the range it added, and the others
+        // stay.
+        SetActiveRange(new SheetRange(_selection.Anchor, cell));
         return true;
     }
+
+    /// <summary>
+    /// What a point over the pinned headers names: the corner where they meet, a column's header, a row's
+    /// number, a header's resize grip, or nothing, for a point over the cells. Read from the bands' sizes and
+    /// the grid's offset at this moment, as <see cref="CellAt"/> reads a cell; a grid with no headers has none.
+    /// </summary>
+    private (SheetAxis? Axis, int Index, bool Corner, bool Grip) HeaderAt(Point point)
+    {
+        var overColumns = point.Y >= 0 && point.Y < Grid.HeaderHeight;
+        var overRows = point.X >= 0 && point.X < Grid.HeaderWidth;
+        if (!overColumns && !overRows) return (null, 0, false, false);
+        if (overColumns && overRows) return (null, 0, true, false);
+        var offset = Grid.Offset;
+        if (overColumns)
+        {
+            var col = Document.ColumnSpans.IndexAt(Math.Max(0, point.X - Grid.HeaderWidth) + offset.Across);
+            col = Math.Clamp(col, 0, Document.Cols - 1);
+            var right = Grid.HeaderWidth + Document.ColumnSpans.OffsetOf(col + 1) - offset.Across;
+            return (SheetAxis.Cols, col, false, Grid.ResizeGrip > 0 && point.X >= right - Grid.ResizeGrip);
+        }
+        var row = Document.RowSpans.IndexAt(Math.Max(0, point.Y - Grid.HeaderHeight) + offset.Down);
+        row = Math.Clamp(row, 0, Document.Rows - 1);
+        var bottom = Grid.HeaderHeight + Document.RowSpans.OffsetOf(row + 1) - offset.Down;
+        return (SheetAxis.Rows, row, false, Grid.ResizeGrip > 0 && point.Y >= bottom - Grid.ResizeGrip);
+    }
+
+    /// <summary>
+    /// A press on a header: the corner selects the sheet; a column's header its whole column and a row's
+    /// number its whole row, Shift stretching the active range's band from its anchor to the pressed one with
+    /// the active cell kept, and ⌘ or Ctrl, or add mode, adding the band as a range of its own.
+    /// </summary>
+    private void PressHeader(SheetAxis? axis, int index, bool corner, KeyModifiers modifiers)
+    {
+        if (corner || axis is not { } along)
+        {
+            SelectAll();
+            return;
+        }
+        if ((modifiers & KeyModifiers.Shift) != 0)
+        {
+            var active = _active;
+            SetActiveRange(along == SheetAxis.Cols
+                ? ColumnBand(_selection.Anchor.Col, index)
+                : RowBand(_selection.Anchor.Row, index));
+            _active = _selection.Contains(active) ? active : _selection.Anchor;
+            return;
+        }
+        if (along == SheetAxis.Cols) SelectCols(index, index, Adds(modifiers));
+        else SelectRows(index, index, Adds(modifiers));
+    }
+
+    /// <summary>A drag along the headers held to its own axis: a column-header drag reads only across, as if the
+    /// pointer stood just under the headers, and a row-number drag only down; any other drag as it is.</summary>
+    private Point AlongTheHeaders(Point position) => _headerDrag switch
+    {
+        SheetAxis.Cols => new Point(position.X, Math.Max(position.Y, Grid.HeaderHeight)),
+        SheetAxis.Rows => new Point(Math.Max(position.X, Grid.HeaderWidth), position.Y),
+        _ => position,
+    };
 
     /// <summary>Whether a point lies past an edge of the part of the viewport where the cells scroll:
     /// over a pinned header, or past the window. Without a viewport, nothing is past.</summary>
@@ -1244,6 +1707,7 @@ public sealed class SheetController : ISheetSurfaceModel
     private void StopDrag()
     {
         _selecting = false;
+        _headerDrag = null;
         if (_dragAt is null) return;
         _dragAt = null;
         Grid.Scroll?.AutoScroll(null);
@@ -1256,8 +1720,9 @@ public sealed class SheetController : ISheetSurfaceModel
         var edit = History.PopUndo();
         if (edit is null) return false;
         Apply(edit, forward: false);
+        _others.Clear();
         _selection = edit.SelectionBefore;
-        _active = _selection.Focus;
+        _active = _selection.Anchor;
         Reveal();
         Changed?.Invoke(edit);
         return true;
@@ -1268,8 +1733,9 @@ public sealed class SheetController : ISheetSurfaceModel
         var edit = History.PopRedo();
         if (edit is null) return false;
         Apply(edit, forward: true);
+        _others.Clear();
         _selection = edit.SelectionAfter;
-        _active = _selection.Focus;
+        _active = _selection.Anchor;
         Reveal();
         Changed?.Invoke(edit);
         return true;

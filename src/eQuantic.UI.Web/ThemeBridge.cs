@@ -190,6 +190,11 @@ public static class ThemeBridge
         ("fillPreview", sheet.FillPreview),
         ("fillHandle", sheet.FillHandle),
         ("entrySelection", sheet.EntrySelection),
+        ("rangeOutline", sheet.RangeOutline),
+        ("headerWholeBackground", sheet.HeaderWholeBackground),
+        ("headerWholeText", sheet.HeaderWholeText),
+        ("dimmedRangeFill", sheet.DimmedRangeFill),
+        ("dimmedOutline", sheet.DimmedOutline),
     ];
 
     private static void Tokens(StringBuilder sb, IReadOnlyList<ColorToken> tokens)

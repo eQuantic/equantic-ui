@@ -53,3 +53,7 @@ static eQuantic.UI.Components.SdkStrings.GoToStart.get -> string!
 static eQuantic.UI.Components.SdkStrings.GoToLinePrompt(int lines) -> string!
 static eQuantic.UI.Components.SdkStrings.GoToLineOrColumn(int line) -> string!
 static eQuantic.UI.Components.SdkStrings.GoToColumnPrompt(int line, int columns) -> string!
+static eQuantic.UI.Components.SdkStrings.Sum(string! value) -> string!
+static eQuantic.UI.Components.SdkStrings.Average(string! value) -> string!
+static eQuantic.UI.Components.SdkStrings.Count(int count) -> string!
+static eQuantic.UI.Components.SdkStrings.AddToSelection.get -> string!

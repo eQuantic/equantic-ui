@@ -177,6 +177,26 @@ namespace eQuantic.UI.Components
             get { return ResourceManager.GetString("RangeSize", Culture)!; }
         }
 
+        internal static string StatusSum
+        {
+            get { return ResourceManager.GetString("StatusSum", Culture)!; }
+        }
+
+        internal static string StatusAverage
+        {
+            get { return ResourceManager.GetString("StatusAverage", Culture)!; }
+        }
+
+        internal static string StatusCount
+        {
+            get { return ResourceManager.GetString("StatusCount", Culture)!; }
+        }
+
+        internal static string AddToSelection
+        {
+            get { return ResourceManager.GetString("AddToSelection", Culture)!; }
+        }
+
         internal static string Back
         {
             get { return ResourceManager.GetString("Back", Culture)!; }
