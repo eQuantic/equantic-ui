@@ -7,7 +7,7 @@ allowed-tools: Bash(python3 scripts/roadmap.py)
 1. **Run `python3 scripts/roadmap.py`**, which only reads, and read the whole report.
 2. **Summarise it for the person**: the pace and the window it comes from, how many changes there are
    and of which kinds (points, statuses, dates), and each milestone's plan date, range and focused date
-   beside its due date. Name a milestone whose plan passes its due date, and the open issues the
+   beside its due date, and what each sprint delivered or is planned to hold. Name a milestone whose plan passes its due date, and the open issues the
    report says are not pointed, pointed past 13, or held by no epic.
 3. **Distrust before applying** whatever looks wrong: a delivered issue pointed far from what it
    was, a date in the past for open work, a forecast that jumped since the last run, a parent the
