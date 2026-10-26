@@ -5,7 +5,9 @@
 import datetime as dt
 import unittest
 
-from roadmap_model import (NO_EPIC, Forecast, Issue, PullRequest, changes, pool, real_start, unread, delivered_points, done_below, forecast, link,
+from roadmap_model import (NO_EPIC, Forecast, Issue, PullRequest, Sprint, calendar, changes, lines_by_day, pool,
+                           real_start,
+                           sprint_changes, sprint_load, sprint_of, sprinted, unread, delivered_points, done_below, forecast, link,
                            monte_carlo, pace, plan, points_for, progressing, queues, scope, simulate, size, work,
                            written)
 
@@ -60,6 +62,12 @@ class PointsTests(unittest.TestCase):
 
     def test_the_points_a_person_gave_win_over_the_size(self):
         self.assertEqual(delivered_points(done(1, points=8, pulls=[pull(10, 5, 4, lines=50)])), 8)
+
+    def test_main_s_history_is_read_as_lines_a_person_wrote_each_day(self):
+        log = "\n".join(["@2026-10-25", "", "120\t30\tsrc/eQuantic.UI.Web/WebRealizer.cs",
+                         "900\t0\tsrc/eQuantic.UI.Web/PublicAPI.Unshipped.txt", "-\t-\tassets/readme/home.png",
+                         "@2026-10-25", "", "10\t0\tdocs/README.md", "@2026-10-24", "", "5\t5\tscripts/x.py"])
+        self.assertEqual(lines_by_day(log), {dt.date(2026, 10, 25): 160, dt.date(2026, 10, 24): 10})
 
     def test_an_unread_pull_request_leaves_the_size_unknown(self):
         issue = done(1, pulls=[pull(10, 5, 4, lines=300), pull(11, 5, 4)])
@@ -204,6 +212,8 @@ def written_to(issues: dict, found: list):
             c.issue.status = c.new
         elif c.kind == "Estimate":
             c.issue.points = c.new
+        elif c.kind == "Sprint":
+            c.issue.sprint = c.new
         elif c.kind == "Start date":
             c.issue.start = c.new
         else:
@@ -222,6 +232,70 @@ class IdempotenceTests(unittest.TestCase):
         )
         written_to(issues, changes(issues, plan(issues, forecast(issues, {}, TODAY))))
         self.assertEqual(changes(issues, plan(issues, forecast(issues, {}, TODAY))), [])
+
+
+def sprints_from(start_days_ago: int, count: int) -> list:
+    return [Sprint(f"Sprint {k + 1}", day(start_days_ago) + dt.timedelta(days=14 * k)) for k in range(count)]
+
+
+class SprintTests(unittest.TestCase):
+    def test_the_board_s_sprints_are_renamed_in_order_and_extended_to_the_plan(self):
+        held = [Sprint("Iteration 2", day(27), id="b"), Sprint("Iteration 1", day(41), id="a")]
+        found = calendar(held, day(-10))
+        self.assertEqual([(s.title, s.id) for s in found],
+                         [("Sprint 1", "a"), ("Sprint 2", "b"), ("Sprint 3", None), ("Sprint 4", None)])
+        self.assertEqual(found[2].start, held[0].end + dt.timedelta(days=1))
+        self.assertTrue(found[-1].holds(day(-10)))
+
+    def test_sprint_1_is_the_project_s_first_not_the_board_s(self):
+        # The board's first iteration began on day 41; the project began on day 60, two sprints before.
+        found = calendar([Sprint("Iteration 1", day(41), id="a")], TODAY, since=day(60))
+        self.assertEqual([(s.title, s.start, s.id) for s in found[:3]],
+                         [("Sprint 1", day(69), None), ("Sprint 2", day(55), None), ("Sprint 3", day(41), "a")])
+        self.assertTrue(found[0].holds(day(60)))
+
+    def test_a_sprint_holds_what_closed_in_it_and_what_the_plan_ends_in_it(self):
+        sprints = sprints_from(13, 3)
+        closed, early, ahead, far = done(1, closed=2), done(2, closed=30), todo(3, points=3), todo(4, points=3)
+        fc = Forecast(None, {}, {}, [], {3: (0, 20), 4: (None, None)}, TODAY)
+        self.assertEqual(sprint_of(closed, fc, sprints), (sprints[0], "closed then"))
+        self.assertEqual(sprint_of(early, fc, sprints), (None, "before the first sprint"))
+        self.assertEqual(sprint_of(ahead, fc, sprints), (sprints[2], "planned to end then"))
+        self.assertEqual(sprint_of(far, fc, sprints), (None, "beyond the horizon"))
+        self.assertEqual(sprint_of(ahead, None, sprints), (None, "no pace"))
+
+    def test_a_parent_whose_work_is_open_below_it_is_held_by_no_sprint(self):
+        issues = board(todo(1, "Feature"), todo(2, parent=1), done(3, "Feature"), done(4, parent=3),
+                       todo(5, "Feature"), done(6, parent=5))
+        self.assertEqual([i.number for i in sprinted(issues)], [2, 4, 5, 6])
+
+    def test_a_sprint_the_plan_no_longer_reaches_is_taken_away_and_no_pace_leaves_it(self):
+        issue = todo(1, points=3)
+        issue.sprint = "Sprint 2"
+        sprints = sprints_from(13, 2)
+        fc = Forecast(None, {}, {}, [], {1: (None, None)}, TODAY)
+        self.assertEqual([(c.kind, c.new) for c in sprint_changes(board(issue), fc, sprints)], [("Sprint", None)])
+        self.assertEqual(sprint_changes(board(issue), None, sprints), [])
+
+    def test_renaming_the_calendar_moves_no_issue(self):
+        issue = done(1, closed=2, points=3)
+        issue.sprint, issue.sprint_id = "Iteration 1", "a"
+        sprints = [Sprint("Sprint 18", day(13), id="a")]
+        self.assertEqual(sprint_changes(board(issue), None, sprints), [])
+
+    def test_each_sprint_says_what_it_delivered_and_what_it_is_planned_to_hold(self):
+        issues = board(done(1, closed=2, points=5), done(2, closed=3, points=3), todo(3, points=8))
+        fc = Forecast(None, {}, {}, [], {3: (0, 20)}, TODAY)
+        lines = {day(4): 700, day(5): 50, day(40): 900}
+        self.assertEqual(sprint_load(issues, fc, sprints_from(13, 3), lines),
+                         {"Sprint 1": (8.0, 750.0, 0.0), "Sprint 2": (0.0, 0.0, 0.0), "Sprint 3": (0.0, 0.0, 8.0)})
+
+    def test_a_board_that_took_its_sprints_is_given_the_same_ones(self):
+        issues = board(todo(1, "Epic"), todo(2, "Feature", parent=1, points=8), done(3, parent=1, closed=1, points=2))
+        sprints = sprints_from(13, 8)
+        fc = forecast(issues, {}, TODAY)
+        written_to(issues, sprint_changes(issues, fc, sprints))
+        self.assertEqual(sprint_changes(issues, forecast(issues, {}, TODAY), sprints), [])
 
 
 class ChangeTests(unittest.TestCase):
