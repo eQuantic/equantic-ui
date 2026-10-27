@@ -1,4 +1,4 @@
-- **2026-10-26 · The code editor goes to a definition and its references**: the editor reached a line, a
+- **2026-10-27 · The code editor goes to a definition and its references**: the editor reached a line, a
   symbol and back, but not what a name means. F12 goes to where the name at the caret is defined, ⌘F12
   (Ctrl+F12) to where it is implemented and ⇧F12 finds where it is used, from `ICodeDefinitionProvider` (LSP's
   `definition`, `declaration`, `typeDefinition` and `implementation`, one method told which by
