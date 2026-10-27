@@ -76,6 +76,11 @@ internal sealed partial class EmitVisitor
         // paints the one mark that blinks, the entry's caret, over everything the child drew, as a code
         // surface paints its own.
         s.Input.Add(new SheetRegion(s.Node.Bounds, sheetSurface, PositionOf(s.Node)));
+        // What the grid says now is announced as a polite live region's text is, recorded here because this
+        // walk runs once a frame (#1081, the Visit(LiveRegion) arm says why); the semantics walk makes the
+        // surface's field the region a shell marks live.
+        s.Input.Add(new LiveRegionMark(PositionOf(s.Node), "", LiveRegionUrgency.Polite, s.Node,
+            sheetSurface.Announcement));
         foreach (var child in s.Node)
             Emit(s with { Node = child });
         EmitCarets(s.Node, sheetSurface.Model.Carets, sheetSurface.CaretColor, s.Theme, s.Mode, s.Builder, s.Press);

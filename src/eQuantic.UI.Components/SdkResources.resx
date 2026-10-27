@@ -84,6 +84,27 @@
   <data name="RangeSize" xml:space="preserve">
     <value>{0}R x {1}C</value>
   </data>
+  <data name="CellAnnouncement" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="CellBlank" xml:space="preserve">
+    <value>blank</value>
+  </data>
+  <data name="RangeAnnouncement" xml:space="preserve">
+    <value>{0}, {1} by {2}</value>
+  </data>
+  <data name="RangeOneRow" xml:space="preserve">
+    <value>1 row</value>
+  </data>
+  <data name="RangeRows" xml:space="preserve">
+    <value>{0} rows</value>
+  </data>
+  <data name="RangeOneColumn" xml:space="preserve">
+    <value>1 column</value>
+  </data>
+  <data name="RangeColumns" xml:space="preserve">
+    <value>{0} columns</value>
+  </data>
   <data name="StatusSum" xml:space="preserve">
     <value>Sum: {0}</value>
   </data>

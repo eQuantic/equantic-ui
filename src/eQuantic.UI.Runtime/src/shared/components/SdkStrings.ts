@@ -231,6 +231,14 @@ export class SdkStrings {
         return $eq.text.stringFormat($eq.str('SdkResources', 'RangeSize'), $eq.text.asNumber(rows, 'int32'), $eq.text.asNumber(columns, 'int32'));
     }
 
+    static cellAnnouncement(address: string, text: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'CellAnnouncement'), address, text.length === 0 ? $eq.str('SdkResources', 'CellBlank') : text);
+    }
+
+    static rangeAnnouncement(address: string, rows: number, columns: number) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'RangeAnnouncement'), address, rows === 1 ? $eq.str('SdkResources', 'RangeOneRow') : $eq.text.stringFormat($eq.str('SdkResources', 'RangeRows'), $eq.text.asNumber(rows, 'int32')), columns === 1 ? $eq.str('SdkResources', 'RangeOneColumn') : $eq.text.stringFormat($eq.str('SdkResources', 'RangeColumns'), $eq.text.asNumber(columns, 'int32')));
+    }
+
     static sum(value: string) {
         return $eq.text.stringFormat($eq.str('SdkResources', 'StatusSum'), value);
     }

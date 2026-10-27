@@ -404,7 +404,7 @@ public sealed class PhotonHost
         // from a build is waiting in the owner, and a write of `false` here would leave it there
         // until something else asked for a frame.
         NeedsRender = _lastFrame.HasActiveMotion || gliding || PhotonFrameTicker.Shared.HasSubscribers
-            || _owner.HasDirty;
+            || _owner.HasDirty || _announcer.Pending;
 
         // A code surface whose caret was MOVED since the last frame is brought into view — by a key,
         // a command, a find stepping to a match. After the frame, because that is when the caret's
@@ -1806,9 +1806,9 @@ public sealed class PhotonHost
     /// <summary>
     /// The live-region announcements produced since this was last called, and the queue is emptied.
     /// A shell drains it after each frame and posts each one the way its platform does —
-    /// <c>NSAccessibilityPostNotification</c> on macOS, an announcement notification on UIKit, and
-    /// nothing on Android, where setting <c>accessibilityLiveRegion</c> on the container IS the
-    /// platform doing the posting.
+    /// <c>NSAccessibilityPostNotification</c> on macOS, the announcement notification on UIKit, and on
+    /// Android the region's node marked live and its content reported changed, the route Android keeps
+    /// after deprecating announcement events (#1081).
     /// <para>
     /// DRAINING, not reading. An announcement is an event; a bridge that polled a list would post
     /// the same one every poll, which is the failure the whole diff exists to prevent, arriving
@@ -1899,6 +1899,21 @@ public sealed class PhotonHost
             // these ARRIVES and nothing more, which is the right default for whatever comes next.
             if (stops[i].Code is { } code) BeginCodeEditing(stops[i].Element, code.Model);
             else if (stops[i].Sheet is { } sheet) BeginSheetEditing(stops[i].Element, sheet);
+            return true;
+        }
+
+        // A GRID'S CELL OR A HEADER with no handler of its own, as a spreadsheet's are: the surface under
+        // them takes the pointer for the whole grid, so activating one is a press and a release at its
+        // centre, where the shell reads it, the tap a finger there makes (#1081). Asked by what the node
+        // IS, as the stops above are: a calendar day is a grid cell too, and its pressable answered first.
+        foreach (var node in Semantics())
+        {
+            if (node.Id != id || node.Role is not (SemanticRole.GridCell or SemanticRole.ColumnHeader
+                    or SemanticRole.RowHeader)) continue;
+            var x = node.Bounds.X + node.Bounds.Width / 2;
+            var y = node.Bounds.Y + node.Bounds.Height / 2;
+            PressDown(x, y);
+            PressUp(x, y);
             return true;
         }
         return false;

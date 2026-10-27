@@ -82,13 +82,14 @@ function lift(node: HtmlNode, target: HTMLElement, init: PointerInit = {}): void
 }
 
 describe('SheetSurface on the web', () => {
-  it('is a grid whose door holds its stop of the Tab order, and whose keyboard is the shared keymap', () => {
+  it('is a field whose door holds its stop of the Tab order, and whose keyboard is the shared keymap', () => {
     const sheet = new SheetController(50, 8);
     const node = surfaceFor(sheet);
 
     expect((door(node) as { attributes: Record<string, string> }).attributes['tabindex']).toBe('0');
     expect((node as { attributes: Record<string, string> }).attributes['tabindex']).toBeUndefined();
-    expect((node as { attributes: Record<string, string> }).attributes['role']).toBe('grid');
+    // The table it holds is the grid a reader walks (#1081): the host bears no role of its own.
+    expect((node as { attributes: Record<string, string> }).attributes['role']).toBeUndefined();
     // A selection drag must paint the band, not the browser's blue text sweep.
     expect(effectiveStyle(node)).toContain('user-select: none');
 
@@ -208,6 +209,43 @@ describe('SheetSurface on the web', () => {
     lift(node, target, { clientX: 96 + 48, clientY: 28 * 2 + 14 });
 
     expect(sheet.activeCell).toEqual(new CellRef(42, 1));
+  });
+
+  it("answers a reader's activation of a cell or a header, a click no press came before (#1081)", () => {
+    const sheet = new SheetController(200, 8);
+    // The table's pinned bands: row numbers 44 wide, column headers 26 tall.
+    const scroll = new TableScroll();
+    scroll.arrange(new Size(900, 600), 44 + sheet.document.columnSpans.total, 26 + sheet.document.rowSpans.total, 44, 26, true);
+    sheet.grid = new SheetGrid(scroll, 44, 26);
+    const node = surfaceFor(sheet);
+    const target = makeTarget();
+    target.getBoundingClientRect = () => ({ left: 0, top: 0, width: 900, height: 600 }) as DOMRect;
+    /** A cell or a header of the table, where the table draws it. */
+    const drawn = (x: number, y: number, width: number, height: number) => {
+      const cell = document.createElement('div');
+      cell.setAttribute('data-eq-cell', '0:0');
+      cell.getBoundingClientRect = () => ({ left: x, top: y, width, height }) as DOMRect;
+      target.appendChild(cell);
+      return cell;
+    };
+    const activate = (cell: HTMLElement) => {
+      const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+      Object.defineProperty(click, 'target', { value: cell });
+      events(node)['click'](on(click, target));
+    };
+
+    // D6, then column C's header.
+    activate(drawn(44 + 3 * 96, 26 + 5 * 28, 96, 28));
+    expect(sheet.activeCell).toEqual(new CellRef(5, 3));
+    expect(sheet.ranges).toEqual([new SheetRange(new CellRef(5, 3), new CellRef(5, 3))]);
+    activate(drawn(44 + 2 * 96, 0, 96, 26));
+    expect(sheet.ranges).toEqual([new SheetRange(new CellRef(0, 2), new CellRef(sheet.document.rows - 1, 2))]);
+
+    // The click that follows a press the sheet answered is that press's: B3 stays the selection.
+    press(node, target, { clientX: 44 + 96 + 48, clientY: 26 + 2 * 28 + 14 });
+    lift(node, target, { clientX: 44 + 96 + 48, clientY: 26 + 2 * 28 + 14 });
+    activate(drawn(44 + 5 * 96, 26 + 7 * 28, 96, 28));
+    expect(sheet.activeCell).toEqual(new CellRef(2, 1));
   });
 
   it('reads a press on the headers with its modifiers, as Photon does (#984)', () => {

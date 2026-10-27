@@ -23,12 +23,13 @@ than the surface's.
 ### Requirement: The grid announces each move and each growing range
 
 The grid SHALL announce, politely and without moving the reader's focus, what changed when the active
-cell or the active range changes: when the active cell moves, its address and its value as the cell
-shows it, or the word for blank when it is empty; when the active range grows or shrinks around an
-active cell that stays, the range's address and its size in rows and columns. The words SHALL be in the
-page's culture, as every string of the SDK is. Nothing SHALL be announced when neither changed, and the
-grid SHALL announce nothing of its own while an entry is open in a cell. On Photon an announcement made
-within a second of the last one SHALL be said when that second ends, with the grid's state at that time.
+cell or the active range changes: when the active range changes and covers more than one cell (Shift
+stretching it, a drag drawing it, a header selecting a band), the range's address and its size in rows
+and columns; otherwise, when the active cell moves, its address and its value as the cell shows it, or
+the word for blank when it is empty. The words SHALL be in the page's culture, as every string of the
+SDK is. Nothing SHALL be announced when neither changed, and the grid SHALL announce nothing of its own
+while an entry is open in a cell. On Photon an announcement made within a second of the last one SHALL be
+said when that second ends, with the grid's state at that time.
 
 #### Scenario: An arrow
 
@@ -45,6 +46,11 @@ within a second of the last one SHALL be said when that second ends, with the gr
 - **WHEN** the page's culture is pt-BR, the active cell is B3, and the user presses Shift+→ and then
   Shift+↓ twice
 - **THEN** the grid's last announcement is `B3:C5, 3 linhas por 2 colunas`
+
+#### Scenario: A header
+
+- **WHEN** the sheet has 50 rows and the user presses the header of column C
+- **THEN** the grid announces `C1:C50, 50 rows by 1 column`
 
 #### Scenario: Quick arrows on Photon
 

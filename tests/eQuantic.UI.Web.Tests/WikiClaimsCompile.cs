@@ -132,6 +132,26 @@ public class WikiClaimsCompile
             label: "Sheet");
     }
 
+    /// <summary>TableView read as a grid (#1081): its headers, the selection and the current cell.</summary>
+    [Fact]
+    public void TheTableViewAsAGrid_Compiles()
+    {
+        var rows = new eQuantic.UI.Components.UniformTableSpans(1_048_576 + 1, 28);
+        var columns = new eQuantic.UI.Components.UniformTableSpans(16_384 + 1, 96);
+        VisualNode? Cell(int row, int column) => Text($"{row}:{column}", TypeRole.Caption);
+
+        _ = TableView(rows, columns, Cell,
+            pinnedRows: 1,
+            pinnedColumns: 1,
+            label: "Ledger",
+            role: TableRole.Grid,
+            cellRole: (row, column) => row == 0 ? TableCellRole.ColumnHeader
+                : column == 0 ? TableCellRole.RowHeader
+                : TableCellRole.Cell,
+            selected: (row, column) => column == 2 && row >= 2 && row <= 4,
+            current: new TableRange(3, 2));
+    }
+
     /// <summary>Spreadsheet (#995): a sheet the viewport builds lazily on both axes, and the theme's
     /// sheet slot naming two of its colours.</summary>
     [Fact]

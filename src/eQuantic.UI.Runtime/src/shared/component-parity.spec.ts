@@ -50,7 +50,7 @@ import {
   TextRun,
   TransitionSpec,
 } from './vocabulary';
-import { SizeValue, StyleChannels, Transform2D } from './value-types';
+import { SizeValue, StyleChannels, TableRange, Transform2D } from './value-types';
 import { Accordion } from './components/Accordion';
 import { AccordionItem } from './components/AccordionItem';
 import { Badge } from './components/Badge';
@@ -142,6 +142,26 @@ function summing(first = '7.01', second = '14.02', third = 'text'): SheetControl
   sheet.selection = new SheetRange(new CellRef(1, 1), new CellRef(3, 1));
   sheet.handleKey('F8', 1, 'standard', null);
   return sheet;
+}
+
+/** The C# `TableAs`: a table or a grid of six rows and four columns, its first row and column pinned and
+ * their headers, the corner hidden, rows 2 and 3 of column 2 selected and the one of row 3 current. */
+function tableAs(role: 'table' | 'grid'): unknown {
+  return new TableView(
+    new UniformTableSpans(6, 28),
+    new UniformTableSpans(4, 96),
+    (row: number, column: number) => new Text(`${row}:${column}`, 'caption', photonTheme.textPrimary),
+    {
+      pinnedRows: 1,
+      pinnedColumns: 1,
+      label: 'ledger',
+      role,
+      cellRole: (row: number, column: number) =>
+        row === 0 && column === 0 ? 'none' : row === 0 ? 'columnHeader' : column === 0 ? 'rowHeader' : 'cell',
+      selected: (row: number, column: number) => column === 2 && row >= 2 && row <= 3,
+      current: new TableRange(3, 2),
+    },
+  );
 }
 
 function cases(): Record<string, { node: unknown; presses: number[] }> {
@@ -382,6 +402,8 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         },
       ),
     ),
+    'table-view-table': still(tableAs('table')),
+    'table-view-grid': still(tableAs('grid')),
     'table-view-unfocusable': still(
       new TableView(
         new UniformTableSpans(3, 28),

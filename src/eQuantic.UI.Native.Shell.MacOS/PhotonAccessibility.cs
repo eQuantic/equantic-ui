@@ -145,13 +145,30 @@ internal static class PhotonAccessibility
             // word for both, read after the name.
             if (node.Current || node.Selected == true)
                 SendVoid(element, Sel("setAccessibilitySelected:"), true);
+            // WHERE A CELL STANDS in its table or grid, and how large the grid is (#1081): AppKit's own
+            // AXRowIndexRange and AXColumnIndexRange on a cell, AXRowCount and AXColumnCount on the table.
+            // The tree is flat, so VoiceOver's table commands have no rows to walk yet (#1105); the element
+            // still says the truth about itself.
+            if (node.Place is { } place)
+            {
+                SendVoid(element, Sel("setAccessibilityRowIndexRange:"), new NSRange((nuint)place.Row, (nuint)place.Rows));
+                SendVoid(element, Sel("setAccessibilityColumnIndexRange:"), new NSRange((nuint)place.Column, (nuint)place.Columns));
+            }
+            if (node.Extent is { } extent)
+            {
+                SendVoid(element, Sel("setAccessibilityRowCount:"), (ulong)extent.Rows);
+                SendVoid(element, Sel("setAccessibilityColumnCount:"), (ulong)extent.Columns);
+            }
             // AppKit is the one platform of the three that takes the LEVEL as well as the fact —
             // AXHeading plus AXDisclosureLevel — so VoiceOver on the Mac can announce "heading
             // level 2" the way it does in a browser.
             if (node.HeadingLevel > 0)
             {
                 SendVoid(element, Sel("setAccessibilityRole:"), NSString("AXHeading"));
-                SendVoid(element, Sel("setAccessibilityDisclosureLevel:"), (long)node.HeadingLevel);
+                // An INTEGER register: ObjC has no SendVoid for a long, and a long converts implicitly to
+                // a double, whose overload put the level in a float register AppKit never reads, so every
+                // heading reached VoiceOver with whatever the integer register held.
+                SendVoid(element, Sel("setAccessibilityDisclosureLevel:"), (ulong)node.HeadingLevel);
             }
             SendVoid(element, Sel("setAccessibilityEnabled:"), !node.Disabled);
             SendVoid(element, Sel("setAccessibilityParent:"), view);

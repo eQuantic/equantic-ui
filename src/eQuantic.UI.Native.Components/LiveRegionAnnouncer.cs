@@ -35,7 +35,11 @@ namespace eQuantic.UI.Native.Components;
 /// percentage, a clock — would otherwise produce sixty announcements a second in either urgency.
 /// So a region announces at most once per <see cref="QuietMs"/>, and what it announces when the
 /// window opens is its CURRENT text rather than the one that was pending: a reader saying "41%"
-/// when the bar reads 58% is worse than saying nothing.
+/// when the bar reads 58% is worse than saying nothing. A change inside the window is OWED, not
+/// said: until #1081 it was recorded as said and dropped, so the second of two arrows a second apart
+/// in a spreadsheet was never heard. While one is owed the host keeps asking for frames
+/// (<see cref="Pending"/>), so the window's end is a frame even when nothing else moves; and a
+/// region back to what it last said owes nothing.
 /// </para>
 ///
 /// <para>
@@ -68,6 +72,7 @@ internal sealed class LiveRegionAnnouncer
     public void Observe(RealizeResult frame, float timeMs)
     {
         var marks = frame.LiveRegions;
+        Pending = false;
         for (var i = 0; i < marks.Count; i++)
         {
             var mark = marks[i];
@@ -88,11 +93,21 @@ internal sealed class LiveRegionAnnouncer
                 region.Said = text;
                 continue;
             }
-            if (region.Known && string.Equals(region.Said, text, StringComparison.Ordinal)) continue;
+            if (region.Known && string.Equals(region.Said, text, StringComparison.Ordinal))
+            {
+                region.Pending = false;                   // back to what it said: nothing owed
+                continue;
+            }
             region.Known = true;
+            if (region.SpokeAtMs is { } last && timeMs - last < QuietMs)
+            {
+                region.Pending = true;                    // owed when the window ends
+                Pending = true;
+                continue;
+            }
+            region.Pending = false;
             region.Said = text;
             if (text.Length == 0) continue;               // emptied, not said
-            if (region.SpokeAtMs is { } last && timeMs - last < QuietMs) continue;
             region.SpokeAtMs = timeMs;
             if (_pending.Count == MaxPending) _pending.RemoveAt(0);
             _pending.Add(new LiveAnnouncement(mark.Element.Id, mark.Label, text, mark.Urgency));
@@ -101,11 +116,15 @@ internal sealed class LiveRegionAnnouncer
         _seenAFrame = true;
     }
 
+    /// <summary>Whether a region of the last frame observed changed inside its quiet window and owes its
+    /// text when the window ends: the host keeps asking for frames while it does.</summary>
+    public bool Pending { get; private set; }
+
     /// <summary>
     /// How many announcements may wait to be drained. A BOUND rather than a growing list, because
-    /// `PhotonHost` is shared by every shell and only the macOS one drains today: iOS and Android
-    /// run the same host with no bridge wired, so an unbounded queue would grow for the life of the
-    /// app on exactly the two targets that cannot yet use it. When the bound is reached the OLDEST
+    /// `PhotonHost` is shared by every shell, and a shell that drains nothing (Windows, until its UI
+    /// Automation provider, #310) would otherwise grow the queue for the life of the app; macOS, iOS
+    /// and Android drain it after every frame (#1081). When the bound is reached the OLDEST
     /// goes — an announcement is an event whose worth expires, and the same reasoning already
     /// decides what a region says when its quiet window opens: the current state, not the backlog.
     /// </summary>
@@ -128,6 +147,7 @@ internal sealed class LiveRegionAnnouncer
     /// <summary>What a reader would say for the region's contents, as one line.</summary>
     private string TextOf(LiveRegionMark mark)
     {
+        if (mark.Text is { } words) return words;
         _scratch.Clear();
         SemanticsTree.CollectChildren(mark.Node, _scratch);
         if (_scratch.Count == 0) return string.Empty;

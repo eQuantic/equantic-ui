@@ -238,7 +238,7 @@ describe('the formula bar and the name box beside a sheet', () => {
     new FormulaBar(sheet).mount(bar);
     new Spreadsheet(sheet, { width: SizeValue.fill, height: SizeValue.fill }).mount(grid);
     await settle();
-    const textarea = grid.querySelector('[role="grid"] textarea.eq-code-input') as HTMLTextAreaElement;
+    const textarea = grid.querySelector('.eq-sheet-surface textarea.eq-code-input') as HTMLTextAreaElement;
     return { sheet, box, bar, grid, textarea };
   }
 

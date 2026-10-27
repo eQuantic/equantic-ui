@@ -139,6 +139,51 @@ public class LiveRegionAnnouncementTests
     }
 
     /// <summary>
+    /// A CHANGE INSIDE THE WINDOW IS OWED, not dropped (#1081). It was recorded as said, so a region that
+    /// changed inside the window and then held still never said what it held: the second of two arrows in
+    /// a spreadsheet went unheard. The host keeps asking for frames while one is owed, so the window's end
+    /// is a frame even when nothing else moves.
+    /// </summary>
+    [Fact]
+    public void AChangeInsideTheWindow_IsSaidWhenTheWindowEnds_WithTheTextThen()
+    {
+        var root = new Mutable("A1");
+        var host = Host(root);
+        Frame(host, 0);
+        root.Text = "B3, 1";
+        Frame(host, 100).Single().Text.Should().Be("B3, 1");
+
+        root.Text = "C3, 2";
+        Frame(host, 400).Should().BeEmpty("inside the window");
+        root.Text = "D3, 3";
+        Frame(host, 700).Should().BeEmpty("still inside it");
+        host.NeedsRender.Should().BeTrue("an announcement is owed, and nothing else would ask for its frame");
+        Frame(host, 1000).Should().BeEmpty("the window opened at 100 and lasts a second");
+
+        Frame(host, 1100).Single().Text.Should().Be("D3, 3", "what the region holds when the window ends");
+        Frame(host, 1200).Should().BeEmpty("once");
+        host.NeedsRender.Should().BeFalse("nothing is owed any more");
+    }
+
+    /// <summary>A region back to what it last said owes nothing: the reader already heard it.</summary>
+    [Fact]
+    public void ARegionBackToWhatItSaid_OwesNothing()
+    {
+        var root = new Mutable("A1");
+        var host = Host(root);
+        Frame(host, 0);
+        root.Text = "B3, 1";
+        Frame(host, 100).Should().ContainSingle();
+
+        root.Text = "C3, 2";
+        Frame(host, 400);
+        root.Text = "B3, 1";
+        Frame(host, 700).Should().BeEmpty();
+        host.NeedsRender.Should().BeFalse("back to what was said");
+        Frame(host, 1200).Should().BeEmpty();
+    }
+
+    /// <summary>
     /// DRAINED, not read. A bridge asks after each frame; asking twice must not say it twice, or
     /// the sixty-times-a-second failure arrives from the polling end instead of the diffing end.
     /// </summary>

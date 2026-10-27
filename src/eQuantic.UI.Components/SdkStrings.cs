@@ -208,6 +208,22 @@ public static class SdkStrings
     public static string RangeSize(int rows, int columns) =>
         string.Format(CultureInfo.CurrentCulture, SdkResources.RangeSize, rows, columns);
 
+    /// <summary>What the grid announces when the active cell moves (#1081): its address and the text it
+    /// holds, or the word for blank when it holds none ("B3, 14,02"; "C3, blank").</summary>
+    public static string CellAnnouncement(string address, string text) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.CellAnnouncement, address,
+            text.Length == 0 ? SdkResources.CellBlank : text);
+
+    /// <summary>What the grid announces when the active range grows or shrinks around the active cell
+    /// (#1081): its address and its size, the counts in the words of the app's language ("B3:C5, 3 rows by
+    /// 2 columns").</summary>
+    public static string RangeAnnouncement(string address, int rows, int columns) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.RangeAnnouncement, address,
+            rows == 1 ? SdkResources.RangeOneRow : string.Format(CultureInfo.CurrentCulture, SdkResources.RangeRows, rows),
+            columns == 1
+                ? SdkResources.RangeOneColumn
+                : string.Format(CultureInfo.CurrentCulture, SdkResources.RangeColumns, columns));
+
     /// <summary>The status bar's sum of the numbers selected, already written in the page's culture.</summary>
     public static string Sum(string value) => string.Format(CultureInfo.CurrentCulture, SdkResources.StatusSum, value);
 

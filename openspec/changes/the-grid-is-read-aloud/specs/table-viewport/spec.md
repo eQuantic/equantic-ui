@@ -5,11 +5,12 @@
 A viewport SHALL read as a group of its cells unless it says it is a table or a grid, on every target.
 A table or a grid SHALL read as rows of cells: each row that holds built cells as one row, its cells in
 the order of their columns whichever band draws them, the pinned column's first; each cell with its row
-and its column in the whole grid; and the viewport with the number of rows and columns of the whole grid
+and its column in the whole grid, and the rows and columns it spans when it spans more than one; and the
+viewport with the number of rows and columns of the whole grid
 rather than of the cells it built. On the web a table SHALL be `role="table"` of `row`s and `cell`s and
 a grid `role="grid"` of `row`s and `gridcell`s, with `aria-rowcount` and `aria-colcount` on the
-viewport, `aria-rowindex` on each row and `aria-colindex` on each cell, counted from one; the server's
-first pass SHALL write the same. Marks SHALL stay nothing a reader reaches.
+viewport, `aria-rowindex` on each row and `aria-colindex` on each cell, counted from one, and
+`aria-rowspan` and `aria-colspan` on a cell that spans; the server's first pass SHALL write the same. Marks SHALL stay nothing a reader reaches.
 
 #### Scenario: A grid of Excel's extent on the web
 
@@ -29,6 +30,13 @@ first pass SHALL write the same. Marks SHALL stay nothing a reader reaches.
 
 - **WHEN** a viewport says it is a table
 - **THEN** on the web it is `role="table"` of `row`s and `cell`s, and on Photon it is a table of cells
+
+#### Scenario: A cell that spans
+
+- **WHEN** a table's header of row 0 and column 0 spans two columns and its cell of row 1 and column 0
+  spans two rows
+- **THEN** on the web the header has `aria-colspan="2"` and the cell `aria-rowspan="2"`, on Photon each
+  carries the rows and columns it spans, and a cell that spans one row and one column says nothing more
 
 #### Scenario: A group by default
 

@@ -77,6 +77,27 @@
   <data name="RangeSize" xml:space="preserve">
     <value>{0}L x {1}C</value>
   </data>
+  <data name="CellAnnouncement" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="CellBlank" xml:space="preserve">
+    <value>em branco</value>
+  </data>
+  <data name="RangeAnnouncement" xml:space="preserve">
+    <value>{0}, {1} por {2}</value>
+  </data>
+  <data name="RangeOneRow" xml:space="preserve">
+    <value>1 linha</value>
+  </data>
+  <data name="RangeRows" xml:space="preserve">
+    <value>{0} linhas</value>
+  </data>
+  <data name="RangeOneColumn" xml:space="preserve">
+    <value>1 coluna</value>
+  </data>
+  <data name="RangeColumns" xml:space="preserve">
+    <value>{0} colunas</value>
+  </data>
   <data name="StatusSum" xml:space="preserve">
     <value>Soma: {0}</value>
   </data>

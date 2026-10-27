@@ -189,12 +189,53 @@ internal sealed partial class SemanticsVisitor
 
     /// <summary>
     /// A table viewport is a GROUP named by its label, over the cells it holds in view: a reader walks
-    /// them as it walks a list's rows. What a cell IS (a grid cell, its row and column) is the
-    /// component's to say, as a spreadsheet does.
+    /// them as it walks a list's rows. Unless it says it is a table or a grid (#1081, web twin:
+    /// <c>lowerTableViewport</c>): then it announces that role with the whole grid's extent, and each cell
+    /// it holds announces its own (<see cref="TableCell"/>). The tree is flat, so the cells follow the table
+    /// in reading order rather than sit inside it (#1105).
     /// </summary>
-    public bool Visit(TableViewport node, LayoutNode laidOut) =>
-        AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds,
-            node.Label ?? "", null, false));
+    public bool Visit(TableViewport node, LayoutNode laidOut)
+    {
+        if (node.Role == TableRole.Group)
+            return AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds,
+                node.Label ?? "", null, false));
+        var grid = node.Role == TableRole.Grid;
+        _nodes.Add(new(grid ? SemanticRole.Grid : SemanticRole.Table, IdOf(laidOut), laidOut.Bounds,
+            node.Label ?? "", null, false, Extent: new TableRange(0, 0, node.Rows.Count, node.Columns.Count)));
+        foreach (var child in laidOut)
+            if (child.Source is TableViewCell { Mark: false } cell) TableCell(cell, child, grid);
+        return Consumed;
+    }
+
+    /// <summary>
+    /// One cell of a table or a grid: the header of its column or of its row, a cell or a grid cell, with
+    /// its place in the whole grid and, in a grid, whether it is selected and whether it is current. It is
+    /// named by the text it holds, which it consumes, as a button is named by its own; anything else inside
+    /// it, a control, still follows it as a stop of its own. A cell that is nothing a reader reaches says
+    /// nothing, and neither does what it holds.
+    /// </summary>
+    private void TableCell(TableViewCell cell, LayoutNode laidOut, bool grid)
+    {
+        if (cell.Role == TableCellRole.None) return;
+        var inside = new List<SemanticNode>();
+        var walker = new SemanticsVisitor(inside);
+        foreach (var child in laidOut) SemanticsTree.Walk(child, walker);
+        var name = string.Join(" ", inside
+            .Where(each => each.Role == SemanticRole.StaticText && each.Label.Length > 0)
+            .Select(each => each.Label));
+        var role = cell.Role switch
+        {
+            TableCellRole.ColumnHeader => SemanticRole.ColumnHeader,
+            TableCellRole.RowHeader => SemanticRole.RowHeader,
+            _ => grid ? SemanticRole.GridCell : SemanticRole.Cell,
+        };
+        _nodes.Add(new(role, IdOf(laidOut), laidOut.Bounds, name, null, false,
+            Current: grid && cell.Current,
+            Selected: grid && role == SemanticRole.GridCell ? cell.Selected : null,
+            Place: new TableRange(cell.Row, cell.Column, cell.Rows, cell.Columns)));
+        foreach (var each in inside)
+            if (each.Role != SemanticRole.StaticText) _nodes.Add(each);
+    }
 
     /// <summary>
     /// A live region is a GROUP THE PLATFORM WATCHES. The urgency rides on the node rather than the

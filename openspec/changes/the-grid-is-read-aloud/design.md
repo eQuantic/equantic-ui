@@ -75,7 +75,9 @@ the viewport's label with the atomizer's FNV, so the server's first pass and hyd
 ones (`eq-tcell-{scope}-{row}-{column}`). A `None` cell is `aria-hidden`; marks stay `inert`.
 
 The sheet's host stops claiming the grid role (it keeps its class, its door and its keyboard), and the
-spreadsheet names its table with the sheet's label: the grid is the table.
+spreadsheet names its table with the sheet's label: the grid is the table. The phrase is composed by the
+component from the engine's state (decision 4), and what moved is the engine's: `SheetController.Moved`,
+read in `Refresh()`, the one call every change of the selection ends with.
 
 *Alternatives:* focusing the grid with `aria-activedescendant` on the active cell is the textbook grid,
 and it would move the focus off the door, so the first key of a composition would land outside the
@@ -85,9 +87,14 @@ element the input method composes in. The door keeps the focus; the active cell 
 ### 3. On Photon, new roles in a flat tree
 
 `SemanticRole` gains `Table`, `Grid`, `Cell`, `ColumnHeader` and `RowHeader`, appended (the enum is an
-ABI); a grid's cells are the existing `GridCell`. `SemanticNode` gains the cell's place
-(`CellPlace(Row, Column)`) and the table's extent (`TableExtent(Rows, Columns)`), appended as optional
-members with every call site moved, and no second constructor. The walk announces the viewport as its
+ABI); a grid's cells are the existing `GridCell`. `SemanticNode` gains the cell's place and
+the table's extent, both a `TableRange` (the table's own coordinates, which `TableView.Current` already
+speaks): a cell's row and column with the rows and columns it spans, which AppKit's index ranges and
+Android's `CollectionItemInfo` take as they are, and the whole grid's rows and columns from zero. They are
+appended as optional members with every call site moved, and no second constructor. A type of their own
+was written first and the value-shape guard refused it: a place in a table is the origin of the range
+the vocabulary already had. The web writes a span too (`aria-rowspan`, `aria-colspan`), so both targets
+say it. The walk announces the viewport as its
 role with its extent, and each cell as its role with its place, `Selected` and `Current`, named by the
 text its content holds; the walk does not descend into the plain text it named, and still reaches any
 control inside. `NativeRole` names the new roles on the three platforms: `AXTable`/`AXCell` with the
@@ -96,13 +103,18 @@ not emitted until the tree nests.
 
 ### 4. The grid's announcement is the surface's own
 
-`SheetSurface.Announcement` is what the grid says now; `SheetController.Announcement` composes it from
-the active cell (its A1 address and its text, or the word for blank) or the active range (its address
-and its size), with new `SdkStrings` phrases in English, Portuguese and Spanish, and empty while an entry
-is open. The web writes it into a visually hidden `role="status"` `aria-live="polite"`
-`aria-atomic="true"` element inside the host, as the text field's description twin is written. Photon's
-walk adds a polite live `Group` named by it, and the emit walk records a live mark carrying its text, so
-the announcer treats it as any region.
+`SheetSurface.Announcement` is what the grid says now. The `Spreadsheet` composes it, since the engine
+does not reach `SdkStrings`: from the active cell (its A1 address and its text, or the word for blank)
+when `SheetController.Moved` says the active cell moved, or from the active range (its address and its
+size) when it grew around a cell that stayed, with new `SdkStrings` phrases in English, Portuguese and
+Spanish. It is a function of the selection, so it stays the same however often the grid builds, and an
+entry, which moves neither, leaves it unchanged and announced by nobody. The web writes it into a visually hidden `role="status"` `aria-live="polite"`
+`aria-atomic="true"` element inside the host, as the text field's description twin is written. On Photon
+the surface's own field carries it: the `CodeField` the walk already announces for the sheet takes the
+announcement as its value, so a reader arriving there hears where it is, and is marked live, which is
+what Android needs; the emit walk records a live mark carrying the text, so the announcer treats it as
+any region and macOS and iOS post it. A separate live node would have needed an id of its own, and the
+announcement has no position of its own to take one from.
 
 *Alternative:* the spreadsheet wrapping a `LiveRegion` around hidden text. A `LiveRegion` announces what
 its child draws, and the vocabulary has no hidden child on either realizer; the announcement is the

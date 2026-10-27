@@ -1,3 +1,4 @@
+using System.Globalization;
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Web;
@@ -47,10 +48,24 @@ internal sealed partial class WebLoweringVisitor
                 TouchAction = "none",
             },
         };
+        // A table or a grid reads as rows of cells (TS twin: lowerTableViewport, #1081); a group adds nothing.
+        TableSemantics? semantics = viewport.Role == TableRole.Group
+            ? null
+            : new TableSemantics(viewport.Role == TableRole.Grid, StyleAtomizer.Hash(viewport.Label ?? ""));
+        element.RawAttributes = new Dictionary<string, string>
+        {
+            ["role"] = viewport.Role switch { TableRole.Table => "table", TableRole.Grid => "grid", _ => "group" },
+        };
+        if (semantics is { } table)
+        {
+            // The whole grid's count, not the cells built: a reader is told where it is in a million rows.
+            element.RawAttributes["aria-rowcount"] = rows.Count.ToString(CultureInfo.InvariantCulture);
+            element.RawAttributes["aria-colcount"] = columns.Count.ToString(CultureInfo.InvariantCulture);
+            if (table.Grid) element.RawAttributes["aria-multiselectable"] = "true";
+        }
         // A stop of the Tab order itself, before its cells': the keys it takes scroll it, and a scroller
         // a keyboard cannot reach scrolls for nobody who only has a keyboard. Unless it declines, for a
         // component that composes it and keeps the keyboard.
-        element.RawAttributes = new Dictionary<string, string> { ["role"] = "group" };
         if (viewport.CanRequestFocus) element.RawAttributes["tabindex"] = "0";
         if (viewport.Label is { Length: > 0 } label) element.RawAttributes["aria-label"] = label;
 
@@ -58,16 +73,76 @@ internal sealed partial class WebLoweringVisitor
         {
             for (var band = 0; band < TableBands; band++)
                 element.Children.Add(LowerTableBand(viewport, band, marks == 1, pinnedRows, pinnedColumns,
-                    pinnedAcross, pinnedDown));
+                    pinnedAcross, pinnedDown, semantics));
         }
-        element.Children.Add(LowerTableScrollbar());
-        element.Children.Add(LowerTableScrollbar());
+        element.Children.Add(LowerTableScrollbar(semantics is not null));
+        element.Children.Add(LowerTableScrollbar(semantics is not null));
+        if (semantics is { } owner) element.Children.Add(LowerTableRows(viewport, owner));
         return element;
+    }
+
+    /// <summary>What a table or a grid adds for a reader (#1081): whether it is a grid, and the scope its
+    /// cells' ids are unique in, the label hashed as a <see cref="Navigable"/> grid's are
+    /// (<see cref="NavigableScope"/>).</summary>
+    private readonly record struct TableSemantics(bool Grid, string Scope);
+
+    /// <summary>The id a table's cell answers to, which its row's <c>aria-owns</c> names (TS twin:
+    /// tableCellId).</summary>
+    private static string TableCellId(string scope, int row, int column) => $"eq-tcell-{scope}-{row}-{column}";
+
+    /// <summary>A cell of a table or a grid as a reader meets it (TS twin: describeTableCell): its id, its
+    /// role, its column and what it spans, and in a grid whether it is selected and whether it is current. A cell that is
+    /// nothing a reader reaches is hidden from it, and no row owns it.</summary>
+    private static void DescribeTableCell(HtmlElement wrapper, TableViewCell cell, TableSemantics table)
+    {
+        if (cell.Role == TableCellRole.None)
+        {
+            wrapper.AriaHidden = true;
+            return;
+        }
+        wrapper.Id = TableCellId(table.Scope, cell.Row, cell.Column);
+        wrapper.Role = cell.Role switch
+        {
+            TableCellRole.ColumnHeader => "columnheader",
+            TableCellRole.RowHeader => "rowheader",
+            _ => table.Grid ? "gridcell" : "cell",
+        };
+        wrapper.AriaColIndex = cell.Column + 1;
+        if (cell.Rows > 1) wrapper.AriaRowSpan = cell.Rows;
+        if (cell.Columns > 1) wrapper.AriaColSpan = cell.Columns;
+        if (!table.Grid) return;
+        if (cell.Role == TableCellRole.Cell) wrapper.AriaSelected = cell.Selected;
+        if (cell.Current) wrapper.AriaCurrent = "true";
+    }
+
+    /// <summary>The rows of a table or a grid (TS twin: lowerTableRows): one per row that holds built cells,
+    /// owning them in column order whichever band draws them, since a row's cells live in the pinned
+    /// column's band and the body's. A box of no size, last among the viewport's children, where the
+    /// runtime's after-pass, which finds the bands and the scrollbars by their place, never looks.</summary>
+    private static HtmlElement LowerTableRows(TableViewport viewport, TableSemantics table)
+    {
+        var group = new RealizedElement("div")
+        {
+            Style = new HtmlStyle { Position = Position.Absolute, Width = "0", Height = "0", Overflow = "hidden" },
+            Role = "rowgroup",
+        };
+        var owned = viewport.Cells.Where(cell => !cell.Mark && cell.Role != TableCellRole.None)
+            .GroupBy(cell => cell.Row)
+            .OrderBy(row => row.Key);
+        foreach (var row in owned)
+            group.Children.Add(new RealizedElement("div")
+            {
+                Role = "row",
+                AriaRowIndex = row.Key + 1,
+                AriaOwns = string.Join(" ", row.OrderBy(cell => cell.Column)
+                    .Select(cell => TableCellId(table.Scope, cell.Row, cell.Column))),
+            });
+        return group;
     }
 
     /// <summary>One band: a clipping box at its edges, and the layer its cells sit on.</summary>
     private HtmlElement LowerTableBand(TableViewport viewport, int band, bool marks, int pinnedRows,
-        int pinnedColumns, float pinnedAcross, float pinnedDown)
+        int pinnedColumns, float pinnedAcross, float pinnedDown, TableSemantics? semantics)
     {
         var holdsAcross = band is 1 or 3;
         var holdsDown = band is 2 or 3;
@@ -94,6 +169,12 @@ internal sealed partial class WebLoweringVisitor
         // A mark is drawn over the cells and is nothing to reach: no press, no Tab stop, nothing a
         // reader lands on, whatever it holds.
         if (marks) (box.RawAttributes ??= new())["inert"] = "";
+        // In a table or a grid the bands are boxes and nothing else: the rows own the cells they hold.
+        if (semantics is not null)
+        {
+            box.Role = "none";
+            layer.Role = "none";
+        }
 
         var offset = viewport.Scroll.Offset;
         foreach (var cell in viewport.Cells)
@@ -103,7 +184,7 @@ internal sealed partial class WebLoweringVisitor
             var inPinnedColumn = cell.Column < pinnedColumns;
             if ((inPinnedColumn ? 1 : 0) + (inPinnedRow ? 2 : 0) != band) continue;
             layer.Children.Add(LowerTableCell(viewport, cell, inPinnedRow, inPinnedColumn, pinnedAcross,
-                pinnedDown, offset));
+                pinnedDown, offset, marks ? null : semantics));
         }
         return box;
     }
@@ -114,7 +195,7 @@ internal sealed partial class WebLoweringVisitor
     /// mark and its cell round alike. A mark's glide is the runtime's after-pass (TS twin: lowerTableCell,
     /// and <c>table-viewports.ts</c>): the server's first pass has nothing to glide from.</summary>
     private HtmlElement LowerTableCell(TableViewport viewport, TableViewCell cell, bool inPinnedRow,
-        bool inPinnedColumn, float pinnedAcross, float pinnedDown, TableOffset offset)
+        bool inPinnedColumn, float pinnedAcross, float pinnedDown, TableOffset offset, TableSemantics? semantics)
     {
         var rows = viewport.Rows;
         var columns = viewport.Columns;
@@ -140,12 +221,13 @@ internal sealed partial class WebLoweringVisitor
             },
         };
         if (Lower(cell.Child, horizontalAxis: null) is { } child) wrapper.Children.Add(child);
+        if (semantics is { } table) DescribeTableCell(wrapper, cell, table);
         return Decorate(cell, wrapper)!;
     }
 
     /// <summary>A scrollbar's track and thumb, hidden: the runtime shows and places them once it knows
     /// the window.</summary>
-    private static HtmlElement LowerTableScrollbar()
+    private static HtmlElement LowerTableScrollbar(bool inTable)
     {
         var track = new RealizedElement("div")
         {
@@ -155,6 +237,8 @@ internal sealed partial class WebLoweringVisitor
                 Position = Position.Absolute,
                 Background = "var(--eq-color-scrollbar-track)",
             },
+            // A table's or a grid's children are its rows: a scrollbar is a box among them, and nothing else.
+            Role = inTable ? "none" : null,
         };
         track.Children.Add(new RealizedElement("div")
         {

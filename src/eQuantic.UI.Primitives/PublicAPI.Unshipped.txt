@@ -137,3 +137,35 @@ eQuantic.UI.Primitives.GoogleFontAttribute.GoogleFontAttribute(string! family, p
 eQuantic.UI.Primitives.GoogleFontAttribute.Italic.get -> bool
 eQuantic.UI.Primitives.GoogleFontAttribute.Italic.set -> void
 eQuantic.UI.Primitives.GoogleFontAttribute.Weights.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FontWeight>!
+*REMOVED*eQuantic.UI.Primitives.SemanticNode.Deconstruct(out eQuantic.UI.Primitives.SemanticRole Role, out int Id, out eQuantic.UI.Primitives.Rect Bounds, out string! Label, out string? Value, out bool Disabled, out eQuantic.UI.Primitives.SemanticCheck? Checked, out bool? Expanded, out bool Current, out bool? Selected, out int HeadingLevel, out eQuantic.UI.Primitives.LiveRegionUrgency? Live, out eQuantic.UI.Primitives.RangeValue? Range) -> void
+*REMOVED*eQuantic.UI.Primitives.SemanticNode.SemanticNode(eQuantic.UI.Primitives.SemanticRole Role, int Id, eQuantic.UI.Primitives.Rect Bounds, string! Label, string? Value, bool Disabled, eQuantic.UI.Primitives.SemanticCheck? Checked = null, bool? Expanded = null, bool Current = false, bool? Selected = null, int HeadingLevel = 0, eQuantic.UI.Primitives.LiveRegionUrgency? Live = null, eQuantic.UI.Primitives.RangeValue? Range = null) -> void
+eQuantic.UI.Primitives.SemanticRole.Table = 22 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.Grid = 23 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.Cell = 24 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.ColumnHeader = 25 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.RowHeader = 26 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticNode.Deconstruct(out eQuantic.UI.Primitives.SemanticRole Role, out int Id, out eQuantic.UI.Primitives.Rect Bounds, out string! Label, out string? Value, out bool Disabled, out eQuantic.UI.Primitives.SemanticCheck? Checked, out bool? Expanded, out bool Current, out bool? Selected, out int HeadingLevel, out eQuantic.UI.Primitives.LiveRegionUrgency? Live, out eQuantic.UI.Primitives.RangeValue? Range, out eQuantic.UI.Primitives.TableRange? Place, out eQuantic.UI.Primitives.TableRange? Extent) -> void
+eQuantic.UI.Primitives.SemanticNode.SemanticNode(eQuantic.UI.Primitives.SemanticRole Role, int Id, eQuantic.UI.Primitives.Rect Bounds, string! Label, string? Value, bool Disabled, eQuantic.UI.Primitives.SemanticCheck? Checked = null, bool? Expanded = null, bool Current = false, bool? Selected = null, int HeadingLevel = 0, eQuantic.UI.Primitives.LiveRegionUrgency? Live = null, eQuantic.UI.Primitives.RangeValue? Range = null, eQuantic.UI.Primitives.TableRange? Place = null, eQuantic.UI.Primitives.TableRange? Extent = null) -> void
+eQuantic.UI.Primitives.SemanticNode.Place.get -> eQuantic.UI.Primitives.TableRange?
+eQuantic.UI.Primitives.SemanticNode.Place.init -> void
+eQuantic.UI.Primitives.SemanticNode.Extent.get -> eQuantic.UI.Primitives.TableRange?
+eQuantic.UI.Primitives.SemanticNode.Extent.init -> void
+eQuantic.UI.Primitives.SheetSurface.Announcement.get -> string!
+eQuantic.UI.Primitives.SheetSurface.Announcement.init -> void
+eQuantic.UI.Primitives.TableCellRole.Cell = 0 -> eQuantic.UI.Primitives.TableCellRole
+eQuantic.UI.Primitives.TableCellRole.ColumnHeader = 1 -> eQuantic.UI.Primitives.TableCellRole
+eQuantic.UI.Primitives.TableCellRole.RowHeader = 2 -> eQuantic.UI.Primitives.TableCellRole
+eQuantic.UI.Primitives.TableCellRole.None = 3 -> eQuantic.UI.Primitives.TableCellRole
+eQuantic.UI.Primitives.TableCellRole
+eQuantic.UI.Primitives.TableRole.Group = 0 -> eQuantic.UI.Primitives.TableRole
+eQuantic.UI.Primitives.TableRole.Table = 1 -> eQuantic.UI.Primitives.TableRole
+eQuantic.UI.Primitives.TableRole.Grid = 2 -> eQuantic.UI.Primitives.TableRole
+eQuantic.UI.Primitives.TableRole
+eQuantic.UI.Primitives.TableViewCell.Role.get -> eQuantic.UI.Primitives.TableCellRole
+eQuantic.UI.Primitives.TableViewCell.Role.init -> void
+eQuantic.UI.Primitives.TableViewCell.Selected.get -> bool
+eQuantic.UI.Primitives.TableViewCell.Selected.init -> void
+eQuantic.UI.Primitives.TableViewCell.Current.get -> bool
+eQuantic.UI.Primitives.TableViewCell.Current.init -> void
+eQuantic.UI.Primitives.TableViewport.Role.get -> eQuantic.UI.Primitives.TableRole
+eQuantic.UI.Primitives.TableViewport.Role.init -> void

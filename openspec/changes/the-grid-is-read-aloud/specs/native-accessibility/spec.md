@@ -7,9 +7,10 @@ the header of a column and the header of a row, each in the words its platform u
 and a grid are `AXTable` and their cells and headers `AXCell`, with the cell's row and column index
 ranges set; on Android a table and a grid are `android.widget.GridView` and a cell carries its row and
 column; on iOS a header carries the header trait and a grid cell the button trait, as a calendar day
-does. A table, a grid and a header SHALL be neither activatable nor adjustable, and a grid cell SHALL be
-activatable. A new role SHALL fail the build until every platform names it. The tree stays flat in this
-change: a cell is not nested inside its row or its table.
+does. A table, a grid and a table's cell SHALL be neither activatable nor adjustable, and a grid cell
+and a header SHALL be activatable, since activating one selects it. A new role SHALL fail the build
+until every platform names it. The tree stays flat in this change: a cell is not nested inside its row
+or its table.
 
 #### Scenario: A grid on macOS
 

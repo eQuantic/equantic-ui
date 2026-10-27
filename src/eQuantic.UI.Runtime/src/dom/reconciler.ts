@@ -21,6 +21,21 @@ import { claimedByShortcut } from './shortcuts';
  */
 export const MOUNTED_HOOK = 'eq:mounted';
 
+/** The mark a click handler of the runtime's own carries when it needs the event (#1081): see
+ * {@link clickWithEvent}. */
+const WANTS_THE_EVENT = Symbol('eq:wantsTheEvent');
+
+/**
+ * A click handler that is handed the event, which a click is not by default: C# declares `OnClick` as an
+ * `Action`, so the page calls a click handler with nothing, and an event passed to a transpiled method
+ * would fill its first optional parameter. The runtime's own lowering marks the one click that needs the
+ * event, as the sheet's does to find the cell a reader activated (#1081); nothing an app writes is marked.
+ */
+export function clickWithEvent<T extends (event: MouseEvent) => void>(handler: T): T {
+  (handler as unknown as Record<symbol, boolean>)[WANTS_THE_EVENT] = true;
+  return handler;
+}
+
 /**
  * The server's mark on a subtree it laid out on widths it could not MEASURE (the C#
  * `WebLoweringVisitor.UnmeasuredMark`, written as a data attribute): it has no fonts, so a
@@ -439,7 +454,8 @@ export class Reconciler {
       // own navigate-away submission never runs — the declarative-framework norm. A form that
       // wants native submission simply has no OnSubmit.
       if (eventName === 'click') {
-        (handler as () => void)();
+        if ((handler as unknown as Record<symbol, boolean>)[WANTS_THE_EVENT]) handler(e);
+        else (handler as () => void)();
         return;
       }
       if (eventName === 'submit') {

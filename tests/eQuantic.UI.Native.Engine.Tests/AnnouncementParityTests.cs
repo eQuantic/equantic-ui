@@ -109,6 +109,69 @@ public class AnnouncementParityTests
             $"'{name}' has to say the same thing to a screen reader on every target, in the same order");
     }
 
+    /// <summary>A table's and a grid's roles (#1081), compared apart from the others: a calendar's grid is
+    /// a <c>Navigable</c>, which the web writes as a grid and Photon still walks as a group.</summary>
+    private static readonly Dictionary<string, SemanticRole> TableRoles = new()
+    {
+        ["table"] = SemanticRole.Table,
+        ["grid"] = SemanticRole.Grid,
+        ["cell"] = SemanticRole.Cell,
+        ["gridcell"] = SemanticRole.GridCell,
+        ["columnheader"] = SemanticRole.ColumnHeader,
+        ["rowheader"] = SemanticRole.RowHeader,
+    };
+
+    [Theory]
+    [InlineData(TableRole.Table)]
+    [InlineData(TableRole.Grid)]
+    public void ATableAndAGridAnnounceTheSameOnTheWebAndPhoton(TableRole role)
+    {
+        VisualNode Table() => new TableView(new UniformTableSpans(6, 28), new UniformTableSpans(4, 96),
+            (row, column) => new Text($"{row}:{column}", TypeRole.BodyM))
+        {
+            PinnedRows = 1,
+            PinnedColumns = 1,
+            Label = "Ledger",
+            Role = role,
+            CellRole = (row, column) => row == 0 && column == 0 ? TableCellRole.None
+                : row == 0 ? TableCellRole.ColumnHeader
+                : column == 0 ? TableCellRole.RowHeader
+                : TableCellRole.Cell,
+            Selected = (row, column) => column == 2 && row >= 2 && row <= 3,
+            Current = new TableRange(3, 2),
+        };
+
+        var web = TableOnTheWeb(Table());
+        var photon = OnPhoton(Table(), open: false, TableRoles);
+
+        web.Should().HaveCountGreaterThan(20, "the table, its headers and its cells");
+        photon.Should().Equal(web, "a table says the same thing to a screen reader on every target, in the same order");
+    }
+
+    /// <summary>A table as a reader meets it on the web: the table, then each row's cells in the order its
+    /// <c>aria-owns</c> names them, which is the accessibility tree's order, not the DOM's bands'.</summary>
+    private static List<Announcement> TableOnTheWeb(VisualNode node)
+    {
+        var tree = WebRealizer.Lower(node, Theme).Render();
+        var byId = Elements(tree).Where(element => element.Attributes.ContainsKey("id"))
+            .ToDictionary(element => element.Attributes["id"]!);
+        var said = new List<Announcement>();
+        foreach (var element in Elements(tree))
+        {
+            var aria = element.Attributes.GetValueOrDefault("role");
+            if (aria is "table" or "grid")
+                said.Add(new Announcement(TableRoles[aria], element.Attributes.GetValueOrDefault("aria-label") ?? "",
+                    StateOf(element)));
+            if (aria != "row") continue;
+            foreach (var id in element.Attributes["aria-owns"]!.Split(' '))
+            {
+                var cell = byId[id];
+                said.Add(new Announcement(TableRoles[cell.Attributes["role"]!], TextOf(cell).Trim(), StateOf(cell)));
+            }
+        }
+        return said;
+    }
+
     // ---- the web ---------------------------------------------------------------------------------
 
     private static List<Announcement> OnTheWeb(VisualNode node, bool open)
@@ -158,7 +221,9 @@ public class AnnouncementParityTests
 
     // ---- Photon ------------------------------------------------------------------------------------
 
-    private static List<Announcement> OnPhoton(VisualNode node, bool open)
+    private static List<Announcement> OnPhoton(VisualNode node, bool open) => OnPhoton(node, open, AriaRoles);
+
+    private static List<Announcement> OnPhoton(VisualNode node, bool open, Dictionary<string, SemanticRole> roles)
     {
         var host = new PhotonHost(node, Theme, ThemeMode.Light, 400, 800);
         host.RenderFrame(new DisplayListBuilder());
@@ -168,7 +233,7 @@ public class AnnouncementParityTests
             host.RenderFrame(new DisplayListBuilder(), 16);
         }
 
-        var compared = AriaRoles.Values.ToHashSet();
+        var compared = roles.Values.ToHashSet();
         return host.Semantics()
             .Where(stop => compared.Contains(stop.Role))
             .Select(stop => new Announcement(stop.Role, stop.Label, StateOf(stop)))

@@ -183,6 +183,64 @@ public class AppKitAccessibilityTests
 
     /// <summary>A dialog that does not interrupt carries the other subrole, the one Core-AAM gives
     /// role="dialog".</summary>
+    /// <summary>A rectangle's location and length, as AppKit answers for a range (an index range).</summary>
+    [System.Runtime.InteropServices.DllImport("/usr/lib/libobjc.A.dylib", EntryPoint = "objc_msgSend")]
+    private static extern eQuantic.UI.Native.Shell.Apple.NSRange SendRange(IntPtr receiver, IntPtr selector);
+
+    /// <summary>
+    /// A grid, its headers and its cells, from a real <see cref="TableView"/> (#1081): AXTable with the
+    /// grid's whole count of rows and columns, and AXCell with its row and column index ranges, read back
+    /// from the elements AppKit is handed.
+    /// </summary>
+    [MacFact]
+    public void AGridAndItsCellsReachAppKitAsATableOfCells()
+    {
+        var table = new TableView(new UniformTableSpans(40, 28), new UniformTableSpans(10, 96),
+            (row, column) => new Text($"{row}:{column}", TypeRole.BodyM))
+        {
+            PinnedRows = 1,
+            PinnedColumns = 1,
+            Label = "Ledger",
+            Role = TableRole.Grid,
+            CellRole = (row, column) => row == 0 ? TableCellRole.ColumnHeader
+                : column == 0 ? TableCellRole.RowHeader
+                : TableCellRole.Cell,
+        };
+
+        var said = ReadBack(table);
+
+        var grid = said.Single(element => element.Label == "Ledger");
+        grid.Role.Should().Be("AXTable");
+        SendULong(grid.Element, Sel("accessibilityRowCount")).Should().Be(40);
+        SendULong(grid.Element, Sel("accessibilityColumnCount")).Should().Be(10);
+        var cell = said.Single(element => element.Label == "3:2");
+        cell.Role.Should().Be("AXCell");
+        SendRange(cell.Element, Sel("accessibilityRowIndexRange")).Location.Should().Be((nuint)3);
+        SendRange(cell.Element, Sel("accessibilityColumnIndexRange")).Location.Should().Be((nuint)2);
+        said.Single(element => element.Label == "0:2").Role.Should().Be("AXCell", "a header is a cell to AppKit");
+    }
+
+    /// <summary>A heading's level, read back as AppKit holds it: VoiceOver says "heading level 2".</summary>
+    [MacFact]
+    public void AHeadingReachesAppKitWithItsLevel()
+    {
+        IReadOnlyList<SemanticNode> tree =
+            [new(SemanticRole.StaticText, 1, new Rect(0, 0, 120, 24), "Revenue", null, false, HeadingLevel: 2)];
+        var previous = PhotonAccessibility.Source;
+        PhotonAccessibility.Source = () => tree;
+        try
+        {
+            var view = Send(Send(AppKit.Class("NSView"), Sel("alloc")), Sel("init"));
+            var element = Send(PhotonAccessibility.BuildChildren(view), Sel("objectAtIndex:"), (nuint)0);
+            FromNSString(Send(element, Sel("accessibilityRole"))).Should().Be("AXHeading");
+            SendLong(element, Sel("accessibilityDisclosureLevel")).Should().Be(2);
+        }
+        finally
+        {
+            PhotonAccessibility.Source = previous;
+        }
+    }
+
     [MacFact]
     public void AModalLayerReachesAppKitAsADialog()
     {

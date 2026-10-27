@@ -55,8 +55,10 @@ export class Spreadsheet extends StatefulComponent {
         let $n0: any; 
         this.controller.grid = ($n0 = new SheetGrid(this._scroll, numbers, Spreadsheet.headerHeight), $n0.measure = (text: string) => context.measureText(text, cellType), $n0.lineHeight = cellType.lineHeight, $n0.cellPadding = Spreadsheet.cellPadding, $n0.resizeGrip = Spreadsheet.grip, $n0);
         let revealed = this.controller.revealCell;
-        let table = new TableView(this._rows, this._columns, (row: number, column: number) => this.cell(row, column, document, palette, numbers), { pinnedRows: 1, pinnedColumns: 1, overscan: this._config.overscan, width: SizeValue.fill, height: SizeValue.fill, scroll: this._scroll, marks: this.marks(palette), request: new TableScrollRequest(this.controller.revealVersion, { reveal: new TableRange(revealed.row + 1, revealed.col + 1) }), onScrolled: this.scrolled.bind(this), onViewportChanged: this.viewportChanged.bind(this), canRequestFocus: false });
-        return new Box(new BoxStyle({ width: this._config.width, height: this._config.height, borderColor: palette.gridline, borderWidth: 1, clip: true }), new SheetSurface(new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill }), table), this.controller, { onChanged: () => this.controller.refresh(), label: SdkStrings.spreadsheet, caretColor: palette.cellText }));
+        let ranges = this.controller.ranges;
+        let active = this.controller.activeCell;
+        let table = new TableView(this._rows, this._columns, (row: number, column: number) => this.cell(row, column, document, palette, numbers), { pinnedRows: 1, pinnedColumns: 1, overscan: this._config.overscan, width: SizeValue.fill, height: SizeValue.fill, scroll: this._scroll, marks: this.marks(palette), request: new TableScrollRequest(this.controller.revealVersion, { reveal: new TableRange(revealed.row + 1, revealed.col + 1) }), onScrolled: this.scrolled.bind(this), onViewportChanged: this.viewportChanged.bind(this), canRequestFocus: false, role: 'grid', label: SdkStrings.spreadsheet, cellRole: (row: number, column: number) => Spreadsheet.cellRoleAt(row, column), selected: (row: number, column: number) => row > 0 && column > 0 && Spreadsheet.inAny(ranges, new CellRef(row - 1, column - 1)), current: new TableRange(active.row + 1, active.col + 1) });
+        return new Box(new BoxStyle({ width: this._config.width, height: this._config.height, borderColor: palette.gridline, borderWidth: 1, clip: true }), new SheetSurface(new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill }), table), this.controller, { onChanged: () => this.controller.refresh(), label: SdkStrings.spreadsheet, caretColor: palette.cellText, announcement: this.announcement(document) }));
     }
 
     adoptConfig(next: UiComponent) {
@@ -80,6 +82,22 @@ export class Spreadsheet extends StatefulComponent {
         if (!(this._listening == null)) this._listening.refreshed = $eq.delegates.remove(this._listening.refreshed, this._rebuild);
         this._listening = controller;
         if (!(controller == null)) controller.refreshed = $eq.delegates.combine(controller.refreshed, this._rebuild);
+    }
+
+    static cellRoleAt(row: number, column: number) {
+        return row === 0 && column === 0 ? 'none' : row === 0 ? 'columnHeader' : column === 0 ? 'rowHeader' : 'cell';
+    }
+
+    static inAny(ranges: SheetRange[], cell: CellRef) {
+        for (let i = 0; i < $eq.collections.count(ranges); i++) if ($eq.collections.item(ranges, i).contains(cell)) return true;
+        return false;
+    }
+
+    announcement(document: SheetDocument) {
+        let range = this.controller.selection;
+        if (this.controller.moved === 'activeRange' && !range.isSingleCell) return SdkStrings.rangeAnnouncement(range.topLeft.toA1() + ':' + new CellRef(range.bottomRow, range.rightCol).toA1(), range.rowCount, range.colCount);
+        let cell = this.controller.activeCell;
+        return SdkStrings.cellAnnouncement(cell.toA1(), document.getCell(cell));
     }
 
     digitsShown(document: SheetDocument) {
