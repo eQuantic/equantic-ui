@@ -7,8 +7,9 @@ namespace eQuantic.UI.Server.Client;
 /// (<c>Resources/boot.ts</c>): the page this document drew, the build it came from, whether it was
 /// rendered on the server, whether the server streams rebuilds (<see cref="UIOptions.HotReloads(Microsoft.Extensions.Hosting.IHostEnvironment)"/>),
 /// the density it was rendered at (which hydration lowers at before it switches to the browser's own,
-/// #623), the theme cookie, the language-prefix policy, the route table and whether the server serves
-/// events. Written by System.Text.Json alone (<see cref="Json"/>), so no string in it is quoted by hand.
+/// #623), the theme cookie, the language-prefix policy, the route table, whether the server serves
+/// events and, in Development alone, the SDK's version, which the error overlay's report names (#1108).
+/// Written by System.Text.Json alone (<see cref="Json"/>), so no string in it is quoted by hand.
 /// </summary>
 internal sealed record ClientConfig(
     string? Page,
@@ -19,7 +20,8 @@ internal sealed record ClientConfig(
     object ThemeCookie,
     ClientCultureRoutes? CultureRoutes,
     IReadOnlyList<ClientRoute> Routes,
-    bool ServerEvents)
+    bool ServerEvents,
+    string? SdkVersion)
 {
     /// <summary>
     /// camelCase names, as the boot reads them, and the default encoder, which escapes every code

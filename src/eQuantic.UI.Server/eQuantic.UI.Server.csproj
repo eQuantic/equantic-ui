@@ -19,6 +19,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\eQuantic.UI.Web\eQuantic.UI.Web.csproj" />
+    <!-- eqc composes the runtime's map after the bundle is written (BundleRuntime), so a cold build has to
+         order it before this project. Nothing links against it, nothing copies it here, and it is not a
+         dependency of the package: the Server ships the map, never the tool. -->
+    <ProjectReference Include="..\eQuantic.Build\eQuantic.Build.csproj"
+      ReferenceOutputAssembly="false" Private="false" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,6 +36,13 @@
     <None Remove="wwwroot/runtime.js" />
     <EmbeddedResource Include="wwwroot/runtime.js">
       <LogicalName>eQuantic.UI.Server.runtime.js</LogicalName>
+    </EmbeddedResource>
+    <!-- The runtime's map, written beside it by the same target and composed by eqc down to the SDK's C#
+         where eqc transpiled a module of it (#1108). Answered in Development alone, for the error
+         overlay to name a frame inside the SDK. -->
+    <None Remove="wwwroot/runtime.js.map" />
+    <EmbeddedResource Include="wwwroot/runtime.js.map">
+      <LogicalName>eQuantic.UI.Server.runtime.js.map</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="Templates\app-shell.html">
       <LogicalName>eQuantic.UI.Server.Templates.app-shell.html</LogicalName>
@@ -109,10 +121,24 @@
       Text="eQuantic.UI.Server: wwwroot/runtime.js was not produced, and the package would ship no runtime." />
   </Target>
 
+  <!-- The bundle and its map. bun writes an external map only into an output folder, so the entry is
+       named there. The map leads to the runtime's TypeScript; ComposeRuntimeMap leads it on to the C#. -->
   <Target Name="BundleRuntime" BeforeTargets="BeforeBuild" DependsOnTargets="ResolveBunForServer">
     <Message Text="Bundling eQuantic UI Runtime..." Importance="high" />
     <MakeDir Directories="wwwroot" />
-    <Exec Command="&quot;$(_BunPath)&quot; build ../eQuantic.UI.Sdk/Resources/boot.ts --outfile wwwroot/runtime.js --minify-syntax --minify-whitespace" />
+    <Exec Command="&quot;$(_BunPath)&quot; build ../eQuantic.UI.Sdk/Resources/boot.ts --outdir wwwroot --entry-naming &quot;runtime.[ext]&quot; --sourcemap=external --minify-syntax --minify-whitespace" />
+  </Target>
+
+  <!-- eqc leads each module it transpiled from the SDK's C# on to that C#, through the map committed beside
+       the module, and names every source from src/ with no text (#1108). After the references are built,
+       since eqc is one of them, and before the resources are, since the map is embedded. -->
+  <Target Name="ComposeRuntimeMap" BeforeTargets="PrepareResources" DependsOnTargets="BundleRuntime;ResolveProjectReferences">
+    <PropertyGroup>
+      <_EqcForRuntimeMap>$(MSBuildThisFileDirectory)../eQuantic.Build/bin/$(Configuration)/net10.0/eqc.dll</_EqcForRuntimeMap>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(_EqcForRuntimeMap)')"
+      Text="eQuantic.UI.Server: eqc was not built at '$(_EqcForRuntimeMap)', and the runtime's map cannot be composed. The ProjectReference to eQuantic.Build orders it; a build that skipped it is a broken graph." />
+    <Exec Command="dotnet &quot;$(_EqcForRuntimeMap)&quot; compose-map wwwroot/runtime.js.map --names-from &quot;$(MSBuildThisFileDirectory)..&quot;" />
   </Target>
 
   <ItemGroup>
