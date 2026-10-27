@@ -35,14 +35,19 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
     private readonly Func<int, bool> _activate;
     private readonly Func<int, int, bool> _adjust;
 
+    /// <summary>What a live region holds now, by its node's id, which its node reads to TalkBack.</summary>
+    private readonly Func<int, string?> _liveText;
+
     private IReadOnlyList<SemanticNode> _tree = [];
+
     private int _focused = Host;
     private int _hovered = Host;
 
     internal PhotonAccessibility(View view,
         Func<IReadOnlyList<SemanticNode>> semantics,
         Func<int, bool> activate,
-        Func<int, int, bool> adjust)
+        Func<int, int, bool> adjust,
+        Func<int, string?> liveText)
     {
         _view = view;
         _manager = view.Context?.GetSystemService(global::Android.Content.Context.AccessibilityService)
@@ -50,6 +55,7 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         _semantics = semantics;
         _activate = activate;
         _adjust = adjust;
+        _liveText = liveText;
     }
 
     /// <summary>
@@ -57,13 +63,39 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
     /// is told the subtree is stale and re-reads it. The walk happens only while an assistive
     /// technology is listening — a phone with TalkBack off pays nothing for any of this.
     /// </summary>
-    internal void FrameRendered()
+    internal void FrameRendered(IReadOnlyList<LiveAnnouncement> said)
     {
         if (_manager?.IsEnabled != true) return;
         var tree = _semantics();
-        if (Same(_tree, tree)) return;
-        _tree = tree;
-        _view.SendAccessibilityEvent(EventTypes.WindowContentChanged);
+        if (!Same(_tree, tree))
+        {
+            _tree = tree;
+            _view.SendAccessibilityEvent(EventTypes.WindowContentChanged);
+        }
+        for (var i = 0; i < said.Count; i++) Announce(said[i]);
+    }
+
+    /// <summary>
+    /// What a live region just said, the way Android keeps after deprecating announcement events (#1081),
+    /// which Flutter's engine follows too: the region's node is a live region (<see cref="CreateAccessibilityNodeInfo"/>)
+    /// carrying the words it holds now, and the change of its content is reported from it when the host
+    /// announces, so TalkBack reads it politely or at once as the region asks, wherever the user is.
+    /// </summary>
+    private void Announce(LiveAnnouncement announcement)
+    {
+        if (announcement.Text.Length == 0) return;
+        var index = -1;
+        for (var i = 0; i < _tree.Count; i++)
+            if (_tree[i].Id == announcement.Id) index = i;
+        if (index < 0 || _view.Parent is not { } parent) return;
+        var changed = OperatingSystem.IsAndroidVersionAtLeast(30)
+            ? new AccessibilityEvent { EventType = EventTypes.WindowContentChanged }
+            : AccessibilityEvent.Obtain(EventTypes.WindowContentChanged);
+        if (changed is null) return;
+        changed.ContentChangeTypes = ContentChangeTypes.Text;
+        changed.PackageName = _view.Context?.PackageName;
+        changed.SetSource(_view, index);
+        parent.RequestSendAccessibilityEvent(_view, changed);
     }
 
     public override AccessibilityNodeInfo? CreateAccessibilityNodeInfo(int virtualViewId)
@@ -107,6 +139,20 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
             info.ContentDescription = node.Label;
         }
 
+        // A LIVE REGION is read when its content changes, wherever the user is (#1081): marked live with its
+        // urgency, and carrying the words it holds NOW, which is what TalkBack reads when the change is
+        // reported, and what it reads exploring it: a region that empties reads empty, not what it said.
+        if (node.Live is { } urgency)
+        {
+            info.LiveRegion = urgency == LiveRegionUrgency.Assertive
+                ? AccessibilityLiveRegion.Assertive
+                : AccessibilityLiveRegion.Polite;
+            // A field's value already is what it says (a spreadsheet's surface); a region's words are not
+            // otherwise on its node.
+            if (node.Value is null && _liveText(node.Id) is { Length: > 0 } words)
+                info.ContentDescription = node.Label.Length == 0 ? words : $"{node.Label}: {words}";
+        }
+
         // THE NUMBERS BEHIND THE WORDS (#243). TalkBack treats a node with RangeInfo as a real
         // indicator — it announces the position within the range and, on a SeekBar, offers the
         // adjust gestures. Without it a progress bar mapped to android.widget.ProgressBar by role
@@ -148,6 +194,24 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         // needs the stops.
         if (OperatingSystem.IsAndroidVersionAtLeast(28))
             info.Heading = node.HeadingLevel > 0;
+
+        // WHERE A CELL STANDS, and how large its table is (#1081): CollectionItemInfo on a cell and a
+        // header, CollectionInfo on a table or a grid, which TalkBack reads as a row and a column once the
+        // cell is a child of its table. The tree is flat here (#1105), so the numbers are set for the day
+        // it is not, and the heading flag tells a header from a cell.
+        // The constructors arrived in API 33, which obsoleted the Obtain factories older systems still need.
+        if (node.Place is { } place)
+        {
+            var heading = node.Role is SemanticRole.ColumnHeader or SemanticRole.RowHeader;
+            var selected = node.Selected == true;
+            info.SetCollectionItemInfo(OperatingSystem.IsAndroidVersionAtLeast(33)
+                ? new AccessibilityNodeInfo.CollectionItemInfo(place.Row, place.Rows, place.Column, place.Columns, heading, selected)
+                : AccessibilityNodeInfo.CollectionItemInfo.Obtain(place.Row, place.Rows, place.Column, place.Columns, heading, selected));
+        }
+        if (node.Extent is { } extent)
+            info.SetCollectionInfo(OperatingSystem.IsAndroidVersionAtLeast(33)
+                ? new AccessibilityNodeInfo.CollectionInfo(extent.Rows, extent.Columns, false)
+                : AccessibilityNodeInfo.CollectionInfo.Obtain(extent.Rows, extent.Columns, false));
 
         info.Focusable = true;
         info.AccessibilityFocused = _focused == virtualViewId;

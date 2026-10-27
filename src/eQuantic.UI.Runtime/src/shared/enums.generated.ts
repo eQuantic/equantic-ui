@@ -160,7 +160,8 @@ export type SemanticCheckValue = 'off' | 'on' | 'mixed';
 export type SemanticRoleValue =
   'staticText' | 'button' | 'link' | 'textField' | 'codeField' | 'slider' | 'image' | 'checkbox'
   | 'switch' | 'gridCell' | 'progressIndicator' | 'group' | 'radio' | 'tab' | 'menuItem' | 'option'
-  | 'destination' | 'tabBar' | 'radioGroup' | 'comboBox' | 'dialog' | 'alertDialog';
+  | 'destination' | 'tabBar' | 'radioGroup' | 'comboBox' | 'dialog' | 'alertDialog' | 'table'
+  | 'grid' | 'cell' | 'columnHeader' | 'rowHeader';
 
 export type ServerConnectionStateValue =
   'disconnected' | 'connecting' | 'connected' | 'reconnecting';
@@ -181,9 +182,15 @@ export type SheetEntryViewValue = 'cell' | 'formulaBar';
 
 export type SheetMotionValue = 'cell' | 'dataEdge' | 'rowBoundary' | 'sheetBoundary';
 
+export type SheetMoveValue = 'activeCell' | 'activeRange';
+
 export type SizeKindValue = 'hug' | 'fill' | 'fixed' | 'windowMinus';
 
 export type SizeVariantValue = 'small' | 'medium' | 'large' | 'xLarge';
+
+export type TableCellRoleValue = 'cell' | 'columnHeader' | 'rowHeader';
+
+export type TableRoleValue = 'group' | 'table' | 'grid';
 
 export type TextAlignmentValue = 'start' | 'center' | 'end';
 

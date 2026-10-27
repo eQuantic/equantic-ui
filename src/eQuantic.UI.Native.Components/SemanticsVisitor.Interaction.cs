@@ -189,12 +189,62 @@ internal sealed partial class SemanticsVisitor
 
     /// <summary>
     /// A table viewport is a GROUP named by its label, over the cells it holds in view: a reader walks
-    /// them as it walks a list's rows. What a cell IS (a grid cell, its row and column) is the
-    /// component's to say, as a spreadsheet does.
+    /// them as it walks a list's rows. Unless it says it is a table or a grid (#1081, web twin:
+    /// <c>lowerTableViewport</c>): then it announces that role with the whole grid's extent, and each cell
+    /// it holds announces its own (<see cref="TableCell"/>). The tree is flat, so the cells follow the table
+    /// in reading order rather than sit inside it (#1105).
     /// </summary>
-    public bool Visit(TableViewport node, LayoutNode laidOut) =>
-        AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds,
-            node.Label ?? "", null, false));
+    public bool Visit(TableViewport node, LayoutNode laidOut)
+    {
+        if (node.Role == TableRole.Group)
+            return AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds,
+                node.Label ?? "", null, false));
+        var grid = node.Role == TableRole.Grid;
+        _nodes.Add(new(grid ? SemanticRole.Grid : SemanticRole.Table, IdOf(laidOut), laidOut.Bounds,
+            node.Label ?? "", null, false, Extent: new TableRange(0, 0, node.Rows.Count, node.Columns.Count)));
+        // Row by row, each row's cells by column, whatever order they were added in: the reading order of a
+        // table, which the web's rows give by owning their cells in column order.
+        var cells = new List<(TableViewCell Cell, LayoutNode LaidOut)>();
+        foreach (var child in laidOut)
+            if (child.Source is TableViewCell { Mark: false } cell) cells.Add((cell, child));
+        cells.Sort((a, b) => a.Cell.Row != b.Cell.Row
+            ? a.Cell.Row.CompareTo(b.Cell.Row)
+            : a.Cell.Column.CompareTo(b.Cell.Column));
+        foreach (var (cell, child) in cells) TableCell(cell, child, grid);
+        return Consumed;
+    }
+
+    /// <summary>
+    /// One cell of a table or a grid: the header of its column or of its row, a cell or a grid cell, with
+    /// its place in the whole grid and, in a grid, whether it is selected and whether it is current. It is
+    /// named by the text it holds, which it consumes, as a button is named by its own; anything else inside
+    /// it, a control or a heading, still follows it as a node of its own.
+    /// </summary>
+    private void TableCell(TableViewCell cell, LayoutNode laidOut, bool grid)
+    {
+        var inside = new List<SemanticNode>();
+        var walker = new SemanticsVisitor(inside);
+        foreach (var child in laidOut) SemanticsTree.Walk(child, walker);
+        var name = string.Join(" ", inside
+            .Where(each => each.Role == SemanticRole.StaticText && each.Label.Length > 0)
+            .Select(each => each.Label));
+        var role = cell.Role switch
+        {
+            TableCellRole.ColumnHeader => SemanticRole.ColumnHeader,
+            TableCellRole.RowHeader => SemanticRole.RowHeader,
+            _ => grid ? SemanticRole.GridCell : SemanticRole.Cell,
+        };
+        // In a grid a cell says whether it is selected, and a header only when it is (web twin:
+        // describeTableCell), so a reader hears a selected column's header as selected.
+        _nodes.Add(new(role, IdOf(laidOut), laidOut.Bounds, name, null, false,
+            Current: grid && cell.Current,
+            Selected: !grid ? null : role == SemanticRole.GridCell ? cell.Selected : cell.Selected ? true : null,
+            Place: new TableRange(cell.Row, cell.Column, cell.Rows, cell.Columns)));
+        // The plain text is the cell's name; a heading inside it stays a heading too, as the web's does, so
+        // a reader still jumps to it.
+        foreach (var each in inside)
+            if (each.Role != SemanticRole.StaticText || each.HeadingLevel > 0) _nodes.Add(each);
+    }
 
     /// <summary>
     /// A live region is a GROUP THE PLATFORM WATCHES. The urgency rides on the node rather than the

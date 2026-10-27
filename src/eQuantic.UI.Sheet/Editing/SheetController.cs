@@ -56,8 +56,28 @@ public sealed class SheetController : ISheetSurfaceModel
     public event Action? Refreshed;
 
     /// <summary>Tells every view of this sheet to build again: what a view calls after an input it handled,
-    /// and what an app calls after it changed the sheet itself.</summary>
-    public void Refresh() => Refreshed?.Invoke();
+    /// and what an app calls after it changed the sheet itself. It is also where <see cref="Moved"/> is read,
+    /// the one call every change of the selection ends with, rather than in each of the many ways the
+    /// selection changes.</summary>
+    public void Refresh()
+    {
+        if (_selection != _refreshedSelection && !_selection.IsSingleCell) Moved = SheetMove.ActiveRange;
+        else if (_active != _refreshedActive) Moved = SheetMove.ActiveCell;
+        _refreshedActive = _active;
+        _refreshedSelection = _selection;
+        Refreshed?.Invoke();
+    }
+
+    /// <summary>
+    /// What the selection's last change moved, since the views last built (#1081): the active range, when it
+    /// changed and covers more than one cell (Shift stretched it, a drag drew it, a header selected a band),
+    /// or else the active cell, when it moved. A change of anything else leaves it as it was, so a view that
+    /// announces it says the same words until the selection moves again, however often it builds.
+    /// </summary>
+    public SheetMove Moved { get; private set; }
+
+    private CellRef _refreshedActive = new(0, 0);
+    private SheetRange _refreshedSelection = new(new CellRef(0, 0));
 
     /// <summary>The ACTIVE range: the last one selected, the one that holds the active cell, and the one copy,
     /// cut, paste and fill act on. Setting it leaves it the only range, puts the active cell at its anchor,

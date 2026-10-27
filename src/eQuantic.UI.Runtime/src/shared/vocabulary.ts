@@ -10,6 +10,7 @@
 
 import type { AnchorPlacementValue, ComponentChild, ICanvasPainter, NavigableMoveValue } from './nodes';
 import type { NodeKind } from './node-kinds.generated';
+import type { TableCellRoleValue, TableRoleValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
 import { iconPaths } from './icons.generated';
 import type {
@@ -795,6 +796,8 @@ export class SheetSurface extends VisualNode {
   model: unknown;
   onChanged: (() => void) | null = null;
   label: string | null = null;
+  /** What the grid says now, published as a polite announcement (C# `SheetSurface.Announcement`). */
+  announcement = '';
 
   constructor(child: VisualChild, model: unknown, config?: EqConfig) {
     super();
@@ -833,6 +836,12 @@ export class TableViewCell extends VisualNode {
   columns = 1;
   /** How a keyed mark moves to another range, or null to stand where it is at once. */
   glide: { durationMs: number; curve: { x1: number; y1: number; x2: number; y2: number } } | null = null;
+  /** What the cell is in a table or a grid (C# `TableViewCell.Role`). */
+  role: TableCellRoleValue = 'cell';
+  /** In a grid, whether the cell is in the selection. */
+  selected = false;
+  /** In a grid, whether the cell is the current one. */
+  current = false;
 
   constructor(row: number, column: number, child: VisualChild, mark = false, config?: EqConfig) {
     super();
@@ -865,6 +874,8 @@ export class TableViewport extends VisualNode {
   label: string | null = null;
   /** False: no Tab stop of its own and no keys, the composing component keeps the keyboard. */
   canRequestFocus = true;
+  /** What the viewport is to a reader (C# `TableViewport.Role`). */
+  role: TableRoleValue = 'group';
   readonly cells: TableViewCell[] = [];
 
   constructor(rows: unknown, columns: unknown, scroll: unknown, config?: EqConfig) {

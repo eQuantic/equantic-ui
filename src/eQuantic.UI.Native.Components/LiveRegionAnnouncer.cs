@@ -35,7 +35,12 @@ namespace eQuantic.UI.Native.Components;
 /// percentage, a clock — would otherwise produce sixty announcements a second in either urgency.
 /// So a region announces at most once per <see cref="QuietMs"/>, and what it announces when the
 /// window opens is its CURRENT text rather than the one that was pending: a reader saying "41%"
-/// when the bar reads 58% is worse than saying nothing.
+/// when the bar reads 58% is worse than saying nothing. A change inside the window is OWED, not
+/// said: until #1081 it was recorded as said and dropped, so the second of two arrows a second apart
+/// in a spreadsheet was never heard. While one is owed the host schedules a frame for the window's end
+/// (<see cref="DueAtMs"/>), as a caret schedules its blink, so that end is a frame even when nothing else
+/// moves and the frames before it are not drawn for it; and a region back to what it last said owes
+/// nothing.
 /// </para>
 ///
 /// <para>
@@ -57,6 +62,9 @@ internal sealed class LiveRegionAnnouncer
     public const float QuietMs = 1000f;
 
     private readonly List<LiveAnnouncement> _pending = [];
+
+    /// <summary>What each live region of the last frame observed holds now, by its element's id.</summary>
+    private readonly Dictionary<int, string> _current = [];
     private readonly List<SemanticNode> _scratch = [];
     private bool _seenAFrame;
 
@@ -68,11 +76,14 @@ internal sealed class LiveRegionAnnouncer
     public void Observe(RealizeResult frame, float timeMs)
     {
         var marks = frame.LiveRegions;
+        DueAtMs = null;
+        _current.Clear();
         for (var i = 0; i < marks.Count; i++)
         {
             var mark = marks[i];
             if (NodeStates.For<LiveRegionState>(mark.Element) is not { } region) continue;
             var text = TextOf(mark);
+            _current[mark.Element.Id] = text;
             // A REGION THAT APPEARS **IS** THE EVENT — on any frame but the first. That is the case
             // `LiveRegion` was added for: a Banner that appears announced nothing (B18) and a Toast
             // lowered to a non-modal Overlay announced nothing (C4), and treating arrival as "no
@@ -88,11 +99,22 @@ internal sealed class LiveRegionAnnouncer
                 region.Said = text;
                 continue;
             }
-            if (region.Known && string.Equals(region.Said, text, StringComparison.Ordinal)) continue;
+            if (region.Known && string.Equals(region.Said, text, StringComparison.Ordinal))
+            {
+                region.Pending = false;                   // back to what it said: nothing owed
+                continue;
+            }
             region.Known = true;
+            if (region.SpokeAtMs is { } last && timeMs - last < QuietMs)
+            {
+                region.Pending = true;                    // owed when the window ends
+                var due = last + QuietMs;
+                if (DueAtMs is not { } earliest || due < earliest) DueAtMs = due;
+                continue;
+            }
+            region.Pending = false;
             region.Said = text;
             if (text.Length == 0) continue;               // emptied, not said
-            if (region.SpokeAtMs is { } last && timeMs - last < QuietMs) continue;
             region.SpokeAtMs = timeMs;
             if (_pending.Count == MaxPending) _pending.RemoveAt(0);
             _pending.Add(new LiveAnnouncement(mark.Element.Id, mark.Label, text, mark.Urgency));
@@ -102,10 +124,22 @@ internal sealed class LiveRegionAnnouncer
     }
 
     /// <summary>
+    /// What the live region whose element has <paramref name="id"/> holds now, whatever its quiet window
+    /// owes or it last said: empty for one that holds nothing, null for an id no live region of the last
+    /// frame has (#1081). A platform that reads a region's words from its node shows these, so a region
+    /// that empties reads empty rather than what it said before.
+    /// </summary>
+    public string? CurrentText(int id) => _current.TryGetValue(id, out var text) ? text : null;
+
+    /// <summary>When the first quiet window ends of the regions of the last frame observed that changed
+    /// inside theirs and owe their text, or null when none does: the host schedules a frame for it.</summary>
+    public float? DueAtMs { get; private set; }
+
+    /// <summary>
     /// How many announcements may wait to be drained. A BOUND rather than a growing list, because
-    /// `PhotonHost` is shared by every shell and only the macOS one drains today: iOS and Android
-    /// run the same host with no bridge wired, so an unbounded queue would grow for the life of the
-    /// app on exactly the two targets that cannot yet use it. When the bound is reached the OLDEST
+    /// `PhotonHost` is shared by every shell, and a shell that drains nothing (Windows, until its UI
+    /// Automation provider, #310) would otherwise grow the queue for the life of the app; macOS, iOS
+    /// and Android drain it after every frame (#1081). When the bound is reached the OLDEST
     /// goes — an announcement is an event whose worth expires, and the same reasoning already
     /// decides what a region says when its quiet window opens: the current state, not the backlog.
     /// </summary>
@@ -128,6 +162,7 @@ internal sealed class LiveRegionAnnouncer
     /// <summary>What a reader would say for the region's contents, as one line.</summary>
     private string TextOf(LiveRegionMark mark)
     {
+        if (mark.Text is { } words) return words;
         _scratch.Clear();
         SemanticsTree.CollectChildren(mark.Node, _scratch);
         if (_scratch.Count == 0) return string.Empty;

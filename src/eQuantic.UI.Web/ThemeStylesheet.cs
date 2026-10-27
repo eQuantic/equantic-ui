@@ -423,7 +423,7 @@ public static class ThemeStylesheet
             + "caret-color: var(--eq-color-text-primary); }");
         // The entry's description twin: clipped, NOT display:none — a hidden target still reads
         // for aria-describedby, but only a rendered one announces as a live region.
-        css.AppendLine(".eq-desc { position: absolute; width: 1px; height: 1px; margin: -1px; border: 0; padding: 0; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }");
+        css.AppendLine(".eq-desc, .eq-announcement { position: absolute; width: 1px; height: 1px; margin: -1px; border: 0; padding: 0; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }");
 
         // Loop motion (spec §06, transform-only): ONE keyframe pair per effect reads its per-element
         // endpoints from custom properties the realizers set at the style tail; duration rides the

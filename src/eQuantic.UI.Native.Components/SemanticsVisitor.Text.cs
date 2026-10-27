@@ -50,14 +50,17 @@ internal sealed partial class SemanticsVisitor
     }
 
     /// <summary>
-    /// A grid announces as an editable region with its label, and what it draws inside after it: its
-    /// headers announce as the buttons they are, and its cells as their values. Per-cell semantics (the
-    /// real AX grid role) joins with a later slice.
+    /// A spreadsheet's surface announces as the editable field that takes its keys, with its label, and what
+    /// it draws inside after it: the grid its table is, with its headers and its cells (#1081). The field's
+    /// value is what the grid says now (<see cref="SheetSurface.Announcement"/>), so a reader arriving on it
+    /// hears where it is, and the field is the polite live region a shell marks, so the moves are heard
+    /// wherever the reader is (web twin: the surface's hidden status).
     /// </summary>
     public bool Visit(SheetSurface node, LayoutNode laidOut)
     {
         Announce(new(SemanticRole.CodeField, IdOf(laidOut), laidOut.Bounds,
-            node.Label ?? "", null, false));
+            node.Label ?? "", node.Announcement.Length > 0 ? node.Announcement : null, false,
+            Live: LiveRegionUrgency.Polite));
         foreach (var child in laidOut.Children) SemanticsTree.Walk(child, this);
         return Consumed;
     }

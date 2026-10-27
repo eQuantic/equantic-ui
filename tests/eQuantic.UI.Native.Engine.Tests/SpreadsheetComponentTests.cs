@@ -35,17 +35,19 @@ public class SpreadsheetComponentTests
     [Fact]
     public void TheWindow_MaterializesAScreenful_NotTheSheet()
     {
-        // The grid's cells live inside the surface (one announced region for now), so the window
-        // is proven two ways: the row headers OUTSIDE it, and the ListView ruler — a sheet twenty
-        // times longer must emit exactly the same draw commands.
+        // The window is proven two ways: the row headers the grid announces, and the ListView ruler — a
+        // sheet twenty times longer must emit exactly the same draw commands.
         var (host, _) = Open();
-        // Headers are drawn text, and the sheet's engine reads a press on them (#984); slice 2b (#1081) gives
-        // them the grid's own roles.
-        var headers = host.Semantics().Where(s => s.Role == SemanticRole.StaticText).ToList();
-        headers.Should().Contain(s => s.Label == "A", "column headers spell A..");
-        headers.Should().Contain(s => s.Label == "1", "row headers count from 1");
-        headers.Count(s => int.TryParse(s.Label, out _)).Should().BeLessThan(40,
+        // The headers are the grid's own (#1081): the letters head their columns and the numbers their rows,
+        // and neither is a paragraph any more.
+        var semantics = host.Semantics();
+        semantics.Should().Contain(s => s.Role == SemanticRole.ColumnHeader && s.Label == "A",
+            "column headers spell A..");
+        semantics.Should().Contain(s => s.Role == SemanticRole.RowHeader && s.Label == "1",
+            "row headers count from 1");
+        semantics.Count(s => s.Role == SemanticRole.RowHeader).Should().BeLessThan(40,
             "row headers exist for the WINDOW, not the thousand rows");
+        semantics.Should().NotContain(s => s.Role == SemanticRole.StaticText && s.Label == "A");
 
         var big = new DisplayListBuilder();
         Open(rows: 1000).Host.RenderFrame(big, 32);

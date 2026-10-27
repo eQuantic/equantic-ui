@@ -297,7 +297,7 @@ adds: accessibility and touch are not a slice at the end.
 | 0b | [#995](https://github.com/eQuantic/equantic-ui/issues/995) | `Spreadsheet` rebuilt on it, in the family's own assembly: pinned headers, reveal and autoscroll, the overlay layer, the widening row numbers, its theme slot, touch scrolling on the web | D1–D4, D6 (scroll by touch) |
 | 1 | [#983](https://github.com/eQuantic/equantic-ui/issues/983) | The text door and the cell editor: the code surface's input door, caret and selection in the cell, Enter and Edit modes, line breaks, the editor growing over its neighbours, the formula bar and the name box as components of their own, Go To, Ctrl+Enter, the date and time chords, Backspace that clears and edits, Tab released by Escape | D5, D12, D15 |
 | 2a | [#984](https://github.com/eQuantic/equantic-ui/issues/984) | Selection and navigation complete: several ranges, header drags and Shift+clicks, row and column chords, the page chords, Ctrl+End, the Tab-Enter column; the range as one outlined rectangle, header emphasis, unfocused dimming, the gliding cursor; the status bar component | D10, D13, D14 |
-| 2b | [#1081](https://github.com/eQuantic/equantic-ui/issues/1081) | The grid read aloud: grid semantics and announcements, with the accessibility contract a code surface needs (#1078) | D17 |
+| 2b | [#1081](https://github.com/eQuantic/equantic-ui/issues/1081) | The grid read aloud: a table and a grid of rows, cells and headers on both realizers, the selection and the active cell marked, every move and every growing range announced, a reader's activation of a cell; the code surface's contract (#1078) next, the native tree nested in #1105 | D17 |
 | 3 | [#985](https://github.com/eQuantic/equantic-ui/issues/985) | Commands and structure: the command registry and the keymap as data; context menus; insert and delete; hide and unhide; resize several at once, the guide line and its tooltip, fit to content; reorder by header drag; long press on touch | D11, D16 (fit) |
 | 4 | [#986](https://github.com/eQuantic/equantic-ui/issues/986) | Clipboard and moving cells: HTML in and out, marching ants, cut that moves on paste, a paste that fills the selection, paste values and transposed, dragging a selection's border to move, copy or insert | D9 |
 | 5 | [#987](https://github.com/eQuantic/equantic-ui/issues/987) | Typed values: the value model, parsing in the app's culture, alignment, spilling text, `###`; fill series, the double-clicked fill handle, the fill dragged back; AutoComplete | D7, D8, D16 (fill) |
@@ -416,7 +416,24 @@ Each slice proposes, implements and archives its change in its own pull request.
   ([#1092](https://github.com/eQuantic/equantic-ui/issues/1092)), and in the dashboard a status bar
   under the grid sits below the fold because the grid takes the scroller's whole extent
   ([#1006](https://github.com/eQuantic/equantic-ui/issues/1006)).
-- **2b** ([#1081](https://github.com/eQuantic/equantic-ui/issues/1081)) is next.
+- **2b, delivered (2026-10-26, [#1081](https://github.com/eQuantic/equantic-ui/issues/1081)).** Split
+  again with Edgar: a code surface's accessible value and invalid state, which the formula bar, the name
+  box and a failed Go To need, is its own pull request next
+  ([#1078](https://github.com/eQuantic/equantic-ui/issues/1078)), and nesting Photon's semantics tree,
+  which every shell flattens, is [#1105](https://github.com/eQuantic/equantic-ui/issues/1105). A
+  `TableView` says what it is to a reader (`TableRole`: a group, a table or a grid) and what each cell is
+  (`TableCellRole`, `Selected`, `Current`); the web writes the table or the grid with its rows owning
+  their cells across the pinned bands by `aria-owns`, with the whole grid's row and column count, and
+  Photon announces five new roles (`Table`, `Grid`, `Cell`, `ColumnHeader`, `RowHeader`) with each
+  cell's place, in AppKit's, Android's and UIKit's words. The spreadsheet's table is that grid, named
+  after the sheet, and its surface announces each move and each growing range in the page's culture
+  (`SheetSurface.Announcement`, from `SheetController.Moved`), as a polite status on the web and as its
+  field's value, marked live, on Photon (D17 closed). A reader's activation of a cell or a header is a
+  tap at its centre on both targets. Found on the way and fixed here: Photon's live region announcer
+  recorded a change inside its one-second quiet window as said, so the second of two quick arrows was
+  never heard, and only the macOS shell posted an announcement, which iOS and Android now do too; and a
+  heading's level reached VoiceOver as garbage on macOS
+  ([#1107](https://github.com/eQuantic/equantic-ui/issues/1107)).
 
 ## Fenced, on purpose
 

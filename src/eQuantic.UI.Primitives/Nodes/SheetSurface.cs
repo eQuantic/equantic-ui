@@ -31,8 +31,16 @@ public sealed class SheetSurface : SingleChildNode
     /// component's cue to SetState, because the model mutates outside the tree.</summary>
     public Action? OnChanged { get; init; }
 
-    /// <summary>Accessible name (role: grid).</summary>
+    /// <summary>Accessible name of the field that takes the sheet's keys.</summary>
     public string? Label { get; init; }
+
+    /// <summary>
+    /// What the grid says now that the active cell moved or the active range grew (#1081): the cell's
+    /// address and what it holds, or the range's address and size. Both realizers publish it as a polite
+    /// announcement each time it changes, without moving the reader's focus; empty says nothing. It is the
+    /// surface's own speech, as <see cref="Label"/> is its own name.
+    /// </summary>
+    public string Announcement { get; init; } = "";
 
     /// <summary>
     /// The entry's caret ink, carried HERE as a code surface carries its own: the realizer paints the

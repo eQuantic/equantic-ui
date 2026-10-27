@@ -142,6 +142,7 @@ internal sealed class PhotonAccessibility
         UIKitTrait.Adjustable => UIAccessibilityTrait.Adjustable,
         UIKitTrait.UpdatesFrequently => UIAccessibilityTrait.UpdatesFrequently,
         UIKitTrait.StaticText => UIAccessibilityTrait.StaticText,
+        UIKitTrait.Header => UIAccessibilityTrait.Header,
         _ => throw new ArgumentOutOfRangeException(nameof(trait), trait,
             "A named UIKit trait with no UIKit constant beside it. Add the arm — an element that "
             + "announces itself as something it is not is the failure this refuses to make quietly."),

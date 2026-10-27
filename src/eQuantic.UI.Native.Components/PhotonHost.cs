@@ -141,7 +141,8 @@ public sealed class PhotonHost
     }
 
     /// <summary>When the next frame is due even though nothing is dirty — the caret's next blink
-    /// transition, in the same clock <see cref="RenderFrame"/> is fed. Null = nothing scheduled.</summary>
+    /// transition, or the end of a live region's quiet window, in the same clock <see cref="RenderFrame"/>
+    /// is fed. Null = nothing scheduled.</summary>
     private float? _nextFrameDueMs;
 
     /// <summary>
@@ -425,9 +426,15 @@ public sealed class PhotonHost
         // due at the next blink transition, and the shells' idle ticks ask IsFrameDue alongside
         // NeedsRender. While a drag draws a selection the caret does not blink at all (it is forced
         // solid), and the pointer is what drives frames — nothing to schedule.
-        _nextFrameDueMs = _textAt is not null && !NeedsRender && !_dragSelecting && !_codeDragging
+        float? caretDue = _textAt is not null && !NeedsRender && !_dragSelecting && !_codeDragging
             ? _caretPhaseMs + (MathF.Floor((_lastTimeMs - _caretPhaseMs) / CaretBlinkMs) + 1) * CaretBlinkMs
             : null;
+        // A live region that owes its words is due when its quiet window ends (#1081): one frame then, as
+        // the caret's blink is, rather than every tick of the display until it.
+        var announcementDue = NeedsRender ? null : _announcer.DueAtMs;
+        _nextFrameDueMs = caretDue is { } caret && announcementDue is { } owed
+            ? MathF.Min(caret, owed)
+            : caretDue ?? announcementDue;
         return _lastFrame;
     }
 
@@ -1813,9 +1820,9 @@ public sealed class PhotonHost
     /// <summary>
     /// The live-region announcements produced since this was last called, and the queue is emptied.
     /// A shell drains it after each frame and posts each one the way its platform does —
-    /// <c>NSAccessibilityPostNotification</c> on macOS, an announcement notification on UIKit, and
-    /// nothing on Android, where setting <c>accessibilityLiveRegion</c> on the container IS the
-    /// platform doing the posting.
+    /// <c>NSAccessibilityPostNotification</c> on macOS, the announcement notification on UIKit, and on
+    /// Android the region's node marked live and its content reported changed, the route Android keeps
+    /// after deprecating announcement events (#1081).
     /// <para>
     /// DRAINING, not reading. An announcement is an event; a bridge that polled a list would post
     /// the same one every poll, which is the failure the whole diff exists to prevent, arriving
@@ -1823,6 +1830,14 @@ public sealed class PhotonHost
     /// </para>
     /// </summary>
     public IReadOnlyList<LiveAnnouncement> TakeAnnouncements() => _announcer.Take();
+
+    /// <summary>
+    /// What the live region whose node has <paramref name="id"/> holds now, as one line, or null when no
+    /// live region of the last frame has it (#1081). For a platform that reads a region's words from its
+    /// node, as TalkBack does: the CURRENT words, so a region that empties reads empty, while
+    /// <see cref="TakeAnnouncements"/> keeps deciding when it speaks.
+    /// </summary>
+    public string? LiveRegionText(int id) => _announcer.CurrentText(id);
 
     /// <summary>
     /// Runs the control named <paramref name="id"/> (a <see cref="SemanticNode.Id"/>), the way a
@@ -1906,6 +1921,21 @@ public sealed class PhotonHost
             // these ARRIVES and nothing more, which is the right default for whatever comes next.
             if (stops[i].Code is { } code) BeginCodeEditing(stops[i].Element, code.Model);
             else if (stops[i].Sheet is { } sheet) BeginSheetEditing(stops[i].Element, sheet);
+            return true;
+        }
+
+        // A GRID'S CELL OR A HEADER with no handler of its own, as a spreadsheet's are: the surface under
+        // them takes the pointer for the whole grid, so activating one is a press and a release at its
+        // centre, where the shell reads it, the tap a finger there makes (#1081). Asked by what the node
+        // IS, as the stops above are: a calendar day is a grid cell too, and its pressable answered first.
+        foreach (var node in Semantics())
+        {
+            if (node.Id != id || node.Role is not (SemanticRole.GridCell or SemanticRole.ColumnHeader
+                    or SemanticRole.RowHeader)) continue;
+            var x = node.Bounds.X + node.Bounds.Width / 2;
+            var y = node.Bounds.Y + node.Bounds.Height / 2;
+            PressDown(x, y);
+            PressUp(x, y);
             return true;
         }
         return false;

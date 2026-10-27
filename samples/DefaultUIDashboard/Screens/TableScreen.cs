@@ -34,6 +34,11 @@ public sealed class TableScreen : StatefulComponent
             Width = SizeValue.Fill,
             Height = SizeValue.Fill,
             Label = "Excel's grid",
+            // Read as a table: the letters head their columns, the numbers their rows.
+            Role = TableRole.Table,
+            CellRole = (row, column) => row == 0 ? TableCellRole.ColumnHeader
+                : column == 0 ? TableCellRole.RowHeader
+                : TableCellRole.Cell,
         };
         return new Box(new BoxStyle
         {

@@ -24,8 +24,17 @@ namespace eQuantic.UI.Native.Components;
 /// the resulting STRING and never this.
 /// </para>
 /// </summary>
+/// <param name="Element">The region's position, which keeps what it said between frames.</param>
+/// <param name="Label">What the region is called, said before its text where the platform does.</param>
+/// <param name="Urgency">How hard its announcement interrupts.</param>
+/// <param name="Node">This frame's subtree, whose text is the announcement unless <paramref name="Text"/>
+/// says it.</param>
+/// <param name="Text">What the region says, when it says it in words of its own rather than through what
+/// it draws: a spreadsheet's surface announcing its moves (<see cref="SheetSurface.Announcement"/>, #1081).
+/// Null reads it from <paramref name="Node"/>'s subtree, as a <see cref="LiveRegion"/>'s.</param>
 internal readonly record struct LiveRegionMark(
     Element Element,
     string Label,
     LiveRegionUrgency Urgency,
-    LayoutNode Node);
+    LayoutNode Node,
+    string? Text = null);

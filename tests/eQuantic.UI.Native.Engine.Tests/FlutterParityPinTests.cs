@@ -135,6 +135,11 @@ public class FlutterParityPinTests
         ProjectSource("eQuantic.UI.Native.Shell.iOS", atLeast: 5,
             because: "the shell is several files; a probe that found one would assert about little")));
 
+    /// <summary>The Android shell's CODE, comments stripped and read once, for the same reason.</summary>
+    private static readonly Lazy<string> AndroidShellCode = new(() => WithoutComments(
+        ProjectSource("eQuantic.UI.Native.Shell.Android", atLeast: 5,
+            because: "the shell is several files; a probe that found one would assert about little")));
+
     private static Type? Find(string name) => Surface
         .SelectMany(a => a.GetExportedTypes())
         .FirstOrDefault(t => t.Name == name || t.Name == name + "Attribute");
@@ -349,6 +354,19 @@ public class FlutterParityPinTests
                 typeof(SemanticRole), typeof(SemanticCheck), typeof(SemanticNode),
             }.All(t => t.Assembly == typeof(VisualNode).Assembly)
             && !WebRealizerCode().Contains("SemanticRole", StringComparison.Ordinal),
+        // TWO halves again. The roles, each cell's role and the grid's own reach both realizers (#1081);
+        // what keeps the row PARTIAL is Photon's flat tree, which has no row to hold a cell. The day
+        // #1105 nests it, a row role appears and this fails, so the row moves off PARTIAL with it.
+        ["SemanticsRole.table"] = () => HasMember("TableViewport", "Role") && HasMember("TableViewCell", "Role")
+            && new[] { "Table", "Grid", "Cell", "ColumnHeader", "RowHeader" }
+                .All(name => Enum.IsDefined(typeof(SemanticRole), name))
+            && !Enum.IsDefined(typeof(SemanticRole), "Row"),
+        // A region that changes is drained by the shells, and each one posts it its own platform's way:
+        // queued on iOS, a live node whose content changed on Android.
+        ["Semantics(liveRegion: true)"] = () => HasMember("PhotonHost", "TakeAnnouncements")
+            && HasMember("SheetSurface", "Announcement")
+            && IosShellCode.Value.Contains("SpeechAttributeQueueAnnouncement", StringComparison.Ordinal)
+            && AndroidShellCode.Value.Contains("LiveRegion", StringComparison.Ordinal),
         ["MergeSemantics"] = () => Nothing("MergeSemantics", "ExcludeSemantics"),
         ["Localizations"] = () => Has("ICultureController") && Nothing("LocalizationsDelegate"),
         ["TextDirection.ltr/rtl"] = () => Nothing("TextDirection"),

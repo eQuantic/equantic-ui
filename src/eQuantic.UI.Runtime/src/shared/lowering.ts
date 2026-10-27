@@ -25,7 +25,7 @@ export { num, tokenValue };
 import { DomCanvasPainter } from './canvas-painter';
 import { declareCanvas } from './canvas-surface';
 import { installDraggableController } from '../dom/draggable';
-import { MOUNTED_HOOK } from '../dom/reconciler';
+import { MOUNTED_HOOK, clickWithEvent } from '../dom/reconciler';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import {
   describeComponentFailure,
@@ -1653,8 +1653,8 @@ function lowerSheetSurface(
   const view = element(
     'div',
     {
-      // FIT-CONTENT, not nothing (C# twin: LowerSheetSurface) — this host carries role="grid", so its
-      // box is what a reader outlines.
+      // FIT-CONTENT, not nothing (C# twin: LowerSheetSurface): the box the door and the carets are placed
+      // in is the sheet's own, as Photon's wrapper takes exactly its child's bounds.
       width: fill.width ? '100%' : 'fit-content',
       'max-width': sizeValue(cap),
       height: fill.height ? '100%' : undefined,
@@ -1670,8 +1670,8 @@ function lowerSheetSurface(
     child ? [child] : [],
   );
   prependClass(view, 'eq-sheet-surface');
-  view.attributes['role'] = 'grid';
-  if (node.label) view.attributes['aria-label'] = node.label;
+  // No role of its own (#1081): the table it holds is the grid a reader walks, and the door is the field
+  // that takes the sheet's keys, named as the sheet is.
   // The surface's identity across rebuilds, which a focus request finds it by after the render.
   view.attributes['data-eq-sheet'] = path;
 
@@ -1702,6 +1702,15 @@ function lowerSheetSurface(
   };
   if (node.label) input.attributes['aria-label'] = node.label;
   view.children.push(input);
+
+  // What the grid says now (C# twin: LowerSheetSurface, #1081): a visually hidden polite status, which a
+  // reader speaks each time its words change, wherever its focus is.
+  const announcement = element('div', {}, node.announcement ? [textLeaf(node.announcement)] : []);
+  prependClass(announcement, 'eq-announcement');
+  announcement.attributes['role'] = 'status';
+  announcement.attributes['aria-live'] = 'polite';
+  announcement.attributes['aria-atomic'] = 'true';
+  view.children.push(announcement);
 
   const changed = () => node.onChanged?.();
   openTextDoor(input, model, changed, null, browserReloads);
@@ -1762,6 +1771,7 @@ function lowerSheetSurface(
   };
 
   view.events['pointerdown'] = ((event: PointerEvent) => {
+    sheetClicksAnswered.delete(model);
     if (sheetPresses.has(model)) cancel();
     if (notTheSheets(event)) return;
     const target = event.currentTarget as HTMLElement;
@@ -1818,12 +1828,32 @@ function lowerSheetSurface(
     const ended = settle()!;
     // The release of a finger's pan, which the table marked handled, is no tap.
     const phase = ended.kind === 'touch' && event.defaultPrevented ? 'cancel' : 'up';
+    // A release the browser follows with a click, which is this press's; a pan's is followed by none, and
+    // a mark left for it would swallow the next reader's activation.
+    if (phase === 'up') sheetClicksAnswered.add(model);
     const at = local(ended.target, event.clientX, event.clientY);
     if (model.handlePointer(phase, at, modifiersOf(event), 1, ended.kind)) changed();
   }) as unknown as EventHandler;
 
   view.events['pointercancel'] = ((event: PointerEvent) => {
     if (sheetPresses.get(model)?.id === event.pointerId) cancel();
+  }) as unknown as EventHandler;
+
+  // A READER'S ACTIVATION (C# twin: PhotonHost.Activate, #1081): VoiceOver's press and a browser's
+  // accessibility action arrive as a click that no press of the sheet's came before, on the cell or the
+  // header activated. The sheet answers it as a press and a release at that cell's centre, the path a tap
+  // takes, so the cell becomes active and a header selects its column or its row. The click that follows
+  // a press the sheet already answered is that press's, and nothing more.
+  // Handed the event, which a click is not by default (`clickWithEvent`): the cell is read from it.
+  view.events['click'] = clickWithEvent((event: MouseEvent) => {
+    if (sheetClicksAnswered.delete(model) || notTheSheets(event)) return;
+    const cell = (event.target as Element | null)?.closest?.('[data-eq-cell]') as HTMLElement | null;
+    if (!cell) return;
+    const box = cell.getBoundingClientRect();
+    const at = local(event.currentTarget as HTMLElement, box.left + box.width / 2, box.top + box.height / 2);
+    model.handlePointer('down', at, 0, 1, 'mouse');
+    model.handlePointer('up', at, 0, 1, 'mouse');
+    changed();
   }) as unknown as EventHandler;
 
   return view;
@@ -1853,6 +1883,10 @@ function browserReloads(event: KeyboardEvent): boolean {
 /** The press in flight on each sheet surface, by MODEL — see lowerSheetSurface. */
 const sheetPresses = new WeakMap<object, { id: number; kind: string; target: HTMLElement; blur: () => void }>();
 
+/** The sheets whose last press was released and whose click, which a browser sends after the release, is
+ * still to come: kept by MODEL, as the press is, since the release can build the sheet again before it. */
+const sheetClicksAnswered = new WeakSet<object>();
+
 /**
  * The table viewport on the web, at the offset its model holds as the pass runs (C# twin:
  * `WebLoweringVisitor.LowerTableViewport`, which writes the same boxes at offset zero). A box that
@@ -1868,15 +1902,20 @@ function lowerTableViewport(node: TableViewportNode, context: LoweringContext, p
   const pinnedAcross = Math.fround(node.columns.offsetOf(pinnedColumns));
   const pinnedDown = Math.fround(node.rows.offsetOf(pinnedRows));
   const offset = node.scroll.offset;
+  const role = node.role ?? 'group';
+  // A table or a grid reads as rows of cells (C# twin: LowerTableViewport, #1081); a group adds nothing.
+  const semantics: TableSemantics | null =
+    role === 'group' ? null : { grid: role === 'grid', scope: hashDeclaration(node.label ?? '') };
   const children: HtmlNode[] = [];
   for (let marks = 0; marks < 2; marks++) {
     for (let band = 0; band < 4; band++) {
       children.push(
-        lowerTableBand(node, context, path, band, marks === 1, pinnedRows, pinnedColumns, pinnedAcross, pinnedDown),
+        lowerTableBand(node, context, path, band, marks === 1, pinnedRows, pinnedColumns, pinnedAcross, pinnedDown, semantics),
       );
     }
   }
-  children.push(lowerTableScrollbar(), lowerTableScrollbar());
+  children.push(lowerTableScrollbar(semantics !== null), lowerTableScrollbar(semantics !== null));
+  if (semantics) children.push(lowerTableRows(node, semantics));
   const view = element(
     'div',
     {
@@ -1894,7 +1933,13 @@ function lowerTableViewport(node: TableViewportNode, context: LoweringContext, p
     },
     children,
   );
-  view.attributes['role'] = 'group';
+  view.attributes['role'] = role;
+  if (semantics) {
+    // The whole grid's count, not the cells built: a reader is told where it is in a million rows.
+    view.attributes['aria-rowcount'] = String(node.rows.count);
+    view.attributes['aria-colcount'] = String(node.columns.count);
+    if (semantics.grid) view.attributes['aria-multiselectable'] = 'true';
+  }
   // A stop of the Tab order itself, before its cells': the keys it takes scroll it (table-viewports.ts),
   // and a scroller a keyboard cannot reach scrolls for nobody who only has a keyboard. Unless it
   // declines, for a component that composes it and keeps the keyboard.
@@ -1921,6 +1966,7 @@ function lowerTableBand(
   pinnedColumns: number,
   pinnedAcross: number,
   pinnedDown: number,
+  semantics: TableSemantics | null,
 ): HtmlNode {
   const holdsAcross = band === 1 || band === 3;
   const holdsDown = band === 2 || band === 3;
@@ -1936,7 +1982,7 @@ function lowerTableBand(
     // A cell's path segment is its key, its position, rather than its index: the window moves and
     // the index with it, and what is kept by path (a component's instance) must stay with the cell.
     const segment = (cell as { key?: string | null }).key ?? 'm' + i;
-    const placed = lowerTableCell(node, cell, context, path + '/' + segment, inPinnedRow, inPinnedColumn, pinnedAcross, pinnedDown, offset);
+    const placed = lowerTableCell(node, cell, context, path + '/' + segment, inPinnedRow, inPinnedColumn, pinnedAcross, pinnedDown, offset, marks ? null : semantics);
     if (placed) cells.push(placed);
   }
   const layer = element('div', { position: 'absolute', left: '0', top: '0' }, cells);
@@ -1958,7 +2004,70 @@ function lowerTableBand(
   // A mark is drawn over the cells and is nothing to reach: no press, no Tab stop, nothing a reader
   // lands on, whatever it holds.
   if (marks) box.attributes['inert'] = '';
+  // In a table or a grid the bands are boxes and nothing else: the rows own the cells they hold.
+  if (semantics) {
+    box.attributes['role'] = 'none';
+    layer.attributes['role'] = 'none';
+  }
   return box;
+}
+
+/** What a table or a grid adds for a reader (#1081): whether it is a grid, and the scope its cells' ids
+ * are unique in, the label hashed as a `Navigable` grid's are (`navigableScope`). */
+interface TableSemantics {
+  readonly grid: boolean;
+  readonly scope: string;
+}
+
+/** The id a table's cell answers to, which its row's `aria-owns` names (C# twin: TableCellId). */
+function tableCellId(scope: string, row: number, column: number): string {
+  return `eq-tcell-${scope}-${row}-${column}`;
+}
+
+/** A cell of a table or a grid as a reader meets it (C# twin: DescribeTableCell): its id, its role, its
+ * column and what it spans, and in a grid whether it is selected and whether it is current. */
+function describeTableCell(wrapper: HtmlNode, cell: TableViewCellNode, semantics: TableSemantics): void {
+  const role = cell.role ?? 'cell';
+  wrapper.attributes['id'] = tableCellId(semantics.scope, cell.row, cell.column);
+  wrapper.attributes['role'] =
+    role === 'columnHeader' ? 'columnheader' : role === 'rowHeader' ? 'rowheader' : semantics.grid ? 'gridcell' : 'cell';
+  wrapper.attributes['aria-colindex'] = String(cell.column + 1);
+  if (cell.rows > 1) wrapper.attributes['aria-rowspan'] = String(cell.rows);
+  if (cell.columns > 1) wrapper.attributes['aria-colspan'] = String(cell.columns);
+  if (!semantics.grid) return;
+  // A cell says whether it is selected, and a header only when it is, as Photon's does.
+  if (role === 'cell') wrapper.attributes['aria-selected'] = cell.selected ? 'true' : 'false';
+  else if (cell.selected) wrapper.attributes['aria-selected'] = 'true';
+  if (cell.current) wrapper.attributes['aria-current'] = 'true';
+}
+
+/** The rows of a table or a grid (C# twin: LowerTableRows): one per row that holds built cells, owning
+ * them in column order whichever band draws them, since a row's cells live in the pinned column's band
+ * and the body's. A browser places a cell by its order among the cells its row owns, not by its
+ * `aria-colindex`, so a header stands over its column only while every row owns the same columns
+ * (TableCellRole says what Safari read when the corner was left out). A box of no size, last among the viewport's children, where the after-pass, which
+ * finds the bands and the scrollbars by their place, never looks. */
+function lowerTableRows(node: TableViewportNode, semantics: TableSemantics): HtmlNode {
+  const owned = new Map<number, TableViewCellNode[]>();
+  for (const cell of node.cells ?? []) {
+    if (cell.mark) continue;
+    const row = owned.get(cell.row);
+    if (row) row.push(cell);
+    else owned.set(cell.row, [cell]);
+  }
+  const rows = [...owned.keys()]
+    .sort((a, b) => a - b)
+    .map((index) => {
+      const cells = owned.get(index)!.slice().sort((a, b) => a.column - b.column);
+      const row = element('div', {}, []);
+      row.attributes['role'] = 'row';
+      row.attributes['aria-rowindex'] = String(index + 1);
+      row.attributes['aria-owns'] = cells.map((cell) => tableCellId(semantics.scope, cell.row, cell.column)).join(' ');
+      return row;
+    });
+  const group = element('div', { position: 'absolute', width: '0', height: '0', overflow: 'hidden' }, rows);
+  group.attributes['role'] = 'rowgroup';
+  return group;
 }
 
 /** A cell, or a mark, placed in its band's layer over the rows and columns it covers, from the band's
@@ -1975,6 +2084,7 @@ function lowerTableCell(
   pinnedAcross: number,
   pinnedDown: number,
   offset: { across: number; down: number },
+  semantics: TableSemantics | null,
 ): HtmlNode | null {
   const place = tableCellPlace(node, cell);
   const x = inPinnedColumn ? place.x : place.x - pinnedAcross - offset.across;
@@ -1996,21 +2106,25 @@ function lowerTableCell(
   // the cells. Client-only too: the server's first pass has nothing to glide from.
   const key = (cell as { key?: string | null }).key;
   if (cell.mark && cell.glide && key) wrapper.attributes['data-eq-glide'] = key;
+  if (semantics) describeTableCell(wrapper, cell, semantics);
   return decorate(cell as unknown as VisualNodeValue, wrapper);
 }
 
 /** A scrollbar's track and thumb, hidden until the window is measured (C# twin). */
-function lowerTableScrollbar(): HtmlNode {
+function lowerTableScrollbar(inTable: boolean): HtmlNode {
   const thumb = element('div', {
     position: 'absolute',
     background: 'var(--eq-color-scrollbar-thumb)',
     'border-radius': '999px',
   });
-  return element(
+  const track = element(
     'div',
     { display: 'none', position: 'absolute', background: 'var(--eq-color-scrollbar-track)' },
     [thumb],
   );
+  // A table's or a grid's children are its rows: a scrollbar is a box among them, and nothing else.
+  if (inTable) track.attributes['role'] = 'none';
+  return track;
 }
 
 /** Spec A6 mirror: native browser scrolling — overflow auto on the axis, hidden on the cross. */

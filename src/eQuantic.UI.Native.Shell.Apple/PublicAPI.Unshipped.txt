@@ -1,1 +1,2 @@
 #nullable enable
+[EQX0001]static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, eQuantic.UI.Native.Shell.Apple.NSRange range) -> void

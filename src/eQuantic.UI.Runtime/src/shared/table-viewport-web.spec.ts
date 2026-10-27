@@ -462,6 +462,148 @@ interface FakeMotion {
   effect: { getComputedTiming(): { progress: number } };
 }
 
+describe('A table and a grid on the web (#1081)', () => {
+  type CellRole = 'cell' | 'columnHeader' | 'rowHeader';
+
+  /** A viewport of Excel's extent, its first row and column pinned, holding the cells of rows 0 to 30 and
+   * columns 0 to 12: row 0's the headers of their columns, the corner among them, column 0's of their rows,
+   * and the cells of rows 2 to 4 of column 2 selected with the one of row 3 current. */
+  function lowered(role?: 'group' | 'table' | 'grid'): HtmlNode {
+    const scroll = new TableScroll();
+    const rows = new UniformTableSpans(1_048_577, 28);
+    const columns = new UniformTableSpans(16_385, 96);
+    scroll.arrange(new Size(900, 600), columns.total, rows.total, 96, 28, true);
+    const node = new TableViewport(rows, columns, scroll, { pinnedRows: 1, pinnedColumns: 1, label: 'Ledger', ...(role ? { role } : {}) });
+    for (let row = 0; row <= 30; row++)
+      for (let column = 0; column <= 12; column++) {
+        const cellRole: CellRole = row === 0 ? 'columnHeader' : column === 0 ? 'rowHeader' : 'cell';
+        node.add(new TableViewCell(row, column, new Text(`${row}:${column}`), false, {
+          role: cellRole,
+          selected: column === 2 && row >= 2 && row <= 4,
+          current: column === 2 && row === 3,
+        }));
+      }
+    return lowerVisualNode(node as never, context);
+  }
+
+  /** Every element of a lowered tree, depth first. */
+  function* walk(node: HtmlNode): Generator<HtmlNode> {
+    yield node;
+    for (const child of (node.children ?? []) as (HtmlNode | string)[])
+      if (child && typeof child !== 'string' && 'tag' in child) yield* walk(child);
+  }
+
+  const byId = (root: HtmlNode, id: string) => [...walk(root)].find((node) => node.attributes?.['id'] === id);
+  const cellAt = (root: HtmlNode, row: number, column: number) =>
+    [...walk(root)].find((node) => node.attributes?.['data-eq-cell'] === `${row}:${column}`)!;
+
+  it('reads a grid of Excel\'s extent as rows owning their cells across the bands', () => {
+    const grid = lowered('grid');
+    expect(grid.attributes['role']).toBe('grid');
+    expect(grid.attributes['aria-rowcount']).toBe('1048577');
+    expect(grid.attributes['aria-colcount']).toBe('16385');
+    expect(grid.attributes['aria-multiselectable']).toBe('true');
+    // Four bands of cells, four of marks and two scrollbars come first, where the after-pass counts them.
+    const rowgroup = grid.children[10] as HtmlNode;
+    expect(rowgroup.attributes['role']).toBe('rowgroup');
+    expect(rowgroup.children).toHaveLength(31);
+    const row3 = rowgroup.children[3] as HtmlNode;
+    expect(row3.attributes['role']).toBe('row');
+    expect(row3.attributes['aria-rowindex']).toBe('4');
+    const owned = String(row3.attributes['aria-owns']).split(' ');
+    expect(owned).toHaveLength(13);
+    expect(owned[0]).toMatch(/-3-0$/);
+    const cell = byId(grid, owned[2])!;
+    expect(cell).toBe(cellAt(grid, 3, 2));
+    expect(cell.attributes['role']).toBe('gridcell');
+    expect(cell.attributes['aria-colindex']).toBe('3');
+    for (let band = 0; band < 8; band++) expect((grid.children[band] as HtmlNode).attributes['role']).toBe('none');
+  });
+
+  it('says which cells are headers, the corner among the headers of the columns', () => {
+    const grid = lowered('grid');
+    expect(cellAt(grid, 0, 2).attributes['role']).toBe('columnheader');
+    expect(cellAt(grid, 3, 0).attributes['role']).toBe('rowheader');
+    const corner = cellAt(grid, 0, 0);
+    expect(corner.attributes['role']).toBe('columnheader');
+    expect(corner.attributes['aria-hidden']).toBeUndefined();
+    const row0 = (grid.children[10] as HtmlNode).children[0] as HtmlNode;
+    expect(String(row0.attributes['aria-owns']).split(' ')[0]).toBe(corner.attributes['id']);
+  });
+
+  it("stands each header at its column's place in every row, where a browser counts it", () => {
+    // A browser places a cell by its order among the cells its row owns, not by its aria-colindex: Safari
+    // read the header of column H over column G while the corner was left out of the headers' row.
+    const grid = lowered('grid');
+    const rows = (grid.children[10] as HtmlNode).children as HtmlNode[];
+    const columnsOf = (row: HtmlNode) =>
+      String(row.attributes['aria-owns']).split(' ').map((id) => byId(grid, id)!.attributes['aria-colindex']);
+    const headers = columnsOf(rows[0]);
+    expect(headers).toHaveLength(13);
+    for (const row of rows) expect(columnsOf(row)).toEqual(headers);
+  });
+
+  it('marks the selected cells and the current one in a grid, and no other', () => {
+    const grid = lowered('grid');
+    for (const row of [2, 3, 4]) expect(cellAt(grid, row, 2).attributes['aria-selected']).toBe('true');
+    expect(cellAt(grid, 3, 2).attributes['aria-current']).toBe('true');
+    expect(cellAt(grid, 5, 2).attributes['aria-selected']).toBe('false');
+    expect(cellAt(grid, 2, 2).attributes['aria-current']).toBeUndefined();
+    expect([...walk(grid)].filter((node) => node.attributes?.['aria-current'])).toHaveLength(1);
+  });
+
+  it('says a selected header is selected in a grid, and nothing of one that is not, as Photon does', () => {
+    const scroll = new TableScroll();
+    const rows = new UniformTableSpans(2, 28);
+    const columns = new UniformTableSpans(3, 96);
+    scroll.arrange(new Size(900, 600), columns.total, rows.total, 96, 28, true);
+    const node = new TableViewport(rows, columns, scroll, { label: 'Ledger', role: 'grid' });
+    node.add(new TableViewCell(0, 1, new Text('A'), false, { role: 'columnHeader', selected: true }));
+    node.add(new TableViewCell(0, 2, new Text('B'), false, { role: 'columnHeader' }));
+    node.add(new TableViewCell(1, 0, new Text('1'), false, { role: 'rowHeader', selected: true }));
+    const grid = lowerVisualNode(node as never, context);
+    expect(cellAt(grid, 0, 1).attributes['aria-selected']).toBe('true');
+    expect(cellAt(grid, 0, 2).attributes['aria-selected']).toBeUndefined();
+    expect(cellAt(grid, 1, 0).attributes['aria-selected']).toBe('true');
+  });
+
+  it('reads a table as rows of cells, with no selection', () => {
+    const table = lowered('table');
+    expect(table.attributes['role']).toBe('table');
+    expect(table.attributes['aria-multiselectable']).toBeUndefined();
+    expect(cellAt(table, 3, 2).attributes['role']).toBe('cell');
+    expect(cellAt(table, 3, 2).attributes['aria-selected']).toBeUndefined();
+    expect((table.children[10] as HtmlNode).attributes['role']).toBe('rowgroup');
+  });
+
+  it('says what a cell spans, as Photon does', () => {
+    const scroll = new TableScroll();
+    const rows = new UniformTableSpans(3, 28);
+    const columns = new UniformTableSpans(4, 96);
+    scroll.arrange(new Size(900, 600), columns.total, rows.total, 96, 28, true);
+    const node = new TableViewport(rows, columns, scroll, { label: 'Totals', role: 'table' });
+    node.add(new TableViewCell(0, 0, new Text('Quarter'), false, { role: 'columnHeader', columns: 2 }));
+    node.add(new TableViewCell(1, 0, new Text('Q1'), false, { rows: 2 }));
+    node.add(new TableViewCell(1, 1, new Text('14,02')));
+    const table = lowerVisualNode(node as never, context);
+    expect(cellAt(table, 0, 0).attributes['aria-colspan']).toBe('2');
+    expect(cellAt(table, 0, 0).attributes['aria-rowspan']).toBeUndefined();
+    expect(cellAt(table, 1, 0).attributes['aria-rowspan']).toBe('2');
+    expect(cellAt(table, 1, 1).attributes['aria-colspan']).toBeUndefined();
+  });
+
+  it('stays a group by default, its cells saying nothing of rows or columns', () => {
+    const group = lowered();
+    expect(group.attributes['role']).toBe('group');
+    expect(group.attributes['aria-rowcount']).toBeUndefined();
+    expect(group.children).toHaveLength(10);
+    const cell = cellAt(group, 3, 2);
+    expect(cell.attributes['role']).toBeUndefined();
+    expect(cell.attributes['aria-colindex']).toBeUndefined();
+    expect(cell.attributes['id']).toBeUndefined();
+  });
+});
+
 describe('A gliding mark on the web, glided by the after-pass (#984)', () => {
   const glide = { durationMs: 200, curve: { x1: 0.2, y1: 0, x2: 0, y2: 1 } };
   const prototype = HTMLElement.prototype as { animate?: unknown };

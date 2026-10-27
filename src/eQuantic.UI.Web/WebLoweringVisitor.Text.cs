@@ -103,12 +103,8 @@ internal sealed partial class WebLoweringVisitor
     private HtmlElement LowerSheetSurface(
         SheetSurface sheet, bool? horizontalAxis)
     {
-        var attributes = new Dictionary<string, string>
-        {
-            ["role"] = "grid",
-        };
-        if (sheet.Label is { Length: > 0 } label) attributes["aria-label"] = label;
-
+        // No role of its own (#1081): the table it holds is the grid a reader walks, and the door is the
+        // field that takes the sheet's keys, named as the sheet is.
         var sheetFills = Fills(sheet.Child);
         var sheetCap = CapsAt(sheet.Child);
         var element = new RealizedElement("div")
@@ -116,12 +112,11 @@ internal sealed partial class WebLoweringVisitor
             ClassName = "eq-sheet-surface",
             Style = new HtmlStyle
             {
-                // FIT-CONTENT, not nothing: this host CARRIES THE ROLE, so its box is the bounds a
-                // reader outlines for touch exploration. A bare block div stretches to the container
-                // while the sheet keeps its own size, and the two stop describing the same thing; on
-                // Photon `MeasureWrapper` gives the wrapper exactly the child's bounds. The third
-                // instance of #239's rule, and the one that needed the width contract below before it
-                // could be stated at all (#241).
+                // FIT-CONTENT, not nothing: the box the door and the carets are placed in is the sheet's
+                // own. A bare block div stretches to the container while the sheet keeps its own size, and
+                // the two stop describing the same thing; on Photon `MeasureWrapper` gives the wrapper
+                // exactly the child's bounds. The third instance of #239's rule, and the one that needed
+                // the width contract below before it could be stated at all (#241).
                 Width = sheetFills.Width ? "100%" : "fit-content",
                 // The child's cap comes THROUGH: a wrapper that takes the width and drops the
                 // maximum is the half-contract that made the Link diverge once already.
@@ -133,14 +128,14 @@ internal sealed partial class WebLoweringVisitor
                 Outline = "none",
                 UserSelect = "none",
             },
-            RawAttributes = attributes,
         };
         // The pointer, DECLARED here as well as installed by the client twin, as the Navigable's
         // keyboard is. The server dispatches none of them, so these delegates never run, but the lowered
         // tree is what the parity net compares, and a fixture that says "no handler" cannot notice the
         // client losing one.
         element.OnMouseDown = static _ => { };
-        foreach (var pointer in (ReadOnlySpan<string>)["pointerdown", "pointermove", "pointerup", "pointercancel"])
+        // The click is a reader's activation of a cell or a header (#1081), which the client answers as a tap.
+        foreach (var pointer in (ReadOnlySpan<string>)["pointerdown", "pointermove", "pointerup", "pointercancel", "click"])
             element.CustomEvents[pointer] = ClientDispatches;
         // The inherited axis travels THROUGH, as it does in the client twin: a Spacer inside a
         // sheet inside a Row needs to know which way the row runs, and `null` makes it lower to
@@ -177,6 +172,20 @@ internal sealed partial class WebLoweringVisitor
         foreach (var text in (ReadOnlySpan<string>)["beforeinput", "compositionupdate", "compositionend"])
             input.CustomEvents[text] = ClientDispatches;
         element.Children.Add(input);
+
+        // What the grid says now (TS twin: lowerSheetSurface, #1081): a visually hidden polite status, which
+        // a reader speaks each time its words change, wherever its focus is.
+        element.Children.Add(new RealizedElement("div")
+        {
+            ClassName = "eq-announcement",
+            RawAttributes = new Dictionary<string, string>
+            {
+                ["role"] = "status",
+                ["aria-live"] = "polite",
+                ["aria-atomic"] = "true",
+            },
+            InnerHtml = sheet.Announcement.Length > 0 ? sheet.Announcement : null,
+        });
         return element;
     }
 
