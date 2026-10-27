@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "JsonLanguage.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Languages/JsonLanguage.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAQA;QAMI;;;;;;QAGA;;;IAHA;IAGA;;IAPA;QAAsB;;;IAStB;QAEI;QACA;YAEI;YACA;gBAA4B;gBAAK;;YAEjC;gBAEI;gBACA;oBAEI;wBAAyB;wBAAU;;oBACnC;wBAAwB;wBAAO;;oBAC/B;;gBAEJ;gBACA;gBAEA;gBACA;;YAGJ;gBAEI;gBACA,sKAEuE;gBACvE;gBACA;gBACA;;YAGJ;gBAEI;gBACA,0DAAsD;gBACtD;gBACA;gBACA;;YAGJ;YACA;;QAEJ;;;IAGJ;QAEI,yCACI,qCAAiC;QACrC;;;IAjER"
+}

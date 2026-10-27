@@ -18,6 +18,9 @@ export interface RemappedFrame {
   mapped: boolean;
   /** The original source text, when the map embedded it (for showing a C# snippet). */
   sourceContent: string | null;
+  /** The URL the browser ran the frame from, which says whose code it is: the served runtime's is the
+   * SDK's, a module's under /_equantic/ the app's (#1108). Kept through every hop. */
+  generatedUrl: string;
 }
 
 interface ParsedFrame {
@@ -88,6 +91,7 @@ export async function remapStackTrace(
         column: original.column,
         mapped: true,
         sourceContent: original.sourceContent,
+        generatedUrl: parsed.url,
       });
     } else {
       frames.push({
@@ -97,6 +101,7 @@ export async function remapStackTrace(
         column: parsed.column,
         mapped: false,
         sourceContent: null,
+        generatedUrl: parsed.url,
       });
     }
   }
@@ -142,6 +147,7 @@ export async function remapFramesToCSharp(
     result.push(
       original
         ? {
+            ...frame,
             func: original.name ?? frame.func,
             file: original.source,
             line: original.line,

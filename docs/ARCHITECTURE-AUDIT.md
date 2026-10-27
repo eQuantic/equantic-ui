@@ -124,7 +124,7 @@ move, its address does not.
 | `Components` — the write-once library | 9,593 | 61 | 99 | Primitives, Code |
 | `Charts` — the write-once charts | 839 | 5 | 12 | Primitives, Components |
 | `Web` — the SSR realizer and the DOM escape hatch | 6,449 | 22 | 39 | Primitives |
-| `Server` — the ASP.NET Core host | 4,848 | 33 | 51 | Web |
+| `Server` — the ASP.NET Core host | 4,848 | 33 | 51 | Web (and eqc, as a build tool) |
 | `Email` — the third realizer | 606 | 2 | 3 | Primitives |
 | `Native.Engine` (+ `Metal` 711, `Vulkan` 2,795, `Reference` 379) | 2,181 | 12 | 36 | Primitives |
 | `Native.Framework` — layout | 2,803 | 11 | 25 | Primitives, Engine |
@@ -149,6 +149,12 @@ the engine left `Primitives` with its 2,300 lines and took `Components` with it 
 (section 4 has the decision). No realizer references it — each drives a code surface through the
 vocabulary's `ICodeSurfaceModel`, which is what makes the engine a library rather than a dependency
 of every host.
+
+`Server` gained an edge to `eQuantic.Build` (eqc) in #1108, and it is a build tool's, not a
+dependency: `ReferenceOutputAssembly=false`, no copy, no package dependency, and the framework, runtime
+and publish globals removed, the shape `Sdk.props` gives an app's eqc. The Server bundles the runtime,
+and eqc composes the bundle's map with the maps of the modules it transpiled into it, so the edge only
+orders eqc's build before the Server's. No type of the compiler reaches the Server.
 
 **The rule the table protects: a realizer never references the library it realizes.** A component
 reaches a realizer as the tree its `Build` produced, so `Web`, `Email` and `Native.Components` have

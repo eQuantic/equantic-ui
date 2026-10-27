@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "CultureSwitcher.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/CultureSwitcher.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAgEI;IAGA;IAIA;IAUA;IAIA;;;;;;;QAxBI;;;;;QA4BA,+CAAwB;QAExB;QACA;QAKA;QACA;YAEI;gBAEI;gBACA;;YAEJ,oHAAwD;;QAG5D;YAEI;YACA,mCAAgC;YAChC;;QAUJ;QACA;YACI;YAAA;;QAMJ;QACA;QAAA;;;IASJ;QAEI,+DAAyC;QACzC;QACA;QACA;;;IAKJ;QAEI;QACA"
+}

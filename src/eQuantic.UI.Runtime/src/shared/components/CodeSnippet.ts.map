@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "CodeSnippet.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Snippets/CodeSnippet.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAmBA;QASI;QAGA;QARI;QACA;;;IAIJ;IAGA;;IAGA;QAAgD;;;IAGhD;QAAqC"
+}

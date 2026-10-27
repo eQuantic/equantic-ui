@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "Chip.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/Chip.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IA8BI;IACA;IACA;IACA;IACA;IAGA;;;;;;;;;;;;QAdI;QACA;QACA;QACA;QACA;;;;;QAcA;QACA;QACA;QAEA;QAOA;QAOA;QAKA;QACA;YAEI;;QAEJ;QACA;YAEI;;QAaJ;QAMA;QAYA"
+}

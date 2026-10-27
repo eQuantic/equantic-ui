@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "MermaidSegment.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/MermaidModel.cs"
+    ],
+    "names" : [],
+    "mappings" : ";IA6EA;QAEI;QACA;QACA;QACA;;;IAHA;IACA;IACA;IACA;;IALJ"
+}

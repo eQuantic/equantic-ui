@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "Slider.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/Slider.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAkCsC;IAQF;IAIE;IAQlC;IACA;IAEA;IACA;IAGA;IAEA;IACA;IAGA;IAWA;;;;;;;;;;;;;QA5BI;QACA;;;;;QA+BA;QACA;QACA;QAUA;QAGA;QACA;QACA;QAEA;QAoBA;QAEA;QAEA;QAIA;QAOA;QAWA;QAaA;;;IAgBJ;QACI;;;IAMJ;QAA6C;;;IAM7C;QAEI;QAYA;QACA;QAEA;QACA"
+}

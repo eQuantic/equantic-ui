@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "FormulaBar.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Spreadsheets/FormulaBar.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAoBqC;;;;;;IAFjC;QAAoC;;;IAqBpC;IAGA;;;;;;QARI;QACA;QACA;;;;;QAgCA;QACA;QACA;QACA;QACA;QACA;QAEA;QAGA;QACA;QAGA;QACA,0BAA4B;QAC5B;QAEA;QAGA;QASA;QAMA;YAaQ,4DAA2C;YAC3C;SAdR;;;IA5DJ;QAEI;QAAA,6DAAkC;QAClC,gCAA4B;QAC5B;QACA;;;IAGJ;QAAqC;;;IAErC;QAAuC;;;IAIvC;QAEI,sCAA6C;QAC7C,gCAA4B;QAC5B;QACA,2BAA4B;;;IA4DhC;QAEI;QACA,sDAAsD;QACtD;;;IAIJ;QAEI;QACA;YAEI;;QAGJ"
+}

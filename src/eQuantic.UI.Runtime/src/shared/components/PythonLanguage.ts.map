@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "PythonLanguage.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Languages/PythonLanguage.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IASA;QASI;;;;;;;;;;IAAA;IAPkB;IACA;IACA;;IAElB;QAAsB;;;IA+BtB;QAAyC;;;;;;;;;;;;;;;gBApBD;gBAQA;gBAMA;gBAEM;;;;;;;;;IAhBN;;;;IAAA;;;;IAQA;;;;IAAA;;;;IAMA;;;;IAAA;;;;IAEM;;;;IAAA;;;;IAM9C;QAEI;QACA;YAEI;YACA;YACA;gBAEI;gBACA;;YAEJ;YACA;;QAGJ;YAEI;YACA;gBAA4B;gBAAK;;YAEjC;gBAEI;gBACA;;YAIJ;gBAEI;gBACA;gBACA;gBACA;oBAEI;oBACA;;gBAEJ;gBACA;gBACA;;YAGJ;gBAEI;gBAEA,mDAAmD;gBACnD,qEAAsD;gBACtD;gBACA;gBACA;gBACA;;YAGJ;gBAEI;gBACA,8GACmD;gBACnD;gBACA;gBACA;;YAGJ;gBAEI;gBACA,uFAAsF;gBACtF;gBACA;gBACA;;YAGJ;gBAEI;gBACA,4DAA4D;gBAC5D;gBACA;gBAMA;gBACA;;YAGJ;YAGA;;QAEJ;;;IAGJ;QACI;;;IAEJ;QAEI;YAEI;gBAAuB;gBAAK;;YAC5B,uBAAsB;;QAE1B;;;IAGJ;QAEI,yCACI,qCAAiC;QACrC;;;IAGJ;QAEI,iBAAiB;QACjB;YAEI;YACA;;QAEJ;;;IApKR"
+}

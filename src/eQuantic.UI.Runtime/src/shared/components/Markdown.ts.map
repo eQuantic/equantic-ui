@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "Markdown.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/Markdown.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IA2DI;IAGA;;;;;QANI;;;;;QAUA;QACA;QACA;QAEA;QACA,4BACI;QACJ;;;IAQJ;QAGI;;;oBAIQ;oBACA,uBAAsB,4BACjB,uBAAsB,4BACtB,uBAAsB;oBAE3B;;;gBAeA;;gBAMA,8BAA6B;gBAC7B;;gBAQA;;gBAUA;;gBAGA;;gBAGA;;;;IAMZ;QAEI;QAGA;QACA;QAEA;QACA;YAEI;;QAUJ;;;IAGJ;QAEI;QACA;YAEI;YACA;YAEA;YAEA;;QAEJ;;;IAGJ;QAEI;QACA,4CAA2C;QAE3C;QAEA;QACA,+BACI;QAEJ;QAEA;YAEI;YACA;YACA,8BACI;YAEJ;;QAGJ"
+}

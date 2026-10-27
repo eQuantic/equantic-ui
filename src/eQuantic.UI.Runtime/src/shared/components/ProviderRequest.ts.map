@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "ProviderRequest.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Intelligence/ProviderRequest.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAUI;QAEI,oBAAoB;QACpB;YAEI;;YAIA"
+}

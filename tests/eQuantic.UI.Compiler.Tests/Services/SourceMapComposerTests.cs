@@ -159,6 +159,61 @@ public class SourceMapComposerTests
         composed.Contents.Should().Equal(text);
     }
 
+    /// <summary>
+    /// The served runtime's map, as the Server's build composes it (#1108): bun's map, from the
+    /// Server's wwwroot, leads into a transpiled module that carries its map beside it, whose sources
+    /// are named from <c>src/</c>, and into a hand-written module that carries none. Composed in place,
+    /// both are named from <c>src/</c>, the transpiled one at its C#, and no source's text is carried:
+    /// bun's map held the TypeScript's. A position of the transpiled module its map leads nowhere stays
+    /// at the module, where remapping's rule would drop it and a lookup would fall into the module
+    /// before it on the bundle's line.
+    /// </summary>
+    [Fact]
+    public void ARuntimeMapOnDisk_NamedFromTheTree_LeadsToTheSdksCSharp_AndCarriesNoText()
+    {
+        var root = Directory.CreateTempSubdirectory("eq-compose-").FullName;
+        try
+        {
+            var components = Directory.CreateDirectory(Path.Combine(root, "eQuantic.UI.Runtime", "src", "shared", "components")).FullName;
+            var wwwroot = Directory.CreateDirectory(Path.Combine(root, "eQuantic.UI.Server", "wwwroot")).FullName;
+            var sheet = CSharpSyntaxTree.ParseText("class SheetController {}",
+                path: Path.Combine(root, "eQuantic.UI.Spreadsheets", "SheetController.cs"));
+            File.WriteAllText(Path.Combine(components, "SheetController.ts.map"), new SourceMapGenerator().Generate(
+                "SheetController.ts", [At(1, 0, 3, 4, sheet)],
+                tree => new SourceMapSource("eQuantic.UI.Spreadsheets/SheetController.cs", null), "../../../../"));
+
+            var bundleMap = Path.Combine(wwwroot, "runtime.js.map");
+            File.WriteAllText(bundleMap, JsonSerializer.Serialize(new Dictionary<string, object?>
+            {
+                ["version"] = 3,
+                ["sources"] = new[]
+                {
+                    "../../eQuantic.UI.Runtime/src/shared/components/SheetController.ts",
+                    "../../eQuantic.UI.Runtime/src/shared/lowering.ts",
+                },
+                ["sourcesContent"] = new[] { "export class SheetController {}", "export const lowered = 1;" },
+                ["names"] = Array.Empty<string>(),
+                // Column 0: SheetController.ts line 0, which its map leads to C#. Column 4: its line 1,
+                // which leads nowhere. Column 7: the hand-written module.
+                ["mappings"] = Line([[0, 0, 0, 0], [4, 0, 1, 0], [7, 1, 0, 0]]),
+            }));
+
+            SourceMapComposer.ComposeFile(bundleMap, namesFrom: root);
+
+            var composed = Parse(File.ReadAllText(bundleMap));
+            composed.Sources.Should().Equal("eQuantic.UI.Spreadsheets/SheetController.cs",
+                "eQuantic.UI.Runtime/src/shared/components/SheetController.ts",
+                "eQuantic.UI.Runtime/src/shared/lowering.ts");
+            composed.Contents.Should().BeEmpty("a map the Server ships names the SDK's sources, it does not carry them");
+            composed.Lines[0].Should().BeEquivalentTo(new[] { new[] { 0, 0, 3, 4 }, new[] { 4, 1, 1, 0 }, new[] { 7, 2, 0, 0 } },
+                options => options.WithStrictOrdering());
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     // ---- a codec of this file's own ---------------------------------------------------------------
 
     private const string Digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

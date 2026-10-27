@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "AppBar.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/AppBar.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAwBI;IAGA;IASA;;IAEI;;;;IACA;QAAQ;;;IAMZ;;;;;;QAxBI;;;;;QA4BA;QACA;QAMA;QAAA,sCAA4B;QAM5B;QAKA;QAIA;QAEA;QAAA;YAEI,8BAAgC;;QAGpC"
+}

@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "MarkdownListItem.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/MarkdownBlocks.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAmCA;QAEI;QAGA;QAEA;;;IALA;IAGA;IAEA;;IAPJ"
+}

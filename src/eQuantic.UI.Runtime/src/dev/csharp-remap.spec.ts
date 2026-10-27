@@ -29,6 +29,7 @@ const tsFrame = (line: number, column = 0): RemappedFrame => ({
   column,
   mapped: true,
   sourceContent: 'const ts = true;',
+  generatedUrl: 'http://localhost/_equantic/PaymentsPage.js',
 });
 
 describe('remapFramesToCSharp (hop two)', () => {
@@ -42,6 +43,8 @@ describe('remapFramesToCSharp (hop two)', () => {
     expect(frames[0].file).toBe('/app/Screens/PaymentsPage.cs');
     expect(frames[0].line).toBe(3);
     expect(frames[0].sourceContent).toContain('public class PaymentsPage');
+    // whose code it was outlives the hop: the owner is read from where the browser ran it (#1108)
+    expect(frames[0].generatedUrl).toBe('http://localhost/_equantic/PaymentsPage.js');
   });
 
   it('leaves a frame ALONE when the stage-one map is missing', async () => {
@@ -61,6 +64,7 @@ describe('remapFramesToCSharp (hop two)', () => {
       column: 4,
       mapped: false,
       sourceContent: null,
+      generatedUrl: 'http://localhost/_equantic/runtime.js',
     };
     let fetches = 0;
     const frames = await remapFramesToCSharp([jsFrame], async () => {

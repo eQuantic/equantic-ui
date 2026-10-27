@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "CodeSymbols.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Intelligence/CodeSymbols.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAOA;QAE0C;QAQtC;QAIgC;QAVqB;;;IAFf;IAQtC;IAIgC;;IAShC;QAEI;QACA;QACA,uCAAoC;QACpC;QACA,yBAA2B;QAC3B;QACA;;;IAGJ;QAGI;YAEI;;YAFJ;YAAA;gBAMI;;gBAIA;gBACA;;;;;IAhDZ"
+}

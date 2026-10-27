@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "SegmentedControl.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/SegmentedControl.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAyBI;IACA;IACA;IAEA;IACA;IAGA;;;;;;;;;;;QAbI;QACA;QACA;;;;;QAeA;QACA;QACA;QACA;QAIA;QAMA;YAEI;YACA;YAIA;YAOA;YAOA;YAWA;YAQA;;QAGJ;QAaA,2FAA0D;QAC1D;QACA"
+}

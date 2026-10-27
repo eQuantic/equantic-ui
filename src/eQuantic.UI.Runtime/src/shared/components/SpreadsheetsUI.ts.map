@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "SpreadsheetsUI.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Spreadsheets/SpreadsheetsUI.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAkBI;QAEI;;;IAOJ;QAAgF;;;IAEhF;QAA0E;;;IAE1E;QAA8E"
+}
