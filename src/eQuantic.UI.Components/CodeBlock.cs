@@ -531,7 +531,9 @@ public sealed class CodeBlock : StatelessComponent
                 : null,
         }, numbers);
 
-        if (Folds.Count == 0)
+        // The slot stands whenever the block can fold, regions or none, so the numbers never move as they come
+        // and go.
+        if (Folds.Count == 0 && OnFoldPressed is null)
             return isLine && OnGutterPressed is { } pressed
                 ? new Pressable(cell, () => pressed(index)) { Label = SdkStrings.LineNumbered(FirstLineNumber + index) }
                 : cell;
@@ -563,21 +565,28 @@ public sealed class CodeBlock : StatelessComponent
         }, slot);
     }
 
-    /// <summary>The region whose header is <paramref name="line"/>, or null.</summary>
+    /// <summary>The region whose header is <paramref name="line"/>, or null. Asked for every row drawn, so the
+    /// regions are looked up by their header, once per block.</summary>
     private CodeFold? FoldAt(int line)
     {
-        foreach (var fold in Folds)
-            if (fold.StartLine == line) return fold;
-        return null;
+        if (_foldsByHeader is null)
+        {
+            _foldsByHeader = new Dictionary<int, CodeFold>();
+            foreach (var fold in Folds) _foldsByHeader[fold.StartLine] = fold;
+        }
+        return _foldsByHeader.TryGetValue(line, out var found) ? found : null;
     }
+
+    private Dictionary<int, CodeFold>? _foldsByHeader;
 
     /// <summary>Whether the region whose header is <paramref name="line"/> is folded.</summary>
     private bool IsFolded(int line)
     {
-        foreach (var folded in FoldedLines)
-            if (folded == line) return true;
-        return false;
+        _foldedHeaders ??= [.. FoldedLines];
+        return _foldedHeaders.Contains(line);
     }
+
+    private HashSet<int>? _foldedHeaders;
 
     /// <summary>
     /// The chevron of <paramref name="fold"/>, down while it is open and right while it is folded, a button named by

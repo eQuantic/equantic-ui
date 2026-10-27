@@ -63,7 +63,8 @@ public sealed class CodeFolding
     /// <summary>Raised when the regions or what is folded change.</summary>
     public event Action? Changed;
 
-    /// <summary>Raised when a provider throws, with what it threw. The other providers' regions still fold.</summary>
+    /// <summary>Raised when a provider throws, with what it threw. That answer changes nothing: the regions and what
+    /// is folded stay as they were until the next one.</summary>
     public event Action<Exception>? Failed;
 
     /// <summary>Whether the region whose header is <paramref name="line"/> is folded.</summary>
@@ -126,6 +127,7 @@ public sealed class CodeFolding
 
     /// <summary>Whether a region holds <paramref name="line"/>.</summary>
     internal bool CanToggle(int line) => Innermost(line, null) >= 0;
+
 
     /// <summary>Whether any region is folded, or open, as <paramref name="folded"/> asks.</summary>
     internal bool Any(bool folded)
@@ -196,11 +198,20 @@ public sealed class CodeFolding
         return false;
     }
 
-    /// <summary>The index of the region whose header is <paramref name="line"/>, or -1.</summary>
+    /// <summary>The index of the region whose header is <paramref name="line"/>, or -1. The regions are ordered by
+    /// their header, one for each, so it is searched for by halves: a view asks for every header it draws.</summary>
     private int IndexOf(int line)
     {
-        for (var i = 0; i < _regions.Count; i++)
-            if (_regions[i].StartLine == line) return i;
+        var low = 0;
+        var high = _regions.Count - 1;
+        while (low <= high)
+        {
+            var middle = low + (high - low) / 2;
+            var header = _regions[middle].StartLine;
+            if (header == line) return middle;
+            if (header < line) low = middle + 1;
+            else high = middle - 1;
+        }
         return -1;
     }
 
@@ -291,9 +302,12 @@ public sealed class CodeFolding
                 var carried = edit.Carry(new CodeRange(new CodePosition(region.StartLine, 0),
                     new CodePosition(region.EndLine, LineEnd)));
                 // An edit from above the header that takes text of the header line, or leaves the header after
-                // text of the line above, removed the header line: the lines above it deleted leave it a line.
-                if (from < region.StartLine && to >= region.StartLine
-                    && (edit.Range.End > new CodePosition(region.StartLine, 0) || carried.Start.Column != 0))
+                // text of the line above, removed the header line: the lines above it deleted leave it a line. So
+                // does one from the header's first column past its line break, which takes the whole line.
+                var header = new CodePosition(region.StartLine, 0);
+                if ((from < region.StartLine && to >= region.StartLine
+                        && (edit.Range.End > header || carried.Start.Column != 0))
+                    || (edit.Range.Start == header && to > region.StartLine))
                 {
                     kept = false;
                     break;
@@ -307,7 +321,8 @@ public sealed class CodeFolding
         _regions = regions;
         _folded = folded;
         Apply();
-        _ = Ask(wait: true);
+        // A grid with rows of its own (a diff's side, a formula bar) hides no fold, so nothing is asked for it.
+        if (_editor.HidesFolds) _ = Ask(wait: true);
     }
 
     /// <summary>The selection moved: a line a selection ends on that is hidden is shown, every caret's of several,
@@ -363,10 +378,16 @@ public sealed class CodeFolding
         var document = _editor.Document;
         var providers = new List<ICodeFoldProvider>(Providers);
         if (providers.Count == 0) providers.Add(new IndentationFoldProvider());
-        var asked = new List<Task<IReadOnlyList<CodeFold>>>();
+        var asked = new List<Task<IReadOnlyList<CodeFold>?>>();
         foreach (var provider in providers) asked.Add(AskOne(provider, document, request.Token));
         var answers = new List<IReadOnlyList<CodeFold>>();
-        foreach (var one in asked) answers.Add(await one);
+        foreach (var one in asked)
+        {
+            // A provider that failed changes nothing: the regions and what is folded stay until the next answer, as
+            // a language server that timed out once must not open everything the person folded.
+            if (await one is not { } answer) return;
+            answers.Add(answer);
+        }
         // Back where the editor lives: a provider and a timer end on a thread of their own, and the regions are the
         // UI thread's (a Photon host has no synchronization context to bring an await back to it).
         UiThread.Run(() =>
@@ -376,7 +397,8 @@ public sealed class CodeFolding
         });
     }
 
-    private async Task<IReadOnlyList<CodeFold>> AskOne(ICodeFoldProvider provider, CodeDocument document,
+    /// <summary>What <paramref name="provider"/> answers, or null when it threw or was cancelled.</summary>
+    private async Task<IReadOnlyList<CodeFold>?> AskOne(ICodeFoldProvider provider, CodeDocument document,
         CancellationToken cancellation)
     {
         try
@@ -385,12 +407,12 @@ public sealed class CodeFolding
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
-            return [];
+            return null;
         }
         catch (Exception error)
         {
             UiThread.Run(() => Failed?.Invoke(error));
-            return [];
+            return null;
         }
     }
 

@@ -3,6 +3,8 @@ import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
     static foldSlot: number = 20;
+    _foldsByHeader: any = null;
+    _foldedHeaders: any = null;
     _cells: any = $eq.collections.dictionary();
     _fillerCells: any = $eq.collections.dictionary();
     static linePass: number = 0;
@@ -268,7 +270,7 @@ export class CodeBlock extends StatelessComponent {
             numbers.add(new Text(text, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, 0, { mono: true, tabular: true, styleOverride: $eq.withPatch(metrics.style, { weight: 'regular' }) }));
         }
         let cell = new Box(new BoxStyle({ width: SizeValue.fixed(metrics.gutterWidth), height: SizeValue.fixed(metrics.lineHeight), padding: new EdgeInsets(0, 0, 12, 0), background: !isLine ? this.fillerColor : this.activeLines.includes(index) ? this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle : null }), numbers);
-        if ($eq.collections.count(this.folds) === 0) {
+        if ($eq.collections.count(this.folds) === 0 && this.onFoldPressed == null) {
             let pressed: any; 
             return isLine && (pressed = this.onGutterPressed) != null ? new Pressable(cell, () => pressed(index), { label: SdkStrings.lineNumbered(this.firstLineNumber + index) }) : cell;
         }
@@ -282,13 +284,17 @@ export class CodeBlock extends StatelessComponent {
     }
 
     foldAt(line: number) {
-        for (const fold of this.folds) if (fold.startLine === line) return fold;
-        return null;
+        if (this._foldsByHeader == null) {
+            this._foldsByHeader = $eq.collections.dictionary();
+            for (const fold of this.folds) $eq.mapSet(this._foldsByHeader, fold.startLine, fold);
+        }
+        let found: any; 
+        return (($0) => ($0.has(line) ? ((found = $0.get(line)), true) : ((found = null), false)))(this._foldsByHeader) ? found : null;
     }
 
     isFolded(line: number) {
-        for (const folded of this.foldedLines) if (folded === line) return true;
-        return false;
+        this._foldedHeaders ?? (this._foldedHeaders = $eq.collections.hashSetOf([...this.foldedLines]));
+        return this._foldedHeaders.has(line);
     }
 
     foldChevron(fold: any, metrics: CodeBlock$CodeMetrics, theme: any) {

@@ -728,9 +728,10 @@ public sealed class CodeEditor : StatefulComponent
 
         var metrics = CodeBlock.MetricsFor(context, Size, ShowLineNumbers,
             FirstLineNumber + editor.Document.LineCount - 1);
-        // The gutter takes the chevrons right of its numbers, as VS Code's folding column stands (#1119).
+        // The gutter takes the chevrons right of its numbers, as VS Code's folding column stands (#1119): always,
+        // regions or none, or the code would move sideways each time the first one came or the last one went.
         var folds = ShowLineNumbers ? editor.Folding.Regions : [];
-        if (folds.Count > 0) metrics = metrics with { GutterWidth = metrics.GutterWidth + CodeBlock.FoldSlot };
+        if (ShowLineNumbers) metrics = metrics with { GutterWidth = metrics.GutterWidth + CodeBlock.FoldSlot };
 
         // THE grid, handed to the engine — the only thing that turns a position into a point. The
         // block draws the lines on these same numbers, so the caret and the glyphs cannot disagree.
@@ -786,7 +787,8 @@ public sealed class CodeEditor : StatefulComponent
             Rows = shown,
             Folds = folds,
             FoldedLines = FoldedLines(editor, folds),
-            OnFoldPressed = line => SetState(() => editor.Folding.Toggle(line)),
+            // Folding.Changed asks for the build.
+            OnFoldPressed = ShowLineNumbers ? line => editor.Folding.Toggle(line) : null,
             Highlighter = highlighter,
             // THE grid — the same numbers the surface places the caret and the band on.
             Metrics = metrics,

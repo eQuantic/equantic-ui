@@ -63,6 +63,12 @@ public class CodeFoldingTests : IDisposable
             Answer.Task;
     }
 
+    private sealed class Throwing : ICodeFoldProvider
+    {
+        public Task<IReadOnlyList<CodeFold>> FoldsAsync(CodeDocument document, CancellationToken cancellation) =>
+            throw new InvalidOperationException("the language server timed out");
+    }
+
     private sealed class Clipboard : ITextClipboard
     {
         public string Text = "";
@@ -329,6 +335,45 @@ public class CodeFoldingTests : IDisposable
 
         editor.Selections.Should().Equal(new CodeRange(new CodePosition(0, 0)), new CodeRange(new CodePosition(3, 5)));
         editor.Folding.IsFolded(3).Should().BeTrue();
+    }
+
+    [Fact]
+    public void TheHeaderLineDeletedFromItsFirstColumn_TakesItsRegionAway()
+    {
+        var editor = Editor();
+        editor.Folding.Providers.Add(new Waiting());
+
+        editor.Apply(new CodeRange(new CodePosition(1, 0), new CodePosition(2, 0)), "");
+
+        editor.Folding.Regions.Should().Equal([new CodeFold(2, 3)], "the class's header went, the method's moved up");
+    }
+
+    [Fact]
+    public void AProviderThatFails_LeavesTheRegionsAndTheFoldsAsTheyWere()
+    {
+        var editor = Editor();
+        editor.Folding.Toggle(3);
+        var failures = new List<Exception>();
+        editor.Folding.Failed += failures.Add;
+        editor.Folding.Providers.Add(new Throwing());
+
+        editor.Folding.Check();
+
+        failures.Should().ContainSingle();
+        editor.Folding.Regions.Should().Equal(new CodeFold(1, 5), new CodeFold(3, 4));
+        editor.Folding.IsFolded(3).Should().BeTrue();
+    }
+
+    [Fact]
+    public void AGridWithRowsOfItsOwn_HidesNoFold_AndTheKeysClaimNothing()
+    {
+        // A diff's side brings its own rows: a fold there would move the caret and hide nothing.
+        var editor = Editor(caretLine: 4);
+        editor.Grid = editor.Grid with { Rows = new CodeRows(editor.Document.LineCount, [], []) };
+
+        Press(editor, "[", Alt | Command).Should().BeFalse();
+        editor.CanExecute(CodeCommand.FoldAll).Should().BeFalse();
+        editor.Selection.Should().Be(new CodeRange(new CodePosition(4, 0)));
     }
 
     [Fact]

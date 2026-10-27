@@ -99,7 +99,7 @@ public class CodeFoldingViewTests : IDisposable
     }
 
     [Fact]
-    public void ACodeWithNoRegion_DrawsNoChevron()
+    public void ACodeWithNoRegion_DrawsNoChevron_AndKeepsTheChevronsColumn()
     {
         var context = new ComponentContext(PhotonTheme.Instance);
         var flat = new CodeEditor("a\nb\nc", "csharp");
@@ -108,5 +108,8 @@ public class CodeFoldingViewTests : IDisposable
 
         All<Pressable>(drawn).Should().NotContain(press => press.Expanded != null);
         All<Icon>(drawn).Should().BeEmpty();
+        All<CodeBlock>(drawn).Single().Metrics!.Value.GutterWidth.Should().Be(
+            All<CodeBlock>(new CodeEditor("a\n  b\nc", "csharp").Build(context)).Single().Metrics!.Value.GutterWidth,
+            "the chevrons' column stands with no region, so the code never moves as the first one comes");
     }
 }

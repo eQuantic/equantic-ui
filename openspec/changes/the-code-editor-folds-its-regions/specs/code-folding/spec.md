@@ -6,7 +6,9 @@
 its delay, and the indentation's provider when there is none. The answers SHALL be joined, ordered by their start
 line, one region kept for each start line (the one reaching furthest), a region that crosses another dropped,
 and a region of no line under its header dropped. An answer that comes after the text changed again SHALL be
-dropped.
+dropped, and so SHALL an answer in which a provider failed, the regions and what is folded staying as they were.
+An editor whose grid brings rows of its own (a diff's side) SHALL hide nothing, and its fold commands SHALL claim
+no key.
 
 #### Scenario: The indentation's regions
 

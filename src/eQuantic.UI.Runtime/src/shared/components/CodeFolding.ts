@@ -160,7 +160,14 @@ export class CodeFolding {
     }
 
     indexOf(line: number) {
-        for (let i = 0; i < this._regions.length; i++) if (this._regions[i].startLine === line) return i;
+        let low = 0;
+        let high = this._regions.length - 1;
+        while (low <= high) {
+            let middle = low + Math.trunc((high - low) / 2);
+            let header = this._regions[middle].startLine;
+            if (header === line) return middle;
+            if (header < line) low = middle + 1; else high = middle - 1;
+        }
         return -1;
     }
 
@@ -220,7 +227,8 @@ export class CodeFolding {
                 let to = edit.range.end.line;
                 if (isFolded && from <= region.endLine && to > region.startLine) isFolded = false;
                 let carried = edit.carry(new CodeRange(new CodePosition(region.startLine, 0), new CodePosition(region.endLine, CodeFolding.lineEnd)));
-                if (from < region.startLine && to >= region.startLine && (CodePosition.opGreaterThan(edit.range.end, new CodePosition(region.startLine, 0)) || carried.start.column !== 0)) {
+                let header = new CodePosition(region.startLine, 0);
+                if (from < region.startLine && to >= region.startLine && (CodePosition.opGreaterThan(edit.range.end, header) || carried.start.column !== 0) || $eq.equals(edit.range.start, header) && to > region.startLine) {
                     kept = false;
                     break;
                 }
@@ -233,7 +241,7 @@ export class CodeFolding {
         this._regions = regions;
         this._folded = folded;
         this.apply();
-        this.ask(true);
+        if (this._editor.hidesFolds) this.ask(true);
     }
 
     selected(__: CodeRange) {
@@ -277,7 +285,11 @@ export class CodeFolding {
         let asked = [];
         for (const provider of providers) asked.push(this.askOne(provider, document, request.token));
         let answers = [];
-        for (const one of asked) answers.push(await one);
+        for (const one of asked) {
+            let answer: any; 
+            if (!((answer = await one) != null)) return;
+            answers.push(answer);
+        }
         UiThread.run(() => {
             if (generation !== this._generation) return;
             this.answered(answers, document);
@@ -290,10 +302,10 @@ export class CodeFolding {
         } catch ($e: any) {
             let error = $e;
             if ($eq.exceptions.is($e, 'System.OperationCanceledException') && $eq.exceptions.filter(() => cancellation.isCancellationRequested)) {
-                return [];
+                return null;
             } else {
                 UiThread.run(() => this.failed?.(error));
-                return [];
+                return null;
             }
         }
     }
