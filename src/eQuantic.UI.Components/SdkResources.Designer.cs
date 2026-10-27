@@ -336,5 +336,90 @@ namespace eQuantic.UI.Components
         {
             get { return ResourceManager.GetString("ReadingSymbols", Culture)!; }
         }
+
+        internal static string DefinitionsCount
+        {
+            get { return ResourceManager.GetString("DefinitionsCount", Culture)!; }
+        }
+
+        internal static string DeclarationsCount
+        {
+            get { return ResourceManager.GetString("DeclarationsCount", Culture)!; }
+        }
+
+        internal static string TypeDefinitionsCount
+        {
+            get { return ResourceManager.GetString("TypeDefinitionsCount", Culture)!; }
+        }
+
+        internal static string ImplementationsCount
+        {
+            get { return ResourceManager.GetString("ImplementationsCount", Culture)!; }
+        }
+
+        internal static string ReferencesCount
+        {
+            get { return ResourceManager.GetString("ReferencesCount", Culture)!; }
+        }
+
+        internal static string FilterPlaces
+        {
+            get { return ResourceManager.GetString("FilterPlaces", Culture)!; }
+        }
+
+        internal static string NoMatchingPlaces
+        {
+            get { return ResourceManager.GetString("NoMatchingPlaces", Culture)!; }
+        }
+
+        internal static string NoDefinitionFound
+        {
+            get { return ResourceManager.GetString("NoDefinitionFound", Culture)!; }
+        }
+
+        internal static string NoDefinition
+        {
+            get { return ResourceManager.GetString("NoDefinition", Culture)!; }
+        }
+
+        internal static string NoDeclarationFound
+        {
+            get { return ResourceManager.GetString("NoDeclarationFound", Culture)!; }
+        }
+
+        internal static string NoDeclaration
+        {
+            get { return ResourceManager.GetString("NoDeclaration", Culture)!; }
+        }
+
+        internal static string NoTypeDefinitionFound
+        {
+            get { return ResourceManager.GetString("NoTypeDefinitionFound", Culture)!; }
+        }
+
+        internal static string NoTypeDefinition
+        {
+            get { return ResourceManager.GetString("NoTypeDefinition", Culture)!; }
+        }
+
+        internal static string NoImplementationFound
+        {
+            get { return ResourceManager.GetString("NoImplementationFound", Culture)!; }
+        }
+
+        internal static string NoImplementation
+        {
+            get { return ResourceManager.GetString("NoImplementation", Culture)!; }
+        }
+
+        internal static string NoReferencesFound
+        {
+            get { return ResourceManager.GetString("NoReferencesFound", Culture)!; }
+        }
+
+        internal static string NoReferences
+        {
+            get { return ResourceManager.GetString("NoReferences", Culture)!; }
+        }
 }
 }

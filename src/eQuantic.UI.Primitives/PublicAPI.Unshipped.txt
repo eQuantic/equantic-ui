@@ -168,6 +168,7 @@ eQuantic.UI.Primitives.TableViewCell.Current.get -> bool
 eQuantic.UI.Primitives.TableViewCell.Current.init -> void
 eQuantic.UI.Primitives.TableViewport.Role.get -> eQuantic.UI.Primitives.TableRole
 eQuantic.UI.Primitives.TableViewport.Role.init -> void
+eQuantic.UI.Primitives.ICodeSurfaceModel.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
 eQuantic.UI.Primitives.FontWeight.Black = 900 -> eQuantic.UI.Primitives.FontWeight
 eQuantic.UI.Primitives.FontWeight.ExtraLight = 200 -> eQuantic.UI.Primitives.FontWeight
 eQuantic.UI.Primitives.FontWeight.Light = 300 -> eQuantic.UI.Primitives.FontWeight

@@ -217,12 +217,7 @@ internal static class PhotonContentView
 
     private static void OnKeyDown(IntPtr self, IntPtr selector, IntPtr @event)
     {
-        var flags = SendULong(@event, Sel("modifierFlags"));
-        var modifiers = Primitives.KeyModifiers.None;
-        if ((flags & (1UL << 17)) != 0) modifiers |= Primitives.KeyModifiers.Shift;
-        if ((flags & (1UL << 18)) != 0) modifiers |= Primitives.KeyModifiers.Control;
-        if ((flags & (1UL << 19)) != 0) modifiers |= Primitives.KeyModifiers.Alt;
-        if ((flags & (1UL << 20)) != 0) modifiers |= Primitives.KeyModifiers.Command;
+        var modifiers = MacKeys.ModifiersOf(SendULong(@event, Sel("modifierFlags")));
 
         var text = FromNSString(Send(@event, Sel("characters"))) ?? "";
         var keyCode = SendUShort(@event, Sel("keyCode"));

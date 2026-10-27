@@ -69,3 +69,26 @@ static eQuantic.UI.Components.SdkStrings.CellAnnouncement(string! address, strin
 static eQuantic.UI.Components.SdkStrings.RangeAnnouncement(string! address, int rows, int columns) -> string!
 static eQuantic.UI.Components.UI.TableViewCell(int row, int column, eQuantic.UI.Primitives.VisualNode! child, bool mark = false, int rows = 1, int columns = 1, eQuantic.UI.Primitives.TableCellRole role = eQuantic.UI.Primitives.TableCellRole.Cell, bool selected = false, bool current = false) -> eQuantic.UI.Primitives.TableViewCell!
 *REMOVED*static eQuantic.UI.Components.UI.TableViewCell(int row, int column, eQuantic.UI.Primitives.VisualNode! child, bool mark = false, int rows = 1, int columns = 1) -> eQuantic.UI.Primitives.TableViewCell!
+eQuantic.UI.Components.CodeEditor.DefinitionProviders.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.ICodeDefinitionProvider!>!
+eQuantic.UI.Components.CodeEditor.DefinitionProviders.set -> void
+eQuantic.UI.Components.CodeEditor.ReferenceProviders.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.ICodeReferenceProvider!>!
+eQuantic.UI.Components.CodeEditor.ReferenceProviders.set -> void
+eQuantic.UI.Components.CodeEditor.OnOpenRequested.get -> System.Action<eQuantic.UI.Code.CodeLocation!>?
+eQuantic.UI.Components.CodeEditor.OnOpenRequested.set -> void
+static eQuantic.UI.Components.SdkStrings.DefinitionsCount(int count) -> string!
+static eQuantic.UI.Components.SdkStrings.DeclarationsCount(int count) -> string!
+static eQuantic.UI.Components.SdkStrings.TypeDefinitionsCount(int count) -> string!
+static eQuantic.UI.Components.SdkStrings.ImplementationsCount(int count) -> string!
+static eQuantic.UI.Components.SdkStrings.ReferencesCount(int count) -> string!
+static eQuantic.UI.Components.SdkStrings.FilterPlaces.get -> string!
+static eQuantic.UI.Components.SdkStrings.NoMatchingPlaces.get -> string!
+static eQuantic.UI.Components.SdkStrings.NoDefinitionFound(string! word) -> string!
+static eQuantic.UI.Components.SdkStrings.NoDefinition.get -> string!
+static eQuantic.UI.Components.SdkStrings.NoDeclarationFound(string! word) -> string!
+static eQuantic.UI.Components.SdkStrings.NoDeclaration.get -> string!
+static eQuantic.UI.Components.SdkStrings.NoTypeDefinitionFound(string! word) -> string!
+static eQuantic.UI.Components.SdkStrings.NoTypeDefinition.get -> string!
+static eQuantic.UI.Components.SdkStrings.NoImplementationFound(string! word) -> string!
+static eQuantic.UI.Components.SdkStrings.NoImplementation.get -> string!
+static eQuantic.UI.Components.SdkStrings.NoReferencesFound(string! word) -> string!
+static eQuantic.UI.Components.SdkStrings.NoReferences.get -> string!

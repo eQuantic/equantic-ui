@@ -53,6 +53,9 @@ public sealed unsafe class PhotonWindow
     private readonly bool _smoothScroll;
 
     private IntPtr _hwnd;
+
+    // The cursor last shown over the client area, which a frame shows again only when it changed (#1084).
+    private CursorShape _cursorShown;
     private IntPtr _hinstance;
     private uint _dpi = 96;
     private float _scale = 1f;
@@ -376,6 +379,36 @@ public sealed unsafe class PhotonWindow
     // ---- Presenting ---------------------------------------------------------------------------
 
     /// <summary>Draws one frame, wherever we are called from — the loop, WM_SIZE mid-drag, WM_PAINT.</summary>
+    /// <summary>
+    /// The modifiers changed with the pointer at rest (#1084): the host hears them, and the cursor where the
+    /// pointer rests is shown again, since a link ⌘ shows over a name is a hand that comes without a move and
+    /// Windows asks <c>WM_SETCURSOR</c> only as the pointer moves.
+    /// </summary>
+    private void ModifiersChanged()
+    {
+        if (_host is null) return;
+        _host.ModifiersChanged(WindowsKeys.Modifiers());
+        Present(IntPtr.Zero);
+    }
+
+    /// <summary>
+    /// Shows the cursor the host answers where the pointer rests inside the window, when it is not the one shown:
+    /// a frame that changes what is under a resting pointer (a link ⌘ shows over a name, #1084) shows its cursor
+    /// without a move.
+    /// </summary>
+    private void ShowCursorAtRest()
+    {
+        if (_host is null || !_trackingLeave) return;
+        POINT point;
+        GetCursorPos(&point);
+        ScreenToClient(_hwnd, &point);
+        if (point.X < 0 || point.Y < 0 || point.X >= _clientWidth || point.Y >= _clientHeight) return;
+        var shape = _host.CursorAt(point.X / _scale, point.Y / _scale);
+        if (shape == _cursorShown) return;
+        _cursorShown = shape;
+        Cursors.Apply(shape);
+    }
+
     private void Present(IntPtr hdc)
     {
         if (_host is null || _presenter is null || _presenting || _clientWidth <= 0 || _clientHeight <= 0) return;
@@ -386,6 +419,7 @@ public sealed unsafe class PhotonWindow
             var started = Now();
             _builder.Reset();
             _host.RenderFrame(_builder, started);
+            ShowCursorAtRest();
             if (_chrome == WindowChrome.Unified) DrawCaptionButtons(_builder);
             _presenter.Present(_builder.Build(), hdc);
             FramesPresented++;
@@ -696,7 +730,7 @@ public sealed unsafe class PhotonWindow
                 POINT point;
                 GetCursorPos(&point);
                 ScreenToClient(hwnd, &point);
-                Cursors.Apply(_host.CursorAt(point.X / _scale, point.Y / _scale));
+                Cursors.Apply(_cursorShown = _host.CursorAt(point.X / _scale, point.Y / _scale));
                 return 1;
             }
 
@@ -711,7 +745,9 @@ public sealed unsafe class PhotonWindow
                     _trackingLeave = TrackMouseEvent(&track);
                 }
                 var (x, y) = PointOf(lParam);
-                _host.PointerMove(x / _scale, y / _scale);
+                // What the pointer holds is what a code surface hears with its hover (#1084): Ctrl over a name
+                // links it.
+                _host.PointerMove(x / _scale, y / _scale, modifiers: WindowsKeys.Modifiers());
                 SetCaptionHover(0);
                 return 0;
             }
@@ -781,6 +817,8 @@ public sealed unsafe class PhotonWindow
                 // one into whatever field was last touched. The text arrives NEXT, as WM_CHAR, and
                 // is swallowed when the key was already answered.
                 var name = WindowsKeys.NameOf((uint)wParam);
+                // A modifier pressed with the pointer at rest: the code under it hears so (#1084).
+                if (name is "Shift" or "Control" or "Alt") ModifiersChanged();
                 var handled = name.Length > 0 && _host.KeyDown(name, WindowsKeys.Modifiers());
                 _swallowChar = handled;
                 if (handled)
@@ -792,6 +830,11 @@ public sealed unsafe class PhotonWindow
                 }
                 break;   // Alt+F4, F10 and the system menu keep working
             }
+
+            case WM_KEYUP or WM_SYSKEYUP when _host is not null && WindowsKeys.NameOf((uint)wParam) is "Shift" or "Control" or "Alt":
+                // …and released, which the default procedure still sees (Alt's release opens the menu).
+                ModifiersChanged();
+                break;
 
             case WM_CHAR when _host is not null:
             {

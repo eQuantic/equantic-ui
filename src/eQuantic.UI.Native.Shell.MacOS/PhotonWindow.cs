@@ -47,6 +47,7 @@ public sealed class PhotonWindow
     private const ulong EventTypeMouseMoved = 5;
     private const ulong EventTypeLeftMouseDragged = 6;
     private const ulong EventTypeMouseExited = 9;
+    private const ulong EventTypeFlagsChanged = 12;
     private const ulong EventTypeScrollWheel = 22;
 
     // NSTrackingArea options — the crossing events, live while the window is key, with AppKit
@@ -60,6 +61,11 @@ public sealed class PhotonWindow
     private readonly float _height;
     private float _currentWidth;
     private float _currentHeight;
+
+    // Where the pointer last moved inside the content view, and the cursor shown there: a frame that changes
+    // what is under a resting pointer (a link ⌘ shows over a name, #1084) shows its cursor without a move.
+    private (float X, float Y)? _pointerAt;
+    private CursorShape _cursorShown;
 
     public PhotonWindow(string title, float width = 800, float height = 600,
         WindowChrome chrome = WindowChrome.Standard, bool resizable = true,
@@ -217,6 +223,7 @@ public sealed class PhotonWindow
             frameBuilder.Reset();
             var builder = frameBuilder;
             host.RenderFrame(builder, (float)clock.Elapsed.TotalMilliseconds);
+            if (_pointerAt is { } resting) ShowCursor(host, resting.X, resting.Y);
             // What a live region just said, if anything. DRAINED every frame rather than polled by
             // the accessibility tree: an announcement is an event, and the tree is asked at
             // VoiceOver's moments rather than the content's. The host has already decided whether
@@ -422,6 +429,15 @@ public sealed class PhotonWindow
         Console.WriteLine($"[photon] ime probe: marked '{marked}' → {committed}");
     }
 
+    /// <summary>Shows the cursor the host answers where the pointer rests, when it is not the one shown.</summary>
+    private void ShowCursor(PhotonHost host, float x, float y)
+    {
+        var shape = host.CursorAt(x, y);
+        if (shape == _cursorShown) return;
+        _cursorShown = shape;
+        Cursors.Apply(shape);
+    }
+
     /// <summary>OS event → the host's pointer pipeline. AppKit is bottom-left; the UI is top-left.</summary>
     private void Route(IntPtr e, PhotonHost host)
     {
@@ -435,6 +451,10 @@ public sealed class PhotonWindow
             case EventTypeMouseExited:
             case EventTypeScrollWheel:
                 break;
+            case EventTypeFlagsChanged:
+                // A modifier pressed or released with the pointer at rest: the code under it hears so (#1084).
+                host.ModifiersChanged(MacKeys.ModifiersOf(SendULong(e, Sel("modifierFlags"))));
+                return;
             default:
                 return;
         }
@@ -442,6 +462,7 @@ public sealed class PhotonWindow
         if (type == EventTypeMouseExited)
         {
             // The pointer left the content view — its location is already outside; hover clears.
+            _pointerAt = null;
             host.PointerLeave();
             return;
         }
@@ -453,20 +474,19 @@ public sealed class PhotonWindow
         switch (type)
         {
             case EventTypeLeftMouseDown:
-                // Shift+click extends a sheet/text selection — the same bits OnKeyDown reads.
-                var mouseFlags = SendULong(e, Sel("modifierFlags"));
-                var mouseModifiers = Primitives.KeyModifiers.None;
-                if ((mouseFlags & (1UL << 17)) != 0) mouseModifiers |= Primitives.KeyModifiers.Shift;
-                if ((mouseFlags & (1UL << 20)) != 0) mouseModifiers |= Primitives.KeyModifiers.Command;
-                host.PressDown(x, y, (int)SendULong(e, Sel("clickCount")), mouseModifiers);
+                // Shift+click extends a sheet/text selection, ⌥ and a press adds a caret, ⌘ and a press follows a
+                // link: the same bits OnKeyDown reads, all four of them.
+                host.PressDown(x, y, (int)SendULong(e, Sel("clickCount")),
+                    MacKeys.ModifiersOf(SendULong(e, Sel("modifierFlags"))));
                 break;
             case EventTypeLeftMouseUp:
                 host.PressUp(x, y);
                 break;
             case EventTypeMouseMoved:
             case EventTypeLeftMouseDragged:
-                host.PointerMove(x, y);
-                Cursors.Apply(host.CursorAt(x, y));
+                host.PointerMove(x, y, modifiers: MacKeys.ModifiersOf(SendULong(e, Sel("modifierFlags"))));
+                _pointerAt = (x, y);
+                Cursors.Apply(_cursorShown = host.CursorAt(x, y));
                 break;
             case EventTypeScrollWheel:
             {

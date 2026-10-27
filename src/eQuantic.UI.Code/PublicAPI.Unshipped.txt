@@ -384,8 +384,6 @@ eQuantic.UI.Code.CodeGoToEntry.Target.get -> eQuantic.UI.Code.CodePosition
 eQuantic.UI.Code.CodeGoToEntry.Target.init -> void
 eQuantic.UI.Code.CodeGoToEntry
 eQuantic.UI.Code.CodeGoToEntry.<Clone>$() -> eQuantic.UI.Code.CodeGoToEntry!
-eQuantic.UI.Code.CodeGoToEntry.CodeGoToEntry(string! Name, eQuantic.UI.Code.CodeSymbolKind Kind, eQuantic.UI.Code.CodeRange Range, eQuantic.UI.Code.CodePosition Target) -> void
-eQuantic.UI.Code.CodeGoToEntry.Deconstruct(out string! Name, out eQuantic.UI.Code.CodeSymbolKind Kind, out eQuantic.UI.Code.CodeRange Range, out eQuantic.UI.Code.CodePosition Target) -> void
 eQuantic.UI.Code.CodeGoToEntry.Equals(eQuantic.UI.Code.CodeGoToEntry? other) -> bool
 override eQuantic.UI.Code.CodeGoToEntry.Equals(object? obj) -> bool
 override eQuantic.UI.Code.CodeGoToEntry.GetHashCode() -> int
@@ -394,7 +392,6 @@ static eQuantic.UI.Code.CodeGoToEntry.operator !=(eQuantic.UI.Code.CodeGoToEntry
 static eQuantic.UI.Code.CodeGoToEntry.operator ==(eQuantic.UI.Code.CodeGoToEntry? left, eQuantic.UI.Code.CodeGoToEntry? right) -> bool
 eQuantic.UI.Code.CodeGoToEntry.Name.get -> string!
 eQuantic.UI.Code.CodeGoToEntry.Name.init -> void
-eQuantic.UI.Code.CodeGoToEntry.Kind.get -> eQuantic.UI.Code.CodeSymbolKind
 eQuantic.UI.Code.CodeGoToEntry.Kind.init -> void
 eQuantic.UI.Code.CodeGoToEntry.Range.get -> eQuantic.UI.Code.CodeRange
 eQuantic.UI.Code.CodeGoToEntry.Range.init -> void
@@ -430,3 +427,82 @@ eQuantic.UI.Code.CodeJumpList.CanGoForward.get -> bool
 eQuantic.UI.Code.CodeJumpList.Back() -> bool
 eQuantic.UI.Code.CodeJumpList.Forward() -> bool
 eQuantic.UI.Code.CodeGoTo.Dismiss() -> bool
+eQuantic.UI.Code.CodeCommand.GoToDefinition = 79 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.GoToDeclaration = 80 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.GoToTypeDefinition = 81 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.GoToImplementation = 82 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.FindReferences = 83 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.NextReference = 84 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.PreviousReference = 85 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeEditorController.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
+eQuantic.UI.Code.CodeEditorController.Definitions.get -> eQuantic.UI.Code.CodeDefinitions!
+eQuantic.UI.Code.CodeEditorController.References.get -> eQuantic.UI.Code.CodeReferences!
+eQuantic.UI.Code.CodeEditorController.OpenRequested -> System.Action<eQuantic.UI.Code.CodeLocation!>?
+eQuantic.UI.Code.CodeEditorController.RevealNearTopIfOutsideView(eQuantic.UI.Code.CodePosition position) -> void
+eQuantic.UI.Code.CodeDefinitionKind.Declaration = 1 -> eQuantic.UI.Code.CodeDefinitionKind
+eQuantic.UI.Code.CodeDefinitionKind.TypeDefinition = 2 -> eQuantic.UI.Code.CodeDefinitionKind
+eQuantic.UI.Code.CodeDefinitionKind.Implementation = 3 -> eQuantic.UI.Code.CodeDefinitionKind
+eQuantic.UI.Code.CodeDefinitionKind
+eQuantic.UI.Code.CodeDefinitionKind.Definition = 0 -> eQuantic.UI.Code.CodeDefinitionKind
+eQuantic.UI.Code.CodeDefinitions
+eQuantic.UI.Code.CodeDefinitions.Providers.get -> System.Collections.Generic.IList<eQuantic.UI.Code.ICodeDefinitionProvider!>!
+eQuantic.UI.Code.CodeDefinitions.Failed -> System.Action<System.Exception!>?
+eQuantic.UI.Code.CodeDefinitions.Link.get -> eQuantic.UI.Code.CodeRange?
+eQuantic.UI.Code.CodeDefinitions.Changed -> System.Action?
+eQuantic.UI.Code.CodeDefinitions.RequestAsync(eQuantic.UI.Code.CodePosition position, eQuantic.UI.Code.CodeDefinitionKind kind, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLocation!>!>!
+eQuantic.UI.Code.CodeLocation.Document.get -> string?
+eQuantic.UI.Code.CodeLocation.Document.init -> void
+eQuantic.UI.Code.CodeLocation
+eQuantic.UI.Code.CodeLocation.<Clone>$() -> eQuantic.UI.Code.CodeLocation!
+eQuantic.UI.Code.CodeLocation.CodeLocation(eQuantic.UI.Code.CodeRange Range) -> void
+eQuantic.UI.Code.CodeLocation.Deconstruct(out eQuantic.UI.Code.CodeRange Range) -> void
+eQuantic.UI.Code.CodeLocation.Equals(eQuantic.UI.Code.CodeLocation? other) -> bool
+override eQuantic.UI.Code.CodeLocation.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeLocation.GetHashCode() -> int
+override eQuantic.UI.Code.CodeLocation.ToString() -> string!
+static eQuantic.UI.Code.CodeLocation.operator !=(eQuantic.UI.Code.CodeLocation? left, eQuantic.UI.Code.CodeLocation? right) -> bool
+static eQuantic.UI.Code.CodeLocation.operator ==(eQuantic.UI.Code.CodeLocation? left, eQuantic.UI.Code.CodeLocation? right) -> bool
+eQuantic.UI.Code.CodeLocation.Range.get -> eQuantic.UI.Code.CodeRange
+eQuantic.UI.Code.CodeLocation.Range.init -> void
+eQuantic.UI.Code.CodeReferences.Providers.get -> System.Collections.Generic.IList<eQuantic.UI.Code.ICodeReferenceProvider!>!
+eQuantic.UI.Code.CodeReferences.Failed -> System.Action<System.Exception!>?
+eQuantic.UI.Code.CodeReferences.RequestAsync(eQuantic.UI.Code.CodePosition position, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLocation!>!>!
+eQuantic.UI.Code.CodeReferences
+eQuantic.UI.Code.ICodeDefinitionProvider
+eQuantic.UI.Code.ICodeDefinitionProvider.DefinitionsAsync(eQuantic.UI.Code.CodeDocument! document, eQuantic.UI.Code.CodePosition position, eQuantic.UI.Code.CodeDefinitionKind kind, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLocation!>!>!
+eQuantic.UI.Code.ICodeReferenceProvider.ReferencesAsync(eQuantic.UI.Code.CodeDocument! document, eQuantic.UI.Code.CodePosition position, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLocation!>!>!
+eQuantic.UI.Code.ICodeReferenceProvider
+eQuantic.UI.Code.CodeGoTo.DefinitionKind.get -> eQuantic.UI.Code.CodeDefinitionKind
+eQuantic.UI.Code.CodeGoTo.Places.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLocation!>!
+eQuantic.UI.Code.CodeGoTo.PlaceIndex.get -> int
+eQuantic.UI.Code.CodeGoTo.NotFound.get -> eQuantic.UI.Code.CodeGoToNotFound?
+eQuantic.UI.Code.CodeGoTo.Definition(eQuantic.UI.Code.CodeDefinitionKind kind) -> bool
+eQuantic.UI.Code.CodeGoTo.References() -> bool
+eQuantic.UI.Code.CodeGoTo.NextPlace() -> bool
+eQuantic.UI.Code.CodeGoTo.PreviousPlace() -> bool
+eQuantic.UI.Code.CodeGoToEntry.CodeGoToEntry(string! Name, eQuantic.UI.Code.CodeSymbolKind? Kind, eQuantic.UI.Code.CodeRange Range, eQuantic.UI.Code.CodePosition Target) -> void
+eQuantic.UI.Code.CodeGoToEntry.Deconstruct(out string! Name, out eQuantic.UI.Code.CodeSymbolKind? Kind, out eQuantic.UI.Code.CodeRange Range, out eQuantic.UI.Code.CodePosition Target) -> void
+eQuantic.UI.Code.CodeGoToEntry.Kind.get -> eQuantic.UI.Code.CodeSymbolKind?
+eQuantic.UI.Code.CodeGoToEntry.Document.get -> string?
+eQuantic.UI.Code.CodeGoToEntry.Document.init -> void
+eQuantic.UI.Code.CodeGoToMode.Definitions = 3 -> eQuantic.UI.Code.CodeGoToMode
+eQuantic.UI.Code.CodeGoToMode.References = 4 -> eQuantic.UI.Code.CodeGoToMode
+eQuantic.UI.Code.CodeGoToNotFound.Word.get -> string!
+eQuantic.UI.Code.CodeGoToNotFound.Word.init -> void
+eQuantic.UI.Code.CodeGoToNotFound
+eQuantic.UI.Code.CodeGoToNotFound.<Clone>$() -> eQuantic.UI.Code.CodeGoToNotFound!
+eQuantic.UI.Code.CodeGoToNotFound.CodeGoToNotFound(eQuantic.UI.Code.CodeGoToMode Mode, eQuantic.UI.Code.CodeDefinitionKind Kind, eQuantic.UI.Code.CodePosition At, string! Word) -> void
+eQuantic.UI.Code.CodeGoToNotFound.Deconstruct(out eQuantic.UI.Code.CodeGoToMode Mode, out eQuantic.UI.Code.CodeDefinitionKind Kind, out eQuantic.UI.Code.CodePosition At, out string! Word) -> void
+eQuantic.UI.Code.CodeGoToNotFound.Equals(eQuantic.UI.Code.CodeGoToNotFound? other) -> bool
+override eQuantic.UI.Code.CodeGoToNotFound.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeGoToNotFound.GetHashCode() -> int
+override eQuantic.UI.Code.CodeGoToNotFound.ToString() -> string!
+static eQuantic.UI.Code.CodeGoToNotFound.operator !=(eQuantic.UI.Code.CodeGoToNotFound? left, eQuantic.UI.Code.CodeGoToNotFound? right) -> bool
+static eQuantic.UI.Code.CodeGoToNotFound.operator ==(eQuantic.UI.Code.CodeGoToNotFound? left, eQuantic.UI.Code.CodeGoToNotFound? right) -> bool
+eQuantic.UI.Code.CodeGoToNotFound.Mode.get -> eQuantic.UI.Code.CodeGoToMode
+eQuantic.UI.Code.CodeGoToNotFound.Mode.init -> void
+eQuantic.UI.Code.CodeGoToNotFound.Kind.get -> eQuantic.UI.Code.CodeDefinitionKind
+eQuantic.UI.Code.CodeGoToNotFound.Kind.init -> void
+eQuantic.UI.Code.CodeGoToNotFound.At.get -> eQuantic.UI.Code.CodePosition
+eQuantic.UI.Code.CodeGoToNotFound.At.init -> void
+eQuantic.UI.Code.CodeDefinitions.ClearLink() -> void

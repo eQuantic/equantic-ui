@@ -188,4 +188,55 @@
   <data name="ReadingSymbols" xml:space="preserve">
     <value>Leyendo los símbolos…</value>
   </data>
+  <data name="DefinitionsCount" xml:space="preserve">
+    <value>Definiciones ({0})</value>
+  </data>
+  <data name="DeclarationsCount" xml:space="preserve">
+    <value>Declaraciones ({0})</value>
+  </data>
+  <data name="TypeDefinitionsCount" xml:space="preserve">
+    <value>Definiciones de tipo ({0})</value>
+  </data>
+  <data name="ImplementationsCount" xml:space="preserve">
+    <value>Implementaciones ({0})</value>
+  </data>
+  <data name="ReferencesCount" xml:space="preserve">
+    <value>Referencias ({0})</value>
+  </data>
+  <data name="FilterPlaces" xml:space="preserve">
+    <value>Escriba para filtrar los lugares.</value>
+  </data>
+  <data name="NoMatchingPlaces" xml:space="preserve">
+    <value>Ningún lugar coincide.</value>
+  </data>
+  <data name="NoDefinitionFound" xml:space="preserve">
+    <value>No se encontró ninguna definición para '{0}'</value>
+  </data>
+  <data name="NoDefinition" xml:space="preserve">
+    <value>No se encontró ninguna definición</value>
+  </data>
+  <data name="NoDeclarationFound" xml:space="preserve">
+    <value>No se encontró ninguna declaración para '{0}'</value>
+  </data>
+  <data name="NoDeclaration" xml:space="preserve">
+    <value>No se encontró ninguna declaración</value>
+  </data>
+  <data name="NoTypeDefinitionFound" xml:space="preserve">
+    <value>No se encontró ninguna definición de tipo para '{0}'</value>
+  </data>
+  <data name="NoTypeDefinition" xml:space="preserve">
+    <value>No se encontró ninguna definición de tipo</value>
+  </data>
+  <data name="NoImplementationFound" xml:space="preserve">
+    <value>No se encontró ninguna implementación para '{0}'</value>
+  </data>
+  <data name="NoImplementation" xml:space="preserve">
+    <value>No se encontró ninguna implementación</value>
+  </data>
+  <data name="NoReferencesFound" xml:space="preserve">
+    <value>No se encontraron referencias para '{0}'</value>
+  </data>
+  <data name="NoReferences" xml:space="preserve">
+    <value>No se encontraron referencias</value>
+  </data>
 </root>

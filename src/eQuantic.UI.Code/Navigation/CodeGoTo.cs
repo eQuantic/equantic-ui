@@ -22,6 +22,16 @@ namespace eQuantic.UI.Code;
 /// (<see cref="CodeFuzzyMatch"/>), from anywhere in the name. With nothing typed, the symbol the caret stands
 /// in is selected.
 /// </para>
+/// <para>
+/// It also goes where a name is defined and used (#1084), as VS Code's <c>SymbolNavigationAction</c> does:
+/// <see cref="Definition"/> and <see cref="References"/> ask the language services at the caret, go to a single
+/// answer, list several in the field (<see cref="CodeGoToMode.Definitions"/>, <see cref="CodeGoToMode.References"/>,
+/// modes its text does not choose and only filters), and say when there is none (<see cref="NotFound"/>). Going
+/// to a place selects its start, records a jump and brings it near the top of the view; a place in another
+/// document is handed to the app (<see cref="CodeEditorController.OpenRequested"/>). The places of the last list
+/// are kept, carried through every edit, for <see cref="NextPlace"/> and <see cref="PreviousPlace"/> (F4, ⇧F4)
+/// to walk once it is closed.
+/// </para>
 /// </summary>
 public sealed class CodeGoTo
 {
@@ -46,8 +56,29 @@ public sealed class CodeGoTo
     private bool _enclose;
     private int _generation;
     private CancellationTokenSource? _request;
+    // The places of the last list, which a walk goes through once it is closed, carried through every edit.
+    private readonly List<CodeLocation> _places = [];
+    // The place last gone to in _places, or the one nearest the caret when the list opened; -1 with none.
+    private int _placeAt = -1;
+    // The place nearest the caret when the list opened, which it selects with nothing typed.
+    private int _nearest = -1;
+    // Which of _places each entry shows, in the order of _entries.
+    private readonly List<int> _entryPlaces = [];
+    // The place whose row stays selected as the rows are made again, or -1: an edit while the list shows.
+    private int _keepPlace = -1;
+    private CodeDefinitionKind _kind;
+    private CodeGoToNotFound? _notFound;
+    // The places asked for and not answered yet: a request of its own, dropped when the caret moves or the text
+    // changes, as VS Code drops one (CodeEditorStateFlag.Value | Position).
+    private int _placesGeneration;
+    private CancellationTokenSource? _placesRequest;
 
-    internal CodeGoTo(CodeEditorController editor) => _editor = editor;
+    internal CodeGoTo(CodeEditorController editor)
+    {
+        _editor = editor;
+        editor.Changed += Carry;
+        editor.SelectionChanged += _ => Moved();
+    }
 
     /// <summary>Whether the field shows.</summary>
     public bool IsOpen => _open;
@@ -73,8 +104,25 @@ public sealed class CodeGoTo
     /// <summary>The line the text reads, in <see cref="CodeGoToMode.Line"/>, or null when it reads none.</summary>
     public CodeGoToLine? Line => _line;
 
-    /// <summary>The symbols the text lists, in <see cref="CodeGoToMode.Symbol"/>, the best first.</summary>
+    /// <summary>What the field lists: the symbols the text matches, in <see cref="CodeGoToMode.Symbol"/>, the best
+    /// first, or the places the text matches, in <see cref="CodeGoToMode.Definitions"/> and
+    /// <see cref="CodeGoToMode.References"/>, in the document's order.</summary>
     public IReadOnlyList<CodeGoToEntry> Entries => _entries;
+
+    /// <summary>What the definitions listed answer, in <see cref="CodeGoToMode.Definitions"/>: where the name is
+    /// defined, declared, typed or implemented.</summary>
+    public CodeDefinitionKind DefinitionKind => _kind;
+
+    /// <summary>The places of the last list, which <see cref="NextPlace"/> and <see cref="PreviousPlace"/> walk,
+    /// carried through every edit. Empty until a list is shown, and again when the document is replaced.</summary>
+    public IReadOnlyList<CodeLocation> Places => _places;
+
+    /// <summary>The place last gone to in <see cref="Places"/>, or the one nearest the caret when the list opened;
+    /// -1 with none.</summary>
+    public int PlaceIndex => _placeAt;
+
+    /// <summary>That nothing was found where the person last asked, for the editor to say at the caret, or null.</summary>
+    public CodeGoToNotFound? NotFound => _notFound;
 
     /// <summary>The index of the selected entry in <see cref="Entries"/>, or -1 with none.</summary>
     public int Selected => _selected;
@@ -97,22 +145,34 @@ public sealed class CodeGoTo
     /// <summary>
     /// Opens the field on <paramref name="mode"/>, its text the mode's prefix alone. Opened already, it
     /// starts again from the prefix and keeps the view to give back that it had. Whatever was over the code
-    /// (the completion's list, the card, the panel) closes, as the keyboard leaves the code.
+    /// (the completion's list, the card, the panel) closes, as the keyboard leaves the code. A list of places is
+    /// not opened here but by asking for it (<see cref="Definition"/>, <see cref="References"/>): a mode of one
+    /// opens the field with nothing typed.
     /// </summary>
     public void Open(CodeGoToMode mode)
     {
-        if (!_open)
-        {
-            _open = true;
-            _view = _editor.View;
-            _editor.Completion.Dismiss();
-            _editor.Hover.Dismiss();
-            _editor.SignatureHelp.Dismiss();
-            // A composition in flight goes with the keyboard: its text is not the code's yet.
-            if (_editor.Composition is not null) _editor.SetComposition("");
-        }
+        Begin();
+        // The field leaves a list of places for the modes its text chooses.
+        if (Lists(_mode)) _mode = CodeGoToMode.None;
         Read(mode switch { CodeGoToMode.Line => ":", CodeGoToMode.Symbol => "@", _ => "" }, opening: true);
     }
+
+    /// <summary>Shows the field, unless it shows already, keeping the view it opens over to give back.</summary>
+    private void Begin()
+    {
+        if (_open) return;
+        _open = true;
+        _view = _editor.View;
+        _editor.Completion.Dismiss();
+        _editor.Hover.Dismiss();
+        _editor.SignatureHelp.Dismiss();
+        Unsay();
+        // A composition in flight goes with the keyboard: its text is not the code's yet.
+        if (_editor.Composition is not null) _editor.SetComposition("");
+    }
+
+    /// <summary>Whether <paramref name="mode"/> lists places, which the text filters and does not choose.</summary>
+    private static bool Lists(CodeGoToMode mode) => mode == CodeGoToMode.Definitions || mode == CodeGoToMode.References;
 
     /// <summary>Selects the entry at <paramref name="index"/>, clamped to the list, and centres the code on
     /// it. Answers whether the selection moved.</summary>
@@ -142,12 +202,27 @@ public sealed class CodeGoTo
 
     /// <summary>
     /// Goes where the field reads: the caret to the line read, or to where the selected symbol's name
-    /// starts, centred, recorded as a jump, the field closed and the keyboard given to the code. With nothing
-    /// to go to it does nothing, and the field stays, as VS Code's does.
+    /// starts, centred, recorded as a jump, the field closed and the keyboard given to the code. A selected place
+    /// is gone to as a single answer is (<see cref="Definition"/>). With nothing to go to it does nothing, and the
+    /// field stays, as VS Code's does.
     /// </summary>
     public bool Accept()
     {
         if (!_open) return false;
+        if (Lists(_mode))
+        {
+            // A place is gone to as a single answer is: its start, near the top of the view, a jump; one in
+            // another document is the app's, with the view given back.
+            if (_selected < 0) return false;
+            var index = _entryPlaces[_selected];
+            var view = _view;
+            End();
+            _placeAt = index;
+            GoToPlace(_places[index], view);
+            _editor.RequestFocus();
+            Changed?.Invoke();
+            return true;
+        }
         CodePosition? target = _mode == CodeGoToMode.Line ? _lineTarget
             : _mode == CodeGoToMode.Symbol && _selected >= 0 ? _entries[_selected].Target
             : null;
@@ -177,13 +252,18 @@ public sealed class CodeGoTo
     /// that draws it, and what is typed before that is the field's, never the code's: ⌃G and a line number
     /// typed at once edited the code. The field's own keys act on it and are claimed, Backspace takes the last
     /// character, and every other key is left to the host, a character among them, which arrives as text
-    /// (<see cref="Type"/>). A chord with ⌘, ⌃ or ⌥ is the host's too.
+    /// (<see cref="Type"/>). A chord with ⌘, ⌃ or ⌥ is the host's too. F4 and ⇧F4 walk a list of places.
     /// </summary>
     internal bool Key(string key, KeyModifiers modifiers)
     {
         if ((modifiers & (KeyModifiers.Command | KeyModifiers.Control | KeyModifiers.Alt)) != 0) return false;
         switch (key)
         {
+            case "F4":
+                if (!Lists(_mode)) return false;
+                if ((modifiers & KeyModifiers.Shift) != 0) SelectPrevious();
+                else SelectNext();
+                return true;
             case "Enter":
                 Accept();
                 return true;
@@ -227,10 +307,20 @@ public sealed class CodeGoTo
         return true;
     }
 
-    /// <summary>A new document: the field closes, with nothing to give back.</summary>
+    /// <summary>A new document: the field closes, with nothing to give back, and the places held, the request
+    /// for them and what was said about them go, since they were the old document's.</summary>
     internal void Reset()
     {
-        if (!_open) return;
+        _places.Clear();
+        _placeAt = -1;
+        StopAsking();
+        var said = _notFound is not null;
+        _notFound = null;
+        if (!_open)
+        {
+            if (said) Changed?.Invoke();
+            return;
+        }
         End();
         Changed?.Invoke();
     }
@@ -238,24 +328,40 @@ public sealed class CodeGoTo
     private void End()
     {
         _open = false;
-        _generation++;
-        ProviderRequest.Cancel(_request, null);
-        _request = null;
-        _asking = false;
+        StopSymbols();
         _query = "";
         _mode = CodeGoToMode.None;
         _line = null;
         _lineTarget = null;
         _entries = [];
+        _entryPlaces.Clear();
+        _nearest = -1;
         _selected = -1;
         _preview = null;
         _revealed = null;
+    }
+
+    /// <summary>Drops the symbols asked for or answered.</summary>
+    private void StopSymbols()
+    {
+        _generation++;
+        ProviderRequest.Cancel(_request, null);
+        _request = null;
+        _asking = false;
         _symbols.Clear();
         _containers.Clear();
     }
 
     private void Read(string query, bool opening)
     {
+        // A list of places keeps its mode: the text filters it.
+        if (Lists(_mode))
+        {
+            _query = query;
+            _enclose = false;
+            Refresh();
+            return;
+        }
         var was = _mode;
         _query = query;
         _mode = query.StartsWith(':') ? CodeGoToMode.Line
@@ -269,15 +375,7 @@ public sealed class CodeGoTo
         else
         {
             _enclose = false;
-            if (_mode != CodeGoToMode.Symbol)
-            {
-                _generation++;
-                ProviderRequest.Cancel(_request, null);
-                _request = null;
-                _asking = false;
-                _symbols.Clear();
-                _containers.Clear();
-            }
+            if (_mode != CodeGoToMode.Symbol) StopSymbols();
         }
         Refresh();
     }
@@ -288,9 +386,11 @@ public sealed class CodeGoTo
         _line = null;
         _lineTarget = null;
         _entries = [];
+        _entryPlaces.Clear();
         _selected = -1;
         if (_mode == CodeGoToMode.Line) ReadLine();
         else if (_mode == CodeGoToMode.Symbol) Filter();
+        else if (Lists(_mode)) FilterPlaces();
         Previewed();
         Changed?.Invoke();
     }
@@ -532,14 +632,295 @@ public sealed class CodeGoTo
             at = line;
             _preview = new CodeRange(line);
         }
-        else if (_mode == CodeGoToMode.Symbol && _selected >= 0)
+        else if ((_mode == CodeGoToMode.Symbol || Lists(_mode)) && _selected >= 0 && _entries[_selected].Document is null)
         {
             at = _entries[_selected].Target;
             _preview = _entries[_selected].Range;
         }
+        // A place in another document is not the editor's to show: the view stays where it is.
         else _preview = null;
         if (at is not { } shown || _revealed == shown) return;
         _revealed = shown;
         _editor.RevealInCenter(shown);
+    }
+
+    // ---- definitions and references (#1084) -------------------------------------------------------------
+
+    /// <summary>
+    /// Goes where what stands at the caret is defined, declared, typed or implemented, as
+    /// <paramref name="kind"/> asks (F12, ⌘F12), when the definition providers answer: one place is gone to, several
+    /// are listed (<see cref="CodeGoToMode.Definitions"/>), and none is said (<see cref="NotFound"/>). When the caret
+    /// already stands in the only place answered, its references are found instead, VS Code's alternative command,
+    /// for every kind but an implementation. Answers false, and asks nothing, with no provider.
+    /// </summary>
+    public bool Definition(CodeDefinitionKind kind) =>
+        _editor.Definitions.Providers.Count > 0 && RequestPlaces(CodeGoToMode.Definitions, kind, muted: false);
+
+    /// <summary>Finds the references of what stands at the caret (⇧F12), when the reference providers answer: one
+    /// place is gone to, several are listed (<see cref="CodeGoToMode.References"/>), and none is said. Answers false,
+    /// and asks nothing, with no provider.</summary>
+    public bool References() =>
+        _editor.References.Providers.Count > 0 && RequestPlaces(CodeGoToMode.References, CodeDefinitionKind.Definition, muted: false);
+
+    /// <summary>Goes to the definition at the caret as a click on a link does: as F12, saying nothing when there
+    /// is none, as VS Code mutes its message for the click.</summary>
+    internal bool FollowLink() =>
+        _editor.Definitions.Providers.Count > 0 && RequestPlaces(CodeGoToMode.Definitions, CodeDefinitionKind.Definition, muted: true);
+
+    /// <summary>
+    /// The place after the one last gone to in <see cref="Places"/> (F4): the next row while the list shows, and
+    /// once it is closed the next place, the first after the last, gone to as a single answer is. Answers false,
+    /// claiming nothing, with no place held.
+    /// </summary>
+    public bool NextPlace() => Walk(1);
+
+    /// <summary>The place before the one last gone to (⇧F4), the last before the first.</summary>
+    public bool PreviousPlace() => Walk(-1);
+
+    private bool Walk(int step)
+    {
+        if (_open && Lists(_mode))
+        {
+            if (step > 0) SelectNext();
+            else SelectPrevious();
+            return true;
+        }
+        if (_places.Count == 0) return false;
+        var count = _places.Count;
+        _placeAt = _placeAt < 0 ? (step > 0 ? 0 : count - 1) : ((_placeAt + step) % count + count) % count;
+        GoToPlace(_places[_placeAt], null);
+        Changed?.Invoke();
+        return true;
+    }
+
+    private bool RequestPlaces(CodeGoToMode mode, CodeDefinitionKind kind, bool muted)
+    {
+        Unsay();
+        StopAsking();
+        var generation = _placesGeneration;
+        var request = new CancellationTokenSource();
+        _placesRequest = request;
+        var at = _editor.Selection.Focus;
+        _ = AskPlaces(mode, kind, at, muted, generation, request.Token);
+        return true;
+    }
+
+    private async Task AskPlaces(CodeGoToMode mode, CodeDefinitionKind kind, CodePosition at, bool muted, int generation,
+        CancellationToken cancellation)
+    {
+        IReadOnlyList<CodeLocation> places;
+        try
+        {
+            places = mode == CodeGoToMode.References
+                ? await _editor.References.RequestAsync(at, cancellation)
+                : await _editor.Definitions.RequestAsync(at, kind, cancellation);
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            return;
+        }
+        UiThread.Run(() =>
+        {
+            if (generation != _placesGeneration) return;
+            _placesRequest = null;
+            Answered(mode, kind, at, muted, places);
+        });
+    }
+
+    /// <summary>What an answer does, as VS Code's <c>SymbolNavigationAction</c> does with one.</summary>
+    private void Answered(CodeGoToMode mode, CodeDefinitionKind kind, CodePosition at, bool muted,
+        IReadOnlyList<CodeLocation> places)
+    {
+        if (places.Count == 0)
+        {
+            if (muted) return;
+            var word = _editor.Definitions.WordUnder(at) ?? (at.Column > 0
+                ? _editor.Definitions.WordUnder(at with { Column = at.Column - 1 })
+                : null);
+            _notFound = new CodeGoToNotFound(mode, kind, at, word is { } found ? _editor.Document.TextIn(found) : "");
+            Changed?.Invoke();
+            return;
+        }
+        if (places.Count == 1)
+        {
+            var only = places[0];
+            // Already at the only definition: its references instead (alternativeDefinitionCommand), which an
+            // implementation has none of (alternativeImplementationCommand is empty).
+            var here = only.Document is null && only.Range.Start <= at && at <= only.Range.End;
+            if (here && mode == CodeGoToMode.Definitions && kind != CodeDefinitionKind.Implementation
+                && _editor.References.Providers.Count > 0)
+            {
+                RequestPlaces(CodeGoToMode.References, kind, muted);
+                return;
+            }
+            GoToPlace(only, null);
+            // An answer arrives after the key that asked: whoever draws the editor hears that the caret went.
+            Changed?.Invoke();
+            return;
+        }
+        OpenPlaces(mode, kind, places, at);
+    }
+
+    /// <summary>Lists <paramref name="places"/> in the field, the one nearest <paramref name="at"/> selected and
+    /// previewed, and holds them for the walk.</summary>
+    private void OpenPlaces(CodeGoToMode mode, CodeDefinitionKind kind, IReadOnlyList<CodeLocation> places, CodePosition at)
+    {
+        Begin();
+        StopSymbols();
+        _mode = mode;
+        _kind = kind;
+        _query = "";
+        _enclose = false;
+        _revealed = null;
+        _places.Clear();
+        _places.AddRange(places);
+        _nearest = Nearest(at);
+        _placeAt = _nearest;
+        Refresh();
+    }
+
+    /// <summary>
+    /// The place nearest <paramref name="at"/>, as VS Code's <c>ReferencesModel.nearestReference</c> finds it: one
+    /// in the editor's document before any other, then the fewest lines away, a line counting a hundred columns,
+    /// and of two as near the earlier. With none in the editor's document, the first.
+    /// </summary>
+    private int Nearest(CodePosition at)
+    {
+        var best = -1;
+        var distance = 0;
+        for (var i = 0; i < _places.Count; i++)
+        {
+            if (_places[i].Document is not null) continue;
+            var start = _places[i].Range.Start;
+            var away = Math.Abs(start.Line - at.Line) * 100 + Math.Abs(start.Column - at.Column);
+            if (best >= 0 && away >= distance) continue;
+            best = i;
+            distance = away;
+        }
+        return best >= 0 ? best : 0;
+    }
+
+    /// <summary>
+    /// The places the text matches, as rows, in the document's order: the whole text, trimmed, against what a row
+    /// shows, by the completion's matcher. With nothing typed every place is listed, the nearest selected; with
+    /// something typed, the first left.
+    /// </summary>
+    private void FilterPlaces()
+    {
+        var query = _query.Trim();
+        var document = _editor.Document;
+        for (var i = 0; i < _places.Count; i++)
+        {
+            var entry = PlaceEntry(_places[i], document);
+            if (query.Length > 0)
+            {
+                if (CodeFuzzyMatch.Of(query, entry.Name, anywhere: true) is not { } match) continue;
+                entry = entry with { Matches = match.Positions };
+            }
+            _entries.Add(entry);
+            _entryPlaces.Add(i);
+        }
+        if (_entries.Count == 0) return;
+        _selected = 0;
+        var kept = _entryPlaces.IndexOf(_keepPlace);
+        if (kept >= 0)
+        {
+            _selected = kept;
+            return;
+        }
+        if (query.Length > 0) return;
+        var nearest = _entryPlaces.IndexOf(_nearest);
+        if (nearest >= 0) _selected = nearest;
+    }
+
+    /// <summary>
+    /// The row of <paramref name="place"/>: in the editor's document, the text of its line with its leading white
+    /// space left out, the place's characters on it marked; in another, the last part of the document's name. Both
+    /// show where it stands, its line and its column counted from one.
+    /// </summary>
+    private static CodeGoToEntry PlaceEntry(CodeLocation place, CodeDocument document)
+    {
+        var start = place.Range.Start;
+        var where = (start.Line + 1) + ":" + (start.Column + 1);
+        if (place.Document is { } other)
+            return new CodeGoToEntry(NameOf(other), null, place.Range, start) { Container = where, Document = other };
+        var at = document.Clamp(start);
+        var text = document.Line(at.Line);
+        var lead = 0;
+        while (lead < text.Length && char.IsWhiteSpace(text[lead])) lead++;
+        var name = text.Substring(lead).TrimEnd();
+        var end = place.Range.End;
+        var to = (end.Line == at.Line ? end.Column : text.Length) - lead;
+        var marked = new List<int>();
+        for (var column = Math.Max(at.Column, lead) - lead; column < to && column < name.Length; column++) marked.Add(column);
+        return new CodeGoToEntry(name, null, place.Range, start) { Container = where, Matches = marked };
+    }
+
+    /// <summary>The last part of a document's name, after its last <c>/</c> or <c>\</c>.</summary>
+    private static string NameOf(string document)
+    {
+        var cut = Math.Max(document.LastIndexOf('/'), document.LastIndexOf('\\'));
+        return cut >= 0 && cut < document.Length - 1 ? document.Substring(cut + 1) : document;
+    }
+
+    /// <summary>
+    /// Goes to <paramref name="place"/>: in the editor's document, the caret to its start, recorded as a jump, and
+    /// the place near the top of the view when it is out of it (VS Code's <c>NearTopIfOutsideViewport</c>); in
+    /// another, the place handed to the app, the caret and the jump list left as they were, and the view given back
+    /// to <paramref name="giveBack"/> when a list's preview moved it.
+    /// </summary>
+    private void GoToPlace(CodeLocation place, Rect? giveBack)
+    {
+        if (place.Document is not null)
+        {
+            if (giveBack is { } view) _editor.ScrollTo(view);
+            _editor.RequestOpen(place);
+            return;
+        }
+        var to = _editor.Document.Clamp(place.Range.Start);
+        _editor.JumpList.Jump(() => _editor.Selection = new CodeRange(to));
+        _editor.RevealNearTopIfOutsideView(to);
+    }
+
+    /// <summary>The places held, carried through what changed, as the jump list's are; an edit also drops a
+    /// request under way and what was said, as the caret moving does.</summary>
+    private void Carry(CodeChange change)
+    {
+        if (change.Replaced) return;
+        StopAsking();
+        Unsay();
+        if (_places.Count == 0) return;
+        foreach (var edit in change.Edits)
+            for (var i = 0; i < _places.Count; i++)
+                if (_places[i].Document is null) _places[i] = _places[i] with { Range = edit.Carry(_places[i].Range) };
+        if (!_open || !Lists(_mode)) return;
+        // The rows follow their places, and the one selected stays selected.
+        _keepPlace = _selected >= 0 ? _entryPlaces[_selected] : -1;
+        Refresh();
+        _keepPlace = -1;
+    }
+
+    /// <summary>The caret moved: a request is for where it stood, and what was said was said there.</summary>
+    private void Moved()
+    {
+        StopAsking();
+        Unsay();
+    }
+
+    /// <summary>Drops the places asked for and not answered yet.</summary>
+    private void StopAsking()
+    {
+        _placesGeneration++;
+        ProviderRequest.Cancel(_placesRequest, null);
+        _placesRequest = null;
+    }
+
+    /// <summary>Takes away what was said about nothing found. Answers whether something was.</summary>
+    internal bool Unsay()
+    {
+        if (_notFound is null) return false;
+        _notFound = null;
+        Changed?.Invoke();
+        return true;
     }
 }

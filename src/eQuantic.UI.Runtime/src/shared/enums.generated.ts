@@ -41,7 +41,8 @@ export type CodeCommandValue =
   | 'sortLinesDescending' | 'insertLineAbove' | 'insertLineBelow' | 'addCursorAbove'
   | 'addCursorBelow' | 'addNextOccurrence' | 'selectAllOccurrences' | 'removeSecondaryCursors'
   | 'nextTabStop' | 'previousTabStop' | 'leaveSnippet' | 'goToLine' | 'goToSymbol' | 'navigateBack'
-  | 'navigateForward';
+  | 'navigateForward' | 'goToDefinition' | 'goToDeclaration' | 'goToTypeDefinition'
+  | 'goToImplementation' | 'findReferences' | 'nextReference' | 'previousReference';
 
 export type CodeCompletionKindValue =
   'text' | 'method' | 'function' | 'constructor' | 'field' | 'variable' | 'class' | 'interface'
@@ -54,11 +55,14 @@ export type CodeCompletionTriggerValue = 'invoked' | 'typing' | 'character' | 'i
 export type CodeDecorationKindValue =
   'highlight' | 'squiggle' | 'outline' | 'strike' | 'underline' | 'line' | 'dots';
 
+export type CodeDefinitionKindValue =
+  'definition' | 'declaration' | 'typeDefinition' | 'implementation';
+
 export type CodeDiagnosticSeverityValue = 'hint' | 'information' | 'warning' | 'error';
 
 export type CodeDirectionValue = 'backward' | 'forward';
 
-export type CodeGoToModeValue = 'none' | 'line' | 'symbol';
+export type CodeGoToModeValue = 'none' | 'line' | 'symbol' | 'definitions' | 'references';
 
 export type CodeGutterKindValue =
   'none' | 'breakpoint' | 'breakpointDisabled' | 'error' | 'warning' | 'added' | 'modified'

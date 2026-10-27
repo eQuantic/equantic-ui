@@ -107,7 +107,7 @@ the pill's 40 down.
   MeasureVisitor.Containers.cs:18  var host = ctx.SafeAreaInsets;
   LayoutEngine.cs:128  public EdgeInsets SafeAreaInsets { get; init; }
   WebLoweringVisitor.Containers.cs:436  var env = $"env(safe-area-inset-{name}, 0px)";
-  lowering.ts:4466  const env = `env(safe-area-inset-${name}, 0px)`;
+  lowering.ts:4500  const env = `env(safe-area-inset-${name}, 0px)`;
   ```
 
 ### A5 SafeArea · behaviour · **unverified**
@@ -145,7 +145,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:2629-2640  _pan = null;
+  PhotonHost.cs:2658-2669  _pan = null;
           if (_drag is null)
           {
               var scrollRegions = _lastFrame.ScrollRegions;
@@ -229,7 +229,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:78  var inert = Disabled || Loading;  → Button.cs:132 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:510  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:3661  if (disabled && !wrapping) node.attributes['disabled'] = '';
+  Button.cs:78  var inert = Disabled || Loading;  → Button.cs:132 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:510  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:3695  if (disabled && !wrapping) node.attributes['disabled'] = '';
   ```
 
 ### A13 IconButton · semantics · **CONFIRMED**
@@ -623,7 +623,7 @@ the pill's 40 down.
 
   ```
   Drawer.cs:76  var overlay = new Overlay(layer);
-  lowering.ts:1362  if (node.label) layer.attributes['aria-label'] = node.label;
+  lowering.ts:1393  if (node.label) layer.attributes['aria-label'] = node.label;
   ```
 
 ### C5 Drawer · missing-feature · **unverified**
@@ -714,7 +714,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:4080-4083  const value = role === 'slider' ? node.value : undefined; host.attributes['role'] = role === 'slider' && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
+  lowering.ts:4111-4114  const value = role === 'slider' ? node.value : undefined; host.attributes['role'] = role === 'slider' && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
   WebLoweringVisitor.Interaction.cs:127  var adjustableValue = adjustable.Role == AdjustableRole.Slider ? adjustable.Value : null;
   WebLoweringVisitor.Interaction.cs:288-290  AdjustableRole.Tablist => "tablist", AdjustableRole.Radiogroup => "radiogroup", _ => value is null ? "group" : "slider",
   Slider.cs:163-172              : new Adjustable(box, direction =>
@@ -1182,7 +1182,7 @@ the pill's 40 down.
 
   ```
   Tokens.cs:214  public const float PressCancelSlop = 12;
-  PhotonHost.cs:2128  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
+  PhotonHost.cs:2139  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
   ```
 
 ### A6 ScrollView · missing-feature · **unverified**
@@ -1228,8 +1228,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:2223  public bool ScrollBy(float x, float y, float delta)
-  PhotonHost.cs:1681-1684  case "Home" or "ArrowUp":
+  PhotonHost.cs:2234  public bool ScrollBy(float x, float y, float delta)
+  PhotonHost.cs:1685-1688  case "Home" or "ArrowUp":
                   MoveCaret(0, selecting);
                   return true;
               case "End" or "ArrowDown":
@@ -1304,7 +1304,7 @@ the pill's 40 down.
   src/eQuantic.UI.Web/WebLoweringVisitor.Graphics.cs:300-303 —
           svg.RawAttributes["role"] = "img";
           svg.RawAttributes["aria-label"] = label;
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2551  attributes['role'] = 'img';
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2585  attributes['role'] = 'img';
   ```
 
 ### A11 Image · missing-feature · **REFUTED**
@@ -1591,7 +1591,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:4090-4107  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:4121-4138  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
   ```
 
 ### B5 Tabs · semantics · **unverified**
@@ -1602,7 +1602,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:3625-3627  node.attributes['role'] = 'tab'; node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false'; node.attributes['tabindex'] = '-1';
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:3658-3660  node.attributes['role'] = 'tab'; node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false'; node.attributes['tabindex'] = '-1';
   ```
 
 ### B5 Tabs · missing-feature · **unverified**
@@ -2307,8 +2307,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:4090-4107  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3283  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  lowering.ts:4121-4138  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
+  PhotonHost.cs:3314  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · metric · **CONFIRMED**
@@ -2333,8 +2333,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:4090-4107  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3283  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  lowering.ts:4121-4138  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
+  PhotonHost.cs:3314  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · missing-feature · **unverified**
@@ -2886,7 +2886,7 @@ the pill's 40 down.
 
   ```
   PhotonHost.cs:365  _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, …
-  PhotonHost.cs:2145  if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
+  PhotonHost.cs:2156  if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
                       NeedsRender = true;
   ```
 
@@ -3269,7 +3269,7 @@ the pill's 40 down.
   ```
   Switch.cs:12 — `/// Fence: the slide/crossfade motion between the two ends joins the animation system.`
   WebLoweringVisitor.Interaction.cs:825  var glide = $"translate {Motion.BaseMs}ms";
-  lowering.ts:1301  const glide = `translate ${Motion.baseMs}ms`;
+  lowering.ts:1332  const glide = `translate ${Motion.baseMs}ms`;
   draggable.ts:136  function handBack(surface: HTMLElement): void {
   ```
 

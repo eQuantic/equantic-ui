@@ -54,6 +54,19 @@ export class CodeHoverCard {
         return [card, width, height];
     }
 
+    static message(context: BuildContext, metrics: CodeBlock$CodeMetrics, said: string, viewWidth: number): [VisualNode, number, number] {
+        let theme = context.theme;
+        let prose = $eq.withPatch(metrics.style, { mono: false });
+        let proseLine = prose.scaledLineHeight(context.typeScale);
+        let chrome = Math.fround(2 * Math.fround(CodeHoverCard.border + 8));
+        let most = Math.fround(Math.fround(CodeHoverCard.maxColumns * metrics.columnWidth) + chrome);
+        if (viewWidth > 0) most = Math.min(most, viewWidth);
+        let width = Math.min(most, Math.fround(Math.ceil(CodeHoverCard.widest(context, said, prose)) + chrome));
+        let lines = CodeHoverCard.linesOf(context, said, prose, Math.max(1, Math.fround(width - chrome)));
+        let card = new LiveRegion(new Box(new BoxStyle({ width: width, background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: CodeHoverCard.border, borderColor: theme.border, elevation: 2, padding: EdgeInsets.symmetric(8, 4), clip: true }), new Text(said, 'labelSmall', theme.textSecondary, lines, 'start', false, false, null, 0, { styleOverride: prose })));
+        return [card, width, Math.fround(Math.fround(2 * Math.fround(CodeHoverCard.border + 4)) + Math.fround(Math.fround(lines) * proseLine))];
+    }
+
     static place(start: Rect, viewTop: number, viewLeft: number, viewWidth: number, width: number, height: number): [number, number] {
         let y = Math.fround(start.y - height) >= viewTop ? Math.fround(start.y - height) : Math.fround(start.y + start.height);
         let x = start.x;

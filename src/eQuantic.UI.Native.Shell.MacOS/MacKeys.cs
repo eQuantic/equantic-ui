@@ -8,6 +8,21 @@ namespace eQuantic.UI.Native.Shell.MacOS;
 public static class MacKeys
 {
     /// <summary>
+    /// The modifiers an event's <c>modifierFlags</c> carry, as the engine reads them on a Mac: ⇧ Shift, ⌃
+    /// Control, ⌥ Alt and ⌘ Command, apart. One reading for a key, a press, a move and <c>flagsChanged</c>: a
+    /// press that read only ⇧ and ⌘ never handed a code surface the ⌥ that adds a caret (#1084).
+    /// </summary>
+    public static Primitives.KeyModifiers ModifiersOf(ulong flags)
+    {
+        var modifiers = Primitives.KeyModifiers.None;
+        if ((flags & (1UL << 17)) != 0) modifiers |= Primitives.KeyModifiers.Shift;
+        if ((flags & (1UL << 18)) != 0) modifiers |= Primitives.KeyModifiers.Control;
+        if ((flags & (1UL << 19)) != 0) modifiers |= Primitives.KeyModifiers.Alt;
+        if ((flags & (1UL << 20)) != 0) modifiers |= Primitives.KeyModifiers.Command;
+        return modifiers;
+    }
+
+    /// <summary>
     /// The key's DOM name, taken from the KEY CODE rather than the character it produced. A layout
     /// decides what a key types; it does not decide which key is Return, and a French keyboard's
     /// arrows have to work as arrows. A function key types a character of its own in the private use

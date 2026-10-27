@@ -13,8 +13,9 @@ namespace DefaultUIDashboard.Screens;
 /// provider finds as the text changes (<see cref="LedgerLint"/>), the card that explains a name
 /// (<see cref="LedgerHover"/>), the panel that explains a call being written
 /// (<see cref="LedgerSignatures"/>), the snippets it completes, walked with Tab
-/// (<see cref="CodeSnippetCompletionProvider"/>), and what the file declares, for ⇧⌘O to go to
-/// (<see cref="LedgerSymbols"/>).
+/// (<see cref="CodeSnippetCompletionProvider"/>), what the file declares, for ⇧⌘O to go to
+/// (<see cref="LedgerSymbols"/>), and where a name is defined and used, for F12, ⇧F12 and ⌘ over it
+/// (<see cref="LedgerNames"/>).
 /// </summary>
 [Page("/code", Title = "Code editor — eQuantic Console")]
 public sealed class CodeScreen : StatefulComponent
@@ -30,6 +31,9 @@ public sealed class CodeScreen : StatefulComponent
     private readonly LedgerHover _hover = new();
     private readonly LedgerSignatures _signatures = new();
     private readonly LedgerSymbols _symbols = new();
+    private readonly LedgerNames _names;
+
+    public CodeScreen() => _names = new LedgerNames(_symbols);
 
     /// <summary>Before the language's words and the file's, so a prefix that is also a keyword offers its
     /// snippet first: a loop, a walk over a collection, and a property whose access is a choice.</summary>
@@ -109,7 +113,7 @@ public sealed class CodeScreen : StatefulComponent
         {
             Width = SizeValue.Fill,
             Padding = new EdgeInsets(Space.S4, Space.S4, 0, Space.S4),
-        }, new Text(_status.Length == 0 ? "Rest the pointer on a name, type a call such as Add(, type prop and press Enter, press ⌃G or ⇧⌘O to go to a line or a symbol, or press F8." : _status,
+        }, new Text(_status.Length == 0 ? "Rest the pointer on a name, ⌘-click it or press F12 to go to it and ⇧F12 for its uses, type a call such as Add(, press ⌃G or ⇧⌘O, or press F8." : _status,
             TypeRole.BodyM, theme.TextSecondary, maxLines: 1)));
         page.Add(new Box(new BoxStyle
         {
@@ -126,6 +130,11 @@ public sealed class CodeScreen : StatefulComponent
             HoverProviders = [_hover],
             SignatureProviders = [_signatures],
             SymbolProviders = [_symbols],
+            DefinitionProviders = [_names],
+            ReferenceProviders = [_names],
+            // The framework's names are defined in its own source, which this screen does not have: an IDE opens it.
+            OnOpenRequested = place => SetState(() => _status =
+                $"{place.Document}, line {place.Range.Start.Line + 1}: an IDE opens it here."),
         }));
 
         return new Box(new BoxStyle

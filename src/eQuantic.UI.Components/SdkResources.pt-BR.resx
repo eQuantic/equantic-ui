@@ -188,4 +188,55 @@
   <data name="ReadingSymbols" xml:space="preserve">
     <value>Lendo os símbolos…</value>
   </data>
+  <data name="DefinitionsCount" xml:space="preserve">
+    <value>Definições ({0})</value>
+  </data>
+  <data name="DeclarationsCount" xml:space="preserve">
+    <value>Declarações ({0})</value>
+  </data>
+  <data name="TypeDefinitionsCount" xml:space="preserve">
+    <value>Definições de tipo ({0})</value>
+  </data>
+  <data name="ImplementationsCount" xml:space="preserve">
+    <value>Implementações ({0})</value>
+  </data>
+  <data name="ReferencesCount" xml:space="preserve">
+    <value>Referências ({0})</value>
+  </data>
+  <data name="FilterPlaces" xml:space="preserve">
+    <value>Digite para filtrar os lugares.</value>
+  </data>
+  <data name="NoMatchingPlaces" xml:space="preserve">
+    <value>Nenhum lugar corresponde.</value>
+  </data>
+  <data name="NoDefinitionFound" xml:space="preserve">
+    <value>Nenhuma definição encontrada para '{0}'</value>
+  </data>
+  <data name="NoDefinition" xml:space="preserve">
+    <value>Nenhuma definição encontrada</value>
+  </data>
+  <data name="NoDeclarationFound" xml:space="preserve">
+    <value>Nenhuma declaração encontrada para '{0}'</value>
+  </data>
+  <data name="NoDeclaration" xml:space="preserve">
+    <value>Nenhuma declaração encontrada</value>
+  </data>
+  <data name="NoTypeDefinitionFound" xml:space="preserve">
+    <value>Nenhuma definição de tipo encontrada para '{0}'</value>
+  </data>
+  <data name="NoTypeDefinition" xml:space="preserve">
+    <value>Nenhuma definição de tipo encontrada</value>
+  </data>
+  <data name="NoImplementationFound" xml:space="preserve">
+    <value>Nenhuma implementação encontrada para '{0}'</value>
+  </data>
+  <data name="NoImplementation" xml:space="preserve">
+    <value>Nenhuma implementação encontrada</value>
+  </data>
+  <data name="NoReferencesFound" xml:space="preserve">
+    <value>Nenhuma referência encontrada para '{0}'</value>
+  </data>
+  <data name="NoReferences" xml:space="preserve">
+    <value>Nenhuma referência encontrada</value>
+  </data>
 </root>

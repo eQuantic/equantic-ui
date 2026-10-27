@@ -111,6 +111,35 @@ public static class SdkStrings
     public static string NoSymbolProvider => SdkResources.NoSymbolProvider;
     public static string ReadingSymbols => SdkResources.ReadingSymbols;
 
+    // The places a name is defined and used, listed or not found (#1084).
+    public static string DefinitionsCount(int count) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.DefinitionsCount, count);
+    public static string DeclarationsCount(int count) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.DeclarationsCount, count);
+    public static string TypeDefinitionsCount(int count) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.TypeDefinitionsCount, count);
+    public static string ImplementationsCount(int count) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ImplementationsCount, count);
+    public static string ReferencesCount(int count) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ReferencesCount, count);
+    public static string FilterPlaces => SdkResources.FilterPlaces;
+    public static string NoMatchingPlaces => SdkResources.NoMatchingPlaces;
+    public static string NoDefinitionFound(string word) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.NoDefinitionFound, word);
+    public static string NoDefinition => SdkResources.NoDefinition;
+    public static string NoDeclarationFound(string word) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.NoDeclarationFound, word);
+    public static string NoDeclaration => SdkResources.NoDeclaration;
+    public static string NoTypeDefinitionFound(string word) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.NoTypeDefinitionFound, word);
+    public static string NoTypeDefinition => SdkResources.NoTypeDefinition;
+    public static string NoImplementationFound(string word) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.NoImplementationFound, word);
+    public static string NoImplementation => SdkResources.NoImplementation;
+    public static string NoReferencesFound(string word) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.NoReferencesFound, word);
+    public static string NoReferences => SdkResources.NoReferences;
+
     /// <summary>A code block's copy button.</summary>
     public static string CopyCode => SdkResources.CopyCode;
 

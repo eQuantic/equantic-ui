@@ -166,3 +166,5 @@ eQuantic.UI.Sheet.SheetController.Moved.get -> eQuantic.UI.Sheet.SheetMove
 eQuantic.UI.Sheet.SheetMove
 eQuantic.UI.Sheet.SheetMove.ActiveCell = 0 -> eQuantic.UI.Sheet.SheetMove
 eQuantic.UI.Sheet.SheetMove.ActiveRange = 1 -> eQuantic.UI.Sheet.SheetMove
+eQuantic.UI.Sheet.SheetFormulaBar.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
+eQuantic.UI.Sheet.SheetNameBox.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
