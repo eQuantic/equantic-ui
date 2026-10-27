@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "MarkdownRun.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/MarkdownBlocks.cs"
+    ],
+    "names" : [],
+    "mappings" : ";IAoBA;QAEI;QACA;QACA;QACA;QAGA;;;IANA;IACA;IACA;IACA;IAGA;;IAEA;QAAsB;;;IAV1B"
+}

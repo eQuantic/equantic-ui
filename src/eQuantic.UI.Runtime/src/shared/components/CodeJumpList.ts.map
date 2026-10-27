@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "CodeJumpList.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Navigation/CodeJumpList.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAmBA;QAS0C;QACL;QACrB;QAEM;QACL;QACA;QAIT;QACA;QACA;QACA;QACA;QACA;;;IAfkC;IACL;IACrB;IAEM;IACL;IACA;IAXI;IAGA;;IAqBjB;QAA0C;;;IAG1C;QAAoB;;;IAGpB;QAAyB;;;IAGzB;QAA4B;;;IAI5B;QAAsB;;;IAItB;QAAyB;;;IAIzB;QAEI;QACA;YAEI;;YAIA;;;;IAKR;QAEI;QACA;QACA;QACA;;;IAGJ;QAEI,yCAAmC;QACnC;QACA;QACA;QACA;YAEI;;YAIA;;QAEJ;QACA;QACA;;;IAGJ;QAEI,mBAAc;QACd;QAEA;QACA;QACA,+EAAoE,0BAC/D;;;IAGT;QAEI,2CAAgC;QAChC;QACA,iDAA8B;QAC9B;;;IAIJ;QAEI,qBAAqB;QACrB;YAEI,8CAAwC;YACxC;;;;IAOR;QAEI;QACA;;;IA9HR"
+}

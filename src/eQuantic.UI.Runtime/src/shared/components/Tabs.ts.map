@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "Tabs.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/Tabs.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAoBI;IACA;IACA;;;;;;;;QAPI;QACA;QACA;;;;;QASA;QACA;QAEA;QACA;YAEI;YACA;YAEA;YAKA;YACA;YAGA;YACA;YACA;YAeA;;QAcJ,uEAA2C;QAC3C;QACA"
+}

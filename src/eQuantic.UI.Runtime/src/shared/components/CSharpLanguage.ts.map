@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "CSharpLanguage.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Languages/CSharpLanguage.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAIA;QAQI;;;;;;QAMA;QAYA;QAMA;;QAxBA;QAMA;QAYA;QAMA;;;IAxBA;IAMA;IAYA;IAMA;;IA9BA;QAA+B;;;IAE/B;QAA8C;;;IAC9C;QAAyC;;;IACzC;QAAgD;;;IAEhD;;;;IAAA;;;;IAMA;;;;IAAA;;;;IAYA;;;;IAAA;;;;IAMA;;;;IAAA;;;;IAhCJ;;;;IAAA"
+}

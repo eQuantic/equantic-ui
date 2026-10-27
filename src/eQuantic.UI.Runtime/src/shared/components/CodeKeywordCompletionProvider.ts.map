@@ -1,0 +1,11 @@
+{
+    "version" : 3,
+    "file" : "CodeKeywordCompletionProvider.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Intelligence/CodeKeywordCompletionProvider.cs",
+        "eQuantic.UI.Code/Intelligence/ICodeCompletionProvider.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAOA;;IAEI;QAGI;QACA;QACA,8DAA8D;QAC9D,0CAAyC;QAEzC;QACA,iDACI;QACJ;;;ICLJ;QAAyC;;;IAgBzC;QACI;;;IDzBR"
+}

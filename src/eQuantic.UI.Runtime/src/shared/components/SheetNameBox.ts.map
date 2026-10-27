@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "SheetNameBox.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Sheet/Editing/SheetNameBox.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAcA;QAEqC;QACK;;;;;QAC1B;QACA;QAIC;QACA;QAeb;QAGA;QAhBgD;;;IAVf;IACK;IAC1B;IACA;IAIC;IACA;IAeb;IAGA;;IAXI;QAAO;;;IACP;QAAO;;;IAIX;QAAqC;;;IAUrC;QAAwB;;;IASxB;QAAqC;;;IAGrC;QAA4B;;;IAG5B;QAA2B;;;IAZ3B;QAAwB;;;IAGxB;QAAyB;;;IAYzB;QAA8B;;;IAG9B;QAEI,kBAAa;QACb;QACA;;gBAIQ;oBAEI;oBACA;uBAEC;gBACL;;gBAEA;gBACA;gBACA;gBACA;;gBAEA;;QAER;QACA,aAAa;QACb;;;IAIJ;QAEI,uCAAiC;QACjC;QACA;QACA;;;IAIJ;QAA2C;;;IAG3C;QAA4B;;;IAG5B;QAAuB;;;IAGvB;QAAkC;;;IAGlC;QAEI,kBAAa;QACb;YAEI;YACA;YACA;;QAEJ;YAEI,4CAAqD;YACrD;;QAEJ;;;IAIJ;QAEI;QACA,6BAAuB;QACvB;QAEA;QACA,cAAc;QAEd;QACA;QACA;QACA;;;IArIR"
+}

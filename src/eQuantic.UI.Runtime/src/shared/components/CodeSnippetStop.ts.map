@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "CodeSnippetStop.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Snippets/CodeSnippetStop.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAOA;QAQI;QAGA;QAGA;QAGA;QAIA;QAGA;QAGA;QAvBI;QACA;;;IAGJ;IAGA;IAGA;IAGA;IAIA;IAGA;IAGA;;IAGA;QAEI;YAEI;YACA;YACA;YACA;;QAEJ;QACA;;;IAIJ;QAEI;QACA;;;IAIJ;QAEI,wCACI,+BAA+B;QACnC;;;IAvDR"
+}

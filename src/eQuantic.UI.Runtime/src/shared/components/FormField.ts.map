@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "FormField.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Primitives/Forms/FormModel.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IA4GA;QAGqC;QACJ;QAkB7B;QAIA;QAEA;QAKA;QAmBA;QA3CI;QACA;QACA;QACA;QACA;QAIA;;;IAd6B;IACJ;IAkB7B;IAIA;IAEA;IAKA;IAmBA;;IAhBA;QAAqB;;;IAYrB;QAAwB;;;IAUxB;QAA+B;;;IAE/B;QAA4C;;;IAE5C;QAEI;QACA;;;IAMJ;QAEI;QACA;;;IAIJ;QAEI;QACA;;;IAIJ;QAEI;QACA;QACA;;;IAKJ;QAEI;QACA;QACA;;;IAKJ;QAEI;QACA;;;IAGJ;QAA0B;;;IAK1B;QAAiC;;;IAEjC;QAEI;QAGA,oBAAe;QACf;YAEI,4BAAuB;YACvB;YACA;;;;IA9HZ"
+}

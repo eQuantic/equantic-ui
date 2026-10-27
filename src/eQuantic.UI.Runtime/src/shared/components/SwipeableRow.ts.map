@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "SwipeableRow.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/SwipeableRow.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAsBqC;IAWjC;IACA;IACA;IACA;IAEA;IAEA;IACA;;;;;;;;;;;QAdI;QACA;QACA;QACA;;;;;QAeA;QACA;QAEA;QAOA;QACA;QAEA;QAUA;QAOA;QACA;QACA;QAQA;;;IAIJ;QACI"
+}

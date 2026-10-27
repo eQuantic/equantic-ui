@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "CodeLineAdvances.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Editing/CodeLineAdvances.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAcA;QAEmC;QACM;QAGZ;QAIrB;QACA;QACA;QACA,gDAA2C;;;IAXhB;IACM;IAGZ;;IAWzB;QAAsB;;;IAGtB;QAAsC;;;IAItC;QAEI;QACA,4BAA2B;QAC3B;QACA;QACA;QACA;;;IAKJ;QAEI,iBAAiB;QACjB,uCAAkC;QAClC;;;IAQJ;QAEI,6CAAuC;QACvC;QACA,eAAe;QACf;QACA;QACA;QACA;;;IAKJ;QAEI,4CAAsC;QACtC;QACA;;;IAKJ;QAEI;QACA;QACA;QACA;YAEI;YACA;gBAEI;gBACA;mBAEC;;QAET;;;IArFR"
+}

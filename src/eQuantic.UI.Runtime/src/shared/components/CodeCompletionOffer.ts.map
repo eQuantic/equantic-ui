@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "CodeCompletionOffer.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Intelligence/CodeCompletionOffer.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAMA;QAQI;QAGA;QAGA;QAOA;QAIA;QArBI;QACA;;;IAGJ;IAGA;IAGA;IAOA;IAIA;;IAzBJ"
+}
