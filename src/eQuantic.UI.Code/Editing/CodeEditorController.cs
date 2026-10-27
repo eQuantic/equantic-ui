@@ -44,6 +44,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         References = new CodeReferences(this);
         GoTo = new CodeGoTo(this);
         JumpList = new CodeJumpList(this);
+        Folding = new CodeFolding(this);
+        // Every editor folds, by its document's indentation until a language service says otherwise (#1119).
+        Folding.Check();
     }
 
     /// <summary>The text, as lines. Replacing it is a full reset — a file was opened.</summary>
@@ -261,6 +264,10 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
     /// <summary>The places the caret has been, which ⌃- and ⌃⇧- walk (#1083).</summary>
     public CodeJumpList JumpList { get; }
+
+    /// <summary>The regions the document folds into and which of them are folded (#1119). An IDE adds its language
+    /// service to <see cref="CodeFolding.Providers"/>.</summary>
+    public CodeFolding Folding { get; }
 
     /// <summary>
     /// Raised when the person goes to a place in another document (#1084): a definition or a reference a language
@@ -645,7 +652,26 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// the padding — and hands it over on every build; this is the only place that turns a position
     /// into a point with it, and a point back into a position.
     /// </summary>
-    public CodeGrid Grid { get; set; } = CodeGrid.Default;
+    public CodeGrid Grid
+    {
+        get => _grid;
+        set
+        {
+            // A grid that brings rows of its own (a diff's side) keeps them; one that brings none hides what is
+            // folded (#1119).
+            _rowsFromFolds = value.Rows is null;
+            _grid = _rowsFromFolds ? value with { Rows = Folding.Rows } : value;
+        }
+    }
+
+    private CodeGrid _grid = CodeGrid.Default;
+    private bool _rowsFromFolds = true;
+
+    /// <summary>What is folded changed: a grid whose rows are the folds' takes the new ones.</summary>
+    internal void FoldsChanged()
+    {
+        if (_rowsFromFolds) _grid = _grid with { Rows = Folding.Rows };
+    }
 
     /// <summary>Whether a press that began on the surface is still drawing a selection.</summary>
     private bool _dragging;
@@ -907,6 +933,13 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             case CodeCommand.FindReferences: return GoTo.References();
             case CodeCommand.NextReference: return GoTo.NextPlace();
             case CodeCommand.PreviousReference: return GoTo.PreviousPlace();
+            case CodeCommand.Fold: return Folding.Fold(_selection.Focus.Line);
+            case CodeCommand.Unfold: return Folding.Unfold(_selection.Focus.Line);
+            case CodeCommand.FoldRecursively: return Folding.FoldRecursively(_selection.Focus.Line);
+            case CodeCommand.UnfoldRecursively: return Folding.UnfoldRecursively(_selection.Focus.Line);
+            case CodeCommand.ToggleFold: return Folding.Toggle(_selection.Focus.Line);
+            case CodeCommand.FoldAll: return Folding.FoldAll();
+            case CodeCommand.UnfoldAll: return Folding.UnfoldAll();
             case CodeCommand.Copy:
                 if (clipboard is null) return false;
                 clipboard.Write(CopyText());
@@ -1020,6 +1053,12 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             or CodeCommand.GoToImplementation => Definitions.Providers.Count > 0,
         CodeCommand.FindReferences => References.Providers.Count > 0,
         CodeCommand.NextReference or CodeCommand.PreviousReference => GoTo.Places.Count > 0,
+        CodeCommand.Fold => Folding.CanFold(_selection.Focus.Line),
+        CodeCommand.Unfold => Folding.CanUnfold(_selection.Focus.Line),
+        CodeCommand.FoldRecursively or CodeCommand.UnfoldRecursively or CodeCommand.ToggleFold =>
+            Folding.CanToggle(_selection.Focus.Line),
+        CodeCommand.FoldAll => Folding.Any(folded: false),
+        CodeCommand.UnfoldAll => Folding.Any(folded: true),
         CodeCommand.SortLinesAscending => !ReadOnly && (_others.Count > 0 || Unsorted(descending: false)),
         CodeCommand.SortLinesDescending => !ReadOnly && (_others.Count > 0 || Unsorted(descending: true)),
         _ => true,

@@ -1,13 +1,17 @@
 namespace eQuantic.UI.Code;
 
 /// <summary>
-/// Folds derived from indentation alone: a line that is followed by more-indented lines opens a
-/// region that ends where the indentation comes back. No parser, no language knowledge, and right
-/// often enough to be the default.
+/// Folds derived from indentation alone, as VS Code's indentation strategy derives them: a line that is followed by
+/// more-indented lines opens a region that ends at the last of them, before the indentation comes back. No parser,
+/// no language knowledge, and right often enough to be the default.
 /// </summary>
 public sealed class IndentationFoldProvider : ICodeFoldProvider
 {
-    public IReadOnlyList<CodeFold> FoldsFor(CodeDocument document)
+    public Task<IReadOnlyList<CodeFold>> FoldsAsync(CodeDocument document, CancellationToken cancellation) =>
+        Task.FromResult(FoldsOf(document));
+
+    /// <summary>The regions of <paramref name="document"/>, at once.</summary>
+    private static IReadOnlyList<CodeFold> FoldsOf(CodeDocument document)
     {
         var folds = new List<CodeFold>();
         for (var line = 0; line < document.LineCount - 1; line++)
