@@ -104,8 +104,15 @@ function appFrame(frame: RemappedFrame, pathname: string): NamedFrame {
  * wrote `SheetController`. */
 function memberOf(func: string | null, csFile: string): string | null {
   const type = baseName(csFile).replace(/\.cs$/, '');
-  const escaped = type.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return func && func.replace(new RegExp(`\\b${escaped}\\d+\\b`), type);
+  // Each name in the frame compared with the type, rather than a pattern built from a file's name.
+  return (
+    func &&
+    func.replace(/[A-Za-z_$][\w$]*/g, (name) =>
+      name.length > type.length && name.startsWith(type) && /^\d+$/.test(name.slice(type.length))
+        ? type
+        : name,
+    )
+  );
 }
 
 /** `eQuantic.UI.Runtime/src/shared/lowering.ts` → `shared/lowering`; the SDK's boot → `boot`. A module eqc
