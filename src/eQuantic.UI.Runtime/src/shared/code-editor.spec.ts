@@ -23,6 +23,7 @@ import { CodePosition } from './components/CodePosition';
 import { CodeRange } from './components/CodeRange';
 import { CodeLanguages } from './components/CodeLanguages';
 import { CodeDocument } from './components/CodeDocument';
+import { CodeLocation } from './components/CodeLocation';
 import type { HtmlNode } from '../core/types';
 import { Reconciler } from '../dom/reconciler';
 import { activeShortcuts, commitShortcuts, resetShortcuts } from '../dom/shortcuts';
@@ -583,7 +584,9 @@ function pointer(
   options: { detail?: number; shift?: boolean; buttons?: number; pointerType?: string } = {},
 ) {
   const target = {
-    getBoundingClientRect: () => ({ left: 0, top: 0 }),
+    getBoundingClientRect: () => ({ left: 0, top: 0, width: 4096, height: 4096 }),
+    // The pointer's look, which a hover sets from the model's answer (#1084).
+    style: {} as Record<string, string>,
     setPointerCapture: () => {},
     releasePointerCapture: () => {},
     // The press gives the keyboard to the surface's input.
@@ -634,6 +637,104 @@ function pressAt(
   mousePress(lowered, at[0], at[1], options);
 }
 
+describe('the link ⌘ shows over a name (C# twin: PhotonHost, #1084)', () => {
+  /** Two lines, `total` and `count`, each a name a provider says is declared where it stands. */
+  function linked() {
+    const surface = surfaceFor('total = 1;\ncount = 2;');
+    surface.editor.definitions.providers.push({
+      definitionsAsync: async () => [new CodeLocation(new CodeRange(new CodePosition(0, 0), new CodePosition(0, 5)))],
+    });
+    return surface;
+  }
+
+  /** The provider's answer, which arrives on a later turn, as on the web. */
+  const answered = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  /** The surface's element under a pointer: its box, which a scroll moves, and the look the pointer takes. */
+  function element() {
+    return { box: { left: 0, top: 0, width: 4096, height: 4096 }, getBoundingClientRect() { return this.box; }, style: {} as Record<string, string> };
+  }
+
+  /** A pointer passing over the surface with nothing pressed, ⌘ held or not. */
+  function hover(lowered: HtmlNode, target: ReturnType<typeof element>, at: [number, number], meta: boolean) {
+    const event = { clientX: at[0], clientY: at[1], currentTarget: target, buttons: 0, pointerType: 'mouse',
+      shiftKey: false, altKey: false, metaKey: meta, ctrlKey: false };
+    (lowered.events['pointermove'] as unknown as (e: unknown) => void)(event);
+  }
+
+  /** A modifier key pressed or released, wherever the keyboard is: the page hears it. */
+  function modifier(type: 'keydown' | 'keyup', meta: boolean) {
+    document.dispatchEvent(new KeyboardEvent(type, { key: 'Meta', metaKey: meta, ctrlKey: false }));
+  }
+
+  const total = new CodeRange(new CodePosition(0, 0), new CodePosition(0, 5));
+  const count = new CodeRange(new CodePosition(1, 0), new CodePosition(1, 5));
+
+  it('underlines the name ⌘ rests on, and the pointer is a hand over it', async () => {
+    const { editor, lowered } = linked();
+    const target = element();
+    hover(lowered, target, cell(0, 2), true);
+    await answered();
+
+    expect(editor.definitions.link).toEqual(total);
+    hover(lowered, target, cell(0, 3), true);
+    expect(target.style.cursor).toBe('pointer');
+    hover(lowered, target, cell(0, 8), true);
+    expect(target.style.cursor).toBe('text');
+  });
+
+  it('takes the link away as ⌘ is released with the pointer at rest, and shows it again as ⌘ is pressed, wherever the keyboard is', async () => {
+    const { editor, lowered } = linked();
+    hover(lowered, element(), cell(0, 2), true);
+    await answered();
+    expect(editor.definitions.link).toEqual(total);
+
+    modifier('keyup', false);
+    expect(editor.definitions.link).toBeNull();
+
+    modifier('keydown', true);
+    await answered();
+    expect(editor.definitions.link).toEqual(total);
+  });
+
+  it('links the name the code scrolled under a pointer at rest, not the one it rested on', async () => {
+    const { editor, lowered } = linked();
+    const target = element();
+    hover(lowered, target, cell(0, 2), false);
+    // The code scrolls a line up under the pointer, which stays where it was on the page.
+    target.box = { left: 0, top: -LINE, width: 4096, height: 4096 };
+
+    modifier('keydown', true);
+    await answered();
+
+    expect(editor.definitions.link).toEqual(count);
+  });
+
+  it('rests where a click released it: ⌘ pressed next, with no move, links the name there', async () => {
+    const { editor, lowered } = linked();
+    pressAt(lowered, cell(1, 2));
+    pointer(lowered, 'pointerup', ...cell(1, 2));
+
+    modifier('keydown', true);
+    await answered();
+
+    expect(editor.definitions.link).toEqual(count);
+    modifier('keyup', false);
+  });
+
+  it('follows no link when ⌘ is pressed during a press', async () => {
+    const { editor, lowered } = linked();
+    hover(lowered, element(), cell(0, 2), false);
+    pressAt(lowered, cell(0, 2));
+
+    modifier('keydown', true);
+    await answered();
+
+    expect(editor.definitions.link).toBeNull();
+    pointer(lowered, 'pointerup', ...cell(0, 2));
+  });
+});
+
 describe('code surface pointer (the SAME model the native host drives)', () => {
   it('a press puts the caret where it was aimed', () => {
     const { editor, lowered } = surfaceFor('one two three\nfour');
@@ -675,7 +776,8 @@ describe('code surface pointer (the SAME model the native host drives)', () => {
     let captured = false;
     const button = { tag: 'button' };
     const surfaceElement = {
-      getBoundingClientRect: () => ({ left: 0, top: 0 }),
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 4096, height: 4096 }),
+      style: {} as Record<string, string>,
       setPointerCapture: () => {
         captured = true;
       },
@@ -727,7 +829,11 @@ describe('code surface pointer (the SAME model the native host drives)', () => {
     const event = {
       clientX: 20,
       clientY: 14,
-      currentTarget: { getBoundingClientRect: () => ({ left: 0, top: 0 }), contains: (element: unknown) => element === button },
+      currentTarget: {
+        getBoundingClientRect: () => ({ left: 0, top: 0, width: 4096, height: 4096 }),
+        style: {} as Record<string, string>,
+        contains: (element: unknown) => element === button,
+      },
       target: { closest: () => button },
       pointerType: 'mouse',
       buttons: 0,

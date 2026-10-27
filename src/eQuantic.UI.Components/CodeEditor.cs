@@ -154,6 +154,24 @@ public sealed class CodeEditor : StatefulComponent
     public IReadOnlyList<ICodeSymbolProvider> SymbolProviders { get; set; } = [];
 
     /// <summary>
+    /// What says where a name is defined, declared, typed or implemented (<see cref="ICodeDefinitionProvider"/>),
+    /// which F12 and ⌘F12 go to and ⌘ links over a name (#1084). Put in and taken out as
+    /// <see cref="DiagnosticProviders"/> are, and known by reference as they are.
+    /// </summary>
+    public IReadOnlyList<ICodeDefinitionProvider> DefinitionProviders { get; set; } = [];
+
+    /// <summary>What says where a name is used (<see cref="ICodeReferenceProvider"/>), which ⇧F12 lists and F4
+    /// walks (#1084). Put in and taken out as <see cref="DiagnosticProviders"/> are.</summary>
+    public IReadOnlyList<ICodeReferenceProvider> ReferenceProviders { get; set; } = [];
+
+    /// <summary>
+    /// A place in another document the person went to (#1084): a definition or a reference a provider answered
+    /// there. The editor holds one document, so the app opens that one and puts the caret at the location's start
+    /// (<see cref="CodeEditorController.OpenRequested"/>).
+    /// </summary>
+    public Action<CodeLocation>? OnOpenRequested { get; set; }
+
+    /// <summary>
     /// An app's own key bindings over the editor's defaults (<see cref="CodeKeymap.Defaults"/>): a chord
     /// bound here is the app's alone, and one bound to <see cref="CodeCommand.None"/> is given back to the
     /// host. Handed to <see cref="CodeEditorController.KeyBindings"/>, and taken out again when a later
@@ -185,10 +203,20 @@ public sealed class CodeEditor : StatefulComponent
         editor.Snippet.Changed += () => SetState(() => { });
         // And the go-to field, and a scroll the editor asks of its view, which an app may ask for with no key
         // (#1083).
-        editor.GoTo.Changed += () => SetState(() => { });
+        // It moves the caret when an answer arrives after the key that asked (a definition gone to, #1084), so the
+        // app hears where the caret went as it hears a key's move.
+        editor.GoTo.Changed += () => SetState(() => TellSelection(editor));
         editor.ScrollRequested += () => SetState(() => { });
+        // And the link ⌘ shows over a name, which an answer brings and a key, the pointer or a scroll takes away,
+        // and a place in another document, which is the app's to open (#1084).
+        editor.Definitions.Changed += () => SetState(() => { });
+        // A method, not a lambda: the twin's controller is untyped where an object initializer built it (#1106).
+        editor.OpenRequested += Opened;
         return editor;
     }
+
+    /// <summary>A place in another document the person went to, handed on to the app (#1084).</summary>
+    private void Opened(CodeLocation place) => OnOpenRequested?.Invoke(place);
 
     /// <summary>The providers last handed to the completion (a copy, since a parent may change the list
     /// it keeps in place, and null for the built-ins), whether any have been, and the providers the
@@ -203,6 +231,8 @@ public sealed class CodeEditor : StatefulComponent
     private List<ICodeHoverProvider> _explainers = [];
     private List<ICodeSignatureProvider> _signers = [];
     private List<ICodeSymbolProvider> _declarers = [];
+    private List<ICodeDefinitionProvider> _definers = [];
+    private List<ICodeReferenceProvider> _referrers = [];
 
     /// <summary>
     /// Reports <see cref="Diagnostics"/> when they are other problems than the last ones, and hands the
@@ -261,6 +291,28 @@ public sealed class CodeEditor : StatefulComponent
             }
             _declarers = [.. SymbolProviders];
             foreach (var provider in _declarers) editor.Symbols.Providers.Add(provider);
+        }
+        if (!SameProviders(DefinitionProviders, _definers))
+        {
+            foreach (var provider in _definers)
+            {
+                var at = IndexOfInstance(editor.Definitions.Providers, provider);
+                if (at >= 0) editor.Definitions.Providers.RemoveAt(at);
+            }
+            _definers = [.. DefinitionProviders];
+            foreach (var provider in _definers) editor.Definitions.Providers.Add(provider);
+            // The link stood on what the providers before answered.
+            editor.Definitions.ClearLink();
+        }
+        if (!SameProviders(ReferenceProviders, _referrers))
+        {
+            foreach (var provider in _referrers)
+            {
+                var at = IndexOfInstance(editor.References.Providers, provider);
+                if (at >= 0) editor.References.Providers.RemoveAt(at);
+            }
+            _referrers = [.. ReferenceProviders];
+            foreach (var provider in _referrers) editor.References.Providers.Add(provider);
         }
     }
 
@@ -420,11 +472,15 @@ public sealed class CodeEditor : StatefulComponent
             _toldDocument = editor.Document;
             OnChanged?.Invoke(editor.Document.Text);
         }
-        if (editor.Selection != _toldSelection)
-        {
-            _toldSelection = editor.Selection;
-            OnSelectionChanged?.Invoke(editor.Selection);
-        }
+        TellSelection(editor);
+    }
+
+    /// <summary>Tells the app where the caret is when it is not where it was last told.</summary>
+    private void TellSelection(CodeEditorController editor)
+    {
+        if (editor.Selection == _toldSelection) return;
+        _toldSelection = editor.Selection;
+        OnSelectionChanged?.Invoke(editor.Selection);
     }
 
     /// <summary>
@@ -475,13 +531,17 @@ public sealed class CodeEditor : StatefulComponent
     {
         var problems = editor.Diagnostics.Items;
         if (matches.Count == 0 && !MatchBrackets && editor.Composition is null && problems.Count == 0
-            && !editor.Snippet.IsActive && editor.GoTo.Preview is null) return Decorations;
+            && !editor.Snippet.IsActive && editor.GoTo.Preview is null && editor.Definitions.Link is null) return Decorations;
 
         var marks = new List<CodeDecoration>(Decorations);
         // What the go-to field reads, its lines washed whole under every other mark, as VS Code washes the
         // range it previews (#1083).
         if (editor.GoTo.Preview is { } previewed && previewed.End.Line >= first && previewed.Start.Line <= last)
             marks.Add(new CodeDecoration(previewed, CodeDecorationKind.Line) { Color = theme.Colors(Variant.Info).Subtle });
+        // The word ⌘ links to its definition, underlined in the accent colour, as VS Code draws its
+        // goto-definition-link (#1084).
+        if (editor.Definitions.Link is { } link && link.End.Line >= first && link.Start.Line <= last)
+            marks.Add(new CodeDecoration(link, CodeDecorationKind.Underline) { Color = theme.Colors(Variant.Primary).Base });
         // A snippet's placeholders in view are washed while it is being filled in, the one the carets stand at
         // too, as VS Code washes every tab stop (#1013).
         foreach (var placeholder in editor.Snippet.PlaceholdersIn(first, last))
@@ -571,6 +631,9 @@ public sealed class CodeEditor : StatefulComponent
         HoverProviders = fresh.HoverProviders;
         SignatureProviders = fresh.SignatureProviders;
         SymbolProviders = fresh.SymbolProviders;
+        DefinitionProviders = fresh.DefinitionProviders;
+        ReferenceProviders = fresh.ReferenceProviders;
+        OnOpenRequested = fresh.OnOpenRequested;
         KeyBindings = fresh.KeyBindings;
     }
 
@@ -776,6 +839,17 @@ public sealed class CodeEditor : StatefulComponent
             notes.Add(new Positioned(card, top: y, start: x));
         }
 
+        // What was said about nothing found where the person asked, at the caret where it was asked, while no card
+        // shows, as VS Code's message stands there (#1084).
+        if (editor.GoTo.NotFound is { } nothing && !hover.IsOpen && offered is null)
+        {
+            var (said, saidWidth, saidHeight) = CodeHoverCard.Message(context, metrics, CodeGoToView.NotFoundText(nothing),
+                _viewportWidth);
+            var (x, y) = CodeHoverCard.Place(editor.CaretRect(nothing.At), viewTop, _scrollX, _viewportWidth,
+                saidWidth, saidHeight);
+            notes.Add(new Positioned(said, top: y, start: x));
+        }
+
         // The panel of the call being written, while one shows and no card does (the card is what the person
         // asked for last): over the caret's line, under it when the view has no room above, and on the other
         // side of a list showing, or nowhere when that side has no room.
@@ -953,6 +1027,14 @@ public sealed class CodeEditor : StatefulComponent
         keyed = GoToKey(keyed, "PageDown", goTo.IsOpen, () => goTo.SelectNextPage());
         keyed = GoToKey(keyed, "PageUp", goTo.IsOpen, () => goTo.SelectPreviousPage());
         keyed = GoToKey(keyed, "Escape", goTo.IsOpen, () => goTo.Close());
+        // F4 and ⇧F4 walk a list of places while it shows, as they walk its places once it is closed (#1084).
+        var placesShown = goTo.IsOpen && CodeGoToView.Lists(goTo.Mode);
+        keyed = GoToKey(keyed, "F4", placesShown, () => goTo.NextPlace());
+        keyed = new Shortcut(keyed, new KeyChord("F4", KeyModifiers.Shift), () => SetState(() => goTo.PreviousPlace()))
+        {
+            FocusScoped = true,
+            Enabled = placesShown,
+        };
         // Escape closes the bar wherever the keyboard is in this editor, the bar or the code, and only
         // while the bar is open: a chord of the editor's own, so that of two editors on one page the
         // one in use closes its bar, and one that binds nothing while the bar is closed, so a dialog

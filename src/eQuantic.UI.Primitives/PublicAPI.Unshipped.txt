@@ -137,6 +137,7 @@ eQuantic.UI.Primitives.GoogleFontAttribute.GoogleFontAttribute(string! family, p
 eQuantic.UI.Primitives.GoogleFontAttribute.Italic.get -> bool
 eQuantic.UI.Primitives.GoogleFontAttribute.Italic.set -> void
 eQuantic.UI.Primitives.GoogleFontAttribute.Weights.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FontWeight>!
+eQuantic.UI.Primitives.ICodeSurfaceModel.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
 eQuantic.UI.Primitives.FontWeight.Black = 900 -> eQuantic.UI.Primitives.FontWeight
 eQuantic.UI.Primitives.FontWeight.ExtraLight = 200 -> eQuantic.UI.Primitives.FontWeight
 eQuantic.UI.Primitives.FontWeight.Light = 300 -> eQuantic.UI.Primitives.FontWeight

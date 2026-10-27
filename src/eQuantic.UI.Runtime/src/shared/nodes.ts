@@ -909,6 +909,8 @@ export interface CodeSurfaceModelLike {
     clicks: number,
   ): boolean;
   focusChanged(focused: boolean): void;
+  /** What the pointer looks like resting at a point: a PointerCursor member name ('text', 'pointer'). */
+  cursorAt(position: { x: number; y: number }): string;
 }
 
 /** A live camera surface — the session id names the MediaStream the runtime attaches. */

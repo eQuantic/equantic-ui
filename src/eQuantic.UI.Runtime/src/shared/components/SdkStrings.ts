@@ -105,6 +105,34 @@ export class SdkStrings {
         return $eq.str('SdkResources', 'ReadingSymbols');
     }
 
+    static get filterPlaces(): string {
+        return $eq.str('SdkResources', 'FilterPlaces');
+    }
+
+    static get noMatchingPlaces(): string {
+        return $eq.str('SdkResources', 'NoMatchingPlaces');
+    }
+
+    static get noDefinition(): string {
+        return $eq.str('SdkResources', 'NoDefinition');
+    }
+
+    static get noDeclaration(): string {
+        return $eq.str('SdkResources', 'NoDeclaration');
+    }
+
+    static get noTypeDefinition(): string {
+        return $eq.str('SdkResources', 'NoTypeDefinition');
+    }
+
+    static get noImplementation(): string {
+        return $eq.str('SdkResources', 'NoImplementation');
+    }
+
+    static get noReferences(): string {
+        return $eq.str('SdkResources', 'NoReferences');
+    }
+
     static get copyCode(): string {
         return $eq.str('SdkResources', 'CopyCode');
     }
@@ -199,6 +227,46 @@ export class SdkStrings {
 
     static symbolsCount(count: number) {
         return $eq.text.stringFormat($eq.str('SdkResources', 'SymbolsCount'), $eq.text.asNumber(count, 'int32'));
+    }
+
+    static definitionsCount(count: number) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'DefinitionsCount'), $eq.text.asNumber(count, 'int32'));
+    }
+
+    static declarationsCount(count: number) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'DeclarationsCount'), $eq.text.asNumber(count, 'int32'));
+    }
+
+    static typeDefinitionsCount(count: number) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'TypeDefinitionsCount'), $eq.text.asNumber(count, 'int32'));
+    }
+
+    static implementationsCount(count: number) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'ImplementationsCount'), $eq.text.asNumber(count, 'int32'));
+    }
+
+    static referencesCount(count: number) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'ReferencesCount'), $eq.text.asNumber(count, 'int32'));
+    }
+
+    static noDefinitionFound(word: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'NoDefinitionFound'), word);
+    }
+
+    static noDeclarationFound(word: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'NoDeclarationFound'), word);
+    }
+
+    static noTypeDefinitionFound(word: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'NoTypeDefinitionFound'), word);
+    }
+
+    static noImplementationFound(word: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'NoImplementationFound'), word);
+    }
+
+    static noReferencesFound(word: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'NoReferencesFound'), word);
     }
 
     static hint(pattern: string, letters: string) {

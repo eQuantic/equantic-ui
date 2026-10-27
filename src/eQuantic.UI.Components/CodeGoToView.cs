@@ -5,9 +5,10 @@ namespace eQuantic.UI.Components;
 
 /// <summary>
 /// The go-to field an editor draws over the top of its code while the person goes to a line or a symbol
-/// (<see cref="CodeGoTo"/>, #1083), as VS Code's quick input stands over its editor. The field is a
-/// <see cref="TextEntry"/> holding the session's text, prefix and all, and under it either a page of the
-/// symbols it lists, the selected one marked, or what it says about the line it reads.
+/// (<see cref="CodeGoTo"/>, #1083), or picks one of the places a name is defined or used (#1084), as VS Code's
+/// quick input stands over its editor. The field is a <see cref="TextEntry"/> holding the session's text, prefix
+/// and all, and under it either a page of the symbols or the places it lists, the selected one marked, or what it
+/// says about the line it reads.
 /// <para>
 /// The list is the field's own listbox (<see cref="Anchored"/> with <see cref="AnchorPanelRole.Listbox"/>, as
 /// a <see cref="Select"/>'s is): the field's text control is the combobox, its rows are options, and the
@@ -39,11 +40,13 @@ internal static class CodeGoToView
     {
         var goTo = editor.GoTo;
         var theme = context.Theme;
-        var listed = goTo.Mode == CodeGoToMode.Symbol && goTo.Entries.Count > 0;
+        var places = Lists(goTo.Mode);
+        var listed = (goTo.Mode == CodeGoToMode.Symbol || places) && goTo.Entries.Count > 0;
         var field = new TextEntry(goTo.Query, typed)
         {
-            Label = SdkStrings.GoTo,
-            Placeholder = SdkStrings.GoToStart,
+            // A list of places is named by what it lists, and its text only filters it.
+            Label = places ? Title(goTo, goTo.Places.Count) : SdkStrings.GoTo,
+            Placeholder = places ? SdkStrings.FilterPlaces : SdkStrings.GoToStart,
             Autofocus = true,
             OnSubmit = accept,
             OnFocusChanged = focused =>
@@ -94,7 +97,40 @@ internal static class CodeGoToView
             if (goTo.IsAsking) return SdkStrings.ReadingSymbols;
             return goTo.Query.Substring(1).Trim().Length == 0 ? SdkStrings.NoSymbols : SdkStrings.NoMatchingSymbols;
         }
+        // A list of places opens only with places in it, so what it says is that the text matches none.
+        if (Lists(goTo.Mode)) return SdkStrings.NoMatchingPlaces;
         return SdkStrings.GoToStart;
+    }
+
+    /// <summary>Whether <paramref name="mode"/> lists places (#1084).</summary>
+    internal static bool Lists(CodeGoToMode mode) => mode == CodeGoToMode.Definitions || mode == CodeGoToMode.References;
+
+    /// <summary>The heading over a list of places, <paramref name="count"/> of them: what they are, in VS Code's
+    /// words for the list.</summary>
+    internal static string Title(CodeGoTo goTo, int count) => goTo.Mode == CodeGoToMode.References
+        ? SdkStrings.ReferencesCount(count)
+        : goTo.DefinitionKind switch
+        {
+            CodeDefinitionKind.Declaration => SdkStrings.DeclarationsCount(count),
+            CodeDefinitionKind.TypeDefinition => SdkStrings.TypeDefinitionsCount(count),
+            CodeDefinitionKind.Implementation => SdkStrings.ImplementationsCount(count),
+            _ => SdkStrings.DefinitionsCount(count),
+        };
+
+    /// <summary>What the editor says when nothing was found where the person asked, in VS Code's words: for the
+    /// word there, or with none, for nothing in particular.</summary>
+    internal static string NotFoundText(CodeGoToNotFound nothing)
+    {
+        var word = nothing.Word;
+        var named = word.Length > 0;
+        if (nothing.Mode == CodeGoToMode.References) return named ? SdkStrings.NoReferencesFound(word) : SdkStrings.NoReferences;
+        return nothing.Kind switch
+        {
+            CodeDefinitionKind.Declaration => named ? SdkStrings.NoDeclarationFound(word) : SdkStrings.NoDeclaration,
+            CodeDefinitionKind.TypeDefinition => named ? SdkStrings.NoTypeDefinitionFound(word) : SdkStrings.NoTypeDefinition,
+            CodeDefinitionKind.Implementation => named ? SdkStrings.NoImplementationFound(word) : SdkStrings.NoImplementation,
+            _ => named ? SdkStrings.NoDefinitionFound(word) : SdkStrings.NoDefinition,
+        };
     }
 
     private static VisualNode Said(IAppTheme theme, CodeBlock.CodeMetrics metrics, string saying) =>
@@ -111,8 +147,9 @@ internal static class CodeGoToView
         // The columns a row has for its name and its container: the field's width less a row's chrome.
         var columns = (int)MathF.Floor((width - 2 * Space.S2 - metrics.LineHeight - Space.S1) / metrics.ColumnWidth);
         var page = new Column(gap: 0) { Width = SizeValue.Fill };
+        var heading = Lists(goTo.Mode) ? Title(goTo, entries.Count) : SdkStrings.SymbolsCount(entries.Count);
         page.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Padding = EdgeInsets.Symmetric(Space.S2, Space.S1) },
-            new Text(SdkStrings.SymbolsCount(entries.Count), TypeRole.LabelSmall, theme.TextMuted, maxLines: 1)));
+            new Text(heading, TypeRole.LabelSmall, theme.TextMuted, maxLines: 1)));
         for (var i = top; i < top + PageRows && i < entries.Count; i++)
         {
             var index = i;
@@ -134,10 +171,10 @@ internal static class CodeGoToView
     }, content);
 
     /// <summary>
-    /// One symbol, as an option the keyboard never lands on: a press goes to it while the field keeps the
+    /// One symbol or place, as an option the keyboard never lands on: a press goes to it while the field keeps the
     /// keyboard. Its name is its own and its container's, so the letter before them is not read out. The name
     /// and the container fit the row's columns as the completion's label and detail do, the container cut
-    /// first.
+    /// first. A place has no kind, and no letter before it: its name is the text of its line.
     /// </summary>
     private static VisualNode Entry(IAppTheme theme, CodeBlock.CodeMetrics metrics, CodeGoToEntry entry, bool selected,
         int columns, Action pressed)
@@ -146,7 +183,7 @@ internal static class CodeGoToView
         var accent = theme.Colors(Variant.Primary).Base;
         var name = CodeCompletionView.Fit(entry.Name, columns);
         var row = new Row(gap: Space.S1) { Width = SizeValue.Fill, Height = SizeValue.Fill };
-        row.Add(CodeCompletionView.Glyph(theme, metrics, KindOf(entry.Kind)));
+        if (entry.Kind is { } kind) row.Add(CodeCompletionView.Glyph(theme, metrics, KindOf(kind)));
         row.Add(new Text(name, TypeRole.LabelSmall, ink, maxLines: 1)
         {
             Mono = true,

@@ -156,7 +156,7 @@ public static class CodeKeymap
     }
 
     /// <summary>A key that only modifies others — pressing it is not a key of its own.</summary>
-    private static bool IsModifierKey(string key) =>
+    internal static bool IsModifierKey(string key) =>
         key is "Shift" or "Control" or "Alt" or "Meta" or "AltGraph" or "CapsLock" or "Fn" or "OS";
 
     // ---- the tables ---------------------------------------------------------------------------------
@@ -306,6 +306,15 @@ public static class CodeKeymap
 
             // ---- navigation, as VS Code has it (#1083): ⇧⌘O goes to a symbol everywhere.
             Bind("o", shift | command, CodeCommand.GoToSymbol),
+
+            // ---- definitions and references, as VS Code binds them in both conventions (#1084): F12 to the
+            // definition, ⌘F12 (Ctrl+F12) to the implementations, ⇧F12 to the references, and F4 and ⇧F4
+            // through the places of the last list. With no provider, or no place held, they claim nothing.
+            Bind("F12", none, CodeCommand.GoToDefinition),
+            Bind("F12", command, CodeCommand.GoToImplementation),
+            Bind("F12", shift, CodeCommand.FindReferences),
+            Bind("F4", none, CodeCommand.NextReference),
+            Bind("F4", shift, CodeCommand.PreviousReference),
         };
         if (apple)
         {

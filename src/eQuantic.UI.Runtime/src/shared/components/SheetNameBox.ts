@@ -138,6 +138,10 @@ export class SheetNameBox {
         this._justFocused = true;
     }
 
+    cursorAt(_position: Point) {
+        return 'text';
+    }
+
     toString(): string {
         return 'eQuantic.UI.Sheet.SheetNameBox';
     }

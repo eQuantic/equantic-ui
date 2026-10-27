@@ -57,3 +57,26 @@ static eQuantic.UI.Components.SdkStrings.Sum(string! value) -> string!
 static eQuantic.UI.Components.SdkStrings.Average(string! value) -> string!
 static eQuantic.UI.Components.SdkStrings.Count(int count) -> string!
 static eQuantic.UI.Components.SdkStrings.AddToSelection.get -> string!
+eQuantic.UI.Components.CodeEditor.DefinitionProviders.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.ICodeDefinitionProvider!>!
+eQuantic.UI.Components.CodeEditor.DefinitionProviders.set -> void
+eQuantic.UI.Components.CodeEditor.ReferenceProviders.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.ICodeReferenceProvider!>!
+eQuantic.UI.Components.CodeEditor.ReferenceProviders.set -> void
+eQuantic.UI.Components.CodeEditor.OnOpenRequested.get -> System.Action<eQuantic.UI.Code.CodeLocation!>?
+eQuantic.UI.Components.CodeEditor.OnOpenRequested.set -> void
+static eQuantic.UI.Components.SdkStrings.DefinitionsCount(int count) -> string!
+static eQuantic.UI.Components.SdkStrings.DeclarationsCount(int count) -> string!
+static eQuantic.UI.Components.SdkStrings.TypeDefinitionsCount(int count) -> string!
+static eQuantic.UI.Components.SdkStrings.ImplementationsCount(int count) -> string!
+static eQuantic.UI.Components.SdkStrings.ReferencesCount(int count) -> string!
+static eQuantic.UI.Components.SdkStrings.FilterPlaces.get -> string!
+static eQuantic.UI.Components.SdkStrings.NoMatchingPlaces.get -> string!
+static eQuantic.UI.Components.SdkStrings.NoDefinitionFound(string! word) -> string!
+static eQuantic.UI.Components.SdkStrings.NoDefinition.get -> string!
+static eQuantic.UI.Components.SdkStrings.NoDeclarationFound(string! word) -> string!
+static eQuantic.UI.Components.SdkStrings.NoDeclaration.get -> string!
+static eQuantic.UI.Components.SdkStrings.NoTypeDefinitionFound(string! word) -> string!
+static eQuantic.UI.Components.SdkStrings.NoTypeDefinition.get -> string!
+static eQuantic.UI.Components.SdkStrings.NoImplementationFound(string! word) -> string!
+static eQuantic.UI.Components.SdkStrings.NoImplementation.get -> string!
+static eQuantic.UI.Components.SdkStrings.NoReferencesFound(string! word) -> string!
+static eQuantic.UI.Components.SdkStrings.NoReferences.get -> string!

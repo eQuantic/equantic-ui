@@ -212,4 +212,24 @@ public enum CodeCommand
     NavigateBack,
     /// <summary>The place after in the jump list. Claims nothing at the last place.</summary>
     NavigateForward,
+
+    // ---- definitions and references (#1084) -------------------------------------------------------------
+
+    /// <summary>Where what is at the caret is defined: one place gone to, several listed, none said. Claims nothing
+    /// with no definition provider.</summary>
+    GoToDefinition,
+    /// <summary>Where what is at the caret is declared, as <see cref="GoToDefinition"/> goes.</summary>
+    GoToDeclaration,
+    /// <summary>Where the type of what is at the caret is defined, as <see cref="GoToDefinition"/> goes.</summary>
+    GoToTypeDefinition,
+    /// <summary>Where what is at the caret is implemented, as <see cref="GoToDefinition"/> goes.</summary>
+    GoToImplementation,
+    /// <summary>Where what is at the caret is used: one place gone to, several listed, none said. Claims nothing
+    /// with no reference provider.</summary>
+    FindReferences,
+    /// <summary>The next place of the last list: its next row while it shows, the next place once it is closed.
+    /// Claims nothing with no place held.</summary>
+    NextReference,
+    /// <summary>The place before, as <see cref="NextReference"/> walks.</summary>
+    PreviousReference,
 }
