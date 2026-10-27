@@ -175,4 +175,55 @@
   <data name="ReadingSymbols" xml:space="preserve">
     <value>Reading the symbols…</value>
   </data>
+  <data name="DefinitionsCount" xml:space="preserve">
+    <value>Definitions ({0})</value>
+  </data>
+  <data name="DeclarationsCount" xml:space="preserve">
+    <value>Declarations ({0})</value>
+  </data>
+  <data name="TypeDefinitionsCount" xml:space="preserve">
+    <value>Type definitions ({0})</value>
+  </data>
+  <data name="ImplementationsCount" xml:space="preserve">
+    <value>Implementations ({0})</value>
+  </data>
+  <data name="ReferencesCount" xml:space="preserve">
+    <value>References ({0})</value>
+  </data>
+  <data name="FilterPlaces" xml:space="preserve">
+    <value>Type to filter the places.</value>
+  </data>
+  <data name="NoMatchingPlaces" xml:space="preserve">
+    <value>No place matches.</value>
+  </data>
+  <data name="NoDefinitionFound" xml:space="preserve">
+    <value>No definition found for '{0}'</value>
+  </data>
+  <data name="NoDefinition" xml:space="preserve">
+    <value>No definition found</value>
+  </data>
+  <data name="NoDeclarationFound" xml:space="preserve">
+    <value>No declaration found for '{0}'</value>
+  </data>
+  <data name="NoDeclaration" xml:space="preserve">
+    <value>No declaration found</value>
+  </data>
+  <data name="NoTypeDefinitionFound" xml:space="preserve">
+    <value>No type definition found for '{0}'</value>
+  </data>
+  <data name="NoTypeDefinition" xml:space="preserve">
+    <value>No type definition found</value>
+  </data>
+  <data name="NoImplementationFound" xml:space="preserve">
+    <value>No implementation found for '{0}'</value>
+  </data>
+  <data name="NoImplementation" xml:space="preserve">
+    <value>No implementation found</value>
+  </data>
+  <data name="NoReferencesFound" xml:space="preserve">
+    <value>No references found for '{0}'</value>
+  </data>
+  <data name="NoReferences" xml:space="preserve">
+    <value>No references found</value>
+  </data>
 </root>

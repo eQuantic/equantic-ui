@@ -1,1 +1,2 @@
 #nullable enable
+[EQX0001]static eQuantic.UI.Native.Shell.MacOS.MacKeys.ModifiersOf(ulong flags) -> eQuantic.UI.Primitives.KeyModifiers

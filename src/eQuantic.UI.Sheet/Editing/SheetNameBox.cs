@@ -147,4 +147,8 @@ public sealed class SheetNameBox : ICodeSurfaceModel
         Invalid = false;
         _justFocused = true;
     }
+
+    /// <inheritdoc />
+    /// <remarks>The text cursor: the box follows no link (#1084).</remarks>
+    public PointerCursor CursorAt(Point position) => PointerCursor.Text;
 }

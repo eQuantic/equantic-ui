@@ -1,2 +1,5 @@
 #nullable enable
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.KeyBeforeText(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers) -> bool
+*REMOVED*[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PointerMove(float x, float y, eQuantic.UI.Primitives.PointerKind kind = eQuantic.UI.Primitives.PointerKind.Mouse) -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PointerMove(float x, float y, eQuantic.UI.Primitives.PointerKind kind = eQuantic.UI.Primitives.PointerKind.Mouse, eQuantic.UI.Primitives.KeyModifiers modifiers = eQuantic.UI.Primitives.KeyModifiers.None) -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.ModifiersChanged(eQuantic.UI.Primitives.KeyModifiers modifiers) -> void

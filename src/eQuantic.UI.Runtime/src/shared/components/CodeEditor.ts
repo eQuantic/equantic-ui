@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeDiagnostic, CodeEditorController, CodeGoToView, CodeGrid, CodeGutterMarker, CodeHoverCard, CodeKeyBinding, CodeKeywordCompletionProvider, CodeLanguages, CodeRange, CodeSignatureCard, CodeSurface, CodeWordCompletionProvider, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Rect, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeDiagnostic, CodeEditorController, CodeGoToView, CodeGrid, CodeGutterMarker, CodeHoverCard, CodeKeyBinding, CodeKeywordCompletionProvider, CodeLanguages, CodeLocation, CodeRange, CodeSignatureCard, CodeSurface, CodeWordCompletionProvider, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Rect, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
 
 export class CodeEditor extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeEditor';
@@ -21,6 +21,8 @@ export class CodeEditor extends StatefulComponent {
     _explainers: any[] = [];
     _signers: any[] = [];
     _declarers: any[] = [];
+    _definers: any[] = [];
+    _referrers: any[] = [];
     _bindings: CodeKeyBinding[] = [];
     _toldDocument: any = null;
     _toldSelection: CodeRange = CodeRange.$zero();
@@ -53,6 +55,9 @@ export class CodeEditor extends StatefulComponent {
     declare hoverProviders: any[];
     declare signatureProviders: any[];
     declare symbolProviders: any[];
+    declare definitionProviders: any[];
+    declare referenceProviders: any[];
+    declare onOpenRequested: ((codeLocation: CodeLocation) => void) | null;
     declare keyBindings: CodeKeyBinding[];
 
     get editor() {
@@ -82,6 +87,8 @@ export class CodeEditor extends StatefulComponent {
         if (this.hoverProviders === undefined) this.hoverProviders = [];
         if (this.signatureProviders === undefined) this.signatureProviders = [];
         if (this.symbolProviders === undefined) this.symbolProviders = [];
+        if (this.definitionProviders === undefined) this.definitionProviders = [];
+        if (this.referenceProviders === undefined) this.referenceProviders = [];
         if (this.keyBindings === undefined) this.keyBindings = [];
         this.initialCode = code;
         this.languageName = language;
@@ -149,6 +156,12 @@ export class CodeEditor extends StatefulComponent {
             let [x, y] = CodeHoverCard.place(editor.caretRect(hover.range.start), viewTop, this._scrollX, this._viewportWidth, cardWidth, cardHeight);
             notes.push(new Positioned(card, y, null, null, x));
         }
+        let nothing: any; 
+        if ((nothing = editor.goTo.notFound) != null && !hover.isOpen && offered == null) {
+            let [said, saidWidth, saidHeight] = CodeHoverCard.message(context, metrics, CodeGoToView.notFoundText(nothing), this._viewportWidth);
+            let [x, y] = CodeHoverCard.place(editor.caretRect(nothing.at), viewTop, this._scrollX, this._viewportWidth, saidWidth, saidHeight);
+            notes.push(new Positioned(said, y, null, null, x));
+        }
         let signatures = editor.signatureHelp;
         if (signatures.isOpen && !(signatures.signature == null) && !hover.isOpen) {
             let [panel, panelWidth, panelHeight] = CodeSignatureCard.build(context, signatures, metrics, this._viewportWidth);
@@ -214,6 +227,9 @@ export class CodeEditor extends StatefulComponent {
         keyed = this.goToKey(keyed, 'PageDown', goTo.isOpen, () => goTo.selectNextPage());
         keyed = this.goToKey(keyed, 'PageUp', goTo.isOpen, () => goTo.selectPreviousPage());
         keyed = this.goToKey(keyed, 'Escape', goTo.isOpen, () => goTo.close());
+        let placesShown = goTo.isOpen && CodeGoToView.lists(goTo.mode);
+        keyed = this.goToKey(keyed, 'F4', placesShown, () => goTo.nextPlace());
+        keyed = new Shortcut(keyed, new KeyChord('F4', 1), () => this.setState(() => goTo.previousPlace()), { focusScoped: true, enabled: placesShown });
         let closable = new Shortcut(keyed, KeyChord.escape, () => this.closeFind(editor), { focusScoped: true, enabled: this._findOpen });
         let findable = new Shortcut(closable, new KeyChord('f', 4), () => this.setState(() => this._findOpen = true), { focusScoped: true });
         return new Box(new BoxStyle({ width: SizeValue.fill, height: this.height, maxHeight: capped ? SizeValue.fixed(this.maxHeight) : SizeValue.hug }), findable);
@@ -229,9 +245,15 @@ export class CodeEditor extends StatefulComponent {
         editor.hover.changed = $eq.delegates.combine(editor.hover.changed, () => this.setState(() => {}));
         editor.signatureHelp.changed = $eq.delegates.combine(editor.signatureHelp.changed, () => this.setState(() => {}));
         editor.snippet.changed = $eq.delegates.combine(editor.snippet.changed, () => this.setState(() => {}));
-        editor.goTo.changed = $eq.delegates.combine(editor.goTo.changed, () => this.setState(() => {}));
+        editor.goTo.changed = $eq.delegates.combine(editor.goTo.changed, () => this.setState(() => this.tellSelection(editor)));
         editor.scrollRequested = $eq.delegates.combine(editor.scrollRequested, () => this.setState(() => {}));
+        editor.definitions.changed = $eq.delegates.combine(editor.definitions.changed, () => this.setState(() => {}));
+        editor.openRequested = $eq.delegates.combine(editor.openRequested, this.opened.bind(this));
         return editor;
+    }
+
+    opened(place: CodeLocation) {
+        return this.onOpenRequested?.(place);
     }
 
     handIntelligence(editor: CodeEditorController) {
@@ -273,6 +295,23 @@ export class CodeEditor extends StatefulComponent {
             }
             this._declarers = [...this.symbolProviders];
             for (const provider of this._declarers) $eq.collections.add(editor.symbols.providers, provider);
+        }
+        if (!CodeEditor.sameProviders(this.definitionProviders, this._definers)) {
+            for (const provider of this._definers) {
+                let at = CodeEditor.indexOfInstance(editor.definitions.providers, provider);
+                if (at >= 0) editor.definitions.providers.splice(at, 1);
+            }
+            this._definers = [...this.definitionProviders];
+            for (const provider of this._definers) $eq.collections.add(editor.definitions.providers, provider);
+            editor.definitions.clearLink();
+        }
+        if (!CodeEditor.sameProviders(this.referenceProviders, this._referrers)) {
+            for (const provider of this._referrers) {
+                let at = CodeEditor.indexOfInstance(editor.references.providers, provider);
+                if (at >= 0) editor.references.providers.splice(at, 1);
+            }
+            this._referrers = [...this.referenceProviders];
+            for (const provider of this._referrers) $eq.collections.add(editor.references.providers, provider);
         }
     }
 
@@ -370,10 +409,13 @@ export class CodeEditor extends StatefulComponent {
             this._toldDocument = editor.document;
             this.onChanged?.(editor.document.text);
         }
-        if (!$eq.equals(editor.selection, this._toldSelection)) {
-            this._toldSelection = editor.selection;
-            this.onSelectionChanged?.(editor.selection);
-        }
+        this.tellSelection(editor);
+    }
+
+    tellSelection(editor: CodeEditorController) {
+        if ($eq.equals(editor.selection, this._toldSelection)) return;
+        this._toldSelection = editor.selection;
+        this.onSelectionChanged?.(editor.selection);
     }
 
     gutter(editor: CodeEditorController, first: number, last: number) {
@@ -399,21 +441,26 @@ export class CodeEditor extends StatefulComponent {
 
     marks(editor: CodeEditorController, matches: CodeRange[], first: number, last: number, theme: any) {
         let problems = editor.diagnostics.items;
-        if ($eq.collections.count(matches) === 0 && !this.matchBrackets && editor.composition == null && $eq.collections.count(problems) === 0 && !editor.snippet.isActive && editor.goTo.preview == null) return this.decorations;
+        if ($eq.collections.count(matches) === 0 && !this.matchBrackets && editor.composition == null && $eq.collections.count(problems) === 0 && !editor.snippet.isActive && editor.goTo.preview == null && editor.definitions.link == null) return this.decorations;
         let marks: CodeDecoration[] = $eq.collections.listCopy(this.decorations);
         let previewed: any; 
         if ((previewed = editor.goTo.preview) != null && previewed.end.line >= first && previewed.start.line <= last) {
-            let $n3: any; 
-            marks.push(($n3 = new CodeDecoration(previewed, 'line'), $n3.color = theme.colors('info').subtle, $n3));
+            let $n4: any; 
+            marks.push(($n4 = new CodeDecoration(previewed, 'line'), $n4.color = theme.colors('info').subtle, $n4));
+        }
+        let link: any; 
+        if ((link = editor.definitions.link) != null && link.end.line >= first && link.start.line <= last) {
+            let $n5: any; 
+            marks.push(($n5 = new CodeDecoration(link, 'underline'), $n5.color = theme.colors('primary').base, $n5));
         }
         for (const placeholder of editor.snippet.placeholdersIn(first, last)) {
-            let $n4: any; 
-            marks.push(($n4 = new CodeDecoration(placeholder, 'highlight'), $n4.color = theme.colors('info').subtle, $n4));
+            let $n6: any; 
+            marks.push(($n6 = new CodeDecoration(placeholder, 'highlight'), $n6.color = theme.colors('info').subtle, $n6));
         }
         for (const problem of problems) {
             if (problem.range.end.line < first || problem.range.start.line > last) continue;
-            let $n5: any; 
-            marks.push(($n5 = new CodeDecoration(problem.range, problem.severity === 'hint' ? 'dots' : 'squiggle'), $n5.color = CodeHoverCard.severityColor(theme, problem.severity), $n5));
+            let $n7: any; 
+            marks.push(($n7 = new CodeDecoration(problem.range, problem.severity === 'hint' ? 'dots' : 'squiggle'), $n7.color = CodeHoverCard.severityColor(theme, problem.severity), $n7));
         }
         let composition: any; 
         if ((composition = editor.composition) != null) marks.push(new CodeDecoration(composition, 'underline'));
@@ -459,6 +506,9 @@ export class CodeEditor extends StatefulComponent {
         this.hoverProviders = fresh.hoverProviders;
         this.signatureProviders = fresh.signatureProviders;
         this.symbolProviders = fresh.symbolProviders;
+        this.definitionProviders = fresh.definitionProviders;
+        this.referenceProviders = fresh.referenceProviders;
+        this.onOpenRequested = fresh.onOpenRequested;
         this.keyBindings = fresh.keyBindings;
     }
 

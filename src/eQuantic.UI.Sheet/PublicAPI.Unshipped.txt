@@ -162,3 +162,5 @@ static eQuantic.UI.Sheet.SheetSummary.operator !=(eQuantic.UI.Sheet.SheetSummary
 static eQuantic.UI.Sheet.SheetSummary.operator ==(eQuantic.UI.Sheet.SheetSummary left, eQuantic.UI.Sheet.SheetSummary right) -> bool
 ~override eQuantic.UI.Sheet.SheetSummary.Equals(object obj) -> bool
 ~override eQuantic.UI.Sheet.SheetSummary.ToString() -> string
+eQuantic.UI.Sheet.SheetFormulaBar.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
+eQuantic.UI.Sheet.SheetNameBox.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
