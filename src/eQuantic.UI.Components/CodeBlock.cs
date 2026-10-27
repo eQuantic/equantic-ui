@@ -294,6 +294,14 @@ public sealed class CodeBlock : StatelessComponent
             }
         }
         var codeWidth = widest * metrics.ColumnWidth + metrics.ColumnWidth;
+        // A folded header draws its marker past its text (#1119), so the code is as wide as that too: the widest
+        // line's marker would otherwise be cut where the sideways scroll cannot reach, which Photon sizes by this.
+        foreach (var header in FoldedLines)
+        {
+            if (header < 0 || header >= Document.LineCount || FoldAt(header) is not { } fold) continue;
+            var cells = CodeLineCells.WidthOf(Document.Line(header), TabSize) + CodeLineCells.WidthOf(MarkerOf(fold), TabSize);
+            codeWidth = MathF.Max(codeWidth, cells * metrics.ColumnWidth + MarkerRoom + metrics.ColumnWidth);
+        }
 
         // The other document's own colouring: a highlighter keeps one document's state, and sharing
         // one between two would re-colour both from the top on every build.
@@ -685,6 +693,12 @@ public sealed class CodeBlock : StatelessComponent
 
     /// <summary>What a folded header shows after its text: <c>⋯</c>, or the region's own placeholder, a button that
     /// unfolds it.</summary>
+    /// <summary>What a folded <paramref name="fold"/> shows after its header: its own placeholder, or <c>⋯</c>.</summary>
+    private static string MarkerOf(CodeFold fold) => fold.Placeholder ?? "\u22EF";
+
+    /// <summary>The room a marker takes besides its text: the gap before it and its padding on either side.</summary>
+    private const float MarkerRoom = Space.S1 * 3;
+
     private VisualNode FoldMarker(CodeFold fold, CodeMetrics metrics, IAppTheme theme)
     {
         // The room before it is a box of its own: a box has no margin, and its padding would be inside the wash.
@@ -695,7 +709,7 @@ public sealed class CodeBlock : StatelessComponent
             Padding = EdgeInsets.Symmetric(Space.S1, 0),
             Background = theme.Colors(Variant.Primary).Subtle,
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Small)),
-        }, Muted(fold.Placeholder ?? "\u22EF", metrics, theme)));
+        }, Muted(MarkerOf(fold), metrics, theme)));
         VisualNode marker = spaced;
         return OnFoldPressed is { } pressed
             ? new Pressable(marker, () => pressed(fold.StartLine))

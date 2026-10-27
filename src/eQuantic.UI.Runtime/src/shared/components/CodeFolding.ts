@@ -268,7 +268,11 @@ export class CodeFolding {
         this._regions = regions;
         this._folded = folded;
         this.apply();
-        if (this._editor.hidesFolds) this.ask(true);
+        if (this._editor.hidesFolds) this.ask(true); else {
+            this._generation++;
+            ProviderRequest.cancel(this._request, this.failed);
+            this._request = null;
+        }
     }
 
     selected(__: CodeRange) {

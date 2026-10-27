@@ -149,6 +149,31 @@ public class CodeFoldingViewTests : IDisposable
     }
 
     [Fact]
+    public void AFoldedHeadersMarker_WidensTheCode_SoTheSidewaysScrollReachesIt()
+    {
+        // Photon sizes the sideways scroll by the code's width: a folded header whose marker runs past the widest
+        // line has to widen it, or the marker is cut where no scroll reaches. Eight points a character, so a column
+        // has a width to measure by.
+        var context = new ComponentContext(PhotonTheme.Instance, measureText: (shown, _) => shown.Length * 8f);
+        const string placeholder = "{ every member of the class, folded }";
+        const string text = "class A\n{\n    x();\n}";
+        float Width(bool folded) => ((Box)new CodeBlock(text, "csharp")
+        {
+            Standalone = false,
+            ViewportWidth = 40,
+            Folds = [new CodeFold(1, 2) { Placeholder = placeholder }],
+            FoldedLines = folded ? [1] : [],
+            Rows = folded ? new CodeRows(4, [], [new CodeCollapse(2, 2, Placeholder: false)]) : null,
+        }.Build(context)).Style.Width.Value;
+        var column = CodeBlock.MetricsFor(context, SizeVariant.Small, true, 4).ColumnWidth;
+        column.Should().BeGreaterThan(0);
+        var reach = (1 + placeholder.Length) * column + 3 * Space.S1;
+
+        Width(folded: true).Should().BeGreaterThanOrEqualTo(reach);
+        Width(folded: false).Should().BeLessThan(reach, "open, the header shows no marker to make room for");
+    }
+
+    [Fact]
     public void ACodeWithNoRegion_DrawsNoChevron_AndKeepsTheChevronsColumn()
     {
         var context = new ComponentContext(PhotonTheme.Instance);

@@ -516,6 +516,23 @@ public class CodeFoldingTests : IDisposable
     }
 
     [Fact]
+    public void AnEditWhileTheGridBringsItsOwnRows_DropsWhatWasAskedBeforeIt()
+    {
+        // Nothing is asked again for a grid with rows of its own, and an answer about the ten lines before the edit
+        // must not land in the two lines after it.
+        var editor = Editor("a\nb\nc\nd\ne\nf\ng\nh\ni\nj");
+        var waiting = new Waiting();
+        editor.Folding.Providers.Add(waiting);
+        editor.Folding.Check();
+        editor.Grid = editor.Grid with { Rows = new CodeRows(editor.Document.LineCount, [], []) };
+
+        editor.Apply(new CodeRange(new CodePosition(0, 0), new CodePosition(8, 0)), "");
+        waiting.Answer.SetResult([new CodeFold(7, 8)]);
+
+        editor.Folding.Regions.Should().BeEmpty("the answer was about the document before the edit");
+    }
+
+    [Fact]
     public void ANewAnswer_KeepsFoldedWhatWasFoldedOnItsHeader()
     {
         var editor = Editor();

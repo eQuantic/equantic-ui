@@ -359,8 +359,15 @@ public sealed class CodeFolding
         _regions = regions;
         _folded = folded;
         Apply();
-        // A grid with rows of its own (a diff's side, a formula bar) hides no fold, so nothing is asked for it.
+        // A grid with rows of its own (a diff's side, a formula bar) hides no fold, so nothing is asked for it; and
+        // what was asked before this edit is answered about a document that is gone, so it goes, asked again or not.
         if (_editor.HidesFolds) _ = Ask(wait: true);
+        else
+        {
+            _generation++;
+            ProviderRequest.Cancel(_request, Failed);
+            _request = null;
+        }
     }
 
     /// <summary>The selection moved: a line a selection ends on that is hidden is shown, every caret's of several,

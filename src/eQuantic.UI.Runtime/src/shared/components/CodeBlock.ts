@@ -5,6 +5,7 @@ export class CodeBlock extends StatelessComponent {
     static foldSlot: number = 20;
     _foldsByHeader: any = null;
     _foldedHeaders: any = null;
+    static markerRoom: number = 12;
     _cells: any = $eq.collections.dictionary();
     _fillerCells: any = $eq.collections.dictionary();
     static linePass: number = 0;
@@ -167,6 +168,12 @@ export class CodeBlock extends StatelessComponent {
             }
         }
         let codeWidth = Math.fround(Math.fround(Math.fround(widest) * metrics.columnWidth) + metrics.columnWidth);
+        for (const header of this.foldedLines) {
+            let fold: any; 
+            if (header < 0 || header >= this.document.lineCount || !((fold = this.foldAt(header)) != null)) continue;
+            let cells = CodeLineCells.widthOf(this.document.line(header), this.tabSize) + CodeLineCells.widthOf(CodeBlock.markerOf(fold), this.tabSize);
+            codeWidth = Math.max(codeWidth, Math.fround(Math.fround(Math.fround(Math.fround(cells) * metrics.columnWidth) + CodeBlock.markerRoom) + metrics.columnWidth));
+        }
         let fillerHighlighter = this.fillerDocument == null ? null : this.fillerHighlighter ?? new CodeHighlighter(this.language);
         let lines = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         if (first > 0) lines.add(Spacer.fixed(Math.fround(Math.fround(first) * lineHeight)));
@@ -340,10 +347,14 @@ export class CodeBlock extends StatelessComponent {
         return (pressed = this.onPlaceholderPressed) != null ? new Pressable(box, () => pressed(shown.line), { label: label }) : box;
     }
 
+    static markerOf(fold: CodeFold) {
+        return fold.placeholder ?? '⋯';
+    }
+
     foldMarker(fold: CodeFold, metrics: CodeBlock$CodeMetrics, theme: any) {
         let spaced = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, cross: 'center' });
         spaced.add(Spacer.fixed(4));
-        spaced.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(4, 0), background: theme.colors('primary').subtle, cornerRadius: new CornerRadii(theme.shape('small')) }), this.muted(fold.placeholder ?? '⋯', metrics, theme)));
+        spaced.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(4, 0), background: theme.colors('primary').subtle, cornerRadius: new CornerRadii(theme.shape('small')) }), this.muted(CodeBlock.markerOf(fold), metrics, theme)));
         let marker: VisualNode = spaced;
         let pressed: any; 
         return (pressed = this.onFoldPressed) != null ? new Pressable(marker, () => pressed(fold.startLine), { label: SdkStrings.unfoldLines(this.firstLineNumber + fold.startLine, this.firstLineNumber + fold.endLine), expanded: false, canRequestFocus: false }) : marker;
