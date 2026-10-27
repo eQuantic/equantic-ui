@@ -40,4 +40,19 @@ public class MacKeysTests
         codes.Should().OnlyContain(code => MacKeys.IsFunctionKey(code));
         MacKeys.IsFunctionKey(40).Should().BeFalse("k types, and goes through the input method");
     }
+
+    /// <summary>
+    /// All four modifiers of an event's <c>modifierFlags</c>, apart, for a key, a press, a move and
+    /// <c>flagsChanged</c> alike (#1084): the press read only ⇧ and ⌘, so ⌥ and a press never added a caret in a
+    /// macOS window, and ⌃ and ⌘ could not be told apart on a pointer.
+    /// </summary>
+    [MacTheory]
+    [InlineData(1UL << 17, eQuantic.UI.Primitives.KeyModifiers.Shift)]
+    [InlineData(1UL << 18, eQuantic.UI.Primitives.KeyModifiers.Control)]
+    [InlineData(1UL << 19, eQuantic.UI.Primitives.KeyModifiers.Alt)]
+    [InlineData(1UL << 20, eQuantic.UI.Primitives.KeyModifiers.Command)]
+    [InlineData((1UL << 19) | (1UL << 20) | (1UL << 8), eQuantic.UI.Primitives.KeyModifiers.Alt | eQuantic.UI.Primitives.KeyModifiers.Command)]
+    [InlineData(0UL, eQuantic.UI.Primitives.KeyModifiers.None)]
+    public void TheModifierFlags_AreReadApart(ulong flags, eQuantic.UI.Primitives.KeyModifiers expected) =>
+        MacKeys.ModifiersOf(flags).Should().Be(expected);
 }

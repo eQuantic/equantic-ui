@@ -620,9 +620,10 @@ function frames(node: unknown, presses: number[]): unknown[] {
  * Scoped to the entry's own tag on purpose. Other components attach the same NAMES for their own
  * reasons — a table viewport listens for keydown — and filtering globally would hide a real
  * regression the day one of those joins the fixture. The spreadsheet's door is a textarea, an entry
- * of this kind: its keydown, clipboard trio and focus are the client's alone too.
+ * of this kind: its keydown, clipboard trio and focus are the client's alone too, and so is a code
+ * surface door's keyup, which hands the model a hover again when a modifier is released (#1084).
  */
-const CLIENT_ONLY_EVENTS = new Set(['focus', 'blur', 'input', 'keydown', 'paste', 'cut', 'copy']);
+const CLIENT_ONLY_EVENTS = new Set(['focus', 'blur', 'input', 'keydown', 'keyup', 'paste', 'cut', 'copy']);
 const ENTRY_TAGS = new Set(['input', 'textarea']);
 
 function canonical(node: HtmlNode): unknown {
