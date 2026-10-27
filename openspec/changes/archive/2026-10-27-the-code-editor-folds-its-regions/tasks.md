@@ -25,4 +25,4 @@
 
 - [x] 5.1 The dashboard sample's code screen folds, driven in a browser by the gutter, the `⋯` and the keys
 - [x] 5.2 The wiki's CodeEditor page in its five languages, docs/CODE-EDITOR-PLAN.md, and a ledger entry citing #1119
-- [ ] 5.3 The change archived before the merge
+- [x] 5.3 The change archived before the merge
