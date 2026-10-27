@@ -37,16 +37,6 @@ const fillTrack = () => ({
 const styleOf = (node: unknown): string =>
   effectiveStyle(node as { attributes: Record<string, string | undefined> });
 
-// A model stands in for the real one: the lowering reads where the text door and the carets stand and
-// closes over the rest (a press, a key), so a sheet at rest with its door at its corner is enough to lower
-// the host and read its box.
-const sheetController = () =>
-  ({
-    carets: [],
-    inputBounds: { x: 0, y: 0, width: 10, height: 10 },
-    focusVersion: 0,
-  }) as unknown as never;
-
 describe('a role-bearing host has the bounds of what it names', () => {
   for (const [name, wrap] of [
     ['progress', (child: unknown) => ({ nodeKind: 'progress', child, label: 'Uploading' })],
@@ -54,9 +44,8 @@ describe('a role-bearing host has the bounds of what it names', () => {
     // A live region's box is what a reader outlines when it announces the change inside it, so the
     // same rule applies for the same reason.
     ['liveRegion', (child: unknown) => ({ nodeKind: 'liveRegion', child, label: 'Upload status' })],
-    // A grid's host is what a reader outlines (#241); its stop of the Tab order is its text door.
-    ['sheetSurface', (child: unknown) =>
-      ({ nodeKind: 'sheetSurface', child, model: sheetController(), label: 'Budget' })],
+    // A sheet surface was the fourth until it stopped bearing a role (#1081): the table it holds is the
+    // grid a reader walks.
   ] as const) {
     it(`${name} hugs a hug child and fills a fill child`, () => {
       const hug = lowerVisualNode(wrap(hugTrack()) as unknown as VisualNodeValue, ctx);

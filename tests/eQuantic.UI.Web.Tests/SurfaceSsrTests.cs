@@ -1,5 +1,6 @@
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Sheet;
+using eQuantic.UI.Spreadsheets;
 using eQuantic.UI.Web;
 using FluentAssertions;
 
@@ -179,16 +180,34 @@ public class SurfaceSsrTests
 
 
     [Fact]
-    public void ASheetSurface_ArrivesAsAGrid()
+    public void ASheetSurface_ArrivesAsTheFieldThatTakesItsKeys_SayingWhatTheGridSays()
     {
         var html = Render(new SheetSurface(new Text("x", TypeRole.BodyM), new SheetController(2, 2))
         {
             Label = "Budget",
+            Announcement = "B3, 14,02",
         });
 
-        html.Should().Contain("role=\"grid\"");
+        // The table a sheet holds is the grid a reader walks (#1081), and this one holds none.
+        html.Should().NotContain("role=\"grid\"");
         html.Should().Contain("aria-label=\"Budget\"");
         html.Should().Contain("tabindex=\"0\"");
+        html.Should().Contain("role=\"status\"").And.Contain("aria-live=\"polite\"").And.Contain("B3, 14,02");
+    }
+
+    [Fact]
+    public void ASpreadsheet_ArrivesAsAGridOfHeadersAndCells()
+    {
+        var sheet = new SheetController(30, 6);
+        sheet.Document.SetCell(new CellRef(2, 1), "14,02");
+
+        var html = Render(new Spreadsheet(sheet));
+
+        html.Should().Contain("role=\"grid\"").And.Contain("aria-label=\"Spreadsheet\"")
+            .And.Contain("aria-rowcount=\"31\"").And.Contain("aria-colcount=\"7\"")
+            .And.Contain("role=\"columnheader\"").And.Contain("role=\"rowheader\"")
+            .And.Contain("role=\"gridcell\"").And.Contain("role=\"row\"")
+            .And.Contain("aria-current=\"true\"").And.Contain("A1, blank");
     }
 
 
@@ -212,7 +231,7 @@ public class SurfaceSsrTests
 
         var html = Render(row);
 
-        html.Should().Contain("role=\"grid\"");
+        html.Should().Contain("eq-sheet-surface");
         // The spacer is a node that EXISTS or does not: with no axis, `LowerSpacer` returns null and
         // the grid comes out empty. Asserted by presence rather than by a declaration, because the
         // declaration is atomised into a class name nobody should have to predict.

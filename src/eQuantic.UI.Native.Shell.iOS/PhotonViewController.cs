@@ -264,6 +264,8 @@ public sealed class PhotonViewController : UIViewController
         FramesPresented++;
         // The screen just changed: if that changed what a screen reader would read, tell it.
         view.Semantics?.FrameRendered();
+        // And what a live region said since the last frame, wherever the reader is (#1081).
+        PhotonAnnouncements.Post(_host.TakeAnnouncements());
         // And whether the keyboard has to open, start over, close or take a new value.
         _keyboard?.Sync();
 

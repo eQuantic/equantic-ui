@@ -145,6 +145,8 @@ public sealed class Spreadsheet : StatefulComponent
         };
 
         var revealed = Controller.RevealCell;
+        var ranges = Controller.Ranges;
+        var active = Controller.ActiveCell;
         var table = new TableView(_rows, _columns, (row, column) => Cell(row, column, document, palette, numbers))
         {
             PinnedRows = 1,
@@ -159,6 +161,13 @@ public sealed class Spreadsheet : StatefulComponent
             OnViewportChanged = ViewportChanged,
             // The surface is the sheet's one stop of the Tab order, and an arrow moves the active cell.
             CanRequestFocus = false,
+            // The grid a reader walks (#1081): the letters and the numbers head their columns and rows, the
+            // cells of every range are selected and the active cell is current.
+            Role = TableRole.Grid,
+            Label = SdkStrings.Spreadsheet,
+            CellRole = (row, column) => CellRoleAt(row, column),
+            Selected = (row, column) => row > 0 && column > 0 && InAny(ranges, new CellRef(row - 1, column - 1)),
+            Current = new TableRange(active.Row + 1, active.Col + 1),
         };
 
         return new Box(new BoxStyle
@@ -178,7 +187,44 @@ public sealed class Spreadsheet : StatefulComponent
             OnChanged = () => Controller.Refresh(),
             Label = SdkStrings.Spreadsheet,
             CaretColor = palette.CellText,
+            Announcement = Announcement(document),
         });
+    }
+
+    /// <summary>What a cell of the table is to a reader: the headers' row heads the columns, the corner
+    /// with them as the empty header of the row numbers, which keeps its place in the row (TableCellRole
+    /// says why), and the headers' column heads the rows.</summary>
+    private static TableCellRole CellRoleAt(int row, int column) =>
+        row == 0 ? TableCellRole.ColumnHeader
+        : column == 0 ? TableCellRole.RowHeader
+        : TableCellRole.Cell;
+
+    /// <summary>Whether <paramref name="cell"/> lies in one of <paramref name="ranges"/>.</summary>
+    private static bool InAny(IReadOnlyList<SheetRange> ranges, CellRef cell)
+    {
+        for (var i = 0; i < ranges.Count; i++)
+            if (ranges[i].Contains(cell)) return true;
+        return false;
+    }
+
+    /// <summary>
+    /// What the grid says now (<see cref="SheetSurface.Announcement"/>, #1081): the active range's address
+    /// and size, when it changed and covers more than one cell, or else the active cell's address and what
+    /// it holds, as it moves (<see cref="SheetController.Moved"/>). The same words for the same selection,
+    /// however often the grid builds, so a reader hears a move once. Nothing while an entry is open: the
+    /// grid says nothing of its own over the editing, a move still owed to Photon's quiet window included,
+    /// and says the cell the entry closed on once it closes.
+    /// </summary>
+    private string Announcement(SheetDocument document)
+    {
+        if (Controller.Editing) return "";
+        var range = Controller.Selection;
+        if (Controller.Moved == SheetMove.ActiveRange && !range.IsSingleCell)
+            return SdkStrings.RangeAnnouncement(
+                range.TopLeft.ToA1() + ":" + new CellRef(range.BottomRow, range.RightCol).ToA1(),
+                range.RowCount, range.ColCount);
+        var cell = Controller.ActiveCell;
+        return SdkStrings.CellAnnouncement(cell.ToA1(), document.GetCell(cell));
     }
 
     /// <summary>How many digits the last row number the window shows has, at the scroll's offset now.</summary>

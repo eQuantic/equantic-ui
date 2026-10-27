@@ -27,10 +27,9 @@ namespace eQuantic.UI.Web.Tests;
 /// </para>
 ///
 /// <para>
-/// <c>SheetSurface</c> was the third instance and was named here as absent, because giving it the
-/// bounds rule meant giving it the width contract first — which changes a Spreadsheet's layout
-/// rather than only its announcement. It has both now (#241) and is in the roster below, where
-/// naming it as a hole was always meant to lead.
+/// <c>SheetSurface</c> was the third instance (#241) until it stopped bearing a role (#1081): the table it
+/// holds is the grid a reader walks, and the case below finds the grid there. It keeps the width contract,
+/// because its box is still the one its door and its carets are placed in.
 /// </para>
 /// </summary>
 public class RoleBearingHostBoundsTests
@@ -52,11 +51,6 @@ public class RoleBearingHostBoundsTests
         // the same rule applies for the same reason — written down when the node was added rather
         // than found on a page later, which is what the two above cost.
         { "LiveRegion", new LiveRegion(HugTrack()) { Label = "Upload status" }, new LiveRegion(FillTrack()) },
-        // A grid's host is a TAB STOP as well as an announcement, so its box is also what the
-        // browser draws the focus ring on — the one place this rule is visible to someone who
-        // is not using a reader at all.
-        { "SheetSurface", new SheetSurface(HugTrack(), new SheetController()) { Label = "Budget" },
-            new SheetSurface(FillTrack(), new SheetController()) },
     };
 
     [Theory]

@@ -177,6 +177,41 @@ namespace eQuantic.UI.Components
             get { return ResourceManager.GetString("RangeSize", Culture)!; }
         }
 
+        internal static string CellAnnouncement
+        {
+            get { return ResourceManager.GetString("CellAnnouncement", Culture)!; }
+        }
+
+        internal static string CellBlank
+        {
+            get { return ResourceManager.GetString("CellBlank", Culture)!; }
+        }
+
+        internal static string RangeAnnouncement
+        {
+            get { return ResourceManager.GetString("RangeAnnouncement", Culture)!; }
+        }
+
+        internal static string RangeOneRow
+        {
+            get { return ResourceManager.GetString("RangeOneRow", Culture)!; }
+        }
+
+        internal static string RangeRows
+        {
+            get { return ResourceManager.GetString("RangeRows", Culture)!; }
+        }
+
+        internal static string RangeOneColumn
+        {
+            get { return ResourceManager.GetString("RangeOneColumn", Culture)!; }
+        }
+
+        internal static string RangeColumns
+        {
+            get { return ResourceManager.GetString("RangeColumns", Culture)!; }
+        }
+
         internal static string StatusSum
         {
             get { return ResourceManager.GetString("StatusSum", Culture)!; }

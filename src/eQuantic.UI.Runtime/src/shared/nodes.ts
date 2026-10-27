@@ -51,6 +51,8 @@ import type {
   NavigableMoveValue,
   PointerPhaseValue,
   SizeKindValue,
+  TableCellRoleValue,
+  TableRoleValue,
   VectorPaintKindValue,
 } from './enums.generated';
 import type { NodeKind } from './node-kinds.generated';
@@ -698,6 +700,12 @@ export interface TableViewCellNode extends VisualNodeValue {
   mark: boolean;
   /** How a keyed mark moves to another range (C# `TableViewCell.Glide`), or null to stand at once. */
   glide?: MotionSpecValue | null;
+  /** What the cell is in a table or a grid (C# `TableViewCell.Role`); a cell when absent. */
+  role?: TableCellRoleValue;
+  /** In a grid, whether the cell is in the selection (C# `TableViewCell.Selected`). */
+  selected?: boolean;
+  /** In a grid, whether the cell is the current one (C# `TableViewCell.Current`). */
+  current?: boolean;
 }
 
 export interface TableViewportNode extends VisualNodeValue {
@@ -715,6 +723,8 @@ export interface TableViewportNode extends VisualNodeValue {
   label?: string | null;
   /** False: no Tab stop of its own and no keys (the C# `CanRequestFocus`). */
   canRequestFocus?: boolean;
+  /** What the viewport is to a reader (C# `TableViewport.Role`); a group when absent. */
+  role?: TableRoleValue;
   cells: TableViewCellNode[];
 }
 
@@ -728,6 +738,8 @@ export interface SheetSurfaceNode extends VisualNodeValue {
   /** The entry's caret ink (C# `SheetSurface.CaretColor`), the cell text's: the realizer paints the
    * carets over what the child drew. */
   caretColor?: ColorTokenValue | null;
+  /** What the grid says now (C# `SheetSurface.Announcement`), published as a polite announcement. */
+  announcement?: string;
 }
 
 /**

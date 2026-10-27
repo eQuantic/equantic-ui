@@ -278,6 +278,39 @@ public readonly record struct NativeRole(
         SemanticRole.AlertDialog =>
             new("AXGroup", "android.app.AlertDialog", UIKitTrait.None,
                 Activatable: false, Adjustable: false, AppKitSubrole: "AXApplicationAlertDialog"),
+
+        // A TABLE AND A GRID, their cells and their headers (#1081), in Core-AAM's words for the ARIA
+        // roles the web half writes (table, grid, cell, gridcell, columnheader, rowheader): AXTable
+        // for both containers and AXCell for every cell and header, the row and column riding the
+        // index ranges the bridge sets from SemanticNode.Place. Android's class for a two-dimensional
+        // collection is GridView, and a cell says its place through CollectionItemInfo rather than a
+        // class, so a table's cell and a header are the plain View Core-AAM gives; a GRID's cell is the
+        // GridCell row above, pressed to select it. UIKit has no word for the containers (a data table
+        // is a CONTAINER protocol, which a flat bridge does not build, #1105), none for a cell that is
+        // read, and the header trait for a header. The tree is flat here: what follows a table in
+        // reading order are its cells, and nothing is inside it yet.
+        //
+        // A header is ACTIVATABLE, as a grid's cell is, because activating one selects its column or
+        // row, the way a press on it does; a table's cell is read and nothing else.
+        SemanticRole.Table =>
+            new("AXTable", "android.widget.GridView", UIKitTrait.None,
+                Activatable: false, Adjustable: false),
+
+        SemanticRole.Grid =>
+            new("AXTable", "android.widget.GridView", UIKitTrait.None,
+                Activatable: false, Adjustable: false),
+
+        SemanticRole.Cell =>
+            new("AXCell", "android.view.View", UIKitTrait.None,
+                Activatable: false, Adjustable: false),
+
+        SemanticRole.ColumnHeader =>
+            new("AXCell", "android.view.View", UIKitTrait.Header,
+                Activatable: true, Adjustable: false),
+
+        SemanticRole.RowHeader =>
+            new("AXCell", "android.view.View", UIKitTrait.Header,
+                Activatable: true, Adjustable: false),
     };
 #pragma warning restore CS8524
 }

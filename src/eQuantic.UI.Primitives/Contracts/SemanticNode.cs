@@ -138,6 +138,30 @@ public enum SemanticRole : byte
     /// <c>role="alertdialog"</c> does. Its own role because the platforms have their own words for
     /// it.</summary>
     AlertDialog,
+
+    /// <summary>
+    /// A table of rows and cells read in place: a <c>TableViewport</c> whose role says so (#1081). Its
+    /// whole grid's count of rows and columns rides <see cref="SemanticNode.Extent"/>, because the cells a
+    /// window builds are forty of a million. What follows it in reading order are its cells; the tree is
+    /// flat, so nothing is inside it yet (#1105).
+    /// </summary>
+    Table,
+
+    /// <summary>A <see cref="Table"/> a user moves through and selects in, one cell current: a
+    /// spreadsheet's. Its cells are <see cref="GridCell"/>s.</summary>
+    Grid,
+
+    /// <summary>A cell of a <see cref="Table"/>, named by what it holds, its row and column on
+    /// <see cref="SemanticNode.Place"/>. A grid's cell is a <see cref="GridCell"/>.</summary>
+    Cell,
+
+    /// <summary>The header of a table's or a grid's column, named by what it shows, which names the
+    /// cells beneath it.</summary>
+    ColumnHeader,
+
+    /// <summary>The header of a table's or a grid's row, named by what it shows, which names the cells
+    /// beside it.</summary>
+    RowHeader,
 }
 
 /// <summary>A check's state, in ARIA's own three words. Mixed exists for checkboxes and nothing
@@ -229,11 +253,22 @@ public enum SemanticCheck : byte
 /// Set when this node is a LIVE REGION: the platform watches it and announces a change inside it
 /// wherever the user happens to be, without moving focus. Null for everything else, which is almost
 /// everything — a region that interrupts when nothing happened is worse than one that never speaks.
-/// <para>Only <see cref="SemanticRole.Group"/> carries it, because announcing a change means
-/// re-reading what is INSIDE, and every other role here consumes its subtree.</para>
-/// <para>It is the DATA an announcement needs, and on Photon nothing posts one yet: the semantics
-/// tree is a per-frame snapshot with nothing to compare against, so the frame-to-frame diff is its
-/// own slice. The fence is written where the behaviour is — <c>SemanticsVisitor.Visit(LiveRegion)</c>.</para>
+/// <para>A <see cref="SemanticRole.Group"/> carries it for a <c>LiveRegion</c>, because announcing a change
+/// means re-reading what is INSIDE, and every other role here consumes its subtree; the one exception is a
+/// field whose VALUE is what is announced, a spreadsheet's surface saying its moves (#1081).</para>
+/// <para>It is the DATA a shell marks a live node with (Android's live region); what is announced
+/// when, the host's announcer decides from frame to frame, and each shell posts it.</para>
+/// </param>
+/// <param name="Place">
+/// Where a cell or a header of a table or a grid stands: its row and column in the WHOLE grid, from
+/// zero, and the rows and columns it spans (#1081), in the table's own coordinates, as
+/// <see cref="TableViewCell"/> declares them. Null for everything else. A shell sets its platform's
+/// row and column ranges on the element, which a reader uses once the tree nests the cell in its row
+/// (#1105).
+/// </param>
+/// <param name="Extent">
+/// The rows and columns a <see cref="SemanticRole.Table"/> or a <see cref="SemanticRole.Grid"/> covers in
+/// all, from its first row and column, not the ones a window built. Null for everything else.
 /// </param>
 [ServerOnly]
 public readonly record struct SemanticNode(
@@ -249,4 +284,6 @@ public readonly record struct SemanticNode(
     bool? Selected = null,
     int HeadingLevel = 0,
     LiveRegionUrgency? Live = null,
-    RangeValue? Range = null);
+    RangeValue? Range = null,
+    TableRange? Place = null,
+    TableRange? Extent = null);

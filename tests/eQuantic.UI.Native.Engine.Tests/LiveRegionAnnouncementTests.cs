@@ -59,6 +59,25 @@ public class LiveRegionAnnouncementTests
     }
 
     /// <summary>
+    /// What a region holds NOW, for a platform that reads a region's words from its node (#1081: TalkBack):
+    /// the current words, and nothing once the region empties, whatever it last said.
+    /// </summary>
+    [Fact]
+    public void ARegionsWords_AreWhatItHoldsNow_EmptyOnceItEmpties()
+    {
+        var root = new Mutable("Uploading 10%");
+        var host = Host(root);
+        Frame(host, 0);
+        root.Text = "Upload complete";
+        var id = Frame(host, 2000).Single().Id;
+        host.LiveRegionText(id).Should().Be("Upload complete");
+
+        root.Text = "";
+        Frame(host, 4000).Should().BeEmpty("an emptied region says nothing");
+        host.LiveRegionText(id).Should().BeEmpty("and its node no longer reads what it said");
+    }
+
+    /// <summary>
     /// AND AN UNCHANGED ONE IS NOT. This is the case the issue is actually about: the semantics
     /// walk runs every frame and would post every frame, and "a reader repeating itself sixty times
     /// a second is a reader the user turns off".
@@ -136,6 +155,55 @@ public class LiveRegionAnnouncementTests
 
         Frame(host, 100 + LiveRegionAnnouncerQuietMs).Single().Text.Should().Be("100%",
             "the announcement is the region's state now, not a queue of what it passed through");
+    }
+
+    /// <summary>
+    /// A CHANGE INSIDE THE WINDOW IS OWED, not dropped (#1081). It was recorded as said, so a region that
+    /// changed inside the window and then held still never said what it held: the second of two arrows in
+    /// a spreadsheet went unheard. The host schedules a frame for the window's end, so that end is a frame
+    /// even when nothing else moves, and the frames before it are not drawn for it.
+    /// </summary>
+    [Fact]
+    public void AChangeInsideTheWindow_IsSaidWhenTheWindowEnds_WithTheTextThen()
+    {
+        var root = new Mutable("A1");
+        var host = Host(root);
+        Frame(host, 0);
+        root.Text = "B3, 1";
+        Frame(host, 100).Single().Text.Should().Be("B3, 1");
+
+        root.Text = "C3, 2";
+        Frame(host, 400).Should().BeEmpty("inside the window");
+        root.Text = "D3, 3";
+        Frame(host, 700).Should().BeEmpty("still inside it");
+        host.NeedsRender.Should().BeFalse("an owed announcement draws no frame before the window ends");
+        host.IsFrameDue(1099).Should().BeFalse();
+        host.IsFrameDue(1100).Should().BeTrue("the window opened at 100, and its end is the frame it is said in");
+        Frame(host, 1000).Should().BeEmpty("the window opened at 100 and lasts a second");
+
+        Frame(host, 1100).Single().Text.Should().Be("D3, 3", "what the region holds when the window ends");
+        Frame(host, 1200).Should().BeEmpty("once");
+        host.NeedsRender.Should().BeFalse("nothing is owed any more");
+        host.IsFrameDue(5000).Should().BeFalse("and no frame is scheduled for it");
+    }
+
+    /// <summary>A region back to what it last said owes nothing: the reader already heard it.</summary>
+    [Fact]
+    public void ARegionBackToWhatItSaid_OwesNothing()
+    {
+        var root = new Mutable("A1");
+        var host = Host(root);
+        Frame(host, 0);
+        root.Text = "B3, 1";
+        Frame(host, 100).Should().ContainSingle();
+
+        root.Text = "C3, 2";
+        Frame(host, 400);
+        root.Text = "B3, 1";
+        Frame(host, 700).Should().BeEmpty();
+        host.NeedsRender.Should().BeFalse("back to what was said");
+        host.IsFrameDue(5000).Should().BeFalse("nothing is owed, so no frame is scheduled");
+        Frame(host, 1200).Should().BeEmpty();
     }
 
     /// <summary>

@@ -172,6 +172,9 @@ public static partial class ObjC
     public static partial void SendVoid(IntPtr receiver, IntPtr selector, CGSize size);
 
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    public static partial void SendVoid(IntPtr receiver, IntPtr selector, NSRange range);
+
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
     public static partial void SendVoid(IntPtr receiver, IntPtr selector, IntPtr arg1, NSRange range);
 
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]

@@ -261,7 +261,7 @@ public static class UI
         int pinnedRows = 0, int pinnedColumns = 0, SizeValue width = default, SizeValue height = default,
         TableScrollRequest? request = null, Action<TableOffset>? onScrolled = null,
         Action<Size>? onViewportChanged = null, string? label = null, bool canRequestFocus = true,
-        VisualNode[]? children = null)
+        TableRole role = TableRole.Group, VisualNode[]? children = null)
     {
         var node = new TableViewport(rows, columns, scroll)
         {
@@ -274,6 +274,7 @@ public static class UI
             OnViewportChanged = onViewportChanged,
             Label = label,
             CanRequestFocus = canRequestFocus,
+            Role = role,
         };
         if (children != null)
             foreach (var child in children)
@@ -285,10 +286,19 @@ public static class UI
 
     /// <summary>A cell of a table viewport, over the rows and columns it covers from
     /// (<paramref name="row"/>, <paramref name="column"/>); a <paramref name="mark"/> is drawn above the
-    /// cells and takes no press.</summary>
+    /// cells and takes no press. In a table or a grid, <paramref name="role"/> says what it is to a reader,
+    /// and in a grid whether it is <paramref name="selected"/> and the <paramref name="current"/> one.</summary>
     public static TableViewCell TableViewCell(int row, int column, VisualNode child, bool mark = false,
-        int rows = 1, int columns = 1) =>
-        new TableViewCell(row, column, child, mark) { Rows = rows, Columns = columns };
+        int rows = 1, int columns = 1, TableCellRole role = TableCellRole.Cell, bool selected = false,
+        bool current = false) =>
+        new TableViewCell(row, column, child, mark)
+        {
+            Rows = rows,
+            Columns = columns,
+            Role = role,
+            Selected = selected,
+            Current = current,
+        };
 
     /// <summary>Keeps the child clear of system-owned display regions (notch, home indicator).</summary>
     public static SafeArea SafeArea(VisualNode child, SafeEdges edges = SafeEdges.All) =>
@@ -707,13 +717,18 @@ public static class UI
     /// <summary>
     /// A table that builds only the cells in view: the extents of its <paramref name="rows"/> and
     /// <paramref name="columns"/>, and the cell at a row and a column, its leading rows and columns
-    /// pinned, scrolling both axes in a <see cref="TableViewport"/>.
+    /// pinned, scrolling both axes in a <see cref="TableViewport"/>. In a table or a grid
+    /// (<paramref name="role"/>), <paramref name="cellRole"/> says what each cell is, and in a grid
+    /// <paramref name="selected"/> which are in the selection and <paramref name="current"/> the one the
+    /// next key acts on.
     /// </summary>
     public static TableView TableView(TableSpans rows, TableSpans columns, Func<int, int, VisualNode?> cellBuilder,
         int pinnedRows = 0, int pinnedColumns = 0, int overscan = 3, SizeValue width = default,
         SizeValue height = default, IReadOnlyList<TableViewCell>? marks = null, TableScrollRequest? request = null,
         Action<TableOffset>? onScrolled = null, Action<Size>? onViewportChanged = null, string? label = null,
-        bool canRequestFocus = true, TableScroll? scroll = null) =>
+        bool canRequestFocus = true, TableScroll? scroll = null, TableRole role = TableRole.Group,
+        Func<int, int, TableCellRole>? cellRole = null, Func<int, int, bool>? selected = null,
+        TableRange? current = null) =>
         new TableView(rows, columns, cellBuilder)
         {
             PinnedRows = pinnedRows,
@@ -728,5 +743,9 @@ public static class UI
             Label = label,
             CanRequestFocus = canRequestFocus,
             Scroll = scroll,
+            Role = role,
+            CellRole = cellRole,
+            Selected = selected,
+            Current = current,
         };
 }

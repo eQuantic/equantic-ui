@@ -52,6 +52,19 @@ public sealed class TableViewCell : SingleChildNode
     /// </summary>
     public MotionSpec? Glide { get; init; }
 
+    /// <summary>
+    /// What the cell is in a table or a grid (<see cref="TableViewport.Role"/>, #1081): a cell named by what
+    /// it holds, the header of its column or of its row, or nothing a reader reaches. A group's cells and a
+    /// mark say nothing whatever this says.
+    /// </summary>
+    public TableCellRole Role { get; init; }
+
+    /// <summary>In a grid, whether the cell is in the selection.</summary>
+    public bool Selected { get; init; }
+
+    /// <summary>In a grid, whether the cell is the current one, where the user's next key acts.</summary>
+    public bool Current { get; init; }
+
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

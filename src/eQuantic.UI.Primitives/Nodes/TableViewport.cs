@@ -61,6 +61,17 @@ public sealed class TableViewport : VisualNode
     public string? Label { get; init; }
 
     /// <summary>
+    /// What the viewport is to a reader (#1081): a group of its cells, as it was, or a table or a grid
+    /// read as rows of cells, each with its row and column in the whole grid and the viewport with the
+    /// whole grid's count of each, so a reader knows where it is in a million rows of which forty are
+    /// built. What each cell is, <see cref="TableViewCell.Role"/> says. Each row it holds a cell of holds
+    /// one at every column the others do, an empty one included: a browser places a cell by its order
+    /// among its row's cells, so a cell left out moves every later one onto the column before
+    /// (<see cref="TableCellRole"/>), and <c>TableView</c> holds an empty cell for that reason.
+    /// </summary>
+    public TableRole Role { get; init; }
+
+    /// <summary>
     /// Whether the viewport is a stop of the Tab order itself and takes the keys that scroll it (the
     /// arrows, the pages, the ends). False leaves the keyboard to the component that composes it, as a
     /// spreadsheet keeps it for its own cells (Flutter's <c>canRequestFocus</c>); the controls in its

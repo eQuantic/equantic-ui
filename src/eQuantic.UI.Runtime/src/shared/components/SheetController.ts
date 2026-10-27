@@ -1,4 +1,4 @@
-import { $eq, CellRef, CodeCommandValue, CodeDocument, CodeEditorController, CodeGrid, CodeKeymap, CodeRange, DateTime, KeyboardConventionValue, Point, PointerKindValue, PointerPhaseValue, Rect, SheetAxisValue, SheetCellSnapshot, SheetDocument, SheetEdit, SheetEditModeValue, SheetEntryLanguage, SheetEntryViewValue, SheetFormulaBar, SheetGrid, SheetHistory, SheetKeymap, SheetMotionValue, SheetNameBox, SheetRange, SheetReference, SheetSummary, Size, TsvCodec } from "../runtime-exports";
+import { $eq, CellRef, CodeCommandValue, CodeDocument, CodeEditorController, CodeGrid, CodeKeymap, CodeRange, DateTime, KeyboardConventionValue, Point, PointerKindValue, PointerPhaseValue, Rect, SheetAxisValue, SheetCellSnapshot, SheetDocument, SheetEdit, SheetEditModeValue, SheetEntryLanguage, SheetEntryViewValue, SheetFormulaBar, SheetGrid, SheetHistory, SheetKeymap, SheetMotionValue, SheetMoveValue, SheetNameBox, SheetRange, SheetReference, SheetSummary, Size, TsvCodec } from "../runtime-exports";
 
 export class SheetController {
     constructor(rows: number = 1000, cols: number = 26) {
@@ -11,6 +11,9 @@ export class SheetController {
         this.history = new SheetHistory();
         this.changed = null;
         this.refreshed = null;
+        this.moved = 'activeCell';
+        this._refreshedActive = new CellRef(0, 0);
+        this._refreshedSelection = new SheetRange(new CellRef(0, 0));
         this.addingRanges = false;
         this.revealVersion = 0;
         this.revealCell = CellRef.$zero();
@@ -59,6 +62,9 @@ export class SheetController {
     history!: SheetHistory;
     changed!: ((sheetEdit: SheetEdit) => void) | null;
     refreshed!: (() => void) | null;
+    moved!: SheetMoveValue;
+    _refreshedActive!: CellRef;
+    _refreshedSelection!: SheetRange;
     addingRanges!: boolean;
     revealVersion!: number;
     revealCell!: CellRef;
@@ -244,7 +250,10 @@ export class SheetController {
     }
 
     refresh() {
-        return this.refreshed?.();
+        if (!$eq.equals(this._selection, this._refreshedSelection) && !this._selection.isSingleCell) this.moved = 'activeRange'; else if (!$eq.equals(this._active, this._refreshedActive)) this.moved = 'activeCell';
+        this._refreshedActive = this._active;
+        this._refreshedSelection = this._selection;
+        this.refreshed?.();
     }
 
     select(range: SheetRange) {

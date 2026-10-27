@@ -340,7 +340,8 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         _view!.Semantics = new PhotonAccessibility(_view,
             () => _host?.Semantics() ?? [],
             id => _host?.Activate(id) ?? false,
-            (id, direction) => _host?.Adjust(id, direction) ?? false);
+            (id, direction) => _host?.Adjust(id, direction) ?? false,
+            id => _host?.LiveRegionText(id));
 
         // The keyboard follows the host's edit: the session says when it begins, moves and ends,
         // and the view hands the keyboard a connection to it.
@@ -520,8 +521,10 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             FramesPresented++;
         }
 
-        // The screen just changed: if that changed what a screen reader would read, tell the system.
-        _view.Semantics?.FrameRendered();
+        // The screen just changed: if that changed what a screen reader would read, tell the system, and
+        // what a live region said since the last frame (#1081). Drained whether a reader listens or not:
+        // the host keeps what it owes until a shell takes it.
+        _view.Semantics?.FrameRendered(_host.TakeAnnouncements());
 
         // And whether back has anywhere to go now, which Android has to know BEFORE the gesture.
         SyncBack();

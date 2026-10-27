@@ -53,7 +53,8 @@ public sealed class TableView : StatefulComponent
     /// <summary>The extents of the columns.</summary>
     public TableSpans Columns { get; }
 
-    /// <summary>The cell at a row and a column, or nothing for an empty one.</summary>
+    /// <summary>The cell at a row and a column, or nothing for an empty one, which a table or a grid still
+    /// holds as a blank cell (see <see cref="Role"/>).</summary>
     public Func<int, int, VisualNode?> CellBuilder { get; }
 
     /// <summary>How many leading rows stay at the top while the others scroll.</summary>
@@ -95,6 +96,24 @@ public sealed class TableView : StatefulComponent
     /// (<see cref="TableViewport.CanRequestFocus"/>): false leaves the keyboard to what composes it.</summary>
     public bool CanRequestFocus { get; init; } = true;
 
+    /// <summary>What the table is to a reader (<see cref="TableViewport.Role"/>): a group, as by default, a
+    /// table or a grid.</summary>
+    public TableRole Role { get; init; }
+
+    /// <summary>What the cell at a row and a column is in a table or a grid
+    /// (<see cref="TableViewCell.Role"/>); null makes every one a cell. <em>How does Flutter solve it?</em>
+    /// Its builder returns a <c>TableViewCell</c> that says it; here the table builds the cell around what
+    /// its builder returns, so it asks this beside it.</summary>
+    public Func<int, int, TableCellRole>? CellRole { get; init; }
+
+    /// <summary>Whether the cell at a row and a column is in a grid's selection
+    /// (<see cref="TableViewCell.Selected"/>); null selects none.</summary>
+    public Func<int, int, bool>? Selected { get; init; }
+
+    /// <summary>A grid's current cell (<see cref="TableViewCell.Current"/>), a range of one cell; null has
+    /// none.</summary>
+    public TableRange? Current { get; init; }
+
     public override void AdoptConfig(UiComponent next)
     {
         if (next is not TableView fresh) return;
@@ -134,6 +153,7 @@ public sealed class TableView : StatefulComponent
             OnViewportChanged = ViewportChanged,
             Label = config.Label,
             CanRequestFocus = config.CanRequestFocus,
+            Role = config.Role,
         };
 
         // The corner, the pinned rows over the columns in the window, the pinned columns down the rows
@@ -157,7 +177,18 @@ public sealed class TableView : StatefulComponent
 
     private void Place(TableViewport viewport, int row, int column)
     {
-        if (_config.CellBuilder(row, column) is { } child) viewport.Add(new TableViewCell(row, column, child));
+        var config = _config;
+        // An empty cell of a table or a grid is still a cell, which a reader reaches as blank: one left out
+        // of its row would move every cell after it onto the column before (TableCellRole says why). A
+        // group has no rows to keep, and builds nothing for it.
+        var child = config.CellBuilder(row, column);
+        if (child is null && config.Role == TableRole.Group) return;
+        viewport.Add(new TableViewCell(row, column, child ?? new Box())
+        {
+            Role = config.CellRole?.Invoke(row, column) ?? TableCellRole.Cell,
+            Selected = config.Selected?.Invoke(row, column) ?? false,
+            Current = config.Current is { } current && current.Row == row && current.Column == column,
+        });
     }
 
     /// <summary>A mark, one piece per band it reaches: the viewport draws a cell in the band of its first

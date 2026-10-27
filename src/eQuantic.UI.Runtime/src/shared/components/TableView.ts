@@ -1,4 +1,4 @@
-import { $eq, BuildContext, Size, SizeValue, StatefulComponent, TableOffset, TableScroll, TableSpans, TableViewCell, TableViewport, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Box, BuildContext, Size, SizeValue, StatefulComponent, TableOffset, TableRoleValue, TableScroll, TableSpans, TableViewCell, TableViewport, UiComponent, VisualNode } from "../runtime-exports";
 
 export class TableView extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TableView';
@@ -24,6 +24,10 @@ export class TableView extends StatefulComponent {
     declare label: any;
     declare scroll: any;
     declare canRequestFocus: boolean;
+    declare role: TableRoleValue;
+    declare cellRole: any;
+    declare selected: ((arg1: number, arg2: number) => boolean) | null;
+    declare current: any;
     static $slots: any = null;
     static $failure: any = null;
 
@@ -59,6 +63,7 @@ export class TableView extends StatefulComponent {
         if (this.pinnedColumns === undefined) this.pinnedColumns = 0;
         if (this.overscan === undefined) this.overscan = 3;
         if (this.canRequestFocus === undefined) this.canRequestFocus = true;
+        if (this.role === undefined) this.role = 'group';
         this.rows = rows;
         this.columns = columns;
         this.cellBuilder = cellBuilder;
@@ -74,7 +79,7 @@ export class TableView extends StatefulComponent {
         let pinnedColumns = Math.min(Math.max(config.pinnedColumns, 0), columns.count);
         let scroll = config.scroll ?? this._ownScroll;
         if (!this.covers(scroll.offset) || this._lastRow >= rows.count || this._lastColumn >= columns.count) this.window(scroll.offset);
-        let viewport = new TableViewport(rows, columns, scroll, { pinnedRows: pinnedRows, pinnedColumns: pinnedColumns, width: config.width, height: config.height, request: config.request, onScrolled: this.scrolled.bind(this), onViewportChanged: this.viewportChanged.bind(this), label: config.label, canRequestFocus: config.canRequestFocus });
+        let viewport = new TableViewport(rows, columns, scroll, { pinnedRows: pinnedRows, pinnedColumns: pinnedColumns, width: config.width, height: config.height, request: config.request, onScrolled: this.scrolled.bind(this), onViewportChanged: this.viewportChanged.bind(this), label: config.label, canRequestFocus: config.canRequestFocus, role: config.role });
         for (let row = 0; row < pinnedRows; row++) {
             for (let column = 0; column < pinnedColumns; column++) this.place(viewport, row, column);
             for (let column = this._firstColumn; column <= this._lastColumn; column++) this.place(viewport, row, column);
@@ -99,8 +104,11 @@ export class TableView extends StatefulComponent {
     }
 
     place(viewport: TableViewport, row: number, column: number) {
-        let child: any; 
-        if ((child = this._config.cellBuilder(row, column)) != null) viewport.add(new TableViewCell(row, column, child));
+        let config = this._config;
+        let child = config.cellBuilder(row, column);
+        if (child == null && config.role === 'group') return;
+        let current: any; 
+        viewport.add(new TableViewCell(row, column, child ?? new Box(), false, { role: config.cellRole?.(row, column) ?? 'cell', selected: config.selected?.(row, column) ?? false, current: (current = config.current) != null && current.row === row && current.column === column }));
     }
 
     static addMark(viewport: TableViewport, mark: TableViewCell, index: number, pinnedRows: number, pinnedColumns: number) {

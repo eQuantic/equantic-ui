@@ -38,4 +38,8 @@ public enum UIKitTrait : byte
     /// <summary>Text that is read rather than acted on — and the ONE role allowed to claim it, which
     /// is the whole point of <see cref="NativeRole"/>.</summary>
     StaticText,
+
+    /// <summary>A header: what UIKit says of a heading and of a table's column and row headers, which
+    /// name the cells they head (#1081).</summary>
+    Header,
 }
