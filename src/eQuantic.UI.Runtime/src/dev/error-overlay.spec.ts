@@ -185,6 +185,26 @@ describe('the overlay names every frame by its owner', () => {
     overlay.clear();
   });
 
+  it('asks for each map once, however many errors read it', async () => {
+    const asked: string[] = [];
+    vi.stubGlobal('fetch', (url: string) => {
+      asked.push(url);
+      return answering(maps)(url);
+    });
+    const overlay = new ErrorOverlay(RUNTIME);
+    overlay.show({ kind: 'exception', message: 'first', stack: SDK_STACK });
+    await named();
+    overlay.show({
+      kind: 'exception',
+      message: 'second',
+      stack: SDK_STACK.replace('?v=1', '?v=2'),
+    });
+    await named();
+
+    expect(asked).toEqual([`${ORIGIN}/_equantic/runtime.js.map`]);
+    overlay.clear();
+  });
+
   it('drops the answer of an earlier error whose maps were still loading', async () => {
     let release: () => void = () => {};
     const gate = new Promise<void>((resolve) => (release = resolve));

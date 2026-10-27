@@ -8,6 +8,6 @@
   the SDK says the fault is the SDK's, names the app's call to check when there is one, and hands over a
   report to copy, with the SDK's version the configuration now carries in Development. The title is
   Unhandled Runtime Error, where every error read Build Error, and the browser's ResizeObserver loop
-  notice opens nothing. The served runtime grew 1 215 bytes gzipped (to 300 359), inside its budget
+  notice opens nothing. The served runtime grew 1 257 bytes gzipped (to 300 401), inside its budget
   ([#1108](https://github.com/eQuantic/equantic-ui/issues/1108)). Proposed and archived through
   OpenSpec (`openspec/specs/dev-error-overlay`).

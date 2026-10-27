@@ -94,12 +94,10 @@ public class RuntimeSourceMapTests
 
         var config = ShellConfig.In(await client.GetStringAsync("/mapped"));
 
-        var version = config.GetProperty("sdkVersion");
+        config.TryGetProperty("sdkVersion", out var version).Should().Be(carried);
         if (carried)
             version.GetString().Should().Be(typeof(UIExtensions).Assembly
                 .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion);
-        else
-            version.ValueKind.Should().Be(JsonValueKind.Null);
     }
 
     /// <summary>An app as it runs, its content root holding a web root: outside Development the map's

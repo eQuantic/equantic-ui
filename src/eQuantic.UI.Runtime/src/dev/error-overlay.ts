@@ -27,7 +27,9 @@ interface ErrorInfo {
 
 export class ErrorOverlay {
   private overlay: HTMLDivElement | null = null;
-  private errors: ErrorInfo[] = [];
+  /** Each map asked for, by URL, kept for the page's life: an error raised in a loop asks for the same
+   * maps every time, and the runtime's is large. A rebuild reloads the page, and the maps with it. */
+  private readonly maps = new Map<string, Promise<RawSourceMap | null>>();
   /** The render a stack being named belongs to: an error shown while an earlier one's maps load
    * replaces it, and the earlier answer is dropped. */
   private rendering = 0;
@@ -38,12 +40,10 @@ export class ErrorOverlay {
 
   show(error: ErrorInfo) {
     if (!isDev()) return;
-    this.errors.push(error);
-    this.render();
+    this.render(error);
   }
 
   clear() {
-    this.errors = [];
     document.removeEventListener('keydown', this.onKey);
     if (this.overlay) {
       this.overlay.remove();
@@ -55,7 +55,7 @@ export class ErrorOverlay {
     if (event.key === 'Escape') this.clear();
   };
 
-  private render() {
+  private render(error: ErrorInfo) {
     if (!this.overlay) {
       this.overlay = document.createElement('div');
       this.overlay.id = 'equantic-error-overlay';
@@ -63,7 +63,6 @@ export class ErrorOverlay {
       document.addEventListener('keydown', this.onKey);
     }
 
-    const error = this.errors[this.errors.length - 1];
     const rendering = ++this.rendering;
 
     // The call stack is drawn once its frames are named, never before: what the browser hands over is
@@ -125,12 +124,26 @@ export class ErrorOverlay {
     try {
       // Hop one walks the bundle's map: an app module's leads to its C#, the runtime's to the SDK's C#
       // or its module. Hop two walks eqc's stage-one map for a frame left in a TS intermediate.
-      frames = await remapStackTrace(stack, (url) => this.fetchSourceMap(url));
-      frames = await remapFramesToCSharp(frames, (name) => this.fetchStageOneMap(name));
+      frames = await remapStackTrace(stack, (url) =>
+        this.cached(url, () => this.fetchSourceMap(url)),
+      );
+      frames = await remapFramesToCSharp(frames, (name) =>
+        this.cached(`stage-one:${name}`, () => this.fetchStageOneMap(name)),
+      );
     } catch {
       frames = await remapStackTrace(stack, async () => null);
     }
     return nameFrames(frames, this.runtimeUrl, window.location.origin);
+  }
+
+  private cached(
+    key: string,
+    fetchMap: () => Promise<RawSourceMap | null>,
+  ): Promise<RawSourceMap | null> {
+    const clean = key.split('?')[0];
+    let map = this.maps.get(clean);
+    if (!map) this.maps.set(clean, (map = fetchMap()));
+    return map;
   }
 
   private renderFault(target: Element, error: ErrorInfo, frames: NamedFrame[]) {

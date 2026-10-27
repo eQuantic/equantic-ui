@@ -131,8 +131,10 @@
 
   <!-- eqc leads each module it transpiled from the SDK's C# on to that C#, through the map committed beside
        the module, and names every source from src/ with no text (#1108). After the references are built,
-       since eqc is one of them, and before the resources are, since the map is embedded. -->
-  <Target Name="ComposeRuntimeMap" BeforeTargets="PrepareResources" DependsOnTargets="BundleRuntime;ResolveProjectReferences">
+       since eqc is one of them, and before the resources are, since the map is embedded. An IDE's
+       design-time build builds no reference and embeds nothing, so it composes nothing either. -->
+  <Target Name="ComposeRuntimeMap" BeforeTargets="PrepareResources" DependsOnTargets="BundleRuntime;ResolveProjectReferences"
+    Condition="'$(DesignTimeBuild)' != 'true'">
     <PropertyGroup>
       <_EqcForRuntimeMap>$(MSBuildThisFileDirectory)../eQuantic.Build/bin/$(Configuration)/net10.0/eqc.dll</_EqcForRuntimeMap>
     </PropertyGroup>

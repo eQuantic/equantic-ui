@@ -21,6 +21,8 @@ internal sealed record ClientConfig(
     ClientCultureRoutes? CultureRoutes,
     IReadOnlyList<ClientRoute> Routes,
     bool ServerEvents,
+    // Written in Development alone: a page anywhere else carries no member for it.
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     string? SdkVersion)
 {
     /// <summary>
