@@ -198,7 +198,7 @@ internal static unsafe partial class DWrite
 
     // ---- IDWriteFont (GetFontFamily 3) --------------------------------------------------------
 
-    /// <summary>The weight DirectWrite reads in the face's own file, the OS/2 weight class.</summary>
+    /// <summary>The weight DirectWrite reads in the face's own file.</summary>
     public static int GetWeight(void* font) =>
         ((delegate* unmanaged<void*, int>)Com.Method(font, 4))(font);
 

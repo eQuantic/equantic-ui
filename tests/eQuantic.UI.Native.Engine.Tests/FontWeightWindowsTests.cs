@@ -9,10 +9,10 @@ namespace eQuantic.UI.Native.Engine.Tests;
 
 /// <summary>
 /// A family that ships a file per weight is set by DirectWrite in the file <see cref="ShippedFaces.FileFor"/>
-/// chooses, as on Apple and on Android (#1099). DirectWrite was handed the whole family and asked for it by
-/// name and weight, and it weighs a face by what its file says: two files that say one weight drew both
-/// weights from one of them. The families and the widths are <see cref="FontWeightPhotonTests"/>', so the
-/// two targets are held to one table.
+/// chooses, as on Apple and on Android, at the weight the family's catalog gives it (#1099). DirectWrite was
+/// handed the whole family and asked for it by name and weight, so it matched by the weights it reads in the
+/// files, and laid a simulated bold over a file the catalog weighs bold that declares 400. The families and
+/// the widths are <see cref="FontWeightPhotonTests"/>', so the two targets are held to one table.
 /// </summary>
 [SupportedOSPlatform("windows")]
 public class FontWeightWindowsTests
@@ -34,8 +34,9 @@ public class FontWeightWindowsTests
         FaceResolution.Unresolved.Should().BeEmpty();
     }
 
-    /// <summary>Google's static Thin and ExtraLight of Inter, as the catalog weighs them: two widths, where
-    /// DirectWrite read 250 in both files and set both weights in one of them.</summary>
+    /// <summary>Google's static Thin and ExtraLight of Inter, as the catalog weighs them: two widths. DirectWrite
+    /// told them apart before the shell chose the file too, measured on the Windows runner; this holds the
+    /// four targets to it.</summary>
     [WindowsTheory]
     [MemberData(nameof(FontWeightPhotonTests.OneWeightClassTwoWeights), MemberType = typeof(FontWeightPhotonTests))]
     public void TwoFilesThatSayOneWeight_AreEachSetAtTheWeightTheCatalogGivesIt(FontWeight weight, float em)

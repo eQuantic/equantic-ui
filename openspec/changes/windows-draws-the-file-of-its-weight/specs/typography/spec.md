@@ -11,7 +11,7 @@ on Apple, on Android and on Windows, and on Apple a variable file SHALL be set a
 axis. A static face's weight SHALL be the one position its `STAT` table gives it on `wght` when it gives one,
 and its weight class otherwise. On Windows, whose text engine is asked for a weight over the file chosen, a
 static file asked for the weight it sets, or for a heavier one when the file sets 600 or more, SHALL be drawn
-as the file draws, whatever weight its `OS/2` table declares. On Android below API 28, which cannot be asked
+as the file draws, whatever weight the file declares itself. On Android below API 28, which cannot be asked
 for a weight, the shell SHALL draw a weight below 600 as regular and the others as bold.
 
 #### Scenario: A light weight on the web

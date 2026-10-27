@@ -54,7 +54,8 @@ public sealed class ShippedFaces(Func<FontFile, byte[], bool> register)
     /// The shell opens THAT file, rather than asking its engine for the family at a weight: the engine
     /// reads a face's weight from its file, and Google's static Thin and ExtraLight of Inter carry the
     /// same weight class there, 250, while CoreText's match by weight picked a neighbouring file for Thin,
-    /// Light and Black as measured (#1082), and DirectWrite drew both from one of them (#1099).
+    /// Light and Black as measured (#1082). DirectWrite tells those two apart, but it laid a simulated bold
+    /// over a file the catalog weighs bold that declares 400 (#1099).
     /// </para>
     /// </summary>
     public static FontFile? FileFor(FontFamily family, FontWeight weight, bool italic)

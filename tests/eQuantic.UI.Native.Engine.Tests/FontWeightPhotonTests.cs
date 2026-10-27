@@ -42,7 +42,7 @@ public class FontWeightPhotonTests
 
     /// <summary>Two files whose OS/2 says one weight, 250, and whose catalog says 100 and 200, as Google's
     /// static Thin and ExtraLight of Inter do (the catalog reads the two from their STAT, FontCatalogTests),
-    /// their glyphs 0.5 and 0.6 of an em wide. A text engine that weighs a face by its file sees one weight.</summary>
+    /// their glyphs 0.5 and 0.6 of an em wide. An engine that reads the weight class alone sees one weight.</summary>
     internal static readonly FontFamily ThinFace = new("eQuantic Thin Face",
         new FontFile(Assembly, "eQuantic.UI.Fonts/weights/ThinFace-100.ttf", 100, 100),
         new FontFile(Assembly, "eQuantic.UI.Fonts/weights/ThinFace-200.ttf", 200, 200));

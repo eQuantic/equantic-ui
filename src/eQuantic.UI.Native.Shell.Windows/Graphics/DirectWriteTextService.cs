@@ -43,11 +43,13 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
     // The faces the app SHIPS (#1055): each file handed to DirectWrite from memory and made into a
     // collection of its own, and text in a family that ships files set from the collection of the ONE
     // file ShippedFaces.FileFor chooses for its weight and slant, as on every other target (#1099). A
-    // collection of the whole family left that choice to DirectWrite, which weighs a face by what its
-    // file says: Google's static Thin and ExtraLight of Inter both say 250, and both weights drew from
-    // one of them. The system's collection keeps every other family. Built when the first such family
-    // is asked for; where the system predates in-memory font files (Windows 10 before 1703), a shipped
-    // family is left to fall back and is reported, as any family the machine does not have is.
+    // collection of the whole family left that choice to DirectWrite, by the names and the weights it
+    // reads in the files, where the family's catalog is what decides on every other target: a family
+    // the theme named otherwise than its file fell back, and a file the catalog weighs bold but that
+    // declares 400 drew with a bold DirectWrite simulates. The system's collection keeps every other
+    // family. Built when the first such family is asked for; where the system predates in-memory font
+    // files (Windows 10 before 1703), a shipped family is left to fall back and is reported, as any
+    // family the machine does not have is.
     private readonly ShippedFaces _shipped;
     private void* _factory5;              // IDWriteFactory5
     private void* _memoryLoader;          // IDWriteInMemoryFontFileLoader, registered with the factory
