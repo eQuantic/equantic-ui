@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "Banner.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/Banner.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAmBI;IACA;IACA;IAGA;IACA;IAIA;;;;;;;;QAfI;QACA;QACA;;;;;QAiBA;QACA;QAQA;QACA;QAIA;YAEI;;QAKJ;YAEI;YACA,gCAA2B;YAC3B,kCAA6B;YAC7B;;QAIJ;QACA;QACA;QACA;YAEI;;QAMJ;QAaA"
+}

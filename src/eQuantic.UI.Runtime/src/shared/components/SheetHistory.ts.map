@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "SheetHistory.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Sheet/Document/SheetHistory.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAOA;QAEqC;QACA;;;IADA;IACA;;IAEjC;QAAuB;;;IACvB;QAAuB;;;IAEvB;QAEI;QACA;;;IAGJ;QAEI,6BAAsB;QACtB;QACA;QACA;QACA;;;IAGJ;QAEI,6BAAsB;QACtB;QACA;QACA;QACA;;;IAGJ;QAEI;QACA;;;IAnCR"
+}

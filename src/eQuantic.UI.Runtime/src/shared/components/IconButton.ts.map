@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "IconButton.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/IconButton.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IA0DI;IACA;IACA;IACA;IACA;IACA;IAGA;IAGA;;;;;;;;;;;;;QArBI;QACA;QACA;QACA;QACA;;;;;QAqBA;QACA;QACA;QACA;QAOA;QAMA;QAMA;YAEI;YACA;YAAA,6BAAwB;YACxB;;QAGJ;QAAA;QACA;QAEA;QASA;QAOA;QAWA"
+}

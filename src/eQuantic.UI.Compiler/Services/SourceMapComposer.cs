@@ -30,16 +30,22 @@ public static class SourceMapComposer
     /// <summary>
     /// <paramref name="outerMap"/> composed with the maps its sources carry. <paramref name="innerMapOf"/>
     /// is handed each source by the path the outer map names it with (its sourceRoot joined) and
-    /// answers that source's map, or null when it carries none.
+    /// answers that source's map, or null when it carries none. <paramref name="nameOf"/>, when given,
+    /// is handed each source of the composed map as it resolved and answers the name the map writes
+    /// for it. A map that does not <paramref name="carryText"/> writes no source's text. A segment its
+    /// source's map leads nowhere is dropped, as remapping drops it, unless it is to
+    /// <paramref name="stayWhenUntraced"/>: then it stays at the source, which in a bundle of many
+    /// modules is what keeps a lookup there from falling into the module before it.
     /// </summary>
-    public static string Compose(string outerMap, Func<string, string?> innerMapOf)
+    public static string Compose(string outerMap, Func<string, string?> innerMapOf,
+        Func<string, string>? nameOf = null, bool carryText = true, bool stayWhenUntraced = false)
     {
         var outer = ParsedMap.From(outerMap);
         var inners = outer.Sources
             .Select(source => innerMapOf(source) is { } json ? ParsedMap.From(json, source) : null)
             .ToArray();
 
-        var composed = new ComposedMap();
+        var composed = new ComposedMap(nameOf ?? (source => source), carryText);
         foreach (var line in outer.Lines)
         {
             var into = composed.NextLine();
@@ -59,7 +65,13 @@ public static class SourceMapComposer
                     continue;
                 }
 
-                if (inner.Trace(segment[2], segment[3]) is not { } traced) continue;
+                if (inner.Trace(segment[2], segment[3]) is not { } traced)
+                {
+                    if (stayWhenUntraced)
+                        composed.Add(into, segment[0], outer.Sources[segment[1]], outer.ContentOf(segment[1]),
+                            segment[2], segment[3], name);
+                    continue;
+                }
                 if (traced.Length == 1)
                 {
                     composed.AddSourceless(into, segment[0]);
@@ -71,6 +83,34 @@ public static class SourceMapComposer
         }
 
         return composed.Write(outer.File, outer.DebugId);
+    }
+
+    /// <summary>
+    /// The map at <paramref name="mapFile"/>, composed in place with the maps its sources carry
+    /// BESIDE them, a source's map at its own path with <c>.map</c> added, as eqc writes its
+    /// TypeScript's and the runtime's transpiled modules carry theirs. With
+    /// <paramref name="namesFrom"/>, the map takes the shape of one the SDK ships, the served
+    /// runtime's (#1108): every source named from that folder (a source outside it by its file name,
+    /// never by the machine's layout), no source's text, and a position its module's map leads nowhere
+    /// kept at the module, since one line of the bundle holds hundreds of them.
+    /// </summary>
+    public static void ComposeFile(string mapFile, string? namesFrom = null)
+    {
+        var mapDirectory = Path.GetDirectoryName(Path.GetFullPath(mapFile))!;
+        string Resolved(string source) => Path.GetFullPath(Path.Combine(mapDirectory, source));
+        Func<string, string>? nameOf = namesFrom is null ? null : source =>
+        {
+            var path = Resolved(source);
+            var relative = Path.GetRelativePath(Path.GetFullPath(namesFrom), path);
+            return (relative.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relative)
+                ? Path.GetFileName(path)
+                : relative).Replace('\\', '/');
+        };
+        File.WriteAllText(mapFile, Compose(File.ReadAllText(mapFile), source =>
+        {
+            var inner = Resolved(source) + ".map";
+            return File.Exists(inner) ? File.ReadAllText(inner) : null;
+        }, nameOf, carryText: namesFrom is null, stayWhenUntraced: namesFrom is not null));
     }
 
     /// <summary>
@@ -168,8 +208,10 @@ public static class SourceMapComposer
 
     /// <summary>The composed map as it is built: sources and names numbered as they first appear, and
     /// a segment that would repeat the one before it on its line left out.</summary>
-    private sealed class ComposedMap
+    private sealed class ComposedMap(Func<string, string> nameOf, bool carryText)
     {
+        /// <summary>Each resolved source's name, asked once: a bundle's map has a segment per token.</summary>
+        private readonly Dictionary<string, string> _named = new(StringComparer.Ordinal);
         private readonly List<string> _sources = [];
         private readonly List<string?> _contents = [];
         private readonly Dictionary<string, int> _sourceIndex = new(StringComparer.Ordinal);
@@ -192,9 +234,11 @@ public static class SourceMapComposer
             line.Add([column]);
         }
 
-        public void Add(List<int[]> line, int column, string source, string? content, int sourceLine,
+        public void Add(List<int[]> line, int column, string resolved, string? content, int sourceLine,
             int sourceColumn, string? name)
         {
+            if (!_named.TryGetValue(resolved, out var source)) _named[resolved] = source = nameOf(resolved);
+            if (!carryText) content = null;
             if (!_sourceIndex.TryGetValue(source, out var sourceAt))
             {
                 _sourceIndex[source] = sourceAt = _sources.Count;

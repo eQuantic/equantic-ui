@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "MermaidLabel.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/MermaidModel.cs"
+    ],
+    "names" : [],
+    "mappings" : ";IA2HA;QAEI;QACA;QACA;;;IAFA;IACA;IACA;;IAJJ"
+}

@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "MermaidEdgeRef.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/MermaidParser.cs"
+    ],
+    "names" : [],
+    "mappings" : ";IAaA;QAEI;QACA;QACA;;;IAFA;IACA;IACA;;IAJJ"
+}

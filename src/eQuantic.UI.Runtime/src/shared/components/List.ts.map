@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "List.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/ListItem.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IA+JI;IACA;;;;;;;QALI;QACA;;;;;QAQA;QACA;YAEI;YAEA,gEACI;;QAER"
+}

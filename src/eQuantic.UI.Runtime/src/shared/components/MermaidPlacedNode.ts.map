@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "MermaidPlacedNode.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/MermaidModel.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAmEA;QAEI;QACA;QACA;QACA;QACA;;;IAJA;IACA;IACA;IACA;IACA;;IANJ"
+}

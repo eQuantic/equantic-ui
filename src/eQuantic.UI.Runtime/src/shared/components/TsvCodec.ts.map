@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "TsvCodec.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Sheet/Document/TsvCodec.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IASI;QAEI;QACA;YAEI;YACA,4DACI;YACJ;;QAEJ;;;IAGJ;QAEI,kFACI;QACJ;;;IAKJ;QAEI;QACA;QACA;QACA;QACA;QACA;YAEI;YACA;gBAEI;oBAEI;wBAAiD;wBAAa;wBAAQ;;oBACtE;oBACA;oBACA;;gBAEJ;gBACA;gBACA;;YAEJ;gBAAqC;gBAAe;gBAAK;;YACzD;gBAAkB;gBAAe;gBAAW;gBAAK;;YACjD;gBAAkB;gBAAK;;YACvB;gBAEI;gBACA;gBACA;gBACA;gBACA;gBACA;;YAEJ;YACA;;QAEJ;YAEI;YACA;;QAEJ"
+}

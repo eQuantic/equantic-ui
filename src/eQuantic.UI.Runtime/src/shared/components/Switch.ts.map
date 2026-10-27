@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "Switch.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/Switch.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAuBI;IACA;IACA;IAMA;;;;;;;;QAdI;QACA;;;;;QAiBA;QACA;QACA,mBAAc;QAId;QACA;QACA;QAEA;QAQA;QAUA;QAQA;QACA;QACA;QAOA;;;IAWJ;QAEI;QACA,sBAAgB"
+}

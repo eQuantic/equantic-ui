@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "ValueScale.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Charts/ValueScale.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IA0BI;QAEI,gBAAgB;QAChB;YAEI;YACA;YACA;;QAGJ,kBAAiB;QAEjB;QACA;QACA,gCAAgC;QAChC,0BAA0B;QAE1B;QACA;QACA;QACA;QACA,gBAAgB;QAChB;;;IAIJ;QAEI,eAAe;QACf,gBAAgB;QAChB"
+}

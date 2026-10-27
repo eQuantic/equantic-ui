@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "NameBox.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Spreadsheets/NameBox.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAqBsC;IAED;;;;;;IALjC;QAAoC;;;IAyBpC;IAGA;;;;;;QARI;QACA;QACA;;;;;QAsCA;QACA;QACA;QACA;QACA;QACA;QACA;QAEA;QACA;QAIA;QACA;QAaA;YAaQ,4DAA2C;YAC3C;SAdR;;;IAzDJ;QAEI;QAAA,0DAA+B;QAC/B,8BAA0B;QAC1B;QACA;;;IAGJ;QAAqC;;;IAErC;QAAuC;;;IAIvC;QAEI,oCAA2C;QAC3C;YAEI;YACA;;QAEJ;QACA,wBAAwB;QACxB;QACA;;;IAoDJ;QAEI;QACA"
+}

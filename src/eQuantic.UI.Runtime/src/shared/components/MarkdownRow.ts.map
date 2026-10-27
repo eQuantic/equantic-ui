@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "MarkdownRow.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/MarkdownBlocks.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAkDA;QAEI;;;IAAA;;IAFJ"
+}

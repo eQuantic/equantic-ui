@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "CodeHighlighter.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Languages/CodeHighlighter.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAYA;QAE2C;QACZ;QAI3B;QAFkD;;;IAHX;IACZ;IAI3B;;IAGA;QAEI;QACA;;;IAIJ;QAEI;QACA;;;IAIJ;QAEI,4CAA4C;QAC5C;QACA;;;IAUJ;QAEI;YAII;YACA;;QAGJ,iCAA2B;QAM3B;QACA;QACA,2DAA2D;QAC3D,sCAAgC;QAGhC;YAEI;YACA;YACA,wCAAkC;;QAEtC;;;IAGJ;QAEI;YAEI;YACA;YACA;YACA;YACA;YACA;;;;IAIR;QAEI;QACA;QACA;QACA;;;IAGJ;QAEI,iCAA2B;QAC3B;QACA;;;IA9FR"
+}

@@ -1,0 +1,11 @@
+{
+    "version" : 3,
+    "file" : "XmlLanguage.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Languages/XmlLanguage.cs",
+        "eQuantic.UI.Code/Languages/ICodeLanguage.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAKA;QAOI;;;;;;;;;;;IAAA;IALkB;IACA;;IAElB;QAAsB;;;IAWtB;QAEI;QACA;YAEI;YACA;gBAEI;gBACA;;YAEJ;YACA;;QAGJ;YAEI;YACA;gBAA4B;gBAAK;;YAEjC;gBAEI;oBAEI;oBACA;wBAEI;wBACA;;oBAEJ;oBACA;oBACA;;gBAIJ;gBACA,mHAC+D;gBAC/D;gBACA;gBACA,4HACmF;gBACnF,yBACI;gBACJ;gBACA;;YAGJ;gBAEI;gBACA,6CAA4C;gBAC5C,uBAAuB;gBACvB;gBACA;gBACA;;YAGJ;gBAEI;gBACA,4GACmD;gBAEnD;gBAGA;gBACA;gBACA;;YAGJ;YAEA;;QAEJ;;;IAGJ;QAEI,yCACI,qCAAiC;QACrC;;;ICrEJ;QAAkC;;;ID/BtC"
+}

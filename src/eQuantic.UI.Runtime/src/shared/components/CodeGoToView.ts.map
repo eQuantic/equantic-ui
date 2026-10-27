@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "CodeGoToView.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/CodeGoToView.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAwByB;IAGF;;IASnB;QAGI;QACA;QACA;QACA;YAQQ,cAAc;SARtB;QAWA;QAKA;QAUA;;;IAaJ;QAEI;QACA;YAEI;YAAA,mCAA+B;YAC/B;YAAA,oCAA+B;YAC/B;;QAEJ;YAEI,2DAAyC;YACzC,mBAAmB;YACnB;;QAEJ;;;IAGJ;QACI;;;IAMJ;QAGI;QAEA;QACA;QACA;QAEA;YAEI;YACA;;QAEJ;;;IAGJ;QAAwE;;;IAkBxE;QAGI;QACA;QACA;QACA;QACA;QACA;QAOA;QACA;QAAA;YAEI;YACA;;QAQJ;QAAA;;;IAkBJ;QAAkE"
+}

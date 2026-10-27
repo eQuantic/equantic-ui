@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "Popover.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/Popover.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAwBI;IACA;IACA;IACA;IACA;;;;;;;;;;QAVI;QACA;QACA;QACA;;;;;QAWA;QAEA;QAYA,oBAAoB;QAEpB"
+}

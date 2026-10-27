@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "MermaidNodeRef.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/MermaidParser.cs"
+    ],
+    "names" : [],
+    "mappings" : ";IAGA;QAEI;QACA;QACA;QACA;QACA;;;IAJA;IACA;IACA;IACA;IACA;;IANJ"
+}

@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "ListDetail.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/ListDetail.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IA4DI;IAOA;IAIA;IAIA;IAGA;IAIA;IAQA;IAKA;;;;;;;;;QA5CI;QACA;QACA;;;;;QAiDA;YAEI;YACA,sBAAuB;YACvB;YACA;SALJ;QAQA;YAAsB;SAAtB;QAMA;YACI;YAAA;SADJ;QAGA;QAAA;QAIA;QACA;QAEA;QAGA;QAAA;QAEA;;;IAQJ;QAAuC"
+}

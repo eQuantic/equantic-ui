@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "DataTable.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/DataTable.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAiDmC;IAGK;IAQpC;IACA;IAGA;IACA;IAGA;IAGA;IACA;IAGA;IAEA;IAGA;IAGA;;IAEA;QAA2B;;;;;;;;;;QA7BvB;QACA;;;;;QAgCA;QACA;QAEA;QACA;QAEA;QAAA;YAEI;YACA;;QAGJ,6BAA0B;QAC1B,2CAAsC;QAEtC;;;IAGJ;QAEI;QACA;QACA,qBAAgB;QAChB,8DAAwC;QACxC;;;IAKJ;QAEI;QAEA;YAEI;YAEA;;QAMJ;YAEI;YACA;YAEA;YAMA;YAEA;gBAEI;;YAKJ;YACA;;QAQJ;;;IAWJ;QAEI;QAAA;QACA;QAEA;YAEI;YACA;;QAOJ,sGACI;QAEJ;QAeA;;;IAUJ;QAEI;QACA,qBACI;QAGJ;YAEI;;QAIJ;;;IAaJ;QAEI;QAYA;QAEA"
+}

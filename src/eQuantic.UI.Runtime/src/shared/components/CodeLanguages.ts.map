@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "CodeLanguages.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Languages/CodeLanguages.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;;;;;;;;;;;;;;;gBASyC;gBACA;gBACA;gBACA;gBACA;gBACA;gBAQqB;;;;;;;;;IAbrB;;;;IAAA;;;;IACA;;;;IAAA;;;;IACA;;;;IAAA;;;;IACA;;;;IAAA;;;;IACA;;;;IAAA;;;;IACA;;;;IAAA;;;;IAQqB;;;;IAAA;;;;IAa1D;QAAoE;;;IAIpE;QAEI,wCAAqC;QACrC;QAAA;;;IAIJ;QAA4C"
+}
