@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "CodeReferences.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Intelligence/CodeReferences.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAOA;QAE0C;QAMtC;QAIgC;QARwB;;;IAFlB;IAMtC;IAIgC;;IAShC;QAEI;QACA;QACA,uCAAoC;QACpC;QACA,yBAA2B;QAC3B;QACA;;;IAGJ;QAGI;YAEI;;YAFJ;YAAA;gBAMI;;gBAIA;gBACA;;;;;IA9CZ"
+}

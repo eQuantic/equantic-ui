@@ -2,6 +2,24 @@
 // library holds (AppBuild), so a test runs the same build the SDK does.
 using eQuantic.UI.Compiler.Services;
 
+// The Server's bundle of the runtime holds modules eqc transpiled from the SDK's own C#, each with its
+// map beside it: this composes the bundle's map with theirs, so the overlay names an SDK frame by its
+// C# (#1108). Named from the source tree and carrying no text, since the map ships in the Server.
+if (args is ["compose-map", var bundleMap, "--names-from", var namesFrom])
+{
+    try
+    {
+        SourceMapComposer.ComposeFile(bundleMap, namesFrom);
+        return 0;
+    }
+    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException
+        or System.Text.Json.JsonException)
+    {
+        Console.Error.WriteLine($"eqc: {bundleMap} could not be composed: {ex.Message}");
+        return 1;
+    }
+}
+
 // The SDK hands its arguments in a file, `@<file>`, one a line, so no shell reads a path or a name
 // on its way here (#836). A run by hand may still write them out.
 IReadOnlyList<string> arguments;
@@ -16,6 +34,7 @@ catch (Exception ex) when (ex is ArgumentException or IOException or Unauthorize
     Console.Error.WriteLine($"eqc: {ex.Message}");
     Console.Error.WriteLine("Usage: eqc <source-dir>[;<source-dir>...] <output-dir> [--refs <file>] [--projects <file> --project-assets <file>] [--assembly-name <name>] [--ref-sources <file>] [--generated <dir>] [--bun <path>] [--source-maps full|external|none] [--watch]");
     Console.Error.WriteLine("       eqc @<file>, the same arguments one a line");
+    Console.Error.WriteLine("       eqc compose-map <map> --names-from <dir>");
     return 1;
 }
 var isWatchMode = options.Watch;

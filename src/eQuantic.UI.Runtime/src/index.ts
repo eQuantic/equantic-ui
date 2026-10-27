@@ -300,6 +300,8 @@ export function createApp<T extends import('./core/component').StatefulComponent
 export interface EqConfig {
   page?: string | null;
   version?: string;
+  /** The SDK's version, in Development alone: what the error overlay's report names (#1108). */
+  sdkVersion?: string | null;
   ssr?: boolean;
   /**
    * The density the server rendered the page at (#623): hydration lowers at it, so the served

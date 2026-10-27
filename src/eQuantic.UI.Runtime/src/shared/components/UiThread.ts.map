@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "UiThread.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Intelligence/UiThread.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAYI;QAEI;QAAA,kIAAgE,4BAC3D"
+}

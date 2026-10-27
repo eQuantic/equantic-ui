@@ -23,6 +23,7 @@ export class CodeGoTo {
         this._placeAt = -1;
         this._nearest = -1;
         this._entryPlaces = [];
+        this._keepPlace = -1;
         this._kind = 'definition';
         this._notFound = null;
         this._placesGeneration = 0;
@@ -55,6 +56,7 @@ export class CodeGoTo {
     _placeAt!: number;
     _nearest!: number;
     _entryPlaces!: number[];
+    _keepPlace!: number;
     _kind!: CodeDefinitionKindValue;
     _notFound!: CodeGoToNotFound | null;
     _placesGeneration!: number;
@@ -617,6 +619,11 @@ export class CodeGoTo {
         }
         if (this._entries.length === 0) return;
         this._selected = 0;
+        let kept = this._entryPlaces.indexOf(this._keepPlace);
+        if (kept >= 0) {
+            this._selected = kept;
+            return;
+        }
         if (query.length > 0) return;
         let nearest = this._entryPlaces.indexOf(this._nearest);
         if (nearest >= 0) this._selected = nearest;
@@ -666,7 +673,10 @@ export class CodeGoTo {
         this.unsay();
         if (this._places.length === 0) return;
         for (const edit of change.edits) for (let i = 0; i < this._places.length; i++) if (this._places[i].document == null) this._places[i] = $eq.withPatch(this._places[i], { range: edit.carry(this._places[i].range) });
-        if (this._open && CodeGoTo.lists(this._mode)) this.refresh();
+        if (!this._open || !CodeGoTo.lists(this._mode)) return;
+        this._keepPlace = this._selected >= 0 ? this._entryPlaces[this._selected] : -1;
+        this.refresh();
+        this._keepPlace = -1;
     }
 
     moved() {

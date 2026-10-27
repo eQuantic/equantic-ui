@@ -227,6 +227,10 @@ public class SharedComponentTranspilationTests
         return modules;
     }
 
+    /// <summary>Where the library's modules are committed, embedded in the runtime, each with its map.</summary>
+    private static string EmbeddedDir() =>
+        Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", "components");
+
     /// <summary>Every shared module the pipeline writes, with the C# file it came from: what a test
     /// that reads a module's map needs beside its text (LambdaStatementMapTests).</summary>
     internal static IReadOnlyList<(string SourcePath, CompilationResult Result)> TranspiledSharedComponents()
@@ -270,7 +274,16 @@ public class SharedComponentTranspilationTests
         // dependencies resolve from metadata — a `theme.Code(token.Kind)` whose argument is the
         // source-tree type can never bind against the dll's overload. The model is structurally
         // incomplete here; heuristics stay legal, and the byte-pins below are what guard emission.
-        var compiler = new ComponentCompiler { SymbolsAreAuthoritative = false };
+        var compiler = new ComponentCompiler
+        {
+            SymbolsAreAuthoritative = false,
+            // Each runtime module carries its map beside it, which the Server's build composes the
+            // bundle's map with, so the overlay names a frame inside the SDK by its C# (#1108): the
+            // lines without the text, the sources named from src/ as the tree names them.
+            SourceMaps = SourceMapMode.External,
+            SourceRoot = Path.Combine(root, "src"),
+            SourceMapDirectory = EmbeddedDir(),
+        };
         compiler.SetProjectCompilation(compilation);
 
         var modules = new List<(string, CompilationResult)>();
@@ -538,7 +551,8 @@ public class SharedComponentTranspilationTests
     [Fact]
     public void SharedComponents_TranspiledFixtures_MatchCommittedModules()
     {
-        var modules = TranspileSharedComponents();
+        var transpiled = TranspiledSharedComponents();
+        var modules = transpiled.ToDictionary(module => module.Result.ComponentName, module => module.Result.TypeScript);
 
         // ONE committed copy per module, and which one it is follows from what the module IS.
         //
@@ -557,13 +571,19 @@ public class SharedComponentTranspilationTests
         // back in as a cycle. The specs import components/ directly now, and ~8,000 generated lines
         // left the repository.
         var fixtureDir = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", "__fixtures__");
-        var embeddedDir = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", "components");
+        var embeddedDir = EmbeddedDir();
         string Embedded(string typeScript) =>
             typeScript.Replace("from \"@equantic/runtime\"", "from \"../runtime-exports\"");
         // EVERY module the shared library produces is runtime-provided — a hardcoded roster here
         // meant a new component transpiled fine, never reached runtime.js, and only failed in the
         // browser with "does not provide an export named X". What the library declares IS the set.
         var embeddedNames = modules.Keys.Except(Fixtures).ToHashSet();
+        // And every library module's MAP beside it: the Server's build composes the bundle's map with
+        // these, so a frame inside the SDK is named by its C# (#1108). A module with no mapping (a
+        // record's, which eqc writes on one line) has none.
+        var maps = transpiled
+            .Where(module => embeddedNames.Contains(module.Result.ComponentName) && module.Result.SourceMap is not null)
+            .ToDictionary(module => module.Result.ComponentName, module => module.Result.SourceMap!);
 
         // The BARREL: what the library exports is what the library CONTAINS. Hand-keeping the
         // roster in runtime-exports.ts had already fallen thirteen components behind — Table,
@@ -585,6 +605,8 @@ public class SharedComponentTranspilationTests
                 else
                     File.WriteAllText(Path.Combine(fixtureDir, $"{name}.ts"), typeScript);
             }
+            foreach (var stale in Directory.GetFiles(embeddedDir, "*.ts.map")) File.Delete(stale);
+            foreach (var (name, map) in maps) File.WriteAllText(Path.Combine(embeddedDir, $"{name}.ts.map"), map);
             File.WriteAllText(barrelPath, barrel);
             return;
         }
@@ -605,10 +627,20 @@ public class SharedComponentTranspilationTests
                 $"the committed transpiled {name} must be regenerated (EQ_UPDATE_TRANSPILED=1) after compiler/component changes");
         }
 
+        foreach (var (name, map) in maps)
+        {
+            var path = Path.Combine(embeddedDir, $"{name}.ts.map");
+            File.Exists(path).Should().BeTrue(
+                $"the runtime's map leads into {name} through the map beside it — generate once with EQ_UPDATE_TRANSPILED=1");
+            File.ReadAllText(path).Should().Be(map,
+                $"the committed map of {name} must be regenerated with its module (EQ_UPDATE_TRANSPILED=1)");
+        }
+
         // Nothing but the barrel and the modules: a file left behind by a component that was renamed
         // or removed would go on being executed by a spec that still imports it, and the comparison
         // above cannot see a file it never looks for.
         var stray = Directory.GetFiles(embeddedDir, "*.ts")
+            .Where(path => path.EndsWith(".ts", StringComparison.Ordinal))
             .Select(Path.GetFileNameWithoutExtension)
             .Where(name => name != "index" && !embeddedNames.Contains(name!))
             .OrderBy(name => name, StringComparer.Ordinal)
@@ -616,6 +648,14 @@ public class SharedComponentTranspilationTests
         string.Join(", ", stray!).Should().BeEmpty(
             "these modules are in shared/components and the library no longer declares them — delete "
             + "them, or the runtime keeps embedding a component nothing produces");
+        var strayMaps = Directory.GetFiles(embeddedDir, "*.ts.map")
+            .Select(path => Path.GetFileName(path)[..^".ts.map".Length])
+            .Where(name => !maps.ContainsKey(name))
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+        string.Join(", ", strayMaps).Should().BeEmpty(
+            "these maps are in shared/components and no module carries them — a stale map leads the "
+            + "runtime's frames to C# that is no longer there");
     }
 
     [Fact]

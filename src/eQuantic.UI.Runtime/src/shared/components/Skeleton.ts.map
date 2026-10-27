@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "Skeleton.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/EmptyState.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IA4F0C;IAStC;IACA;IACA;;;;;;;;;;QAPI;QACA;QACA;;;;;QASA;QACA;QAMA;QAUA;QACA;QAKA;QAMA"
+}

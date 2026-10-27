@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "Pagination.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/Pagination.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAoB8B;IAGI;IAEH;IAU3B;IACA;IACA;;;;;;;;;QARI;QACA;QACA;;;;;QAUA;QACA;QAEA;QACA;QACA;YAEI,yCAAyC;YACzC;YACA;;QAGJ;QACA;QACA;QACA;QACA;;;IAQJ;QAEI,oBAAoB;QACpB;YAEI;YACA,8CAA8C;YAC9C;;QAGJ;QACA;QACA,0FACI,2DAA2D;QAC/D,mBAAmB;QAEnB;QACA,uCAAsC;QACtC;;;IAGJ;QAEI;QAOA;QAMA;QAUA;;;IAQJ;QAEI;QAOA;QACA;;;IAIJ;QACI"
+}

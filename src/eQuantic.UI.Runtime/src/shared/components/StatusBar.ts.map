@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "StatusBar.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Spreadsheets/StatusBar.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAmBqC;;;;;IAFjC;QAAoC;;;IAkBpC;IAGA;;;;;;QARI;QACA;QACA;;;;;QAgCA;QACA;QACA;QACA;QAEA;QACA,kCAA6B;QAC7B;QACA;QACA;YAEI;YAAA,yCAAoC;YACpC;YACA;YAAA,wDAAmD;;QAEvD;;;IAvCJ;QAEI;QAAA,4DAAiC;QACjC,gCAA4B;QAC5B;QACA;;;IAGJ;QAAqC;;;IAErC;QAAuC;;;IAIvC;QAEI,sCAA6C;QAC7C,gCAA4B;QAC5B;QACA,2BAA4B;;;IAsChC;QAEI;QAEA;QAEA;QACA;QACA,cAAc;QACd;QACA;QACA,kCAAgB;QAChB;QACA;;;IAKJ;QAEI;QACA;;;IAGJ;QAAgE"
+}

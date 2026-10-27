@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "Dialog.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/Dialog.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAmCI;IACA;IACA;IAIA;IAEA;;;;;;;;;;QAlBI,kDACI;QAEJ;QACA;QACA;QACA;QACA;;;;;QAeA;QAEA;QACA;QACA;QAEA;QAGA;QACA;YAEI;;QAMJ;QACA;QACA;QAKA;QAaA;QAYA,oBAAoB;QAEpB;QAQA;QAEA;QACA;QACA;QAQA;QAKA;QAAA"
+}

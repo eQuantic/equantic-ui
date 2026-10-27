@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "MarkdownBulletMatch.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/MarkdownParser.cs"
+    ],
+    "names" : [],
+    "mappings" : ";IAWA;QAEI;QACA;;;IADA;IACA;;IAHJ"
+}

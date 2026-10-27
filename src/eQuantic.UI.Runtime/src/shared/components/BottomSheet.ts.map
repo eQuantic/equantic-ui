@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "BottomSheet.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/BottomSheet.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAuBI;IACA;IACA;;;;;;;;QAPI;QACA;QACA;;;;;QASA;QAEA;QAWA;QAEA;QACA;QAMA;QACA;QAEA;QACA;QAYA,oBAAoB;QAEpB;QAUA;QACA;QAEA;QACA;QACA;QAKA;QACA;QAAA"
+}

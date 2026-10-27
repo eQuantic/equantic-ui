@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "Divider.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/Divider.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAgCI;IACA;IAUA;;;;;;;;QAfI;QACA;;;;;QAkBA;QAOA,2BAAgC;QAEhC;QAGA"
+}

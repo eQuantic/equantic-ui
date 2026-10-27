@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "Card.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/Card.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IA4BI;IACA;IAGA;IAGA;;;;;;;;QAXI;QACA;;;;;QAcA;QACA;QACA;QAGA;QAIA"
+}

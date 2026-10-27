@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "SheetFormulaBar.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Sheet/Editing/SheetFormulaBar.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAiBA;QAEqC;QACpB;QACD;QAKZ;QAHmD;;;IAJlB;IACpB;IACD;IAKZ;;IAGA;QAA6B;;;IAKzB;QAEI,yBAAoB;QACpB;QACA;;;IAKR;QAA4B;;;IAG5B;QAA2B;;;IAG3B;QAA8B;;;IAI9B;QAEI,0BAAqB;QAErB;QACA;;;IAIJ;QAGI,iEAAiD;QACjD,oCAAoC;QACpC;QACA;QAEA,0BAAqB;QACrB;;;IAIJ;QAEI,uBAAsB;QACtB;QACA;;;IAIJ;QAEI,+CAAyC;QACzC;QACA;;;IAIJ;QAA4B;;;IAG5B;QAAuB;;;IAGvB;QAEI,uBAAsB;QACtB;QACA;;;IAIJ;;YAEI;YAEI;gBACI;gBACA;gBACA;gBACA;mBACJ;gBACI,sBAAgC;gBAChC,yBAAoB;gBACpB;gBACA;;gBAEA;;;;;IAKZ;QAGI,oCAA+B;;;IAKnC;QAAiD;;;IApHrD"
+}

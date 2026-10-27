@@ -1,3 +1,6 @@
 #nullable enable
 const eQuantic.UI.Compiler.CodeGen.Eq.ListReverse = "$eq.collections.listReverse" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ArrayReverse = "$eq.collections.arrayReverse" -> string!
+*REMOVED*static eQuantic.UI.Compiler.Services.SourceMapComposer.Compose(string! outerMap, System.Func<string!, string?>! innerMapOf) -> string!
+static eQuantic.UI.Compiler.Services.SourceMapComposer.Compose(string! outerMap, System.Func<string!, string?>! innerMapOf, System.Func<string!, string!>? nameOf = null, bool carryText = true, bool stayWhenUntraced = false) -> string!
+static eQuantic.UI.Compiler.Services.SourceMapComposer.ComposeFile(string! mapFile, string? namesFrom = null) -> void

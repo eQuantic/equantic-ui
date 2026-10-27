@@ -1,0 +1,11 @@
+{
+    "version" : 3,
+    "file" : "PlainTextLanguage.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Languages/PlainTextLanguage.cs",
+        "eQuantic.UI.Code/Languages/ICodeLanguage.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAMA;;IAEI;QAAsB;;;IAEtB;QAEI,qBAAqB;QACrB;;;ICeJ;QAA2B;;;IAQ3B;QAAkC;;;ID9BtC"
+}

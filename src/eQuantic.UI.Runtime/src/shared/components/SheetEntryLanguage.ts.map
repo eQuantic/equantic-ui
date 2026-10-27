@@ -1,0 +1,11 @@
+{
+    "version" : 3,
+    "file" : "SheetEntryLanguage.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Sheet/Editing/SheetEntryLanguage.cs",
+        "eQuantic.UI.Code/Languages/ICodeLanguage.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAWA;;IAaI;QAAsB;;;IAQtB;QAAkC;;;;;;;;;;;;gBAnBQ;;;;;;;;;;;;;;;;;IAAA;;;;IAAA;;;;IAa1C;QAEI,qBAAqB;QACrB;;;ICOJ;QAAkC;;;IDzBtC"
+}

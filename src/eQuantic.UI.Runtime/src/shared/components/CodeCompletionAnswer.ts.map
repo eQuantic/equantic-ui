@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "CodeCompletionAnswer.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Intelligence/CodeCompletionAnswer.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAOA;QAIsB;QACA;QACN;QAYZ;QAIA;QAIA;QAuBA;QAEA;QAxCI;QACA;QACA;QACA;QACA,+BAAiC;;;IAXnB;IACA;IACN;IAYZ;IAIA;IAIA;IAuBA;IAEA;;IAhBA;QAEI;YAEI;YACA;YACA;;QAEJ,sEACI;QACJ;;;IA7CR"
+}

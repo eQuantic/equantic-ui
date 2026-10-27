@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "SparseTableSpans.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/SparseTableSpans.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IASA;;QAE2B;QACG;QAIA;QAoB1B;QAGA;QAnBI;QACA;QACA;QACA,oCACI,sCAAiC;QACrC;QACA;QACA;QACA;QACA;YAEI;YACA;;;;IArBe;IACG;IAIA;IAoB1B;IAGA;;IAHA;;;;IAAA;;;;IAKA;QAAgC;;;IAEhC;QAEI;QACA;;;IAGJ;QAEI;QACA;;;IAGJ;QAEI,sBAAgB;QAChB;QACA;QACA;YAEI;YACA,qCAAgC,mBAC3B;;QAET;;;IAKJ;QAEI;QACA;QACA;YAEI;YACA,mCAA8B,uBACzB;;QAET;;;IAxER"
+}

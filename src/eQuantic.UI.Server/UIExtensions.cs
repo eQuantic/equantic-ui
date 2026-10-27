@@ -33,6 +33,11 @@ public static class UIExtensions
     // invalidating only when the code actually changes.
     public static readonly string BuildId = GetDeterministicBuildId();
 
+    /// <summary>The SDK's version as this assembly was built, its source revision included: what the
+    /// error overlay's report names (#1108).</summary>
+    private static readonly string? SdkVersion = typeof(UIExtensions).Assembly
+        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
     /// <summary>
     /// The id every served bundle carries in its URL, so a browser may cache it forever and still
     /// pick up a new one the moment it exists.
@@ -536,6 +541,23 @@ public static class UIExtensions
 
         if (environment.IsDevelopment())
         {
+            // The served runtime's map (#1108), embedded beside the runtime it maps: a frame inside the
+            // SDK leads to the SDK's C# where eqc transpiled it and to the runtime's module elsewhere,
+            // and the overlay names it so. The overlay asks for it as `<frame's URL>.map`. Development
+            // alone, under the same condition as the overlay; its sources are names, it carries no text.
+            endpoints.MapGetAndHead("/_equantic/runtime.js.map", async context =>
+            {
+                using var stream = typeof(UIExtensions).Assembly.GetManifestResourceStream("eQuantic.UI.Server.runtime.js.map");
+                if (stream is null)
+                {
+                    context.Response.StatusCode = 404;
+                    return;
+                }
+                context.Response.ContentType = "application/json";
+                context.Response.Headers.CacheControl = "no-cache";
+                await stream.CopyToAsync(context.Response.Body);
+            }).AllowAnonymous();
+
             // The stage-one source maps (TS intermediate → C#, C# text embedded) for the error
             // overlay's second hop, mapped where the overlay installs, in Development alone: the
             // maps carry the app's C#, and a run under dotnet watch in another environment streams
@@ -990,6 +1012,8 @@ public static class UIExtensions
         // The app's route table and whether it has server actions, worked out once (AppSurface).
         var surface = AppSurface.Of(options, route => CultureClientPatterns(options, route));
 
+        var isDevelopment = context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
+
         // The client's configuration, written by System.Text.Json and nothing else. Its strings were
         // quoted by hand, escaping the backslash and the quote, so a route title holding a line break
         // was a syntax error in a script every page carries, and stopped the client of the whole app
@@ -1022,10 +1046,10 @@ public static class UIExtensions
             // Whether the server serves events crosses because only the server knows: without it, a
             // page whose app never called UseServerEvents opened a stream the app's fallback
             // answered, and retried it forever while no subscription heard why.
-            ServerEvents: options.ServerEvents is not null), ClientConfig.Json);
-
-        // Render HTML using template engine with conditionals
-        var isDevelopment = context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
+            ServerEvents: options.ServerEvents is not null,
+            // What a developer reports an error raised inside the SDK against, read where it is
+            // decided, the Server's own assembly. Development alone: a version is nothing a visitor needs.
+            SdkVersion: isDevelopment ? SdkVersion : null), ClientConfig.Json);
 
         var hasServerActions = surface.HasServerActions;
 
