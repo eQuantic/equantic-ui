@@ -80,3 +80,13 @@ static eQuantic.UI.Components.SdkStrings.NoImplementationFound(string! word) -> 
 static eQuantic.UI.Components.SdkStrings.NoImplementation.get -> string!
 static eQuantic.UI.Components.SdkStrings.NoReferencesFound(string! word) -> string!
 static eQuantic.UI.Components.SdkStrings.NoReferences.get -> string!
+eQuantic.UI.Components.CodeBlock.Folds.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeFold!>!
+eQuantic.UI.Components.CodeBlock.Folds.init -> void
+eQuantic.UI.Components.CodeBlock.FoldedLines.get -> System.Collections.Generic.IReadOnlyList<int>!
+eQuantic.UI.Components.CodeBlock.FoldedLines.init -> void
+eQuantic.UI.Components.CodeBlock.OnFoldPressed.get -> System.Action<int>?
+eQuantic.UI.Components.CodeBlock.OnFoldPressed.init -> void
+eQuantic.UI.Components.CodeEditor.FoldProviders.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.ICodeFoldProvider!>!
+eQuantic.UI.Components.CodeEditor.FoldProviders.set -> void
+static eQuantic.UI.Components.SdkStrings.FoldLines(int from, int to) -> string!
+static eQuantic.UI.Components.SdkStrings.UnfoldLines(int from, int to) -> string!

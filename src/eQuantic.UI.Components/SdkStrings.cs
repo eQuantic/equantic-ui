@@ -140,6 +140,12 @@ public static class SdkStrings
         string.Format(CultureInfo.CurrentCulture, SdkResources.NoReferencesFound, word);
     public static string NoReferences => SdkResources.NoReferences;
 
+    // A region's chevron and a folded header's marker, named by the lines they fold (#1119).
+    public static string FoldLines(int from, int to) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.FoldLines, from, to);
+    public static string UnfoldLines(int from, int to) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.UnfoldLines, from, to);
+
     /// <summary>A code block's copy button.</summary>
     public static string CopyCode => SdkResources.CopyCode;
 

@@ -130,6 +130,22 @@ public sealed class CodeBlock : StatelessComponent
     /// <summary>A press on a folded run's row, with the first line it hides: a diff opens it.</summary>
     public Action<int>? OnPlaceholderPressed { get; init; }
 
+    /// <summary>
+    /// The regions the code folds into (#1119): the gutter shows a chevron beside each one's header line, pointing
+    /// down while it is open and right while it is folded, and a folded header shows <c>⋯</c> after its text. None,
+    /// the default, draws neither, and the gutter keeps its width.
+    /// </summary>
+    public IReadOnlyList<CodeFold> Folds { get; init; } = [];
+
+    /// <summary>The header lines of the folded regions among <see cref="Folds"/>.</summary>
+    public IReadOnlyList<int> FoldedLines { get; init; } = [];
+
+    /// <summary>A press on a region's chevron or on a folded header's <c>⋯</c>, with the region's header line.</summary>
+    public Action<int>? OnFoldPressed { get; init; }
+
+    /// <summary>The room a chevron takes in the gutter, right of the line numbers.</summary>
+    internal const float FoldSlot = IconSize.Sm + Space.S1;
+
     /// <summary>Shown top-right, over the code — a file name, a language label.</summary>
     public string? Caption { get; init; }
 
@@ -515,9 +531,85 @@ public sealed class CodeBlock : StatelessComponent
                 : null,
         }, numbers);
 
-        return isLine && OnGutterPressed is { } pressed
-            ? new Pressable(cell, () => pressed(index)) { Label = SdkStrings.LineNumbered(FirstLineNumber + index) }
-            : cell;
+        if (Folds.Count == 0)
+            return isLine && OnGutterPressed is { } pressed
+                ? new Pressable(cell, () => pressed(index)) { Label = SdkStrings.LineNumbered(FirstLineNumber + index) }
+                : cell;
+
+        // With regions, the chevron stands beside the number in a slot of its own, never inside the number's own
+        // press (a breakpoint's): a button in a button is no control a screen reader can name (#1119).
+        var slot = new Row(gap: 0)
+        {
+            Width = SizeValue.Fixed(metrics.GutterWidth),
+            Height = SizeValue.Fixed(metrics.LineHeight),
+            Cross = CrossAlign.Center,
+        };
+        VisualNode numbered = new Box(new BoxStyle
+        {
+            Width = SizeValue.Fixed(metrics.GutterWidth - FoldSlot - Space.S3),
+            Height = SizeValue.Fill,
+        }, numbers);
+        if (isLine && OnGutterPressed is { } press)
+            numbered = new Pressable(numbered, () => press(index)) { Label = SdkStrings.LineNumbered(FirstLineNumber + index) };
+        slot.Add(numbered);
+        slot.Add(FoldChevron(isLine ? FoldAt(index) : null, metrics, theme));
+        return new Box(new BoxStyle
+        {
+            Width = SizeValue.Fixed(metrics.GutterWidth),
+            Height = SizeValue.Fixed(metrics.LineHeight),
+            Background = !isLine ? FillerColor
+                : ActiveLines.Contains(index) ? (Inverse ? CodeSlabActive : theme.Colors(Variant.Primary).Subtle)
+                : null,
+        }, slot);
+    }
+
+    /// <summary>The region whose header is <paramref name="line"/>, or null.</summary>
+    private CodeFold? FoldAt(int line)
+    {
+        foreach (var fold in Folds)
+            if (fold.StartLine == line) return fold;
+        return null;
+    }
+
+    /// <summary>Whether the region whose header is <paramref name="line"/> is folded.</summary>
+    private bool IsFolded(int line)
+    {
+        foreach (var folded in FoldedLines)
+            if (folded == line) return true;
+        return false;
+    }
+
+    /// <summary>
+    /// The chevron of <paramref name="fold"/>, down while it is open and right while it is folded, a button named by
+    /// the lines it folds and saying whether they show, a press toggling it; the empty slot on a line that starts
+    /// none.
+    /// </summary>
+    private VisualNode FoldChevron(CodeFold? fold, CodeMetrics metrics, IAppTheme theme)
+    {
+        var slot = new Row(gap: 0)
+        {
+            Width = SizeValue.Fixed(FoldSlot),
+            Height = SizeValue.Fill,
+            Main = MainAlign.End,
+            Cross = CrossAlign.Center,
+        };
+        if (fold is null) return slot;
+        var folded = IsFolded(fold.StartLine);
+        var from = FirstLineNumber + fold.StartLine;
+        var to = FirstLineNumber + fold.EndLine;
+        slot.Add(new Icon(folded ? Icons.ChevronRight : Icons.ChevronDown, MathF.Min(IconSize.Sm, metrics.LineHeight),
+            Inverse ? CodeInkMuted : theme.TextMuted));
+        VisualNode box = slot;
+        return OnFoldPressed is { } pressed
+            ? new Pressable(box, () => pressed(fold.StartLine))
+            {
+                Label = folded ? SdkStrings.UnfoldLines(from, to) : SdkStrings.FoldLines(from, to),
+                Expanded = !folded,
+                // The keyboard stays with the code, as a press on VS Code's chevrons leaves it in the editor: a
+                // press that took it left ⌘K ⌘J and every other key of the editor reaching a button.
+                CanRequestFocus = false,
+            }
+            : box;
     }
 
     /// <summary>What one row draws: a line of the document, a line of the other one, a label, a folded
@@ -570,6 +662,31 @@ public sealed class CodeBlock : StatelessComponent
             : box;
     }
 
+    /// <summary>What a folded header shows after its text: <c>⋯</c>, or the region's own placeholder, a button that
+    /// unfolds it.</summary>
+    private VisualNode FoldMarker(CodeFold fold, CodeMetrics metrics, IAppTheme theme)
+    {
+        // The room before it is a box of its own: a box has no margin, and its padding would be inside the wash.
+        var spaced = new Row(gap: 0) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
+        spaced.Add(Spacer.Fixed(Space.S1));
+        spaced.Add(new Box(new BoxStyle
+        {
+            Padding = EdgeInsets.Symmetric(Space.S1, 0),
+            Background = theme.Colors(Variant.Primary).Subtle,
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Small)),
+        }, Muted(fold.Placeholder ?? "\u22EF", metrics, theme)));
+        VisualNode marker = spaced;
+        return OnFoldPressed is { } pressed
+            ? new Pressable(marker, () => pressed(fold.StartLine))
+            {
+                Label = SdkStrings.UnfoldLines(FirstLineNumber + fold.StartLine, FirstLineNumber + fold.EndLine),
+                Expanded = false,
+                // As the chevron: the keyboard stays with the code.
+                CanRequestFocus = false,
+            }
+            : marker;
+    }
+
     private VisualNode Muted(string text, CodeMetrics metrics, IAppTheme theme) =>
         new Text(text, TypeRole.LabelSmall, Inverse ? CodeInkMuted : theme.TextMuted, maxLines: 1)
         {
@@ -611,6 +728,8 @@ public sealed class CodeBlock : StatelessComponent
             AddSpans(code, cells, at, text.Length, ink, style, columnWidth, selected, selectedInk);
         // An empty line still needs its height, and a space is the cheapest way to say so.
         if (text.Length == 0) code.Add(Run(" ", ink, style));
+        // A folded header says so after its text, as VS Code's inline marker does, and opens on a press (#1119).
+        if (selectable && IsFolded(index) && FoldAt(index) is { } fold) code.Add(FoldMarker(fold, metrics, theme));
 
         row.Add(new Box(new BoxStyle { Padding = EdgeInsets.Symmetric(Space.S3, 0) }, code));
 
