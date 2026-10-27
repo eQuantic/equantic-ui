@@ -584,7 +584,7 @@ function pointer(
   options: { detail?: number; shift?: boolean; buttons?: number; pointerType?: string } = {},
 ) {
   const target = {
-    getBoundingClientRect: () => ({ left: 0, top: 0 }),
+    getBoundingClientRect: () => ({ left: 0, top: 0, width: 4096, height: 4096 }),
     // The pointer's look, which a hover sets from the model's answer (#1084).
     style: {} as Record<string, string>,
     setPointerCapture: () => {},
@@ -652,7 +652,7 @@ describe('the link ⌘ shows over a name (C# twin: PhotonHost, #1084)', () => {
 
   /** The surface's element under a pointer: its box, which a scroll moves, and the look the pointer takes. */
   function element() {
-    return { box: { left: 0, top: 0 }, getBoundingClientRect() { return this.box; }, style: {} as Record<string, string> };
+    return { box: { left: 0, top: 0, width: 4096, height: 4096 }, getBoundingClientRect() { return this.box; }, style: {} as Record<string, string> };
   }
 
   /** A pointer passing over the surface with nothing pressed, ⌘ held or not. */
@@ -702,12 +702,24 @@ describe('the link ⌘ shows over a name (C# twin: PhotonHost, #1084)', () => {
     const target = element();
     hover(lowered, target, cell(0, 2), false);
     // The code scrolls a line up under the pointer, which stays where it was on the page.
-    target.box = { left: 0, top: -LINE };
+    target.box = { left: 0, top: -LINE, width: 4096, height: 4096 };
 
     modifier('keydown', true);
     await answered();
 
     expect(editor.definitions.link).toEqual(count);
+  });
+
+  it('rests where a click released it: ⌘ pressed next, with no move, links the name there', async () => {
+    const { editor, lowered } = linked();
+    pressAt(lowered, cell(1, 2));
+    pointer(lowered, 'pointerup', ...cell(1, 2));
+
+    modifier('keydown', true);
+    await answered();
+
+    expect(editor.definitions.link).toEqual(count);
+    modifier('keyup', false);
   });
 
   it('follows no link when ⌘ is pressed during a press', async () => {
@@ -764,7 +776,7 @@ describe('code surface pointer (the SAME model the native host drives)', () => {
     let captured = false;
     const button = { tag: 'button' };
     const surfaceElement = {
-      getBoundingClientRect: () => ({ left: 0, top: 0 }),
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 4096, height: 4096 }),
       style: {} as Record<string, string>,
       setPointerCapture: () => {
         captured = true;
@@ -818,7 +830,7 @@ describe('code surface pointer (the SAME model the native host drives)', () => {
       clientX: 20,
       clientY: 14,
       currentTarget: {
-        getBoundingClientRect: () => ({ left: 0, top: 0 }),
+        getBoundingClientRect: () => ({ left: 0, top: 0, width: 4096, height: 4096 }),
         style: {} as Record<string, string>,
         contains: (element: unknown) => element === button,
       },

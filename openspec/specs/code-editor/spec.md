@@ -131,8 +131,9 @@ place everything exactly as before.
 Every host SHALL hand a code surface the modifiers held with each pointer event, read as its keys are read
 (⌘ is Command and ⌃ is Control on a Mac, Ctrl is Command elsewhere), and SHALL hand it a hover at the pointer's
 last place whenever the held modifiers change while the pointer rests over it, wherever the keyboard is. That
-place SHALL be the point on the screen the pointer stands on, read against the code as it stands then, and a
-press SHALL end the rest, so no hover is handed during it. A press SHALL carry ⇧, ⌥, ⌃ and ⌘ alike.
+place SHALL be the point on the screen the pointer stands on, read against the code as it stands then: a
+press SHALL end the rest, so no hover is handed during it, and its release SHALL rest the pointer where it was
+released. A press SHALL carry ⇧, ⌥, ⌃ and ⌘ alike.
 
 #### Scenario: ⌘ pressed with the pointer at rest
 
@@ -143,6 +144,11 @@ press SHALL end the rest, so no hover is handed during it. A press SHALL carry �
 
 - **WHEN** the pointer rests on `total`, the code scrolls a line under it, and ⌘ is pressed
 - **THEN** the surface hears a hover over the name now under the pointer, on the next line
+
+#### Scenario: ⌘ after a drag
+
+- **WHEN** the pointer presses `total`, drags to `amount` and is released there, and ⌘ is pressed with no move
+- **THEN** the surface hears a hover over `amount`, and `total` is not underlined
 
 #### Scenario: ⌘ during a press
 

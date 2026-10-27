@@ -905,7 +905,10 @@ export class CodeEditorController {
                     this._column = null;
                     let press = this._linkPress;
                     this._linkPress = -1;
-                    if (phase === 'up' && press >= 0 && this.positionAt(position).line === press) this.goTo.followLink();
+                    if (phase === 'up' && press >= 0 && this.positionAt(position).line === press) {
+                        this.definitions.clearLink();
+                        this.goTo.followLink();
+                    }
                     return false;
                 }
             case 'hover':
@@ -2005,7 +2008,7 @@ export class CodeEditorController {
             }
             let space = length > 0;
             let tail = parts[parts.length - 1];
-            if (space && (($v153011) => ($v153011 === ' ' || $v153011 === '\t'))(tail[tail.length - 1])) {
+            if (space && (($v153217) => ($v153217 === ' ' || $v153217 === '\t'))(tail[tail.length - 1])) {
                 space = false;
                 let kept = $eq.text.trimEnd(tail, [' ', '\t']);
                 parts[parts.length - 1] = kept;

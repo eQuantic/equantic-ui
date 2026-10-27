@@ -120,7 +120,7 @@ the link: the word underlined, and the pointer a hand over it. The link SHALL go
 released, another key is pressed, the pointer leaves the word or the surface, a press starts a drag, the text
 changes, or the view scrolls. A single press with the modifier alone SHALL place the caret as a press does,
 and its release on the same line without a drag SHALL go to the definition at the press, saying nothing when
-there is none.
+there is none, and take the link away.
 
 #### Scenario: A link and a click
 

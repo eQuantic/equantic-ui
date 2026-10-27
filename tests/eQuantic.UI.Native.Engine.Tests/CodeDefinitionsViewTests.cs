@@ -234,6 +234,32 @@ public class CodeDefinitionsViewTests : IDisposable
         editor.Editor.Definitions.Link.Should().BeNull("⌘ released takes the link away");
     }
 
+    /// <summary>A drag hovers nothing, and still moves the pointer: ⌘ pressed after the release, with no move, is
+    /// heard where the drag ended, and links the name there rather than the one the drag began on.</summary>
+    [Fact]
+    public void OnPhoton_CommandAfterADrag_LinksTheNameWhereTheDragEnded()
+    {
+        var editor = Editor();
+        var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 640, 400) { SmoothScroll = false };
+        var frame = Settle(host);
+        var from = OnScreen(frame, editor, At(5, 10));
+        var to = OnScreen(frame, editor, At(8, 18));
+
+        host.PointerMove(from.X, from.Y);
+        host.PressDown(from.X, from.Y);
+        host.PointerMove(to.X, to.Y);
+        host.PressUp(to.X, to.Y);
+        Settle(host);
+        host.ModifiersChanged(KeyModifiers.Command);
+
+        editor.Editor.Definitions.Link.Should().BeNull("`amount`, where the drag ended, is defined nowhere: no link, and none on `total`");
+        host.ModifiersChanged(KeyModifiers.None);
+        var back = OnScreen(Settle(host), editor, At(8, 10));
+        host.PointerMove(back.X, back.Y);
+        host.ModifiersChanged(KeyModifiers.Command);
+        editor.Editor.Definitions.Link.Should().Be(new CodeRange(At(8, 8), At(8, 13)));
+    }
+
     [Fact]
     public void OnPhoton_ShiftF12ListsTheReferences_AndF4WalksThem_ShownAndClosed()
     {

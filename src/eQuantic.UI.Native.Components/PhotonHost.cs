@@ -1088,9 +1088,9 @@ public sealed class PhotonHost
     /// <summary>The modifiers the pointer last moved with, or the shell last said changed (#1084).</summary>
     private KeyModifiers _pointerModifiers;
 
-    /// <summary>Where the pointer last rested over the code, lifted as <see cref="HoverCode"/> reads it: what a
-    /// change of the modifiers hands the surface again (#1084). Null once the pointer left.</summary>
-    private Point? _codeHoverAt;
+    /// <summary>Where a mouse pointer is now, lifted as <see cref="HoverCode"/> reads it, through drags and releases
+    /// too: what a change of the modifiers hands the code under it again (#1084). Null once the pointer left.</summary>
+    private Point? _pointerAt;
 
     /// <summary>The SPREADSHEET surface being edited, resolved by position every frame like the code
     /// surface: the node is a corpse, the MODEL outlives every rebuild.</summary>
@@ -1955,8 +1955,10 @@ public sealed class PhotonHost
     public void PointerMove(float x, float y, PointerKind kind = PointerKind.Mouse, KeyModifiers modifiers = KeyModifiers.None)
     {
         y += _lift;
-        // What the pointer holds is what a code surface hears with its hover (#1084): ⌘ over a name links it.
+        // What the pointer holds is what a code surface hears with its hover (#1084): ⌘ over a name links it. Where it
+        // is is kept through a drag, which hovers nothing, so a modifier changed after the release is heard there.
         _pointerModifiers = modifiers;
+        if (kind == PointerKind.Mouse) _pointerAt = new Point(x, y);
         // A canvas being dragged keeps the pointer even when it leaves the box; otherwise the
         // topmost canvas under the point gets the move, and the one being left gets its leave.
         var overCanvas = _pressedCanvas ?? CanvasUnder(new Point(x, y));
@@ -2364,13 +2366,14 @@ public sealed class PhotonHost
     {
         if (modifiers == _pointerModifiers) return;
         _pointerModifiers = modifiers;
-        if (_held || _codeHoverAt is not { } point) return;
+        if (_held || _pointerAt is not { } point) return;
         HoverCode(point);
     }
 
     /// <summary>The pointer left the window (or the input is touch) — hover clears.</summary>
     public void PointerLeave()
     {
+        _pointerAt = null;
         LeaveCode(except: null);
         if (_hoveredCanvas is { } leaving)
         {
@@ -2692,6 +2695,8 @@ public sealed class PhotonHost
     {
         y += _lift;
         _held = false;
+        // Where a drag ended is where the pointer is (#1084): ⌘ pressed next, with no move, is heard there.
+        if (kind == PointerKind.Mouse) _pointerAt = new Point(x, y);
         // The canvas that took the press gets the release, wherever it happens — a drag that ends
         // outside the box still ends, which is what every gesture on every platform means by "up".
         if (_pressedCanvas is { } canvas)
@@ -3044,7 +3049,6 @@ public sealed class PhotonHost
             var element = _lastFrame.CodeRegions[noted].Element;
             LeaveCode(except: element);
             _hoveredCode = element;
-            _codeHoverAt = point;
             return;
         }
         var over = hit >= 0;
@@ -3058,13 +3062,11 @@ public sealed class PhotonHost
                 // Still over this surface, whose model hears nothing while the pointer is on what it drew.
                 LeaveCode(except: surfaces[i].Element);
                 _hoveredCode = surfaces[i].Element;
-                _codeHoverAt = point;
                 return;
             }
             if (!Covers(surfaces, i, surfaces[i].Visible ?? surfaces[i].Bounds, point)) continue;
             LeaveCode(except: surfaces[i].Element);
             _hoveredCode = surfaces[i].Element;
-            _codeHoverAt = point;
             if (surfaces[i].Surface.Model.HandlePointer(PointerPhase.Hover,
                     ToLocal(surfaces, i, surfaces[i].Bounds, point), _pointerModifiers, 0))
                 SurfaceChanged(surfaces[i].Surface.OnChanged);
@@ -3079,7 +3081,6 @@ public sealed class PhotonHost
     {
         if (_hoveredCode is not { } left || ReferenceEquals(left, except)) return;
         _hoveredCode = null;
-        _codeHoverAt = null;
         if (_lastFrame is null) return;
         foreach (var region in _lastFrame.CodeRegions)
         {

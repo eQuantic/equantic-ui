@@ -593,6 +593,7 @@ public class CodeDefinitionsTests : IDisposable
         editor.HandlePointer(PointerPhase.Up, On(At(19, 10)), Command, 1);
 
         editor.Selection.Should().Be(new CodeRange(At(9, 8)));
+        editor.Definitions.Link.Should().BeNull("the link it followed goes, as VS Code takes its decoration down");
         Press(editor, "-", KeyModifiers.Control);
         editor.Selection.Should().Be(new CodeRange(At(19, 10)), "the click is a jump from where it was pressed");
     }

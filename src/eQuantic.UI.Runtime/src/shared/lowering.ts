@@ -851,8 +851,18 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     if (model.handlePointer('exit', local(event), doorModifiers(event, convention), 0)) changed();
   }) as unknown as EventHandler;
   surface.events['pointerup'] = ((event: PointerEvent) => {
-    (event.currentTarget as HTMLElement).releasePointerCapture?.(event.pointerId);
-    if (model.handlePointer('up', local(event), doorModifiers(event, convention), 1)) changed();
+    const element = event.currentTarget as HTMLElement;
+    element.releasePointerCapture?.(event.pointerId);
+    const at = local(event);
+    const held = doorModifiers(event, convention);
+    if (model.handlePointer('up', at, held, 1)) changed();
+    // A mouse released over the code rests where it was released (C# twin: PhotonHost.PressUp): a modifier
+    // changed next, with no move, is heard there, and the pointer looks as the model answers there now.
+    if (event.pointerType === 'touch') return;
+    const box = element.getBoundingClientRect();
+    if (at.x < 0 || at.y < 0 || at.x > box.width || at.y > box.height) return;
+    resting = { model, element, path, clientX: event.clientX, clientY: event.clientY, modifiers: held, changed };
+    element.style.cursor = cssCursor(model.cursorAt(at));
   }) as unknown as EventHandler;
 
   return surface;

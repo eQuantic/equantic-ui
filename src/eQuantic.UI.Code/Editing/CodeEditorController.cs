@@ -1301,8 +1301,13 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 var press = _linkPress;
                 _linkPress = -1;
                 // The release of a ⌘ press on the line it was pressed on goes to the definition at the caret the
-                // press placed, saying nothing when there is none.
-                if (phase == PointerPhase.Up && press >= 0 && PositionAt(position).Line == press) GoTo.FollowLink();
+                // press placed, saying nothing when there is none, and the link it followed goes, as VS Code takes its
+                // decoration down once it has gone.
+                if (phase == PointerPhase.Up && press >= 0 && PositionAt(position).Line == press)
+                {
+                    Definitions.ClearLink();
+                    GoTo.FollowLink();
+                }
                 return false;
             }
             // A pointer passing over the code: the hover waits for it to rest on something to explain, and the link
