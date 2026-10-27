@@ -759,26 +759,13 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
 
   // THE POINTER AT REST, and what it holds (C# twin: PhotonHost's hover of a code surface, #1084). The pointer
   // reads its modifiers as the keys do, ⌘ and ⌃ apart on a Mac, and a modifier key pressed or released with
-  // the pointer at rest is a hover again at the same place: the model hears no key released, and the link ⌘
-  // shows over a name goes with the key. The pointer looks as the model answers, after every render too, so a
-  // link that arrives with the pointer still shows the hand.
+  // the pointer at rest, wherever the keyboard is, is a hover again at the same place on the page (see
+  // watchCodeModifiers): the model hears no key released, and the link ⌘ shows over a name goes with the key.
+  // The pointer looks as the model answers, after every render too, so a link that arrives with the pointer
+  // still shows the hand.
   const convention = keyboardConvention();
-  const resting = codePointers.get(model);
-  if (resting) showCursorAfterRender(path, model, resting);
-  const typed = input.events['keydown'] as unknown as (event: KeyboardEvent) => void;
-  const modifierChanged = (event: KeyboardEvent) => {
-    if (!modifierKey(event.key)) return;
-    const rest = codePointers.get(model);
-    const held = doorModifiers(event, convention);
-    if (!rest || rest.modifiers === held) return;
-    rest.modifiers = held;
-    if (model.handlePointer('hover', { x: rest.x, y: rest.y }, held, 0)) changed();
-  };
-  input.events['keydown'] = ((event: KeyboardEvent) => {
-    modifierChanged(event);
-    typed(event);
-  }) as unknown as EventHandler;
-  input.events['keyup'] = modifierChanged as unknown as EventHandler;
+  watchCodeModifiers(convention);
+  if (resting?.model === model) showCursorAfterRender(resting);
 
   // The pointer's whole life goes to the model: the press, every move while it is held — which is
   // what draws a selection — and the release. CAPTURED on the press, so a drag that leaves the
@@ -811,6 +798,8 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     return pressed != null && pressed !== surfaceElement && surfaceElement?.contains?.(pressed) === true;
   };
   const press = (event: MouseEvent, clicks: number) => {
+    // A press is no pointer at rest: ⌘ pressed during the drag it starts follows no link.
+    if (resting?.model === model) resting = null;
     model.handlePointer('down', local(event), doorModifiers(event, convention), clicks);
     changed();
   };
@@ -846,17 +835,19 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
       const phase = onPressable(event) ? 'exit' : 'hover';
       const at = local(event);
       const held = doorModifiers(event, convention);
-      if (phase === 'hover') codePointers.set(model, { x: at.x, y: at.y, modifiers: held });
-      else codePointers.delete(model);
+      const element = event.currentTarget as HTMLElement;
+      if (phase === 'hover') {
+        resting = { model, element, path, clientX: event.clientX, clientY: event.clientY, modifiers: held, changed };
+      } else if (resting?.model === model) resting = null;
       if (model.handlePointer(phase, at, held, 0)) changed();
-      (event.currentTarget as HTMLElement).style.cursor = cssCursor(model.cursorAt(at));
+      element.style.cursor = cssCursor(model.cursorAt(at));
       return;
     }
     if ((event.buttons & 1) === 0) return;
     if (model.handlePointer('move', local(event), doorModifiers(event, convention), 1)) changed();
   }) as unknown as EventHandler;
   surface.events['pointerleave'] = ((event: PointerEvent) => {
-    codePointers.delete(model);
+    if (resting?.model === model) resting = null;
     if (model.handlePointer('exit', local(event), doorModifiers(event, convention), 0)) changed();
   }) as unknown as EventHandler;
   surface.events['pointerup'] = ((event: PointerEvent) => {
@@ -4616,9 +4607,62 @@ function caretAtEnd(element: HTMLInputElement | HTMLTextAreaElement): void {
   }
 }
 
-/** Where the pointer last rested over each code surface, by MODEL, and what it held (#1084): what a
- *  modifier key pressed or released with the pointer at rest hands the model again. */
-const codePointers = new WeakMap<object, { x: number; y: number; modifiers: number }>();
+/**
+ * Where the pointer rests over a code surface (#1084): its model, the element it rests over, the point on the
+ * PAGE, and what it held. Kept on the page, not the surface, because the code scrolls under a pointer that
+ * does not move: the point is read against the surface's box as it stands when a modifier changes. A press,
+ * the pointer leaving or resting on something else takes it away (C# twin: PhotonHost._codeHoverAt).
+ */
+type CodeRest = {
+  model: CodeSurfaceModelLike;
+  element: HTMLElement;
+  path: string;
+  clientX: number;
+  clientY: number;
+  modifiers: number;
+  changed: () => void;
+};
+let resting: CodeRest | null = null;
+
+/** Where `rest` falls on its surface now, or null when the surface is gone. */
+function restingAt(rest: CodeRest): { x: number; y: number } | null {
+  const element = rest.element.isConnected === false
+    ? (typeof document === 'undefined' ? null : (document.querySelector(`[data-eq-code="${rest.path}"]`) as HTMLElement | null))
+    : rest.element;
+  if (!element) return null;
+  rest.element = element;
+  const box = element.getBoundingClientRect();
+  return { x: rest.clientX - box.left, y: rest.clientY - box.top };
+}
+
+let watchingModifiers = false;
+
+/**
+ * ONE document-level listener for the modifier keys, installed lazily by the lowering and idempotent, as the
+ * draggable controller is (C# twin: a shell's flagsChanged, which PhotonHost.ModifiersChanged hears whatever
+ * holds the keyboard). A modifier pressed or released with the pointer at rest over a code surface hands its
+ * model a hover again where the pointer stands; the window losing the keyboard releases them all, since the
+ * key's release goes to another window.
+ */
+function watchCodeModifiers(convention: KeyboardConventionValue): void {
+  if (watchingModifiers || typeof document === 'undefined') return;
+  watchingModifiers = true;
+  const heard = (held: number) => {
+    const rest = resting;
+    if (!rest || rest.modifiers === held) return;
+    rest.modifiers = held;
+    const at = restingAt(rest);
+    if (!at) return;
+    if (rest.model.handlePointer('hover', at, held, 0)) rest.changed();
+  };
+  const keyed = (event: KeyboardEvent) => {
+    if (modifierKey(event.key)) heard(doorModifiers(event, convention));
+  };
+  // Captured, so the code's own keydown hears the key after the hover it changed.
+  document.addEventListener('keydown', keyed, true);
+  document.addEventListener('keyup', keyed, true);
+  if (typeof window !== 'undefined') window.addEventListener('blur', () => heard(0));
+}
 
 /** Whether a key is a modifier alone, whose press or release changes what the pointer holds. */
 function modifierKey(key: string): boolean {
@@ -4626,15 +4670,14 @@ function modifierKey(key: string): boolean {
 }
 
 /**
- * Shows the pointer over the code surface at `path` as its model answers for where the pointer rests, after
- * the render that drew it (#1084): a link that arrives with the pointer still is a hand without a move. Found
- * by path, as {@link revealCaret} finds its caret, since the render replaces the element.
+ * Shows the pointer over the surface it rests on as its model answers, after the render that drew it (#1084):
+ * a link that arrives with the pointer still is a hand without a move.
  */
-function showCursorAfterRender(path: string, model: CodeSurfaceModelLike, rest: { x: number; y: number }): void {
+function showCursorAfterRender(rest: CodeRest): void {
   const show = () => {
-    if (typeof document === 'undefined') return;
-    const surface = document.querySelector(`[data-eq-code="${path}"]`) as HTMLElement | null;
-    if (surface) surface.style.cursor = cssCursor(model.cursorAt({ x: rest.x, y: rest.y }));
+    if (resting !== rest) return;
+    const at = restingAt(rest);
+    if (at) rest.element.style.cursor = cssCursor(rest.model.cursorAt(at));
   };
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(show);
   if (typeof setTimeout === 'function') setTimeout(show, 48);

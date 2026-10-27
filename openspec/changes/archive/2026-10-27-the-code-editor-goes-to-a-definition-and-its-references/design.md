@@ -87,8 +87,10 @@ the text cursor for every code region. A sheet surface already answers `CursorAt
   released, and no interface member is needed for it: a host that sees the held modifiers change while the
   pointer rests over a code surface hands the surface a hover at the pointer's last place with the new
   modifiers. On the web, the code surface's pointer reads the modifiers as its keys do (`doorModifiers`: ⌘ is
-  Command and ⌃ is Control on a Mac), and its text door's `keydown` and `keyup` of a modifier key re-send the
-  hover. On Photon, `PointerMove` takes the modifiers, the macOS shell reads them on every mouse move and on
+  Command and ⌃ is Control on a Mac), and one listener on the page hears a modifier key's `keydown` and `keyup`
+  wherever the keyboard is, as a shell hears `flagsChanged`, and re-sends the hover where the pointer stands on
+  the page, read against the surface's box as it stands then, so code that scrolled under a still pointer is
+  followed. A press ends the rest, as `PhotonHost` ignores the modifiers while a press is held. On Photon, `PointerMove` takes the modifiers, the macOS shell reads them on every mouse move and on
   `flagsChanged`, and the Windows shell on `WM_MOUSEMOVE` and on the Ctrl key's `WM_KEYDOWN` and `WM_KEYUP`;
   `PhotonHost` re-sends the hover when they change. The macOS shell's press read only ⇧ and ⌘, so ⌥ and a
   press, which adds a caret (#1012), never reached a code surface in a macOS window: it now reads all four.

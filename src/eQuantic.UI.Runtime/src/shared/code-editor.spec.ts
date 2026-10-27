@@ -638,11 +638,11 @@ function pressAt(
 }
 
 describe('the link ⌘ shows over a name (C# twin: PhotonHost, #1084)', () => {
-  /** A surface over two lines whose `total` a provider says is declared on the first. */
+  /** Two lines, `total` and `count`, each a name a provider says is declared where it stands. */
   function linked() {
-    const surface = surfaceFor('var total = 1;\ntotal += 2;');
+    const surface = surfaceFor('total = 1;\ncount = 2;');
     surface.editor.definitions.providers.push({
-      definitionsAsync: async () => [new CodeLocation(new CodeRange(new CodePosition(0, 4), new CodePosition(0, 9)))],
+      definitionsAsync: async () => [new CodeLocation(new CodeRange(new CodePosition(0, 0), new CodePosition(0, 5)))],
     });
     return surface;
   }
@@ -650,37 +650,76 @@ describe('the link ⌘ shows over a name (C# twin: PhotonHost, #1084)', () => {
   /** The provider's answer, which arrives on a later turn, as on the web. */
   const answered = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-  /** A pointer passing over the surface with nothing pressed, ⌘ held or not, on a target that keeps its look. */
-  function hover(lowered: HtmlNode, at: [number, number], meta: boolean) {
-    const target = { getBoundingClientRect: () => ({ left: 0, top: 0 }), style: {} as Record<string, string> };
+  /** The surface's element under a pointer: its box, which a scroll moves, and the look the pointer takes. */
+  function element() {
+    return { box: { left: 0, top: 0 }, getBoundingClientRect() { return this.box; }, style: {} as Record<string, string> };
+  }
+
+  /** A pointer passing over the surface with nothing pressed, ⌘ held or not. */
+  function hover(lowered: HtmlNode, target: ReturnType<typeof element>, at: [number, number], meta: boolean) {
     const event = { clientX: at[0], clientY: at[1], currentTarget: target, buttons: 0, pointerType: 'mouse',
       shiftKey: false, altKey: false, metaKey: meta, ctrlKey: false };
     (lowered.events['pointermove'] as unknown as (e: unknown) => void)(event);
-    return target;
   }
+
+  /** A modifier key pressed or released, wherever the keyboard is: the page hears it. */
+  function modifier(type: 'keydown' | 'keyup', meta: boolean) {
+    document.dispatchEvent(new KeyboardEvent(type, { key: 'Meta', metaKey: meta, ctrlKey: false }));
+  }
+
+  const total = new CodeRange(new CodePosition(0, 0), new CodePosition(0, 5));
+  const count = new CodeRange(new CodePosition(1, 0), new CodePosition(1, 5));
 
   it('underlines the name ⌘ rests on, and the pointer is a hand over it', async () => {
     const { editor, lowered } = linked();
-    hover(lowered, cell(1, 2), true);
+    const target = element();
+    hover(lowered, target, cell(0, 2), true);
     await answered();
 
-    expect(editor.definitions.link).toEqual(new CodeRange(new CodePosition(1, 0), new CodePosition(1, 5)));
-    expect(hover(lowered, cell(1, 3), true).style.cursor).toBe('pointer');
-    expect(hover(lowered, cell(1, 8), true).style.cursor).toBe('text');
+    expect(editor.definitions.link).toEqual(total);
+    hover(lowered, target, cell(0, 3), true);
+    expect(target.style.cursor).toBe('pointer');
+    hover(lowered, target, cell(0, 8), true);
+    expect(target.style.cursor).toBe('text');
   });
 
-  it('takes the link away as ⌘ is released with the pointer at rest, and shows it again as ⌘ is pressed', async () => {
+  it('takes the link away as ⌘ is released with the pointer at rest, and shows it again as ⌘ is pressed, wherever the keyboard is', async () => {
     const { editor, lowered } = linked();
-    hover(lowered, cell(1, 2), true);
+    hover(lowered, element(), cell(0, 2), true);
     await answered();
-    expect(editor.definitions.link).not.toBeNull();
+    expect(editor.definitions.link).toEqual(total);
 
-    fire(lowered, 'keyup', { key: 'Meta', metaKey: false, ctrlKey: false, shiftKey: false, altKey: false });
+    modifier('keyup', false);
     expect(editor.definitions.link).toBeNull();
 
-    fire(lowered, 'keydown', { key: 'Meta', metaKey: true, ctrlKey: false, shiftKey: false, altKey: false });
+    modifier('keydown', true);
     await answered();
-    expect(editor.definitions.link).not.toBeNull();
+    expect(editor.definitions.link).toEqual(total);
+  });
+
+  it('links the name the code scrolled under a pointer at rest, not the one it rested on', async () => {
+    const { editor, lowered } = linked();
+    const target = element();
+    hover(lowered, target, cell(0, 2), false);
+    // The code scrolls a line up under the pointer, which stays where it was on the page.
+    target.box = { left: 0, top: -LINE };
+
+    modifier('keydown', true);
+    await answered();
+
+    expect(editor.definitions.link).toEqual(count);
+  });
+
+  it('follows no link when ⌘ is pressed during a press', async () => {
+    const { editor, lowered } = linked();
+    hover(lowered, element(), cell(0, 2), false);
+    pressAt(lowered, cell(0, 2));
+
+    modifier('keydown', true);
+    await answered();
+
+    expect(editor.definitions.link).toBeNull();
+    pointer(lowered, 'pointerup', ...cell(0, 2));
   });
 });
 
