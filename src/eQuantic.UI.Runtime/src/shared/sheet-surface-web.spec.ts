@@ -246,6 +246,15 @@ describe('SheetSurface on the web', () => {
     lift(node, target, { clientX: 44 + 96 + 48, clientY: 26 + 2 * 28 + 14 });
     activate(drawn(44 + 5 * 96, 26 + 7 * 28, 96, 28));
     expect(sheet.activeCell).toEqual(new CellRef(2, 1));
+
+    // A finger's pan, which the table marked handled, is followed by no click: the next reader's
+    // activation is answered still.
+    press(node, target, { clientX: 300, clientY: 300, pointerType: 'touch' });
+    const panned = new PointerEvent('pointerup', { pointerId: 1, cancelable: true, pointerType: 'touch', clientX: 300, clientY: 200 });
+    panned.preventDefault();
+    events(node)['pointerup'](on(panned, target));
+    activate(drawn(44 + 3 * 96, 26 + 5 * 28, 96, 28));
+    expect(sheet.activeCell).toEqual(new CellRef(5, 3));
   });
 
   it('reads a press on the headers with its modifiers, as Photon does (#984)', () => {

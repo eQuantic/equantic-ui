@@ -452,7 +452,6 @@ StyleChannels.All = 63
 TableCellRole.Cell = 0
 TableCellRole.ColumnHeader = 1
 TableCellRole.RowHeader = 2
-TableCellRole.None = 3
 TableRole.Group = 0
 TableRole.Table = 1
 TableRole.Grid = 2

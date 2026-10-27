@@ -145,19 +145,21 @@ function summing(first = '7.01', second = '14.02', third = 'text'): SheetControl
 }
 
 /** The C# `TableAs`: a table or a grid of six rows and four columns, its first row and column pinned and
- * their headers, the corner among the columns' headers, rows 2 and 3 of column 2 selected and the one of row 3 current. */
+ * their headers, the corner among the columns' headers, the cell of row 4 and column 3 empty, rows 2 and 3
+ * of column 2 selected and the one of row 3 current. */
 function tableAs(role: 'table' | 'grid'): unknown {
   return new TableView(
     new UniformTableSpans(6, 28),
     new UniformTableSpans(4, 96),
-    (row: number, column: number) => new Text(`${row}:${column}`, 'caption', photonTheme.textPrimary),
+    (row: number, column: number) =>
+      row === 4 && column === 3 ? null : new Text(`${row}:${column}`, 'caption', photonTheme.textPrimary),
     {
       pinnedRows: 1,
       pinnedColumns: 1,
       label: 'ledger',
       role,
       cellRole: (row: number, column: number) =>
-        row === 0 && column === 0 ? 'none' : row === 0 ? 'columnHeader' : column === 0 ? 'rowHeader' : 'cell',
+        row === 0 ? 'columnHeader' : column === 0 ? 'rowHeader' : 'cell',
       selected: (row: number, column: number) => column === 2 && row >= 2 && row <= 3,
       current: new TableRange(3, 2),
     },

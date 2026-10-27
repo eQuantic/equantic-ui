@@ -1794,10 +1794,12 @@ function lowerSheetSurface(
 
   view.events['pointerup'] = ((event: PointerEvent) => {
     if (sheetPresses.get(model)?.id !== event.pointerId) return;
-    sheetClicksAnswered.add(model);
     const ended = settle()!;
     // The release of a finger's pan, which the table marked handled, is no tap.
     const phase = ended.kind === 'touch' && event.defaultPrevented ? 'cancel' : 'up';
+    // A release the browser follows with a click, which is this press's; a pan's is followed by none, and
+    // a mark left for it would swallow the next reader's activation.
+    if (phase === 'up') sheetClicksAnswered.add(model);
     const at = local(ended.target, event.clientX, event.clientY);
     if (model.handlePointer(phase, at, modifiersOf(event), 1, ended.kind)) changed();
   }) as unknown as EventHandler;

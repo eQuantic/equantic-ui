@@ -68,6 +68,11 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         if (!Same(_tree, tree))
         {
             _tree = tree;
+            // What a region said leaves the tree with it: one that comes back at its id has said nothing yet,
+            // and an app's toasts never pile up here.
+            if (_spoken.Count > 0)
+                foreach (var gone in _spoken.Keys.Where(id => !tree.Any(node => node.Id == id)).ToList())
+                    _spoken.Remove(gone);
             _view.SendAccessibilityEvent(EventTypes.WindowContentChanged);
         }
         for (var i = 0; i < said.Count; i++) Announce(said[i]);

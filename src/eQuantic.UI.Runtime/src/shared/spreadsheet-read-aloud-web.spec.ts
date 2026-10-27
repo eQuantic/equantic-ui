@@ -83,7 +83,15 @@ describe('a spreadsheet read aloud on the web (#1081)', () => {
     const row = host.querySelector(`[aria-owns~="${b3.id}"]`) as HTMLElement;
     expect(row.getAttribute('role')).toBe('row');
     expect(row.getAttribute('aria-rowindex')).toBe('4');
-    expect(host.querySelector('[data-eq-cell="0:0"]')!.getAttribute('aria-hidden')).toBe('true');
+    // The corner heads the row numbers, empty, and keeps its place: every row owns its cells in the order
+    // the headers' row owns its headers, which is how a browser places them.
+    const corner = host.querySelector('[data-eq-cell="0:0"]') as HTMLElement;
+    expect(corner.getAttribute('role')).toBe('columnheader');
+    expect(corner.getAttribute('aria-hidden')).toBeNull();
+    const columnsOf = (owner: Element) =>
+      owner.getAttribute('aria-owns')!.split(' ').map((id) => host.querySelector(`[id="${id}"]`)!.getAttribute('aria-colindex'));
+    const rows = [...host.querySelectorAll('[role="row"]')];
+    for (const each of rows) expect(columnsOf(each)).toEqual(columnsOf(rows[0]));
   });
 
   it('marks the cells of the range selected and the active cell current', async () => {
