@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "SheetEdit.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Sheet/Document/SheetEdit.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAMA;QAEI;QAGA;QACA;QAGA;QACA;QAGA;QAGA;QACA;QAKA;QACA;;;IArBA;IAGA;IACA;IAGA;IACA;IAGA;IAGA;IACA;IAKA;IACA;;IAvBJ"
+}

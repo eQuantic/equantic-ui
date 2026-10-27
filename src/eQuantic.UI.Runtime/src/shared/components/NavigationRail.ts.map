@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "NavigationRail.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/NavigationRail.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IA4CI;;IAEI;;;;IACA;QAAQ;;;IAKZ;IACA;IAIA;IAQA;;;;;;;;;QAjCI;QACA;QACA;;;;;QAmCA;QACA;QAGA;QAKA;YAEI;YACA;YACA;YAEA;YAAA;YACA;YAMA;YACA;YAEA;YAUA;YAOA;YACA;YAOA;;QAcJ;QAOA;QAAA,sCAA4B;QAC5B;QAEA"
+}

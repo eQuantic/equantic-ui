@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "LeadingSpans.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Spreadsheets/LeadingSpans.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IASA;;QAEgC;QACJ;QAIpB;QACA;;;IANwB;IACJ;;IASxB;QAA0B;;;IAG1B;QAAsB;;;IAEtB;QAA6B;;;IAE7B;QAAgC;;;IAEhC;QAA8C;;;IAE9C;QAA8C;;;IAE9C;QACI"
+}

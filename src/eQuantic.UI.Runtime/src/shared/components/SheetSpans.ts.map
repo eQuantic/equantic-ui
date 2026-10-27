@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "SheetSpans.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Sheet/Document/SheetSpans.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAUA;;QAEmC;QACJ;QAGf;QAEE;QAIG;QAIb;QACA;QACA;QACA;QACA;;;IAlB2B;IACJ;IAGf;IAEE;IAIG;;IAWjB;QAA6B;;;IAG7B;QAAyB;;;IAEzB;QAAgC;;;IAEhC;QACI;;;IAEJ;QAEI;QACA;QACA;;;IAGJ;QAEI;QACA,iBAAgB;QAChB;QACA;QACA;YAEI;YACA,qCAAgC,mBAC3B;;QAET;;;IAIJ;QAEI,iDAAsC;QACtC;QACA;QACA;QACA;QACA;QACA;QACA,+CAA0C;;;IAI9C;QAEI;QACA;QACA;YAEI;YACA,mCAA8B,uBACzB;;QAET"
+}

@@ -10,8 +10,8 @@ namespace eQuantic.UI.Native.Shell.Apple;
 /// <see cref="ITextRasterizer"/> (A8 coverage rasters), so breaks agree by construction. Lines sit
 /// on the STYLE's line-height grid (the layout contract), not the font's; the raster draws through
 /// a scaled CTM, so wrapping happens in dp (identical to measuring) while pixels come out at
-/// device scale. v1 fences: weight
-/// maps to the bold trait at ≥600 only, per-process CTFont cache.
+/// device scale. A weight is asked for as CoreText's own weight trait, so every one of the nine
+/// draws as named (#1082). v1 fence: a per-process CTFont cache.
 /// </summary>
 public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
 {
@@ -50,8 +50,19 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     [LibraryImport(CoreTextLib)]
     private static partial IntPtr CTFontCreateUIFontForLanguage(uint uiType, double size, IntPtr language);
 
+    /// <summary>A copy of a font with the attributes of a descriptor laid over it: how the platform's own
+    /// UI face is asked for a weight and a slant.</summary>
     [LibraryImport(CoreTextLib)]
-    private static partial IntPtr CTFontCreateCopyWithSymbolicTraits(IntPtr font, double size, IntPtr matrix, uint traits, uint mask);
+    private static partial IntPtr CTFontCreateCopyWithAttributes(IntPtr font, double size, IntPtr matrix, IntPtr attributes);
+
+    [LibraryImport(CoreFoundation)]
+    private static partial IntPtr CFNumberCreate(IntPtr allocator, nint type, ref double value);
+
+    [LibraryImport(CoreFoundation)]
+    private static partial IntPtr CFNumberCreate(IntPtr allocator, nint type, ref uint value);
+
+    [LibraryImport(CoreFoundation)]
+    private static partial IntPtr CFNumberCreate(IntPtr allocator, nint type, ref int value);
 
     // A face by FAMILY, asked as a question rather than a command. CTFontCreateWithName substitutes
     // silently when the name is unknown, and reading the family back does not settle it either:
@@ -67,15 +78,11 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     [LibraryImport(CoreTextLib)]
     private static partial IntPtr CTFontCreateWithFontDescriptor(IntPtr descriptor, double size, IntPtr matrix);
 
-    // A face the app SHIPS (#1055), registered with the font manager for this process from the bytes
-    // its assembly holds, so the family match below finds it as it finds an installed one: the
-    // descriptor, the bold and italic traits and every cache keyed on the family work unchanged. The
-    // same route .NET MAUI's embedded-font loader takes on iOS.
+    // A face the app SHIPS (#1055), read into a graphics font from the bytes its assembly holds and
+    // opened from it directly (#1082): no family match reaches it, so it is never registered with the
+    // font manager, where a name the machine already has could refuse it.
     [LibraryImport(CoreFoundation)]
     private static partial IntPtr CFDataCreate(IntPtr allocator, byte[] bytes, nint length);
-
-    [LibraryImport(CoreFoundation)]
-    private static partial nint CFErrorGetCode(IntPtr error);
 
     [LibraryImport(CoreGraphics)]
     private static partial IntPtr CGDataProviderCreateWithCFData(IntPtr data);
@@ -89,14 +96,19 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     [LibraryImport(CoreGraphics)]
     private static partial void CGFontRelease(IntPtr font);
 
-    [LibraryImport(CoreTextLib)]
-    [return: MarshalAs(UnmanagedType.U1)]
-    private static partial bool CTFontManagerRegisterGraphicsFont(IntPtr font, out IntPtr error);
-
-    /// <summary>kCTFontManagerErrorAlreadyRegistered: the face is in the process all the same.</summary>
-    private const nint AlreadyRegistered = 105;
-
     private static readonly ShippedFaces Shipped = new(Register);
+
+    /// <summary>
+    /// The face of each file the shell read, kept for the process: the font a family's text is set in is
+    /// opened from the FILE that sets its weight and slant (ShippedFaces.FileFor), never matched by the
+    /// weight CoreText reads from the files, which is not every file's weight (#1082).
+    /// </summary>
+    private static readonly Dictionary<FontFile, IntPtr> GraphicsFonts = new();
+
+    private static readonly Lock GraphicsFontsGate = new();
+
+    [LibraryImport(CoreTextLib)]
+    private static partial IntPtr CTFontCreateWithGraphicsFont(IntPtr graphicsFont, double size, IntPtr matrix, IntPtr attributes);
 
     private static bool Register(FontFile file, byte[] bytes)
     {
@@ -104,20 +116,71 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
         if (data == IntPtr.Zero) return false;
         var provider = CGDataProviderCreateWithCFData(data);
         var font = provider == IntPtr.Zero ? IntPtr.Zero : CGFontCreateWithDataProvider(provider);
+        var kept = false;
         try
         {
             if (font == IntPtr.Zero) return false;
-            if (CTFontManagerRegisterGraphicsFont(font, out var error)) return true;
-            var already = error != IntPtr.Zero && CFErrorGetCode(error) == AlreadyRegistered;
-            if (error != IntPtr.Zero) CFRelease(error);
-            return already;
+            lock (GraphicsFontsGate) kept = GraphicsFonts.TryAdd(file, font);
+            return true;
         }
         finally
         {
-            if (font != IntPtr.Zero) CGFontRelease(font);
+            if (font != IntPtr.Zero && !kept) CGFontRelease(font);
             if (provider != IntPtr.Zero) CGDataProviderRelease(provider);
             CFRelease(data);
         }
+    }
+
+    /// <summary>
+    /// The font a family that ships files sets text in at <paramref name="weight"/>, upright or
+    /// <paramref name="italic"/>: opened from the one file that sets them, or null when its files could
+    /// not all be read, which is reported and falls back, the family resolving from them WHOLE or not at
+    /// all. A variable file is opened at the weight on its axis: opened as it is, it sets every weight at
+    /// its default instance.
+    /// </summary>
+    private static IntPtr? Shipping(FontFamily family, float size, FontWeight weight, bool italic)
+    {
+        if (!Shipped.Register(family) || ShippedFaces.FileFor(family, weight, italic) is not { } file)
+        {
+            FaceResolution.Missing(family.Name);
+            return null;
+        }
+        IntPtr graphics;
+        lock (GraphicsFontsGate) graphics = GraphicsFonts.GetValueOrDefault(file);
+        var variation = file.MinWeight < file.MaxWeight ? Variation(Math.Clamp((int)weight, file.MinWeight, file.MaxWeight)) : IntPtr.Zero;
+        try
+        {
+            var font = graphics == IntPtr.Zero ? IntPtr.Zero : CTFontCreateWithGraphicsFont(graphics, size, IntPtr.Zero, variation);
+            if (font != IntPtr.Zero) return font;
+            FaceResolution.Missing(family.Name);
+            return null;
+        }
+        finally
+        {
+            if (variation != IntPtr.Zero) CFRelease(variation);
+        }
+    }
+
+    /// <summary>
+    /// A descriptor that sets a variable face's <c>wght</c> axis at <paramref name="weight"/>, the number
+    /// a weight is on an OpenType axis (caller releases).
+    /// </summary>
+    private static IntPtr Variation(int weight)
+    {
+        var axes = CFDictionaryCreateMutable(IntPtr.Zero, 1, KeyCallbacks, ValueCallbacks);
+        var tag = 0x77676874; // 'wght'
+        var axis = CFNumberCreate(IntPtr.Zero, 9 /* kCFNumberIntType */, ref tag);
+        double at = weight;
+        var value = CFNumberCreate(IntPtr.Zero, 13 /* kCFNumberDoubleType */, ref at);
+        CFDictionarySetValue(axes, axis, value);
+        CFRelease(axis);
+        CFRelease(value);
+        var attributes = CFDictionaryCreateMutable(IntPtr.Zero, 1, KeyCallbacks, ValueCallbacks);
+        CFDictionarySetValue(attributes, FontVariationAttribute, axes);
+        CFRelease(axes);
+        var descriptor = CTFontDescriptorCreateWithAttributes(attributes);
+        CFRelease(attributes);
+        return descriptor;
     }
 
     /// <summary>The INK box of a line — what the glyphs actually cover, which is not the font's
@@ -187,6 +250,10 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
 
     private static readonly IntPtr FontAttributeName = LoadGlobal(CoreTextLib, "kCTFontAttributeName");
     private static readonly IntPtr FontFamilyNameAttribute = LoadGlobal(CoreTextLib, "kCTFontFamilyNameAttribute");
+    private static readonly IntPtr FontTraitsAttribute = LoadGlobal(CoreTextLib, "kCTFontTraitsAttribute");
+    private static readonly IntPtr FontWeightTrait = LoadGlobal(CoreTextLib, "kCTFontWeightTrait");
+    private static readonly IntPtr FontSymbolicTrait = LoadGlobal(CoreTextLib, "kCTFontSymbolicTrait");
+    private static readonly IntPtr FontVariationAttribute = LoadGlobal(CoreTextLib, "kCTFontVariationAttribute");
     private static readonly IntPtr KeyCallbacks = LoadGlobalAddress(CoreFoundation, "kCFTypeDictionaryKeyCallBacks");
     private static readonly IntPtr ValueCallbacks = LoadGlobalAddress(CoreFoundation, "kCFTypeDictionaryValueCallBacks");
 
@@ -199,39 +266,74 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     private static IntPtr LoadGlobalAddress(string library, string symbol) =>
         dlsym(dlopen(library, 2), symbol);
 
-    private readonly Dictionary<(float Size, bool Bold, bool Mono, bool Italic, FontFamily? Family), IntPtr> _fonts = new();
+    private readonly Dictionary<(float Size, FontWeight Weight, bool Mono, bool Italic, FontFamily? Family), IntPtr> _fonts = new();
 
     private IntPtr FontFor(float size, FontWeight weight, bool mono, bool italic, FontFamily? family = null)
     {
-        var bold = weight >= FontWeight.SemiBold;
-        if (_fonts.TryGetValue((size, bold, mono, italic, family), out var cached)) return cached;
+        if (_fonts.TryGetValue((size, weight, mono, italic, family), out var cached)) return cached;
 
-        // kCTFontUIFontUserFixedPitch is the system's own MONOSPACED face (SF Mono on a modern
-        // Mac) — the one every native editor uses. Asking the OS for it beats naming a family
-        // that may not be installed, which is why it stays the default when none is named.
-        var font = Named(family, size) ?? CTFontCreateUIFontForLanguage(
+        // A family that ships files is set in the file of its weight and slant. One the machine has is
+        // MATCHED with its weight and its slant, so the face of the family nearest them is handed back.
+        var font = (family is { Files.Count: > 0 } ? Shipping(family, size, weight, italic) : Named(family, size, weight, italic))
+            ?? PlatformFace(size, weight, mono, italic);
+        _fonts[(size, weight, mono, italic, family)] = font; // per-process cache (the documented lifetime fence)
+        return font;
+    }
+
+    /// <summary>
+    /// The platform's own face at <paramref name="weight"/>, upright or italic. kCTFontUIFontUserFixedPitch
+    /// is the system's own MONOSPACED face (SF Mono on a modern Mac), the one every native editor uses:
+    /// asking the OS for it beats naming a family that may not be installed, which is why it stays the
+    /// default when none is named. The weight and the slant are laid over it in one copy, the way a
+    /// named family is matched with both: two copies in sequence would each start from the face the OS
+    /// handed back and drop what the other asked for.
+    /// </summary>
+    private static IntPtr PlatformFace(float size, FontWeight weight, bool mono, bool italic)
+    {
+        var font = CTFontCreateUIFontForLanguage(
             mono ? 1u /* kCTFontUIFontUserFixedPitch */ : 2u /* kCTFontUIFontSystem */,
             size, IntPtr.Zero);
-        // Bold and italic are the same mechanism — symbolic TRAITS on the face the OS handed
-        // back — so they are asked for TOGETHER: two copies in sequence would drop the first
-        // trait, because each copy is made from the ORIGINAL descriptor's traits plus the mask.
-        const uint italicTrait = 1 << 0;   // kCTFontTraitItalic
-        const uint boldTrait = 1 << 1;     // kCTFontTraitBold
-        var traits = (bold ? boldTrait : 0u) | (italic ? italicTrait : 0u);
-        if (traits != 0)
+        if (weight == FontWeight.Regular && !italic) return font;
+        var attributes = CFDictionaryCreateMutable(IntPtr.Zero, 1, KeyCallbacks, ValueCallbacks);
+        var traits = Traits(weight, italic);
+        CFDictionarySetValue(attributes, FontTraitsAttribute, traits);
+        var descriptor = CTFontDescriptorCreateWithAttributes(attributes);
+        try
         {
-            // The mask names WHICH traits this call decides; the value names what they become. A
-            // family with no italic cut answers zero, and the upright face we already have is the
-            // honest fallback — a synthesised slant would measure differently than it draws.
-            var traited = CTFontCreateCopyWithSymbolicTraits(font, size, IntPtr.Zero, traits, traits);
-            if (traited != IntPtr.Zero)
-            {
-                CFRelease(font);
-                font = traited;
-            }
+            // A face with no italic cut answers with its upright, which is the honest fallback: a
+            // synthesised slant would measure differently than it draws.
+            var copy = descriptor == IntPtr.Zero ? IntPtr.Zero : CTFontCreateCopyWithAttributes(font, size, IntPtr.Zero, descriptor);
+            if (copy == IntPtr.Zero) return font;
+            CFRelease(font);
+            return copy;
         }
-        _fonts[(size, bold, mono, italic, family)] = font; // per-process cache (the documented lifetime fence)
-        return font;
+        finally
+        {
+            if (descriptor != IntPtr.Zero) CFRelease(descriptor);
+            CFRelease(traits);
+            CFRelease(attributes);
+        }
+    }
+
+    /// <summary>
+    /// The traits a face is asked for: the weight in CoreText's own scale, and the italic as the
+    /// symbolic trait it is (caller releases).
+    /// </summary>
+    private static IntPtr Traits(FontWeight weight, bool italic)
+    {
+        var traits = CFDictionaryCreateMutable(IntPtr.Zero, 2, KeyCallbacks, ValueCallbacks);
+        var scaled = CoreTextWeights.Scale((int)weight);
+        var weightNumber = CFNumberCreate(IntPtr.Zero, 13 /* kCFNumberDoubleType */, ref scaled);
+        CFDictionarySetValue(traits, FontWeightTrait, weightNumber);
+        CFRelease(weightNumber);
+        if (italic)
+        {
+            var symbolic = 1u << 0; // kCTFontTraitItalic
+            var symbolicNumber = CFNumberCreate(IntPtr.Zero, 3 /* kCFNumberSInt32Type */, ref symbolic);
+            CFDictionarySetValue(traits, FontSymbolicTrait, symbolicNumber);
+            CFRelease(symbolicNumber);
+        }
+        return traits;
     }
 
     /// <summary>
@@ -239,25 +341,18 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     /// substitute rather than nothing when the family is unknown, so the family is read back and
     /// compared: a non-null return proves a font, not the right one.
     /// </summary>
-    private static IntPtr? Named(FontFamily? family, float size)
+    private static IntPtr? Named(FontFamily? family, float size, FontWeight weight, bool italic)
     {
         if (family is not { Name.Length: > 0 }) return null;
-        // A family that ships files is registered before it is matched, and resolves from them WHOLE
-        // or not at all: a file that could not be read or registered is reported and the text falls
-        // back, rather than matching what part of the family did register, or a family of that name
-        // the machine happens to have, which would hide the packaging error on this machine alone.
-        if (family.Files.Count > 0 && !Shipped.Register(family))
-        {
-            FaceResolution.Missing(family.Name);
-            return null;
-        }
 
         var name = CFStringCreateWithCString(IntPtr.Zero, family.Name, Utf8);
         if (name == IntPtr.Zero) return null;
-        var attributes = CFDictionaryCreateMutable(IntPtr.Zero, 1, KeyCallbacks, ValueCallbacks);
+        var attributes = CFDictionaryCreateMutable(IntPtr.Zero, 2, KeyCallbacks, ValueCallbacks);
+        var traits = Traits(weight, italic);
         try
         {
             CFDictionarySetValue(attributes, FontFamilyNameAttribute, name);
+            CFDictionarySetValue(attributes, FontTraitsAttribute, traits);
             var wanted = CTFontDescriptorCreateWithAttributes(attributes);
             if (wanted == IntPtr.Zero) { FaceResolution.Missing(family.Name); return null; }
             try
@@ -284,6 +379,7 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
         }
         finally
         {
+            CFRelease(traits);
             CFRelease(attributes);
             CFRelease(name);
         }

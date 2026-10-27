@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "FormSubmit.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/FormInput.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAoGI;IACA;IACA;IACA;IACA;IAGA;;;;;;;;;;;;QAdI;QACA;QACA;QACA;QACA;;;;;QAaA"
+}

@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "EntryLines.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Spreadsheets/EntryLines.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;;;;;;;;;;QA0BQ;QACA;QACA;QACA;QACA;QACA;;;;;QAKA;QACA;QACA;QAEA;QAGA,kBAAa;QACb;YAEI,4EACI;;QAER;YAEI;YACA,uBAAsB;YACtB;YAAA;YAGA;;QAQJ;QAAA;YAII;YACA;YACA,sCACI;;QAER;;;IAGJ;QACI"
+}

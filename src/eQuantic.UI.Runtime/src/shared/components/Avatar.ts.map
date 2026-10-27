@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "Avatar.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/Avatar.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAiCI;IAGA;IAEA;IAGA;IAIA;;;;;;;;;;gBAzBkC;;;;;;;;;IAAA;;;;IAAA;;;;;;;;;;;QAO9B;QACA;QACA;;;;;QAoBA;QACA;QAGA;QAEA;QAAA;YAEI;YAIA;;QAGJ;QACA;QACA;QAGA;QACA;QAOA;QAMA;QAEA;QAQA;;;IAGJ;QAEI;QACA;QACA;QAUA;QACA;QACA;QACA"
+}

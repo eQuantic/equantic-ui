@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "MermaidArrowhead.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/MermaidModel.cs"
+    ],
+    "names" : [],
+    "mappings" : ";IAmHA;QAEI;QACA;QACA;;;IAFA;IACA;IACA;;IAJJ"
+}

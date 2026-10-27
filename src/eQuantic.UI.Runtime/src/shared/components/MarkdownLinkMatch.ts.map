@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "MarkdownLinkMatch.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/MarkdownParser.cs"
+    ],
+    "names" : [],
+    "mappings" : ";IAGA;QAEI;QACA;QACA;;;IAFA;IACA;IACA;;IAJJ"
+}

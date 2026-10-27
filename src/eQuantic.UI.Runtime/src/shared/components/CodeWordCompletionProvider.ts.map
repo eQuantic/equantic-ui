@@ -1,0 +1,11 @@
+{
+    "version" : 3,
+    "file" : "CodeWordCompletionProvider.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Intelligence/CodeWordCompletionProvider.cs",
+        "eQuantic.UI.Code/Intelligence/ICodeCompletionProvider.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAcA;;IAGuB;;IAEnB;QAGI;QACA;QACA;QAEA;YAEI;YACA;YACA,8CAA8C;YAC9C,gBACI;YACJ,4DACI;;QAER;;;IAcJ;QAEI;QACA;QAGA;QACA;YAEI,0DAA0D;;QAE9D;QACA;YAEI;gBAEI;gBACA;;YAEJ;YACA,oDAAoD;YACpD,kCAAkC;YAClC,0EAAyE;YACzE,qCAA+B;YAC/B;YACA,wCAAoB;;QAExB;;;IC9DJ;QAAyC;;;IAgBzC;QACI;;;IDlBR"
+}

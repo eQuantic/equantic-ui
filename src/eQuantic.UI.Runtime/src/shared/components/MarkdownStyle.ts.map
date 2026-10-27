@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "MarkdownStyle.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/Markdown.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAWA;QAEI;QACA;QACA;QACA;QAGA;QAGA;QAIA;QAGA;;;IAhBA;IACA;IACA;IACA;IAGA;IAGA;IAIA;IAGA;;IAlBJ"
+}

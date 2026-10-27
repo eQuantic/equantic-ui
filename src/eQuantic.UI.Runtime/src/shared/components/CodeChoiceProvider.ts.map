@@ -1,0 +1,11 @@
+{
+    "version" : 3,
+    "file" : "CodeChoiceProvider.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Code/Intelligence/CodeChoiceProvider.cs",
+        "eQuantic.UI.Code/Intelligence/ICodeCompletionProvider.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAMA;QAEwC;QAIhC;QACA;YACI;YAAA;;QACJ;;;IAPgC;;IAUpC;QACsE;;;ICJtE;QAAyC;;;IAgBzC;QACI;;;ID1BR"
+}

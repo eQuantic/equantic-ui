@@ -1,6 +1,11 @@
 namespace eQuantic.UI.Primitives;
 
-/// <summary>Bundled-family weights (Hanken Grotesk 400–800, spec §02).</summary>
+/// <summary>
+/// The nine weights OpenType defines, each one's value its weight class: what CSS, CoreText, DirectWrite
+/// and Android are all asked for. The first five are the weights of the family the SDK first bundled
+/// (Hanken Grotesk 400–800, spec §02); the other four are appended after them (#1082), since a member's
+/// value is baked into every assembly that names it and none of them may move.
+/// </summary>
 public enum FontWeight
 {
     Regular = 400,
@@ -8,6 +13,10 @@ public enum FontWeight
     SemiBold = 600,
     Bold = 700,
     ExtraBold = 800,
+    Thin = 100,
+    ExtraLight = 200,
+    Light = 300,
+    Black = 900,
 }
 
 /// <summary>The seven type roles of the scale (spec §02).</summary>

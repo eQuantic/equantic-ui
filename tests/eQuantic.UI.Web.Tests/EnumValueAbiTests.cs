@@ -19,9 +19,12 @@ namespace eQuantic.UI.Web.Tests;
 ///
 /// <para>
 /// THE RULE IS APPEND-ONLY, not "do not touch": a new member at the END takes the next free number
-/// and breaks nobody, which is why this pin lets the baseline GROW and refuses only a value that
-/// MOVED or a member that VANISHED. Explicit values are equally fine — the pin reads what the
-/// compiler assigned either way.
+/// and breaks nobody, which is why this pin lets the baseline GROW and refuses a value that MOVED or
+/// a member that VANISHED. Explicit values are equally fine — the pin reads what the compiler
+/// assigned either way. An appended member is RECORDED in the same pull request, and a member with
+/// no line fails until it is: one never pinned is renumbered by the next insertion above it with
+/// nothing failing, and 22 members of <c>CodeCommand</c>, <c>SheetEditMode</c> and
+/// <c>SheetEntryView</c> had been appended that way when it was measured (#1082).
 /// </para>
 ///
 /// <para>
@@ -89,6 +92,24 @@ public class EnumValueAbiTests
             + "what a released app already emits; one that VANISHED leaves that app emitting a number "
             + "nothing answers. Append the new member at the END instead, then refresh with "
             + "EQ_UPDATE_ENUM_VALUES=1");
+    }
+
+    /// <summary>
+    /// Every member is pinned: a member the baseline has no line for is one whose number nothing
+    /// holds, so the next member inserted above it renumbers it in silence. Appended, it is recorded
+    /// with EQ_UPDATE_ENUM_VALUES=1 in the same pull request; moved, the test above names its old line.
+    /// </summary>
+    [Fact]
+    public void EveryEnumMemberIsPinned()
+    {
+        if (Environment.GetEnvironmentVariable("EQ_UPDATE_ENUM_VALUES") == "1") return;
+
+        var recorded = File.ReadAllLines(BaselinePath()).Where(line => line.Length > 0).ToHashSet(StringComparer.Ordinal);
+        var unpinned = Current().Where(line => !recorded.Contains(line)).ToArray();
+
+        string.Join("\n", unpinned).Should().BeEmpty(
+            "no line holds these members' numbers, so a member inserted above one of them would renumber "
+            + "it with nothing failing. Check each was APPENDED, then record it with EQ_UPDATE_ENUM_VALUES=1");
     }
 
     /// <summary>

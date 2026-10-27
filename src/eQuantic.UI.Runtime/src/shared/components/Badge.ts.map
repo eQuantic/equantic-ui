@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "Badge.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/Badge.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAoBI;IACA;IACA;IAGA;IAGA;IAIA;;;;;;;;;;;;;QAjBI;QACA;QACA;;;;;QAkCA;QACA;QACA;QAEA;YAEI;;QAWJ;QACA;QAKA;QAEA;;;IA1CJ;QAAoE;;;IAOpE;QAEI;QACA;QACA;QACA"
+}

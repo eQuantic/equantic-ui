@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "Breadcrumb.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/Breadcrumb.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAwBI;;;;;QAHI;;;;;QAOA;QACA;QAEA;YAEI;YACA;YAEA,WAAW;YAEX;YAGA;YAAA;;QAKJ"
+}

@@ -11,6 +11,7 @@ import type { ColorValue, SizeKindValue, TypeStyleValue } from './nodes';
 import type { DataPalette } from './data-palette';
 import type { SheetTheme } from './sheet-theme';
 import { hashesByValue } from '../utils/hash';
+import { FontWeightNumbers, type FontWeightValue } from './enums.generated';
 
 /**
  * Companion of the C# `Color` struct — the statics transpiled code references. The surface must
@@ -650,18 +651,12 @@ export function codeTokenColor(theme: AppTheme, kind: string): ColorToken {
  */
 export function cssFontWeight(weight: string | number | undefined): number {
   if (typeof weight === 'number') return weight;
-  switch (weight) {
-    case 'medium':
-      return 500;
-    case 'semiBold':
-      return 600;
-    case 'bold':
-      return 700;
-    case 'extraBold':
-      return 800;
-    default:
-      return 400;
-  }
+  // The number of each name is generated from the C# enum (FontWeightNumbers): a switch written here
+  // by hand drew the four weights appended to it at 400 (#1082). No weight, or a name that is none, is
+  // the regular weight.
+  return weight !== undefined && Object.prototype.hasOwnProperty.call(FontWeightNumbers, weight)
+    ? FontWeightNumbers[weight as FontWeightValue]
+    : FontWeightNumbers.regular;
 }
 
 /**

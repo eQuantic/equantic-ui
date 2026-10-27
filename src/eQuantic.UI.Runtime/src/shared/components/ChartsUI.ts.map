@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "ChartsUI.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Charts/ChartsUI.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAmBI;QAII;;;IAQJ;QACI;;;IAEJ;QACI;;;IAEJ;QAEI"
+}

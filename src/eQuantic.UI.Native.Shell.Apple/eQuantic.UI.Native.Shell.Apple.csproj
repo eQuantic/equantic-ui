@@ -13,4 +13,8 @@
     <ProjectReference Include="../eQuantic.UI.Native.Framework/eQuantic.UI.Native.Framework.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="eQuantic.UI.Native.Engine.Tests" />
+  </ItemGroup>
+
 </Project>

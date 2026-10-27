@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "Checkbox.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/Checkbox.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IAqBI;IACA;IACA;IACA;IAGA;IAQA;;;;;;;;;;;QAnBI;QACA;QACA;;;;;QAqBA;QACA;QAEA;QACA;QACA;QAGA;QAEA;QAUA;QACA;QACA;QAAA,kCACI;QAKJ"
+}
