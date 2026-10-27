@@ -141,7 +141,8 @@ public sealed class PhotonHost
     }
 
     /// <summary>When the next frame is due even though nothing is dirty — the caret's next blink
-    /// transition, in the same clock <see cref="RenderFrame"/> is fed. Null = nothing scheduled.</summary>
+    /// transition, or the end of a live region's quiet window, in the same clock <see cref="RenderFrame"/>
+    /// is fed. Null = nothing scheduled.</summary>
     private float? _nextFrameDueMs;
 
     /// <summary>
@@ -404,7 +405,7 @@ public sealed class PhotonHost
         // from a build is waiting in the owner, and a write of `false` here would leave it there
         // until something else asked for a frame.
         NeedsRender = _lastFrame.HasActiveMotion || gliding || PhotonFrameTicker.Shared.HasSubscribers
-            || _owner.HasDirty || _announcer.Pending;
+            || _owner.HasDirty;
 
         // A code surface whose caret was MOVED since the last frame is brought into view — by a key,
         // a command, a find stepping to a match. After the frame, because that is when the caret's
@@ -425,9 +426,15 @@ public sealed class PhotonHost
         // due at the next blink transition, and the shells' idle ticks ask IsFrameDue alongside
         // NeedsRender. While a drag draws a selection the caret does not blink at all (it is forced
         // solid), and the pointer is what drives frames — nothing to schedule.
-        _nextFrameDueMs = _textAt is not null && !NeedsRender && !_dragSelecting && !_codeDragging
+        float? caretDue = _textAt is not null && !NeedsRender && !_dragSelecting && !_codeDragging
             ? _caretPhaseMs + (MathF.Floor((_lastTimeMs - _caretPhaseMs) / CaretBlinkMs) + 1) * CaretBlinkMs
             : null;
+        // A live region that owes its words is due when its quiet window ends (#1081): one frame then, as
+        // the caret's blink is, rather than every tick of the display until it.
+        var announcementDue = NeedsRender ? null : _announcer.DueAtMs;
+        _nextFrameDueMs = caretDue is { } caret && announcementDue is { } owed
+            ? MathF.Min(caret, owed)
+            : caretDue ?? announcementDue;
         return _lastFrame;
     }
 

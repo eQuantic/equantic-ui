@@ -105,7 +105,9 @@ internal sealed partial class WebLoweringVisitor
         if (cell.Rows > 1) wrapper.AriaRowSpan = cell.Rows;
         if (cell.Columns > 1) wrapper.AriaColSpan = cell.Columns;
         if (!table.Grid) return;
+        // A cell says whether it is selected, and a header only when it is, as Photon's does.
         if (cell.Role == TableCellRole.Cell) wrapper.AriaSelected = cell.Selected;
+        else if (cell.Selected) wrapper.AriaSelected = true;
         if (cell.Current) wrapper.AriaCurrent = "true";
     }
 

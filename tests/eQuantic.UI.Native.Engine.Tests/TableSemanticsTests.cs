@@ -81,6 +81,35 @@ public class TableSemanticsTests
     }
 
     [Fact]
+    public void AGridsSelectedHeaders_ReadAsSelected_AndAHeadingInACellStaysAHeading()
+    {
+        var table = new TableView(new UniformTableSpans(3, 28), new UniformTableSpans(3, 96),
+            (row, column) => row == 1 && column == 1
+                ? new Text("Totals", TypeRole.BodyM) { HeadingLevel = 2 }
+                : new Text($"{row}:{column}", TypeRole.BodyM))
+        {
+            Label = "Ledger",
+            Role = TableRole.Grid,
+            CellRole = (row, column) => row == 0 ? TableCellRole.ColumnHeader
+                : column == 0 ? TableCellRole.RowHeader
+                : TableCellRole.Cell,
+            Selected = (row, column) => column == 2 || row == 2,
+        };
+        var host = new PhotonHost(table, PhotonTheme.Instance, ThemeMode.Light, 900, 600) { SmoothScroll = false };
+        host.RenderFrame(new DisplayListBuilder(), 0);
+        host.RenderFrame(new DisplayListBuilder(), 16);
+
+        At(host, 0, 2).Selected.Should().BeTrue("the selected column's header");
+        At(host, 2, 0).Selected.Should().BeTrue("the selected row's header");
+        At(host, 0, 1).Selected.Should().BeNull("a header that is not selected says nothing of it, as the web's");
+        At(host, 1, 2).Selected.Should().BeTrue();
+        At(host, 1, 1).Selected.Should().BeFalse();
+        At(host, 1, 1).Label.Should().Be("Totals", "the cell is named by the text it holds");
+        host.Semantics().Should().ContainSingle(node => node.HeadingLevel == 2 && node.Label == "Totals",
+            "and a heading in it is still one a reader jumps to");
+    }
+
+    [Fact]
     public void ATable_ReadsAsCells_WithNoSelection()
     {
         var host = Open(TableRole.Table);

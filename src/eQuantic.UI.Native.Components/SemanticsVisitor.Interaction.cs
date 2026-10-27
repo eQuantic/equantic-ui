@@ -218,7 +218,7 @@ internal sealed partial class SemanticsVisitor
     /// One cell of a table or a grid: the header of its column or of its row, a cell or a grid cell, with
     /// its place in the whole grid and, in a grid, whether it is selected and whether it is current. It is
     /// named by the text it holds, which it consumes, as a button is named by its own; anything else inside
-    /// it, a control, still follows it as a stop of its own.
+    /// it, a control or a heading, still follows it as a node of its own.
     /// </summary>
     private void TableCell(TableViewCell cell, LayoutNode laidOut, bool grid)
     {
@@ -234,12 +234,16 @@ internal sealed partial class SemanticsVisitor
             TableCellRole.RowHeader => SemanticRole.RowHeader,
             _ => grid ? SemanticRole.GridCell : SemanticRole.Cell,
         };
+        // In a grid a cell says whether it is selected, and a header only when it is (web twin:
+        // describeTableCell), so a reader hears a selected column's header as selected.
         _nodes.Add(new(role, IdOf(laidOut), laidOut.Bounds, name, null, false,
             Current: grid && cell.Current,
-            Selected: grid && role == SemanticRole.GridCell ? cell.Selected : null,
+            Selected: !grid ? null : role == SemanticRole.GridCell ? cell.Selected : cell.Selected ? true : null,
             Place: new TableRange(cell.Row, cell.Column, cell.Rows, cell.Columns)));
+        // The plain text is the cell's name; a heading inside it stays a heading too, as the web's does, so
+        // a reader still jumps to it.
         foreach (var each in inside)
-            if (each.Role != SemanticRole.StaticText) _nodes.Add(each);
+            if (each.Role != SemanticRole.StaticText || each.HeadingLevel > 0) _nodes.Add(each);
     }
 
     /// <summary>

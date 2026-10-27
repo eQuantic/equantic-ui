@@ -160,8 +160,8 @@ public class LiveRegionAnnouncementTests
     /// <summary>
     /// A CHANGE INSIDE THE WINDOW IS OWED, not dropped (#1081). It was recorded as said, so a region that
     /// changed inside the window and then held still never said what it held: the second of two arrows in
-    /// a spreadsheet went unheard. The host keeps asking for frames while one is owed, so the window's end
-    /// is a frame even when nothing else moves.
+    /// a spreadsheet went unheard. The host schedules a frame for the window's end, so that end is a frame
+    /// even when nothing else moves, and the frames before it are not drawn for it.
     /// </summary>
     [Fact]
     public void AChangeInsideTheWindow_IsSaidWhenTheWindowEnds_WithTheTextThen()
@@ -176,12 +176,15 @@ public class LiveRegionAnnouncementTests
         Frame(host, 400).Should().BeEmpty("inside the window");
         root.Text = "D3, 3";
         Frame(host, 700).Should().BeEmpty("still inside it");
-        host.NeedsRender.Should().BeTrue("an announcement is owed, and nothing else would ask for its frame");
+        host.NeedsRender.Should().BeFalse("an owed announcement draws no frame before the window ends");
+        host.IsFrameDue(1099).Should().BeFalse();
+        host.IsFrameDue(1100).Should().BeTrue("the window opened at 100, and its end is the frame it is said in");
         Frame(host, 1000).Should().BeEmpty("the window opened at 100 and lasts a second");
 
         Frame(host, 1100).Single().Text.Should().Be("D3, 3", "what the region holds when the window ends");
         Frame(host, 1200).Should().BeEmpty("once");
         host.NeedsRender.Should().BeFalse("nothing is owed any more");
+        host.IsFrameDue(5000).Should().BeFalse("and no frame is scheduled for it");
     }
 
     /// <summary>A region back to what it last said owes nothing: the reader already heard it.</summary>
@@ -199,6 +202,7 @@ public class LiveRegionAnnouncementTests
         root.Text = "B3, 1";
         Frame(host, 700).Should().BeEmpty();
         host.NeedsRender.Should().BeFalse("back to what was said");
+        host.IsFrameDue(5000).Should().BeFalse("nothing is owed, so no frame is scheduled");
         Frame(host, 1200).Should().BeEmpty();
     }
 

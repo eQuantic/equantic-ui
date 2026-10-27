@@ -552,6 +552,21 @@ describe('A table and a grid on the web (#1081)', () => {
     expect([...walk(grid)].filter((node) => node.attributes?.['aria-current'])).toHaveLength(1);
   });
 
+  it('says a selected header is selected in a grid, and nothing of one that is not, as Photon does', () => {
+    const scroll = new TableScroll();
+    const rows = new UniformTableSpans(2, 28);
+    const columns = new UniformTableSpans(3, 96);
+    scroll.arrange(new Size(900, 600), columns.total, rows.total, 96, 28, true);
+    const node = new TableViewport(rows, columns, scroll, { label: 'Ledger', role: 'grid' });
+    node.add(new TableViewCell(0, 1, new Text('A'), false, { role: 'columnHeader', selected: true }));
+    node.add(new TableViewCell(0, 2, new Text('B'), false, { role: 'columnHeader' }));
+    node.add(new TableViewCell(1, 0, new Text('1'), false, { role: 'rowHeader', selected: true }));
+    const grid = lowerVisualNode(node as never, context);
+    expect(cellAt(grid, 0, 1).attributes['aria-selected']).toBe('true');
+    expect(cellAt(grid, 0, 2).attributes['aria-selected']).toBeUndefined();
+    expect(cellAt(grid, 1, 0).attributes['aria-selected']).toBe('true');
+  });
+
   it('reads a table as rows of cells, with no selection', () => {
     const table = lowered('table');
     expect(table.attributes['role']).toBe('table');

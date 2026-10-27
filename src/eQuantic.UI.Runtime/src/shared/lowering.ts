@@ -2001,7 +2001,9 @@ function describeTableCell(wrapper: HtmlNode, cell: TableViewCellNode, semantics
   if (cell.rows > 1) wrapper.attributes['aria-rowspan'] = String(cell.rows);
   if (cell.columns > 1) wrapper.attributes['aria-colspan'] = String(cell.columns);
   if (!semantics.grid) return;
+  // A cell says whether it is selected, and a header only when it is, as Photon's does.
   if (role === 'cell') wrapper.attributes['aria-selected'] = cell.selected ? 'true' : 'false';
+  else if (cell.selected) wrapper.attributes['aria-selected'] = 'true';
   if (cell.current) wrapper.attributes['aria-current'] = 'true';
 }
 

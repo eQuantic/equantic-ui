@@ -74,6 +74,27 @@ public class TableSemanticsWebTests
         Cell(root, 2, 1).Attributes["role"].Should().Be("cell");
     }
 
+    [Fact]
+    public void AGridsSelectedHeader_SaysItIsSelected_AndOneThatIsNotSaysNothing()
+    {
+        var rows = new UniformTableSpans(2, 28);
+        var columns = new UniformTableSpans(3, 96);
+        var scroll = new TableScroll();
+        scroll.Arrange(new Size(900, 600), columns.Total, rows.Total, 96, 28, reduceMotion: true);
+        var grid = TableViewport(rows, columns, scroll, label: "Ledger", role: TableRole.Grid, children:
+        [
+            TableViewCell(0, 1, new Text("A", TypeRole.BodyM), role: TableCellRole.ColumnHeader, selected: true),
+            TableViewCell(0, 2, new Text("B", TypeRole.BodyM), role: TableCellRole.ColumnHeader),
+            TableViewCell(1, 0, new Text("1", TypeRole.BodyM), role: TableCellRole.RowHeader, selected: true),
+        ]);
+
+        var root = WebRealizer.Lower(grid, PhotonTheme.Instance).Render();
+
+        Cell(root, 0, 1).Attributes.Should().Contain("aria-selected", "true");
+        Cell(root, 0, 2).Attributes.Should().NotContainKey("aria-selected");
+        Cell(root, 1, 0).Attributes.Should().Contain("aria-selected", "true");
+    }
+
     /// <summary>The rows a table's rowgroup holds, first to last.</summary>
     private static List<HtmlNode> Rows(HtmlNode root) =>
         Walk(root).Where(node => node.Attributes.TryGetValue("role", out var role) && role == "row").ToList();

@@ -37,9 +37,10 @@ namespace eQuantic.UI.Native.Components;
 /// window opens is its CURRENT text rather than the one that was pending: a reader saying "41%"
 /// when the bar reads 58% is worse than saying nothing. A change inside the window is OWED, not
 /// said: until #1081 it was recorded as said and dropped, so the second of two arrows a second apart
-/// in a spreadsheet was never heard. While one is owed the host keeps asking for frames
-/// (<see cref="Pending"/>), so the window's end is a frame even when nothing else moves; and a
-/// region back to what it last said owes nothing.
+/// in a spreadsheet was never heard. While one is owed the host schedules a frame for the window's end
+/// (<see cref="DueAtMs"/>), as a caret schedules its blink, so that end is a frame even when nothing else
+/// moves and the frames before it are not drawn for it; and a region back to what it last said owes
+/// nothing.
 /// </para>
 ///
 /// <para>
@@ -75,7 +76,7 @@ internal sealed class LiveRegionAnnouncer
     public void Observe(RealizeResult frame, float timeMs)
     {
         var marks = frame.LiveRegions;
-        Pending = false;
+        DueAtMs = null;
         _current.Clear();
         for (var i = 0; i < marks.Count; i++)
         {
@@ -107,7 +108,8 @@ internal sealed class LiveRegionAnnouncer
             if (region.SpokeAtMs is { } last && timeMs - last < QuietMs)
             {
                 region.Pending = true;                    // owed when the window ends
-                Pending = true;
+                var due = last + QuietMs;
+                if (DueAtMs is not { } earliest || due < earliest) DueAtMs = due;
                 continue;
             }
             region.Pending = false;
@@ -129,9 +131,9 @@ internal sealed class LiveRegionAnnouncer
     /// </summary>
     public string? CurrentText(int id) => _current.TryGetValue(id, out var text) ? text : null;
 
-    /// <summary>Whether a region of the last frame observed changed inside its quiet window and owes its
-    /// text when the window ends: the host keeps asking for frames while it does.</summary>
-    public bool Pending { get; private set; }
+    /// <summary>When the first quiet window ends of the regions of the last frame observed that changed
+    /// inside theirs and owe their text, or null when none does: the host schedules a frame for it.</summary>
+    public float? DueAtMs { get; private set; }
 
     /// <summary>
     /// How many announcements may wait to be drained. A BOUND rather than a growing list, because
