@@ -78,10 +78,12 @@ A text whose role and call site name no family SHALL be set in the theme's `Text
 set in any of them SHALL be drawn at that weight: on the web, by the server and by the runtime alike, and on
 Photon, by each shell's text engine. A family that ships files SHALL be drawn from the file that sets the
 weight and the slant, or, when none does, from the file a browser would choose (CSS Fonts §5.2), on the web,
-on Apple and on Android, and on Apple a variable file SHALL be set at the weight on its `wght` axis. A static
-face's weight SHALL be the one position its `STAT` table gives it on `wght` when it gives one,
-and its weight class otherwise. On Android below API 28, which cannot be asked for a weight, the shell SHALL
-draw a weight below 600 as regular and the others as bold.
+on Apple, on Android and on Windows, and on Apple a variable file SHALL be set at the weight on its `wght`
+axis. A static face's weight SHALL be the one position its `STAT` table gives it on `wght` when it gives one,
+and its weight class otherwise. On Windows, whose text engine is asked for a weight over the file chosen, a
+static file asked for the weight it sets, or for a heavier one when the file sets 600 or more, SHALL be drawn
+as the file draws, whatever weight the file declares itself. On Android below API 28, which cannot be asked
+for a weight, the shell SHALL draw a weight below 600 as regular and the others as bold.
 
 #### Scenario: A light weight on the web
 
@@ -90,7 +92,8 @@ draw a weight below 600 as regular and the others as bold.
 
 #### Scenario: A family that ships a file per weight, on Photon
 
-- **WHEN** Photon on Apple measures text set in `Light` in a family that ships files at 300, 400 and 700
+- **WHEN** Photon on Apple or on Windows measures text set in `Light` in a family that ships files at 300,
+  400 and 700
 - **THEN** it measures as the 300 file does
 
 #### Scenario: The system face, on Photon
@@ -102,8 +105,15 @@ draw a weight below 600 as regular and the others as bold.
 
 - **WHEN** an app declares Inter's `Thin` and `ExtraLight` from Google Fonts, whose files both carry the
   weight class 250 and give 100 and 200 in their `STAT`
-- **THEN** the catalog carries them at 100 and 200, and the web, Apple and Android draw each weight from its
-  own file
+- **THEN** the catalog carries them at 100 and 200, and the web, Apple, Android and Windows draw each weight
+  from its own file
+
+#### Scenario: A file weighed heavier than it declares, on Windows
+
+- **WHEN** a family's one file declares the weight class 400 and the family gives it 700, and Photon on
+  Windows draws text in it in `Bold`
+- **THEN** it draws as the same file does in `Regular` in a family that gives it 400, with no bold laid over
+  it, and so it does in `Black`
 
 #### Scenario: A variable file, on Apple
 
@@ -114,7 +124,7 @@ draw a weight below 600 as regular and the others as bold.
 #### Scenario: A weight the family does not ship
 
 - **WHEN** text is set in `SemiBold` in a family that ships files at 300, 400 and 700
-- **THEN** the web, Apple and Android draw it from the 700 file, as a browser chooses
+- **THEN** the web, Apple, Android and Windows draw it from the 700 file, as a browser chooses
 
 #### Scenario: A provider's weights
 

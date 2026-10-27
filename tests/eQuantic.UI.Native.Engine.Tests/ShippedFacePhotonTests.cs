@@ -49,6 +49,19 @@ public class ShippedFacePhotonTests
         FaceResolution.Unresolved.Should().BeEmpty();
     }
 
+    /// <summary>A family is set in its file whatever the theme calls it, the name the file gives itself
+    /// included: the shell opens the file. The Windows shell is held to the same (#1099).</summary>
+    [MacFact]
+    public void AShippedFamily_IsSetInItsFile_WhateverNameTheThemeGivesIt()
+    {
+        var brand = new FontFamily("Brand Sans", new FontFile(Assembly, "eQuantic.UI.Fonts/TestFace-Regular.ttf", 400, 400));
+
+        var measured = new CoreTextService().Measure("Handgloves", Body with { Family = brand }, 1f, float.PositiveInfinity, 1);
+
+        measured.Width.Should().BeApproximately(10 * 17, 0.5f, "the file's name table calls the family eQuantic Test Face");
+        FaceResolution.Unresolved.Should().BeEmpty();
+    }
+
     /// <summary>Drawn in it too, not only measured: ten boxes, each nine tenths of an em, are ink
     /// no installed face puts on "Handgloves".</summary>
     [MacFact]

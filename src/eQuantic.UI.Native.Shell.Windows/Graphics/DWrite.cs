@@ -180,15 +180,48 @@ internal static unsafe partial class DWrite
     public static int FindFamilyName(void* collection, char* familyName, uint* index, int* exists) =>
         ((delegate* unmanaged<void*, char*, uint*, int*, int>)Com.Method(collection, 5))(collection, familyName, index, exists);
 
+    // ---- IDWriteFontList (GetFontCollection 3), which a family derives from -------------------
+
+    public static uint GetFontCount(void* fontList) =>
+        ((delegate* unmanaged<void*, uint>)Com.Method(fontList, 4))(fontList);
+
+    public static int GetFont(void* fontList, uint index, void** font) =>
+        ((delegate* unmanaged<void*, uint, void**, int>)Com.Method(fontList, 5))(fontList, index, font);
+
     // ---- IDWriteFontFamily --------------------------------------------------------------------
+
+    public static int GetFamilyNames(void* family, void** names) =>
+        ((delegate* unmanaged<void*, void**, int>)Com.Method(family, 6))(family, names);
 
     public static int GetFirstMatchingFont(void* family, int weight, uint stretch, uint style, void** font) =>
         ((delegate* unmanaged<void*, int, uint, uint, void**, int>)Com.Method(family, 7))(family, weight, stretch, style, font);
 
-    // ---- IDWriteFont --------------------------------------------------------------------------
+    // ---- IDWriteFont (GetFontFamily 3) --------------------------------------------------------
+
+    /// <summary>The weight DirectWrite reads in the face's own file.</summary>
+    public static int GetWeight(void* font) =>
+        ((delegate* unmanaged<void*, int>)Com.Method(font, 4))(font);
+
+    /// <summary>DWRITE_FONT_SIMULATIONS: what DirectWrite lays over the face, the bold it adds and the
+    /// oblique, or <see cref="SimulationsNone"/> for the face as its file draws it.</summary>
+    public static uint GetSimulations(void* font) =>
+        ((delegate* unmanaged<void*, uint>)Com.Method(font, 10))(font);
+
+    public const uint SimulationsNone = 0;
 
     public static void GetMetrics(void* font, FontMetrics* metrics) =>
         ((delegate* unmanaged<void*, FontMetrics*, void>)Com.Method(font, 11))(font, metrics);
+
+    // ---- IDWriteLocalizedStrings (GetCount 3, FindLocaleName 4, its locale names 5–6) ---------
+
+    /// <summary>The length of the string at <paramref name="index"/>, in code units, without its terminator.</summary>
+    public static int GetStringLength(void* strings, uint index, uint* length) =>
+        ((delegate* unmanaged<void*, uint, uint*, int>)Com.Method(strings, 7))(strings, index, length);
+
+    /// <summary>The string at <paramref name="index"/> into a buffer of <paramref name="size"/> code units,
+    /// which holds its terminator too.</summary>
+    public static int GetString(void* strings, uint index, char* buffer, uint size) =>
+        ((delegate* unmanaged<void*, uint, char*, uint, int>)Com.Method(strings, 8))(strings, index, buffer, size);
 
     // ---- IDWriteTextFormat --------------------------------------------------------------------
 

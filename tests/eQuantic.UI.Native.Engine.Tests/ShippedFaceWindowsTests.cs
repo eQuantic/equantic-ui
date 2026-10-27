@@ -38,6 +38,23 @@ public class ShippedFaceWindowsTests
         FaceResolution.Unresolved.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// A family is set in its file under the name DirectWrite reads there, whatever the theme calls the
+    /// family, as every other target opens the file itself (#1099): asked for by the theme's name, a file
+    /// whose name table said another one was reported and fell back.
+    /// </summary>
+    [WindowsFact]
+    public void AShippedFamily_IsSetInItsFile_WhateverNameTheThemeGivesIt()
+    {
+        using var text = new DirectWriteTextService();
+        var brand = new FontFamily("Brand Sans", new FontFile(Assembly, "eQuantic.UI.Fonts/TestFace-Regular.ttf", 400, 400));
+
+        var measured = text.Measure("Handgloves", Body with { Family = brand }, 1f, float.PositiveInfinity, 1);
+
+        measured.Width.Should().BeApproximately(10 * 17, 0.5f, "the file's name table calls the family eQuantic Test Face");
+        FaceResolution.Unresolved.Should().BeEmpty();
+    }
+
     [WindowsFact]
     public void AFaceTheAppShips_IsDrawnInThatFace_ItsItalicToo()
     {

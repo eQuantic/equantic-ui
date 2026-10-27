@@ -40,18 +40,29 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
     private readonly Dictionary<FormatKey, Format> _formats = new();
     private bool _disposed;
 
-    // The faces the app SHIPS (#1055): each file handed to DirectWrite from memory, all of them made
-    // into a collection of their own, and text in a family that ships files formatted against it. The
-    // system's collection keeps every other family. Built when the first such family is asked for;
-    // where the system predates in-memory font files (Windows 10 before 1703), a shipped family is
-    // left to fall back and is reported, as any family the machine does not have is.
+    // The faces the app SHIPS (#1055): each file handed to DirectWrite from memory and made into a
+    // collection of its own, and text in a family that ships files set from the collection of the ONE
+    // file ShippedFaces.FileFor chooses for its weight and slant, as on every other target (#1099). A
+    // collection of the whole family left that choice to DirectWrite, by the names and the weights it
+    // reads in the files, where the family's catalog is what decides on every other target: a family
+    // the theme named otherwise than its file fell back, and a file the catalog weighs bold but that
+    // declares 400 drew with a bold DirectWrite simulates. The system's collection keeps every other
+    // family. Built when the first such family is asked for; where the system predates in-memory font
+    // files (Windows 10 before 1703), a shipped family is left to fall back and is reported, as any
+    // family the machine does not have is.
     private readonly ShippedFaces _shipped;
     private void* _factory5;              // IDWriteFactory5
     private void* _memoryLoader;          // IDWriteInMemoryFontFileLoader, registered with the factory
-    private readonly List<nint> _shippedFiles = new();   // IDWriteFontFile
-    private void* _shippedCollection;     // IDWriteFontCollection1 over every shipped file
+    private readonly Dictionary<FontFile, ShippedFace> _shippedFaces = new();
+
+    /// <summary>The weight from which a face is bold, which a browser lays no synthetic bold over.</summary>
+    private const int BoldWeight = 600;
 
     private readonly record struct FormatKey(float Size, float LineHeight, FontWeight Weight, bool Mono, bool Italic, FontFamily? Family);
+
+    /// <summary>One shipped file as DirectWrite holds it: a collection of that file alone (an
+    /// IDWriteFontCollection1), and the family and the weight DirectWrite reads in it.</summary>
+    private readonly record struct ShippedFace(nint Collection, string Family, int Weight);
 
     /// <summary>A text format and the metrics of the face it resolved to, in dp at its size.</summary>
     private sealed unsafe class Format
@@ -112,7 +123,7 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
         return exists != 0;
     }
 
-    /// <summary>One shipped file, handed to DirectWrite from memory, and the collection rebuilt with it.</summary>
+    /// <summary>One shipped file, handed to DirectWrite from memory and made into a collection of its own.</summary>
     private bool RegisterShipped(FontFile file, byte[] bytes)
     {
         if (_memoryLoader is null)
@@ -129,28 +140,24 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
             _memoryLoader = loader;
         }
 
-        void* fontFile;
-        fixed (byte* data = bytes)
-        {
-            if (DWrite.CreateInMemoryFontFileReference(_memoryLoader, _factory, data, (uint)bytes.Length, null, &fontFile) < 0)
-                return false;
-        }
-        _shippedFiles.Add((nint)fontFile);
-
+        void* fontFile = null;
         void* builder = null;
         void* fontSet = null;
         void* collection = null;
         try
         {
+            fixed (byte* data = bytes)
+            {
+                if (DWrite.CreateInMemoryFontFileReference(_memoryLoader, _factory, data, (uint)bytes.Length, null, &fontFile) < 0)
+                    return false;
+            }
             if (DWrite.CreateFontSetBuilder1(_factory5, &builder) < 0) return false;
-            foreach (var shipped in _shippedFiles)
-                if (DWrite.AddFontFile(builder, (void*)shipped) < 0) return false;
+            if (DWrite.AddFontFile(builder, fontFile) < 0) return false;
             if (DWrite.CreateFontSet(builder, &fontSet) < 0) return false;
             if (DWrite.CreateFontCollectionFromFontSet(_factory5, fontSet, &collection) < 0) return false;
-            // A format made before this file joined holds the collection it was made against, which
-            // still has every file that format's family needs.
-            Com.Release(ref _shippedCollection);
-            _shippedCollection = collection;
+            if (FaceIn(collection) is not { } face) return false;
+            // The collection holds the set, and the set the file, so neither is kept apart from it.
+            _shippedFaces[file] = new ShippedFace((nint)collection, face.Family, face.Weight);
             collection = null;
             return true;
         }
@@ -159,6 +166,53 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
             Com.Release(ref collection);
             Com.Release(ref fontSet);
             Com.Release(ref builder);
+            Com.Release(ref fontFile);
+        }
+    }
+
+    /// <summary>
+    /// The face a collection of one file holds: the name DirectWrite reads in the file for its family,
+    /// the one text is set in from that collection whatever the theme calls the family, and the weight
+    /// it reads there. The face is the file's own, not one of the bold or oblique faces DirectWrite may
+    /// lay over it in the family's list. Null when the file holds no face DirectWrite can name.
+    /// </summary>
+    private static (string Family, int Weight)? FaceIn(void* collection)
+    {
+        void* family = null;
+        void* names = null;
+        try
+        {
+            if (DWrite.GetFontFamily(collection, 0, &family) < 0) return null;
+            if (DWrite.GetFamilyNames(family, &names) < 0) return null;
+            uint length;
+            if (DWrite.GetStringLength(names, 0, &length) < 0 || length == 0) return null;
+            var name = new char[length + 1];
+            fixed (char* buffer = name)
+            {
+                if (DWrite.GetString(names, 0, buffer, length + 1) < 0) return null;
+            }
+
+            var count = DWrite.GetFontCount(family);
+            for (uint index = 0; index < count; index++)
+            {
+                void* font = null;
+                try
+                {
+                    if (DWrite.GetFont(family, index, &font) < 0) return null;
+                    if (DWrite.GetSimulations(font) == DWrite.SimulationsNone)
+                        return (new string(name, 0, (int)length), DWrite.GetWeight(font));
+                }
+                finally
+                {
+                    Com.Release(ref font);
+                }
+            }
+            return null;
+        }
+        finally
+        {
+            Com.Release(ref names);
+            Com.Release(ref family);
         }
     }
 
@@ -174,17 +228,30 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
         // rather than to whatever DirectWrite chooses.
         var family = mono ? _monoFamily : _textFamily;
         var collection = _collection;
+        var asked = (int)weight;
         if (named is { Name.Length: > 0 })
         {
-            // A family that ships files is set from the collection they were registered in, WHOLE or
-            // not at all: one whose files did not all register is reported and falls back, never to
-            // an installed family of the same name, which would hide the packaging error here alone.
+            // A family that ships files is set from the collection of the ONE file ShippedFaces.FileFor
+            // chooses, under the name DirectWrite reads in that file, and WHOLE or not at all: one whose
+            // files did not all register is reported and falls back, never to an installed family of
+            // the same name, which would hide the packaging error here alone.
             if (named.Files.Count > 0)
             {
-                if (_shipped.Register(named) && HasFamily(_shippedCollection, named.Name))
+                if (_shipped.Register(named) && ShippedFaces.FileFor(named, weight, italic) is { } file
+                    && _shippedFaces.TryGetValue(file, out var face))
                 {
-                    family = named.Name;
-                    collection = _shippedCollection;
+                    collection = (void*)face.Collection;
+                    // The theme's name when the file carries it, so a variable file whose instances
+                    // DirectWrite groups into several families is set in the one the theme named; the
+                    // name DirectWrite reads in the file otherwise.
+                    family = HasFamily(collection, named.Name) ? named.Name : face.Family;
+                    // The file's weight is the one the catalog gives it, and a static file is asked for
+                    // at the weight DirectWrite reads in it, so no bold is laid over a file the catalog
+                    // weighs heavier than the file says: when it holds the weight asked, and when it is
+                    // bold already, which a browser never emboldens. A heavier weight than a lighter
+                    // file sets is asked for as it is, and DirectWrite emboldens what the family lacks.
+                    if (file.MinWeight == file.MaxWeight && (asked <= file.MaxWeight || file.MaxWeight >= BoldWeight))
+                        asked = face.Weight;
                 }
                 else Primitives.FaceResolution.Missing(named.Name);
             }
@@ -196,14 +263,14 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
         fixed (char* familyName = family)
         fixed (char* locale = _locale)
         {
-            Com.Check(DWrite.CreateTextFormat(_factory, familyName, collection == _collection ? null : collection, (int)weight, style,
+            Com.Check(DWrite.CreateTextFormat(_factory, familyName, collection == _collection ? null : collection, asked, style,
                 DWrite.StretchNormal, size, locale, &format), "text format creation");
         }
         Com.Check(DWrite.SetWordWrapping(format, DWrite.WordWrappingWrap), "word wrapping");
 
         // The face's ascent and descent at this size, so the line box centres the glyph run on
         // OUR grid exactly as the Mac does — layout and raster agree on where a baseline is.
-        var (ascent, descent) = FaceMetrics(collection, family, weight, style, size);
+        var (ascent, descent) = FaceMetrics(collection, family, asked, style, size);
         var baseline = (lineHeight - (ascent + descent)) / 2 + ascent;
         Com.Check(DWrite.SetLineSpacing(format, DWrite.LineSpacingUniform, lineHeight, baseline), "line spacing");
 
@@ -212,7 +279,7 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
         return created;
     }
 
-    private static (float Ascent, float Descent) FaceMetrics(void* collection, string family, FontWeight weight, uint style, float size)
+    private static (float Ascent, float Descent) FaceMetrics(void* collection, string family, int weight, uint style, float size)
     {
         void* fontFamily = null;
         void* font = null;
@@ -226,7 +293,7 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
                     return (size * 0.8f, size * 0.2f);
             }
             if (DWrite.GetFontFamily(collection, index, &fontFamily) < 0) return (size * 0.8f, size * 0.2f);
-            if (DWrite.GetFirstMatchingFont(fontFamily, (int)weight, DWrite.StretchNormal, style, &font) < 0)
+            if (DWrite.GetFirstMatchingFont(fontFamily, weight, DWrite.StretchNormal, style, &font) < 0)
                 return (size * 0.8f, size * 0.2f);
 
             DWrite.FontMetrics metrics;
@@ -415,9 +482,8 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
         _disposed = true;
         foreach (var format in _formats.Values) Com.Release(format.Handle);
         _formats.Clear();
-        Com.Release(ref _shippedCollection);
-        foreach (var file in _shippedFiles) Com.Release((void*)file);
-        _shippedFiles.Clear();
+        foreach (var face in _shippedFaces.Values) Com.Release((void*)face.Collection);
+        _shippedFaces.Clear();
         if (_memoryLoader is not null)
         {
             DWrite.UnregisterFontFileLoader(_factory, _memoryLoader);
