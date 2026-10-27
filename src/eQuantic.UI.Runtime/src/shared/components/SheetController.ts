@@ -49,6 +49,7 @@ export class SheetController {
         this._entryKeysFor = null;
         this.document = new SheetDocument(rows, cols);
         this.entry = new CodeEditorController('', new SheetEntryLanguage());
+        this.entry.folding.enabled = false;
         this.formulaBar = new SheetFormulaBar(this);
         this.nameBox = new SheetNameBox(this);
     }

@@ -151,7 +151,7 @@ export class CodeBlock extends StatelessComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let highlighter = this.highlighter ?? new CodeHighlighter(this.language);
-        let metrics = this.metrics ?? CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + this.document.lineCount - 1);
+        let metrics = this.ownMetrics(context);
         let lineHeight = metrics.lineHeight;
         let ink = this.inverse ? CodeBlock.codeInk : theme.textPrimary;
         let surface = this.inverse ? CodeBlock.codeSlab : theme.surfaceSubtle;
@@ -222,6 +222,13 @@ export class CodeBlock extends StatelessComponent {
         return new CodeBlock('', null, { document: document, language: language });
     }
 
+    ownMetrics(context: BuildContext) {
+        let given: any; 
+        if ((given = this.metrics) != null) return given;
+        let own = CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + this.document.lineCount - 1);
+        return this.showLineNumbers && ($eq.collections.count(this.folds) > 0 || !(this.onFoldPressed == null)) ? own.with({ gutterWidth: Math.fround(own.gutterWidth + CodeBlock.foldSlot) }) : own;
+    }
+
     static metricsFor(context: BuildContext, size: SizeVariantValue, showLineNumbers: boolean, lastLineNumber: number) {
         let style = $eq.withPatch(TypeStyle.ofSize(Sizing.labelSize(size, context.density), 'regular'), { mono: true });
         let gutter = showLineNumbers ? Math.fround(Math.ceil(context.measureText($eq.text.format(lastLineNumber, null, undefined, undefined, 'int32') + '0', style)) + 12) : 0;
@@ -244,7 +251,7 @@ export class CodeBlock extends StatelessComponent {
 
     gutter(context: BuildContext, numberOf: ((value: CodeRow) => string | null) | null = null) {
         let theme = context.theme;
-        let metrics = this.metrics ?? CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + this.document.lineCount - 1);
+        let metrics = this.ownMetrics(context);
         let lineHeight = metrics.lineHeight;
         let [first, last] = this.window(lineHeight);
         let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fixed(metrics.gutterWidth) });

@@ -99,6 +99,37 @@ public class CodeFoldingViewTests : IDisposable
     }
 
     [Fact]
+    public void ABlockThatFoldsByItself_KeepsItsNumbersWhole()
+    {
+        // A CodeBlock with no editor's metrics derives its own, and the chevrons' column is added to it, not cut
+        // from the numbers.
+        var context = new ComponentContext(PhotonTheme.Instance);
+        var plain = new CodeBlock(Source, "csharp");
+        var folding = new CodeBlock(Source, "csharp") { Folds = [new CodeFold(1, 5)], OnFoldPressed = _ => { } };
+
+        var plainWidth = All<Column>(plain.Gutter(context)).First().Width;
+        var foldingWidth = All<Column>(folding.Gutter(context)).First().Width;
+
+        foldingWidth.Should().Be(SizeValue.Fixed(plainWidth.Value + IconSize.Sm + Space.S1));
+    }
+
+    [Fact]
+    public void WithNoLineNumbers_AFoldedHeaderStillShowsItsMarker_AndItUnfolds()
+    {
+        var context = new ComponentContext(PhotonTheme.Instance);
+        var editor = new CodeEditor(Source, "csharp") { ShowLineNumbers = false };
+        editor.Editor.Folding.Toggle(3);
+
+        var lines = All<CodeBlock>(editor.Build(context)).Single().Build(context);
+        var marker = All<Pressable>(lines).Single(press => press.Label == SdkStrings.UnfoldLines(4, 5));
+        All<Text>(marker).Select(text => text.Content).Should().Equal("⋯");
+        All<Icon>(lines).Should().BeEmpty("no gutter, no chevron");
+        marker.OnPressed!();
+
+        editor.Editor.Folding.IsFolded(3).Should().BeFalse();
+    }
+
+    [Fact]
     public void ACodeWithNoRegion_DrawsNoChevron_AndKeepsTheChevronsColumn()
     {
         var context = new ComponentContext(PhotonTheme.Instance);

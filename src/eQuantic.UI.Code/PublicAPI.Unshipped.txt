@@ -537,3 +537,5 @@ eQuantic.UI.Code.CodeFolding.Check() -> void
 eQuantic.UI.Code.CodeFolding.Fold(int line) -> bool
 eQuantic.UI.Code.ICodeFoldProvider.FoldsAsync(eQuantic.UI.Code.CodeDocument! document, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeFold!>!>!
 eQuantic.UI.Code.IndentationFoldProvider.FoldsAsync(eQuantic.UI.Code.CodeDocument! document, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeFold!>!>!
+eQuantic.UI.Code.CodeFolding.Enabled.get -> bool
+eQuantic.UI.Code.CodeFolding.Enabled.set -> void

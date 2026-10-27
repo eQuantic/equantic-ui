@@ -106,7 +106,7 @@ export class CodeEditor extends StatefulComponent {
         this.handKeyBindings(editor);
         let highlighter = editor.highlighter;
         let metrics = CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + editor.document.lineCount - 1);
-        let folds = this.showLineNumbers ? editor.folding.regions : [];
+        let folds = editor.folding.regions;
         if (this.showLineNumbers) metrics = metrics.with({ gutterWidth: Math.fround(metrics.gutterWidth + 20) });
         editor.grid = new CodeGrid(new Point(metrics.contentLeft, metrics.contentTop), new Size(metrics.columnWidth, metrics.lineHeight));
         let bounded = this.height.kind !== 'hug';
@@ -120,7 +120,7 @@ export class CodeEditor extends StatefulComponent {
         let [firstRow, lastRow] = CodeBlock.windowOf(rowCount, metrics.lineHeight, this._offset, this._viewport);
         let [first, last] = shown?.linesIn(firstRow, lastRow) ?? [firstRow, lastRow];
         let matches = this.matchesOf(editor, this.needle);
-        let block = new CodeBlock('', null, { document: editor.document, language: highlighter.language, decorations: this.marks(editor, matches, first, last, context.theme), showLineNumbers: this.showLineNumbers, firstLineNumber: this.firstLineNumber, standalone: false, size: this.size, inverse: this.inverse, gutterMarkers: this.gutter(editor, first, last), onGutterPressed: this.onGutterPressed, rows: shown, folds: folds, foldedLines: CodeEditor.foldedLines(editor, folds), onFoldPressed: this.showLineNumbers ? (line: number) => editor.folding.toggle(line) : null, highlighter: highlighter, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._viewportWidth, minHeight: bounded ? this._viewport : 0, activeLines: editor.caretLinesIn(first, last), selectionBands: editor.selectionBandsIn(first, last), selections: editor.selectionsIn(first, last), widestLine: editor.widestLine });
+        let block = new CodeBlock('', null, { document: editor.document, language: highlighter.language, decorations: this.marks(editor, matches, first, last, context.theme), showLineNumbers: this.showLineNumbers, firstLineNumber: this.firstLineNumber, standalone: false, size: this.size, inverse: this.inverse, gutterMarkers: this.gutter(editor, first, last), onGutterPressed: this.onGutterPressed, rows: shown, folds: folds, foldedLines: CodeEditor.foldedLines(editor, folds), onFoldPressed: (line: number) => editor.folding.toggle(line), highlighter: highlighter, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._viewportWidth, minHeight: bounded ? this._viewport : 0, activeLines: editor.caretLinesIn(first, last), selectionBands: editor.selectionBandsIn(first, last), selections: editor.selectionsIn(first, last), widestLine: editor.widestLine });
         let completion = editor.completion;
         let offered: VisualNode | null = null;
         let offeredAt = Point.zero;

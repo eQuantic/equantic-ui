@@ -12,8 +12,9 @@ its delay, and the indentation's provider when there is none. The answers SHALL 
 line, one region kept for each start line (the one reaching furthest), a region that crosses another dropped,
 and a region of no line under its header dropped. An answer that comes after the text changed again SHALL be
 dropped, and so SHALL an answer in which a provider failed, the regions and what is folded staying as they were.
-An editor whose grid brings rows of its own (a diff's side) SHALL hide nothing, and its fold commands SHALL claim
-no key.
+An editor whose grid brings rows of its own (a diff's side), or whose folding is turned off
+(`CodeFolding.Enabled`, which a spreadsheet's cell entry turns off), SHALL hide nothing, and its fold commands SHALL
+claim no key.
 
 #### Scenario: The indentation's regions
 
@@ -48,7 +49,8 @@ folded region SHALL keep its header line and hide the lines under it, and the ca
 The gutter SHALL show a chevron beside every line that starts a region, pointing down while it is open and right
 while it is folded, and a press on it SHALL toggle the region. It SHALL be a button for assistive technology,
 named by the lines it folds and saying whether it is expanded. A folded header SHALL show `⋯` after its text, and
-a press on it SHALL unfold the region. A press on either SHALL leave the keyboard with the code.
+a press on it SHALL unfold the region, line numbers shown or not. A press on either SHALL leave the keyboard with
+the code.
 
 #### Scenario: A press on the chevron
 

@@ -730,7 +730,8 @@ public sealed class CodeEditor : StatefulComponent
             FirstLineNumber + editor.Document.LineCount - 1);
         // The gutter takes the chevrons right of its numbers, as VS Code's folding column stands (#1119): always,
         // regions or none, or the code would move sideways each time the first one came or the last one went.
-        var folds = ShowLineNumbers ? editor.Folding.Regions : [];
+        // With no numbers there is no gutter, and a folded header still shows its marker.
+        var folds = editor.Folding.Regions;
         if (ShowLineNumbers) metrics = metrics with { GutterWidth = metrics.GutterWidth + CodeBlock.FoldSlot };
 
         // THE grid, handed to the engine — the only thing that turns a position into a point. The
@@ -788,7 +789,7 @@ public sealed class CodeEditor : StatefulComponent
             Folds = folds,
             FoldedLines = FoldedLines(editor, folds),
             // Folding.Changed asks for the build.
-            OnFoldPressed = ShowLineNumbers ? line => editor.Folding.Toggle(line) : null,
+            OnFoldPressed = line => editor.Folding.Toggle(line),
             Highlighter = highlighter,
             // THE grid — the same numbers the surface places the caret and the band on.
             Metrics = metrics,

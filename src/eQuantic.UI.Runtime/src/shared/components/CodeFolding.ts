@@ -10,6 +10,7 @@ export class CodeFolding {
         this._generation = 0;
         this._request = null;
         this.providers = [];
+        this._enabled = true;
         this.delay = $eq.time.timeSpan.fromMilliseconds(200n);
         this.changed = null;
         this.failed = null;
@@ -26,10 +27,30 @@ export class CodeFolding {
     _generation!: number;
     _request!: CancellationTokenSource | null;
     providers!: any[];
+    _enabled!: boolean;
     delay!: TimeSpan;
     changed!: (() => void) | null;
     failed!: ((exception: Error) => void) | null;
     static lineEnd: number = 1048576;
+
+    get enabled(): boolean {
+        return this._enabled;
+    }
+
+    set enabled(value: boolean) {
+        if (this._enabled === value) return;
+        this._enabled = value;
+        if (value) {
+            this.check();
+            return;
+        }
+        this._generation++;
+        ProviderRequest.cancel(this._request, this.failed);
+        this._request = null;
+        this._regions = [];
+        this._folded = [];
+        this.apply();
+    }
 
     get regions(): CodeFold[] {
         return this._regions;
@@ -266,24 +287,35 @@ export class CodeFolding {
     async ask(wait: boolean) {
         let generation = ++this._generation;
         ProviderRequest.cancel(this._request, this.failed);
+        this._request = null;
+        if (!this._enabled) return;
         let request = $eq.cancellation.source();
         this._request = request;
         if (wait && (this.delay.compareTo($eq.time.timeSpan.zero) > 0)) {
+            let waited = true;
             try {
                 await $eq.task.delay(this.delay, request.token);
             } catch ($e: any) {
                 if ($eq.exceptions.is($e, 'System.OperationCanceledException')) {
-                    return;
+                    waited = false;
                 } else {
                     throw $e;
                 }
             }
+            UiThread.run(() => {
+                if (waited && generation === this._generation) this.askEvery(generation, request.token);
+            });
+            return;
         }
+        await this.askEvery(generation, request.token);
+    }
+
+    async askEvery(generation: number, cancellation: CancellationToken) {
         let document = this._editor.document;
         let providers: any[] = $eq.collections.listCopy(this.providers);
         if (providers.length === 0) providers.push(new IndentationFoldProvider());
         let asked = [];
-        for (const provider of providers) asked.push(this.askOne(provider, document, request.token));
+        for (const provider of providers) asked.push(this.askOne(provider, document, cancellation));
         let answers = [];
         for (const one of asked) {
             let answer: any; 

@@ -219,13 +219,14 @@ export class CodeEditorController {
 
     set grid(value: CodeGrid) {
         let hid = this._rowsFromFolds;
-        this._rowsFromFolds = value.rows == null;
+        let folds: any; 
+        this._rowsFromFolds = value.rows == null || (folds = this.folding.rows) != null && (value.rows === folds);
         this._grid = this._rowsFromFolds ? $eq.withPatch(value, { rows: this.folding.rows }) : value;
         if (this._rowsFromFolds && !hid) this.folding.check();
     }
 
     get hidesFolds(): boolean {
-        return this._rowsFromFolds;
+        return this._rowsFromFolds && this.folding.enabled;
     }
 
     get carets(): Rect[] {
@@ -728,7 +729,7 @@ export class CodeEditorController {
                     return true;
                 case 'paste':
                     if (clipboard == null) return false;
-                    if ((($v50279) => (($v50279 != null && $v50279.length > 0) && (pasted = $v50279, true)))(clipboard.read())) this.paste(pasted);
+                    if ((($v50528) => (($v50528 != null && $v50528.length > 0) && (pasted = $v50528, true)))(clipboard.read())) this.paste(pasted);
                     return true;
                 case 'completionShow':
                     return this.completion.invoke();
@@ -2047,7 +2048,7 @@ export class CodeEditorController {
             }
             let space = length > 0;
             let tail = parts[parts.length - 1];
-            if (space && (($v155847) => ($v155847 === ' ' || $v155847 === '\t'))(tail[tail.length - 1])) {
+            if (space && (($v156096) => ($v156096 === ' ' || $v156096 === '\t'))(tail[tail.length - 1])) {
                 space = false;
                 let kept = $eq.text.trimEnd(tail, [' ', '\t']);
                 parts[parts.length - 1] = kept;

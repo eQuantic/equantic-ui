@@ -660,7 +660,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             // A grid that brings rows of its own (a diff's side) keeps them; one that brings none hides what is
             // folded (#1119).
             var hid = _rowsFromFolds;
-            _rowsFromFolds = value.Rows is null;
+            // A grid handed back with the folds' own rows (one whose geometry alone changed, `Grid with { … }`)
+            // still takes them from the folds.
+            _rowsFromFolds = value.Rows is null || (Folding.Rows is { } folds && ReferenceEquals(value.Rows, folds));
             _grid = _rowsFromFolds ? value with { Rows = Folding.Rows } : value;
             // Back to a grid that hides folds: its regions were not asked while another one's rows stood.
             if (_rowsFromFolds && !hid) Folding.Check();
@@ -678,7 +680,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
     /// <summary>Whether the grid's rows are the folds', so a fold hides lines. A diff's side and a formula bar bring
     /// rows of their own, and there the fold commands claim nothing.</summary>
-    internal bool HidesFolds => _rowsFromFolds;
+    internal bool HidesFolds => _rowsFromFolds && Folding.Enabled;
 
     /// <summary>Whether a press that began on the surface is still drawing a selection.</summary>
     private bool _dragging;

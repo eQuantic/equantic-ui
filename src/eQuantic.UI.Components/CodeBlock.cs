@@ -221,6 +221,20 @@ public sealed class CodeBlock : StatelessComponent
         public float ContentTop => Space.S3;
     }
 
+    /// <summary>
+    /// The metrics this block draws on: the editor's when it hands them over, which hold the chevrons' column
+    /// already, or its own, with the column when it can fold (#1119), so a block that folds by itself keeps its
+    /// numbers whole.
+    /// </summary>
+    private CodeMetrics OwnMetrics(ComponentContext context)
+    {
+        if (Metrics is { } given) return given;
+        var own = MetricsFor(context, Size, ShowLineNumbers, FirstLineNumber + Document.LineCount - 1);
+        return ShowLineNumbers && (Folds.Count > 0 || OnFoldPressed is not null)
+            ? own with { GutterWidth = own.GutterWidth + FoldSlot }
+            : own;
+    }
+
     /// <summary>The metrics for a block of these settings, measured through the context.</summary>
     public static CodeMetrics MetricsFor(ComponentContext context, SizeVariant size,
         bool showLineNumbers, int lastLineNumber)
@@ -243,8 +257,7 @@ public sealed class CodeBlock : StatelessComponent
         // The EDITOR's numbers when it has them: it already measured to place a caret, and a caret
         // measured against one grid over lines drawn on another is a caret that drifts down the
         // file. One measurement, one grid, whatever the two contexts happen to say.
-        var metrics = Metrics ?? MetricsFor(context, Size, ShowLineNumbers,
-            FirstLineNumber + Document.LineCount - 1);
+        var metrics = OwnMetrics(context);
         var lineHeight = metrics.LineHeight;
 
         var ink = Inverse ? CodeInk : theme.TextPrimary;
@@ -465,8 +478,7 @@ public sealed class CodeBlock : StatelessComponent
     public VisualNode Gutter(ComponentContext context, Func<CodeRow, string?>? numberOf = null)
     {
         var theme = context.Theme;
-        var metrics = Metrics ?? MetricsFor(context, Size, ShowLineNumbers,
-            FirstLineNumber + Document.LineCount - 1);
+        var metrics = OwnMetrics(context);
         var lineHeight = metrics.LineHeight;
         var (first, last) = Window(lineHeight);
 

@@ -1,6 +1,7 @@
 using eQuantic.UI.Code;
 using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Sheet;
 using FluentAssertions;
 
 namespace eQuantic.UI.Native.Engine.Tests;
@@ -61,6 +62,32 @@ public class CodeFoldingTests : IDisposable
 
         public Task<IReadOnlyList<CodeFold>> FoldsAsync(CodeDocument document, CancellationToken cancellation) =>
             Answer.Task;
+    }
+
+    /// <summary>A UI thread that is never the caller's, as a Photon host's is to a timer: everything is posted, and
+    /// runs when drained.</summary>
+    private sealed class QueueDispatcher : IUiDispatcher
+    {
+        private readonly Queue<Action> _queue = new();
+        public bool IsOnUiThread => false;
+
+        public void Post(Action work)
+        {
+            lock (_queue) _queue.Enqueue(work);
+        }
+
+        public void Drain()
+        {
+            while (true)
+            {
+                Action? work;
+                lock (_queue)
+                {
+                    if (!_queue.TryDequeue(out work)) return;
+                }
+                work();
+            }
+        }
     }
 
     private sealed class Throwing : ICodeFoldProvider
@@ -374,6 +401,75 @@ public class CodeFoldingTests : IDisposable
         Press(editor, "[", Alt | Command).Should().BeFalse();
         editor.CanExecute(CodeCommand.FoldAll).Should().BeFalse();
         editor.Selection.Should().Be(new CodeRange(new CodePosition(4, 0)));
+    }
+
+    /// <summary>The pause before asking ends on a timer's thread, and the providers are asked from the UI thread
+    /// once it runs what the pause posted, about the document as it stands there.</summary>
+    [Fact]
+    public async Task ThePauseBeforeAsking_EndsOnTheUiThread()
+    {
+        var queue = new QueueDispatcher();
+        UiDispatcher.Current = queue;
+        var editor = new CodeEditorController(Source, CodeLanguages.CSharp);
+        editor.Folding.Delay = TimeSpan.FromMilliseconds(20);
+        var provider = new Fixed(new CodeFold(1, 5));
+        editor.Folding.Providers.Add(provider);
+        editor.Folding.Check();
+        queue.Drain();
+        provider.Asked = 0;
+
+        editor.Apply(new CodeRange(new CodePosition(6, 1)), "\n");
+        await Task.Delay(200);
+
+        provider.Asked.Should().Be(0, "nothing is asked off the UI thread");
+        queue.Drain();
+        provider.Asked.Should().Be(1);
+    }
+
+    [Fact]
+    public void AGridWhoseGeometryAloneChanged_StillHidesTheFolds()
+    {
+        var editor = Editor(caretLine: 0);
+        editor.Folding.Toggle(1);
+
+        editor.Folding.Toggle(3);
+        editor.Grid.Rows!.RowCount.Should().Be(3);
+
+        editor.Grid = editor.Grid with { Cell = new Size(8, 20) };
+        editor.Folding.Toggle(1);
+
+        editor.Grid.Rows!.RowCount.Should().Be(6, "the class opened, the method's body is folded still, and the rows follow");
+        Press(editor, "k", Command);
+        Press(editor, "j", Command).Should().BeTrue("the fold keys still act");
+        editor.Grid.Rows.Should().BeNull();
+    }
+
+    [Fact]
+    public void AnEditorThatDoesNotFold_HasNoRegion_AndItsKeysClaimNothing()
+    {
+        var editor = Editor(caretLine: 4);
+
+        editor.Folding.Enabled = false;
+
+        editor.Folding.Regions.Should().BeEmpty();
+        Press(editor, "[", Alt | Command).Should().BeFalse();
+        editor.Apply(new CodeRange(new CodePosition(0, 0)), "x");
+        editor.Folding.Regions.Should().BeEmpty("nothing is asked");
+        editor.Folding.Enabled = true;
+        editor.Folding.Regions.Should().Equal(new CodeFold(1, 5), new CodeFold(3, 4));
+    }
+
+    [Fact]
+    public void ASpreadsheetCellsEntry_FoldsNothing()
+    {
+        // The entry draws every line it holds, so a fold there would move the caret off the text it draws.
+        var sheet = new SheetController(rows: 2, cols: 2);
+        sheet.Entry.Document = CodeDocument.FromText("total\n  =A1\n  +A2");
+        sheet.Entry.Selection = new CodeRange(new CodePosition(1, 0));
+
+        sheet.Entry.HandleKey("[", Shift | Command, KeyboardConvention.Standard, null).Should().BeFalse();
+        sheet.Entry.Grid.Rows.Should().BeNull();
+        sheet.Entry.Folding.Regions.Should().BeEmpty();
     }
 
     [Fact]

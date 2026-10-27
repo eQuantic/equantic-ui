@@ -47,6 +47,34 @@ public sealed class CodeFolding
     /// </summary>
     public IList<ICodeFoldProvider> Providers { get; } = [];
 
+    /// <summary>
+    /// Whether this editor folds: true to begin with. An editor that draws every line whatever is folded (a cell of
+    /// a spreadsheet, whose entry draws its own lines) turns it off, and then it has no region, asks nothing, and its
+    /// fold commands claim no key, as VS Code's <c>folding</c> option turns its folding off.
+    /// </summary>
+    public bool Enabled
+    {
+        get => _enabled;
+        set
+        {
+            if (_enabled == value) return;
+            _enabled = value;
+            if (value)
+            {
+                Check();
+                return;
+            }
+            _generation++;
+            ProviderRequest.Cancel(_request, Failed);
+            _request = null;
+            _regions = [];
+            _folded = [];
+            Apply();
+        }
+    }
+
+    private bool _enabled = true;
+
     /// <summary>How long typing has to pause before the regions are asked again. VS Code's own pause.</summary>
     public TimeSpan Delay { get; set; } = TimeSpan.FromMilliseconds(200);
 
@@ -362,24 +390,42 @@ public sealed class CodeFolding
     {
         var generation = ++_generation;
         ProviderRequest.Cancel(_request, Failed);
+        _request = null;
+        if (!_enabled) return;
         var request = new CancellationTokenSource();
         _request = request;
         if (wait && Delay > TimeSpan.Zero)
         {
+            var waited = true;
             try
             {
                 await Task.Delay(Delay, request.Token);
             }
             catch (OperationCanceledException)
             {
-                return;
+                waited = false;
             }
+            // Back where the editor lives before anything of it is read: a timer ends the wait on a thread of its
+            // own, and the document, the providers and the generation are the UI thread's (a Photon host has no
+            // synchronization context to bring an await back to it), as the problems' session does.
+            UiThread.Run(() =>
+            {
+                if (waited && generation == _generation) _ = AskEvery(generation, request.Token);
+            });
+            return;
         }
+        await AskEvery(generation, request.Token);
+    }
+
+    /// <summary>Asks every provider about the document as it stands, on the UI thread, each before any is waited for,
+    /// and applies their answers there when the last one comes.</summary>
+    private async Task AskEvery(int generation, CancellationToken cancellation)
+    {
         var document = _editor.Document;
         var providers = new List<ICodeFoldProvider>(Providers);
         if (providers.Count == 0) providers.Add(new IndentationFoldProvider());
         var asked = new List<Task<IReadOnlyList<CodeFold>?>>();
-        foreach (var provider in providers) asked.Add(AskOne(provider, document, request.Token));
+        foreach (var provider in providers) asked.Add(AskOne(provider, document, cancellation));
         var answers = new List<IReadOnlyList<CodeFold>>();
         foreach (var one in asked)
         {
