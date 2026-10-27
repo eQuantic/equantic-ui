@@ -160,7 +160,7 @@ export class ErrorOverlay {
           <button class="close-btn" data-eq-copy>Copy report</button>
           <a class="close-btn" href="${ISSUES_URL}" target="_blank" rel="noopener noreferrer">Open an issue</a>
         </div>
-        <details><summary>Report</summary><textarea readonly class="report" data-eq-report>${this.escapeHtml(this.report(error, frames))}</textarea></details>
+        <details><summary>Report</summary><textarea readonly class="report" aria-label="Error report" data-eq-report>${this.escapeHtml(this.report(error, frames))}</textarea></details>
       </div>
     `;
     const report = target.querySelector<HTMLTextAreaElement>('[data-eq-report]');

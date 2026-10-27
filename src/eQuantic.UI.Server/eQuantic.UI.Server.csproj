@@ -21,9 +21,13 @@
     <ProjectReference Include="..\eQuantic.UI.Web\eQuantic.UI.Web.csproj" />
     <!-- eqc composes the runtime's map after the bundle is written (BundleRuntime), so a cold build has to
          order it before this project. Nothing links against it, nothing copies it here, and it is not a
-         dependency of the package: the Server ships the map, never the tool. -->
+         dependency of the package: the Server ships the map, never the tool. It is a HOST tool, built as
+         the one instance the solution builds: a framework, a runtime or a publish mode this build was
+         handed would build it again under bin/<config>/net10.0/<rid>/, where ComposeRuntimeMap does not
+         look (the same edge Sdk.props declares for an app). -->
     <ProjectReference Include="..\eQuantic.Build\eQuantic.Build.csproj"
-      ReferenceOutputAssembly="false" Private="false" PrivateAssets="All" />
+      ReferenceOutputAssembly="false" Private="false" PrivateAssets="All" SkipGetTargetFrameworkProperties="true"
+      GlobalPropertiesToRemove="TargetFramework;RuntimeIdentifier;RuntimeIdentifiers;SelfContained;PublishAot;PublishTrimmed" />
   </ItemGroup>
 
   <ItemGroup>
