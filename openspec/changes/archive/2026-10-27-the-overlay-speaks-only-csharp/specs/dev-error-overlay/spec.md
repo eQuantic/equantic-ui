@@ -32,7 +32,8 @@ lead each transpiled module's code to its C#, SHALL carry no source text, and SH
 #### Scenario: A position inside a transpiled component
 
 - **WHEN** the served runtime's map is read at a position of the code `SheetController.ts` holds
-- **THEN** it leads to `eQuantic.UI.Spreadsheets/SheetController.cs`, at the line of that C#
+- **THEN** it leads to `eQuantic.UI.Sheet/Editing/SheetController.cs`, at the line the module's own map gives that
+  code
 
 #### Scenario: A position inside the hand-written runtime
 

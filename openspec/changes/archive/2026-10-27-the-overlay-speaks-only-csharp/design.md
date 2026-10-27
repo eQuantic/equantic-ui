@@ -31,9 +31,16 @@ the SDK asks for a report.
 already exists (`SourceMapComposer`, #356) and `ModuleBundler` uses the same rule for an app's modules,
 an inner map at `<source>.map`. Composing in the browser instead (a second hop per transpiled module)
 would serve a map per module and the TypeScript's text besides. The composed map carries no source
-text and names each source from `src/` (`eQuantic.UI.Spreadsheets/SheetController.cs`,
+text and names each source from `src/` (`eQuantic.UI.Sheet/Editing/SheetController.cs`,
 `eQuantic.UI.Runtime/src/shared/lowering.ts`): the overlay names a frame, it does not show the SDK's
 source.
+
+One rule differs from an app module's composition. A position its module's map leads nowhere is
+dropped there, as `@ampproject/remapping` dropped it, and a lookup falls back to the segment before it,
+which in a one-module bundle is the statement before. One line of the runtime's bundle holds hundreds
+of modules, so the segment before can be another module's: in the runtime's map such a position stays
+at its module, and the overlay names it by the module's C# type. A record's module, which eqc writes on
+one line with no mapping, is named the same way.
 
 eqc runs from its build output, as `Sdk.targets` runs it in a source tree, and the Server gains a
 `ProjectReference` to `eQuantic.Build` with `ReferenceOutputAssembly=false` so a cold build orders it.
@@ -84,4 +91,7 @@ the Server assembly's informational version.
 - 221 generated maps join the repository beside the 221 generated modules. They move only when a module
   moves.
 - A frame's member is still the twin's name (`moveTo`, not `MoveTo`): eqc's maps carry no names. That is
-  a follow-up of eqc's, not of the overlay's.
+  a follow-up of eqc's, not of the overlay's. Where bun renamed a class the bundle declares twice
+  (`SheetController3`), a frame led to C# takes the type's name from its C# file.
+- The message is the browser's (`TypeError: Cannot read properties of null`), where .NET would raise a
+  `NullReferenceException`. Translating it is a follow-up.

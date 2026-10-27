@@ -28,7 +28,7 @@ For a developer, the overlay speaks only C# and says whose fault an error is:
   position.
 - **A frame inside the SDK is named as the SDK's.** What eqc transpiled into the runtime (the
   components, the charts, the spreadsheet, the code and sheet engines) is named by its own C# file and
-  line (`eQuantic.UI.Spreadsheets/Spreadsheet.cs:412`); the hand-written runtime by its module
+  line (`eQuantic.UI.Sheet/Editing/SheetController.cs:220`); the hand-written runtime by its module
   (`eQuantic.UI runtime › shared/lowering`).
 - **An error raised inside the SDK says so.** When the throwing frame is the SDK's, the overlay says
   the fault is in eQuantic.UI, not in the app (or, when the app's code called it, names that call as
@@ -67,7 +67,7 @@ For a developer, the overlay speaks only C# and says whose fault an error is:
   which makes `eQuantic.Build` a build dependency of the Server (`ReferenceOutputAssembly=false`). The
   map is embedded and answered at `/_equantic/runtime.js.map` in Development alone. In Development the
   client configuration carries the SDK's version for the report. The bundle gains bun's `debugId`
-  comment, and the served runtime's gzip budget moves only by what the overlay's code adds.
+  comment; the served runtime grew 1,215 bytes gzipped (to 300,359), inside its recorded budget.
 - **Runtime**: `dev/error-overlay.ts` names every frame by its owner (`dev/frame-owner.ts`), renders no
   JavaScript, titles by what was raised, offers the report, and ignores the ResizeObserver notice.
   `stack-remapper.ts` keeps each frame's generated URL, which is how a frame is known to be the SDK's.
