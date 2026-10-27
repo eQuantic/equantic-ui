@@ -52,7 +52,7 @@
       AppKit elements
 - [x] 3.3 `AnnouncementParityTests` gains a grid case: the web and Photon announce the same roles, names,
       states and order for a small grid with headers, a selection and a current cell
-- [ ] 3.4 Check against the real thing: the PhotonDesktop sample's sheet read with the Accessibility
+- [x] 3.4 Check against the real thing: the PhotonDesktop sample's sheet read with the Accessibility
       Inspector, the grid, the headers and the cells in AppKit's words
 
 ## 4. A reader's activation
@@ -78,7 +78,7 @@
 - [x] 5.3 Android marks a live `Group` node live with its urgency and, for each announcement drained,
       reports its content changed; verify it builds and, in the emulator with TalkBack, that a `Banner`
       appearing is heard, or name in the pull request what the emulator could not run
-- [ ] 5.4 Check against the real thing: on macOS, a `Banner` and a `Toast` in the PhotonDesktop sample
+- [x] 5.4 Check against the real thing: on macOS, a `Banner` and a `Toast` in the PhotonDesktop sample
       heard by VoiceOver (the first run of `PhotonAnnouncements.Post`)
 
 ## 6. The spreadsheet read aloud
@@ -99,18 +99,18 @@
       inside the host, Photon as the sheet field's value, marked live, and a live mark carrying its text;
       verify `spreadsheet-read-aloud-web.spec.ts` and `SpreadsheetReadAloudTests` that an arrow changes
       what is announced, and "Quick arrows on Photon" through the host's frames
-- [ ] 6.4 Check against the real thing: the dashboard's sheet with VoiceOver in Safari (the grid, a
+- [x] 6.4 Check against the real thing: the dashboard's sheet with VoiceOver in Safari (the grid, a
       cell's headers, an arrow and Shift+arrows announced, a cell activated) and in Chromium's
       accessibility tree; the PhotonDesktop sheet with VoiceOver on macOS (an arrow and Shift+arrows heard)
-- [ ] 6.5 Docs: `docs/SPREADSHEET-PLAN.md` (D17 fixed, the 2b row with #1078 next and #1105),
+- [x] 6.5 Docs: `docs/SPREADSHEET-PLAN.md` (D17 fixed, the 2b row with #1078 next and #1105),
       `docs/FLUTTER-PARITY.md` (the table semantics row), the wiki's TableView and Spreadsheet pages in its
       five languages on a wiki branch named like this pull request's, and a ledger entry under
       `docs/ledger/` citing #1081
 
 ## 7. Integration
 
-- [ ] 7.1 The suites the change reaches, one at a time through the lock: the runtime, Web, Server (the
+- [x] 7.1 The suites the change reaches, one at a time through the lock: the runtime, Web, Server (the
       served runtime's budget), Native.Engine, Compiler and Conformance; the four samples build; OpenSpec
       validates strictly
-- [ ] 7.2 Archive the change (`openspec archive the-grid-is-read-aloud --yes`) before the pull request
+- [x] 7.2 Archive the change (`openspec archive the-grid-is-read-aloud --yes`) before the pull request
       merges, and verify `openspec/specs` reads the new requirements
