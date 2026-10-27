@@ -40,8 +40,15 @@ Apple does not, and Windows does what DirectWrite did before with a weight the f
   weight asked for at 700 draws that simulated bold. A static file asked for the weight its catalog gives it
   is therefore asked for at the weight DirectWrite reads in that file, read from the face the family holds
   with no simulation, and drawn as the file draws, as a browser draws a face whose `@font-face` rule declares
-  the weight asked. A weight the family does not ship is asked for as it is, and DirectWrite emboldens or
-  slants what the family lacks, as a browser does.
+  the weight asked; so is one the catalog weighs at 600 or more asked for a heavier weight, since a browser
+  lays no synthetic bold over a bold face. A heavier weight than a lighter file sets is asked for as it is,
+  and DirectWrite emboldens what the family lacks, as a browser does.
+- **The theme's name when the file carries it.** DirectWrite can group the instances of a variable file into
+  more than one family, so the format names the family as the theme does when the file's collection has it,
+  and as DirectWrite reads it in the file otherwise.
+- **The test faces are pinned.** A shell reads a face from the assembly it is embedded in, so the weight tests'
+  faces are committed files, and a test holds each one to what `TestFont` builds, written again with
+  `EQ_UPDATE_TEST_FONTS=1`.
 
 ## Risks / Trade-offs
 
@@ -50,4 +57,4 @@ Apple does not, and Windows does what DirectWrite did before with a weight the f
 - Android asks its engine for the weight over the file chosen too, and its engine lays a bold over a face
   asked for 200 above the weight the file declares: a file the catalog weighs at 700 that declares 400 would
   draw bolder there. No font measured here does that, since a `STAT` that moves a weight moves it below the
-  weight class (Inter's 250), and the scenario is held on Windows only.
+  weight class (Inter's 250). It is #1109, and the scenario is held on Windows only until then.

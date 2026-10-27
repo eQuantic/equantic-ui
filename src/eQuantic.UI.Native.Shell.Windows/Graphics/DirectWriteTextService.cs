@@ -53,6 +53,9 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
     private void* _memoryLoader;          // IDWriteInMemoryFontFileLoader, registered with the factory
     private readonly Dictionary<FontFile, ShippedFace> _shippedFaces = new();
 
+    /// <summary>The weight from which a face is bold, which a browser lays no synthetic bold over.</summary>
+    private const int BoldWeight = 600;
+
     private readonly record struct FormatKey(float Size, float LineHeight, FontWeight Weight, bool Mono, bool Italic, FontFamily? Family);
 
     /// <summary>One shipped file as DirectWrite holds it: a collection of that file alone (an
@@ -235,14 +238,18 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
                 if (_shipped.Register(named) && ShippedFaces.FileFor(named, weight, italic) is { } file
                     && _shippedFaces.TryGetValue(file, out var face))
                 {
-                    family = face.Family;
                     collection = (void*)face.Collection;
-                    // The file's weight is the one the catalog gives it. A static file asked for its own
-                    // weight is asked for at the weight DirectWrite reads in it, so no bold is laid over
-                    // a file the catalog weighs heavier than the file says. A weight the family does not
-                    // ship is asked for as it is, and DirectWrite emboldens what the family lacks, as a
-                    // browser does.
-                    if (file.MinWeight == file.MaxWeight && asked == file.MinWeight) asked = face.Weight;
+                    // The theme's name when the file carries it, so a variable file whose instances
+                    // DirectWrite groups into several families is set in the one the theme named; the
+                    // name DirectWrite reads in the file otherwise.
+                    family = HasFamily(collection, named.Name) ? named.Name : face.Family;
+                    // The file's weight is the one the catalog gives it, and a static file is asked for
+                    // at the weight DirectWrite reads in it, so no bold is laid over a file the catalog
+                    // weighs heavier than the file says: when it holds the weight asked, and when it is
+                    // bold already, which a browser never emboldens. A heavier weight than a lighter
+                    // file sets is asked for as it is, and DirectWrite emboldens what the family lacks.
+                    if (file.MinWeight == file.MaxWeight && (asked <= file.MaxWeight || file.MaxWeight >= BoldWeight))
+                        asked = face.Weight;
                 }
                 else Primitives.FaceResolution.Missing(named.Name);
             }

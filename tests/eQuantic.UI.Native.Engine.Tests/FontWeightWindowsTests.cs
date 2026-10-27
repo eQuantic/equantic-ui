@@ -51,19 +51,34 @@ public class FontWeightWindowsTests
 
     /// <summary>
     /// The catalog is the one authority on a file's weight: the file it weighs at 700 is drawn as the file
-    /// draws, as a browser draws the face a rule declares at 700, never with a bold DirectWrite lays over it
-    /// because the file itself says 400.
+    /// draws, at 700 and at a heavier weight that falls back to it, as a browser draws a bold face a rule
+    /// declares, never with a bold DirectWrite lays over it because the file itself says 400.
     /// </summary>
-    [WindowsFact]
-    public void AFileTheCatalogWeighsHeavierThanItSays_IsDrawnAsItIs()
+    [WindowsTheory]
+    [InlineData(FontWeight.Bold)]
+    [InlineData(FontWeight.Black)]
+    public void AFileTheCatalogWeighsHeavierThanItSays_IsDrawnAsItIs(FontWeight weight)
     {
         using var text = new DirectWriteTextService();
-        FontFamily WeighedAt(int weight) => new("eQuantic Weight Face",
-            new FontFile(FontWeightPhotonTests.Assembly, "eQuantic.UI.Fonts/weights/WeightFace-400.ttf", weight, weight));
-        byte[] Coverage(FontFamily family, FontWeight weight) => text.Rasterize("Handgloves",
-            Body with { Family = family, Weight = weight }, 1f, float.PositiveInfinity, 1, 2f, TextAlignment.Start)!.Alpha;
 
-        Coverage(WeighedAt(700), FontWeight.Bold).Should().Equal(Coverage(WeighedAt(400), FontWeight.Regular));
+        Coverage(text, WeighedAt(700), weight).Should().Equal(Coverage(text, WeighedAt(400), FontWeight.Regular));
         FaceResolution.Unresolved.Should().BeEmpty();
     }
+
+    /// <summary>A weight the family does not ship, heavier than its one Regular file, is drawn emboldened, as a
+    /// browser draws it: what makes the test above a measurement, since that bold is the one it keeps off.</summary>
+    [WindowsFact]
+    public void AHeavierWeightThanARegularFileSets_IsEmboldened()
+    {
+        using var text = new DirectWriteTextService();
+
+        Coverage(text, WeighedAt(400), FontWeight.Bold).Should().NotEqual(Coverage(text, WeighedAt(400), FontWeight.Regular));
+    }
+
+    /// <summary>A family of one file, WeightFace's Regular, which declares 400, given <paramref name="weight"/>.</summary>
+    private static FontFamily WeighedAt(int weight) => new("eQuantic Weight Face",
+        new FontFile(FontWeightPhotonTests.Assembly, "eQuantic.UI.Fonts/weights/WeightFace-400.ttf", weight, weight));
+
+    private static byte[] Coverage(DirectWriteTextService text, FontFamily family, FontWeight weight) => text.Rasterize("Handgloves",
+        Body with { Family = family, Weight = weight }, 1f, float.PositiveInfinity, 1, 2f, TextAlignment.Start)!.Alpha;
 }

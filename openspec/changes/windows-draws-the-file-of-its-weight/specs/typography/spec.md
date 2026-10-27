@@ -10,9 +10,9 @@ weight and the slant, or, when none does, from the file a browser would choose (
 on Apple, on Android and on Windows, and on Apple a variable file SHALL be set at the weight on its `wght`
 axis. A static face's weight SHALL be the one position its `STAT` table gives it on `wght` when it gives one,
 and its weight class otherwise. On Windows, whose text engine is asked for a weight over the file chosen, a
-static file asked for the weight it sets SHALL be drawn as the file draws, whatever weight its `OS/2` table
-declares. On Android below API 28, which cannot be asked for a weight, the shell SHALL draw a weight below 600
-as regular and the others as bold.
+static file asked for the weight it sets, or for a heavier one when the file sets 600 or more, SHALL be drawn
+as the file draws, whatever weight its `OS/2` table declares. On Android below API 28, which cannot be asked
+for a weight, the shell SHALL draw a weight below 600 as regular and the others as bold.
 
 #### Scenario: A light weight on the web
 
@@ -42,7 +42,7 @@ as regular and the others as bold.
 - **WHEN** a family's one file declares the weight class 400 and the family gives it 700, and Photon on
   Windows draws text in it in `Bold`
 - **THEN** it draws as the same file does in `Regular` in a family that gives it 400, with no bold laid over
-  it
+  it, and so it does in `Black`
 
 #### Scenario: A variable file, on Apple
 
