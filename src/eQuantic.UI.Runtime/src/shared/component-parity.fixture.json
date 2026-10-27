@@ -4931,20 +4931,12 @@
                   "events": [],
                   "children": [
                     {
-                      "tag": "span",
+                      "tag": "div",
                       "attrs": {
-                        "class": "eq-16x7aca eq-7gvrt4 eq-type-caption"
+                        "class": "eq-1eb13m5 eq-kngwsg"
                       },
                       "events": [],
-                      "children": [
-                        {
-                          "tag": "#text",
-                          "text": "4:3",
-                          "attrs": {},
-                          "events": [],
-                          "children": []
-                        }
-                      ]
+                      "children": []
                     }
                   ]
                 },
@@ -5331,8 +5323,10 @@
                   "tag": "div",
                   "key": "0:0",
                   "attrs": {
-                    "aria-hidden": "true",
-                    "class": "eq-1avhl7d eq-1fo26cq eq-1ogof62 eq-1xlbso6 eq-1yxcnfo eq-mfc69x"
+                    "aria-colindex": "1",
+                    "class": "eq-1avhl7d eq-1fo26cq eq-1ogof62 eq-1xlbso6 eq-1yxcnfo eq-mfc69x",
+                    "id": "eq-tcell-1u65p58-0-0",
+                    "role": "columnheader"
                   },
                   "events": [],
                   "children": [
@@ -5485,7 +5479,7 @@
             {
               "tag": "div",
               "attrs": {
-                "aria-owns": "eq-tcell-1u65p58-0-1 eq-tcell-1u65p58-0-2 eq-tcell-1u65p58-0-3",
+                "aria-owns": "eq-tcell-1u65p58-0-0 eq-tcell-1u65p58-0-1 eq-tcell-1u65p58-0-2 eq-tcell-1u65p58-0-3",
                 "aria-rowindex": "1",
                 "role": "row"
               },
@@ -5921,20 +5915,12 @@
                   "events": [],
                   "children": [
                     {
-                      "tag": "span",
+                      "tag": "div",
                       "attrs": {
-                        "class": "eq-16x7aca eq-7gvrt4 eq-type-caption"
+                        "class": "eq-1eb13m5 eq-kngwsg"
                       },
                       "events": [],
-                      "children": [
-                        {
-                          "tag": "#text",
-                          "text": "4:3",
-                          "attrs": {},
-                          "events": [],
-                          "children": []
-                        }
-                      ]
+                      "children": []
                     }
                   ]
                 },
@@ -6324,8 +6310,10 @@
                   "tag": "div",
                   "key": "0:0",
                   "attrs": {
-                    "aria-hidden": "true",
-                    "class": "eq-1avhl7d eq-1fo26cq eq-1ogof62 eq-1xlbso6 eq-1yxcnfo eq-mfc69x"
+                    "aria-colindex": "1",
+                    "class": "eq-1avhl7d eq-1fo26cq eq-1ogof62 eq-1xlbso6 eq-1yxcnfo eq-mfc69x",
+                    "id": "eq-tcell-1u65p58-0-0",
+                    "role": "columnheader"
                   },
                   "events": [],
                   "children": [
@@ -6478,7 +6466,7 @@
             {
               "tag": "div",
               "attrs": {
-                "aria-owns": "eq-tcell-1u65p58-0-1 eq-tcell-1u65p58-0-2 eq-tcell-1u65p58-0-3",
+                "aria-owns": "eq-tcell-1u65p58-0-0 eq-tcell-1u65p58-0-1 eq-tcell-1u65p58-0-2 eq-tcell-1u65p58-0-3",
                 "aria-rowindex": "1",
                 "role": "row"
               },
@@ -14276,8 +14264,10 @@
                               "tag": "div",
                               "key": "0:0",
                               "attrs": {
-                                "aria-hidden": "true",
-                                "class": "eq-11kg7e8 eq-1avhl7d eq-1efxekf eq-1ogof62 eq-1xlbso6 eq-mfc69x"
+                                "aria-colindex": "1",
+                                "class": "eq-11kg7e8 eq-1avhl7d eq-1efxekf eq-1ogof62 eq-1xlbso6 eq-mfc69x",
+                                "id": "eq-tcell-lq84u1-0-0",
+                                "role": "columnheader"
                               },
                               "events": [],
                               "children": [
@@ -14548,7 +14538,7 @@
                         {
                           "tag": "div",
                           "attrs": {
-                            "aria-owns": "eq-tcell-lq84u1-0-1 eq-tcell-lq84u1-0-2 eq-tcell-lq84u1-0-3 eq-tcell-lq84u1-0-4 eq-tcell-lq84u1-0-5 eq-tcell-lq84u1-0-6",
+                            "aria-owns": "eq-tcell-lq84u1-0-0 eq-tcell-lq84u1-0-1 eq-tcell-lq84u1-0-2 eq-tcell-lq84u1-0-3 eq-tcell-lq84u1-0-4 eq-tcell-lq84u1-0-5 eq-tcell-lq84u1-0-6",
                             "aria-rowindex": "1",
                             "role": "row"
                           },
@@ -22280,8 +22270,10 @@
                               "tag": "div",
                               "key": "0:0",
                               "attrs": {
-                                "aria-hidden": "true",
-                                "class": "eq-11kg7e8 eq-1avhl7d eq-1efxekf eq-1ogof62 eq-1xlbso6 eq-mfc69x"
+                                "aria-colindex": "1",
+                                "class": "eq-11kg7e8 eq-1avhl7d eq-1efxekf eq-1ogof62 eq-1xlbso6 eq-mfc69x",
+                                "id": "eq-tcell-lq84u1-0-0",
+                                "role": "columnheader"
                               },
                               "events": [],
                               "children": [
@@ -22506,7 +22498,7 @@
                         {
                           "tag": "div",
                           "attrs": {
-                            "aria-owns": "eq-tcell-lq84u1-0-1 eq-tcell-lq84u1-0-2 eq-tcell-lq84u1-0-3 eq-tcell-lq84u1-0-4 eq-tcell-lq84u1-0-5 eq-tcell-lq84u1-0-6",
+                            "aria-owns": "eq-tcell-lq84u1-0-0 eq-tcell-lq84u1-0-1 eq-tcell-lq84u1-0-2 eq-tcell-lq84u1-0-3 eq-tcell-lq84u1-0-4 eq-tcell-lq84u1-0-5 eq-tcell-lq84u1-0-6",
                             "aria-rowindex": "1",
                             "role": "row"
                           },

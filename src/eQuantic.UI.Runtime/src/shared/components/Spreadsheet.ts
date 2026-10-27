@@ -85,7 +85,7 @@ export class Spreadsheet extends StatefulComponent {
     }
 
     static cellRoleAt(row: number, column: number) {
-        return row === 0 && column === 0 ? 'none' : row === 0 ? 'columnHeader' : column === 0 ? 'rowHeader' : 'cell';
+        return row === 0 ? 'columnHeader' : column === 0 ? 'rowHeader' : 'cell';
     }
 
     static inAny(ranges: SheetRange[], cell: CellRef) {

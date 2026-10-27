@@ -45,19 +45,30 @@ viewport, `aria-rowindex` on each row and `aria-colindex` on each cell, counted 
 
 ### Requirement: A cell says its part
 
-In a table or a grid, a cell SHALL read as a cell unless it says it is the header of its column, the
-header of its row, or nothing a reader reaches, on every target. In a grid, a cell that says it is
+In a table or a grid, a cell SHALL read as a cell unless it says it is the header of its column or the
+header of its row, on every target, and every cell the table holds SHALL be one a reader reaches: the
+corner between two headers is the empty header of the row headers' column, and a `TableView` whose
+builder returns nothing for a cell SHALL hold it as a blank cell. In a grid, a cell that says it is
 selected SHALL read as selected, and the one cell that says it is current SHALL read as current. A
 header's name SHALL be what it shows. On the web a header of a column SHALL be `role="columnheader"`, a
 header of a row `role="rowheader"`, a selected cell SHALL carry `aria-selected="true"` and the current
-one `aria-current="true"`, and a cell that is nothing a reader reaches SHALL be hidden from it.
+one `aria-current="true"`, and a column's header SHALL stand at the same place among the cells its row
+owns as each cell of that column among the cells of its own row, since a browser places a cell by that
+order rather than by its `aria-colindex`.
 
 #### Scenario: Headers and a corner
 
-- **WHEN** a grid's row 0 holds the headers of its columns, its column 0 the headers of its rows, and
-  the cell at row 0 and column 0 says it is nothing a reader reaches
+- **WHEN** a grid's row 0 holds the headers of its columns, the corner at row 0 and column 0 among them,
+  and its column 0 the headers of its rows
 - **THEN** the cell of row 0 and column 2 reads as the header of its column and the cell of row 3 and
-  column 0 as the header of its row, on every target, and the corner is not read
+  column 0 as the header of its row, on every target, the corner reads as a header, and on the web every
+  row owns its cells in the same order of columns as row 0 owns its headers
+
+#### Scenario: An empty cell
+
+- **WHEN** a table's builder returns nothing for the cell of row 2 and column 1
+- **THEN** that cell reads as a blank cell on every target, and on the web row 2 owns all four of its
+  cells, in the order of their columns
 
 #### Scenario: Selected and current
 

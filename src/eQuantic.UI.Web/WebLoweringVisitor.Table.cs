@@ -91,15 +91,9 @@ internal sealed partial class WebLoweringVisitor
     private static string TableCellId(string scope, int row, int column) => $"eq-tcell-{scope}-{row}-{column}";
 
     /// <summary>A cell of a table or a grid as a reader meets it (TS twin: describeTableCell): its id, its
-    /// role, its column and what it spans, and in a grid whether it is selected and whether it is current. A cell that is
-    /// nothing a reader reaches is hidden from it, and no row owns it.</summary>
+    /// role, its column and what it spans, and in a grid whether it is selected and whether it is current.</summary>
     private static void DescribeTableCell(HtmlElement wrapper, TableViewCell cell, TableSemantics table)
     {
-        if (cell.Role == TableCellRole.None)
-        {
-            wrapper.AriaHidden = true;
-            return;
-        }
         wrapper.Id = TableCellId(table.Scope, cell.Row, cell.Column);
         wrapper.Role = cell.Role switch
         {
@@ -117,7 +111,9 @@ internal sealed partial class WebLoweringVisitor
 
     /// <summary>The rows of a table or a grid (TS twin: lowerTableRows): one per row that holds built cells,
     /// owning them in column order whichever band draws them, since a row's cells live in the pinned
-    /// column's band and the body's. A box of no size, last among the viewport's children, where the
+    /// column's band and the body's. A browser places a cell by its order among the cells its row owns, not
+    /// by its <c>aria-colindex</c>, so a header stands over its column only while every row owns the same
+    /// columns (TableCellRole says what Safari read when the corner was left out). A box of no size, last among the viewport's children, where the
     /// runtime's after-pass, which finds the bands and the scrollbars by their place, never looks.</summary>
     private static HtmlElement LowerTableRows(TableViewport viewport, TableSemantics table)
     {
@@ -126,7 +122,7 @@ internal sealed partial class WebLoweringVisitor
             Style = new HtmlStyle { Position = Position.Absolute, Width = "0", Height = "0", Overflow = "hidden" },
             Role = "rowgroup",
         };
-        var owned = viewport.Cells.Where(cell => !cell.Mark && cell.Role != TableCellRole.None)
+        var owned = viewport.Cells.Where(cell => !cell.Mark)
             .GroupBy(cell => cell.Row)
             .OrderBy(row => row.Key);
         foreach (var row in owned)

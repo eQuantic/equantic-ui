@@ -11,8 +11,12 @@
   activation of a cell or a header is a tap at its centre on both targets. Found on the way and fixed:
   Photon's live region announcer recorded a change inside its quiet window as said, so the second of two
   quick arrows was never heard; only the macOS shell posted an announcement, which iOS and Android now do
-  too; and a heading's level reached VoiceOver as garbage on macOS (#1107). The code surface's accessible
-  value and invalid state is #1078, next
+  too; and a heading's level reached VoiceOver as garbage on macOS (#1107). Heard with VoiceOver in Safari,
+  the hidden corner put each column's header a column early, since WebKit places a cell by its order in its
+  row: every cell a table holds is now one a reader reaches, the corner an empty header and a cell the
+  builder leaves empty a blank one. VoiceOver's own navigation cannot yet walk into a Photon window on macOS
+  (#1111). The code surface's accessible value and invalid state is #1078, next
   ([#1081](https://github.com/eQuantic/equantic-ui/issues/1081),
-  [#1107](https://github.com/eQuantic/equantic-ui/issues/1107)). Proposed and archived through OpenSpec
+  [#1107](https://github.com/eQuantic/equantic-ui/issues/1107),
+  [#1111](https://github.com/eQuantic/equantic-ui/issues/1111)). Proposed and archived through OpenSpec
   (`openspec/specs/table-viewport`, `spreadsheet`, `native-accessibility`).

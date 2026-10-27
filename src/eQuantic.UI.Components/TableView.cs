@@ -53,7 +53,8 @@ public sealed class TableView : StatefulComponent
     /// <summary>The extents of the columns.</summary>
     public TableSpans Columns { get; }
 
-    /// <summary>The cell at a row and a column, or nothing for an empty one.</summary>
+    /// <summary>The cell at a row and a column, or nothing for an empty one, which a table or a grid still
+    /// holds as a blank cell (see <see cref="Role"/>).</summary>
     public Func<int, int, VisualNode?> CellBuilder { get; }
 
     /// <summary>How many leading rows stay at the top while the others scroll.</summary>
@@ -177,8 +178,12 @@ public sealed class TableView : StatefulComponent
     private void Place(TableViewport viewport, int row, int column)
     {
         var config = _config;
-        if (config.CellBuilder(row, column) is not { } child) return;
-        viewport.Add(new TableViewCell(row, column, child)
+        // An empty cell of a table or a grid is still a cell, which a reader reaches as blank: one left out
+        // of its row would move every cell after it onto the column before (TableCellRole says why). A
+        // group has no rows to keep, and builds nothing for it.
+        var child = config.CellBuilder(row, column);
+        if (child is null && config.Role == TableRole.Group) return;
+        viewport.Add(new TableViewCell(row, column, child ?? new Box())
         {
             Role = config.CellRole?.Invoke(row, column) ?? TableCellRole.Cell,
             Selected = config.Selected?.Invoke(row, column) ?? false,

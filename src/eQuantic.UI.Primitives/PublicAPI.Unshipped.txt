@@ -155,7 +155,6 @@ eQuantic.UI.Primitives.SheetSurface.Announcement.init -> void
 eQuantic.UI.Primitives.TableCellRole.Cell = 0 -> eQuantic.UI.Primitives.TableCellRole
 eQuantic.UI.Primitives.TableCellRole.ColumnHeader = 1 -> eQuantic.UI.Primitives.TableCellRole
 eQuantic.UI.Primitives.TableCellRole.RowHeader = 2 -> eQuantic.UI.Primitives.TableCellRole
-eQuantic.UI.Primitives.TableCellRole.None = 3 -> eQuantic.UI.Primitives.TableCellRole
 eQuantic.UI.Primitives.TableCellRole
 eQuantic.UI.Primitives.TableRole.Group = 0 -> eQuantic.UI.Primitives.TableRole
 eQuantic.UI.Primitives.TableRole.Table = 1 -> eQuantic.UI.Primitives.TableRole

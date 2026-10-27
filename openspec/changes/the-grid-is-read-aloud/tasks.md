@@ -3,7 +3,7 @@
 ## 1. The vocabulary
 
 - [x] 1.1 `TableRole` (`Group`, `Table`, `Grid`) and `TableViewport.Role`; `TableCellRole` (`Cell`,
-      `ColumnHeader`, `RowHeader`, `None`) and `TableViewCell.Role`, `Selected` and `Current`; `TableView`'s
+      `ColumnHeader`, `RowHeader`) and `TableViewCell.Role`, `Selected` and `Current`; `TableView`'s
       `Role`, `CellRole`, `Selected` and `Current`, written onto each cell it builds; `SheetSurface.Announcement`;
       the runtime's node twins and generated enums; declare the `PublicAPI` lines; verify through
       `TableSemanticsTests` and `table-viewport-web.spec.ts` that a built cell carries its role, selection
@@ -18,8 +18,8 @@
 
 - [x] 2.1 The runtime's lowering of a `Table` or `Grid` viewport: `role`, label, `aria-rowcount`,
       `aria-colcount` and, for a grid, `aria-multiselectable`; the zero-size `rowgroup` of `row`s with
-      `aria-rowindex` and `aria-owns` in column order; each cell's `id`, role and `aria-colindex`; a `None`
-      cell `aria-hidden`; `aria-selected` and `aria-current` in a grid; the bands, layers and scrollbars
+      `aria-rowindex` and `aria-owns` in column order; each cell's `id`, role and `aria-colindex`;
+      `aria-selected` and `aria-current` in a grid; the bands, layers and scrollbars
       `role="none"`; a `Group` viewport unchanged; verify `table-viewport-web.spec.ts` cases for the spec's
       "A grid of Excel's extent on the web", "A table", "A group by default", "Headers and a corner",
       "Selected and current" and "A cell that spans"
@@ -31,12 +31,18 @@
       new attributes; verify it and record the measurement in the pull request
 - [x] 2.4 Check against the real thing: the dashboard's table page built with `TableRole.Table`, in
       Chromium's accessibility tree (rows owning their cells across the pinned column, indices, counts)
+- [x] 2.5 Every cell a table holds is one a reader reaches (design, decision 1: Safari read each header a
+      column early while the corner was hidden): `TableCellRole.None` goes, the spreadsheet's corner is the
+      empty header of the row numbers' column, and `TableView` holds an empty cell as a blank one in a
+      table or a grid; verify `table-viewport-web.spec.ts` and `TableSemanticsWebTests` for the spec's
+      "Headers and a corner" (every row owning its cells in its headers' order) and "An empty cell",
+      `TableSemanticsTests` for the blank cell on Photon, A/B against the `TableView` before it
 
 ## 3. A table and a grid on Photon
 
 - [x] 3.1 The semantics walk: a `Table` or `Grid` viewport announces its role and extent; a cell
       announces its role, place, `Selected` and `Current`, named by the text its content holds, without
-      descending into that text and still reaching any control inside; a `None` cell and a mark announce
+      descending into that text and still reaching any control inside; a mark announces
       nothing; verify `LabelledNodesReachSemanticsTests` and new `TableSemanticsTests` for the spec's
       "The same grid on Photon", "Headers and a corner" and "Selected and current"
 - [x] 3.2 `NativeRole` names the five roles on AppKit, Android and UIKit (`AXTable`, `AXCell`,
@@ -85,7 +91,7 @@
       Portuguese" on Photon, `spreadsheet-read-aloud-web.spec.ts` for the same keys in the runtime, and the
       parity fixture's spreadsheet cases
 - [x] 6.2 `Spreadsheet` builds its table as a `Grid` named after the sheet, headers as `ColumnHeader` and
-      `RowHeader`, the corner `None`, the selected ranges' cells `Selected` and the active cell `Current`,
+      `RowHeader`, the corner the empty header of the row numbers, the selected ranges' cells `Selected` and the active cell `Current`,
       and sets `SheetSurface.Announcement`; the sheet's host stops claiming the grid role on both lowerings;
       verify `SurfaceSsrTests`, `sheet-surface-web.spec.ts` and `SpreadsheetComponentTests` for the spec's
       "Where a reader finds a cell" and "The selection and the active cell"

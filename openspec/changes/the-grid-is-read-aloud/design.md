@@ -52,8 +52,8 @@ what the cell is. Here the viewport already places `TableViewCell`s, and `TableV
 child its builder returns. So the vocabulary gains:
 
 - `TableViewport.Role`, a `TableRole`: `Group` (today's, the default), `Table`, `Grid`.
-- `TableViewCell.Role`, a `TableCellRole`: `Cell` (the default), `ColumnHeader`, `RowHeader`, `None`
-  (a corner, nothing a reader reaches); `TableViewCell.Selected` and `TableViewCell.Current`.
+- `TableViewCell.Role`, a `TableCellRole`: `Cell` (the default), `ColumnHeader`, `RowHeader`;
+  `TableViewCell.Selected` and `TableViewCell.Current`.
 - `TableView.Role`, and `CellRole` and `Selected` as functions of the row and column, and `Current` as
   a `TableRange` of one cell, which `TableView` writes onto each cell it builds. The builder keeps
   returning the child.
@@ -61,6 +61,17 @@ child its builder returns. So the vocabulary gains:
 *Alternatives:* the builder returning a `TableViewCell` (Flutter's shape) repeats the row and column
 the cell already carries and breaks every builder for no gain; deriving headers from the pinned bands
 is wrong for a table whose pinned row is data.
+
+*Measured, and changed:* the role set first had a fourth, `None`, for a corner no reader reaches, hidden on
+the web and owned by no row. VoiceOver in Safari then read the header of column H over the cells of
+column G: WebKit places a cell by its order among the cells its row owns and reads no `aria-colindex`
+for it, so the headers' row, one cell short, put every header one column early. A role of nothing would
+set the same trap for any author whose cell sits mid-row, so the vocabulary has none: every cell a table
+holds is one a reader reaches, the spreadsheet's corner is the empty header of the row numbers' column,
+and `TableView` holds a cell its builder leaves empty as a blank one in a table or a grid (a group, with
+no rows to keep, still builds nothing for it). Photon, which hands AppKit and Android each cell's indexes,
+read the headers right either way; the rule is the web's, and it costs the other targets one empty
+header.
 
 ### 2. On the web, rows own their cells across the bands
 
@@ -72,7 +83,7 @@ and `aria-colindex`; the bands, the layers and the scrollbars become `role="none
 `role="table"` or `"grid"`, its label, `aria-rowcount` and `aria-colcount` (and
 `aria-multiselectable="true"` for a grid). Ids follow the `Navigable` grid's rule, a scope hashed from
 the viewport's label with the atomizer's FNV, so the server's first pass and hydration write the same
-ones (`eq-tcell-{scope}-{row}-{column}`). A `None` cell is `aria-hidden`; marks stay `inert`.
+ones (`eq-tcell-{scope}-{row}-{column}`). Marks stay `inert`, and no cell is hidden (decision 1).
 
 The sheet's host stops claiming the grid role (it keeps its class, its door and its keyboard), and the
 spreadsheet names its table with the sheet's label: the grid is the table. The phrase is composed by the

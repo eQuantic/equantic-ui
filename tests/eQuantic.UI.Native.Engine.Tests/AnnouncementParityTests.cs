@@ -133,8 +133,7 @@ public class AnnouncementParityTests
             PinnedColumns = 1,
             Label = "Ledger",
             Role = role,
-            CellRole = (row, column) => row == 0 && column == 0 ? TableCellRole.None
-                : row == 0 ? TableCellRole.ColumnHeader
+            CellRole = (row, column) => row == 0 ? TableCellRole.ColumnHeader
                 : column == 0 ? TableCellRole.RowHeader
                 : TableCellRole.Cell,
             Selected = (row, column) => column == 2 && row >= 2 && row <= 3,

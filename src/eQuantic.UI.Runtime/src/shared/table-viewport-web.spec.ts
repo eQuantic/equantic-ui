@@ -463,10 +463,10 @@ interface FakeMotion {
 }
 
 describe('A table and a grid on the web (#1081)', () => {
-  type CellRole = 'cell' | 'columnHeader' | 'rowHeader' | 'none';
+  type CellRole = 'cell' | 'columnHeader' | 'rowHeader';
 
   /** A viewport of Excel's extent, its first row and column pinned, holding the cells of rows 0 to 30 and
-   * columns 0 to 12: row 0's the headers of their columns, column 0's of their rows, the corner none,
+   * columns 0 to 12: row 0's the headers of their columns, the corner among them, column 0's of their rows,
    * and the cells of rows 2 to 4 of column 2 selected with the one of row 3 current. */
   function lowered(role?: 'group' | 'table' | 'grid'): HtmlNode {
     const scroll = new TableScroll();
@@ -476,8 +476,7 @@ describe('A table and a grid on the web (#1081)', () => {
     const node = new TableViewport(rows, columns, scroll, { pinnedRows: 1, pinnedColumns: 1, label: 'Ledger', ...(role ? { role } : {}) });
     for (let row = 0; row <= 30; row++)
       for (let column = 0; column <= 12; column++) {
-        const cellRole: CellRole =
-          row === 0 && column === 0 ? 'none' : row === 0 ? 'columnHeader' : column === 0 ? 'rowHeader' : 'cell';
+        const cellRole: CellRole = row === 0 ? 'columnHeader' : column === 0 ? 'rowHeader' : 'cell';
         node.add(new TableViewCell(row, column, new Text(`${row}:${column}`), false, {
           role: cellRole,
           selected: column === 2 && row >= 2 && row <= 4,
@@ -521,15 +520,27 @@ describe('A table and a grid on the web (#1081)', () => {
     for (let band = 0; band < 8; band++) expect((grid.children[band] as HtmlNode).attributes['role']).toBe('none');
   });
 
-  it('says which cells are headers, and hides the corner from a reader', () => {
+  it('says which cells are headers, the corner among the headers of the columns', () => {
     const grid = lowered('grid');
     expect(cellAt(grid, 0, 2).attributes['role']).toBe('columnheader');
     expect(cellAt(grid, 3, 0).attributes['role']).toBe('rowheader');
     const corner = cellAt(grid, 0, 0);
-    expect(corner.attributes['aria-hidden']).toBe('true');
-    expect(corner.attributes['id']).toBeUndefined();
+    expect(corner.attributes['role']).toBe('columnheader');
+    expect(corner.attributes['aria-hidden']).toBeUndefined();
     const row0 = (grid.children[10] as HtmlNode).children[0] as HtmlNode;
-    expect(String(row0.attributes['aria-owns']).split(' ')).toHaveLength(12);
+    expect(String(row0.attributes['aria-owns']).split(' ')[0]).toBe(corner.attributes['id']);
+  });
+
+  it("stands each header at its column's place in every row, where a browser counts it", () => {
+    // A browser places a cell by its order among the cells its row owns, not by its aria-colindex: Safari
+    // read the header of column H over column G while the corner was left out of the headers' row.
+    const grid = lowered('grid');
+    const rows = (grid.children[10] as HtmlNode).children as HtmlNode[];
+    const columnsOf = (row: HtmlNode) =>
+      String(row.attributes['aria-owns']).split(' ').map((id) => byId(grid, id)!.attributes['aria-colindex']);
+    const headers = columnsOf(rows[0]);
+    expect(headers).toHaveLength(13);
+    for (const row of rows) expect(columnsOf(row)).toEqual(headers);
   });
 
   it('marks the selected cells and the current one in a grid, and no other', () => {

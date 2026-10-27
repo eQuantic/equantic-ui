@@ -3,8 +3,8 @@
 ### Requirement: The grid is read aloud
 
 The spreadsheet's grid SHALL read as a grid named after the sheet, on every target: the column letters
-as the headers of their columns, the row numbers as the headers of their rows, the corner as nothing a
-reader reaches, and each cell as a grid cell whose name is what it shows, its row and its column those
+as the headers of their columns, the row numbers as the headers of their rows, the corner as the empty
+header of the row numbers' column, and each cell as a grid cell whose name is what it shows, its row and its column those
 of the sheet. The cells of every selected range SHALL read as selected and the active cell as current.
 The sheet's surface SHALL keep the keyboard, and on the web the grid role SHALL be the table's rather
 than the surface's.

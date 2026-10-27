@@ -162,7 +162,7 @@ public sealed class Spreadsheet : StatefulComponent
             // The surface is the sheet's one stop of the Tab order, and an arrow moves the active cell.
             CanRequestFocus = false,
             // The grid a reader walks (#1081): the letters and the numbers head their columns and rows, the
-            // corner is nothing to reach, the cells of every range are selected and the active cell is current.
+            // cells of every range are selected and the active cell is current.
             Role = TableRole.Grid,
             Label = SdkStrings.Spreadsheet,
             CellRole = (row, column) => CellRoleAt(row, column),
@@ -191,11 +191,11 @@ public sealed class Spreadsheet : StatefulComponent
         });
     }
 
-    /// <summary>What a cell of the table is to a reader: the headers' row heads the columns, the headers'
-    /// column heads the rows, and the corner between them is nothing to reach.</summary>
+    /// <summary>What a cell of the table is to a reader: the headers' row heads the columns, the corner
+    /// with them as the empty header of the row numbers, which keeps its place in the row (TableCellRole
+    /// says why), and the headers' column heads the rows.</summary>
     private static TableCellRole CellRoleAt(int row, int column) =>
-        row == 0 && column == 0 ? TableCellRole.None
-        : row == 0 ? TableCellRole.ColumnHeader
+        row == 0 ? TableCellRole.ColumnHeader
         : column == 0 ? TableCellRole.RowHeader
         : TableCellRole.Cell;
 

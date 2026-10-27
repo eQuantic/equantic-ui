@@ -179,7 +179,7 @@ export type SizeKindValue = 'hug' | 'fill' | 'fixed' | 'windowMinus';
 
 export type SizeVariantValue = 'small' | 'medium' | 'large' | 'xLarge';
 
-export type TableCellRoleValue = 'cell' | 'columnHeader' | 'rowHeader' | 'none';
+export type TableCellRoleValue = 'cell' | 'columnHeader' | 'rowHeader';
 
 export type TableRoleValue = 'group' | 'table' | 'grid';
 

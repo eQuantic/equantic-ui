@@ -167,7 +167,8 @@ public class ComponentParityFixtureTests
         // boxes it starts from, which hydration adopts by their class hashes.
         ("table-view", TableGrid(), NoPresses),
         // A TABLE and a GRID (#1081): the rows, last, owning their cells across the bands by id, each cell
-        // with its role and column, the corner hidden, and in the grid the selection and the current cell.
+        // with its role and column, the corner among the columns' headers, an empty cell still a cell, and in
+        // the grid the selection and the current cell.
         ("table-view-table", TableAs(TableRole.Table), NoPresses),
         ("table-view-grid", TableAs(TableRole.Grid), NoPresses),
         // One that declines the focus: no Tab stop of its own on either side.
@@ -389,14 +390,13 @@ public class ComponentParityFixtureTests
     }
 
     private static TableView TableAs(TableRole role) => new(new UniformTableSpans(6, 28), new UniformTableSpans(4, 96),
-        (row, column) => new Text($"{row}:{column}", TypeRole.Caption, Theme.TextPrimary))
+        (row, column) => row == 4 && column == 3 ? null : new Text($"{row}:{column}", TypeRole.Caption, Theme.TextPrimary))
     {
         PinnedRows = 1,
         PinnedColumns = 1,
         Label = "ledger",
         Role = role,
-        CellRole = (row, column) => row == 0 && column == 0 ? TableCellRole.None
-            : row == 0 ? TableCellRole.ColumnHeader
+        CellRole = (row, column) => row == 0 ? TableCellRole.ColumnHeader
             : column == 0 ? TableCellRole.RowHeader
             : TableCellRole.Cell,
         Selected = (row, column) => column == 2 && row >= 2 && row <= 3,

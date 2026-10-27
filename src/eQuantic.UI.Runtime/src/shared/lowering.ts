@@ -1989,14 +1989,9 @@ function tableCellId(scope: string, row: number, column: number): string {
 }
 
 /** A cell of a table or a grid as a reader meets it (C# twin: DescribeTableCell): its id, its role, its
- * column and what it spans, and in a grid whether it is selected and whether it is current. A cell that is nothing a
- * reader reaches is hidden from it, and no row owns it. */
+ * column and what it spans, and in a grid whether it is selected and whether it is current. */
 function describeTableCell(wrapper: HtmlNode, cell: TableViewCellNode, semantics: TableSemantics): void {
   const role = cell.role ?? 'cell';
-  if (role === 'none') {
-    wrapper.attributes['aria-hidden'] = 'true';
-    return;
-  }
   wrapper.attributes['id'] = tableCellId(semantics.scope, cell.row, cell.column);
   wrapper.attributes['role'] =
     role === 'columnHeader' ? 'columnheader' : role === 'rowHeader' ? 'rowheader' : semantics.grid ? 'gridcell' : 'cell';
@@ -2010,12 +2005,14 @@ function describeTableCell(wrapper: HtmlNode, cell: TableViewCellNode, semantics
 
 /** The rows of a table or a grid (C# twin: LowerTableRows): one per row that holds built cells, owning
  * them in column order whichever band draws them, since a row's cells live in the pinned column's band
- * and the body's. A box of no size, last among the viewport's children, where the after-pass, which
+ * and the body's. A browser places a cell by its order among the cells its row owns, not by its
+ * `aria-colindex`, so a header stands over its column only while every row owns the same columns
+ * (TableCellRole says what Safari read when the corner was left out). A box of no size, last among the viewport's children, where the after-pass, which
  * finds the bands and the scrollbars by their place, never looks. */
 function lowerTableRows(node: TableViewportNode, semantics: TableSemantics): HtmlNode {
   const owned = new Map<number, TableViewCellNode[]>();
   for (const cell of node.cells ?? []) {
-    if (cell.mark || (cell.role ?? 'cell') === 'none') continue;
+    if (cell.mark) continue;
     const row = owned.get(cell.row);
     if (row) row.push(cell);
     else owned.set(cell.row, [cell]);

@@ -145,7 +145,7 @@ function summing(first = '7.01', second = '14.02', third = 'text'): SheetControl
 }
 
 /** The C# `TableAs`: a table or a grid of six rows and four columns, its first row and column pinned and
- * their headers, the corner hidden, rows 2 and 3 of column 2 selected and the one of row 3 current. */
+ * their headers, the corner among the columns' headers, rows 2 and 3 of column 2 selected and the one of row 3 current. */
 function tableAs(role: 'table' | 'grid'): unknown {
   return new TableView(
     new UniformTableSpans(6, 28),

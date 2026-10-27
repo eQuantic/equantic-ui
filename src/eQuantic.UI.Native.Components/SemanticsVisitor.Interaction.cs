@@ -211,12 +211,10 @@ internal sealed partial class SemanticsVisitor
     /// One cell of a table or a grid: the header of its column or of its row, a cell or a grid cell, with
     /// its place in the whole grid and, in a grid, whether it is selected and whether it is current. It is
     /// named by the text it holds, which it consumes, as a button is named by its own; anything else inside
-    /// it, a control, still follows it as a stop of its own. A cell that is nothing a reader reaches says
-    /// nothing, and neither does what it holds.
+    /// it, a control, still follows it as a stop of its own.
     /// </summary>
     private void TableCell(TableViewCell cell, LayoutNode laidOut, bool grid)
     {
-        if (cell.Role == TableCellRole.None) return;
         var inside = new List<SemanticNode>();
         var walker = new SemanticsVisitor(inside);
         foreach (var child in laidOut) SemanticsTree.Walk(child, walker);

@@ -11,13 +11,13 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// <summary>
 /// A table and a grid on Photon (#1081, <see cref="TableViewport.Role"/>): the viewport announces its role
 /// with the whole grid's extent, and each built cell its own role and place, named by what it holds, the
-/// selection and the current cell in a grid; a corner is not read; a group stays what it was. The web's
+/// selection and the current cell in a grid; the corner heads the row headers' column; a group stays what it was. The web's
 /// twin is <c>table-viewport-web.spec.ts</c>.
 /// </summary>
 public class TableSemanticsTests
 {
     /// <summary>A table of Excel's extent, its first row and column pinned and their headers, the corner
-    /// hidden, rows 2 to 4 of column 2 selected and the one of row 3 current.</summary>
+    /// among the headers of the columns, rows 2 to 4 of column 2 selected and the one of row 3 current.</summary>
     private static PhotonHost Open(TableRole role)
     {
         var table = new TableView(new UniformTableSpans(1_048_577, 28), new UniformTableSpans(16_385, 96),
@@ -27,8 +27,7 @@ public class TableSemanticsTests
             PinnedColumns = 1,
             Label = "Ledger",
             Role = role,
-            CellRole = (row, column) => row == 0 && column == 0 ? TableCellRole.None
-                : row == 0 ? TableCellRole.ColumnHeader
+            CellRole = (row, column) => row == 0 ? TableCellRole.ColumnHeader
                 : column == 0 ? TableCellRole.RowHeader
                 : TableCellRole.Cell,
             Selected = (row, column) => column == 2 && row >= 2 && row <= 4,
@@ -56,10 +55,29 @@ public class TableSemanticsTests
         At(host, 5, 2).Selected.Should().BeFalse();
         At(host, 0, 2).Should().Match<SemanticNode>(node => node.Role == SemanticRole.ColumnHeader && node.Label == "0:2");
         At(host, 3, 0).Should().Match<SemanticNode>(node => node.Role == SemanticRole.RowHeader && node.Label == "3:0");
-        host.Semantics().Should().NotContain(node => node.Place == new TableRange(0, 0));
+        At(host, 0, 0).Should().Match<SemanticNode>(node => node.Role == SemanticRole.ColumnHeader && node.Label == "0:0");
         host.Semantics().Should().NotContain(node => node.Role == SemanticRole.StaticText && node.Label == "3:2",
             "a cell's text is its name, not a paragraph after it");
         host.Semantics().Count(node => node.Current).Should().Be(1);
+    }
+
+    [Fact]
+    public void AnEmptyCellOfATable_IsStillACell_ReadAsBlank()
+    {
+        // The web keeps it so that no cell after it in its row moves onto the column before (TableCellRole);
+        // Photon holds the same cell, so a reader meets a blank cell on both.
+        var table = new TableView(new UniformTableSpans(4, 28), new UniformTableSpans(4, 96),
+            (row, column) => row == 2 && column == 1 ? null : new Text($"{row}:{column}", TypeRole.BodyM))
+        {
+            Label = "Ledger",
+            Role = TableRole.Table,
+        };
+        var host = new PhotonHost(table, PhotonTheme.Instance, ThemeMode.Light, 900, 600) { SmoothScroll = false };
+        host.RenderFrame(new DisplayListBuilder(), 0);
+        host.RenderFrame(new DisplayListBuilder(), 16);
+
+        At(host, 2, 1).Should().Match<SemanticNode>(node => node.Role == SemanticRole.Cell && node.Label.Length == 0);
+        At(host, 2, 2).Label.Should().Be("2:2");
     }
 
     [Fact]

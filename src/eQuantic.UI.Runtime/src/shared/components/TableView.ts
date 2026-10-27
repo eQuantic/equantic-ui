@@ -1,4 +1,4 @@
-import { $eq, BuildContext, Size, SizeValue, StatefulComponent, TableOffset, TableRoleValue, TableScroll, TableSpans, TableViewCell, TableViewport, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Box, BuildContext, Size, SizeValue, StatefulComponent, TableOffset, TableRoleValue, TableScroll, TableSpans, TableViewCell, TableViewport, UiComponent, VisualNode } from "../runtime-exports";
 
 export class TableView extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TableView';
@@ -105,10 +105,10 @@ export class TableView extends StatefulComponent {
 
     place(viewport: TableViewport, row: number, column: number) {
         let config = this._config;
-        let child: any; 
-        if (!((child = config.cellBuilder(row, column)) != null)) return;
+        let child = config.cellBuilder(row, column);
+        if (child == null && config.role === 'group') return;
         let current: any; 
-        viewport.add(new TableViewCell(row, column, child, false, { role: config.cellRole?.(row, column) ?? 'cell', selected: config.selected?.(row, column) ?? false, current: (current = config.current) != null && current.row === row && current.column === column }));
+        viewport.add(new TableViewCell(row, column, child ?? new Box(), false, { role: config.cellRole?.(row, column) ?? 'cell', selected: config.selected?.(row, column) ?? false, current: (current = config.current) != null && current.row === row && current.column === column }));
     }
 
     static addMark(viewport: TableViewport, mark: TableViewCell, index: number, pinnedRows: number, pinnedColumns: number) {

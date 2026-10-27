@@ -63,7 +63,8 @@ public class SpreadsheetReadAloudTests
         At(host, 0, 2).Should().Match<SemanticNode>(node => node.Role == SemanticRole.ColumnHeader && node.Label == "B");
         At(host, 3, 0).Should().Match<SemanticNode>(node => node.Role == SemanticRole.RowHeader && node.Label == "3");
         At(host, 3, 2).Should().Match<SemanticNode>(node => node.Role == SemanticRole.GridCell && node.Label == "14,02");
-        host.Semantics().Should().NotContain(node => node.Place == new TableRange(0, 0), "the corner is nothing to reach");
+        At(host, 0, 0).Should().Match<SemanticNode>(node => node.Role == SemanticRole.ColumnHeader && node.Label.Length == 0,
+            "the corner heads the row numbers' column, and says nothing");
     }
 
     [Fact]
