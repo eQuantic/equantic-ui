@@ -44,16 +44,17 @@ public sealed class ShippedFaces(Func<FontFile, byte[], bool> register)
     /// <summary>
     /// The file of <paramref name="family"/> that sets text at <paramref name="weight"/>, upright or
     /// <paramref name="italic"/>, chosen as a browser chooses among a family's faces (CSS Fonts §5.2), so a
-    /// family draws from the same file on the web, on Apple and on Android (Windows, #1099). The files of the slant asked for, or every file
-    /// when the family ships none of that slant; among them, one whose weights hold the weight asked for;
-    /// failing that, for a weight below 400 the nearest lighter file first and then the nearest heavier,
-    /// for one above 500 the nearest heavier first and then the nearest lighter, and for 400 to 500 the
-    /// heavier files up to 500, then the lighter, then the heavier past 500. Null for a family with no files.
+    /// family draws from the same file on the web, on Apple, on Android and on Windows. The files of the
+    /// slant asked for, or every file when the family ships none of that slant; among them, one whose
+    /// weights hold the weight asked for; failing that, for a weight below 400 the nearest lighter file
+    /// first and then the nearest heavier, for one above 500 the nearest heavier first and then the nearest
+    /// lighter, and for 400 to 500 the heavier files up to 500, then the lighter, then the heavier past 500.
+    /// Null for a family with no files.
     /// <para>
     /// The shell opens THAT file, rather than asking its engine for the family at a weight: the engine
     /// reads a face's weight from its file, and Google's static Thin and ExtraLight of Inter carry the
     /// same weight class there, 250, while CoreText's match by weight picked a neighbouring file for Thin,
-    /// Light and Black as measured (#1082).
+    /// Light and Black as measured (#1082), and DirectWrite drew both from one of them (#1099).
     /// </para>
     /// </summary>
     public static FontFile? FileFor(FontFamily family, FontWeight weight, bool italic)

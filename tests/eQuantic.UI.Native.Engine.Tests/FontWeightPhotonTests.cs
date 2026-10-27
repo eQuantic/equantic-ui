@@ -12,15 +12,47 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// and a family that ships a file per weight was drawn from its Regular or its Bold file whatever the
 /// weight asked. The family here is the tests' own (TestFont), a file at 300, 400 and 700 whose glyphs are
 /// 0.7, 1 and 1.3 of an em wide, so the width a text measures says which file set it.
+/// <para>
+/// The families and the widths they measure are the Windows shell's too (<see cref="FontWeightWindowsTests"/>),
+/// so the two targets are held to one table: every shell sets a weight in the file
+/// <see cref="ShippedFaces.FileFor"/> chooses (#1099).
+/// </para>
 /// </summary>
 public class FontWeightPhotonTests
 {
-    private const string Assembly = "eQuantic.UI.Native.Engine.Tests";
+    internal const string Assembly = "eQuantic.UI.Native.Engine.Tests";
 
-    private static readonly FontFamily WeightFace = new("eQuantic Weight Face",
+    internal static readonly FontFamily WeightFace = new("eQuantic Weight Face",
         new FontFile(Assembly, "eQuantic.UI.Fonts/weights/WeightFace-300.ttf", 300, 300),
         new FontFile(Assembly, "eQuantic.UI.Fonts/weights/WeightFace-400.ttf", 400, 400),
         new FontFile(Assembly, "eQuantic.UI.Fonts/weights/WeightFace-700.ttf", 700, 700));
+
+    /// <summary>The width, in ems, a weight sets <see cref="WeightFace"/> at: the width of the file a browser
+    /// would choose for it.</summary>
+    public static TheoryData<FontWeight, float> FilePerWeight => new()
+    {
+        { FontWeight.Light, 0.7f },
+        { FontWeight.Regular, 1f },
+        { FontWeight.Bold, 1.3f },
+        { FontWeight.Thin, 0.7f },      // no file sets it: the one a browser would choose
+        { FontWeight.Medium, 1f },
+        { FontWeight.SemiBold, 1.3f },
+        { FontWeight.Black, 1.3f },
+    };
+
+    /// <summary>Two files whose OS/2 says one weight, 250, and whose catalog says 100 and 200, as Google's
+    /// static Thin and ExtraLight of Inter do (the catalog reads the two from their STAT, FontCatalogTests),
+    /// their glyphs 0.5 and 0.6 of an em wide. A text engine that weighs a face by its file sees one weight.</summary>
+    internal static readonly FontFamily ThinFace = new("eQuantic Thin Face",
+        new FontFile(Assembly, "eQuantic.UI.Fonts/weights/ThinFace-100.ttf", 100, 100),
+        new FontFile(Assembly, "eQuantic.UI.Fonts/weights/ThinFace-200.ttf", 200, 200));
+
+    /// <summary>The width, in ems, a weight sets <see cref="ThinFace"/> at: two widths, one for each file.</summary>
+    public static TheoryData<FontWeight, float> OneWeightClassTwoWeights => new()
+    {
+        { FontWeight.Thin, 0.5f },
+        { FontWeight.ExtraLight, 0.6f },
+    };
 
     /// <summary>One variable file whose weight axis runs from 100 to 900, its glyphs 0.5 of an em wide at
     /// 100, 1 at its default, 400, and 1.5 at 900, in a straight line on each side.</summary>
@@ -32,16 +64,21 @@ public class FontWeightPhotonTests
     public FontWeightPhotonTests() => FaceResolution.Clear();
 
     [MacTheory]
-    [InlineData(FontWeight.Light, 0.7f)]
-    [InlineData(FontWeight.Regular, 1f)]
-    [InlineData(FontWeight.Bold, 1.3f)]
-    [InlineData(FontWeight.Thin, 0.7f)]      // no file sets it: the one a browser would choose
-    [InlineData(FontWeight.Medium, 1f)]
-    [InlineData(FontWeight.SemiBold, 1.3f)]
-    [InlineData(FontWeight.Black, 1.3f)]
+    [MemberData(nameof(FilePerWeight))]
     public void AFamilyThatShipsAFilePerWeight_IsSetInTheFileOfTheWeightAsked(FontWeight weight, float em)
     {
         var measured = new CoreTextService().Measure("Handgloves", Body with { Family = WeightFace, Weight = weight }, 1f,
+            float.PositiveInfinity, 1);
+
+        measured.Width.Should().BeApproximately(10 * 17 * em, 0.5f);
+        FaceResolution.Unresolved.Should().BeEmpty();
+    }
+
+    [MacTheory]
+    [MemberData(nameof(OneWeightClassTwoWeights))]
+    public void TwoFilesThatSayOneWeight_AreEachSetAtTheWeightTheCatalogGivesIt(FontWeight weight, float em)
+    {
+        var measured = new CoreTextService().Measure("Handgloves", Body with { Family = ThinFace, Weight = weight }, 1f,
             float.PositiveInfinity, 1);
 
         measured.Width.Should().BeApproximately(10 * 17 * em, 0.5f);
