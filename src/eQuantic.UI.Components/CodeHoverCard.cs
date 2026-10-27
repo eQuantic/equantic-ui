@@ -116,6 +116,36 @@ internal static class CodeHoverCard
     }
 
     /// <summary>
+    /// A card that says one thing, <paramref name="said"/>, in the hover card's coat, as wide as it measures up to
+    /// <see cref="MaxColumns"/> and <paramref name="viewWidth"/>: what the editor says when nothing was found where
+    /// the person asked (#1084), as VS Code's message stands at the caret. The keyboard asked, so it is announced.
+    /// </summary>
+    internal static (VisualNode Card, float Width, float Height) Message(ComponentContext context, CodeBlock.CodeMetrics metrics,
+        string said, float viewWidth)
+    {
+        var theme = context.Theme;
+        var prose = metrics.Style with { Mono = false };
+        var proseLine = prose.ScaledLineHeight(context.TypeScale);
+        var chrome = 2 * (Border + Space.S2);
+        var most = MaxColumns * metrics.ColumnWidth + chrome;
+        if (viewWidth > 0) most = MathF.Min(most, viewWidth);
+        var width = MathF.Min(most, MathF.Ceiling(Widest(context, said, prose)) + chrome);
+        var lines = LinesOf(context, said, prose, MathF.Max(1, width - chrome));
+        var card = new LiveRegion(new Box(new BoxStyle
+        {
+            Width = width,
+            Background = theme.Surface,
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Medium)),
+            BorderWidth = Border,
+            BorderColor = theme.Border,
+            Elevation = 2,
+            Padding = EdgeInsets.Symmetric(Space.S2, Space.S1),
+            Clip = true,
+        }, new Text(said, TypeRole.LabelSmall, theme.TextSecondary, maxLines: lines) { StyleOverride = prose }));
+        return (card, width, 2 * (Border + Space.S1) + lines * proseLine);
+    }
+
+    /// <summary>
     /// Where a card <paramref name="width"/> by <paramref name="height"/> stands: its left at
     /// <paramref name="start"/>'s, where what it explains starts (in the surface's coordinates), and its
     /// bottom at the top of that line, or its top at the bottom of the line when the view has no room

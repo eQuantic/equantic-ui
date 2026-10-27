@@ -100,6 +100,10 @@ export class SheetFormulaBar {
         if (!focused && this.holdsTheCaret) this._sheet.entry.focusChanged(false);
     }
 
+    cursorAt(_position: Point) {
+        return 'text';
+    }
+
     toString(): string {
         return 'eQuantic.UI.Sheet.SheetFormulaBar';
     }

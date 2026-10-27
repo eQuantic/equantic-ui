@@ -128,4 +128,8 @@ public sealed class SheetFormulaBar : ICodeSurfaceModel
         // Leaving the bar cancels a composition and keeps the entry open, as leaving the grid does.
         if (!focused && HoldsTheCaret) _sheet.Entry.FocusChanged(false);
     }
+
+    /// <inheritdoc />
+    /// <remarks>The text cursor: the bar follows no link (#1084).</remarks>
+    public PointerCursor CursorAt(Point position) => PointerCursor.Text;
 }

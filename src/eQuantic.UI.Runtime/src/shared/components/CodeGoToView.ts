@@ -1,4 +1,4 @@
-import { $eq, Anchored, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeCompletionView, CodeEditorController, CodeGoTo, CodeGoToEntry, CodeLineCells, CodeSymbolKindValue, Column, CornerRadii, EdgeInsets, LiveRegion, Pressable, Row, SdkStrings, SizeValue, StyleDiff, Text, TextEntry, VisualNode } from "../runtime-exports";
+import { $eq, Anchored, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeCompletionView, CodeEditorController, CodeGoTo, CodeGoToEntry, CodeGoToModeValue, CodeGoToNotFound, CodeLineCells, CodeSymbolKindValue, Column, CornerRadii, EdgeInsets, LiveRegion, Pressable, Row, SdkStrings, SizeValue, StyleDiff, Text, TextEntry, VisualNode } from "../runtime-exports";
 
 export class CodeGoToView {
     static maxWidth: number = 560;
@@ -7,8 +7,9 @@ export class CodeGoToView {
     static build(context: BuildContext, editor: CodeEditorController, metrics: CodeBlock$CodeMetrics, width: number, top: number, typed: (string: string) => void, accept: () => void, dismiss: () => void, pick: (int: number) => void) {
         let goTo = editor.goTo;
         let theme = context.theme;
-        let listed = goTo.mode === 'symbol' && $eq.collections.count(goTo.entries) > 0;
-        let field = new TextEntry(goTo.query, typed, { label: SdkStrings.goTo, placeholder: SdkStrings.goToStart, autofocus: true, onSubmit: accept, onFocusChanged: (focused: boolean) => {
+        let places = CodeGoToView.lists(goTo.mode);
+        let listed = (goTo.mode === 'symbol' || places) && $eq.collections.count(goTo.entries) > 0;
+        let field = new TextEntry(goTo.query, typed, { label: places ? CodeGoToView.title(goTo, $eq.collections.count(goTo.places)) : SdkStrings.goTo, placeholder: places ? SdkStrings.filterPlaces : SdkStrings.goToStart, autofocus: true, onSubmit: accept, onFocusChanged: (focused: boolean) => {
             if (!focused) dismiss();
         } });
         let panel = listed ? CodeGoToView.list(theme, metrics, goTo, width, top, pick) : CodeGoToView.said(theme, metrics, CodeGoToView.saying(editor));
@@ -30,7 +31,23 @@ export class CodeGoToView {
             if (goTo.isAsking) return SdkStrings.readingSymbols;
             return $eq.text.trim($eq.text.substring(goTo.query, 1)).length === 0 ? SdkStrings.noSymbols : SdkStrings.noMatchingSymbols;
         }
+        if (CodeGoToView.lists(goTo.mode)) return SdkStrings.noMatchingPlaces;
         return SdkStrings.goToStart;
+    }
+
+    static lists(mode: CodeGoToModeValue) {
+        return mode === 'definitions' || mode === 'references';
+    }
+
+    static title(goTo: CodeGoTo, count: number) {
+        return goTo.mode === 'references' ? SdkStrings.referencesCount(count) : (() => { const $s = goTo.definitionKind; if ($s === 'declaration') return SdkStrings.declarationsCount(count); if ($s === 'typeDefinition') return SdkStrings.typeDefinitionsCount(count); if ($s === 'implementation') return SdkStrings.implementationsCount(count); return SdkStrings.definitionsCount(count); })();
+    }
+
+    static notFoundText(nothing: CodeGoToNotFound) {
+        let word = nothing.word;
+        let named = word.length > 0;
+        if (nothing.mode === 'references') return named ? SdkStrings.noReferencesFound(word) : SdkStrings.noReferences;
+        return (() => { const $s = nothing.kind; if ($s === 'declaration') return named ? SdkStrings.noDeclarationFound(word) : SdkStrings.noDeclaration; if ($s === 'typeDefinition') return named ? SdkStrings.noTypeDefinitionFound(word) : SdkStrings.noTypeDefinition; if ($s === 'implementation') return named ? SdkStrings.noImplementationFound(word) : SdkStrings.noImplementation; return named ? SdkStrings.noDefinitionFound(word) : SdkStrings.noDefinition; })();
     }
 
     static said(theme: any, metrics: CodeBlock$CodeMetrics, saying: string) {
@@ -41,7 +58,8 @@ export class CodeGoToView {
         let entries = goTo.entries;
         let columns = (Math.trunc(Math.floor(Math.fround(Math.fround(Math.fround(Math.fround(width - Math.fround(2 * 8)) - metrics.lineHeight) - 4) / metrics.columnWidth))) | 0);
         let page = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        page.add(new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(8, 4) }), new Text(SdkStrings.symbolsCount($eq.collections.count(entries)), 'labelSmall', theme.textMuted, 1)));
+        let heading = CodeGoToView.lists(goTo.mode) ? CodeGoToView.title(goTo, $eq.collections.count(entries)) : SdkStrings.symbolsCount($eq.collections.count(entries));
+        page.add(new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(8, 4) }), new Text(heading, 'labelSmall', theme.textMuted, 1)));
         for (let i = top; i < top + CodeGoToView.pageRows && i < $eq.collections.count(entries); i++) {
             let index = i;
             page.add(CodeGoToView.entry(theme, metrics, $eq.collections.item(entries, i), i === goTo.selected, columns, () => pick(index)));
@@ -58,7 +76,8 @@ export class CodeGoToView {
         let accent = theme.colors('primary').base;
         let name = CodeCompletionView.fit(entry.name, columns);
         let row = new Row(4, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill });
-        row.add(CodeCompletionView.glyph(theme, metrics, CodeGoToView.kindOf(entry.kind)));
+        let kind: any; 
+        if ((kind = entry.kind) != null) row.add(CodeCompletionView.glyph(theme, metrics, CodeGoToView.kindOf(kind)));
         row.add(new Text(name, 'labelSmall', ink, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(name, entry.matches, ink, accent) }));
         let room = columns - CodeLineCells.widthOf(name, 4) - 2;
         let held: any; 

@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeEditorController, CodeFuzzyMatch, CodeGoToEntry, CodeGoToLine, CodeGoToModeValue, CodePosition, CodeRange, CodeSymbol, ProviderRequest, Rect, UiThread } from "../runtime-exports";
+import { $eq, CancellationToken, CancellationTokenSource, CodeChange, CodeDefinitionKindValue, CodeDocument, CodeEditorController, CodeFuzzyMatch, CodeGoToEntry, CodeGoToLine, CodeGoToModeValue, CodeGoToNotFound, CodeLocation, CodePosition, CodeRange, CodeSymbol, ProviderRequest, Rect, UiThread } from "../runtime-exports";
 
 export class CodeGoTo {
     constructor(editor: CodeEditorController) {
@@ -19,9 +19,19 @@ export class CodeGoTo {
         this._enclose = false;
         this._generation = 0;
         this._request = null;
+        this._places = [];
+        this._placeAt = -1;
+        this._nearest = -1;
+        this._entryPlaces = [];
+        this._kind = 'definition';
+        this._notFound = null;
+        this._placesGeneration = 0;
+        this._placesRequest = null;
         this.pageSize = 10;
         this.changed = null;
         this._editor = editor;
+        editor.changed = $eq.delegates.combine(editor.changed, this.carry.bind(this));
+        editor.selectionChanged = $eq.delegates.combine(editor.selectionChanged, (_) => this.moved());
     }
 
     _editor!: CodeEditorController;
@@ -41,6 +51,14 @@ export class CodeGoTo {
     _enclose!: boolean;
     _generation!: number;
     _request!: CancellationTokenSource | null;
+    _places!: CodeLocation[];
+    _placeAt!: number;
+    _nearest!: number;
+    _entryPlaces!: number[];
+    _kind!: CodeDefinitionKindValue;
+    _notFound!: CodeGoToNotFound | null;
+    _placesGeneration!: number;
+    _placesRequest!: CancellationTokenSource | null;
     pageSize!: number;
     changed!: (() => void) | null;
 
@@ -69,6 +87,22 @@ export class CodeGoTo {
         return this._entries;
     }
 
+    get definitionKind(): CodeDefinitionKindValue {
+        return this._kind;
+    }
+
+    get places(): CodeLocation[] {
+        return this._places;
+    }
+
+    get placeIndex(): number {
+        return this._placeAt;
+    }
+
+    get notFound(): CodeGoToNotFound | null {
+        return this._notFound;
+    }
+
     get selected(): number {
         return this._selected;
     }
@@ -82,15 +116,24 @@ export class CodeGoTo {
     }
 
     open(mode: CodeGoToModeValue) {
-        if (!this._open) {
-            this._open = true;
-            this._view = this._editor.view;
-            this._editor.completion.dismiss();
-            this._editor.hover.dismiss();
-            this._editor.signatureHelp.dismiss();
-            if (!(this._editor.composition == null)) this._editor.setComposition('');
-        }
+        this.begin();
+        if (CodeGoTo.lists(this._mode)) this._mode = 'none';
         this.read((() => { const $s = mode; if ($s === 'line') return ':'; if ($s === 'symbol') return '@'; return ''; })(), true);
+    }
+
+    begin() {
+        if (this._open) return;
+        this._open = true;
+        this._view = this._editor.view;
+        this._editor.completion.dismiss();
+        this._editor.hover.dismiss();
+        this._editor.signatureHelp.dismiss();
+        this.unsay();
+        if (!(this._editor.composition == null)) this._editor.setComposition('');
+    }
+
+    static lists(mode: CodeGoToModeValue) {
+        return mode === 'definitions' || mode === 'references';
     }
 
     select(index: number) {
@@ -121,6 +164,17 @@ export class CodeGoTo {
 
     accept() {
         if (!this._open) return false;
+        if (CodeGoTo.lists(this._mode)) {
+            if (this._selected < 0) return false;
+            let index = this._entryPlaces[this._selected];
+            let view = this._view;
+            this.end();
+            this._placeAt = index;
+            this.goToPlace(this._places[index], view);
+            this._editor.requestFocus();
+            this.changed?.();
+            return true;
+        }
         let target = this._mode === 'line' ? this._lineTarget : this._mode === 'symbol' && this._selected >= 0 ? this._entries[this._selected].target : null;
         let to: any; 
         if (!((to = target) != null)) return false;
@@ -144,6 +198,10 @@ export class CodeGoTo {
     key(key: string, modifiers: number) {
         if ((modifiers & (4 | 8 | 2)) !== 0) return false;
         switch (key) {
+            case 'F4':
+                if (!CodeGoTo.lists(this._mode)) return false;
+                if ((modifiers & 1) !== 0) this.selectPrevious(); else this.selectNext();
+                return true;
             case 'Enter':
                 this.accept();
                 return true;
@@ -182,30 +240,50 @@ export class CodeGoTo {
     }
 
     reset() {
-        if (!this._open) return;
+        this._places.splice(0);
+        this._placeAt = -1;
+        this.stopAsking();
+        let said = !(this._notFound == null);
+        this._notFound = null;
+        if (!this._open) {
+            if (said) this.changed?.();
+            return;
+        }
         this.end();
         this.changed?.();
     }
 
     end() {
         this._open = false;
-        this._generation++;
-        ProviderRequest.cancel(this._request, null);
-        this._request = null;
-        this._asking = false;
+        this.stopSymbols();
         this._query = '';
         this._mode = 'none';
         this._line = null;
         this._lineTarget = null;
         this._entries = [];
+        this._entryPlaces.splice(0);
+        this._nearest = -1;
         this._selected = -1;
         this._preview = null;
         this._revealed = null;
+    }
+
+    stopSymbols() {
+        this._generation++;
+        ProviderRequest.cancel(this._request, null);
+        this._request = null;
+        this._asking = false;
         this._symbols.splice(0);
         this._containers.splice(0);
     }
 
     read(query: string, opening: boolean) {
+        if (CodeGoTo.lists(this._mode)) {
+            this._query = query;
+            this._enclose = false;
+            this.refresh();
+            return;
+        }
         let was: CodeGoToModeValue = this._mode;
         this._query = query;
         this._mode = query.startsWith(':') ? 'line' : query.startsWith('@') ? 'symbol' : 'none';
@@ -214,14 +292,7 @@ export class CodeGoTo {
             this.ask();
         } else {
             this._enclose = false;
-            if (this._mode !== 'symbol') {
-                this._generation++;
-                ProviderRequest.cancel(this._request, null);
-                this._request = null;
-                this._asking = false;
-                this._symbols.splice(0);
-                this._containers.splice(0);
-            }
+            if (this._mode !== 'symbol') this.stopSymbols();
         }
         this.refresh();
     }
@@ -230,8 +301,9 @@ export class CodeGoTo {
         this._line = null;
         this._lineTarget = null;
         this._entries = [];
+        this._entryPlaces.splice(0);
         this._selected = -1;
-        if (this._mode === 'line') this.readLine(); else if (this._mode === 'symbol') this.filter();
+        if (this._mode === 'line') this.readLine(); else if (this._mode === 'symbol') this.filter(); else if (CodeGoTo.lists(this._mode)) this.filterPlaces();
         this.previewed();
         this.changed?.();
     }
@@ -379,8 +451,8 @@ export class CodeGoTo {
                     }
                 }
             }
-            let $n49: any; 
-            found.push(($n49 = new CodeGoToEntry(name, symbol.kind, symbol.range, symbol.selectionRange.start), $n49.container = container, $n49.deprecated = symbol.deprecated, $n49.matches = matches, $n49.containerMatches = containerMatches, $n49));
+            let $n56: any; 
+            found.push(($n56 = new CodeGoToEntry(name, symbol.kind, symbol.range, symbol.selectionRange.start), $n56.container = container, $n56.deprecated = symbol.deprecated, $n56.matches = matches, $n56.containerMatches = containerMatches, $n56));
             scores.push(score);
         }
         let order: number[] = [];
@@ -406,7 +478,7 @@ export class CodeGoTo {
         if (this._mode === 'line' && (line = this._lineTarget) != null) {
             at = line;
             this._preview = new CodeRange(line);
-        } else if (this._mode === 'symbol' && this._selected >= 0) {
+        } else if ((this._mode === 'symbol' || CodeGoTo.lists(this._mode)) && this._selected >= 0 && this._entries[this._selected].document == null) {
             at = this._entries[this._selected].target;
             this._preview = this._entries[this._selected].range;
         } else this._preview = null;
@@ -414,6 +486,205 @@ export class CodeGoTo {
         if (!((shown = at) != null) || $eq.equals(this._revealed, shown)) return;
         this._revealed = shown;
         this._editor.revealInCenter(shown);
+    }
+
+    definition(kind: CodeDefinitionKindValue) {
+        return $eq.collections.count(this._editor.definitions.providers) > 0 && this.requestPlaces('definitions', kind, false);
+    }
+
+    references() {
+        return $eq.collections.count(this._editor.references.providers) > 0 && this.requestPlaces('references', 'definition', false);
+    }
+
+    followLink() {
+        return $eq.collections.count(this._editor.definitions.providers) > 0 && this.requestPlaces('definitions', 'definition', true);
+    }
+
+    nextPlace() {
+        return this.walk(1);
+    }
+
+    previousPlace() {
+        return this.walk(-1);
+    }
+
+    walk(step: number) {
+        if (this._open && CodeGoTo.lists(this._mode)) {
+            if (step > 0) this.selectNext(); else this.selectPrevious();
+            return true;
+        }
+        if (this._places.length === 0) return false;
+        let count = this._places.length;
+        this._placeAt = this._placeAt < 0 ? step > 0 ? 0 : count - 1 : $eq.num.intRem($eq.num.intRem(this._placeAt + step, count) + count, count);
+        this.goToPlace(this._places[this._placeAt], null);
+        this.changed?.();
+        return true;
+    }
+
+    requestPlaces(mode: CodeGoToModeValue, kind: CodeDefinitionKindValue, muted: boolean) {
+        this.unsay();
+        this.stopAsking();
+        let generation = this._placesGeneration;
+        let request = $eq.cancellation.source();
+        this._placesRequest = request;
+        let at = this._editor.selection.focus;
+        this.askPlaces(mode, kind, at, muted, generation, request.token);
+        return true;
+    }
+
+    async askPlaces(mode: CodeGoToModeValue, kind: CodeDefinitionKindValue, at: CodePosition, muted: boolean, generation: number, cancellation: CancellationToken) {
+        let places = null;
+        try {
+            places = mode === 'references' ? await this._editor.references.requestAsync(at, cancellation) : await this._editor.definitions.requestAsync(at, kind, cancellation);
+        } catch ($e: any) {
+            if ($eq.exceptions.is($e, 'System.OperationCanceledException') && $eq.exceptions.filter(() => cancellation.isCancellationRequested)) {
+                return;
+            } else {
+                throw $e;
+            }
+        }
+        UiThread.run(() => {
+            if (generation !== this._placesGeneration) return;
+            this._placesRequest = null;
+            this.answered(mode, kind, at, muted, places);
+        });
+    }
+
+    answered(mode: CodeGoToModeValue, kind: CodeDefinitionKindValue, at: CodePosition, muted: boolean, places: CodeLocation[]) {
+        if ($eq.collections.count(places) === 0) {
+            if (muted) return;
+            let word = this._editor.definitions.wordUnder(at) ?? (at.column > 0 ? this._editor.definitions.wordUnder($eq.withPatch(at, { column: at.column - 1 })) : null);
+            let found: any; 
+            this._notFound = new CodeGoToNotFound(mode, kind, at, (found = word) != null ? this._editor.document.textIn(found) : '');
+            this.changed?.();
+            return;
+        }
+        if ($eq.collections.count(places) === 1) {
+            let only = $eq.collections.item(places, 0);
+            let here = only.document == null && CodePosition.opLessOrEqual(only.range.start, at) && CodePosition.opLessOrEqual(at, only.range.end);
+            if (here && mode === 'definitions' && kind !== 'implementation' && $eq.collections.count(this._editor.references.providers) > 0) {
+                this.requestPlaces('references', kind, muted);
+                return;
+            }
+            this.goToPlace(only, null);
+            this.changed?.();
+            return;
+        }
+        this.openPlaces(mode, kind, places, at);
+    }
+
+    openPlaces(mode: CodeGoToModeValue, kind: CodeDefinitionKindValue, places: CodeLocation[], at: CodePosition) {
+        this.begin();
+        this.stopSymbols();
+        this._mode = mode;
+        this._kind = kind;
+        this._query = '';
+        this._enclose = false;
+        this._revealed = null;
+        this._places.splice(0);
+        this._places.push(...places);
+        this._nearest = this.nearest(at);
+        this._placeAt = this._nearest;
+        this.refresh();
+    }
+
+    nearest(at: CodePosition) {
+        let best = -1;
+        let distance = 0;
+        for (let i = 0; i < this._places.length; i++) {
+            if (!(this._places[i].document == null)) continue;
+            let start = this._places[i].range.start;
+            let away = Math.abs(start.line - at.line) * 100 + Math.abs(start.column - at.column);
+            if (best >= 0 && away >= distance) continue;
+            best = i;
+            distance = away;
+        }
+        return best >= 0 ? best : 0;
+    }
+
+    filterPlaces() {
+        let query = $eq.text.trim(this._query);
+        let document = this._editor.document;
+        for (let i = 0; i < this._places.length; i++) {
+            let entry = CodeGoTo.placeEntry(this._places[i], document);
+            if (query.length > 0) {
+                let match: any; 
+                if (!((match = CodeFuzzyMatch.of(query, entry.name, true)) != null)) continue;
+                entry = $eq.withPatch(entry, { matches: match.positions });
+            }
+            this._entries.push(entry);
+            this._entryPlaces.push(i);
+        }
+        if (this._entries.length === 0) return;
+        this._selected = 0;
+        if (query.length > 0) return;
+        let nearest = this._entryPlaces.indexOf(this._nearest);
+        if (nearest >= 0) this._selected = nearest;
+    }
+
+    static placeEntry(place: CodeLocation, document: CodeDocument) {
+        let start = place.range.start;
+        let where = $eq.text.format(start.line + 1, null, undefined, undefined, 'int32') + ':' + $eq.text.format(start.column + 1, null, undefined, undefined, 'int32');
+        let other: any; 
+        if ((other = place.document) != null) {
+            let $n60: any; 
+            return ($n60 = new CodeGoToEntry(CodeGoTo.nameOf(other), null, place.range, start), $n60.container = where, $n60.document = other, $n60);
+        }
+        let at = document.clamp(start);
+        let text = document.line(at.line);
+        let lead = 0;
+        while (lead < text.length && $eq.text.isWhiteSpace(text[lead])) lead++;
+        let name = $eq.text.trimEnd($eq.text.substring(text, lead));
+        let end = place.range.end;
+        let to = (end.line === at.line ? end.column : text.length) - lead;
+        let marked: number[] = [];
+        for (let column = Math.max(at.column, lead) - lead; column < to && column < name.length; column++) marked.push(column);
+        let $n61: any; 
+        return ($n61 = new CodeGoToEntry(name, null, place.range, start), $n61.container = where, $n61.matches = marked, $n61);
+    }
+
+    static nameOf(document: string) {
+        let cut = Math.max(document.lastIndexOf('/'), document.lastIndexOf('\\'));
+        return cut >= 0 && cut < document.length - 1 ? $eq.text.substring(document, cut + 1) : document;
+    }
+
+    goToPlace(place: CodeLocation, giveBack: Rect | null) {
+        if (!(place.document == null)) {
+            let view: any; 
+            if ((view = giveBack) != null) this._editor.scrollTo(view);
+            this._editor.requestOpen(place);
+            return;
+        }
+        let to = this._editor.document.clamp(place.range.start);
+        this._editor.jumpList.jump(() => this._editor.selection = new CodeRange(to));
+        this._editor.revealNearTopIfOutsideView(to);
+    }
+
+    carry(change: CodeChange) {
+        if (change.replaced) return;
+        this.stopAsking();
+        this.unsay();
+        if (this._places.length === 0) return;
+        for (const edit of change.edits) for (let i = 0; i < this._places.length; i++) if (this._places[i].document == null) this._places[i] = $eq.withPatch(this._places[i], { range: edit.carry(this._places[i].range) });
+        if (this._open && CodeGoTo.lists(this._mode)) this.refresh();
+    }
+
+    moved() {
+        this.stopAsking();
+        this.unsay();
+    }
+
+    stopAsking() {
+        this._placesGeneration++;
+        ProviderRequest.cancel(this._placesRequest, null);
+        this._placesRequest = null;
+    }
+
+    unsay() {
+        if (this._notFound == null) return false;
+        this._notFound = null;
+        this.changed?.();
+        return true;
     }
 
     toString(): string {

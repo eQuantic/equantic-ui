@@ -86,10 +86,24 @@ public interface ICodeSurfaceModel
     /// <paramref name="clicks"/> is the platform's click count on a <see cref="PointerPhase.Down"/> —
     /// its double-click interval is a system setting, never the engine's to guess. Answers whether
     /// the model changed.
+    /// <para>
+    /// <paramref name="modifiers"/> are read as the host's keys are read (⌘ is Command and ⌃ is Control on
+    /// a Mac, Ctrl is Command elsewhere), on every phase, and a host that sees them change while the pointer
+    /// rests over the surface says <see cref="PointerPhase.Hover"/> again at the same place: the engine
+    /// hears no modifier key released, and the link ⌘ shows over a name goes with the key (#1084).
+    /// </para>
     /// </summary>
     bool HandlePointer(PointerPhase phase, Point position, KeyModifiers modifiers, int clicks);
 
     /// <summary>The surface gained or lost the keyboard. Losing it ends a typing run and cancels a
     /// composition; gaining it traps Tab again.</summary>
     void FocusChanged(bool focused);
+
+    /// <summary>
+    /// What the pointer looks like resting at <paramref name="position"/>, in the surface's own
+    /// coordinates: the engine's answer, as <see cref="ISheetSurfaceModel.CursorAt"/> is the sheet's,
+    /// because only it knows what a press there would do (follow a link). What the component draws over
+    /// the code takes no pointer on any target, so no drawn box can say it.
+    /// </summary>
+    PointerCursor CursorAt(Point position);
 }

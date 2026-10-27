@@ -40,6 +40,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         SignatureHelp = new CodeSignatureHelpSession(this);
         Snippet = new CodeSnippetSession(this);
         Symbols = new CodeSymbols(this);
+        Definitions = new CodeDefinitions(this);
+        References = new CodeReferences(this);
         GoTo = new CodeGoTo(this);
         JumpList = new CodeJumpList(this);
     }
@@ -245,11 +247,31 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// service to <see cref="CodeSymbols.Providers"/>.</summary>
     public CodeSymbols Symbols { get; }
 
-    /// <summary>The go-to field: ⌃G to a line, ⇧⌘O to a symbol (#1083).</summary>
+    /// <summary>Where a name is defined, as its language services answer it, and the link ⌘ shows over one. An
+    /// IDE adds its language service to <see cref="CodeDefinitions.Providers"/> (#1084).</summary>
+    public CodeDefinitions Definitions { get; }
+
+    /// <summary>Where a name is used, as its language services answer it. An IDE adds its language service to
+    /// <see cref="CodeReferences.Providers"/> (#1084).</summary>
+    public CodeReferences References { get; }
+
+    /// <summary>The go-to field: ⌃G to a line, ⇧⌘O to a symbol (#1083), and the places a name is defined and
+    /// used, which F12 and ⇧F12 go to or list and F4 walks (#1084).</summary>
     public CodeGoTo GoTo { get; }
 
     /// <summary>The places the caret has been, which ⌃- and ⌃⇧- walk (#1083).</summary>
     public CodeJumpList JumpList { get; }
+
+    /// <summary>
+    /// Raised when the person goes to a place in another document (#1084): a definition or a reference a language
+    /// service answered there, gone to by a key, a click or a walk. The editor holds one document and never opens
+    /// another, so the app does, and puts the caret at the location's start. The caret, the selection and the jump
+    /// list of this editor are left as they were.
+    /// </summary>
+    public event Action<CodeLocation>? OpenRequested;
+
+    /// <summary>Hands <paramref name="place"/>, in another document, to the app.</summary>
+    internal void RequestOpen(CodeLocation place) => OpenRequested?.Invoke(place);
 
     // ---- the view ---------------------------------------------------------------------------------------
 
@@ -265,7 +287,14 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     public Rect View
     {
         get => _view;
-        set => _view = value;
+        set
+        {
+            var scrolled = value.X != _view.X || value.Y != _view.Y;
+            _view = value;
+            // The link stands under a pointer that rests: the code scrolling under it moves the word away, and VS
+            // Code takes its link down as the view scrolls (#1084).
+            if (scrolled) Definitions.ClearLink();
+        }
     }
 
     /// <summary>Where the editor asks its view to scroll down to, in the surface's coordinates: a request
@@ -291,6 +320,25 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// view, as Monaco's <c>revealPositionInCenterIfOutsideViewport</c> does.</summary>
     public void RevealInCenterIfOutsideView(CodePosition position) => Center(position, onlyOutside: true);
 
+    /// <summary>
+    /// Brings <paramref name="position"/>'s line near the top of the view when it is not in view, as VS Code
+    /// reveals what it goes to (<c>NearTopIfOutsideViewport</c>): a fifth of the view above it, five lines at the
+    /// least, without pushing the line out of the view; across, into it by the least movement. The caret does not
+    /// move, and a line in view moves nothing.
+    /// </summary>
+    public void RevealNearTopIfOutsideView(CodePosition position)
+    {
+        var caret = CaretRect(_document.Clamp(position));
+        float? top = null;
+        if (_view.Height > 0)
+        {
+            if (caret.Y >= _view.Y && caret.Y + caret.Height <= _view.Y + _view.Height) return;
+            var gap = MathF.Max(5 * Grid.Cell.Height, _view.Height * 0.2f);
+            top = MathF.Max(0, MathF.Max(caret.Y + caret.Height - _view.Height, caret.Y - gap));
+        }
+        Scroll(top, Across(caret));
+    }
+
     private void Center(CodePosition position, bool onlyOutside)
     {
         var caret = CaretRect(_document.Clamp(position));
@@ -303,13 +351,17 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             if (onlyOutside && inView) return;
             top = MathF.Max(0, caret.Y + caret.Height / 2 - _view.Height / 2);
         }
-        float? left = null;
-        if (_view.Width > 0)
-        {
-            if (caret.X < _view.X) left = caret.X;
-            else if (caret.X + caret.Width > _view.X + _view.Width) left = caret.X + caret.Width - _view.Width;
-        }
-        Scroll(top, left);
+        Scroll(top, Across(caret));
+    }
+
+    /// <summary>Where the view slides across to bring <paramref name="caret"/> into it by the least movement, or
+    /// null when it is in view or the view's width is not known.</summary>
+    private float? Across(Rect caret)
+    {
+        if (_view.Width <= 0) return null;
+        if (caret.X < _view.X) return caret.X;
+        if (caret.X + caret.Width > _view.X + _view.Width) return caret.X + caret.Width - _view.Width;
+        return null;
     }
 
     /// <summary>Asks the view to stand where <paramref name="view"/> stood: what closing the go-to field gives
@@ -598,6 +650,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <summary>Whether a press that began on the surface is still drawing a selection.</summary>
     private bool _dragging;
 
+    /// <summary>The line a press with ⌘ alone was made on, whose release there follows the link (#1084), or -1.</summary>
+    private int _linkPress = -1;
+
     /// <summary>
     /// The selection, as one band per line it covers from <paramref name="first"/> to
     /// <paramref name="last"/>, in the surface's own coordinates — drawn by the COMPONENT in the code's
@@ -757,8 +812,18 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
     /// <inheritdoc />
     public bool HandleKey(string key, KeyModifiers modifiers, KeyboardConvention convention,
-        ITextClipboard? clipboard) =>
-        GoTo.IsOpen ? GoTo.Key(key, modifiers) : CodeKeymap.Handle(this, key, modifiers, convention, clipboard);
+        ITextClipboard? clipboard)
+    {
+        // A key that is not a modifier takes the link down, as VS Code's does when another key joins ⌘, and what
+        // was said about nothing found; Escape that took that down is claimed for it, as VS Code's message closes
+        // on Escape (#1084).
+        if (!CodeKeymap.IsModifierKey(key))
+        {
+            Definitions.ClearLink();
+            if (GoTo.Unsay() && key == "Escape" && modifiers == KeyModifiers.None) return true;
+        }
+        return GoTo.IsOpen ? GoTo.Key(key, modifiers) : CodeKeymap.Handle(this, key, modifiers, convention, clipboard);
+    }
 
     /// <summary>
     /// Runs <paramref name="command"/> as its key would, with no key: what a menu, a command palette or an
@@ -835,6 +900,13 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 return true;
             case CodeCommand.NavigateBack: return JumpList.Back();
             case CodeCommand.NavigateForward: return JumpList.Forward();
+            case CodeCommand.GoToDefinition: return GoTo.Definition(CodeDefinitionKind.Definition);
+            case CodeCommand.GoToDeclaration: return GoTo.Definition(CodeDefinitionKind.Declaration);
+            case CodeCommand.GoToTypeDefinition: return GoTo.Definition(CodeDefinitionKind.TypeDefinition);
+            case CodeCommand.GoToImplementation: return GoTo.Definition(CodeDefinitionKind.Implementation);
+            case CodeCommand.FindReferences: return GoTo.References();
+            case CodeCommand.NextReference: return GoTo.NextPlace();
+            case CodeCommand.PreviousReference: return GoTo.PreviousPlace();
             case CodeCommand.Copy:
                 if (clipboard is null) return false;
                 clipboard.Write(CopyText());
@@ -944,6 +1016,10 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         CodeCommand.LeaveSnippet => Snippet.IsActive,
         CodeCommand.NavigateBack => JumpList.CanGoBack,
         CodeCommand.NavigateForward => JumpList.CanGoForward,
+        CodeCommand.GoToDefinition or CodeCommand.GoToDeclaration or CodeCommand.GoToTypeDefinition
+            or CodeCommand.GoToImplementation => Definitions.Providers.Count > 0,
+        CodeCommand.FindReferences => References.Providers.Count > 0,
+        CodeCommand.NextReference or CodeCommand.PreviousReference => GoTo.Places.Count > 0,
         CodeCommand.SortLinesAscending => !ReadOnly && (_others.Count > 0 || Unsorted(descending: false)),
         CodeCommand.SortLinesDescending => !ReadOnly && (_others.Count > 0 || Unsorted(descending: true)),
         _ => true,
@@ -1125,10 +1201,13 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         TabMovesFocus = false;
         if (focused) return;
         // A list and a card belong to the editor being typed in, and this one no longer is; so does a
-        // chord half typed.
+        // chord half typed, what was said about nothing found, and a link whose ⌘ may be released elsewhere.
         Completion.Dismiss();
         Hover.Dismiss();
         SignatureHelp.Dismiss();
+        GoTo.Unsay();
+        Definitions.ClearLink();
+        _linkPress = -1;
         PendingChord = null;
         // A composition cannot survive the keyboard leaving: the platform has already dropped it,
         // and text still underlined in the document would claim an input method nobody is using.
@@ -1150,8 +1229,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             case PointerPhase.Down:
             {
                 // A press in the code while the go-to field shows closes it where the view stands, and lands
-                // where the person pointed (#1083).
+                // where the person pointed (#1083), and takes down what was said about nothing found (#1084).
                 GoTo.Dismiss();
+                GoTo.Unsay();
                 // A press closes a card, as it does in every editor, even one that leaves the caret
                 // where it was, and ends a chord half typed.
                 Hover.Dismiss();
@@ -1161,6 +1241,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 // it slid a diff's side sideways as the run opened.
                 if (OnPlaceholder(position)) return false;
                 var at = PositionAt(position);
+                // ⌘ alone and one press on a character: the press places the caret as any does, and its release on
+                // the same line goes to the definition there (#1084), as VS Code's ClickLinkGesture records the
+                // modifier at the press, so ⌘ pressed during a drag to copy goes nowhere.
+                _linkPress = clicks == 1 && CodeDefinitions.Follows(modifiers) && Definitions.Providers.Count > 0
+                    && CharacterAt(position) is not null ? at.Line : -1;
                 var alt = (modifiers & KeyModifiers.Alt) != 0;
                 if (alt && clicks < 2 && (modifiers & KeyModifiers.Shift) != 0)
                 {
@@ -1202,27 +1287,47 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                     return true;
                 }
                 if (at == _selection.Focus) return false;
+                // A drag is a selection, never a click on a link.
+                _linkPress = -1;
                 // The primary's focus follows the pointer, and a caret ⌥ added keeps the others.
                 Select(new CodeRange(_selection.Anchor, at), keepCell: false);
                 return true;
             }
             case PointerPhase.Up:
             case PointerPhase.Cancel:
+            {
                 _dragging = false;
                 _column = null;
+                var press = _linkPress;
+                _linkPress = -1;
+                // The release of a ⌘ press on the line it was pressed on goes to the definition at the caret the
+                // press placed, saying nothing when there is none.
+                if (phase == PointerPhase.Up && press >= 0 && PositionAt(position).Line == press) GoTo.FollowLink();
                 return false;
-            // A pointer passing over the code: the hover waits for it to rest on something to explain,
-            // and the card it shows arrives through the hover's own event, not as a change of the model.
+            }
+            // A pointer passing over the code: the hover waits for it to rest on something to explain, and the link
+            // asks at once while ⌘ is held (#1084); the card and the link arrive through their own events, not as a
+            // change of the model. A host says it again when the modifiers change with the pointer at rest.
             case PointerPhase.Hover:
-                Hover.PointerAt(CharacterAt(position));
+            {
+                var character = CharacterAt(position);
+                Hover.PointerAt(character);
+                Definitions.PointerAt(character, modifiers);
                 return false;
+            }
             case PointerPhase.Exit:
                 Hover.PointerLeft();
+                Definitions.ClearLink();
                 return false;
             default:
                 return false;
         }
     }
+
+    /// <inheritdoc />
+    /// <remarks>The text cursor over the code, and the hand over the word ⌘ links to its definition (#1084).</remarks>
+    public PointerCursor CursorAt(Point position) =>
+        Definitions.OnLink(CharacterAt(position)) ? PointerCursor.Pointer : PointerCursor.Text;
 
     /// <summary>Whether <paramref name="point"/> is on a row that stands for a folded run.</summary>
     private bool OnPlaceholder(Point point)

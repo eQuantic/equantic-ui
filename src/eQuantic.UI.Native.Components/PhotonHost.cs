@@ -1085,6 +1085,13 @@ public sealed class PhotonHost
     /// no code (the web twin reads the same from a move's <c>buttons</c>).</summary>
     private bool _held;
 
+    /// <summary>The modifiers the pointer last moved with, or the shell last said changed (#1084).</summary>
+    private KeyModifiers _pointerModifiers;
+
+    /// <summary>Where the pointer last rested over the code, lifted as <see cref="HoverCode"/> reads it: what a
+    /// change of the modifiers hands the surface again (#1084). Null once the pointer left.</summary>
+    private Point? _codeHoverAt;
+
     /// <summary>The SPREADSHEET surface being edited, resolved by position every frame like the code
     /// surface: the node is a corpse, the MODEL outlives every rebuild.</summary>
     public SheetSurface? SheetTarget
@@ -1945,9 +1952,11 @@ public sealed class PhotonHost
     /// A <see cref="PointerKind.Touch"/> move drives drags, pans and selections exactly the same —
     /// it only skips the hover resolution at the tail (spec S5: hover never fires on touch).
     /// </summary>
-    public void PointerMove(float x, float y, PointerKind kind = PointerKind.Mouse)
+    public void PointerMove(float x, float y, PointerKind kind = PointerKind.Mouse, KeyModifiers modifiers = KeyModifiers.None)
     {
         y += _lift;
+        // What the pointer holds is what a code surface hears with its hover (#1084): ⌘ over a name links it.
+        _pointerModifiers = modifiers;
         // A canvas being dragged keeps the pointer even when it leaves the box; otherwise the
         // topmost canvas under the point gets the move, and the one being left gets its leave.
         var overCanvas = _pressedCanvas ?? CanvasUnder(new Point(x, y));
@@ -2018,7 +2027,7 @@ public sealed class PhotonHost
             {
                 if (!ReferenceEquals(surfaces[i].Element, _textAt)) continue;
                 if (!surfaces[i].Surface.Model.HandlePointer(PointerPhase.Move,
-                        ToLocal(surfaces, i, surfaces[i].Bounds, new Point(x, y)), KeyModifiers.None, 1)) break;
+                        ToLocal(surfaces, i, surfaces[i].Bounds, new Point(x, y)), modifiers, 1)) break;
                 SurfaceChanged(surfaces[i].Surface.OnChanged);
                 break;
             }
@@ -2318,7 +2327,10 @@ public sealed class PhotonHost
             // Over what a surface offers, where no row is, the pointer is the list's and not the code's,
             // and over a note it is the note's.
             if (OnOffered(code, i, point) || OnNote(code, i, point)) return CursorShape.Default;
-            if (Covers(code, i, code[i].Visible ?? code[i].Bounds, point)) return CursorShape.Text;
+            // The engine answers, as a sheet's does: the beam over the code, and the hand over the word ⌘ links
+            // to its definition (#1084).
+            if (Covers(code, i, code[i].Visible ?? code[i].Bounds, point))
+                return ShapeOf(code[i].Surface.Model.CursorAt(ToLocal(code, i, code[i].Bounds, point)));
         }
         for (var i = links.Count - 1; i >= 0; i--)
             if (Covers(links, i, links[i].Bounds, point)) return CursorShape.Pointer;
@@ -2341,6 +2353,20 @@ public sealed class PhotonHost
     /// (a <see cref="ScrollRegion.Element"/>) — the test seam for gesture regressions (a latched pan
     /// shows up here as an offset nobody asked for).</summary>
     public float ScrollOffsetOf(Element at) => ScrollClock.OffsetOf(at) ?? 0f;
+
+    /// <summary>
+    /// The modifiers held changed with the pointer at rest: a shell's <c>flagsChanged</c>, a modifier key pressed
+    /// or released (#1084). The code surface under the pointer hears a hover again where it rests, with them,
+    /// since its engine hears no modifier key released and the link ⌘ shows over a name goes with the key; the
+    /// moves that follow carry them too (web twin: lowerCodeSurface's keydown and keyup).
+    /// </summary>
+    public void ModifiersChanged(KeyModifiers modifiers)
+    {
+        if (modifiers == _pointerModifiers) return;
+        _pointerModifiers = modifiers;
+        if (_held || _codeHoverAt is not { } point) return;
+        HoverCode(point);
+    }
 
     /// <summary>The pointer left the window (or the input is touch) — hover clears.</summary>
     public void PointerLeave()
@@ -3018,6 +3044,7 @@ public sealed class PhotonHost
             var element = _lastFrame.CodeRegions[noted].Element;
             LeaveCode(except: element);
             _hoveredCode = element;
+            _codeHoverAt = point;
             return;
         }
         var over = hit >= 0;
@@ -3031,13 +3058,15 @@ public sealed class PhotonHost
                 // Still over this surface, whose model hears nothing while the pointer is on what it drew.
                 LeaveCode(except: surfaces[i].Element);
                 _hoveredCode = surfaces[i].Element;
+                _codeHoverAt = point;
                 return;
             }
             if (!Covers(surfaces, i, surfaces[i].Visible ?? surfaces[i].Bounds, point)) continue;
             LeaveCode(except: surfaces[i].Element);
             _hoveredCode = surfaces[i].Element;
+            _codeHoverAt = point;
             if (surfaces[i].Surface.Model.HandlePointer(PointerPhase.Hover,
-                    ToLocal(surfaces, i, surfaces[i].Bounds, point), KeyModifiers.None, 0))
+                    ToLocal(surfaces, i, surfaces[i].Bounds, point), _pointerModifiers, 0))
                 SurfaceChanged(surfaces[i].Surface.OnChanged);
             return;
         }
@@ -3050,6 +3079,7 @@ public sealed class PhotonHost
     {
         if (_hoveredCode is not { } left || ReferenceEquals(left, except)) return;
         _hoveredCode = null;
+        _codeHoverAt = null;
         if (_lastFrame is null) return;
         foreach (var region in _lastFrame.CodeRegions)
         {

@@ -211,7 +211,8 @@ internal sealed partial class WebLoweringVisitor
     /// The pointer and the input's text and composition are DECLARED here, as the sheet's are, though the
     /// server dispatches none of them: the lowered tree is what the parity net compares, and a surface that
     /// said "no handler" could not notice the client losing one. The input's keydown, its clipboard trio and
-    /// its focus are the client-only handlers of every entry the net leaves to the browser.
+    /// its focus are the client-only handlers of every entry the net leaves to the browser, and so is its keyup,
+    /// which hands the model a hover again when a modifier is released (#1084).
     /// </para>
     /// </summary>
     private HtmlElement LowerCodeSurface(CodeSurface surface)
