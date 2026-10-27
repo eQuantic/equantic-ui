@@ -91,14 +91,9 @@ public static class ModuleBundler
         {
             foreach (var mapFile in written)
             {
-                var mapDir = Path.GetDirectoryName(mapFile)!;
                 try
                 {
-                    File.WriteAllText(mapFile, SourceMapComposer.Compose(File.ReadAllText(mapFile), source =>
-                    {
-                        var inner = Path.GetFullPath(Path.Combine(mapDir, source)) + ".map";
-                        return File.Exists(inner) ? File.ReadAllText(inner) : null;
-                    }));
+                    SourceMapComposer.ComposeFile(mapFile);
                 }
                 catch (Exception ex) when (ex is FormatException or System.Text.Json.JsonException or IOException)
                 {
