@@ -22849,15 +22849,7 @@
                 "role": "status"
               },
               "events": [],
-              "children": [
-                {
-                  "tag": "#text",
-                  "text": "B2, Budget",
-                  "attrs": {},
-                  "events": [],
-                  "children": []
-                }
-              ]
+              "children": []
             }
           ]
         }

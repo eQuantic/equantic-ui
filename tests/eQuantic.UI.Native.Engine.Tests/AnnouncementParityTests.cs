@@ -147,6 +147,30 @@ public class AnnouncementParityTests
         photon.Should().Equal(web, "a table says the same thing to a screen reader on every target, in the same order");
     }
 
+    [Fact]
+    public void AViewportComposedColumnByColumn_IsReadRowByRow_OnTheWebAndPhoton()
+    {
+        // A component that composes the viewport adds its cells in its own order; both targets read the rows,
+        // each row's cells by column, whatever that order was.
+        VisualNode Viewport()
+        {
+            var rows = new UniformTableSpans(2, 28);
+            var columns = new UniformTableSpans(2, 96);
+            var scroll = new TableScroll();
+            scroll.Arrange(new Size(400, 300), columns.Total, rows.Total, 96, 28, reduceMotion: true);
+            var viewport = new TableViewport(rows, columns, scroll) { Label = "Ledger", Role = TableRole.Table };
+            foreach (var (row, column) in new[] { (0, 0), (1, 0), (0, 1), (1, 1) })
+                viewport.Add(new TableViewCell(row, column, new Text($"{row}:{column}", TypeRole.BodyM)));
+            return viewport;
+        }
+
+        var web = TableOnTheWeb(Viewport());
+        var photon = OnPhoton(Viewport(), open: false, TableRoles);
+
+        web.Select(each => each.Name).Should().Equal("Ledger", "0:0", "0:1", "1:0", "1:1");
+        photon.Should().Equal(web, "the cells were added down the columns, and are read along the rows on both");
+    }
+
     /// <summary>A table as a reader meets it on the web: the table, then each row's cells in the order its
     /// <c>aria-owns</c> names them, which is the accessibility tree's order, not the DOM's bands'.</summary>
     private static List<Announcement> TableOnTheWeb(VisualNode node)

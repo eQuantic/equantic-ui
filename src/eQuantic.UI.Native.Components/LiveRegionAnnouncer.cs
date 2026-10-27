@@ -61,6 +61,9 @@ internal sealed class LiveRegionAnnouncer
     public const float QuietMs = 1000f;
 
     private readonly List<LiveAnnouncement> _pending = [];
+
+    /// <summary>What each live region of the last frame observed holds now, by its element's id.</summary>
+    private readonly Dictionary<int, string> _current = [];
     private readonly List<SemanticNode> _scratch = [];
     private bool _seenAFrame;
 
@@ -73,11 +76,13 @@ internal sealed class LiveRegionAnnouncer
     {
         var marks = frame.LiveRegions;
         Pending = false;
+        _current.Clear();
         for (var i = 0; i < marks.Count; i++)
         {
             var mark = marks[i];
             if (NodeStates.For<LiveRegionState>(mark.Element) is not { } region) continue;
             var text = TextOf(mark);
+            _current[mark.Element.Id] = text;
             // A REGION THAT APPEARS **IS** THE EVENT — on any frame but the first. That is the case
             // `LiveRegion` was added for: a Banner that appears announced nothing (B18) and a Toast
             // lowered to a non-modal Overlay announced nothing (C4), and treating arrival as "no
@@ -115,6 +120,14 @@ internal sealed class LiveRegionAnnouncer
 
         _seenAFrame = true;
     }
+
+    /// <summary>
+    /// What the live region whose element has <paramref name="id"/> holds now, whatever its quiet window
+    /// owes or it last said: empty for one that holds nothing, null for an id no live region of the last
+    /// frame has (#1081). A platform that reads a region's words from its node shows these, so a region
+    /// that empties reads empty rather than what it said before.
+    /// </summary>
+    public string? CurrentText(int id) => _current.TryGetValue(id, out var text) ? text : null;
 
     /// <summary>Whether a region of the last frame observed changed inside its quiet window and owes its
     /// text when the window ends: the host keeps asking for frames while it does.</summary>

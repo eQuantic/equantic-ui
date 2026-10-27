@@ -1818,6 +1818,14 @@ public sealed class PhotonHost
     public IReadOnlyList<LiveAnnouncement> TakeAnnouncements() => _announcer.Take();
 
     /// <summary>
+    /// What the live region whose node has <paramref name="id"/> holds now, as one line, or null when no
+    /// live region of the last frame has it (#1081). For a platform that reads a region's words from its
+    /// node, as TalkBack does: the CURRENT words, so a region that empties reads empty, while
+    /// <see cref="TakeAnnouncements"/> keeps deciding when it speaks.
+    /// </summary>
+    public string? LiveRegionText(int id) => _announcer.CurrentText(id);
+
+    /// <summary>
     /// Runs the control named <paramref name="id"/> (a <see cref="SemanticNode.Id"/>), the way a
     /// screen reader's activate action does. Resolved out of THIS frame's regions — same reason as
     /// every press: the handler on a node from an old rebuild closes over dead state. Answers false

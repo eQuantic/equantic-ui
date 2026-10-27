@@ -145,7 +145,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:2614-2625  _pan = null;
+  PhotonHost.cs:2622-2633  _pan = null;
           if (_drag is null)
           {
               var scrollRegions = _lastFrame.ScrollRegions;
@@ -157,14 +157,14 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Components/SemanticsVisitor.Text.cs`
 - **Handoff**: Semantics — "StaticText — the run's text is its accessible value." / A11y — "Role: static text; label = full untruncated string (readers speak past the ellipsis)."
-- **Code**: Filed against a `Content`-only guard that is no longer there. Both readers take `PlainContent`, which concatenates the runs: the Text arm announces a rich-run paragraph (SemanticsVisitor.Text.cs:16-20 SemanticsVisitor), and the derived name of a label-less control gathers the same field (SemanticsVisitor.Interaction.cs:291-310 TextWithin). A Markdown paragraph with bold/code/link runs — the shape that produced nothing at all — announces its whole string on Photon. What the row asked for is what the code does; the READ remains untruncated (PlainContent is the full string, not the ellipsised line), which is the second half of the handoff's claim.
+- **Code**: Filed against a `Content`-only guard that is no longer there. Both readers take `PlainContent`, which concatenates the runs: the Text arm announces a rich-run paragraph (SemanticsVisitor.Text.cs:16-20 SemanticsVisitor), and the derived name of a label-less control gathers the same field (SemanticsVisitor.Interaction.cs:298-317 TextWithin). A Markdown paragraph with bold/code/link runs — the shape that produced nothing at all — announces its whole string on Photon. What the row asked for is what the code does; the READ remains untruncated (PlainContent is the full string, not the ellipsised line), which is the second half of the handoff's claim.
 - **Evidence**:
 
   ```
   src/eQuantic.UI.Native.Components/SemanticsVisitor.Text.cs:16-20 —
       public bool Visit(Text node, LayoutNode laidOut) =>
           node.PlainContent.Length > 0
-  src/eQuantic.UI.Native.Components/SemanticsVisitor.Interaction.cs:306  if (node.Source is Text { PlainContent.Length: > 0 } text) parts.Add(text.PlainContent);
+  src/eQuantic.UI.Native.Components/SemanticsVisitor.Interaction.cs:313  if (node.Source is Text { PlainContent.Length: > 0 } text) parts.Add(text.PlainContent);
   src/eQuantic.UI.Components/Markdown.cs:167  return new Text("", style.Body, theme.TextSecondary, maxLines: 0) { Spans = spans };
   ```
 
@@ -187,12 +187,12 @@ the pill's 40 down.
 
 - **Component**: `MISSING`
 - **Handoff**: new Heading("Portfolio", level: 1) — "Heading — semantic Text. Level 1 → Heading role, 2 → Title, 3 → Label-strong… Announced as 'heading, level N' — VoiceOver rotor / TalkBack heading navigation jump between them. Exactly one level-1 per screen (debug assert)." Semantics: "Web emits real heading levels; native marks the node as a header so readers can jump by heading."
-- **Code**: Half of this has landed since the audit and half has not. The LEVEL exists and is not decoration: `Text.HeadingLevel` is a 1–6 slot refused at every door (src/eQuantic.UI.Primitives/Nodes/Text.cs:65-73 HeadingLevel), the web emits the real element (WebLoweringVisitor.Text.cs:345 LowerText), the semantic node carries it (SemanticsVisitor.Text.cs:16-20 SemanticsVisitor), and `HeadingOutlineTests` / `HeadingSemanticsTests` pin both. What is still missing is (a) a `Heading` COMPONENT — there is no `class Heading`, so an author writes `new Text("Portfolio") { HeadingLevel = 1 }`; (b) the level-1 uniqueness assert, which nothing checks; and (c) two of the four bridges — Android reports the trait (src/eQuantic.UI.Native.Shell.Android/PhotonAccessibility.cs:200), the Apple and Windows shells never read `HeadingLevel`, so the VoiceOver rotor still has nothing to jump between on macOS/iOS.
+- **Code**: Half of this has landed since the audit and half has not. The LEVEL exists and is not decoration: `Text.HeadingLevel` is a 1–6 slot refused at every door (src/eQuantic.UI.Primitives/Nodes/Text.cs:65-73 HeadingLevel), the web emits the real element (WebLoweringVisitor.Text.cs:345 LowerText), the semantic node carries it (SemanticsVisitor.Text.cs:16-20 SemanticsVisitor), and `HeadingOutlineTests` / `HeadingSemanticsTests` pin both. What is still missing is (a) a `Heading` COMPONENT — there is no `class Heading`, so an author writes `new Text("Portfolio") { HeadingLevel = 1 }`; (b) the level-1 uniqueness assert, which nothing checks; and (c) two of the four bridges — Android reports the trait (src/eQuantic.UI.Native.Shell.Android/PhotonAccessibility.cs:196), the Apple and Windows shells never read `HeadingLevel`, so the VoiceOver rotor still has nothing to jump between on macOS/iOS.
 - **Evidence**:
 
   ```
   src/eQuantic.UI.Web/WebLoweringVisitor.Text.cs:367  var element = new RealizedElement(text.HeadingLevel > 0 ? $"h{text.HeadingLevel}" : "span")
-  src/eQuantic.UI.Native.Shell.Android/PhotonAccessibility.cs:200  info.Heading = node.HeadingLevel > 0;
+  src/eQuantic.UI.Native.Shell.Android/PhotonAccessibility.cs:196  info.Heading = node.HeadingLevel > 0;
   ```
 
 ### A9 Heading · Label · missing-component · **unverified**
@@ -811,7 +811,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Stepper.cs`
 - **Handoff**: The value group is one stop: ↑/→ increment, ↓/← decrement, Home/End clamp; the −/+ buttons are also plain stops.
-- **Code**: the −/+ buttons are plain stops as specified, but the value group is not a stop at all and no arrow key does anything: with no Adjustable in the tree (Stepper.cs:67) there is no keydown handler, and the value cell is a plain Box, not a Pressable (line 62), so it is not focusable. Home/End are unimplemented framework-wide in any case (lowering.ts:3127-3132, PhotonHost.cs:3106).
+- **Code**: the −/+ buttons are plain stops as specified, but the value group is not a stop at all and no arrow key does anything: with no Adjustable in the tree (Stepper.cs:67) there is no keydown handler, and the value cell is a plain Box, not a Pressable (line 62), so it is not focusable. Home/End are unimplemented framework-wide in any case (lowering.ts:3127-3132, PhotonHost.cs:3114).
 - **Evidence**:
 
   ```
@@ -1182,7 +1182,7 @@ the pill's 40 down.
 
   ```
   Tokens.cs:214  public const float PressCancelSlop = 12;
-  PhotonHost.cs:2113  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
+  PhotonHost.cs:2121  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
   ```
 
 ### A6 ScrollView · missing-feature · **unverified**
@@ -1224,11 +1224,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Components/PhotonHost.cs`
 - **Handoff**: Focused region: ↑/↓ line · PgUp/PgDn viewport · Home/End extremes. Space stays with the focused control, not the scroll.
-- **Code**: No key ever moves a scroll region in the Photon host. The only writers into ScrollClock are the wheel entry point ScrollBy(x, y, delta) (PhotonHost.cs:1830), the pointer pan (1374), the fling on release (1836) and focus-driven ScrollIntoView (399). The "Home"/"End"/"ArrowUp"/"ArrowDown" cases at PhotonHost.cs:1329-1334 belong to the text-entry caret, not to a focused scroll region, and PageUp/PageDown appear nowhere outside the code editor's keymap. On web the div is not focusable either (no tabindex), so keyboard scrolling depends entirely on browser defaults.
+- **Code**: No key ever moves a scroll region in the Photon host. The only writers into ScrollClock are the wheel entry point ScrollBy(x, y, delta) (PhotonHost.cs:1838), the pointer pan (1374), the fling on release (1836) and focus-driven ScrollIntoView (399). The "Home"/"End"/"ArrowUp"/"ArrowDown" cases at PhotonHost.cs:1329-1334 belong to the text-entry caret, not to a focused scroll region, and PageUp/PageDown appear nowhere outside the code editor's keymap. On web the div is not focusable either (no tabindex), so keyboard scrolling depends entirely on browser defaults.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:2208  public bool ScrollBy(float x, float y, float delta)
+  PhotonHost.cs:2216  public bool ScrollBy(float x, float y, float delta)
   PhotonHost.cs:1674-1677  case "Home" or "ArrowUp":
                   MoveCaret(0, selecting);
                   return true;
@@ -2303,12 +2303,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/SegmentedControl.cs`
 - **Handoff**: ONE tab stop, roving: ←/→ move AND select (wraps) · Home/End.
-- **Code**: the one Tab stop and the wrapping arrows are correct (SegmentedControl.cs:109-113), but Home/End are handled on no target: the Adjustable keydown recognises only the four arrow keys on the web (lowering.ts:3127-3132), only the same four on native (PhotonHost.cs:3106), and the SSR realizer emits no key handler at all (WebLoweringVisitor.Interaction.cs:121-166 LowerAdjustable).
+- **Code**: the one Tab stop and the wrapping arrows are correct (SegmentedControl.cs:109-113), but Home/End are handled on no target: the Adjustable keydown recognises only the four arrow keys on the web (lowering.ts:3127-3132), only the same four on native (PhotonHost.cs:3114), and the SSR realizer emits no key handler at all (WebLoweringVisitor.Interaction.cs:121-166 LowerAdjustable).
 - **Evidence**:
 
   ```
   lowering.ts:4088-4105  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3268  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:3276  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · metric · **CONFIRMED**
@@ -2329,12 +2329,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: ←/↓ −1 step · →/↑ +1 · PgUp/PgDn ±10% · Home/End min/max.
-- **Code**: the four arrows are wired correctly (the web lowering even splits ↑/↓ by role so a slider's up increases), but PgUp/PgDn and Home/End are handled nowhere — the web keydown returns early on any other key (lowering.ts:3132) and PhotonHost.cs:3106 gates on the same four names.
+- **Code**: the four arrows are wired correctly (the web lowering even splits ↑/↓ by role so a slider's up increases), but PgUp/PgDn and Home/End are handled nowhere — the web keydown returns early on any other key (lowering.ts:3132) and PhotonHost.cs:3114 gates on the same four names.
 - **Evidence**:
 
   ```
   lowering.ts:4088-4105  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3268  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:3276  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · missing-feature · **unverified**
@@ -2886,7 +2886,7 @@ the pill's 40 down.
 
   ```
   PhotonHost.cs:364  _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, …
-  PhotonHost.cs:2130  if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
+  PhotonHost.cs:2138  if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
                       NeedsRender = true;
   ```
 

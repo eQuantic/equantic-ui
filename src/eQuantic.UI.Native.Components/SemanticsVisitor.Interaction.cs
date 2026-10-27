@@ -202,8 +202,15 @@ internal sealed partial class SemanticsVisitor
         var grid = node.Role == TableRole.Grid;
         _nodes.Add(new(grid ? SemanticRole.Grid : SemanticRole.Table, IdOf(laidOut), laidOut.Bounds,
             node.Label ?? "", null, false, Extent: new TableRange(0, 0, node.Rows.Count, node.Columns.Count)));
+        // Row by row, each row's cells by column, whatever order they were added in: the reading order of a
+        // table, which the web's rows give by owning their cells in column order.
+        var cells = new List<(TableViewCell Cell, LayoutNode LaidOut)>();
         foreach (var child in laidOut)
-            if (child.Source is TableViewCell { Mark: false } cell) TableCell(cell, child, grid);
+            if (child.Source is TableViewCell { Mark: false } cell) cells.Add((cell, child));
+        cells.Sort((a, b) => a.Cell.Row != b.Cell.Row
+            ? a.Cell.Row.CompareTo(b.Cell.Row)
+            : a.Cell.Column.CompareTo(b.Cell.Column));
+        foreach (var (cell, child) in cells) TableCell(cell, child, grid);
         return Consumed;
     }
 

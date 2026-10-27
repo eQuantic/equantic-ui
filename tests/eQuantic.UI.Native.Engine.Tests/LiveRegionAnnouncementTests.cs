@@ -59,6 +59,25 @@ public class LiveRegionAnnouncementTests
     }
 
     /// <summary>
+    /// What a region holds NOW, for a platform that reads a region's words from its node (#1081: TalkBack):
+    /// the current words, and nothing once the region empties, whatever it last said.
+    /// </summary>
+    [Fact]
+    public void ARegionsWords_AreWhatItHoldsNow_EmptyOnceItEmpties()
+    {
+        var root = new Mutable("Uploading 10%");
+        var host = Host(root);
+        Frame(host, 0);
+        root.Text = "Upload complete";
+        var id = Frame(host, 2000).Single().Id;
+        host.LiveRegionText(id).Should().Be("Upload complete");
+
+        root.Text = "";
+        Frame(host, 4000).Should().BeEmpty("an emptied region says nothing");
+        host.LiveRegionText(id).Should().BeEmpty("and its node no longer reads what it said");
+    }
+
+    /// <summary>
     /// AND AN UNCHANGED ONE IS NOT. This is the case the issue is actually about: the semantics
     /// walk runs every frame and would post every frame, and "a reader repeating itself sixty times
     /// a second is a reader the user turns off".

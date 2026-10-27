@@ -340,7 +340,8 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         _view!.Semantics = new PhotonAccessibility(_view,
             () => _host?.Semantics() ?? [],
             id => _host?.Activate(id) ?? false,
-            (id, direction) => _host?.Adjust(id, direction) ?? false);
+            (id, direction) => _host?.Adjust(id, direction) ?? false,
+            id => _host?.LiveRegionText(id));
 
         // The keyboard follows the host's edit: the session says when it begins, moves and ends,
         // and the view hands the keyboard a connection to it.

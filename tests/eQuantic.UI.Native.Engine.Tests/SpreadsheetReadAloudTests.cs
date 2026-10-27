@@ -148,6 +148,27 @@ public class SpreadsheetReadAloudTests
     }
 
     [Fact]
+    public void AnOpenEntry_SilencesTheGrid_EvenAMoveStillOwed()
+    {
+        var (host, sheet) = Open();
+        Click(host, 1, 1);
+        Frame(host, 100);
+
+        host.KeyDown("ArrowRight");
+        Frame(host, 1200).Single().Text.Should().Be("C2, blank");
+        host.KeyDown("ArrowRight");
+        Frame(host, 1400).Should().BeEmpty("the second move is owed to the quiet window");
+        host.KeyDown("F2");
+        sheet.Editing.Should().BeTrue();
+        Frame(host, 1600).Should().BeEmpty();
+
+        Frame(host, 2300).Should().BeEmpty("an entry is open, and the grid says nothing of its own over it");
+        host.KeyDown("Escape");
+        sheet.Editing.Should().BeFalse();
+        Frame(host, 3500).Single().Text.Should().Be("D2, blank", "the cell the entry closed on, once it closed");
+    }
+
+    [Fact]
     public void AReadersActivationOfACell_MakesItTheActiveCell()
     {
         var (host, sheet) = Open();

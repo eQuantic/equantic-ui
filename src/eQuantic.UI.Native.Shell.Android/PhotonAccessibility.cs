@@ -35,10 +35,10 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
     private readonly Func<int, bool> _activate;
     private readonly Func<int, int, bool> _adjust;
 
-    private IReadOnlyList<SemanticNode> _tree = [];
+    /// <summary>What a live region holds now, by its node's id, which its node reads to TalkBack.</summary>
+    private readonly Func<int, string?> _liveText;
 
-    /// <summary>What each live region last said, by its node's id, which its node reads to TalkBack.</summary>
-    private readonly Dictionary<int, string> _spoken = new();
+    private IReadOnlyList<SemanticNode> _tree = [];
 
     private int _focused = Host;
     private int _hovered = Host;
@@ -46,7 +46,8 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
     internal PhotonAccessibility(View view,
         Func<IReadOnlyList<SemanticNode>> semantics,
         Func<int, bool> activate,
-        Func<int, int, bool> adjust)
+        Func<int, int, bool> adjust,
+        Func<int, string?> liveText)
     {
         _view = view;
         _manager = view.Context?.GetSystemService(global::Android.Content.Context.AccessibilityService)
@@ -54,6 +55,7 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         _semantics = semantics;
         _activate = activate;
         _adjust = adjust;
+        _liveText = liveText;
     }
 
     /// <summary>
@@ -68,11 +70,6 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         if (!Same(_tree, tree))
         {
             _tree = tree;
-            // What a region said leaves the tree with it: one that comes back at its id has said nothing yet,
-            // and an app's toasts never pile up here.
-            if (_spoken.Count > 0)
-                foreach (var gone in _spoken.Keys.Where(id => !tree.Any(node => node.Id == id)).ToList())
-                    _spoken.Remove(gone);
             _view.SendAccessibilityEvent(EventTypes.WindowContentChanged);
         }
         for (var i = 0; i < said.Count; i++) Announce(said[i]);
@@ -80,16 +77,13 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
 
     /// <summary>
     /// What a live region just said, the way Android keeps after deprecating announcement events (#1081),
-    /// which Flutter's engine follows too: the region's node is a live region (<see cref="CreateAccessibilityNodeInfo"/>),
-    /// its words become the node's, and the change of its content is reported from it, so TalkBack reads
-    /// it politely or at once as the region asks, wherever the user is.
+    /// which Flutter's engine follows too: the region's node is a live region (<see cref="CreateAccessibilityNodeInfo"/>)
+    /// carrying the words it holds now, and the change of its content is reported from it when the host
+    /// announces, so TalkBack reads it politely or at once as the region asks, wherever the user is.
     /// </summary>
     private void Announce(LiveAnnouncement announcement)
     {
         if (announcement.Text.Length == 0) return;
-        _spoken[announcement.Id] = announcement.Label.Length == 0
-            ? announcement.Text
-            : $"{announcement.Label}: {announcement.Text}";
         var index = -1;
         for (var i = 0; i < _tree.Count; i++)
             if (_tree[i].Id == announcement.Id) index = i;
@@ -146,15 +140,17 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         }
 
         // A LIVE REGION is read when its content changes, wherever the user is (#1081): marked live with its
-        // urgency, and carrying what it last said, which is what TalkBack reads when the change is reported.
+        // urgency, and carrying the words it holds NOW, which is what TalkBack reads when the change is
+        // reported, and what it reads exploring it: a region that empties reads empty, not what it said.
         if (node.Live is { } urgency)
         {
             info.LiveRegion = urgency == LiveRegionUrgency.Assertive
                 ? AccessibilityLiveRegion.Assertive
                 : AccessibilityLiveRegion.Polite;
-            // A field's value already is what it said (a spreadsheet's surface); a region's words are not
+            // A field's value already is what it says (a spreadsheet's surface); a region's words are not
             // otherwise on its node.
-            if (node.Value is null && _spoken.TryGetValue(node.Id, out var spoken)) info.ContentDescription = spoken;
+            if (node.Value is null && _liveText(node.Id) is { Length: > 0 } words)
+                info.ContentDescription = node.Label.Length == 0 ? words : $"{node.Label}: {words}";
         }
 
         // THE NUMBERS BEHIND THE WORDS (#243). TalkBack treats a node with RangeInfo as a real

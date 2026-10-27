@@ -211,10 +211,13 @@ public sealed class Spreadsheet : StatefulComponent
     /// What the grid says now (<see cref="SheetSurface.Announcement"/>, #1081): the active range's address
     /// and size, when it changed and covers more than one cell, or else the active cell's address and what
     /// it holds, as it moves (<see cref="SheetController.Moved"/>). The same words for the same selection,
-    /// however often the grid builds, so a reader hears a move once.
+    /// however often the grid builds, so a reader hears a move once. Nothing while an entry is open: the
+    /// grid says nothing of its own over the editing, a move still owed to Photon's quiet window included,
+    /// and says the cell the entry closed on once it closes.
     /// </summary>
     private string Announcement(SheetDocument document)
     {
+        if (Controller.Editing) return "";
         var range = Controller.Selection;
         if (Controller.Moved == SheetMove.ActiveRange && !range.IsSingleCell)
             return SdkStrings.RangeAnnouncement(

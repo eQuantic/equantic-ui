@@ -143,4 +143,17 @@ describe('a spreadsheet read aloud on the web (#1081)', () => {
     await press(textarea, 'ArrowLeft');
     expect(said()).toBe('B3, 14,02');
   });
+
+  it('says nothing of its own while an entry is open, and the cell it closed on after', async () => {
+    const { textarea, said, sheet } = await mount();
+    await press(textarea, 'ArrowDown');
+    expect(said()).toBe('B3, 14,02');
+
+    await press(textarea, 'F2');
+    expect(sheet.editing).toBe(true);
+    expect(said()).toBe('');
+    await press(textarea, 'Escape');
+    expect(sheet.editing).toBe(false);
+    expect(said()).toBe('B3, 14,02');
+  });
 });

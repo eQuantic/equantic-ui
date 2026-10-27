@@ -94,6 +94,7 @@ export class Spreadsheet extends StatefulComponent {
     }
 
     announcement(document: SheetDocument) {
+        if (this.controller.editing) return '';
         let range = this.controller.selection;
         if (this.controller.moved === 'activeRange' && !range.isSingleCell) return SdkStrings.rangeAnnouncement(range.topLeft.toA1() + ':' + new CellRef(range.bottomRow, range.rightCol).toA1(), range.rowCount, range.colCount);
         let cell = this.controller.activeCell;

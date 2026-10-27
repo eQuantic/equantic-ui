@@ -1,3 +1,4 @@
 #nullable enable
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.KeyBeforeText(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers) -> bool
 [EQX0001]eQuantic.UI.Native.Components.UIKitTrait.Header = 7 -> eQuantic.UI.Native.Components.UIKitTrait
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.LiveRegionText(int id) -> string?
