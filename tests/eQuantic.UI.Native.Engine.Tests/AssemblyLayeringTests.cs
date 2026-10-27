@@ -63,8 +63,9 @@ public class AssemblyLayeringTests
         ["eQuantic.UI.Native.Components"] =
             ["eQuantic.UI.Primitives", "eQuantic.UI.Native.Engine", "eQuantic.UI.Native.Framework"],
 
-        // The web host sits on the web realizer alone.
-        ["eQuantic.UI.Server"] = ["eQuantic.UI.Web"],
+        // The web host sits on the web realizer alone. Its edge to eqc is a BUILD tool's, not code's
+        // (ReferenceOutputAssembly=false): eqc composes the map of the runtime the Server bundles (#1108).
+        ["eQuantic.UI.Server"] = ["eQuantic.UI.Web", "eQuantic.Build"],
 
         // Photon: engine, its backends, the layout framework, the host.
         ["eQuantic.UI.Native.Engine"] = ["eQuantic.UI.Primitives"],

@@ -76,7 +76,7 @@ public class RuntimeSourceMapTests
         answer.StatusCode.Should().Be(status);
         if (status == HttpStatusCode.OK)
         {
-            answer.Content.Headers.ContentType?.MediaType.Should().Be("application/json");
+            (answer.Content.Headers.ContentType?.MediaType).Should().Be("application/json");
             using var map = JsonDocument.Parse(await answer.Content.ReadAsStringAsync());
             map.RootElement.GetProperty("version").GetInt32().Should().Be(3);
         }
