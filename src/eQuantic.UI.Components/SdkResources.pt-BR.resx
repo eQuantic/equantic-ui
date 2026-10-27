@@ -239,4 +239,10 @@
   <data name="NoReferences" xml:space="preserve">
     <value>Nenhuma referência encontrada</value>
   </data>
+  <data name="FoldLines" xml:space="preserve">
+    <value>Recolher as linhas {0} a {1}</value>
+  </data>
+  <data name="UnfoldLines" xml:space="preserve">
+    <value>Expandir as linhas {0} a {1}</value>
+  </data>
 </root>

@@ -29,6 +29,7 @@ export const sdkNeutralStrings: Record<string, string> = {
   'Dismiss': "Dismiss",
   'FilterPlaces': "Type to filter the places.",
   'Find': "Find",
+  'FoldLines': "Fold lines {0} to {1}",
   'FormulaBar': "Formula bar",
   'GoTo': "Go to",
   'GoToColumnPrompt': "Press Enter to go to line {0}, or type a column (from 1 to {1}).",
@@ -87,4 +88,5 @@ export const sdkNeutralStrings: Record<string, string> = {
   'TypeDefinitionsCount': "Type definitions ({0})",
   'UnchangedLine': "1 unchanged line",
   'UnchangedLines': "{0} unchanged lines",
+  'UnfoldLines': "Unfold lines {0} to {1}",
 };

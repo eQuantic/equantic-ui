@@ -165,6 +165,13 @@ public sealed class CodeEditor : StatefulComponent
     public IReadOnlyList<ICodeReferenceProvider> ReferenceProviders { get; set; } = [];
 
     /// <summary>
+    /// What says where the code folds (<see cref="ICodeFoldProvider"/>), whose regions the gutter's chevrons fold
+    /// (#1119). None, the default, folds by indentation. Put in and taken out as <see cref="DiagnosticProviders"/>
+    /// are, and the regions asked again when they change.
+    /// </summary>
+    public IReadOnlyList<ICodeFoldProvider> FoldProviders { get; set; } = [];
+
+    /// <summary>
     /// A place in another document the person went to (#1084): a definition or a reference a provider answered
     /// there. The editor holds one document, so the app opens that one and puts the caret at the location's start
     /// (<see cref="CodeEditorController.OpenRequested"/>).
@@ -210,6 +217,8 @@ public sealed class CodeEditor : StatefulComponent
         // And the link ⌘ shows over a name, which an answer brings and a key, the pointer or a scroll takes away,
         // and a place in another document, which is the app's to open (#1084).
         editor.Definitions.Changed += () => SetState(() => { });
+        // And the regions, which arrive after the text rests and fold and unfold by key (#1119).
+        editor.Folding.Changed += () => SetState(() => { });
         // A method, not a lambda: the twin's controller is untyped where an object initializer built it (#1106).
         editor.OpenRequested += Opened;
         return editor;
@@ -233,6 +242,7 @@ public sealed class CodeEditor : StatefulComponent
     private List<ICodeSymbolProvider> _declarers = [];
     private List<ICodeDefinitionProvider> _definers = [];
     private List<ICodeReferenceProvider> _referrers = [];
+    private List<ICodeFoldProvider> _folders = [];
 
     /// <summary>
     /// Reports <see cref="Diagnostics"/> when they are other problems than the last ones, and hands the
@@ -313,6 +323,18 @@ public sealed class CodeEditor : StatefulComponent
             }
             _referrers = [.. ReferenceProviders];
             foreach (var provider in _referrers) editor.References.Providers.Add(provider);
+        }
+        if (!SameProviders(FoldProviders, _folders))
+        {
+            foreach (var provider in _folders)
+            {
+                var at = IndexOfInstance(editor.Folding.Providers, provider);
+                if (at >= 0) editor.Folding.Providers.RemoveAt(at);
+            }
+            _folders = [.. FoldProviders];
+            foreach (var provider in _folders) editor.Folding.Providers.Add(provider);
+            // The regions came from the providers before.
+            editor.Folding.Check();
         }
     }
 
@@ -475,6 +497,15 @@ public sealed class CodeEditor : StatefulComponent
         TellSelection(editor);
     }
 
+    /// <summary>The header lines of the folded regions among <paramref name="folds"/>.</summary>
+    private static List<int> FoldedLines(CodeEditorController editor, IReadOnlyList<CodeFold> folds)
+    {
+        var folded = new List<int>();
+        foreach (var fold in folds)
+            if (editor.Folding.IsFolded(fold.StartLine)) folded.Add(fold.StartLine);
+        return folded;
+    }
+
     /// <summary>Tells the app where the caret is when it is not where it was last told.</summary>
     private void TellSelection(CodeEditorController editor)
     {
@@ -633,6 +664,7 @@ public sealed class CodeEditor : StatefulComponent
         SymbolProviders = fresh.SymbolProviders;
         DefinitionProviders = fresh.DefinitionProviders;
         ReferenceProviders = fresh.ReferenceProviders;
+        FoldProviders = fresh.FoldProviders;
         OnOpenRequested = fresh.OnOpenRequested;
         KeyBindings = fresh.KeyBindings;
     }
@@ -696,6 +728,11 @@ public sealed class CodeEditor : StatefulComponent
 
         var metrics = CodeBlock.MetricsFor(context, Size, ShowLineNumbers,
             FirstLineNumber + editor.Document.LineCount - 1);
+        // The gutter takes the chevrons right of its numbers, as VS Code's folding column stands (#1119): always,
+        // regions or none, or the code would move sideways each time the first one came or the last one went.
+        // With no numbers there is no gutter, and a folded header still shows its marker.
+        var folds = editor.Folding.Regions;
+        if (ShowLineNumbers) metrics = metrics with { GutterWidth = metrics.GutterWidth + CodeBlock.FoldSlot };
 
         // THE grid, handed to the engine — the only thing that turns a position into a point. The
         // block draws the lines on these same numbers, so the caret and the glyphs cannot disagree.
@@ -720,7 +757,11 @@ public sealed class CodeEditor : StatefulComponent
         }
         // The lines this build draws, and the only ones anything is measured on: the selection's
         // bands and the matches are asked for between these two, not over the whole file.
-        var (first, last) = CodeBlock.WindowOf(editor.Document.LineCount, metrics.LineHeight, _offset, _viewport);
+        // Counted in ROWS: a folded region's lines have none (#1119), as a diff's hidden runs have one.
+        var shown = editor.Grid.Rows;
+        var rowCount = shown?.RowCount ?? editor.Document.LineCount;
+        var (firstRow, lastRow) = CodeBlock.WindowOf(rowCount, metrics.LineHeight, _offset, _viewport);
+        var (first, last) = shown?.LinesIn(firstRow, lastRow) ?? (firstRow, lastRow);
 
         // Every match, found once per search: the marks and the bar's count both read it.
         var matches = MatchesOf(editor, Needle);
@@ -743,6 +784,12 @@ public sealed class CodeEditor : StatefulComponent
             Inverse = Inverse,
             GutterMarkers = Gutter(editor, first, last),
             OnGutterPressed = OnGutterPressed,
+            // The rows a folded region hides, and the regions the gutter's chevrons fold (#1119).
+            Rows = shown,
+            Folds = folds,
+            FoldedLines = FoldedLines(editor, folds),
+            // Folding.Changed asks for the build.
+            OnFoldPressed = line => editor.Folding.Toggle(line),
             Highlighter = highlighter,
             // THE grid — the same numbers the surface places the caret and the band on.
             Metrics = metrics,
@@ -775,7 +822,7 @@ public sealed class CodeEditor : StatefulComponent
         bool? listAbove = null;
         // The room over the code, in the surface's coordinates: the viewport, inside the surface, since the
         // scrollers around the surface clip whatever leaves it.
-        var codeHeight = 2 * metrics.ContentTop + editor.Document.LineCount * metrics.LineHeight;
+        var codeHeight = 2 * metrics.ContentTop + rowCount * metrics.LineHeight;
         var surfaceHeight = bounded ? MathF.Max(codeHeight, _viewport) : codeHeight;
         var viewTop = windowed ? _offset : 0;
         var viewBottom = windowed && _viewport > 0 ? MathF.Min(_offset + _viewport, surfaceHeight) : surfaceHeight;

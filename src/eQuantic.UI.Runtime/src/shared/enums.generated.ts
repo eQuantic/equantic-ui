@@ -42,7 +42,8 @@ export type CodeCommandValue =
   | 'addCursorBelow' | 'addNextOccurrence' | 'selectAllOccurrences' | 'removeSecondaryCursors'
   | 'nextTabStop' | 'previousTabStop' | 'leaveSnippet' | 'goToLine' | 'goToSymbol' | 'navigateBack'
   | 'navigateForward' | 'goToDefinition' | 'goToDeclaration' | 'goToTypeDefinition'
-  | 'goToImplementation' | 'findReferences' | 'nextReference' | 'previousReference';
+  | 'goToImplementation' | 'findReferences' | 'nextReference' | 'previousReference' | 'fold'
+  | 'unfold' | 'foldRecursively' | 'unfoldRecursively' | 'toggleFold' | 'foldAll' | 'unfoldAll';
 
 export type CodeCompletionKindValue =
   'text' | 'method' | 'function' | 'constructor' | 'field' | 'variable' | 'class' | 'interface'

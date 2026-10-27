@@ -315,6 +315,14 @@ public static class CodeKeymap
             Bind("F12", shift, CodeCommand.FindReferences),
             Bind("F4", none, CodeCommand.NextReference),
             Bind("F4", shift, CodeCommand.PreviousReference),
+
+            // ---- folding, as VS Code binds it in both conventions (#1119): ⌘K ⌘[ and ⌘K ⌘] fold and unfold a
+            // region with every region inside it, ⌘K ⌘L toggles it, ⌘K ⌘0 folds them all and ⌘K ⌘J unfolds them.
+            new(new KeyChord("[", command), CodeCommand.FoldRecursively) { First = new KeyChord("k", command) },
+            new(new KeyChord("]", command), CodeCommand.UnfoldRecursively) { First = new KeyChord("k", command) },
+            new(new KeyChord("l", command), CodeCommand.ToggleFold) { First = new KeyChord("k", command) },
+            new(new KeyChord("0", command), CodeCommand.FoldAll) { First = new KeyChord("k", command) },
+            new(new KeyChord("j", command), CodeCommand.UnfoldAll) { First = new KeyChord("k", command) },
         };
         if (apple)
         {
@@ -343,6 +351,12 @@ public static class CodeKeymap
             // stays the browser's.
             bindings.Add(Bind("j", control, CodeCommand.JoinLines));
             bindings.Add(Bind("j", command, CodeCommand.JoinLines));
+            // ⌥⌘[ and ⌥⌘] fold and unfold the region at the caret. ⌥ makes the bracket key type a quotation mark on
+            // a Mac, which a host may report as the key, so the key is named both ways.
+            bindings.Add(Bind("[", alt | command, CodeCommand.Fold));
+            bindings.Add(Bind("\u201C", alt | command, CodeCommand.Fold));
+            bindings.Add(Bind("]", alt | command, CodeCommand.Unfold));
+            bindings.Add(Bind("\u2018", alt | command, CodeCommand.Unfold));
         }
         else
         {
@@ -351,6 +365,12 @@ public static class CodeKeymap
             bindings.Add(Bind("g", command, CodeCommand.GoToLine));
             bindings.Add(Bind("ArrowLeft", alt, CodeCommand.NavigateBack));
             bindings.Add(Bind("ArrowRight", alt, CodeCommand.NavigateForward));
+            // Ctrl+Shift+[ and Ctrl+Shift+] fold and unfold the region at the caret; ⇧ makes the key a brace in a
+            // browser, so the key is named both ways.
+            bindings.Add(Bind("[", shift | command, CodeCommand.Fold));
+            bindings.Add(Bind("{", shift | command, CodeCommand.Fold));
+            bindings.Add(Bind("]", shift | command, CodeCommand.Unfold));
+            bindings.Add(Bind("}", shift | command, CodeCommand.Unfold));
         }
         // Ctrl+↑ scrolls the view in every Standard editor; there is no view to scroll from here, so it
         // is left to the host rather than guessed at.

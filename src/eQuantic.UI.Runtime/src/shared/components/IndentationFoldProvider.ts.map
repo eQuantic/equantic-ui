@@ -6,5 +6,5 @@
         "eQuantic.UI.Code/Folding/IndentationFoldProvider.cs"
     ],
     "names" : [],
-    "mappings" : ";;;IAOA;;IAEI;QAEI;QACA;YAEI;YACA,sCAA6B;YAE7B;YACA;YACA;gBAEI;gBACA,2CAAkC;gBAClC,8CAA8C;gBAC9C;;YAEJ,iBAAiB;;QAErB;;;IArBR"
+    "mappings" : ";;;IAOA;QAEyB;QAOjB;;;IAPiB;;IAUrB;QACI;;;IAGJ;QAAwD;;;IAGxD;QAEI;QACA;YAEI;YACA,sCAA6B;YAE7B;YACA;YACA;gBAEI;gBACA,2CAAkC;gBAClC,4CAAuC;gBACvC;;YAEJ,iBAAiB;;QAErB;;;IAtCR"
 }

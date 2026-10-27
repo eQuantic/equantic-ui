@@ -55,6 +55,7 @@ export { CodeEditor } from './CodeEditor';
 export { CodeEditorController } from './CodeEditorController';
 export { CodeFiller } from './CodeFiller';
 export { CodeFold } from './CodeFold';
+export { CodeFolding } from './CodeFolding';
 export { CodeFuzzyMatch } from './CodeFuzzyMatch';
 export { CodeGoTo } from './CodeGoTo';
 export { CodeGoToEntry } from './CodeGoToEntry';

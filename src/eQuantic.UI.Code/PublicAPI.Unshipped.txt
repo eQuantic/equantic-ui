@@ -506,3 +506,38 @@ eQuantic.UI.Code.CodeGoToNotFound.Kind.init -> void
 eQuantic.UI.Code.CodeGoToNotFound.At.get -> eQuantic.UI.Code.CodePosition
 eQuantic.UI.Code.CodeGoToNotFound.At.init -> void
 eQuantic.UI.Code.CodeDefinitions.ClearLink() -> void
+*REMOVED*eQuantic.UI.Code.ICodeFoldProvider.FoldsFor(eQuantic.UI.Code.CodeDocument! document) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeFold!>!
+*REMOVED*eQuantic.UI.Code.IndentationFoldProvider.FoldsFor(eQuantic.UI.Code.CodeDocument! document) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeFold!>!
+eQuantic.UI.Code.CodeCommand.Fold = 86 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.Unfold = 87 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.FoldRecursively = 88 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.UnfoldRecursively = 89 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.ToggleFold = 90 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.FoldAll = 91 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeCommand.UnfoldAll = 92 -> eQuantic.UI.Code.CodeCommand
+eQuantic.UI.Code.CodeEditorController.Folding.get -> eQuantic.UI.Code.CodeFolding!
+eQuantic.UI.Code.CodeFolding.Unfold(int line) -> bool
+eQuantic.UI.Code.CodeFolding.UnfoldRecursively(int line) -> bool
+eQuantic.UI.Code.CodeFolding.FoldRecursively(int line) -> bool
+eQuantic.UI.Code.CodeFolding.Toggle(int line) -> bool
+eQuantic.UI.Code.CodeFolding.FoldAll() -> bool
+eQuantic.UI.Code.CodeFolding.UnfoldAll() -> bool
+eQuantic.UI.Code.CodeFolding
+eQuantic.UI.Code.CodeFolding.Providers.get -> System.Collections.Generic.IList<eQuantic.UI.Code.ICodeFoldProvider!>!
+eQuantic.UI.Code.CodeFolding.Delay.get -> System.TimeSpan
+eQuantic.UI.Code.CodeFolding.Delay.set -> void
+eQuantic.UI.Code.CodeFolding.Regions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeFold!>!
+eQuantic.UI.Code.CodeFolding.Collapses.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeCollapse>!
+eQuantic.UI.Code.CodeFolding.Changed -> System.Action?
+eQuantic.UI.Code.CodeFolding.Failed -> System.Action<System.Exception!>?
+eQuantic.UI.Code.CodeFolding.IsFolded(int line) -> bool
+eQuantic.UI.Code.CodeFolding.IsHidden(int line) -> bool
+eQuantic.UI.Code.CodeFolding.RegionAt(int line) -> eQuantic.UI.Code.CodeFold?
+eQuantic.UI.Code.CodeFolding.Check() -> void
+eQuantic.UI.Code.CodeFolding.Fold(int line) -> bool
+eQuantic.UI.Code.ICodeFoldProvider.FoldsAsync(eQuantic.UI.Code.CodeDocument! document, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeFold!>!>!
+eQuantic.UI.Code.IndentationFoldProvider.FoldsAsync(eQuantic.UI.Code.CodeDocument! document, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeFold!>!>!
+eQuantic.UI.Code.CodeFolding.Enabled.get -> bool
+eQuantic.UI.Code.CodeFolding.Enabled.set -> void
+*REMOVED*eQuantic.UI.Code.IndentationFoldProvider.IndentationFoldProvider() -> void
+eQuantic.UI.Code.IndentationFoldProvider.IndentationFoldProvider(int tabSize = 4) -> void

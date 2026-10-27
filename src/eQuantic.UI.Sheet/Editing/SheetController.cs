@@ -31,6 +31,8 @@ public sealed class SheetController : ISheetSurfaceModel
     {
         Document = new SheetDocument(rows, cols);
         Entry = new CodeEditorController("", new SheetEntryLanguage());
+        // A cell's entry draws every line it holds (EntryLines), so nothing in it folds (#1119).
+        Entry.Folding.Enabled = false;
         FormulaBar = new SheetFormulaBar(this);
         NameBox = new SheetNameBox(this);
     }

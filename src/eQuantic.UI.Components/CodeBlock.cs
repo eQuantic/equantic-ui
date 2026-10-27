@@ -130,6 +130,22 @@ public sealed class CodeBlock : StatelessComponent
     /// <summary>A press on a folded run's row, with the first line it hides: a diff opens it.</summary>
     public Action<int>? OnPlaceholderPressed { get; init; }
 
+    /// <summary>
+    /// The regions the code folds into (#1119): the gutter shows a chevron beside each one's header line, pointing
+    /// down while it is open and right while it is folded, and a folded header shows <c>⋯</c> after its text. None,
+    /// the default, draws neither, and the gutter keeps its width.
+    /// </summary>
+    public IReadOnlyList<CodeFold> Folds { get; init; } = [];
+
+    /// <summary>The header lines of the folded regions among <see cref="Folds"/>.</summary>
+    public IReadOnlyList<int> FoldedLines { get; init; } = [];
+
+    /// <summary>A press on a region's chevron or on a folded header's <c>⋯</c>, with the region's header line.</summary>
+    public Action<int>? OnFoldPressed { get; init; }
+
+    /// <summary>The room a chevron takes in the gutter, right of the line numbers.</summary>
+    internal const float FoldSlot = IconSize.Sm + Space.S1;
+
     /// <summary>Shown top-right, over the code — a file name, a language label.</summary>
     public string? Caption { get; init; }
 
@@ -205,6 +221,20 @@ public sealed class CodeBlock : StatelessComponent
         public float ContentTop => Space.S3;
     }
 
+    /// <summary>
+    /// The metrics this block draws on: the editor's when it hands them over, which hold the chevrons' column
+    /// already, or its own, with the column when it can fold (#1119), so a block that folds by itself keeps its
+    /// numbers whole.
+    /// </summary>
+    private CodeMetrics OwnMetrics(ComponentContext context)
+    {
+        if (Metrics is { } given) return given;
+        var own = MetricsFor(context, Size, ShowLineNumbers, FirstLineNumber + Document.LineCount - 1);
+        return ShowLineNumbers && (Folds.Count > 0 || OnFoldPressed is not null)
+            ? own with { GutterWidth = own.GutterWidth + FoldSlot }
+            : own;
+    }
+
     /// <summary>The metrics for a block of these settings, measured through the context.</summary>
     public static CodeMetrics MetricsFor(ComponentContext context, SizeVariant size,
         bool showLineNumbers, int lastLineNumber)
@@ -227,8 +257,7 @@ public sealed class CodeBlock : StatelessComponent
         // The EDITOR's numbers when it has them: it already measured to place a caret, and a caret
         // measured against one grid over lines drawn on another is a caret that drifts down the
         // file. One measurement, one grid, whatever the two contexts happen to say.
-        var metrics = Metrics ?? MetricsFor(context, Size, ShowLineNumbers,
-            FirstLineNumber + Document.LineCount - 1);
+        var metrics = OwnMetrics(context);
         var lineHeight = metrics.LineHeight;
 
         var ink = Inverse ? CodeInk : theme.TextPrimary;
@@ -265,6 +294,14 @@ public sealed class CodeBlock : StatelessComponent
             }
         }
         var codeWidth = widest * metrics.ColumnWidth + metrics.ColumnWidth;
+        // A folded header draws its marker past its text (#1119), so the code is as wide as that too: the widest
+        // line's marker would otherwise be cut where the sideways scroll cannot reach, which Photon sizes by this.
+        foreach (var header in FoldedLines)
+        {
+            if (header < 0 || header >= Document.LineCount || FoldAt(header) is not { } fold) continue;
+            var cells = CodeLineCells.WidthOf(Document.Line(header), TabSize) + CodeLineCells.WidthOf(MarkerOf(fold), TabSize);
+            codeWidth = MathF.Max(codeWidth, cells * metrics.ColumnWidth + MarkerRoom + metrics.ColumnWidth);
+        }
 
         // The other document's own colouring: a highlighter keeps one document's state, and sharing
         // one between two would re-colour both from the top on every build.
@@ -449,8 +486,7 @@ public sealed class CodeBlock : StatelessComponent
     public VisualNode Gutter(ComponentContext context, Func<CodeRow, string?>? numberOf = null)
     {
         var theme = context.Theme;
-        var metrics = Metrics ?? MetricsFor(context, Size, ShowLineNumbers,
-            FirstLineNumber + Document.LineCount - 1);
+        var metrics = OwnMetrics(context);
         var lineHeight = metrics.LineHeight;
         var (first, last) = Window(lineHeight);
 
@@ -515,9 +551,94 @@ public sealed class CodeBlock : StatelessComponent
                 : null,
         }, numbers);
 
-        return isLine && OnGutterPressed is { } pressed
-            ? new Pressable(cell, () => pressed(index)) { Label = SdkStrings.LineNumbered(FirstLineNumber + index) }
-            : cell;
+        // The slot stands whenever the block can fold, regions or none, so the numbers never move as they come
+        // and go.
+        if (Folds.Count == 0 && OnFoldPressed is null)
+            return isLine && OnGutterPressed is { } pressed
+                ? new Pressable(cell, () => pressed(index)) { Label = SdkStrings.LineNumbered(FirstLineNumber + index) }
+                : cell;
+
+        // With regions, the chevron stands beside the number in a slot of its own, never inside the number's own
+        // press (a breakpoint's): a button in a button is no control a screen reader can name (#1119).
+        var slot = new Row(gap: 0)
+        {
+            Width = SizeValue.Fixed(metrics.GutterWidth),
+            Height = SizeValue.Fixed(metrics.LineHeight),
+            Cross = CrossAlign.Center,
+        };
+        VisualNode numbered = new Box(new BoxStyle
+        {
+            Width = SizeValue.Fixed(metrics.GutterWidth - FoldSlot - Space.S3),
+            Height = SizeValue.Fill,
+        }, numbers);
+        if (isLine && OnGutterPressed is { } press)
+            numbered = new Pressable(numbered, () => press(index)) { Label = SdkStrings.LineNumbered(FirstLineNumber + index) };
+        slot.Add(numbered);
+        slot.Add(FoldChevron(isLine ? FoldAt(index) : null, metrics, theme));
+        return new Box(new BoxStyle
+        {
+            Width = SizeValue.Fixed(metrics.GutterWidth),
+            Height = SizeValue.Fixed(metrics.LineHeight),
+            Background = !isLine ? FillerColor
+                : ActiveLines.Contains(index) ? (Inverse ? CodeSlabActive : theme.Colors(Variant.Primary).Subtle)
+                : null,
+        }, slot);
+    }
+
+    /// <summary>The region whose header is <paramref name="line"/>, or null. Asked for every row drawn, so the
+    /// regions are looked up by their header, once per block.</summary>
+    private CodeFold? FoldAt(int line)
+    {
+        if (_foldsByHeader is null)
+        {
+            _foldsByHeader = new Dictionary<int, CodeFold>();
+            foreach (var fold in Folds) _foldsByHeader[fold.StartLine] = fold;
+        }
+        return _foldsByHeader.TryGetValue(line, out var found) ? found : null;
+    }
+
+    private Dictionary<int, CodeFold>? _foldsByHeader;
+
+    /// <summary>Whether the region whose header is <paramref name="line"/> is folded.</summary>
+    private bool IsFolded(int line)
+    {
+        _foldedHeaders ??= [.. FoldedLines];
+        return _foldedHeaders.Contains(line);
+    }
+
+    private HashSet<int>? _foldedHeaders;
+
+    /// <summary>
+    /// The chevron of <paramref name="fold"/>, down while it is open and right while it is folded, a button named by
+    /// the lines it folds and saying whether they show, a press toggling it; the empty slot on a line that starts
+    /// none.
+    /// </summary>
+    private VisualNode FoldChevron(CodeFold? fold, CodeMetrics metrics, IAppTheme theme)
+    {
+        var slot = new Row(gap: 0)
+        {
+            Width = SizeValue.Fixed(FoldSlot),
+            Height = SizeValue.Fill,
+            Main = MainAlign.End,
+            Cross = CrossAlign.Center,
+        };
+        if (fold is null) return slot;
+        var folded = IsFolded(fold.StartLine);
+        var from = FirstLineNumber + fold.StartLine;
+        var to = FirstLineNumber + fold.EndLine;
+        slot.Add(new Icon(folded ? Icons.ChevronRight : Icons.ChevronDown, MathF.Min(IconSize.Sm, metrics.LineHeight),
+            Inverse ? CodeInkMuted : theme.TextMuted));
+        VisualNode box = slot;
+        return OnFoldPressed is { } pressed
+            ? new Pressable(box, () => pressed(fold.StartLine))
+            {
+                Label = folded ? SdkStrings.UnfoldLines(from, to) : SdkStrings.FoldLines(from, to),
+                Expanded = !folded,
+                // The keyboard stays with the code, as a press on VS Code's chevrons leaves it in the editor: a
+                // press that took it left ⌘K ⌘J and every other key of the editor reaching a button.
+                CanRequestFocus = false,
+            }
+            : box;
     }
 
     /// <summary>What one row draws: a line of the document, a line of the other one, a label, a folded
@@ -570,6 +691,37 @@ public sealed class CodeBlock : StatelessComponent
             : box;
     }
 
+    /// <summary>What a folded header shows after its text: <c>⋯</c>, or the region's own placeholder, a button that
+    /// unfolds it.</summary>
+    /// <summary>What a folded <paramref name="fold"/> shows after its header: its own placeholder, or <c>⋯</c>.</summary>
+    private static string MarkerOf(CodeFold fold) => fold.Placeholder ?? "\u22EF";
+
+    /// <summary>The room a marker takes besides its text: the gap before it and its padding on either side.</summary>
+    private const float MarkerRoom = Space.S1 * 3;
+
+    private VisualNode FoldMarker(CodeFold fold, CodeMetrics metrics, IAppTheme theme)
+    {
+        // The room before it is a box of its own: a box has no margin, and its padding would be inside the wash.
+        var spaced = new Row(gap: 0) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
+        spaced.Add(Spacer.Fixed(Space.S1));
+        spaced.Add(new Box(new BoxStyle
+        {
+            Padding = EdgeInsets.Symmetric(Space.S1, 0),
+            Background = theme.Colors(Variant.Primary).Subtle,
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Small)),
+        }, Muted(MarkerOf(fold), metrics, theme)));
+        VisualNode marker = spaced;
+        return OnFoldPressed is { } pressed
+            ? new Pressable(marker, () => pressed(fold.StartLine))
+            {
+                Label = SdkStrings.UnfoldLines(FirstLineNumber + fold.StartLine, FirstLineNumber + fold.EndLine),
+                Expanded = false,
+                // As the chevron: the keyboard stays with the code.
+                CanRequestFocus = false,
+            }
+            : marker;
+    }
+
     private VisualNode Muted(string text, CodeMetrics metrics, IAppTheme theme) =>
         new Text(text, TypeRole.LabelSmall, Inverse ? CodeInkMuted : theme.TextMuted, maxLines: 1)
         {
@@ -611,6 +763,8 @@ public sealed class CodeBlock : StatelessComponent
             AddSpans(code, cells, at, text.Length, ink, style, columnWidth, selected, selectedInk);
         // An empty line still needs its height, and a space is the cheapest way to say so.
         if (text.Length == 0) code.Add(Run(" ", ink, style));
+        // A folded header says so after its text, as VS Code's inline marker does, and opens on a press (#1119).
+        if (selectable && IsFolded(index) && FoldAt(index) is { } fold) code.Add(FoldMarker(fold, metrics, theme));
 
         row.Add(new Box(new BoxStyle { Padding = EdgeInsets.Symmetric(Space.S3, 0) }, code));
 
@@ -673,6 +827,9 @@ public sealed class CodeBlock : StatelessComponent
     internal static (int First, int Last) WindowOf(int lineCount, float lineHeight, float offset, float viewportHeight)
     {
         if (viewportHeight <= 0 || lineHeight <= 0) return (0, lineCount - 1);
+        // Never past the rows there are: a fold that leaves fewer rows than the scroll had passed (#1119) would
+        // otherwise build none, before the view, clamped by its own layout, says where it stands.
+        offset = MathF.Min(offset, MathF.Max(0, lineCount * lineHeight - viewportHeight));
         const int margin = 8;   // a scroll of one line builds nothing
         var first = Math.Max(0, (int)MathF.Floor(offset / lineHeight) - margin);
         var visible = (int)MathF.Ceiling(viewportHeight / lineHeight) + margin * 2;

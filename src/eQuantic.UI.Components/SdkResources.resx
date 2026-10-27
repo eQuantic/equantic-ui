@@ -247,4 +247,10 @@
   <data name="NoReferences" xml:space="preserve">
     <value>No references found</value>
   </data>
+  <data name="FoldLines" xml:space="preserve">
+    <value>Fold lines {0} to {1}</value>
+  </data>
+  <data name="UnfoldLines" xml:space="preserve">
+    <value>Unfold lines {0} to {1}</value>
+  </data>
 </root>

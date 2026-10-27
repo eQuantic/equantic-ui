@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeDiagnostic, CodeEditorController, CodeGoToView, CodeGrid, CodeGutterMarker, CodeHoverCard, CodeKeyBinding, CodeKeywordCompletionProvider, CodeLanguages, CodeLocation, CodeRange, CodeSignatureCard, CodeSurface, CodeWordCompletionProvider, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Rect, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeDiagnostic, CodeEditorController, CodeFold, CodeGoToView, CodeGrid, CodeGutterMarker, CodeHoverCard, CodeKeyBinding, CodeKeywordCompletionProvider, CodeLanguages, CodeLocation, CodeRange, CodeSignatureCard, CodeSurface, CodeWordCompletionProvider, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Rect, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
 
 export class CodeEditor extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeEditor';
@@ -23,6 +23,7 @@ export class CodeEditor extends StatefulComponent {
     _declarers: any[] = [];
     _definers: any[] = [];
     _referrers: any[] = [];
+    _folders: any[] = [];
     _bindings: CodeKeyBinding[] = [];
     _toldDocument: any = null;
     _toldSelection: CodeRange = CodeRange.$zero();
@@ -57,6 +58,7 @@ export class CodeEditor extends StatefulComponent {
     declare symbolProviders: any[];
     declare definitionProviders: any[];
     declare referenceProviders: any[];
+    declare foldProviders: any[];
     declare onOpenRequested: ((codeLocation: CodeLocation) => void) | null;
     declare keyBindings: CodeKeyBinding[];
 
@@ -89,6 +91,7 @@ export class CodeEditor extends StatefulComponent {
         if (this.symbolProviders === undefined) this.symbolProviders = [];
         if (this.definitionProviders === undefined) this.definitionProviders = [];
         if (this.referenceProviders === undefined) this.referenceProviders = [];
+        if (this.foldProviders === undefined) this.foldProviders = [];
         if (this.keyBindings === undefined) this.keyBindings = [];
         this.initialCode = code;
         this.languageName = language;
@@ -103,6 +106,8 @@ export class CodeEditor extends StatefulComponent {
         this.handKeyBindings(editor);
         let highlighter = editor.highlighter;
         let metrics = CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + editor.document.lineCount - 1);
+        let folds = editor.folding.regions;
+        if (this.showLineNumbers) metrics = metrics.with({ gutterWidth: Math.fround(metrics.gutterWidth + 20) });
         editor.grid = new CodeGrid(new Point(metrics.contentLeft, metrics.contentTop), new Size(metrics.columnWidth, metrics.lineHeight));
         let bounded = this.height.kind !== 'hug';
         let windowed = bounded || this.maxHeight > 0;
@@ -110,15 +115,18 @@ export class CodeEditor extends StatefulComponent {
             this._offset = 0;
             this._viewport = 0;
         }
-        let [first, last] = CodeBlock.windowOf(editor.document.lineCount, metrics.lineHeight, this._offset, this._viewport);
+        let shown = editor.grid.rows;
+        let rowCount = shown?.rowCount ?? editor.document.lineCount;
+        let [firstRow, lastRow] = CodeBlock.windowOf(rowCount, metrics.lineHeight, this._offset, this._viewport);
+        let [first, last] = shown?.linesIn(firstRow, lastRow) ?? [firstRow, lastRow];
         let matches = this.matchesOf(editor, this.needle);
-        let block = new CodeBlock('', null, { document: editor.document, language: highlighter.language, decorations: this.marks(editor, matches, first, last, context.theme), showLineNumbers: this.showLineNumbers, firstLineNumber: this.firstLineNumber, standalone: false, size: this.size, inverse: this.inverse, gutterMarkers: this.gutter(editor, first, last), onGutterPressed: this.onGutterPressed, highlighter: highlighter, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._viewportWidth, minHeight: bounded ? this._viewport : 0, activeLines: editor.caretLinesIn(first, last), selectionBands: editor.selectionBandsIn(first, last), selections: editor.selectionsIn(first, last), widestLine: editor.widestLine });
+        let block = new CodeBlock('', null, { document: editor.document, language: highlighter.language, decorations: this.marks(editor, matches, first, last, context.theme), showLineNumbers: this.showLineNumbers, firstLineNumber: this.firstLineNumber, standalone: false, size: this.size, inverse: this.inverse, gutterMarkers: this.gutter(editor, first, last), onGutterPressed: this.onGutterPressed, rows: shown, folds: folds, foldedLines: CodeEditor.foldedLines(editor, folds), onFoldPressed: (line: number) => editor.folding.toggle(line), highlighter: highlighter, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._viewportWidth, minHeight: bounded ? this._viewport : 0, activeLines: editor.caretLinesIn(first, last), selectionBands: editor.selectionBandsIn(first, last), selections: editor.selectionsIn(first, last), widestLine: editor.widestLine });
         let completion = editor.completion;
         let offered: VisualNode | null = null;
         let offeredAt = Point.zero;
         let highlighted = -1;
         let listAbove: boolean | null = null;
-        let codeHeight = Math.fround(Math.fround(2 * metrics.contentTop) + Math.fround(Math.fround(editor.document.lineCount) * metrics.lineHeight));
+        let codeHeight = Math.fround(Math.fround(2 * metrics.contentTop) + Math.fround(Math.fround(rowCount) * metrics.lineHeight));
         let surfaceHeight = bounded ? Math.max(codeHeight, this._viewport) : codeHeight;
         let viewTop = windowed ? this._offset : 0;
         let viewBottom = windowed && this._viewport > 0 ? Math.min(Math.fround(this._offset + this._viewport), surfaceHeight) : surfaceHeight;
@@ -248,6 +256,7 @@ export class CodeEditor extends StatefulComponent {
         editor.goTo.changed = $eq.delegates.combine(editor.goTo.changed, () => this.setState(() => this.tellSelection(editor)));
         editor.scrollRequested = $eq.delegates.combine(editor.scrollRequested, () => this.setState(() => {}));
         editor.definitions.changed = $eq.delegates.combine(editor.definitions.changed, () => this.setState(() => {}));
+        editor.folding.changed = $eq.delegates.combine(editor.folding.changed, () => this.setState(() => {}));
         editor.openRequested = $eq.delegates.combine(editor.openRequested, this.opened.bind(this));
         return editor;
     }
@@ -312,6 +321,15 @@ export class CodeEditor extends StatefulComponent {
             }
             this._referrers = [...this.referenceProviders];
             for (const provider of this._referrers) $eq.collections.add(editor.references.providers, provider);
+        }
+        if (!CodeEditor.sameProviders(this.foldProviders, this._folders)) {
+            for (const provider of this._folders) {
+                let at = CodeEditor.indexOfInstance(editor.folding.providers, provider);
+                if (at >= 0) editor.folding.providers.splice(at, 1);
+            }
+            this._folders = [...this.foldProviders];
+            for (const provider of this._folders) $eq.collections.add(editor.folding.providers, provider);
+            editor.folding.check();
         }
     }
 
@@ -412,6 +430,12 @@ export class CodeEditor extends StatefulComponent {
         this.tellSelection(editor);
     }
 
+    static foldedLines(editor: CodeEditorController, folds: CodeFold[]) {
+        let folded: number[] = [];
+        for (const fold of folds) if (editor.folding.isFolded(fold.startLine)) folded.push(fold.startLine);
+        return folded;
+    }
+
     tellSelection(editor: CodeEditorController) {
         if ($eq.equals(editor.selection, this._toldSelection)) return;
         this._toldSelection = editor.selection;
@@ -508,6 +532,7 @@ export class CodeEditor extends StatefulComponent {
         this.symbolProviders = fresh.symbolProviders;
         this.definitionProviders = fresh.definitionProviders;
         this.referenceProviders = fresh.referenceProviders;
+        this.foldProviders = fresh.foldProviders;
         this.onOpenRequested = fresh.onOpenRequested;
         this.keyBindings = fresh.keyBindings;
     }

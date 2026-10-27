@@ -232,4 +232,21 @@ public enum CodeCommand
     NextReference,
     /// <summary>The place before, as <see cref="NextReference"/> walks.</summary>
     PreviousReference,
+
+    // ---- folding (#1119) --------------------------------------------------------------------------------
+
+    /// <summary>The innermost open region holding the caret's line folded. Claims nothing with none.</summary>
+    Fold,
+    /// <summary>The innermost folded region holding the caret's line unfolded. Claims nothing with none.</summary>
+    Unfold,
+    /// <summary>The innermost region holding the caret's line folded, with every region inside it.</summary>
+    FoldRecursively,
+    /// <summary>The innermost region holding the caret's line unfolded, with every region inside it.</summary>
+    UnfoldRecursively,
+    /// <summary>The innermost region holding the caret's line folded when open, unfolded when folded.</summary>
+    ToggleFold,
+    /// <summary>Every region folded. Claims nothing when every one is folded already.</summary>
+    FoldAll,
+    /// <summary>Every region unfolded. Claims nothing when none is folded.</summary>
+    UnfoldAll,
 }

@@ -60,6 +60,7 @@ Apple plain / Command => claimed text=alpha beta\n    // gamma delta\nepsilon ze
 Apple plain / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
 Apple plain Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
 Apple plain Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Apple plain k Command => claimed unchanged
 Apple plain k Shift+Command => claimed text=alpha beta\nepsilon zeta
 Apple plain j Command => claimed text=alpha beta\n    gamma delta epsilon zeta selection=1:15>1:15
 Apple plain j Control => claimed text=alpha beta\n    gamma delta epsilon zeta selection=1:15>1:15
@@ -125,6 +126,7 @@ Apple selection / Command => claimed text=alpha beta\n    // gamma delta\nepsilo
 Apple selection / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
 Apple selection Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
 Apple selection Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Apple selection k Command => claimed unchanged
 Apple selection k Shift+Command => claimed text=alpha beta\nepsilon zeta selection=1:9>1:9
 Apple selection j Command => claimed text=alpha beta\n    gamma delta epsilon zeta
 Apple selection j Control => claimed text=alpha beta\n    gamma delta epsilon zeta
@@ -187,6 +189,7 @@ Apple no-clipboard / Command => claimed text=alpha beta\n    // gamma delta\neps
 Apple no-clipboard / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
 Apple no-clipboard Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
 Apple no-clipboard Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Apple no-clipboard k Command => claimed unchanged
 Apple no-clipboard k Shift+Command => claimed text=alpha beta\nepsilon zeta selection=1:9>1:9
 Apple no-clipboard j Command => claimed text=alpha beta\n    gamma delta epsilon zeta
 Apple no-clipboard j Control => claimed text=alpha beta\n    gamma delta epsilon zeta
@@ -234,6 +237,7 @@ Apple read-only c Command => claimed clipboard=    gamma delta
 Apple read-only x Command => claimed selection=1:0>2:0 clipboard=    gamma delta
 
 Apple read-only v Command => claimed unchanged
+Apple read-only k Command => claimed unchanged
 Apple read-only g Control => claimed goto=:
 Apple read-only o Shift+Command => claimed goto=@
 Apple released ArrowLeft - => claimed selection=1:5>1:5 trap=armed
@@ -560,7 +564,7 @@ Apple released Slash Command+Control+Alt => unclaimed trap=armed
 Apple released Slash Shift+Command+Control+Alt => unclaimed trap=armed
 Apple released k - => unclaimed trap=armed
 Apple released k Shift => unclaimed trap=armed
-Apple released k Command => unclaimed trap=armed
+Apple released k Command => claimed trap=armed
 Apple released k Shift+Command => claimed text=alpha beta\nepsilon zeta trap=armed
 Apple released k Control => unclaimed trap=armed
 Apple released k Shift+Control => unclaimed trap=armed
@@ -779,6 +783,7 @@ Apple list / Command => claimed text=alpha beta\n    gamma delta\n// epsilon zet
 Apple list / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18
 Apple list Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18
 Apple list Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18
+Apple list k Command => claimed unchanged
 Apple list k Shift+Command => claimed text=alpha beta\n    gamma delta selection=1:15>1:15 list=-
 Apple list g Control => claimed list=- goto=:
 Apple list o Shift+Command => claimed list=- goto=@
@@ -914,6 +919,7 @@ Apple panel / Command => claimed text=alpha beta\n    gamma delta\n// epsilon ze
 Apple panel / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22
 Apple panel Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22
 Apple panel Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22
+Apple panel k Command => claimed unchanged
 Apple panel k Shift+Command => claimed text=alpha beta\n    gamma delta selection=1:15>1:15 panel=-
 Apple panel g Control => claimed panel=- goto=:
 Apple panel o Shift+Command => claimed panel=- goto=@
@@ -973,6 +979,7 @@ Apple problems / Command => claimed text=// alpha beta\n    gamma delta\nepsilon
 Apple problems / Shift+Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
 Apple problems Slash Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
 Apple problems Slash Shift+Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
+Apple problems k Command => claimed unchanged
 Apple problems k Shift+Command => claimed text=    gamma delta\nepsilon zeta
 Apple problems j Command => claimed text=alpha beta gamma delta\nepsilon zeta selection=0:10>0:10
 Apple problems j Control => claimed text=alpha beta gamma delta\nepsilon zeta selection=0:10>0:10
@@ -1040,6 +1047,7 @@ Apple jumped / Command => claimed text=alpha beta\n    gamma delta\n// epsilon z
 Apple jumped / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta
 Apple jumped Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta
 Apple jumped Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta
+Apple jumped k Command => claimed unchanged
 Apple jumped k Shift+Command => claimed text=alpha beta\n    gamma delta selection=1:0>1:0
 Apple jumped g Control => claimed goto=:
 Apple jumped o Shift+Command => claimed goto=@
@@ -1101,6 +1109,7 @@ Apple walked-back / Command => claimed text=// alpha beta\n    gamma delta\nepsi
 Apple walked-back / Shift+Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
 Apple walked-back Slash Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
 Apple walked-back Slash Shift+Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
+Apple walked-back k Command => claimed unchanged
 Apple walked-back k Shift+Command => claimed text=    gamma delta\nepsilon zeta
 Apple walked-back j Command => claimed text=alpha beta gamma delta\nepsilon zeta selection=0:10>0:10
 Apple walked-back j Control => claimed text=alpha beta gamma delta\nepsilon zeta selection=0:10>0:10
@@ -1174,7 +1183,7 @@ Apple chord Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\n
 Apple chord k Command => claimed unchanged
 Apple chord k Shift+Command => claimed text=alpha beta\nepsilon zeta
 Apple chord i Command => claimed card=open
-Apple chord j Command => claimed text=alpha beta\n    gamma delta epsilon zeta selection=1:15>1:15
+Apple chord j Command => claimed unchanged
 Apple chord j Control => claimed text=alpha beta\n    gamma delta epsilon zeta selection=1:15>1:15
 Apple chord g Control => claimed goto=:
 Apple chord o Shift+Command => claimed goto=@
@@ -1231,6 +1240,7 @@ Standard plain / Command => claimed text=alpha beta\n    // gamma delta\nepsilon
 Standard plain / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
 Standard plain Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
 Standard plain Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:9>1:9
+Standard plain k Command => claimed unchanged
 Standard plain k Shift+Command => claimed text=alpha beta\nepsilon zeta
 Standard plain g Command => claimed goto=:
 Standard plain o Shift+Command => claimed goto=@
@@ -1285,6 +1295,7 @@ Standard selection / Command => claimed text=alpha beta\n    // gamma delta\neps
 Standard selection / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
 Standard selection Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
 Standard selection Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Standard selection k Command => claimed unchanged
 Standard selection k Shift+Command => claimed text=alpha beta\nepsilon zeta selection=1:9>1:9
 Standard selection g Command => claimed goto=:
 Standard selection o Shift+Command => claimed goto=@
@@ -1336,6 +1347,7 @@ Standard no-clipboard / Command => claimed text=alpha beta\n    // gamma delta\n
 Standard no-clipboard / Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
 Standard no-clipboard Slash Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
 Standard no-clipboard Slash Shift+Command => claimed text=alpha beta\n    // gamma delta\nepsilon zeta selection=1:4>1:12
+Standard no-clipboard k Command => claimed unchanged
 Standard no-clipboard k Shift+Command => claimed text=alpha beta\nepsilon zeta selection=1:9>1:9
 Standard no-clipboard g Command => claimed goto=:
 Standard no-clipboard o Shift+Command => claimed goto=@
@@ -1373,6 +1385,7 @@ Standard read-only c Command => claimed clipboard=    gamma delta
 Standard read-only x Command => claimed selection=1:0>2:0 clipboard=    gamma delta
 
 Standard read-only v Command => claimed unchanged
+Standard read-only k Command => claimed unchanged
 Standard read-only g Command => claimed goto=:
 Standard read-only o Shift+Command => claimed goto=@
 Standard released ArrowLeft - => claimed selection=1:5>1:5 trap=armed
@@ -1699,7 +1712,7 @@ Standard released Slash Command+Control+Alt => unclaimed trap=armed
 Standard released Slash Shift+Command+Control+Alt => unclaimed trap=armed
 Standard released k - => unclaimed trap=armed
 Standard released k Shift => unclaimed trap=armed
-Standard released k Command => unclaimed trap=armed
+Standard released k Command => claimed trap=armed
 Standard released k Shift+Command => claimed text=alpha beta\nepsilon zeta trap=armed
 Standard released k Control => unclaimed trap=armed
 Standard released k Shift+Control => unclaimed trap=armed
@@ -1909,6 +1922,7 @@ Standard list / Command => claimed text=alpha beta\n    gamma delta\n// epsilon 
 Standard list / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18
 Standard list Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18
 Standard list Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta ga selection=2:18>2:18
+Standard list k Command => claimed unchanged
 Standard list k Shift+Command => claimed text=alpha beta\n    gamma delta selection=1:15>1:15 list=-
 Standard list g Command => claimed list=- goto=:
 Standard list o Shift+Command => claimed list=- goto=@
@@ -2024,6 +2038,7 @@ Standard panel / Command => claimed text=alpha beta\n    gamma delta\n// epsilon
 Standard panel / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22
 Standard panel Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22
 Standard panel Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta x.Add() selection=2:22>2:22
+Standard panel k Command => claimed unchanged
 Standard panel k Shift+Command => claimed text=alpha beta\n    gamma delta selection=1:15>1:15 panel=-
 Standard panel g Command => claimed panel=- goto=:
 Standard panel o Shift+Command => claimed panel=- goto=@
@@ -2075,6 +2090,7 @@ Standard problems / Command => claimed text=// alpha beta\n    gamma delta\nepsi
 Standard problems / Shift+Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
 Standard problems Slash Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
 Standard problems Slash Shift+Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
+Standard problems k Command => claimed unchanged
 Standard problems k Shift+Command => claimed text=    gamma delta\nepsilon zeta
 Standard problems F8 - => claimed selection=1:4>1:4 card=open
 Standard problems F8 Shift => claimed selection=2:8>2:8 card=open
@@ -2132,6 +2148,7 @@ Standard jumped / Command => claimed text=alpha beta\n    gamma delta\n// epsilo
 Standard jumped / Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta
 Standard jumped Slash Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta
 Standard jumped Slash Shift+Command => claimed text=alpha beta\n    gamma delta\n// epsilon zeta
+Standard jumped k Command => claimed unchanged
 Standard jumped k Shift+Command => claimed text=alpha beta\n    gamma delta selection=1:0>1:0
 Standard jumped g Command => claimed goto=:
 Standard jumped o Shift+Command => claimed goto=@
@@ -2184,6 +2201,7 @@ Standard walked-back / Command => claimed text=// alpha beta\n    gamma delta\ne
 Standard walked-back / Shift+Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
 Standard walked-back Slash Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
 Standard walked-back Slash Shift+Command => claimed text=// alpha beta\n    gamma delta\nepsilon zeta
+Standard walked-back k Command => claimed unchanged
 Standard walked-back k Shift+Command => claimed text=    gamma delta\nepsilon zeta
 Standard walked-back g Command => claimed goto=:
 Standard walked-back o Shift+Command => claimed goto=@
@@ -2243,5 +2261,6 @@ Standard chord Slash Shift+Command => claimed text=alpha beta\n    // gamma delt
 Standard chord k Command => claimed unchanged
 Standard chord k Shift+Command => claimed text=alpha beta\nepsilon zeta
 Standard chord i Command => claimed card=open
+Standard chord j Command => claimed unchanged
 Standard chord g Command => claimed goto=:
 Standard chord o Shift+Command => claimed goto=@

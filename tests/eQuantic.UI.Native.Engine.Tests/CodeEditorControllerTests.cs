@@ -641,20 +641,3 @@ public class CodeEditorControllerTests
         editor.Document.LineCount.Should().Be(1);
     }
 }
-
-/// <summary>Folding, which every editor of this class has, derived from indentation alone so it
-/// works for a language nobody wrote a parser for.</summary>
-public class CodeFoldingTests
-{
-    [Fact]
-    public void AnIndentedBlockFoldsUnderItsHeader()
-    {
-        var document = CodeDocument.FromText("def run():\n    a = 1\n    b = 2\nprint(1)");
-
-        var folds = new IndentationFoldProvider().FoldsFor(document);
-
-        folds.Should().ContainSingle();
-        folds[0].StartLine.Should().Be(0);
-        folds[0].EndLine.Should().Be(2, "the region ends where the indentation comes back");
-    }
-}

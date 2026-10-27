@@ -421,5 +421,15 @@ namespace eQuantic.UI.Components
         {
             get { return ResourceManager.GetString("NoReferences", Culture)!; }
         }
+
+        internal static string FoldLines
+        {
+            get { return ResourceManager.GetString("FoldLines", Culture)!; }
+        }
+
+        internal static string UnfoldLines
+        {
+            get { return ResourceManager.GetString("UnfoldLines", Culture)!; }
+        }
 }
 }
