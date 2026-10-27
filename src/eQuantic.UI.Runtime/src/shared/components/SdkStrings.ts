@@ -269,6 +269,14 @@ export class SdkStrings {
         return $eq.text.stringFormat($eq.str('SdkResources', 'NoReferencesFound'), word);
     }
 
+    static foldLines(from: number, to: number) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'FoldLines'), $eq.text.asNumber(from, 'int32'), $eq.text.asNumber(to, 'int32'));
+    }
+
+    static unfoldLines(from: number, to: number) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'UnfoldLines'), $eq.text.asNumber(from, 'int32'), $eq.text.asNumber(to, 'int32'));
+    }
+
     static hint(pattern: string, letters: string) {
         let day = letters.length > 0 ? letters[0] : 'D';
         let month = letters.length > 1 ? letters[1] : 'M';

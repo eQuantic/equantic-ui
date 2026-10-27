@@ -34,6 +34,7 @@
   "CodeEditorController",
   "CodeFiller",
   "CodeFold",
+  "CodeFolding",
   "CodeFuzzyMatch",
   "CodeGoTo",
   "CodeGoToEntry",

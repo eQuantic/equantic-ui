@@ -1,7 +1,8 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRange, CodeRow, CodeTokenKindValue, ColorToken, Column, CornerRadii, Drawing, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VectorDrawing, VectorPaint, VectorShape, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeFold, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRange, CodeRow, CodeTokenKindValue, ColorToken, Column, CornerRadii, Drawing, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VectorDrawing, VectorPaint, VectorShape, VisualNode } from "../runtime-exports";
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
+    static foldSlot: number = 20;
     _cells: any = $eq.collections.dictionary();
     _fillerCells: any = $eq.collections.dictionary();
     static linePass: number = 0;
@@ -34,6 +35,9 @@ export class CodeBlock extends StatelessComponent {
     declare fillerDecorations: CodeDecoration[];
     declare fillerColor: any;
     declare onPlaceholderPressed: ((int: number) => void) | null;
+    declare folds: CodeFold[];
+    declare foldedLines: number[];
+    declare onFoldPressed: ((int: number) => void) | null;
     declare caption: any;
     declare onCopy: (() => void) | null;
     declare onGutterPressed: ((int: number) => void) | null;
@@ -131,6 +135,8 @@ export class CodeBlock extends StatelessComponent {
         if (this.selectionBands === undefined) this.selectionBands = [];
         if (this.selections === undefined) this.selections = [];
         if (this.fillerDecorations === undefined) this.fillerDecorations = [];
+        if (this.folds === undefined) this.folds = [];
+        if (this.foldedLines === undefined) this.foldedLines = [];
         if (this.viewportOffset === undefined) this.viewportOffset = 0;
         if (this.viewportHeight === undefined) this.viewportHeight = 0;
         if (this.viewportWidth === undefined) this.viewportWidth = 0;
@@ -262,8 +268,39 @@ export class CodeBlock extends StatelessComponent {
             numbers.add(new Text(text, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, 0, { mono: true, tabular: true, styleOverride: $eq.withPatch(metrics.style, { weight: 'regular' }) }));
         }
         let cell = new Box(new BoxStyle({ width: SizeValue.fixed(metrics.gutterWidth), height: SizeValue.fixed(metrics.lineHeight), padding: new EdgeInsets(0, 0, 12, 0), background: !isLine ? this.fillerColor : this.activeLines.includes(index) ? this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle : null }), numbers);
+        if ($eq.collections.count(this.folds) === 0) {
+            let pressed: any; 
+            return isLine && (pressed = this.onGutterPressed) != null ? new Pressable(cell, () => pressed(index), { label: SdkStrings.lineNumbered(this.firstLineNumber + index) }) : cell;
+        }
+        let slot = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fixed(metrics.gutterWidth), height: SizeValue.fixed(metrics.lineHeight), cross: 'center' });
+        let numbered: VisualNode = new Box(new BoxStyle({ width: SizeValue.fixed(Math.fround(Math.fround(metrics.gutterWidth - CodeBlock.foldSlot) - 12)), height: SizeValue.fill }), numbers);
+        let press: any; 
+        if (isLine && (press = this.onGutterPressed) != null) numbered = new Pressable(numbered, () => press(index), { label: SdkStrings.lineNumbered(this.firstLineNumber + index) });
+        slot.add(numbered);
+        slot.add(this.foldChevron(isLine ? this.foldAt(index) : null, metrics, theme));
+        return new Box(new BoxStyle({ width: SizeValue.fixed(metrics.gutterWidth), height: SizeValue.fixed(metrics.lineHeight), background: !isLine ? this.fillerColor : this.activeLines.includes(index) ? this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle : null }), slot);
+    }
+
+    foldAt(line: number) {
+        for (const fold of this.folds) if (fold.startLine === line) return fold;
+        return null;
+    }
+
+    isFolded(line: number) {
+        for (const folded of this.foldedLines) if (folded === line) return true;
+        return false;
+    }
+
+    foldChevron(fold: any, metrics: CodeBlock$CodeMetrics, theme: any) {
+        let slot = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fixed(CodeBlock.foldSlot), height: SizeValue.fill, main: 'end', cross: 'center' });
+        if (fold == null) return slot;
+        let folded = this.isFolded(fold.startLine);
+        let from = this.firstLineNumber + fold.startLine;
+        let to = this.firstLineNumber + fold.endLine;
+        slot.add(new Icon(IconGlyph.fromIcons(folded ? 'chevronRight' : 'chevronDown'), Math.min(16, metrics.lineHeight), this.inverse ? CodeBlock.codeInkMuted : theme.textMuted));
+        let box: VisualNode = slot;
         let pressed: any; 
-        return isLine && (pressed = this.onGutterPressed) != null ? new Pressable(cell, () => pressed(index), { label: SdkStrings.lineNumbered(this.firstLineNumber + index) }) : cell;
+        return (pressed = this.onFoldPressed) != null ? new Pressable(box, () => pressed(fold.startLine), { label: folded ? SdkStrings.unfoldLines(from, to) : SdkStrings.foldLines(from, to), expanded: !folded, canRequestFocus: false }) : box;
     }
 
     rowView(shown: CodeRow, highlighter: CodeHighlighter, fillerHighlighter: any, metrics: CodeBlock$CodeMetrics, ink: ColorToken, theme: any) {
@@ -290,6 +327,15 @@ export class CodeBlock extends StatelessComponent {
         return (pressed = this.onPlaceholderPressed) != null ? new Pressable(box, () => pressed(shown.line), { label: label }) : box;
     }
 
+    foldMarker(fold: CodeFold, metrics: CodeBlock$CodeMetrics, theme: any) {
+        let spaced = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, cross: 'center' });
+        spaced.add(Spacer.fixed(4));
+        spaced.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(4, 0), background: theme.colors('primary').subtle, cornerRadius: new CornerRadii(theme.shape('small')) }), this.muted(fold.placeholder ?? '⋯', metrics, theme)));
+        let marker: VisualNode = spaced;
+        let pressed: any; 
+        return (pressed = this.onFoldPressed) != null ? new Pressable(marker, () => pressed(fold.startLine), { label: SdkStrings.unfoldLines(this.firstLineNumber + fold.startLine, this.firstLineNumber + fold.endLine), expanded: false, canRequestFocus: false }) : marker;
+    }
+
     muted(text: string, metrics: CodeBlock$CodeMetrics, theme: any) {
         return new Text(text, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style });
     }
@@ -313,6 +359,8 @@ export class CodeBlock extends StatelessComponent {
         }
         if (at < text.length) CodeBlock.addSpans(code, cells, at, text.length, ink, style, columnWidth, selected, selectedInk);
         if (text.length === 0) code.add(CodeBlock.run(' ', ink, style));
+        let fold: any; 
+        if (selectable && this.isFolded(index) && (fold = this.foldAt(index)) != null) code.add(this.foldMarker(fold, metrics, theme));
         row.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(12, 0) }), code));
         return row;
     }

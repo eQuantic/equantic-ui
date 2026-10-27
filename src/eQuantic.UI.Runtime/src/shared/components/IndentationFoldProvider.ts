@@ -1,9 +1,13 @@
-import { $eq, CodeDocument, CodeFold } from "../runtime-exports";
+import { $eq, CancellationToken, CodeDocument, CodeFold } from "../runtime-exports";
 
 export class IndentationFoldProvider {
     constructor() {}
 
-    foldsFor(document: CodeDocument) {
+    async foldsAsync(document: CodeDocument, _cancellation: CancellationToken) {
+        return Promise.resolve(IndentationFoldProvider.foldsOf(document));
+    }
+
+    static foldsOf(document: CodeDocument) {
         let folds: CodeFold[] = [];
         for (let line = 0; line < document.lineCount - 1; line++) {
             let text = document.line(line);

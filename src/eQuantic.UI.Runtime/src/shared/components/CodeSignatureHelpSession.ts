@@ -56,8 +56,8 @@ export class CodeSignatureHelpSession {
 
     invoke() {
         if ($eq.collections.count(this.providers) === 0) return false;
-        let $n38: any; 
-        this.ask(($n38 = new CodeSignatureContext('invoked'), $n38.isRetrigger = this.isOpen, $n38.active = this.shown(), $n38), false);
+        let $n45: any; 
+        this.ask(($n45 = new CodeSignatureContext('invoked'), $n45.isRetrigger = this.isOpen, $n45.active = this.shown(), $n45), false);
         return true;
     }
 
@@ -94,14 +94,14 @@ export class CodeSignatureHelpSession {
             retriggered = $eq.logic.or(retriggered, provider.retriggerCharacters.includes(typed));
         }
         if (!triggered && !(retriggered && this.isOpen)) return;
-        let $n41: any; 
-        this.ask(($n41 = new CodeSignatureContext('character'), $n41.character = typed, $n41.isRetrigger = this.isOpen, $n41.active = this.shown(), $n41), false);
+        let $n48: any; 
+        this.ask(($n48 = new CodeSignatureContext('character'), $n48.character = typed, $n48.isRetrigger = this.isOpen, $n48.active = this.shown(), $n48), false);
     }
 
     moved() {
         if (this._help == null && this._request == null) return;
-        let $n42: any; 
-        this.ask(($n42 = new CodeSignatureContext('contentChange'), $n42.isRetrigger = this.isOpen, $n42.active = this.shown(), $n42), true);
+        let $n49: any; 
+        this.ask(($n49 = new CodeSignatureContext('contentChange'), $n49.isRetrigger = this.isOpen, $n49.active = this.shown(), $n49), true);
     }
 
     edited(change: CodeChange) {

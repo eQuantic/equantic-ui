@@ -1,4 +1,4 @@
-import { $eq, CodeCaret, CodeChange, CodeCommandValue, CodeCompletion, CodeDefinitions, CodeDiagnostics, CodeDirectionValue, CodeDocument, CodeEdit, CodeGoTo, CodeGrid, CodeHighlighter, CodeHistory, CodeHoverSession, CodeJumpList, CodeKeyBinding, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineAdvances, CodeLineCells, CodeLocation, CodeMotionValue, CodePosition, CodeRange, CodeReferences, CodeSignatureHelpSession, CodeSnippet, CodeSnippetExpansion, CodeSnippetPlace, CodeSnippetSession, CodeSnippetStop, CodeStep, CodeSymbols, KeyboardConventionValue, KeyChord, Point, PointerPhaseValue, Rect, ScrollRequest } from "../runtime-exports";
+import { $eq, CodeCaret, CodeChange, CodeCommandValue, CodeCompletion, CodeDefinitions, CodeDiagnostics, CodeDirectionValue, CodeDocument, CodeEdit, CodeFolding, CodeGoTo, CodeGrid, CodeHighlighter, CodeHistory, CodeHoverSession, CodeJumpList, CodeKeyBinding, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineAdvances, CodeLineCells, CodeLocation, CodeMotionValue, CodePosition, CodeRange, CodeReferences, CodeSignatureHelpSession, CodeSnippet, CodeSnippetExpansion, CodeSnippetPlace, CodeSnippetSession, CodeSnippetStop, CodeStep, CodeSymbols, KeyboardConventionValue, KeyChord, Point, PointerPhaseValue, Rect, ScrollRequest } from "../runtime-exports";
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null) {
@@ -18,6 +18,7 @@ export class CodeEditorController {
         this.references = null!;
         this.goTo = null!;
         this.jumpList = null!;
+        this.folding = null!;
         this.openRequested = null;
         this._view = new Rect();
         this._scrollVersion = 0;
@@ -36,7 +37,8 @@ export class CodeEditorController {
         this._widths = null;
         this._widthsTabs = 0;
         this._widest = 0;
-        this.grid = CodeGrid.default;
+        this._grid = CodeGrid.default;
+        this._rowsFromFolds = true;
         this._dragging = false;
         this._linkPress = -1;
         this._revealVersion = 0;
@@ -68,6 +70,8 @@ export class CodeEditorController {
         this.references = new CodeReferences(this);
         this.goTo = new CodeGoTo(this);
         this.jumpList = new CodeJumpList(this);
+        this.folding = new CodeFolding(this);
+        this.folding.check();
     }
 
     _document!: CodeDocument;
@@ -86,6 +90,7 @@ export class CodeEditorController {
     references!: CodeReferences;
     goTo!: CodeGoTo;
     jumpList!: CodeJumpList;
+    folding!: CodeFolding;
     openRequested!: ((codeLocation: CodeLocation) => void) | null;
     _view!: Rect;
     _scrollVersion!: number;
@@ -104,7 +109,8 @@ export class CodeEditorController {
     _widths!: number[] | null;
     _widthsTabs!: number;
     _widest!: number;
-    grid!: CodeGrid;
+    _grid!: CodeGrid;
+    _rowsFromFolds!: boolean;
     _dragging!: boolean;
     _linkPress!: number;
     _revealVersion!: number;
@@ -205,6 +211,15 @@ export class CodeEditorController {
             this._widest = CodeEditorController.widest(this._widths);
         }
         return this._widest;
+    }
+
+    get grid(): CodeGrid {
+        return this._grid;
+    }
+
+    set grid(value: CodeGrid) {
+        this._rowsFromFolds = value.rows == null;
+        this._grid = this._rowsFromFolds ? $eq.withPatch(value, { rows: this.folding.rows }) : value;
     }
 
     get carets(): Rect[] {
@@ -453,6 +468,10 @@ export class CodeEditorController {
         return new CodePosition(here.line + 1, 0);
     }
 
+    foldsChanged() {
+        if (this._rowsFromFolds) this._grid = $eq.withPatch(this._grid, { rows: this.folding.rows });
+    }
+
     selectionBandsIn(first: number, last: number) {
         let bands: Rect[] = [];
         for (const selection of this.selectionsIn(first, last)) this.bandsOf(selection, first, last, bands);
@@ -678,6 +697,20 @@ export class CodeEditorController {
                     return this.goTo.nextPlace();
                 case 'previousReference':
                     return this.goTo.previousPlace();
+                case 'fold':
+                    return this.folding.fold(this._selection.focus.line);
+                case 'unfold':
+                    return this.folding.unfold(this._selection.focus.line);
+                case 'foldRecursively':
+                    return this.folding.foldRecursively(this._selection.focus.line);
+                case 'unfoldRecursively':
+                    return this.folding.unfoldRecursively(this._selection.focus.line);
+                case 'toggleFold':
+                    return this.folding.toggle(this._selection.focus.line);
+                case 'foldAll':
+                    return this.folding.foldAll();
+                case 'unfoldAll':
+                    return this.folding.unfoldAll();
                 case 'copy':
                     if (clipboard == null) return false;
                     clipboard.write(this.copyText());
@@ -689,7 +722,7 @@ export class CodeEditorController {
                     return true;
                 case 'paste':
                     if (clipboard == null) return false;
-                    if ((($v48130) => (($v48130 != null && $v48130.length > 0) && (pasted = $v48130, true)))(clipboard.read())) this.paste(pasted);
+                    if ((($v49732) => (($v49732 != null && $v49732.length > 0) && (pasted = $v49732, true)))(clipboard.read())) this.paste(pasted);
                     return true;
                 case 'completionShow':
                     return this.completion.invoke();
@@ -739,7 +772,7 @@ export class CodeEditorController {
     }
 
     canExecute(command: CodeCommandValue) {
-        return (() => {let help: any;  const $s = command; if (($s === 'none' || $s === 'releaseKeyboard')) return false; if ((($s === 'newLine' || $s === 'cut') || $s === 'paste')) return !this.readOnly; if ((($s === 'deleteLeft' || $s === 'deleteWordLeft') || $s === 'deleteToLineStart')) return !this.readOnly && (this._others.length > 0 || !this._selection.isEmpty || !$eq.equals(this.caret, CodePosition.start)); if (($s === 'deleteRight' || $s === 'deleteWordRight')) return !this.readOnly && (this._others.length > 0 || !this._selection.isEmpty || !$eq.equals(this.caret, this._document.end)); if ($s === 'toggleLineComment') return !this.readOnly && !(this.rules.lineComment == null); if (($s === 'indent' || $s === 'outdent')) return !this.readOnly && !this.tabMovesFocus; if ($s === 'undo') return !this.readOnly && this.history.canUndo; if ($s === 'redo') return !this.readOnly && this.history.canRedo; if ($s === 'completionShow') return !this.readOnly && $eq.collections.count(this.completion.providers) > 0; if (((($s === 'completionNext' || $s === 'completionPrevious') || $s === 'completionNextPage') || $s === 'completionPreviousPage')) return this.completion.isOpen && $eq.collections.count(this.completion.items) > 1; if (($s === 'completionAccept' || $s === 'completionHide')) return this.completion.isOpen; if ($s === 'completionAcceptChangingText') return this.completion.isOpen && this.completion.acceptChangesText; if ($s === 'signatureHelpShow') return $eq.collections.count(this.signatureHelp.providers) > 0; if (($s === 'signatureHelpNext' || $s === 'signatureHelpPrevious')) return !this.hover.isOpen && (help = this.signatureHelp.help) != null && $eq.collections.count(help.signatures) > 1; if ($s === 'signatureHelpHide') return this.signatureHelp.isOpen; if ($s === 'hoverShow') return this.hover.canShowAt(this.caret); if ($s === 'hoverHide') return this.hover.isOpen; if (($s === 'problemNext' || $s === 'problemPrevious')) return $eq.collections.count(this.diagnostics.items) > 0; if ($s === 'moveLinesUp') return !this.readOnly && (this._others.length > 0 || this.selectedLines()[0] > 0); if ($s === 'moveLinesDown') return !this.readOnly && (this._others.length > 0 || this._selection.end.line < this._document.lineCount - 1); if (((($s === 'copyLinesUp' || $s === 'copyLinesDown') || $s === 'insertLineAbove') || $s === 'insertLineBelow')) return !this.readOnly; if ($s === 'deleteLines') return !this.readOnly && (this._document.lineCount > 1 || this._document.line(0).length > 0); if ($s === 'joinLines') return !this.readOnly && (this._others.length > 0 || this.canJoin()); if ($s === 'removeSecondaryCursors') return this._others.length > 0; if ($s === 'nextTabStop') return !this.readOnly && !this.tabMovesFocus && this.snippet.isActive; if ($s === 'previousTabStop') return !this.readOnly && !this.tabMovesFocus && this.snippet.hasPrevious; if ($s === 'leaveSnippet') return this.snippet.isActive; if ($s === 'navigateBack') return this.jumpList.canGoBack; if ($s === 'navigateForward') return this.jumpList.canGoForward; if (((($s === 'goToDefinition' || $s === 'goToDeclaration') || $s === 'goToTypeDefinition') || $s === 'goToImplementation')) return $eq.collections.count(this.definitions.providers) > 0; if ($s === 'findReferences') return $eq.collections.count(this.references.providers) > 0; if (($s === 'nextReference' || $s === 'previousReference')) return $eq.collections.count(this.goTo.places) > 0; if ($s === 'sortLinesAscending') return !this.readOnly && (this._others.length > 0 || this.unsorted(false)); if ($s === 'sortLinesDescending') return !this.readOnly && (this._others.length > 0 || this.unsorted(true)); return true; })();
+        return (() => {let help: any;  const $s = command; if (($s === 'none' || $s === 'releaseKeyboard')) return false; if ((($s === 'newLine' || $s === 'cut') || $s === 'paste')) return !this.readOnly; if ((($s === 'deleteLeft' || $s === 'deleteWordLeft') || $s === 'deleteToLineStart')) return !this.readOnly && (this._others.length > 0 || !this._selection.isEmpty || !$eq.equals(this.caret, CodePosition.start)); if (($s === 'deleteRight' || $s === 'deleteWordRight')) return !this.readOnly && (this._others.length > 0 || !this._selection.isEmpty || !$eq.equals(this.caret, this._document.end)); if ($s === 'toggleLineComment') return !this.readOnly && !(this.rules.lineComment == null); if (($s === 'indent' || $s === 'outdent')) return !this.readOnly && !this.tabMovesFocus; if ($s === 'undo') return !this.readOnly && this.history.canUndo; if ($s === 'redo') return !this.readOnly && this.history.canRedo; if ($s === 'completionShow') return !this.readOnly && $eq.collections.count(this.completion.providers) > 0; if (((($s === 'completionNext' || $s === 'completionPrevious') || $s === 'completionNextPage') || $s === 'completionPreviousPage')) return this.completion.isOpen && $eq.collections.count(this.completion.items) > 1; if (($s === 'completionAccept' || $s === 'completionHide')) return this.completion.isOpen; if ($s === 'completionAcceptChangingText') return this.completion.isOpen && this.completion.acceptChangesText; if ($s === 'signatureHelpShow') return $eq.collections.count(this.signatureHelp.providers) > 0; if (($s === 'signatureHelpNext' || $s === 'signatureHelpPrevious')) return !this.hover.isOpen && (help = this.signatureHelp.help) != null && $eq.collections.count(help.signatures) > 1; if ($s === 'signatureHelpHide') return this.signatureHelp.isOpen; if ($s === 'hoverShow') return this.hover.canShowAt(this.caret); if ($s === 'hoverHide') return this.hover.isOpen; if (($s === 'problemNext' || $s === 'problemPrevious')) return $eq.collections.count(this.diagnostics.items) > 0; if ($s === 'moveLinesUp') return !this.readOnly && (this._others.length > 0 || this.selectedLines()[0] > 0); if ($s === 'moveLinesDown') return !this.readOnly && (this._others.length > 0 || this._selection.end.line < this._document.lineCount - 1); if (((($s === 'copyLinesUp' || $s === 'copyLinesDown') || $s === 'insertLineAbove') || $s === 'insertLineBelow')) return !this.readOnly; if ($s === 'deleteLines') return !this.readOnly && (this._document.lineCount > 1 || this._document.line(0).length > 0); if ($s === 'joinLines') return !this.readOnly && (this._others.length > 0 || this.canJoin()); if ($s === 'removeSecondaryCursors') return this._others.length > 0; if ($s === 'nextTabStop') return !this.readOnly && !this.tabMovesFocus && this.snippet.isActive; if ($s === 'previousTabStop') return !this.readOnly && !this.tabMovesFocus && this.snippet.hasPrevious; if ($s === 'leaveSnippet') return this.snippet.isActive; if ($s === 'navigateBack') return this.jumpList.canGoBack; if ($s === 'navigateForward') return this.jumpList.canGoForward; if (((($s === 'goToDefinition' || $s === 'goToDeclaration') || $s === 'goToTypeDefinition') || $s === 'goToImplementation')) return $eq.collections.count(this.definitions.providers) > 0; if ($s === 'findReferences') return $eq.collections.count(this.references.providers) > 0; if (($s === 'nextReference' || $s === 'previousReference')) return $eq.collections.count(this.goTo.places) > 0; if ($s === 'fold') return this.folding.canFold(this._selection.focus.line); if ($s === 'unfold') return this.folding.canUnfold(this._selection.focus.line); if ((($s === 'foldRecursively' || $s === 'unfoldRecursively') || $s === 'toggleFold')) return this.folding.canToggle(this._selection.focus.line); if ($s === 'foldAll') return this.folding.any(false); if ($s === 'unfoldAll') return this.folding.any(true); if ($s === 'sortLinesAscending') return !this.readOnly && (this._others.length > 0 || this.unsorted(false)); if ($s === 'sortLinesDescending') return !this.readOnly && (this._others.length > 0 || this.unsorted(true)); return true; })();
     }
 
     unsorted(descending: boolean) {
@@ -2008,7 +2041,7 @@ export class CodeEditorController {
             }
             let space = length > 0;
             let tail = parts[parts.length - 1];
-            if (space && (($v153217) => ($v153217 === ' ' || $v153217 === '\t'))(tail[tail.length - 1])) {
+            if (space && (($v155230) => ($v155230 === ' ' || $v155230 === '\t'))(tail[tail.length - 1])) {
                 space = false;
                 let kept = $eq.text.trimEnd(tail, [' ', '\t']);
                 parts[parts.length - 1] = kept;
