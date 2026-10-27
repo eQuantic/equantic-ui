@@ -672,10 +672,36 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     private CodeGrid _grid = CodeGrid.Default;
     private bool _rowsFromFolds = true;
 
-    /// <summary>What is folded changed: a grid whose rows are the folds' takes the new ones.</summary>
+    /// <summary>What is folded changed: a grid whose rows are the folds' takes the new ones, and the line at the top of
+    /// the view stays there.</summary>
     internal void FoldsChanged()
     {
-        if (_rowsFromFolds) _grid = _grid with { Rows = Folding.Rows };
+        if (!_rowsFromFolds) return;
+        var before = _grid.Rows;
+        _grid = _grid with { Rows = Folding.Rows };
+        KeepTheTopLine(before);
+    }
+
+    /// <summary>
+    /// Asks the view to keep the line at its top where it stands when the rows change under it, as VS Code keeps its
+    /// viewport's first line when what it hides changes: the scroll stays a number of pixels, so a fold above the
+    /// view would otherwise slide other lines into it, carry the caret out of it, or leave it past the end of rows
+    /// that grew fewer. A line that went into a fold keeps the header that hides it at the top. A view never known
+    /// asks nothing.
+    /// </summary>
+    private void KeepTheTopLine(CodeRows? before)
+    {
+        if (_view.Height <= 0) return;
+        var origin = _grid.Origin.Y;
+        var lineHeight = _grid.Cell.Height;
+        if (lineHeight <= 0) return;
+        var topRow = (int)MathF.Floor(MathF.Max(0, _view.Y - origin) / lineHeight);
+        var within = _view.Y - origin - topRow * lineHeight;
+        var line = before?.LineAtRow(topRow) ?? Math.Min(topRow, _document.LineCount - 1);
+        var row = _grid.Rows?.RowOf(line) ?? line;
+        var top = MathF.Max(0, origin + row * lineHeight + within);
+        if (MathF.Abs(top - _view.Y) < 0.5f) return;
+        Scroll(top, null);
     }
 
     /// <summary>Whether the grid's rows are the folds', so a fold hides lines. A diff's side and a formula bar bring

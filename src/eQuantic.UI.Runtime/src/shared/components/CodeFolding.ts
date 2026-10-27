@@ -197,12 +197,18 @@ export class CodeFolding {
         let selections: CodeRange[] = $eq.collections.listCopy(this._editor.selections);
         let moved = false;
         for (let i = 0; i < selections.length; i++) {
-            let header = this.headerHiding(selections[i].focus.line);
-            if (header < 0) continue;
-            selections[i] = new CodeRange(new CodePosition(header, this._editor.document.line(header).length));
+            let anchor = this.outOfFolds(selections[i].anchor);
+            let focus = this.outOfFolds(selections[i].focus);
+            if ($eq.equals(anchor, selections[i].anchor) && $eq.equals(focus, selections[i].focus)) continue;
+            selections[i] = new CodeRange(anchor, focus);
             moved = true;
         }
         if (moved) this._editor.selections = selections;
+    }
+
+    outOfFolds(position: CodePosition) {
+        let header = this.headerHiding(position.line);
+        return header < 0 ? position : new CodePosition(header, this._editor.document.line(header).length);
     }
 
     headerHiding(line: number) {
@@ -313,7 +319,7 @@ export class CodeFolding {
     async askEvery(generation: number, cancellation: CancellationToken) {
         let document = this._editor.document;
         let providers: any[] = $eq.collections.listCopy(this.providers);
-        if (providers.length === 0) providers.push(new IndentationFoldProvider());
+        if (providers.length === 0) providers.push(new IndentationFoldProvider(this._editor.rules.indentWidth));
         let asked = [];
         for (const provider of providers) asked.push(this.askOne(provider, document, cancellation));
         let answers = [];

@@ -130,6 +130,25 @@ public class CodeFoldingViewTests : IDisposable
     }
 
     [Fact]
+    public void FoldedToFewerRowsThanTheScrollHadPassed_TheBlockStillDrawsWhatIsLeft()
+    {
+        // A thousand lines folded to two while the view stood at row 900: the window starts past the rows there
+        // are unless the scroll is held to them, and the view comes up blank.
+        var context = new ComponentContext(PhotonTheme.Instance);
+        var text = string.Join("\n", Enumerable.Range(0, 1000).Select(i => $"row{i}"));
+        var block = new CodeBlock(text, "csharp")
+        {
+            Rows = new CodeRows(1000, [], [new CodeCollapse(1, 998, Placeholder: false)]),
+            ViewportOffset = 900 * 18,
+            ViewportHeight = 400,
+        };
+
+        var drawn = All<Text>(block.Build(context)).Select(shown => shown.Content).ToList();
+
+        drawn.Should().Contain("row0").And.Contain("row999");
+    }
+
+    [Fact]
     public void ACodeWithNoRegion_DrawsNoChevron_AndKeepsTheChevronsColumn()
     {
         var context = new ComponentContext(PhotonTheme.Instance);

@@ -1,4 +1,4 @@
-import { $eq, CodeCaret, CodeChange, CodeCommandValue, CodeCompletion, CodeDefinitions, CodeDiagnostics, CodeDirectionValue, CodeDocument, CodeEdit, CodeFolding, CodeGoTo, CodeGrid, CodeHighlighter, CodeHistory, CodeHoverSession, CodeJumpList, CodeKeyBinding, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineAdvances, CodeLineCells, CodeLocation, CodeMotionValue, CodePosition, CodeRange, CodeReferences, CodeSignatureHelpSession, CodeSnippet, CodeSnippetExpansion, CodeSnippetPlace, CodeSnippetSession, CodeSnippetStop, CodeStep, CodeSymbols, KeyboardConventionValue, KeyChord, Point, PointerPhaseValue, Rect, ScrollRequest } from "../runtime-exports";
+import { $eq, CodeCaret, CodeChange, CodeCommandValue, CodeCompletion, CodeDefinitions, CodeDiagnostics, CodeDirectionValue, CodeDocument, CodeEdit, CodeFolding, CodeGoTo, CodeGrid, CodeHighlighter, CodeHistory, CodeHoverSession, CodeJumpList, CodeKeyBinding, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineAdvances, CodeLineCells, CodeLocation, CodeMotionValue, CodePosition, CodeRange, CodeReferences, CodeRows, CodeSignatureHelpSession, CodeSnippet, CodeSnippetExpansion, CodeSnippetPlace, CodeSnippetSession, CodeSnippetStop, CodeStep, CodeSymbols, KeyboardConventionValue, KeyChord, Point, PointerPhaseValue, Rect, ScrollRequest } from "../runtime-exports";
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null) {
@@ -476,7 +476,24 @@ export class CodeEditorController {
     }
 
     foldsChanged() {
-        if (this._rowsFromFolds) this._grid = $eq.withPatch(this._grid, { rows: this.folding.rows });
+        if (!this._rowsFromFolds) return;
+        let before = this._grid.rows;
+        this._grid = $eq.withPatch(this._grid, { rows: this.folding.rows });
+        this.keepTheTopLine(before);
+    }
+
+    keepTheTopLine(before: CodeRows | null) {
+        if (this._view.height <= 0) return;
+        let origin = this._grid.origin.y;
+        let lineHeight = this._grid.cell.height;
+        if (lineHeight <= 0) return;
+        let topRow = (Math.trunc(Math.floor(Math.fround(Math.max(0, Math.fround(this._view.y - origin)) / lineHeight))) | 0);
+        let within = Math.fround(Math.fround(this._view.y - origin) - Math.fround(Math.fround(topRow) * lineHeight));
+        let line = before?.lineAtRow(topRow) ?? Math.min(topRow, this._document.lineCount - 1);
+        let row = this._grid.rows?.rowOf(line) ?? line;
+        let top = Math.max(0, Math.fround(Math.fround(origin + Math.fround(Math.fround(row) * lineHeight)) + within));
+        if (Math.abs(Math.fround(top - this._view.y)) < 0.5) return;
+        this.scroll(top, null);
     }
 
     selectionBandsIn(first: number, last: number) {
@@ -729,7 +746,7 @@ export class CodeEditorController {
                     return true;
                 case 'paste':
                     if (clipboard == null) return false;
-                    if ((($v50528) => (($v50528 != null && $v50528.length > 0) && (pasted = $v50528, true)))(clipboard.read())) this.paste(pasted);
+                    if ((($v51846) => (($v51846 != null && $v51846.length > 0) && (pasted = $v51846, true)))(clipboard.read())) this.paste(pasted);
                     return true;
                 case 'completionShow':
                     return this.completion.invoke();
@@ -2048,7 +2065,7 @@ export class CodeEditorController {
             }
             let space = length > 0;
             let tail = parts[parts.length - 1];
-            if (space && (($v156096) => ($v156096 === ' ' || $v156096 === '\t'))(tail[tail.length - 1])) {
+            if (space && (($v157414) => ($v157414 === ' ' || $v157414 === '\t'))(tail[tail.length - 1])) {
                 space = false;
                 let kept = $eq.text.trimEnd(tail, [' ', '\t']);
                 parts[parts.length - 1] = kept;

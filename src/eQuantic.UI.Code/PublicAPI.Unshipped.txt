@@ -539,3 +539,5 @@ eQuantic.UI.Code.ICodeFoldProvider.FoldsAsync(eQuantic.UI.Code.CodeDocument! doc
 eQuantic.UI.Code.IndentationFoldProvider.FoldsAsync(eQuantic.UI.Code.CodeDocument! document, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeFold!>!>!
 eQuantic.UI.Code.CodeFolding.Enabled.get -> bool
 eQuantic.UI.Code.CodeFolding.Enabled.set -> void
+*REMOVED*eQuantic.UI.Code.IndentationFoldProvider.IndentationFoldProvider() -> void
+eQuantic.UI.Code.IndentationFoldProvider.IndentationFoldProvider(int tabSize = 4) -> void

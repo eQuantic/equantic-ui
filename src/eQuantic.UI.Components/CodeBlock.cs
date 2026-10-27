@@ -813,6 +813,9 @@ public sealed class CodeBlock : StatelessComponent
     internal static (int First, int Last) WindowOf(int lineCount, float lineHeight, float offset, float viewportHeight)
     {
         if (viewportHeight <= 0 || lineHeight <= 0) return (0, lineCount - 1);
+        // Never past the rows there are: a fold that leaves fewer rows than the scroll had passed (#1119) would
+        // otherwise build none, before the view, clamped by its own layout, says where it stands.
+        offset = MathF.Min(offset, MathF.Max(0, lineCount * lineHeight - viewportHeight));
         const int margin = 8;   // a scroll of one line builds nothing
         var first = Math.Max(0, (int)MathF.Floor(offset / lineHeight) - margin);
         var visible = (int)MathF.Ceiling(viewportHeight / lineHeight) + margin * 2;

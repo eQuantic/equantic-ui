@@ -8,7 +8,8 @@ How a code editor folds its regions, on both targets and with VS Code's keys: th
 ### Requirement: The regions
 
 `CodeEditorController.Folding` SHALL ask every `ICodeFoldProvider` in its `Providers` once the text has rested for
-its delay, and the indentation's provider when there is none. The answers SHALL be joined, ordered by their start
+its delay, and the indentation's provider when there is none, which measures an indentation in the columns it is
+drawn across, a tab to its stop. The answers SHALL be joined, ordered by their start
 line, one region kept for each start line (the one reaching furthest), a region that crosses another dropped,
 and a region of no line under its header dropped. An answer that comes after the text changed again SHALL be
 dropped, and so SHALL an answer in which a provider failed, the regions and what is folded staying as they were.
@@ -64,7 +65,8 @@ The regions and the folded ones SHALL be carried through every edit until the ne
 whose start line is kept staying folded when it arrives unless it would hide a line a selection ends on. An edit
 that changes a hidden line SHALL unfold the regions hiding it, a region whose header line is removed or joined to
 the line above SHALL go, and a selection that moves into a hidden line SHALL unfold the regions hiding it. A
-command that folds a region over a caret SHALL put that caret at the end of the region's header. A copy or a cut
+command that folds a region over an end of a selection SHALL put that end at the end of the region's header, the
+other end where it was. When what is folded changes, the line at the top of the view SHALL stay at its top. A copy or a cut
 across a folded region SHALL take its hidden lines.
 
 #### Scenario: Going to a hidden line

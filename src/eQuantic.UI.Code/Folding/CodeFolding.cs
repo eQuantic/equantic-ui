@@ -246,8 +246,10 @@ public sealed class CodeFolding
     // ---- what is hidden ---------------------------------------------------------------------------------
 
     /// <summary>
-    /// A command folded or unfolded: what is hidden is made again, and a caret a fold hid is put at the end of the
-    /// outermost header it is hidden under, every caret of several, as VS Code moves its cursors out of what it folds.
+    /// A command folded or unfolded: what is hidden is made again, and each end of a selection a fold hid is put at
+    /// the end of the outermost header it is hidden under, the other end where it was, every caret of several, as
+    /// VS Code's <c>adjustSelections</c> moves what it folds over: an anchor left on a hidden line would unfold the
+    /// region at the next move of the other end.
     /// </summary>
     private void Folded()
     {
@@ -256,12 +258,20 @@ public sealed class CodeFolding
         var moved = false;
         for (var i = 0; i < selections.Count; i++)
         {
-            var header = HeaderHiding(selections[i].Focus.Line);
-            if (header < 0) continue;
-            selections[i] = new CodeRange(new CodePosition(header, _editor.Document.Line(header).Length));
+            var anchor = OutOfFolds(selections[i].Anchor);
+            var focus = OutOfFolds(selections[i].Focus);
+            if (anchor == selections[i].Anchor && focus == selections[i].Focus) continue;
+            selections[i] = new CodeRange(anchor, focus);
             moved = true;
         }
         if (moved) _editor.Selections = selections;
+    }
+
+    /// <summary><paramref name="position"/>, or the end of the outermost header hiding its line.</summary>
+    private CodePosition OutOfFolds(CodePosition position)
+    {
+        var header = HeaderHiding(position.Line);
+        return header < 0 ? position : new CodePosition(header, _editor.Document.Line(header).Length);
     }
 
     /// <summary>The header of the outermost folded region hiding <paramref name="line"/>, or -1 when it shows.</summary>
@@ -423,7 +433,7 @@ public sealed class CodeFolding
     {
         var document = _editor.Document;
         var providers = new List<ICodeFoldProvider>(Providers);
-        if (providers.Count == 0) providers.Add(new IndentationFoldProvider());
+        if (providers.Count == 0) providers.Add(new IndentationFoldProvider(_editor.Rules.IndentWidth));
         var asked = new List<Task<IReadOnlyList<CodeFold>?>>();
         foreach (var provider in providers) asked.Add(AskOne(provider, document, cancellation));
         var answers = new List<IReadOnlyList<CodeFold>>();

@@ -126,6 +126,19 @@ public class CodeFoldingTests : IDisposable
     }
 
     [Fact]
+    public async Task ATabAndAsManySpaces_IndentToTheSameDepth()
+    {
+        // A tab is drawn to its stop, four columns here, so the second line and the third stand side by side: as
+        // one column, the tab made the second line a header hiding the third.
+        var document = CodeDocument.FromText("a\n\tb\n    c");
+
+        var folds = await new IndentationFoldProvider(4).FoldsAsync(document, CancellationToken.None);
+
+        folds.Should().Equal([new CodeFold(0, 2)]);
+        Editor("a\n\tb\n    c").Folding.Regions.Should().Equal([new CodeFold(0, 2)], "the editor's own tab size");
+    }
+
+    [Fact]
     public void TwoRegionsOnOneHeader_KeepTheOneReachingFurthest_AndOneCrossingAnotherIsDropped()
     {
         var editor = Editor("a\nb\nc\nd\ne\nf\ng\nh\ni\nj");
@@ -180,6 +193,36 @@ public class CodeFoldingTests : IDisposable
 
         editor.Selection.Should().Be(new CodeRange(new CodePosition(3, 5)), "as VS Code moves its cursor out of what it folds");
         editor.Folding.IsFolded(3).Should().BeTrue("and the move does not unfold it again");
+    }
+
+    [Fact]
+    public void AFoldOverASelectionsAnchor_PutsTheAnchorAtTheEndOfTheHeader_AndKeepsItsDirection()
+    {
+        var editor = Editor();
+        editor.Selection = new CodeRange(new CodePosition(4, 2), new CodePosition(6, 1));
+
+        editor.Folding.Toggle(3);
+
+        editor.Selection.Should().Be(new CodeRange(new CodePosition(3, 5), new CodePosition(6, 1)));
+        Press(editor, "ArrowUp", Shift);
+        editor.Folding.IsFolded(3).Should().BeTrue("the end that moves stays on lines that show");
+    }
+
+    [Fact]
+    public void AFoldAboveTheView_KeepsTheLineAtItsTopThere()
+    {
+        // VS Code keeps its viewport's first line when what it hides changes: a fold of ninety lines above the view
+        // asks the view to scroll up by them, so the same lines and the caret among them stay in it.
+        var editor = Editor(string.Join("\n", Enumerable.Range(0, 200).Select(i => $"line {i}")), caretLine: 160);
+        editor.Folding.Providers.Add(new Fixed(new CodeFold(10, 100)));
+        editor.Folding.Check();
+        var origin = editor.Grid.Origin.Y;
+        var line = editor.Grid.Cell.Height;
+        editor.View = new Rect(0, origin + 150 * line, 600, 400);
+
+        editor.Folding.Toggle(10);
+
+        editor.VerticalScroll!.Offset.Should().BeApproximately(origin + 60 * line, 0.01f);
     }
 
     [Fact]

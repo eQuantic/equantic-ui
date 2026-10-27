@@ -417,6 +417,7 @@ export class CodeBlock extends StatelessComponent {
 
     static windowOf(lineCount: number, lineHeight: number, offset: number, viewportHeight: number): [number, number] {
         if (viewportHeight <= 0 || lineHeight <= 0) return [0, lineCount - 1];
+        offset = Math.min(offset, Math.max(0, Math.fround(Math.fround(Math.fround(lineCount) * lineHeight) - viewportHeight)));
         let margin = 8;
         let first = Math.max(0, (Math.trunc(Math.floor(Math.fround(offset / lineHeight))) | 0) - margin);
         let visible = (Math.trunc(Math.ceil(Math.fround(viewportHeight / lineHeight))) | 0) + margin * 2;
