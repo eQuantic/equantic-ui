@@ -41,7 +41,13 @@ internal static class ExplicitImplementations
     public static bool LeavesOut(ISymbol member) =>
         IterableTwin.LeavesOut(member)
         || (IsExplicit(member) && member.ContainingType is { } type
-            && Settle(type, member.MemberTwinName(), member.IsStatic).LeftOut.Contains(member.OriginalDefinition));
+            && Settle(type, NameOf(member), member.IsStatic).LeftOut.Contains(member.OriginalDefinition));
+
+    /// <summary>The name an explicit implementation holds on its twin: its member's, unless it is a typed
+    /// <c>Equals</c>, which holds a name of its own that the twin's <c>static $equatable</c> maps its
+    /// contract to (<see cref="TwinMethodName.TypedEquals"/>), so it meets no other there.</summary>
+    public static string NameOf(ISymbol member) =>
+        member is IMethodSymbol method ? TwinMethodName.Of(method) : member.MemberTwinName();
 
     /// <summary>
     /// The explicit implementations <paramref name="type"/>'s twin writes under <paramref name="name"/>, on
@@ -82,7 +88,7 @@ internal static class ExplicitImplementations
         Cache.GetValue(type.OriginalDefinition, _ => new()).GetOrAdd((name, isStatic), _ =>
         {
             var group = type.GetMembers()
-                .Where(member => IsExplicit(member) && member.IsStatic == isStatic && member.MemberTwinName() == name
+                .Where(member => IsExplicit(member) && member.IsStatic == isStatic && NameOf(member) == name
                     && !IterableTwin.LeavesOut(member))
                 .OrderBy(member => member.Locations.FirstOrDefault()?.SourceSpan.Start ?? 0)
                 .Select(member => (Member: member, Reached: Reached(member)))

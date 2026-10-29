@@ -702,17 +702,17 @@ internal static class OverloadedMethods
     {
         if (model.SyntaxTree != type.SyntaxTree || model.GetDeclaredSymbol(type) is not INamedTypeSymbol declared) return;
         var written = declared.GetMembers().Where(ExplicitImplementations.IsExplicit)
-            .Select(member => (Name: Lowered(member), member.IsStatic))
+            .Select(member => (Name: ExplicitImplementations.NameOf(member), member.IsStatic))
             .Distinct()
             .SelectMany(key => ExplicitImplementations.Written(declared, key.Name, key.IsStatic))
             .OrderBy(member => member.Locations.FirstOrDefault()?.SourceSpan.Start ?? 0)
             .ToList();
         foreach (var held in written)
         {
-            var name = Lowered(held);
+            var name = ExplicitImplementations.NameOf(held);
             var lowered = $"`{(held.IsStatic ? "static " : "")}{name}{(held is IMethodSymbol ? "()" : "")}`";
             if (written.FirstOrDefault(other => !SymbolEqualityComparer.Default.Equals(other, held)
-                    && Lowered(other) == name && other.IsStatic == held.IsStatic) is { } second)
+                    && ExplicitImplementations.NameOf(other) == name && other.IsStatic == held.IsStatic) is { } second)
             {
                 Refuse(errors, sourcePath, second, type,
                     $"'{declared.Name}' implements '{Answering(held)}' and '{Answering(second)}' explicitly, and both lower to "
@@ -773,7 +773,7 @@ internal static class OverloadedMethods
                 if (member.IsStatic || member.IsImplicitlyDeclared) continue;
                 if (ExplicitImplementations.IsExplicit(member))
                 {
-                    if (Lowered(member) == name && !Contracts(member).Intersect(Contracts(held), SymbolEqualityComparer.Default).Any()
+                    if (ExplicitImplementations.NameOf(member) == name && !Contracts(member).Intersect(Contracts(held), SymbolEqualityComparer.Default).Any()
                         && ExplicitImplementations.Written(current, name, isStatic: false).Contains(member, SymbolEqualityComparer.Default))
                         return member;
                     continue;

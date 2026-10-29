@@ -301,6 +301,23 @@ public class ExplicitImplementationTests
         evented.Errors.Should().BeEmpty();
     }
 
+    /// <summary>A typed <c>Equals</c> holds a name of its own, which the twin's <c>static $equatable</c> maps
+    /// its contract to (#947), so two explicit ones over two types meet nothing.</summary>
+    [Fact]
+    public void TwoExplicitTypedEquals_HoldNamesOfTheirOwn()
+    {
+        var result = Compile("""
+            public class TwoWays : System.IEquatable<int>, System.IEquatable<string>
+            {
+                bool System.IEquatable<int>.Equals(int n) => n == 1;
+                bool System.IEquatable<string>.Equals(string? s) => s == "x";
+            }
+            """, "TwoWays");
+
+        result.Errors.Should().BeEmpty();
+        result.TypeScript.Should().Contain("equals$1(").And.Contain("equals$2(");
+    }
+
     /// <summary>The error points at the later of the two, as every EQ1007 does.</summary>
     [Fact]
     public void TheErrorPointsAtTheSecond()
