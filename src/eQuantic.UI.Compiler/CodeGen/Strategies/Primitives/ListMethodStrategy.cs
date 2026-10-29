@@ -25,7 +25,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// (<see cref="ElementEquality"/>), which <c>indexOf</c>'s <c>===</c> is not; <c>Find</c> and
 /// <c>FindLast</c> with the element type's default; <c>FindIndex</c>'s and <c>FindLastIndex</c>'s ranges,
 /// which <c>findIndex</c> took for its predicate; <c>RemoveAll</c>, which answers how many it removed
-/// and once threw a ReferenceError; and <c>CopyTo</c>, which writes into the array it is handed.
+/// and once threw a ReferenceError; <c>CopyTo</c>, which writes into the array it is handed; and
+/// <c>AddRange</c> and <c>InsertRange</c>, one element at a time. They were <c>push(...items)</c> and
+/// <c>splice(index, 0, ...items)</c>, which hand every element to the call as an argument, and an engine
+/// caps a call's arguments, so a large range threw in the browser (#1060).
 /// </para>
 /// <para>
 /// A call of the array's own method is IR, so a lambda passed to it (<c>ForEach</c>, <c>Exists</c>…)
@@ -112,9 +115,12 @@ public class ListMethodStrategy : IExpressionIrStrategy
         var args = argsIr.Select(JsExprWriter.Write).ToList();
         return methodName switch
         {
-            "AddRange" => args.Count > 0 ? $"{caller}.push(...{args[0]})" : caller,
+            // A named argument could fill either of a range's parameters, and no model says which.
+            "AddRange" or "InsertRange" when invocation.ArgumentList.Arguments.Any(argument => argument.NameColon is not null) =>
+                JsExpr.Opaque(context.Unhandled(invocation, $"List.{methodName} with a named argument, which no model places")),
+            "AddRange" when args.Count > 0 => Helper(context, $"{Eq.ListAddRange}({caller}, {args[0]})"),
             "Insert" => ConvertInsert(caller, args),
-            "InsertRange" => ConvertInsertRange(caller, args),
+            "InsertRange" when args.Count > 1 => Helper(context, $"{Eq.ListInsertRange}({caller}, {args[0]}, {args[1]})"),
             // An element type no model can say compares by what each value turns out to be.
             "Remove" when args.Count > 0 => Helper(context, $"{Eq.ListRemove}({caller}, {args[0]}, 'own')"),
             "RemoveAt" => ConvertRemoveAt(caller, args),
@@ -210,6 +216,13 @@ public class ListMethodStrategy : IExpressionIrStrategy
             case "RemoveAll":
                 context.UsedHelpers.Add(Eq.Import);
                 return ParameterTemplate.Call($"{Eq.ListRemoveAll}({{0}}, {{1}})", list, invocation, method, context);
+            // The arguments as they are written, a named collection before a named index included.
+            case "AddRange":
+                context.UsedHelpers.Add(Eq.Import);
+                return ParameterTemplate.Call($"{Eq.ListAddRange}({{0}}, {{1}})", list, invocation, method, context);
+            case "InsertRange":
+                context.UsedHelpers.Add(Eq.Import);
+                return ParameterTemplate.Call($"{Eq.ListInsertRange}({{0}}, {{1}}, {{2}})", list, invocation, method, context);
             case "CopyTo":
                 context.UsedHelpers.Add(Eq.Import);
                 return ParameterTemplate.Call(count switch
@@ -300,13 +313,6 @@ public class ListMethodStrategy : IExpressionIrStrategy
     {
         if (args.Count >= 2)
             return $"{caller}.splice({args[0]}, 0, {args[1]})";
-        return caller;
-    }
-
-    private string ConvertInsertRange(string caller, List<string> args)
-    {
-        if (args.Count >= 2)
-            return $"{caller}.splice({args[0]}, 0, ...{args[1]})";
         return caller;
     }
 

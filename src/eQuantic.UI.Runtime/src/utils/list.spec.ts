@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addRange,
   arrayFind,
   arrayIndexOf,
   arrayLastIndexOf,
@@ -12,6 +13,7 @@ import {
   findLast,
   findLastIndex,
   indexOf,
+  insertRange,
   lastIndexOf,
   listCapacity,
   listCopy,
@@ -123,6 +125,68 @@ describe("List<T>'s finds (#488)", () => {
     expect(fails(() => findLastIndex([], () => true, 0))).toBe(
       "Index was out of range. Must be non-negative and less than the size of the collection. (Parameter 'startIndex')",
     );
+  });
+});
+
+describe("List<T>'s AddRange and InsertRange, of a range of any size (#1060)", () => {
+  // A million: past the cap V8 (near 125,000) and JavaScriptCore (near 640,000) set on a call's arguments,
+  // which `push(...items)` and `splice(index, 0, ...items)` passed.
+  const million = Array.from({ length: 1_000_000 }, (_, i) => i);
+
+  it('adds and inserts a million elements, in their order', () => {
+    const added = [-1];
+    addRange(added, million);
+    expect([added.length, added[0], added[1], added[1_000_000]]).toEqual([1_000_001, -1, 0, 999_999]);
+    const inserted = [-1, -2];
+    insertRange(inserted, 1, million);
+    expect([inserted.length, inserted[0], inserted[1], inserted[1_000_000], inserted[1_000_001]]).toEqual([
+      1_000_002, -1, 0, 999_999, -2,
+    ]);
+  });
+
+  it('takes what a list held before the call when it is the range, and any collection in its order', () => {
+    const self = [1, 2];
+    addRange(self, self);
+    expect(self).toEqual([1, 2, 1, 2]);
+    const into = [1, 2, 3];
+    insertRange(into, 1, into);
+    expect(into).toEqual([1, 1, 2, 3, 2, 3]);
+    const text: string[] = [];
+    addRange(text, 'a\uD83D\uDE00');
+    expect(text).toEqual(['a', '\uD83D', '\uDE00']);
+    const fromASet = [0];
+    insertRange(fromASet, 0, hashSetOf([7, 8]));
+    expect(fromASet).toEqual([7, 8, 0]);
+  });
+
+  it('refuses a null collection before the index, and an index outside 0 to the count', () => {
+    const range = 'Index was out of range. Must be non-negative and less than or equal to the size of the collection.';
+    expect(fails(() => addRange([], null))).toBe("Value cannot be null. (Parameter 'collection')");
+    expect(fails(() => insertRange([], 5, null))).toBe("Value cannot be null. (Parameter 'collection')");
+    expect(fails(() => insertRange([1], 2, [9]))).toBe(`${range} (Parameter 'index')`);
+    expect(fails(() => insertRange([1], -1, [9]))).toBe(`${range} (Parameter 'index')`);
+    const end = [1];
+    insertRange(end, 1, [9]);
+    expect(end).toEqual([1, 9]);
+    const none = [1, 2];
+    insertRange(none, 0, []);
+    insertRange(none, 0, none.slice(0, 0));
+    expect(none).toEqual([1, 2]);
+  });
+
+  it('refuses a null list first, and an index before the collection is read', () => {
+    const throughNull = 'Object reference not set to an instance of an object.';
+    expect(fails(() => addRange(null as unknown as number[], []))).toBe(throughNull);
+    expect(fails(() => insertRange(null as unknown as number[], -1, null))).toBe(throughNull);
+    let read = false;
+    const asked: Iterable<number> = {
+      *[Symbol.iterator]() {
+        read = true;
+        yield 1;
+      },
+    };
+    expect(fails(() => insertRange([], 5, asked))).toContain("(Parameter 'index')");
+    expect(read).toBe(false);
   });
 });
 
