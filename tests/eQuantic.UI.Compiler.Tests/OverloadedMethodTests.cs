@@ -753,7 +753,8 @@ public class OverloadedMethodTests
     /// plain class's field beside a member of its name moves to a slot of its own (`count$`, #396). An
     /// override of object's <c>ToString()</c>, <c>GetHashCode()</c> or <c>Equals(object)</c> is written
     /// in place of the twin's own (#1146), a typed <c>Equals</c> holds a name of its own (#947), and a
-    /// static <c>ToString</c> lives on the class, apart from the instance's text.
+    /// static <c>ToString</c> lives on the class, apart from the instance's text. The two halves of a
+    /// partial property or a partial event are one member, as a partial method's are.
     /// </summary>
     [Theory]
     [InlineData("Box", "public sealed record Box(int X, int Y) { public int X { get; set; } = X; }")]
@@ -770,6 +771,7 @@ public class OverloadedMethodTests
     [InlineData("Key", "public sealed class Key { public int X; public override bool Equals(object? o) => o is Key k && k.X == X; public override int GetHashCode() => X; public override string ToString() => \"key\"; }")]
     [InlineData("Same", "public sealed record Same(int V) { public bool Equals(Same? other) => other?.V == V; public override int GetHashCode() => V; }")]
     [InlineData("Fmt", "public sealed record Fmt(int V) { public static string ToString(int v) => v.ToString(); }")]
+    [InlineData("Halves", "public sealed partial class Halves { public partial int Level { get; set; } public partial int Level { get => field; set => field = value * 2; } public partial event System.Action? Moved; public partial event System.Action? Moved { add { } remove { } } }")]
     public void OneMemberOnItsName_IsNotRefused(string name, string source) =>
         Compile(source, name).Errors.Where(error => error.Code == "EQ1007").Should().BeEmpty();
 

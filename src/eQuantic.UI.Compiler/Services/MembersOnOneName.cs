@@ -32,8 +32,8 @@ namespace eQuantic.UI.Compiler.Services;
 /// #396), a method under <see cref="TwinMethodName"/> (a method that hides a member holds a name of its
 /// own, #563), a property, an event and a held primary constructor's parameter camelCased, an operator
 /// and a conversion under the static the twin calls, an extension block's members as statics of the
-/// class. The two accessors of a property are one member, and so is a positional parameter its record
-/// redeclares (#546). The second member on a key is refused, naming the first. An explicit interface
+/// class. The two accessors of a property are one member, and so are the two halves of a partial property
+/// or event, and a positional parameter its record redeclares (#546). The second member on a key is refused, naming the first. An explicit interface
 /// implementation is left out, as the overload check leaves it out: its name is the interface's (#1139).
 /// </para>
 ///
@@ -189,7 +189,8 @@ internal static class MembersOnOneName
                             IsStatic(field), $"{name}.{variable.Identifier.ValueText}", variable.Identifier, Held: true);
                     break;
 
-                case EventFieldDeclarationSyntax handler:
+                // The defining half of a partial event is the event its implementing half declares.
+                case EventFieldDeclarationSyntax handler when !handler.Modifiers.Any(SyntaxKind.PartialKeyword):
                     foreach (var variable in handler.Declaration.Variables)
                         yield return new(variable.Identifier.ValueText.ToCamelCase(), IsStatic(handler),
                             $"{name}.{variable.Identifier.ValueText}", variable.Identifier, Held: true);
@@ -200,7 +201,8 @@ internal static class MembersOnOneName
                         $"{name}.{handler.Identifier.ValueText}", handler.Identifier, Held: false);
                     break;
 
-                case PropertyDeclarationSyntax { ExplicitInterfaceSpecifier: null } property:
+                case PropertyDeclarationSyntax { ExplicitInterfaceSpecifier: null } property
+                    when !DefinesAPartial(property, ownModel):
                     yield return new(property.Identifier.ValueText.ToCamelCase(), IsStatic(property),
                         $"{name}.{property.Identifier.ValueText}", property.Identifier, Held: IsAuto(property));
                     break;
@@ -253,6 +255,14 @@ internal static class MembersOnOneName
     private static bool IsAuto(PropertyDeclarationSyntax property) =>
         property.ExpressionBody is null && property.AccessorList?.Accessors
             .All(accessor => accessor.Body is null && accessor.ExpressionBody is null) == true;
+
+    /// <summary>The defining half of a partial property, which is the property its implementing half
+    /// declares, as a partial method's two halves are one method: asked of the model, and of the syntax
+    /// where there is none, the half whose accessors have no body.</summary>
+    private static bool DefinesAPartial(PropertyDeclarationSyntax property, SemanticModel? model) =>
+        model?.GetDeclaredSymbol(property) is IPropertySymbol symbol
+            ? symbol.IsPartialDefinition
+            : property.Modifiers.Any(SyntaxKind.PartialKeyword) && IsAuto(property);
 
     /// <summary>The C# names a member of the body declares, which a primary constructor's parameter of
     /// the same name is one with.</summary>
