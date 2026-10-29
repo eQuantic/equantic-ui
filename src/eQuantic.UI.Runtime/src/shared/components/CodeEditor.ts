@@ -120,7 +120,7 @@ export class CodeEditor extends StatefulComponent {
         let [firstRow, lastRow] = CodeBlock.windowOf(rowCount, metrics.lineHeight, this._offset, this._viewport);
         let [first, last] = shown?.linesIn(firstRow, lastRow) ?? [firstRow, lastRow];
         let matches = this.matchesOf(editor, this.needle);
-        let block = new CodeBlock('', null, { document: editor.document, language: highlighter.language, decorations: this.marks(editor, matches, first, last, context.theme), showLineNumbers: this.showLineNumbers, firstLineNumber: this.firstLineNumber, standalone: false, size: this.size, inverse: this.inverse, gutterMarkers: this.gutter(editor, first, last), onGutterPressed: this.onGutterPressed, rows: shown, folds: folds, foldedLines: CodeEditor.foldedLines(editor, folds), onFoldPressed: (line: number) => editor.folding.toggle(line), highlighter: highlighter, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._viewportWidth, minHeight: bounded ? this._viewport : 0, activeLines: editor.caretLinesIn(first, last), selectionBands: editor.selectionBandsIn(first, last), selections: editor.selectionsIn(first, last), widestLine: editor.widestLine });
+        let block = new CodeBlock('', null, { document: editor.document, language: highlighter.language, decorations: this.marks(editor, matches, first, last, context.theme), showLineNumbers: this.showLineNumbers, firstLineNumber: this.firstLineNumber, standalone: false, size: this.size, inverse: this.inverse, gutterMarkers: this.gutter(editor, first, last), onGutterPressed: this.onGutterPressed, rows: shown, folds: folds, foldedLines: CodeEditor.foldedLines(editor, folds), onFoldPressed: (line: number) => editor.folding.toggle(line), highlighter: highlighter, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._viewportWidth, activeLines: editor.caretLinesIn(first, last), selectionBands: editor.selectionBandsIn(first, last), selections: editor.selectionsIn(first, last), widestLine: editor.widestLine });
         let completion = editor.completion;
         let offered: VisualNode | null = null;
         let offeredAt = Point.zero;
@@ -177,7 +177,7 @@ export class CodeEditor extends StatefulComponent {
             if ((at = CodeNoteBuilder.place(editor.caretRect(editor.caret), viewTop, viewBottom, this._scrollX, this._viewportWidth, panelWidth, panelHeight, listAbove)) != null) notes.push(new Positioned(panel, at.y, null, null, at.x));
         }
         let surface: VisualNode = new CodeSurface(block, editor, { autofocus: this.autofocus, label: this.caption ?? SdkStrings.codeEditor, caretColor: CodeBlock.inkFor(this.inverse, context.theme), onChanged: () => this.setState(() => this.notify(editor)), options: offered, optionsOrigin: offeredAt, highlightedOption: highlighted, notes: notes });
-        let viewport: VisualNode = new ScrollView(surface, 'horizontal', { width: SizeValue.fill, onViewportChanged: (width: number) => {
+        let viewport: VisualNode = new ScrollView(surface, 'horizontal', { width: SizeValue.fill, fillViewport: true, onViewportChanged: (width: number) => {
             if (Math.abs(Math.fround(width - this._viewportWidth)) < 1) return;
             this.setState(() => this._viewportWidth = width);
         }, onScrolled: (offset: number) => {
@@ -185,14 +185,12 @@ export class CodeEditor extends StatefulComponent {
             if (editor.completion.isOpen || editor.hover.isOpen || editor.signatureHelp.isOpen) this.setState(() => this._scrollX = offset); else this._scrollX = offset;
             this.reportView(editor, windowed);
         }, request: editor.horizontalScroll });
-        if (this.showLineNumbers) {
-            let withGutter = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'start' });
-            withGutter.add(block.gutter(context));
-            withGutter.add(new Flexible(viewport));
-            viewport = withGutter;
-        }
+        let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'stretch' });
+        if (this.showLineNumbers) row.add(block.gutter(context));
+        row.add(new Flexible(viewport));
+        viewport = row;
         if (windowed) {
-            viewport = new Box(new BoxStyle({ width: SizeValue.fill, height: bounded ? SizeValue.fill : SizeValue.hug, maxHeight: !bounded && this.maxHeight > 0 ? SizeValue.fixed(this.maxHeight) : SizeValue.hug }), new ScrollView(viewport, 'vertical', { width: SizeValue.fill, height: bounded ? SizeValue.fill : SizeValue.hug, onScrolled: (offset: number) => {
+            viewport = new Box(new BoxStyle({ width: SizeValue.fill, height: bounded ? SizeValue.fill : SizeValue.hug, maxHeight: !bounded && this.maxHeight > 0 ? SizeValue.fixed(this.maxHeight) : SizeValue.hug }), new ScrollView(viewport, 'vertical', { width: SizeValue.fill, height: bounded ? SizeValue.fill : SizeValue.hug, fillViewport: true, onScrolled: (offset: number) => {
                 if (Math.abs(Math.fround(offset - this._offset)) < 1) return;
                 this.setState(() => this._offset = offset);
                 this.reportView(editor, windowed);

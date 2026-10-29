@@ -1768,7 +1768,13 @@ describe('a press under the code', () => {
     expect(editor.caret).toEqual({ line: 1, column: 9 });
   });
 
-  it("lands in the code, since a bounded editor's code is as tall as its viewport", async () => {
+  /**
+   * The code fills its viewport by LAYOUT (#1143): both scroll views fill their viewports and the row of
+   * gutter and code stretches, so the code is as tall as the sideways scroll view's content box, which
+   * leaves its scrollbar out. A number reported from layout made the code the vertical viewport's height,
+   * and where a scrollbar takes space the sideways one stood under that, so a short file scrolled by it.
+   */
+  it("lands in the code, since a bounded editor's code fills its viewport", async () => {
     const { materializeTheme } = await import('./theme-bridge');
     const photonData = (await import('./theme-bridge.photon.json')).default;
     const { CodeEditor } = await import('./components/CodeEditor');
@@ -1790,7 +1796,52 @@ describe('a press under the code', () => {
 
     const lowered = lowerVisualNode(component.build(context as never) as never, context as never);
 
-    expect(nodesWhere(lowered, (node) => effectiveStyle(node).includes('min-height: 400px'))).toHaveLength(1);
+    expect(
+      nodesWhere(lowered, (node) => effectiveStyle(node).includes('min-height: 400px')),
+      'no height reported from layout reaches the code',
+    ).toHaveLength(0);
+    const [vertical] = nodesWhere(lowered, (node) => effectiveStyle(node).includes('overflow-y: auto'));
+    expect(effectiveStyle(vertical)).toContain('display: flex');
+    expect(effectiveStyle(vertical)).toContain('flex-direction: column');
+    const row = effectiveStyle(vertical.children[0]);
+    expect(row, 'the row grows to the viewport and never shrinks under its code').toContain('flex-grow: 1');
+    expect(row).toContain('flex-shrink: 0');
+    expect(row, 'and stretches the gutter and the sideways scroll view to it').toContain('align-items: stretch');
+    const [sideways] = nodesWhere(lowered, (node) => effectiveStyle(node).includes('overflow-x: auto'));
+    expect(effectiveStyle(sideways)).toContain('display: flex');
+    expect(effectiveStyle(sideways)).toContain('flex-direction: row');
+    const surface = sideways.children[0];
+    expect(surface.attributes['class']).toContain('eq-code-surface');
+    expect(effectiveStyle(surface), 'the code fills the sideways viewport').toContain('flex-grow: 1');
+    expect(effectiveStyle(surface)).toContain('flex-shrink: 0');
+  });
+
+  it('has the row of gutter and code with no gutter too, so the code fills its viewport the same way', async () => {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const context = {
+      theme,
+      textPrimary: theme.textPrimary,
+      density: 'comfortable',
+      typeScale: 1,
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    const component = new CodeEditor('one\ntwo three', 'csharp');
+    component.height = SizeValue.fill;
+    component.showLineNumbers = false;
+
+    const lowered = lowerVisualNode(component.build(context as never) as never, context as never);
+
+    // A scroll view straight inside the vertical one took `height: 100%` of it: exactly the viewport, so a
+    // file longer than the pane was cut at its bottom instead of scrolling.
+    const [vertical] = nodesWhere(lowered, (node) => effectiveStyle(node).includes('overflow-y: auto'));
+    expect(effectiveStyle(vertical.children[0])).toContain('display: flex');
+    expect(effectiveStyle(vertical.children[0])).toContain('flex-direction: row');
+    expect(effectiveStyle(vertical.children[0])).not.toContain('overflow-x: auto');
   });
 });
 

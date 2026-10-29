@@ -645,6 +645,8 @@ export interface ScrollViewNode extends VisualNodeValue {
   onScrolled?: ((offset: number) => void) | null;
   /** How tall the viewport turned out to be, reported after the pass mounts it. */
   onViewportChanged?: ((height: number) => void) | null;
+  /** The content is never smaller than the viewport (C# `ScrollView.FillViewport`). */
+  fillViewport?: boolean;
 }
 
 /** One axis of a table (the C# `TableSpans`): how many, how far each reaches, where each starts. */
