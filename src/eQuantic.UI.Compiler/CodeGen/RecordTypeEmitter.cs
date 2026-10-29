@@ -333,7 +333,10 @@ public class RecordTypeEmitter
             // reaches what the value is. It held a name of its own, and a derived value answered by the base's
             // method alone, its own members and type unread, in a call, a contract and a List<Base> alike.
             var baseTyped = recordSymbol is { BaseType: { IsRecord: true } recordBase } ? ElementEquality.SelfMethod(recordBase) : null;
-            if (ownTyped is not null)
+            // A struct that overrides Equals(object) has its own written with its methods, in place of this one,
+            // as getHashCode's is below: both were written, and the browser kept the later (#1146).
+            var writesEquals = !TwinOwnMembers.OverriddenIn(type, nameof(Equals), ModelFor(type));
+            if (writesEquals && ownTyped is not null)
             {
                 var typedName = TwinMethodName.Of(ownTyped);
                 var head = tsTypeDeclarations ? "equals(o: unknown): boolean" : "equals(o)";
@@ -346,7 +349,7 @@ public class RecordTypeEmitter
                     ? $"{head} {{ return {ours} && this.{typedName}(o); }} "
                     : $"{head} {{ return this.{typedName}({ours} ? o : null); }} ");
             }
-            else
+            else if (writesEquals)
             {
                 sb.Append(tsTypeDeclarations ? $"equals(o: unknown) {{ return o instanceof {name}"
                     : $"equals(o) {{ return o instanceof {name}");
@@ -459,9 +462,7 @@ public class RecordTypeEmitter
             // .NET does. A record derived from a record of this compilation combines its base's hash
             // first, which is the base's own override where it wrote one, as .NET's synthesized hash
             // calls it.
-            if (!type.Members.OfType<MethodDeclarationSyntax>().Any(method =>
-                    method is { Identifier.ValueText: "GetHashCode", ParameterList.Parameters.Count: 0 }
-                    && method.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.OverrideKeyword))))
+            if (!TwinOwnMembers.OverriddenIn(type, nameof(GetHashCode), ModelFor(type)))
             {
                 var hashed = members.Select(m => $"this.{m.Store}");
                 if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol { BaseType: { IsRecord: true } baseRecord }
@@ -493,7 +494,6 @@ public class RecordTypeEmitter
         // User-declared methods — a STATIC one keeps its modifier: a record's factory
         // (`LegalBlock.P(…)`, `Money.Zero()`) is called on the CLASS, and emitting it as an
         // instance method turns every call site into "X.p is not a function" at hydration.
-        var userToString = false;
         foreach (var method in type.Members.OfType<MethodDeclarationSyntax>())
         {
             // A [ServerOnly] method is no member of the twin, as a component's and a class's are not:
@@ -502,7 +502,6 @@ public class RecordTypeEmitter
             // The non-generic IEnumerable.GetEnumerator() beside the generic one holds its name, and is
             // the same sequence (#612).
             if (ModelFor(method)?.GetDeclaredSymbol(method) is IMethodSymbol declared && IterableTwin.LeavesOut(declared)) continue;
-            if (method.Identifier.ValueText == "ToString") userToString = true;
             sb.Append(EmitMethod(method, name));
         }
 
@@ -654,12 +653,13 @@ public class RecordTypeEmitter
             }
         }
 
-        // .NET record ToString ("Name { X = …, Y = … }") unless the user overrode it: the members
+        // .NET record ToString ("Name { X = …, Y = … }") unless the user overrode it (any other member
+        // named ToString is EQ1007's, #1146, where it took this one's place in silence): the members
         // PrintMembers writes, a base's first, each once (#546), and `Name { }` for none, as .NET
         // writes it, where the twin wrote two spaces. The runtime's record text writes it, each member
         // as a concatenation would (#454): a template hole wrote JavaScript's own text of each. A
         // plain struct is no record: it writes its full name, as ValueType.ToString does (#570).
-        if (!userToString)
+        if (!TwinOwnMembers.OverriddenIn(type, nameof(ToString), ModelFor(type)))
         {
             var plainStruct = type is StructDeclarationSyntax
                 && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol declared
