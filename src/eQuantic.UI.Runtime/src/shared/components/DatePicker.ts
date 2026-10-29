@@ -4,12 +4,20 @@ export class DatePicker extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.DatePicker';
     _open: boolean = false;
     _typing: any = null;
+    _disabled: boolean = false;
     declare selected: any;
     declare onChanged: ((dateOnly: DateOnly) => void) | null;
     declare min: any;
     declare max: any;
     declare label: string;
-    declare disabled: boolean;
+
+    get disabled() {
+        return this._disabled;
+    }
+
+    set disabled(value) {
+        this._disabled = value;
+    }
 
     constructor(selected: any = null, onChanged: any = null, min: any = null, max: any = null, label: any = '', props?: any) {
         super();
@@ -18,7 +26,6 @@ export class DatePicker extends StatefulComponent {
         if (min !== undefined) this.min = min;
         if (max !== undefined) this.max = max;
         if (label !== undefined) this.label = label;
-        if (this.disabled === undefined) this.disabled = false;
         this.selected = selected;
         this.onChanged = onChanged;
         this.min = min;
@@ -49,6 +56,7 @@ export class DatePicker extends StatefulComponent {
         this.min = fresh.min;
         this.max = fresh.max;
         this.label = fresh.label;
+        this._disabled = fresh.disabled;
     }
 
     pick(day: DateOnly) {

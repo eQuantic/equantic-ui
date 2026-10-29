@@ -167,7 +167,14 @@ public abstract class StatelessComponent : UiComponent
 /// retained instance shows its FIRST configuration forever: a mood set at frame one, a root folder
 /// that never changes when you navigate. Override <c>AdoptConfig</c> to copy the constructor/init
 /// props across; state fields stay yours. Three components in one consumer app shipped this bug
-/// before the rule was written here.
+/// before the rule was written here, and ten of the SDK's own until a test handed each of them a
+/// second configuration (#1142).
+/// </para>
+/// <para>
+/// An <c>init</c> accessor cannot be written from <c>AdoptConfig</c>. Back such a setting with a field
+/// the override writes, or keep the fresh instance whole (<c>_config = fresh</c>) and read every
+/// setting from it: the shape of Flutter's <c>State.widget</c>, which carries a setting added later
+/// without a line of its own.
 /// </para>
 /// </summary>
 public abstract class StatefulComponent : UiComponent

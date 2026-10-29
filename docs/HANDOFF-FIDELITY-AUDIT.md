@@ -1079,7 +1079,7 @@ the pill's 40 down.
   ```
   Select.cs:27-28  public Select(IReadOnlyList<string> options, int selectedIndex = -1,
           Action<int>? onChanged = null, string? placeholder = null)
-  Select.cs:123  var trigger = new Pressable(field, Disabled ? null : Toggle) { Disabled = Disabled, Expanded = _open && !Disabled };
+  Select.cs:127  var trigger = new Pressable(field, Disabled ? null : Toggle) { Disabled = Disabled, Expanded = _open && !Disabled };
   ```
 
 ### C14 Select · missing-feature · **unverified**
@@ -1090,7 +1090,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Select.cs:75-76  var list = new Column(gap: 0) { Width = SizeValue.Fill };
+  Select.cs:79-80  var list = new Column(gap: 0) { Width = SizeValue.Fill };
           for (var i = 0; i < Options.Count; i++)
   ```
 
@@ -2606,7 +2606,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Select.cs:70-72  BorderColor = theme.BorderStrong,
+  Select.cs:74-76  BorderColor = theme.BorderStrong,
               Opacity = Disabled ? theme.DisabledOpacity : null,
               Hover = Disabled ? null : new StyleDiff { BorderColor = theme.Colors(Variant.Primary).Base },
   ```
@@ -3626,11 +3626,11 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Select.cs:63-66  Height = Sizing.Height(SizeVariant.Medium, context.Density),
+  Select.cs:67-70  Height = Sizing.Height(SizeVariant.Medium, context.Density),
               Width = SizeValue.Fill,
               Padding = EdgeInsets.Symmetric(Space.S3, 0),
   TextInput.cs:22  Icons? leading = null, SizeVariant size = SizeVariant.Large)
-  TextInput.cs:101  var paddingX = _focused ? 13f : 14f;
+  TextInput.cs:113  var paddingX = _focused ? 13f : 14f;
   ```
 
 ### C14 Select · documented-deviation · **unverified**

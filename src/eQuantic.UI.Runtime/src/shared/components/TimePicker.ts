@@ -4,6 +4,7 @@ export class TimePicker extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TimePicker';
     _open: boolean = false;
     _highlight: number = 0;
+    _disabled: boolean = false;
     static panelHeight: number = 260;
     declare selected: any;
     declare onChanged: ((timeOnly: TimeOnly) => void) | null;
@@ -11,7 +12,14 @@ export class TimePicker extends StatefulComponent {
     declare min: any;
     declare max: any;
     declare label: string;
-    declare disabled: boolean;
+
+    get disabled() {
+        return this._disabled;
+    }
+
+    set disabled(value) {
+        this._disabled = value;
+    }
 
     constructor(selected: any = null, onChanged: any = null, stepMinutes: any = 30, min: any = null, max: any = null, label: any = '', props?: any) {
         super();
@@ -22,7 +30,6 @@ export class TimePicker extends StatefulComponent {
         if (max !== undefined) this.max = max;
         if (label !== undefined) this.label = label;
         if (this.stepMinutes === undefined) this.stepMinutes = 0;
-        if (this.disabled === undefined) this.disabled = false;
         this.selected = selected;
         this.onChanged = onChanged;
         this.stepMinutes = TimePicker.step(stepMinutes);
@@ -72,6 +79,7 @@ export class TimePicker extends StatefulComponent {
         this.min = fresh.min;
         this.max = fresh.max;
         this.label = fresh.label;
+        this._disabled = fresh.disabled;
     }
 
     static step(minutes: number) {

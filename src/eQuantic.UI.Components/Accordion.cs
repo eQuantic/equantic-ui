@@ -28,11 +28,16 @@ public sealed class Accordion : StatefulComponent
     }
 
     public IReadOnlyList<AccordionItem> Items { get; private set; }
-    public bool Multiple { get; init; }
+    /// <summary>Backed by a field, so <see cref="AdoptConfig"/> can carry it: this instance is kept
+    /// across the parent's rebuilds, and an <c>init</c> accessor cannot be written from there.</summary>
+    public bool Multiple { get => _multiple; init => _multiple = value; }
+    private bool _multiple;
 
     public override void AdoptConfig(UiComponent next)
     {
-        if (next is Accordion fresh) Items = fresh.Items;
+        if (next is not Accordion fresh) return;
+        Items = fresh.Items;
+        _multiple = fresh.Multiple;
     }
 
     private bool IsOpen(int index) => Multiple ? _openMulti.Contains(index) : _openSingle == index;

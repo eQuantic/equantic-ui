@@ -102,3 +102,4 @@ eQuantic.UI.Components.CodeEditor.FoldProviders.get -> System.Collections.Generi
 eQuantic.UI.Components.CodeEditor.FoldProviders.set -> void
 static eQuantic.UI.Components.SdkStrings.FoldLines(int from, int to) -> string!
 static eQuantic.UI.Components.SdkStrings.UnfoldLines(int from, int to) -> string!
+override eQuantic.UI.Components.CookieConsent.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void

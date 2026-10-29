@@ -43,7 +43,10 @@ public sealed class DateTimePicker : StatefulComponent
     public int StepMinutes { get; private set; }
     public string DateLabel { get; private set; }
     public string TimeLabel { get; private set; }
-    public bool Disabled { get; init; }
+    /// <summary>Backed by a field, so <see cref="AdoptConfig"/> can carry it: this instance is kept
+    /// across the parent's rebuilds, and an <c>init</c> accessor cannot be written from there.</summary>
+    public bool Disabled { get => _disabled; init => _disabled = value; }
+    private bool _disabled;
 
     public override void AdoptConfig(UiComponent next)
     {
@@ -59,6 +62,7 @@ public sealed class DateTimePicker : StatefulComponent
         StepMinutes = fresh.StepMinutes;
         DateLabel = fresh.DateLabel;
         TimeLabel = fresh.TimeLabel;
+        _disabled = fresh.Disabled;
         // The app moved the moment, so both halves follow it — the same rule the Calendar keeps
         // for its view, and for the same reason: a control that ignores the value it was handed
         // looks broken long before anyone calls it wrong.

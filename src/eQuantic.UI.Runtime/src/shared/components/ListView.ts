@@ -6,12 +6,36 @@ export class ListView extends StatefulComponent {
     _viewport: number = 0;
     _first: number = 0;
     _last: number = -1;
+    _overscan: number = 3;
+    _width!: SizeValue;
+    _height!: SizeValue;
     declare count: number;
     declare itemExtent: number;
     declare itemBuilder: (value: number) => VisualNode;
-    declare overscan: number;
-    declare width: SizeValue;
-    declare height: SizeValue;
+
+    get overscan() {
+        return this._overscan;
+    }
+
+    set overscan(value) {
+        this._overscan = value;
+    }
+
+    get width() {
+        return this._width;
+    }
+
+    set width(value) {
+        this._width = value;
+    }
+
+    get height() {
+        return this._height;
+    }
+
+    set height(value) {
+        this._height = value;
+    }
 
     constructor(count?: any, itemExtent?: any, itemBuilder?: any, props?: any) {
         super();
@@ -20,7 +44,6 @@ export class ListView extends StatefulComponent {
         if (itemBuilder !== undefined) this.itemBuilder = itemBuilder;
         if (this.count === undefined) this.count = 0;
         if (this.itemExtent === undefined) this.itemExtent = 0;
-        if (this.overscan === undefined) this.overscan = 3;
         this.count = count;
         this.itemExtent = itemExtent;
         this.itemBuilder = itemBuilder;
@@ -43,6 +66,9 @@ export class ListView extends StatefulComponent {
         this.count = fresh.count;
         this.itemExtent = fresh.itemExtent;
         this.itemBuilder = fresh.itemBuilder;
+        this._overscan = fresh.overscan;
+        this._width = fresh.width;
+        this._height = fresh.height;
     }
 
     windowFor(offset: number, viewport: number): [number, number] {

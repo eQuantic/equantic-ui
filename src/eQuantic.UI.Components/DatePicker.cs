@@ -41,7 +41,10 @@ public sealed class DatePicker : StatefulComponent
     public DateOnly? Min { get; private set; }
     public DateOnly? Max { get; private set; }
     public string Label { get; private set; }
-    public bool Disabled { get; init; }
+    /// <summary>Backed by a field, so <see cref="AdoptConfig"/> can carry it: this instance is kept
+    /// across the parent's rebuilds, and an <c>init</c> accessor cannot be written from there.</summary>
+    public bool Disabled { get => _disabled; init => _disabled = value; }
+    private bool _disabled;
 
     public override void AdoptConfig(UiComponent next)
     {
@@ -63,6 +66,7 @@ public sealed class DatePicker : StatefulComponent
         Min = fresh.Min;
         Max = fresh.Max;
         Label = fresh.Label;
+        _disabled = fresh.Disabled;
     }
 
     public override VisualNode Build(ComponentContext context)
