@@ -7,7 +7,8 @@ namespace eQuantic.UI.Native.Engine.Tests;
 
 /// <summary>
 /// The file of a family every shell sets text in, chosen as a browser chooses among a family's faces
-/// (CSS Fonts §5.2), so a family draws from the same file on the web, on Apple and on Android (#1082).
+/// (CSS Fonts §5.2), so a family draws from the same file on every target (#1082, #1099), and whether that
+/// file is drawn as it is or left to the engine to embolden (#1109).
 /// </summary>
 public class ShippedFileChoiceTests
 {
@@ -64,4 +65,23 @@ public class ShippedFileChoiceTests
     [Fact]
     public void AFamilyWithNoFiles_HasNoFile() =>
         ShippedFaces.FileFor(new FontFamily("Georgia"), FontWeight.Regular, italic: false).Should().BeNull();
+
+    /// <summary>A file is drawn as it is for its own weight and a lighter one, and a bold one for a heavier one
+    /// too, as a browser lays no synthetic bold over a face its rule declares bold. Only a heavier weight than a
+    /// lighter static file sets, and any weight of a variable file, are left to the engine.</summary>
+    [Theory]
+    [InlineData(400, FontWeight.Regular, true)]
+    [InlineData(400, FontWeight.Light, true)]
+    [InlineData(700, FontWeight.Regular, true)]
+    [InlineData(700, FontWeight.Black, true)]
+    [InlineData(600, FontWeight.ExtraBold, true)]
+    [InlineData(400, FontWeight.Bold, false)]
+    [InlineData(500, FontWeight.SemiBold, false)]
+    [InlineData(590, FontWeight.Bold, false)]
+    public void AStaticFile_IsDrawnAsItIs_UnlessAskedHeavierThanALighterFileSets(int file, FontWeight weight, bool asItIs) =>
+        ShippedFaces.IsDrawnAsItIs(File(file), weight).Should().Be(asItIs);
+
+    [Fact]
+    public void AVariableFile_IsLeftToTheEngine() =>
+        ShippedFaces.IsDrawnAsItIs(new FontFile("Acme.App", "eQuantic.UI.Fonts/Face.ttf", 100, 900), FontWeight.Bold).Should().BeFalse();
 }

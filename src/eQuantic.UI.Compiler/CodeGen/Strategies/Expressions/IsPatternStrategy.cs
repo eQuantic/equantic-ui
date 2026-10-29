@@ -26,7 +26,6 @@ public class IsPatternStrategy : IConversionStrategy
         if (node is IsPatternExpressionSyntax isPattern)
         {
             var expr = context.Converter.ConvertExpression(isPattern.Expression);
-            var exprType = context.SemanticHelper.GetType(isPattern.Expression);
 
             // Peel top-level `not`s FIRST: bindings live in the inner pattern and must assign when
             // the INNER pattern matches — C#'s definite-assignment-when-false, the guard idiom
@@ -55,9 +54,9 @@ public class IsPatternStrategy : IConversionStrategy
             // test's own arrow declares it (MatchParts, Holding).
             var ((condition, bindings), held) = context.MatchParts.In(isPattern.SpanStart, () =>
             {
-                var built = PatternConverter.BuildCondition(pattern, access, context, exprType);
+                var built = PatternConverter.BuildCondition(pattern, access, context);
                 var collected = new List<(string Name, string Access)>();
-                PatternConverter.CollectBindings(pattern, access, context, collected, exprType);
+                PatternConverter.CollectBindings(pattern, access, context, collected);
                 return (built, collected);
             });
 

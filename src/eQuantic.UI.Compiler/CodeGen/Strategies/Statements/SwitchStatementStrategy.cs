@@ -86,7 +86,6 @@ public class SwitchStatementStrategy : IStatementStrategy
 
     private static JsStatement ConvertAsIfChain(SwitchStatementSyntax switchStmt, JsExpr expr, ConversionContext context)
     {
-        var governingType = context.SemanticHelper.GetType(switchStmt.Expression);
         var arms = new List<(string Condition, JsStatement Body, SwitchSectionSyntax Section)>();
         var hoist = new List<string>();   // distinct bound names, hoisted once for the whole chain
         var seen = new HashSet<string>();
@@ -118,9 +117,9 @@ public class SwitchStatementStrategy : IStatementStrategy
                             break;
 
                         case CasePatternSwitchLabelSyntax pat:
-                            var cond = PatternConverter.BuildCondition(pat.Pattern, Subject, context, governingType);
+                            var cond = PatternConverter.BuildCondition(pat.Pattern, Subject, context);
                             var bindings = new List<(string Name, string Access)>();
-                            PatternConverter.CollectBindings(pat.Pattern, Subject, context, bindings, governingType);
+                            PatternConverter.CollectBindings(pat.Pattern, Subject, context, bindings);
                             foreach (var b in bindings) if (seen.Add(b.Name)) hoist.Add(b.Name);
 
                             // Assign the pattern's bindings AND evaluate the when-clause inside the condition (a

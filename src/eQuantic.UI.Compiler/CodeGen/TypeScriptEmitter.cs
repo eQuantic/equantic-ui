@@ -1292,8 +1292,9 @@ public class TypeScriptEmitter
     {
         var types = new HashSet<string>();
         if (node == null) return types;
-        var crossing = node.DescendantNodes(child => !Parser.ComponentParser.StaysOnTheServer(child, asComponent)
-            && !(child is InvocationExpressionSyntax invocation && invocation.IsNameOf(ModelFor(invocation)))).ToList();
+        var model = ModelFor(node);
+        var crossing = node.DescendantNodes(child => !Parser.ComponentParser.StaysOnTheServer(child, asComponent, model)
+            && !(child is InvocationExpressionSyntax invocation && invocation.IsNameOf(model))).ToList();
         
         var creations = crossing.OfType<ObjectCreationExpressionSyntax>();
         foreach (var creation in creations)
@@ -1831,7 +1832,7 @@ public class TypeScriptEmitter
             foreach (var op in cls.Members.OfType<OperatorDeclarationSyntax>())
             {
                 // A [ServerOnly] operator never crosses, as a [ServerOnly] method does not (#816).
-                if (Parser.ComponentParser.StaysOnTheServer(op, inAComponent: false)) continue;
+                if (Parser.ComponentParser.StaysOnTheServer(op, inAComponent: false, ModelFor(op))) continue;
                 var opName = op.ParameterList.Parameters.Count == 1
                     ? RecordTypeEmitter.UnaryOperatorMethodName(op.OperatorToken.Text)
                     : RecordTypeEmitter.OperatorMethodName(op.OperatorToken.Text);
@@ -1846,7 +1847,7 @@ public class TypeScriptEmitter
 
             foreach (var conversion in cls.Members.OfType<ConversionOperatorDeclarationSyntax>())
             {
-                if (Parser.ComponentParser.StaysOnTheServer(conversion, inAComponent: false)) continue;
+                if (Parser.ComponentParser.StaysOnTheServer(conversion, inAComponent: false, ModelFor(conversion))) continue;
                 if (OperatorBody(conversion) is not { } convBody) continue;
                 var declared = _semanticModel?.GetDeclaredSymbol(conversion) as IMethodSymbol;
                 var convName = declared is not null
@@ -1955,7 +1956,7 @@ public class TypeScriptEmitter
     /// code in it was refused there (#816).</summary>
     private void EmitClassMethod(MethodDeclarationSyntax m, TypeScriptCodeBuilder.ClassBuilder c, bool asStatic)
     {
-        if (Parser.ComponentParser.StaysOnTheServer(m, inAComponent: false)) return;
+        if (Parser.ComponentParser.StaysOnTheServer(m, inAComponent: false, ModelFor(m))) return;
         // The non-generic IEnumerable.GetEnumerator() beside the generic one holds its name, and is the
         // same sequence: written, it replaced the generic one and called itself (#612).
         if (ModelFor(m)?.GetDeclaredSymbol(m) is IMethodSymbol declared && IterableTwin.LeavesOut(declared)) return;
@@ -2120,7 +2121,7 @@ public class TypeScriptEmitter
                                 "extension indexer has no getter body the compiler can lower.");
                             break;
                         }
-                        c.Member(JsClassMember.Method("static ", "item", "", WithReceiver(pars),
+                        c.Member(JsClassMember.Method("static ", Strategies.Expressions.Indexer.Get, "", WithReceiver(pars),
                             Annotation(DeclaredType(indexer.Type)), ExtensionGetter(getterBlock, body)), indexer);
                         ReportExtensionSetter(indexer.AccessorList?.Accessors, "this[]");
                         break;
