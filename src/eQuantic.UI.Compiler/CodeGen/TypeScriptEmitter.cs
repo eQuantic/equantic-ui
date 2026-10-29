@@ -334,8 +334,8 @@ public class TypeScriptEmitter
     /// <summary>
     /// Where every module this emitter writes starts, a component's and a class's alike: from a
     /// converter that holds nothing of the module written before it (<see cref="ConversionContext.Reset"/>),
-    /// with this module's model and class in force. The two are set after the reset, which keeps
-    /// neither: a module's model is its own file's, never the one the module before it left. Its
+    /// with this module's model and class in force. The two are set after the reset, whatever it keeps
+    /// of them: a module's model is its own file's, never the one the module before it left. Its
     /// diagnostics start at zero too, since the compiler drains them for this module's file alone.
     /// <para>
     /// A class's module cleared the names it used and its diagnostics, and nothing else, so it numbered

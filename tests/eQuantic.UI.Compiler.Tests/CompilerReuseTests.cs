@@ -165,6 +165,32 @@ public class CompilerReuseTests
     }
 
     /// <summary>
+    /// A class's module handed no model converts with none (#1138): it kept the model of the module
+    /// emitted before it, which answers for a class of the same file, so `value / 2` was an integer
+    /// division after a class that had a model, and a plain one alone.
+    /// </summary>
+    [Fact]
+    public void AClassModuleHandedNoModel_ConvertsWithNone_WhateverWasEmittedBeforeIt()
+    {
+        var tree = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(
+            TwoTemporariesSource + "\npublic class Halves { public int Half(int value) { return value / 2; } }\n",
+            eQuantic.UI.Compiler.Services.ParseDefaults.Options);
+        var model = Microsoft.CodeAnalysis.CSharp.CSharpCompilation.Create("OneFile", [tree],
+            [TestReferences.Of(typeof(object).Assembly.Location)],
+            new Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions(Microsoft.CodeAnalysis.OutputKind.DynamicallyLinkedLibrary))
+            .GetSemanticModel(tree);
+        var classes = tree.GetRoot().DescendantNodes()
+            .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax>().ToList();
+
+        var alone = new eQuantic.UI.Compiler.CodeGen.TypeScriptEmitter().EmitPlainClassModule(classes[1], semanticModel: null);
+        var shared = new eQuantic.UI.Compiler.CodeGen.TypeScriptEmitter();
+        shared.EmitPlainClassModule(classes[0], model);
+        var after = shared.EmitPlainClassModule(classes[1], semanticModel: null);
+
+        Assert.Equal(alone, after);
+    }
+
+    /// <summary>
     /// The record emitter's module starts from a reset converter too, which no build of the compiler
     /// shows, since it hands each record a converter of its own: a host that shares one, as the
     /// conformance harness shares one between a prelude's records, met the same numbering.
