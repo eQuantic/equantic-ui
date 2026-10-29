@@ -85,6 +85,8 @@ public class LinqKeyEqualityConformanceTests
             "var c = new[] { new Code(1), new Code(1), new Code(2) }; return c.GroupBy(x => x).Count() + \"|\" + c.Join(new[] { new Code(1) }, x => x, y => y, (x, y) => 0).Count() + \"|\" + c.DistinctBy(x => x).Count() + \"|\" + c.ToLookup(x => x)[new Code(1)].Count();"), // 2|2|2|2
         ("GroupJoin, the other By forms and a lookup's grouping ask its own Equals",
             "var c = new[] { new Code(1), new Code(1), new Code(2) }; return c.GroupJoin(new[] { new Code(1) }, x => x, y => y, (x, ys) => ys.Count()).Sum() + \"|\" + c.UnionBy(new[] { new Code(3) }, x => x).Count() + \"|\" + c.IntersectBy(new[] { new Code(1) }, x => x).Count() + \"|\" + c.ExceptBy(new[] { new Code(1) }, x => x).Count() + \"|\" + c.ToLookup(x => x).Count;"), // 2|3|1|1|2
+        ("a lookup's Contains asks its own Equals, its subclass's, and a reference otherwise (#1145)",
+            "var c = new[] { new Code(1), new Code(2) }.ToLookup(x => x); var p = new Plain(1); var ps = new[] { p }.ToLookup(x => x); Animal[] a = { new Dog(1) }; var d = a.ToLookup(x => x); return c.Contains(new Code(2)) + \"|\" + c.Contains(new Code(3)) + \"|\" + ps.Contains(p) + \"|\" + ps.Contains(new Plain(1)) + \"|\" + d.Contains(new Dog(1));"), // True|False|True|False|True
         ("a class that does not override Equals is found by reference",
             "var p = new Plain(1); var ps = new[] { p, p, new Plain(1) }; return ps.Distinct().Count() + \"|\" + ps.GroupBy(x => x).Count() + \"|\" + ps.Union(new[] { p }).Count() + \"|\" + ps.Join(new[] { p }, x => x, y => y, (x, y) => 0).Count();"), // 2|2|2|2
         ("a class that does not override Equals asks the Equals its subclass overrides",
