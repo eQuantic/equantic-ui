@@ -239,11 +239,69 @@ public class OverloadedMethodTests
         result.TypeScript.Should().Contain("label(", Exactly.Once(), "the twin holds the method that crosses, and only it");
     }
 
-    /// <summary>A static class nested in a component is embedded in its module, a class of its own.</summary>
+    /// <summary>A server-only method that only its symbol says is one, by an alias or on the defining
+    /// half of a partial method, is left out of the twin as one marked where it is written (#1140), so it
+    /// names nothing there either: it took the name its overload holds, and the type was refused.</summary>
+    [Theory]
+    [InlineData("public sealed partial class Bag", "", "alias")]
+    [InlineData("public static partial class Bag", "static ", "alias")]
+    [InlineData("public sealed partial record Bag(int N)", "", "alias")]
+    [InlineData("public partial struct Bag", "", "alias")]
+    [InlineData("public sealed partial class Bag", "", "partial")]
+    [InlineData("public static partial class Bag", "static ", "partial")]
+    [InlineData("public sealed partial record Bag(int N)", "", "partial")]
+    [InlineData("public partial struct Bag", "", "partial")]
+    public void AServerOnlyMethodKnownByItsSymbol_TakesNoName(string declaration, string modifier, string spelling)
+    {
+        var serverOnly = spelling == "alias"
+            ? $"[Keep] public {modifier}string Label(System.Net.Http.HttpClient client) => \"\";"
+            : $"[ServerOnly] public {modifier}partial string Label(System.Net.Http.HttpClient client);\n"
+              + $"    public {modifier}partial string Label(System.Net.Http.HttpClient client) => \"\";";
+        var result = Compile($$"""
+            using eQuantic.UI.Primitives;
+            using Keep = eQuantic.UI.Primitives.ServerOnlyAttribute;
+
+            {{declaration}}
+            {
+                {{serverOnly}}
+                public {{modifier}}string Label(string s) => s;
+            }
+            """, "Bag");
+
+        result.Errors.Should().NotContain(error => error.Code == "EQ1007");
+        result.TypeScript.Should().Contain("label(", Exactly.Once(), "the twin holds the method that crosses, and only it");
+    }
+
+    /// <summary>A server-only default a type takes from its interface reaches no twin, so it takes no
+    /// name there either: a record whose positional member is named like it was refused as two members
+    /// on one name (Copilot's review of #1151).</summary>
+    [Theory]
+    [InlineData("[ServerOnly]")]
+    [InlineData("[Keep]")]
+    public void AServerOnlyDefaultATypeTakes_TakesNoName(string attribute)
+    {
+        var result = Compile($$"""
+            using eQuantic.UI.Primitives;
+            using Keep = eQuantic.UI.Primitives.ServerOnlyAttribute;
+
+            public interface IReads
+            {
+                {{attribute}} string Read() => "x";
+            }
+
+            public sealed record Note(int Read) : IReads;
+            """, "Note");
+
+        result.Errors.Should().NotContain(error => error.Code == "EQ1007");
+        result.Success.Should().BeTrue(string.Join("\n", result.Errors.Select(error => $"{error.Code} {error.Message}")));
+    }
+
+    /// <summary>A static class nested in a component is a module of its own (#654), checked as one, and
+    /// refused once, where it is written: checked from its owner as well, it was refused twice.</summary>
     [Fact]
     public void AStaticClassNestedInAComponent_IsCheckedToo()
     {
-        var result = Compile("""
+        var results = new ComponentCompiler().CompileSource("""
             using eQuantic.UI.Primitives;
 
             [Page("/probe")]
@@ -257,9 +315,11 @@ public class OverloadedMethodTests
 
                 public override VisualNode Build(ComponentContext context) => new Text(Copy.Title(1), TypeRole.BodyM);
             }
-            """, "Page");
+            """, "Probe.cs");
 
-        result.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new { Code = "EQ1007", Line = 9 });
+        results.Single(result => result.ComponentName == "Page$Copy").Errors.Should().ContainSingle()
+            .Which.Should().BeEquivalentTo(new { Code = "EQ1007", Line = 9 });
+        results.Single(result => result.ComponentName == "Page").Errors.Should().BeEmpty();
     }
 
     /// <summary>
@@ -748,10 +808,13 @@ public class OverloadedMethodTests
 
     /// <summary>
     /// What is one member is not refused: a positional parameter the body redeclares under its own name
-    /// (#546), a static beside an instance member of the name, and a struct's primary constructor
-    /// parameter read only by an initializer, which no instance holds. A plain class's backing field
-    /// beside its property answers right, its field being a class field that shadows the getter, and is
-    /// left as it is.
+    /// (#546), a static beside an instance member of the name, a struct's primary constructor parameter
+    /// read only by an initializer, which no instance holds, and the two accessors of one property. A
+    /// plain class's field beside a member of its name moves to a slot of its own (`count$`, #396). An
+    /// override of object's <c>ToString()</c>, <c>GetHashCode()</c> or <c>Equals(object)</c> is written
+    /// in place of the twin's own (#1146), a typed <c>Equals</c> holds a name of its own (#947), and a
+    /// static <c>ToString</c> lives on the class, apart from the instance's text. The two halves of a
+    /// partial property or a partial event are one member, as a partial method's are.
     /// </summary>
     [Theory]
     [InlineData("Box", "public sealed record Box(int X, int Y) { public int X { get; set; } = X; }")]
@@ -760,6 +823,314 @@ public class OverloadedMethodTests
     [InlineData("Point", "public readonly struct Point(int x, int y) { public int X { get; } = x; public int Y { get; } = y; }")]
     [InlineData("Spot", "public class Spot(int x) { public int X { get; } = x; }")]
     [InlineData("Badge", "public class Badge(string label) { public string Name => label; }")]
+    [InlineData("Gauge", "public sealed class Gauge { private int level; public int Level { get => level; set => level = value * 2; } }")]
+    [InlineData("Person", "public sealed class Person { private string name = \"x\"; public string Name { get; set; } = \"y\"; }")]
+    [InlineData("Tally", "public sealed class Tally { public static int Count => 1; public int count; }")]
+    [InlineData("Cash", "public sealed record Cash(int Cents) { public override string ToString() => \"$\" + Cents; public override int GetHashCode() => Cents; }")]
+    [InlineData("Pin", "public struct Pin { public int X; public override bool Equals(object? o) => o is Pin p && p.X == X; public override int GetHashCode() => X; public override string ToString() => \"pin\"; }")]
+    [InlineData("Key", "public sealed class Key { public int X; public override bool Equals(object? o) => o is Key k && k.X == X; public override int GetHashCode() => X; public override string ToString() => \"key\"; }")]
+    [InlineData("Same", "public sealed record Same(int V) { public bool Equals(Same? other) => other?.V == V; public override int GetHashCode() => V; }")]
+    [InlineData("Fmt", "public sealed record Fmt(int V) { public static string ToString(int v) => v.ToString(); }")]
+    [InlineData("Halves", "public sealed partial class Halves { public partial int Level { get; set; } public partial int Level { get => field; set => field = value * 2; } public partial event System.Action? Moved; public partial event System.Action? Moved { add { } remove { } } }")]
+    [InlineData("Shown", "using eQuantic.UI.Primitives; public sealed class Shown : StatelessComponent { public override string ToString() => \"Shown\"; public override VisualNode Build(ComponentContext context) => new Text(\"\", TypeRole.BodyM); }")]
+    [InlineData("Consent", "using eQuantic.UI.Primitives; public sealed class Consent(string? policyHref = null) : StatefulComponent { public string? PolicyHref { get; init; } = policyHref; public override VisualNode Build(ComponentContext context) => new Text(PolicyHref ?? \"\", TypeRole.BodyM); }")]
+    [InlineData("Exact", "using eQuantic.UI.Primitives; public sealed class Exact(string? PolicyHref = null) : StatefulComponent { public string? PolicyHref { get; init; } = PolicyHref; public override VisualNode Build(ComponentContext context) => new Text(PolicyHref ?? \"\", TypeRole.BodyM); }")]
+    [InlineData("Wide", "using eQuantic.UI.Primitives; public sealed class Wide(long count) : StatelessComponent { public long Count { get; init; } = count; public override VisualNode Build(ComponentContext context) => new Text(\"\" + Count, TypeRole.BodyM); }")]
+    [InlineData("Paren", "using eQuantic.UI.Primitives; public sealed class Paren(string? policyHref = null) : StatefulComponent { public string? PolicyHref { get; init; } = (policyHref); public override VisualNode Build(ComponentContext context) => new Text(PolicyHref ?? \"\", TypeRole.BodyM); }")]
+    [InlineData("Greeter", "public interface IGreet { string Greet() => \"hi\"; } public sealed class Greeter : IGreet { public int N; }")]
+    [InlineData("Typed", "public record Root(int X) { public virtual bool Equals(int x) => X == x; } public sealed record Typed(int X, int Y) : Root(X) { public override bool Equals(int x) => Y == x; }")]
     public void OneMemberOnItsName_IsNotRefused(string name, string source) =>
         Compile(source, name).Errors.Where(error => error.Code == "EQ1007").Should().BeEmpty();
+
+    /// <summary>
+    /// Every pair of members of one type that lands on one key of its twin, the same lowered name and the
+    /// same static-ness, whatever kind each member is (#1146). Each passed the build, and the browser kept
+    /// one of them: a static field took the place of a static accessor or method of its name when the
+    /// class was defined (<c>Seq.Next()</c> was "not a function"), a value held on each instance hid an
+    /// accessor or a method of its name, two statics of one name answered for each other, and so did two
+    /// <c>operator +</c>, which the twin names by their symbol alone.
+    /// </summary>
+    public static TheoryData<string, string, string, string> MembersOnOneKey => new()
+    {
+        { "Counter", "public static class Counter { private static int count; public static int Count { get => count; set => count = value * 2; } }", "Counter.Count", "Counter.count" },
+        { "Seq", "public static class Seq { private static int next; public static int Next() => ++next; }", "Seq.Next()", "Seq.next" },
+        { "Limits", "public static class Limits { public const int Max = 3; public static int max => 4; }", "Limits.max", "Limits.Max" },
+        { "Ids", "public sealed class Ids { private static int next; public static int Next() => ++next; }", "Ids.Next()", "Ids.next" },
+        { "Cfg", "public sealed class Cfg { private static int count; public static int Count { get; set; } = 5; }", "Cfg.Count", "Cfg.count" },
+        { "Shape", "public sealed class Shape { public int Total => 3; public int total() => 4; }", "Shape.total()", "Shape.Total" },
+        { "Twins", "public sealed class Twins { public int Total { get; set; } = 1; public int total { get; set; } = 2; }", "Twins.total", "Twins.Total" },
+        { "Named", "public sealed class Named { public string Name { get; set; } = \"a\"; public string name() => Name; }", "Named.name()", "Named.Name" },
+        { "Clicker", "public sealed class Clicker { public event System.Action? Changed; public void changed() => Changed?.Invoke(); }", "Clicker.changed()", "Clicker.Changed" },
+        { "Sizes", "public static class Sizes { extension(string s) { public int Size => s.Length; } public static int Size(this System.Collections.Generic.List<int> l) => l.Count; }", "Sizes.Size(System.Collections.Generic.List<int>)", "Sizes.extension(string).Size" },
+        { "Items", "public static class Items { extension(string s) { public char this[int i] => s[i]; } public static int Item(int x) => x; }", "Items.Item(int)", "Items.extension(string).this[int]" },
+        { "Texts", "public static class Texts { extension(string) { public static string Blank => \"\"; } public static string blank() => \"b\"; }", "Texts.blank()", "Texts.extension(string).Blank" },
+        { "Money", "public sealed record Money(int Cents) { public static implicit operator Money(int cents) => new(cents); public static Money FromInt(int cents) => new(cents * 100); }", "Money.FromInt(int)", "Money.implicit operator Money(int)" },
+        { "Sum", "public sealed record Sum(int V) { public static Sum operator +(Sum a, Sum b) => new(a.V + b.V); public static Sum operator +(Sum a, int b) => new(a.V + b); }", "Sum.operator +(Sum, int)", "Sum.operator +(Sum, Sum)" },
+    };
+
+    [Theory]
+    [MemberData(nameof(MembersOnOneKey))]
+    public void TwoMembersOfAnyKindOnOneKey_AreRefused(string name, string source, string later, string earlier)
+    {
+        var error = Compile(source, name).Errors.Should().ContainSingle().Subject;
+
+        error.Code.Should().Be("EQ1007");
+        error.Message.Should().StartWith($"'{later}' lowers to").And.Contain($"and so does '{earlier}' (line 1)");
+    }
+
+    /// <summary>
+    /// A component's members land on one key the same way, stateless and stateful alike. Its fields keep
+    /// the names the server hydrates them under, so none moves as a plain class's does (#662): a field
+    /// beside its property hid the getter (<c>Label =&gt; label.ToUpper()</c> answered "x"), and a
+    /// setter never ran.
+    /// </summary>
+    [Theory]
+    [InlineData("StatelessComponent", "private readonly string label = \"x\"; public string Label => label.ToUpper();", "Page.Label", "Page.label")]
+    [InlineData("StatefulComponent", "private int count; public int Count { get => count; set => count = value * 2; }", "Page.Count", "Page.count")]
+    [InlineData("StatelessComponent", "public string Title => \"t\"; private string title() => \"x\";", "Page.title()", "Page.Title")]
+    [InlineData("StatelessComponent", "private static int count; public static int Count => count;", "Page.Count", "Page.count")]
+    [InlineData("StatefulComponent", "public event System.Action? Changed; private bool changed;", "Page.changed", "Page.Changed")]
+    public void AComponentsMembersOnOneKey_AreRefused(string kind, string members, string later, string earlier)
+    {
+        var error = Compile($$"""
+            using eQuantic.UI.Primitives;
+
+            [Page("/probe")]
+            public sealed class Page : {{kind}}
+            {
+                {{members}}
+                public override VisualNode Build(ComponentContext context) => new Text("", TypeRole.BodyM);
+            }
+            """, "Page").Errors.Should().ContainSingle().Subject;
+
+        error.Should().BeEquivalentTo(new { Code = "EQ1007", Line = 6 });
+        error.Message.Should().StartWith($"'{later}' lowers to").And.Contain($"and so does '{earlier}' (line 6)");
+    }
+
+    /// <summary>A static class nested in a component is a module of its own, and holds one member per key
+    /// too.</summary>
+    [Fact]
+    public void AStaticClassNestedInAComponent_HoldsOneMemberPerKey()
+    {
+        var result = Compile("""
+            using eQuantic.UI.Primitives;
+
+            [Page("/probe")]
+            public sealed class Page : StatelessComponent
+            {
+                private static class Copy
+                {
+                    private static int count;
+                    public static int Count() => ++count;
+                }
+
+                public override VisualNode Build(ComponentContext context) => new Text(Copy.Count().ToString(), TypeRole.BodyM);
+            }
+            """, "Page$Copy");
+
+        result.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new { Code = "EQ1007", Line = 9 });
+    }
+
+    /// <summary>A <c>[ServerOnly]</c> static class nested in a component is no module, so nothing of it
+    /// reaches a twin, and its owner is refused nothing for it: checked from its owner, its backing-field
+    /// idiom was refused.</summary>
+    [Fact]
+    public void AServerOnlyClassNestedInAComponent_IsRefusedNowhere()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            using eQuantic.UI.Primitives;
+
+            [Page("/probe")]
+            public sealed class Page : StatelessComponent
+            {
+                [ServerOnly] private static class Backend
+                {
+                    private static int count;
+                    public static int Count => count;
+                }
+
+                public override VisualNode Build(ComponentContext context) => new Text("", TypeRole.BodyM);
+            }
+            """, "Probe.cs");
+
+        results.Should().ContainSingle().Which.Errors.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// A component's instance holds every parameter of its primary constructor, read or not: its
+    /// constructor writes each one it is handed onto the instance, where it hid a method of its name
+    /// (<c>Caption()</c> was "not a function" wherever a caption was handed over), and where it filled the
+    /// slot of the property of its name before that property's initializer ran, which then ran nowhere
+    /// (<c>= policyHref?.Trim()</c> held the untrimmed value, <c>long Count = count</c> an int every read
+    /// took as a long), spelled a case apart or exactly like it, and where it hid an indexer's method
+    /// (<c>item</c> for its getter, <c>setItem</c> for its setter).
+    /// </summary>
+    [Theory]
+    [InlineData("Tile(string caption) : StatelessComponent", "public string Caption() => \"x\";", "'Tile.Caption()' lowers to `caption`", "'Tile(caption)' (line 4)")]
+    [InlineData("Tile(string? policyHref = null) : StatefulComponent", "public string? PolicyHref { get; init; } = policyHref?.Trim();", "'Tile.PolicyHref' lowers to `policyHref`", "'Tile(policyHref)' (line 4)")]
+    [InlineData("Tile(string? PolicyHref = null) : StatefulComponent", "public string? PolicyHref { get; init; } = PolicyHref?.Trim();", "'Tile.PolicyHref' lowers to `policyHref`", "'Tile(PolicyHref)' (line 4)")]
+    [InlineData("Tile(string Caption) : StatelessComponent", "public string Caption() => \"x\";", "'Tile.Caption()' lowers to `caption`", "'Tile(Caption)' (line 4)")]
+    [InlineData("Tile(int count) : StatelessComponent", "public long Count { get; init; } = count;", "'Tile.Count' lowers to `count`", "'Tile(count)' (line 4)")]
+    [InlineData("Tile(int count) : StatelessComponent", "public int Count { get; init => field = value * 2; } = count;", "'Tile.Count' lowers to `count`", "'Tile(count)' (line 4)")]
+    [InlineData("Tile(string item) : StatelessComponent", "public int this[int i] => i * 2;", "'Tile.this[int]' lowers to `item()`", "'Tile(item)' (line 4)")]
+    [InlineData("Tile(string setItem) : StatefulComponent", "public int this[int i] { get => i; set { } }", "'Tile.this[int]'s setter' lowers to `setItem()`", "'Tile(setItem)' (line 4)")]
+    public void AComponentsParameter_HoldsItsKey_ReadOrNot(string declaration, string member, string later, string earlier)
+    {
+        var error = Compile($$"""
+            using eQuantic.UI.Primitives;
+
+            [Page("/probe")]
+            public sealed class {{declaration}}
+            {
+                {{member}}
+                public override VisualNode Build(ComponentContext context) => new Text("", TypeRole.BodyM);
+            }
+            """, "Tile").Errors.Should().ContainSingle().Subject;
+
+        error.Should().BeEquivalentTo(new { Code = "EQ1007", Line = 6 });
+        error.Message.Should().StartWith(later).And.Contain($"and so does {earlier}");
+    }
+
+    /// <summary>
+    /// A component's twin is asked the names the runtime asks any value, and an overload there answered
+    /// for <c>ToString()</c>: <c>"" + this</c> called <c>ToString(string)</c> with no argument. Its
+    /// <c>constructor</c> is EQ2011's (<see cref="ShadowedRuntimeMembersTests"/>).
+    /// </summary>
+    [Theory]
+    [InlineData("public string ToString(string prefix) => prefix;", "'Page.ToString(string)' lowers to `toString`")]
+    [InlineData("public int GetHashCode(int salt) => salt;", "'Page.GetHashCode(int)' lowers to `getHashCode`")]
+    [InlineData("public string ToJSON() => \"j\";", "'Page.ToJSON()' lowers to `toJSON`")]
+    public void AComponentsMemberOnANameTheRuntimeAsks_IsRefused(string members, string named)
+    {
+        var error = Compile($$"""
+            using eQuantic.UI.Primitives;
+
+            [Page("/probe")]
+            public sealed class Page : StatelessComponent
+            {
+                {{members}}
+                public override VisualNode Build(ComponentContext context) => new Text("" + this, TypeRole.BodyM);
+            }
+            """, "Page").Errors.Should().ContainSingle().Subject;
+
+        error.Code.Should().Be("EQ1007");
+        error.Message.Should().StartWith(named).And.Contain("a name of its own");
+    }
+
+    /// <summary>
+    /// A member on a name the twin holds itself: a record's or a struct's <c>with</c>, the names the
+    /// runtime and JavaScript ask a value for its equality, its hash, its text and its JSON, a class's
+    /// <c>constructor</c> and its static <c>prototype</c> (#1146). Each answered in the twin's place, or
+    /// lost to it, or left a module that did not parse. Only an override of object's member stands there.
+    /// </summary>
+    public static TheoryData<string, string, string> NamesTheTwinHolds => new()
+    {
+        { "Style", "public sealed record Style(int Size) { public Style With(int size) => this with { Size = size }; }", "'Style.With(int)' lowers to `with`" },
+        { "Vec", "public readonly record struct Vec(int X) { public Vec With(int x) => new(x); }", "'Vec.With(int)' lowers to `with`" },
+        { "Fit", "public sealed record Fit(int With, int Height);", "'Fit(With)' lowers to `with`" },
+        { "Pt", "public sealed record Pt(int X) { public bool equals(Pt other) => X == other.X; }", "'Pt.equals(Pt)' lowers to `equals`" },
+        { "Seed", "public sealed record Seed(int V) { public int GetHashCode(int salt) => V ^ salt; }", "'Seed.GetHashCode(int)' lowers to `getHashCode`" },
+        { "Temp", "public sealed class Temp { public double C = 1; public string ToString(string unit) => C + unit; }", "'Temp.ToString(string)' lowers to `toString`" },
+        { "Tag", "public sealed record Tag(string V) { public string ToString(string prefix) => prefix + V; }", "'Tag.ToString(string)' lowers to `toString`" },
+        { "Doc", "public sealed class Doc { public string Title = \"a\"; public string ToJSON() => Title; }", "'Doc.ToJSON()' lowers to `toJSON`" },
+        { "Js", "public sealed record Js(int V) { public string ToJSON() => \"x\"; }", "'Js.ToJSON()' lowers to `toJSON`" },
+        { "Builder", "public sealed class Builder { public string Constructor() => \"c\"; }", "'Builder.Constructor()' lowers to `constructor`" },
+        { "Shaped", "public sealed record Shaped(int Constructor);", "'Shaped(Constructor)' lowers to `constructor`" },
+        { "Proto", "public static class Proto { public static int Prototype => 2; }", "'Proto.Prototype' lowers to `static prototype`" },
+    };
+
+    [Theory]
+    [MemberData(nameof(NamesTheTwinHolds))]
+    public void AMemberOnANameTheTwinHolds_IsRefused(string name, string source, string named)
+    {
+        var error = Compile(source, name).Errors.Should().ContainSingle().Subject;
+
+        error.Code.Should().Be("EQ1007");
+        error.Message.Should().StartWith(named).And.Contain("Give").And.Contain("a name of its own");
+    }
+
+    /// <summary>
+    /// The twin writes an override of object's member in place of its own, and nothing else in its place
+    /// (#1146): a struct's <c>Equals(object)</c> was written beside the twin's <c>equals</c>, the browser
+    /// keeping the later, and a record's static <c>ToString(int)</c> took the place of its synthesized
+    /// text, which the twin then wrote nowhere.
+    /// </summary>
+    /// <summary>
+    /// A default the type takes from an interface, or a private helper copied with one, is a member of
+    /// its twin, and meets the names the twin holds itself as a declared member does: a default
+    /// <c>Constructor()</c> was a second constructor, which no module parses, and over a component's own
+    /// one, which EQ2011 never reads, the component never called its base's.
+    /// </summary>
+    [Theory]
+    [InlineData("Builder", "public interface IBuilder { string Constructor() => \"c\"; } public sealed class Builder : IBuilder { public int N; }", "'Builder' takes the default 'IBuilder.Constructor', which lowers to `constructor`")]
+    [InlineData("Temp", "public interface IShow { string ToString(string unit) => unit; } public sealed class Temp : IShow { public double C = 1; }", "'Temp' takes the default 'IShow.ToString', which lowers to `toString`")]
+    [InlineData("Fmt", "public interface IFmt { string Text() => ToJSON(); private string ToJSON() => \"j\"; } public sealed class Fmt : IFmt { public int N; }", "'Fmt' takes the default 'IFmt.ToJSON', which lowers to `toJSON`")]
+    [InlineData("Page", "using eQuantic.UI.Primitives; public interface IBuilt { string Constructor() => \"c\"; } public sealed class Page : StatelessComponent, IBuilt { public override VisualNode Build(ComponentContext context) => new Text(\"\", TypeRole.BodyM); }", "'Page' takes the default 'IBuilt.Constructor', which lowers to `constructor`")]
+    public void ADefaultOnANameTheTwinHolds_IsRefused(string name, string source, string named)
+    {
+        var error = Compile(source, name).Errors.Should().ContainSingle().Subject;
+
+        error.Code.Should().Be("EQ1007");
+        error.Message.Should().StartWith(named).And.Contain("a name of its own");
+    }
+
+    [Fact]
+    public void AStructsEqualsOverride_IsItsTwinsOneEquals()
+    {
+        var result = Compile("public struct Pin { public int X; public override bool Equals(object? o) => o is Pin p && p.X == X; public override int GetHashCode() => X; }", "Pin");
+
+        result.Errors.Should().BeEmpty();
+        result.TypeScript.Should().Contain("equals(", Exactly.Once(), "the override is the twin's equals, and nothing beside it");
+    }
+
+    /// <summary>A server-only override is no member of the twin, so the twin keeps its own: the record's
+    /// synthesized text and its hash. A server-only <c>GetHashCode()</c> took the hash away with nothing in
+    /// its place, so the runtime hashed the record by its identity: two equal records hashed apart, and a
+    /// dictionary keyed by one never found the other. An alias marks it as much as the attribute does
+    /// (#1140): the overrides are asked of their symbol.</summary>
+    [Theory]
+    [InlineData("[ServerOnly]")]
+    [InlineData("[Keep]")]
+    public void AServerOnlyOverride_LeavesTheTwinsOwnInPlace(string attribute)
+    {
+        var result = Compile($$"""
+            using eQuantic.UI.Primitives;
+            using Keep = eQuantic.UI.Primitives.ServerOnlyAttribute;
+
+            public sealed record Note(int V)
+            {
+                {{attribute}} public override string ToString() => System.IO.Path.GetTempPath();
+                {{attribute}} public override int GetHashCode() => System.IO.Path.GetTempPath().Length;
+            }
+            """, "Note");
+
+        result.Errors.Should().BeEmpty();
+        result.TypeScript.Should().Contain("$eq.text.record(this, 'Note'")
+            .And.Contain("$eq.hash.combine(this.");
+    }
+
+    /// <summary>An override of a typed <c>Equals</c> a base record declares fills that one's slot, a name of
+    /// its own, and leaves the twin's <c>equals</c> in place: it took it away, and the derived record's
+    /// values compared as its base's, its own state unread.</summary>
+    [Fact]
+    public void ADerivedRecordsTypedEqualsOverride_LeavesItsEqualsInPlace()
+    {
+        var result = Compile("""
+            public record Base(int X) { public virtual bool Equals(int x) => X == x; }
+            public sealed record Derived(int X, int Y) : Base(X) { public override bool Equals(int x) => Y == x; }
+            """, "Derived");
+
+        result.Errors.Should().BeEmpty();
+        result.TypeScript.Should().Contain("$eq.equals(this.y, o.y)", "the derived record compares its own state");
+    }
+
+    [Fact]
+    public void ARecordsStaticToString_LeavesItsTextInPlace()
+    {
+        var result = Compile("public sealed record Fmt(int V) { public static string ToString(int v) => v.ToString(); }", "Fmt");
+
+        result.Errors.Should().BeEmpty();
+        result.TypeScript.Should().Contain("$eq.text.record(this, 'Fmt'", "the record's text is still the one C# synthesizes")
+            .And.Contain("static toString(");
+    }
 }

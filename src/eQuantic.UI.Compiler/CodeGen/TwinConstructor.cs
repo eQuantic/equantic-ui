@@ -67,7 +67,9 @@ internal sealed class TwinConstructor
     /// itself, a property's or a field's initializer converted like any expression where the
     /// constructor's parameters are in scope, and its type's default where there is none.
     /// <paramref name="tsType"/> is what TypeScript reads the member as: a reference type that starts
-    /// as C#'s null where TypeScript reads it as never null (`declare c: string`) is said to be one.
+    /// as C#'s null where TypeScript reads it as never null (`declare c: string`) is said to be one, and
+    /// so is a struct with no zero of its own, which starts as the `undefined` its twin reads as its own
+    /// default (<see cref="DefaultValue"/>): strict TypeScript refused it bare (#1169).
     /// <para>
     /// Every initializer runs on every construction (#413). It was each member's PARAMETER default,
     /// which JavaScript evaluates only for an argument that is missing, so an object initializer setting
@@ -86,7 +88,7 @@ internal sealed class TwinConstructor
                 : (DefaultOf(declared.Type), false),
             _ => ("null", false),
         };
-        if (value == "null" && _annotations && !Nullable(tsType)) value = "null!";
+        if (value is "null" or "undefined" && _annotations && !Nullable(tsType)) value += "!";
         return new Start(slot, JsExpr.Opaque(value), runsCode, declaration);
     }
 
