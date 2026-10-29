@@ -146,6 +146,57 @@ public sealed class ServerOnlyMethodBySymbolTests
             .And.NotContainAny(["HttpClient", "File.", "ColdStore"], "nothing its body or its signature names crosses");
     }
 
+    /// <summary>The other members the rule leaves out, each marked through the alias: an operator and a
+    /// conversion of a class and of a record, a member of an extension block, which method lowering writes,
+    /// and an interface's default, which the emitters write into the twin of a class or a record that takes
+    /// it. Each reads a file and constructs the app's <c>ColdStore</c>. A record that took a server-only
+    /// default was refused (EQ1008) as relying on a body nothing could read, the attribute written on the
+    /// default included, where a class left it out.</summary>
+    public static TheoryData<string, string, string, string, string> OtherMembers() => new()
+    {
+        { "a class's operator", "Amount",
+            "public sealed class Amount\n{\n    public int V;\n\n    [Keep] public static Amount operator +(Amount a, Amount b) => new Amount { V = File.ReadAllText(new ColdStore().Path).Length };\n}",
+            "new App.Model.Amount().V.ToString()", "opAdd" },
+        { "a class's conversion", "Amount",
+            "public sealed class Amount\n{\n    public int V;\n\n    [Keep] public static implicit operator Amount(string s) => new Amount { V = File.ReadAllText(s + new ColdStore().Path).Length };\n}",
+            "new App.Model.Amount().V.ToString()", "fromString" },
+        { "a record's operator", "Note",
+            "public sealed record Note(string Name)\n{\n    [Keep] public static Note operator +(Note a, Note b) => new(File.ReadAllText(new ColdStore().Path));\n}",
+            "new App.Model.Note(\"n\").Name", "opAdd" },
+        { "a record's conversion", "Note",
+            "public sealed record Note(string Name)\n{\n    [Keep] public static explicit operator Note(int n) => new(File.ReadAllText(new ColdStore().Path + n));\n}",
+            "new App.Model.Note(\"n\").Name", "fromInt" },
+        { "an extension block's member", "Exts",
+            "public static class Exts\n{\n    extension(string s)\n    {\n        public string Plain() => s + \"?\";\n\n        [Keep] public string Disk() => File.ReadAllText(s + new ColdStore().Path);\n    }\n}",
+            "\"x\".Plain()", "disk" },
+        { "an interface's default a record takes", "Note",
+            "public interface IReads\n{\n    [Keep] string Read() => File.ReadAllText(new ColdStore().Path);\n}\n\npublic sealed record Note(string Name) : IReads;",
+            "new App.Model.Note(\"n\").Name", "read(" },
+        { "an interface's default a record takes, marked as written", "Note",
+            "public interface IReads\n{\n    [ServerOnly] string Read() => File.ReadAllText(new ColdStore().Path);\n}\n\npublic sealed record Note(string Name) : IReads;",
+            "new App.Model.Note(\"n\").Name", "read(" },
+        { "an interface's default a class takes", "Plain",
+            "public interface IReads\n{\n    [Keep] string Read() => File.ReadAllText(new ColdStore().Path);\n}\n\npublic sealed class Plain : IReads\n{\n    public int V => 1;\n}",
+            "new App.Model.Plain().V.ToString()", "read(" },
+    };
+
+    [Theory]
+    [MemberData(nameof(OtherMembers))]
+    public void AServerOnlyMemberKnownByItsSymbol_IsLeftOutOfItsTwin(string what, string module, string declaration, string shown, string member)
+    {
+        using var solution = App(
+            ("Model/ColdStore.cs", $"namespace App.Model;\n\n{ColdStore}\n"),
+            ($"Model/{module}.cs", $"{Usings}\nnamespace App.Model;\n\n{declaration}\n"),
+            ("Screens/Home.cs", Page(shown: shown, usings: "using App.Model;\n")));
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse($"{what}, marked through the alias, never crosses:\n{built.Errors}");
+        built.Errors.Should().BeEmpty();
+        built.Module(module).Should().NotBeNull().And.NotContain(member, $"{what} is no member of the twin")
+            .And.NotContainAny(["File.", "ColdStore"], "nothing its body names crosses");
+        built.SiblingImportsOf(module).Should().NotContain("ColdStore");
+    }
+
     /// <summary>Client code that calls such a method is refused where it calls it (EQ2010), as a call
     /// to a method marked as written is: the twin holds no such member.</summary>
     [Theory]

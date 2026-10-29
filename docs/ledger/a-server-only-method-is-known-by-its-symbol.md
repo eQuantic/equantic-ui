@@ -8,4 +8,6 @@
   with EQ2112 and EQ2103; the EQ1007 guard refused such a method beside its overload. The rule asks the method's
   symbol now wherever a model holds its tree, and every reader hands it its model: the parser, the emitters, method
   lowering, the import and refusal scans and the overload guard. A member that writes no attribute and is no
-  partial method binds nothing. Proposed and archived through OpenSpec (`client-boundary`).
+  partial method binds nothing. The same proof found a record that takes a `[ServerOnly]` interface default
+  refused with EQ1008, however the attribute was spelled, where a class left the default out: it is left out
+  of the record's twin too. Proposed and archived through OpenSpec (`client-boundary`).

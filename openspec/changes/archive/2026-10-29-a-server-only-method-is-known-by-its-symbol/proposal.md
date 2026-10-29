@@ -20,7 +20,9 @@ with EQ2112 and EQ2103, the refusal of the file access and the `HttpClient` the 
 out of the browser. The same syntax-only rule made the EQ1007 overload guard count such a method, so a
 server-only overload beside one that crosses was refused as two methods on one name.
 
-The attribute written on the method, as written, has been left out by every emitter since #816 and #944.
+The attribute written on the method, as written, has been left out by every emitter since #816 and #944,
+with one exception the same measurement found: a record that takes a `[ServerOnly]` default from an
+interface was refused with EQ1008, as relying on a body nothing could read, where a class left it out.
 
 ## What Changes
 
